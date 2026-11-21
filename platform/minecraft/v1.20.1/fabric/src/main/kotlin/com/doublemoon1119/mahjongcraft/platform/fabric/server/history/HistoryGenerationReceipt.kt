@@ -7,7 +7,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
  * @property pruned 是否存在已提交的清理收據。
  * @property disk 同一查詢工作取得的實際磁碟大小。
  */
-internal data class HistoryGenerationReceipt(
+data class HistoryGenerationReceipt(
     val replayBytes: Map<String, Long>,
     val pruned: Set<String>,
     val disk: HistoryDiskUsage,

@@ -12,7 +12,7 @@ import kotlin.time.Instant
  * @property retentionDuration 保留期限；零為不按天數清理。
  * @property maxDiskBytes 主檔與附屬檔的磁碟管理上限。
  */
-internal data class HistoryRetentionPolicy(
+data class HistoryRetentionPolicy(
     val includeInterruptedMatches: Boolean,
     val maxMatches: Int,
     val retentionDuration: Duration,
@@ -77,7 +77,7 @@ internal data class HistoryCleanupPlan(
  *
  * @return 設定值的不可變政策快照。
  */
-internal fun MinecraftHistoryConfig.retentionPolicy(): HistoryRetentionPolicy = HistoryRetentionPolicy(
+fun MinecraftHistoryConfig.retentionPolicy(): HistoryRetentionPolicy = HistoryRetentionPolicy(
     includeInterruptedMatches = includeInterruptedMatches,
     maxMatches = maxMatches,
     retentionDuration = retention,

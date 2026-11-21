@@ -5,13 +5,11 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomP
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomParticipantProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomVacancy
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricRoomParticipantRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.character.DebugSeatedParticipantAdapter
 import net.minecraft.entity.Entity
 import java.lang.reflect.Modifier
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -50,16 +48,6 @@ class FabricRoomParticipantRegistrationTest {
         val factories = FabricRoomVacancy.Companion::class.java.declaredMethods.filter { it.name.startsWith("create") }
         assertTrue(factories.isNotEmpty())
         assertTrue(factories.all { it.isSynthetic })
-    }
-
-    /** 最小 adapter 不因在附近而允許加入其他房主的房間。 */
-    @Test
-    fun `debug participant grants permission only to its recorded host`() {
-        val host = Uuid.random()
-        val tags = setOf(DebugSeatedParticipantAdapter.TAG, "${DebugSeatedParticipantAdapter.OWNER_TAG_PREFIX}$host")
-        assertTrue(DebugSeatedParticipantAdapter.authorized(tags, host))
-        assertFalse(DebugSeatedParticipantAdapter.authorized(tags, Uuid.random()))
-        assertFalse(DebugSeatedParticipantAdapter.authorized(emptySet(), host))
     }
 
     /** 建立不能在登記時執行的能力替身。 */

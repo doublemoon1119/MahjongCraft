@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticCon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInAutomaticControlTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.config.StressDebugKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.guide.MinecraftGuideScreenKeys
@@ -251,7 +250,6 @@ class MinecraftLanguageFilesTest {
         MinecraftHandbookScreenKeys::class,
         MinecraftCycleButtonKeys::class,
         MinecraftHudKeys::class,
-        StressDebugKeys::class,
         BuiltInAutomaticControlTranslationKeys::class,
         SharedGameFlowConfigTranslationKeys::class,
     )

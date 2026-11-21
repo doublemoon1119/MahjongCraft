@@ -45,7 +45,7 @@ import kotlin.uuid.Uuid
  * @property payloadVersion 原始事件 DTO 的格式版本。
  * @property payload 原始事件的版本化 JSON；只保存在伺服器側。
  */
-internal data class PendingHistoryRecord(
+data class PendingHistoryRecord(
     val matchId: String,
     val sequence: Long,
     val roundNumber: Int,

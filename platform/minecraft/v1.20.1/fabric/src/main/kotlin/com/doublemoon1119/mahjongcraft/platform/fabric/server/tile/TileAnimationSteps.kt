@@ -22,7 +22,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PlannedTileMotion
  * 讓開發者不必建房、加入、開局就能預覽演出效果；兩邊共用同一份實作，動畫調整時不會不同步。
  * `internal`：只給同模組內的呼叫端使用，不對外公開成正式 API。
  */
-internal object TileAnimationSteps {
+object TileAnimationSteps {
     /**
      * 開局發牌動畫：排定單張牌「起飛→隱形傳送→落下→（全部座位都到齊後統一）翻牌」整段動畫，一次性
      * 組好整個 [AnimationStep] 佇列，理由見 [AnimatedMahjongEntity] KDoc（持久化撐過伺服器重啟）。

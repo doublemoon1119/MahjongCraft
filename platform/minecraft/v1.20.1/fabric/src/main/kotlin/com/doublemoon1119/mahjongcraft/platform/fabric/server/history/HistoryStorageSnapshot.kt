@@ -41,7 +41,7 @@ internal data class HistoryDatabaseStatistics(
  * @property policy 取得快照時固定的有效保留政策。
  * @property updatedAt 快照完成的 UTC 時刻。
  */
-internal data class HistoryStorageSnapshot(
+data class HistoryStorageSnapshot(
     val completedMatchCount: Long,
     val activeMatchCount: Long,
     val partialMatchCount: Long,

@@ -21,13 +21,31 @@ import net.minecraft.util.Formatting
  * @property location 桌子的公開位置。
  * @property facing 桌子的公開朝向。
  */
-internal class FabricSeatingSession(
+class FabricSeatingSession internal constructor(
     val world: ServerWorld,
     val requests: List<SeatRequest>,
-    val coordinator: SeatAssignmentCoordinator<ServerWorld, Entity, FabricSeatSnapshot>,
+    internal val coordinator: SeatAssignmentCoordinator<ServerWorld, Entity, FabricSeatSnapshot>,
     val location: TableLocation,
     val facing: MahjongTableFacing,
 ) {
+    /**
+     * 試算這個實體能否坐上指定席位，不實際入座。
+     *
+     * @param rider 要入座的實體。
+     * @param request 要坐的席位。
+     * @return 找得到可坐的座位時為 true。
+     */
+    fun canSeat(rider: Entity, request: SeatRequest): Boolean = coordinator.previewSeat(world, rider, request) != null
+
+    /**
+     * 讓實體坐上指定席位。
+     *
+     * @param rider 要入座的實體。
+     * @param request 要坐的席位。
+     * @return 入座結果。
+     */
+    fun assign(rider: Entity, request: SeatRequest): SeatAssignmentResult = coordinator.assign(world, rider, request)
+
     /**
      * 入座不成功時提示玩家原因；成功入座或安全站立時不提示。
      *

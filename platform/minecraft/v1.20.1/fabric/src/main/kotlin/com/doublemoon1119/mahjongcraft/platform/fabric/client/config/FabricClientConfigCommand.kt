@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.text.configReloadFailureM
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.configShowMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.prefixedConfigMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
@@ -29,12 +28,10 @@ import net.minecraft.util.Formatting
  *
  * @property configStore 本機設定的讀取與保存來源。
  * @property screenController 開啟設定畫面的入口。
- * @property minecraftEnvironment 判斷是否註冊開發環境診斷指令的來源。
  */
 class FabricClientConfigCommand(
     private val configStore: MahjongClientConfigStore,
     private val screenController: MahjongClientConfigScreenController,
-    private val minecraftEnvironment: MinecraftEnvironment,
 ) {
     /** 記錄 config 指令執行結果，對稱 server 端 `FabricServerConfigCommand` 的 logger。 */
     private val logger = mahjongCraftLogger(FabricClientConfigCommand::class)
@@ -57,29 +54,8 @@ class FabricClientConfigCommand(
                         },
                     ),
             )
-            if (minecraftEnvironment.isDevelopment) {
-                root.then(
-                    ClientCommandManager.literal(DEBUG_SUBCOMMAND).then(
-                        ClientCommandManager.literal(HOVERED_TEXT_SUBCOMMAND).then(
-                            ClientCommandManager.literal(CLIENT_CONFIG_ARGUMENT)
-                                .executes { context -> previewHoveredText(context.source) },
-                        ),
-                    ),
-                )
-            }
             dispatcher.register(root)
         }
-    }
-
-    /**
-     * 以正式設定訊息建構器發送客戶端設定懸停預覽。
-     *
-     * @param source 接收預覽的指令來源。
-     * @return Brigadier 成功值。
-     */
-    private fun previewHoveredText(source: FabricClientCommandSource): Int {
-        source.sendFeedback(clientConfigShowMessage())
-        return COMMAND_SUCCESS
     }
 
     /**
@@ -149,15 +125,6 @@ class FabricClientConfigCommand(
 
         /** `screen` 子指令節點。 */
         const val SCREEN_SUBCOMMAND: String = "screen"
-
-        /** 開發期診斷子指令。 */
-        const val DEBUG_SUBCOMMAND: String = "debug"
-
-        /** 可懸停正式訊息的診斷子指令。 */
-        const val HOVERED_TEXT_SUBCOMMAND: String = "hovered_text"
-
-        /** Client config 正式 hover 預覽。 */
-        const val CLIENT_CONFIG_ARGUMENT: String = "client_config"
 
         /** Brigadier 成功回傳值。 */
         const val COMMAND_SUCCESS: Int = 1

@@ -10,11 +10,10 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.development.TableEndListeners
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinShowcaseOverride
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricMahjongLobbyInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
@@ -24,7 +23,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.OrphanedTablePo
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
@@ -92,7 +90,7 @@ class FabricTableLifecycleServiceTest {
         holder.join()
     }
 
-    /** 方塊替換已完成清理時，玩家破壞清理針對的位置項目已不存在，不得再次執行清理。 */
+    /** 方塊替換已完成清理時，玩家破壞清理針對的位置項目已不存在，不得再次執行清理或通知牌桌結束。 */
     @Test
     fun `player-broken cleanup is stale after block replacement removed location`() = runTest {
         val fixture = Fixture()
@@ -105,9 +103,10 @@ class FabricTableLifecycleServiceTest {
         assertEquals(OrphanedTableCleanupResult.STALE_REQUEST, afterEventResult)
         assertNull(fixture.locations.get(fixture.tableId))
         assertNull(fixture.store.snapshot().rooms[fixture.tableId])
+        assertTrue(fixture.endedTableIds.isEmpty())
     }
 
-    /** 沒有先發生方塊替換時，玩家破壞事件排入的清理應移除目前的桌子。 */
+    /** 沒有先發生方塊替換時，玩家破壞事件排入的清理應移除目前的桌子，並通知牌桌已結束。 */
     @Test
     fun `player break event cleans current table location`() = runTest {
         val fixture = Fixture()
@@ -119,6 +118,7 @@ class FabricTableLifecycleServiceTest {
         assertNull(fixture.locations.get(fixture.tableId))
         assertNull(fixture.store.snapshot().rooms[fixture.tableId])
         assertNull(fixture.memberships.getVenueId(fixture.playerId))
+        assertEquals(listOf(fixture.tableId), fixture.endedTableIds)
     }
 
     /** 清理仍在排隊時同一 UUID 的桌子已在另一位置重新登記，排隊中的清理不得移除新來源。 */
@@ -214,12 +214,14 @@ class FabricTableLifecycleServiceTest {
         /** 麻將資料的讀取狀態。 */
         val dataStatus = FabricMahjongDataStatus()
 
+        /** 收到牌桌結束通知的牌桌，依通知順序排列。 */
+        val endedTableIds = mutableListOf<Uuid>()
+
         /** 受測生命週期服務。 */
         val lifecycleService = FabricTableLifecycleService(
             store = store,
             locations = locations,
-            debugWinRoundContinuationState = DebugWinRoundContinuationState(),
-            debugWinShowcaseOverride = DebugWinShowcaseOverride(NonDevelopmentEnvironment),
+            tableEndListeners = TableEndListeners().apply { register { tableId -> endedTableIds += tableId } },
             cleanupService = cleanupService,
             cleanupQueue = cleanupQueue,
             configState = configState,
@@ -234,11 +236,6 @@ class FabricTableLifecycleServiceTest {
             presentationCleaner = FabricTablePresentationCleaner(FabricWinCelebrationEffectScheduler(FabricEntitySpawnGateway())),
             dataStatus = dataStatus,
         )
-
-        /** 這個測試不驗證 debug 覆寫，一律回報非開發環境讓它保持 inert。 */
-        object NonDevelopmentEnvironment : MinecraftEnvironment {
-            override val isDevelopment: Boolean = false
-        }
 
         /** 等待目前已排入的清理全部完成。 */
         suspend fun drainCleanupQueue() {

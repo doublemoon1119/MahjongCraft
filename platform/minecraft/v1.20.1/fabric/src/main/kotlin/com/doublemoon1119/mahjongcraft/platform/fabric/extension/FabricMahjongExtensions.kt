@@ -12,10 +12,7 @@ import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionBootstrap
 import com.doublemoon1119.mahjongcraft.extension.mergeRegistrationSources
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugMahjongExtension
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatProvider
-import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionBootstrap
@@ -45,8 +42,6 @@ internal object FabricMahjongExtensions {
      * @param presentationRegistries Minecraft 呈現 registry 集合。
      * @param fabricRegistries Fabric 原生整合 registry 集合。
      * @param mahjongStoolSeatProvider 內建麻將凳座位 provider。
-     * @param debugWinRoundContinuationState 開發用中途胡牌流程狀態。
-     * @param minecraftEnvironment 判斷是否載入開發用 extension 的環境資訊。
      * @param failurePolicy 判斷登記回呼丟出的失敗能否包成帶擴充識別碼的註冊例外。
      */
     fun initialize(
@@ -54,8 +49,6 @@ internal object FabricMahjongExtensions {
         presentationRegistries: MinecraftPresentationRegistries,
         fabricRegistries: FabricExtensionRegistries,
         mahjongStoolSeatProvider: MahjongStoolSeatProvider,
-        debugWinRoundContinuationState: DebugWinRoundContinuationState,
-        minecraftEnvironment: MinecraftEnvironment,
         failurePolicy: ExtensionFailurePolicy,
     ) {
         try {
@@ -66,8 +59,6 @@ internal object FabricMahjongExtensions {
                 presentationRegistries = presentationRegistries,
                 fabricRegistries = fabricRegistries,
                 mahjongStoolSeatProvider = mahjongStoolSeatProvider,
-                debugWinRoundContinuationState = debugWinRoundContinuationState,
-                minecraftEnvironment = minecraftEnvironment,
                 failurePolicy = failurePolicy,
                 extensions = extensions,
             )
@@ -94,8 +85,6 @@ internal object FabricMahjongExtensions {
      * @param presentationRegistries Minecraft 呈現 registry 集合。
      * @param fabricRegistries Fabric 原生整合 registry 集合。
      * @param mahjongStoolSeatProvider 內建麻將凳座位 provider。
-     * @param debugWinRoundContinuationState 開發用中途胡牌流程狀態。
-     * @param minecraftEnvironment 判斷是否載入開發用 extension 的環境資訊。
      * @param failurePolicy 判斷登記回呼丟出的失敗能否包成帶擴充識別碼的註冊例外。
      * @param extensions 要額外登記的 extension。
      */
@@ -104,22 +93,13 @@ internal object FabricMahjongExtensions {
         presentationRegistries: MinecraftPresentationRegistries,
         fabricRegistries: FabricExtensionRegistries,
         mahjongStoolSeatProvider: MahjongStoolSeatProvider,
-        debugWinRoundContinuationState: DebugWinRoundContinuationState,
-        minecraftEnvironment: MinecraftEnvironment,
         failurePolicy: ExtensionFailurePolicy,
         extensions: Iterable<MahjongExtension>,
     ): FabricExtensionRegistrationResult {
         val discoveredExtensions = extensions.toList()
-        // 開發環境限定的 debug 整合排在內建規則之後、第三方之前；正式產物不登記。
-        val debugExtensions = if (minecraftEnvironment.isDevelopment) {
-            listOf(DebugMahjongExtension(winRoundContinuationState = debugWinRoundContinuationState))
-        } else {
-            emptyList()
-        }
         val coreSources = MahjongExtensionBootstrap.registerAndFreeze(
             extensions = buildList {
                 addAll(BundledMahjongExtensions.all)
-                addAll(debugExtensions)
                 addAll(discoveredExtensions)
             },
             registries = coreRegistries,
@@ -136,7 +116,6 @@ internal object FabricMahjongExtensions {
         val minecraftResult = MinecraftMahjongExtensionBootstrap.registerAndFreeze(
             extensions = buildList {
                 addAll(BundledMinecraftMahjongExtensions.all)
-                addAll(debugExtensions)
                 discoveredExtensions.filterIsInstanceTo<MinecraftMahjongExtension, _>(this)
             },
             registries = presentationRegistries,
@@ -155,7 +134,7 @@ internal object FabricMahjongExtensions {
             )
         }
         val fabricSources = FabricMahjongExtensionBootstrap.registerAndFreeze(
-            extensions = debugExtensions.filterIsInstance<FabricMahjongExtension>() + discoveredExtensions.filterIsInstance<FabricMahjongExtension>(),
+            extensions = discoveredExtensions.filterIsInstance<FabricMahjongExtension>(),
             registries = fabricRegistries,
             builtIn = BuiltInFabricMahjongExtension(
                 seatProvider = mahjongStoolSeatProvider,

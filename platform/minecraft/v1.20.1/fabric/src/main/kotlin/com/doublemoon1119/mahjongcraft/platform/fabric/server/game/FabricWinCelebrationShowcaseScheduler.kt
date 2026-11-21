@@ -201,7 +201,7 @@ class FabricWinCelebrationShowcaseScheduler(
  * @param backAppearanceOf 依牌面素材取得蓋著時要畫的牌背外觀 ID。
  * @return 依編隊順序排列的牌；蓋著的牌只帶牌背，不帶牌面。
  */
-internal fun showcaseWingCards(
+fun showcaseWingCards(
     standingTileIds: List<Uuid>,
     melds: List<MahjongMeldTileGroup>,
     assetKeyOf: (Uuid) -> String?,
