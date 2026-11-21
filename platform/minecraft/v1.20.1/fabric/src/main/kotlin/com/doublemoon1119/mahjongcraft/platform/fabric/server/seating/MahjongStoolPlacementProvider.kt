@@ -3,8 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.seating
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatPlacementContext
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatPlacementProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongStoolBlock
-import net.minecraft.item.BlockItem
-import net.minecraft.item.ItemStack
+import net.minecraft.world.item.BlockItem
+import net.minecraft.world.item.ItemStack
 
 /** 辨識各款內建凳子物品，以正常 BlockItem 流程放置。 */
 internal object MahjongStoolPlacementProvider : FabricSeatPlacementProvider {

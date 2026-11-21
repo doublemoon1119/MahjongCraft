@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.guide
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideScene
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 /**
  * 「如何開始」內容區中由上而下排列的一個區塊。
@@ -16,7 +16,7 @@ internal sealed interface GuideBlock {
      *
      * @property text 標題文字。
      */
-    data class Heading(val text: Text) : GuideBlock
+    data class Heading(val text: Component) : GuideBlock
 
     /**
      * 一段會自動換行的文字。
@@ -24,7 +24,7 @@ internal sealed interface GuideBlock {
      * @property text 文字；以換行分隔句子。
      * @property hint 是否以灰色的補充說明呈現。
      */
-    data class Paragraph(val text: Text, val hint: Boolean = false) : GuideBlock
+    data class Paragraph(val text: Component, val hint: Boolean = false) : GuideBlock
 
     /**
      * 編號步驟，編號從 1 開始。
@@ -47,7 +47,7 @@ internal sealed interface GuideBlock {
         val heightRatio: Float,
         val minimumHeight: Int,
         val maximumHeight: Int,
-        val captions: List<Text> = emptyList(),
+        val captions: List<Component> = emptyList(),
     ) : GuideBlock
 
     /**
@@ -63,7 +63,7 @@ internal sealed interface GuideBlock {
      * @property title 標題。
      * @property body 標題下方由上而下的區塊。
      */
-    data class Section(val title: Text, val body: List<GuideBlock>) : GuideBlock
+    data class Section(val title: Component, val body: List<GuideBlock>) : GuideBlock
 
     /**
      * 有底色的卡片，標題在上、內容在下，例如輪流摸牌、打牌的每一步。
@@ -71,7 +71,7 @@ internal sealed interface GuideBlock {
      * @property title 標題。
      * @property body 標題下方由上而下的區塊。
      */
-    data class Card(val title: Text, val body: List<GuideBlock>) : GuideBlock
+    data class Card(val title: Component, val body: List<GuideBlock>) : GuideBlock
 
     /**
      * 開啟其他畫面的按鈕，靠左放置。
@@ -79,7 +79,7 @@ internal sealed interface GuideBlock {
      * @property label 按鈕文字。
      * @property action 按下後開啟的畫面。
      */
-    data class Button(val label: Text, val action: GuideAction) : GuideBlock
+    data class Button(val label: Component, val action: GuideAction) : GuideBlock
 
     /** 麻將桌與麻將凳的合成配方輪播；找不到配方時不佔空間。 */
     data object Recipe : GuideBlock
@@ -98,7 +98,7 @@ internal sealed interface GuideBlock {
  * @property text 步驟本身。
  * @property hint 步驟下方的灰色補充；沒有時為 null。
  */
-internal data class GuideStep(val text: Text, val hint: Text? = null)
+internal data class GuideStep(val text: Component, val hint: Component? = null)
 
 /** 「如何開始」按鈕開啟的畫面。 */
 internal enum class GuideAction {
@@ -120,14 +120,14 @@ internal sealed interface GuideTileItem {
      * @property tiles 由左到右的牌。
      * @property label 牌組上方的小標籤；沒有時為 null。
      */
-    data class Group(val tiles: List<Tile>, val label: Text? = null) : GuideTileItem
+    data class Group(val tiles: List<Tile>, val label: Component? = null) : GuideTileItem
 
     /**
      * 牌組之間的符號，例如加號與箭頭，與牌面垂直置中；換行時跟著後面的項目移到下一行。
      *
      * @property symbol 符號文字。
      */
-    data class Operator(val symbol: Text) : GuideTileItem
+    data class Operator(val symbol: Component) : GuideTileItem
 
     /**
      * 一張牌，牌的下方附牌名。
@@ -141,5 +141,5 @@ internal sealed interface GuideTileItem {
      *
      * @property text 文字。
      */
-    data class Result(val text: Text) : GuideTileItem
+    data class Result(val text: Component) : GuideTileItem
 }

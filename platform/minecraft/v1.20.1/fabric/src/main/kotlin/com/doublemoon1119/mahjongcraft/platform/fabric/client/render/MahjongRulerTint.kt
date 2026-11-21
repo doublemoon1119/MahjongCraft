@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerColor
-import net.minecraft.util.DyeColor
+import net.minecraft.world.item.DyeColor
 
 /** 牌尺物品與實體共用的顏色：染色牌尺使用原版染料的顏色，無色牌尺使用接近玻璃的淡藍白色。 */
 internal object MahjongRulerTint {
@@ -30,7 +30,7 @@ internal object MahjongRulerTint {
      * @return 以 `0xRRGGBB` 打包的顏色。
      */
     fun rgb(color: MahjongRulerColor): Int {
-        val components = color.dyeName?.let { DyeColor.byName(it, null) }?.colorComponents ?: return CLEAR_RGB
+        val components = color.dyeName?.let { DyeColor.byName(it, null) }?.textureDiffuseColors ?: return CLEAR_RGB
         val (red, green, blue) = components.map { (it * CHANNEL_MAX).toInt().coerceIn(0, CHANNEL_MAX.toInt()) }
         return (red shl RED_SHIFT) or (green shl GREEN_SHIFT) or blue
     }

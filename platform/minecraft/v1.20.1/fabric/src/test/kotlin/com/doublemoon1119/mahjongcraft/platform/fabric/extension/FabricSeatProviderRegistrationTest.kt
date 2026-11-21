@@ -14,8 +14,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvid
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatTarget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
-import net.minecraft.entity.Entity
-import net.minecraft.server.world.ServerWorld
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -25,8 +25,8 @@ import kotlin.test.assertTrue
 /** 驗證 Fabric 座位 provider 的登記順序、優先順序、凍結與 extension 來源診斷。 */
 class FabricSeatProviderRegistrationTest {
     /** 不讀寫世界的測試 provider。 */
-    private class FakeProvider : SeatProvider<ServerWorld, Entity> {
-        override fun resolve(world: ServerWorld, request: SeatRequest): List<SeatTarget<ServerWorld, Entity>> = emptyList()
+    private class FakeProvider : SeatProvider<ServerLevel, Entity> {
+        override fun resolve(world: ServerLevel, request: SeatRequest): List<SeatTarget<ServerLevel, Entity>> = emptyList()
     }
 
     /**
@@ -60,7 +60,7 @@ class FabricSeatProviderRegistrationTest {
      */
     private class ProviderExtension(
         override val id: String,
-        private val registrations: List<Triple<String, SeatProvider<ServerWorld, Entity>, Int>>,
+        private val registrations: List<Triple<String, SeatProvider<ServerLevel, Entity>, Int>>,
     ) : FabricMahjongExtension {
         override fun registerSeatProviders(registry: FabricSeatProviderRegistrar) {
             registrations.forEach { (id, provider, priority) -> registry.register(RegisteredSeatProvider(id, provider, priority)) }

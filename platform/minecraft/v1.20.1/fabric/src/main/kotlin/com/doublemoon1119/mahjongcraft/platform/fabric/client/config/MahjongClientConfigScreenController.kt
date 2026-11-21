@@ -6,12 +6,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAu
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.HistoryScreenController
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
+import com.mojang.blaze3d.platform.InputConstants
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.client.option.KeyBinding
-import net.minecraft.client.util.InputUtil
+import net.minecraft.client.KeyMapping
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.screens.Screen
 
 /**
  * 集中註冊並處理 Client Config Screen 的快捷鍵與程式化開啟入口。
@@ -34,13 +34,13 @@ class MahjongClientConfigScreenController(
     private val hudPreviewRenderer: MahjongHudPreviewRenderer,
 ) {
     /** 開啟 Client Config Screen 的按鍵綁定，預設不綁定；分號預設開啟麻將手冊。 */
-    private lateinit var openKeyBinding: KeyBinding
+    private lateinit var openKeyBinding: KeyMapping
 
     /** 開啟對局歷史的快捷鍵。 */
-    private lateinit var historyKeyBinding: KeyBinding
+    private lateinit var historyKeyBinding: KeyMapping
 
     /** 開啟規則一覽的快捷鍵，預設不綁定。 */
-    private lateinit var ruleCatalogueKeyBinding: KeyBinding
+    private lateinit var ruleCatalogueKeyBinding: KeyMapping
 
     /** 是否已完成事件註冊。 */
     private var registered = false
@@ -53,26 +53,26 @@ class MahjongClientConfigScreenController(
         if (registered) return
         registered = true
         openKeyBinding = KeyBindingHelper.registerKeyBinding(
-            KeyBinding(
+            KeyMapping(
                 MinecraftClientConfigScreenKeys.OPEN_KEY,
-                InputUtil.Type.KEYSYM,
-                InputUtil.UNKNOWN_KEY.code,
+                InputConstants.Type.KEYSYM,
+                InputConstants.UNKNOWN.value,
                 MinecraftClientConfigScreenKeys.KEY_CATEGORY,
             ),
         )
         historyKeyBinding = KeyBindingHelper.registerKeyBinding(
-            KeyBinding(
+            KeyMapping(
                 MinecraftClientConfigScreenKeys.OPEN_HISTORY_KEY,
-                InputUtil.Type.KEYSYM,
-                InputUtil.UNKNOWN_KEY.code,
+                InputConstants.Type.KEYSYM,
+                InputConstants.UNKNOWN.value,
                 MinecraftClientConfigScreenKeys.KEY_CATEGORY,
             ),
         )
         ruleCatalogueKeyBinding = KeyBindingHelper.registerKeyBinding(
-            KeyBinding(
+            KeyMapping(
                 MinecraftClientConfigScreenKeys.OPEN_RULE_CATALOGUE_KEY,
-                InputUtil.Type.KEYSYM,
-                InputUtil.UNKNOWN_KEY.code,
+                InputConstants.Type.KEYSYM,
+                InputConstants.UNKNOWN.value,
                 MinecraftClientConfigScreenKeys.KEY_CATEGORY,
             ),
         )
@@ -85,7 +85,7 @@ class MahjongClientConfigScreenController(
      * @param returnScreen 開啟設定畫面的畫面。
      */
     fun openFrom(returnScreen: Screen) {
-        open(MinecraftClient.getInstance(), returnScreen)
+        open(Minecraft.getInstance(), returnScreen)
     }
 
     /** 從指令開啟設定畫面；延到下一個 client tick，避免指令執行後關閉聊天畫面時一併關掉設定畫面。 */
@@ -98,23 +98,23 @@ class MahjongClientConfigScreenController(
      *
      * @param client 本次 tick 的客戶端。
      */
-    private fun tick(client: MinecraftClient) {
+    private fun tick(client: Minecraft) {
         if (openRequested) {
             openRequested = false
             open(client, null)
         }
-        while (openKeyBinding.wasPressed()) {
-            if (client.currentScreen == null) {
+        while (openKeyBinding.consumeClick()) {
+            if (client.screen == null) {
                 open(client, null)
             }
         }
-        while (historyKeyBinding.wasPressed()) {
-            if (client.currentScreen == null) {
+        while (historyKeyBinding.consumeClick()) {
+            if (client.screen == null) {
                 historyScreenController.openFromCommand()
             }
         }
-        while (ruleCatalogueKeyBinding.wasPressed()) {
-            if (client.currentScreen == null) {
+        while (ruleCatalogueKeyBinding.consumeClick()) {
+            if (client.screen == null) {
                 ruleCatalogueScreenController.openGeneral()
             }
         }
@@ -126,7 +126,7 @@ class MahjongClientConfigScreenController(
      * @param client 要開啟畫面的客戶端。
      * @param parent 返回目標；null 表示關回遊戲。
      */
-    private fun open(client: MinecraftClient, parent: Screen?) {
+    private fun open(client: Minecraft, parent: Screen?) {
         client.setScreen(screen(parent))
     }
 

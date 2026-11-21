@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.guide
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.TOOLTIP_BACKGROUND_MARGIN
-import net.minecraft.client.gui.tooltip.TooltipPositioner
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner
 import org.joml.Vector2i
 import org.joml.Vector2ic
 
@@ -15,7 +15,7 @@ import org.joml.Vector2ic
 internal class GuideTooltipPlacement(
     private val anchorTop: Int,
     private val anchorBottom: Int,
-) : TooltipPositioner {
+) : ClientTooltipPositioner {
     /**
      * 計算提示框文字區左上角的位置；提示框背景比文字區四周多出 [TOOLTIP_BACKGROUND_MARGIN]。
      *
@@ -27,7 +27,7 @@ internal class GuideTooltipPlacement(
      * @param height 文字區高度。
      * @return 文字區左上角。
      */
-    override fun getPosition(
+    override fun positionTooltip(
         screenWidth: Int,
         screenHeight: Int,
         x: Int,

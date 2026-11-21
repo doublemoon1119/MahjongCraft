@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
 import net.minecraft.server.MinecraftServer
-import net.minecraft.util.WorldSavePath
+import net.minecraft.world.level.storage.LevelResource
 import java.nio.file.Path
 import kotlin.io.path.invariantSeparatorsPathString
 
@@ -19,7 +19,7 @@ object FabricHistoryDatabasePath {
      * @param server Minecraft 伺服器。
      * @return 該存檔共用的歷史 SQLite 路徑。
      */
-    fun resolve(server: MinecraftServer): Path = resolve(server.getSavePath(WorldSavePath.ROOT))
+    fun resolve(server: MinecraftServer): Path = resolve(server.getWorldPath(LevelResource.ROOT))
 
     /**
      * 將已確認的存檔根目錄轉為模組專用資料庫路徑。

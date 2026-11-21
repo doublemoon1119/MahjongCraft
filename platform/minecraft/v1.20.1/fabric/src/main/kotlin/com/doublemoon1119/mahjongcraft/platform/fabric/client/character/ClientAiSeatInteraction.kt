@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeat
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.event.player.UseEntityCallback
-import net.minecraft.util.ActionResult
+import net.minecraft.world.InteractionResult
 import java.util.UUID
 
 /** 只攔截公開接管角色與已登記座位物品的右鍵，其餘實體保持原生互動。 */
@@ -38,19 +38,19 @@ internal object ClientAiSeatInteraction {
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> targets.clear() }
         ClientEntityEvents.ENTITY_UNLOAD.register { entity, _ -> targets -= entity.uuid }
         UseEntityCallback.EVENT.register { player, world, hand, entity, _ ->
-            if (!world.isClient || entity.uuid !in targets || player.isSneaking) return@register ActionResult.PASS
-            val stack = player.getStackInHand(hand)
-            if (stack.isEmpty) return@register ActionResult.PASS
+            if (!world.isClientSide || entity.uuid !in targets || player.isShiftKeyDown) return@register InteractionResult.PASS
+            val stack = player.getItemInHand(hand)
+            if (stack.isEmpty) return@register InteractionResult.PASS
             for (definition in registry.entries()) {
                 try {
-                    if (definition.provider.supports(stack.copy())) return@register ActionResult.SUCCESS
+                    if (definition.provider.supports(stack.copy())) return@register InteractionResult.SUCCESS
                 } catch (cause: Throwable) {
                     if (!failures.isIsolatable(cause)) throw cause
                     logger.warn("Seat item matching failed providerId={}", definition.id, cause)
-                    return@register ActionResult.FAIL
+                    return@register InteractionResult.FAIL
                 }
             }
-            ActionResult.PASS
+            InteractionResult.PASS
         }
     }
 }

@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.seating
 
-import net.minecraft.util.math.Box
+import net.minecraft.world.phys.AABB
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -15,8 +15,8 @@ class SeatCollisionScopeTest {
         val first = Uuid.random()
         val second = Uuid.random()
         val outsider = Uuid.random()
-        val left = Box(0.0, 0.0, 0.0, 1.0, 2.0, 1.0)
-        val right = Box(3.0, 0.0, 0.0, 4.0, 2.0, 1.0)
+        val left = AABB(0.0, 0.0, 0.0, 1.0, 2.0, 1.0)
+        val right = AABB(3.0, 0.0, 0.0, 4.0, 2.0, 1.0)
         SeatCollisionScope.withPlans(mapOf(first to left, second to right)) {
             assertTrue(SeatCollisionScope.ignores(first, second))
             assertFalse(SeatCollisionScope.ignores(first, outsider))
@@ -34,7 +34,7 @@ class SeatCollisionScopeTest {
     fun `nested failure restores outer scope and leaves no stale exclusions`() {
         val first = Uuid.random()
         val second = Uuid.random()
-        val plans = mapOf(first to Box(0.0, 0.0, 0.0, 1.0, 2.0, 1.0), second to Box(3.0, 0.0, 0.0, 4.0, 2.0, 1.0))
+        val plans = mapOf(first to AABB(0.0, 0.0, 0.0, 1.0, 2.0, 1.0), second to AABB(3.0, 0.0, 0.0, 4.0, 2.0, 1.0))
         SeatCollisionScope.withPlans(plans) {
             assertFailsWith<IllegalStateException> {
                 SeatCollisionScope.withPlans(emptyMap()) {

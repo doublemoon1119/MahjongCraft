@@ -9,10 +9,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClient
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
-import net.minecraft.client.MinecraftClient
-import net.minecraft.text.MutableText
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.MutableComponent
 
 /**
  * `/mahjongcraft_client hand_sort toggle`：切換自動整理手牌開關。跟純 client-only 的
@@ -41,15 +41,15 @@ class FabricHandSortCommand(
     /** 切換開關、立即持久化並同步給伺服器，並在本地聊天欄回饋「切換前狀態 → 切換後狀態」。 */
     private fun toggle(): Int = when (val result = preferenceService.toggle()) {
         is ClientAutoSortHandPreferenceUpdateResult.Updated -> {
-            MinecraftClient.getInstance().player?.sendMessage(handSortToggledMessage(result.enabled), false)
+            Minecraft.getInstance().player?.displayClientMessage(handSortToggledMessage(result.enabled), false)
             COMMAND_SUCCESS
         }
 
         is ClientAutoSortHandPreferenceUpdateResult.Unchanged -> COMMAND_SUCCESS
         is ClientAutoSortHandPreferenceUpdateResult.SaveFailed -> {
-            MinecraftClient.getInstance().player?.sendMessage(
+            Minecraft.getInstance().player?.displayClientMessage(
                 configSaveFailureMessage(
-                    settingName = Text.translatable(MinecraftClientConfigScreenKeys.AUTO_SORT_HAND),
+                    settingName = Component.translatable(MinecraftClientConfigScreenKeys.AUTO_SORT_HAND),
                     details = result.failure.message,
                 ),
                 false,
@@ -58,8 +58,8 @@ class FabricHandSortCommand(
         }
 
         is ClientAutoSortHandPreferenceUpdateResult.SyncFailed -> {
-            MinecraftClient.getInstance().player?.sendMessage(
-                Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_PREFERENCE_SYNC_FAILED),
+            Minecraft.getInstance().player?.displayClientMessage(
+                Component.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_PREFERENCE_SYNC_FAILED),
                 false,
             )
             COMMAND_FAILURE
@@ -72,18 +72,18 @@ class FabricHandSortCommand(
      *
      * @param enabled 切換後是否為開啟狀態。
      */
-    private fun handSortToggledMessage(enabled: Boolean): MutableText {
+    private fun handSortToggledMessage(enabled: Boolean): MutableComponent {
         val fromKey =
             if (enabled) MinecraftMessageKeys.HAND_SORT_STATE_OFF else MinecraftMessageKeys.HAND_SORT_STATE_ON
-        val fromColor = if (enabled) Formatting.RED else Formatting.GREEN
+        val fromColor = if (enabled) ChatFormatting.RED else ChatFormatting.GREEN
         val toKey =
             if (enabled) MinecraftMessageKeys.HAND_SORT_STATE_ON else MinecraftMessageKeys.HAND_SORT_STATE_OFF
-        val toColor = if (enabled) Formatting.GREEN else Formatting.RED
+        val toColor = if (enabled) ChatFormatting.GREEN else ChatFormatting.RED
 
-        return Text.translatable(MinecraftMessageKeys.HAND_SORT_TOGGLE_PREFIX)
-            .append(Text.translatable(fromKey).formatted(fromColor))
-            .append(Text.literal(" → "))
-            .append(Text.translatable(toKey).formatted(toColor))
+        return Component.translatable(MinecraftMessageKeys.HAND_SORT_TOGGLE_PREFIX)
+            .append(Component.translatable(fromKey).withStyle(fromColor))
+            .append(Component.literal(" → "))
+            .append(Component.translatable(toKey).withStyle(toColor))
     }
 
     private companion object {

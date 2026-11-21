@@ -4,10 +4,12 @@ import com.doublemoon1119.mahjongcraft.example.minecraft.ExampleMinecraftMahjong
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.FixedMahjongTileModelPreparedData
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
-import net.minecraft.resource.Resource
-import net.minecraft.resource.ResourceManager
-import net.minecraft.resource.ResourcePack
-import net.minecraft.util.Identifier
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.packs.PackResources
+import net.minecraft.server.packs.PathPackResources
+import net.minecraft.server.packs.resources.Resource
+import net.minecraft.server.packs.resources.ResourceManager
+import java.nio.file.Path
 import java.util.Optional
 import java.util.function.Predicate
 import java.util.stream.Stream
@@ -35,28 +37,28 @@ class ExampleTileModelLoadingTest {
         val unknown = prepared.variants.single {
             it.modelId == FixedMahjongTileModelPreparedData.syntheticUnknownModelId(appearance.id)
         }
-        assertEquals(Identifier(tile.textureId), visible.frontTextureId)
-        assertEquals(Identifier(tile.modelId), visible.templateModelId)
-        assertEquals(Identifier(appearance.coverTextureId), visible.coverTextureId)
+        assertEquals(ResourceLocation(tile.textureId), visible.frontTextureId)
+        assertEquals(ResourceLocation(tile.modelId), visible.templateModelId)
+        assertEquals(ResourceLocation(appearance.coverTextureId), visible.coverTextureId)
         assertEquals(visible.coverTextureId, unknown.coverTextureId)
-        assertEquals(Identifier(appearance.unknownFaceTextureId), unknown.frontTextureId)
+        assertEquals(ResourceLocation(appearance.unknownFaceTextureId), unknown.frontTextureId)
     }
 
     /** 從測試執行時實際打包的資源載入指定完整 ID，不製造模型或替貼圖補路徑。 */
     private class ClasspathResources : ResourceManager {
-        override fun getResource(id: Identifier): Optional<Resource> {
+        override fun getResource(id: ResourceLocation): Optional<Resource> {
             val url = javaClass.classLoader.getResource("assets/${id.namespace}/${id.path}") ?: return Optional.empty()
-            return Optional.of(Resource(null as ResourcePack?) { url.openStream() })
+            return Optional.of(Resource(PathPackResources("test", Path.of(""), true)) { url.openStream() })
         }
 
-        override fun getAllNamespaces(): Set<String> = setOf("mahjongcraft", "mahjongcraft_example")
+        override fun getNamespaces(): Set<String> = setOf("mahjongcraft", "mahjongcraft_example")
 
-        override fun getAllResources(id: Identifier): List<Resource> = getResource(id).map(::listOf).orElse(emptyList())
+        override fun getResourceStack(id: ResourceLocation): List<Resource> = getResource(id).map(::listOf).orElse(emptyList())
 
-        override fun findResources(startingPath: String, allowedPathPredicate: Predicate<Identifier>): Map<Identifier, Resource> = emptyMap()
+        override fun listResources(startingPath: String, allowedPathPredicate: Predicate<ResourceLocation>): Map<ResourceLocation, Resource> = emptyMap()
 
-        override fun findAllResources(startingPath: String, allowedPathPredicate: Predicate<Identifier>): Map<Identifier, List<Resource>> = emptyMap()
+        override fun listResourceStacks(startingPath: String, allowedPathPredicate: Predicate<ResourceLocation>): Map<ResourceLocation, List<Resource>> = emptyMap()
 
-        override fun streamResourcePacks(): Stream<ResourcePack> = Stream.empty()
+        override fun listPacks(): Stream<PackResources> = Stream.empty()
     }
 }

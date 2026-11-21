@@ -19,7 +19,7 @@ rules come from collisions that only showed up in game, so check them even when 
   through `WorldPanelDeferral.draw`. During world rendering it records the panel's transform and draws every
   panel after the rest of the world, clouds and weather included, from far to near. Vanilla does not sort
   entities by distance, so a panel drawn in the entity pass would hide entities drawn later behind it.
-- Panel backgrounds use `WorldPanelRenderLayer`, which tests depth but does not write it, so everything
+- Panel backgrounds use `WorldPanelRenderType`, which tests depth but does not write it, so everything
   behind a panel shows through. Text, portraits and tile faces inside a panel keep writing depth.
 - A panel is not drawn while a shader mod renders its shadow map (`ShaderShadowPass`), so panels cast no
   shadows and the deferral never records the light's view. Outside world rendering, for example in replay

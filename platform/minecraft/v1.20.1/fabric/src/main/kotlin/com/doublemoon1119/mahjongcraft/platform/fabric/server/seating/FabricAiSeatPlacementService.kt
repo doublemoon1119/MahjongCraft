@@ -14,15 +14,15 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatItemPlacem
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftSeatPlacementKeys
 import net.fabricmc.fabric.api.event.player.UseEntityCallback
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
-import net.minecraft.entity.Entity
-import net.minecraft.item.ItemStack
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.text.Text
-import net.minecraft.util.ActionResult
-import net.minecraft.util.Formatting
-import net.minecraft.util.Hand
-import net.minecraft.util.math.Box
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.Component
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.InteractionHand
+import net.minecraft.world.InteractionResult
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.phys.AABB
 import kotlin.uuid.toKotlinUuid
 
 /**
@@ -56,7 +56,7 @@ internal class FabricAiSeatPlacementService(
     fun registerEvents() {
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ -> limiter.forget(handler.player.uuid.toKotlinUuid()) }
         UseEntityCallback.EVENT.register { player, world, hand, entity, _ ->
-            if (world !is ServerWorld || player !is ServerPlayerEntity) ActionResult.PASS else interact(player, world, hand, entity)
+            if (world !is ServerLevel || player !is ServerPlayer) InteractionResult.PASS else interact(player, world, hand, entity)
         }
     }
 
@@ -70,30 +70,30 @@ internal class FabricAiSeatPlacementService(
      * @return 是否處理這次互動。
      */
     private fun interact(
-        player: ServerPlayerEntity,
-        world: ServerWorld,
-        hand: Hand,
+        player: ServerPlayer,
+        world: ServerLevel,
+        hand: InteractionHand,
         entity: Entity,
-    ): ActionResult {
-        check(world.server.isOnThread) { "Seat interaction requires the server thread" }
-        if (player.isSneaking) return ActionResult.PASS
-        val (key, actor) = bindings.findEntity(entity) ?: return ActionResult.PASS
-        if (limiter.tryAcquire(player.uuid.toKotlinUuid()) != PlayerRequestRateLimiter.Result.Accepted) return ActionResult.FAIL
-        if (entity.hasVehicle() || entity.hasPassengers()) return ActionResult.FAIL
-        val stack = player.getStackInHand(hand).copy()
-        if (stack.isEmpty) return ActionResult.PASS
+    ): InteractionResult {
+        check(world.server.isSameThread) { "Seat interaction requires the server thread" }
+        if (player.isShiftKeyDown) return InteractionResult.PASS
+        val (key, actor) = bindings.findEntity(entity) ?: return InteractionResult.PASS
+        if (limiter.tryAcquire(player.uuid.toKotlinUuid()) != PlayerRequestRateLimiter.Result.Accepted) return InteractionResult.FAIL
+        if (entity.isPassenger || entity.isVehicle) return InteractionResult.FAIL
+        val stack = player.getItemInHand(hand).copy()
+        if (stack.isEmpty) return InteractionResult.PASS
         var providerId: String? = null
         try {
             val definition = registry.entries().firstOrNull {
                 providerId = it.id
                 it.provider.supports(stack.copy())
-            } ?: return ActionResult.PASS
+            } ?: return InteractionResult.PASS
             providerId = definition.id
-            val game = persistence.characterSnapshot()?.authoritative?.games?.get(key.tableId) ?: return ActionResult.FAIL
+            val game = persistence.characterSnapshot()?.authoritative?.games?.get(key.tableId) ?: return InteractionResult.FAIL
             val roster = game.tableState.players.map { it.id }
             val index = roster.indexOf(key.playerId)
-            if (index < 0) return ActionResult.FAIL
-            val seating = sessions.prepare(key.tableId, roster) ?: return ActionResult.FAIL
+            if (index < 0) return InteractionResult.FAIL
+            val seating = sessions.prepare(key.tableId, roster) ?: return InteractionResult.FAIL
             val context = FabricSeatPlacementContext.create(
                 world = world,
                 player = player,
@@ -106,39 +106,39 @@ internal class FabricAiSeatPlacementService(
                 valid = {
                     player.isAlive &&
                         !player.isSpectator &&
-                        player.world === world &&
+                        player.level() === world &&
                         seating.world === world &&
-                        player.squaredDistanceTo(entity) <= MAXIMUM_DISTANCE_SQUARED &&
-                        player.squaredDistanceTo(context.request.seat.x, context.request.seat.y, context.request.seat.z) <= MAXIMUM_DISTANCE_SQUARED &&
-                        entity.squaredDistanceTo(context.request.seat.x, context.request.seat.y, context.request.seat.z) <= MAXIMUM_DISTANCE_SQUARED &&
-                        !entity.hasVehicle() &&
-                        !entity.hasPassengers() &&
+                        player.distanceToSqr(entity) <= MAXIMUM_DISTANCE_SQUARED &&
+                        player.distanceToSqr(context.request.seat.x, context.request.seat.y, context.request.seat.z) <= MAXIMUM_DISTANCE_SQUARED &&
+                        entity.distanceToSqr(context.request.seat.x, context.request.seat.y, context.request.seat.z) <= MAXIMUM_DISTANCE_SQUARED &&
+                        !entity.isPassenger &&
+                        !entity.isVehicle &&
                         persistence.characterSnapshot()?.authoritative?.games?.get(key.tableId) == game &&
                         bindings.find(key.tableId, key.playerId) === actor &&
-                        context.canModify(Box(context.blockPos))
+                        context.canModify(AABB(context.blockPos))
                 },
                 place = {
-                    if (!ItemStack.areEqual(stack, player.getStackInHand(hand)) ||
-                        !context.isSpaceClear(Box(context.blockPos)) ||
+                    if (!ItemStack.matches(stack, player.getItemInHand(hand)) ||
+                        !context.isSpaceClear(AABB(context.blockPos)) ||
                         !seating.coordinator.isVacant(world, entity, context.request)
                     ) {
                         false
                     } else {
-                        val checked = entity.intersectionChecked
+                        val checked = entity.blocksBuilding
                         try {
-                            entity.intersectionChecked = false
+                            entity.blocksBuilding = false
                             definition.provider.place(context)
                         } finally {
-                            entity.intersectionChecked = checked
+                            entity.blocksBuilding = checked
                         }
                     }
                 },
                 seat = { characters.seatAfterPlacement(key, actor) },
             )
             when (result) {
-                SeatItemPlacementResult.SEATED -> return ActionResult.SUCCESS
+                SeatItemPlacementResult.SEATED -> return InteractionResult.SUCCESS
                 SeatItemPlacementResult.PLACED_UNSEATED -> notify(player, MinecraftSeatPlacementKeys.PLACED_UNSEATED)
-                SeatItemPlacementResult.BUSY -> return ActionResult.FAIL
+                SeatItemPlacementResult.BUSY -> return InteractionResult.FAIL
                 SeatItemPlacementResult.REJECTED, SeatItemPlacementResult.NOT_PLACED -> {
                     logger.debug(
                         "AI seat placement rejected providerId={} tableId={} seatIndex={} result={}",
@@ -150,7 +150,7 @@ internal class FabricAiSeatPlacementService(
                     notify(player, MinecraftSeatPlacementKeys.NOT_PLACED)
                 }
             }
-            return ActionResult.FAIL
+            return InteractionResult.FAIL
         } catch (cause: Throwable) {
             if (!failurePolicy.isIsolatable(cause)) throw cause
             logger.warn(
@@ -162,7 +162,7 @@ internal class FabricAiSeatPlacementService(
                 cause,
             )
             notify(player, MinecraftSeatPlacementKeys.FAILED)
-            return ActionResult.FAIL
+            return InteractionResult.FAIL
         }
     }
 
@@ -172,8 +172,8 @@ internal class FabricAiSeatPlacementService(
      * @param player 發起者。
      * @param key 翻譯鍵。
      */
-    private fun notify(player: ServerPlayerEntity, key: String) {
-        player.sendMessage(Text.translatable(key).formatted(Formatting.YELLOW), false)
+    private fun notify(player: ServerPlayer, key: String) {
+        player.displayClientMessage(Component.translatable(key).withStyle(ChatFormatting.YELLOW), false)
     }
 
     /** 與原生實體互動相同的最遠距離。 */

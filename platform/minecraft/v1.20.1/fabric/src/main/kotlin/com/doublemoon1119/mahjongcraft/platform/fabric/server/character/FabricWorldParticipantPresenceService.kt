@@ -54,7 +54,7 @@ internal class FabricWorldParticipantPresenceService(
     /** 登記每秒一次的檢查，同時間只執行一份工作。 */
     fun registerEvents() {
         ServerTickEvents.END_SERVER_TICK.register { current ->
-            if (server !== current || current.ticks % CHECK_INTERVAL != 0) return@register
+            if (server !== current || current.tickCount % CHECK_INTERVAL != 0) return@register
             val token = Any()
             if (!pending.compareAndSet(null, token)) return@register
             val task = scope.launch(dispatchers.main, start = CoroutineStart.LAZY) {
@@ -69,7 +69,7 @@ internal class FabricWorldParticipantPresenceService(
                             entity != null &&
                                 entity.isAlive &&
                                 !entity.isRemoved &&
-                                table.world.chunkManager.isChunkLoaded(entity.blockX shr 4, entity.blockZ shr 4) &&
+                                table.world.chunkSource.hasChunk(entity.blockX shr 4, entity.blockZ shr 4) &&
                                 TableInteractionReach.distance(
                                     x = entity.x,
                                     y = entity.y,

@@ -3,8 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.tile
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.minecraft.client.MinecraftClient
-import net.minecraft.util.math.Vec3d
+import net.minecraft.client.Minecraft
+import net.minecraft.world.phys.Vec3
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -17,7 +17,7 @@ class ClientDiscardSettlementTracker(
     private val stateStore: ClientMahjongStateStore,
 ) {
     /** 各桌捨牌的落定狀態。 */
-    private val state = DiscardSettlementState<Vec3d>()
+    private val state = DiscardSettlementState<Vec3>()
 
     /** 註冊 client tick 更新；要在讀取落定狀態的功能之前註冊。 */
     fun register() {
@@ -38,17 +38,17 @@ class ClientDiscardSettlementTracker(
      *
      * @param client Minecraft client 狀態與當前世界。
      */
-    private fun tick(client: MinecraftClient) {
+    private fun tick(client: Minecraft) {
         val tableIds = stateStore.gameTableIds()
         state.retainTables(tableIds)
-        val tiles = client.world?.entities?.filterIsInstance<MahjongTileEntity>()?.associateBy { it.uuid.toKotlinUuid() }.orEmpty()
+        val tiles = client.level?.entitiesForRendering()?.filterIsInstance<MahjongTileEntity>()?.associateBy { it.uuid.toKotlinUuid() }.orEmpty()
         tableIds.forEach { tableId ->
             val snapshot = stateStore.gameSnapshot(tableId) ?: return@forEach
             val discardTileIds = snapshot.players.flatMapTo(mutableSetOf()) { player -> player.discardPile.entries.map { it.tile.id } }
             state.update(
                 tableId = tableId,
                 discardTileIds = discardTileIds,
-                positionOf = { tileId -> tiles[tileId]?.pos },
+                positionOf = { tileId -> tiles[tileId]?.position() },
                 isMoving = { tileId -> tiles[tileId]?.animating == true },
             )
         }

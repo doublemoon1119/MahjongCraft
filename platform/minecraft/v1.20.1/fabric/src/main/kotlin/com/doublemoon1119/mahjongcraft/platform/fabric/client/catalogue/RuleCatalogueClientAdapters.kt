@@ -6,26 +6,26 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureResourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.resource.ResourceManager
-import net.minecraft.text.Style
-import net.minecraft.util.Identifier
-import net.minecraft.util.Language
+import net.minecraft.client.gui.Font
+import net.minecraft.locale.Language
+import net.minecraft.network.chat.Style
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.packs.resources.ResourceManager
 
 /**
  * 以 Minecraft 字型測量目錄文字。
  *
  * @property font 目前的字型。
  */
-internal class TextRendererCatalogueMetrics(private val font: TextRenderer) : RuleCatalogueTextMetrics {
-    override fun width(text: String): Int = font.getWidth(text)
+internal class TextRendererCatalogueMetrics(private val font: Font) : RuleCatalogueTextMetrics {
+    override fun width(text: String): Int = font.width(text)
 
-    override fun wrap(text: String, maxWidth: Int): List<String> = font.textHandler
-        .wrapLines(text, maxWidth.coerceAtLeast(1), Style.EMPTY)
+    override fun wrap(text: String, maxWidth: Int): List<String> = font.splitter
+        .splitLines(text, maxWidth.coerceAtLeast(1), Style.EMPTY)
         .map { it.string }
         .ifEmpty { listOf("") }
 
-    override fun trim(text: String, maxWidth: Int): String = font.trimToWidth(text, maxWidth.coerceAtLeast(0))
+    override fun trim(text: String, maxWidth: Int): String = font.plainSubstrByWidth(text, maxWidth.coerceAtLeast(0))
 }
 
 /**
@@ -45,7 +45,7 @@ internal class ResourceCatalogueTileArt(
         val assetKey = tile.toAssetKey(assets)
         val face = tile.tile
         val name = if (face is Tile.Extension) "${face.typeId.namespace}:${face.typeId.path}" else assetKey
-        val texture = Identifier(tileTextureResourceId(assetKey, assets))
+        val texture = ResourceLocation(tileTextureResourceId(assetKey, assets))
         if (assetKey == UNKNOWN_TILE_ASSET_KEY || resources.getResource(texture).isEmpty) {
             CatalogueTileArt(assetKey = UNKNOWN_TILE_ASSET_KEY, missingName = name)
         } else {
@@ -62,4 +62,4 @@ internal class ResourceCatalogueTileArt(
  * @param key 翻譯鍵。
  * @return 翻譯文字；目前語言沒有這個鍵時為 null。
  */
-internal fun currentLanguageTranslation(key: String): String? = Language.getInstance().takeIf { it.hasTranslation(key) }?.get(key)
+internal fun currentLanguageTranslation(key: String): String? = Language.getInstance().takeIf { it.has(key) }?.getOrDefault(key)

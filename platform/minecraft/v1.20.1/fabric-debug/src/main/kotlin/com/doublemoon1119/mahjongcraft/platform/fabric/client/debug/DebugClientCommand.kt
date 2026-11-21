@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfig
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 /**
  * 客戶端的 debug 指令 `/mahjongcraft_client debug hovered_text client_config`：以正式設定訊息建構器顯示客戶端設定，
@@ -40,7 +40,7 @@ class DebugClientCommand(private val configStore: () -> MahjongClientConfigStore
         val store = configStore()
         source.sendFeedback(
             configShowMessage(
-                configName = Text.translatable(MinecraftConfigCommandKeys.CLIENT_CONFIG),
+                configName = Component.translatable(MinecraftConfigCommandKeys.CLIENT_CONFIG),
                 displayPath = store.displayPath,
                 entries = clientConfigEntries(store.current),
             ),

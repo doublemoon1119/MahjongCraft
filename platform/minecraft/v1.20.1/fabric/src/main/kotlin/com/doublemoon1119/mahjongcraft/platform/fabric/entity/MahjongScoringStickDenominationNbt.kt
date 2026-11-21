@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDenomination
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.nbt.NbtElement
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.Tag
 
 /**
  * 點棒面額的持久化讀寫。
@@ -19,7 +19,7 @@ internal object MahjongScoringStickDenominationNbt {
      * @param nbt 目的 NBT compound。
      * @param denomination 要保存的面額。
      */
-    fun write(nbt: NbtCompound, denomination: MahjongScoringStickDenomination) {
+    fun write(nbt: CompoundTag, denomination: MahjongScoringStickDenomination) {
         nbt.putString(NBT_KEY_DENOMINATION, denomination.name)
     }
 
@@ -29,8 +29,8 @@ internal object MahjongScoringStickDenominationNbt {
      * @param nbt 含面額欄位的 NBT compound。
      * @return 欄位中的有效面額；欄位不存在或名稱無效時為百分棒。
      */
-    fun read(nbt: NbtCompound): MahjongScoringStickDenomination = when {
-        nbt.contains(NBT_KEY_DENOMINATION, NbtElement.STRING_TYPE.toInt()) ->
+    fun read(nbt: CompoundTag): MahjongScoringStickDenomination = when {
+        nbt.contains(NBT_KEY_DENOMINATION, Tag.TAG_STRING.toInt()) ->
             MahjongScoringStickDenomination.fromNameOrDefault(nbt.getString(NBT_KEY_DENOMINATION))
         else -> MahjongScoringStickDenomination.P100
     }

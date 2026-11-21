@@ -8,11 +8,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionKindDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.client.gui.tooltip.TooltipBackgroundRenderer
-import net.minecraft.client.gui.widget.ButtonWidget
-import net.minecraft.text.Text
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.Button
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.client.gui.screens.inventory.tooltip.TooltipRenderUtil
+import net.minecraft.network.chat.Component
 
 /**
  * 透明且不暫停遊戲的權威操作選擇介面。
@@ -28,7 +28,7 @@ internal class PlayerDecisionScreen(
     private val prompt: PlayerDecisionPromptDto,
     private val isReaction: Boolean,
     private val controller: PlayerDecisionHudController,
-) : Screen(Text.translatable(MinecraftHudKeys.ACTION_TITLE)) {
+) : Screen(Component.translatable(MinecraftHudKeys.ACTION_TITLE)) {
     /** 畫面所呈現 prompt 的穩定 key，供生命週期協調器關閉過期畫面。 */
     val decisionKey: String
         get() = prompt.decisionKey
@@ -37,10 +37,10 @@ internal class PlayerDecisionScreen(
     private var visibleEntries: List<DecisionEntry> = emptyList()
 
     /** 跟隨橫向捲動內容移動的選項按鈕。 */
-    private var cardButtons: List<ButtonWidget> = emptyList()
+    private var cardButtons: List<Button> = emptyList()
 
     /** 固定在 header 右側的跳過按鈕。 */
-    private var skipButton: ButtonWidget? = null
+    private var skipButton: Button? = null
 
     /** 目前操作卡片的水平捲動量。 */
     private var horizontalScroll = 0.0
@@ -64,7 +64,7 @@ internal class PlayerDecisionScreen(
     private val descriptionMarquee = MarqueeState()
 
     /** 讓多人遊戲與 integrated server 在畫面開啟時持續推進。 */
-    override fun shouldPause(): Boolean = false
+    override fun isPauseScreen(): Boolean = false
 
     /** 建立固定單列、可水平捲動的半透明選項卡。 */
     override fun init() {
@@ -142,9 +142,9 @@ internal class PlayerDecisionScreen(
     }
 
     /** Esc 只暫時收起，不提交 Pass。 */
-    override fun close() {
+    override fun onClose() {
         controller.dismiss(prompt.decisionKey)
-        client?.setScreen(null)
+        minecraft?.setScreen(null)
     }
 
     /** 操作區內的滾輪一律轉為水平捲動。 */
@@ -210,7 +210,7 @@ internal class PlayerDecisionScreen(
     }
 
     /** 繪製操作面板、按鈕、倒數與卡片說明。 */
-    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         reservedTimerWidth = maxOf(reservedTimerWidth, controller.timerOverlayWidth(HEADER_TIMER_SCALE) ?: 0)
         val content = panelContent()
         val measured = measurePanel(content)
@@ -218,7 +218,7 @@ internal class PlayerDecisionScreen(
         val placements = layout.cardPlacements(horizontalScroll)
         updateCardButtonPositions(layout, placements)
         context.drawDecisionPanel(
-            renderer = textRenderer,
+            renderer = font,
             measured = measured,
             content = content,
             placements = placements,
@@ -233,7 +233,7 @@ internal class PlayerDecisionScreen(
         controller.timerOverlayWidth(HEADER_TIMER_SCALE)?.let { timerWidth ->
             controller.renderTimerOverlay(
                 context = context,
-                y = layout.headerTextTop(textRenderer.fontHeight),
+                y = layout.headerTextTop(font.lineHeight),
                 centerX = layout.timerLeft + timerWidth / 2,
                 scale = HEADER_TIMER_SCALE,
             )
@@ -251,7 +251,7 @@ internal class PlayerDecisionScreen(
      * @param mouseY 游標垂直座標。
      */
     private fun renderDescriptionTooltip(
-        context: DrawContext,
+        context: GuiGraphics,
         layout: DecisionCardLayout,
         placements: List<DecisionBounds>,
         mouseX: Int,
@@ -264,26 +264,26 @@ internal class PlayerDecisionScreen(
         }
         val description = visibleEntries.getOrNull(index)?.description
         val maximumWidth = layout.descriptionTooltipWidth
-        val maximumLines = layout.descriptionTooltipHeight / textRenderer.fontHeight
+        val maximumLines = layout.descriptionTooltipHeight / font.lineHeight
         if (description == null || maximumWidth == 0 || maximumLines == 0) {
             descriptionMarquee.offset(subject = null, overflow = 0)
             return
         }
-        val lines = textRenderer.wrapDescription(description, maximumWidth)
+        val lines = font.wrapDescription(description, maximumWidth)
         val lineCount = minOf(lines.size, maximumLines)
         if (lineCount == 0) {
             descriptionMarquee.offset(subject = null, overflow = 0)
             return
         }
-        val width = if (lines.size > lineCount) maximumWidth else lines.maxOf(textRenderer::getWidth).coerceIn(1, maximumWidth)
-        val height = lineCount * textRenderer.fontHeight
+        val width = if (lines.size > lineCount) maximumWidth else lines.maxOf(font::width).coerceIn(1, maximumWidth)
+        val height = lineCount * font.lineHeight
         val position = layout.descriptionTooltipPosition(card = placements[index], width = width, height = height)
-        TooltipBackgroundRenderer.render(context, position.x, position.y, width, height, DESCRIPTION_TOOLTIP_Z)
-        context.matrices.push()
-        context.matrices.translate(0f, 0f, DESCRIPTION_TOOLTIP_Z.toFloat())
+        TooltipRenderUtil.renderTooltipBackground(context, position.x, position.y, width, height, DESCRIPTION_TOOLTIP_Z)
+        context.pose().pushPose()
+        context.pose().translate(0f, 0f, DESCRIPTION_TOOLTIP_Z.toFloat())
         drawWrappedDescription(
             context = context,
-            renderer = textRenderer,
+            renderer = font,
             lines = lines,
             visibleLines = lineCount,
             left = position.x,
@@ -293,7 +293,7 @@ internal class PlayerDecisionScreen(
             marquee = descriptionMarquee,
             subject = index,
         )
-        context.matrices.pop()
+        context.pose().popPose()
     }
 
     /** 目前畫面寬度下的面板內容；觸發文字依畫面寬度換行。 */
@@ -301,7 +301,7 @@ internal class PlayerDecisionScreen(
         prompt = prompt,
         texts = controller.decisionTexts,
         resolvePlayerName = controller::resolveTriggerPlayerName,
-        renderer = textRenderer,
+        renderer = font,
         screenWidth = width,
     )
 
@@ -320,7 +320,7 @@ internal class PlayerDecisionScreen(
      */
     private fun measurePanel(content: DecisionPanelContent): MeasuredDecisionPanel = decisionPanelLayout(
         content = content,
-        renderer = textRenderer,
+        renderer = font,
         screenWidth = width,
         screenHeight = height,
         panelRatioY = controller.hudLayout().decisionPanelY,
@@ -335,7 +335,7 @@ internal class PlayerDecisionScreen(
      * @param x 牌面左界。
      * @param y 牌面上界。
      */
-    private fun drawTile(context: DrawContext, assetKey: String, x: Int, y: Int) {
+    private fun drawTile(context: GuiGraphics, assetKey: String, x: Int, y: Int) {
         controller.renderTileFace(
             context = context,
             assetKey = assetKey,

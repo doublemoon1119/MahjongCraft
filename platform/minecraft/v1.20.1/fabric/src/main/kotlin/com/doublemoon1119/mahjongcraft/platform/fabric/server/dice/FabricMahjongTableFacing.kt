@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.dice
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
-import net.minecraft.util.math.Direction
+import net.minecraft.core.Direction
 
 /**
  * 將 Minecraft 水平朝向轉為共用麻將桌配置朝向。

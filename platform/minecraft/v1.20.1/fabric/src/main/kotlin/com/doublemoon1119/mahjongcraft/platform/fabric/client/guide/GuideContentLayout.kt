@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.guide
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideScene
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 import kotlin.math.roundToInt
 
 /** 版面計算需要的文字與面板量測，畫面以文字繪製器與操作面板繪製實作，測試以固定尺寸實作。 */
@@ -14,7 +14,7 @@ internal interface GuideMeasurer {
      * @param text 文字。
      * @return 單行寬度。
      */
-    fun width(text: Text): Int
+    fun width(text: Component): Int
 
     /**
      * 文字在指定寬度內換行後的行數；換行字元一定換行。
@@ -23,7 +23,7 @@ internal interface GuideMeasurer {
      * @param width 可用寬度。
      * @return 行數，至少 1。
      */
-    fun lineCount(text: Text, width: Int): Int
+    fun lineCount(text: Component, width: Int): Int
 
     /**
      * 牌名，例如「1萬」。
@@ -31,7 +31,7 @@ internal interface GuideMeasurer {
      * @param tile 牌。
      * @return 牌名。
      */
-    fun tileName(tile: Tile): Text
+    fun tileName(tile: Tile): Component
 
     /**
      * 範例操作面板連同觸發框的高度。
@@ -63,7 +63,7 @@ internal sealed interface GuideElement {
      * @property centered 是否每行水平置中。
      */
     data class Label(
-        val text: Text,
+        val text: Component,
         val x: Int,
         override val y: Int,
         val width: Int,
@@ -138,7 +138,7 @@ internal sealed interface GuideElement {
      * @property width 寬度。
      */
     data class ActionButton(
-        val label: Text,
+        val label: Component,
         val action: GuideAction,
         val x: Int,
         override val y: Int,
@@ -498,7 +498,7 @@ internal data class GuideContentLayout(val elements: List<GuideElement>, val hei
          * @return 文字下界。
          */
         private fun label(
-            text: Text,
+            text: Component,
             left: Int,
             top: Int,
             width: Int,
@@ -539,7 +539,7 @@ internal data class GuideContentLayout(val elements: List<GuideElement>, val hei
             steps.forEachIndexed { index, step ->
                 if (index > 0) y += STEP_GAP
                 elements += GuideElement.Label(
-                    text = Text.literal("${index + 1}."),
+                    text = Component.literal("${index + 1}."),
                     x = left,
                     y = y,
                     width = STEP_INDENT,
@@ -737,7 +737,7 @@ internal data class GuideContentLayout(val elements: List<GuideElement>, val hei
          * @param centered 是否在範圍內置中。
          */
         private fun labelAt(
-            text: Text,
+            text: Component,
             x: Int,
             y: Int,
             width: Int,

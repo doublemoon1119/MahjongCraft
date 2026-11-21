@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
-import net.minecraft.client.render.VertexConsumer
+import com.mojang.blaze3d.vertex.VertexConsumer
 import kotlin.math.roundToInt
 
 /**
@@ -17,24 +17,24 @@ internal class AlphaVertexConsumer(
 
     override fun color(red: Int, green: Int, blue: Int, alpha: Int): VertexConsumer = apply { delegate.color(red, green, blue, scaled(alpha)) }
 
-    override fun texture(u: Float, v: Float): VertexConsumer = apply { delegate.texture(u, v) }
+    override fun uv(u: Float, v: Float): VertexConsumer = apply { delegate.uv(u, v) }
 
-    override fun overlay(u: Int, v: Int): VertexConsumer = apply { delegate.overlay(u, v) }
+    override fun overlayCoords(u: Int, v: Int): VertexConsumer = apply { delegate.overlayCoords(u, v) }
 
-    override fun light(u: Int, v: Int): VertexConsumer = apply { delegate.light(u, v) }
+    override fun uv2(u: Int, v: Int): VertexConsumer = apply { delegate.uv2(u, v) }
 
     override fun normal(x: Float, y: Float, z: Float): VertexConsumer = apply { delegate.normal(x, y, z) }
 
-    override fun next() {
-        delegate.next()
+    override fun endVertex() {
+        delegate.endVertex()
     }
 
-    override fun fixedColor(red: Int, green: Int, blue: Int, alpha: Int) {
-        delegate.fixedColor(red, green, blue, scaled(alpha))
+    override fun defaultColor(red: Int, green: Int, blue: Int, alpha: Int) {
+        delegate.defaultColor(red, green, blue, scaled(alpha))
     }
 
-    override fun unfixColor() {
-        delegate.unfixColor()
+    override fun unsetDefaultColor() {
+        delegate.unsetDefaultColor()
     }
 
     /**

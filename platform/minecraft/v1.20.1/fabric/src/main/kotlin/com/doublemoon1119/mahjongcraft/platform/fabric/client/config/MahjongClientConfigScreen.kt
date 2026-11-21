@@ -22,11 +22,11 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScroll
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInMinecraftAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.client.gui.tooltip.Tooltip
-import net.minecraft.client.gui.widget.ButtonWidget
-import net.minecraft.text.Text
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.Button
+import net.minecraft.client.gui.components.Tooltip
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.network.chat.Component
 
 /**
  * 原生 MahjongCraft client 設定畫面；分開編輯本機設定與本局自動操作草稿，不接觸房間規則。
@@ -45,7 +45,7 @@ class MahjongClientConfigScreen(
     private val displayResolver: AutomaticControlDisplayResolver,
     private val preferenceService: ClientAutoSortHandPreferenceService,
     private val hudPreviewRenderer: MahjongHudPreviewRenderer,
-) : Screen(Text.translatable(MinecraftClientConfigScreenKeys.TITLE)) {
+) : Screen(Component.translatable(MinecraftClientConfigScreenKeys.TITLE)) {
     /** 伺服器權威狀態之外的畫面專用本局草稿。 */
     private val automaticDraft = ClientAutomaticControlDraftSession(automaticCoordinator.snapshot())
 
@@ -89,16 +89,16 @@ class MahjongClientConfigScreen(
     private var rebuildRequested = false
 
     /** 套用按鈕，供草稿狀態即時更新。 */
-    private var applyButton: ButtonWidget? = null
+    private var applyButton: Button? = null
 
     /** 復原按鈕，供草稿狀態即時更新。 */
-    private var undoButton: ButtonWidget? = null
+    private var undoButton: Button? = null
 
     /** 重設按鈕，供草稿狀態即時更新。 */
-    private var resetButton: ButtonWidget? = null
+    private var resetButton: Button? = null
 
     /** 完成按鈕，等待 ACK 時禁止離開。 */
-    private var doneButton: ButtonWidget? = null
+    private var doneButton: Button? = null
 
     override fun init() {
         applyButton = null
@@ -113,22 +113,22 @@ class MahjongClientConfigScreen(
     }
 
     /** 設定畫面不暫停整合伺服器或單人遊戲。 */
-    override fun shouldPause(): Boolean = false
+    override fun isPauseScreen(): Boolean = false
 
     /** Esc 在無變更時返回；有未套用草稿時顯示明確的三選項確認畫面。 */
-    override fun close() {
+    override fun onClose() {
         if (automaticDraft.state().pending) return
         if (!hasChanges()) {
-            client?.setScreen(parent)
+            minecraft?.setScreen(parent)
         } else {
-            client?.setScreen(
+            minecraft?.setScreen(
                 UnsavedChangesConfirmationScreen(
                     previousScreen = this,
                     onApply = {
-                        client?.setScreen(this)
+                        minecraft?.setScreen(this)
                         applyDraft(closeAfterSave = true)
                     },
-                    onDiscard = { client?.setScreen(parent) },
+                    onDiscard = { minecraft?.setScreen(parent) },
                     changesPreview = differenceText(),
                 ),
             )
@@ -140,7 +140,7 @@ class MahjongClientConfigScreen(
         super.tick()
         if (rebuildRequested) {
             rebuildRequested = false
-            clearAndInit()
+            rebuildWidgets()
             return
         }
         if (configStore.revision != baselineRevision && !draftStale) {
@@ -156,7 +156,7 @@ class MahjongClientConfigScreen(
                 val result = automaticDraft.applyCompletion(completion)
                 automaticError = if (result?.accepted == true) null else completion.result.toAutomaticControlError()
                 if (result?.closeAfterAcceptance == true) {
-                    client?.setScreen(parent)
+                    minecraft?.setScreen(parent)
                     return
                 }
                 rebuild()
@@ -165,16 +165,16 @@ class MahjongClientConfigScreen(
         refreshButtons()
     }
 
-    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         renderBackground(context)
         val layout = layout()
-        ScreenRendering.title(context, textRenderer, title, width)
+        ScreenRendering.title(context, font, title, width)
         ScreenRendering.tabLine(context, tabStrip(layout))
         val hoveredLabel = renderFieldLabels(context, layout, mouseX, mouseY)
         renderStatus(context, layout, mouseX, mouseY)
         VerticalScrollbar.render(context, layout.scrollbarLeft, layout.scrollbar(rows().size, rowScroll.index))
         super.render(context, mouseX, mouseY, delta)
-        hoveredLabel?.let { context.drawTooltip(textRenderer, it, mouseX, mouseY) }
+        hoveredLabel?.let { context.renderTooltip(font, it, mouseX, mouseY) }
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
@@ -232,13 +232,13 @@ class MahjongClientConfigScreen(
         tabScroll = strip.effectiveScroll
         Category.entries.forEachIndexed { index, entry ->
             val selected = entry == category
-            addDrawableChild(
+            addRenderableWidget(
                 TabWidget(
                     x = strip.tabX(index),
                     y = strip.tabY(selected),
                     width = strip.tabWidth,
                     height = strip.tabHeight(selected),
-                    message = Text.translatable(entry.translationKey),
+                    message = Component.translatable(entry.translationKey),
                     selected = selected,
                     clipLeft = strip.left,
                     clipRight = strip.right,
@@ -266,25 +266,25 @@ class MahjongClientConfigScreen(
             val active = !draftStale && !automaticDraft.state().pending && (!row.remote || !automaticDraft.state().stale)
             when (row) {
                 is ConfigRow.Information -> Unit
-                is ConfigRow.Action -> addDrawableChild(
+                is ConfigRow.Action -> addRenderableWidget(
                     RestartableMarqueeButtonWidget.builder(row.name) { row.activate() }
                         .dimensions(layout.contentLeft, y, layout.contentWidth, FormScreenLayout.BUTTON_HEIGHT)
                         .build()
                         .also {
                             it.active = active
-                            it.tooltip = Tooltip.of(ControlTooltip.description(row.description))
+                            it.tooltip = Tooltip.create(ControlTooltip.description(row.description))
                         },
                 )
                 is ConfigRow.Toggle -> {
                     val enabled = row.enabled()
-                    addDrawableChild(
+                    addRenderableWidget(
                         RestartableMarqueeButtonWidget.builder(booleanText(enabled)) { row.toggle() }
                             .pressesOnSecondaryClick()
                             .dimensions(layout.controlLeft, y, layout.controlWidth, FormScreenLayout.BUTTON_HEIGHT)
                             .build()
                             .also {
                                 it.active = active
-                                it.tooltip = Tooltip.of(
+                                it.tooltip = Tooltip.create(
                                     ControlTooltip.options(
                                         description = row.description,
                                         options = listOf(
@@ -317,8 +317,8 @@ class MahjongClientConfigScreen(
          * @param action 點擊時執行的動作。
          * @return 已加入畫面的按鈕。
          */
-        fun button(index: Int, key: String, action: () -> Unit): ButtonWidget = addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(key)) { action() }
+        fun button(index: Int, key: String, action: () -> Unit): Button = addRenderableWidget(
+            RestartableMarqueeButtonWidget.builder(Component.translatable(key)) { action() }
                 .dimensions(footer.buttonX(index), layout.footerY, footer.buttonWidth(index), FormScreenLayout.BUTTON_HEIGHT)
                 .build(),
         )
@@ -332,7 +332,7 @@ class MahjongClientConfigScreen(
         applyButton = button(SettingsFooterButtons.APPLY, MinecraftClientConfigScreenKeys.APPLY) { applyDraft(closeAfterSave = false) }
         doneButton = button(SettingsFooterButtons.DONE, MinecraftClientConfigScreenKeys.DONE) {
             if (draftStale || (!hasChanges() && !preferenceService.hasPendingSync)) {
-                close()
+                onClose()
             } else {
                 applyDraft(closeAfterSave = true)
             }
@@ -348,7 +348,7 @@ class MahjongClientConfigScreen(
     private fun applyDraft(closeAfterSave: Boolean): Boolean {
         if (draftStale || automaticDraft.state().pending) return false
         if (draft != baseline || preferenceService.hasPendingSync) {
-            when (preferenceService.saveDraft(draft, client?.networkHandler != null)) {
+            when (preferenceService.saveDraft(draft, minecraft?.connection != null)) {
                 is ClientAutoSortHandPreferenceUpdateResult.SaveFailed -> {
                     saveFailed = true
                     refreshButtons()
@@ -390,7 +390,7 @@ class MahjongClientConfigScreen(
             refreshButtons()
             return false
         }
-        if (closeAfterSave) client?.setScreen(parent) else rebuild()
+        if (closeAfterSave) minecraft?.setScreen(parent) else rebuild()
         return true
     }
 
@@ -406,7 +406,7 @@ class MahjongClientConfigScreen(
     internal fun applyHudLayout(layout: MahjongHudLayoutConfig): Boolean {
         if (draftStale || automaticDraft.state().pending) return false
         draft = draft.copy(hudLayout = layout)
-        return when (preferenceService.saveDraft(draft, client?.networkHandler != null)) {
+        return when (preferenceService.saveDraft(draft, minecraft?.connection != null)) {
             is ClientAutoSortHandPreferenceUpdateResult.SaveFailed -> {
                 saveFailed = true
                 false
@@ -435,7 +435,7 @@ class MahjongClientConfigScreen(
         applyButton?.active = !draftStale && !remote.pending && (hasChanges() || preferenceService.hasPendingSync)
         undoButton?.active = !remote.pending && (draftStale || hasChanges() || remote.stale)
         doneButton?.active = !remote.pending
-        val changes = if (hasChanges()) Tooltip.of(differenceText()) else null
+        val changes = if (hasChanges()) Tooltip.create(differenceText()) else null
         applyButton?.tooltip = changes
         undoButton?.tooltip = changes
     }
@@ -459,7 +459,7 @@ class MahjongClientConfigScreen(
     private fun hasChanges(): Boolean = draft != baseline || automaticDraft.state().dirty
 
     /** 所有套用入口使用同一份本機與本局草稿差異。 */
-    private fun differenceText(): Text = clientConfigDifferenceText(baseline, draft, automaticDraft.state(), displayResolver)
+    private fun differenceText(): Component = clientConfigDifferenceText(baseline, draft, automaticDraft.state(), displayResolver)
 
     /**
      * 繪製欄位名稱與說明列；放不下時截斷。
@@ -470,8 +470,8 @@ class MahjongClientConfigScreen(
      * @param mouseY 游標垂直座標。
      * @return 游標下被截斷的文字全文；游標不在被截斷的文字上時為 null。
      */
-    private fun renderFieldLabels(context: DrawContext, layout: FormScreenLayout, mouseX: Int, mouseY: Int): Text? {
-        var hoveredLabel: Text? = null
+    private fun renderFieldLabels(context: GuiGraphics, layout: FormScreenLayout, mouseX: Int, mouseY: Int): Component? {
+        var hoveredLabel: Component? = null
         rows().drop(rowScroll.index).take(layout.visibleFieldCount).forEachIndexed { index, row ->
             val rowTop = layout.fieldRowTop(index)
             layout.fieldStripe(index).renderIfStriped(context, rowScroll.index + index)
@@ -479,7 +479,7 @@ class MahjongClientConfigScreen(
                 is ConfigRow.Action -> null
                 is ConfigRow.Information -> ScreenRendering.label(
                     context = context,
-                    textRenderer = textRenderer,
+                    textRenderer = font,
                     label = row.name,
                     x = layout.contentLeft,
                     y = rowTop + (FormScreenLayout.BUTTON_HEIGHT - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2,
@@ -490,7 +490,7 @@ class MahjongClientConfigScreen(
                 )
                 is ConfigRow.Toggle -> ScreenRendering.label(
                     context = context,
-                    textRenderer = textRenderer,
+                    textRenderer = font,
                     label = row.name,
                     x = layout.contentLeft,
                     y = layout.fieldLabelY(rowTop),
@@ -512,22 +512,22 @@ class MahjongClientConfigScreen(
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
      */
-    private fun renderStatus(context: DrawContext, layout: FormScreenLayout, mouseX: Int, mouseY: Int) {
+    private fun renderStatus(context: GuiGraphics, layout: FormScreenLayout, mouseX: Int, mouseY: Int) {
         val remote = automaticDraft.state()
         val error = ScreenRendering.ERROR_TEXT_COLOR
         val (status, color) = when {
-            draftStale -> Text.translatable(MinecraftClientConfigScreenKeys.DRAFT_STALE) to error
-            saveFailed -> Text.translatable(MinecraftClientConfigScreenKeys.SAVE_FAILED) to error
-            preferenceSyncFailed -> Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_PREFERENCE_SYNC_FAILED) to error
-            remote.pending -> Text.translatable(pendingStatusKey(checkNotNull(remote.pendingRequestId))) to ScreenRendering.TEXT_COLOR
-            automaticError == AutomaticControlError.UNCONFIRMED -> Text.translatable(AutomaticControlError.UNCONFIRMED.translationKey) to error
-            remote.stale -> Text.translatable(MinecraftClientConfigScreenKeys.AUTOMATIC_STALE) to error
-            automaticError != null -> Text.translatable(checkNotNull(automaticError).translationKey) to error
+            draftStale -> Component.translatable(MinecraftClientConfigScreenKeys.DRAFT_STALE) to error
+            saveFailed -> Component.translatable(MinecraftClientConfigScreenKeys.SAVE_FAILED) to error
+            preferenceSyncFailed -> Component.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_PREFERENCE_SYNC_FAILED) to error
+            remote.pending -> Component.translatable(pendingStatusKey(checkNotNull(remote.pendingRequestId))) to ScreenRendering.TEXT_COLOR
+            automaticError == AutomaticControlError.UNCONFIRMED -> Component.translatable(AutomaticControlError.UNCONFIRMED.translationKey) to error
+            remote.stale -> Component.translatable(MinecraftClientConfigScreenKeys.AUTOMATIC_STALE) to error
+            automaticError != null -> Component.translatable(checkNotNull(automaticError).translationKey) to error
             else -> return
         }
         ScreenRendering.status(
             context = context,
-            textRenderer = textRenderer,
+            textRenderer = font,
             layout = layout,
             message = status,
             color = color,
@@ -562,10 +562,10 @@ class MahjongClientConfigScreen(
 
         Category.HUD -> listOf(
             element = ConfigRow.Action(
-                name = Text.translatable(MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT),
-                description = Text.translatable(MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT_DESCRIPTION),
+                name = Component.translatable(MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT),
+                description = Component.translatable(MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT_DESCRIPTION),
                 activate = {
-                    client?.setScreen(
+                    minecraft?.setScreen(
                         MahjongHudLayoutEditorScreen(
                             parent = this,
                             initialLayout = currentDraft().hudLayout,
@@ -603,8 +603,8 @@ class MahjongClientConfigScreen(
         read: (MahjongClientConfigState) -> Boolean,
         update: (MahjongClientConfigState, Boolean) -> MahjongClientConfigState,
     ): ConfigRow = ConfigRow.Toggle(
-        name = Text.translatable(nameKey),
-        description = Text.translatable(descriptionKey),
+        name = Component.translatable(nameKey),
+        description = Component.translatable(descriptionKey),
         enabled = { read(draft) },
         toggle = {
             draft = update(draft, !read(draft))
@@ -617,7 +617,7 @@ class MahjongClientConfigScreen(
      * 供 HUD 位置編輯器量測自動操作狀態預覽的項目名稱；本局有權威快照時用實際支援的項目，
      * 不在對局中則改用內建項目當樣本，讓玩家在任何時候都能先安排位置。
      */
-    private fun automaticControlPreviewLabels(): List<Text> {
+    private fun automaticControlPreviewLabels(): List<Component> {
         val baseline = automaticDraft.state().baseline?.takeIf { it.supportedControlIds.isNotEmpty() }
         val ruleModuleId = baseline?.ruleModuleId
         val supported = baseline?.supportedControlIds ?: AUTOMATIC_CONTROL_PREVIEW_SAMPLE_IDS
@@ -634,7 +634,7 @@ class MahjongClientConfigScreen(
             snapshot.supportedControlIds.isEmpty() -> MinecraftClientConfigScreenKeys.AUTOMATIC_EMPTY
             else -> MinecraftClientConfigScreenKeys.AUTOMATIC_ROUND_ONLY
         }
-        val heading = ConfigRow.Information(Text.translatable(explanation))
+        val heading = ConfigRow.Information(Component.translatable(explanation))
         if (snapshot == null) return listOf(heading)
         return listOf(heading) + displayResolver.resolveAll(snapshot.ruleModuleId, snapshot.supportedControlIds).map { display ->
             ConfigRow.Toggle(
@@ -677,7 +677,7 @@ class MahjongClientConfigScreen(
      * @param value 是否啟用。
      * @return 啟用或停用的本地化文字。
      */
-    private fun booleanText(value: Boolean): Text = Text.translatable(
+    private fun booleanText(value: Boolean): Component = Component.translatable(
         if (value) MinecraftClientConfigScreenKeys.ENABLED else MinecraftClientConfigScreenKeys.DISABLED,
     )
 
@@ -734,7 +734,7 @@ class MahjongClientConfigScreen(
     /** 分類中的一列。 */
     private sealed interface ConfigRow {
         /** 這一列顯示的名稱或說明文字。 */
-        val name: Text
+        val name: Component
 
         /** 本局權威狀態過期時是否不可操作。 */
         val remote: Boolean
@@ -750,8 +750,8 @@ class MahjongClientConfigScreen(
          * @property remote 本局權威狀態過期時是否不可操作。
          */
         data class Toggle(
-            override val name: Text,
-            val description: Text?,
+            override val name: Component,
+            val description: Component?,
             val enabled: () -> Boolean,
             val toggle: () -> Unit,
             override val remote: Boolean = false,
@@ -765,8 +765,8 @@ class MahjongClientConfigScreen(
          * @property activate 按下按鈕時執行的動作。
          */
         data class Action(
-            override val name: Text,
-            val description: Text,
+            override val name: Component,
+            val description: Component,
             val activate: () -> Unit,
         ) : ConfigRow
 
@@ -776,7 +776,7 @@ class MahjongClientConfigScreen(
          * @property name 說明文字。
          */
         data class Information(
-            override val name: Text,
+            override val name: Component,
         ) : ConfigRow
     }
 

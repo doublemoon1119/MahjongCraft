@@ -15,13 +15,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableOverlayVisi
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.mahjongTableFacingFromNameOrDefault
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import net.minecraft.entity.EntityType
-import net.minecraft.entity.data.DataTracker
-import net.minecraft.entity.data.TrackedData
-import net.minecraft.entity.data.TrackedDataHandlerRegistry
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.util.math.BlockPos
-import net.minecraft.world.World
+import net.minecraft.core.BlockPos
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.network.syncher.EntityDataAccessor
+import net.minecraft.network.syncher.EntityDataSerializers
+import net.minecraft.network.syncher.SynchedEntityData
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.level.Level
 import kotlin.uuid.Uuid
 
 /**
@@ -32,15 +32,16 @@ import kotlin.uuid.Uuid
  */
 class MahjongPlayerInfoEntity(
     type: EntityType<out MahjongPlayerInfoEntity> = ModEntities.mahjongPlayerInfo,
-    world: World,
-) : AnimatedMahjongEntity<Nothing>(type, world) {
+    world: Level,
+) : AnimatedMahjongEntity<Nothing>(type, world),
+    HiddenDebugHitboxEntity {
     /** 同一份解不出來的玩家資料只記錄一次警告。 */
     private val unreadablePlayers = DistinctFailureGate<String>()
 
     /** 同步的玩家快照；資料解不出來時視為沒有玩家，並對同一份資料記錄一次警告（不含資料內容）。 */
     var players: List<MahjongPlayerInfoEntry>
         get() {
-            val raw = dataTracker[PLAYERS]
+            val raw = entityData[PLAYERS]
             val entries = try {
                 JSON.decodeFromString<List<PlayerEntryDto>>(raw)
             } catch (error: Exception) {
@@ -52,29 +53,29 @@ class MahjongPlayerInfoEntity(
             unreadablePlayers.clear()
             return entries.mapNotNull(PlayerEntryDto::toDomain)
         }
-        set(value) = dataTracker.set(PLAYERS, JSON.encodeToString(value.map(PlayerEntryDto::fromDomain)))
+        set(value) = entityData.set(PLAYERS, JSON.encodeToString(value.map(PlayerEntryDto::fromDomain)))
 
     /** 短暫顯示中的分數增減；只供呈現，不寫入存檔，資料解不出來時視為沒有。 */
     var scoreChanges: List<MahjongPlayerScoreChange>
-        get() = runCatching { JSON.decodeFromString<List<ScoreChangeDto>>(dataTracker[SCORE_CHANGES]) }
+        get() = runCatching { JSON.decodeFromString<List<ScoreChangeDto>>(entityData[SCORE_CHANGES]) }
             .getOrDefault(emptyList())
             .mapNotNull(ScoreChangeDto::toDomain)
-        set(value) = dataTracker.set(SCORE_CHANGES, JSON.encodeToString(value.map(ScoreChangeDto::fromDomain)))
+        set(value) = entityData.set(SCORE_CHANGES, JSON.encodeToString(value.map(ScoreChangeDto::fromDomain)))
 
     /** 莊家玩家 UUID；資料未設定或損壞時為 `null`。 */
     var dealerPlayerId: Uuid?
-        get() = dataTracker[DEALER_PLAYER_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
-        set(value) = dataTracker.set(DEALER_PLAYER_ID, value?.toString().orEmpty())
+        get() = entityData[DEALER_PLAYER_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
+        set(value) = entityData.set(DEALER_PLAYER_ID, value?.toString().orEmpty())
 
     /** 觀看此桌時的座位方向；未知值使用北向預設。 */
     var tableFacing: MahjongTableFacing
-        get() = mahjongTableFacingFromNameOrDefault(dataTracker[TABLE_FACING])
-        set(value) = dataTracker.set(TABLE_FACING, value.name)
+        get() = mahjongTableFacingFromNameOrDefault(entityData[TABLE_FACING])
+        set(value) = entityData.set(TABLE_FACING, value.name)
 
     /** 所屬麻將桌；尚未指派或資料損壞時為 `null`。 */
     var managedTableId: Uuid?
-        get() = dataTracker[MANAGED_TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
-        private set(value) = dataTracker.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
+        get() = entityData[MANAGED_TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
+        private set(value) = entityData.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
 
     /** 所屬桌子的控制方塊位置，用來定期檢查此資訊 entity 是否仍有效。 */
     private var controllerPos: BlockPos? = null
@@ -93,9 +94,9 @@ class MahjongPlayerInfoEntity(
      * @param controllerPos 該桌控制方塊位置。
      */
     fun assignToTable(tableId: Uuid, controllerPos: BlockPos) {
-        check(!world.isClient) { "Managed player info must be assigned by the server" }
+        check(!level().isClientSide) { "Managed player info must be assigned by the server" }
         managedTableId = tableId
-        this.controllerPos = controllerPos.toImmutable()
+        this.controllerPos = controllerPos.immutable()
     }
 
     /**
@@ -104,7 +105,7 @@ class MahjongPlayerInfoEntity(
      * @param gameTime 隱藏租約結束的 server game time；不晚於現有期限時不改變期限。
      */
     fun hideUntil(gameTime: Long) {
-        check(!world.isClient) { "Player info visibility lease must be changed by the server" }
+        check(!level().isClientSide) { "Player info visibility lease must be changed by the server" }
         val extendedUntil = TableOverlayVisibility.extend(hiddenUntilGameTime, gameTime)
         if (extendedUntil == hiddenUntilGameTime) return
         hiddenUntilGameTime = extendedUntil
@@ -113,48 +114,48 @@ class MahjongPlayerInfoEntity(
 
     /** 將玩家公開資訊隱藏至此 entity 被移除。 */
     fun hideUntilRemoved() {
-        check(!world.isClient) { "Player info visibility lease must be changed by the server" }
+        check(!level().isClientSide) { "Player info visibility lease must be changed by the server" }
         hiddenUntilGameTime = Long.MAX_VALUE
         applyVisibility()
     }
 
     /** 新局已確定開始時解除所有舊 presentation lease，立即恢復玩家公開資訊。 */
     fun showNow() {
-        check(!world.isClient) { "Player info visibility lease must be changed by the server" }
+        check(!level().isClientSide) { "Player info visibility lease must be changed by the server" }
         hiddenUntilGameTime = Long.MIN_VALUE
         applyVisibility()
     }
 
     override fun tick() {
         super.tick()
-        if (world.isClient) return
+        if (level().isClientSide) return
         applyVisibility()
-        if (age % ORPHAN_CHECK_INTERVAL_TICKS != 0) return
+        if (tickCount % ORPHAN_CHECK_INTERVAL_TICKS != 0) return
         val expectedId = managedTableId ?: return discard()
         val pos = controllerPos ?: return discard()
-        if (MahjongTableLookup.find(world, pos, expectedId) == null) discard()
+        if (MahjongTableLookup.find(level(), pos, expectedId) == null) discard()
     }
 
-    override fun isCollidable(): Boolean = false
+    override fun canBeCollidedWith(): Boolean = false
     override fun isPushable(): Boolean = false
-    override fun canHit(): Boolean = false
+    override fun isPickable(): Boolean = false
     override fun applyCustomStep(step: Nothing) = error("Player info has no custom animation step")
     override fun applyPlayMotion(step: AnimationStep.PlayMotion, startGameTime: Long) = error("Player info does not support motion")
-    override fun serializeCustomStep(step: Nothing, nbt: NbtCompound) = error("Player info has no custom animation step")
-    override fun deserializeCustomStep(nbt: NbtCompound): Nothing = error("Player info has no custom animation step")
+    override fun serializeCustomStep(step: Nothing, nbt: CompoundTag) = error("Player info has no custom animation step")
+    override fun deserializeCustomStep(nbt: CompoundTag): Nothing = error("Player info has no custom animation step")
 
-    override fun initDataTracker() {
-        dataTracker.startTracking(PLAYERS, "[]")
-        dataTracker.startTracking(DEALER_PLAYER_ID, "")
-        dataTracker.startTracking(TABLE_FACING, MahjongTableFacing.NORTH.name)
-        dataTracker.startTracking(MANAGED_TABLE_ID, "")
-        dataTracker.startTracking(SCORE_CHANGES, "[]")
+    override fun defineSynchedData() {
+        entityData.define(PLAYERS, "[]")
+        entityData.define(DEALER_PLAYER_ID, "")
+        entityData.define(TABLE_FACING, MahjongTableFacing.NORTH.name)
+        entityData.define(MANAGED_TABLE_ID, "")
+        entityData.define(SCORE_CHANGES, "[]")
     }
 
-    override fun readCustomDataFromNbt(nbt: NbtCompound) {
-        dataTracker.set(PLAYERS, nbt.getString(NBT_PLAYERS).ifBlank { "[]" })
+    override fun readAdditionalSaveData(nbt: CompoundTag) {
+        entityData.set(PLAYERS, nbt.getString(NBT_PLAYERS).ifBlank { "[]" })
         dealerPlayerId = nbt.getString(NBT_DEALER).takeIf(String::isNotBlank)?.let { Uuid.parse(it) }
-        dataTracker.set(TABLE_FACING, mahjongTableFacingFromNameOrDefault(nbt.getString(NBT_FACING)).name)
+        entityData.set(TABLE_FACING, mahjongTableFacingFromNameOrDefault(nbt.getString(NBT_FACING)).name)
         managedTableId = ManagedTableNbt.read(nbt)
         if (nbt.contains(NBT_CONTROLLER_X)) {
             controllerPos = BlockPos(nbt.getInt(NBT_CONTROLLER_X), nbt.getInt(NBT_CONTROLLER_Y), nbt.getInt(NBT_CONTROLLER_Z))
@@ -164,10 +165,10 @@ class MahjongPlayerInfoEntity(
         applyVisibility()
     }
 
-    override fun writeCustomDataToNbt(nbt: NbtCompound) {
-        nbt.putString(NBT_PLAYERS, dataTracker[PLAYERS])
+    override fun addAdditionalSaveData(nbt: CompoundTag) {
+        nbt.putString(NBT_PLAYERS, entityData[PLAYERS])
         dealerPlayerId?.let { nbt.putString(NBT_DEALER, it.toString()) }
-        nbt.putString(NBT_FACING, dataTracker[TABLE_FACING])
+        nbt.putString(NBT_FACING, entityData[TABLE_FACING])
         ManagedTableNbt.write(nbt, managedTableId)
         controllerPos?.let {
             nbt.putInt(NBT_CONTROLLER_X, it.x)
@@ -180,7 +181,7 @@ class MahjongPlayerInfoEntity(
 
     /** 依已保存的期限設定伺服器隱藏狀態；每個伺服器 tick 與期限變更時套用，是隱藏狀態的唯一來源。 */
     private fun applyVisibility() {
-        if (!world.isClient) isInvisible = TableOverlayVisibility.isHidden(hiddenUntilGameTime, world.time)
+        if (!level().isClientSide) isInvisible = TableOverlayVisibility.isHidden(hiddenUntilGameTime, level().gameTime)
     }
 
     companion object {
@@ -196,11 +197,11 @@ class MahjongPlayerInfoEntity(
 
         private val JSON = Json
         private val logger = mahjongCraftLogger(MahjongPlayerInfoEntity::class)
-        private val PLAYERS: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
-        private val DEALER_PLAYER_ID: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
-        private val TABLE_FACING: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
-        private val MANAGED_TABLE_ID: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
-        private val SCORE_CHANGES: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val PLAYERS: EntityDataAccessor<String> = SynchedEntityData.defineId(MahjongPlayerInfoEntity::class.java, EntityDataSerializers.STRING)
+        private val DEALER_PLAYER_ID: EntityDataAccessor<String> = SynchedEntityData.defineId(MahjongPlayerInfoEntity::class.java, EntityDataSerializers.STRING)
+        private val TABLE_FACING: EntityDataAccessor<String> = SynchedEntityData.defineId(MahjongPlayerInfoEntity::class.java, EntityDataSerializers.STRING)
+        private val MANAGED_TABLE_ID: EntityDataAccessor<String> = SynchedEntityData.defineId(MahjongPlayerInfoEntity::class.java, EntityDataSerializers.STRING)
+        private val SCORE_CHANGES: EntityDataAccessor<String> = SynchedEntityData.defineId(MahjongPlayerInfoEntity::class.java, EntityDataSerializers.STRING)
     }
 }
 

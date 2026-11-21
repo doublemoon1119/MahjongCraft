@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.entity
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
-import net.minecraft.entity.Entity
-import net.minecraft.server.world.ServerWorld
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.uuid.Uuid
 
@@ -18,7 +18,7 @@ class FabricEntitySpawnGateway {
     private val activeSpawn = AtomicReference<SpawnContext?>()
 
     /**
-     * 只在 server thread 上檢查 UUID collision，然後原樣回傳或重拋 [ServerWorld.spawnEntity] 結果。
+     * 只在 server thread 上檢查 UUID collision，然後原樣回傳或重拋 [ServerLevel.addFreshEntity] 結果。
      *
      * @param world 目標 server 世界。
      * @param entity 要生成的 entity。
@@ -27,11 +27,11 @@ class FabricEntitySpawnGateway {
      * @return 世界生成實體的結果；失敗回傳 false 時會記錄警告。
      * @throws IllegalStateException 不在伺服器主執行緒，或存在並行／重入的生成工作。
      */
-    fun spawn(world: ServerWorld, entity: Entity, source: String, tableId: Uuid?): Boolean {
-        val serverIsOnThread = world.server.isOnThread
+    fun spawn(world: ServerLevel, entity: Entity, source: String, tableId: Uuid?): Boolean {
+        val serverIsOnThread = world.server.isSameThread
         val context = "source=$source tableId=${tableId ?: "none"} entity=${entity.javaClass.name} id=${entity.id} " +
             "uuid=${entity.uuid} thread=${Thread.currentThread().name} serverIsOnThread=$serverIsOnThread " +
-            "world=${world.registryKey.value}"
+            "world=${world.dimension().location()}"
         check(serverIsOnThread) { "Entity spawn attempted off server thread: $context" }
         val spawnContext = SpawnContext(source, tableId, entity.id, entity.uuid.toString(), Thread.currentThread().name)
         val existingSpawn = activeSpawn.get()
@@ -43,7 +43,7 @@ class FabricEntitySpawnGateway {
             if (collision != null) {
                 logger.warn("Entity UUID collision before spawn: {} existing={} existingId={}", context, collision.javaClass.name, collision.id)
             }
-            val spawned = world.spawnEntity(entity)
+            val spawned = world.addFreshEntity(entity)
             if (!spawned) logger.warn("Entity spawn returned false: {}", context)
             spawned
         } catch (throwable: Throwable) {

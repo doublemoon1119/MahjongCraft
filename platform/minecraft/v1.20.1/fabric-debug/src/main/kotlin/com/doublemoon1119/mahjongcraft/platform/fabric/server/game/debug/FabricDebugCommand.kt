@@ -16,8 +16,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands.literal
 
 /**
  * 註冊 development-only、op 限定的 `/mahjongcraft debug ...` 指令根節點與各功能測試子指令。
@@ -39,7 +39,7 @@ import net.minecraft.server.command.ServerCommandSource
  *
  * 整組指令樹只在 [MinecraftEnvironment.isDevelopment] 為 `true` 時才註冊——正式打包發布的產物裡整棵
  * debug 指令樹根本沒被註冊過，不是「有指令但用權限藏起來」而已。額外再疊一層 op 權限
- * （`hasPermissionLevel(2)`）當作雙重保險，避免「不小心用非開發建置跑本地測試伺服器」時被一般玩家
+ * （`hasPermission(2)`）當作雙重保險，避免「不小心用非開發建置跑本地測試伺服器」時被一般玩家
  * 誤用。
  *
  * @property minecraftEnvironment 查詢目前是否為開發環境，決定整組指令樹要不要註冊。
@@ -82,9 +82,9 @@ class FabricDebugCommand internal constructor(
     }
 
     /** 建立保留既有 literal、權限與子指令順序的完整 debug 指令樹。 */
-    internal fun build(): LiteralArgumentBuilder<ServerCommandSource> = literal(MinecraftModMetadata.MOD_ID).then(
+    internal fun build(): LiteralArgumentBuilder<CommandSourceStack> = literal(MinecraftModMetadata.MOD_ID).then(
         literal(DEBUG_SUBCOMMAND)
-            .requires { it.hasPermissionLevel(OP_PERMISSION_LEVEL) }
+            .requires { it.hasPermission(OP_PERMISSION_LEVEL) }
             .then(scenarioCommand.build())
             .then(presentationCommand.buildWinCommand())
             .then(presentationCommand.buildShowcaseCommand())

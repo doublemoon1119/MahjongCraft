@@ -3,12 +3,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.character
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatCollisionScope
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
-import net.minecraft.entity.Entity
-import net.minecraft.entity.LivingEntity
-import net.minecraft.registry.Registries
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
+import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.phys.AABB
 import kotlin.coroutines.cancellation.CancellationException
 
 /** 在生成前預檢失敗時記錄附近空間，只讀原生狀態，不再次呼叫座位提供者。 */
@@ -25,7 +25,7 @@ internal object FabricAiCharacterActivationDiagnostics {
      * @param seatIndex 完整名冊中的席位索引。
      */
     fun beforeSpawn(
-        world: ServerWorld,
+        world: ServerLevel,
         rider: Entity,
         request: SeatRequest,
         seatIndex: Int,
@@ -33,8 +33,8 @@ internal object FabricAiCharacterActivationDiagnostics {
         if (!logger.isDebugEnabled) return
         try {
             val seat = request.seat
-            val dimensionsValid = rider.width.isFinite() && rider.height.isFinite() && rider.width > 0f && rider.height > 0f
-            val probe = Box(
+            val dimensionsValid = rider.bbWidth.isFinite() && rider.bbHeight.isFinite() && rider.bbWidth > 0f && rider.bbHeight > 0f
+            val probe = AABB(
                 seat.x - PROBE_RADIUS,
                 seat.y - PROBE_RADIUS,
                 seat.z - PROBE_RADIUS,
@@ -42,20 +42,20 @@ internal object FabricAiCharacterActivationDiagnostics {
                 seat.y + PROBE_HEIGHT,
                 seat.z + PROBE_RADIUS,
             )
-            val minimum = BlockPos.ofFloored(
+            val minimum = BlockPos.containing(
                 probe.minX - 1.0,
                 probe.minY,
                 probe.minZ - 1.0,
             )
-            val maximum = BlockPos.ofFloored(
+            val maximum = BlockPos.containing(
                 probe.maxX + 1.0,
                 probe.maxY,
                 probe.maxZ + 1.0,
             )
-            val probeLoaded = minimum.y >= world.bottomY &&
-                maximum.y < world.topY &&
+            val probeLoaded = minimum.y >= world.minBuildHeight &&
+                maximum.y < world.maxBuildHeight &&
                 ((minimum.x shr 4)..(maximum.x shr 4)).all { x ->
-                    ((minimum.z shr 4)..(maximum.z shr 4)).all { z -> world.chunkManager.isChunkLoaded(x, z) }
+                    ((minimum.z shr 4)..(maximum.z shr 4)).all { z -> world.chunkSource.hasChunk(x, z) }
                 }
             logger.debug(
                 "AI character activation position tableId={} seatIndex={} entityId={} dimension={} target={} dimensions={}x{} dimensionsValid={} probe={} probeLoaded={}",
@@ -64,23 +64,23 @@ internal object FabricAiCharacterActivationDiagnostics {
                 rider.uuid,
                 request.dimensionId,
                 seat,
-                rider.width,
-                rider.height,
+                rider.bbWidth,
+                rider.bbHeight,
                 dimensionsValid,
                 probe,
                 probeLoaded,
             )
             if (!probeLoaded || !dimensionsValid) return
-            val halfWidth = minOf(rider.width.toDouble() / 2.0, PROBE_RADIUS)
-            val body = Box(
+            val halfWidth = minOf(rider.bbWidth.toDouble() / 2.0, PROBE_RADIUS)
+            val body = AABB(
                 seat.x - halfWidth,
                 seat.y,
                 seat.z - halfWidth,
                 seat.x + halfWidth,
-                seat.y + minOf(rider.height.toDouble(), PROBE_HEIGHT),
+                seat.y + minOf(rider.bbHeight.toDouble(), PROBE_HEIGHT),
                 seat.z + halfWidth,
             )
-            val support = Box(
+            val support = AABB(
                 body.minX,
                 body.minY - SUPPORT_DEPTH,
                 body.minZ,
@@ -88,17 +88,17 @@ internal object FabricAiCharacterActivationDiagnostics {
                 body.minY,
                 body.maxZ,
             )
-            val entities = world.getOtherEntities(rider, probe)
+            val entities = world.getEntities(rider, probe)
             val samples = entities.take(MAX_SAMPLES).map { other ->
-                "type=${Registries.ENTITY_TYPE.getId(other.type)} uuid=${other.uuid} pos=${other.pos} box=${other.boundingBox} standingOverlap=${other.boundingBox.intersects(body)} invisible=${other.isInvisible} living=${other is LivingEntity} collidable=${other.isCollidable} removed=${other.isRemoved} spectator=${other.isSpectator} ignoredBySeatMove=${SeatCollisionScope.ignores(rider, other)} passengerCount=${other.passengerList.size} passengers=${other.passengerList.take(MAX_SAMPLES).map { it.uuid }}"
+                "type=${BuiltInRegistries.ENTITY_TYPE.getKey(other.type)} uuid=${other.uuid} pos=${other.position()} box=${other.boundingBox} standingOverlap=${other.boundingBox.intersects(body)} invisible=${other.isInvisible} living=${other is LivingEntity} collidable=${other.canBeCollidedWith()} removed=${other.isRemoved} spectator=${other.isSpectator} ignoredBySeatMove=${SeatCollisionScope.ignores(rider, other)} passengerCount=${other.passengers.size} passengers=${other.passengers.take(MAX_SAMPLES).map { it.uuid }}"
             }
-            val blocks = BlockPos.iterate(
-                BlockPos.ofFloored(
+            val blocks = BlockPos.betweenClosed(
+                BlockPos.containing(
                     probe.minX,
                     probe.minY,
                     probe.minZ,
                 ),
-                BlockPos.ofFloored(
+                BlockPos.containing(
                     probe.maxX,
                     probe.maxY,
                     probe.maxZ,
@@ -106,36 +106,36 @@ internal object FabricAiCharacterActivationDiagnostics {
             )
                 .asSequence().mapNotNull { pos ->
                     val state = world.getBlockState(pos)
-                    if (state.isAir) null else "${pos.toShortString()}:${Registries.BLOCK.getId(state.block)}"
+                    if (state.isAir) null else "${pos.toShortString()}:${BuiltInRegistries.BLOCK.getKey(state.block)}"
                 }.take(MAX_SAMPLES).toList()
-            val collisions = world.getBlockCollisions(rider, body).asSequence().take(MAX_SAMPLES).map { it.boundingBox }.toList()
+            val collisions = world.getBlockCollisions(rider, body).asSequence().take(MAX_SAMPLES).map { it.bounds() }.toList()
             val supported = world.getBlockCollisions(rider, support).iterator().hasNext()
             logger.debug(
                 "AI character activation observations tableId={} seatIndex={} bodyProbe={} bodyProbeClipped={} insideBorder={} blockCollisions={} support={} targetBlock={} fluid={} nearbyEntityCount={} entitySamples={} blockSamples={}",
                 request.tableId,
                 seatIndex,
                 body,
-                rider.width / 2.0 > PROBE_RADIUS || rider.height > PROBE_HEIGHT,
-                world.worldBorder.contains(body),
+                rider.bbWidth / 2.0 > PROBE_RADIUS || rider.bbHeight > PROBE_HEIGHT,
+                world.worldBorder.isWithinBounds(body),
                 collisions,
                 supported,
-                Registries.BLOCK.getId(
+                BuiltInRegistries.BLOCK.getKey(
                     world.getBlockState(
-                        BlockPos.ofFloored(
+                        BlockPos.containing(
                             seat.x,
                             seat.y,
                             seat.z,
                         ),
                     ).block,
                 ),
-                Registries.FLUID.getId(
+                BuiltInRegistries.FLUID.getKey(
                     world.getFluidState(
-                        BlockPos.ofFloored(
+                        BlockPos.containing(
                             seat.x,
                             seat.y,
                             seat.z,
                         ),
-                    ).fluid,
+                    ).type,
                 ),
                 entities.size,
                 samples,

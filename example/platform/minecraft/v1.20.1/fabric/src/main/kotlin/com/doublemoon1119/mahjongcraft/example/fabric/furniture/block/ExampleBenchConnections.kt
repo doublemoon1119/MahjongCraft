@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.furniture.block
 
-import net.minecraft.util.math.Direction
+import net.minecraft.core.Direction
 
 /** 長凳只沿自身左右方向連接同朝向的相鄰長凳。 */
 internal object ExampleBenchConnections {
@@ -18,5 +18,5 @@ internal object ExampleBenchConnections {
         neighborFacing: Direction?,
     ): Boolean = facing.axis.isHorizontal &&
         neighborFacing == facing &&
-        (side == facing.rotateYClockwise() || side == facing.rotateYCounterclockwise())
+        (side == facing.clockWise || side == facing.counterClockWise)
 }

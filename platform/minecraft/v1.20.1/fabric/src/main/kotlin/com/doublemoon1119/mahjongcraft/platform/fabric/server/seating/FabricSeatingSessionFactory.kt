@@ -9,12 +9,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatAssignment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
-import net.minecraft.entity.Entity
-import net.minecraft.registry.RegistryKey
-import net.minecraft.registry.RegistryKeys
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.Registries
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
 import kotlin.math.floor
 import kotlin.uuid.Uuid
 
@@ -62,9 +62,9 @@ class FabricSeatingSessionFactory internal constructor(
     private fun prepareLayout(tableId: Uuid, layout: MahjongTableSeatLayout): FabricSeatingSession? {
         val location = tableLocationRegistry.get(tableId)?.location ?: return null
         val world = resolveWorld(location) ?: return null
-        check(world.server.isOnThread) { "Automatic seating must run on the server thread" }
+        check(world.server.isSameThread) { "Automatic seating must run on the server thread" }
         val controllerPos = BlockPos(location.x, location.y, location.z)
-        if (!world.chunkManager.isChunkLoaded(controllerPos.x shr 4, controllerPos.z shr 4)) return null
+        if (!world.chunkSource.hasChunk(controllerPos.x shr 4, controllerPos.z shr 4)) return null
         val tableFacing = MahjongTableLookup.find(world, controllerPos, tableId)?.facing ?: return null
         val requests = MahjongSeatingTableLayout.seatRequests(
             layout = layout,
@@ -79,13 +79,13 @@ class FabricSeatingSessionFactory internal constructor(
                 val x = floor(request.seat.x).toInt()
                 val z = floor(request.seat.z).toInt()
                 (((x - 1) shr 4)..((x + 1) shr 4)).any { cx ->
-                    (((z - 1) shr 4)..((z + 1) shr 4)).any { cz -> !world.chunkManager.isChunkLoaded(cx, cz) }
+                    (((z - 1) shr 4)..((z + 1) shr 4)).any { cz -> !world.chunkSource.hasChunk(cx, cz) }
                 }
             }
         ) {
             return null
         }
-        val coordinator = SeatAssignmentCoordinator<ServerWorld, Entity, FabricSeatSnapshot>(
+        val coordinator = SeatAssignmentCoordinator<ServerLevel, Entity, FabricSeatSnapshot>(
             providers = seatProviders.entries(),
             environment = FabricSeatEnvironment(),
             failurePolicy = failurePolicy,
@@ -107,9 +107,9 @@ class FabricSeatingSessionFactory internal constructor(
      * @param location 含 dimension ID 的桌子位置。
      * @return 對應的已載入伺服器世界；無法解析時為 null。
      */
-    private fun resolveWorld(location: TableLocation): ServerWorld? {
-        val identifier = Identifier.tryParse(location.dimensionId) ?: return null
-        val worldKey = RegistryKey.of(RegistryKeys.WORLD, identifier)
-        return serverHolder.current()?.getWorld(worldKey)
+    private fun resolveWorld(location: TableLocation): ServerLevel? {
+        val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null
+        val worldKey = ResourceKey.create(Registries.DIMENSION, identifier)
+        return serverHolder.current()?.getLevel(worldKey)
     }
 }

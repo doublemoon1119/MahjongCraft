@@ -20,21 +20,21 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.nextTileAssetKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.normalizedTileAssetKey
-import net.minecraft.entity.Entity
-import net.minecraft.entity.EntityDimensions
-import net.minecraft.entity.EntityPose
-import net.minecraft.entity.EntityType
-import net.minecraft.entity.data.DataTracker
-import net.minecraft.entity.data.TrackedData
-import net.minecraft.entity.data.TrackedDataHandlerRegistry
-import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.item.ItemStack
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.sound.SoundEvents
-import net.minecraft.util.ActionResult
-import net.minecraft.util.Hand
-import net.minecraft.world.World
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.network.syncher.EntityDataAccessor
+import net.minecraft.network.syncher.EntityDataSerializers
+import net.minecraft.network.syncher.SynchedEntityData
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.sounds.SoundEvents
+import net.minecraft.world.InteractionHand
+import net.minecraft.world.InteractionResult
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.EntityDimensions
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.entity.Pose
+import net.minecraft.world.entity.player.Player
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.level.Level
 import org.koin.core.context.GlobalContext
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
@@ -51,7 +51,7 @@ import kotlin.uuid.toKotlinUuid
  */
 class MahjongTileEntity(
     type: EntityType<out MahjongTileEntity> = ModEntities.mahjongTile,
-    world: World,
+    world: Level,
 ) : AnimatedMahjongEntity<MahjongTilePose>(type, world) {
     /** 僅供本地 client 同種牌提示使用的原版 outline RGB；不追蹤也不持久化。 */
     private var matchingHighlightColor: Int? = null
@@ -63,7 +63,7 @@ class MahjongTileEntity(
     private var latestDiscardHighlightColor: Int? = null
 
     /** 原版或其他來源未啟用 glowing 時，加入本地選牌提示、同種牌提示或最新捨牌標示狀態。 */
-    override fun isGlowing(): Boolean = super.isGlowing() ||
+    override fun isCurrentlyGlowing(): Boolean = super.isCurrentlyGlowing ||
         selectionHighlightColor != null ||
         matchingHighlightColor != null ||
         latestDiscardHighlightColor != null
@@ -71,10 +71,10 @@ class MahjongTileEntity(
     /**
      * 原版 glowing 優先；其次是選牌提示（比同種牌提示更即時可動作），再來是同種牌提示，最後才是一直亮著的最新捨牌標示。
      */
-    override fun getTeamColorValue(): Int = if (super.isGlowing()) {
-        super.getTeamColorValue()
+    override fun getTeamColor(): Int = if (super.isCurrentlyGlowing) {
+        super.teamColor
     } else {
-        selectionHighlightColor ?: matchingHighlightColor ?: latestDiscardHighlightColor ?: super.getTeamColorValue()
+        selectionHighlightColor ?: matchingHighlightColor ?: latestDiscardHighlightColor ?: super.teamColor
     }
 
     /** 設定僅供目前 client 使用的同種牌描邊色彩。 */
@@ -115,53 +115,53 @@ class MahjongTileEntity(
      * 面，真正牌面完全交給 client 端依 `TableStateSnapshot` 的可見性規則另外呈現。
      */
     var tileAssetKey: String
-        get() = dataTracker[TILE_ASSET_KEY].normalizedTileAssetKey(GlobalContext.get().get<MinecraftTileAssetRegistry>())
+        get() = entityData[TILE_ASSET_KEY].normalizedTileAssetKey(GlobalContext.get().get<MinecraftTileAssetRegistry>())
         set(value) {
             val normalized = if (managedByGame) UNKNOWN_TILE_ASSET_KEY else value.normalizedTileAssetKey(GlobalContext.get().get<MinecraftTileAssetRegistry>())
-            dataTracker.set(TILE_ASSET_KEY, normalized)
+            entityData.set(TILE_ASSET_KEY, normalized)
         }
 
     /** 牌相對於表面的姿態；改變後立即更新 bounding box。 */
     var tilePose: MahjongTilePose
-        get() = MahjongTilePose.fromNameOrDefault(dataTracker[TILE_POSE])
-        set(value) = dataTracker.set(TILE_POSE, value.name)
+        get() = MahjongTilePose.fromNameOrDefault(entityData[TILE_POSE])
+        set(value) = entityData.set(TILE_POSE, value.name)
 
     /** 伺服器目前佇列最後排定的姿態；沒有排定姿態時使用當前姿態。 */
     val queuedTilePose: MahjongTilePose
         get() {
-            check(!world.isClient) { "Queued tile pose is only available on the server" }
+            check(!level().isClientSide) { "Queued tile pose is only available on the server" }
             return finalQueuedCustomState(tilePose)
         }
 
     /** 是否阻擋玩家及其他非麻將牌 entity；由目前 server config 同步，不寫入世界存檔。 */
     var physicalCollisionEnabled: Boolean
-        get() = dataTracker[PHYSICAL_COLLISION_ENABLED]
-        set(value) = dataTracker.set(PHYSICAL_COLLISION_ENABLED, value)
+        get() = entityData[PHYSICAL_COLLISION_ENABLED]
+        set(value) = entityData.set(PHYSICAL_COLLISION_ENABLED, value)
 
     /** 是否由正式牌局管理；管理中的牌不接受自由放置互動。 */
     var managedByGame: Boolean
-        get() = dataTracker[MANAGED_BY_GAME]
-        set(value) = dataTracker.set(MANAGED_BY_GAME, value)
+        get() = entityData[MANAGED_BY_GAME]
+        set(value) = entityData.set(MANAGED_BY_GAME, value)
 
     /** 正式牌局所屬麻將桌；自由放置牌為 null。 */
     var managedTableId: Uuid?
-        get() = dataTracker[MANAGED_TABLE_ID]
+        get() = entityData[MANAGED_TABLE_ID]
             .takeIf(String::isNotBlank)
             ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
-        private set(value) = dataTracker.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
+        private set(value) = entityData.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
 
     /** 最近一次捨牌或鳴牌落地後的短暫提示種類。 */
-    val actionPopupKind: TileActionPopupKind get() = TileActionPopupKind.fromNameOrDefault(dataTracker[ACTION_POPUP_KIND])
+    val actionPopupKind: TileActionPopupKind get() = TileActionPopupKind.fromNameOrDefault(entityData[ACTION_POPUP_KIND])
 
     /** 短暫牌面提示開始淡入的絕對時間。 */
-    val actionPopupStartGameTime: Long get() = dataTracker[ACTION_POPUP_START_GAME_TIME]
+    val actionPopupStartGameTime: Long get() = entityData[ACTION_POPUP_START_GAME_TIME]
 
     /** 短暫牌面提示完成淡出的絕對時間。 */
-    val actionPopupEndGameTime: Long get() = dataTracker[ACTION_POPUP_END_GAME_TIME]
+    val actionPopupEndGameTime: Long get() = entityData[ACTION_POPUP_END_GAME_TIME]
 
     /** 由單一錨點承載的完整副露提示排列；非副露錨點為空集合。 */
     val meldActionPopupTiles: List<MeldActionPopupTile>
-        get() = dataTracker[MELD_ACTION_POPUP_TILES].split(";").mapNotNull { encoded ->
+        get() = entityData[MELD_ACTION_POPUP_TILES].split(";").mapNotNull { encoded ->
             val parts = encoded.split(",")
             val tileId = parts.getOrNull(0)?.let { runCatching { Uuid.parse(it) }.getOrNull() } ?: return@mapNotNull null
             MeldActionPopupTile(tileId, claimed = parts.getOrNull(1) == "1")
@@ -175,12 +175,12 @@ class MahjongTileEntity(
      * @param endGameTime 提示結束的絕對遊戲時間，必須晚於開始時間。
      */
     fun showActionPopup(kind: TileActionPopupKind, startGameTime: Long, endGameTime: Long) {
-        check(!world.isClient) { "Tile action popup is server-only" }
+        check(!level().isClientSide) { "Tile action popup is server-only" }
         require(kind != TileActionPopupKind.NONE) { "Tile action popup kind must be visible" }
         require(endGameTime > startGameTime) { "Tile action popup must have a positive duration" }
-        dataTracker.set(ACTION_POPUP_KIND, kind.name)
-        dataTracker.set(ACTION_POPUP_START_GAME_TIME, startGameTime)
-        dataTracker.set(ACTION_POPUP_END_GAME_TIME, endGameTime)
+        entityData.set(ACTION_POPUP_KIND, kind.name)
+        entityData.set(ACTION_POPUP_START_GAME_TIME, startGameTime)
+        entityData.set(ACTION_POPUP_END_GAME_TIME, endGameTime)
     }
 
     /**
@@ -193,7 +193,7 @@ class MahjongTileEntity(
     fun showMeldActionPopup(tiles: List<MeldActionPopupTile>, startGameTime: Long, endGameTime: Long) {
         require(tiles.isNotEmpty()) { "Meld action popup must contain tiles" }
         showActionPopup(TileActionPopupKind.MELD, startGameTime, endGameTime)
-        dataTracker.set(
+        entityData.set(
             MELD_ACTION_POPUP_TILES,
             tiles.joinToString(";") { tile ->
                 "${tile.tileId},${if (tile.claimed) 1 else 0}"
@@ -224,7 +224,7 @@ class MahjongTileEntity(
      * @param endGameTime 不阻塞整桌忙碌判定的 lease 到期時間。
      */
     fun exemptFromTableBusyUntil(endGameTime: Long) {
-        check(!world.isClient) { "Non-blocking presentation lease is server-only" }
+        check(!level().isClientSide) { "Non-blocking presentation lease is server-only" }
         if (endGameTime <= nonBlockingPresentationUntilGameTime) return
         nonBlockingPresentationUntilGameTime = endGameTime
     }
@@ -242,57 +242,57 @@ class MahjongTileEntity(
 
     /**
      * 是否正在播放由伺服器啟動的運動動畫（牌牆生成掉落、發牌、摸牌、丟牌共用同一套機制，見
-     * [applyPlayMotion]）。`entity` 本身固定 `refreshPositionAndAngles` 到動畫**終點**，動畫期間
+     * [applyPlayMotion]）。`entity` 本身固定 `moveTo` 到動畫**終點**，動畫期間
      * 的視覺位移／姿態旋轉完全由 client 端 renderer 依 [animationStartGameTime] 等欄位即時計算插值，
      * 不影響這個欄位代表的實際邏輯位置——比照 [MahjongDiceEntity.rolling] 的既有設計。
      */
     var animating: Boolean
-        get() = dataTracker[ANIMATING]
-        private set(value) = dataTracker.set(ANIMATING, value)
+        get() = entityData[ANIMATING]
+        private set(value) = entityData.set(ANIMATING, value)
 
     /** 動畫開始時的 server game time。 */
     val animationStartGameTime: Long
-        get() = dataTracker[ANIMATION_START_GAME_TIME]
+        get() = entityData[ANIMATION_START_GAME_TIME]
 
     /** 動畫總長度，以 server ticks 表示。 */
     val animationDurationTicks: Int
-        get() = dataTracker[ANIMATION_DURATION_TICKS]
+        get() = entityData[ANIMATION_DURATION_TICKS]
 
     /** 拋物線最高額外高度；`0` 代表純直落，不套用拋物線。 */
     val animationArcHeight: Double
-        get() = dataTracker[ANIMATION_ARC_HEIGHT].toDouble()
+        get() = entityData[ANIMATION_ARC_HEIGHT].toDouble()
 
     /** 動畫起點相對 entity 最終位置的向量。 */
     val animationStartOffset: DiceAnimationVector
         get() = DiceAnimationVector(
-            x = dataTracker[ANIMATION_START_OFFSET_X].toDouble(),
-            y = dataTracker[ANIMATION_START_OFFSET_Y].toDouble(),
-            z = dataTracker[ANIMATION_START_OFFSET_Z].toDouble(),
+            x = entityData[ANIMATION_START_OFFSET_X].toDouble(),
+            y = entityData[ANIMATION_START_OFFSET_Y].toDouble(),
+            z = entityData[ANIMATION_START_OFFSET_Z].toDouble(),
         )
 
     /** 動畫起點相對 entity 真實終點 yaw 的角差。 */
     val animationStartYawOffsetDegrees: Float
-        get() = dataTracker[ANIMATION_START_YAW_OFFSET]
+        get() = entityData[ANIMATION_START_YAW_OFFSET]
 
     /** 動畫起始姿態的局部 X 軸旋轉角。 */
     val animationStartPoseRotationDegrees: Float
-        get() = dataTracker[ANIMATION_START_POSE_ROTATION]
+        get() = entityData[ANIMATION_START_POSE_ROTATION]
 
     /** 動畫結束姿態的局部 X 軸旋轉角。 */
     val animationEndPoseRotationDegrees: Float
-        get() = dataTracker[ANIMATION_END_POSE_ROTATION]
+        get() = entityData[ANIMATION_END_POSE_ROTATION]
 
     /** 姿態旋轉角是否也套用 ease-out 曲線，理由見 [AnimationStep.PlayMotion.easeRotation] KDoc。 */
     val animationEaseRotation: Boolean
-        get() = dataTracker[ANIMATION_EASE_ROTATION]
+        get() = entityData[ANIMATION_EASE_ROTATION]
 
     /** 動畫是否走「提起、橫移、放下」的路線，見 [AnimationStep.PlayMotion.liftCarryLower]。 */
     val animationLiftCarryLower: Boolean
-        get() = dataTracker[ANIMATION_LIFT_CARRY_LOWER]
+        get() = entityData[ANIMATION_LIFT_CARRY_LOWER]
 
     /** 動畫途中往前進方向傾斜的角度，見 [AnimationStep.PlayMotion.leanDegrees]。 */
     val animationLeanDegrees: Float
-        get() = dataTracker[ANIMATION_LEAN]
+        get() = entityData[ANIMATION_LEAN]
 
     /** 這個 entity 是否已經做過一次 [validateStillManagedByActiveGame] 檢查；只需要做一次。 */
     private var hasValidatedManagedState = false
@@ -303,18 +303,18 @@ class MahjongTileEntity(
 
     /** 依 [AnimationStep.PlayMotion] 同步既有的 render 用 tracked data 欄位。 */
     override fun applyPlayMotion(step: AnimationStep.PlayMotion, startGameTime: Long) {
-        dataTracker.set(ANIMATION_START_GAME_TIME, startGameTime)
-        dataTracker.set(ANIMATION_DURATION_TICKS, step.durationTicks)
-        dataTracker.set(ANIMATION_ARC_HEIGHT, step.arcHeight.toFloat())
-        dataTracker.set(ANIMATION_START_OFFSET_X, step.startOffsetX.toFloat())
-        dataTracker.set(ANIMATION_START_OFFSET_Y, step.startOffsetY.toFloat())
-        dataTracker.set(ANIMATION_START_OFFSET_Z, step.startOffsetZ.toFloat())
-        dataTracker.set(ANIMATION_START_POSE_ROTATION, step.startPoseRotationDegrees)
-        dataTracker.set(ANIMATION_END_POSE_ROTATION, step.endPoseRotationDegrees)
-        dataTracker.set(ANIMATION_EASE_ROTATION, step.easeRotation)
-        dataTracker.set(ANIMATION_START_YAW_OFFSET, step.startYawOffsetDegrees)
-        dataTracker.set(ANIMATION_LIFT_CARRY_LOWER, step.liftCarryLower)
-        dataTracker.set(ANIMATION_LEAN, step.leanDegrees)
+        entityData.set(ANIMATION_START_GAME_TIME, startGameTime)
+        entityData.set(ANIMATION_DURATION_TICKS, step.durationTicks)
+        entityData.set(ANIMATION_ARC_HEIGHT, step.arcHeight.toFloat())
+        entityData.set(ANIMATION_START_OFFSET_X, step.startOffsetX.toFloat())
+        entityData.set(ANIMATION_START_OFFSET_Y, step.startOffsetY.toFloat())
+        entityData.set(ANIMATION_START_OFFSET_Z, step.startOffsetZ.toFloat())
+        entityData.set(ANIMATION_START_POSE_ROTATION, step.startPoseRotationDegrees)
+        entityData.set(ANIMATION_END_POSE_ROTATION, step.endPoseRotationDegrees)
+        entityData.set(ANIMATION_EASE_ROTATION, step.easeRotation)
+        entityData.set(ANIMATION_START_YAW_OFFSET, step.startYawOffsetDegrees)
+        entityData.set(ANIMATION_LIFT_CARRY_LOWER, step.liftCarryLower)
+        entityData.set(ANIMATION_LEAN, step.leanDegrees)
         animating = true
     }
 
@@ -328,13 +328,13 @@ class MahjongTileEntity(
         tilePose = step
     }
 
-    /** 序列化姿態名稱；持久化仍使用名稱以避免 enum 重排影響存檔，理由同 [writeCustomDataToNbt]。 */
-    override fun serializeCustomStep(step: MahjongTilePose, nbt: NbtCompound) {
+    /** 序列化姿態名稱；持久化仍使用名稱以避免 enum 重排影響存檔，理由同 [addAdditionalSaveData]。 */
+    override fun serializeCustomStep(step: MahjongTilePose, nbt: CompoundTag) {
         nbt.putString(NBT_KEY_POSE, step.name)
     }
 
     /** 還原姿態名稱，非法值使用安全預設。 */
-    override fun deserializeCustomStep(nbt: NbtCompound): MahjongTilePose = MahjongTilePose.fromNameOrDefault(nbt.getString(NBT_KEY_POSE))
+    override fun deserializeCustomStep(nbt: CompoundTag): MahjongTilePose = MahjongTilePose.fromNameOrDefault(nbt.getString(NBT_KEY_POSE))
 
     /**
      * 將牌標記為指定正式牌局桌子管理；[tileAssetKey] 的 setter 會因此自動鎖定為 [UNKNOWN_TILE_ASSET_KEY]。
@@ -342,7 +342,7 @@ class MahjongTileEntity(
      * @param tableId 所屬麻將桌 UUID。
      */
     fun assignToTable(tableId: Uuid) {
-        check(!world.isClient) { "Managed tiles must be assigned by the server" }
+        check(!level().isClientSide) { "Managed tiles must be assigned by the server" }
         managedByGame = true
         managedTableId = tableId
     }
@@ -368,7 +368,7 @@ class MahjongTileEntity(
      */
     override fun tick() {
         super.tick()
-        if (world.isClient) return
+        if (level().isClientSide) return
         if (!managedByGame || hasValidatedManagedState) return
         hasValidatedManagedState = true
         validateStillManagedByActiveGame()
@@ -389,25 +389,25 @@ class MahjongTileEntity(
     }
 
     /** 依 server policy 決定是否提供物理阻擋；展示交接後的隱形牌不得繼續形成看不見的牆。 */
-    override fun isCollidable(): Boolean = !isInvisible && physicalCollisionEnabled
+    override fun canBeCollidedWith(): Boolean = !isInvisible && physicalCollisionEnabled
 
     /** 麻將牌彼此永遠不產生物理碰撞，其他 entity 則依目前 server policy 與原版規則處理。 */
-    override fun collidesWith(other: Entity): Boolean = !isInvisible &&
+    override fun canCollideWith(other: Entity): Boolean = !isInvisible &&
         physicalCollisionEnabled &&
         other !is MahjongTileEntity &&
-        super.collidesWith(other)
+        super.canCollideWith(other)
 
     /** 麻將牌固定不動，不參與一般 entity 推擠。 */
     override fun isPushable(): Boolean = false
 
     /** 允許玩家視線 raycast 選取麻將牌，以執行右鍵互動與後續 HUD targeting。 */
-    override fun canHit(): Boolean = !isInvisible && !isRemoved
+    override fun isPickable(): Boolean = !isInvisible && !isRemoved
 
-    /** 允許麻將牌成為攻擊目標；與控制視線選取的 [canHit] 分開處理。 */
+    /** 允許麻將牌成為攻擊目標；與控制視線選取的 [isPickable] 分開處理。 */
     override fun isAttackable(): Boolean = !isRemoved
 
     /** 依直立或平放姿態提供實際尺寸。 */
-    override fun getDimensions(pose: EntityPose): EntityDimensions = when (tilePose) {
+    override fun getDimensions(pose: Pose): EntityDimensions = when (tilePose) {
         MahjongTilePose.STANDING -> EntityDimensions.fixed(TILE_WIDTH, TILE_HEIGHT)
         MahjongTilePose.FACE_UP, MahjongTilePose.FACE_DOWN -> EntityDimensions.fixed(TILE_HEIGHT, TILE_DEPTH)
     }
@@ -415,15 +415,15 @@ class MahjongTileEntity(
     /**
      * 姿態同步後立即重算 bounding box，並保留切換前的底面高度。
      *
-     * [calculateDimensions] 在 entity 由直立縮成平放尺寸時可能調整位置；重新以原本底面定位可避免模型與
+     * [refreshDimensions] 在 entity 由直立縮成平放尺寸時可能調整位置；重新以原本底面定位可避免模型與
      * bounding box 一起浮離所放置的表面。Server 本地更新與 client tracked data 同步都經過此入口。
      */
-    override fun onTrackedDataSet(data: TrackedData<*>) {
-        super.onTrackedDataSet(data)
+    override fun onSyncedDataUpdated(data: EntityDataAccessor<*>) {
+        super.onSyncedDataUpdated(data)
         if (data == TILE_POSE) {
             val bottomY = boundingBox.minY
-            calculateDimensions()
-            setPosition(x, bottomY, z)
+            refreshDimensions()
+            setPos(x, bottomY, z)
         }
     }
 
@@ -434,16 +434,16 @@ class MahjongTileEntity(
      * @param player 互動的玩家。
      * @param hand 使用的手；此 entity 的互動不區分主手與副手。
      */
-    override fun interact(player: PlayerEntity, hand: Hand): ActionResult {
+    override fun interact(player: Player, hand: InteractionHand): InteractionResult {
         if (managedByGame) return interactManaged(player)
-        if (world.isClient) return ActionResult.SUCCESS
+        if (level().isClientSide) return InteractionResult.SUCCESS
 
-        if (player.isSneaking) {
+        if (player.isShiftKeyDown) {
             tilePose = tilePose.next()
         } else {
             tileAssetKey = tileAssetKey.nextTileAssetKey(GlobalContext.get().get<MinecraftTileAssetRegistry>())
         }
-        return ActionResult.CONSUME
+        return InteractionResult.CONSUME
     }
 
     /**
@@ -456,10 +456,10 @@ class MahjongTileEntity(
      *
      * @param player 嘗試操作這張受牌局管理麻將牌的玩家。
      */
-    private fun interactManaged(player: PlayerEntity): ActionResult {
-        if (world.isClient) return ActionResult.SUCCESS
-        val serverPlayer = player as? ServerPlayerEntity ?: return ActionResult.PASS
-        val tableId = managedTableId ?: return ActionResult.PASS
+    private fun interactManaged(player: Player): InteractionResult {
+        if (level().isClientSide) return InteractionResult.SUCCESS
+        val serverPlayer = player as? ServerPlayer ?: return InteractionResult.PASS
+        val tableId = managedTableId ?: return InteractionResult.PASS
 
         val playerId = player.uuid.toKotlinUuid()
         val tileId = uuid.toKotlinUuid()
@@ -474,11 +474,11 @@ class MahjongTileEntity(
         if (!isOwnHandTile) {
             GlobalContext.get().get<MinecraftPlayerFeedbackPublisher>()
                 .publish(playerId, MinecraftPlayerFeedback.IllegalGameAction)
-            return ActionResult.CONSUME
+            return InteractionResult.CONSUME
         }
 
         GlobalContext.get().get<MahjongTableGameActionService>().interactWithHandTile(serverPlayer, tileId)
-        return ActionResult.CONSUME
+        return InteractionResult.CONSUME
     }
 
     /**
@@ -486,14 +486,14 @@ class MahjongTileEntity(
      *
      * @param attacker 攻擊此牌的 entity；只有玩家能回收自由放置的牌。
      */
-    override fun handleAttack(attacker: Entity): Boolean {
+    override fun skipAttackInteraction(attacker: Entity): Boolean {
         if (managedByGame) return false
-        val player = attacker as? PlayerEntity ?: return false
-        if (!world.isClient) {
-            if (!player.abilities.creativeMode) {
-                dropStack(asItemStack())
+        val player = attacker as? Player ?: return false
+        if (!level().isClientSide) {
+            if (!player.abilities.instabuild) {
+                spawnAtLocation(asItemStack())
             }
-            playSound(SoundEvents.ENTITY_ITEM_FRAME_BREAK, 1.0f, 1.0f)
+            playSound(SoundEvents.ITEM_FRAME_BREAK, 1.0f, 1.0f)
             discard()
         }
         return true
@@ -505,32 +505,32 @@ class MahjongTileEntity(
     }
 
     /** 創造模式中鍵複製自由牌；牌局管理中的牌不公開其隱藏牌面。 */
-    override fun getPickBlockStack(): ItemStack? = if (managedByGame) null else asItemStack()
+    override fun getPickResult(): ItemStack? = if (managedByGame) null else asItemStack()
 
     /** 初始化 client/server 同步的牌面、姿態與管理狀態。 */
-    override fun initDataTracker() {
-        dataTracker.startTracking(TILE_ASSET_KEY, UNKNOWN_TILE_ASSET_KEY)
-        dataTracker.startTracking(TILE_POSE, MahjongTilePose.STANDING.name)
-        dataTracker.startTracking(PHYSICAL_COLLISION_ENABLED, true)
-        dataTracker.startTracking(MANAGED_BY_GAME, false)
-        dataTracker.startTracking(MANAGED_TABLE_ID, "")
-        dataTracker.startTracking(ANIMATING, false)
-        dataTracker.startTracking(ANIMATION_START_GAME_TIME, 0L)
-        dataTracker.startTracking(ANIMATION_DURATION_TICKS, 1)
-        dataTracker.startTracking(ANIMATION_ARC_HEIGHT, 0.0f)
-        dataTracker.startTracking(ANIMATION_START_OFFSET_X, 0.0f)
-        dataTracker.startTracking(ANIMATION_START_OFFSET_Y, 0.0f)
-        dataTracker.startTracking(ANIMATION_START_OFFSET_Z, 0.0f)
-        dataTracker.startTracking(ANIMATION_START_POSE_ROTATION, 0.0f)
-        dataTracker.startTracking(ANIMATION_END_POSE_ROTATION, 0.0f)
-        dataTracker.startTracking(ANIMATION_EASE_ROTATION, false)
-        dataTracker.startTracking(ANIMATION_START_YAW_OFFSET, 0.0f)
-        dataTracker.startTracking(ANIMATION_LIFT_CARRY_LOWER, false)
-        dataTracker.startTracking(ANIMATION_LEAN, 0.0f)
-        dataTracker.startTracking(ACTION_POPUP_KIND, TileActionPopupKind.NONE.name)
-        dataTracker.startTracking(ACTION_POPUP_START_GAME_TIME, 0L)
-        dataTracker.startTracking(ACTION_POPUP_END_GAME_TIME, 0L)
-        dataTracker.startTracking(MELD_ACTION_POPUP_TILES, "")
+    override fun defineSynchedData() {
+        entityData.define(TILE_ASSET_KEY, UNKNOWN_TILE_ASSET_KEY)
+        entityData.define(TILE_POSE, MahjongTilePose.STANDING.name)
+        entityData.define(PHYSICAL_COLLISION_ENABLED, true)
+        entityData.define(MANAGED_BY_GAME, false)
+        entityData.define(MANAGED_TABLE_ID, "")
+        entityData.define(ANIMATING, false)
+        entityData.define(ANIMATION_START_GAME_TIME, 0L)
+        entityData.define(ANIMATION_DURATION_TICKS, 1)
+        entityData.define(ANIMATION_ARC_HEIGHT, 0.0f)
+        entityData.define(ANIMATION_START_OFFSET_X, 0.0f)
+        entityData.define(ANIMATION_START_OFFSET_Y, 0.0f)
+        entityData.define(ANIMATION_START_OFFSET_Z, 0.0f)
+        entityData.define(ANIMATION_START_POSE_ROTATION, 0.0f)
+        entityData.define(ANIMATION_END_POSE_ROTATION, 0.0f)
+        entityData.define(ANIMATION_EASE_ROTATION, false)
+        entityData.define(ANIMATION_START_YAW_OFFSET, 0.0f)
+        entityData.define(ANIMATION_LIFT_CARRY_LOWER, false)
+        entityData.define(ANIMATION_LEAN, 0.0f)
+        entityData.define(ACTION_POPUP_KIND, TileActionPopupKind.NONE.name)
+        entityData.define(ACTION_POPUP_START_GAME_TIME, 0L)
+        entityData.define(ACTION_POPUP_END_GAME_TIME, 0L)
+        entityData.define(MELD_ACTION_POPUP_TILES, "")
     }
 
     /**
@@ -538,29 +538,29 @@ class MahjongTileEntity(
      * （[readAnimationQueueFromNbt]），動畫播放中離開世界時牌才不會卡在半空——佇列裡
      * 還沒播完的 step 會在世界重新載入、entity 開始被 tick 之後自動接續播放，不需要另外觸發。
      */
-    override fun readCustomDataFromNbt(nbt: NbtCompound) {
+    override fun readAdditionalSaveData(nbt: CompoundTag) {
         val management = GameManagedEntityNbt.read(nbt)
         managedByGame = management.managedByGame
         managedTableId = management.tableId
         tileAssetKey = nbt.getString(NBT_KEY_TILE)
         tilePose = MahjongTilePose.fromNameOrDefault(nbt.getString(NBT_KEY_POSE))
-        dataTracker.set(ACTION_POPUP_KIND, TileActionPopupKindNbt.read(nbt, NBT_KEY_ACTION_POPUP_KIND).name)
-        dataTracker.set(ACTION_POPUP_START_GAME_TIME, nbt.getLong(NBT_KEY_ACTION_POPUP_START_GAME_TIME))
-        dataTracker.set(ACTION_POPUP_END_GAME_TIME, nbt.getLong(NBT_KEY_ACTION_POPUP_END_GAME_TIME))
-        dataTracker.set(MELD_ACTION_POPUP_TILES, nbt.getString(NBT_KEY_MELD_ACTION_POPUP_TILES))
+        entityData.set(ACTION_POPUP_KIND, TileActionPopupKindNbt.read(nbt, NBT_KEY_ACTION_POPUP_KIND).name)
+        entityData.set(ACTION_POPUP_START_GAME_TIME, nbt.getLong(NBT_KEY_ACTION_POPUP_START_GAME_TIME))
+        entityData.set(ACTION_POPUP_END_GAME_TIME, nbt.getLong(NBT_KEY_ACTION_POPUP_END_GAME_TIME))
+        entityData.set(MELD_ACTION_POPUP_TILES, nbt.getString(NBT_KEY_MELD_ACTION_POPUP_TILES))
         nonBlockingPresentationUntilGameTime = NonBlockingPresentationLeaseCodec.read(nbt)
         readAnimationQueueFromNbt(nbt)
     }
 
-    /** 將牌面、姿態、管理狀態與動畫佇列寫入世界存檔，理由同 [readCustomDataFromNbt]。 */
-    override fun writeCustomDataToNbt(nbt: NbtCompound) {
+    /** 將牌面、姿態、管理狀態與動畫佇列寫入世界存檔，理由同 [readAdditionalSaveData]。 */
+    override fun addAdditionalSaveData(nbt: CompoundTag) {
         nbt.putString(NBT_KEY_TILE, tileAssetKey)
         nbt.putString(NBT_KEY_POSE, tilePose.name)
         GameManagedEntityNbt.write(nbt, managedByGame, managedTableId)
         TileActionPopupKindNbt.write(nbt, NBT_KEY_ACTION_POPUP_KIND, actionPopupKind)
         nbt.putLong(NBT_KEY_ACTION_POPUP_START_GAME_TIME, actionPopupStartGameTime)
         nbt.putLong(NBT_KEY_ACTION_POPUP_END_GAME_TIME, actionPopupEndGameTime)
-        nbt.putString(NBT_KEY_MELD_ACTION_POPUP_TILES, dataTracker[MELD_ACTION_POPUP_TILES])
+        nbt.putString(NBT_KEY_MELD_ACTION_POPUP_TILES, entityData[MELD_ACTION_POPUP_TILES])
         NonBlockingPresentationLeaseCodec.write(nbt, nonBlockingPresentationUntilGameTime)
         writeAnimationQueueToNbt(nbt)
     }
@@ -594,91 +594,91 @@ class MahjongTileEntity(
         private const val NBT_KEY_MELD_ACTION_POPUP_TILES = "MeldActionPopupTiles"
 
         /** 同步牌面素材 key。 */
-        private val TILE_ASSET_KEY: TrackedData<String> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val TILE_ASSET_KEY: EntityDataAccessor<String> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.STRING)
 
         /** 同步最近一次捨牌或鳴牌的提示種類。 */
-        private val ACTION_POPUP_KIND: TrackedData<String> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val ACTION_POPUP_KIND: EntityDataAccessor<String> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.STRING)
 
         /** 同步提示淡入開始的絕對遊戲時間。 */
-        private val ACTION_POPUP_START_GAME_TIME: TrackedData<Long> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.LONG)
+        private val ACTION_POPUP_START_GAME_TIME: EntityDataAccessor<Long> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.LONG)
 
         /** 同步提示淡出完成的絕對遊戲時間。 */
-        private val ACTION_POPUP_END_GAME_TIME: TrackedData<Long> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.LONG)
+        private val ACTION_POPUP_END_GAME_TIME: EntityDataAccessor<Long> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.LONG)
 
         /** 同步完整副露提示排列。 */
-        private val MELD_ACTION_POPUP_TILES: TrackedData<String> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val MELD_ACTION_POPUP_TILES: EntityDataAccessor<String> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.STRING)
 
         /** 以名稱同步姿態；宣告順序不影響同步語意。 */
-        private val TILE_POSE: TrackedData<String> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val TILE_POSE: EntityDataAccessor<String> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.STRING)
 
         /** 同步目前 server policy 決定的物理碰撞開關。 */
-        private val PHYSICAL_COLLISION_ENABLED: TrackedData<Boolean> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.BOOLEAN)
+        private val PHYSICAL_COLLISION_ENABLED: EntityDataAccessor<Boolean> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.BOOLEAN)
 
         /** 同步是否由正式牌局管理。 */
-        private val MANAGED_BY_GAME: TrackedData<Boolean> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.BOOLEAN)
+        private val MANAGED_BY_GAME: EntityDataAccessor<Boolean> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.BOOLEAN)
 
         /** 同步正式牌局所屬麻將桌 UUID；空字串表示自由放置。 */
-        private val MANAGED_TABLE_ID: TrackedData<String> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val MANAGED_TABLE_ID: EntityDataAccessor<String> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.STRING)
 
         /** 同步是否正在播放運動動畫。 */
-        private val ANIMATING: TrackedData<Boolean> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.BOOLEAN)
+        private val ANIMATING: EntityDataAccessor<Boolean> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.BOOLEAN)
 
         /** 同步動畫開始的 server game time。 */
-        private val ANIMATION_START_GAME_TIME: TrackedData<Long> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.LONG)
+        private val ANIMATION_START_GAME_TIME: EntityDataAccessor<Long> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.LONG)
 
         /** 同步動畫總長度（ticks）。 */
-        private val ANIMATION_DURATION_TICKS: TrackedData<Int> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
+        private val ANIMATION_DURATION_TICKS: EntityDataAccessor<Int> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.INT)
 
         /** 同步動畫拋物線最高額外高度。 */
-        private val ANIMATION_ARC_HEIGHT: TrackedData<Float> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+        private val ANIMATION_ARC_HEIGHT: EntityDataAccessor<Float> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.FLOAT)
 
         /** 同步動畫起點相對終點的 X 偏移。 */
-        private val ANIMATION_START_OFFSET_X: TrackedData<Float> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+        private val ANIMATION_START_OFFSET_X: EntityDataAccessor<Float> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.FLOAT)
 
         /** 同步動畫起點相對終點的 Y 偏移。 */
-        private val ANIMATION_START_OFFSET_Y: TrackedData<Float> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+        private val ANIMATION_START_OFFSET_Y: EntityDataAccessor<Float> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.FLOAT)
 
         /** 同步動畫起點相對終點的 Z 偏移。 */
-        private val ANIMATION_START_OFFSET_Z: TrackedData<Float> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+        private val ANIMATION_START_OFFSET_Z: EntityDataAccessor<Float> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.FLOAT)
 
         /** 同步動畫起始姿態的局部 X 軸旋轉角。 */
-        private val ANIMATION_START_POSE_ROTATION: TrackedData<Float> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+        private val ANIMATION_START_POSE_ROTATION: EntityDataAccessor<Float> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.FLOAT)
 
         /** 同步動畫結束姿態的局部 X 軸旋轉角。 */
-        private val ANIMATION_END_POSE_ROTATION: TrackedData<Float> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+        private val ANIMATION_END_POSE_ROTATION: EntityDataAccessor<Float> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.FLOAT)
 
         /** 同步姿態旋轉角是否也套用 ease-out 曲線。 */
-        private val ANIMATION_EASE_ROTATION: TrackedData<Boolean> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.BOOLEAN)
+        private val ANIMATION_EASE_ROTATION: EntityDataAccessor<Boolean> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.BOOLEAN)
 
         /** 同步動畫起點相對真實終點 yaw 的角差。 */
-        private val ANIMATION_START_YAW_OFFSET: TrackedData<Float> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+        private val ANIMATION_START_YAW_OFFSET: EntityDataAccessor<Float> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.FLOAT)
 
         /** 同步動畫是否走「提起、橫移、放下」的路線。 */
-        private val ANIMATION_LIFT_CARRY_LOWER: TrackedData<Boolean> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.BOOLEAN)
+        private val ANIMATION_LIFT_CARRY_LOWER: EntityDataAccessor<Boolean> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.BOOLEAN)
 
         /** 同步動畫途中往前進方向傾斜的角度。 */
-        private val ANIMATION_LEAN: TrackedData<Float> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+        private val ANIMATION_LEAN: EntityDataAccessor<Float> =
+            SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.FLOAT)
     }
 }

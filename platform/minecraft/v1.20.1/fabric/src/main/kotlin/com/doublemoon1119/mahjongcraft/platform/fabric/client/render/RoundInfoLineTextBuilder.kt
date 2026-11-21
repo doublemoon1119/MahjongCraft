@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageK
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 /**
  * 將局況資料行與參數組成依用戶端語系解析的文字。
@@ -39,10 +39,10 @@ class RoundInfoLineTextBuilder(
      * @param line 要顯示的局況資料行。
      * @return 依本機語系組成的文字或原始行 ID。
      */
-    fun buildLineText(line: RoundInfoLine): Text {
-        val display = roundInfoLineDisplayRegistry.find(line.key) ?: return Text.literal(line.key)
+    fun buildLineText(line: RoundInfoLine): Component {
+        val display = roundInfoLineDisplayRegistry.find(line.key) ?: return Component.literal(line.key)
         val arguments = line.args.map(::buildArgumentText)
-        return Text.translatable(display.translationKey, *arguments.toTypedArray())
+        return Component.translatable(display.translationKey, *arguments.toTypedArray())
     }
 
     /**
@@ -53,16 +53,16 @@ class RoundInfoLineTextBuilder(
      */
     private fun buildArgumentText(argument: RoundInfoArgument): Any = when (argument) {
         is RoundInfoArgument.Number -> argument.value
-        is RoundInfoArgument.WindValue -> Text.translatable(argument.value.toMessageKey())
+        is RoundInfoArgument.WindValue -> Component.translatable(argument.value.toMessageKey())
         is RoundInfoArgument.TileValue -> argument.tile.toDisplayText(
             displayNameRegistry = tileDisplayNameRegistry,
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
         )
         is RoundInfoArgument.Message -> roundInfoLineDisplayRegistry.findMessage(argument.id)
-            ?.let { Text.translatable(it.translationKey) }
-            ?: Text.literal(argument.id).also { warnMessageIdOnce(argument.id) }
-        RoundInfoArgument.Unrecognized -> Text.literal("?").also { warnUnrecognizedArgumentOnce() }
+            ?.let { Component.translatable(it.translationKey) }
+            ?: Component.literal(argument.id).also { warnMessageIdOnce(argument.id) }
+        RoundInfoArgument.Unrecognized -> Component.literal("?").also { warnUnrecognizedArgumentOnce() }
     }
 
     /**

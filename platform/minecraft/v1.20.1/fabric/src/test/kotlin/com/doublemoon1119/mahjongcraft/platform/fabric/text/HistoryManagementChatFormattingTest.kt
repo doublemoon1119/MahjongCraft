@@ -7,10 +7,10 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryDis
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryRetentionPolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryStorageSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
-import net.minecraft.text.HoverEvent
-import net.minecraft.text.Text
-import net.minecraft.text.TranslatableTextContent
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.HoverEvent
+import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -76,8 +76,8 @@ class HistoryManagementChatFormattingTest {
                 MinecraftConfigCommandKeys.HISTORY_ADDITIONAL_CANDIDATES,
             ),
         )
-        assertEquals(Formatting.GREEN.colorValue, message.siblings.first { it.string == "2" }.style.color?.rgb)
-        assertEquals(Formatting.YELLOW.colorValue, message.siblings.first { it.string == "3" }.style.color?.rgb)
+        assertEquals(ChatFormatting.GREEN.color, message.siblings.first { it.string == "2" }.style.color?.value)
+        assertEquals(ChatFormatting.YELLOW.color, message.siblings.first { it.string == "3" }.style.color?.value)
     }
 
     /** 清理報告保留部分完成狀態，並顯示正的 signed 磁碟變化。 */
@@ -107,7 +107,7 @@ class HistoryManagementChatFormattingTest {
                 MinecraftConfigCommandKeys.HISTORY_RESULT_STATE,
             ),
         )
-        assertEquals(Formatting.GREEN.colorValue, message.siblings.first { it.string == "2" }.style.color?.rgb)
+        assertEquals(ChatFormatting.GREEN.color, message.siblings.first { it.string == "2" }.style.color?.value)
     }
 
     /**
@@ -116,14 +116,14 @@ class HistoryManagementChatFormattingTest {
      * @param message 受測的 preview 或 run 訊息。
      * @param keys 預期出現的條列項目名稱。
      */
-    private fun assertCleanupLabelColors(message: Text, keys: Set<String>) {
-        assertEquals(Formatting.GOLD.colorValue, message.style.color?.rgb)
-        val labels = message.siblings.filter { (it.content as? TranslatableTextContent)?.key in keys }
+    private fun assertCleanupLabelColors(message: Component, keys: Set<String>) {
+        assertEquals(ChatFormatting.GOLD.color, message.style.color?.value)
+        val labels = message.siblings.filter { (it.contents as? TranslatableContents)?.key in keys }
         assertEquals(keys.size, labels.size)
-        labels.forEach { assertEquals(Formatting.GRAY.colorValue, it.style.color?.rgb) }
+        labels.forEach { assertEquals(ChatFormatting.GRAY.color, it.style.color?.value) }
         val bullets = message.siblings.filter { it.string == "\n  • " }
         assertEquals(keys.size, bullets.size)
-        bullets.forEach { assertEquals(Formatting.GRAY.colorValue, it.style.color?.rgb) }
+        bullets.forEach { assertEquals(ChatFormatting.GRAY.color, it.style.color?.value) }
     }
 
     /**

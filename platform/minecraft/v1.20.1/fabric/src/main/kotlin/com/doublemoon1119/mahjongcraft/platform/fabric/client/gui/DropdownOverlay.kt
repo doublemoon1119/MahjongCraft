@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftControlTooltipKeys
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.widget.ClickableWidget
-import net.minecraft.text.StringVisitable
-import net.minecraft.text.Text
+import net.minecraft.client.gui.Font
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.AbstractWidget
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.FormattedText
 import org.lwjgl.glfw.GLFW
 
 /**
@@ -16,9 +16,9 @@ import org.lwjgl.glfw.GLFW
  * @property unavailableReason 不可選的原因；可選時為 null。不可選的選項留在原本的位置，以紅字附上原因。
  */
 internal data class DropdownOption(
-    val label: Text,
-    val description: Text? = null,
-    val unavailableReason: Text? = null,
+    val label: Component,
+    val description: Component? = null,
+    val unavailableReason: Component? = null,
 )
 
 /**
@@ -72,7 +72,7 @@ internal class DropdownOverlay {
      */
     fun toggle(
         key: Any,
-        anchor: ClickableWidget,
+        anchor: AbstractWidget,
         options: List<DropdownOption>,
         selectedIndex: Int?,
         onSelect: (Int) -> Unit,
@@ -108,7 +108,7 @@ internal class DropdownOverlay {
      * @param mouseX 游標的水平座標。
      * @param mouseY 游標的垂直座標。
      */
-    fun render(context: DrawContext, textRenderer: TextRenderer, windowHeight: Int, mouseX: Int, mouseY: Int) {
+    fun render(context: GuiGraphics, textRenderer: Font, windowHeight: Int, mouseX: Int, mouseY: Int) {
         val mouseMoved = mouseX != lastMouseX || mouseY != lastMouseY
         lastMouseX = mouseX
         lastMouseY = mouseY
@@ -119,8 +119,8 @@ internal class DropdownOverlay {
             list.keyboardHighlight = false
             layout.optionIndexAt(mouseX.toDouble(), mouseY.toDouble())?.let { list.highlightedIndex = it }
         }
-        context.matrices.push()
-        context.matrices.translate(0f, 0f, OVERLAY_Z)
+        context.pose().pushPose()
+        context.pose().translate(0f, 0f, OVERLAY_Z)
         context.fill(layout.left, layout.top, layout.right, layout.bottom, BORDER_COLOR)
         context.fill(layout.left + 1, layout.top + 1, layout.right - 1, layout.bottom - 1, BACKGROUND_COLOR)
         val scrollable = layout.maximumScroll > 0
@@ -149,7 +149,7 @@ internal class DropdownOverlay {
             }
             val labelLeft = layout.left + 1 + TEXT_PADDING + CHECK_COLUMN_WIDTH
             val label = option.unavailableReason?.let { reason ->
-                Text.translatable(MinecraftControlTooltipKeys.UNAVAILABLE_OPTION, option.label, reason)
+                Component.translatable(MinecraftControlTooltipKeys.UNAVAILABLE_OPTION, option.label, reason)
             } ?: option.label
             MarqueeText.draw(
                 context = context,
@@ -182,7 +182,7 @@ internal class DropdownOverlay {
             marquee = list.footnoteMarquee,
             subject = shown.takeIf { activated },
         )
-        context.matrices.pop()
+        context.pose().popPose()
     }
 
     /**
@@ -195,7 +195,7 @@ internal class DropdownOverlay {
      * @param button 滑鼠按鍵代碼。
      * @return 清單展開中時為 true。
      */
-    fun mouseClicked(textRenderer: TextRenderer, windowHeight: Int, mouseX: Double, mouseY: Double, button: Int): Boolean {
+    fun mouseClicked(textRenderer: Font, windowHeight: Int, mouseX: Double, mouseY: Double, button: Int): Boolean {
         val list = open ?: return false
         val layout = layout(list, footnotes(list, textRenderer), textRenderer, windowHeight)
         if (!layout.contains(mouseX, mouseY)) {
@@ -215,7 +215,7 @@ internal class DropdownOverlay {
      * @param amount 滾輪位移；負值向後看後面的選項。
      * @return 清單展開中時為 true。
      */
-    fun mouseScrolled(textRenderer: TextRenderer, windowHeight: Int, amount: Double): Boolean {
+    fun mouseScrolled(textRenderer: Font, windowHeight: Int, amount: Double): Boolean {
         val list = open ?: return false
         val layout = layout(list, footnotes(list, textRenderer), textRenderer, windowHeight)
         if (amount != 0.0) list.scrollIndex = (layout.effectiveScroll + if (amount < 0) 1 else -1).coerceIn(0, layout.maximumScroll)
@@ -230,7 +230,7 @@ internal class DropdownOverlay {
      * @param keyCode 按鍵代碼。
      * @return 清單展開中時為 true。
      */
-    fun keyPressed(textRenderer: TextRenderer, windowHeight: Int, keyCode: Int): Boolean {
+    fun keyPressed(textRenderer: Font, windowHeight: Int, keyCode: Int): Boolean {
         val list = open ?: return false
         when (keyCode) {
             GLFW.GLFW_KEY_ESCAPE -> close()
@@ -271,7 +271,7 @@ internal class DropdownOverlay {
      * @param textRenderer 文字繪製器。
      * @return 依選項順序排列的說明行；沒有說明的選項為空清單。
      */
-    private fun footnotes(list: OpenList, textRenderer: TextRenderer): List<List<StringVisitable>> = list.options.map { option ->
+    private fun footnotes(list: OpenList, textRenderer: Font): List<List<FormattedText>> = list.options.map { option ->
         option.description?.let { textRenderer.wrapDescription(it, footnoteWidth(list)) }.orEmpty()
     }
 
@@ -289,8 +289,8 @@ internal class DropdownOverlay {
      */
     private fun layout(
         list: OpenList,
-        footnotes: List<List<StringVisitable>>,
-        textRenderer: TextRenderer,
+        footnotes: List<List<FormattedText>>,
+        textRenderer: Font,
         windowHeight: Int,
     ): DropdownListLayout = DropdownListLayout(
         anchorLeft = list.anchorLeft,
@@ -298,9 +298,9 @@ internal class DropdownOverlay {
         anchorBottom = list.anchorBottom,
         width = list.width,
         optionCount = list.options.size,
-        footnoteHeight = (footnotes.maxOfOrNull { it.size } ?: 0) * textRenderer.fontHeight,
+        footnoteHeight = (footnotes.maxOfOrNull { it.size } ?: 0) * textRenderer.lineHeight,
         windowHeight = windowHeight,
-        footnoteLineHeight = textRenderer.fontHeight,
+        footnoteLineHeight = textRenderer.lineHeight,
         scrollIndex = list.scrollIndex,
     )
 

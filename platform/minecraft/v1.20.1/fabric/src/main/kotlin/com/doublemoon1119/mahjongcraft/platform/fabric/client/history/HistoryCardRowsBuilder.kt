@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.client.gui.Font
+import net.minecraft.network.chat.Component
 
 /**
  * 依卡片寬度逐列排出牌譜卡片內容。
@@ -12,7 +12,7 @@ import net.minecraft.util.Formatting
  * @property contentWidth 卡片內容寬度。
  */
 internal class HistoryCardRowsBuilder(
-    private val textRenderer: TextRenderer,
+    private val textRenderer: Font,
     val contentWidth: Int,
 ) {
     /** 已排好的列。 */
@@ -28,15 +28,15 @@ internal class HistoryCardRowsBuilder(
      * @param identifiers 僅供 tooltip 查閱的原始識別碼。
      */
     fun addText(
-        text: Text,
+        text: Component,
         color: Int = HistoryCardStyle.TEXT_COLOR,
         indent: Int = 8,
         participant: HistoryParticipantSummaryDto? = null,
         identifiers: List<String> = emptyList(),
     ) {
         val left = indent + if (participant != null) HistoryCardStyle.PORTRAIT_STEP else 0
-        textRenderer.wrapLines(text, (contentWidth - left - 8).coerceAtLeast(1)).forEachIndexed { index, line ->
-            rows += HistoryCardRow.TextLine(line, listOf(text) + identifiers.map { Text.literal(it).formatted(Formatting.GRAY) }, left, color, participant.takeIf { index == 0 }, indent)
+        textRenderer.split(text, (contentWidth - left - 8).coerceAtLeast(1)).forEachIndexed { index, line ->
+            rows += HistoryCardRow.TextLine(line, listOf(text) + identifiers.map { Component.literal(it).withStyle(ChatFormatting.GRAY) }, left, color, participant.takeIf { index == 0 }, indent)
         }
     }
 

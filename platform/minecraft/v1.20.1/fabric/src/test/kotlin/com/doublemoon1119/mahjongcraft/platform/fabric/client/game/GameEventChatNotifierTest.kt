@@ -20,9 +20,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
-import net.minecraft.text.HoverEvent
-import net.minecraft.text.Text
-import net.minecraft.text.TranslatableTextContent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.HoverEvent
+import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -30,7 +30,7 @@ import kotlin.uuid.Uuid
 
 /**
  * [buildRoundResultChatMessage]／[buildMatchResultChatMessage] 的單元測試；只涵蓋不需要真正 Minecraft client 執行環境的分支，
- * 真人玩家名稱解析需要 `MinecraftClient.getInstance()`，留給實機驗證。
+ * 真人玩家名稱解析需要 `Minecraft.getInstance()`，留給實機驗證。
  */
 class GameEventChatNotifierTest {
 
@@ -105,7 +105,7 @@ class GameEventChatNotifierTest {
      * @param result 結算 payload。
      * @return 結算聊天訊息。
      */
-    private fun buildMessage(result: RoundResultPayloadDto): Text = buildRoundResultChatMessage(
+    private fun buildMessage(result: RoundResultPayloadDto): Component = buildRoundResultChatMessage(
         result = result,
         actionVocabularyRegistry = actionVocabularyRegistry,
         roundOutcomeDisplayNameRegistry = roundOutcomeDisplayNameRegistry,
@@ -171,7 +171,7 @@ class GameEventChatNotifierTest {
      * @receiver 待讀取標題的訊息。
      * @return 標題的 translation key；非翻譯文字時為 `null`。
      */
-    private fun Text.titleKey(): String? = (content as? TranslatableTextContent)?.key
+    private fun Component.titleKey(): String? = (contents as? TranslatableContents)?.key
 
     /**
      * 標題中結算結果文字的參數。
@@ -179,7 +179,7 @@ class GameEventChatNotifierTest {
      * @receiver 結算訊息。
      * @return 標題第一個參數的文字。
      */
-    private fun Text.outcomeArgument(): Text = (content as TranslatableTextContent).args[0] as Text
+    private fun Component.outcomeArgument(): Component = (contents as TranslatableContents).args[0] as Component
 
     /**
      * 標題中結算結果文字的翻譯鍵。
@@ -187,7 +187,7 @@ class GameEventChatNotifierTest {
      * @receiver 結算訊息。
      * @return 結果文字的 translation key；非翻譯文字時為 `null`。
      */
-    private fun Text.outcomeKey(): String? = (outcomeArgument().content as? TranslatableTextContent)?.key
+    private fun Component.outcomeKey(): String? = (outcomeArgument().contents as? TranslatableContents)?.key
 
     /**
      * hover 詳情中每位玩家的一行。
@@ -195,9 +195,9 @@ class GameEventChatNotifierTest {
      * @receiver 結算訊息。
      * @return hover 詳情內的玩家行。
      */
-    private fun Text.playerLines(): List<TranslatableTextContent> = hoverDetails()?.siblings
+    private fun Component.playerLines(): List<TranslatableContents> = hoverDetails()?.siblings
         .orEmpty()
-        .mapNotNull { it.content as? TranslatableTextContent }
+        .mapNotNull { it.contents as? TranslatableContents }
         .filter { it.key == MinecraftMessageKeys.ROUND_RESULT_PLAYER_LINE }
 
     /**
@@ -206,7 +206,7 @@ class GameEventChatNotifierTest {
      * @receiver 要搜尋 hover 的文字。
      * @return 直接或巢狀 hover 的內容；未找到時為 `null`。
      */
-    private fun Text.hoverDetails(): Text? = style.hoverEvent?.getValue(HoverEvent.Action.SHOW_TEXT)
+    private fun Component.hoverDetails(): Component? = style.hoverEvent?.getValue(HoverEvent.Action.SHOW_TEXT)
         ?: siblings.firstNotNullOfOrNull { it.hoverDetails() }
 
     /** 非「對局結束」動作不建立 match-result 訊息。 */
@@ -228,9 +228,9 @@ class GameEventChatNotifierTest {
         val label = message.siblings.last()
         assertEquals(command, label.style.clickEvent?.value)
         val details = requireNotNull(label.hoverDetails())
-        val hintCount = details.descendants().count { (it.content as? TranslatableTextContent)?.key == "mahjongcraft.history_screen.open_hint" }
+        val hintCount = details.descendants().count { (it.contents as? TranslatableContents)?.key == "mahjongcraft.history_screen.open_hint" }
         assertEquals(1, hintCount)
-        assertEquals(2, details.siblings.count { (it.content as? TranslatableTextContent)?.key == "mahjongcraft.message.ranking_line" })
+        assertEquals(2, details.siblings.count { (it.contents as? TranslatableContents)?.key == "mahjongcraft.message.ranking_line" })
     }
 
     /**
@@ -238,7 +238,7 @@ class GameEventChatNotifierTest {
      *
      * @return 包含目前文字的所有後代節點。
      */
-    private fun Text.descendants(): Sequence<Text> = sequence {
+    private fun Component.descendants(): Sequence<Component> = sequence {
         yield(this@descendants)
         siblings.forEach { yieldAll(it.descendants()) }
     }
@@ -273,7 +273,7 @@ class GameEventChatNotifierTest {
         assertEquals(false, message?.hoverDetails()?.string?.startsWith("\n"))
         val rankingLines = message?.hoverDetails()?.siblings
             .orEmpty()
-            .mapNotNull { it.content as? TranslatableTextContent }
+            .mapNotNull { it.contents as? TranslatableContents }
             .filter { it.key == "mahjongcraft.message.ranking_line" }
         val orderedPlayerIdPrefixes = rankingLines.map { it.args[1].toString() }
 

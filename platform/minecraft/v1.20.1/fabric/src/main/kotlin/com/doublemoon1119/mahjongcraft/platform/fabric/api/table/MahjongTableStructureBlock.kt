@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.api.table
 
-import net.minecraft.block.BlockState
-import net.minecraft.util.math.BlockPos
-import net.minecraft.world.BlockView
+import net.minecraft.core.BlockPos
+import net.minecraft.world.level.BlockGetter
+import net.minecraft.world.level.block.state.BlockState
 
 /**
  * 組成麻將桌的方塊，由方塊實作。
@@ -20,7 +20,7 @@ interface MahjongTableStructureBlock {
      * @return 控制方塊位置；此方塊目前不屬於任何桌子時為 null。
      */
     fun mahjongTableControllerPos(
-        world: BlockView,
+        world: BlockGetter,
         pos: BlockPos,
         state: BlockState,
     ): BlockPos?

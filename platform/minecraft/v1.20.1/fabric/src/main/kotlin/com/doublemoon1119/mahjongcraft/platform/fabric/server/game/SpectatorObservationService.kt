@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
  *
  * 玩家不需要做任何額外操作就能被判斷成旁觀者——只要他的用戶端開始看到桌子中央的局況顯示 entity
  * （`MahjongRoundInfoEntity`，每桌固定一個，對局一開始就跟著牌牆出現、對局結束就消失，見它的
- * `onStartedTrackingBy`／`onStoppedTrackingBy`），伺服器就會呼叫這裡的 [onStartedObserving]。
+ * `startSeenByPlayer`／`stopSeenByPlayer`），伺服器就會呼叫這裡的 [onStartedObserving]。
  *
  * 這裡只負責把他登記為這場對局的觀察者（寫入 [GameSnapshotRepository]），讓
  * [GameEventPublisher.publishToAllObservers] 之後的每則對局事件也送給他——那裡才是決定「這則通知要送給

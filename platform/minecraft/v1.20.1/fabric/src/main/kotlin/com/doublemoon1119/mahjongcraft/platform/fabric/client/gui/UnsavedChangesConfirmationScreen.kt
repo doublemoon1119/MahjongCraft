@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.client.gui.tooltip.Tooltip
-import net.minecraft.text.Text
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.Tooltip
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.network.chat.Component
 
 /**
  * 離開仍有未套用變更的編輯畫面時共用的「套用並返回／放棄變更／繼續編輯」三選一確認畫面；
@@ -19,43 +19,43 @@ internal class UnsavedChangesConfirmationScreen(
     private val previousScreen: Screen,
     private val onApply: () -> Unit,
     private val onDiscard: () -> Unit,
-    private val changesPreview: Text? = null,
-) : Screen(Text.translatable(MinecraftClientConfigScreenKeys.UNSAVED_CHANGES_TITLE)) {
+    private val changesPreview: Component? = null,
+) : Screen(Component.translatable(MinecraftClientConfigScreenKeys.UNSAVED_CHANGES_TITLE)) {
     /** 建立套用、放棄與繼續編輯三個按鈕；套用按鈕附上呼叫端提供的變更預覽。 */
     override fun init() {
         val buttonWidth = minOf(160, width - 24)
         val left = (width - buttonWidth) / 2
-        addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.APPLY_AND_BACK)) { onApply() }
+        addRenderableWidget(
+            RestartableMarqueeButtonWidget.builder(Component.translatable(MinecraftClientConfigScreenKeys.APPLY_AND_BACK)) { onApply() }
                 .dimensions(left, height / 2, buttonWidth, 20).build().also {
-                    it.tooltip = changesPreview?.let(Tooltip::of)
+                    it.tooltip = changesPreview?.let(Tooltip::create)
                 },
         )
-        addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.DISCARD_CHANGES)) { onDiscard() }
+        addRenderableWidget(
+            RestartableMarqueeButtonWidget.builder(Component.translatable(MinecraftClientConfigScreenKeys.DISCARD_CHANGES)) { onDiscard() }
                 .dimensions(left, height / 2 + 24, buttonWidth, 20).build(),
         )
-        addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.CONTINUE_EDITING)) { client?.setScreen(previousScreen) }
+        addRenderableWidget(
+            RestartableMarqueeButtonWidget.builder(Component.translatable(MinecraftClientConfigScreenKeys.CONTINUE_EDITING)) { minecraft?.setScreen(previousScreen) }
                 .dimensions(left, height / 2 + 48, buttonWidth, 20).build(),
         )
     }
 
     /** 確認畫面不暫停遊戲。 */
-    override fun shouldPause(): Boolean = false
+    override fun isPauseScreen(): Boolean = false
 
     /** Esc 返回前一個畫面，避免無聲放棄變更。 */
-    override fun close() {
-        client?.setScreen(previousScreen)
+    override fun onClose() {
+        minecraft?.setScreen(previousScreen)
     }
 
     /** 繪製確認標題與說明。 */
-    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         renderBackground(context)
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, height / 2 - 42, FormScreenLayout.TITLE_COLOR)
-        context.drawCenteredTextWithShadow(
-            textRenderer,
-            Text.translatable(MinecraftClientConfigScreenKeys.UNSAVED_CHANGES_MESSAGE),
+        context.drawCenteredString(font, title, width / 2, height / 2 - 42, FormScreenLayout.TITLE_COLOR)
+        context.drawCenteredString(
+            font,
+            Component.translatable(MinecraftClientConfigScreenKeys.UNSAVED_CHANGES_MESSAGE),
             width / 2,
             height / 2 - 26,
             0xFFFFFF,

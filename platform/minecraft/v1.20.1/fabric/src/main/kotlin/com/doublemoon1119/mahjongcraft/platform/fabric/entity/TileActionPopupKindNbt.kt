@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.nbt.NbtElement
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.Tag
 
 /** 短暫牌面提示以名稱保存。 */
 internal object TileActionPopupKindNbt {
@@ -12,7 +12,7 @@ internal object TileActionPopupKindNbt {
      * @param key 欄位名稱。
      * @param kind 要保存的提示種類。
      */
-    fun write(nbt: NbtCompound, key: String, kind: TileActionPopupKind) {
+    fun write(nbt: CompoundTag, key: String, kind: TileActionPopupKind) {
         nbt.putString(key, kind.name)
     }
 
@@ -23,8 +23,8 @@ internal object TileActionPopupKindNbt {
      * @param key 欄位名稱。
      * @return 欄位中的有效提示種類；欄位缺少、型別錯誤或名稱未知時為 [TileActionPopupKind.NONE]。
      */
-    fun read(nbt: NbtCompound, key: String): TileActionPopupKind = when {
-        nbt.contains(key, NbtElement.STRING_TYPE.toInt()) -> TileActionPopupKind.fromNameOrDefault(nbt.getString(key))
+    fun read(nbt: CompoundTag, key: String): TileActionPopupKind = when {
+        nbt.contains(key, Tag.TAG_STRING.toInt()) -> TileActionPopupKind.fromNameOrDefault(nbt.getString(key))
 
         else -> TileActionPopupKind.NONE
     }

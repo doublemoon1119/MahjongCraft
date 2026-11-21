@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.hudCoordinate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 /** Prompt 是否包含需要玩家明確選擇的內容。 */
 internal val PlayerDecisionPromptDto.isInteractive: Boolean
@@ -30,7 +30,7 @@ internal sealed interface CompactDecisionHudContent {
      */
     data class TileSelection(
         val progress: DecisionTileSelectionState.Progress,
-        val description: Text? = null,
+        val description: Component? = null,
     ) : CompactDecisionHudContent
 
     /** 操作介面已被 Esc 收起、可以重新開啟的提醒。 */
@@ -56,7 +56,7 @@ internal fun compactDecisionHudContent(
     dismissedDecisionKey: String?,
     isPhysicalSelectionActive: Boolean,
     tileSelectionProgress: DecisionTileSelectionState.Progress?,
-    tileSelectionDescription: Text? = null,
+    tileSelectionDescription: Component? = null,
 ): CompactDecisionHudContent = when {
     tileSelectionProgress != null -> CompactDecisionHudContent.TileSelection(tileSelectionProgress, tileSelectionDescription)
     prompt != null &&
@@ -75,15 +75,15 @@ internal fun compactDecisionHudContent(
  * @param progress 已選張數與可選範圍。
  * @return 尚缺張數或可確認選牌的本地化提示。
  */
-internal fun tileSelectionDetailText(progress: DecisionTileSelectionState.Progress): Text = if (progress.selectedCount < progress.validRange.first) {
-    Text.translatable(
+internal fun tileSelectionDetailText(progress: DecisionTileSelectionState.Progress): Component = if (progress.selectedCount < progress.validRange.first) {
+    Component.translatable(
         MinecraftHudKeys.TILE_SELECTION_NEED_MORE,
         progress.validRange.first - progress.selectedCount,
         progress.selectedCount,
         progress.validRange.last,
     )
 } else {
-    Text.translatable(MinecraftHudKeys.TILE_SELECTION_READY, progress.selectedCount, progress.validRange.last)
+    Component.translatable(MinecraftHudKeys.TILE_SELECTION_READY, progress.selectedCount, progress.validRange.last)
 }
 
 /**

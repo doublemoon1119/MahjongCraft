@@ -11,12 +11,12 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.minecraft.client.MinecraftClient
-import net.minecraft.command.argument.IdentifierArgumentType
-import net.minecraft.text.MutableText
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
-import net.minecraft.util.Identifier
+import net.minecraft.ChatFormatting
+import net.minecraft.client.Minecraft
+import net.minecraft.commands.arguments.ResourceLocationArgument
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.MutableComponent
+import net.minecraft.resources.ResourceLocation
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -38,7 +38,7 @@ class FabricAutomaticControlCommand(
             dispatcher.register(
                 ClientCommandManager.literal(CLIENT_COMMAND_ROOT).then(
                     ClientCommandManager.literal(AUTOMATIC_CONTROL_SUBCOMMAND).then(
-                        ClientCommandManager.argument(CONTROL_ID_ARGUMENT, IdentifierArgumentType.identifier())
+                        ClientCommandManager.argument(CONTROL_ID_ARGUMENT, ResourceLocationArgument.id())
                             .suggests(::suggestControlIds)
                             .then(modeLiteral(ON_LITERAL, AutomaticControlCommandMode.ON))
                             .then(modeLiteral(OFF_LITERAL, AutomaticControlCommandMode.OFF))
@@ -72,7 +72,7 @@ class FabricAutomaticControlCommand(
         context: CommandContext<FabricClientCommandSource>,
         mode: AutomaticControlCommandMode,
     ): Int {
-        val controlId = context.getArgument(CONTROL_ID_ARGUMENT, Identifier::class.java).toString()
+        val controlId = context.getArgument(CONTROL_ID_ARGUMENT, ResourceLocation::class.java).toString()
         return when (val result = commandService.execute(controlId, mode)) {
             is ClientAutomaticControlCommandResult.Updated -> {
                 context.source.sendFeedback(updatedMessage(result.controlId, result.previousEnabled, result.enabled))
@@ -91,7 +91,7 @@ class FabricAutomaticControlCommand(
                     resyncReported = false,
                 )
                 context.source.sendFeedback(
-                    Text.translatable(
+                    Component.translatable(
                         MinecraftMessageKeys.AUTOMATIC_CONTROL_WAITING,
                         displayResolver.resolve(commandService.ruleModuleId(), result.controlId).label,
                         stateText(result.previousEnabled),
@@ -102,15 +102,15 @@ class FabricAutomaticControlCommand(
             }
             ClientAutomaticControlCommandResult.Pending -> failure(
                 source = context.source,
-                message = Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_PENDING),
+                message = Component.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_PENDING),
             )
             ClientAutomaticControlCommandResult.Unavailable -> failure(
                 source = context.source,
-                message = Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_UNAVAILABLE),
+                message = Component.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_UNAVAILABLE),
             )
             is ClientAutomaticControlCommandResult.Unsupported -> failure(
                 source = context.source,
-                message = Text.translatable(
+                message = Component.translatable(
                     MinecraftMessageKeys.AUTOMATIC_CONTROL_UNSUPPORTED,
                     displayResolver.resolve(commandService.ruleModuleId(), result.controlId).label,
                 ),
@@ -118,17 +118,17 @@ class FabricAutomaticControlCommand(
             is ClientAutomaticControlCommandResult.SaveFailed -> failure(
                 source = context.source,
                 message = configSaveFailureMessage(
-                    settingName = Text.translatable(MinecraftClientConfigScreenKeys.AUTO_SORT_HAND),
+                    settingName = Component.translatable(MinecraftClientConfigScreenKeys.AUTO_SORT_HAND),
                     details = result.failure.message,
                 ),
             )
             is ClientAutomaticControlCommandResult.PreferenceSyncFailed -> failure(
                 source = context.source,
-                message = Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_PREFERENCE_SYNC_FAILED),
+                message = Component.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_PREFERENCE_SYNC_FAILED),
             )
             ClientAutomaticControlCommandResult.RoundControlSendFailed -> failure(
                 source = context.source,
-                message = Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_SEND_FAILED),
+                message = Component.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_SEND_FAILED),
             )
         }
     }
@@ -155,7 +155,7 @@ class FabricAutomaticControlCommand(
      *
      * @param client 本次 tick 的客戶端，供回覆目前玩家使用。
      */
-    private fun pollCompletion(client: MinecraftClient) {
+    private fun pollCompletion(client: Minecraft) {
         val pending = pendingFeedback ?: return
         val completion = commandService.takeCompletion(pending.requestId, pending.controlId)
         if (completion == null) {
@@ -163,7 +163,7 @@ class FabricAutomaticControlCommand(
                 pendingFeedback = null
             } else if (!pending.resyncReported && commandService.isResyncing(pending.requestId)) {
                 pendingFeedback = pending.copy(resyncReported = true)
-                client.player?.sendMessage(Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_RESYNCING), false)
+                client.player?.displayClientMessage(Component.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_RESYNCING), false)
             }
             return
         }
@@ -174,13 +174,13 @@ class FabricAutomaticControlCommand(
                 previousEnabled = pending.previousEnabled,
                 enabled = completion.enabled ?: pending.requestedEnabled,
             )
-            ClientAutomaticControlResultKind.REJECTED -> Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_REJECTED)
-            ClientAutomaticControlResultKind.STALE -> Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_STALE)
-            ClientAutomaticControlResultKind.UNAVAILABLE -> Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_UNAVAILABLE)
-            ClientAutomaticControlResultKind.NOT_APPLIED -> Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_NOT_APPLIED)
-            ClientAutomaticControlResultKind.UNCONFIRMED -> Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_UNCONFIRMED)
+            ClientAutomaticControlResultKind.REJECTED -> Component.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_REJECTED)
+            ClientAutomaticControlResultKind.STALE -> Component.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_STALE)
+            ClientAutomaticControlResultKind.UNAVAILABLE -> Component.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_UNAVAILABLE)
+            ClientAutomaticControlResultKind.NOT_APPLIED -> Component.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_NOT_APPLIED)
+            ClientAutomaticControlResultKind.UNCONFIRMED -> Component.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_UNCONFIRMED)
         }
-        client.player?.sendMessage(message, false)
+        client.player?.displayClientMessage(message, false)
     }
 
     /**
@@ -190,7 +190,7 @@ class FabricAutomaticControlCommand(
      * @param message 要顯示的錯誤文字。
      * @return Brigadier 失敗值。
      */
-    private fun failure(source: FabricClientCommandSource, message: Text): Int {
+    private fun failure(source: FabricClientCommandSource, message: Component): Int {
         source.sendError(message)
         return COMMAND_FAILURE
     }
@@ -203,12 +203,12 @@ class FabricAutomaticControlCommand(
      * @param enabled 更新後已確認的狀態。
      * @return 帶成功顏色與前後狀態的訊息。
      */
-    private fun updatedMessage(controlId: String, previousEnabled: Boolean, enabled: Boolean): MutableText = Text.translatable(
+    private fun updatedMessage(controlId: String, previousEnabled: Boolean, enabled: Boolean): MutableComponent = Component.translatable(
         MinecraftMessageKeys.AUTOMATIC_CONTROL_UPDATED,
         displayResolver.resolve(commandService.ruleModuleId(), controlId).label,
         stateText(previousEnabled),
         stateText(enabled),
-    ).formatted(Formatting.GREEN)
+    ).withStyle(ChatFormatting.GREEN)
 
     /**
      * 建立狀態未改變訊息。
@@ -217,11 +217,11 @@ class FabricAutomaticControlCommand(
      * @param enabled 目前已確認的狀態。
      * @return 帶提示顏色的未變更訊息。
      */
-    private fun unchangedMessage(controlId: String, enabled: Boolean): MutableText = Text.translatable(
+    private fun unchangedMessage(controlId: String, enabled: Boolean): MutableComponent = Component.translatable(
         MinecraftMessageKeys.AUTOMATIC_CONTROL_UNCHANGED,
         displayResolver.resolve(commandService.ruleModuleId(), controlId).label,
         stateText(enabled),
-    ).formatted(Formatting.YELLOW)
+    ).withStyle(ChatFormatting.YELLOW)
 
     /**
      * 建立帶顏色的開啟／關閉文字。
@@ -229,9 +229,9 @@ class FabricAutomaticControlCommand(
      * @param enabled 是否啟用。
      * @return 對應狀態的本地化文字。
      */
-    private fun stateText(enabled: Boolean): MutableText = Text.translatable(
+    private fun stateText(enabled: Boolean): MutableComponent = Component.translatable(
         if (enabled) MinecraftMessageKeys.AUTOMATIC_CONTROL_STATE_ON else MinecraftMessageKeys.AUTOMATIC_CONTROL_STATE_OFF,
-    ).formatted(if (enabled) Formatting.GREEN else Formatting.RED)
+    ).withStyle(if (enabled) ChatFormatting.GREEN else ChatFormatting.RED)
 
     /**
      * 指令送出後等待配對回覆的資料。

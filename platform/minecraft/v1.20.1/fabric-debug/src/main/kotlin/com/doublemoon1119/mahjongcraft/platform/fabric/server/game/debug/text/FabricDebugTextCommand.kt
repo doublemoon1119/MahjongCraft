@@ -23,9 +23,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import kotlinx.serialization.encodeToString
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.text.Text
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands.literal
+import net.minecraft.network.chat.Component
 import kotlin.uuid.toKotlinUuid
 
 /**
@@ -57,7 +57,7 @@ class FabricDebugTextCommand(
      *
      * @return 可掛入 debug 指令樹的節點。
      */
-    fun buildHoveredTextCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(HOVERED_TEXT_SUBCOMMAND)
+    fun buildHoveredTextCommand(): LiteralArgumentBuilder<CommandSourceStack> = literal(HOVERED_TEXT_SUBCOMMAND)
         .then(
             literal(EXHAUSTIVE_DRAW_SETTLEMENT_ARGUMENT)
                 .executes { context -> previewExhaustiveDrawSettlementHoveredText(context.source) },
@@ -85,12 +85,12 @@ class FabricDebugTextCommand(
      * @param source 指令呼叫來源。
      * @return Brigadier 命令結果碼。
      */
-    private fun previewExhaustiveDrawSettlementHoveredText(source: ServerCommandSource): Int {
-        val details = Text.empty()
+    private fun previewExhaustiveDrawSettlementHoveredText(source: CommandSourceStack): Int {
+        val details = Component.empty()
         HOVERED_TEXT_SAMPLE_ROWS.forEachIndexed { index, row ->
-            if (index > 0) details.append(Text.literal("\n"))
+            if (index > 0) details.append(Component.literal("\n"))
             details.append(
-                Text.translatable(
+                Component.translatable(
                     MinecraftMessageKeys.ROUND_RESULT_PLAYER_LINE,
                     row.playerName,
                     row.previousRank.toString(),
@@ -101,10 +101,10 @@ class FabricDebugTextCommand(
                 ),
             )
         }
-        source.sendFeedback(
+        source.sendSuccess(
             {
                 buildRoundResultChatText(
-                    actionText = Text.translatable(MinecraftMessageKeys.GAME_ACTION_EXHAUSTIVE_DRAW),
+                    actionText = Component.translatable(MinecraftMessageKeys.GAME_ACTION_EXHAUSTIVE_DRAW),
                     details = details,
                     roundContinues = false,
                 )
@@ -120,15 +120,15 @@ class FabricDebugTextCommand(
      * @param source 指令呼叫來源。
      * @return Brigadier 命令結果碼。
      */
-    private fun previewWinSettlementHoveredText(source: ServerCommandSource): Int {
-        val details = Text.empty()
-            .append(Text.translatable(WinSettlementTextKeys.RON_RELATIONSHIP, "Player", "AI 1"))
-            .append(Text.literal("\n"))
-            .append(Text.translatable(RiichiTranslationKeys.SETTLEMENT_HAN_FU, "3", "30"))
-            .append(Text.literal("\n"))
-            .append(Text.translatable(WinSettlementTextKeys.TOTAL_SCORE, "7700"))
-        source.sendFeedback(
-            { buildRoundResultChatText(Text.translatable(ronLabelKey()), details, roundContinues = false) },
+    private fun previewWinSettlementHoveredText(source: CommandSourceStack): Int {
+        val details = Component.empty()
+            .append(Component.translatable(WinSettlementTextKeys.RON_RELATIONSHIP, "Player", "AI 1"))
+            .append(Component.literal("\n"))
+            .append(Component.translatable(RiichiTranslationKeys.SETTLEMENT_HAN_FU, "3", "30"))
+            .append(Component.literal("\n"))
+            .append(Component.translatable(WinSettlementTextKeys.TOTAL_SCORE, "7700"))
+        source.sendSuccess(
+            { buildRoundResultChatText(Component.translatable(ronLabelKey()), details, roundContinues = false) },
             false,
         )
         return COMMAND_SUCCESS
@@ -140,14 +140,14 @@ class FabricDebugTextCommand(
      * @param source 指令呼叫來源。
      * @return Brigadier 命令結果碼。
      */
-    private fun previewMatchSettlementHoveredText(source: ServerCommandSource): Int {
-        val details = Text.empty()
+    private fun previewMatchSettlementHoveredText(source: CommandSourceStack): Int {
+        val details = Component.empty()
         listOf("PlayerLongName123" to "120000", "AI 1" to "45000", "PlayerC" to "25000", "PlayerD" to "-12000")
             .forEachIndexed { index, (name, score) ->
-                if (index > 0) details.append(Text.literal("\n"))
-                details.append(Text.translatable(MinecraftMessageKeys.RANKING_LINE, (index + 1).toString(), name, score))
+                if (index > 0) details.append(Component.literal("\n"))
+                details.append(Component.translatable(MinecraftMessageKeys.RANKING_LINE, (index + 1).toString(), name, score))
             }
-        source.sendFeedback({ buildMatchResultChatText(details) }, false)
+        source.sendSuccess({ buildMatchResultChatText(details) }, false)
         return COMMAND_SUCCESS
     }
 
@@ -157,13 +157,13 @@ class FabricDebugTextCommand(
      * @param source 指令呼叫來源。
      * @return Brigadier 命令結果碼。
      */
-    private fun previewGameCreatedLocationHoveredText(source: ServerCommandSource): Int {
+    private fun previewGameCreatedLocationHoveredText(source: CommandSourceStack): Int {
         val player = source.player ?: return COMMAND_FAILURE
         feedbackPublisher.publish(
             playerId = player.uuid.toKotlinUuid(),
             feedback = MinecraftPlayerFeedback.GameCreated(
                 location = TableLocation(
-                    dimensionId = player.world.registryKey.value.toString(),
+                    dimensionId = player.level().dimension().location().toString(),
                     x = player.blockX,
                     y = player.blockY,
                     z = player.blockZ,
@@ -180,7 +180,7 @@ class FabricDebugTextCommand(
      * @param variant 設定顯示狀態，使用 `show`、`changed` 或 `unchanged`。
      * @return Brigadier 命令結果碼。
      */
-    private fun previewGameConfigHoveredText(source: ServerCommandSource, variant: String): Int {
+    private fun previewGameConfigHoveredText(source: CommandSourceStack, variant: String): Int {
         val player = source.player ?: return COMMAND_FAILURE
         val current = json.encodeToString(GameConfig(DebugPreviewDefaults.RULE_CONFIG).toDto(networkRegistries))
         val changed = json.encodeToString(
@@ -201,11 +201,11 @@ class FabricDebugTextCommand(
      * @param source 指令呼叫來源。
      * @return Brigadier 命令結果碼。
      */
-    private fun previewServerConfigHoveredText(source: ServerCommandSource): Int {
-        source.sendFeedback(
+    private fun previewServerConfigHoveredText(source: CommandSourceStack): Int {
+        source.sendSuccess(
             {
                 configShowMessage(
-                    configName = Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG),
+                    configName = Component.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG),
                     displayPath = serverConfigManager.displayPath,
                     entries = serverConfigEntries(serverConfigManager.current),
                 )

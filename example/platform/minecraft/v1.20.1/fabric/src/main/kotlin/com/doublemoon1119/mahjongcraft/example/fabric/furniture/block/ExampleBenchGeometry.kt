@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.furniture.block
 
-import net.minecraft.util.math.Box
-import net.minecraft.util.math.Direction
+import net.minecraft.core.Direction
+import net.minecraft.world.phys.AABB
 
 /** 與長凳模型一致的局部碰撞範圍，每格以十六單位表示。 */
 internal object ExampleBenchGeometry {
@@ -17,10 +17,10 @@ internal object ExampleBenchGeometry {
         facing: Direction,
         leftConnected: Boolean,
         rightConnected: Boolean,
-    ): List<Box> {
+    ): List<AABB> {
         require(facing.axis.isHorizontal) { "Bench facing must be horizontal" }
         val boxes = mutableListOf(
-            Box(
+            AABB(
                 0.0,
                 6.0,
                 0.0,
@@ -28,7 +28,7 @@ internal object ExampleBenchGeometry {
                 9.0,
                 16.0,
             ),
-            Box(
+            AABB(
                 0.0,
                 9.0,
                 13.0,
@@ -39,7 +39,7 @@ internal object ExampleBenchGeometry {
         )
         for (x in listOf(1.0, 13.0)) {
             for (z in listOf(1.0, 13.0)) {
-                boxes += Box(
+                boxes += AABB(
                     x,
                     0.0,
                     z,
@@ -50,7 +50,7 @@ internal object ExampleBenchGeometry {
             }
         }
         if (!leftConnected) {
-            boxes += Box(
+            boxes += AABB(
                 0.0,
                 9.0,
                 0.0,
@@ -60,7 +60,7 @@ internal object ExampleBenchGeometry {
             )
         }
         if (!rightConnected) {
-            boxes += Box(
+            boxes += AABB(
                 14.0,
                 9.0,
                 0.0,
@@ -71,8 +71,8 @@ internal object ExampleBenchGeometry {
         }
         return boxes.map { box ->
             var result = box
-            repeat((facing.horizontal + 2) % 4) {
-                result = Box(
+            repeat((facing.get2DDataValue() + 2) % 4) {
+                result = AABB(
                     16.0 - result.maxZ,
                     result.minY,
                     result.minX,

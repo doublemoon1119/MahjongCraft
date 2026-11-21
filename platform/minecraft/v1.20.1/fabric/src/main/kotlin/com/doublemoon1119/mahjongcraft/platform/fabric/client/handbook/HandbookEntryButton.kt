@@ -1,12 +1,12 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.handbook
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.fitClientText
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.tooltip.Tooltip
-import net.minecraft.client.gui.widget.ButtonWidget
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.Button
+import net.minecraft.client.gui.components.Tooltip
+import net.minecraft.network.chat.Component
 
 /**
  * 麻將手冊快捷畫面的入口按鈕：一般按鈕底，左側物品圖示，右側名稱與一行灰色說明；放不下的文字截斷，
@@ -25,44 +25,44 @@ internal class HandbookEntryButton(
     width: Int,
     height: Int,
     private val entry: HandbookEntry,
-    onPress: PressAction,
-) : ButtonWidget(
+    onPress: OnPress,
+) : Button(
     x,
     y,
     width,
     height,
-    Text.translatable(entry.titleKey),
+    Component.translatable(entry.titleKey),
     onPress,
-    DEFAULT_NARRATION_SUPPLIER,
+    DEFAULT_NARRATION,
 ) {
     /** 入口名稱。 */
-    private val title: Text = Text.translatable(entry.titleKey)
+    private val title: Component = Component.translatable(entry.titleKey)
 
     /** 入口說明。 */
-    private val description: Text = Text.translatable(entry.descriptionKey)
+    private val description: Component = Component.translatable(entry.descriptionKey)
 
     /** 上次設定提示框時說明是否被截斷，避免每幀重建提示框。 */
     private var descriptionTruncated: Boolean? = null
 
-    override fun renderButton(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderWidget(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         val originalMessage = message
         try {
-            message = Text.empty()
-            super.renderButton(context, mouseX, mouseY, delta)
+            message = Component.empty()
+            super.renderWidget(context, mouseX, mouseY, delta)
         } finally {
             message = originalMessage
         }
-        val textRenderer = MinecraftClient.getInstance().textRenderer
-        context.drawItem(entry.icon, x + ICON_INSET, y + (height - ICON_SIZE) / 2)
+        val textRenderer = Minecraft.getInstance().font
+        context.renderItem(entry.icon, x + ICON_INSET, y + (height - ICON_SIZE) / 2)
         val textLeft = x + ICON_INSET + ICON_SIZE + ICON_TEXT_GAP
         val textWidth = (x + width - TEXT_RIGHT_INSET - textLeft).coerceAtLeast(1)
         val color = if (active) TITLE_COLOR else DISABLED_COLOR
-        context.drawTextWithShadow(textRenderer, fitClientText(textRenderer, title, textWidth), textLeft, y + TITLE_TOP, color)
-        context.drawTextWithShadow(textRenderer, fitClientText(textRenderer, description, textWidth), textLeft, y + DESCRIPTION_TOP, DESCRIPTION_COLOR)
-        val truncated = textRenderer.getWidth(description) > textWidth
+        context.drawString(textRenderer, fitClientText(textRenderer, title, textWidth), textLeft, y + TITLE_TOP, color)
+        context.drawString(textRenderer, fitClientText(textRenderer, description, textWidth), textLeft, y + DESCRIPTION_TOP, DESCRIPTION_COLOR)
+        val truncated = textRenderer.width(description) > textWidth
         if (truncated != descriptionTruncated) {
             descriptionTruncated = truncated
-            tooltip = if (truncated) Tooltip.of(description.copy().formatted(Formatting.GRAY)) else null
+            tooltip = if (truncated) Tooltip.create(description.copy().withStyle(ChatFormatting.GRAY)) else null
         }
     }
 

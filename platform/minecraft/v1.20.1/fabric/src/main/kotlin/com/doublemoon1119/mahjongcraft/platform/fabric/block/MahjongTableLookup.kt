@@ -3,9 +3,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.block
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableController
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableControllerState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
-import net.minecraft.block.entity.BlockEntity
-import net.minecraft.util.math.BlockPos
-import net.minecraft.world.BlockView
+import net.minecraft.core.BlockPos
+import net.minecraft.world.level.BlockGetter
+import net.minecraft.world.level.block.entity.BlockEntity
 import kotlin.uuid.Uuid
 
 /**
@@ -28,7 +28,7 @@ internal class LocatedMahjongTable(
 
     /** 控制方塊位置，也是桌子布局的原點。 */
     val pos: BlockPos
-        get() = blockEntity.pos
+        get() = blockEntity.blockPos
 
     /** 桌子朝向。 */
     val facing: MahjongTableFacing
@@ -46,7 +46,7 @@ internal object MahjongTableLookup {
      * @return 位置上的方塊實體是控制點且 ID 相符時回傳桌子，否則為 null。
      */
     fun find(
-        world: BlockView,
+        world: BlockGetter,
         controllerPos: BlockPos,
         expectedTableId: Uuid? = null,
     ): LocatedMahjongTable? = world.getBlockEntity(controllerPos)?.let { of(it, expectedTableId) }

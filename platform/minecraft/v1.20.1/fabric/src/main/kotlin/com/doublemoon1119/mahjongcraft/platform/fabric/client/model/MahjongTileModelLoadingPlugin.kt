@@ -8,8 +8,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.allTileAssetKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileModelResourceId
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin
 import net.fabricmc.fabric.api.client.model.loading.v1.PreparableModelLoadingPlugin
-import net.minecraft.resource.ResourceManager
-import net.minecraft.util.Identifier
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.packs.resources.ResourceManager
 import org.koin.core.context.GlobalContext
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executor
@@ -39,10 +39,10 @@ object MahjongTileModelLoadingPlugin : PreparableModelLoadingPlugin<FixedMahjong
         pluginContext.addModels(
             buildList {
                 registry.allTileAssetKeys().mapTo(this) { assetKey ->
-                    Identifier(tileModelResourceId(assetKey, registry))
+                    ResourceLocation(tileModelResourceId(assetKey, registry))
                 }
                 data.variants.mapTo(this) { it.modelId }
-                add(Identifier(BuiltInAiCharacters.TILE_MASCOT_LIMB_MODEL_ID))
+                add(ResourceLocation(BuiltInAiCharacters.TILE_MASCOT_LIMB_MODEL_ID))
             },
         )
         pluginContext.resolveModel().register(FixedMahjongTileModelVariantResolver(data.variants))

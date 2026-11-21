@@ -2,10 +2,10 @@ package com.doublemoon1119.mahjongcraft.example.fabric.table
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ManagedTableNbt
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.TablePropIdentityNbt
-import net.minecraft.entity.Entity
-import net.minecraft.entity.EntityType
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.world.World
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.level.Level
 import kotlin.uuid.Uuid
 
 /**
@@ -18,7 +18,7 @@ import kotlin.uuid.Uuid
  */
 class ExampleHandRevealChipEntity(
     type: EntityType<out ExampleHandRevealChipEntity>,
-    world: World,
+    world: Level,
 ) : Entity(type, world) {
     /** 所屬桌子 UUID。 */
     var managedTableId: Uuid? = null
@@ -31,29 +31,29 @@ class ExampleHandRevealChipEntity(
 
     init {
         setNoGravity(true)
-        noClip = true
+        noPhysics = true
     }
 
     /** 晶片不阻擋其他實體。 */
-    override fun isCollidable(): Boolean = false
+    override fun canBeCollidedWith(): Boolean = false
 
     /** 晶片不參與實體推擠。 */
     override fun isPushable(): Boolean = false
 
     /** 晶片不能被玩家點選。 */
-    override fun canHit(): Boolean = false
+    override fun isPickable(): Boolean = false
 
     /** 這個示範 entity 不需要原生資料追蹤欄位。 */
-    override fun initDataTracker() = Unit
+    override fun defineSynchedData() = Unit
 
     /** 保存桌面同步所需的管理身分。 */
-    override fun writeCustomDataToNbt(nbt: NbtCompound) {
+    override fun addAdditionalSaveData(nbt: CompoundTag) {
         ManagedTableNbt.write(nbt, managedTableId)
         TablePropIdentityNbt.write(nbt, placementId, tablePropRuleModuleId)
     }
 
     /** 還原桌面同步所需的管理身分。 */
-    override fun readCustomDataFromNbt(nbt: NbtCompound) {
+    override fun readAdditionalSaveData(nbt: CompoundTag) {
         managedTableId = ManagedTableNbt.read(nbt)
         val identity = TablePropIdentityNbt.read(nbt)
         placementId = identity?.placementId.orEmpty()

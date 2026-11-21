@@ -8,8 +8,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.GameEventExclusions
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.text.Text
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.network.chat.Component
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -49,7 +49,7 @@ class DebugPlayerTableScope(
      * @param action 以牌桌識別碼產生回饋文字的動作。
      * @return Brigadier 命令成功或失敗代碼；玩家查詢與動作在背景協程執行。
      */
-    fun runOnMain(source: ServerCommandSource, action: (tableId: Uuid) -> String): Int {
+    fun runOnMain(source: CommandSourceStack, action: (tableId: Uuid) -> String): Int {
         val player = requirePlayer(source) ?: return COMMAND_FAILURE
         scope.launch {
             val tableId = membershipRepository.getVenueId(player.uuid.toKotlinUuid())
@@ -58,7 +58,7 @@ class DebugPlayerTableScope(
                 if (tableId == null) {
                     sendNotSeated(source)
                 } else {
-                    source.sendFeedback({ Text.literal(action(tableId)) }, true)
+                    source.sendSuccess({ Component.literal(action(tableId)) }, true)
                 }
             }
         }
@@ -73,7 +73,7 @@ class DebugPlayerTableScope(
      * @return Brigadier 命令成功或失敗代碼；查詢與動作在背景協程執行。
      */
     fun runSuspending(
-        source: ServerCommandSource,
+        source: CommandSourceStack,
         action: suspend (tableId: Uuid, playerId: Uuid) -> String,
     ): Int {
         val player = requirePlayer(source) ?: return COMMAND_FAILURE
@@ -90,7 +90,7 @@ class DebugPlayerTableScope(
                 if (message == null) {
                     sendNotSeated(source)
                 } else {
-                    source.sendFeedback({ Text.literal(message) }, true)
+                    source.sendSuccess({ Component.literal(message) }, true)
                 }
             }
         }
@@ -114,8 +114,8 @@ class DebugPlayerTableScope(
      * @param source 指令呼叫來源。
      * @return 指令來源中的玩家；非玩家來源時為 null。
      */
-    private fun requirePlayer(source: ServerCommandSource) = source.player ?: run {
-        source.sendError(Text.literal("This debug subcommand must be run by a player seated at a table"))
+    private fun requirePlayer(source: CommandSourceStack) = source.player ?: run {
+        source.sendFailure(Component.literal("This debug subcommand must be run by a player seated at a table"))
         null
     }
 
@@ -124,8 +124,8 @@ class DebugPlayerTableScope(
      *
      * @param source 指令呼叫來源。
      */
-    private fun sendNotSeated(source: ServerCommandSource) {
-        source.sendError(Text.literal("You are not seated at any mahjong table"))
+    private fun sendNotSeated(source: CommandSourceStack) {
+        source.sendFailure(Component.literal("You are not seated at any mahjong table"))
     }
 
     private companion object {

@@ -5,11 +5,11 @@ import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurniture
 import com.doublemoon1119.mahjongcraft.example.minecraft.character.ExampleCharacterIds
 import com.doublemoon1119.mahjongcraft.example.minecraft.text.ExampleFurnitureMessageKeys
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup
-import net.minecraft.item.ItemStack
-import net.minecraft.registry.Registries
-import net.minecraft.registry.Registry
-import net.minecraft.text.Text
-import net.minecraft.util.Identifier
+import net.minecraft.core.Registry
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.item.ItemStack
 
 /** 範例專屬的創造模式分頁，不更改本體的物品分類。 */
 object ExampleItemGroups {
@@ -28,12 +28,12 @@ object ExampleItemGroups {
     fun register() {
         val group = FabricItemGroup.builder()
             .icon { ItemStack(ExampleFurniture.chairItem) }
-            .displayName(Text.translatable(ExampleFurnitureMessageKeys.ITEM_GROUP))
-            .entries { _, entries -> itemIds().forEach { entries.add(Registries.ITEM.get(Identifier(it))) } }
+            .title(Component.translatable(ExampleFurnitureMessageKeys.ITEM_GROUP))
+            .displayItems { _, entries -> itemIds().forEach { entries.accept(BuiltInRegistries.ITEM.get(ResourceLocation(it))) } }
             .build()
         Registry.register(
-            Registries.ITEM_GROUP,
-            Identifier(ExampleFurnitureIds.ITEM_GROUP),
+            BuiltInRegistries.CREATIVE_MODE_TAB,
+            ResourceLocation(ExampleFurnitureIds.ITEM_GROUP),
             group,
         )
     }

@@ -2,8 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
-import net.minecraft.text.OrderedText
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
+import net.minecraft.util.FormattedCharSequence
 import kotlin.math.ceil
 
 /** 牌譜卡片中的一列，例如事件頁的交易卡片與回放的結算卡片。 */
@@ -22,8 +22,8 @@ internal sealed interface HistoryCardRow {
      * @property portraitIndent 頭像縮排。
      */
     data class TextLine(
-        val text: OrderedText,
-        val tooltip: List<Text>,
+        val text: FormattedCharSequence,
+        val tooltip: List<Component>,
         val indent: Int,
         val color: Int,
         val participant: HistoryParticipantSummaryDto?,
@@ -59,7 +59,7 @@ internal sealed interface HistoryCardRow {
      * @property tileIndent 相對卡片左側的牌面縮排。
      */
     data class LabeledTiles(
-        val label: Text,
+        val label: Component,
         val participant: HistoryParticipantSummaryDto?,
         val tiles: List<TileFaceViewDto>,
         val bulletIndent: Int,
@@ -87,7 +87,7 @@ internal sealed interface HistoryCardRow {
      * @property index 已確認交易索引。
      */
     data class Heading(
-        val text: Text,
+        val text: Component,
         val index: Int,
     ) : HistoryCardRow {
         /** 容得下放大鏡按鈕的列高。 */

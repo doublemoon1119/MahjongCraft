@@ -6,9 +6,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringSt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropDefinitions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropContent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropTarget
-import net.minecraft.entity.Entity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.Box
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 
 /**
@@ -23,19 +23,19 @@ object ScoringStickTablePropKind : FabricTablePropKind {
 
     override fun ruleModuleIdOf(entity: Entity): String? = (entity as? MahjongScoringStickEntity)?.tablePropRuleModuleId?.takeIf(String::isNotBlank)
 
-    override fun findManaged(world: ServerWorld, tableId: Uuid, searchBox: Box): List<Entity> = world.getEntitiesByClass(
+    override fun findManaged(world: ServerLevel, tableId: Uuid, searchBox: AABB): List<Entity> = world.getEntitiesOfClass(
         MahjongScoringStickEntity::class.java,
         searchBox,
     ) { stick -> stick.managedTableId == tableId }
 
     override fun contentOf(entity: Entity): TablePropContent? = (entity as? MahjongScoringStickEntity)?.let { TablePropContent.CustomVariant(it.denomination.points.toString()) }
 
-    override fun create(world: ServerWorld, tableId: Uuid, target: TablePropTarget): Entity? {
+    override fun create(world: ServerLevel, tableId: Uuid, target: TablePropTarget): Entity? {
         val denomination = MahjongScoringStickDenomination.entries.firstOrNull { it.points.toString() == (target.content as? TablePropContent.CustomVariant)?.value }
             ?: return null
         return MahjongScoringStickEntity(world = world).apply {
             tablePropRuleModuleId = target.ruleModuleId
-            refreshPositionAndAngles(target.x, target.y, target.z, target.yaw, 0.0f)
+            moveTo(target.x, target.y, target.z, target.yaw, 0.0f)
             tablePropPlacementId = target.id
             this.denomination = denomination
             assignToTable(tableId)

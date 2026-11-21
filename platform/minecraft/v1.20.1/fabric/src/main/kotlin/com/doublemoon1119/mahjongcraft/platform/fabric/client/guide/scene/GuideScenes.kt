@@ -24,10 +24,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimens
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallSideLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfile
-import net.minecraft.block.Blocks
-import net.minecraft.state.property.Properties
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Direction
+import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
+import net.minecraft.world.level.block.Blocks
+import net.minecraft.world.level.block.state.properties.BlockStateProperties
 import kotlin.math.floor
 import kotlin.uuid.Uuid
 
@@ -297,9 +297,9 @@ internal object GuideScenes {
     internal fun stools(seats: List<SeatGeometry>): List<GuideSceneBlock> {
         val stool = ModBlocks.woodenMahjongStool as MahjongStoolBlock
         return seats.map { seat ->
-            val towardTable = Direction.getFacing(TABLE_CENTER - seat.x, 0.0, TABLE_CENTER - seat.z)
+            val towardTable = Direction.getNearest(TABLE_CENTER - seat.x, 0.0, TABLE_CENTER - seat.z)
             GuideSceneBlock(
-                state = stool.defaultState.with(Properties.HORIZONTAL_FACING, towardTable),
+                state = stool.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, towardTable),
                 position = BlockPos(floor(seat.x).toInt(), 0, floor(seat.z).toInt()),
             )
         }
@@ -308,9 +308,9 @@ internal object GuideScenes {
     /** 朝北木製麻將桌的 18 個方塊，controller 在原點。 */
     internal fun tableBlocks(): List<GuideSceneBlock> {
         val table = ModBlocks.woodenMahjongTable
-        return MahjongTableStructure.placements(BlockPos.ORIGIN, Direction.NORTH).map { (part, position) ->
+        return MahjongTableStructure.placements(BlockPos.ZERO, Direction.NORTH).map { (part, position) ->
             GuideSceneBlock(
-                state = table.defaultState.with(MahjongTableBlock.PART, part).with(Properties.HORIZONTAL_FACING, Direction.NORTH),
+                state = table.defaultBlockState().setValue(MahjongTableBlock.PART, part).setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH),
                 position = position,
             )
         }
@@ -320,7 +320,7 @@ internal object GuideScenes {
     internal fun floor(): List<GuideSceneBlock> = (-FLOOR_RADIUS..FLOOR_RADIUS).flatMap { x ->
         (-FLOOR_RADIUS..FLOOR_RADIUS).map { z ->
             val block = if ((x + z) % 2 == 0) Blocks.WHITE_CONCRETE else Blocks.SNOW_BLOCK
-            GuideSceneBlock(state = block.defaultState, position = BlockPos(x, -1, z))
+            GuideSceneBlock(state = block.defaultBlockState(), position = BlockPos(x, -1, z))
         }
     }
 

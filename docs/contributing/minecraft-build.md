@@ -7,10 +7,17 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
 
 - Minecraft version-common and loader modules use the Java policy declared by their selected platform target
   in `gradle/platform-targets.toml`, not the core Java policy.
+- Minecraft code uses Mojang's official names, which Fabric Loom modules select with
+  `loom.officialMojangMappings()`. Code, comments and documentation name Minecraft classes and members
+  by those names, for example `PoseStack` and `GuiGraphics`.
 - The Minecraft loader convention makes every Fabric Loom remap task (`remapJar`, `remapSourcesJar`) share one
   build-wide slot, so remapping runs one task at a time while other work stays parallel. Two remap tasks running at
   once in the same daemon can fail with `ClosedFileSystemException` while reading a classpath JAR. New loader or
   version modules inherit this through the convention; do not add per-module workarounds.
+- The root build script declares the Gradle plugins that Minecraft modules apply, such as Fabric Loom,
+  without applying them, so every module loads the same plugin classes. Modules that apply different plugin
+  sets would otherwise load Loom in separate class loaders, and Loom fails when it reaches another project, for
+  example while an IDE sync creates `genSources` tasks. Declare a new loader's plugins there as well.
 
 ## Mod Dependency Requirements
 

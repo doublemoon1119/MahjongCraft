@@ -14,9 +14,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPr
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
+import net.minecraft.core.BlockPos
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.BlockPos
+import net.minecraft.server.level.ServerLevel
 
 /**
  * 在 tick 邊界後登記已載入桌子，並定點驗證已載入 chunk 的預期位置。
@@ -46,7 +46,7 @@ class FabricTableLocationValidationService(
     private var activeServer: MinecraftServer? = null
 
     /** 管理 chunk 載入後的延遲缺失確認。 */
-    private val validationQueue = TableLocationValidationQueue<MinecraftServer, ServerWorld>()
+    private val validationQueue = TableLocationValidationQueue<MinecraftServer, ServerLevel>()
 
     /** 下一個 tick 邊界才可處理的 BlockEntity 載入工作。 */
     private var nextTableLoads = mutableListOf<PendingTableLoad>()
@@ -57,7 +57,7 @@ class FabricTableLocationValidationService(
     /** 註冊 Fabric BlockEntity、chunk 與 server tick 事件。 */
     fun registerEvents() {
         ServerBlockEntityEvents.BLOCK_ENTITY_LOAD.register { blockEntity, world ->
-            if (MahjongTableLookup.of(blockEntity) != null) nextTableLoads.add(PendingTableLoad(world, blockEntity.pos))
+            if (MahjongTableLookup.of(blockEntity) != null) nextTableLoads.add(PendingTableLoad(world, blockEntity.blockPos))
         }
         ServerChunkEvents.CHUNK_LOAD.register { world, chunk ->
             validationQueue.enqueueChunk(world, chunk.pos.x, chunk.pos.z)
@@ -136,8 +136,8 @@ class FabricTableLocationValidationService(
      * @param chunkZ chunk Z 座標。
      * @return 位於該維度與 chunk 的桌子索引項目。
      */
-    private fun entriesForChunk(world: ServerWorld, chunkX: Int, chunkZ: Int): Collection<TableLocationEntry> {
-        val key = DimensionChunkKey(world.registryKey.value.toString(), chunkX, chunkZ)
+    private fun entriesForChunk(world: ServerLevel, chunkX: Int, chunkZ: Int): Collection<TableLocationEntry> {
+        val key = DimensionChunkKey(world.dimension().location().toString(), chunkX, chunkZ)
         return locations.getByChunk(key)
     }
 
@@ -185,8 +185,8 @@ class FabricTableLocationValidationService(
      * @param chunkZ chunk Z 座標。
      * @return 世界仍屬於作用中的伺服器且 chunk 已載入時為 true。
      */
-    private fun isUsable(world: ServerWorld, chunkX: Int, chunkZ: Int): Boolean = world.server === activeServer &&
-        world.chunkManager.isChunkLoaded(chunkX, chunkZ)
+    private fun isUsable(world: ServerLevel, chunkX: Int, chunkZ: Int): Boolean = world.server === activeServer &&
+        world.chunkSource.hasChunk(chunkX, chunkZ)
 
     /**
      * 定點確認位置上是 UUID 符合索引的麻將桌控制點；內建桌另外確認整個結構完整。
@@ -195,10 +195,10 @@ class FabricTableLocationValidationService(
      * @param entry 位置索引中的桌子 UUID 與座標。
      * @return 指定位置為 UUID 相符的麻將桌，且內建桌結構完整時為 true。
      */
-    private fun matchesExpectedTable(world: ServerWorld, entry: TableLocationEntry): Boolean {
+    private fun matchesExpectedTable(world: ServerLevel, entry: TableLocationEntry): Boolean {
         val location: TableLocation = entry.location
         val table = MahjongTableLookup.find(world, BlockPos(location.x, location.y, location.z), entry.tableId) ?: return false
-        val controllerState = table.blockEntity.cachedState
+        val controllerState = table.blockEntity.blockState
         val builtInBlock = controllerState.block as? MahjongTableBlock ?: return true
         val complete = builtInBlock.isComplete(world, table.pos, controllerState)
         if (!complete) logger.warn("Found incomplete Mahjong table {} at {}", table.tableId, entry.location)
@@ -212,7 +212,7 @@ class FabricTableLocationValidationService(
      * @property pos BlockEntity 所在座標。
      */
     private data class PendingTableLoad(
-        val world: ServerWorld,
+        val world: ServerLevel,
         val pos: BlockPos,
     )
 }

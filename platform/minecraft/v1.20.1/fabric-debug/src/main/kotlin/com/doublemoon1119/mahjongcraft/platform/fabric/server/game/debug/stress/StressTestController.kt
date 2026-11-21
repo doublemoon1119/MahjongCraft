@@ -294,8 +294,8 @@ class StressTestController(
      * @param report 要送出的最終報告。
      */
     private fun notifyStarter(server: MinecraftServer, starterId: Uuid?, report: StressTestReport) {
-        val player = starterId?.let { server.playerManager.getPlayer(it.toJavaUuid()) } ?: return
-        player.sendMessage(stressTestReportMessage(report))
+        val player = starterId?.let { server.playerList.getPlayer(it.toJavaUuid()) } ?: return
+        player.sendSystemMessage(stressTestReportMessage(report))
     }
 
     /**

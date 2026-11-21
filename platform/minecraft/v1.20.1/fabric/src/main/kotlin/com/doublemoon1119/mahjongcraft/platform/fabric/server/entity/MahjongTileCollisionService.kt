@@ -28,8 +28,8 @@ class MahjongTileCollisionService(
      * @param config 要套用的有效設定。
      */
     fun applyToLoaded(server: MinecraftServer, config: MinecraftServerConfig) {
-        server.worlds.forEach { world ->
-            world.iterateEntities()
+        server.allLevels.forEach { world ->
+            world.allEntities
                 .filterIsInstance<MahjongTileEntity>()
                 .forEach { entity -> apply(entity, config) }
         }

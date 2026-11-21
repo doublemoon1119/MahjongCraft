@@ -4,15 +4,15 @@ import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurniture
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureItems
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity.ExampleChairSeatEntity
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity.ExampleCushionEntity
+import com.mojang.blaze3d.vertex.PoseStack
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
-import net.minecraft.client.render.OverlayTexture
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.render.entity.EntityRenderer
-import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.render.model.json.ModelTransformationMode
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.item.ItemStack
-import net.minecraft.util.Identifier
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.entity.EntityRenderer
+import net.minecraft.client.renderer.entity.EntityRendererProvider
+import net.minecraft.client.renderer.texture.OverlayTexture
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.item.ItemDisplayContext
+import net.minecraft.world.item.ItemStack
 
 /** 範例家具 entity 的 client renderer 註冊入口。 */
 object ExampleFurnitureRenderers {
@@ -29,10 +29,10 @@ object ExampleFurnitureRenderers {
  * @param context Minecraft renderer factory 提供的 client context。
  */
 private class ExampleChairSeatRenderer(
-    context: EntityRendererFactory.Context,
+    context: EntityRendererProvider.Context,
 ) : EntityRenderer<ExampleChairSeatEntity>(context) {
     /** 隱形 entity 沒有實際貼圖。 */
-    override fun getTexture(entity: ExampleChairSeatEntity): Identifier? = null
+    override fun getTextureLocation(entity: ExampleChairSeatEntity): ResourceLocation? = null
 }
 
 /**
@@ -41,7 +41,7 @@ private class ExampleChairSeatRenderer(
  * @param context Minecraft renderer factory 提供的 client context。
  */
 private class ExampleCushionRenderer(
-    context: EntityRendererFactory.Context,
+    context: EntityRendererProvider.Context,
 ) : EntityRenderer<ExampleCushionEntity>(context) {
     /** 共用原版物品模型 renderer。 */
     private val itemRenderer = context.itemRenderer
@@ -51,26 +51,26 @@ private class ExampleCushionRenderer(
         entity: ExampleCushionEntity,
         yaw: Float,
         tickDelta: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
     ) {
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(0.0, 0.5, 0.0)
-        itemRenderer.renderItem(
+        itemRenderer.renderStatic(
             ItemStack(ExampleFurnitureItems.cushion),
-            ModelTransformationMode.NONE,
+            ItemDisplayContext.NONE,
             light,
-            OverlayTexture.DEFAULT_UV,
+            OverlayTexture.NO_OVERLAY,
             matrices,
             vertexConsumers,
-            entity.world,
+            entity.level(),
             entity.id,
         )
-        matrices.pop()
+        matrices.popPose()
     }
 
     /** Item renderer 依 model 資源提供外觀。 */
-    override fun getTexture(entity: ExampleCushionEntity): Identifier? = null
+    override fun getTextureLocation(entity: ExampleCushionEntity): ResourceLocation? = null
 }

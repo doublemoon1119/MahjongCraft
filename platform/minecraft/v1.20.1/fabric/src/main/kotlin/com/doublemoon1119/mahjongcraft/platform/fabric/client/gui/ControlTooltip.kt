@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftControlTooltipKeys
-import net.minecraft.text.MutableText
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.MutableComponent
 
 /**
  * 控制項提示框的共用格式，由上到下為說明、狀態區、提醒與操作提示，各段之間空一行，沒有內容的段落省略。
@@ -30,9 +30,9 @@ internal object ControlTooltip {
      * @property unavailableReason 不可選的原因；可選時為 null。
      */
     data class Option(
-        val label: Text,
+        val label: Component,
         val current: Boolean,
-        val unavailableReason: Text? = null,
+        val unavailableReason: Component? = null,
     )
 
     /**
@@ -46,12 +46,12 @@ internal object ControlTooltip {
      * @return 以換行分隔各行的提示文字。
      */
     fun options(
-        description: Text?,
+        description: Component?,
         options: List<Option>,
-        hints: List<Text> = emptyList(),
-        title: Text = Text.translatable(MinecraftControlTooltipKeys.OPTIONS),
-        notice: Text? = null,
-    ): Text = joinLines(optionLines(description = description, options = options, hints = hints, title = title, notice = notice))
+        hints: List<Component> = emptyList(),
+        title: Component = Component.translatable(MinecraftControlTooltipKeys.OPTIONS),
+        notice: Component? = null,
+    ): Component = joinLines(optionLines(description = description, options = options, hints = hints, title = title, notice = notice))
 
     /**
      * 建立只需要標出目前是第幾個選項的提示框，用於全部選項都可選的循環按鈕。
@@ -63,11 +63,11 @@ internal object ControlTooltip {
      * @return 以換行分隔各行的提示文字。
      */
     fun options(
-        description: Text?,
-        labels: List<Text>,
+        description: Component?,
+        labels: List<Component>,
         currentIndex: Int,
-        hints: List<Text> = emptyList(),
-    ): Text = options(
+        hints: List<Component> = emptyList(),
+    ): Component = options(
         description = description,
         options = labels.mapIndexed { index, label -> Option(label = label, current = index == currentIndex) },
         hints = hints,
@@ -84,14 +84,14 @@ internal object ControlTooltip {
      * @return 提示框的每一行；段落之間以空行分隔。
      */
     fun optionLines(
-        description: Text?,
+        description: Component?,
         options: List<Option>,
-        hints: List<Text> = emptyList(),
-        title: Text = Text.translatable(MinecraftControlTooltipKeys.OPTIONS),
-        notice: Text? = null,
-    ): List<Text> = composeLines(
+        hints: List<Component> = emptyList(),
+        title: Component = Component.translatable(MinecraftControlTooltipKeys.OPTIONS),
+        notice: Component? = null,
+    ): List<Component> = composeLines(
         description = description,
-        status = listOf<Text>(title.copy().formatted(Formatting.GOLD)) + options.map(::optionLine),
+        status = listOf<Component>(title.copy().withStyle(ChatFormatting.GOLD)) + options.map(::optionLine),
         notice = notice,
         hints = hints,
     )
@@ -106,15 +106,15 @@ internal object ControlTooltip {
      * @return 以換行分隔各行的提示文字。
      */
     fun range(
-        description: Text?,
-        range: Text,
-        hints: List<Text> = emptyList(),
-        notice: Text? = null,
-    ): Text {
-        val status = Text.empty()
-            .append(Text.translatable(MinecraftControlTooltipKeys.RANGE).formatted(Formatting.GOLD))
+        description: Component?,
+        range: Component,
+        hints: List<Component> = emptyList(),
+        notice: Component? = null,
+    ): Component {
+        val status = Component.empty()
+            .append(Component.translatable(MinecraftControlTooltipKeys.RANGE).withStyle(ChatFormatting.GOLD))
             .append("  ")
-            .append(range.copy().formatted(Formatting.WHITE))
+            .append(range.copy().withStyle(ChatFormatting.WHITE))
         return joinLines(composeLines(description = description, status = listOf(status), notice = notice, hints = hints))
     }
 
@@ -128,13 +128,13 @@ internal object ControlTooltip {
      * @return 以換行分隔各行的提示文字。
      */
     fun list(
-        description: Text?,
-        title: Text,
-        lines: List<Text>,
-        hints: List<Text> = emptyList(),
-    ): Text {
-        val status = listOf<Text>(title.copy().formatted(Formatting.GOLD)) +
-            lines.map { Text.literal(OPTION_INDENT).append(it).formatted(Formatting.WHITE) }
+        description: Component?,
+        title: Component,
+        lines: List<Component>,
+        hints: List<Component> = emptyList(),
+    ): Component {
+        val status = listOf<Component>(title.copy().withStyle(ChatFormatting.GOLD)) +
+            lines.map { Component.literal(OPTION_INDENT).append(it).withStyle(ChatFormatting.WHITE) }
         return joinLines(composeLines(description = description, status = status, notice = null, hints = hints))
     }
 
@@ -145,7 +145,7 @@ internal object ControlTooltip {
      * @param notice 紅字提醒，例如按鈕停用的原因；沒有時為 null。
      * @return 灰色的說明文字，以及紅字提醒。
      */
-    fun description(description: Text, notice: Text? = null): Text {
+    fun description(description: Component, notice: Component? = null): Component {
         val lines = composeLines(description = description, status = emptyList(), notice = notice, hints = emptyList())
         return joinLines(lines)
     }
@@ -158,17 +158,17 @@ internal object ControlTooltip {
      * @param unsetLabel 欄位可以不設定時，不設定狀態的名稱；必須設定數值時為 null。
      * @return 範圍文字，例如「1 – 13」或「不限制, 1000 – 100000」。
      */
-    fun rangeText(minimum: Text, maximum: Text, unsetLabel: Text? = null): Text = if (unsetLabel == null) {
-        Text.translatable(MinecraftControlTooltipKeys.RANGE_VALUES, minimum, maximum)
+    fun rangeText(minimum: Component, maximum: Component, unsetLabel: Component? = null): Component = if (unsetLabel == null) {
+        Component.translatable(MinecraftControlTooltipKeys.RANGE_VALUES, minimum, maximum)
     } else {
-        Text.translatable(MinecraftControlTooltipKeys.RANGE_VALUES_OPTIONAL, unsetLabel, minimum, maximum)
+        Component.translatable(MinecraftControlTooltipKeys.RANGE_VALUES_OPTIONAL, unsetLabel, minimum, maximum)
     }
 
     /** 開關的操作提示。 */
-    fun toggleHints(): List<Text> = listOf(hint(Text.translatable(MinecraftControlTooltipKeys.HINT_TOGGLE)))
+    fun toggleHints(): List<Component> = listOf(hint(Component.translatable(MinecraftControlTooltipKeys.HINT_TOGGLE)))
 
     /** 點擊後開啟選項畫面的操作提示。 */
-    fun chooseHints(): List<Text> = listOf(hint(Text.translatable(MinecraftControlTooltipKeys.HINT_CHOOSE)))
+    fun chooseHints(): List<Component> = listOf(hint(Component.translatable(MinecraftControlTooltipKeys.HINT_CHOOSE)))
 
     /**
      * 建立數值欄位的操作提示。
@@ -179,11 +179,11 @@ internal object ControlTooltip {
      * @param unsetLabel 欄位可以不設定時，不設定狀態的名稱；必須設定數值時為 null。
      * @return 加減按鈕、按住 Shift、直接輸入的提示；欄位可以不設定時再加一行改為不設定的方法。
      */
-    fun integerHints(step: Text, shiftStep: Text, minimum: Text, unsetLabel: Text? = null): List<Text> = buildList {
-        add(hint(Text.translatable(MinecraftControlTooltipKeys.HINT_STEP, step)))
-        add(hint(Text.translatable(MinecraftControlTooltipKeys.HINT_SHIFT_STEP, shiftStep)))
-        add(hint(Text.translatable(MinecraftControlTooltipKeys.HINT_TYPE_NUMBER)))
-        if (unsetLabel != null) add(hint(Text.translatable(MinecraftControlTooltipKeys.HINT_CLEAR, minimum, unsetLabel)))
+    fun integerHints(step: Component, shiftStep: Component, minimum: Component, unsetLabel: Component? = null): List<Component> = buildList {
+        add(hint(Component.translatable(MinecraftControlTooltipKeys.HINT_STEP, step)))
+        add(hint(Component.translatable(MinecraftControlTooltipKeys.HINT_SHIFT_STEP, shiftStep)))
+        add(hint(Component.translatable(MinecraftControlTooltipKeys.HINT_TYPE_NUMBER)))
+        if (unsetLabel != null) add(hint(Component.translatable(MinecraftControlTooltipKeys.HINT_CLEAR, minimum, unsetLabel)))
     }
 
     /**
@@ -192,7 +192,7 @@ internal object ControlTooltip {
      * @param text 提示內容。
      * @return 灰色的提示。
      */
-    private fun hint(text: MutableText): Text = text.formatted(Formatting.GRAY)
+    private fun hint(text: MutableComponent): Component = text.withStyle(ChatFormatting.GRAY)
 
     /**
      * 建立選項清單中的一行。
@@ -200,16 +200,16 @@ internal object ControlTooltip {
      * @param option 要呈現的選項。
      * @return 依目前、可選、不可選上色並加上行首標示的文字。
      */
-    private fun optionLine(option: Option): Text {
+    private fun optionLine(option: Option): Component {
         val label = option.unavailableReason?.let { reason ->
-            Text.translatable(MinecraftControlTooltipKeys.UNAVAILABLE_OPTION, option.label, reason)
+            Component.translatable(MinecraftControlTooltipKeys.UNAVAILABLE_OPTION, option.label, reason)
         } ?: option.label.copy()
         val color = when {
-            option.current -> Formatting.GREEN
-            option.unavailableReason != null -> Formatting.RED
-            else -> Formatting.WHITE
+            option.current -> ChatFormatting.GREEN
+            option.unavailableReason != null -> ChatFormatting.RED
+            else -> ChatFormatting.WHITE
         }
-        return Text.literal(if (option.current) CURRENT_MARKER else OPTION_INDENT).append(label).formatted(color)
+        return Component.literal(if (option.current) CURRENT_MARKER else OPTION_INDENT).append(label).withStyle(color)
     }
 
     /**
@@ -221,16 +221,16 @@ internal object ControlTooltip {
      * @param hints 操作提示的每一行。
      * @return 提示框的每一行。
      */
-    private fun composeLines(description: Text?, status: List<Text>, notice: Text?, hints: List<Text>): List<Text> {
+    private fun composeLines(description: Component?, status: List<Component>, notice: Component?, hints: List<Component>): List<Component> {
         val sections = listOf(
-            listOfNotNull(description?.copy()?.formatted(Formatting.GRAY)),
+            listOfNotNull(description?.copy()?.withStyle(ChatFormatting.GRAY)),
             status,
-            listOfNotNull(notice?.copy()?.formatted(Formatting.RED)),
+            listOfNotNull(notice?.copy()?.withStyle(ChatFormatting.RED)),
             hints,
         ).filter { it.isNotEmpty() }
         return buildList {
             sections.forEachIndexed { index, lines ->
-                if (index > 0) add(Text.empty())
+                if (index > 0) add(Component.empty())
                 addAll(lines)
             }
         }
@@ -242,8 +242,8 @@ internal object ControlTooltip {
      * @param lines 提示框的每一行。
      * @return 以換行分隔各行的提示文字。
      */
-    private fun joinLines(lines: List<Text>): Text {
-        val result = Text.empty()
+    private fun joinLines(lines: List<Component>): Component {
+        val result = Component.empty()
         lines.forEachIndexed { index, line ->
             if (index > 0) result.append("\n")
             result.append(line)

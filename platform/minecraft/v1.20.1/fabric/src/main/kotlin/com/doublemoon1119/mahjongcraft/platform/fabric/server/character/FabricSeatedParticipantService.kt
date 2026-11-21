@@ -44,13 +44,13 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.fabricmc.fabric.api.networking.v1.EntityTrackingEvents
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup
-import net.minecraft.entity.Entity
+import net.minecraft.network.chat.contents.TranslatableContents
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.text.TranslatableTextContent
-import net.minecraft.util.TypeFilter
-import net.minecraft.util.math.Box
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.level.entity.EntityTypeTest
+import net.minecraft.world.phys.AABB
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.cancellation.CancellationException
@@ -130,7 +130,7 @@ internal class FabricSeatedParticipantService(
      */
     private fun refreshTrackedPreview(entity: Entity) {
         val current = server ?: return
-        if (entity.world.server !== current) return
+        if (entity.level().server !== current) return
         val state = persistence.characterSnapshot() ?: return
         val identity = RoomParticipantIdentity(SeatedParticipantSources.WORLD_ENTITY, entity.uuid.toKotlinUuid())
         val tableId = state.claimedParticipants[identity] ?: bindings.coordinator.keyFor(entity.uuid.toKotlinUuid())?.tableId ?: return
@@ -150,7 +150,7 @@ internal class FabricSeatedParticipantService(
             departures[identity] = waiting.admission.instanceId
         }
         ServerTickEvents.END_SERVER_TICK.register { current ->
-            if (server !== current || activeScan.load() != null || current.ticks % SCAN_INTERVAL != 0) return@register
+            if (server !== current || activeScan.load() != null || current.tickCount % SCAN_INTERVAL != 0) return@register
             val state = persistence.characterSnapshot() ?: return@register
             departures.entries.removeAll { (identity, instance) ->
                 val tableId = state.claimedParticipants[identity]
@@ -215,27 +215,27 @@ internal class FabricSeatedParticipantService(
      */
     private fun findVacancies(entity: Entity, requestedDistance: Double): List<FabricRoomVacancy> {
         val current = server ?: return emptyList()
-        check(current.isOnThread) { "Room discovery requires the server thread" }
-        val world = entity.world as? ServerWorld ?: return emptyList()
+        check(current.isSameThread) { "Room discovery requires the server thread" }
+        val world = entity.level() as? ServerLevel ?: return emptyList()
         if (world.server !== current || !validEntity(entity, world) || querying || !requestedDistance.isFinite() || requestedDistance < 0) return emptyList()
         val state = persistence.characterSnapshot() ?: return emptyList()
         if (state.characters == null) return emptyList()
         val id = entity.uuid.toKotlinUuid()
         val identity = RoomParticipantIdentity(SeatedParticipantSources.WORLD_ENTITY, id)
         if (isClaimed(identity)) return emptyList()
-        val tick = current.ticks.toLong()
+        val tick = current.tickCount.toLong()
         if (!queryBudget.acquire(id, tick)) return emptyList()
         querying = true
         return try {
             val range = min(requestedDistance, TableInteractionReach.SURVIVAL)
             val entries = (-1..1).asSequence().flatMap { x ->
                 (-1..1).asSequence().map { z ->
-                    DimensionChunkKey(world.registryKey.value.toString(), (entity.blockX shr 4) + x, (entity.blockZ shr 4) + z)
+                    DimensionChunkKey(world.dimension().location().toString(), (entity.blockX shr 4) + x, (entity.blockZ shr 4) + z)
                 }
             }.flatMap { locations.getByChunk(it, TABLES_PER_QUERY).asSequence() }.take(TABLES_PER_QUERY)
             entries.flatMap { entry ->
                 val location = entry.location
-                if (!world.chunkManager.isChunkLoaded(location.chunkX, location.chunkZ) ||
+                if (!world.chunkSource.hasChunk(location.chunkX, location.chunkZ) ||
                     TableInteractionReach.distance(entity.x, entity.y, entity.z, location.x, location.y, location.z) > range
                 ) {
                     return@flatMap emptySequence()
@@ -262,12 +262,12 @@ internal class FabricSeatedParticipantService(
      * @param current 目前伺服器 session。
      */
     private suspend fun refreshExcludedNames(room: Room, current: MinecraftServer) {
-        val host = current.playerManager.getPlayer(room.hostId.toJavaUuid()) ?: return
+        val host = current.playerList.getPlayer(room.hostId.toJavaUuid()) ?: return
         val location = locations.get(room.id)?.location ?: return
-        if (host.serverWorld.registryKey.value.toString() != location.dimensionId) return
+        if (host.serverLevel().dimension().location().toString() != location.dimensionId) return
         for ((identity, member) in room.admission.excludedParticipants) {
             if (server !== current || identity.sourceId != SeatedParticipantSources.WORLD_ENTITY) continue
-            val entity = host.serverWorld.getEntity(identity.subjectId.toJavaUuid()) ?: continue
+            val entity = host.serverLevel().getEntity(identity.subjectId.toJavaUuid()) ?: continue
             if (!entity.isAlive || host !in PlayerLookup.tracking(entity)) continue
             val eligible = describe(entity, room.hostId) as? ParticipantCheck.Eligible ?: continue
             val envelope = persistence.characterSnapshot() ?: return
@@ -326,16 +326,16 @@ internal class FabricSeatedParticipantService(
         for (request in seating.requests) {
             val position = request.seat
             val candidates = mutableListOf<Entity>()
-            seating.world.collectEntitiesByType(
-                TypeFilter.instanceOf(Entity::class.java),
-                Box(position.x - 1.0, position.y - 2.0, position.z - 1.0, position.x + 1.0, position.y + 2.0, position.z + 1.0),
+            seating.world.getEntities(
+                EntityTypeTest.forClass(Entity::class.java),
+                AABB(position.x - 1.0, position.y - 2.0, position.z - 1.0, position.x + 1.0, position.y + 2.0, position.z + 1.0),
                 { true },
                 candidates,
                 CANDIDATES_PER_SEAT + 1,
             )
             if (candidates.size > CANDIDATES_PER_SEAT) continue
             val eligible = candidates.mapNotNull { entity ->
-                if (!entity.hasVehicle() || !validEntity(entity, seating.world) || seating.coordinator.inspectSeat(seating.world, entity, request).state != SeatState.SEATED) return@mapNotNull null
+                if (!entity.isPassenger || !validEntity(entity, seating.world) || seating.coordinator.inspectSeat(seating.world, entity, request).state != SeatState.SEATED) return@mapNotNull null
                 val identity = RoomParticipantIdentity(SeatedParticipantSources.WORLD_ENTITY, entity.uuid.toKotlinUuid())
                 if (identity in expected.admission.excludedParticipants || isClaimed(identity)) return@mapNotNull null
                 val participant = (describe(entity, expected.hostId) as? ParticipantCheck.Eligible)?.participant ?: return@mapNotNull null
@@ -345,7 +345,7 @@ internal class FabricSeatedParticipantService(
             val (entity, identity, participant) = eligible.single()
             if (server !== current ||
                 persistence.characterSnapshot()?.authoritative?.rooms?.get(expected.id) != expected ||
-                !entity.hasVehicle() ||
+                !entity.isPassenger ||
                 seating.coordinator.inspectSeat(seating.world, entity, request).state != SeatState.SEATED
             ) {
                 return
@@ -358,7 +358,7 @@ internal class FabricSeatedParticipantService(
                 validate = {
                     server === current &&
                         validEntity(entity, seating.world) &&
-                        entity.hasVehicle() &&
+                        entity.isPassenger &&
                         seating.coordinator.inspectSeat(seating.world, entity, request).state == SeatState.SEATED &&
                         (describe(entity, expected.hostId) as? ParticipantCheck.Eligible)?.participant?.let {
                             it.strategyKey == participant.strategyKey && captureAppearance(entity, it.character) == appearance
@@ -389,7 +389,7 @@ internal class FabricSeatedParticipantService(
             } else if (player in room.aiPlayerIds) {
                 null
             } else {
-                current.playerManager.getPlayer(player.toJavaUuid())
+                current.playerList.getPlayer(player.toJavaUuid())
             }
         }
         if (playerIds.indices.any { playerIds[it] !in room.aiPlayerIds && riders[it] == null }) return null
@@ -437,7 +437,7 @@ internal class FabricSeatedParticipantService(
      */
     fun prepareStart(room: Room): List<AiCharacterParticipantCapture>? {
         val current = server ?: return rejectStart(room, "session_unavailable")
-        check(current.isOnThread) { "Participant preflight requires the server thread" }
+        check(current.isSameThread) { "Participant preflight requires the server thread" }
         if (room.admission.memberIdentities.isEmpty()) return emptyList()
         if (persistence.characterSnapshot()?.characters == null) return rejectStart(room, "character_data_unavailable")
         val seating = sessions.prepareTable(room.id) ?: return rejectStart(room, "seating_session_unavailable")
@@ -448,7 +448,7 @@ internal class FabricSeatedParticipantService(
             val index = room.playerIds.indexOf(player)
             if (index < 0) return rejectStart(room, "member_not_in_roster", player)
             if (!validEntity(entity, seating.world)) return rejectStart(room, "entity_unavailable_or_bound", player)
-            if (!entity.hasVehicle()) return rejectStart(room, "entity_not_riding", player)
+            if (!entity.isPassenger) return rejectStart(room, "entity_not_riding", player)
             val seatStates = seating.requests.map { seating.coordinator.inspectSeat(seating.world, entity, it).state }
             if (SeatedParticipantPresence.resolve(seatStates) != SeatedParticipantPresence.PRESENT) return rejectStart(room, "not_in_table_seat", player)
             val seatState = SeatState.SEATED
@@ -494,8 +494,8 @@ internal class FabricSeatedParticipantService(
     private fun captureAppearance(entity: Entity, character: AiCharacterDefinition): AiCharacterSnapshot = AiCharacterSnapshot(
         characterId = character.id,
         definition = character,
-        displayName = (entity.customName ?: entity.name.takeUnless { it.content is TranslatableTextContent })
-            ?.takeUnless { it.content is TranslatableTextContent }?.string?.take(128)?.takeIf(String::isNotBlank),
+        displayName = (entity.customName ?: entity.name.takeUnless { it.contents is TranslatableContents })
+            ?.takeUnless { it.contents is TranslatableContents }?.string?.take(128)?.takeIf(String::isNotBlank),
     )
 
     /**
@@ -534,11 +534,11 @@ internal class FabricSeatedParticipantService(
      * @param world 要求的世界。
      * @return 有效時為 true。
      */
-    private fun validEntity(entity: Entity, world: ServerWorld): Boolean = entity !is ServerPlayerEntity &&
+    private fun validEntity(entity: Entity, world: ServerLevel): Boolean = entity !is ServerPlayer &&
         entity.isAlive &&
-        entity.world === world &&
+        entity.level() === world &&
         world.getEntity(entity.uuid) === entity &&
-        world.chunkManager.isChunkLoaded(entity.blockX shr 4, entity.blockZ shr 4) &&
+        world.chunkSource.hasChunk(entity.blockX shr 4, entity.blockZ shr 4) &&
         bindings.coordinator.keyFor(entity.uuid.toKotlinUuid()) == null
 
     /**

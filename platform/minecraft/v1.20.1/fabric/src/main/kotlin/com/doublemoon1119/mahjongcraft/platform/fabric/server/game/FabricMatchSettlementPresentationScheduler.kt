@@ -8,8 +8,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntit
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerLevel
 import kotlin.uuid.Uuid
 
 /**
@@ -42,7 +42,7 @@ class FabricMatchSettlementPresentationScheduler(
      * @return 舞台固定結束的絕對 game time；找不到版型或未能生成時為 null。
      */
     fun schedule(
-        world: ServerWorld,
+        world: ServerLevel,
         tableId: Uuid,
         controllerPos: BlockPos,
         placement: MahjongTileWallPlacement,
@@ -55,7 +55,7 @@ class FabricMatchSettlementPresentationScheduler(
             }
             return null
         }
-        val startGameTime = maxOf(world.time, earliestStartGameTime)
+        val startGameTime = maxOf(world.gameTime, earliestStartGameTime)
         val snapshots = request.players.map { player ->
             MatchSettlementPlayerSnapshot(
                 playerId = player.playerId.toString(),
@@ -68,7 +68,7 @@ class FabricMatchSettlementPresentationScheduler(
         }
         val stage = MatchSettlementPresentationEntity(world = world).apply {
             configure(tableId, startGameTime, snapshots, template)
-            refreshPositionAndAngles(placement.x, placement.y + STAGE_HEIGHT_OFFSET, placement.z, placement.yaw, 0f)
+            moveTo(placement.x, placement.y + STAGE_HEIGHT_OFFSET, placement.z, placement.yaw, 0f)
         }
         if (!spawnGateway.spawn(world, stage, "match-settlement", tableId)) return null
         val endGameTime = stage.endGameTime

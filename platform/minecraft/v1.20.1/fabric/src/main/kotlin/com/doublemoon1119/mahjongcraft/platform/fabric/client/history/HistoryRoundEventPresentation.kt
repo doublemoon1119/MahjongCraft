@@ -35,8 +35,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.detailTextF
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.BuiltInRuleWordingIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.minecraftAbortReasonTranslationKey
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.Component
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds as MinecraftBuiltInGameActionIds
 
 /**
@@ -63,13 +63,13 @@ internal class HistoryRoundEventPresenter(
     private val markerClassifier = HistoryReplayMarkerClassifier(actionVocabulary)
 
     /**
-     * 取得一筆交易在回放時的標記種類。
+     * 依序取得各筆交易在回放時的標記種類，見 [HistoryReplayMarkerClassifier.markersOf]。
      *
      * @param ruleId 對局摘要中的規則模組 ID。
-     * @param transaction 牌譜交易。
-     * @return 標記種類；不需要標記時為 null。
+     * @param transactions 依發生順序排列的牌譜交易。
+     * @return 與 [transactions] 一一對應的標記種類；不需要標記時為 null。
      */
-    fun replayMarker(ruleId: String?, transaction: HistoryReplayTransactionDto): GameActionReplayMarker? = markerClassifier.markerOf(ruleId, transaction)
+    fun replayMarkers(ruleId: String?, transactions: List<HistoryReplayTransactionDto>): List<GameActionReplayMarker?> = markerClassifier.markersOf(ruleId, transactions)
 
     /**
      * 將單局事件轉換為保留原始順序的呈現模型。
@@ -148,7 +148,7 @@ internal class HistoryRoundEventPresenter(
      * @param ruleId 對局規則模組 ID。
      * @return 例如「開始補花」；規則沒有登記用語時為「開始換牌」。
      */
-    private fun replacementStartText(ruleId: String?): Text = Text.translatable(MinecraftHistoryScreenKeys.ROUND_REPLACEMENT_STARTED, replacementName(ruleId))
+    private fun replacementStartText(ruleId: String?): Component = Component.translatable(MinecraftHistoryScreenKeys.ROUND_REPLACEMENT_STARTED, replacementName(ruleId))
 
     /**
      * 規則登記的換牌用語。
@@ -156,7 +156,7 @@ internal class HistoryRoundEventPresenter(
      * @param ruleId 對局規則模組 ID。
      * @return 例如「補花」；規則沒有登記時為中立的「換牌」。
      */
-    private fun replacementName(ruleId: String?): Text = Text.translatable(setAsideDisplays.findReplacementName(ruleId) ?: MinecraftHistoryScreenKeys.ROUND_REPLACEMENT)
+    private fun replacementName(ruleId: String?): Component = Component.translatable(setAsideDisplays.findReplacementName(ruleId) ?: MinecraftHistoryScreenKeys.ROUND_REPLACEMENT)
 
     /**
      * 換牌紀錄的標題；局首逐輪換牌帶輪次，牌局中的換牌只顯示用語。
@@ -165,9 +165,9 @@ internal class HistoryRoundEventPresenter(
      * @param ruleId 對局規則模組 ID。
      * @return 例如「第 1 輪補花」或「補花」。
      */
-    private fun replacementText(fact: HistoryReplayFactDto.TileReplacementRound, ruleId: String?): Text {
+    private fun replacementText(fact: HistoryReplayFactDto.TileReplacementRound, ruleId: String?): Component {
         val name = replacementName(ruleId)
-        return if (fact.timing == RuleDecisionTimingDto.ROUND_START) Text.translatable(MinecraftHistoryScreenKeys.ROUND_REPLACEMENT_ROUND, fact.round, name) else name
+        return if (fact.timing == RuleDecisionTimingDto.ROUND_START) Component.translatable(MinecraftHistoryScreenKeys.ROUND_REPLACEMENT_ROUND, fact.round, name) else name
     }
 
     /**
@@ -198,17 +198,17 @@ internal class HistoryRoundEventPresenter(
             is HistoryReplayFactDto.ActionScored -> HistoryFactPresentation(
                 source = this,
                 text = when {
-                    potDeposit > 0 -> Text.translatable(
+                    potDeposit > 0 -> Component.translatable(
                         MinecraftHistoryScreenKeys.ROUND_ACTION_SCORED_POT_DEPOSIT,
                         actionText(ruleId, actionType, extensionTypeId),
                         potDeposit,
                     )
-                    potDeposit < 0 -> Text.translatable(
+                    potDeposit < 0 -> Component.translatable(
                         MinecraftHistoryScreenKeys.ROUND_ACTION_SCORED_POT_WITHDRAWAL,
                         actionText(ruleId, actionType, extensionTypeId),
                         -potDeposit.toLong(),
                     )
-                    else -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_SCORED, actionText(ruleId, actionType, extensionTypeId))
+                    else -> Component.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_SCORED, actionText(ruleId, actionType, extensionTypeId))
                 },
                 actorSeat = actorSeat,
                 directTiles = emptyList(),
@@ -219,9 +219,9 @@ internal class HistoryRoundEventPresenter(
 
             is HistoryReplayFactDto.Reaction -> HistoryFactPresentation(
                 source = this,
-                text = Text.translatable(
+                text = Component.translatable(
                     MinecraftHistoryScreenKeys.ROUND_REACTION,
-                    actionType?.let { actionText(ruleId, it, null) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_REACTION_NONE),
+                    actionType?.let { actionText(ruleId, it, null) } ?: Component.translatable(MinecraftHistoryScreenKeys.ROUND_REACTION_NONE),
                 ),
                 actorSeat = resolvedActorSeat,
                 directTiles = emptyList(),
@@ -231,11 +231,11 @@ internal class HistoryRoundEventPresenter(
 
             is HistoryReplayFactDto.RuleDecision -> HistoryFactPresentation(
                 source = this,
-                text = choiceLabelKey(ruleId, this)?.let(Text::translatable)
+                text = choiceLabelKey(ruleId, this)?.let(Component::translatable)
                     ?: replacementStartText(ruleId).takeIf { typeKey == HistoryFactTypeKeys.RULE_DECISION_STARTED && stepKey() in replacementSteps }
-                    ?: Text.translatable(
+                    ?: Component.translatable(
                         MinecraftHistoryScreenKeys.RULE_DECISION,
-                        Text.translatable(MinecraftHistoryScreenKeys.RULE_DECISION_STEP, stepIndex + 1),
+                        Component.translatable(MinecraftHistoryScreenKeys.RULE_DECISION_STEP, stepIndex + 1),
                         ruleDecisionText(typeKey, nextStepId),
                     ),
                 actorSeat = actorSeat,
@@ -256,7 +256,7 @@ internal class HistoryRoundEventPresenter(
 
             is HistoryReplayFactDto.DiceRolled -> HistoryFactPresentation(
                 source = this,
-                text = Text.translatable(
+                text = Component.translatable(
                     MinecraftHistoryScreenKeys.ROUND_EVENT_DICE_ROLLED,
                     rollIndex + 1,
                     dice.joinToString(" + "),
@@ -270,10 +270,10 @@ internal class HistoryRoundEventPresenter(
             is HistoryReplayFactDto.Completion -> HistoryFactPresentation(
                 source = this,
                 text = when (typeKey) {
-                    HistoryFactTypeKeys.MATCH_COMPLETED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_MATCH_COMPLETION, outcome?.let { outcomeText(it.reasonId, ruleId) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER))
-                    HistoryFactTypeKeys.MATCH_ABORTED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_MATCH_ABORTED, outcome?.let { outcomeText(it.reasonId, ruleId) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER))
-                    HistoryFactTypeKeys.WIN_SETTLED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_WIN_SETTLEMENT, outcome?.let { outcomeText(it.reasonId, ruleId) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER))
-                    else -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_COMPLETION, outcome?.let { outcomeText(it.reasonId, ruleId) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER), outcome?.classification?.let(::classificationText) ?: "—")
+                    HistoryFactTypeKeys.MATCH_COMPLETED -> Component.translatable(MinecraftHistoryScreenKeys.ROUND_MATCH_COMPLETION, outcome?.let { outcomeText(it.reasonId, ruleId) } ?: Component.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER))
+                    HistoryFactTypeKeys.MATCH_ABORTED -> Component.translatable(MinecraftHistoryScreenKeys.ROUND_MATCH_ABORTED, outcome?.let { outcomeText(it.reasonId, ruleId) } ?: Component.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER))
+                    HistoryFactTypeKeys.WIN_SETTLED -> Component.translatable(MinecraftHistoryScreenKeys.ROUND_WIN_SETTLEMENT, outcome?.let { outcomeText(it.reasonId, ruleId) } ?: Component.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER))
+                    else -> Component.translatable(MinecraftHistoryScreenKeys.ROUND_COMPLETION, outcome?.let { outcomeText(it.reasonId, ruleId) } ?: Component.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER), outcome?.classification?.let(::classificationText) ?: "—")
                 },
                 actorSeat = null,
                 directTiles = emptyList(),
@@ -284,7 +284,7 @@ internal class HistoryRoundEventPresenter(
             )
             is HistoryReplayFactDto.RuleEffect -> HistoryFactPresentation(
                 source = this,
-                text = Text.translatable(MinecraftHistoryScreenKeys.ROUND_RULE_EFFECT, outcomeText(reasonId, ruleId)),
+                text = Component.translatable(MinecraftHistoryScreenKeys.ROUND_RULE_EFFECT, outcomeText(reasonId, ruleId)),
                 actorSeat = null,
                 directTiles = emptyList(),
                 revealedTiles = emptyList(),
@@ -326,7 +326,7 @@ internal class HistoryRoundEventPresenter(
      * @param typeKey 保存的事實種類。
      * @return 不包含格式 ID 的玩家用語。
      */
-    private fun eventText(typeKey: String): Text = Text.translatable(
+    private fun eventText(typeKey: String): Component = Component.translatable(
         when (typeKey) {
             HistoryFactTypeKeys.WIN_CONTINUATION_RESOLVED -> MinecraftHistoryScreenKeys.ROUND_EVENT_WIN_CONTINUATION
             HistoryFactTypeKeys.RETURNED_TO_ROOM -> MinecraftHistoryScreenKeys.ROUND_EVENT_RETURNED_TO_ROOM
@@ -343,7 +343,7 @@ internal class HistoryRoundEventPresenter(
      * @param nextStepId 自動處理後的下一步識別碼；開始／提交事實不以此欄位推斷完成。
      * @return 本地化規則選擇狀態。
      */
-    private fun ruleDecisionText(typeKey: String, nextStepId: String?): Text = Text.translatable(
+    private fun ruleDecisionText(typeKey: String, nextStepId: String?): Component = Component.translatable(
         when (typeKey) {
             HistoryFactTypeKeys.RULE_DECISION_STARTED -> MinecraftHistoryScreenKeys.RULE_DECISION_STARTED
             HistoryFactTypeKeys.RULE_DECISION_SUBMITTED -> MinecraftHistoryScreenKeys.RULE_DECISION_SUBMITTED
@@ -358,7 +358,7 @@ internal class HistoryRoundEventPresenter(
      * @param classification 保存的分類名稱。
      * @return 本地化分類。
      */
-    fun classificationText(classification: String): Text = Text.translatable(
+    fun classificationText(classification: String): Component = Component.translatable(
         when (classification) {
             RoundCompletionClassification.WIN.name -> MinecraftHistoryScreenKeys.ROUND_CLASSIFICATION_WIN
             RoundCompletionClassification.EXHAUSTIVE_DRAW.name -> MinecraftHistoryScreenKeys.ROUND_CLASSIFICATION_EXHAUSTIVE_DRAW
@@ -374,13 +374,13 @@ internal class HistoryRoundEventPresenter(
      * @param change 該次交易前後分數差。
      * @return 可附加於玩家分數列的差額文字。
      */
-    fun scoreChangeText(change: Int): Text = Text.literal(
+    fun scoreChangeText(change: Int): Component = Component.literal(
         when {
             change > 0 -> "+$change"
             change < 0 -> "−${-change.toLong()}"
             else -> "±0"
         },
-    ).styled { it.withColor(scoreChangeColor(change)) }
+    ).withStyle { it.withColor(scoreChangeColor(change)) }
 
     /**
      * 解析已保存的玩家結算身分；流局原因有登記結算身分用語時（例如日麻一般荒牌流局的聽牌與未聽）使用該用語，
@@ -390,15 +390,15 @@ internal class HistoryRoundEventPresenter(
      * @param row 玩家結算列。
      * @return 可翻譯的身分文字；沒有身分時為 null。
      */
-    fun settlementStatusText(outcome: HistoryOutcomePresentation, row: HistoryOutcomeRowPresentation): Text? {
+    fun settlementStatusText(outcome: HistoryOutcomePresentation, row: HistoryOutcomeRowPresentation): Component? {
         val labels = outcome.reasonId
             .takeIf { outcome.classification == RoundCompletionClassification.EXHAUSTIVE_DRAW.name }
             ?.let(exhaustiveDrawReasons::findSettlementStatusLabels)
         return when {
-            labels != null -> Text.translatable(
+            labels != null -> Component.translatable(
                 if (row.beneficiary) labels.beneficiaryTranslationKey else labels.othersTranslationKey,
-            ).styled { it.withColor(0xFFE08A) }
-            row.beneficiary -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_BENEFICIARY)
+            ).withStyle { it.withColor(0xFFE08A) }
+            row.beneficiary -> Component.translatable(MinecraftHistoryScreenKeys.ROUND_BENEFICIARY)
             else -> null
         }
     }
@@ -423,11 +423,11 @@ internal class HistoryRoundEventPresenter(
      * @param templates 正式結算模板註冊表。
      * @return 依保存順序排列的文字列。
      */
-    fun detailText(fieldId: String, value: HistoryWinDetailValueDto, templates: WinSettlementPresentationTemplateRegistry): List<Text> {
+    fun detailText(fieldId: String, value: HistoryWinDetailValueDto, templates: WinSettlementPresentationTemplateRegistry): List<Component> {
         val formatter = templates.detailTextFormatter(fieldId)
         return when (value) {
             is HistoryWinDetailValueDto.Quantities -> formatter.quantities(value.quantities.map { it.toQuantity() }).let { text ->
-                listOf(Text.translatable(text.translationKey, *text.arguments.toTypedArray()))
+                listOf(Component.translatable(text.translationKey, *text.arguments.toTypedArray()))
             }
             is HistoryWinDetailValueDto.Entries -> formatter.entries(
                 entries = value.entries.map {
@@ -439,17 +439,17 @@ internal class HistoryRoundEventPresenter(
                     )
                 },
             ).entries.map { entry ->
-                val name = entry.translationArgument?.let { Text.translatable(entry.translationKey, it) } ?: Text.translatable(entry.translationKey)
+                val name = entry.translationArgument?.let { Component.translatable(entry.translationKey, it) } ?: Component.translatable(entry.translationKey)
                 // 只適用於部分付款者的條目沿用結算面板的顏色，讓紀錄與面板的意思一致。
                 val text = if (entry.emphasis == EntryEmphasis.CONDITIONAL) {
-                    name.styled { it.withColor(StandardWinSettlementLayout.CONDITIONAL_ARGB and 0xFFFFFF) }
+                    name.withStyle { it.withColor(StandardWinSettlementLayout.CONDITIONAL_ARGB and 0xFFFFFF) }
                 } else {
                     name
                 }
                 val trailing = entry.trailingTranslationKey?.let { key ->
-                    entry.trailingTranslationArgument?.let { Text.translatable(key, it) } ?: Text.translatable(key)
-                } ?: entry.trailingText.takeIf(String::isNotBlank)?.let(Text::literal)
-                trailing?.let { text.append(" • ").append(it.copy().formatted(Formatting.GRAY)) } ?: text
+                    entry.trailingTranslationArgument?.let { Component.translatable(key, it) } ?: Component.translatable(key)
+                } ?: entry.trailingText.takeIf(String::isNotBlank)?.let(Component::literal)
+                trailing?.let { text.append(" • ").append(it.copy().withStyle(ChatFormatting.GRAY)) } ?: text
             }
             is HistoryWinDetailValueDto.TileFaces -> emptyList()
         }
@@ -463,8 +463,8 @@ internal class HistoryRoundEventPresenter(
      * @param templates 正式結算模板註冊表。
      * @return 本地化標題；沒有對應模板或標題時為 null。
      */
-    fun detailLabel(ruleId: String?, fieldId: String, templates: WinSettlementPresentationTemplateRegistry): Text? = ruleId
-        ?.let(templates::findTemplateForRule)?.detailFieldLabelKeys?.get(PresentationFieldId(fieldId))?.let(Text::translatable)
+    fun detailLabel(ruleId: String?, fieldId: String, templates: WinSettlementPresentationTemplateRegistry): Component? = ruleId
+        ?.let(templates::findTemplateForRule)?.detailFieldLabelKeys?.get(PresentationFieldId(fieldId))?.let(Component::translatable)
 
     /**
      * 欄位是否只列出贏家自己桌前的公開牌；牌譜已在贏家牌組旁畫出這些牌時不再重複列出。
@@ -488,20 +488,20 @@ internal class HistoryRoundEventPresenter(
      * @param extensionTypeId 擴充動作 ID；一般動作為 null。
      * @return 動作顯示文字。
      */
-    private fun actionText(ruleId: String?, actionType: String, extensionTypeId: String?): Text {
+    private fun actionText(ruleId: String?, actionType: String, extensionTypeId: String?): Component {
         when (actionType) {
-            HistoryActionTypeKeys.KAN -> return Text.translatable(requireNotNull(ruleWordings.find(ruleId, BuiltInRuleWordingIds.HISTORY_KAN)) { "Kan has a built-in wording" })
-            HistoryActionTypeKeys.DRAW -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_DRAW)
-            HistoryActionTypeKeys.EXHAUSTIVE_DRAW -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_CLASSIFICATION_EXHAUSTIVE_DRAW)
-            HistoryActionTypeKeys.GAME_STARTED -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_GAME_STARTED)
-            HistoryActionTypeKeys.ROUND_STARTED -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_ROUND_STARTED)
-            HistoryActionTypeKeys.MATCH_ENDED -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_MATCH_ENDED)
-            HistoryActionTypeKeys.DICE_ROLLED -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_DICE_ROLLED)
+            HistoryActionTypeKeys.KAN -> return Component.translatable(requireNotNull(ruleWordings.find(ruleId, BuiltInRuleWordingIds.HISTORY_KAN)) { "Kan has a built-in wording" })
+            HistoryActionTypeKeys.DRAW -> return Component.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_DRAW)
+            HistoryActionTypeKeys.EXHAUSTIVE_DRAW -> return Component.translatable(MinecraftHistoryScreenKeys.ROUND_CLASSIFICATION_EXHAUSTIVE_DRAW)
+            HistoryActionTypeKeys.GAME_STARTED -> return Component.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_GAME_STARTED)
+            HistoryActionTypeKeys.ROUND_STARTED -> return Component.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_ROUND_STARTED)
+            HistoryActionTypeKeys.MATCH_ENDED -> return Component.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_MATCH_ENDED)
+            HistoryActionTypeKeys.DICE_ROLLED -> return Component.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_DICE_ROLLED)
         }
         val actionId = normalizeActionId(actionType, extensionTypeId)
         val translationKey = actionVocabulary.find(ruleId, actionId)?.labelKey
             ?: exhaustiveDrawReasons.find(actionId)
-        return Text.translatable(translationKey ?: MinecraftHistoryScreenKeys.ROUND_ACTION_OTHER)
+        return Component.translatable(translationKey ?: MinecraftHistoryScreenKeys.ROUND_ACTION_OTHER)
     }
 
     /**
@@ -511,22 +511,22 @@ internal class HistoryRoundEventPresenter(
      * @param ruleId 對局規則模組 ID。
      * @return 結算原因顯示文字。
      */
-    private fun outcomeText(reasonId: String, ruleId: String?): Text = when (reasonId) {
-        BuiltInRoundOutcomeIds.TSUMO -> Text.translatable(requireNotNull(actionVocabulary.find(ruleId, MinecraftBuiltInGameActionIds.TSUMO)) { "Tsumo has a built-in label" }.labelKey)
-        BuiltInRoundOutcomeIds.RON -> Text.translatable(requireNotNull(actionVocabulary.find(ruleId, MinecraftBuiltInGameActionIds.RON)) { "Ron has a built-in label" }.labelKey)
-        BuiltInMatchEndReasonIds.SCHEDULE_COMPLETED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_SCHEDULE_COMPLETED)
-        BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_TARGET_SCORE_REACHED)
-        BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_EXTRA_ROUND_LIMIT_REACHED)
-        BuiltInMatchEndReasonIds.PLAYER_BUSTED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_PLAYER_BUSTED)
-        MinecraftMatchAbortReasonIds.TABLE_MISSING -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_ABORT_REASON_TABLE_MISSING)
-        MinecraftMatchAbortReasonIds.TABLE_BROKEN_BY_PLAYER -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_ABORT_REASON_TABLE_BROKEN_BY_PLAYER)
+    private fun outcomeText(reasonId: String, ruleId: String?): Component = when (reasonId) {
+        BuiltInRoundOutcomeIds.TSUMO -> Component.translatable(requireNotNull(actionVocabulary.find(ruleId, MinecraftBuiltInGameActionIds.TSUMO)) { "Tsumo has a built-in label" }.labelKey)
+        BuiltInRoundOutcomeIds.RON -> Component.translatable(requireNotNull(actionVocabulary.find(ruleId, MinecraftBuiltInGameActionIds.RON)) { "Ron has a built-in label" }.labelKey)
+        BuiltInMatchEndReasonIds.SCHEDULE_COMPLETED -> Component.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_SCHEDULE_COMPLETED)
+        BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED -> Component.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_TARGET_SCORE_REACHED)
+        BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED -> Component.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_EXTRA_ROUND_LIMIT_REACHED)
+        BuiltInMatchEndReasonIds.PLAYER_BUSTED -> Component.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_PLAYER_BUSTED)
+        MinecraftMatchAbortReasonIds.TABLE_MISSING -> Component.translatable(MinecraftHistoryScreenKeys.ROUND_ABORT_REASON_TABLE_MISSING)
+        MinecraftMatchAbortReasonIds.TABLE_BROKEN_BY_PLAYER -> Component.translatable(MinecraftHistoryScreenKeys.ROUND_ABORT_REASON_TABLE_BROKEN_BY_PLAYER)
         GameAbortReasonIds.MISSING_WIN_SETTLEMENT,
         GameAbortReasonIds.MISSING_DRAW_SETTLEMENT,
         GameAbortReasonIds.INVALID_PROGRESSION,
         GameAbortReasonIds.AUTOMATIC_DECISION_FAILED,
         GameAbortReasonIds.RULE_EXECUTION_FAILED,
-        -> Text.translatable(minecraftAbortReasonTranslationKey(reasonId))
-        else -> Text.translatable(roundOutcomes.find(reasonId) ?: exhaustiveDrawReasons.find(reasonId) ?: MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER)
+        -> Component.translatable(minecraftAbortReasonTranslationKey(reasonId))
+        else -> Component.translatable(roundOutcomes.find(reasonId) ?: exhaustiveDrawReasons.find(reasonId) ?: MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER)
     }
 
     /**
@@ -604,7 +604,7 @@ internal data class HistoryTransactionPresentation(
  * @property source 畫面需要更多保存資料（例如和牌者手牌）時查閱的原始事實。
  */
 internal data class HistoryFactPresentation(
-    val text: Text,
+    val text: Component,
     val actorSeat: Int?,
     val directTiles: List<TileFaceViewDto>,
     val revealedTiles: List<TileFaceViewDto>,
@@ -652,7 +652,7 @@ private data class RuleDecisionStepKey(
  */
 internal data class HistoryOutcomePresentation(
     val reasonId: String,
-    val reasonText: Text,
+    val reasonText: Component,
     val classification: String?,
     val transitionDirective: String?,
     val nextDealerSeat: Int?,
@@ -686,7 +686,7 @@ internal data class HistoryOutcomeRowPresentation(
  * @param reasonText 已解析的結算原因顯示文字。
  * @return 結算呈現資料。
  */
-private fun HistoryRoundOutcomeDto.toPresentation(identitySeats: List<Int>, reasonText: Text): HistoryOutcomePresentation = HistoryOutcomePresentation(
+private fun HistoryRoundOutcomeDto.toPresentation(identitySeats: List<Int>, reasonText: Component): HistoryOutcomePresentation = HistoryOutcomePresentation(
     reasonId = reasonId,
     reasonText = reasonText,
     classification = classification,

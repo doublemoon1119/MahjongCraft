@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
-import net.minecraft.nbt.NbtCompound
+import net.minecraft.nbt.CompoundTag
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -13,7 +13,7 @@ class TileActionPopupKindNbtTest {
     @Test
     fun `all kinds survive a name round trip`() {
         TileActionPopupKind.entries.forEach { kind ->
-            val nbt = NbtCompound()
+            val nbt = CompoundTag()
             TileActionPopupKindNbt.write(nbt, key, kind)
 
             assertEquals(kind.name, nbt.getString(key))
@@ -24,8 +24,8 @@ class TileActionPopupKindNbtTest {
     /** 缺少欄位、未知名稱或型別錯誤時隱藏提示。 */
     @Test
     fun `unknown or malformed values hide the popup`() {
-        assertEquals(TileActionPopupKind.NONE, TileActionPopupKindNbt.read(NbtCompound(), key))
-        assertEquals(TileActionPopupKind.NONE, TileActionPopupKindNbt.read(NbtCompound().apply { putString(key, "UNKNOWN") }, key))
-        assertEquals(TileActionPopupKind.NONE, TileActionPopupKindNbt.read(NbtCompound().apply { putInt(key, 99) }, key))
+        assertEquals(TileActionPopupKind.NONE, TileActionPopupKindNbt.read(CompoundTag(), key))
+        assertEquals(TileActionPopupKind.NONE, TileActionPopupKindNbt.read(CompoundTag().apply { putString(key, "UNKNOWN") }, key))
+        assertEquals(TileActionPopupKind.NONE, TileActionPopupKindNbt.read(CompoundTag().apply { putInt(key, 99) }, key))
     }
 }

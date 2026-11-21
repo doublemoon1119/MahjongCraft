@@ -18,7 +18,7 @@ import net.minecraft.server.MinecraftServer
 import kotlin.uuid.Uuid
 
 /**
- * 將單次 Minecraft server session 與其 overworld [MahjongAuthoritativePersistentState] 接起來。
+ * 將單次 Minecraft server session 與其 overworld [MahjongAuthoritativeSavedData] 接起來。
  *
  * @property codec 編碼與解碼權威狀態的持久化 codec。
  * @property store 目前的權威狀態儲存庫。
@@ -37,8 +37,8 @@ class FabricAuthoritativeStatePersistence(
 ) {
     private val logger = mahjongCraftLogger(FabricAuthoritativeStatePersistence::class)
 
-    /** 目前 server session 使用的 Minecraft persistent state。 */
-    private var persistentState: MahjongAuthoritativePersistentState? = null
+    /** 目前 server session 使用的 Minecraft saved data。 */
+    private var savedData: MahjongAuthoritativeSavedData? = null
 
     /**
      * 載入 [server] 所屬世界的權威狀態，並開始轉送後續 dirty snapshot。
@@ -46,15 +46,15 @@ class FabricAuthoritativeStatePersistence(
      * @param server 要載入權威狀態的 Minecraft 伺服器。
      */
     suspend fun attach(server: MinecraftServer) {
-        check(persistentState == null) { "Authoritative persistence is already attached to a server session" }
+        check(savedData == null) { "Authoritative persistence is already attached to a server session" }
         try {
             val state = attachPersistenceState(
                 load = {
-                    loadPersistentStateStrict(
+                    loadSavedDataStrict(
                         server = server,
-                        key = MahjongAuthoritativePersistentState.STORAGE_KEY,
-                        decode = { nbt -> MahjongAuthoritativePersistentState.fromNbt(nbt, codec, characterRegistry) },
-                        create = { MahjongAuthoritativePersistentState.create(codec, characterRegistry) },
+                        key = MahjongAuthoritativeSavedData.STORAGE_KEY,
+                        decode = { nbt -> MahjongAuthoritativeSavedData.fromNbt(nbt, codec, characterRegistry) },
+                        create = { MahjongAuthoritativeSavedData.create(codec, characterRegistry) },
                     )
                 },
                 initialize = { state ->
@@ -92,10 +92,10 @@ class FabricAuthoritativeStatePersistence(
                     }
                 },
             )
-            persistentState = state
+            savedData = state
             state.characterDataFailure?.let { cause ->
                 logger.warn("AI character data could not be read; its original section is preserved and character changes are disabled", cause)
-                dataStatus.report(MahjongDataProblem(MahjongDataSource.AI_CHARACTERS, persistentStateDisplayPath(MahjongAuthoritativePersistentState.STORAGE_KEY), classifyDataLoadFailure(cause)))
+                dataStatus.report(MahjongDataProblem(MahjongDataSource.AI_CHARACTERS, savedDataDisplayPath(MahjongAuthoritativeSavedData.STORAGE_KEY), classifyDataLoadFailure(cause)))
             }
         } catch (cancelled: CancellationException) {
             throw cancelled
@@ -106,7 +106,7 @@ class FabricAuthoritativeStatePersistence(
     }
 
     /** 取得同一版本的牌局與角色快照；沒有有效 session 時為 null。 */
-    fun characterSnapshot(): AiCharacterStateSnapshot? = persistentState?.characterSnapshot()
+    fun characterSnapshot(): AiCharacterStateSnapshot? = savedData?.characterSnapshot()
 
     /**
      * 在目前 session 的保存封套內提交外部實體成員。
@@ -123,8 +123,8 @@ class FabricAuthoritativeStatePersistence(
         rejected: () -> T,
         action: suspend () -> T,
     ): T {
-        val saved = persistentState ?: return rejected()
-        return saved.withParticipant(capture, { persistentState === saved && validate() }, rejected, action)
+        val saved = savedData ?: return rejected()
+        return saved.withParticipant(capture, { savedData === saved && validate() }, rejected, action)
     }
 
     /**
@@ -143,8 +143,8 @@ class FabricAuthoritativeStatePersistence(
         action: suspend () -> T,
     ): T {
         if (captures.isEmpty()) return action()
-        val saved = persistentState ?: return rejected()
-        return saved.withParticipants(captures, { persistentState === saved && validate() }, rejected, action)
+        val saved = savedData ?: return rejected()
+        return saved.withParticipants(captures, { savedData === saved && validate() }, rejected, action)
     }
 
     /**
@@ -157,7 +157,7 @@ class FabricAuthoritativeStatePersistence(
      */
     internal suspend fun refreshParticipant(expected: Room, sessionId: Uuid, capture: AiCharacterParticipantCapture): Boolean = try {
         store.update(waitForLock = false) { current ->
-            val saved = persistentState
+            val saved = savedData
             val metadata = saved?.characterSnapshot()
             val accepted = current.rooms[expected.id] == expected &&
                 metadata?.sessionId == sessionId &&
@@ -175,7 +175,7 @@ class FabricAuthoritativeStatePersistence(
     /** 停止 dirty 轉送；Minecraft 仍持有 state，會在既有世界保存流程中寫入磁碟。 */
     suspend fun detach() {
         store.setDirtyListener {}
-        persistentState = null
+        savedData = null
         logger.debug("Detached authoritative persistence from the current server session")
     }
 
@@ -220,7 +220,7 @@ internal suspend fun attachAuthoritativeStateOrDisable(
     report(
         MahjongDataProblem(
             source = MahjongDataSource.AUTHORITATIVE_STATE,
-            file = persistentStateDisplayPath(MahjongAuthoritativePersistentState.STORAGE_KEY),
+            file = savedDataDisplayPath(MahjongAuthoritativeSavedData.STORAGE_KEY),
             cause = classifyDataLoadFailure(exception),
         ),
     )

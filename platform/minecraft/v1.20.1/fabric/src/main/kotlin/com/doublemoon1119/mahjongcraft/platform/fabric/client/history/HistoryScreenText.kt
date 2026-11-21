@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryOutcomeFi
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -20,11 +20,11 @@ internal object HistoryScreenText {
      * @param value 目前保存狀態。
      * @return 應顯示的提示文字；無需提示時為 null。
      */
-    fun archiveStatus(value: HistoryArchiveStatusView): Text? = when (value) {
+    fun archiveStatus(value: HistoryArchiveStatusView): Component? = when (value) {
         HistoryArchiveStatusView.Idle -> null
-        is HistoryArchiveStatusView.Resolved -> value.status.translationKey?.let(Text::translatable)
-        is HistoryArchiveStatusView.Pending -> Text.translatable(MinecraftHistoryScreenKeys.ARCHIVE_STATUS_PENDING)
-        is HistoryArchiveStatusView.Failed -> Text.translatable(MinecraftHistoryScreenKeys.ARCHIVE_UNAVAILABLE)
+        is HistoryArchiveStatusView.Resolved -> value.status.translationKey?.let(Component::translatable)
+        is HistoryArchiveStatusView.Pending -> Component.translatable(MinecraftHistoryScreenKeys.ARCHIVE_STATUS_PENDING)
+        is HistoryArchiveStatusView.Failed -> Component.translatable(MinecraftHistoryScreenKeys.ARCHIVE_UNAVAILABLE)
     }
 
     /**
@@ -74,10 +74,10 @@ internal object HistoryScreenText {
      * @param value 對局結果狀態。
      * @return 對應的翻譯文字。
      */
-    fun outcome(value: HistoryOutcomeFilterDto?): Text = when (value) {
-        HistoryOutcomeFilterDto.COMPLETED -> Text.translatable(MinecraftHistoryScreenKeys.OUTCOME_COMPLETED)
-        HistoryOutcomeFilterDto.INTERRUPTED -> Text.translatable(MinecraftHistoryScreenKeys.OUTCOME_INTERRUPTED)
-        null -> Text.translatable(MinecraftHistoryScreenKeys.UNKNOWN)
+    fun outcome(value: HistoryOutcomeFilterDto?): Component = when (value) {
+        HistoryOutcomeFilterDto.COMPLETED -> Component.translatable(MinecraftHistoryScreenKeys.OUTCOME_COMPLETED)
+        HistoryOutcomeFilterDto.INTERRUPTED -> Component.translatable(MinecraftHistoryScreenKeys.OUTCOME_INTERRUPTED)
+        null -> Component.translatable(MinecraftHistoryScreenKeys.UNKNOWN)
     }
 
     /**
@@ -87,9 +87,9 @@ internal object HistoryScreenText {
      * @param registry 規則顯示名稱 registry。
      * @return 規則顯示文字。
      */
-    fun rule(value: String?, registry: RuleModuleDisplayNameRegistry): Text = value?.let { id ->
-        registry.find(id)?.let(Text::translatable) ?: Text.literal(id)
-    } ?: Text.translatable(MinecraftHistoryScreenKeys.UNKNOWN)
+    fun rule(value: String?, registry: RuleModuleDisplayNameRegistry): Component = value?.let { id ->
+        registry.find(id)?.let(Component::translatable) ?: Component.literal(id)
+    } ?: Component.translatable(MinecraftHistoryScreenKeys.UNKNOWN)
 
     /**
      * 從結果中只取指定玩家的名次與分數。

@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfileRegistry
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.minecraft.client.MinecraftClient
+import net.minecraft.client.Minecraft
 import kotlin.uuid.toKotlinUuid
 
 /**
@@ -31,8 +31,8 @@ class LatestDiscardHighlightController(
      *
      * @param client Minecraft client 狀態與當前世界。
      */
-    private fun tick(client: MinecraftClient) {
-        val tiles = client.world?.entities?.filterIsInstance<MahjongTileEntity>()?.toList().orEmpty()
+    private fun tick(client: Minecraft) {
+        val tiles = client.level?.entitiesForRendering()?.filterIsInstance<MahjongTileEntity>()?.toList().orEmpty()
         tiles.forEach(MahjongTileEntity::clearLatestDiscardHighlight)
         if (!configStore.current.presentationVisibility.latestDiscardHighlightEnabled) return
         val latestDiscards = stateStore.gameTableIds().mapNotNull { tableId ->

@@ -22,9 +22,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayInput
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayMotion
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayTransform
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationSpec
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.world.ClientWorld
-import net.minecraft.util.math.Box
+import net.minecraft.client.Minecraft
+import net.minecraft.client.multiplayer.ClientLevel
+import net.minecraft.world.phys.AABB
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.max
@@ -53,7 +53,7 @@ class ClientHandTileLayoutController(
     private var frame: Map<Uuid, TileDisplayTransform> = emptyMap()
 
     /** 最近建立布局的世界實例，避免不同連線共用同一個時間值。 */
-    private var world: ClientWorld? = null
+    private var world: ClientLevel? = null
 
     /** 各桌的本人手牌排列時間軸；跨回合保留，由伺服器在發牌開始時送出空排列來結束上一局。 */
     private val timelines = mutableMapOf<Uuid, PrivateHandOrderTimeline>()
@@ -70,16 +70,16 @@ class ClientHandTileLayoutController(
      * @param client 目前客戶端。
      * @param tickDelta 本幀部分 tick。
      */
-    fun beginFrame(client: MinecraftClient, tickDelta: Float) {
-        val currentWorld = client.world ?: return clear()
+    fun beginFrame(client: Minecraft, tickDelta: Float) {
+        val currentWorld = client.level ?: return clear()
         val localId = client.player?.uuid?.toKotlinUuid() ?: return clear()
         if (world !== currentWorld) {
             clear()
             world = currentWorld
         }
-        val time = currentWorld.time.toDouble() + tickDelta
+        val time = currentWorld.gameTime.toDouble() + tickDelta
         val seatedTableId = stateStore.findTableWhereSeated(localId)
-        val tilesByTable = currentWorld.entities.asSequence().filterIsInstance<MahjongTileEntity>()
+        val tilesByTable = currentWorld.entitiesForRendering().asSequence().filterIsInstance<MahjongTileEntity>()
             .filter { !it.isRemoved }
             .groupBy { it.managedTableId }
         val active = mutableSetOf<SlotKey>()
@@ -181,7 +181,7 @@ class ClientHandTileLayoutController(
     private fun MahjongTileEntity.displayInput(): TileDisplayInput = TileDisplayInput(
         target = TileDisplayTransform(
             position = DiceAnimationVector(x, y, z),
-            yawDegrees = yaw,
+            yawDegrees = yRot,
             poseDegrees = tilePose.rotationDegrees,
         ),
         motion = takeIf { it.animating && it.animationDurationTicks > 0 }?.let {
@@ -209,7 +209,7 @@ class ClientHandTileLayoutController(
      * @param entity 要繪製或選取的牌張。
      * @return 本幀絕對位置與姿態；不是本機排列的牌時為 null。
      */
-    fun display(entity: MahjongTileEntity): TileDisplayTransform? = if (entity.world === world) frame[entity.uuid.toKotlinUuid()] else null
+    fun display(entity: MahjongTileEntity): TileDisplayTransform? = if (entity.level() === world) frame[entity.uuid.toKotlinUuid()] else null
 
     /**
      * 依本人看見的位置與翻轉角建立包圍盒；未接管的牌保留原生結果。
@@ -217,7 +217,7 @@ class ClientHandTileLayoutController(
      * @param entity 要進行視線選取或裁切的牌張。
      * @return 本幀顯示位置的保守包圍盒。
      */
-    fun adjustedBox(entity: MahjongTileEntity): Box {
+    fun adjustedBox(entity: MahjongTileEntity): AABB {
         val transform = display(entity) ?: return entity.boundingBox
         val angle = Math.toRadians(transform.poseDegrees.toDouble())
         val height = abs(cos(angle)) * MahjongTileDimensions.TILE_HEIGHT + abs(sin(angle)) * MahjongTileDimensions.TILE_DEPTH
@@ -227,7 +227,7 @@ class ClientHandTileLayoutController(
             b = abs(sin(angle)) * MahjongTileDimensions.TILE_HEIGHT + abs(cos(angle)) * MahjongTileDimensions.TILE_DEPTH,
         )
         val position = transform.position
-        return Box(
+        return AABB(
             position.x - width / 2,
             position.y,
             position.z - width / 2,

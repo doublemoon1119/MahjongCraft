@@ -6,8 +6,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerKeys
-import net.minecraft.client.resource.language.I18n
-import net.minecraft.text.Text
+import net.minecraft.client.resources.language.I18n
+import net.minecraft.network.chat.Component
 import kotlin.uuid.Uuid
 
 /**
@@ -82,7 +82,7 @@ class ClientPlayerDisplayNameResolver(
     private fun characterName(snapshot: AiCharacterSnapshot?): String? {
         snapshot?.displayName?.let { return it }
         if (snapshot?.characterId == BuiltInAiCharacters.TILE_MASCOT_ID) return null
-        return snapshot?.definition?.nameKey?.takeIf(I18n::hasTranslation)?.let { Text.translatable(it).string }
+        return snapshot?.definition?.nameKey?.takeIf(I18n::exists)?.let { Component.translatable(it).string }
     }
 
     /**
@@ -90,7 +90,7 @@ class ClientPlayerDisplayNameResolver(
      *
      * @return 本地化的未知玩家文字。
      */
-    private fun unknownName(): String = Text.translatable(MinecraftPlayerKeys.UNKNOWN).string
+    private fun unknownName(): String = Component.translatable(MinecraftPlayerKeys.UNKNOWN).string
 
     /**
      * 依桌況資料優先順序取得房間內 AI 的座位排列。

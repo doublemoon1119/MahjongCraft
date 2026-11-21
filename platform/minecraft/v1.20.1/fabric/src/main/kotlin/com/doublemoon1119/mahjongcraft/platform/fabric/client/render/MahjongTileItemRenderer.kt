@@ -11,19 +11,19 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileModelResourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureAssetPath
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureResourceId
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.blaze3d.vertex.VertexConsumer
 import net.fabricmc.fabric.api.client.model.loading.v1.FabricBakedModelManager
 import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.render.RenderLayer
-import net.minecraft.client.render.VertexConsumer
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.render.model.BakedModel
-import net.minecraft.client.render.model.json.ModelTransformationMode
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.item.ItemStack
-import net.minecraft.screen.PlayerScreenHandler
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.random.Random
+import net.minecraft.client.Minecraft
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.RenderType
+import net.minecraft.client.resources.model.BakedModel
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.util.RandomSource
+import net.minecraft.world.inventory.InventoryMenu
+import net.minecraft.world.item.ItemDisplayContext
+import net.minecraft.world.item.ItemStack
 import org.joml.Vector3f
 import org.koin.core.context.GlobalContext
 
@@ -34,7 +34,7 @@ import org.koin.core.context.GlobalContext
  * 所有 asset key（見 `allTileAssetKeys`）透過 [MahjongTileModelLoadingPlugin]
  * 登記為可獨立查詢的已烘焙模型，直接重繪其原始 quad，幾何與 UV 與遷移前完全一致。找不到
  * 已烘焙模型的 asset key，改為手繪與內建模型相同的立方體幾何，正面材質直接綁定 runtime 解析的
- * [Identifier]，不經過 atlas；缺少材質時退回內建 unknown 牌面，不靜默顯示錯誤畫面。
+ * [ResourceLocation]，不經過 atlas；缺少材質時退回內建 unknown 牌面，不靜默顯示錯誤畫面。
  */
 object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer {
     private val logger = mahjongCraftLogger(MahjongTileItemRenderer::class)
@@ -43,19 +43,19 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
     private val reportedMissingTextureKeys = mutableSetOf<String>()
 
     /** 取得已烘焙模型使用的固定隨機來源；此模型沒有隨機變體，種子值本身不影響外觀。 */
-    private val quadRandom = Random.create(42L)
+    private val quadRandom = RandomSource.create(42L)
 
     /** vanilla 供已烘焙模型使用的共用材質 atlas，item／block model 的 sprite 皆繪製於此。 */
-    private val BLOCK_ATLAS_TEXTURE: Identifier = PlayerScreenHandler.BLOCK_ATLAS_TEXTURE
+    private val BLOCK_ATLAS_TEXTURE: ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     /** 半透明牌繪製時的縮放倍率；略小於 1，避免貼著桌面的面與桌面重疊閃爍，肉眼看不出大小差異。 */
     private const val TRANSLUCENT_TILE_SCALE: Float = 0.995f
 
     override fun render(
         stack: ItemStack,
-        mode: ModelTransformationMode,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        mode: ItemDisplayContext,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
         overlay: Int,
     ) {
@@ -85,14 +85,14 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
     fun renderWithAppearance(
         appearanceId: String,
         assetKey: String,
-        mode: ModelTransformationMode,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        mode: ItemDisplayContext,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
         overlay: Int,
         alpha: Float = 1f,
     ) {
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(-0.5, -0.5, -0.5)
         try {
             renderInternal(
@@ -106,7 +106,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
                 alpha = alpha,
             )
         } finally {
-            matrices.pop()
+            matrices.popPose()
         }
     }
 
@@ -122,13 +122,13 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
      */
     fun renderUnknownWithAppearance(
         appearanceId: String,
-        mode: ModelTransformationMode,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        mode: ItemDisplayContext,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
         overlay: Int,
     ) {
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(-0.5, -0.5, -0.5)
         try {
             val registry = GlobalContext.get().get<MinecraftTileAssetRegistry>()
@@ -144,8 +144,8 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
                 )
             renderModel(
                 model = findBakedModel(FixedMahjongTileModelPreparedData.syntheticUnknownModelId(appearance.id)),
-                fallbackTextureId = Identifier(appearance.unknownFaceTextureId),
-                coverTextureId = Identifier(appearance.coverTextureId),
+                fallbackTextureId = ResourceLocation(appearance.unknownFaceTextureId),
+                coverTextureId = ResourceLocation(appearance.coverTextureId),
                 mode = mode,
                 matrices = matrices,
                 vertexConsumers = vertexConsumers,
@@ -153,7 +153,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
                 overlay = overlay,
             )
         } finally {
-            matrices.pop()
+            matrices.popPose()
         }
     }
 
@@ -199,9 +199,9 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
     private fun renderInternal(
         assetKey: String,
         appearanceId: String?,
-        mode: ModelTransformationMode,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        mode: ItemDisplayContext,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
         overlay: Int,
         alpha: Float = 1f,
@@ -209,10 +209,10 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         val registry = GlobalContext.get().get<MinecraftTileAssetRegistry>()
         val appearance = effectiveAppearance(registry, assetKey, appearanceId)
         val resource = registry.findResources(assetKey)
-        val textureId = resource?.textureId?.let(::Identifier)
-            ?: Identifier(tileTextureResourceId(assetKey, registry))
-        val coverTextureId = appearance?.coverTextureId?.let(::Identifier)
-            ?: Identifier(MinecraftModMetadata.MOD_ID, tileTextureAssetPath("cover"))
+        val textureId = resource?.textureId?.let(::ResourceLocation)
+            ?: ResourceLocation(tileTextureResourceId(assetKey, registry))
+        val coverTextureId = appearance?.coverTextureId?.let(::ResourceLocation)
+            ?: ResourceLocation(MinecraftModMetadata.MOD_ID, tileTextureAssetPath("cover"))
         val bakedModel = if (appearance != null) {
             findBakedModel(FixedMahjongTileModelPreparedData.syntheticModelId(appearance.id, assetKey))
         } else {
@@ -256,21 +256,21 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
     private fun renderModel(
         model: BakedModel?,
         fallbackModel: BakedModel? = null,
-        fallbackTextureId: Identifier,
-        coverTextureId: Identifier,
-        mode: ModelTransformationMode,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        fallbackTextureId: ResourceLocation,
+        coverTextureId: ResourceLocation,
+        mode: ItemDisplayContext,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
         overlay: Int,
         assetKey: String = UNKNOWN_TILE_ASSET_KEY,
         translucent: Boolean = false,
         alpha: Float = 1f,
     ) {
-        val client = MinecraftClient.getInstance()
+        val client = Minecraft.getInstance()
 
-        matrices.push()
-        // vanilla ItemRenderer.renderItem(...BakedModel) 在呼叫 builtin renderer 前，已經對「這個
+        matrices.pushPose()
+        // vanilla ItemRenderer.render(...BakedModel) 在呼叫 builtin renderer 前，已經對「這個
         // ItemStack 解析到的模型」（本身沒有 display 區塊的 builtin/entity marker，等同 identity
         // transform）無條件做過一次 translate(-0.5,-0.5,-0.5) 置中，此時已疊加在 matrices 最外層。
         // 若直接在這層之上套用子模型 transform，等同「先縮放旋轉、再置中」，順序與原本「先置中、
@@ -280,8 +280,8 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         matrices.translate(0.5, 0.5, 0.5)
         // 所有內建子模型共用同一個 display transform；找不到已烘焙模型時借用 unknown 子模型的
         // transform，避免手動抄寫 mahjong_tile_base.json 的 8 組數值造成打字誤差。
-        val referenceTransform = (model ?: fallbackModel ?: findBakedModel(UNKNOWN_TILE_ASSET_KEY))?.transformation
-        referenceTransform?.getTransformation(mode)?.apply(false, matrices)
+        val referenceTransform = (model ?: fallbackModel ?: findBakedModel(UNKNOWN_TILE_ASSET_KEY))?.transforms
+        referenceTransform?.getTransform(mode)?.apply(false, matrices)
         // 半透明牌貼著桌面的面若與桌面同一平面會閃爍；以模型中心略微縮小，讓每一面都離開所接觸的平面。
         if (translucent) matrices.scale(TRANSLUCENT_TILE_SCALE, TRANSLUCENT_TILE_SCALE, TRANSLUCENT_TILE_SCALE)
         matrices.translate(-0.5, -0.5, -0.5)
@@ -303,7 +303,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
             }
         }
 
-        matrices.pop()
+        matrices.popPose()
     }
 
     /**
@@ -316,10 +316,10 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
      * @param alpha 0 到 1 之間的不透明度。
      * @return 頂點緩衝。
      */
-    private fun tileBuffer(vertexConsumers: VertexConsumerProvider, texture: Identifier, translucent: Boolean, alpha: Float): VertexConsumer = when {
-        alpha < 1f -> AlphaVertexConsumer(vertexConsumers.getBuffer(RenderLayer.getItemEntityTranslucentCull(texture)), alpha)
-        translucent -> vertexConsumers.getBuffer(RenderLayer.getEntityTranslucent(texture))
-        else -> vertexConsumers.getBuffer(RenderLayer.getEntityCutout(texture))
+    private fun tileBuffer(vertexConsumers: MultiBufferSource, texture: ResourceLocation, translucent: Boolean, alpha: Float): VertexConsumer = when {
+        alpha < 1f -> AlphaVertexConsumer(vertexConsumers.getBuffer(RenderType.itemEntityTranslucentCull(texture)), alpha)
+        translucent -> vertexConsumers.getBuffer(RenderType.entityTranslucent(texture))
+        else -> vertexConsumers.getBuffer(RenderType.entityCutout(texture))
     }
 
     /**
@@ -330,7 +330,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
      */
     private fun findBakedModel(assetKey: String): BakedModel? {
         val registry = GlobalContext.get().get<MinecraftTileAssetRegistry>()
-        return findBakedModel(Identifier(tileModelResourceId(assetKey, registry)))
+        return findBakedModel(ResourceLocation(tileModelResourceId(assetKey, registry)))
     }
 
     /**
@@ -339,8 +339,8 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
      * @param modelId 要查詢的模型 ID。
      * @return 找到的有效烘焙模型；缺少或為 missing model 時回傳 `null`。
      */
-    private fun findBakedModel(modelId: Identifier): BakedModel? {
-        val manager = MinecraftClient.getInstance().bakedModelManager
+    private fun findBakedModel(modelId: ResourceLocation): BakedModel? {
+        val manager = Minecraft.getInstance().modelManager
         val model = (manager as FabricBakedModelManager).getModel(modelId) ?: return null
         return if (model === manager.missingModel) null else model
     }
@@ -358,17 +358,17 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
      */
     private fun drawBakedModel(
         model: BakedModel,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
         overlay: Int,
         translucent: Boolean = false,
         alpha: Float = 1f,
     ) {
         val buffer = tileBuffer(vertexConsumers, BLOCK_ATLAS_TEXTURE, translucent, alpha)
-        val entry = matrices.peek()
+        val entry = matrices.last()
         model.getQuads(null, null, quadRandom).forEach { quad ->
-            buffer.quad(entry, quad, 1.0f, 1.0f, 1.0f, light, overlay)
+            buffer.putBulkData(entry, quad, 1.0f, 1.0f, 1.0f, light, overlay)
         }
     }
 
@@ -385,10 +385,10 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
      * @param alpha 0 到 1 之間的不透明度。
      */
     private fun drawDynamicCuboid(
-        faceTextureId: Identifier,
-        coverTextureId: Identifier,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        faceTextureId: ResourceLocation,
+        coverTextureId: ResourceLocation,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
         overlay: Int,
         translucent: Boolean = false,
@@ -396,7 +396,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
     ) {
         // 此處只處理缺少有效模型的回退立方體，非正面五面沿用牌組共用 cover 牌體材質圖集。
         // 有效的自訂模型不經此流程，其各面材質與 UV 由模型 JSON 定義。
-        val entry = matrices.peek()
+        val entry = matrices.last()
         val faceBuffer = tileBuffer(vertexConsumers, faceTextureId, translucent, alpha)
         val coverBuffer = tileBuffer(vertexConsumers, coverTextureId, translucent, alpha)
 
@@ -404,13 +404,13 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
             val buffer = if (face.usesFaceTexture) faceBuffer else coverBuffer
             face.corners.forEachIndexed { index, corner ->
                 val (u, v) = face.uvAt(index)
-                buffer.vertex(entry.positionMatrix, corner.x, corner.y, corner.z)
+                buffer.vertex(entry.pose(), corner.x, corner.y, corner.z)
                     .color(1.0f, 1.0f, 1.0f, 1.0f)
-                    .texture(u, v)
-                    .overlay(overlay)
-                    .light(light)
-                    .normal(entry.normalMatrix, face.normal.x, face.normal.y, face.normal.z)
-                    .next()
+                    .uv(u, v)
+                    .overlayCoords(overlay)
+                    .uv2(light)
+                    .normal(entry.normal(), face.normal.x, face.normal.y, face.normal.z)
+                    .endVertex()
             }
         }
     }

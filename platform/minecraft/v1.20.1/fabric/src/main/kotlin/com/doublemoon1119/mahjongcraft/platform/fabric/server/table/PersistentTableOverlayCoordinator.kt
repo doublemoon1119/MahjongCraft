@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
+import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 
 /** 同時管理 Round Info 與 Player Info 的常駐桌級 overlay lease 與清除。 */
@@ -17,7 +17,7 @@ class PersistentTableOverlayCoordinator {
      * @param controllerPos controller 方塊位置。
      * @param gameTime 隱藏 lease 的結束遊戲時間。
      */
-    fun hideUntil(world: ServerWorld, tableId: Uuid, controllerPos: BlockPos, gameTime: Long) {
+    fun hideUntil(world: ServerLevel, tableId: Uuid, controllerPos: BlockPos, gameTime: Long) {
         findRoundInfo(world, tableId, controllerPos).forEach { it.hideUntil(gameTime) }
         findPlayerInfo(world, tableId, controllerPos).forEach { it.hideUntil(gameTime) }
     }
@@ -29,7 +29,7 @@ class PersistentTableOverlayCoordinator {
      * @param tableId 桌子 UUID。
      * @param controllerPos controller 方塊位置。
      */
-    fun hideUntilRemoved(world: ServerWorld, tableId: Uuid, controllerPos: BlockPos) {
+    fun hideUntilRemoved(world: ServerLevel, tableId: Uuid, controllerPos: BlockPos) {
         findRoundInfo(world, tableId, controllerPos).forEach(MahjongRoundInfoEntity::hideUntilRemoved)
         findPlayerInfo(world, tableId, controllerPos).forEach(MahjongPlayerInfoEntity::hideUntilRemoved)
     }
@@ -42,7 +42,7 @@ class PersistentTableOverlayCoordinator {
      * @param tableId 桌子 UUID。
      * @param controllerPos controller 方塊位置。
      */
-    fun showNow(world: ServerWorld, tableId: Uuid, controllerPos: BlockPos) {
+    fun showNow(world: ServerLevel, tableId: Uuid, controllerPos: BlockPos) {
         findRoundInfo(world, tableId, controllerPos).forEach(MahjongRoundInfoEntity::showNow)
         findPlayerInfo(world, tableId, controllerPos).forEach(MahjongPlayerInfoEntity::showNow)
     }
@@ -55,7 +55,7 @@ class PersistentTableOverlayCoordinator {
      * @param controllerPos controller 方塊位置。
      * @return 移除的 entity 數量。
      */
-    fun clear(world: ServerWorld, tableId: Uuid, controllerPos: BlockPos): Int {
+    fun clear(world: ServerLevel, tableId: Uuid, controllerPos: BlockPos): Int {
         val entities = findRoundInfo(world, tableId, controllerPos) + findPlayerInfo(world, tableId, controllerPos)
         entities.forEach { it.discard() }
         return entities.size
@@ -67,7 +67,7 @@ class PersistentTableOverlayCoordinator {
      * @param pos 桌子 controller 方塊位置。
      * @return 搜尋範圍。
      */
-    private fun searchBox(pos: BlockPos) = Box(pos).expand(
+    private fun searchBox(pos: BlockPos) = AABB(pos).inflate(
         TableOverlayEntitySearch.HORIZONTAL_RADIUS,
         TableOverlayEntitySearch.VERTICAL_RADIUS,
         TableOverlayEntitySearch.HORIZONTAL_RADIUS,
@@ -81,7 +81,7 @@ class PersistentTableOverlayCoordinator {
      * @param pos 桌子 controller 方塊位置。
      * @return 搜尋範圍內由該桌管理的回合資訊 entity。
      */
-    private fun findRoundInfo(world: ServerWorld, tableId: Uuid, pos: BlockPos) = world.getEntitiesByClass(MahjongRoundInfoEntity::class.java, searchBox(pos)) { it.managedTableId == tableId }
+    private fun findRoundInfo(world: ServerLevel, tableId: Uuid, pos: BlockPos) = world.getEntitiesOfClass(MahjongRoundInfoEntity::class.java, searchBox(pos)) { it.managedTableId == tableId }
 
     /**
      * 搜尋桌子附近由該桌管理的玩家資訊 overlay。
@@ -91,5 +91,5 @@ class PersistentTableOverlayCoordinator {
      * @param pos 桌子 controller 方塊位置。
      * @return 搜尋範圍內由該桌管理的玩家資訊 entity。
      */
-    private fun findPlayerInfo(world: ServerWorld, tableId: Uuid, pos: BlockPos) = world.getEntitiesByClass(MahjongPlayerInfoEntity::class.java, searchBox(pos)) { it.managedTableId == tableId }
+    private fun findPlayerInfo(world: ServerLevel, tableId: Uuid, pos: BlockPos) = world.getEntitiesOfClass(MahjongPlayerInfoEntity::class.java, searchBox(pos)) { it.managedTableId == tableId }
 }

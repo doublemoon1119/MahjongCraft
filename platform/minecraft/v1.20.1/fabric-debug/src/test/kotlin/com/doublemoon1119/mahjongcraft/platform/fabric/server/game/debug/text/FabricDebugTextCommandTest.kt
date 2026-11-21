@@ -16,8 +16,8 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledNetworkJson
 import com.mojang.brigadier.tree.CommandNode
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import net.minecraft.commands.CommandSourceStack
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.command.ServerCommandSource
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -56,7 +56,7 @@ class FabricDebugTextCommandTest {
                 "game_config",
                 "server_config",
             ),
-            actual = node.children.map(CommandNode<ServerCommandSource>::getName).toSet(),
+            actual = node.children.map(CommandNode<CommandSourceStack>::getName).toSet(),
         )
     }
 
@@ -74,7 +74,7 @@ class FabricDebugTextCommandTest {
         ).forEach { name ->
             val child = children.getValue(name)
             assertNotNull(child.command, "$name executes directly")
-            assertEquals(emptySet(), child.children.map(CommandNode<ServerCommandSource>::getName).toSet(), "$name has no child node")
+            assertEquals(emptySet(), child.children.map(CommandNode<CommandSourceStack>::getName).toSet(), "$name has no child node")
         }
     }
 
@@ -86,7 +86,7 @@ class FabricDebugTextCommandTest {
         assertNull(gameConfig.command, "game_config is not executable on its own")
         assertEquals(
             expected = setOf("show", "changed", "unchanged"),
-            actual = gameConfig.children.map(CommandNode<ServerCommandSource>::getName).toSet(),
+            actual = gameConfig.children.map(CommandNode<CommandSourceStack>::getName).toSet(),
         )
         gameConfig.children.forEach { variant ->
             assertNotNull(variant.command, "${variant.name} executes directly")

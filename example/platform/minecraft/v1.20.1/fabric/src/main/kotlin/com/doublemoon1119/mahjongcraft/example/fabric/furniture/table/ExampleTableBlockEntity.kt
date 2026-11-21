@@ -5,12 +5,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.writeNbt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableController
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableControllerState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
-import net.minecraft.block.BlockState
-import net.minecraft.block.entity.BlockEntity
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.state.property.Properties
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Direction
+import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.world.level.block.entity.BlockEntity
+import net.minecraft.world.level.block.state.BlockState
+import net.minecraft.world.level.block.state.properties.BlockStateProperties
 
 /**
  * 三種範例麻將桌共用的控制方塊實體。
@@ -26,11 +26,11 @@ class ExampleTableBlockEntity(
 ) : BlockEntity(ExampleTables.blockEntityType, pos, state),
     MahjongTableController {
     /** MahjongCraft 的桌子狀態，隨此方塊實體存讀檔。 */
-    override val mahjongTableState: MahjongTableControllerState = MahjongTableControllerState(::markDirty)
+    override val mahjongTableState: MahjongTableControllerState = MahjongTableControllerState(::setChanged)
 
     /** 由控制方塊狀態的水平朝向轉成 MahjongCraft 的朝向。 */
     override val mahjongTableFacing: MahjongTableFacing
-        get() = when (cachedState.get(Properties.HORIZONTAL_FACING)) {
+        get() = when (blockState.getValue(BlockStateProperties.HORIZONTAL_FACING)) {
             Direction.EAST -> MahjongTableFacing.EAST
             Direction.SOUTH -> MahjongTableFacing.SOUTH
             Direction.WEST -> MahjongTableFacing.WEST
@@ -42,8 +42,8 @@ class ExampleTableBlockEntity(
      *
      * @param nbt 方塊實體的 NBT。
      */
-    override fun readNbt(nbt: NbtCompound) {
-        super.readNbt(nbt)
+    override fun load(nbt: CompoundTag) {
+        super.load(nbt)
         mahjongTableState.readNbt(nbt)
     }
 
@@ -52,8 +52,8 @@ class ExampleTableBlockEntity(
      *
      * @param nbt 方塊實體的 NBT。
      */
-    override fun writeNbt(nbt: NbtCompound) {
-        super.writeNbt(nbt)
+    override fun saveAdditional(nbt: CompoundTag) {
+        super.saveAdditional(nbt)
         mahjongTableState.writeNbt(nbt)
     }
 }

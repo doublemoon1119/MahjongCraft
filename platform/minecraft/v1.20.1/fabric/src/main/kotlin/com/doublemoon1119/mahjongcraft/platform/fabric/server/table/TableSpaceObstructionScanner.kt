@@ -4,8 +4,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.MahjongTableStr
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.playSpaceCells
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSpace
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSpaceObstruction
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerLevel
 
 /** 讀取世界中擺牌層的方塊，找出擋住擺牌的格子。 */
 internal object TableSpaceObstructionScanner {
@@ -20,19 +20,19 @@ internal object TableSpaceObstructionScanner {
      * @return 擋住的格子，依 [MahjongTableSpace.playSpaceHorizontalOffsets] 的順序；擺牌層有區塊未載入時為 null。
      */
     fun obstructedCells(
-        world: ServerWorld,
+        world: ServerLevel,
         controllerPos: BlockPos,
     ): List<BlockPos>? {
         val cells = MahjongTableSpace.playSpaceCells(controllerPos)
-        if (cells.any { !world.chunkManager.isChunkLoaded(it.x shr CHUNK_SHIFT, it.z shr CHUNK_SHIFT) }) return null
-        val controller = controllerPos.toImmutable()
+        if (cells.any { !world.chunkSource.hasChunk(it.x shr CHUNK_SHIFT, it.z shr CHUNK_SHIFT) }) return null
+        val controller = controllerPos.immutable()
         return cells.filter { cell ->
             val state = world.getBlockState(cell)
             val owner = (state.block as? MahjongTableStructureBlock)?.mahjongTableControllerPos(world, cell, state)
             TableSpaceObstruction.isObstructing(
                 isAir = state.isAir,
                 hasFluid = !state.fluidState.isEmpty,
-                owningController = owner?.toImmutable(),
+                owningController = owner?.immutable(),
                 controller = controller,
             )
         }

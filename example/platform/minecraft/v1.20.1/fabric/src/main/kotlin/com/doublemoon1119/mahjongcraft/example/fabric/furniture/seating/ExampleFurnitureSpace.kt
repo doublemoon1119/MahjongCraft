@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity.ExampleCushionEntity
-import net.minecraft.entity.Entity
-import net.minecraft.entity.LivingEntity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
+import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.phys.AABB
 
 /** 家具放置與乘坐共用的已載入空間查詢，不為碰撞檢查載入區塊。 */
 internal object ExampleFurnitureSpace {
@@ -16,13 +16,13 @@ internal object ExampleFurnitureSpace {
      * @param box 即將使用的身體或家具範圍。
      * @return 可安全執行碰撞查詢時為 true。
      */
-    fun isLoaded(world: ServerWorld, box: Box): Boolean {
-        if (box.minY < world.bottomY || box.maxY >= world.topY || !world.worldBorder.contains(box)) return false
-        val minimum = BlockPos.ofFloored(box.minX - 1.0, box.minY, box.minZ - 1.0)
-        val maximum = BlockPos.ofFloored(box.maxX + 1.0, box.maxY, box.maxZ + 1.0)
+    fun isLoaded(world: ServerLevel, box: AABB): Boolean {
+        if (box.minY < world.minBuildHeight || box.maxY >= world.maxBuildHeight || !world.worldBorder.isWithinBounds(box)) return false
+        val minimum = BlockPos.containing(box.minX - 1.0, box.minY, box.minZ - 1.0)
+        val maximum = BlockPos.containing(box.maxX + 1.0, box.maxY, box.maxZ + 1.0)
         for (chunkX in (minimum.x shr 4)..(maximum.x shr 4)) {
             for (chunkZ in (minimum.z shr 4)..(maximum.z shr 4)) {
-                if (!world.chunkManager.isChunkLoaded(chunkX, chunkZ)) return false
+                if (!world.chunkSource.hasChunk(chunkX, chunkZ)) return false
             }
         }
         return true
@@ -37,12 +37,12 @@ internal object ExampleFurnitureSpace {
      * @param ignoredSeat 本次使用的坐墊，不當成自己的阻擋者。
      * @return 空間完整可用時為 true。
      */
-    fun isClear(world: ServerWorld, actor: Entity, box: Box, ignoredSeat: Entity? = null): Boolean = isLoaded(world, box) &&
-        world.isSpaceEmpty(actor, box) &&
-        world.getOtherEntities(actor, box) {
+    fun isClear(world: ServerLevel, actor: Entity, box: AABB, ignoredSeat: Entity? = null): Boolean = isLoaded(world, box) &&
+        world.noCollision(actor, box) &&
+        world.getEntities(actor, box) {
             it !== ignoredSeat &&
                 !it.isRemoved &&
                 !it.isSpectator &&
-                (it is LivingEntity || it is ExampleCushionEntity || it.isCollidable)
+                (it is LivingEntity || it is ExampleCushionEntity || it.canBeCollidedWith())
         }.isEmpty()
 }

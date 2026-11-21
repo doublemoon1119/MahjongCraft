@@ -10,12 +10,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClient
 import com.doublemoon1119.mahjongcraft.platform.minecraft.guide.MinecraftGuideScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
+import com.mojang.blaze3d.platform.InputConstants
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.client.option.KeyBinding
-import net.minecraft.client.util.InputUtil
+import net.minecraft.client.KeyMapping
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.screens.Screen
 
 /**
  * 開啟「如何開始」畫面：麻將手冊入口、按鍵（預設未綁定）與指令。
@@ -40,7 +40,7 @@ class GuideScreenController internal constructor(
     private val ruleCatalogueScreens: RuleCatalogueScreenController,
 ) {
     /** 開啟畫面的按鍵，預設未綁定。 */
-    private lateinit var openKeyBinding: KeyBinding
+    private lateinit var openKeyBinding: KeyMapping
 
     /** 是否已完成事件註冊。 */
     private var registered = false
@@ -56,10 +56,10 @@ class GuideScreenController internal constructor(
         if (registered) return
         registered = true
         openKeyBinding = KeyBindingHelper.registerKeyBinding(
-            KeyBinding(
+            KeyMapping(
                 MinecraftGuideScreenKeys.OPEN_KEY,
-                InputUtil.Type.KEYSYM,
-                InputUtil.UNKNOWN_KEY.code,
+                InputConstants.Type.KEYSYM,
+                InputConstants.UNKNOWN.value,
                 MinecraftClientConfigScreenKeys.KEY_CATEGORY,
             ),
         )
@@ -77,7 +77,7 @@ class GuideScreenController internal constructor(
      * @param returnScreen 返回時回到的畫面。
      */
     fun openFrom(returnScreen: Screen) {
-        open(MinecraftClient.getInstance(), returnScreen)
+        open(Minecraft.getInstance(), returnScreen)
     }
 
     /**
@@ -85,13 +85,13 @@ class GuideScreenController internal constructor(
      *
      * @param client 本次 tick 的客戶端。
      */
-    private fun tick(client: MinecraftClient) {
+    private fun tick(client: Minecraft) {
         if (openRequested) {
             openRequested = false
-            if (client.world != null) open(client, returnScreen = null)
+            if (client.level != null) open(client, returnScreen = null)
         }
-        while (openKeyBinding.wasPressed()) {
-            if (client.currentScreen == null) open(client, returnScreen = null)
+        while (openKeyBinding.consumeClick()) {
+            if (client.screen == null) open(client, returnScreen = null)
         }
     }
 
@@ -101,7 +101,7 @@ class GuideScreenController internal constructor(
      * @param client 客戶端。
      * @param returnScreen 返回時回到的畫面；關回遊戲時為 null。
      */
-    private fun open(client: MinecraftClient, returnScreen: Screen?) {
+    private fun open(client: Minecraft, returnScreen: Screen?) {
         client.setScreen(
             GuideScreen(
                 tileFaces = tileFaces,

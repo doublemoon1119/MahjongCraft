@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.item
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDenomination
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickItemData
-import net.minecraft.item.ItemStack
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.nbt.NbtElement
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.Tag
+import net.minecraft.world.item.ItemStack
 
 /** 點棒 ItemStack 的面額資料讀寫邊界。 */
 object MahjongScoringStickItemStackData {
@@ -17,7 +17,7 @@ object MahjongScoringStickItemStackData {
      * @param stack 要讀取的點棒物品堆疊。
      * @return 堆疊保存的有效面額；缺失或無效資料時為百分棒。
      */
-    fun read(stack: ItemStack): MahjongScoringStickDenomination = readNbt(stack.nbt)
+    fun read(stack: ItemStack): MahjongScoringStickDenomination = readNbt(stack.tag)
 
     /**
      * 從物品的 NBT 欄位讀取面額。
@@ -25,8 +25,8 @@ object MahjongScoringStickItemStackData {
      * @param nbt 物品 NBT；沒有資料時傳入 `null`。
      * @return 欄位中的有效面額；缺失、錯誤型別或未知名稱時為百分棒。
      */
-    internal fun readNbt(nbt: NbtCompound?): MahjongScoringStickDenomination {
-        val storedName = nbt?.takeIf { it.contains(NBT_KEY_DENOMINATION, NbtElement.STRING_TYPE.toInt()) }?.getString(NBT_KEY_DENOMINATION)
+    internal fun readNbt(nbt: CompoundTag?): MahjongScoringStickDenomination {
+        val storedName = nbt?.takeIf { it.contains(NBT_KEY_DENOMINATION, Tag.TAG_STRING.toInt()) }?.getString(NBT_KEY_DENOMINATION)
         return MahjongScoringStickItemData.read(storedName)
     }
 
@@ -37,7 +37,7 @@ object MahjongScoringStickItemStackData {
      * @param denomination 要保存的點棒面額。
      */
     fun write(stack: ItemStack, denomination: MahjongScoringStickDenomination) {
-        writeNbt(stack.orCreateNbt, denomination)
+        writeNbt(stack.orCreateTag, denomination)
     }
 
     /**
@@ -46,7 +46,7 @@ object MahjongScoringStickItemStackData {
      * @param nbt 目的物品 NBT。
      * @param denomination 要保存的點棒面額。
      */
-    internal fun writeNbt(nbt: NbtCompound, denomination: MahjongScoringStickDenomination) {
+    internal fun writeNbt(nbt: CompoundTag, denomination: MahjongScoringStickDenomination) {
         nbt.putString(NBT_KEY_DENOMINATION, MahjongScoringStickItemData.write(denomination))
     }
 }

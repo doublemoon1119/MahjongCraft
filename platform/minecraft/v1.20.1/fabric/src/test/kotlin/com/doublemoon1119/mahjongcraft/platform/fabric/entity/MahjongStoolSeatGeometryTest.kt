@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongStoolDesign
-import net.minecraft.util.math.Direction
+import net.minecraft.core.Direction
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

@@ -24,12 +24,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerColo
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropDefinitions
 import net.fabricmc.fabric.api.`object`.builder.v1.entity.FabricEntityTypeBuilder
-import net.minecraft.entity.EntityDimensions
-import net.minecraft.entity.EntityType
-import net.minecraft.entity.SpawnGroup
-import net.minecraft.registry.Registries
-import net.minecraft.registry.Registry
-import net.minecraft.util.Identifier
+import net.minecraft.core.Registry
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.entity.EntityDimensions
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.entity.MobCategory
 
 /** MahjongCraft Fabric entity type 的集中註冊點。 */
 object ModEntities {
@@ -108,9 +108,9 @@ object ModEntities {
     /** 註冊骰子、牌張、點棒、牌尺、座位與各種呈現實體的類型；皆不自然生成。 */
     fun register() {
         mahjongBot = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier(MinecraftModMetadata.MOD_ID, "mahjong_bot"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongBotEntity)
+            BuiltInRegistries.ENTITY_TYPE,
+            ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_bot"),
+            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongBotEntity)
                 .dimensions(EntityDimensions.fixed(MahjongBotEntity.WIDTH, MahjongBotEntity.HEIGHT))
                 .trackRangeBlocks(32)
                 .trackedUpdateRate(1)
@@ -119,9 +119,9 @@ object ModEntities {
                 .build(),
         )
         mahjongSoundTimeline = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier(MinecraftModMetadata.MOD_ID, "mahjong_sound_timeline"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongSoundTimelineEntity)
+            BuiltInRegistries.ENTITY_TYPE,
+            ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_sound_timeline"),
+            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongSoundTimelineEntity)
                 .dimensions(EntityDimensions.fixed(MahjongSoundTimelineEntity.SIZE, MahjongSoundTimelineEntity.SIZE))
                 .trackRangeBlocks(32)
                 .trackedUpdateRate(1)
@@ -129,9 +129,9 @@ object ModEntities {
                 .build(),
         )
         mahjongDice = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier(MinecraftModMetadata.MOD_ID, "mahjong_dice"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongDiceEntity)
+            BuiltInRegistries.ENTITY_TYPE,
+            ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_dice"),
+            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongDiceEntity)
                 .dimensions(EntityDimensions.fixed(MahjongDiceEntity.SIZE, MahjongDiceEntity.SIZE))
                 .trackRangeBlocks(16)
                 .trackedUpdateRate(10)
@@ -139,9 +139,9 @@ object ModEntities {
                 .build(),
         )
         diceRollPresentation = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier(MinecraftModMetadata.MOD_ID, "dice_roll_presentation"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::DiceRollPresentationEntity)
+            BuiltInRegistries.ENTITY_TYPE,
+            ResourceLocation(MinecraftModMetadata.MOD_ID, "dice_roll_presentation"),
+            FabricEntityTypeBuilder.create(MobCategory.MISC, ::DiceRollPresentationEntity)
                 .dimensions(EntityDimensions.fixed(DiceRollPresentationEntity.WIDTH, DiceRollPresentationEntity.HEIGHT))
                 .trackRangeBlocks(32)
                 .trackedUpdateRate(1)
@@ -149,9 +149,9 @@ object ModEntities {
                 .build(),
         )
         mahjongTile = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier(MinecraftModMetadata.MOD_ID, "mahjong_tile"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongTileEntity)
+            BuiltInRegistries.ENTITY_TYPE,
+            ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_tile"),
+            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongTileEntity)
                 .dimensions(EntityDimensions.fixed(MahjongTileEntity.TILE_WIDTH, MahjongTileEntity.TILE_HEIGHT))
                 .trackRangeBlocks(16)
                 .trackedUpdateRate(10)
@@ -159,9 +159,9 @@ object ModEntities {
                 .build(),
         )
         tablePropTile = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier(MinecraftModMetadata.MOD_ID, "table_prop_tile"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::TablePropTileEntity)
+            BuiltInRegistries.ENTITY_TYPE,
+            ResourceLocation(MinecraftModMetadata.MOD_ID, "table_prop_tile"),
+            FabricEntityTypeBuilder.create(MobCategory.MISC, ::TablePropTileEntity)
                 .dimensions(EntityDimensions.fixed(BuiltInTablePropDefinitions.FACE_UP_TILE.dimensions.depth.toFloat(), BuiltInTablePropDefinitions.FACE_UP_TILE.dimensions.height.toFloat()))
                 .trackRangeBlocks(16)
                 .trackedUpdateRate(10)
@@ -169,9 +169,9 @@ object ModEntities {
                 .build(),
         )
         mahjongTileSelectionConfirm = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier(MinecraftModMetadata.MOD_ID, "mahjong_tile_selection_confirm"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongTileSelectionConfirmEntity)
+            BuiltInRegistries.ENTITY_TYPE,
+            ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_tile_selection_confirm"),
+            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongTileSelectionConfirmEntity)
                 .dimensions(EntityDimensions.fixed(MahjongTileSelectionConfirmEntity.WIDTH, MahjongTileSelectionConfirmEntity.HEIGHT))
                 .trackRangeBlocks(16)
                 .trackedUpdateRate(10)
@@ -179,9 +179,9 @@ object ModEntities {
                 .build(),
         )
         mahjongScoringStick = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier(MinecraftModMetadata.MOD_ID, "mahjong_scoring_stick"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongScoringStickEntity)
+            BuiltInRegistries.ENTITY_TYPE,
+            ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_scoring_stick"),
+            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongScoringStickEntity)
                 .dimensions(EntityDimensions.fixed(MahjongScoringStickEntity.STICK_WIDTH, MahjongScoringStickEntity.STICK_HEIGHT))
                 .trackRangeBlocks(16)
                 .trackedUpdateRate(10)
@@ -189,9 +189,9 @@ object ModEntities {
                 .build(),
         )
         mahjongRuler = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier(MinecraftModMetadata.MOD_ID, MahjongRulerColor.BASE_ITEM_PATH),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongRulerEntity)
+            BuiltInRegistries.ENTITY_TYPE,
+            ResourceLocation(MinecraftModMetadata.MOD_ID, MahjongRulerColor.BASE_ITEM_PATH),
+            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongRulerEntity)
                 .dimensions(EntityDimensions.fixed(MahjongRulerDimensions.LENGTH.toFloat(), MahjongRulerDimensions.BROAD_SIDE.toFloat()))
                 .trackRangeBlocks(16)
                 .trackedUpdateRate(10)
@@ -199,9 +199,9 @@ object ModEntities {
                 .build(),
         )
         mahjongRoundInfo = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier(MinecraftModMetadata.MOD_ID, "mahjong_round_info"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongRoundInfoEntity)
+            BuiltInRegistries.ENTITY_TYPE,
+            ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_round_info"),
+            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongRoundInfoEntity)
                 .dimensions(EntityDimensions.fixed(MahjongRoundInfoEntity.WIDTH, MahjongRoundInfoEntity.HEIGHT))
                 .trackRangeBlocks(16)
                 .trackedUpdateRate(10)
@@ -209,9 +209,9 @@ object ModEntities {
                 .build(),
         )
         mahjongPlayerInfo = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier(MinecraftModMetadata.MOD_ID, "mahjong_player_info"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongPlayerInfoEntity)
+            BuiltInRegistries.ENTITY_TYPE,
+            ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_player_info"),
+            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongPlayerInfoEntity)
                 .dimensions(EntityDimensions.fixed(MahjongPlayerInfoEntity.WIDTH, MahjongPlayerInfoEntity.HEIGHT))
                 .trackRangeBlocks(32)
                 .trackedUpdateRate(10)
@@ -219,9 +219,9 @@ object ModEntities {
                 .build(),
         )
         mahjongLobbyInfo = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier(MinecraftModMetadata.MOD_ID, "mahjong_lobby_info"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongLobbyInfoEntity)
+            BuiltInRegistries.ENTITY_TYPE,
+            ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_lobby_info"),
+            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongLobbyInfoEntity)
                 .dimensions(EntityDimensions.fixed(MahjongLobbyInfoEntity.WIDTH, MahjongLobbyInfoEntity.HEIGHT))
                 .trackRangeBlocks(32)
                 .trackedUpdateRate(1)
@@ -229,9 +229,9 @@ object ModEntities {
                 .build(),
         )
         winCelebrationEffect = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier(MinecraftModMetadata.MOD_ID, "win_celebration_effect"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::WinCelebrationEffectEntity)
+            BuiltInRegistries.ENTITY_TYPE,
+            ResourceLocation(MinecraftModMetadata.MOD_ID, "win_celebration_effect"),
+            FabricEntityTypeBuilder.create(MobCategory.MISC, ::WinCelebrationEffectEntity)
                 .dimensions(EntityDimensions.fixed(WinCelebrationEffectEntity.WIDTH, WinCelebrationEffectEntity.HEIGHT))
                 .trackRangeBlocks(16)
                 .trackedUpdateRate(1)
@@ -239,9 +239,9 @@ object ModEntities {
                 .build(),
         )
         winCelebrationShowcase = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier(MinecraftModMetadata.MOD_ID, "win_celebration_showcase"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::WinCelebrationShowcaseEntity)
+            BuiltInRegistries.ENTITY_TYPE,
+            ResourceLocation(MinecraftModMetadata.MOD_ID, "win_celebration_showcase"),
+            FabricEntityTypeBuilder.create(MobCategory.MISC, ::WinCelebrationShowcaseEntity)
                 .dimensions(EntityDimensions.fixed(WinCelebrationShowcaseEntity.WIDTH, WinCelebrationShowcaseEntity.HEIGHT))
                 .trackRangeBlocks(32)
                 .trackedUpdateRate(1)
@@ -249,9 +249,9 @@ object ModEntities {
                 .build(),
         )
         exhaustiveDrawSettlementPresentation = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier(MinecraftModMetadata.MOD_ID, "exhaustive_draw_settlement_presentation"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::ExhaustiveDrawSettlementPresentationEntity)
+            BuiltInRegistries.ENTITY_TYPE,
+            ResourceLocation(MinecraftModMetadata.MOD_ID, "exhaustive_draw_settlement_presentation"),
+            FabricEntityTypeBuilder.create(MobCategory.MISC, ::ExhaustiveDrawSettlementPresentationEntity)
                 .dimensions(EntityDimensions.fixed(ExhaustiveDrawSettlementPresentationEntity.WIDTH, ExhaustiveDrawSettlementPresentationEntity.HEIGHT))
                 .trackRangeBlocks(32)
                 .trackedUpdateRate(1)
@@ -259,9 +259,9 @@ object ModEntities {
                 .build(),
         )
         winSettlementPresentation = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier(MinecraftModMetadata.MOD_ID, "win_settlement_presentation"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::WinSettlementPresentationEntity)
+            BuiltInRegistries.ENTITY_TYPE,
+            ResourceLocation(MinecraftModMetadata.MOD_ID, "win_settlement_presentation"),
+            FabricEntityTypeBuilder.create(MobCategory.MISC, ::WinSettlementPresentationEntity)
                 .dimensions(EntityDimensions.fixed(WinSettlementPresentationEntity.WIDTH, WinSettlementPresentationEntity.HEIGHT))
                 .trackRangeBlocks(32)
                 .trackedUpdateRate(1)
@@ -269,9 +269,9 @@ object ModEntities {
                 .build(),
         )
         matchSettlementPresentation = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier(MinecraftModMetadata.MOD_ID, "match_settlement_presentation"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MatchSettlementPresentationEntity)
+            BuiltInRegistries.ENTITY_TYPE,
+            ResourceLocation(MinecraftModMetadata.MOD_ID, "match_settlement_presentation"),
+            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MatchSettlementPresentationEntity)
                 .dimensions(EntityDimensions.fixed(MatchSettlementPresentationEntity.WIDTH, MatchSettlementPresentationEntity.HEIGHT))
                 .trackRangeBlocks(32)
                 .trackedUpdateRate(1)
@@ -279,9 +279,9 @@ object ModEntities {
                 .build(),
         )
         mahjongStoolSeat = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier(MinecraftModMetadata.MOD_ID, "mahjong_stool_seat"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongStoolSeatEntity)
+            BuiltInRegistries.ENTITY_TYPE,
+            ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_stool_seat"),
+            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongStoolSeatEntity)
                 .dimensions(EntityDimensions.fixed(MahjongStoolSeatGeometry.SEAT_SIZE, MahjongStoolSeatGeometry.SEAT_SIZE))
                 // 與原版的船相同，讓看得到乘客的玩家也看得到座位
                 .trackRangeChunks(10)

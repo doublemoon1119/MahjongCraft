@@ -8,18 +8,18 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.fabricmc.fabric.api.`object`.builder.v1.block.entity.FabricBlockEntityTypeBuilder
-import net.minecraft.block.AbstractBlock
-import net.minecraft.block.Block
-import net.minecraft.block.Blocks
-import net.minecraft.block.MapColor
-import net.minecraft.block.entity.BlockEntityType
-import net.minecraft.block.piston.PistonBehavior
-import net.minecraft.item.BlockItem
-import net.minecraft.item.Item
-import net.minecraft.registry.Registries
-import net.minecraft.registry.Registry
-import net.minecraft.sound.BlockSoundGroup
-import net.minecraft.util.Identifier
+import net.minecraft.core.Registry
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.item.BlockItem
+import net.minecraft.world.item.Item
+import net.minecraft.world.level.block.Block
+import net.minecraft.world.level.block.Blocks
+import net.minecraft.world.level.block.SoundType
+import net.minecraft.world.level.block.entity.BlockEntityType
+import net.minecraft.world.level.block.state.BlockBehaviour
+import net.minecraft.world.level.material.MapColor
+import net.minecraft.world.level.material.PushReaction
 
 /** MahjongCraft Fabric 方塊與方塊實體的集中註冊點。 */
 object ModBlocks {
@@ -64,26 +64,26 @@ object ModBlocks {
         woodenMahjongStool = registerStool(
             path = "wooden_mahjong_stool",
             design = MahjongStoolDesign.WOODEN,
-            settings = AbstractBlock.Settings.create()
-                .mapColor(MapColor.OAK_TAN)
+            settings = BlockBehaviour.Properties.of()
+                .mapColor(MapColor.WOOD)
                 .strength(0.0f)
-                .sounds(BlockSoundGroup.WOOD)
-                .solid(),
+                .sound(SoundType.WOOD)
+                .forceSolidOn(),
             seatService = seatService,
         )
         plasticMahjongStool = registerStool(
             path = "plastic_mahjong_stool",
             design = MahjongStoolDesign.PLASTIC,
-            settings = AbstractBlock.Settings.create()
-                .mapColor(MapColor.BRIGHT_RED)
+            settings = BlockBehaviour.Properties.of()
+                .mapColor(MapColor.FIRE)
                 .strength(0.0f)
-                .sounds(BlockSoundGroup.SCAFFOLDING)
-                .solid(),
+                .sound(SoundType.SCAFFOLDING)
+                .forceSolidOn(),
             seatService = seatService,
         )
-        val blockEntityId = Identifier(MinecraftModMetadata.MOD_ID, "mahjong_table")
+        val blockEntityId = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_table")
         mahjongTableBlockEntity = Registry.register(
-            Registries.BLOCK_ENTITY_TYPE,
+            BuiltInRegistries.BLOCK_ENTITY_TYPE,
             blockEntityId,
             FabricBlockEntityTypeBuilder.create(
                 ::MahjongTableBlockEntity,
@@ -105,19 +105,19 @@ object ModBlocks {
         design: MahjongTableDesign,
         baseBlock: Block,
     ): Block {
-        val id = Identifier(MinecraftModMetadata.MOD_ID, path)
+        val id = ResourceLocation(MinecraftModMetadata.MOD_ID, path)
         val block = Registry.register(
-            Registries.BLOCK,
+            BuiltInRegistries.BLOCK,
             id,
             MahjongTableBlock(
-                settings = AbstractBlock.Settings.copy(baseBlock)
+                settings = BlockBehaviour.Properties.copy(baseBlock)
                     .strength(2.5f)
-                    .pistonBehavior(PistonBehavior.BLOCK)
-                    .solid(),
+                    .pushReaction(PushReaction.BLOCK)
+                    .forceSolidOn(),
                 design = design,
             ),
         )
-        Registry.register(Registries.ITEM, id, BlockItem(block, Item.Settings()))
+        Registry.register(BuiltInRegistries.ITEM, id, BlockItem(block, Item.Properties()))
         return block
     }
 
@@ -132,12 +132,12 @@ object ModBlocks {
     private fun registerStool(
         path: String,
         design: MahjongStoolDesign,
-        settings: AbstractBlock.Settings,
+        settings: BlockBehaviour.Properties,
         seatService: MahjongStoolSeatService,
     ): Block {
-        val id = Identifier(MinecraftModMetadata.MOD_ID, path)
+        val id = ResourceLocation(MinecraftModMetadata.MOD_ID, path)
         val block = Registry.register(
-            Registries.BLOCK,
+            BuiltInRegistries.BLOCK,
             id,
             MahjongStoolBlock(
                 settings = settings,
@@ -145,7 +145,7 @@ object ModBlocks {
                 seatService = seatService,
             ),
         )
-        Registry.register(Registries.ITEM, id, BlockItem(block, Item.Settings()))
+        Registry.register(BuiltInRegistries.ITEM, id, BlockItem(block, Item.Properties()))
         return block
     }
 }

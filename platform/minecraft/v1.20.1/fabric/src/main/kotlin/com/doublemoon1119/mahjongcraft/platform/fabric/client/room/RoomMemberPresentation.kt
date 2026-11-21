@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PublicPlaye
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 import java.util.Locale
 import kotlin.uuid.Uuid
 
@@ -27,16 +27,16 @@ internal class RoomMemberPresentation(private val indicatorTextResolver: PublicP
      * @param dealerPlayerId 莊家識別碼；未知時為 null。
      * @return 依顯示順序排列的文字與顏色。
      */
-    fun infoRows(player: MahjongPlayerInfoEntry, dealerPlayerId: Uuid?): List<Pair<Text, Int>> = buildList {
+    fun infoRows(player: MahjongPlayerInfoEntry, dealerPlayerId: Uuid?): List<Pair<Component, Int>> = buildList {
         val wind = windText(player.seatWind)
         add(
             element = if (player.playerId == dealerPlayerId) {
-                Text.empty().append(wind).append(DEALER_MARKER) to WIND_COLOR
+                Component.empty().append(wind).append(DEALER_MARKER) to WIND_COLOR
             } else {
                 wind to WIND_COLOR
             },
         )
-        add(Text.literal(formatRoomInteger(player.score)) to SCORE_COLOR)
+        add(Component.literal(formatRoomInteger(player.score)) to SCORE_COLOR)
         addAll(player.indicators.map(indicatorTextResolver::resolve))
     }
 
@@ -47,7 +47,7 @@ internal class RoomMemberPresentation(private val indicatorTextResolver: PublicP
          * @param wind 玩家的自風。
          * @return 對應風牌名稱的可翻譯文字。
          */
-        fun windText(wind: Wind): Text = Text.translatable(
+        fun windText(wind: Wind): Component = Component.translatable(
             when (wind) {
                 Wind.EAST -> MinecraftMessageKeys.TILE_HONOR_EAST
                 Wind.SOUTH -> MinecraftMessageKeys.TILE_HONOR_SOUTH

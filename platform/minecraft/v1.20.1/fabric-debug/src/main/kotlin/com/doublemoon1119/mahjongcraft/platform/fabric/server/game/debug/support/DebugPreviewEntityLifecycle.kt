@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
-import net.minecraft.entity.Entity
-import net.minecraft.server.world.ServerWorld
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
 
 /**
  * 集中保管所有 debug 預覽指令排定的臨時 entity 清除工作。
@@ -35,13 +35,13 @@ class DebugPreviewEntityLifecycle {
      * @param entities 到期時要清除的 entity。
      */
     fun schedule(
-        world: ServerWorld,
+        world: ServerLevel,
         endGameTime: Long,
         entities: List<Entity>,
     ) {
         cleanupQueue.schedule(
             endGameTime = endGameTime,
-            currentGameTime = { world.time },
+            currentGameTime = { world.gameTime },
             discard = { entities.forEach(Entity::discard) },
         )
     }

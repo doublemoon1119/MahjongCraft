@@ -22,9 +22,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.nbt.NbtElement
+import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.NbtIo
+import net.minecraft.nbt.Tag
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import kotlin.test.Test
@@ -35,14 +35,14 @@ import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /** 驗證 Minecraft NBT adapter 以位元組陣列保存 codec JSON，並維持每個世界各自的 snapshot。 */
-class MahjongAuthoritativePersistentStateTest {
+class MahjongAuthoritativeSavedDataTest {
     /** 使用所有內建 mapper 的待測 codec。 */
     private val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries(), componentValidator = bundledComponentValidator())
 
     /** 前次擷取結束前已離座者，等待結束後必須拒絕，不執行加入操作。 */
     @Test
     fun `capture scope revalidates after waiting before any admission action`() = runTest {
-        val state = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry())
+        val state = MahjongAuthoritativeSavedData.create(codec, testCharacterRegistry())
         val room = createRoom()
         val capture = AiCharacterParticipantCapture(room.admission.instanceId, Uuid.random(), RoomParticipantIdentity("example:actors", Uuid.random()), AiCharacterSnapshot(BuiltInAiCharacters.TILE_MASCOT_ID, BuiltInAiCharacters.TILE_MASCOT))
         val release = CompletableDeferred<Unit>()
@@ -67,11 +67,11 @@ class MahjongAuthoritativePersistentStateTest {
     /** 既有 NBT 缺少 payload 時不得偽裝成新世界，空狀態只能由 create 建立。 */
     @Test
     fun `missing payload is rejected instead of creating empty state`() {
-        assertFailsWith<IllegalArgumentException> { MahjongAuthoritativePersistentState.fromNbt(NbtCompound(), codec, testCharacterRegistry()) }
+        assertFailsWith<IllegalArgumentException> { MahjongAuthoritativeSavedData.fromNbt(CompoundTag(), codec, testCharacterRegistry()) }
         assertFailsWith<IllegalArgumentException> {
-            MahjongAuthoritativePersistentState.fromNbt(NbtCompound().apply { putString(MahjongAuthoritativePersistentState.NBT_KEY_STATE, "invalid") }, codec, testCharacterRegistry())
+            MahjongAuthoritativeSavedData.fromNbt(CompoundTag().apply { putString(MahjongAuthoritativeSavedData.NBT_KEY_STATE, "invalid") }, codec, testCharacterRegistry())
         }
-        val created = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry())
+        val created = MahjongAuthoritativeSavedData.create(codec, testCharacterRegistry())
         assertEquals(AuthoritativeStateSnapshot(), created.snapshot)
         assertFalse(created.isDirty)
     }
@@ -81,10 +81,10 @@ class MahjongAuthoritativePersistentStateTest {
     fun `updated snapshot round-trips through NBT`() {
         val room = createRoom()
         val expected = AuthoritativeStateSnapshot(rooms = mapOf(room.id to room))
-        val state = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry())
+        val state = MahjongAuthoritativeSavedData.create(codec, testCharacterRegistry())
 
         state.update(expected)
-        val restored = MahjongAuthoritativePersistentState.fromNbt(state.writeNbt(NbtCompound()), codec, testCharacterRegistry())
+        val restored = MahjongAuthoritativeSavedData.fromNbt(state.save(CompoundTag()), codec, testCharacterRegistry())
 
         assertTrue(state.isDirty)
         assertEquals(expected, restored.snapshot)
@@ -94,13 +94,13 @@ class MahjongAuthoritativePersistentStateTest {
     @Test
     fun `separate NBT containers retain separate world states`() {
         val room = createRoom()
-        val first = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry()).apply {
+        val first = MahjongAuthoritativeSavedData.create(codec, testCharacterRegistry()).apply {
             update(AuthoritativeStateSnapshot(rooms = mapOf(room.id to room)))
         }
-        val second = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry())
+        val second = MahjongAuthoritativeSavedData.create(codec, testCharacterRegistry())
 
-        val restoredFirst = MahjongAuthoritativePersistentState.fromNbt(first.writeNbt(NbtCompound()), codec, testCharacterRegistry())
-        val restoredSecond = MahjongAuthoritativePersistentState.fromNbt(second.writeNbt(NbtCompound()), codec, testCharacterRegistry())
+        val restoredFirst = MahjongAuthoritativeSavedData.fromNbt(first.save(CompoundTag()), codec, testCharacterRegistry())
+        val restoredSecond = MahjongAuthoritativeSavedData.fromNbt(second.save(CompoundTag()), codec, testCharacterRegistry())
 
         assertEquals(setOf(room.id), restoredFirst.snapshot.rooms.keys)
         assertTrue(restoredSecond.snapshot.rooms.isEmpty())
@@ -111,13 +111,13 @@ class MahjongAuthoritativePersistentStateTest {
     fun `state larger than NBT string limit round-trips through compressed NBT`() {
         val rooms = List(LARGE_ROOM_COUNT) { createRoom() }.associateBy { it.id }
         val expected = AuthoritativeStateSnapshot(rooms = rooms)
-        val state = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry()).apply { update(expected) }
+        val state = MahjongAuthoritativeSavedData.create(codec, testCharacterRegistry()).apply { update(expected) }
         assertTrue(codec.encode(rooms.values, emptyList()).encodeToByteArray().size > NBT_STRING_LIMIT_BYTES)
 
         val output = ByteArrayOutputStream()
-        NbtIo.writeCompressed(state.writeNbt(NbtCompound()), output)
+        NbtIo.writeCompressed(state.save(CompoundTag()), output)
         val nbt = NbtIo.readCompressed(ByteArrayInputStream(output.toByteArray()))
-        val restored = MahjongAuthoritativePersistentState.fromNbt(nbt, codec, testCharacterRegistry())
+        val restored = MahjongAuthoritativeSavedData.fromNbt(nbt, codec, testCharacterRegistry())
 
         assertEquals(expected, restored.snapshot)
     }
@@ -125,20 +125,20 @@ class MahjongAuthoritativePersistentStateTest {
     /** 驗證狀態以位元組陣列欄位寫入。 */
     @Test
     fun `state is written as a byte array`() {
-        val nbt = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry()).writeNbt(NbtCompound())
+        val nbt = MahjongAuthoritativeSavedData.create(codec, testCharacterRegistry()).save(CompoundTag())
 
-        assertEquals(setOf(MahjongAuthoritativePersistentState.NBT_KEY_STATE, MahjongAuthoritativePersistentState.NBT_KEY_CHARACTERS), nbt.keys)
-        assertEquals(NbtElement.BYTE_ARRAY_TYPE, nbt.getType(MahjongAuthoritativePersistentState.NBT_KEY_CHARACTERS))
-        assertEquals(NbtElement.BYTE_ARRAY_TYPE, nbt.getType(MahjongAuthoritativePersistentState.NBT_KEY_STATE))
+        assertEquals(setOf(MahjongAuthoritativeSavedData.NBT_KEY_STATE, MahjongAuthoritativeSavedData.NBT_KEY_CHARACTERS), nbt.allKeys)
+        assertEquals(Tag.TAG_BYTE_ARRAY, nbt.getTagType(MahjongAuthoritativeSavedData.NBT_KEY_CHARACTERS))
+        assertEquals(Tag.TAG_BYTE_ARRAY, nbt.getTagType(MahjongAuthoritativeSavedData.NBT_KEY_STATE))
     }
 
     /** 驗證損壞 JSON 不會被當成空存檔而靜默接受。 */
     @Test
     fun `malformed payload fails loading`() {
-        val nbt = NbtCompound().apply { putByteArray(MahjongAuthoritativePersistentState.NBT_KEY_STATE, "{not-json".encodeToByteArray()) }
+        val nbt = CompoundTag().apply { putByteArray(MahjongAuthoritativeSavedData.NBT_KEY_STATE, "{not-json".encodeToByteArray()) }
 
         assertFailsWith<SerializationException> {
-            MahjongAuthoritativePersistentState.fromNbt(nbt, codec, testCharacterRegistry())
+            MahjongAuthoritativeSavedData.fromNbt(nbt, codec, testCharacterRegistry())
         }
     }
 
@@ -148,15 +148,15 @@ class MahjongAuthoritativePersistentStateTest {
         val encoded = codec.encode(emptyList(), emptyList())
         val envelope = Json.decodeFromString(PersistenceEnvelopeDto.serializer(), encoded)
             .copy(schemaVersion = Int.MAX_VALUE)
-        val nbt = NbtCompound().apply {
+        val nbt = CompoundTag().apply {
             putByteArray(
-                MahjongAuthoritativePersistentState.NBT_KEY_STATE,
+                MahjongAuthoritativeSavedData.NBT_KEY_STATE,
                 Json.encodeToString(PersistenceEnvelopeDto.serializer(), envelope).encodeToByteArray(),
             )
         }
 
         assertFailsWith<UnsupportedPersistenceSchemaVersionException> {
-            MahjongAuthoritativePersistentState.fromNbt(nbt, codec, testCharacterRegistry())
+            MahjongAuthoritativeSavedData.fromNbt(nbt, codec, testCharacterRegistry())
         }
     }
 
@@ -169,10 +169,10 @@ class MahjongAuthoritativePersistentStateTest {
             ruleConfigs = PersistenceDtoRegistry<MahjongRuleConfig> { error("No rule config mapper is registered in this test") },
         )
         val codecWithoutRules = AuthoritativeStatePersistenceCodec(registriesWithoutRules, componentValidator = bundledComponentValidator())
-        val nbt = NbtCompound().apply { putByteArray(MahjongAuthoritativePersistentState.NBT_KEY_STATE, encoded.encodeToByteArray()) }
+        val nbt = CompoundTag().apply { putByteArray(MahjongAuthoritativeSavedData.NBT_KEY_STATE, encoded.encodeToByteArray()) }
 
         assertFailsWith<IllegalStateException> {
-            MahjongAuthoritativePersistentState.fromNbt(nbt, codecWithoutRules, testCharacterRegistry())
+            MahjongAuthoritativeSavedData.fromNbt(nbt, codecWithoutRules, testCharacterRegistry())
         }
     }
 

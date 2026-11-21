@@ -4,20 +4,20 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogge
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEntry
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.nbt.NbtElement
-import net.minecraft.nbt.NbtList
-import net.minecraft.world.PersistentState
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.ListTag
+import net.minecraft.nbt.Tag
+import net.minecraft.world.level.saveddata.SavedData
 import kotlin.uuid.Uuid
 
 /**
- * 將 Minecraft 麻將桌位置索引保存為獨立 NBT list 的 [PersistentState]。
+ * 將 Minecraft 麻將桌位置索引保存為獨立 NBT list 的 [SavedData]。
  *
  * @param initialEntries 從既有世界存檔還原的位置項目。
  */
-class MahjongTableLocationsPersistentState private constructor(
+class MahjongTableLocationsSavedData private constructor(
     initialEntries: Collection<TableLocationEntry>,
-) : PersistentState() {
+) : SavedData() {
     /** 目前等待 Minecraft 世界儲存流程寫入的不可變位置集合。 */
     var entries: List<TableLocationEntry> = initialEntries.toList()
         private set
@@ -29,7 +29,7 @@ class MahjongTableLocationsPersistentState private constructor(
      */
     fun update(entriesByTableId: Map<Uuid, TableLocationEntry>) {
         entries = entriesByTableId.values.toList()
-        markDirty()
+        setDirty()
     }
 
     /**
@@ -38,12 +38,12 @@ class MahjongTableLocationsPersistentState private constructor(
      * @param nbt Minecraft 提供的 NBT compound。
      * @return 寫入位置索引後的 NBT compound。
      */
-    override fun writeNbt(nbt: NbtCompound): NbtCompound {
+    override fun save(nbt: CompoundTag): CompoundTag {
         nbt.putInt(NBT_KEY_VERSION, CURRENT_VERSION)
-        val entriesNbt = NbtList()
+        val entriesNbt = ListTag()
         entries.forEach { entry ->
             entriesNbt.add(
-                NbtCompound().apply {
+                CompoundTag().apply {
                     putString(NBT_KEY_TABLE_ID, entry.tableId.toString())
                     putString(NBT_KEY_DIMENSION, entry.location.dimensionId)
                     putInt(NBT_KEY_X, entry.location.x)
@@ -57,15 +57,15 @@ class MahjongTableLocationsPersistentState private constructor(
         return nbt
     }
 
-    /** 建立與讀取位置 [PersistentState] 的固定 metadata。 */
+    /** 建立與讀取位置 [SavedData] 的固定 metadata。 */
     companion object {
-        private val logger = mahjongCraftLogger(MahjongTableLocationsPersistentState::class)
+        private val logger = mahjongCraftLogger(MahjongTableLocationsSavedData::class)
 
-        /** `PersistentStateManager` 使用的世界存檔 key。 */
+        /** `DimensionDataStorage` 使用的世界存檔 key。 */
         const val STORAGE_KEY: String = "${MinecraftModMetadata.MOD_ID}_table_locations"
 
         /** 建立空的位置 state。 */
-        fun create(): MahjongTableLocationsPersistentState = MahjongTableLocationsPersistentState(emptyList())
+        fun create(): MahjongTableLocationsSavedData = MahjongTableLocationsSavedData(emptyList())
 
         /**
          * 從 Minecraft NBT 還原完整位置 state。
@@ -80,8 +80,8 @@ class MahjongTableLocationsPersistentState private constructor(
          * @param nbt Minecraft 讀出的持久化 NBT。
          * @return 還原完成的位置索引；格式版本無效時為空索引。
          */
-        fun fromNbt(nbt: NbtCompound): MahjongTableLocationsPersistentState {
-            if (nbt.contains(NBT_KEY_VERSION) && !nbt.contains(NBT_KEY_VERSION, NbtElement.INT_TYPE.toInt())) {
+        fun fromNbt(nbt: CompoundTag): MahjongTableLocationsSavedData {
+            if (nbt.contains(NBT_KEY_VERSION) && !nbt.contains(NBT_KEY_VERSION, Tag.TAG_INT.toInt())) {
                 logger.error("Ignoring Mahjong table location index with an invalid format version type")
                 return create()
             }
@@ -98,22 +98,22 @@ class MahjongTableLocationsPersistentState private constructor(
                 )
                 return create()
             }
-            if (!nbt.contains(NBT_KEY_ENTRIES, NbtElement.LIST_TYPE.toInt())) {
+            if (!nbt.contains(NBT_KEY_ENTRIES, Tag.TAG_LIST.toInt())) {
                 if (nbt.contains(NBT_KEY_ENTRIES)) logger.error("Ignoring Mahjong table location index with an invalid entries type")
                 return create()
             }
-            val entriesNbt = nbt.getList(NBT_KEY_ENTRIES, NbtElement.COMPOUND_TYPE.toInt())
+            val entriesNbt = nbt.getList(NBT_KEY_ENTRIES, Tag.TAG_COMPOUND.toInt())
             val entries = buildList {
                 val seenTableIds = mutableSetOf<Uuid>()
                 repeat(entriesNbt.size) { index ->
                     val entryNbt = entriesNbt.getCompound(index)
                     val entry = runCatching {
-                        require(entryNbt.contains(NBT_KEY_TABLE_ID, NbtElement.STRING_TYPE.toInt())) { "Missing or invalid $NBT_KEY_TABLE_ID" }
-                        require(entryNbt.contains(NBT_KEY_DIMENSION, NbtElement.STRING_TYPE.toInt())) { "Missing or invalid $NBT_KEY_DIMENSION" }
-                        require(entryNbt.contains(NBT_KEY_X, NbtElement.INT_TYPE.toInt())) { "Missing or invalid $NBT_KEY_X" }
-                        require(entryNbt.contains(NBT_KEY_Y, NbtElement.INT_TYPE.toInt())) { "Missing or invalid $NBT_KEY_Y" }
-                        require(entryNbt.contains(NBT_KEY_Z, NbtElement.INT_TYPE.toInt())) { "Missing or invalid $NBT_KEY_Z" }
-                        require(entryNbt.contains(NBT_KEY_REVISION, NbtElement.LONG_TYPE.toInt())) { "Missing or invalid $NBT_KEY_REVISION" }
+                        require(entryNbt.contains(NBT_KEY_TABLE_ID, Tag.TAG_STRING.toInt())) { "Missing or invalid $NBT_KEY_TABLE_ID" }
+                        require(entryNbt.contains(NBT_KEY_DIMENSION, Tag.TAG_STRING.toInt())) { "Missing or invalid $NBT_KEY_DIMENSION" }
+                        require(entryNbt.contains(NBT_KEY_X, Tag.TAG_INT.toInt())) { "Missing or invalid $NBT_KEY_X" }
+                        require(entryNbt.contains(NBT_KEY_Y, Tag.TAG_INT.toInt())) { "Missing or invalid $NBT_KEY_Y" }
+                        require(entryNbt.contains(NBT_KEY_Z, Tag.TAG_INT.toInt())) { "Missing or invalid $NBT_KEY_Z" }
+                        require(entryNbt.contains(NBT_KEY_REVISION, Tag.TAG_LONG.toInt())) { "Missing or invalid $NBT_KEY_REVISION" }
                         TableLocationEntry(
                             tableId = Uuid.parse(entryNbt.getString(NBT_KEY_TABLE_ID)),
                             location = TableLocation(
@@ -135,7 +135,7 @@ class MahjongTableLocationsPersistentState private constructor(
                     }
                 }
             }
-            return MahjongTableLocationsPersistentState(entries)
+            return MahjongTableLocationsSavedData(entries)
         }
 
         /** 這個索引目前的格式版本。 */

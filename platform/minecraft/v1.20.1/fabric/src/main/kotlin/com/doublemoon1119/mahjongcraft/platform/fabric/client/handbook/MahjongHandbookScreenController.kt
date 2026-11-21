@@ -9,17 +9,17 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.handbook.MinecraftHandbookScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerColor
+import com.mojang.blaze3d.platform.InputConstants
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.fabricmc.fabric.api.event.player.UseItemCallback
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.option.KeyBinding
-import net.minecraft.client.util.InputUtil
-import net.minecraft.item.ItemStack
-import net.minecraft.item.Items
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
-import net.minecraft.util.TypedActionResult
+import net.minecraft.ChatFormatting
+import net.minecraft.client.KeyMapping
+import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.Component
+import net.minecraft.world.InteractionResultHolder
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
 import org.lwjgl.glfw.GLFW
 
 /**
@@ -39,7 +39,7 @@ class MahjongHandbookScreenController(
     private val guideScreens: GuideScreenController,
 ) {
     /** 開啟麻將手冊的按鍵，預設分號。 */
-    private lateinit var openKeyBinding: KeyBinding
+    private lateinit var openKeyBinding: KeyMapping
 
     /** 是否已完成事件註冊。 */
     private var registered = false
@@ -52,21 +52,21 @@ class MahjongHandbookScreenController(
         if (registered) return
         registered = true
         openKeyBinding = KeyBindingHelper.registerKeyBinding(
-            KeyBinding(
+            KeyMapping(
                 MinecraftHandbookScreenKeys.OPEN_KEY,
-                InputUtil.Type.KEYSYM,
+                InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_SEMICOLON,
                 MinecraftClientConfigScreenKeys.KEY_CATEGORY,
             ),
         )
         ClientTickEvents.END_CLIENT_TICK.register(::tick)
         UseItemCallback.EVENT.register { player, world, hand ->
-            val stack = player.getStackInHand(hand)
-            if (world.isClient && stack.isOf(ModItems.MAHJONG_HANDBOOK)) {
-                open(MinecraftClient.getInstance())
-                TypedActionResult.success(stack)
+            val stack = player.getItemInHand(hand)
+            if (world.isClientSide && stack.`is`(ModItems.MAHJONG_HANDBOOK)) {
+                open(Minecraft.getInstance())
+                InteractionResultHolder.success(stack)
             } else {
-                TypedActionResult.pass(stack)
+                InteractionResultHolder.pass(stack)
             }
         }
     }
@@ -81,13 +81,13 @@ class MahjongHandbookScreenController(
      *
      * @param client 本次 tick 的客戶端。
      */
-    private fun tick(client: MinecraftClient) {
+    private fun tick(client: Minecraft) {
         if (openRequested) {
             openRequested = false
-            if (client.world != null) open(client)
+            if (client.level != null) open(client)
         }
-        while (openKeyBinding.wasPressed()) {
-            if (client.currentScreen == null) open(client)
+        while (openKeyBinding.consumeClick()) {
+            if (client.screen == null) open(client)
         }
     }
 
@@ -96,7 +96,7 @@ class MahjongHandbookScreenController(
      *
      * @param client 要開啟畫面的客戶端。
      */
-    private fun open(client: MinecraftClient) {
+    private fun open(client: Minecraft) {
         client.setScreen(HandbookScreen(entries = entries(), openHint = ::openHint))
     }
 
@@ -129,9 +129,9 @@ class MahjongHandbookScreenController(
     )
 
     /** 依目前的按鍵綁定產生開啟方式的提示；按鍵名稱以黃色標出，不加括號，綁定符號鍵時也看得清楚。 */
-    private fun openHint(): Text = if (openKeyBinding.isUnbound) {
-        Text.translatable(MinecraftHandbookScreenKeys.OPEN_HINT_UNBOUND)
+    private fun openHint(): Component = if (openKeyBinding.isUnbound) {
+        Component.translatable(MinecraftHandbookScreenKeys.OPEN_HINT_UNBOUND)
     } else {
-        Text.translatable(MinecraftHandbookScreenKeys.OPEN_HINT, openKeyBinding.boundKeyLocalizedText.copy().formatted(Formatting.YELLOW))
+        Component.translatable(MinecraftHandbookScreenKeys.OPEN_HINT, openKeyBinding.translatedKeyMessage.copy().withStyle(ChatFormatting.YELLOW))
     }
 }

@@ -13,8 +13,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigVariant
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import kotlinx.serialization.decodeFromString
-import net.minecraft.text.MutableText
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.MutableComponent
 
 /**
  * 將權威 GameConfig 依宣告式 schema 格式化成 GUI 與 hover 共用的本地化文字。
@@ -40,8 +40,8 @@ class FabricGameConfigTextFormatter(
      * @param configJson 網路格式的遊戲設定 JSON。
      * @return 本地化的完整設定文字。
      */
-    fun full(configJson: String): MutableText = runCatching { decode(configJson) }
-        .fold(::full, { Text.literal(configJson) })
+    fun full(configJson: String): MutableComponent = runCatching { decode(configJson) }
+        .fold(::full, { Component.literal(configJson) })
 
     /**
      * 只顯示實際改變的欄位；規則模組不同時只列出新舊規則名稱。
@@ -50,14 +50,14 @@ class FabricGameConfigTextFormatter(
      * @param newConfigJson 變更後的遊戲設定 JSON。
      * @return 本地化差異文字；解碼失敗時回傳新設定原始 JSON。
      */
-    fun changes(oldConfigJson: String, newConfigJson: String): MutableText = runCatching {
+    fun changes(oldConfigJson: String, newConfigJson: String): MutableComponent = runCatching {
         val old = decode(oldConfigJson)
         val new = decode(newConfigJson)
         val oldModuleId = modules.getModule(old.ruleConfig).id
         val newModuleId = modules.getModule(new.ruleConfig).id
         if (oldModuleId != newModuleId) {
-            return@runCatching Text.empty()
-                .append(ruleName(oldModuleId)).append(Text.literal(" → ")).append(ruleName(newModuleId))
+            return@runCatching Component.empty()
+                .append(ruleName(oldModuleId)).append(Component.literal(" → ")).append(ruleName(newModuleId))
         }
         val definition = presentations.find(newModuleId, new.ruleConfig) ?: return@runCatching full(new)
         val oldDefinition = presentations.find(oldModuleId, old.ruleConfig) ?: return@runCatching full(new)
@@ -73,21 +73,21 @@ class FabricGameConfigTextFormatter(
         val newVariant = GameConfigVariantResolver.find(definition, new)
         val variantChange = if (oldVariant != null && newVariant != null && oldVariant.id != newVariant.id) oldVariant to newVariant else null
         if (changed.isEmpty() && variantChange == null) return@runCatching full(new)
-        Text.empty().also { result ->
+        Component.empty().also { result ->
             variantChange?.let { (from, to) ->
-                result.append(Text.translatable(MinecraftRoomScreenKeys.VARIANT_SELECTOR)).append(Text.literal(": "))
-                    .append(Text.translatable(from.nameTranslationKey)).append(Text.literal(" → "))
-                    .append(Text.translatable(to.nameTranslationKey))
+                result.append(Component.translatable(MinecraftRoomScreenKeys.VARIANT_SELECTOR)).append(Component.literal(": "))
+                    .append(Component.translatable(from.nameTranslationKey)).append(Component.literal(" → "))
+                    .append(Component.translatable(to.nameTranslationKey))
             }
             changed.forEachIndexed { index, field ->
                 if (index > 0 || variantChange != null) result.append("\n")
                 val oldField = oldFieldsById.getValue(field.id)
-                result.append(Text.translatable(field.nameTranslationKey)).append(Text.literal(": "))
-                    .append(gameConfigPresentationText(oldField.read(old), oldField.editor)).append(Text.literal(" → "))
+                result.append(Component.translatable(field.nameTranslationKey)).append(Component.literal(": "))
+                    .append(gameConfigPresentationText(oldField.read(old), oldField.editor)).append(Component.literal(" → "))
                     .append(gameConfigPresentationText(field.read(new), field.editor))
             }
         }
-    }.getOrElse { Text.literal(newConfigJson) }
+    }.getOrElse { Component.literal(newConfigJson) }
 
     /**
      * 依已解析的設定欄位呈現完整本地化文字。
@@ -95,21 +95,21 @@ class FabricGameConfigTextFormatter(
      * @param config 要呈現的領域遊戲設定。
      * @return 完整設定文字。
      */
-    private fun full(config: GameConfig): MutableText {
+    private fun full(config: GameConfig): MutableComponent {
         val resolved = resolver.resolve(config)
         val moduleId = resolved.ruleModuleId
-        val result = Text.empty().append(ruleName(moduleId))
-        val definition = resolved.definition ?: return result.append("\n").append(Text.literal(moduleId))
+        val result = Component.empty().append(ruleName(moduleId))
+        val definition = resolved.definition ?: return result.append("\n").append(Component.literal(moduleId))
         resolved.variant?.takeIf { definition.variants.isNotEmpty() }?.let { variant ->
-            result.append("\n").append(Text.translatable(MinecraftRoomScreenKeys.VARIANT_SELECTOR)).append(Text.literal(": "))
-                .append(Text.translatable(variant.nameTranslationKey))
+            result.append("\n").append(Component.translatable(MinecraftRoomScreenKeys.VARIANT_SELECTOR)).append(Component.literal(": "))
+                .append(Component.translatable(variant.nameTranslationKey))
         }
         val fields = GameConfigVariantResolver.visibleFields(definition)
         definition.categories.forEach { category ->
-            result.append("\n\n").append(Text.translatable(category.nameTranslationKey))
+            result.append("\n\n").append(Component.translatable(category.nameTranslationKey))
             fields.filter { it.categoryId == category.id }.forEach { field ->
-                result.append("\n").append(Text.translatable(field.nameTranslationKey))
-                    .append(Text.literal(": ")).append(
+                result.append("\n").append(Component.translatable(field.nameTranslationKey))
+                    .append(Component.literal(": ")).append(
                         gameConfigPresentationText(
                             value = requireNotNull(resolved.valuesByFieldId[field.id]),
                             editor = field.editor,
@@ -126,7 +126,7 @@ class FabricGameConfigTextFormatter(
      * @param moduleId 規則模組 ID。
      * @return 可本地化的名稱文字。
      */
-    private fun ruleName(moduleId: String): Text = ruleNames.find(moduleId)?.let(Text::translatable) ?: Text.literal(moduleId)
+    private fun ruleName(moduleId: String): Component = ruleNames.find(moduleId)?.let(Component::translatable) ?: Component.literal(moduleId)
 
     /**
      * 將設定 JSON 解碼為領域設定。

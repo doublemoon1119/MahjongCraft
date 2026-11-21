@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
-import net.minecraft.util.math.Direction
+import net.minecraft.core.Direction
 
 /**
  * 麻將凳座位的位置換算與下座順序。
@@ -44,8 +44,8 @@ internal object MahjongStoolSeatGeometry {
      */
     fun dismountDirections(facing: Direction): List<Direction> = listOf(
         facing,
-        facing.rotateYClockwise(),
-        facing.rotateYCounterclockwise(),
+        facing.clockWise,
+        facing.counterClockWise,
         facing.opposite,
     )
 }

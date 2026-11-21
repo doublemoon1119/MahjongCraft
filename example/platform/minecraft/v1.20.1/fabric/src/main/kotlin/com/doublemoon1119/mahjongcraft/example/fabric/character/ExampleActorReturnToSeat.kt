@@ -8,12 +8,12 @@ import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleC
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleFurnitureSpace
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.state.property.Properties
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
-import net.minecraft.util.math.MathHelper
-import net.minecraft.util.math.Vec3d
+import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.util.Mth
+import net.minecraft.world.level.block.state.properties.BlockStateProperties
+import net.minecraft.world.phys.AABB
+import net.minecraft.world.phys.Vec3
 import kotlin.math.abs
 
 /** 範例人偶在指定位置附近自行回座，沒有座位時回原位站立。 */
@@ -25,8 +25,8 @@ internal object ExampleActorReturnToSeat {
      * @param request 最新指定席位。
      */
     fun tryReturn(actor: ExampleActorEntity, request: SeatRequest) {
-        val world = actor.world as? ServerWorld ?: return
-        if (!actor.control.isActive || !actor.isAlive || actor.hasVehicle() || world.registryKey.value.toString() != request.dimensionId) return
+        val world = actor.level() as? ServerLevel ?: return
+        if (!actor.control.isActive || !actor.isAlive || actor.isPassenger || world.dimension().location().toString() != request.dimensionId) return
         val seat = request.seat
         if (!isNear(
                 x = actor.x,
@@ -39,15 +39,15 @@ internal object ExampleActorReturnToSeat {
         ) {
             return
         }
-        val pos = BlockPos.ofFloored(
+        val pos = BlockPos.containing(
             seat.x,
             seat.y,
             seat.z,
         )
-        if (!world.chunkManager.isChunkLoaded(pos.x shr 4, pos.z shr 4)) return
+        if (!world.chunkSource.hasChunk(pos.x shr 4, pos.z shr 4)) return
         val state = world.getBlockState(pos)
         if (ExampleFurnitureBlocks.isSeat(state)) {
-            if (state.isOf(ExampleFurnitureBlocks.bench) && abs(MathHelper.wrapDegrees(state.get(Properties.HORIZONTAL_FACING).asRotation() - seat.yaw)) > 15f) return
+            if (state.`is`(ExampleFurnitureBlocks.bench) && abs(Mth.wrapDegrees(state.getValue(BlockStateProperties.HORIZONTAL_FACING).toYRot() - seat.yaw)) > 15f) return
             ExampleChairSeatService().sit(
                 world = world,
                 pos = pos,
@@ -56,9 +56,9 @@ internal object ExampleActorReturnToSeat {
             )
             return
         }
-        val candidates = world.getEntitiesByClass(
+        val candidates = world.getEntitiesOfClass(
             ExampleCushionEntity::class.java,
-            Box(
+            AABB(
                 seat.x - 0.5,
                 seat.y - 1.0,
                 seat.z - 0.5,
@@ -79,8 +79,8 @@ internal object ExampleActorReturnToSeat {
             )
             return
         }
-        if (actor.x == seat.x && actor.y == seat.y && actor.z == seat.z && abs(MathHelper.wrapDegrees(actor.yaw - seat.yaw)) < 0.001f) return
-        val body = actor.boundingBox.offset(
+        if (actor.x == seat.x && actor.y == seat.y && actor.z == seat.z && abs(Mth.wrapDegrees(actor.yRot - seat.yaw)) < 0.001f) return
+        val body = actor.boundingBox.move(
             seat.x - actor.x,
             seat.y - actor.y,
             seat.z - actor.z,
@@ -97,7 +97,7 @@ internal object ExampleActorReturnToSeat {
             hasSupport = { bounds ->
                 world.getBlockCollisions(
                     actor,
-                    Box(
+                    AABB(
                         bounds.minX,
                         bounds.minY - SUPPORT_DEPTH,
                         bounds.minZ,
@@ -108,16 +108,16 @@ internal object ExampleActorReturnToSeat {
                 ).any { !it.isEmpty }
             },
             move = {
-                actor.refreshPositionAndAngles(
+                actor.moveTo(
                     seat.x,
                     seat.y,
                     seat.z,
                     seat.yaw,
-                    actor.pitch,
+                    actor.xRot,
                 )
-                actor.headYaw = seat.yaw
-                actor.bodyYaw = seat.yaw
-                actor.velocity = Vec3d.ZERO
+                actor.yHeadRot = seat.yaw
+                actor.yBodyRot = seat.yaw
+                actor.setDeltaMovement(Vec3.ZERO)
                 actor.fallDistance = 0f
             },
         )
@@ -133,9 +133,9 @@ internal object ExampleActorReturnToSeat {
      * @return 已執行移動時為 true。
      */
     internal fun standIfSafe(
-        body: Box,
-        isClear: (Box) -> Boolean,
-        hasSupport: (Box) -> Boolean,
+        body: AABB,
+        isClear: (AABB) -> Boolean,
+        hasSupport: (AABB) -> Boolean,
         move: () -> Unit,
     ): Boolean {
         if (!isClear(body) || !hasSupport(body)) return false
@@ -170,7 +170,7 @@ internal object ExampleActorReturnToSeat {
      * @param current 目前指定位置。
      * @return 座標與等價朝向相同時為 true。
      */
-    internal fun sameSeat(previous: SeatGeometry, current: SeatGeometry): Boolean = previous.x == current.x && previous.y == current.y && previous.z == current.z && abs(MathHelper.wrapDegrees(previous.yaw - current.yaw)) < 0.001f
+    internal fun sameSeat(previous: SeatGeometry, current: SeatGeometry): Boolean = previous.x == current.x && previous.y == current.y && previous.z == current.z && abs(Mth.wrapDegrees(previous.yaw - current.yaw)) < 0.001f
 
     /**
      * 範例只在指定位置六格內返回，跑遠時留在原處。

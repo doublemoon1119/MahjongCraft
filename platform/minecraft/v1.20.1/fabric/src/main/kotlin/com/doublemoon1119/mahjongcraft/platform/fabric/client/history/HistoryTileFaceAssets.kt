@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.text.toNameText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 /**
  * 依牌譜回覆的牌面、外觀及特徵取得素材 key；特徵無法解碼時沿用基本牌面與外觀。
@@ -35,7 +35,7 @@ internal fun TileFaceViewDto.toHistoryAssetKey(
  * @param displayNames 牌種與外觀樣式的名稱來源。
  * @return 本地化牌名，例如「春」或「赤5萬」。
  */
-internal fun TileFaceViewDto.toHistoryNameText(displayNames: TileDisplayNameRegistry): Text = TileFaceView(tile.toDomain(), appearanceId = appearanceId).toNameText(displayNames)
+internal fun TileFaceViewDto.toHistoryNameText(displayNames: TileDisplayNameRegistry): Component = TileFaceView(tile.toDomain(), appearanceId = appearanceId).toNameText(displayNames)
 
 /**
  * 判斷牌譜回覆的牌面能否安全繪製：基本牌面可解析，外觀 ID 格式正確。

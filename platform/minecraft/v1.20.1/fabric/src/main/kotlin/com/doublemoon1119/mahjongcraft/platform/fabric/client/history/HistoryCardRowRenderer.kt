@@ -3,9 +3,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.text.Text
+import net.minecraft.client.gui.Font
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.network.chat.Component
 
 /**
  * 畫出牌譜卡片中的文字、牌列與和牌手牌；交易標題與讀取按鈕這類帶按鈕的列由各畫面自己畫。
@@ -18,7 +18,7 @@ import net.minecraft.text.Text
  */
 internal class HistoryCardRowRenderer(
     private val session: HistoryBrowseSession,
-    private val textRenderer: TextRenderer,
+    private val textRenderer: Font,
     private val tileFaceRenderer: MahjongTileFaceRenderer,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val tileGroups: HistoryTileGroupRenderer,
@@ -36,19 +36,19 @@ internal class HistoryCardRowRenderer(
      * @return 游標指著這一列時的提示；沒有時為 null。
      */
     fun render(
-        context: DrawContext,
+        context: GuiGraphics,
         row: HistoryCardRow,
         left: Int,
         y: Int,
         hovered: Boolean,
         mouseX: Int,
         mouseY: Int,
-    ): List<Text>? {
-        var tooltip: List<Text>? = null
+    ): List<Component>? {
+        var tooltip: List<Component>? = null
         when (row) {
             is HistoryCardRow.TextLine -> {
                 row.participant?.let { session.participants.render(it, context, left + row.portraitIndent, y - 1, PORTRAIT_SIZE, matchId = matchId()) }
-                context.drawTextWithShadow(textRenderer, row.text, left + row.indent, y, row.color)
+                context.drawString(textRenderer, row.text, left + row.indent, y, row.color)
                 if (hovered && mouseY >= y && mouseY < y + row.height) tooltip = row.tooltip
             }
             is HistoryCardRow.Tiles -> row.tiles.forEachIndexed { index, tile ->
@@ -57,9 +57,9 @@ internal class HistoryCardRowRenderer(
             }
             is HistoryCardRow.LabeledTiles -> {
                 val textY = y + (HistoryCardStyle.TILE_HEIGHT - HistoryCardStyle.LINE_HEIGHT) / 2 + 1
-                context.drawTextWithShadow(textRenderer, HistoryCardStyle.SEAT_LINE_BULLET, left + row.bulletIndent, textY, HistoryCardStyle.TEXT_COLOR)
+                context.drawString(textRenderer, HistoryCardStyle.SEAT_LINE_BULLET, left + row.bulletIndent, textY, HistoryCardStyle.TEXT_COLOR)
                 row.participant?.let { session.participants.render(it, context, left + row.portraitIndent, textY - 1, PORTRAIT_SIZE, matchId = matchId()) }
-                context.drawTextWithShadow(textRenderer, row.label, left + row.labelIndent, textY, HistoryCardStyle.TEXT_COLOR)
+                context.drawString(textRenderer, row.label, left + row.labelIndent, textY, HistoryCardStyle.TEXT_COLOR)
                 row.tiles.forEachIndexed { index, tile ->
                     val x = left + row.tileIndent + index * HistoryCardStyle.TILE_STEP
                     tile(context, tile, x, y, hovered, mouseX, mouseY)?.let { tooltip = it }
@@ -86,7 +86,7 @@ internal class HistoryCardRowRenderer(
      * @param mouseY 游標垂直座標。
      * @return 游標指著這張牌時的提示；沒有時為 null。
      */
-    private fun tile(context: DrawContext, tile: TileFaceViewDto, x: Int, y: Int, hovered: Boolean, mouseX: Int, mouseY: Int): List<Text>? {
+    private fun tile(context: GuiGraphics, tile: TileFaceViewDto, x: Int, y: Int, hovered: Boolean, mouseX: Int, mouseY: Int): List<Component>? {
         val asset = tile.toHistoryAssetKey(registry = tileAssetRegistry, registries = session.networkRegistries)
         tileFaceRenderer.renderGui(context, asset, x, y, HistoryCardStyle.TILE_WIDTH, HistoryCardStyle.TILE_HEIGHT, appearance = session.tileAppearance())
         val over = hovered && mouseX >= x && mouseX < x + HistoryCardStyle.TILE_WIDTH && mouseY >= y && mouseY < y + HistoryCardStyle.TILE_HEIGHT

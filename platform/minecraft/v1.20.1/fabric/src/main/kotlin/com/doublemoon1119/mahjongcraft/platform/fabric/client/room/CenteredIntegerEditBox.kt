@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.widget.TextFieldWidget
-import net.minecraft.text.Text
+import net.minecraft.client.gui.Font
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.EditBox
+import net.minecraft.network.chat.Component
 
 /**
  * 保留原版輸入、游標與選取行為，並將短整數文字置中的文字輸入框。
@@ -15,19 +15,19 @@ import net.minecraft.text.Text
  * @param height 輸入框高度。
  * @param narration 供輔助朗讀使用的欄位名稱。
  */
-internal class CenteredIntegerTextFieldWidget(
-    private val fieldTextRenderer: TextRenderer,
+internal class CenteredIntegerEditBox(
+    private val fieldTextRenderer: Font,
     x: Int,
     y: Int,
     width: Int,
     height: Int,
-    narration: Text,
-) : TextFieldWidget(fieldTextRenderer, x, y, width, height, narration) {
+    narration: Component,
+) : EditBox(fieldTextRenderer, x, y, width, height, narration) {
     init {
-        setDrawsBackground(false)
+        setBordered(false)
     }
 
-    override fun renderButton(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderWidget(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         val originalX = x
         val originalY = y
         val originalWidth = width
@@ -37,13 +37,13 @@ internal class CenteredIntegerTextFieldWidget(
         context.fill(originalX + 1, y + 1, originalX + originalWidth - 1, y + height - 1, 0xFF000000.toInt())
 
         val contentWidth = (originalWidth - 8).coerceAtLeast(1)
-        val centeredPadding = ((contentWidth - fieldTextRenderer.getWidth(text)) / 2).coerceAtLeast(0)
+        val centeredPadding = ((contentWidth - fieldTextRenderer.width(value)) / 2).coerceAtLeast(0)
         try {
             x = originalX + 4 + centeredPadding
             y = originalY + (originalHeight - VANILLA_VISIBLE_TEXT_HEIGHT) / 2
             width = (contentWidth - centeredPadding * 2).coerceAtLeast(1)
             height = VANILLA_VISIBLE_TEXT_HEIGHT
-            super.renderButton(context, mouseX, mouseY, delta)
+            super.renderWidget(context, mouseX, mouseY, delta)
         } finally {
             x = originalX
             y = originalY
@@ -53,7 +53,7 @@ internal class CenteredIntegerTextFieldWidget(
     }
 
     private companion object {
-        /** 原版 TextFieldWidget 有背景時用來計算文字基準線的可視字高。 */
+        /** 原版 EditBox 有背景時用來計算文字基準線的可視字高。 */
         const val VANILLA_VISIBLE_TEXT_HEIGHT = 8
     }
 }

@@ -2,10 +2,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
 import com.mojang.authlib.GameProfile
-import net.minecraft.client.network.OtherClientPlayerEntity
-import net.minecraft.client.util.DefaultSkinHelper
-import net.minecraft.client.world.ClientWorld
-import net.minecraft.util.Identifier
+import net.minecraft.client.multiplayer.ClientLevel
+import net.minecraft.client.player.RemotePlayer
+import net.minecraft.client.resources.DefaultPlayerSkin
+import net.minecraft.resources.ResourceLocation
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
@@ -21,14 +21,14 @@ import kotlin.uuid.toJavaUuid
  * @property profiles 皮膚與手臂款式的來源。
  */
 internal class HistoryReplayPlayerEntity(
-    world: ClientWorld,
+    world: ClientLevel,
     private val playerId: Uuid,
     profile: GameProfile,
     private val profiles: ClientPlayerProfileResolver,
-) : OtherClientPlayerEntity(world, profile) {
-    override fun hasSkinTexture(): Boolean = true
+) : RemotePlayer(world, profile) {
+    override fun isSkinLoaded(): Boolean = true
 
-    override fun getSkinTexture(): Identifier = profiles.resolvedSkinTexture(playerId) ?: DefaultSkinHelper.getTexture(playerId.toJavaUuid())
+    override fun getSkinTextureLocation(): ResourceLocation = profiles.resolvedSkinTexture(playerId) ?: DefaultPlayerSkin.getDefaultSkin(playerId.toJavaUuid())
 
-    override fun getModel(): String = profiles.resolvedSkinModel(playerId) ?: DefaultSkinHelper.getModel(playerId.toJavaUuid())
+    override fun getModelName(): String = profiles.resolvedSkinModel(playerId) ?: DefaultPlayerSkin.getSkinModelName(playerId.toJavaUuid())
 }

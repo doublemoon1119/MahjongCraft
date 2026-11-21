@@ -5,10 +5,10 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup
-import net.minecraft.registry.RegistryKey
-import net.minecraft.registry.RegistryKeys
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.Registries
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -35,9 +35,9 @@ internal class FabricTableStateDeliveryEnvironment(
 
     override fun trackingObservers(entry: TableLocationEntry): Set<Uuid> {
         val server = serverHolder.current() ?: return emptySet()
-        check(server.isOnThread) { "Table observer capture must run on the server thread" }
-        val dimension = Identifier.tryParse(entry.location.dimensionId) ?: return emptySet()
-        val world = server.getWorld(RegistryKey.of(RegistryKeys.WORLD, dimension)) ?: return emptySet()
+        check(server.isSameThread) { "Table observer capture must run on the server thread" }
+        val dimension = ResourceLocation.tryParse(entry.location.dimensionId) ?: return emptySet()
+        val world = server.getLevel(ResourceKey.create(Registries.DIMENSION, dimension)) ?: return emptySet()
         return PlayerLookup.tracking(world, BlockPos(entry.location.x, entry.location.y, entry.location.z))
             .mapTo(mutableSetOf()) { it.uuid.toKotlinUuid() }
     }

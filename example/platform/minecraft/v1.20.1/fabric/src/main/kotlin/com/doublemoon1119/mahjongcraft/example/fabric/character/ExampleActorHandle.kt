@@ -6,10 +6,10 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCha
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterOwnership
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
-import net.minecraft.entity.Entity
-import net.minecraft.util.math.EulerAngle
-import net.minecraft.util.math.MathHelper
-import net.minecraft.util.math.Vec3d
+import net.minecraft.core.Rotations
+import net.minecraft.util.Mth
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.phys.Vec3
 import kotlin.math.atan2
 import kotlin.math.sqrt
 
@@ -54,7 +54,7 @@ internal class ExampleActorHandle(
         val previous = actor.assignedSeat
         actor.assignedSeat = request
         val changed = previous != null && (previous.tableId != request.tableId || previous.dimensionId != request.dimensionId || !ExampleActorReturnToSeat.sameSeat(previous.seat, request.seat))
-        val misplaced = actor.hasVehicle() &&
+        val misplaced = actor.isPassenger &&
             !ExampleActorReturnToSeat.isAtSeat(
                 x = actor.x,
                 y = actor.y,
@@ -65,7 +65,7 @@ internal class ExampleActorHandle(
             val vehicle = actor.vehicle
             if (vehicle is ExampleChairSeatEntity || vehicle is ExampleCushionEntity) {
                 actor.stopRiding()
-                if (vehicle is ExampleChairSeatEntity && !vehicle.hasPassengers()) vehicle.discard()
+                if (vehicle is ExampleChairSeatEntity && !vehicle.isVehicle) vehicle.discard()
             }
         }
         actor.updateSittingPose()
@@ -77,19 +77,19 @@ internal class ExampleActorHandle(
     }
 
     /** 只小幅轉動頭部，不扭轉整個身體，也不讀取任何隱藏牌。 */
-    override fun lookAt(target: Vec3d?) {
+    override fun lookAt(target: Vec3?) {
         val original = actor.control.savedState ?: return
         if (target == null) {
-            actor.setHeadRotation(original.head)
+            actor.setHeadPose(original.head)
             return
         }
         val dx = target.x - actor.x
         val dz = target.z - actor.z
         val dy = target.y - actor.eyeY
-        val yaw = MathHelper.wrapDegrees(Math.toDegrees(atan2(-dx, dz)).toFloat() - actor.yaw).coerceIn(-35f, 35f)
+        val yaw = Mth.wrapDegrees(Math.toDegrees(atan2(-dx, dz)).toFloat() - actor.yRot).coerceIn(-35f, 35f)
         val pitch = -Math.toDegrees(atan2(dy, sqrt(dx * dx + dz * dz))).toFloat().coerceIn(-25f, 25f)
-        actor.setHeadRotation(
-            EulerAngle(
+        actor.setHeadPose(
+            Rotations(
                 pitch,
                 yaw,
                 0f,

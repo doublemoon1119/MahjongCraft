@@ -1,14 +1,14 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
-import net.minecraft.client.render.OverlayTexture
-import net.minecraft.client.render.RenderLayer
-import net.minecraft.client.render.VertexConsumer
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.render.entity.model.TridentEntityModel
-import net.minecraft.client.render.item.ItemRenderer
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.util.math.RotationAxis
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.blaze3d.vertex.VertexConsumer
+import com.mojang.math.Axis
+import net.minecraft.client.model.TridentModel
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.RenderType
+import net.minecraft.client.renderer.entity.ItemRenderer
+import net.minecraft.client.renderer.texture.OverlayTexture
 import org.joml.Matrix4f
 import kotlin.math.PI
 import kotlin.math.abs
@@ -22,7 +22,7 @@ import kotlin.math.sin
  *
  * @property tridentModel 原版三叉戟實體模型；直接使用其明確座標，讓戟尖能穩定對準胡牌張。
  */
-class WinCelebrationEffectGeometry(private val tridentModel: TridentEntityModel) {
+class WinCelebrationEffectGeometry(private val tridentModel: TridentModel) {
     /**
      * 畫出特效在某一刻的樣子；還沒開始或已經結束時不畫。
      *
@@ -35,8 +35,8 @@ class WinCelebrationEffectGeometry(private val tridentModel: TridentEntityModel)
     fun render(
         elapsedTicks: Double,
         seed: Long,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
     ) {
         if (elapsedTicks !in 0.0..<MahjongTileTableLayout.WIN_EFFECT_DURATION_TICKS.toDouble()) return
@@ -49,17 +49,17 @@ class WinCelebrationEffectGeometry(private val tridentModel: TridentEntityModel)
         if (envelope <= 0.0) return
 
         val rotation = seedRotation(seed) + progress * FULL_ROTATION_RADIANS
-        val entry = matrices.peek()
-        val lightningBuffer = vertexConsumers.getBuffer(RenderLayer.getLightning())
+        val entry = matrices.last()
+        val lightningBuffer = vertexConsumers.getBuffer(RenderType.lightning())
         lightningStrike(
             buffer = lightningBuffer,
-            positionMatrix = entry.positionMatrix,
+            positionMatrix = entry.pose(),
             effectProgress = progress,
             seed = seed,
         )
         groundDischarge(
             buffer = lightningBuffer,
-            positionMatrix = entry.positionMatrix,
+            positionMatrix = entry.pose(),
             effectProgress = progress,
             seed = seed,
             rotation = seedRotation(seed),
@@ -67,7 +67,7 @@ class WinCelebrationEffectGeometry(private val tridentModel: TridentEntityModel)
         repeat(RIPPLE_COUNT) { index ->
             ripple(
                 buffer = lightningBuffer,
-                positionMatrix = entry.positionMatrix,
+                positionMatrix = entry.pose(),
                 rotation = rotation,
                 effectProgress = progress,
                 envelope = envelope,
@@ -88,8 +88,8 @@ class WinCelebrationEffectGeometry(private val tridentModel: TridentEntityModel)
     private fun renderTrident(
         seed: Long,
         elapsedTicks: Double,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         light: Int,
     ) {
         if (elapsedTicks !in 0.0..<TRIDENT_SHRINK_END_TICK.toDouble()) return
@@ -116,29 +116,29 @@ class WinCelebrationEffectGeometry(private val tridentModel: TridentEntityModel)
                     ).toFloat()
         val fallingTilt = seededTilt * (1.0 - easedFall).toFloat()
 
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(0.0, TRIDENT_START_HEIGHT + (TRIDENT_END_HEIGHT - TRIDENT_START_HEIGHT) * easedFall, 0.0)
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(seededYaw))
-        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(fallingTilt + wobble.toFloat()))
+        matrices.mulPose(Axis.YP.rotationDegrees(seededYaw))
+        matrices.mulPose(Axis.ZP.rotationDegrees(fallingTilt + wobble.toFloat()))
         matrices.scale(tridentScale, tridentScale, tridentScale)
         matrices.translate(0.0, TRIDENT_TIP_TO_MODEL_ORIGIN, 0.0)
-        val buffer = ItemRenderer.getDirectItemGlintConsumer(
+        val buffer = ItemRenderer.getFoilBufferDirect(
             consumers,
-            tridentModel.getLayer(TridentEntityModel.TEXTURE),
+            tridentModel.renderType(TridentModel.TEXTURE),
             false,
             true,
         )
-        tridentModel.render(
+        tridentModel.renderToBuffer(
             matrices,
             buffer,
             light,
-            OverlayTexture.DEFAULT_UV,
+            OverlayTexture.NO_OVERLAY,
             1.0f,
             1.0f,
             1.0f,
             1.0f,
         )
-        matrices.pop()
+        matrices.popPose()
     }
 
     /**
@@ -332,7 +332,7 @@ class WinCelebrationEffectGeometry(private val tridentModel: TridentEntityModel)
     ) {
         buffer.vertex(positionMatrix, x.toFloat(), y.toFloat(), z.toFloat())
             .color(red, green, blue, alpha)
-            .next()
+            .endVertex()
     }
 
     /**

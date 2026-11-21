@@ -6,9 +6,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigVariantResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
-import net.minecraft.text.MutableText
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.MutableComponent
 
 /**
  * 建立房間設定頁與未套用變更確認畫面共用的本地化差異清單。
@@ -27,10 +27,10 @@ fun gameConfigDifferenceText(
     ruleNames: RuleModuleDisplayNameRegistry,
     from: GameConfig,
     to: GameConfig,
-): Text {
+): Component {
     val fromResolved = resolver.resolve(from)
     val toResolved = resolver.resolve(to)
-    val result = Text.translatable(MinecraftRoomScreenKeys.CONFIG_CHANGES).formatted(Formatting.GOLD)
+    val result = Component.translatable(MinecraftRoomScreenKeys.CONFIG_CHANGES).withStyle(ChatFormatting.GOLD)
     if (fromResolved.ruleModuleId != toResolved.ruleModuleId) {
         result.appendValueChange(
             nameKey = MinecraftRoomScreenKeys.RULE,
@@ -45,8 +45,8 @@ fun gameConfigDifferenceText(
     if (fromVariant != null && toVariant != null && fromVariant.id != toVariant.id) {
         result.appendValueChange(
             nameKey = MinecraftRoomScreenKeys.VARIANT_SELECTOR,
-            from = Text.translatable(fromVariant.nameTranslationKey),
-            to = Text.translatable(toVariant.nameTranslationKey),
+            from = Component.translatable(fromVariant.nameTranslationKey),
+            to = Component.translatable(toVariant.nameTranslationKey),
         )
     }
     GameConfigVariantResolver.visibleFields(definition).forEach { field ->
@@ -70,7 +70,7 @@ fun gameConfigDifferenceText(
  * @param moduleId 規則模組識別碼。
  * @return 可翻譯名稱或原始識別碼。
  */
-private fun ruleNameText(ruleNames: RuleModuleDisplayNameRegistry, moduleId: String): Text = ruleNames.find(moduleId)?.let(Text::translatable) ?: Text.literal(moduleId)
+private fun ruleNameText(ruleNames: RuleModuleDisplayNameRegistry, moduleId: String): Component = ruleNames.find(moduleId)?.let(Component::translatable) ?: Component.literal(moduleId)
 
 /**
  * 附加一列設定值差異。
@@ -79,13 +79,13 @@ private fun ruleNameText(ruleNames: RuleModuleDisplayNameRegistry, moduleId: Str
  * @param from 變更前的值。
  * @param to 變更後的值。
  */
-private fun MutableText.appendValueChange(nameKey: String, from: Text, to: Text) {
+private fun MutableComponent.appendValueChange(nameKey: String, from: Component, to: Component) {
     append("\n").append(
-        Text.translatable(
+        Component.translatable(
             MinecraftRoomScreenKeys.CONFIG_VALUE_CHANGE,
-            Text.translatable(nameKey),
+            Component.translatable(nameKey),
             from,
             to,
-        ).formatted(Formatting.GRAY),
+        ).withStyle(ChatFormatting.GRAY),
     )
 }

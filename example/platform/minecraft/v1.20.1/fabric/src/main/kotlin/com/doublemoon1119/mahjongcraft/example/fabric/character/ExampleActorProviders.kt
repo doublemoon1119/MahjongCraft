@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCha
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomParticipant
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomParticipantProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterOwnership
-import net.minecraft.entity.Entity
+import net.minecraft.world.entity.Entity
 import kotlin.uuid.Uuid
 
 /** 登記時只建立能力描述；原生類型與世界都在回呼被使用時才查詢。 */
@@ -27,7 +27,7 @@ internal object ExampleActorProviders {
     /** 工廠不生成或移動，只借用框架指定的同一隻人偶。 */
     val BORROWED: FabricAiCharacterProvider = FabricAiCharacterProvider { context ->
         val actor = context.participant as? ExampleActorEntity ?: return@FabricAiCharacterProvider null
-        if (actor.world !== context.world || !actor.isAlive) return@FabricAiCharacterProvider null
+        if (actor.level() !== context.world || !actor.isAlive) return@FabricAiCharacterProvider null
         ExampleActorHandle(actor, AiCharacterOwnership.BORROWED)
     }
 

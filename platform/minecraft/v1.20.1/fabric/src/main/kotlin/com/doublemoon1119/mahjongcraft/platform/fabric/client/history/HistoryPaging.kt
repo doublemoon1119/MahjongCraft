@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.client.gui.Font
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.network.chat.Component
 
 /**
  * 牌譜各頁底部翻頁的共用呈現：上一頁、下一頁按鈕的提示，以及中間一格的範圍文字。
@@ -37,12 +37,12 @@ internal object HistoryPaging {
      * @param status 查詢中或冷卻中的說明；沒有時為 null。
      * @return 提示文字。
      */
-    fun buttonTooltip(clickKey: String, shiftKey: String, status: Text?): Text {
-        val text = Text.empty()
-            .append(Text.translatable(clickKey).formatted(Formatting.GRAY))
+    fun buttonTooltip(clickKey: String, shiftKey: String, status: Component?): Component {
+        val text = Component.empty()
+            .append(Component.translatable(clickKey).withStyle(ChatFormatting.GRAY))
             .append("\n")
-            .append(Text.translatable(shiftKey).formatted(Formatting.GRAY))
-        status?.let { text.append("\n\n").append(it.copy().formatted(Formatting.YELLOW)) }
+            .append(Component.translatable(shiftKey).withStyle(ChatFormatting.GRAY))
+        status?.let { text.append("\n\n").append(it.copy().withStyle(ChatFormatting.YELLOW)) }
         return text
     }
 
@@ -52,7 +52,7 @@ internal object HistoryPaging {
      * @param total 總數；未知時為 null。
      * @return 「共 N 筆」；未知時為 null。
      */
-    fun totalText(total: Int?): Text? = total?.let { Text.translatable(MinecraftHistoryScreenKeys.RANGE_TOTAL, it) }
+    fun totalText(total: Int?): Component? = total?.let { Component.translatable(MinecraftHistoryScreenKeys.RANGE_TOTAL, it) }
 
     /**
      * 在底部中間一格置中繪製範圍文字；文字太寬時等比縮小，只有一行時垂直置中。
@@ -63,17 +63,17 @@ internal object HistoryPaging {
      * @param primary 第一行，例如「第 21–40 筆」。
      * @param secondary 第二行，例如「共 57 筆」；沒有時為 null。
      */
-    fun renderRange(context: DrawContext, textRenderer: TextRenderer, bounds: HistoryScreenLayout.Bounds, primary: Text, secondary: Text?) {
+    fun renderRange(context: GuiGraphics, textRenderer: Font, bounds: HistoryScreenLayout.Bounds, primary: Component, secondary: Component?) {
         val lines = listOfNotNull(primary to PRIMARY_COLOR, secondary?.let { it to SECONDARY_COLOR })
-        val top = bounds.y + (bounds.height - (lines.size - 1) * LINE_STEP - textRenderer.fontHeight) / 2 + 1
+        val top = bounds.y + (bounds.height - (lines.size - 1) * LINE_STEP - textRenderer.lineHeight) / 2 + 1
         context.enableScissor(bounds.x, bounds.y, bounds.right, bounds.bottom)
         lines.forEachIndexed { index, (line, color) ->
-            val scale = (bounds.width.toFloat() / textRenderer.getWidth(line).coerceAtLeast(1)).coerceAtMost(1f)
-            context.matrices.push()
-            context.matrices.translate((bounds.x + bounds.width / 2).toDouble(), (top + index * LINE_STEP).toDouble(), 0.0)
-            context.matrices.scale(scale, scale, 1f)
-            context.drawCenteredTextWithShadow(textRenderer, line, 0, 0, color)
-            context.matrices.pop()
+            val scale = (bounds.width.toFloat() / textRenderer.width(line).coerceAtLeast(1)).coerceAtMost(1f)
+            context.pose().pushPose()
+            context.pose().translate((bounds.x + bounds.width / 2).toDouble(), (top + index * LINE_STEP).toDouble(), 0.0)
+            context.pose().scale(scale, scale, 1f)
+            context.drawCenteredString(textRenderer, line, 0, 0, color)
+            context.pose().popPose()
         }
         context.disableScissor()
     }

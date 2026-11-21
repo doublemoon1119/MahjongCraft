@@ -9,9 +9,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvid
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatTarget
-import net.minecraft.entity.Entity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
 
 /**
  * 將固定席位上的內建麻將凳轉換成通用座位目標。
@@ -23,7 +23,7 @@ import net.minecraft.util.math.BlockPos
  */
 class MahjongStoolSeatProvider(
     private val seatService: MahjongStoolSeatService,
-) : SeatProvider<ServerWorld, Entity> {
+) : SeatProvider<ServerLevel, Entity> {
     /**
      * 解析固定席位上的內建麻將凳。
      *
@@ -31,14 +31,14 @@ class MahjongStoolSeatProvider(
      * @param request 固定席位的請求與幾何資料。
      * @return 位置已載入且確實為麻將凳時的單一目標，否則為空列表。
      */
-    override fun resolve(world: ServerWorld, request: SeatRequest): List<SeatTarget<ServerWorld, Entity>> {
-        if (request.dimensionId != world.registryKey.value.toString()) return emptyList()
-        val stoolPos = BlockPos.ofFloored(
+    override fun resolve(world: ServerLevel, request: SeatRequest): List<SeatTarget<ServerLevel, Entity>> {
+        if (request.dimensionId != world.dimension().location().toString()) return emptyList()
+        val stoolPos = BlockPos.containing(
             request.seat.x,
             request.seat.y,
             request.seat.z,
         )
-        if (!world.chunkManager.isChunkLoaded(stoolPos.x shr 4, stoolPos.z shr 4)) return emptyList()
+        if (!world.chunkSource.hasChunk(stoolPos.x shr 4, stoolPos.z shr 4)) return emptyList()
         if (world.getBlockState(stoolPos).block !is MahjongStoolBlock) return emptyList()
         return listOf(
             element = MahjongStoolSeatTarget(
@@ -60,14 +60,14 @@ class MahjongStoolSeatProvider(
  * @property seatService 執行實際乘坐操作的服務。
  */
 private class MahjongStoolSeatTarget(
-    private val world: ServerWorld,
+    private val world: ServerLevel,
     private val stoolPos: BlockPos,
     private val request: SeatRequest,
     private val seatService: MahjongStoolSeatService,
-) : SeatTarget<ServerWorld, Entity> {
+) : SeatTarget<ServerLevel, Entity> {
     /** 以維度、方塊座標與單一子座位識別這張凳子。 */
     override val identity: SeatIdentity = SeatIdentity(
-        dimensionId = world.registryKey.value.toString(),
+        dimensionId = world.dimension().location().toString(),
         kind = BLOCK_KIND,
         key = "${stoolPos.x},${stoolPos.y},${stoolPos.z}",
         slot = MAIN_SLOT,
@@ -80,8 +80,8 @@ private class MahjongStoolSeatTarget(
      * @param rider 預計乘坐的實體。
      * @return 凳子目前的乘坐幾何。
      */
-    override fun geometry(world: ServerWorld, rider: Entity): SeatGeometry {
-        if (world !== this.world || !world.chunkManager.isChunkLoaded(stoolPos.x shr 4, stoolPos.z shr 4)) {
+    override fun geometry(world: ServerLevel, rider: Entity): SeatGeometry {
+        if (world !== this.world || !world.chunkSource.hasChunk(stoolPos.x shr 4, stoolPos.z shr 4)) {
             return SeatGeometry(
                 x = request.seat.x,
                 y = request.seat.y,
@@ -113,15 +113,15 @@ private class MahjongStoolSeatTarget(
      * @param rider 預計乘坐的實體。
      * @return 目前的座位狀態。
      */
-    override fun inspect(world: ServerWorld, rider: Entity): SeatState {
-        if (world !== this.world || !world.chunkManager.isChunkLoaded(stoolPos.x shr 4, stoolPos.z shr 4)) {
+    override fun inspect(world: ServerLevel, rider: Entity): SeatState {
+        if (world !== this.world || !world.chunkSource.hasChunk(stoolPos.x shr 4, stoolPos.z shr 4)) {
             return SeatState.INVALID
         }
         if (world.getBlockState(stoolPos).block !is MahjongStoolBlock) return SeatState.INVALID
         val ownSeat = rider.vehicle as? MahjongStoolSeatEntity
-        if (ownSeat != null && ownSeat.world === world && ownSeat.blockPos == stoolPos) return SeatState.SEATED
-        if (SeatSupportCleanup.isOccupied(MahjongStoolSeatEntity.seatsAt(world, stoolPos), Entity::hasPassengers)) return SeatState.OCCUPIED
-        if (rider.hasVehicle()) return SeatState.UNSUPPORTED
+        if (ownSeat != null && ownSeat.level() === world && ownSeat.blockPosition() == stoolPos) return SeatState.SEATED
+        if (SeatSupportCleanup.isOccupied(MahjongStoolSeatEntity.seatsAt(world, stoolPos), Entity::isVehicle)) return SeatState.OCCUPIED
+        if (rider.isPassenger) return SeatState.UNSUPPORTED
         return if (seatService.canSit(
                 world = world,
                 stoolPos = stoolPos,
@@ -141,7 +141,7 @@ private class MahjongStoolSeatTarget(
      * @param rider 要乘坐凳子的實體。
      * @return 入座後的座位狀態；服務拒絕時不留下自有座位實體。
      */
-    override fun trySit(world: ServerWorld, rider: Entity): SeatState {
+    override fun trySit(world: ServerLevel, rider: Entity): SeatState {
         val current = inspect(world, rider)
         if (current != SeatState.AVAILABLE) return current
         return if (seatService.sit(

@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.seating
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatCollisionPolicy
-import net.minecraft.util.math.Box
+import net.minecraft.world.phys.AABB
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -11,8 +11,8 @@ class SeatPlacementCollisionTest {
     /** 玩家資訊面板包圍盒涵蓋席位，但沒有身體碰撞。 */
     @Test
     fun `overlapping visual panel does not block seat placement`() {
-        val panel = Box(-4.0, 64.0, -4.0, 4.0, 70.0, 4.0)
-        val seat = Box(1.0, 64.0, 0.0, 2.0, 65.0, 1.0)
+        val panel = AABB(-4.0, 64.0, -4.0, 4.0, 70.0, 4.0)
+        val seat = AABB(1.0, 64.0, 0.0, 2.0, 65.0, 1.0)
         assertTrue(panel.intersects(seat))
         assertFalse(SeatCollisionPolicy.blocks(removed = false, spectator = false, physical = false))
     }

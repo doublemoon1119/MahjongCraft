@@ -12,15 +12,15 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ScoreRankin
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.exhaustiveDrawSettlementStatusTranslationKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.render.LightmapTextureManager
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.render.entity.EntityRenderer
-import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
-import net.minecraft.util.Identifier
+import com.mojang.blaze3d.vertex.PoseStack
+import net.minecraft.ChatFormatting
+import net.minecraft.client.gui.Font
+import net.minecraft.client.renderer.LightTexture
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.entity.EntityRenderer
+import net.minecraft.client.renderer.entity.EntityRendererProvider
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid as KotlinUuid
 
@@ -36,7 +36,7 @@ import kotlin.uuid.Uuid as KotlinUuid
  * @param tileAppearanceResolver 依桌子目前公開規則解析牌組外觀。
  */
 class ExhaustiveDrawSettlementPresentationEntityRenderer(
-    context: EntityRendererFactory.Context,
+    context: EntityRendererProvider.Context,
     private val reasonDisplayNames: ExhaustiveDrawReasonDisplayNameRegistry,
     private val portraitRenderer: PlayerPortraitRenderer,
     private val tileFaceRenderer: MahjongTileFaceRenderer,
@@ -46,7 +46,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
 ) : EntityRenderer<ExhaustiveDrawSettlementPresentationEntity>(context) {
     private val logger = mahjongCraftLogger(ExhaustiveDrawSettlementPresentationEntityRenderer::class)
 
-    private val textRenderer = context.textRenderer
+    private val textRenderer = context.font
     private val warnedUnknownReasonIds = mutableSetOf<String>()
 
     /** 目前這次 [render] 呼叫所屬的桌子 ID，[resolvePlayerName] 解析名稱時查詢用；每次 render 開頭重設。 */
@@ -56,8 +56,8 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         entity: ExhaustiveDrawSettlementPresentationEntity,
         yaw: Float,
         tickDelta: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
     ) {
         if (!configStore.current.presentationVisibility.drawSettlementEnabled) return
@@ -87,9 +87,9 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
             // 面板在世界畫完後才畫，期間其他實體可能已改過目前的桌子，畫之前重新指定。
             currentTableId = entity.managedTableId
-            panelMatrices.push()
+            panelMatrices.pushPose()
             panelMatrices.translate(0.0, 0.55, 0.0)
-            panelMatrices.multiply(dispatcher.rotation)
+            panelMatrices.mulPose(entityRenderDispatcher.cameraOrientation())
             panelMatrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
             renderPanel(sharedPanelHalfWidth, sharedPanelBottom, panelAlpha, panelMatrices, panelConsumers)
             renderTitle(entity.reasonId, panelAlpha, panelMatrices, panelConsumers)
@@ -146,7 +146,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
                     vertexConsumers = panelConsumers,
                 )
             }
-            panelMatrices.pop()
+            panelMatrices.popPose()
         }
     }
 
@@ -163,16 +163,16 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         panelHalfWidth: Float,
         panelBottom: Float,
         alpha: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
     ) {
-        val matrix = matrices.peek().positionMatrix
-        val buffer = vertexConsumers.getBuffer(WorldPanelRenderLayer.layer)
+        val matrix = matrices.last().pose()
+        val buffer = vertexConsumers.getBuffer(WorldPanelRenderType.layer)
         val panelAlpha = (alpha * PANEL_ALPHA * 255).roundToInt()
-        buffer.vertex(matrix, -panelHalfWidth, PANEL_TOP, PANEL_Z).color(0, 0, 0, panelAlpha).next()
-        buffer.vertex(matrix, panelHalfWidth, PANEL_TOP, PANEL_Z).color(0, 0, 0, panelAlpha).next()
-        buffer.vertex(matrix, panelHalfWidth, panelBottom, PANEL_Z).color(0, 0, 0, panelAlpha).next()
-        buffer.vertex(matrix, -panelHalfWidth, panelBottom, PANEL_Z).color(0, 0, 0, panelAlpha).next()
+        buffer.vertex(matrix, -panelHalfWidth, PANEL_TOP, PANEL_Z).color(0, 0, 0, panelAlpha).endVertex()
+        buffer.vertex(matrix, panelHalfWidth, PANEL_TOP, PANEL_Z).color(0, 0, 0, panelAlpha).endVertex()
+        buffer.vertex(matrix, panelHalfWidth, panelBottom, PANEL_Z).color(0, 0, 0, panelAlpha).endVertex()
+        buffer.vertex(matrix, -panelHalfWidth, panelBottom, PANEL_Z).color(0, 0, 0, panelAlpha).endVertex()
     }
 
     /**
@@ -183,12 +183,12 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
      * @param matrices 目前繪製矩陣。
      * @param vertexConsumers 頂點消費者。
      */
-    private fun renderTitle(reasonId: String, alpha: Float, matrices: MatrixStack, vertexConsumers: VertexConsumerProvider) {
-        matrices.push()
+    private fun renderTitle(reasonId: String, alpha: Float, matrices: PoseStack, vertexConsumers: MultiBufferSource) {
+        matrices.pushPose()
         matrices.translate(0f, TITLE_Y, 0f)
         matrices.scale(TITLE_SCALE, TITLE_SCALE, 1f)
-        drawText(reasonText(reasonId).copy().formatted(Formatting.GOLD), 0f, 0f, Alignment.CENTER, withAlpha(0xFFD37A, alpha), matrices, vertexConsumers)
-        matrices.pop()
+        drawText(reasonText(reasonId).copy().withStyle(ChatFormatting.GOLD), 0f, 0f, Alignment.CENTER, withAlpha(0xFFD37A, alpha), matrices, vertexConsumers)
+        matrices.popPose()
     }
 
     /**
@@ -216,8 +216,8 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         y: Float,
         alpha: Float,
         settledEffect: SettlementRankingSettledEffect.State,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
     ) {
         val deltaText = SettlementRankingLayout.formatDelta(delta)
         val deltaColor = when {
@@ -227,14 +227,14 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         }
 
         renderRankingSettledHighlight(layout.panelHalfWidth, y, alpha, settledEffect, matrices, vertexConsumers)
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(0f, y, 0f)
         matrices.scale(settledEffect.rowScale, settledEffect.rowScale, 1f)
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(layout.rankRightX, 0f, 0f)
         matrices.scale(settledEffect.rankScale, settledEffect.rankScale, 1f)
         drawText(
-            text = Text.literal(displayedRank.toString()),
+            text = Component.literal(displayedRank.toString()),
             anchorX = 0f,
             y = 0f,
             alignment = Alignment.RIGHT,
@@ -242,15 +242,15 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
             matrices = matrices,
             vertexConsumers = vertexConsumers,
         )
-        matrices.pop()
+        matrices.popPose()
         renderPortrait(player, layout.faceLeftX, -FACE_TEXT_CENTER_OFFSET, alpha, matrices, vertexConsumers)
-        drawText(Text.literal(fitPlayerName(resolvePlayerName(player))), layout.nameLeftX, 0f, Alignment.LEFT, withAlpha(0xFFFFFF, alpha), matrices, vertexConsumers)
+        drawText(Component.literal(fitPlayerName(resolvePlayerName(player))), layout.nameLeftX, 0f, Alignment.LEFT, withAlpha(0xFFFFFF, alpha), matrices, vertexConsumers)
         settlementStatusText(reasonId, player)?.let { statusText ->
             drawText(statusText, layout.statusCenterX, 0f, Alignment.CENTER, withAlpha(0xFFE08A, alpha), matrices, vertexConsumers)
         }
-        drawText(Text.literal(score.toString()), layout.scoreRightX, 0f, Alignment.RIGHT, withAlpha(0xFFF3C4, alpha), matrices, vertexConsumers)
-        drawText(Text.literal(deltaText), layout.deltaRightX, 0f, Alignment.RIGHT, withAlpha(deltaColor, alpha), matrices, vertexConsumers)
-        matrices.pop()
+        drawText(Component.literal(score.toString()), layout.scoreRightX, 0f, Alignment.RIGHT, withAlpha(0xFFF3C4, alpha), matrices, vertexConsumers)
+        drawText(Component.literal(deltaText), layout.deltaRightX, 0f, Alignment.RIGHT, withAlpha(deltaColor, alpha), matrices, vertexConsumers)
+        matrices.popPose()
     }
 
     /**
@@ -268,8 +268,8 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         y: Float,
         alpha: Float,
         effect: SettlementRankingSettledEffect.State,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
     ) {
         if (!effect.active) return
         val left = -panelHalfWidth + 5f
@@ -304,17 +304,17 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         top: Float,
         bottom: Float,
         alpha: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
     ) {
         if (right <= left || alpha <= 0f) return
-        val matrix = matrices.peek().positionMatrix
-        val buffer = vertexConsumers.getBuffer(WorldPanelRenderLayer.layer)
+        val matrix = matrices.last().pose()
+        val buffer = vertexConsumers.getBuffer(WorldPanelRenderType.layer)
         val a = (alpha.coerceIn(0f, 1f) * 255).roundToInt()
-        buffer.vertex(matrix, left, top, RANKING_HIGHLIGHT_Z).color(255, 205, 92, a).next()
-        buffer.vertex(matrix, right, top, RANKING_HIGHLIGHT_Z).color(255, 238, 178, a).next()
-        buffer.vertex(matrix, right, bottom, RANKING_HIGHLIGHT_Z).color(255, 238, 178, a).next()
-        buffer.vertex(matrix, left, bottom, RANKING_HIGHLIGHT_Z).color(255, 205, 92, a).next()
+        buffer.vertex(matrix, left, top, RANKING_HIGHLIGHT_Z).color(255, 205, 92, a).endVertex()
+        buffer.vertex(matrix, right, top, RANKING_HIGHLIGHT_Z).color(255, 238, 178, a).endVertex()
+        buffer.vertex(matrix, right, bottom, RANKING_HIGHLIGHT_Z).color(255, 238, 178, a).endVertex()
+        buffer.vertex(matrix, left, bottom, RANKING_HIGHLIGHT_Z).color(255, 205, 92, a).endVertex()
     }
 
     /**
@@ -355,13 +355,13 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         layout: InformationLayout,
         y: Float,
         alpha: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         appearance: MinecraftTileSetAppearanceDefinition,
     ) {
         renderPortrait(player, layout.faceLeftX, y - FACE_TEXT_CENTER_OFFSET, alpha, matrices, vertexConsumers)
         drawText(
-            text = Text.literal(fitPlayerName(resolvePlayerName(player))),
+            text = Component.literal(fitPlayerName(resolvePlayerName(player))),
             anchorX = layout.nameLeftX,
             y = y,
             alignment = Alignment.LEFT,
@@ -404,8 +404,8 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         x: Float,
         y: Float,
         alpha: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
     ) = portraitRenderer.render(
         playerId = KotlinUuid.parse(player.playerId),
         isAi = player.isAi,
@@ -438,8 +438,8 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         width: Float,
         height: Float,
         alpha: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         appearance: MinecraftTileSetAppearanceDefinition,
     ) {
         tileFaceRenderer.renderWorldPanel(assetKey, centerX, centerY, width, height, alpha, TILE_FACE_Z, matrices, vertexConsumers, appearance)
@@ -457,21 +457,21 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
      * @param vertexConsumers 頂點消費者。
      */
     private fun drawText(
-        text: Text,
+        text: Component,
         anchorX: Float,
         y: Float,
         alignment: Alignment,
         color: Int,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
     ) {
-        val width = textRenderer.getWidth(text).toFloat()
+        val width = textRenderer.width(text).toFloat()
         val x = when (alignment) {
             Alignment.LEFT -> anchorX
             Alignment.CENTER -> anchorX - width / 2f
             Alignment.RIGHT -> anchorX - width
         }
-        textRenderer.draw(text, x, y, color, false, matrices.peek().positionMatrix, vertexConsumers, TextRenderer.TextLayerType.NORMAL, 0, LightmapTextureManager.MAX_LIGHT_COORDINATE)
+        textRenderer.drawInBatch(text, x, y, color, false, matrices.last().pose(), vertexConsumers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT)
     }
 
     /**
@@ -496,9 +496,9 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
      * @param reasonId 流局原因 ID。
      * @return 原因本地化文字。
      */
-    private fun reasonText(reasonId: String): Text = reasonDisplayNames.find(reasonId)?.let(Text::translatable) ?: run {
+    private fun reasonText(reasonId: String): Component = reasonDisplayNames.find(reasonId)?.let(Component::translatable) ?: run {
         if (warnedUnknownReasonIds.add(reasonId)) logger.warn("Unknown exhaustive-draw reason display name: {}", reasonId)
-        Text.translatable(MinecraftMessageKeys.EXHAUSTIVE_DRAW_REASON_NORMAL)
+        Component.translatable(MinecraftMessageKeys.EXHAUSTIVE_DRAW_REASON_NORMAL)
     }
 
     /**
@@ -508,8 +508,8 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
      * @param player 玩家結算資料。
      * @return 已知狀態的翻譯文字；沒有對應狀態時為 null。
      */
-    private fun settlementStatusText(reasonId: String, player: ExhaustiveDrawSettlementPlayerSnapshot): Text? = exhaustiveDrawSettlementStatusTranslationKey(reasonId, player.statusId, reasonDisplayNames)
-        ?.let(Text::translatable)
+    private fun settlementStatusText(reasonId: String, player: ExhaustiveDrawSettlementPlayerSnapshot): Component? = exhaustiveDrawSettlementStatusTranslationKey(reasonId, player.statusId, reasonDisplayNames)
+        ?.let(Component::translatable)
 
     /**
      * 計算排行榜單列的揭示進度。
@@ -580,17 +580,17 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
      */
     private fun measureLayout(reasonId: String, players: List<ExhaustiveDrawSettlementPlayerSnapshot>): TableLayout {
         val scoreWidth = SettlementRankingLayout.contentColumnWidth(
-            contentWidths = players.flatMap { listOf(it.previousScore, it.currentScore) }.map { textRenderer.getWidth(it.toString()).toFloat() },
+            contentWidths = players.flatMap { listOf(it.previousScore, it.currentScore) }.map { textRenderer.width(it.toString()).toFloat() },
             padding = SettlementRankingLayout.NUMERIC_COLUMN_PADDING,
             minWidth = SettlementRankingLayout.MIN_SCORE_COLUMN_WIDTH,
         )
         val deltaWidth = SettlementRankingLayout.contentColumnWidth(
-            contentWidths = players.map { textRenderer.getWidth(SettlementRankingLayout.formatDelta(it.currentScore - it.previousScore)).toFloat() },
+            contentWidths = players.map { textRenderer.width(SettlementRankingLayout.formatDelta(it.currentScore - it.previousScore)).toFloat() },
             padding = SettlementRankingLayout.NUMERIC_COLUMN_PADDING,
             minWidth = SettlementRankingLayout.MIN_DELTA_COLUMN_WIDTH,
         )
         val statusWidth = SettlementRankingLayout.contentColumnWidth(
-            contentWidths = players.map { player -> settlementStatusText(reasonId, player)?.let(textRenderer::getWidth)?.toFloat() ?: 0f },
+            contentWidths = players.map { player -> settlementStatusText(reasonId, player)?.let(textRenderer::width)?.toFloat() ?: 0f },
             padding = STATUS_COLUMN_PADDING,
             minWidth = MIN_STATUS_COLUMN_WIDTH,
         )
@@ -640,7 +640,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
      * @return 合成後的 ARGB 顏色。
      */
     private fun withAlpha(rgb: Int, alpha: Float): Int = WorldPanelRenderer.withAlpha(rgb, alpha)
-    override fun getTexture(entity: ExhaustiveDrawSettlementPresentationEntity): Identifier? = null
+    override fun getTextureLocation(entity: ExhaustiveDrawSettlementPresentationEntity): ResourceLocation? = null
 
     /** 文字相對水平錨點的對齊方式。 */
     private enum class Alignment {

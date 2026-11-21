@@ -101,7 +101,7 @@ Omitting `resources` preserves the existing `mahjongcraft` texture and model pat
 the asset key. Built-in keys and stored item data are unchanged. Unknown keys use the existing
 unknown-tile fallback; a registered but missing model may use its texture-only fallback.
 Resource locations are validated during registration setup rather than silently changing an
-invalid namespace. No Minecraft-version-specific `Identifier` is needed in this common layer.
+invalid namespace. No Minecraft-version-specific `ResourceLocation` is needed in this common layer.
 
 ## Shared tile-set appearance
 

@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.example.fabric
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.table.ExampleFlatTablePart
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.table.ExampleFlatTableStructure
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

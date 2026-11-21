@@ -5,11 +5,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftItemGroupKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.STANDARD_TILE_ASSET_KEYS
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup
-import net.minecraft.item.ItemStack
-import net.minecraft.registry.Registries
-import net.minecraft.registry.Registry
-import net.minecraft.text.Text
-import net.minecraft.util.Identifier
+import net.minecraft.core.Registry
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.item.ItemStack
 
 /** MahjongCraft Fabric 創造模式物品分類的集中註冊點。 */
 object ModItemGroups {
@@ -20,22 +20,22 @@ object ModItemGroups {
         }
         val group = FabricItemGroup.builder()
             .icon(iconStack::copy)
-            .displayName(Text.translatable(MinecraftItemGroupKeys.MAIN))
-            .entries { _, entries ->
-                entries.add(iconStack.copy())
-                entries.add(ModItems.MAHJONG_DICE)
-                entries.add(ModItems.MAHJONG_HANDBOOK)
-                entries.add(ModItems.MAHJONG_SCORING_STICK)
-                ModItems.MAHJONG_RULERS.values.forEach(entries::add)
-                entries.add(ModBlocks.woodenMahjongTable)
-                entries.add(ModBlocks.concreteMahjongTable)
-                entries.add(ModBlocks.woodenMahjongStool)
-                entries.add(ModBlocks.plasticMahjongStool)
+            .title(Component.translatable(MinecraftItemGroupKeys.MAIN))
+            .displayItems { _, entries ->
+                entries.accept(iconStack.copy())
+                entries.accept(ModItems.MAHJONG_DICE)
+                entries.accept(ModItems.MAHJONG_HANDBOOK)
+                entries.accept(ModItems.MAHJONG_SCORING_STICK)
+                ModItems.MAHJONG_RULERS.values.forEach(entries::accept)
+                entries.accept(ModBlocks.woodenMahjongTable)
+                entries.accept(ModBlocks.concreteMahjongTable)
+                entries.accept(ModBlocks.woodenMahjongStool)
+                entries.accept(ModBlocks.plasticMahjongStool)
             }
             .build()
         Registry.register(
-            Registries.ITEM_GROUP,
-            Identifier(MinecraftModMetadata.MOD_ID, "main"),
+            BuiltInRegistries.CREATIVE_MODE_TAB,
+            ResourceLocation(MinecraftModMetadata.MOD_ID, "main"),
             group,
         )
     }

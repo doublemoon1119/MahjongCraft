@@ -23,24 +23,24 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationShow
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.ShowcaseVisualLayer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
-import net.minecraft.block.Blocks
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.model.ModelPart
-import net.minecraft.client.render.OverlayTexture
-import net.minecraft.client.render.RenderLayer
-import net.minecraft.client.render.VertexConsumer
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.render.block.BlockRenderManager
-import net.minecraft.client.render.entity.EntityRenderer
-import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.render.entity.model.EntityModelLayers
-import net.minecraft.client.render.model.json.ModelTransformationMode
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.item.ItemStack
-import net.minecraft.item.Items
-import net.minecraft.text.Text
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.RotationAxis
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.blaze3d.vertex.VertexConsumer
+import com.mojang.math.Axis
+import net.minecraft.client.gui.Font
+import net.minecraft.client.model.geom.ModelLayers
+import net.minecraft.client.model.geom.ModelPart
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.RenderType
+import net.minecraft.client.renderer.block.BlockRenderDispatcher
+import net.minecraft.client.renderer.entity.EntityRenderer
+import net.minecraft.client.renderer.entity.EntityRendererProvider
+import net.minecraft.client.renderer.texture.OverlayTexture
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.item.ItemDisplayContext
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
+import net.minecraft.world.level.block.Blocks
 import org.joml.Matrix3f
 import org.joml.Matrix4f
 import org.joml.Quaternionf
@@ -59,15 +59,15 @@ import kotlin.math.sqrt
  * @param tileAppearanceResolver 依桌子目前公開規則解析牌組外觀。
  */
 class WinCelebrationShowcaseEntityRenderer(
-    context: EntityRendererFactory.Context,
+    context: EntityRendererProvider.Context,
     private val showcaseRegistry: WinCelebrationShowcaseRegistry,
     private val tileFaceRenderer: MahjongTileFaceRenderer,
     private val tileAppearanceResolver: ClientTileAppearanceResolver,
 ) : EntityRenderer<WinCelebrationShowcaseEntity>(context) {
     private val itemRenderer = context.itemRenderer
-    private val blockRenderManager: BlockRenderManager = context.blockRenderManager
-    private val textRenderer = context.textRenderer
-    private val elytraRoot: ModelPart = context.getPart(EntityModelLayers.ELYTRA)
+    private val blockRenderManager: BlockRenderDispatcher = context.blockRenderDispatcher
+    private val textRenderer = context.font
+    private val elytraRoot: ModelPart = context.bakeLayer(ModelLayers.ELYTRA)
     private val leftWing: ModelPart = elytraRoot.getChild("left_wing")
     private val rightWing: ModelPart = elytraRoot.getChild("right_wing")
     private val fireworkStack = ItemStack(Items.FIREWORK_ROCKET)
@@ -78,8 +78,8 @@ class WinCelebrationShowcaseEntityRenderer(
         entity: WinCelebrationShowcaseEntity,
         yaw: Float,
         tickDelta: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
     ) {
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
@@ -88,7 +88,7 @@ class WinCelebrationShowcaseEntityRenderer(
         if (duration <= 0.0 || elapsed !in 0.0..<duration) return
         val appearance = TileRenderAppearanceContext(tileAppearanceResolver.resolve(entity.managedTableId))
         val fadeStart = duration - WinCelebrationShowcaseEntity.FADE_OUT_TICKS
-        val billboardRotation = Quaternionf(dispatcher.rotation)
+        val billboardRotation = Quaternionf(entityRenderDispatcher.cameraOrientation())
         val formation = ShowcaseFormationLayout(
             wingCardOrders = entity.wings.map { wing -> wing.cards.map { it.order } },
             includesWinningTile = entity.winningTileSnapshot != null,
@@ -138,8 +138,8 @@ class WinCelebrationShowcaseEntityRenderer(
         formation: ShowcaseFormationLayout,
         elapsed: Double,
         billboardRotation: Quaternionf,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         light: Int,
     ) {
         if (elapsed in TNT_PLACEMENT_TICK..<EXPLOSION_TICK) {
@@ -148,13 +148,13 @@ class WinCelebrationShowcaseEntityRenderer(
             val floatProgress = smoothStep(((elapsed - FUSE_TICK) / (EXPLOSION_TICK - FUSE_TICK)).coerceIn(0.0, 1.0))
             val floatY = floatProgress * TNT_AIR_HEIGHT
             val pulse = if (elapsed < IGNITION_TICK) 1.0 else 1.0 + sin(fuse * fuse * PI * 18.0) * TNT_MAX_PULSE * fuse
-            matrices.push()
+            matrices.pushPose()
             matrices.translate(0.0, TABLE_SURFACE_HEIGHT + floatY, 0.0)
             matrices.scale((TNT_WORLD_SCALE * handoff * pulse).toFloat(), (TNT_WORLD_SCALE * handoff * pulse).toFloat(), (TNT_WORLD_SCALE * handoff * pulse).toFloat())
             if (elapsed >= IGNITION_TICK && tntFlashVisible(fuse)) renderTntFlash(matrices, consumers, fuse)
             matrices.translate(-0.5, 0.0, -0.5)
-            blockRenderManager.renderBlockAsEntity(Blocks.TNT.defaultState, matrices, consumers, light, OverlayTexture.DEFAULT_UV)
-            matrices.pop()
+            blockRenderManager.renderSingleBlock(Blocks.TNT.defaultBlockState(), matrices, consumers, light, OverlayTexture.NO_OVERLAY)
+            matrices.popPose()
         }
         if (elapsed in IGNITION_TICK..<FUSE_TICK) renderIgnitionSparks(entity, elapsed, billboardRotation, matrices, consumers)
         if (elapsed in EXPLOSION_TICK..<TITLE_TEXT_START_TICK) {
@@ -169,9 +169,9 @@ class WinCelebrationShowcaseEntityRenderer(
      * @param consumers 提供閃光頂點緩衝。
      * @param fuse 引信燃燒進度，用來調整範圍與透明度。
      */
-    private fun renderTntFlash(matrices: MatrixStack, consumers: VertexConsumerProvider, fuse: Double) {
-        val buffer = consumers.getBuffer(RenderLayer.getLightning())
-        val matrix = matrices.peek().positionMatrix
+    private fun renderTntFlash(matrices: PoseStack, consumers: MultiBufferSource, fuse: Double) {
+        val buffer = consumers.getBuffer(RenderType.lightning())
+        val matrix = matrices.last().pose()
         val extent = 0.505 + fuse * 0.012
         val alpha = (155 + fuse * 100).toInt()
         val faces = listOf(
@@ -185,7 +185,7 @@ class WinCelebrationShowcaseEntityRenderer(
         faces.forEach { face ->
             (face + face.reversedArray()).forEach { point ->
                 buffer.vertex(matrix, point[0].toFloat(), point[1].toFloat(), point[2].toFloat())
-                    .color(255, 255, 255, alpha.coerceIn(0, 255)).next()
+                    .color(255, 255, 255, alpha.coerceIn(0, 255)).endVertex()
             }
         }
     }
@@ -203,13 +203,13 @@ class WinCelebrationShowcaseEntityRenderer(
         entity: WinCelebrationShowcaseEntity,
         elapsed: Double,
         billboardRotation: Quaternionf,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
         val progress = ((elapsed - IGNITION_TICK) / (FUSE_TICK - IGNITION_TICK)).coerceIn(0.0, 1.0)
         val origin = Vector3f(0.0f, (TABLE_SURFACE_HEIGHT + TNT_WORLD_SCALE).toFloat(), 0.0f)
-        val buffer = consumers.getBuffer(RenderLayer.getLightning())
-        val matrix = matrices.peek().positionMatrix
+        val buffer = consumers.getBuffer(RenderType.lightning())
+        val matrix = matrices.last().pose()
         repeat(7) { index ->
             val angle = seededUnit(entity.animationSeed, index * 37) * PI * 2.0
             val radius = progress * (0.05 + seededUnit(entity.animationSeed, index * 71) * 0.13)
@@ -233,13 +233,13 @@ class WinCelebrationShowcaseEntityRenderer(
         formation: ShowcaseFormationLayout,
         elapsed: Double,
         billboardRotation: Quaternionf,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
         val explosionProgress = ((elapsed - EXPLOSION_TICK) / EXPLOSION_VISUAL_TICKS).coerceIn(0.0, 1.0)
         val centerY = TABLE_SURFACE_HEIGHT + TNT_AIR_HEIGHT + TNT_WORLD_SCALE / 2.0
-        val buffer = consumers.getBuffer(RenderLayer.getLightning())
-        val matrix = matrices.peek().positionMatrix
+        val buffer = consumers.getBuffer(RenderType.lightning())
+        val matrix = matrices.last().pose()
         if (explosionProgress < 0.10) {
             val flashRadius = 0.18 + explosionProgress / 0.10 * 1.15
             repeat(16) { index ->
@@ -306,8 +306,8 @@ class WinCelebrationShowcaseEntityRenderer(
         progress: Double,
         index: Int,
         billboardRotation: Quaternionf,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
         val appear = smoothStep((progress / SMOKE_APPEAR_FRACTION).coerceIn(0.0, 1.0))
         val disappear = 1.0 - smoothStep(((progress - SMOKE_FADE_START_FRACTION) / (1.0 - SMOKE_FADE_START_FRACTION)).coerceIn(0.0, 1.0))
@@ -315,18 +315,18 @@ class WinCelebrationShowcaseEntityRenderer(
         if (alpha <= 1) return
         val sizeVariance = seededUnit(index.toLong(), 2300 + index * 17) * SMOKE_SIZE_VARIANCE
         val size = (SMOKE_START_SIZE + progress * SMOKE_GROWTH + sizeVariance).toFloat()
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(position.x.toDouble(), position.y.toDouble(), position.z.toDouble())
-        matrices.multiply(billboardRotation)
-        val entry = matrices.peek()
+        matrices.mulPose(billboardRotation)
+        val entry = matrices.last()
         val smokeFrame = (progress * SMOKE_TEXTURES.size).toInt().coerceIn(0, SMOKE_TEXTURES.lastIndex)
-        val buffer = consumers.getBuffer(RenderLayer.getEntityTranslucent(SMOKE_TEXTURES[smokeFrame]))
+        val buffer = consumers.getBuffer(RenderType.entityTranslucent(SMOKE_TEXTURES[smokeFrame]))
         val color = if (index % 4 == 0) EXPLOSION_WHITE_COLOR else SMOKE_COLOR
-        texturedVertex(buffer, entry.positionMatrix, entry.normalMatrix, -size, -size, 0f, 0f, 1f, 15728880, alpha / 255.0, color)
-        texturedVertex(buffer, entry.positionMatrix, entry.normalMatrix, size, -size, 0f, 1f, 1f, 15728880, alpha / 255.0, color)
-        texturedVertex(buffer, entry.positionMatrix, entry.normalMatrix, size, size, 0f, 1f, 0f, 15728880, alpha / 255.0, color)
-        texturedVertex(buffer, entry.positionMatrix, entry.normalMatrix, -size, size, 0f, 0f, 0f, 15728880, alpha / 255.0, color)
-        matrices.pop()
+        texturedVertex(buffer, entry.pose(), entry.normal(), -size, -size, 0f, 0f, 1f, 15728880, alpha / 255.0, color)
+        texturedVertex(buffer, entry.pose(), entry.normal(), size, -size, 0f, 1f, 1f, 15728880, alpha / 255.0, color)
+        texturedVertex(buffer, entry.pose(), entry.normal(), size, size, 0f, 1f, 0f, 15728880, alpha / 255.0, color)
+        texturedVertex(buffer, entry.pose(), entry.normal(), -size, size, 0f, 0f, 0f, 15728880, alpha / 255.0, color)
+        matrices.popPose()
     }
 
     /**
@@ -350,8 +350,8 @@ class WinCelebrationShowcaseEntityRenderer(
         elapsed: Double,
         fadeStart: Double,
         billboardRotation: Quaternionf,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         light: Int,
         appearance: TileRenderAppearanceContext,
     ) {
@@ -385,7 +385,7 @@ class WinCelebrationShowcaseEntityRenderer(
         }
         if (elapsed < FLIGHT_END_TICK) return
         val fadeScale = if (elapsed < fadeStart) WINNING_TILE_SCALE else WINNING_TILE_SCALE * (1.0 - smoothStep((elapsed - fadeStart) / WinCelebrationShowcaseEntity.FADE_OUT_TICKS)).coerceAtLeast(0.0)
-        matrices.push()
+        matrices.pushPose()
         val localX = formation.winningTileX
         val offset = Vector3f(localX.toFloat(), 0.0f, 0.0f).rotate(billboardRotation)
         val fade = fadeScale(elapsed, fadeStart)
@@ -400,11 +400,11 @@ class WinCelebrationShowcaseEntityRenderer(
             SHOWCASE_HEIGHT + WINNING_TILE_HEIGHT_OFFSET - (1.0 - entranceEase) * CARD_ENTRANCE_DROP + bob,
             offset.z.toDouble(),
         )
-        matrices.multiply(billboardRotation)
+        matrices.mulPose(billboardRotation)
         matrices.translate(0.0, 0.0, WINNING_TILE_FORWARD_OFFSET)
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((360.0 * easeOut(entranceEase)).toFloat()))
+        matrices.mulPose(Axis.YP.rotationDegrees((360.0 * easeOut(entranceEase)).toFloat()))
         if (entranceProgress >= 1.0) {
-            matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees((sin((elapsed - FLIGHT_END_TICK - CARD_ENTRANCE_TICKS) * WINNING_TILE_PITCH_SPEED) * WINNING_TILE_PITCH_DEGREES).toFloat()))
+            matrices.mulPose(Axis.XP.rotationDegrees((sin((elapsed - FLIGHT_END_TICK - CARD_ENTRANCE_TICKS) * WINNING_TILE_PITCH_SPEED) * WINNING_TILE_PITCH_DEGREES).toFloat()))
         }
         val entranceBounce = 1.0 + sin(entranceProgress * PI) * CARD_ENTRANCE_BOUNCE
         val scale = (fadeScale * entranceBounce).toFloat()
@@ -413,13 +413,13 @@ class WinCelebrationShowcaseEntityRenderer(
             assetKey = entity.winningTileAssetKey,
             backAppearanceId = null,
             appearance = appearance,
-            mode = ModelTransformationMode.HEAD,
+            mode = ItemDisplayContext.HEAD,
             light = light,
             matrices = matrices,
             consumers = consumers,
         )
         tileFaceRenderer.renderModelLabels(entity.winningTileAssetKey, matrices, consumers, light)
-        matrices.pop()
+        matrices.popPose()
     }
 
     /**
@@ -446,8 +446,8 @@ class WinCelebrationShowcaseEntityRenderer(
         elapsed: Double,
         fadeStart: Double,
         billboardRotation: Quaternionf,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
         localTargetX: Double,
         returnStart: Double,
@@ -491,12 +491,12 @@ class WinCelebrationShowcaseEntityRenderer(
         }
 
         if (elapsed in RIPPLE_START_TICK..<RIPPLE_END_TICK) {
-            matrices.push()
+            matrices.pushPose()
             matrices.translate(x, TABLE_RIPPLE_HEIGHT, z)
             renderExpandingRipples(elapsed, matrices, vertexConsumers)
-            matrices.pop()
+            matrices.popPose()
         }
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(x, y, z)
         val poseRotation = when {
             elapsed >= returnStart -> {
@@ -530,12 +530,12 @@ class WinCelebrationShowcaseEntityRenderer(
                 )
             }
         }
-        matrices.multiply(poseRotation)
+        matrices.mulPose(poseRotation)
         if (elapsed >= returnStart) {
-            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((360.0 * returnProgress).toFloat()))
+            matrices.mulPose(Axis.YP.rotationDegrees((360.0 * returnProgress).toFloat()))
         }
         if (winningTile && entranceProgress >= 1.0) {
-            matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees((sin((elapsed - FLIGHT_END_TICK - CARD_ENTRANCE_TICKS) * WINNING_TILE_PITCH_SPEED) * WINNING_TILE_PITCH_DEGREES).toFloat()))
+            matrices.mulPose(Axis.XP.rotationDegrees((sin((elapsed - FLIGHT_END_TICK - CARD_ENTRANCE_TICKS) * WINNING_TILE_PITCH_SPEED) * WINNING_TILE_PITCH_DEGREES).toFloat()))
             matrices.translate(0.0, 0.0, WINNING_TILE_FORWARD_OFFSET)
         }
         if (elapsed >= returnStart) {
@@ -551,21 +551,21 @@ class WinCelebrationShowcaseEntityRenderer(
             0.0
         }
         matrices.translate(0.0, 0.0, recoil)
-        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees((-recoil * 80.0).toFloat()))
+        matrices.mulPose(Axis.XP.rotationDegrees((-recoil * 80.0).toFloat()))
         if (elapsed in SHAKE_START_TICK..<SHAKE_END_TICK) {
             val envelope = sin((elapsed - SHAKE_START_TICK) / (SHAKE_END_TICK - SHAKE_START_TICK) * PI)
             val phase = (elapsed - SHAKE_START_TICK) * SHAKE_OSCILLATIONS * PI * 2.0 / (SHAKE_END_TICK - SHAKE_START_TICK) + seededPhase
-            matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees((sin(phase) * SHAKE_PITCH_DEGREES * envelope).toFloat()))
-            matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees((sin(phase * SHAKE_SECONDARY_FREQUENCY_RATIO + PI / 3.0) * SHAKE_SECONDARY_TILT_DEGREES * envelope).toFloat()))
+            matrices.mulPose(Axis.XP.rotationDegrees((sin(phase) * SHAKE_PITCH_DEGREES * envelope).toFloat()))
+            matrices.mulPose(Axis.ZP.rotationDegrees((sin(phase * SHAKE_SECONDARY_FREQUENCY_RATIO + PI / 3.0) * SHAKE_SECONDARY_TILT_DEGREES * envelope).toFloat()))
         }
         if (card.backAppearanceId != null) {
             // 繞牌自身的縱軸翻面：平躺時牌背朝上，站起來後牌背朝向觀眾。
-            matrices.push()
-            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0f))
-            renderTile(card.assetKey, card.backAppearanceId, appearance, ModelTransformationMode.HEAD, light, matrices, vertexConsumers)
-            matrices.pop()
+            matrices.pushPose()
+            matrices.mulPose(Axis.YP.rotationDegrees(180.0f))
+            renderTile(card.assetKey, card.backAppearanceId, appearance, ItemDisplayContext.HEAD, light, matrices, vertexConsumers)
+            matrices.popPose()
         } else {
-            renderTile(card.assetKey, null, appearance, ModelTransformationMode.HEAD, light, matrices, vertexConsumers)
+            renderTile(card.assetKey, null, appearance, ItemDisplayContext.HEAD, light, matrices, vertexConsumers)
             tileFaceRenderer.renderModelLabels(card.assetKey, matrices, vertexConsumers, light)
         }
         if (elapsed in ELYTRA_APPEAR_TICK..<ELYTRA_FADE_END_TICK) {
@@ -578,7 +578,7 @@ class WinCelebrationShowcaseEntityRenderer(
         if (elapsed in FIREWORK_USE_START_TICK..<FIREWORK_FLAME_END_TICK) {
             renderIgnition(elapsed, matrices, vertexConsumers)
         }
-        matrices.pop()
+        matrices.popPose()
     }
 
     /**
@@ -589,29 +589,29 @@ class WinCelebrationShowcaseEntityRenderer(
      * @param consumers 提供鞘翅頂點緩衝。
      * @param light 世界光照值。
      */
-    private fun renderElytra(elapsed: Double, matrices: MatrixStack, consumers: VertexConsumerProvider, light: Int) {
+    private fun renderElytra(elapsed: Double, matrices: PoseStack, consumers: MultiBufferSource, light: Int) {
         val open = when {
             elapsed < ELYTRA_OPEN_TICK -> 0.0
             elapsed < FIREWORK_USE_START_TICK -> smoothStep((elapsed - ELYTRA_OPEN_TICK) / (FIREWORK_USE_START_TICK - ELYTRA_OPEN_TICK))
             elapsed < ELYTRA_FADE_START_TICK -> 1.0
             else -> 1.0 - smoothStep((elapsed - ELYTRA_FADE_START_TICK) / (ELYTRA_FADE_END_TICK - ELYTRA_FADE_START_TICK))
         }
-        leftWing.yaw = (0.08 * (1.0 - open)).toFloat()
-        rightWing.yaw = -leftWing.yaw
-        leftWing.roll = (-0.10 - open * 0.58).toFloat()
-        rightWing.roll = -leftWing.roll
-        leftWing.pitch = (0.52 * (1.0 - open) + ELYTRA_FLIGHT_PITCH * open).toFloat()
-        rightWing.pitch = leftWing.pitch
+        leftWing.yRot = (0.08 * (1.0 - open)).toFloat()
+        rightWing.yRot = -leftWing.yRot
+        leftWing.zRot = (-0.10 - open * 0.58).toFloat()
+        rightWing.zRot = -leftWing.zRot
+        leftWing.xRot = (0.52 * (1.0 - open) + ELYTRA_FLIGHT_PITCH * open).toFloat()
+        rightWing.xRot = leftWing.xRot
         val visibility = equipmentVisibility(elapsed)
         val appearance = equipmentAppearance(elapsed)
         val scale = visibility * lerp(EQUIPMENT_APPEAR_START_SCALE, 1.0, appearance)
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(0.0, ELYTRA_ROOT_Y, ELYTRA_BACK_Z)
-        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(180.0f))
+        matrices.mulPose(Axis.ZP.rotationDegrees(180.0f))
         matrices.scale((ELYTRA_SCALE * scale).toFloat(), (ELYTRA_SCALE * scale).toFloat(), (ELYTRA_SCALE * scale).toFloat())
-        val buffer = consumers.getBuffer(RenderLayer.getEntityTranslucent(ELYTRA_TEXTURE))
-        elytraRoot.render(matrices, buffer, light, OverlayTexture.DEFAULT_UV, 1.0f, 1.0f, 1.0f, (appearance * visibility).toFloat())
-        matrices.pop()
+        val buffer = consumers.getBuffer(RenderType.entityTranslucent(ELYTRA_TEXTURE))
+        elytraRoot.render(matrices, buffer, light, OverlayTexture.NO_OVERLAY, 1.0f, 1.0f, 1.0f, (appearance * visibility).toFloat())
+        matrices.popPose()
     }
 
     /**
@@ -627,8 +627,8 @@ class WinCelebrationShowcaseEntityRenderer(
     private fun renderHeldFirework(
         elapsed: Double,
         order: Int,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         light: Int,
         entity: WinCelebrationShowcaseEntity,
     ) {
@@ -638,16 +638,16 @@ class WinCelebrationShowcaseEntityRenderer(
         val visibility = equipmentVisibility(elapsed)
         val appearance = equipmentAppearance(elapsed)
         val scale = visibility * lerp(EQUIPMENT_APPEAR_START_SCALE, 1.0, appearance)
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(LEFT_HAND_X, RIGHT_HAND_Y + heightOffset, RIGHT_HAND_Z)
         matrices.translate(0.0, -FIREWORK_GRIP_OFFSET, 0.0)
-        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees((armSwing * FIREWORK_SWING_ROLL).toFloat()))
-        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees((armSwing * FIREWORK_SWING_PITCH).toFloat()))
+        matrices.mulPose(Axis.ZP.rotationDegrees((armSwing * FIREWORK_SWING_ROLL).toFloat()))
+        matrices.mulPose(Axis.XP.rotationDegrees((armSwing * FIREWORK_SWING_PITCH).toFloat()))
         matrices.translate(0.0, FIREWORK_GRIP_OFFSET, 0.0)
-        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(FIREWORK_HOLD_PITCH.toFloat()))
+        matrices.mulPose(Axis.XP.rotationDegrees(FIREWORK_HOLD_PITCH.toFloat()))
         matrices.scale((FIREWORK_ITEM_SCALE * scale).toFloat(), (FIREWORK_ITEM_SCALE * scale).toFloat(), (FIREWORK_ITEM_SCALE * scale).toFloat())
-        itemRenderer.renderItem(fireworkStack, ModelTransformationMode.GROUND, light, OverlayTexture.DEFAULT_UV, matrices, consumers, entity.world, order + 4000)
-        matrices.pop()
+        itemRenderer.renderStatic(fireworkStack, ItemDisplayContext.GROUND, light, OverlayTexture.NO_OVERLAY, matrices, consumers, entity.level(), order + 4000)
+        matrices.popPose()
     }
 
     /**
@@ -661,8 +661,8 @@ class WinCelebrationShowcaseEntityRenderer(
      */
     private fun renderWinningTileHeldItem(
         elapsed: Double,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         light: Int,
         entity: WinCelebrationShowcaseEntity,
     ) {
@@ -679,18 +679,18 @@ class WinCelebrationShowcaseEntityRenderer(
         val useProgress = ((elapsed - IGNITION_TICK) / (FUSE_TICK - IGNITION_TICK)).coerceIn(0.0, 1.0)
         val swing = if (elapsed in IGNITION_TICK..<FUSE_TICK) sin(useProgress * PI) else 0.0
         val placement = if (holdingTnt) smoothStep(((elapsed - TNT_PLACEMENT_TICK) / TNT_HANDOFF_TICKS).coerceIn(0.0, 1.0)) else 0.0
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(
             RIGHT_HAND_X + placement * (WINNING_PLACEMENT_SIDE_OFFSET - RIGHT_HAND_X) + swing * FLINT_REACH_SIDE,
             RIGHT_HAND_Y - placement * 0.05 + swing * 0.025,
             RIGHT_HAND_Z - placement * WINNING_PLACEMENT_FORWARD - swing * FLINT_REACH_FORWARD,
         )
-        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees((-18.0 - swing * 62.0).toFloat()))
-        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees((-22.0 - placement * 28.0).toFloat()))
+        matrices.mulPose(Axis.ZP.rotationDegrees((-18.0 - swing * 62.0).toFloat()))
+        matrices.mulPose(Axis.XP.rotationDegrees((-22.0 - placement * 28.0).toFloat()))
         val itemScale = (if (holdingTnt) HELD_TNT_SCALE else FLINT_ITEM_SCALE) * appearance
         matrices.scale(itemScale.toFloat(), itemScale.toFloat(), itemScale.toFloat())
-        itemRenderer.renderItem(if (holdingTnt) tntStack else flintAndSteelStack, ModelTransformationMode.GROUND, light, OverlayTexture.DEFAULT_UV, matrices, consumers, entity.world, 6100)
-        matrices.pop()
+        itemRenderer.renderStatic(if (holdingTnt) tntStack else flintAndSteelStack, ItemDisplayContext.GROUND, light, OverlayTexture.NO_OVERLAY, matrices, consumers, entity.level(), 6100)
+        matrices.popPose()
     }
 
     /**
@@ -700,15 +700,15 @@ class WinCelebrationShowcaseEntityRenderer(
      * @param matrices 目前的模型矩陣。
      * @param consumers 提供波紋頂點緩衝。
      */
-    private fun renderExpandingRipples(elapsed: Double, matrices: MatrixStack, consumers: VertexConsumerProvider) {
+    private fun renderExpandingRipples(elapsed: Double, matrices: PoseStack, consumers: MultiBufferSource) {
         repeat(RIPPLE_COUNT) { ring ->
             val age = elapsed - RIPPLE_START_TICK - ring * RIPPLE_DELAY_TICKS
             val local = (age / RIPPLE_DURATION_TICKS).coerceIn(0.0, 1.0)
             if (local <= 0.0 || local >= 1.0) return@repeat
             val radius = lerp(RIPPLE_START_RADIUS, RIPPLE_END_RADIUS, smoothStep(local))
             val alpha = (sin(local * PI) * 150.0).toInt()
-            val buffer = consumers.getBuffer(RenderLayer.getLightning())
-            val matrix = matrices.peek().positionMatrix
+            val buffer = consumers.getBuffer(RenderType.lightning())
+            val matrix = matrices.last().pose()
             repeat(RIPPLE_SEGMENTS) { index ->
                 val a = index * PI * 2.0 / RIPPLE_SEGMENTS
                 val b = (index + 1) * PI * 2.0 / RIPPLE_SEGMENTS
@@ -1002,13 +1002,13 @@ class WinCelebrationShowcaseEntityRenderer(
         returnStart: Double,
         elapsed: Double,
         billboardRotation: Quaternionf,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         light: Int,
         winningTile: Boolean,
     ) {
-        val buffer = consumers.getBuffer(RenderLayer.getEntityTranslucent(GLOW_TEXTURE))
-        val entry = matrices.peek()
+        val buffer = consumers.getBuffer(RenderType.entityTranslucent(GLOW_TEXTURE))
+        val entry = matrices.last()
         var previous = flightPosition(entity, card, wingIndex, startX, startY, startZ, localTargetX, returnStart, elapsed, billboardRotation, winningTile)
         val segmentCount = when {
             entity.wings.size >= 3 -> 3
@@ -1021,7 +1021,7 @@ class WinCelebrationShowcaseEntityRenderer(
             val point = flightPosition(entity, card, wingIndex, startX, startY, startZ, localTargetX, returnStart, sampleElapsed, billboardRotation, winningTile)
             val strength = 1.0 - index.toDouble() / segmentCount
             val color = if (winningTile) WINNING_TILE_TRAIL_COLOR else CARD_TRAIL_COLOR
-            texturedThinQuad(buffer, entry.positionMatrix, entry.normalMatrix, previous, point, 0.004 + strength * 0.009, (strength * 175).toInt(), light, color)
+            texturedThinQuad(buffer, entry.pose(), entry.normal(), previous, point, 0.004 + strength * 0.009, (strength * 175).toInt(), light, color)
             previous = point
         }
     }
@@ -1048,11 +1048,11 @@ class WinCelebrationShowcaseEntityRenderer(
         fun vertex(point: Vector3f, sideX: Float, sideZ: Float, u: Float, v: Float) {
             buffer.vertex(matrix, point.x + sideX, point.y, point.z + sideZ)
                 .color(color shr 16 and 0xFF, color shr 8 and 0xFF, color and 0xFF, alpha.coerceIn(0, 255))
-                .texture(u, v)
-                .overlay(OverlayTexture.DEFAULT_UV)
-                .light(light)
+                .uv(u, v)
+                .overlayCoords(OverlayTexture.NO_OVERLAY)
+                .uv2(light)
                 .normal(normal, 0.0f, 1.0f, 0.0f)
-                .next()
+                .endVertex()
         }
         vertex(start, -ox, -oz, 0.0f, 1.0f)
         vertex(start, ox, oz, 1.0f, 1.0f)
@@ -1067,12 +1067,12 @@ class WinCelebrationShowcaseEntityRenderer(
      * @param matrices 目前的模型矩陣。
      * @param consumers 提供火花頂點緩衝。
      */
-    private fun renderIgnition(elapsed: Double, matrices: MatrixStack, consumers: VertexConsumerProvider) {
+    private fun renderIgnition(elapsed: Double, matrices: PoseStack, consumers: MultiBufferSource) {
         val progress = ((elapsed - FIREWORK_USE_START_TICK) / (FIREWORK_FLAME_END_TICK - FIREWORK_USE_START_TICK)).coerceIn(0.0, 1.0)
         val alpha = ((1.0 - progress) * 220.0).toInt()
         val length = 0.035 + progress * 0.11
-        val matrix = matrices.peek().positionMatrix
-        val buffer = consumers.getBuffer(RenderLayer.getLightning())
+        val matrix = matrices.last().pose()
+        val buffer = consumers.getBuffer(RenderType.lightning())
         thinQuad(buffer, matrix, LEFT_HAND_X, RIGHT_HAND_Y, RIGHT_HAND_Z, LEFT_HAND_X, RIGHT_HAND_Y - length, RIGHT_HAND_Z, 0.012, alpha)
         thinQuad(buffer, matrix, LEFT_HAND_X - length / 2.0, RIGHT_HAND_Y - 0.03, RIGHT_HAND_Z, LEFT_HAND_X + length / 2.0, RIGHT_HAND_Y - 0.03, RIGHT_HAND_Z, 0.008, alpha)
     }
@@ -1097,8 +1097,8 @@ class WinCelebrationShowcaseEntityRenderer(
         fadeStart: Double,
         duration: Double,
         billboardRotation: Quaternionf,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         light: Int,
     ) {
         val definition = entity.wings.firstNotNullOfOrNull { showcaseRegistry.find(it.cueKey) }
@@ -1106,8 +1106,8 @@ class WinCelebrationShowcaseEntityRenderer(
             elapsed < fadeStart -> 1.0
             else -> 1.0 - ((elapsed - fadeStart) / (duration - fadeStart)).coerceIn(0.0, 1.0)
         }
-        val buffer = consumers.getBuffer(RenderLayer.getLightning())
-        val matrix = matrices.peek().positionMatrix
+        val buffer = consumers.getBuffer(RenderType.lightning())
+        val matrix = matrices.last().pose()
         // 內建舞台不繪製中央 Halo；registry 仍保留該宣告值，讓 extension API 維持相容。
         if (definition != null && elapsed >= SHOWCASE_START_TICK && ShowcaseVisualLayer.SparkField in definition.layers) {
             repeat(18) { index ->
@@ -1160,11 +1160,11 @@ class WinCelebrationShowcaseEntityRenderer(
         fade: Double,
         localCenterX: Double,
         billboardRotation: Quaternionf,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
-        val texture = Identifier.tryParse(definition.titleImageResourceId) ?: return
-        matrices.push()
+        val texture = ResourceLocation.tryParse(definition.titleImageResourceId) ?: return
+        matrices.pushPose()
         val offset = Vector3f(localCenterX.toFloat(), 0.0f, 0.0f).rotate(billboardRotation)
         val reveal = ((elapsed - TITLE_REVEAL_START_TICK) / (SHOWCASE_START_TICK - TITLE_REVEAL_START_TICK)).coerceIn(0.0, 1.0)
         val revealScale = when {
@@ -1173,16 +1173,16 @@ class WinCelebrationShowcaseEntityRenderer(
             else -> lerp(1.05, 1.0, smoothStep((reveal - 0.62) / 0.38))
         }
         matrices.translate(offset.x.toDouble(), SHOWCASE_HEIGHT + TITLE_IMAGE_HEIGHT + offset.y, offset.z.toDouble())
-        matrices.multiply(billboardRotation)
+        matrices.mulPose(billboardRotation)
         matrices.scale((TITLE_IMAGE_SCALE * revealScale).toFloat(), (TITLE_IMAGE_SCALE * revealScale).toFloat(), (TITLE_IMAGE_SCALE * revealScale).toFloat())
-        val entry = matrices.peek()
-        val buffer = consumers.getBuffer(WinCelebrationTitleRenderLayer.get(texture))
+        val entry = matrices.last()
+        val buffer = consumers.getBuffer(WinCelebrationTitleRenderType.get(texture))
         val revealAlpha = fade * smoothStep((reveal / 0.22).coerceIn(0.0, 1.0))
-        titleVertex(buffer, entry.positionMatrix, -1f, -0.5f, 0f, 1f, 1f, revealAlpha)
-        titleVertex(buffer, entry.positionMatrix, 1f, -0.5f, 0f, 0f, 1f, revealAlpha)
-        titleVertex(buffer, entry.positionMatrix, 1f, 0.5f, 0f, 0f, 0f, revealAlpha)
-        titleVertex(buffer, entry.positionMatrix, -1f, 0.5f, 0f, 1f, 0f, revealAlpha)
-        matrices.pop()
+        titleVertex(buffer, entry.pose(), -1f, -0.5f, 0f, 1f, 1f, revealAlpha)
+        titleVertex(buffer, entry.pose(), 1f, -0.5f, 0f, 0f, 1f, revealAlpha)
+        titleVertex(buffer, entry.pose(), 1f, 0.5f, 0f, 0f, 0f, revealAlpha)
+        titleVertex(buffer, entry.pose(), -1f, 0.5f, 0f, 1f, 0f, revealAlpha)
+        matrices.popPose()
     }
 
     /**
@@ -1203,32 +1203,32 @@ class WinCelebrationShowcaseEntityRenderer(
         fade: Double,
         localCenterX: Double,
         billboardRotation: Quaternionf,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         light: Int,
     ) {
         if (elapsed < TITLE_TEXT_START_TICK) return
         val reveal = smoothStep(((elapsed - TITLE_TEXT_START_TICK) / TITLE_TEXT_FADE_TICKS).coerceIn(0.0, 1.0))
-        val label = Text.translatable(definition.titleTranslationKey)
-        matrices.push()
+        val label = Component.translatable(definition.titleTranslationKey)
+        matrices.pushPose()
         val offset = Vector3f(localCenterX.toFloat(), 0.0f, 0.0f).rotate(billboardRotation)
         matrices.translate(offset.x.toDouble(), SHOWCASE_HEIGHT - TITLE_TEXT_DROP + offset.y, offset.z.toDouble())
-        matrices.multiply(billboardRotation)
+        matrices.mulPose(billboardRotation)
         matrices.translate(0.0, 0.0, -0.006)
         matrices.scale(-TITLE_TEXT_SCALE, -TITLE_TEXT_SCALE, TITLE_TEXT_SCALE)
-        textRenderer.draw(
+        textRenderer.drawInBatch(
             label,
-            -textRenderer.getWidth(label) / 2.0f,
+            -textRenderer.width(label) / 2.0f,
             0.0f,
             ((fade * reveal * 255.0).toInt().coerceIn(0, 255) shl 24) or TITLE_TEXT_RGB,
             false,
-            matrices.peek().positionMatrix,
+            matrices.last().pose(),
             consumers,
-            TextRenderer.TextLayerType.NORMAL,
+            Font.DisplayMode.NORMAL,
             0,
             light,
         )
-        matrices.pop()
+        matrices.popPose()
     }
 
     /**
@@ -1246,10 +1246,10 @@ class WinCelebrationShowcaseEntityRenderer(
         assetKey: String,
         backAppearanceId: String?,
         appearance: TileRenderAppearanceContext,
-        mode: ModelTransformationMode,
+        mode: ItemDisplayContext,
         light: Int,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
         if (backAppearanceId != null) {
             MahjongTileItemRenderer.renderUnknownWithAppearance(
@@ -1258,7 +1258,7 @@ class WinCelebrationShowcaseEntityRenderer(
                 matrices = matrices,
                 vertexConsumers = consumers,
                 light = light,
-                overlay = OverlayTexture.DEFAULT_UV,
+                overlay = OverlayTexture.NO_OVERLAY,
             )
         } else {
             MahjongTileItemRenderer.renderWithAppearance(
@@ -1268,12 +1268,12 @@ class WinCelebrationShowcaseEntityRenderer(
                 matrices = matrices,
                 vertexConsumers = consumers,
                 light = light,
-                overlay = OverlayTexture.DEFAULT_UV,
+                overlay = OverlayTexture.NO_OVERLAY,
             )
         }
     }
 
-    override fun getTexture(entity: WinCelebrationShowcaseEntity): Identifier? = null
+    override fun getTextureLocation(entity: WinCelebrationShowcaseEntity): ResourceLocation? = null
 
     /**
      * 胡牌張每次接近晃動最低點時，在固定的空中水面生成兩圈短促波紋。
@@ -1288,21 +1288,21 @@ class WinCelebrationShowcaseEntityRenderer(
         elapsed: Double,
         fade: Double,
         horizontalOffset: Vector3f,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
         val twoPi = PI * 2.0
         val ticksFromBottom = winningTileTicksFromBottom(elapsed)
         if (ticksFromBottom !in -WINNING_RIPPLE_LEAD_TICKS..WINNING_RIPPLE_FADE_TICKS) return
         val baseProgress = (ticksFromBottom + WINNING_RIPPLE_LEAD_TICKS) / (WINNING_RIPPLE_LEAD_TICKS + WINNING_RIPPLE_FADE_TICKS)
-        val buffer = consumers.getBuffer(RenderLayer.getLightning())
-        matrices.push()
+        val buffer = consumers.getBuffer(RenderType.lightning())
+        matrices.pushPose()
         matrices.translate(
             horizontalOffset.x.toDouble(),
             SHOWCASE_HEIGHT + WINNING_TILE_HEIGHT_OFFSET - BOB_HEIGHT - WINNING_TILE_RENDER_HEIGHT / 2.0 - WINNING_RIPPLE_BOTTOM_GAP,
             horizontalOffset.z.toDouble(),
         )
-        val matrix = matrices.peek().positionMatrix
+        val matrix = matrices.last().pose()
         repeat(WINNING_RIPPLE_COUNT) { ring ->
             val progress = baseProgress - ring * WINNING_RIPPLE_DELAY_PROGRESS
             if (progress !in 0.0..1.0) return@repeat
@@ -1326,7 +1326,7 @@ class WinCelebrationShowcaseEntityRenderer(
                 )
             }
         }
-        matrices.pop()
+        matrices.popPose()
     }
 
     /**
@@ -1361,7 +1361,7 @@ class WinCelebrationShowcaseEntityRenderer(
             doubleArrayOf(ax - ox, ay, az - oz),
         ).forEach { point ->
             buffer.vertex(matrix, point[0].toFloat(), point[1].toFloat(), point[2].toFloat())
-                .color(color shr 16 and 0xFF, color shr 8 and 0xFF, color and 0xFF, alpha.coerceIn(0, 255)).next()
+                .color(color shr 16 and 0xFF, color shr 8 and 0xFF, color and 0xFF, alpha.coerceIn(0, 255)).endVertex()
         }
     }
 
@@ -1381,7 +1381,7 @@ class WinCelebrationShowcaseEntityRenderer(
      * @param color RGB 顏色，預設為白色。
      */
     private fun texturedVertex(buffer: VertexConsumer, matrix: Matrix4f, normal: Matrix3f, x: Float, y: Float, z: Float, u: Float, v: Float, light: Int, alpha: Double, color: Int = 0xFFFFFF) {
-        buffer.vertex(matrix, x, y, z).color(color shr 16 and 0xFF, color shr 8 and 0xFF, color and 0xFF, (alpha * 255).toInt()).texture(u, v).overlay(OverlayTexture.DEFAULT_UV).light(light).normal(normal, 0f, 0f, 1f).next()
+        buffer.vertex(matrix, x, y, z).color(color shr 16 and 0xFF, color shr 8 and 0xFF, color and 0xFF, (alpha * 255).toInt()).uv(u, v).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(normal, 0f, 0f, 1f).endVertex()
     }
 
     /**
@@ -1397,7 +1397,7 @@ class WinCelebrationShowcaseEntityRenderer(
      * @param alpha 透明度比例。
      */
     private fun titleVertex(buffer: VertexConsumer, matrix: Matrix4f, x: Float, y: Float, z: Float, u: Float, v: Float, alpha: Double) {
-        buffer.vertex(matrix, x, y, z).color(255, 255, 255, (alpha * 255).toInt()).texture(u, v).light(FULL_BRIGHT_LIGHT).next()
+        buffer.vertex(matrix, x, y, z).color(255, 255, 255, (alpha * 255).toInt()).uv(u, v).uv2(FULL_BRIGHT_LIGHT).endVertex()
     }
 
     /**
@@ -1446,9 +1446,9 @@ class WinCelebrationShowcaseEntityRenderer(
     private fun seededUnit(seed: Long, salt: Int): Double = (((seed xor (salt.toLong() * -7046029254386353131L)) ushr 11) and 0xFFFF).toDouble() / 65535.0
 
     private companion object {
-        val ELYTRA_TEXTURE = Identifier("minecraft", "textures/entity/elytra.png")
-        val GLOW_TEXTURE = Identifier("mahjongcraft", "textures/showcase/glow.png")
-        val SMOKE_TEXTURES = Array(12) { frame -> Identifier("minecraft", "textures/particle/big_smoke_$frame.png") }
+        val ELYTRA_TEXTURE = ResourceLocation("minecraft", "textures/entity/elytra.png")
+        val GLOW_TEXTURE = ResourceLocation("mahjongcraft", "textures/showcase/glow.png")
+        val SMOKE_TEXTURES = Array(12) { frame -> ResourceLocation("minecraft", "textures/particle/big_smoke_$frame.png") }
         const val FULL_BRIGHT_LIGHT = 15728880
         const val ARMING_START_TICK = 0.0
         const val LIFT_END_TICK = 7.0

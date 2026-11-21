@@ -32,7 +32,7 @@ class AttachAuthoritativeStateOrDisableTest {
             expected = listOf(
                 element = MahjongDataProblem(
                     source = MahjongDataSource.AUTHORITATIVE_STATE,
-                    file = persistentStateDisplayPath(MahjongAuthoritativePersistentState.STORAGE_KEY),
+                    file = savedDataDisplayPath(MahjongAuthoritativeSavedData.STORAGE_KEY),
                     cause = MahjongDataLoadCause.MissingExtension("example:custom_rule"),
                 ),
             ),

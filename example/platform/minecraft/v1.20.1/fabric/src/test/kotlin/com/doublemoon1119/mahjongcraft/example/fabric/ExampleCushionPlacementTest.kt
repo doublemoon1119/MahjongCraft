@@ -2,8 +2,8 @@ package com.doublemoon1119.mahjongcraft.example.fabric
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleCushionPlacement
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleFurnitureSeatRules
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
+import net.minecraft.core.BlockPos
+import net.minecraft.world.phys.AABB
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -40,19 +40,19 @@ class ExampleCushionPlacementTest {
     /** 半磚、完整方塊與階梯分段都能以相接的頂面支撐坐墊。 */
     @Test
     fun `support follows actual top surfaces instead of full cube height`() {
-        val cushion = Box(0.125, 0.5, 0.125, 0.875, 0.7, 0.875)
-        assertTrue(ExampleCushionPlacement.hasSurfaceSupport(cushion, listOf(Box(0.0, 0.0, 0.0, 1.0, 0.5, 1.0))))
-        assertTrue(ExampleCushionPlacement.hasSurfaceSupport(cushion, listOf(Box(0.0, 0.0, 0.0, 1.0, 0.5, 0.5))))
-        assertTrue(ExampleCushionPlacement.hasSurfaceSupport(cushion.offset(0.0, 0.5, 0.0), listOf(Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0))))
+        val cushion = AABB(0.125, 0.5, 0.125, 0.875, 0.7, 0.875)
+        assertTrue(ExampleCushionPlacement.hasSurfaceSupport(cushion, listOf(AABB(0.0, 0.0, 0.0, 1.0, 0.5, 1.0))))
+        assertTrue(ExampleCushionPlacement.hasSurfaceSupport(cushion, listOf(AABB(0.0, 0.0, 0.0, 1.0, 0.5, 0.5))))
+        assertTrue(ExampleCushionPlacement.hasSurfaceSupport(cushion.move(0.0, 0.5, 0.0), listOf(AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0))))
     }
 
     /** 支撐移除、只貼側邊或高度不相接，都不能繼續當成有效支撐。 */
     @Test
     fun `removed and side only surfaces do not support a cushion`() {
-        val cushion = Box(0.125, 0.5, 0.125, 0.875, 0.7, 0.875)
+        val cushion = AABB(0.125, 0.5, 0.125, 0.875, 0.7, 0.875)
         assertFalse(ExampleCushionPlacement.hasSurfaceSupport(cushion, emptyList()))
-        assertFalse(ExampleCushionPlacement.hasSurfaceSupport(cushion, listOf(Box(0.875, 0.0, 0.0, 1.0, 0.5, 1.0))))
-        assertFalse(ExampleCushionPlacement.hasSurfaceSupport(cushion, listOf(Box(0.0, 0.0, 0.0, 1.0, 0.4, 1.0))))
+        assertFalse(ExampleCushionPlacement.hasSurfaceSupport(cushion, listOf(AABB(0.875, 0.0, 0.0, 1.0, 0.5, 1.0))))
+        assertFalse(ExampleCushionPlacement.hasSurfaceSupport(cushion, listOf(AABB(0.0, 0.0, 0.0, 1.0, 0.4, 1.0))))
     }
 
     /** 玩家只能拆除有修改權限的空坐墊，重複攻擊不會重複取得物品。 */

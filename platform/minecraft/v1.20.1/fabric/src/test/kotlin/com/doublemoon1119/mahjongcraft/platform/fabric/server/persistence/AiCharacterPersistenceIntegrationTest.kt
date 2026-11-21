@@ -24,7 +24,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtension
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlinx.coroutines.test.runTest
-import net.minecraft.nbt.NbtCompound
+import net.minecraft.nbt.CompoundTag
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -50,7 +50,7 @@ class AiCharacterPersistenceIntegrationTest {
             random = testRoundRandomness().components,
         ).tableState
         val game = Game(table, GameFlowConfig(), aiPlayerStrategyKeys = room.aiPlayerStrategyKeys)
-        val saved = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry())
+        val saved = MahjongAuthoritativeSavedData.create(codec, testCharacterRegistry())
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
         store.load(saved.snapshot)
         store.setDirtyListener(saved::update)
@@ -79,7 +79,7 @@ class AiCharacterPersistenceIntegrationTest {
             )
         }
         assertTrue(observed)
-        val restored = MahjongAuthoritativePersistentState.fromNbt(saved.writeNbt(NbtCompound()), codec, testCharacterRegistry())
+        val restored = MahjongAuthoritativeSavedData.fromNbt(saved.save(CompoundTag()), codec, testCharacterRegistry())
         assertNull(restored.characterDataFailure)
         assertEquals(saved.characterSnapshot().characters, restored.characterSnapshot().characters)
         assertEquals(game, restored.snapshot.games[game.id])
@@ -89,47 +89,47 @@ class AiCharacterPersistenceIntegrationTest {
     /** 格式錯誤的角色 JSON 不影響牌局，之後保存也不覆寫原始區段。 */
     @Test
     fun `unreadable character bytes are retained while valid match data can change`() {
-        val created = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry())
-        val nbt = created.writeNbt(NbtCompound())
+        val created = MahjongAuthoritativeSavedData.create(codec, testCharacterRegistry())
+        val nbt = created.save(CompoundTag())
         val damaged = "{invalid-character-data".encodeToByteArray()
-        nbt.putByteArray(MahjongAuthoritativePersistentState.NBT_KEY_CHARACTERS, damaged)
-        val restored = MahjongAuthoritativePersistentState.fromNbt(nbt, codec, testCharacterRegistry())
+        nbt.putByteArray(MahjongAuthoritativeSavedData.NBT_KEY_CHARACTERS, damaged)
+        val restored = MahjongAuthoritativeSavedData.fromNbt(nbt, codec, testCharacterRegistry())
         assertNotNull(restored.characterDataFailure)
         assertNull(restored.characterSnapshot().characters)
         val room = Room(Uuid.random(), Uuid.random(), GameConfig(RiichiRuleConfig()))
         val updated = AuthoritativeStateSnapshot(rooms = mapOf(room.id to room))
         restored.update(updated)
         assertEquals(AiCharacterSelectionResult.DATA_UNAVAILABLE, restored.selectCharacter(updated, room.id, Uuid.random(), room.hostId, BuiltInAiCharacters.TILE_MASCOT_ID))
-        val written = restored.writeNbt(NbtCompound())
-        assertContentEquals(damaged, written.getByteArray(MahjongAuthoritativePersistentState.NBT_KEY_CHARACTERS))
-        assertEquals(updated, MahjongAuthoritativePersistentState.fromNbt(written, codec, testCharacterRegistry()).snapshot)
+        val written = restored.save(CompoundTag())
+        assertContentEquals(damaged, written.getByteArray(MahjongAuthoritativeSavedData.NBT_KEY_CHARACTERS))
+        assertEquals(updated, MahjongAuthoritativeSavedData.fromNbt(written, codec, testCharacterRegistry()).snapshot)
     }
 
     /** 非法 UTF-8 不得被替代字元默默修正後覆寫。 */
     @Test
     fun `invalid UTF8 in a valid JSON string preserves the original section`() {
-        val nbt = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry()).writeNbt(NbtCompound())
+        val nbt = MahjongAuthoritativeSavedData.create(codec, testCharacterRegistry()).save(CompoundTag())
         val encoded = """{"selections":[],"matches":[{"matchId":"${Uuid.random()}","players":[{"playerId":"${Uuid.random()}","characterId":"example:actor","definition":{"id":"example:actor","nameKey":"x","face":null,"worldCapabilityId":null,"preview":null}}]}]}"""
         val bytes = encoded.encodeToByteArray()
         val index = encoded.indexOf("\"nameKey\":\"x\"") + "\"nameKey\":\"".length
         bytes[index] = 0xff.toByte()
-        nbt.putByteArray(MahjongAuthoritativePersistentState.NBT_KEY_CHARACTERS, bytes)
-        val restored = MahjongAuthoritativePersistentState.fromNbt(nbt, codec, testCharacterRegistry())
+        nbt.putByteArray(MahjongAuthoritativeSavedData.NBT_KEY_CHARACTERS, bytes)
+        val restored = MahjongAuthoritativeSavedData.fromNbt(nbt, codec, testCharacterRegistry())
         assertNotNull(restored.characterDataFailure)
-        assertContentEquals(bytes, restored.writeNbt(NbtCompound()).getByteArray(MahjongAuthoritativePersistentState.NBT_KEY_CHARACTERS))
+        assertContentEquals(bytes, restored.save(CompoundTag()).getByteArray(MahjongAuthoritativeSavedData.NBT_KEY_CHARACTERS))
     }
 
     /** 錯誤 NBT 型別也原樣保留；缺少區段不以空選擇偷偷補上。 */
     @Test
     fun `wrong NBT type and absent section are not silently replaced`() {
-        val original = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry()).writeNbt(NbtCompound())
-        original.putString(MahjongAuthoritativePersistentState.NBT_KEY_CHARACTERS, "unknown representation")
-        val restored = MahjongAuthoritativePersistentState.fromNbt(original, codec, testCharacterRegistry())
+        val original = MahjongAuthoritativeSavedData.create(codec, testCharacterRegistry()).save(CompoundTag())
+        original.putString(MahjongAuthoritativeSavedData.NBT_KEY_CHARACTERS, "unknown representation")
+        val restored = MahjongAuthoritativeSavedData.fromNbt(original, codec, testCharacterRegistry())
         assertNotNull(restored.characterDataFailure)
-        assertEquals(original.get(MahjongAuthoritativePersistentState.NBT_KEY_CHARACTERS), restored.writeNbt(NbtCompound()).get(MahjongAuthoritativePersistentState.NBT_KEY_CHARACTERS))
-        original.remove(MahjongAuthoritativePersistentState.NBT_KEY_CHARACTERS)
-        val absent = MahjongAuthoritativePersistentState.fromNbt(original, codec, testCharacterRegistry())
+        assertEquals(original.get(MahjongAuthoritativeSavedData.NBT_KEY_CHARACTERS), restored.save(CompoundTag()).get(MahjongAuthoritativeSavedData.NBT_KEY_CHARACTERS))
+        original.remove(MahjongAuthoritativeSavedData.NBT_KEY_CHARACTERS)
+        val absent = MahjongAuthoritativeSavedData.fromNbt(original, codec, testCharacterRegistry())
         assertNotNull(absent.characterDataFailure)
-        assertNull(absent.writeNbt(NbtCompound()).get(MahjongAuthoritativePersistentState.NBT_KEY_CHARACTERS))
+        assertNull(absent.save(CompoundTag()).get(MahjongAuthoritativeSavedData.NBT_KEY_CHARACTERS))
     }
 }

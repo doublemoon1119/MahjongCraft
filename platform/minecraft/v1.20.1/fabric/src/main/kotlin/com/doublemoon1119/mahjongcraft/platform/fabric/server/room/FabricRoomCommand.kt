@@ -15,11 +15,11 @@ import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
-import net.minecraft.server.command.CommandManager.argument
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands.argument
+import net.minecraft.commands.Commands.literal
+import net.minecraft.network.chat.Component
+import net.minecraft.server.level.ServerPlayer
 import java.util.concurrent.CompletableFuture
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
@@ -48,7 +48,7 @@ import kotlin.uuid.toKotlinUuid
  * 引號。補全 AI 候選項目時，打進聊天框的實際文字固定是語言無關的技術代號（見
  * [RoomMemberCandidate.token]），因為伺服器端在 1.20.1 無法得知玩家客戶端語言；真正依語言顯示的
  * 「AI 玩家 N」文字是透過 [com.mojang.brigadier.suggestion.SuggestionsBuilder.suggest] 的 tooltip
- * 參數（[Text.translatable]）呈現，由客戶端依玩家自己的語言設定解析。
+ * 參數（[Component.translatable]）呈現，由客戶端依玩家自己的語言設定解析。
  *
  * @property tableResolver 依玩家可互動範圍找出候選麻將桌。
  * @property memberCandidateResolver 依玩家目前房間列出可踢除或可更換策略的候選成員。
@@ -142,7 +142,7 @@ class FabricRoomCommand(
      *
      * @param context Brigadier 的指令來源與引數。
      */
-    private fun join(context: CommandContext<ServerCommandSource>): Int = withResolvedTable(context) { player, table ->
+    private fun join(context: CommandContext<CommandSourceStack>): Int = withResolvedTable(context) { player, table ->
         roomService.interact(table, player)
     }
 
@@ -151,7 +151,7 @@ class FabricRoomCommand(
      *
      * @param context Brigadier 的指令來源與引數。
      */
-    private fun leave(context: CommandContext<ServerCommandSource>): Int = withResolvedTable(context) { player, table ->
+    private fun leave(context: CommandContext<CommandSourceStack>): Int = withResolvedTable(context) { player, table ->
         roomService.leave(table, player)
     }
 
@@ -160,7 +160,7 @@ class FabricRoomCommand(
      *
      * @param source Brigadier 指令來源。
      */
-    private fun ready(source: ServerCommandSource): Int = withPlayer(source) { player ->
+    private fun ready(source: CommandSourceStack): Int = withPlayer(source) { player ->
         roomService.ready(player)
     }
 
@@ -169,7 +169,7 @@ class FabricRoomCommand(
      *
      * @param source Brigadier 指令來源。
      */
-    private fun start(source: ServerCommandSource): Int = withPlayer(source) { player ->
+    private fun start(source: CommandSourceStack): Int = withPlayer(source) { player ->
         roomService.start(player)
     }
 
@@ -179,7 +179,7 @@ class FabricRoomCommand(
      * @param source Brigadier 指令來源。
      * @param strategyKey 可選的 AI 策略註冊 key。
      */
-    private fun addAi(source: ServerCommandSource, strategyKey: String?): Int = withPlayer(source) { player ->
+    private fun addAi(source: CommandSourceStack, strategyKey: String?): Int = withPlayer(source) { player ->
         roomService.addAi(player, strategyKey)
     }
 
@@ -188,7 +188,7 @@ class FabricRoomCommand(
      *
      * @param context Brigadier 的指令來源與候選標籤。
      */
-    private fun kick(context: CommandContext<ServerCommandSource>): Int = withPlayer(context.source) { player ->
+    private fun kick(context: CommandContext<CommandSourceStack>): Int = withPlayer(context.source) { player ->
         val label = StringArgumentType.getString(context, TARGET_ARGUMENT)
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -206,7 +206,7 @@ class FabricRoomCommand(
      *
      * @param context Brigadier 的指令來源、目標標籤與策略 key。
      */
-    private fun changeAiStrategy(context: CommandContext<ServerCommandSource>): Int = withPlayer(context.source) { player ->
+    private fun changeAiStrategy(context: CommandContext<CommandSourceStack>): Int = withPlayer(context.source) { player ->
         val label = StringArgumentType.getString(context, TARGET_ARGUMENT)
         val strategyKey = StringArgumentType.getString(context, STRATEGY_ARGUMENT)
         val playerId = player.uuid.toKotlinUuid()
@@ -225,7 +225,7 @@ class FabricRoomCommand(
      *
      * @param source Brigadier 指令來源。
      */
-    private fun showConfig(source: ServerCommandSource): Int = withPlayer(source) { player ->
+    private fun showConfig(source: CommandSourceStack): Int = withPlayer(source) { player ->
         roomService.showConfig(player)
     }
 
@@ -236,8 +236,8 @@ class FabricRoomCommand(
      * @param action 桌子解析成功後要執行的操作。
      */
     private fun withResolvedTable(
-        context: CommandContext<ServerCommandSource>,
-        action: (ServerPlayerEntity, LocatedMahjongTable) -> Unit,
+        context: CommandContext<CommandSourceStack>,
+        action: (ServerPlayer, LocatedMahjongTable) -> Unit,
     ): Int = withPlayer(context.source) { player ->
         val pos = TableCoordinateArgument.parse(StringArgumentType.getString(context, TABLE_ARGUMENT))
         val table = pos?.let { tableResolver.resolve(player, it) }
@@ -254,7 +254,7 @@ class FabricRoomCommand(
      * @param source Brigadier 指令來源。
      * @param action 解析到玩家時要執行的操作。
      */
-    private fun withPlayer(source: ServerCommandSource, action: (ServerPlayerEntity) -> Unit): Int {
+    private fun withPlayer(source: CommandSourceStack, action: (ServerPlayer) -> Unit): Int {
         val player = source.player ?: return COMMAND_FAILURE
         action(player)
         return COMMAND_SUCCESS
@@ -268,7 +268,7 @@ class FabricRoomCommand(
      * @return 完成桌子座標候選的 future。
      */
     private fun suggestReachableTables(
-        context: CommandContext<ServerCommandSource>,
+        context: CommandContext<CommandSourceStack>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> {
         val player = context.source.player
@@ -289,7 +289,7 @@ class FabricRoomCommand(
      * @return 完成策略 key 候選的 future。
      */
     private fun suggestAiStrategies(
-        context: CommandContext<ServerCommandSource>,
+        context: CommandContext<CommandSourceStack>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> {
         aiStrategyRegistry.getAllStrategyKeys().forEach { key ->
@@ -306,7 +306,7 @@ class FabricRoomCommand(
      * @return 完成成員候選的 future。
      */
     private fun suggestAllTargets(
-        context: CommandContext<ServerCommandSource>,
+        context: CommandContext<CommandSourceStack>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> = suggestTargets(context, builder) { playerId ->
         memberCandidateResolver.listCandidates(playerId)
@@ -320,7 +320,7 @@ class FabricRoomCommand(
      * @return 完成 AI 成員候選的 future。
      */
     private fun suggestAiTargets(
-        context: CommandContext<ServerCommandSource>,
+        context: CommandContext<CommandSourceStack>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> = suggestTargets(context, builder) { playerId ->
         memberCandidateResolver.listAiCandidates(playerId)
@@ -340,7 +340,7 @@ class FabricRoomCommand(
      * @return 完成候選成員與 tooltip 的 future。
      */
     private fun suggestTargets(
-        context: CommandContext<ServerCommandSource>,
+        context: CommandContext<CommandSourceStack>,
         builder: SuggestionsBuilder,
         listCandidates: suspend (Uuid) -> List<RoomMemberCandidate>,
     ): CompletableFuture<Suggestions> {
@@ -356,8 +356,8 @@ class FabricRoomCommand(
                 if (candidate.aiSequence != null) {
                     val strategyName = candidate.strategyKey
                         ?.let(aiStrategyDisplayNames::resolveDisplayText)
-                        ?: Text.literal("?")
-                    val tooltip = Text.translatable(
+                        ?: Component.literal("?")
+                    val tooltip = Component.translatable(
                         MinecraftMessageKeys.KICK_CANDIDATE_AI_LABEL,
                         candidate.aiSequence,
                         strategyName,

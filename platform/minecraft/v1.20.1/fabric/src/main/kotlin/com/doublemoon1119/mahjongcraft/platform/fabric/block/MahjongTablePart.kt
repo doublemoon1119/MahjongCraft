@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.block
 
-import net.minecraft.util.StringIdentifiable
+import net.minecraft.util.StringRepresentable
 
 /**
  * 標示 3×3×2 麻將桌中的固定相對位置。
@@ -18,7 +18,7 @@ enum class MahjongTablePart(
     val localY: Int,
     val localZ: Int,
     private val serializedName: String,
-) : StringIdentifiable {
+) : StringRepresentable {
     /** 底層西北角。 */
     BOTTOM_NORTH_WEST(-1, 0, -1, "bottom_north_west"),
 
@@ -75,5 +75,5 @@ enum class MahjongTablePart(
     ;
 
     /** 回傳 blockstate serialization 使用的名稱。 */
-    override fun asString(): String = serializedName
+    override fun getSerializedName(): String = serializedName
 }

@@ -3,9 +3,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.AutomaticControlDisplayResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlDraftState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
-import net.minecraft.text.MutableText
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.MutableComponent
 import kotlin.math.roundToInt
 
 /**
@@ -15,8 +15,8 @@ import kotlin.math.roundToInt
  * @param to 比較後的本機設定。
  * @return 列出設定差異的本地化文字。
  */
-fun clientConfigDifferenceText(from: MahjongClientConfigState, to: MahjongClientConfigState): Text {
-    val result = Text.translatable(MinecraftClientConfigScreenKeys.CONFIG_CHANGES).formatted(Formatting.GOLD)
+fun clientConfigDifferenceText(from: MahjongClientConfigState, to: MahjongClientConfigState): Component {
+    val result = Component.translatable(MinecraftClientConfigScreenKeys.CONFIG_CHANGES).withStyle(ChatFormatting.GOLD)
     if (from.autoSortHandEnabled != to.autoSortHandEnabled) {
         result.appendValueChange(
             nameKey = MinecraftClientConfigScreenKeys.AUTO_SORT_HAND,
@@ -50,7 +50,7 @@ fun clientConfigDifferenceText(
     to: MahjongClientConfigState,
     automaticDraft: ClientAutomaticControlDraftState,
     displayResolver: AutomaticControlDisplayResolver,
-): Text {
+): Component {
     val result = clientConfigDifferenceText(from, to).copy()
     val baseline = automaticDraft.baseline ?: return result
     val changedIds = baseline.supportedControlIds.filter { id ->
@@ -67,7 +67,7 @@ fun clientConfigDifferenceText(
 }
 
 /** 附加所有非必要呈現開關的差異。 */
-private fun MutableText.appendPresentationVisibilityChanges(
+private fun MutableComponent.appendPresentationVisibilityChanges(
     from: MahjongPresentationVisibilityConfig,
     to: MahjongPresentationVisibilityConfig,
 ) {
@@ -81,72 +81,72 @@ private fun MutableText.appendPresentationVisibilityChanges(
 }
 
 /** 附加 HUD 百分比配置差異。 */
-private fun MutableText.appendHudLayoutChanges(from: MahjongHudLayoutConfig, to: MahjongHudLayoutConfig) {
+private fun MutableComponent.appendHudLayoutChanges(from: MahjongHudLayoutConfig, to: MahjongHudLayoutConfig) {
     if (from.decisionPanelY != to.decisionPanelY) {
         append("\n").append(
-            Text.translatable(
+            Component.translatable(
                 MinecraftClientConfigScreenKeys.HUD_LAYOUT_Y_CHANGE,
-                Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_DECISION_PANEL),
+                Component.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_DECISION_PANEL),
                 percent(from.decisionPanelY),
                 percent(to.decisionPanelY),
-            ).formatted(Formatting.GRAY),
+            ).withStyle(ChatFormatting.GRAY),
         )
     }
     if (from.compactPromptX != to.compactPromptX || from.compactPromptY != to.compactPromptY) {
         append("\n").append(
-            Text.translatable(
+            Component.translatable(
                 MinecraftClientConfigScreenKeys.HUD_LAYOUT_XY_CHANGE,
-                Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_COMPACT_PROMPT),
+                Component.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_COMPACT_PROMPT),
                 percent(from.compactPromptX),
                 percent(from.compactPromptY),
                 percent(to.compactPromptX),
                 percent(to.compactPromptY),
-            ).formatted(Formatting.GRAY),
+            ).withStyle(ChatFormatting.GRAY),
         )
     }
     if (from.discardAnalysisY != to.discardAnalysisY) {
         append("\n").append(
-            Text.translatable(
+            Component.translatable(
                 MinecraftClientConfigScreenKeys.HUD_LAYOUT_Y_CHANGE,
-                Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_DISCARD_ANALYSIS),
+                Component.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_DISCARD_ANALYSIS),
                 percent(from.discardAnalysisY),
                 percent(to.discardAnalysisY),
-            ).formatted(Formatting.GRAY),
+            ).withStyle(ChatFormatting.GRAY),
         )
     }
     if (from.automaticControlStatusX != to.automaticControlStatusX || from.automaticControlStatusY != to.automaticControlStatusY) {
         append("\n").append(
-            Text.translatable(
+            Component.translatable(
                 MinecraftClientConfigScreenKeys.HUD_LAYOUT_XY_CHANGE,
-                Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_AUTOMATIC_CONTROL_STATUS),
+                Component.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_AUTOMATIC_CONTROL_STATUS),
                 percent(from.automaticControlStatusX),
                 percent(from.automaticControlStatusY),
                 percent(to.automaticControlStatusX),
                 percent(to.automaticControlStatusY),
-            ).formatted(Formatting.GRAY),
+            ).withStyle(ChatFormatting.GRAY),
         )
     }
 }
 
 /** 附加一般設定值差異。 */
-private fun MutableText.appendValueChange(nameKey: String, from: Text, to: Text) {
-    appendValueChange(Text.translatable(nameKey), from, to)
+private fun MutableComponent.appendValueChange(nameKey: String, from: Component, to: Component) {
+    appendValueChange(Component.translatable(nameKey), from, to)
 }
 
 /** 附加已解析名稱的差異，讓第三方自動操作顯示資料也能使用相同格式。 */
-private fun MutableText.appendValueChange(name: Text, from: Text, to: Text) {
+private fun MutableComponent.appendValueChange(name: Component, from: Component, to: Component) {
     append("\n").append(
-        Text.translatable(
+        Component.translatable(
             MinecraftClientConfigScreenKeys.CONFIG_VALUE_CHANGE,
             name,
             from,
             to,
-        ).formatted(Formatting.GRAY),
+        ).withStyle(ChatFormatting.GRAY),
     )
 }
 
 /** 將 Boolean 轉換為 Client Config Screen 共用文字。 */
-private fun booleanText(enabled: Boolean): Text = Text.translatable(
+private fun booleanText(enabled: Boolean): Component = Component.translatable(
     if (enabled) MinecraftClientConfigScreenKeys.ENABLED else MinecraftClientConfigScreenKeys.DISABLED,
 )
 

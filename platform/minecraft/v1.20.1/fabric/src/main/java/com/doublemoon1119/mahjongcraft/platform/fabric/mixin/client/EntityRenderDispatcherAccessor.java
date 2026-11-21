@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.mixin.client;
 
-import net.minecraft.client.render.entity.EntityRenderDispatcher;
+import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
@@ -8,10 +8,10 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(EntityRenderDispatcher.class)
 public interface EntityRenderDispatcherAccessor {
     /** 取得目前是否繪製陰影。 */
-    @Accessor("renderShadows")
-    boolean mahjongcraft$getRenderShadows();
+    @Accessor("shouldRenderShadow")
+    boolean mahjongcraft$getShouldRenderShadow();
 
     /** 取得目前是否繪製除錯碰撞框。 */
-    @Accessor("renderHitboxes")
-    boolean mahjongcraft$getRenderHitboxes();
+    @Accessor("renderHitBoxes")
+    boolean mahjongcraft$getRenderHitBoxes();
 }

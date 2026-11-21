@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
-import net.minecraft.text.TranslatableTextContent
+import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -39,9 +39,9 @@ class DecisionCardTextTest {
             ruleDecisionDisplayNames = RuleDecisionDisplayNameRegistryImpl(),
         )
         val entries = decisionEntriesFrom(resolver, promptOf("sample:declare", "mahjongcraft:ron"))
-        val custom = entries.single { (it.label.content as? TranslatableTextContent)?.key == "sample.declare" }
-        assertEquals("sample.declare.body", (custom.cardBody?.content as TranslatableTextContent).key)
-        assertEquals("sample.declare.hint", (custom.cardHint?.content as TranslatableTextContent).key)
+        val custom = entries.single { (it.label.contents as? TranslatableContents)?.key == "sample.declare" }
+        assertEquals("sample.declare.body", (custom.cardBody?.contents as TranslatableContents).key)
+        assertEquals("sample.declare.hint", (custom.cardHint?.contents as TranslatableContents).key)
         assertEquals("token-sample:declare", assertIs<DecisionEntryIntent.SubmitAction>(custom.intent).token)
         val builtIn = entries.single { it !== custom }
         assertNull(builtIn.cardBody)

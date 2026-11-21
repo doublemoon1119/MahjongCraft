@@ -4,12 +4,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.FabricGamePr
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropSearchArea
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
-import net.minecraft.registry.RegistryKey
-import net.minecraft.registry.RegistryKeys
+import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.Registries
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.BlockPos
+import net.minecraft.server.level.ServerLevel
 
 /**
  * 在桌子及其規則物件搜尋範圍的 chunk 都可用後，重新請求桌面物件呈現。
@@ -67,8 +67,8 @@ class FabricTablePropRefreshScheduler(
     }
 
     /** 取得桌子所在的已載入世界。 */
-    private fun resolveWorld(server: MinecraftServer, dimensionId: String): ServerWorld? {
-        val id = Identifier.tryParse(dimensionId) ?: return null
-        return server.getWorld(RegistryKey.of(RegistryKeys.WORLD, id))
+    private fun resolveWorld(server: MinecraftServer, dimensionId: String): ServerLevel? {
+        val id = ResourceLocation.tryParse(dimensionId) ?: return null
+        return server.getLevel(ResourceKey.create(Registries.DIMENSION, id))
     }
 }

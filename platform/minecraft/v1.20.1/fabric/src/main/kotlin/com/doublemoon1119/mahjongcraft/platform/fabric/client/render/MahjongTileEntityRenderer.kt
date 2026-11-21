@@ -18,19 +18,19 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimati
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
-import net.minecraft.client.render.Frustum
-import net.minecraft.client.render.OverlayTexture
-import net.minecraft.client.render.RenderLayer
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.render.entity.EntityRenderer
-import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.render.item.ItemRenderer
-import net.minecraft.client.render.model.json.ModelTransformationMode
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.client.world.ClientWorld
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.MathHelper
-import net.minecraft.util.math.RotationAxis
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.math.Axis
+import net.minecraft.client.multiplayer.ClientLevel
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.RenderType
+import net.minecraft.client.renderer.culling.Frustum
+import net.minecraft.client.renderer.entity.EntityRenderer
+import net.minecraft.client.renderer.entity.EntityRendererProvider
+import net.minecraft.client.renderer.entity.ItemRenderer
+import net.minecraft.client.renderer.texture.OverlayTexture
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.util.Mth
+import net.minecraft.world.item.ItemDisplayContext
 import org.joml.Quaternionf
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
@@ -58,7 +58,7 @@ import kotlin.uuid.toKotlinUuid
  * @param handTileLayoutController 提供本人牌張本幀的絕對位置與姿態。
  */
 class MahjongTileEntityRenderer(
-    context: EntityRendererFactory.Context,
+    context: EntityRendererProvider.Context,
     private val stateStore: ClientMahjongStateStore,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val tileFaceRenderer: MahjongTileFaceRenderer,
@@ -86,8 +86,8 @@ class MahjongTileEntityRenderer(
         entity: MahjongTileEntity,
         yaw: Float,
         tickDelta: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
     ) {
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
@@ -97,7 +97,7 @@ class MahjongTileEntityRenderer(
         // 不會自動幫自訂 renderer 跳過 render()，所以這裡要自己判斷。
         if (entity.isInvisible) return
         val localDisplay = handTileLayoutController.display(entity)
-        val elapsedAnimationTicks = entity.world.time.toDouble() + tickDelta - entity.animationStartGameTime
+        val elapsedAnimationTicks = entity.level().gameTime.toDouble() + tickDelta - entity.animationStartGameTime
         val animationFrame = if (localDisplay == null && entity.animating) {
             TileMotionAnimation(
                 spec = TileMotionAnimationSpec(
@@ -117,27 +117,27 @@ class MahjongTileEntityRenderer(
         } else {
             null
         }
-        matrices.push()
+        matrices.pushPose()
         if (localDisplay != null) {
             // dispatcher 已移到原生插值位置；這裡換成最終私人位置，不疊加共享動畫。
             matrices.translate(
-                localDisplay.position.x - MathHelper.lerp(tickDelta.toDouble(), entity.lastRenderX, entity.x),
-                localDisplay.position.y - MathHelper.lerp(tickDelta.toDouble(), entity.lastRenderY, entity.y),
-                localDisplay.position.z - MathHelper.lerp(tickDelta.toDouble(), entity.lastRenderZ, entity.z),
+                localDisplay.position.x - Mth.lerp(tickDelta.toDouble(), entity.xOld, entity.x),
+                localDisplay.position.y - Mth.lerp(tickDelta.toDouble(), entity.yOld, entity.y),
+                localDisplay.position.z - Mth.lerp(tickDelta.toDouble(), entity.zOld, entity.z),
             )
         }
         if (animationFrame != null) matrices.translate(animationFrame.offset.x, animationFrame.offset.y, animationFrame.offset.z)
         // 往前進方向的傾斜繞底部中心、以世界水平軸旋轉，在座位朝向之前套用。
         val lean = localDisplay?.lean ?: animationFrame?.lean
         if (lean != null && lean.degrees != 0.0f) {
-            matrices.multiply(Quaternionf().rotateAxis(Math.toRadians(lean.degrees.toDouble()).toFloat(), lean.axisX.toFloat(), 0.0f, lean.axisZ.toFloat()))
+            matrices.mulPose(Quaternionf().rotateAxis(Math.toRadians(lean.degrees.toDouble()).toFloat(), lean.axisX.toFloat(), 0.0f, lean.axisZ.toFloat()))
         }
-        matrices.multiply(
-            RotationAxis.POSITIVE_Y.rotationDegrees(
-                -(localDisplay?.yawDegrees ?: entity.yaw) + 180.0f - (animationFrame?.yawOffsetDegrees ?: 0.0f),
+        matrices.mulPose(
+            Axis.YP.rotationDegrees(
+                -(localDisplay?.yawDegrees ?: entity.yRot) + 180.0f - (animationFrame?.yawOffsetDegrees ?: 0.0f),
             ),
         )
-        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(localDisplay?.poseDegrees ?: animationFrame?.poseRotationDegrees ?: entity.tilePose.rotationDegrees))
+        matrices.mulPose(Axis.XP.rotationDegrees(localDisplay?.poseDegrees ?: animationFrame?.poseRotationDegrees ?: entity.tilePose.rotationDegrees))
         val (poseOffsetX, poseOffsetY, poseOffsetZ) = if (localDisplay != null) {
             displayPoseOriginOffset(localDisplay.poseDegrees)
         } else if (animationFrame != null) {
@@ -154,9 +154,9 @@ class MahjongTileEntityRenderer(
         renderTile(
             assetKey = assetKey,
             appearance = appearance,
-            mode = ModelTransformationMode.HEAD,
+            mode = ItemDisplayContext.HEAD,
             light = effectiveLight,
-            overlay = OverlayTexture.DEFAULT_UV,
+            overlay = OverlayTexture.NO_OVERLAY,
             matrices = matrices,
             consumers = consumers,
         )
@@ -168,15 +168,15 @@ class MahjongTileEntityRenderer(
             renderTile(
                 assetKey = assetKey,
                 appearance = appearance,
-                mode = ModelTransformationMode.HEAD,
+                mode = ItemDisplayContext.HEAD,
                 light = effectiveLight,
-                overlay = OverlayTexture.DEFAULT_UV,
+                overlay = OverlayTexture.NO_OVERLAY,
                 matrices = matrices,
                 consumers = vertexConsumers.glintOnly(),
             )
         }
         tileFaceRenderer.renderModelLabels(assetKey, matrices, vertexConsumers, effectiveLight)
-        matrices.pop()
+        matrices.popPose()
         WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
             renderActionPopup(entity, assetKey, appearance.definition, tickDelta, panelMatrices, panelConsumers)
         }
@@ -196,11 +196,11 @@ class MahjongTileEntityRenderer(
     private fun renderTile(
         assetKey: String,
         appearance: TileRenderAppearanceContext,
-        mode: ModelTransformationMode,
+        mode: ItemDisplayContext,
         light: Int,
         overlay: Int,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
         if (assetKey == UNKNOWN_TILE_ASSET_KEY) {
             MahjongTileItemRenderer.renderUnknownWithAppearance(
@@ -239,8 +239,8 @@ class MahjongTileEntityRenderer(
         assetKey: String,
         appearance: MinecraftTileSetAppearanceDefinition,
         tickDelta: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
         val kind = entity.actionPopupKind
         val visibility = configStore.current.presentationVisibility
@@ -250,7 +250,7 @@ class MahjongTileEntityRenderer(
             TileActionPopupKind.NONE -> false
         }
         if (!enabled) return
-        val now = entity.world.time.toDouble() + tickDelta
+        val now = entity.level().gameTime.toDouble() + tickDelta
         if (now !in entity.actionPopupStartGameTime.toDouble()..<entity.actionPopupEndGameTime.toDouble()) return
         val elapsed = now - entity.actionPopupStartGameTime
         val remaining = entity.actionPopupEndGameTime - now
@@ -260,9 +260,9 @@ class MahjongTileEntityRenderer(
             return
         }
         if (assetKey == UNKNOWN_TILE_ASSET_KEY) return
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(0.0, ACTION_POPUP_WORLD_HEIGHT, 0.0)
-        matrices.multiply(dispatcher.rotation)
+        matrices.mulPose(entityRenderDispatcher.cameraOrientation())
         matrices.scale(-ACTION_POPUP_SCALE, -ACTION_POPUP_SCALE, ACTION_POPUP_SCALE)
         WorldPanelRenderer.drawBackground(
             left = -ACTION_POPUP_PANEL_WIDTH / 2f,
@@ -286,7 +286,7 @@ class MahjongTileEntityRenderer(
             consumers = consumers,
             appearance = appearance,
         )
-        matrices.pop()
+        matrices.popPose()
     }
 
     /**
@@ -302,11 +302,11 @@ class MahjongTileEntityRenderer(
         entity: MahjongTileEntity,
         appearance: MinecraftTileSetAppearanceDefinition,
         alpha: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
         val popupTiles = entity.meldActionPopupTiles
-        val managedTiles = (entity.world as? ClientWorld)?.entities?.filterIsInstance<MahjongTileEntity>().orEmpty()
+        val managedTiles = (entity.level() as? ClientLevel)?.entitiesForRendering()?.filterIsInstance<MahjongTileEntity>().orEmpty()
         val entries = popupTiles.map { popupTile ->
             val javaTileId = popupTile.tileId.toJavaUuid()
             val tile = managedTiles.firstOrNull { it.uuid == javaTileId } ?: return
@@ -322,9 +322,9 @@ class MahjongTileEntityRenderer(
         val markerHeight = if (layout.placements.any { it.claimed }) CLAIMED_MARKER_HEIGHT + CLAIMED_MARKER_GAP else 0f
         val panelWidth = layout.contentWidth + ACTION_POPUP_GROUP_PADDING * 2
         val panelHeight = layout.contentHeight + markerHeight + ACTION_POPUP_GROUP_PADDING * 2
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(0.0, ACTION_POPUP_WORLD_HEIGHT, 0.0)
-        matrices.multiply(dispatcher.rotation)
+        matrices.mulPose(entityRenderDispatcher.cameraOrientation())
         matrices.scale(-ACTION_POPUP_SCALE, -ACTION_POPUP_SCALE, ACTION_POPUP_SCALE)
         WorldPanelRenderer.drawBackground(
             left = -panelWidth / 2f,
@@ -352,7 +352,7 @@ class MahjongTileEntityRenderer(
                 )
             }
         }
-        matrices.pop()
+        matrices.popPose()
     }
 
     /**
@@ -373,11 +373,11 @@ class MahjongTileEntityRenderer(
         centerY: Float,
         alpha: Float,
         z: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         appearance: MinecraftTileSetAppearanceDefinition,
     ) {
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(centerX.toDouble(), centerY.toDouble(), 0.0)
         tileFaceRenderer.renderWorldPanel(
             assetKey = assetKey,
@@ -391,7 +391,7 @@ class MahjongTileEntityRenderer(
             consumers = consumers,
             appearance = appearance,
         )
-        matrices.pop()
+        matrices.popPose()
     }
 
     /**
@@ -412,8 +412,8 @@ class MahjongTileEntityRenderer(
         bottom: Float,
         alpha: Float,
         z: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
         val color = WorldPanelRenderer.withAlpha(ClaimedTileMarker.COLOR, alpha)
         ClaimedTileMarker.ROW_WIDTHS.forEachIndexed { row, width ->
@@ -438,7 +438,7 @@ class MahjongTileEntityRenderer(
      * @param entity 正在繪製的牌張 entity。
      * @return `null`，表示材質由 item model renderer 動態解析。
      */
-    override fun getTexture(entity: MahjongTileEntity): Identifier? = null
+    override fun getTextureLocation(entity: MahjongTileEntity): ResourceLocation? = null
 
     /**
      * 自由放置牌沿用 entity 自身 tracked data；牌局管理中的牌改查 [stateStore]——查不到（不在目前
@@ -480,24 +480,24 @@ class MahjongTileEntityRenderer(
     }
 
     /**
-     * 疊加附魔物品光暈疊圖層——用 [ItemRenderer.getDirectItemGlintConsumer]（entity 世界渲染用的
-     * direct 版本，不是 GUI 用的 [ItemRenderer.getItemGlintConsumer]）包一層，讓
+     * 疊加附魔物品光暈疊圖層——用 [ItemRenderer.getFoilBufferDirect]（entity 世界渲染用的
+     * direct 版本，不是 GUI 用的 [ItemRenderer.getFoilBuffer]）包一層，讓
      * item renderer（`solid` 參數暫定 `false`，遊戲內驗證光暈貼合效果後可再調整）在同一次
-     * render 呼叫裡連同正常牌面一起疊畫，也不用 `Entity.setGlowing()`（保留給其他用途）。
+     * render 呼叫裡連同正常牌面一起疊畫，也不用 `Entity.setGlowingTag()`（保留給其他用途）。
      *
      * @return 將 layer 請求包裝為直接物品光暈 consumer 的 provider。
      */
-    private fun VertexConsumerProvider.withGlint(): VertexConsumerProvider = VertexConsumerProvider { layer -> ItemRenderer.getDirectItemGlintConsumer(this, layer, false, true) }
+    private fun MultiBufferSource.withGlint(): MultiBufferSource = MultiBufferSource { layer -> ItemRenderer.getFoilBufferDirect(this, layer, false, true) }
 
     /**
      * 純光暈疊圖層，不含正常牌面——所有 buffer 請求一律導向
-     * [RenderLayer.getDirectEntityGlint]，忽略呼叫端原本要求的 layer（正常牌面已經在第一次
+     * [RenderType.entityGlintDirect]，忽略呼叫端原本要求的 layer（正常牌面已經在第一次
      * `renderItem` 呼叫時畫過一次），用來在 [render] 額外疊加第二次光暈幾何、加強亮度，見 [render]
      * 內的呼叫點註解。
      *
      * @return 將緩衝請求導向純 entity 光暈 layer 的 provider。
      */
-    private fun VertexConsumerProvider.glintOnly(): VertexConsumerProvider = VertexConsumerProvider { _ -> this.getBuffer(RenderLayer.getDirectEntityGlint()) }
+    private fun MultiBufferSource.glintOnly(): MultiBufferSource = MultiBufferSource { _ -> this.getBuffer(RenderType.entityGlintDirect()) }
 
     companion object {
         /**

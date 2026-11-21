@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
-import net.minecraft.nbt.NbtCompound
+import net.minecraft.nbt.CompoundTag
 import kotlin.uuid.Uuid
 
 /**
@@ -15,7 +15,7 @@ object GameManagedEntityNbt {
      * @param nbt 含牌局管理欄位的 NBT compound。
      * @return 讀取到的牌局管理狀態。
      */
-    fun read(nbt: NbtCompound): GameManagedEntityState = GameManagedEntityState(
+    fun read(nbt: CompoundTag): GameManagedEntityState = GameManagedEntityState(
         managedByGame = nbt.getBoolean(NBT_KEY_MANAGED_BY_GAME),
         tableId = ManagedTableNbt.read(nbt),
     )
@@ -27,7 +27,7 @@ object GameManagedEntityNbt {
      * @param managedByGame 是否由牌局生命週期管理。
      * @param tableId 所屬桌子 UUID；沒有桌子時為 `null`。
      */
-    fun write(nbt: NbtCompound, managedByGame: Boolean, tableId: Uuid?) {
+    fun write(nbt: CompoundTag, managedByGame: Boolean, tableId: Uuid?) {
         nbt.putBoolean(NBT_KEY_MANAGED_BY_GAME, managedByGame)
         ManagedTableNbt.write(nbt, tableId)
     }

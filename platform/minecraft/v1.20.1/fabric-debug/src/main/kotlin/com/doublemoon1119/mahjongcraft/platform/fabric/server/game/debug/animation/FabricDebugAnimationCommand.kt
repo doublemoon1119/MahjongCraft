@@ -28,8 +28,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PlannedTileMotion
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionKind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileRowKey
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands.literal
 import kotlin.random.Random
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
@@ -58,23 +58,23 @@ class FabricDebugAnimationCommand(
     private val entityLifecycle: DebugPreviewEntityLifecycle,
 ) {
     /** 建立 `dice` 子指令；省略參數時使用 [DEFAULT_DEBUG_DICE_COUNT]。 */
-    fun buildDiceCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(DICE_SUBCOMMAND)
+    fun buildDiceCommand(): LiteralArgumentBuilder<CommandSourceStack> = literal(DICE_SUBCOMMAND)
         .executes { ctx -> previewDice(ctx.source, DEFAULT_DEBUG_DICE_COUNT) }
         .then(literal(TWO_DICE_ARGUMENT).executes { ctx -> previewDice(ctx.source, 2) })
         .then(literal(THREE_DICE_ARGUMENT).executes { ctx -> previewDice(ctx.source, 3) })
         .then(literal(MULTI_ROUND_ARGUMENT).executes { ctx -> previewMultiRoundDice(ctx.source) })
 
     /** 建立 `deal [tile]` 子指令。 */
-    fun buildDealCommand(): LiteralArgumentBuilder<ServerCommandSource> = tilePreviewSupport.withOptionalTileArgument(literal(DEAL_SUBCOMMAND), ::previewDeal)
+    fun buildDealCommand(): LiteralArgumentBuilder<CommandSourceStack> = tilePreviewSupport.withOptionalTileArgument(literal(DEAL_SUBCOMMAND), ::previewDeal)
 
     /** 建立 `draw [tile]` 子指令。 */
-    fun buildDrawCommand(): LiteralArgumentBuilder<ServerCommandSource> = tilePreviewSupport.withOptionalTileArgument(literal(DRAW_SUBCOMMAND), ::previewDraw)
+    fun buildDrawCommand(): LiteralArgumentBuilder<CommandSourceStack> = tilePreviewSupport.withOptionalTileArgument(literal(DRAW_SUBCOMMAND), ::previewDraw)
 
     /** 建立 `discard [tile]` 子指令。 */
-    fun buildDiscardCommand(): LiteralArgumentBuilder<ServerCommandSource> = tilePreviewSupport.withOptionalTileArgument(literal(DISCARD_SUBCOMMAND), ::previewDiscard)
+    fun buildDiscardCommand(): LiteralArgumentBuilder<CommandSourceStack> = tilePreviewSupport.withOptionalTileArgument(literal(DISCARD_SUBCOMMAND), ::previewDiscard)
 
     /** 建立 `meld <chi|pon|kan|added_kan> [tile]` 子指令。 */
-    fun buildMeldCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(MELD_SUBCOMMAND)
+    fun buildMeldCommand(): LiteralArgumentBuilder<CommandSourceStack> = literal(MELD_SUBCOMMAND)
         .then(tilePreviewSupport.withOptionalTileArgument(literal(CHI_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.Chi, tileArg) })
         .then(tilePreviewSupport.withOptionalTileArgument(literal(PON_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.Pon, tileArg) })
         .then(tilePreviewSupport.withOptionalTileArgument(literal(KAN_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.OpenKan, tileArg) })
@@ -91,19 +91,19 @@ class FabricDebugAnimationCommand(
      * @return Brigadier 指令結果碼。
      */
     private fun previewDice(
-        source: ServerCommandSource,
+        source: CommandSourceStack,
         diceCount: Int,
         startOffsetTicks: Int = 0,
         throwSide: MahjongTableSide = MahjongTableSide.SOUTH,
         rollSequence: Long = 0,
     ): Int {
         val player = source.player ?: return COMMAND_FAILURE
-        val world = player.serverWorld
+        val world = player.serverLevel()
         val layout = layoutFactory.create(
-            playerBlockX = player.blockPos.x,
-            playerBlockY = player.blockPos.y,
-            playerBlockZ = player.blockPos.z,
-            tableFacing = player.horizontalFacing.toMahjongTableFacing(),
+            playerBlockX = player.blockPosition().x,
+            playerBlockY = player.blockPosition().y,
+            playerBlockZ = player.blockPosition().z,
+            tableFacing = player.direction.toMahjongTableFacing(),
             seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
         val tableId = Uuid.random()
@@ -118,18 +118,18 @@ class FabricDebugAnimationCommand(
             diceCount = diceCount,
         )
         val points = List(diceCount) { index -> MahjongDicePoint.entries[(index + DEBUG_DICE_POINT_OFFSET) % MahjongDicePoint.entries.size] }
-        val revealGameTime = world.time + startOffsetTicks + MahjongDiceTableLayout.maxStartDelayTicks(diceCount) + DiceRollAnimationSpec.DEFAULT_DURATION_TICKS
+        val revealGameTime = world.gameTime + startOffsetTicks + MahjongDiceTableLayout.maxStartDelayTicks(diceCount) + DiceRollAnimationSpec.DEFAULT_DURATION_TICKS
         val endGameTime = revealGameTime + DiceRollAnimationSpec.EXTRA_VIEWING_TICKS
         val dice = placements.map { placement ->
             MahjongDiceEntity(world = world).apply {
-                refreshPositionAndAngles(
+                moveTo(
                     placement.finalPosition.x,
                     placement.finalPosition.y,
                     placement.finalPosition.z,
                     0.0f,
                     0.0f,
                 )
-            }.also(world::spawnEntity)
+            }.also(world::addFreshEntity)
         }
         dice.zip(placements).zip(points).forEach { (entityAndPlacement, point) ->
             val (entity, placement) = entityAndPlacement
@@ -142,7 +142,7 @@ class FabricDebugAnimationCommand(
             )
         }
         val stage = DiceRollPresentationEntity(world = world).apply {
-            refreshPositionAndAngles(
+            moveTo(
                 layout.controllerX + DEBUG_BLOCK_CENTER,
                 layout.controllerY + DEBUG_TABLETOP_HEIGHT + DiceRollPresentationEntity.HEIGHT_ABOVE_TABLETOP,
                 layout.controllerZ + DEBUG_BLOCK_CENTER,
@@ -151,13 +151,13 @@ class FabricDebugAnimationCommand(
             )
             configure(tableId, points.map(MahjongDicePoint::value), revealGameTime, endGameTime)
         }
-        world.spawnEntity(stage)
+        world.addFreshEntity(stage)
         entityLifecycle.schedule(world, endGameTime, dice + stage)
         return COMMAND_SUCCESS
     }
 
     /** `dice multi`：依共用時間線連續預覽兩輪不同骰數與擲骰方向。 */
-    private fun previewMultiRoundDice(source: ServerCommandSource): Int {
+    private fun previewMultiRoundDice(source: CommandSourceStack): Int {
         val first = previewDice(source, diceCount = 2, throwSide = MahjongTableSide.SOUTH, rollSequence = 0)
         if (first != COMMAND_SUCCESS) return first
         val offset = MahjongDiceRollTimeline.totalTicks(listOf(2))
@@ -180,15 +180,15 @@ class FabricDebugAnimationCommand(
      * @param tileArg 可選的牌面資產引數；省略時使用支援元件的預設值。
      * @return Brigadier 指令結果碼。
      */
-    private fun previewDeal(source: ServerCommandSource, tileArg: String?): Int {
+    private fun previewDeal(source: CommandSourceStack, tileArg: String?): Int {
         val player = source.player ?: return COMMAND_FAILURE
-        val world = player.serverWorld
+        val world = player.serverLevel()
         val assetKey = tilePreviewSupport.resolveAssetKey(tileArg)
         val layout = layoutFactory.create(
-            playerBlockX = player.blockPos.x,
-            playerBlockY = player.blockPos.y,
-            playerBlockZ = player.blockPos.z,
-            tableFacing = player.horizontalFacing.toMahjongTableFacing(),
+            playerBlockX = player.blockPosition().x,
+            playerBlockY = player.blockPosition().y,
+            playerBlockZ = player.blockPosition().z,
+            tableFacing = player.direction.toMahjongTableFacing(),
             seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
         val handSize = DebugPreviewDefaults.RULE_CONFIG.initialHandSize
@@ -201,7 +201,7 @@ class FabricDebugAnimationCommand(
         }
         val tiles = sourcePlacements.map { placement -> tilePreviewSupport.spawnFreeTile(world, placement, MahjongTilePose.FACE_DOWN, assetKey) }
 
-        val liftAbsoluteGameTime = world.time
+        val liftAbsoluteGameTime = world.gameTime
         val flipAbsoluteGameTime = liftAbsoluteGameTime +
             MahjongTileTableLayout.DEAL_LIFT_DURATION_TICKS +
             MahjongTileTableLayout.DEAL_SNAP_GAP_TICKS +
@@ -231,23 +231,23 @@ class FabricDebugAnimationCommand(
      * @param tileArg 可選的牌面資產引數；省略時使用支援元件的預設值。
      * @return Brigadier 指令結果碼。
      */
-    private fun previewDraw(source: ServerCommandSource, tileArg: String?): Int {
+    private fun previewDraw(source: CommandSourceStack, tileArg: String?): Int {
         val player = source.player ?: return COMMAND_FAILURE
-        val world = player.serverWorld
+        val world = player.serverLevel()
         val assetKey = tilePreviewSupport.resolveAssetKey(tileArg)
         val layout = layoutFactory.create(
-            playerBlockX = player.blockPos.x,
-            playerBlockY = player.blockPos.y,
-            playerBlockZ = player.blockPos.z,
-            tableFacing = player.horizontalFacing.toMahjongTableFacing(),
+            playerBlockX = player.blockPosition().x,
+            playerBlockY = player.blockPosition().y,
+            playerBlockZ = player.blockPosition().z,
+            tableFacing = player.direction.toMahjongTableFacing(),
             seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
 
         val sourcePlacement = layout.wallPlacement(tileIndex = 0)
         val finalPlacement = layout.drawnTilePlacement(standingTileCount = DebugPreviewDefaults.RULE_CONFIG.initialHandSize)
         val tile = tilePreviewSupport.spawnFreeTile(world, sourcePlacement, MahjongTilePose.FACE_DOWN, assetKey)
-        TileAnimationSteps.schedulePlannedMotion(tile, previewMotion(tile, TileMotionKind.DRAW, TileRegion.WALL, TileRegion.DRAWN, sourcePlacement, finalPlacement, TilePose.FACE_DOWN, TilePose.UPRIGHT), world.time)
-        val endGameTime = world.time +
+        TileAnimationSteps.schedulePlannedMotion(tile, previewMotion(tile, TileMotionKind.DRAW, TileRegion.WALL, TileRegion.DRAWN, sourcePlacement, finalPlacement, TilePose.FACE_DOWN, TilePose.UPRIGHT), world.gameTime)
+        val endGameTime = world.gameTime +
             MahjongTileTableLayout.DRAW_LIFT_DURATION_TICKS +
             MahjongTileTableLayout.DRAW_SNAP_GAP_TICKS +
             MahjongTileTableLayout.DRAW_DROP_DURATION_TICKS +
@@ -263,25 +263,25 @@ class FabricDebugAnimationCommand(
      * @param tileArg 可選的牌面資產引數；省略時使用支援元件的預設值。
      * @return Brigadier 指令結果碼。
      */
-    private fun previewDiscard(source: ServerCommandSource, tileArg: String?): Int {
+    private fun previewDiscard(source: CommandSourceStack, tileArg: String?): Int {
         val player = source.player ?: return COMMAND_FAILURE
-        val world = player.serverWorld
+        val world = player.serverLevel()
         val assetKey = tilePreviewSupport.resolveAssetKey(tileArg)
         val layout = layoutFactory.create(
-            playerBlockX = player.blockPos.x,
-            playerBlockY = player.blockPos.y,
-            playerBlockZ = player.blockPos.z,
-            tableFacing = player.horizontalFacing.toMahjongTableFacing(),
+            playerBlockX = player.blockPosition().x,
+            playerBlockY = player.blockPosition().y,
+            playerBlockZ = player.blockPosition().z,
+            tableFacing = player.direction.toMahjongTableFacing(),
             seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
 
         val sourcePlacement = layout.handPlacement(handSize = DebugPreviewDefaults.RULE_CONFIG.initialHandSize, tileIndex = 0)
         val finalPlacement = layout.discardPlacement(discardIndex = 0)
         val tile = tilePreviewSupport.spawnFreeTile(world, sourcePlacement, MahjongTilePose.STANDING, assetKey)
-        TileAnimationSteps.schedulePlannedMotion(tile, previewMotion(tile, TileMotionKind.FLIGHT, TileRegion.HAND, TileRegion.DISCARD, sourcePlacement, finalPlacement, TilePose.UPRIGHT, TilePose.FACE_UP), world.time)
-        val landingTime = world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS
+        TileAnimationSteps.schedulePlannedMotion(tile, previewMotion(tile, TileMotionKind.FLIGHT, TileRegion.HAND, TileRegion.DISCARD, sourcePlacement, finalPlacement, TilePose.UPRIGHT, TilePose.FACE_UP), world.gameTime)
+        val landingTime = world.gameTime + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS
         tile.showActionPopup(TileActionPopupKind.DISCARD, landingTime, landingTime + TileAnimationSteps.ACTION_POPUP_DURATION_TICKS)
-        val endGameTime = world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS + PREVIEW_VIEWING_BUFFER_TICKS
+        val endGameTime = world.gameTime + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS + PREVIEW_VIEWING_BUFFER_TICKS
         entityLifecycle.schedule(world, endGameTime, listOf(tile))
         return COMMAND_SUCCESS
     }
@@ -295,16 +295,16 @@ class FabricDebugAnimationCommand(
      * @param tileArg 可選的牌面資產引數；省略時使用支援元件的預設值。
      * @return Brigadier 指令結果碼。
      */
-    private fun previewMeld(source: ServerCommandSource, type: MeldType, tileArg: String?): Int {
+    private fun previewMeld(source: CommandSourceStack, type: MeldType, tileArg: String?): Int {
         val player = source.player ?: return COMMAND_FAILURE
-        val world = player.serverWorld
+        val world = player.serverLevel()
         val assetKey = tilePreviewSupport.resolveAssetKey(tileArg)
         val tileCount = if (type == MeldType.OpenKan) MELD_KAN_TILE_COUNT else DebugPreviewDefaults.MELD_TILE_COUNT
         val layout = layoutFactory.create(
-            playerBlockX = player.blockPos.x,
-            playerBlockY = player.blockPos.y,
-            playerBlockZ = player.blockPos.z,
-            tableFacing = player.horizontalFacing.toMahjongTableFacing(),
+            playerBlockX = player.blockPosition().x,
+            playerBlockY = player.blockPosition().y,
+            playerBlockZ = player.blockPosition().z,
+            tableFacing = player.direction.toMahjongTableFacing(),
             seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
         val sourceDirection = if (type == MeldType.Chi) RelativeDirection.Left else RelativeDirection.Across
@@ -319,20 +319,20 @@ class FabricDebugAnimationCommand(
             TileAnimationSteps.schedulePlannedMotion(
                 tile = tile,
                 motion = previewMotion(tile, TileMotionKind.FLIGHT, TileRegion.HAND, TileRegion.MELD, sourcePlacements[index], finalPlacements[index], TilePose.UPRIGHT, TilePose.FACE_UP),
-                startGameTime = world.time,
+                startGameTime = world.gameTime,
                 playLandingSound = index == 0,
             )
         }
         val popupTiles = tiles.mapIndexed { slot, tile ->
             MeldActionPopupTile(tileId = tile.uuid.toKotlinUuid(), claimed = type == MeldType.Chi && slot == sidewaysSlot)
         }
-        val landingTime = world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS
+        val landingTime = world.gameTime + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS
         tiles.first().showMeldActionPopup(
             tiles = popupTiles,
             startGameTime = landingTime,
             endGameTime = landingTime + TileAnimationSteps.ACTION_POPUP_DURATION_TICKS,
         )
-        val endGameTime = world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS + PREVIEW_VIEWING_BUFFER_TICKS
+        val endGameTime = world.gameTime + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS + PREVIEW_VIEWING_BUFFER_TICKS
         entityLifecycle.schedule(world, endGameTime, tiles)
         return COMMAND_SUCCESS
     }
@@ -379,15 +379,15 @@ class FabricDebugAnimationCommand(
      * @param tileArg 可選的牌面資產引數；省略時使用支援元件的預設值。
      * @return Brigadier 指令結果碼。
      */
-    private fun previewAddedKanMeld(source: ServerCommandSource, tileArg: String?): Int {
+    private fun previewAddedKanMeld(source: CommandSourceStack, tileArg: String?): Int {
         val player = source.player ?: return COMMAND_FAILURE
-        val world = player.serverWorld
+        val world = player.serverLevel()
         val assetKey = tilePreviewSupport.resolveAssetKey(tileArg)
         val layout = layoutFactory.create(
-            playerBlockX = player.blockPos.x,
-            playerBlockY = player.blockPos.y,
-            playerBlockZ = player.blockPos.z,
-            tableFacing = player.horizontalFacing.toMahjongTableFacing(),
+            playerBlockX = player.blockPosition().x,
+            playerBlockY = player.blockPosition().y,
+            playerBlockZ = player.blockPosition().z,
+            tableFacing = player.direction.toMahjongTableFacing(),
             seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
         val sourceDirection = RelativeDirection.Across
@@ -402,19 +402,19 @@ class FabricDebugAnimationCommand(
             TileAnimationSteps.schedulePlannedMotion(
                 tile = tile,
                 motion = previewMotion(tile, TileMotionKind.FLIGHT, TileRegion.HAND, TileRegion.MELD, sourcePlacements[index], finalPlacements[index], TilePose.UPRIGHT, TilePose.FACE_UP),
-                startGameTime = world.time,
+                startGameTime = world.gameTime,
                 playLandingSound = index == 0,
             )
         }
         // 加槓的四張牌面相同，比照決策卡片不標鳴取牌。
         val popupTiles = tiles.map { tile -> MeldActionPopupTile(tileId = tile.uuid.toKotlinUuid(), claimed = false) }
-        val landingTime = world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS
+        val landingTime = world.gameTime + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS
         tiles.first().showMeldActionPopup(
             tiles = popupTiles,
             startGameTime = landingTime,
             endGameTime = landingTime + TileAnimationSteps.ACTION_POPUP_DURATION_TICKS,
         )
-        val endGameTime = world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS + PREVIEW_VIEWING_BUFFER_TICKS
+        val endGameTime = world.gameTime + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS + PREVIEW_VIEWING_BUFFER_TICKS
         entityLifecycle.schedule(world, endGameTime, tiles)
         return COMMAND_SUCCESS
     }

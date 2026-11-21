@@ -8,10 +8,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActi
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionPlayerRelationDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.text.OrderedText
-import net.minecraft.text.Text
+import net.minecraft.client.gui.Font
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.network.chat.Component
+import net.minecraft.util.FormattedCharSequence
 import org.joml.Vector3f
 import kotlin.math.roundToInt
 
@@ -24,8 +24,8 @@ import kotlin.math.roundToInt
  * @property entries 由左至右的操作卡。
  */
 internal data class DecisionPanelContent(
-    val title: Text,
-    val triggerLines: List<OrderedText>,
+    val title: Component,
+    val triggerLines: List<FormattedCharSequence>,
     val triggerTileAssetKey: String?,
     val entries: List<DecisionEntry>,
 )
@@ -44,12 +44,12 @@ internal fun decisionPanelContent(
     prompt: PlayerDecisionPromptDto,
     texts: DecisionTextResolver,
     resolvePlayerName: (String) -> String,
-    renderer: TextRenderer,
+    renderer: Font,
     screenWidth: Int,
 ): DecisionPanelContent = DecisionPanelContent(
-    title = Text.translatable(MinecraftHudKeys.ACTION_TITLE),
+    title = Component.translatable(MinecraftHudKeys.ACTION_TITLE),
     triggerLines = decisionTriggerText(prompt, texts, resolvePlayerName)
-        ?.let { renderer.wrapLines(it, DecisionCardLayout.triggerTextMaximumWidth(screenWidth)) }
+        ?.let { renderer.split(it, DecisionCardLayout.triggerTextMaximumWidth(screenWidth)) }
         .orEmpty(),
     triggerTileAssetKey = prompt.triggerTileAssetKey?.takeIf { it.isNotEmpty() },
     entries = decisionEntriesFrom(texts, prompt),
@@ -67,9 +67,9 @@ private fun decisionTriggerText(
     prompt: PlayerDecisionPromptDto,
     texts: DecisionTextResolver,
     resolvePlayerName: (String) -> String,
-): Text? {
+): Component? {
     val playerId = prompt.triggerPlayerId
-        ?: return if (prompt.triggerTileAssetKey != null) Text.translatable(MinecraftHudKeys.TRIGGER_SELF_DRAW) else null
+        ?: return if (prompt.triggerTileAssetKey != null) Component.translatable(MinecraftHudKeys.TRIGGER_SELF_DRAW) else null
     val playerName = prompt.triggerPlayerName ?: resolvePlayerName(playerId)
     val relationKey = when (prompt.triggerPlayerRelation) {
         DecisionPlayerRelationDto.LEFT -> MinecraftHudKeys.RELATION_LEFT
@@ -78,7 +78,7 @@ private fun decisionTriggerText(
         null -> return null
     }
     val action = texts.actionLabel(prompt.ruleModuleId, prompt.triggerActionId ?: BuiltInGameActionIds.DISCARD)
-    return Text.translatable(MinecraftHudKeys.TRIGGER, playerName, Text.translatable(relationKey), action)
+    return Component.translatable(MinecraftHudKeys.TRIGGER, playerName, Component.translatable(relationKey), action)
 }
 
 /**
@@ -98,7 +98,7 @@ internal data class MeasuredDecisionPanel(
  * @property body 正文各行。
  * @property hint 補充提示各行。
  */
-internal data class DecisionCardTextLines(val body: List<OrderedText>, val hint: List<OrderedText>)
+internal data class DecisionCardTextLines(val body: List<FormattedCharSequence>, val hint: List<FormattedCharSequence>)
 
 /**
  * [content] 在指定畫面、玩家設定的位置比例與倒數保留寬度下的版面幾何。
@@ -113,7 +113,7 @@ internal data class DecisionCardTextLines(val body: List<OrderedText>, val hint:
  */
 internal fun decisionPanelLayout(
     content: DecisionPanelContent,
-    renderer: TextRenderer,
+    renderer: Font,
     screenWidth: Int,
     screenHeight: Int,
     panelRatioY: Double,
@@ -123,9 +123,9 @@ internal fun decisionPanelLayout(
         screenWidth = screenWidth,
         screenHeight = screenHeight,
         cards = content.entries.map(DecisionEntry::layoutCard),
-        headerTextWidth = renderer.getWidth(content.title),
+        headerTextWidth = renderer.width(content.title),
         triggerLineCount = content.triggerLines.size,
-        triggerTextWidth = content.triggerLines.maxOfOrNull(renderer::getWidth) ?: 0,
+        triggerTextWidth = content.triggerLines.maxOfOrNull(renderer::width) ?: 0,
         hasTriggerTile = content.triggerTileAssetKey != null,
         panelRatioY = panelRatioY,
         timerWidth = timerWidth,
@@ -168,8 +168,8 @@ internal fun decisionPanelLayout(
  * @param drawTile 在指定左上角畫出一張預覽尺寸的牌面。
  * @param renderCardButtons 在裁切區內繪製卡片按鈕的回呼。
  */
-internal fun DrawContext.drawDecisionPanel(
-    renderer: TextRenderer,
+internal fun GuiGraphics.drawDecisionPanel(
+    renderer: Font,
     measured: MeasuredDecisionPanel,
     content: DecisionPanelContent,
     placements: List<DecisionBounds>,
@@ -181,18 +181,18 @@ internal fun DrawContext.drawDecisionPanel(
 ) {
     val layout = measured.geometry
     fill(layout.panelLeft, layout.panelTop, layout.panelRight, layout.panelBottom, DECISION_PANEL_BACKGROUND)
-    drawCenteredTextWithShadow(renderer, content.title, layout.screenWidth / 2, layout.headerTextTop(renderer.fontHeight), HEADER_TEXT_COLOR)
+    drawCenteredString(renderer, content.title, layout.screenWidth / 2, layout.headerTextTop(renderer.lineHeight), HEADER_TEXT_COLOR)
     content.triggerTileAssetKey?.let { assetKey ->
         val panel = layout.triggerPanelBounds
         fill(panel.x, panel.y, panel.x + panel.width, panel.y + panel.height, DECISION_PANEL_BACKGROUND)
         content.triggerLines.forEachIndexed { index, line ->
-            drawCenteredTextWithShadow(renderer, line, layout.screenWidth / 2, layout.triggerTextLineTop(index), TRIGGER_TEXT_COLOR)
+            drawCenteredString(renderer, line, layout.screenWidth / 2, layout.triggerTextLineTop(index), TRIGGER_TEXT_COLOR)
         }
         val tile = layout.triggerTileBounds
         drawTile(assetKey, tile.x, tile.y)
     }
     // 裁切範圍以畫面座標指定，不受矩陣影響；面板平移到其他位置繪製時，裁切範圍跟著平移。
-    val offset = matrices.peek().positionMatrix.getTranslation(Vector3f())
+    val offset = pose().last().pose().getTranslation(Vector3f())
     val offsetX = offset.x.roundToInt()
     val offsetY = offset.y.roundToInt()
     enableScissor(layout.viewportLeft + offsetX, layout.cardTop + offsetY, layout.viewportRight + offsetX, layout.cardBottom + offsetY)
@@ -236,8 +236,8 @@ internal fun DrawContext.drawDecisionPanel(
  * @param mouseY 游標垂直座標。
  * @param drawTile 在指定左上角繪製預覽牌面的回呼。
  */
-private fun DrawContext.drawDecisionCard(
-    renderer: TextRenderer,
+private fun GuiGraphics.drawDecisionCard(
+    renderer: Font,
     layout: DecisionCardLayout,
     card: DecisionCard,
     entry: DecisionEntry,
@@ -264,7 +264,7 @@ private fun DrawContext.drawDecisionCard(
         }
     }
     lines.body.forEachIndexed { index, line ->
-        drawCenteredTextWithShadow(
+        drawCenteredString(
             renderer,
             line,
             placement.x + placement.width / 2,
@@ -273,7 +273,7 @@ private fun DrawContext.drawDecisionCard(
         )
     }
     lines.hint.forEachIndexed { index, line ->
-        drawCenteredTextWithShadow(
+        drawCenteredString(
             renderer,
             line,
             placement.x + placement.width / 2,
@@ -290,7 +290,7 @@ private fun DrawContext.drawDecisionCard(
  * @param centerX 指標中心的水平座標。
  * @param top 指標最上方的垂直座標。
  */
-private fun DrawContext.drawClaimedTileMarker(centerX: Int, top: Int) {
+private fun GuiGraphics.drawClaimedTileMarker(centerX: Int, top: Int) {
     ClaimedTileMarker.ROW_WIDTHS.forEachIndexed { row, width ->
         val left = centerX - width / 2
         fill(left, top + row, left + width, top + row + 1, ClaimedTileMarker.COLOR)

@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.text.OrderedText
-import net.minecraft.text.StringVisitable
+import net.minecraft.client.gui.Font
+import net.minecraft.network.chat.FormattedText
+import net.minecraft.util.FormattedCharSequence
 
 /**
  * 在不增加行數的前提下，找出能讓各行長度最接近的最小換行寬度，避免最後一行只剩一兩個字。
@@ -31,4 +31,4 @@ internal fun balancedWrapWidth(maximumWidth: Int, lineCount: (Int) -> Int): Int 
  * @param maximumWidth 允許的最大換行寬度。
  * @return 換行後的每一行。
  */
-internal fun TextRenderer.wrapLinesBalanced(text: StringVisitable, maximumWidth: Int): List<OrderedText> = wrapLines(text, balancedWrapWidth(maximumWidth) { width -> wrapLines(text, width).size })
+internal fun Font.wrapLinesBalanced(text: FormattedText, maximumWidth: Int): List<FormattedCharSequence> = split(text, balancedWrapWidth(maximumWidth) { width -> split(text, width).size })

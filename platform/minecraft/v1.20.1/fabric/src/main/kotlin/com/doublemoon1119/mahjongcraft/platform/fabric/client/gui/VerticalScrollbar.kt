@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
-import net.minecraft.client.gui.DrawContext
+import net.minecraft.client.gui.GuiGraphics
 
 /** 各畫面共用的垂直捲軸外觀；水平捲軸 [HorizontalScrollbar] 使用同樣的顏色。 */
 internal object VerticalScrollbar {
@@ -26,7 +26,7 @@ internal object VerticalScrollbar {
      * @param right 保留範圍的右界。
      * @param layout 捲軸的軌道與滑塊位置。
      */
-    fun renderWithin(context: DrawContext, left: Int, right: Int, layout: ScrollbarLayout) {
+    fun renderWithin(context: GuiGraphics, left: Int, right: Int, layout: ScrollbarLayout) {
         render(context, left + (right - left - WIDTH).coerceAtLeast(0) / 2, layout)
     }
 
@@ -37,7 +37,7 @@ internal object VerticalScrollbar {
      * @param left 軌道左界。
      * @param layout 捲軸的軌道與滑塊位置。
      */
-    fun render(context: DrawContext, left: Int, layout: ScrollbarLayout) {
+    fun render(context: GuiGraphics, left: Int, layout: ScrollbarLayout) {
         if (layout.maximumScroll <= 0) return
         context.fill(left, layout.trackTop, left + WIDTH, layout.trackBottom, TRACK_COLOR)
         context.fill(left, layout.thumbTop, left + WIDTH, layout.thumbTop + layout.thumbHeight, THUMB_COLOR)

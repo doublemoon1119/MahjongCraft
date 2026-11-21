@@ -5,11 +5,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationSte
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementRevealTimeline
-import net.minecraft.entity.EntityType
-import net.minecraft.entity.data.DataTracker
-import net.minecraft.entity.data.TrackedDataHandlerRegistry
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.world.World
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.network.syncher.EntityDataSerializers
+import net.minecraft.network.syncher.SynchedEntityData
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.level.Level
 import org.koin.core.context.GlobalContext
 import kotlin.uuid.Uuid
 
@@ -21,41 +21,42 @@ import kotlin.uuid.Uuid
  */
 class WinSettlementPresentationEntity(
     type: EntityType<out WinSettlementPresentationEntity> = ModEntities.winSettlementPresentation,
-    world: World,
+    world: Level,
 ) : SimpleAnimatedMahjongEntity(type, world),
-    TableOwnedPresentationEntity {
+    TableOwnedPresentationEntity,
+    HiddenDebugHitboxEntity {
     /** 所屬麻將桌；資料未設定或損壞時為 `null`。 */
-    override val managedTableId: Uuid? get() = dataTracker[TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
+    override val managedTableId: Uuid? get() = entityData[TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
 
     /** 舞台開始的絕對遊戲時間。 */
-    val startGameTime: Long get() = dataTracker[START_GAME_TIME]
+    val startGameTime: Long get() = entityData[START_GAME_TIME]
 
     /** 舞台結束的絕對遊戲時間。 */
-    val endGameTime: Long get() = dataTracker[END_GAME_TIME]
+    val endGameTime: Long get() = entityData[END_GAME_TIME]
 
     /** 本次結算的結果識別碼。 */
-    val outcomeId: String get() = dataTracker[OUTCOME_ID]
+    val outcomeId: String get() = entityData[OUTCOME_ID]
 
     /** 決定結算版面的模板 key。 */
-    val templateKey: String get() = dataTracker[TEMPLATE_KEY]
+    val templateKey: String get() = entityData[TEMPLATE_KEY]
 
     /** 本次和牌是否為自摸。 */
-    val isTsumo: Boolean get() = dataTracker[IS_TSUMO]
+    val isTsumo: Boolean get() = entityData[IS_TSUMO]
 
     /** 這次和牌動作在本規則的名稱 translation key。 */
-    val winActionLabelKey: String get() = dataTracker[WIN_ACTION_LABEL_KEY]
+    val winActionLabelKey: String get() = entityData[WIN_ACTION_LABEL_KEY]
 
     /** 贏家詳情快照；精簡中途胡牌演出可為空。 */
-    val winners: List<WinSettlementWinnerSnapshot> get() = decodeWinners(dataTracker[WINNERS])
+    val winners: List<WinSettlementWinnerSnapshot> get() = decodeWinners(entityData[WINNERS])
 
     /** 結算前後的玩家分數與排行快照。 */
-    val rankings: List<WinSettlementRankingSnapshot> get() = WinSettlementRankingCodec.decode(dataTracker[RANKINGS])
+    val rankings: List<WinSettlementRankingSnapshot> get() = WinSettlementRankingCodec.decode(entityData[RANKINGS])
 
     /** 模板指定的贏家詳情揭示節奏。 */
-    val revealTiming: WinSettlementRevealTimingSnapshot get() = decodeRevealTiming(dataTracker[REVEAL_TIMING])
+    val revealTiming: WinSettlementRevealTimingSnapshot get() = decodeRevealTiming(entityData[REVEAL_TIMING])
 
     /** 覆蓋預設贏家詳情音效的自訂 cue；空集合時使用預設 cue。 */
-    val customSoundCues: List<WinSettlementSoundCueSnapshot> get() = decodeSoundCues(dataTracker[CUSTOM_SOUND_CUES])
+    val customSoundCues: List<WinSettlementSoundCueSnapshot> get() = decodeSoundCues(entityData[CUSTOM_SOUND_CUES])
 
     init {
         setNoGravity(true)
@@ -92,19 +93,19 @@ class WinSettlementPresentationEntity(
         revealTiming: WinSettlementRevealTimingSnapshot,
         customSoundCues: List<WinSettlementSoundCueSnapshot>,
     ) {
-        check(!world.isClient)
+        check(!level().isClientSide)
         require(rankings.isNotEmpty()) { "A settlement panel must always show the score changes" }
-        dataTracker.set(TABLE_ID, tableId.toString())
-        dataTracker.set(START_GAME_TIME, startGameTime)
-        dataTracker.set(REVEAL_TIMING, encodeRevealTiming(revealTiming))
-        dataTracker.set(CUSTOM_SOUND_CUES, encodeSoundCues(customSoundCues))
-        dataTracker.set(END_GAME_TIME, startGameTime + durationTicks(winners, revealTiming, scoreRevealDelayTicks(layoutOf(templateKey))))
-        dataTracker.set(OUTCOME_ID, outcomeId)
-        dataTracker.set(TEMPLATE_KEY, templateKey)
-        dataTracker.set(IS_TSUMO, isTsumo)
-        dataTracker.set(WIN_ACTION_LABEL_KEY, winActionLabelKey)
-        dataTracker.set(WINNERS, encodeWinners(winners))
-        dataTracker.set(RANKINGS, WinSettlementRankingCodec.encode(rankings))
+        entityData.set(TABLE_ID, tableId.toString())
+        entityData.set(START_GAME_TIME, startGameTime)
+        entityData.set(REVEAL_TIMING, encodeRevealTiming(revealTiming))
+        entityData.set(CUSTOM_SOUND_CUES, encodeSoundCues(customSoundCues))
+        entityData.set(END_GAME_TIME, startGameTime + durationTicks(winners, revealTiming, scoreRevealDelayTicks(layoutOf(templateKey))))
+        entityData.set(OUTCOME_ID, outcomeId)
+        entityData.set(TEMPLATE_KEY, templateKey)
+        entityData.set(IS_TSUMO, isTsumo)
+        entityData.set(WIN_ACTION_LABEL_KEY, winActionLabelKey)
+        entityData.set(WINNERS, encodeWinners(winners))
+        entityData.set(RANKINGS, WinSettlementRankingCodec.encode(rankings))
         enqueueSettlementSounds(startGameTime)
     }
 
@@ -114,7 +115,7 @@ class WinSettlementPresentationEntity(
      * @param tickDelta 本 tick 的部分經過時間。
      * @return 從舞台開始起算、包含部分 tick 的相對時間。
      */
-    fun elapsedTicks(tickDelta: Float): Double = world.time + tickDelta.toDouble() - startGameTime
+    fun elapsedTicks(tickDelta: Float): Double = level().gameTime + tickDelta.toDouble() - startGameTime
 
     /**
      * 取得指定贏家在目前揭示序列中的開始 tick。
@@ -142,8 +143,8 @@ class WinSettlementPresentationEntity(
     /** 在結算演出到達結束時間後由伺服器移除此實體。 */
     override fun tick() {
         super.tick()
-        if (world.isClient) return
-        if (endGameTime > startGameTime && world.time >= endGameTime) discard()
+        if (level().isClientSide) return
+        if (endGameTime > startGameTime && level().gameTime >= endGameTime) discard()
     }
 
     /**
@@ -250,26 +251,26 @@ class WinSettlementPresentationEntity(
     }
 
     /** 結算舞台不提供碰撞。 */
-    override fun isCollidable() = false
+    override fun canBeCollidedWith() = false
 
     /** 結算舞台不參與推擠。 */
     override fun isPushable() = false
 
     /** 結算舞台不能被選取。 */
-    override fun canHit() = false
+    override fun isPickable() = false
 
-    override fun initDataTracker() {
-        dataTracker.startTracking(TABLE_ID, "")
-        dataTracker.startTracking(START_GAME_TIME, 0L)
-        dataTracker.startTracking(END_GAME_TIME, 0L)
-        dataTracker.startTracking(OUTCOME_ID, "")
-        dataTracker.startTracking(TEMPLATE_KEY, "")
-        dataTracker.startTracking(IS_TSUMO, false)
-        dataTracker.startTracking(WIN_ACTION_LABEL_KEY, "")
-        dataTracker.startTracking(WINNERS, "")
-        dataTracker.startTracking(RANKINGS, "")
-        dataTracker.startTracking(REVEAL_TIMING, "")
-        dataTracker.startTracking(CUSTOM_SOUND_CUES, "")
+    override fun defineSynchedData() {
+        entityData.define(TABLE_ID, "")
+        entityData.define(START_GAME_TIME, 0L)
+        entityData.define(END_GAME_TIME, 0L)
+        entityData.define(OUTCOME_ID, "")
+        entityData.define(TEMPLATE_KEY, "")
+        entityData.define(IS_TSUMO, false)
+        entityData.define(WIN_ACTION_LABEL_KEY, "")
+        entityData.define(WINNERS, "")
+        entityData.define(RANKINGS, "")
+        entityData.define(REVEAL_TIMING, "")
+        entityData.define(CUSTOM_SOUND_CUES, "")
     }
 
     /**
@@ -277,18 +278,18 @@ class WinSettlementPresentationEntity(
      *
      * @param nbt 儲存此實體資料的 NBT 複合標籤。
      */
-    override fun readCustomDataFromNbt(nbt: NbtCompound) {
-        dataTracker.set(TABLE_ID, ManagedTableNbt.read(nbt)?.toString().orEmpty())
-        dataTracker.set(START_GAME_TIME, nbt.getLong(NBT_KEY_START_GAME_TIME))
-        dataTracker.set(END_GAME_TIME, nbt.getLong(NBT_KEY_END_GAME_TIME))
-        dataTracker.set(OUTCOME_ID, nbt.getString(NBT_KEY_OUTCOME_ID))
-        dataTracker.set(TEMPLATE_KEY, nbt.getString(NBT_KEY_TEMPLATE_KEY))
-        dataTracker.set(IS_TSUMO, nbt.getBoolean(NBT_KEY_IS_TSUMO))
-        dataTracker.set(WIN_ACTION_LABEL_KEY, nbt.getString(NBT_KEY_WIN_ACTION_LABEL_KEY))
-        dataTracker.set(WINNERS, nbt.getString(NBT_KEY_WINNERS))
-        dataTracker.set(RANKINGS, nbt.getString(NBT_KEY_RANKINGS))
-        dataTracker.set(REVEAL_TIMING, nbt.getString(NBT_KEY_REVEAL_TIMING))
-        dataTracker.set(CUSTOM_SOUND_CUES, nbt.getString(NBT_KEY_CUSTOM_SOUND_CUES))
+    override fun readAdditionalSaveData(nbt: CompoundTag) {
+        entityData.set(TABLE_ID, ManagedTableNbt.read(nbt)?.toString().orEmpty())
+        entityData.set(START_GAME_TIME, nbt.getLong(NBT_KEY_START_GAME_TIME))
+        entityData.set(END_GAME_TIME, nbt.getLong(NBT_KEY_END_GAME_TIME))
+        entityData.set(OUTCOME_ID, nbt.getString(NBT_KEY_OUTCOME_ID))
+        entityData.set(TEMPLATE_KEY, nbt.getString(NBT_KEY_TEMPLATE_KEY))
+        entityData.set(IS_TSUMO, nbt.getBoolean(NBT_KEY_IS_TSUMO))
+        entityData.set(WIN_ACTION_LABEL_KEY, nbt.getString(NBT_KEY_WIN_ACTION_LABEL_KEY))
+        entityData.set(WINNERS, nbt.getString(NBT_KEY_WINNERS))
+        entityData.set(RANKINGS, nbt.getString(NBT_KEY_RANKINGS))
+        entityData.set(REVEAL_TIMING, nbt.getString(NBT_KEY_REVEAL_TIMING))
+        entityData.set(CUSTOM_SOUND_CUES, nbt.getString(NBT_KEY_CUSTOM_SOUND_CUES))
         readAnimationQueueFromNbt(nbt)
     }
 
@@ -297,7 +298,7 @@ class WinSettlementPresentationEntity(
      *
      * @param nbt 接收此實體資料的 NBT 複合標籤。
      */
-    override fun writeCustomDataToNbt(nbt: NbtCompound) {
+    override fun addAdditionalSaveData(nbt: CompoundTag) {
         ManagedTableNbt.write(nbt, managedTableId)
         nbt.putLong(NBT_KEY_START_GAME_TIME, startGameTime)
         nbt.putLong(NBT_KEY_END_GAME_TIME, endGameTime)
@@ -305,10 +306,10 @@ class WinSettlementPresentationEntity(
         nbt.putString(NBT_KEY_TEMPLATE_KEY, templateKey)
         nbt.putBoolean(NBT_KEY_IS_TSUMO, isTsumo)
         nbt.putString(NBT_KEY_WIN_ACTION_LABEL_KEY, winActionLabelKey)
-        nbt.putString(NBT_KEY_WINNERS, dataTracker[WINNERS])
-        nbt.putString(NBT_KEY_RANKINGS, dataTracker[RANKINGS])
-        nbt.putString(NBT_KEY_REVEAL_TIMING, dataTracker[REVEAL_TIMING])
-        nbt.putString(NBT_KEY_CUSTOM_SOUND_CUES, dataTracker[CUSTOM_SOUND_CUES])
+        nbt.putString(NBT_KEY_WINNERS, entityData[WINNERS])
+        nbt.putString(NBT_KEY_RANKINGS, entityData[RANKINGS])
+        nbt.putString(NBT_KEY_REVEAL_TIMING, entityData[REVEAL_TIMING])
+        nbt.putString(NBT_KEY_CUSTOM_SOUND_CUES, entityData[CUSTOM_SOUND_CUES])
         writeAnimationQueueToNbt(nbt)
     }
 
@@ -458,37 +459,37 @@ class WinSettlementPresentationEntity(
         fun layoutOf(templateKey: String): PresentationLayout? = GlobalContext.get().get<WinSettlementPresentationTemplateRegistry>().findTemplate(templateKey)?.root
 
         /** 追蹤舞台所屬麻將桌 UUID 的資料欄位。 */
-        private val TABLE_ID = DataTracker.registerData(WinSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val TABLE_ID = SynchedEntityData.defineId(WinSettlementPresentationEntity::class.java, EntityDataSerializers.STRING)
 
         /** 追蹤舞台開始絕對遊戲時間的資料欄位。 */
-        private val START_GAME_TIME = DataTracker.registerData(WinSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.LONG)
+        private val START_GAME_TIME = SynchedEntityData.defineId(WinSettlementPresentationEntity::class.java, EntityDataSerializers.LONG)
 
         /** 追蹤舞台結束絕對遊戲時間的資料欄位。 */
-        private val END_GAME_TIME = DataTracker.registerData(WinSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.LONG)
+        private val END_GAME_TIME = SynchedEntityData.defineId(WinSettlementPresentationEntity::class.java, EntityDataSerializers.LONG)
 
         /** 追蹤和牌結果識別碼的資料欄位。 */
-        private val OUTCOME_ID = DataTracker.registerData(WinSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val OUTCOME_ID = SynchedEntityData.defineId(WinSettlementPresentationEntity::class.java, EntityDataSerializers.STRING)
 
         /** 追蹤結算呈現模板 key 的資料欄位。 */
-        private val TEMPLATE_KEY = DataTracker.registerData(WinSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val TEMPLATE_KEY = SynchedEntityData.defineId(WinSettlementPresentationEntity::class.java, EntityDataSerializers.STRING)
 
         /** 追蹤本次和牌是否自摸的資料欄位。 */
-        private val IS_TSUMO = DataTracker.registerData(WinSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.BOOLEAN)
+        private val IS_TSUMO = SynchedEntityData.defineId(WinSettlementPresentationEntity::class.java, EntityDataSerializers.BOOLEAN)
 
         /** 和牌動作名稱同步欄位。 */
-        private val WIN_ACTION_LABEL_KEY = DataTracker.registerData(WinSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val WIN_ACTION_LABEL_KEY = SynchedEntityData.defineId(WinSettlementPresentationEntity::class.java, EntityDataSerializers.STRING)
 
         /** 追蹤贏家詳情快照編碼字串的資料欄位。 */
-        private val WINNERS = DataTracker.registerData(WinSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val WINNERS = SynchedEntityData.defineId(WinSettlementPresentationEntity::class.java, EntityDataSerializers.STRING)
 
         /** 追蹤分數與排行快照編碼字串的資料欄位。 */
-        private val RANKINGS = DataTracker.registerData(WinSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val RANKINGS = SynchedEntityData.defineId(WinSettlementPresentationEntity::class.java, EntityDataSerializers.STRING)
 
         /** 追蹤贏家詳情揭示節奏編碼字串的資料欄位。 */
-        private val REVEAL_TIMING = DataTracker.registerData(WinSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val REVEAL_TIMING = SynchedEntityData.defineId(WinSettlementPresentationEntity::class.java, EntityDataSerializers.STRING)
 
         /** 追蹤覆蓋預設值的自訂音效 cue 編碼字串的資料欄位。 */
-        private val CUSTOM_SOUND_CUES = DataTracker.registerData(WinSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val CUSTOM_SOUND_CUES = SynchedEntityData.defineId(WinSettlementPresentationEntity::class.java, EntityDataSerializers.STRING)
 
         /**
          * 將揭示時間欄位依固定順序編成分隔字串。

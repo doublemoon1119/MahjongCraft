@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.furniture.block
 
-import net.minecraft.util.math.Direction
+import net.minecraft.core.Direction
 
 /** 長凳開口、一般放置視角及指定座位朝向的換算。 */
 internal object ExampleBenchPlacement {

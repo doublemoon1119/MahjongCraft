@@ -5,9 +5,9 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryWriterStage
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.prefixedConfigMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.StressDebugKeys
-import net.minecraft.text.MutableText
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.MutableComponent
 import java.util.Locale
 
 /**
@@ -16,71 +16,71 @@ import java.util.Locale
  * @param report 要呈現的測試快照。
  * @return 帶模組前綴與分行欄位的報告文字。
  */
-internal fun stressTestReportMessage(report: StressTestReport): MutableText = prefixedConfigMessage(
+internal fun stressTestReportMessage(report: StressTestReport): MutableComponent = prefixedConfigMessage(
     message = stressText(if (report.running) StressDebugKeys.TITLE_RUNNING else StressDebugKeys.TITLE_STOPPED),
-    color = if (report.running) Formatting.AQUA else Formatting.YELLOW,
+    color = if (report.running) ChatFormatting.AQUA else ChatFormatting.YELLOW,
 ).also { message ->
-    message.append(entry(StressDebugKeys.SCENARIO, Text.literal(report.scenarioId), Formatting.GRAY))
-        .append(entry(StressDebugKeys.SEED, Text.literal(report.seed.toString()), Formatting.GRAY))
-        .append(entry(StressDebugKeys.MODE, modeText(report.mode), Formatting.GRAY))
-        .append(entry(StressDebugKeys.PACE, stressText(paceKey(report.pace)), Formatting.GRAY))
-        .append(entry(StressDebugKeys.HISTORY_MODE, stressText(report.historyMode.translationKey), Formatting.GRAY))
-        .append(entry(StressDebugKeys.TABLES, Text.literal(report.tables.toString()), Formatting.GREEN))
-        .append(entry(StressDebugKeys.COMPLETED, Text.literal(report.completedMatches.toString()), Formatting.GREEN))
-        .append(entry(StressDebugKeys.FAILED, Text.literal(report.failedMatches.toString()), if (report.failedMatches > 0) Formatting.RED else Formatting.GREEN))
-        .append(entry(StressDebugKeys.ELAPSED, Text.literal(formatSeconds(report.elapsedTicks)), Formatting.GRAY))
-        .append(entry(StressDebugKeys.WARMUP, warmupText(report), Formatting.GRAY))
-        .append(entry(StressDebugKeys.TICK, Text.literal(formatTriple(report.tickAverageMillis, report.tickP95Millis, report.tickMaxMillis)), Formatting.AQUA))
-        .append(entry(StressDebugKeys.TICK_INTERVAL, Text.literal(formatTriple(report.tickIntervalAverageMillis, report.tickIntervalP95Millis, report.tickIntervalMaxMillis)), Formatting.AQUA))
-        .append(entry(StressDebugKeys.LAG, Text.literal("${formatMillis(report.lagMillis)} ms"), Formatting.AQUA))
-        .append(entry(StressDebugKeys.ADVANCE_PER_SECOND, Text.literal("${formatMillis(report.advanceMillisPerSecond)} ms"), Formatting.AQUA))
-        .append(entry(StressDebugKeys.SLOW_TICKS, Text.literal(formatSlowTicks(report)), Formatting.AQUA))
+    message.append(entry(StressDebugKeys.SCENARIO, Component.literal(report.scenarioId), ChatFormatting.GRAY))
+        .append(entry(StressDebugKeys.SEED, Component.literal(report.seed.toString()), ChatFormatting.GRAY))
+        .append(entry(StressDebugKeys.MODE, modeText(report.mode), ChatFormatting.GRAY))
+        .append(entry(StressDebugKeys.PACE, stressText(paceKey(report.pace)), ChatFormatting.GRAY))
+        .append(entry(StressDebugKeys.HISTORY_MODE, stressText(report.historyMode.translationKey), ChatFormatting.GRAY))
+        .append(entry(StressDebugKeys.TABLES, Component.literal(report.tables.toString()), ChatFormatting.GREEN))
+        .append(entry(StressDebugKeys.COMPLETED, Component.literal(report.completedMatches.toString()), ChatFormatting.GREEN))
+        .append(entry(StressDebugKeys.FAILED, Component.literal(report.failedMatches.toString()), if (report.failedMatches > 0) ChatFormatting.RED else ChatFormatting.GREEN))
+        .append(entry(StressDebugKeys.ELAPSED, Component.literal(formatSeconds(report.elapsedTicks)), ChatFormatting.GRAY))
+        .append(entry(StressDebugKeys.WARMUP, warmupText(report), ChatFormatting.GRAY))
+        .append(entry(StressDebugKeys.TICK, Component.literal(formatTriple(report.tickAverageMillis, report.tickP95Millis, report.tickMaxMillis)), ChatFormatting.AQUA))
+        .append(entry(StressDebugKeys.TICK_INTERVAL, Component.literal(formatTriple(report.tickIntervalAverageMillis, report.tickIntervalP95Millis, report.tickIntervalMaxMillis)), ChatFormatting.AQUA))
+        .append(entry(StressDebugKeys.LAG, Component.literal("${formatMillis(report.lagMillis)} ms"), ChatFormatting.AQUA))
+        .append(entry(StressDebugKeys.ADVANCE_PER_SECOND, Component.literal("${formatMillis(report.advanceMillisPerSecond)} ms"), ChatFormatting.AQUA))
+        .append(entry(StressDebugKeys.SLOW_TICKS, Component.literal(formatSlowTicks(report)), ChatFormatting.AQUA))
         .append(stutterEntry(report))
-        .append(entry(StressDebugKeys.STEP, Text.literal(formatTriple(report.stepAverageMillis, report.stepP95Millis, report.stepMaxMillis)), Formatting.AQUA))
-        .append(entry(StressDebugKeys.STEP_BREAKDOWN, Text.empty(), Formatting.AQUA))
+        .append(entry(StressDebugKeys.STEP, Component.literal(formatTriple(report.stepAverageMillis, report.stepP95Millis, report.stepMaxMillis)), ChatFormatting.AQUA))
+        .append(entry(StressDebugKeys.STEP_BREAKDOWN, Component.empty(), ChatFormatting.AQUA))
     report.stepStages.forEach { (stage, summary) ->
         message.append(subEntry(stressText(stage.translationKey), formatAverageMax(summary)))
     }
-    message.append(entry(StressDebugKeys.HISTORY_RECORDING, Text.literal(formatAverageMax(report.historyRecording)), Formatting.AQUA))
-        .append(entry(StressDebugKeys.AI_LATENCY, Text.literal(formatMillisList(report.aiLatencyAverageMillis, report.aiLatencyP95Millis, report.aiLatencyP99Millis, report.aiLatencyMaxMillis)), Formatting.AQUA))
+    message.append(entry(StressDebugKeys.HISTORY_RECORDING, Component.literal(formatAverageMax(report.historyRecording)), ChatFormatting.AQUA))
+        .append(entry(StressDebugKeys.AI_LATENCY, Component.literal(formatMillisList(report.aiLatencyAverageMillis, report.aiLatencyP95Millis, report.aiLatencyP99Millis, report.aiLatencyMaxMillis)), ChatFormatting.AQUA))
         .append(
             entry(
                 key = StressDebugKeys.AI_DECISIONS,
-                value = Text.literal("${report.aiDecisions} / ${report.aiTimeouts} / ${report.aiPreviousStillRunning}"),
-                valueColor = if (report.aiTimeouts + report.aiPreviousStillRunning > 0) Formatting.RED else Formatting.AQUA,
+                value = Component.literal("${report.aiDecisions} / ${report.aiTimeouts} / ${report.aiPreviousStillRunning}"),
+                valueColor = if (report.aiTimeouts + report.aiPreviousStillRunning > 0) ChatFormatting.RED else ChatFormatting.AQUA,
             ),
         )
-        .append(entry(StressDebugKeys.STALE_DECISIONS, Text.literal(report.staleDecisions.toString()), Formatting.AQUA))
+        .append(entry(StressDebugKeys.STALE_DECISIONS, Component.literal(report.staleDecisions.toString()), ChatFormatting.AQUA))
         .append(
             entry(
                 key = StressDebugKeys.STRATEGY_CALLS,
-                value = Text.literal("${report.unfinishedStrategyCalls} / ${report.unfinishedStrategyPeak} / ${report.strategyCapacity}"),
-                valueColor = Formatting.AQUA,
+                value = Component.literal("${report.unfinishedStrategyCalls} / ${report.unfinishedStrategyPeak} / ${report.strategyCapacity}"),
+                valueColor = ChatFormatting.AQUA,
             ),
         )
-    message.append(entry(StressDebugKeys.PEAK_PER_TICK, Text.literal("${report.maxStepsInTick} / ${report.maxEventsInTick}"), Formatting.AQUA))
-        .append(entry(StressDebugKeys.EVENTS, Text.literal(formatEvents(report)), Formatting.AQUA))
-        .append(entry(StressDebugKeys.WRITER_BREAKDOWN, Text.empty(), Formatting.AQUA))
+    message.append(entry(StressDebugKeys.PEAK_PER_TICK, Component.literal("${report.maxStepsInTick} / ${report.maxEventsInTick}"), ChatFormatting.AQUA))
+        .append(entry(StressDebugKeys.EVENTS, Component.literal(formatEvents(report)), ChatFormatting.AQUA))
+        .append(entry(StressDebugKeys.WRITER_BREAKDOWN, Component.empty(), ChatFormatting.AQUA))
     report.writerStages.forEach { (stage, summary) ->
         message.append(subEntry(stressText(stage.translationKey), "${formatAverageMax(summary)} ×${summary.count}"))
     }
-    message.append(entry(StressDebugKeys.PENDING, Text.literal("${report.pendingEvents} / ${report.pendingPeak} / ${report.pendingCapacity}"), Formatting.AQUA))
-        .append(entry(StressDebugKeys.LOST, Text.literal(report.lostSegments.toString()), if (report.lostSegments > 0) Formatting.RED else Formatting.GREEN))
+    message.append(entry(StressDebugKeys.PENDING, Component.literal("${report.pendingEvents} / ${report.pendingPeak} / ${report.pendingCapacity}"), ChatFormatting.AQUA))
+        .append(entry(StressDebugKeys.LOST, Component.literal(report.lostSegments.toString()), if (report.lostSegments > 0) ChatFormatting.RED else ChatFormatting.GREEN))
         .append(
             entry(
                 key = StressDebugKeys.WRITER,
                 value = stressText(if (report.writerFailed) StressDebugKeys.WRITER_FAILED else StressDebugKeys.WRITER_OK),
-                valueColor = if (report.writerFailed) Formatting.RED else Formatting.GREEN,
+                valueColor = if (report.writerFailed) ChatFormatting.RED else ChatFormatting.GREEN,
             ),
         )
-        .append(entry(StressDebugKeys.MEMORY, Text.literal("${report.usedMemoryMiB} MiB"), Formatting.GRAY))
-        .append(entry(StressDebugKeys.GC, Text.literal("${report.gc.count} / ${report.gc.millis} ms"), Formatting.GRAY))
-    report.timeSeriesFile?.let { file -> message.append(entry(StressDebugKeys.TIME_SERIES, Text.literal(file), Formatting.GRAY)) }
+        .append(entry(StressDebugKeys.MEMORY, Component.literal("${report.usedMemoryMiB} MiB"), ChatFormatting.GRAY))
+        .append(entry(StressDebugKeys.GC, Component.literal("${report.gc.count} / ${report.gc.millis} ms"), ChatFormatting.GRAY))
+    report.timeSeriesFile?.let { file -> message.append(entry(StressDebugKeys.TIME_SERIES, Component.literal(file), ChatFormatting.GRAY)) }
     report.stopReason?.let { reason ->
-        message.append(entry(StressDebugKeys.STOP_REASON, stressText(reason.translationKey), Formatting.YELLOW))
+        message.append(entry(StressDebugKeys.STOP_REASON, stressText(reason.translationKey), ChatFormatting.YELLOW))
     }
     report.sustainedTables?.let { tables ->
-        message.append(entry(StressDebugKeys.SUSTAINED, Text.literal(tables.toString()), Formatting.GOLD))
+        message.append(entry(StressDebugKeys.SUSTAINED, Component.literal(tables.toString()), ChatFormatting.GOLD))
     }
 }
 
@@ -195,7 +195,7 @@ private fun tileNotation(tile: Tile?): String = when (tile) {
  * @param color 內容的文字顏色。
  * @return 帶模組前綴的回覆文字。
  */
-internal fun stressTestMessage(key: String, color: Formatting): MutableText = prefixedConfigMessage(stressText(key), color)
+internal fun stressTestMessage(key: String, color: ChatFormatting): MutableComponent = prefixedConfigMessage(stressText(key), color)
 
 /**
  * 開始測試的回覆，附上這次使用的基準種子，之後可以用 `seed` 選項重跑同樣的對局。
@@ -203,8 +203,8 @@ internal fun stressTestMessage(key: String, color: Formatting): MutableText = pr
  * @param seed 這次測試的基準種子。
  * @return 帶模組前綴的綠色回覆。
  */
-internal fun stressTestStartedMessage(seed: Long): MutableText = stressTestMessage(StressDebugKeys.STARTED, Formatting.GREEN)
-    .append(entry(StressDebugKeys.SEED, Text.literal(seed.toString()), Formatting.GRAY))
+internal fun stressTestStartedMessage(seed: Long): MutableComponent = stressTestMessage(StressDebugKeys.STARTED, ChatFormatting.GREEN)
+    .append(entry(StressDebugKeys.SEED, Component.literal(seed.toString()), ChatFormatting.GRAY))
 
 /**
  * 桌數安排的顯示文字。
@@ -212,8 +212,8 @@ internal fun stressTestStartedMessage(seed: Long): MutableText = stressTestMessa
  * @param mode 固定桌數或爬坡安排。
  * @return 對應安排的本地化文字。
  */
-private fun modeText(mode: StressTestMode): Text = when (mode) {
-    is StressTestMode.Fixed -> Text.translatableWithFallback(StressDebugKeys.MODE_FIXED, "Fixed %s tables", mode.tables)
+private fun modeText(mode: StressTestMode): Component = when (mode) {
+    is StressTestMode.Fixed -> Component.translatableWithFallback(StressDebugKeys.MODE_FIXED, "Fixed %s tables", mode.tables)
     is StressTestMode.Ramp -> stressText(StressDebugKeys.MODE_RAMP)
 }
 
@@ -223,13 +223,13 @@ private fun modeText(mode: StressTestMode): Text = when (mode) {
  * @param report 包含卡頓門檻與首次持續卡頓桌數的報告。
  * @return 包含門檻、桌數或尚未發生提示的欄位。
  */
-private fun stutterEntry(report: StressTestReport): MutableText = Text.literal("\n  • ")
-    .formatted(Formatting.GRAY)
-    .append(Text.translatableWithFallback(StressDebugKeys.STUTTER, STRESS_FALLBACKS.getValue(StressDebugKeys.STUTTER), formatMillis(report.stutterLimitMillis)).formatted(Formatting.GRAY))
-    .append(Text.literal(": ").formatted(Formatting.DARK_GRAY))
+private fun stutterEntry(report: StressTestReport): MutableComponent = Component.literal("\n  • ")
+    .withStyle(ChatFormatting.GRAY)
+    .append(Component.translatableWithFallback(StressDebugKeys.STUTTER, STRESS_FALLBACKS.getValue(StressDebugKeys.STUTTER), formatMillis(report.stutterLimitMillis)).withStyle(ChatFormatting.GRAY))
+    .append(Component.literal(": ").withStyle(ChatFormatting.DARK_GRAY))
     .append(
-        report.stutterTables?.let { Text.literal(it.toString()).formatted(Formatting.GOLD) }
-            ?: stressText(StressDebugKeys.STUTTER_NONE).formatted(Formatting.GREEN),
+        report.stutterTables?.let { Component.literal(it.toString()).withStyle(ChatFormatting.GOLD) }
+            ?: stressText(StressDebugKeys.STUTTER_NONE).withStyle(ChatFormatting.GREEN),
     )
 
 /**
@@ -238,14 +238,14 @@ private fun stutterEntry(report: StressTestReport): MutableText = Text.literal("
  * @param report 包含暖機設定與剩餘 tick 數的報告。
  * @return 未設定、進行中或完成暖機的提示。
  */
-private fun warmupText(report: StressTestReport): Text = when {
+private fun warmupText(report: StressTestReport): Component = when {
     report.warmupTicks == 0L -> stressText(StressDebugKeys.WARMUP_NONE)
-    report.warmupRemainingTicks > 0 -> Text.translatableWithFallback(
+    report.warmupRemainingTicks > 0 -> Component.translatableWithFallback(
         StressDebugKeys.WARMUP_RUNNING,
         "In progress, %s s left",
         (report.warmupRemainingTicks + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND,
     )
-    else -> Text.translatableWithFallback(StressDebugKeys.WARMUP_DONE, "Done, the first %s s are excluded", report.warmupTicks / TICKS_PER_SECOND)
+    else -> Component.translatableWithFallback(StressDebugKeys.WARMUP_DONE, "Done, the first %s s are excluded", report.warmupTicks / TICKS_PER_SECOND)
 }
 
 /**
@@ -254,34 +254,34 @@ private fun warmupText(report: StressTestReport): Text = when {
  * @param error 選項解析錯誤。
  * @return 帶模組前綴的紅色錯誤回覆。
  */
-internal fun stressOptionErrorMessage(error: StressOptionError): MutableText = prefixedConfigMessage(
+internal fun stressOptionErrorMessage(error: StressOptionError): MutableComponent = prefixedConfigMessage(
     message = when (error) {
-        is StressOptionError.UnknownOption -> Text.translatableWithFallback(
+        is StressOptionError.UnknownOption -> Component.translatableWithFallback(
             StressDebugKeys.UNKNOWN_OPTION,
             "Unknown stress test option: %s; use %s",
             error.token,
             StressOption.entries.joinToString(", ") { it.commandName },
         )
-        is StressOptionError.MissingValue -> Text.translatableWithFallback(StressDebugKeys.MISSING_OPTION_VALUE, "Stress test option %s needs a value", error.option.commandName)
-        is StressOptionError.DuplicateOption -> Text.translatableWithFallback(StressDebugKeys.DUPLICATE_OPTION, "Stress test option %s is given more than once", error.option.commandName)
+        is StressOptionError.MissingValue -> Component.translatableWithFallback(StressDebugKeys.MISSING_OPTION_VALUE, "Stress test option %s needs a value", error.option.commandName)
+        is StressOptionError.DuplicateOption -> Component.translatableWithFallback(StressDebugKeys.DUPLICATE_OPTION, "Stress test option %s is given more than once", error.option.commandName)
         is StressOptionError.InvalidValue -> when (error.option) {
             StressOption.PACE -> stressText(StressDebugKeys.INVALID_PACE)
             StressOption.HISTORY -> stressText(StressDebugKeys.INVALID_HISTORY_MODE)
-            StressOption.MAX_MSPT, StressOption.WARMUP -> Text.translatableWithFallback(
+            StressOption.MAX_MSPT, StressOption.WARMUP -> Component.translatableWithFallback(
                 StressDebugKeys.INVALID_OPTION_NUMBER,
                 "Stress test option %s must be a whole number from %s to %s",
                 error.option.commandName,
                 requireNotNull(error.option.range).first,
                 requireNotNull(error.option.range).last,
             )
-            StressOption.SEED -> Text.translatableWithFallback(
+            StressOption.SEED -> Component.translatableWithFallback(
                 StressDebugKeys.INVALID_SEED,
                 "Stress test option %s must be a whole number",
                 error.option.commandName,
             )
         }
     },
-    color = Formatting.RED,
+    color = ChatFormatting.RED,
 )
 
 /**
@@ -303,11 +303,11 @@ private fun paceKey(pace: StressTestPace): String = when (pace) {
  * @param valueColor 值的文字顏色。
  * @return 以換行與項目符號開頭的欄位。
  */
-private fun entry(key: String, value: Text, valueColor: Formatting): MutableText = Text.literal("\n  • ")
-    .formatted(Formatting.GRAY)
-    .append(stressText(key).formatted(Formatting.GRAY))
-    .append(Text.literal(": ").formatted(Formatting.DARK_GRAY))
-    .append(value.copy().formatted(valueColor))
+private fun entry(key: String, value: Component, valueColor: ChatFormatting): MutableComponent = Component.literal("\n  • ")
+    .withStyle(ChatFormatting.GRAY)
+    .append(stressText(key).withStyle(ChatFormatting.GRAY))
+    .append(Component.literal(": ").withStyle(ChatFormatting.DARK_GRAY))
+    .append(value.copy().withStyle(valueColor))
 
 /**
  * 縮排在上一個欄位下的子欄位。
@@ -316,11 +316,11 @@ private fun entry(key: String, value: Text, valueColor: Formatting): MutableText
  * @param value 子欄位值。
  * @return 以換行與縮排項目符號開頭的子欄位。
  */
-private fun subEntry(name: MutableText, value: String): MutableText = Text.literal("\n      ◦ ")
-    .formatted(Formatting.DARK_GRAY)
-    .append(name.formatted(Formatting.GRAY))
-    .append(Text.literal(": ").formatted(Formatting.DARK_GRAY))
-    .append(Text.literal(value).formatted(Formatting.AQUA))
+private fun subEntry(name: MutableComponent, value: String): MutableComponent = Component.literal("\n      ◦ ")
+    .withStyle(ChatFormatting.DARK_GRAY)
+    .append(name.withStyle(ChatFormatting.GRAY))
+    .append(Component.literal(": ").withStyle(ChatFormatting.DARK_GRAY))
+    .append(Component.literal(value).withStyle(ChatFormatting.AQUA))
 
 /**
  * 以 [key] 建立帶英文備援的本地化文字。
@@ -328,7 +328,7 @@ private fun subEntry(name: MutableText, value: String): MutableText = Text.liter
  * @param key 翻譯鍵；沒有英文備援時也作為備援內容。
  * @return 帶英文或鍵名備援的本地化文字。
  */
-private fun stressText(key: String): MutableText = Text.translatableWithFallback(key, STRESS_FALLBACKS[key] ?: key)
+private fun stressText(key: String): MutableComponent = Component.translatableWithFallback(key, STRESS_FALLBACKS[key] ?: key)
 
 /**
  * 以平均／第 95 百分位／最大值格式化毫秒數。

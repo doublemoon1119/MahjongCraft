@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNa
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistryImpl
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -20,8 +20,8 @@ class DisplayNameResolverFacadeTest {
         val method = Class.forName("com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricAiStrategyDisplayNameRegistryKt")
             .getMethod("resolveDisplayText", AiStrategyDisplayNameRegistry::class.java, String::class.java)
 
-        assertEquals("example.strategy.name", (method.invoke(null, registry, "example:strategy") as Text).string)
-        assertEquals("example:unknown", (method.invoke(null, registry, "example:unknown") as Text).string)
+        assertEquals("example.strategy.name", (method.invoke(null, registry, "example:strategy") as Component).string)
+        assertEquals("example:unknown", (method.invoke(null, registry, "example:unknown") as Component).string)
     }
 
     /** 規則名稱的既有靜態入口仍解析已登記名稱，未登記時回傳原 ID。 */
@@ -32,7 +32,7 @@ class DisplayNameResolverFacadeTest {
         val method = Class.forName("com.doublemoon1119.mahjongcraft.platform.fabric.server.rule.FabricRuleModuleDisplayNameRegistryKt")
             .getMethod("resolveDisplayText", RuleModuleDisplayNameRegistry::class.java, String::class.java)
 
-        assertEquals("example.rule.name", (method.invoke(null, registry, "example:rule") as Text).string)
-        assertEquals("example:unknown", (method.invoke(null, registry, "example:unknown") as Text).string)
+        assertEquals("example.rule.name", (method.invoke(null, registry, "example:rule") as Component).string)
+        assertEquals("example:unknown", (method.invoke(null, registry, "example:unknown") as Component).string)
     }
 }

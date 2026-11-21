@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.text.StringVisitable
-import net.minecraft.text.Style
-import net.minecraft.text.Text
-import net.minecraft.util.Language
+import net.minecraft.client.gui.Font
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.locale.Language
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.FormattedText
+import net.minecraft.network.chat.Style
 import java.util.Optional
 
 /**
@@ -15,7 +15,7 @@ import java.util.Optional
  * @param width 可用寬度。
  * @return 各行的文字。
  */
-internal fun TextRenderer.wrapDescription(text: Text, width: Int): List<StringVisitable> = textHandler.wrapLines(text, width, Style.EMPTY)
+internal fun Font.wrapDescription(text: Component, width: Int): List<FormattedText> = splitter.splitLines(text, width, Style.EMPTY)
 
 /**
  * 繪製可容納的說明行。內容超出高度時，末行使用同一個跑馬燈顯示其餘文字。
@@ -32,9 +32,9 @@ internal fun TextRenderer.wrapDescription(text: Text, width: Int): List<StringVi
  * @param subject 目前要捲動顯示的項目；沒有時為 null。
  */
 internal fun drawWrappedDescription(
-    context: DrawContext,
-    renderer: TextRenderer,
-    lines: List<StringVisitable>,
+    context: GuiGraphics,
+    renderer: Font,
+    lines: List<FormattedText>,
     visibleLines: Int,
     left: Int,
     top: Int,
@@ -47,10 +47,10 @@ internal fun drawWrappedDescription(
     if (!truncated) marquee.offset(subject = null, overflow = 0)
     if (visibleLines == 0 || lines.isEmpty()) return
 
-    context.enableScissor(left, top, left + width, top + minOf(visibleLines, lines.size) * renderer.fontHeight)
+    context.enableScissor(left, top, left + width, top + minOf(visibleLines, lines.size) * renderer.lineHeight)
     try {
         lines.take(visibleLines).forEachIndexed { index, line ->
-            val y = top + index * renderer.fontHeight
+            val y = top + index * renderer.lineHeight
             if (truncated && index == visibleLines - 1) {
                 MarqueeText.draw(
                     context = context,
@@ -64,7 +64,7 @@ internal fun drawWrappedDescription(
                     subject = subject,
                 )
             } else {
-                context.drawText(renderer, Language.getInstance().reorder(line), left, y, color, false)
+                context.drawString(renderer, Language.getInstance().getVisualOrder(line), left, y, color, false)
             }
         }
     } finally {
@@ -73,13 +73,13 @@ internal fun drawWrappedDescription(
 }
 
 /** 把最後可見行與後續文字接成單行，保留原本的文字樣式。 */
-private fun joinDescriptionTail(lines: List<StringVisitable>): Text {
-    val tail = Text.empty()
+private fun joinDescriptionTail(lines: List<FormattedText>): Component {
+    val tail = Component.empty()
     lines.forEachIndexed { index, line ->
         if (index > 0) tail.append(" ")
         line.visit(
             { style, part ->
-                tail.append(Text.literal(part).setStyle(style))
+                tail.append(Component.literal(part).setStyle(style))
                 Optional.empty<Unit>()
             },
             Style.EMPTY,

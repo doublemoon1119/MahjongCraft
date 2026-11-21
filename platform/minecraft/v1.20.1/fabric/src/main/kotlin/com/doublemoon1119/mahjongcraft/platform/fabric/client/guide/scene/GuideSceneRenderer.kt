@@ -15,29 +15,29 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatEn
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
+import com.mojang.blaze3d.platform.Lighting
 import com.mojang.blaze3d.systems.RenderSystem
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.render.BufferBuilder
-import net.minecraft.client.render.BufferRenderer
-import net.minecraft.client.render.DiffuseLighting
-import net.minecraft.client.render.GameRenderer
-import net.minecraft.client.render.LightmapTextureManager
-import net.minecraft.client.render.OverlayTexture
-import net.minecraft.client.render.Tessellator
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.render.VertexFormat
-import net.minecraft.client.render.VertexFormats
-import net.minecraft.client.render.entity.EntityRenderDispatcher
-import net.minecraft.client.render.entity.LivingEntityRenderer
-import net.minecraft.client.render.entity.model.EntityModelLayers
-import net.minecraft.client.render.entity.model.TridentEntityModel
-import net.minecraft.client.render.model.json.ModelTransformationMode
-import net.minecraft.client.world.ClientWorld
-import net.minecraft.entity.Entity
-import net.minecraft.entity.LivingEntity
-import net.minecraft.util.Hand
-import net.minecraft.util.math.RotationAxis
+import com.mojang.blaze3d.vertex.BufferBuilder
+import com.mojang.blaze3d.vertex.BufferUploader
+import com.mojang.blaze3d.vertex.DefaultVertexFormat
+import com.mojang.blaze3d.vertex.Tesselator
+import com.mojang.blaze3d.vertex.VertexFormat
+import com.mojang.math.Axis
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.model.TridentModel
+import net.minecraft.client.model.geom.ModelLayers
+import net.minecraft.client.multiplayer.ClientLevel
+import net.minecraft.client.renderer.GameRenderer
+import net.minecraft.client.renderer.LightTexture
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.entity.EntityRenderDispatcher
+import net.minecraft.client.renderer.entity.LivingEntityRenderer
+import net.minecraft.client.renderer.texture.OverlayTexture
+import net.minecraft.world.InteractionHand
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.item.ItemDisplayContext
 import org.joml.Matrix4f
 import org.joml.Quaternionf
 import org.joml.Vector3f
@@ -94,7 +94,7 @@ internal class GuideSceneRenderer : AutoCloseable {
      * @return 滑鼠指著、離鏡頭最近的東西所屬的區塊與它在畫面上的範圍；沒有指著任何區塊時為 null。
      */
     fun render(
-        context: DrawContext,
+        context: GuiGraphics,
         scene: GuideScene,
         left: Int,
         top: Int,
@@ -108,7 +108,7 @@ internal class GuideSceneRenderer : AutoCloseable {
         panY: Float = 0f,
     ): GuideSceneHover? {
         if (width <= 0 || height <= 0 || scene.blocks.isEmpty() && scene.figures.isEmpty() && scene.tiles.isEmpty()) return null
-        val client = MinecraftClient.getInstance()
+        val client = Minecraft.getInstance()
         val yaw = scene.view.yawDegrees + if (scene.rotatable) yawOffset else 0f
         val rotation = rotation(scene.view.pitchDegrees, yaw)
         val bounds = if (scene.rotatable) rotatableBounds(scene, rotation) else projectedBounds(scene, rotation)
@@ -128,18 +128,18 @@ internal class GuideSceneRenderer : AutoCloseable {
                 bottom = minOf(top + height, ceil(centerY + halfHeight).toInt()),
             )
         }
-        context.draw()
-        RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, MinecraftClient.IS_SYSTEM_MAC)
+        context.flush()
+        RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, Minecraft.ON_OSX)
         context.enableScissor(clip.left, clip.top, clip.right, clip.bottom)
-        val matrices = context.matrices
-        matrices.push()
+        val matrices = context.pose()
+        matrices.pushPose()
         try {
             matrices.translate(centerX, centerY, SCENE_Z)
             // 上下翻轉只套用在位置；法線只受視角旋轉影響，光線因此可以直接以鏡頭的方向指定。
-            matrices.multiplyPositionMatrix(Matrix4f().scaling(scale, -scale, scale))
+            matrices.mulPoseMatrix(Matrix4f().scaling(scale, -scale, scale))
             matrices.translate(-bounds.centerX.toDouble(), -bounds.centerY.toDouble(), 0.0)
-            matrices.multiply(Quaternionf().setFromNormalized(rotation))
-            val sceneToScreen = Matrix4f(matrices.peek().positionMatrix)
+            matrices.mulPose(Quaternionf().setFromNormalized(rotation))
+            val sceneToScreen = Matrix4f(matrices.last().pose())
             val hovered = if (clip.contains(mouseX, mouseY)) hoveredRegion(scene, sceneToScreen, scale, mouseX, mouseY) else null
             hoveredTileKey = if (clip.contains(mouseX, mouseY)) hoveredTile(scene, sceneToScreen, mouseX, mouseY) else null
             RenderSystem.setShaderLights(
@@ -147,13 +147,13 @@ internal class GuideSceneRenderer : AutoCloseable {
                 Vector3f(SIDE_LIGHT, UP_LIGHT, FRONT_LIGHT).normalize(),
             )
             RenderSystem.enableDepthTest()
-            val consumers = client.bufferBuilders.entityVertexConsumers
+            val consumers = client.renderBuffers().bufferSource()
             try {
                 scene.blocks.forEach { block ->
-                    matrices.push()
+                    matrices.pushPose()
                     matrices.translate(block.position.x.toDouble(), block.position.y.toDouble(), block.position.z.toDouble())
-                    client.blockRenderManager.renderBlockAsEntity(block.state, matrices, consumers, FULL_LIGHT, OverlayTexture.DEFAULT_UV)
-                    matrices.pop()
+                    client.blockRenderer.renderSingleBlock(block.state, matrices, consumers, FULL_LIGHT, OverlayTexture.NO_OVERLAY)
+                    matrices.popPose()
                 }
                 renderFigures(client, scene.figures.filter { it.alpha >= 1f }, context, consumers)
                 renderEntities(client, scene.entities.filter { it.alpha >= 1f }, context, consumers)
@@ -161,16 +161,16 @@ internal class GuideSceneRenderer : AutoCloseable {
                 tiles.opaque.forEach { tile -> renderTile(tile, context, consumers) }
                 renderInfo(client, scene, rotation, context, consumers)
                 // 半透明的牌與人物最後畫：不透明的東西先全部畫進畫面，半透明的部分才透得出它後面的東西。
-                consumers.draw()
+                consumers.endBatch()
                 tiles.translucentFarToNear.forEach { tile -> renderTile(tile, context, consumers) }
-                consumers.draw()
+                consumers.endBatch()
                 renderFigures(client, scene.figures.filter { it.alpha < 1f }, context, consumers)
                 renderEntities(client, scene.entities.filter { it.alpha < 1f }, context, consumers)
                 renderWinEffects(client, scene.winEffects, context, consumers)
             } finally {
-                consumers.draw()
+                consumers.endBatch()
             }
-            val time = (client.world?.time ?: 0L) + client.tickDelta.toDouble()
+            val time = (client.level?.gameTime ?: 0L) + client.frameTime.toDouble()
             val outlined = scene.tiles.mapNotNull { tile ->
                 when {
                     hovered != null && tile.region == hovered.region -> tile to HOVER_COLOR
@@ -183,10 +183,10 @@ internal class GuideSceneRenderer : AutoCloseable {
             renderOutlines(client, outlined, context, expansion = GLOW_PIXELS / scale)
             return hovered
         } finally {
-            matrices.pop()
+            matrices.popPose()
             context.disableScissor()
-            DiffuseLighting.enableGuiDepthLighting()
-            RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, MinecraftClient.IS_SYSTEM_MAC)
+            Lighting.setupFor3DItems()
+            RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, Minecraft.ON_OSX)
         }
     }
 
@@ -282,20 +282,20 @@ internal class GuideSceneRenderer : AutoCloseable {
      * @param consumers 頂點緩衝。
      */
     private fun renderFigures(
-        client: MinecraftClient,
+        client: Minecraft,
         figures: List<GuideSceneFigure>,
-        context: DrawContext,
-        consumers: VertexConsumerProvider,
+        context: GuiGraphics,
+        consumers: MultiBufferSource,
     ) {
         if (figures.isEmpty()) return
-        val world = client.world ?: return
+        val world = client.level ?: return
         val entity = figureEntity(world)
         val renderer = client.entityRenderDispatcher.getRenderer(entity) as? MahjongBotEntityRenderer ?: return
-        val matrices = context.matrices
+        val matrices = context.pose()
         figures.forEach { figure ->
             if (figure.alpha <= 0f) return@forEach
             entity.faceAssetKey = figure.faceAssetKey
-            matrices.push()
+            matrices.pushPose()
             matrices.translate(figure.x, figure.y, figure.z)
             renderer.renderPose(
                 entity = entity,
@@ -308,7 +308,7 @@ internal class GuideSceneRenderer : AutoCloseable {
                 swingProgress = figure.swingProgress,
                 alpha = figure.alpha,
             )
-            matrices.pop()
+            matrices.popPose()
         }
     }
 
@@ -322,23 +322,23 @@ internal class GuideSceneRenderer : AutoCloseable {
      * @param consumers 頂點緩衝。
      */
     private fun renderInfo(
-        client: MinecraftClient,
+        client: Minecraft,
         scene: GuideScene,
         rotation: Matrix4f,
-        context: DrawContext,
-        consumers: VertexConsumerProvider,
+        context: GuiGraphics,
+        consumers: MultiBufferSource,
     ) {
-        val world = client.world ?: return
-        val matrices = context.matrices
+        val world = client.level ?: return
+        val matrices = context.pose()
         val dispatcher = client.entityRenderDispatcher
         scene.roundInfo?.let { info ->
             val entity = roundInfoEntity(world).apply { lines = info.lines }
             // 讓轉向鏡頭的面板正對畫面：抵銷場景視角，再轉半圈對齊原版名牌的座標方向。
-            dispatcher.setRotation(Quaternionf().setFromNormalized(rotation).conjugate().rotateY(Math.PI.toFloat()))
-            matrices.push()
+            dispatcher.overrideCameraOrientation(Quaternionf().setFromNormalized(rotation).conjugate().rotateY(Math.PI.toFloat()))
+            matrices.pushPose()
             matrices.translate(info.x, info.y, info.z)
             dispatcher.getRenderer(entity).render(entity, 0f, 0f, matrices, consumers, FULL_LIGHT)
-            matrices.pop()
+            matrices.popPose()
         }
         scene.playerInfo?.let { info ->
             val entity = playerInfoEntity(world).apply {
@@ -347,10 +347,10 @@ internal class GuideSceneRenderer : AutoCloseable {
                 tableFacing = MahjongTableFacing.NORTH
             }
             val renderer = dispatcher.getRenderer(entity) as? MahjongPlayerInfoEntityRenderer ?: return
-            matrices.push()
+            matrices.pushPose()
             matrices.translate(info.x, info.y, info.z)
             renderer.renderPanels(entity, matrices, consumers, FULL_LIGHT) { it in info.shownSeats }
-            matrices.pop()
+            matrices.popPose()
         }
     }
 
@@ -363,17 +363,17 @@ internal class GuideSceneRenderer : AutoCloseable {
      * @param consumers 頂點緩衝。
      */
     private fun renderWinEffects(
-        client: MinecraftClient,
+        client: Minecraft,
         effects: List<GuideSceneWinEffect>,
-        context: DrawContext,
-        consumers: VertexConsumerProvider,
+        context: GuiGraphics,
+        consumers: MultiBufferSource,
     ) {
         if (effects.isEmpty()) return
         val geometry = winEffectGeometry
-            ?: WinCelebrationEffectGeometry(TridentEntityModel(client.entityModelLoader.getModelPart(EntityModelLayers.TRIDENT))).also { winEffectGeometry = it }
-        val matrices = context.matrices
+            ?: WinCelebrationEffectGeometry(TridentModel(client.entityModels.bakeLayer(ModelLayers.TRIDENT))).also { winEffectGeometry = it }
+        val matrices = context.pose()
         effects.forEach { effect ->
-            matrices.push()
+            matrices.pushPose()
             matrices.translate(effect.x, effect.y, effect.z)
             geometry.render(
                 elapsedTicks = effect.elapsedTicks,
@@ -382,7 +382,7 @@ internal class GuideSceneRenderer : AutoCloseable {
                 vertexConsumers = consumers,
                 light = FULL_LIGHT,
             )
-            matrices.pop()
+            matrices.popPose()
         }
     }
 
@@ -403,17 +403,17 @@ internal class GuideSceneRenderer : AutoCloseable {
      * @param context GUI 繪製上下文，矩陣已套用場景視角。
      * @param consumers 頂點緩衝。
      */
-    private fun renderTile(tile: GuideSceneTile, context: DrawContext, consumers: VertexConsumerProvider) {
-        val matrices = context.matrices
-        matrices.push()
+    private fun renderTile(tile: GuideSceneTile, context: GuiGraphics, consumers: MultiBufferSource) {
+        val matrices = context.pose()
+        matrices.pushPose()
         matrices.translate(tile.x, tile.y, tile.z)
         // 往前進方向的傾斜繞牌底、以世界水平軸旋轉，在朝向之前套用，與對局中的牌相同。
         if (tile.lean.degrees != 0.0f) {
-            matrices.multiply(Quaternionf().rotateAxis(Math.toRadians(tile.lean.degrees.toDouble()).toFloat(), tile.lean.axisX.toFloat(), 0.0f, tile.lean.axisZ.toFloat()))
+            matrices.mulPose(Quaternionf().rotateAxis(Math.toRadians(tile.lean.degrees.toDouble()).toFloat(), tile.lean.axisX.toFloat(), 0.0f, tile.lean.axisZ.toFloat()))
         }
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-tile.yaw + HALF_TURN_DEGREES))
+        matrices.mulPose(Axis.YP.rotationDegrees(-tile.yaw + HALF_TURN_DEGREES))
         val poseDegrees = tile.poseDegrees ?: tile.pose.rotationDegrees
-        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(poseDegrees))
+        matrices.mulPose(Axis.XP.rotationDegrees(poseDegrees))
         val (offsetX, offsetY, offsetZ) = if (tile.poseDegrees != null) {
             MahjongTileEntityRenderer.displayPoseOriginOffset(poseDegrees)
         } else {
@@ -424,24 +424,24 @@ internal class GuideSceneRenderer : AutoCloseable {
         if (assetKey == null) {
             MahjongTileItemRenderer.renderUnknownWithAppearance(
                 appearanceId = BuiltInMinecraftTileAppearances.DEFAULT.id,
-                mode = ModelTransformationMode.HEAD,
+                mode = ItemDisplayContext.HEAD,
                 matrices = matrices,
                 vertexConsumers = consumers,
                 light = FULL_LIGHT,
-                overlay = OverlayTexture.DEFAULT_UV,
+                overlay = OverlayTexture.NO_OVERLAY,
             )
         } else {
             MahjongTileItemRenderer.renderWithAppearance(
                 appearanceId = BuiltInMinecraftTileAppearances.DEFAULT.id,
                 assetKey = assetKey,
-                mode = ModelTransformationMode.HEAD,
+                mode = ItemDisplayContext.HEAD,
                 matrices = matrices,
                 vertexConsumers = consumers,
                 light = FULL_LIGHT,
-                overlay = OverlayTexture.DEFAULT_UV,
+                overlay = OverlayTexture.NO_OVERLAY,
             )
         }
-        matrices.pop()
+        matrices.popPose()
     }
 
     /**
@@ -454,18 +454,18 @@ internal class GuideSceneRenderer : AutoCloseable {
      * @param expansion 外框往外擴的距離，以場景座標（方塊）為單位。
      */
     private fun renderOutlines(
-        client: MinecraftClient,
+        client: Minecraft,
         outlined: List<Pair<GuideSceneTile, Int>>,
-        context: DrawContext,
+        context: GuiGraphics,
         expansion: Float,
     ) {
         if (outlined.isEmpty()) return
-        val sceneMatrix = context.matrices.peek().positionMatrix
+        val sceneMatrix = context.pose().last().pose()
         RenderSystem.disableDepthTest()
         RenderSystem.disableCull()
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram)
-        val buffer = Tessellator.getInstance().buffer
-        buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR)
+        RenderSystem.setShader(GameRenderer::getPositionColorShader)
+        val buffer = Tesselator.getInstance().builder
+        buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR)
         val grow = Vector3f(expansion, expansion, expansion)
         outlined.forEach { (tile, color) ->
             addBox(
@@ -476,12 +476,12 @@ internal class GuideSceneRenderer : AutoCloseable {
                 color = color,
             )
         }
-        BufferRenderer.drawWithGlobalProgram(buffer.end())
+        BufferUploader.drawWithShader(buffer.end())
         RenderSystem.enableCull()
         RenderSystem.enableDepthTest()
-        val consumers = client.bufferBuilders.entityVertexConsumers
+        val consumers = client.renderBuffers().bufferSource()
         outlined.forEach { (tile, _) -> renderTile(tile, context, consumers) }
-        consumers.draw()
+        consumers.endBatch()
     }
 
     /**
@@ -565,7 +565,7 @@ internal class GuideSceneRenderer : AutoCloseable {
             listOf(Vector3f(min.x, min.y, min.z), Vector3f(max.x, min.y, min.z), Vector3f(max.x, min.y, max.z), Vector3f(min.x, min.y, max.z)),
         )
         faces.flatten().forEach { corner ->
-            buffer.vertex(matrix, corner.x, corner.y, corner.z).color(red, green, blue, CHANNEL_MASK).next()
+            buffer.vertex(matrix, corner.x, corner.y, corner.z).color(red, green, blue, CHANNEL_MASK).endVertex()
         }
     }
 
@@ -580,16 +580,16 @@ internal class GuideSceneRenderer : AutoCloseable {
      * @param consumers 繪製用的頂點緩衝。
      */
     private fun renderEntities(
-        client: MinecraftClient,
+        client: Minecraft,
         entities: List<GuideSceneEntity>,
-        context: DrawContext,
-        consumers: VertexConsumerProvider,
+        context: GuiGraphics,
+        consumers: MultiBufferSource,
     ) {
         if (entities.isEmpty()) return
-        val world = client.world ?: return
+        val world = client.level ?: return
         val dispatcher = client.entityRenderDispatcher
         val seat = seatEntity(world)
-        dispatcher.setRenderShadows(false)
+        dispatcher.setRenderShadow(false)
         try {
             entities.forEach { figure ->
                 if (!canDraw(figure, dispatcher)) return@forEach
@@ -598,7 +598,7 @@ internal class GuideSceneRenderer : AutoCloseable {
                 if (guard == null) draw() else guard.run(draw)
             }
         } finally {
-            dispatcher.setRenderShadows(true)
+            dispatcher.setRenderShadow(true)
         }
     }
 
@@ -628,34 +628,34 @@ internal class GuideSceneRenderer : AutoCloseable {
         figure: GuideSceneEntity,
         seat: Entity,
         dispatcher: EntityRenderDispatcher,
-        context: DrawContext,
-        consumers: VertexConsumerProvider,
+        context: GuiGraphics,
+        consumers: MultiBufferSource,
     ) {
         val entity = figure.entity
         entity.stopRiding()
         if (figure.seated) entity.startRiding(seat, true)
         try {
-            entity.setPosition(0.0, DETACHED_Y, 0.0)
+            entity.setPos(0.0, DETACHED_Y, 0.0)
             if (entity is LivingEntity) {
-                entity.bodyYaw = figure.yaw
-                entity.prevBodyYaw = figure.yaw
-                entity.headYaw = figure.yaw
-                entity.prevHeadYaw = figure.yaw
-                entity.preferredHand = Hand.MAIN_HAND
-                entity.handSwingProgress = figure.swingProgress
-                entity.lastHandSwingProgress = figure.swingProgress
+                entity.yBodyRot = figure.yaw
+                entity.yBodyRotO = figure.yaw
+                entity.yHeadRot = figure.yaw
+                entity.yHeadRotO = figure.yaw
+                entity.swingingArm = InteractionHand.MAIN_HAND
+                entity.attackAnim = figure.swingProgress
+                entity.oAttackAnim = figure.swingProgress
             }
-            entity.yaw = figure.yaw
-            entity.prevYaw = figure.yaw
-            entity.pitch = 0f
-            entity.prevPitch = 0f
-            val render = { dispatcher.render(entity, figure.x, figure.y, figure.z, figure.yaw, 1f, context.matrices, consumers, FULL_LIGHT) }
+            entity.setYRot(figure.yaw)
+            entity.yRotO = figure.yaw
+            entity.setXRot(0f)
+            entity.xRotO = 0f
+            val render = { dispatcher.render(entity, figure.x, figure.y, figure.z, figure.yaw, 1f, context.pose(), consumers, FULL_LIGHT) }
             if (figure.alpha < 1f) SceneEntityTranslucency.render(figure.alpha, render) else render()
         } finally {
             entity.stopRiding()
             if (entity is LivingEntity) {
-                entity.handSwingProgress = 0f
-                entity.lastHandSwingProgress = 0f
+                entity.attackAnim = 0f
+                entity.oAttackAnim = 0f
             }
         }
     }
@@ -666,8 +666,8 @@ internal class GuideSceneRenderer : AutoCloseable {
      * @param world 目前客戶端世界。
      * @return 不在世界中的座位實體。
      */
-    private fun seatEntity(world: ClientWorld): Entity {
-        seatEntity?.takeIf { it.world === world }?.let { return it }
+    private fun seatEntity(world: ClientLevel): Entity {
+        seatEntity?.takeIf { it.level() === world }?.let { return it }
         seatEntity?.discard()
         return MahjongStoolSeatEntity(world = world).also { seatEntity = it }
     }
@@ -678,8 +678,8 @@ internal class GuideSceneRenderer : AutoCloseable {
      * @param world 目前客戶端世界。
      * @return 不在世界中的預覽實體。
      */
-    private fun figureEntity(world: ClientWorld): MahjongBotEntity {
-        figureEntity?.takeIf { it.world === world }?.let { return it }
+    private fun figureEntity(world: ClientLevel): MahjongBotEntity {
+        figureEntity?.takeIf { it.level() === world }?.let { return it }
         figureEntity?.discard()
         return MahjongBotEntity(world = world).also { figureEntity = it }
     }
@@ -690,8 +690,8 @@ internal class GuideSceneRenderer : AutoCloseable {
      * @param world 目前客戶端世界。
      * @return 不在世界中的預覽實體。
      */
-    private fun roundInfoEntity(world: ClientWorld): MahjongRoundInfoEntity {
-        roundInfoEntity?.takeIf { it.world === world }?.let { return it }
+    private fun roundInfoEntity(world: ClientLevel): MahjongRoundInfoEntity {
+        roundInfoEntity?.takeIf { it.level() === world }?.let { return it }
         roundInfoEntity?.discard()
         return MahjongRoundInfoEntity(world = world).also { roundInfoEntity = it }
     }
@@ -702,8 +702,8 @@ internal class GuideSceneRenderer : AutoCloseable {
      * @param world 目前客戶端世界。
      * @return 不在世界中的預覽實體。
      */
-    private fun playerInfoEntity(world: ClientWorld): MahjongPlayerInfoEntity {
-        playerInfoEntity?.takeIf { it.world === world }?.let { return it }
+    private fun playerInfoEntity(world: ClientLevel): MahjongPlayerInfoEntity {
+        playerInfoEntity?.takeIf { it.level() === world }?.let { return it }
         playerInfoEntity?.discard()
         return MahjongPlayerInfoEntity(world = world).also { playerInfoEntity = it }
     }
@@ -891,7 +891,7 @@ internal class GuideSceneRenderer : AutoCloseable {
         const val SCENE_Z: Double = 200.0
 
         /** 最亮的方塊與天空光照。 */
-        const val FULL_LIGHT: Int = LightmapTextureManager.MAX_LIGHT_COORDINATE
+        const val FULL_LIGHT: Int = LightTexture.FULL_BRIGHT
 
         /** 繪製實體前放置的高度，遠離鏡頭，名牌不會出現。 */
         const val DETACHED_Y: Double = -10_000.0

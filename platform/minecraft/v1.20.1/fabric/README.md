@@ -125,12 +125,12 @@ when any of its blocks is broken; the break policy then applies to the whole tab
 The table's own callbacks call `MahjongTables`; no built-in table class needs to be extended:
 
 ```kotlin
-override fun onUse(/* ... */): ActionResult = MahjongTables.interact(world, pos, state, player)
+override fun use(/* ... */): InteractionResult = MahjongTables.interact(world, pos, state, player)
 
 // In the controller block; pos is the controller position.
-override fun onStateReplaced(state: BlockState, world: World, pos: BlockPos, newState: BlockState, moved: Boolean) {
-    if (!state.isOf(newState.block)) MahjongTables.onControllerRemoved(world, pos)
-    super.onStateReplaced(state, world, pos, newState, moved)
+override fun onRemove(state: BlockState, world: Level, pos: BlockPos, newState: BlockState, moved: Boolean) {
+    if (!state.`is`(newState.block)) MahjongTables.onControllerRemoved(world, pos)
+    super.onRemove(state, world, pos, newState, moved)
 }
 ```
 

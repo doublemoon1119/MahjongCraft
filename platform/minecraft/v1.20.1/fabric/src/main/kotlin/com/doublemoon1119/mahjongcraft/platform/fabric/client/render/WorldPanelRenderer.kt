@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.mojang.blaze3d.systems.RenderSystem
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.text.Text
+import com.mojang.blaze3d.vertex.PoseStack
+import net.minecraft.client.gui.Font
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.network.chat.Component
 import kotlin.math.roundToInt
 
 /** 常駐世界面板共用的單一深色背景、動態測量與文字繪製 helper。 */
@@ -28,19 +28,19 @@ object WorldPanelRenderer {
         bottom: Float,
         color: Int,
         z: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
-        val matrix = matrices.peek().positionMatrix
-        val buffer = consumers.getBuffer(WorldPanelRenderLayer.layer)
+        val matrix = matrices.last().pose()
+        val buffer = consumers.getBuffer(WorldPanelRenderType.layer)
         val alpha = color ushr 24 and 0xFF
         val red = color ushr 16 and 0xFF
         val green = color ushr 8 and 0xFF
         val blue = color and 0xFF
-        buffer.vertex(matrix, left, top, z).color(red, green, blue, alpha).next()
-        buffer.vertex(matrix, right, top, z).color(red, green, blue, alpha).next()
-        buffer.vertex(matrix, right, bottom, z).color(red, green, blue, alpha).next()
-        buffer.vertex(matrix, left, bottom, z).color(red, green, blue, alpha).next()
+        buffer.vertex(matrix, left, top, z).color(red, green, blue, alpha).endVertex()
+        buffer.vertex(matrix, right, top, z).color(red, green, blue, alpha).endVertex()
+        buffer.vertex(matrix, right, bottom, z).color(red, green, blue, alpha).endVertex()
+        buffer.vertex(matrix, left, bottom, z).color(red, green, blue, alpha).endVertex()
     }
 
     /**
@@ -57,20 +57,20 @@ object WorldPanelRenderer {
      * @param consumers 接收文字頂點的繪製緩衝來源。
      */
     fun drawText(
-        renderer: TextRenderer,
-        text: Text,
+        renderer: Font,
+        text: Component,
         x: Float,
         y: Float,
         color: Int,
         z: Float,
         light: Int,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(0.0, 0.0, z.toDouble())
-        renderer.draw(text, x, y, color, false, matrices.peek().positionMatrix, consumers, TextRenderer.TextLayerType.NORMAL, 0, light)
-        matrices.pop()
+        renderer.drawInBatch(text, x, y, color, false, matrices.last().pose(), consumers, Font.DisplayMode.NORMAL, 0, light)
+        matrices.popPose()
     }
 
     /**
@@ -79,7 +79,7 @@ object WorldPanelRenderer {
      * @param matrices 面板正面的座標轉換。
      * @return 在正面那一側時為 true。
      */
-    fun facesViewer(matrices: MatrixStack): Boolean = PanelFacing.facesViewer(matrices.peek().positionMatrix, RenderSystem.getProjectionMatrix())
+    fun facesViewer(matrices: PoseStack): Boolean = PanelFacing.facesViewer(matrices.last().pose(), RenderSystem.getProjectionMatrix())
 
     /**
      * 依實際字型像素寬度截斷並補 `...`；寬度連省略號都容納不了時仍保留省略號。
@@ -89,10 +89,10 @@ object WorldPanelRenderer {
      * @param maxWidth 可用的像素寬度。
      * @return 原文或截斷後附省略號的文字。
      */
-    fun fitText(renderer: TextRenderer, value: String, maxWidth: Int): String {
-        if (renderer.getWidth(value) <= maxWidth) return value
+    fun fitText(renderer: Font, value: String, maxWidth: Int): String {
+        if (renderer.width(value) <= maxWidth) return value
         val suffix = "..."
-        return renderer.trimToWidth(value, (maxWidth - renderer.getWidth(suffix)).coerceAtLeast(0)) + suffix
+        return renderer.plainSubstrByWidth(value, (maxWidth - renderer.width(suffix)).coerceAtLeast(0)) + suffix
     }
 
     /**

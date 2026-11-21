@@ -67,13 +67,13 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
-import net.minecraft.command.argument.IdentifierArgumentType
-import net.minecraft.entity.Entity
-import net.minecraft.server.command.CommandManager.argument
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.text.Text
-import net.minecraft.util.math.BlockPos
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands.argument
+import net.minecraft.commands.Commands.literal
+import net.minecraft.commands.arguments.ResourceLocationArgument
+import net.minecraft.core.BlockPos
+import net.minecraft.network.chat.Component
+import net.minecraft.world.entity.Entity
 import java.util.concurrent.CompletableFuture
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
@@ -128,7 +128,7 @@ class FabricDebugPresentationCommand(
      *
      * @return 已包含引數與執行處理的子指令節點，供上層指令註冊。
      */
-    fun buildWinCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(WIN_SUBCOMMAND)
+    fun buildWinCommand(): LiteralArgumentBuilder<CommandSourceStack> = literal(WIN_SUBCOMMAND)
         .then(tilePreviewSupport.withOptionalTileArgument(literal(TSUMO_ARGUMENT)) { source, tileArg -> previewWin(source, isTsumo = true, tileArg) })
         .then(tilePreviewSupport.withOptionalTileArgument(literal(RON_ARGUMENT)) { source, tileArg -> previewWin(source, isTsumo = false, tileArg) })
 
@@ -137,7 +137,7 @@ class FabricDebugPresentationCommand(
      *
      * @return 已包含引數與執行處理的子指令節點，供上層指令註冊。
      */
-    fun buildShowcaseCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(SHOWCASE_SUBCOMMAND)
+    fun buildShowcaseCommand(): LiteralArgumentBuilder<CommandSourceStack> = literal(SHOWCASE_SUBCOMMAND)
         .then(
             literal(MELDS_ARGUMENT)
                 .executes { context -> previewMeldShowcase(context.source, listOf(MELD_SHOWCASE_CUE)) }
@@ -193,13 +193,13 @@ class FabricDebugPresentationCommand(
                     .suggests(::suggestShowcasePhases)
                     .executes { context -> previewShowcasePhase(context.source, StringArgumentType.getString(context, PHASE_NAME_ARGUMENT), DEFAULT_SHOWCASE_CUE) }
                     .then(
-                        argument(CUE_ARGUMENT, IdentifierArgumentType.identifier())
+                        argument(CUE_ARGUMENT, ResourceLocationArgument.id())
                             .suggests(::suggestSingleShowcaseCue)
                             .executes { context ->
                                 previewShowcasePhase(
                                     source = context.source,
                                     phase = StringArgumentType.getString(context, PHASE_NAME_ARGUMENT),
-                                    cue = IdentifierArgumentType.getIdentifier(context, CUE_ARGUMENT).toString(),
+                                    cue = ResourceLocationArgument.getId(context, CUE_ARGUMENT).toString(),
                                 )
                             },
                     ),
@@ -212,14 +212,14 @@ class FabricDebugPresentationCommand(
      *
      * @return 已包含引數與執行處理的子指令節點，供上層指令註冊。
      */
-    fun buildExhaustiveDrawSettlementCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(EXHAUSTIVE_DRAW_SETTLEMENT_SUBCOMMAND)
+    fun buildExhaustiveDrawSettlementCommand(): LiteralArgumentBuilder<CommandSourceStack> = literal(EXHAUSTIVE_DRAW_SETTLEMENT_SUBCOMMAND)
         .then(buildRiichiExhaustiveDrawSettlementCommand())
         .then(
             literal(ABORTIVE_ARGUMENT).then(
-                argument(REASON_ARGUMENT, IdentifierArgumentType.identifier())
+                argument(REASON_ARGUMENT, ResourceLocationArgument.id())
                     .suggests(::suggestAbortiveDrawReasons)
                     .executes { context ->
-                        previewSettlement(context.source, IdentifierArgumentType.getIdentifier(context, REASON_ARGUMENT).toString(), 0)
+                        previewSettlement(context.source, ResourceLocationArgument.getId(context, REASON_ARGUMENT).toString(), 0)
                     },
             ),
         )
@@ -229,7 +229,7 @@ class FabricDebugPresentationCommand(
      *
      * @return 日麻流局結算預覽的子指令節點。
      */
-    private fun buildRiichiExhaustiveDrawSettlementCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(RIICHI_ARGUMENT)
+    private fun buildRiichiExhaustiveDrawSettlementCommand(): LiteralArgumentBuilder<CommandSourceStack> = literal(RIICHI_ARGUMENT)
         .then(
             literal(NORMAL_ARGUMENT).then(
                 argument(TENPAI_COUNT_ARGUMENT, IntegerArgumentType.integer(0, 4)).executes { context ->
@@ -286,7 +286,7 @@ class FabricDebugPresentationCommand(
      *
      * @return 已包含引數與執行處理的子指令節點，供上層指令註冊。
      */
-    fun buildWinSettlementCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(WIN_SETTLEMENT_SUBCOMMAND)
+    fun buildWinSettlementCommand(): LiteralArgumentBuilder<CommandSourceStack> = literal(WIN_SETTLEMENT_SUBCOMMAND)
         .then(buildRiichiWinSettlementCommand())
         .then(
             TaiwanWinSettlementPreview.entries.fold(literal(TAIWAN_ARGUMENT)) { node, preview ->
@@ -299,7 +299,7 @@ class FabricDebugPresentationCommand(
      *
      * @return 日麻胡牌結算預覽的子指令節點。
      */
-    private fun buildRiichiWinSettlementCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(RIICHI_ARGUMENT)
+    private fun buildRiichiWinSettlementCommand(): LiteralArgumentBuilder<CommandSourceStack> = literal(RIICHI_ARGUMENT)
         .then(literal(TSUMO_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.TSUMO, 1) })
         .then(
             literal(RON_ARGUMENT)
@@ -323,7 +323,7 @@ class FabricDebugPresentationCommand(
      *
      * @return 已包含引數與執行處理的子指令節點，供上層指令註冊。
      */
-    fun buildMatchSettlementCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(MATCH_SETTLEMENT_SUBCOMMAND)
+    fun buildMatchSettlementCommand(): LiteralArgumentBuilder<CommandSourceStack> = literal(MATCH_SETTLEMENT_SUBCOMMAND)
         .executes { context -> previewMatchSettlement(context.source, 4) }
         .then(
             argument(PLAYER_COUNT_ARGUMENT, IntegerArgumentType.integer(2, 4))
@@ -340,7 +340,7 @@ class FabricDebugPresentationCommand(
      *
      * @return 已包含引數與執行處理的子指令節點，供上層指令註冊。
      */
-    fun buildContinuingWinCommand(): LiteralArgumentBuilder<ServerCommandSource> = DebugWinRoundContinuationMode.entries.fold(
+    fun buildContinuingWinCommand(): LiteralArgumentBuilder<CommandSourceStack> = DebugWinRoundContinuationMode.entries.fold(
         initial = literal(CONTINUING_WIN_SUBCOMMAND)
             .executes { context -> reportContinuingWinMode(context.source) },
     ) { node, mode ->
@@ -356,7 +356,7 @@ class FabricDebugPresentationCommand(
      *
      * @return 已包含引數與執行處理的子指令節點，供上層指令註冊。
      */
-    fun buildWinShowcaseOverrideCommand(): LiteralArgumentBuilder<ServerCommandSource> = withOptionalCueArgument(
+    fun buildWinShowcaseOverrideCommand(): LiteralArgumentBuilder<CommandSourceStack> = withOptionalCueArgument(
         node = literal(WIN_SHOWCASE_OVERRIDE_SUBCOMMAND).then(
             literal(CLEAR_ARGUMENT).executes { context -> clearWinShowcaseOverride(context.source) },
         ),
@@ -370,7 +370,7 @@ class FabricDebugPresentationCommand(
      * @param mode 本桌要採用的中途胡牌模式。
      * @return 指令執行狀態碼。
      */
-    private fun setContinuingWinMode(source: ServerCommandSource, mode: DebugWinRoundContinuationMode): Int = playerTableScope.runOnMain(source) { tableId ->
+    private fun setContinuingWinMode(source: CommandSourceStack, mode: DebugWinRoundContinuationMode): Int = playerTableScope.runOnMain(source) { tableId ->
         debugWinRoundContinuationState.setMode(tableId, mode)
         "Continuing-win debug mode for table $tableId set to ${mode.name}"
     }
@@ -381,7 +381,7 @@ class FabricDebugPresentationCommand(
      * @param source 指令發起來源。
      * @return 指令執行狀態碼。
      */
-    private fun reportContinuingWinMode(source: ServerCommandSource): Int = playerTableScope.runOnMain(source) { tableId ->
+    private fun reportContinuingWinMode(source: CommandSourceStack): Int = playerTableScope.runOnMain(source) { tableId ->
         buildString {
             append("Continuing-win debug mode for table $tableId is ${debugWinRoundContinuationState.modeFor(tableId).name}")
             val others = debugWinRoundContinuationState.activeTableIds() - tableId
@@ -399,7 +399,7 @@ class FabricDebugPresentationCommand(
      * @param cueKey 展示理由識別碼；null 時使用預設演出。
      * @return 指令執行狀態碼。
      */
-    private fun armWinShowcaseOverride(source: ServerCommandSource, cueKey: String?): Int = playerTableScope.runOnMain(source) { tableId ->
+    private fun armWinShowcaseOverride(source: CommandSourceStack, cueKey: String?): Int = playerTableScope.runOnMain(source) { tableId ->
         val resolvedCue = cueKey ?: DEFAULT_SHOWCASE_CUE
         if (debugWinShowcaseOverride.arm(tableId, resolvedCue)) {
             "Next win on table $tableId will play showcase cue $resolvedCue (presentation only, one-shot)"
@@ -414,7 +414,7 @@ class FabricDebugPresentationCommand(
      * @param source 指令發起來源。
      * @return 指令執行狀態碼。
      */
-    private fun clearWinShowcaseOverride(source: ServerCommandSource): Int = playerTableScope.runOnMain(source) { tableId ->
+    private fun clearWinShowcaseOverride(source: CommandSourceStack): Int = playerTableScope.runOnMain(source) { tableId ->
         debugWinShowcaseOverride.clear(tableId)
         "Showcase override for table $tableId cleared"
     }
@@ -428,10 +428,10 @@ class FabricDebugPresentationCommand(
      * @return 加入引數與執行回呼的原節點。
      */
     private fun withOptionalCueArgument(
-        node: LiteralArgumentBuilder<ServerCommandSource>,
+        node: LiteralArgumentBuilder<CommandSourceStack>,
         allowMultiple: Boolean,
-        onExecute: (ServerCommandSource, String?) -> Int,
-    ): LiteralArgumentBuilder<ServerCommandSource> {
+        onExecute: (CommandSourceStack, String?) -> Int,
+    ): LiteralArgumentBuilder<CommandSourceStack> {
         node.executes { ctx -> onExecute(ctx.source, null) }
         return if (allowMultiple) {
             node.then(
@@ -441,9 +441,9 @@ class FabricDebugPresentationCommand(
             )
         } else {
             node.then(
-                argument(CUE_ARGUMENT, IdentifierArgumentType.identifier())
+                argument(CUE_ARGUMENT, ResourceLocationArgument.id())
                     .suggests(::suggestSingleShowcaseCue)
-                    .executes { ctx -> onExecute(ctx.source, IdentifierArgumentType.getIdentifier(ctx, CUE_ARGUMENT).toString()) },
+                    .executes { ctx -> onExecute(ctx.source, ResourceLocationArgument.getId(ctx, CUE_ARGUMENT).toString()) },
             )
         }
     }
@@ -456,7 +456,7 @@ class FabricDebugPresentationCommand(
      * @return 非同步補全結果。
      */
     private fun suggestSingleShowcaseCue(
-        context: CommandContext<ServerCommandSource>,
+        context: CommandContext<CommandSourceStack>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> = suggestShowcaseCues(context, builder, allowMultiple = false)
 
@@ -468,7 +468,7 @@ class FabricDebugPresentationCommand(
      * @return 保留已輸入前綴的非同步補全結果。
      */
     private fun suggestShowcaseCueList(
-        context: CommandContext<ServerCommandSource>,
+        context: CommandContext<CommandSourceStack>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> = suggestShowcaseCues(context, builder, allowMultiple = true)
 
@@ -481,7 +481,7 @@ class FabricDebugPresentationCommand(
      * @return 非同步補全結果。
      */
     private fun suggestShowcaseCues(
-        context: CommandContext<ServerCommandSource>,
+        context: CommandContext<CommandSourceStack>,
         builder: SuggestionsBuilder,
         allowMultiple: Boolean,
     ): CompletableFuture<Suggestions> {
@@ -497,7 +497,7 @@ class FabricDebugPresentationCommand(
      * @return 非同步補全結果。
      */
     private fun suggestShowcasePhases(
-        context: CommandContext<ServerCommandSource>,
+        context: CommandContext<CommandSourceStack>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> {
         SHOWCASE_PHASES.filter { it.startsWith(builder.remaining, ignoreCase = true) }.forEach(builder::suggest)
@@ -512,7 +512,7 @@ class FabricDebugPresentationCommand(
      * @return 非同步補全結果。
      */
     private fun suggestDebugMeldCounts(
-        context: CommandContext<ServerCommandSource>,
+        context: CommandContext<CommandSourceStack>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> {
         (1..MAX_DEBUG_MELD_COUNT).forEach(builder::suggest)
@@ -527,7 +527,7 @@ class FabricDebugPresentationCommand(
      * @return 依識別碼排序的非同步補全結果。
      */
     private fun suggestAbortiveDrawReasons(
-        context: CommandContext<ServerCommandSource>,
+        context: CommandContext<CommandSourceStack>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> {
         exhaustiveDrawReasonDisplayNameRegistry.reasonIds
@@ -548,15 +548,15 @@ class FabricDebugPresentationCommand(
      * @param initialElapsedTicks 演出起點已經過的 tick 數，用於跳轉階段。
      * @return 成功排定時為成功狀態碼，識別碼、玩家或排程不可用時為失敗狀態碼。
      */
-    private fun previewShowcase(source: ServerCommandSource, isTsumo: Boolean, cues: List<String>, initialElapsedTicks: Int = 0): Int {
+    private fun previewShowcase(source: CommandSourceStack, isTsumo: Boolean, cues: List<String>, initialElapsedTicks: Int = 0): Int {
         if (cues.any { showcaseRegistry.find(it) == null }) return COMMAND_FAILURE
         val player = source.player ?: return COMMAND_FAILURE
-        val world = player.serverWorld
+        val world = player.serverLevel()
         val layout = layoutFactory.create(
-            playerBlockX = player.blockPos.x,
-            playerBlockY = player.blockPos.y,
-            playerBlockZ = player.blockPos.z,
-            tableFacing = player.horizontalFacing.toMahjongTableFacing(),
+            playerBlockX = player.blockPosition().x,
+            playerBlockY = player.blockPosition().y,
+            playerBlockZ = player.blockPosition().z,
+            tableFacing = player.direction.toMahjongTableFacing(),
             seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
         val controllerPos = BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ)
@@ -578,7 +578,7 @@ class FabricDebugPresentationCommand(
             tableId = tableId,
             controllerPos = controllerPos,
             stagePlacement = layout.showcaseStagePlacement(),
-            startGameTime = world.time - initialElapsedTicks,
+            startGameTime = world.gameTime - initialElapsedTicks,
             winningTileId = winningTile.uuid.toKotlinUuid(),
             winningTileAssetKey = winningAsset,
             wings = wingTiles.map { (seat, cue, tiles) ->
@@ -605,15 +605,15 @@ class FabricDebugPresentationCommand(
      * @param cues 依贏家順序排列的展示理由識別碼。
      * @return 指令執行狀態碼。
      */
-    private fun previewMeldShowcase(source: ServerCommandSource, cues: List<String>): Int {
+    private fun previewMeldShowcase(source: CommandSourceStack, cues: List<String>): Int {
         if (cues.any { showcaseRegistry.find(it) == null }) return COMMAND_FAILURE
         val player = source.player ?: return COMMAND_FAILURE
-        val world = player.serverWorld
+        val world = player.serverLevel()
         val layout = layoutFactory.create(
-            playerBlockX = player.blockPos.x,
-            playerBlockY = player.blockPos.y,
-            playerBlockZ = player.blockPos.z,
-            tableFacing = player.horizontalFacing.toMahjongTableFacing(),
+            playerBlockX = player.blockPosition().x,
+            playerBlockY = player.blockPosition().y,
+            playerBlockZ = player.blockPosition().z,
+            tableFacing = player.direction.toMahjongTableFacing(),
             seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
         // 單一贏家也使用四人桌預覽，不把贏家數當作對局人數。
@@ -682,7 +682,7 @@ class FabricDebugPresentationCommand(
             tableId = Uuid.random(),
             controllerPos = BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ),
             stagePlacement = layout.showcaseStagePlacement(),
-            startGameTime = world.time,
+            startGameTime = world.gameTime,
             winningTileId = winningTile.uuid.toKotlinUuid(),
             winningTileAssetKey = MELD_SHOWCASE_WAIT_ASSET,
             wings = wings,
@@ -700,7 +700,7 @@ class FabricDebugPresentationCommand(
      * @param cue 展示理由識別碼。
      * @return 指令執行狀態碼；未知階段會失敗。
      */
-    private fun previewShowcasePhase(source: ServerCommandSource, phase: String, cue: String): Int {
+    private fun previewShowcasePhase(source: CommandSourceStack, phase: String, cue: String): Int {
         val initialElapsedTicks = when (phase.lowercase()) {
             "launch" -> WinCelebrationCinematicTimeline.LAUNCH_START
             "orbit" -> WinCelebrationCinematicTimeline.ORBIT_BUILDUP_START
@@ -726,7 +726,7 @@ class FabricDebugPresentationCommand(
      * @return 指令執行狀態碼。
      */
     private fun previewSettlement(
-        source: ServerCommandSource,
+        source: CommandSourceStack,
         reasonId: String,
         tenpaiCount: Int,
         proof: Boolean = false,
@@ -739,10 +739,10 @@ class FabricDebugPresentationCommand(
         if (meldCount !in 0..MAX_DEBUG_MELD_COUNT) return COMMAND_FAILURE
         val player = source.player ?: return COMMAND_FAILURE
         val layout = layoutFactory.create(
-            playerBlockX = player.blockPos.x,
-            playerBlockY = player.blockPos.y,
-            playerBlockZ = player.blockPos.z,
-            tableFacing = player.horizontalFacing.toMahjongTableFacing(),
+            playerBlockX = player.blockPosition().x,
+            playerBlockY = player.blockPosition().y,
+            playerBlockZ = player.blockPosition().z,
+            tableFacing = player.direction.toMahjongTableFacing(),
             seatLayout = MahjongTableSeatLayout.forPlayerCount(playerCount),
         )
         val previousScores = if (scoreDelta == 0) List(playerCount) { 25_000 } else List(playerCount) { index -> 28_000 - index * 2_000 }
@@ -765,7 +765,7 @@ class FabricDebugPresentationCommand(
         val previewMeldTiles = List(meldCount) { meldIndex ->
             List(DebugPreviewDefaults.MELD_TILE_COUNT) { tileIndex ->
                 tilePreviewSupport.spawnFreeTile(
-                    world = player.serverWorld,
+                    world = player.serverLevel(),
                     placement = layout.handPlacement(handSize = DebugPreviewDefaults.RULE_CONFIG.initialHandSize, tileIndex = tileIndex),
                     pose = MahjongTilePose.FACE_UP,
                     assetKey = previewAssets[(meldIndex * DebugPreviewDefaults.MELD_TILE_COUNT + tileIndex) % previewAssets.size],
@@ -784,7 +784,7 @@ class FabricDebugPresentationCommand(
         }
         layout.meldPlacements(previewMelds).forEach { (tileId, tilePlacement) ->
             previewMeldTiles.flatten().first { it.uuid.toKotlinUuid() == tileId }
-                .refreshPositionAndAngles(tilePlacement.x, tilePlacement.y, tilePlacement.z, tilePlacement.yaw, 0.0f)
+                .moveTo(tilePlacement.x, tilePlacement.y, tilePlacement.z, tilePlacement.yaw, 0.0f)
         }
         val handShifts = mutableMapOf<Int, Double>()
         val previewTilesBySeat = List(playerCount) { seat ->
@@ -812,7 +812,7 @@ class FabricDebugPresentationCommand(
             }
             assets.mapIndexed { index, asset ->
                 tilePreviewSupport.spawnFreeTile(
-                    world = player.serverWorld,
+                    world = player.serverLevel(),
                     placement = layout.handPlacement(seat, assets.size, index, handShift),
                     pose = MahjongTilePose.STANDING,
                     assetKey = asset,
@@ -855,7 +855,7 @@ class FabricDebugPresentationCommand(
             )
         }
         val end = exhaustiveDrawSettlementScheduler.schedule(
-            world = player.serverWorld,
+            world = player.serverLevel(),
             tableId = Uuid.random(),
             controllerPos = BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ),
             tableFacing = layout.tableFacing,
@@ -867,11 +867,11 @@ class FabricDebugPresentationCommand(
             handShiftsBySeat = handShifts,
         ) ?: return COMMAND_FAILURE
         entityLifecycle.schedule(
-            world = player.serverWorld,
+            world = player.serverLevel(),
             endGameTime = end,
             entities = previewTilesBySeat.flatten().map(Pair<MahjongTileEntity, String>::first) + previewMeldTiles.flatten(),
         )
-        source.sendFeedback({ Text.literal("Exhaustive draw settlement preview active until game time $end") }, false)
+        source.sendSuccess({ Component.literal("Exhaustive draw settlement preview active until game time $end") }, false)
         return COMMAND_SUCCESS
     }
 
@@ -882,14 +882,14 @@ class FabricDebugPresentationCommand(
      * @param playerCount 已由指令驗證的玩家數。
      * @return 指令執行狀態碼。
      */
-    private fun previewMatchSettlement(source: ServerCommandSource, playerCount: Int): Int {
+    private fun previewMatchSettlement(source: CommandSourceStack, playerCount: Int): Int {
         val player = source.player ?: return COMMAND_FAILURE
-        val world = player.serverWorld
+        val world = player.serverLevel()
         val layout = layoutFactory.create(
             playerBlockX = player.blockX,
             playerBlockY = player.blockY,
             playerBlockZ = player.blockZ,
-            tableFacing = player.horizontalFacing.toMahjongTableFacing(),
+            tableFacing = player.direction.toMahjongTableFacing(),
             seatLayout = MahjongTableSeatLayout.forPlayerCount(playerCount),
         )
         val scores = listOf(120_000, 45_000, 25_000, -12_000).take(playerCount)
@@ -912,10 +912,10 @@ class FabricDebugPresentationCommand(
             tableId = Uuid.random(),
             controllerPos = BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ),
             placement = layout.showcaseStagePlacement(),
-            earliestStartGameTime = world.time,
+            earliestStartGameTime = world.gameTime,
             request = request,
         ) ?: return COMMAND_FAILURE
-        source.sendFeedback({ Text.literal("Match settlement preview active until game time $end") }, false)
+        source.sendSuccess({ Component.literal("Match settlement preview active until game time $end") }, false)
         return COMMAND_SUCCESS
     }
 
@@ -928,17 +928,17 @@ class FabricDebugPresentationCommand(
      * @return 指令執行狀態碼。
      */
     private fun previewWinSettlement(
-        source: ServerCommandSource,
+        source: CommandSourceStack,
         preview: WinSettlementPreview,
         winnerCount: Int,
     ): Int {
         val player = source.player ?: return COMMAND_FAILURE
-        val world = player.serverWorld
+        val world = player.serverLevel()
         val layout = layoutFactory.create(
             playerBlockX = player.blockX,
             playerBlockY = player.blockY,
             playerBlockZ = player.blockZ,
-            tableFacing = player.horizontalFacing.toMahjongTableFacing(),
+            tableFacing = player.direction.toMahjongTableFacing(),
             seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
         val playerIds = List(4) { index -> if (index == 0) player.uuid.toKotlinUuid() else Uuid.random() }
@@ -1072,7 +1072,7 @@ class FabricDebugPresentationCommand(
                 tableId = Uuid.random(),
                 controllerPos = BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ),
                 placement = layout.showcaseStagePlacement(),
-                earliestStartGameTime = world.time,
+                earliestStartGameTime = world.gameTime,
                 request = request,
                 tileAssetsById = tileAssetsById,
             ) != null
@@ -1091,14 +1091,14 @@ class FabricDebugPresentationCommand(
      * @param preview 要呈現的結算情境。
      * @return 指令執行狀態碼。
      */
-    private fun previewTaiwanWinSettlement(source: ServerCommandSource, preview: TaiwanWinSettlementPreview): Int {
+    private fun previewTaiwanWinSettlement(source: CommandSourceStack, preview: TaiwanWinSettlementPreview): Int {
         val player = source.player ?: return COMMAND_FAILURE
-        val world = player.serverWorld
+        val world = player.serverLevel()
         val layout = layoutFactory.create(
             playerBlockX = player.blockX,
             playerBlockY = player.blockY,
             playerBlockZ = player.blockZ,
-            tableFacing = player.horizontalFacing.toMahjongTableFacing(),
+            tableFacing = player.direction.toMahjongTableFacing(),
             seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
         val playerIds = List(4) { index -> if (index == 0) player.uuid.toKotlinUuid() else Uuid.random() }
@@ -1200,7 +1200,7 @@ class FabricDebugPresentationCommand(
                 tableId = Uuid.random(),
                 controllerPos = BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ),
                 placement = layout.showcaseStagePlacement(),
-                earliestStartGameTime = world.time,
+                earliestStartGameTime = world.gameTime,
                 request = request,
                 tileAssetsById = tileAssetsById,
             ) != null
@@ -1219,15 +1219,15 @@ class FabricDebugPresentationCommand(
      * @param tileArg 牌面素材引數；null 時由預覽工具選用預設值。
      * @return 指令執行狀態碼。
      */
-    private fun previewWin(source: ServerCommandSource, isTsumo: Boolean, tileArg: String?): Int {
+    private fun previewWin(source: CommandSourceStack, isTsumo: Boolean, tileArg: String?): Int {
         val player = source.player ?: return COMMAND_FAILURE
-        val world = player.serverWorld
+        val world = player.serverLevel()
         val assetKey = tilePreviewSupport.resolveAssetKey(tileArg)
         val layout = layoutFactory.create(
-            playerBlockX = player.blockPos.x,
-            playerBlockY = player.blockPos.y,
-            playerBlockZ = player.blockPos.z,
-            tableFacing = player.horizontalFacing.toMahjongTableFacing(),
+            playerBlockX = player.blockPosition().x,
+            playerBlockY = player.blockPosition().y,
+            playerBlockZ = player.blockPosition().z,
+            tableFacing = player.direction.toMahjongTableFacing(),
             seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
         val handSize = DebugPreviewDefaults.RULE_CONFIG.initialHandSize
@@ -1241,7 +1241,7 @@ class FabricDebugPresentationCommand(
             tilePreviewSupport.spawnFreeTile(world, shuffledPlacement, MahjongTilePose.STANDING, assetKey)
         }
 
-        val reorderStartGameTime = world.time
+        val reorderStartGameTime = world.gameTime
         val reorderEndGameTime = reorderStartGameTime + MahjongTileTableLayout.WIN_POST_REORDER_DELAY_TICKS
         handTiles.forEachIndexed { index, tile ->
             TileAnimationSteps.scheduleInstantReorder(

@@ -3,8 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.character
 import com.doublemoon1119.mahjongcraft.platform.fabric.mixin.client.EntityRenderDispatcherAccessor
 import com.mojang.blaze3d.platform.GlStateManager
 import com.mojang.blaze3d.systems.RenderSystem
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.util.math.MatrixStack
+import com.mojang.blaze3d.vertex.PoseStack
+import net.minecraft.client.Minecraft
 import org.joml.Matrix4f
 import org.joml.Quaternionf
 import org.lwjgl.opengl.GL11
@@ -15,16 +15,16 @@ import org.lwjgl.opengl.GL30
 /** 模型預覽的圖形狀態快照；外部 renderer 失敗也由 finally 還原。 */
 internal class CharacterPreviewRenderState : AutoCloseable {
     /** 目前實體繪製器。 */
-    private val dispatcher = MinecraftClient.getInstance().entityRenderDispatcher
+    private val dispatcher = Minecraft.getInstance().entityRenderDispatcher
 
     /** 原本相機旋轉。 */
-    private val rotation = Quaternionf(dispatcher.rotation)
+    private val rotation = Quaternionf(dispatcher.cameraOrientation())
 
     /** 原本的陰影開關。 */
-    private val shadows = (dispatcher as EntityRenderDispatcherAccessor).`mahjongcraft$getRenderShadows`()
+    private val shadows = (dispatcher as EntityRenderDispatcherAccessor).`mahjongcraft$getShouldRenderShadow`()
 
     /** 原本的除錯框開關。 */
-    private val hitboxes = (dispatcher as EntityRenderDispatcherAccessor).`mahjongcraft$getRenderHitboxes`()
+    private val hitboxes = (dispatcher as EntityRenderDispatcherAccessor).`mahjongcraft$getRenderHitBoxes`()
 
     /** 原本的投影，不占用 RenderSystem 的單一備份欄位。 */
     private val projection = Matrix4f(RenderSystem.getProjectionMatrix())
@@ -102,9 +102,9 @@ internal class CharacterPreviewRenderState : AutoCloseable {
 
     /** 還原這次模型繪製之前的圖形與實體繪製器狀態。 */
     override fun close() {
-        dispatcher.setRotation(rotation)
-        dispatcher.setRenderShadows(shadows)
-        dispatcher.setRenderHitboxes(hitboxes)
+        dispatcher.overrideCameraOrientation(rotation)
+        dispatcher.setRenderShadow(shadows)
+        dispatcher.setRenderHitBoxes(hitboxes)
         modelView.close()
         RenderSystem.applyModelViewMatrix()
         RenderSystem.setProjectionMatrix(projection, sorting)
@@ -133,14 +133,14 @@ internal class CharacterPreviewRenderState : AutoCloseable {
      *
      * @property matrices 此次繪製使用的矩陣堆疊。
      */
-    internal class ModelViewScope(private val matrices: MatrixStack) : AutoCloseable {
+    internal class ModelViewScope(private val matrices: PoseStack) : AutoCloseable {
         init {
-            matrices.push()
+            matrices.pushPose()
         }
 
         /** 恢復進入前的座標系，不將 GUI 位移清成單位矩陣。 */
         override fun close() {
-            matrices.pop()
+            matrices.popPose()
         }
     }
 }

@@ -14,9 +14,9 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
-import net.minecraft.server.command.CommandManager.argument
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.server.world.ServerWorld
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands.argument
+import net.minecraft.server.level.ServerLevel
 import java.util.concurrent.CompletableFuture
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -55,9 +55,9 @@ class DebugTilePreviewSupport(private val tileAssetRegistry: MinecraftTileAssetR
      * @return 已加入可選 `tile` 引數的節點。
      */
     fun withOptionalTileArgument(
-        node: LiteralArgumentBuilder<ServerCommandSource>,
-        onExecute: (ServerCommandSource, String?) -> Int,
-    ): LiteralArgumentBuilder<ServerCommandSource> = node
+        node: LiteralArgumentBuilder<CommandSourceStack>,
+        onExecute: (CommandSourceStack, String?) -> Int,
+    ): LiteralArgumentBuilder<CommandSourceStack> = node
         .executes { ctx -> onExecute(ctx.source, null) }
         .then(
             argument(TILE_ARGUMENT, StringArgumentType.word())
@@ -76,7 +76,7 @@ class DebugTilePreviewSupport(private val tileAssetRegistry: MinecraftTileAssetR
      * @return 已建立的候選結果。
      */
     fun suggestTileAssetKeys(
-        context: CommandContext<ServerCommandSource>,
+        context: CommandContext<CommandSourceStack>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> {
         buildTileAssetKeySuggestions(builder.remaining, previewAssetKeys).forEach(builder::suggest)
@@ -102,18 +102,18 @@ class DebugTilePreviewSupport(private val tileAssetRegistry: MinecraftTileAssetR
      * @return 已生成並加入世界的臨時牌 entity。
      */
     fun spawnFreeTile(
-        world: ServerWorld,
+        world: ServerLevel,
         placement: MahjongTileWallPlacement,
         pose: MahjongTilePose,
         assetKey: String,
     ): MahjongTileEntity {
         val tile = MahjongTileEntity(world = world).apply {
-            uuid = Uuid.random().toJavaUuid()
-            refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+            setUUID(Uuid.random().toJavaUuid())
+            moveTo(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
             tilePose = pose
             tileAssetKey = assetKey
         }
-        world.spawnEntity(tile)
+        world.addFreshEntity(tile)
         return tile
     }
 

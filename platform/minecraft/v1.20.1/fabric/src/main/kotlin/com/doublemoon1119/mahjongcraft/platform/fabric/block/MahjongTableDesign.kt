@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.block
 
-import net.minecraft.util.math.Direction
-import net.minecraft.util.shape.VoxelShape
-import net.minecraft.util.shape.VoxelShapes
+import net.minecraft.core.Direction
+import net.minecraft.world.phys.shapes.Shapes
+import net.minecraft.world.phys.shapes.VoxelShape
 
 /**
  * 麻將桌固定桌型及其 server 權威碰撞 profile。
@@ -56,14 +56,14 @@ enum class MahjongTableDesign {
      * @return 上層桌緣的 voxel shape。
      */
     private fun topCollisionShape(part: MahjongTablePart): VoxelShape {
-        if (part == MahjongTablePart.TOP_CENTER) return VoxelShapes.empty()
+        if (part == MahjongTablePart.TOP_CENTER) return Shapes.empty()
         val boxes = buildList {
             if (part.localX == -1) add(cuboid(0.0, 0.0, 0.0, RIM, RIM, 16.0))
             if (part.localX == 1) add(cuboid(16.0 - RIM, 0.0, 0.0, 16.0, RIM, 16.0))
             if (part.localZ == -1) add(cuboid(0.0, 0.0, 0.0, 16.0, RIM, RIM))
             if (part.localZ == 1) add(cuboid(0.0, 0.0, 16.0 - RIM, 16.0, RIM, 16.0))
         }
-        return boxes.fold(VoxelShapes.empty(), VoxelShapes::union)
+        return boxes.fold(Shapes.empty(), Shapes::or)
     }
 
     /**
@@ -78,7 +78,7 @@ enum class MahjongTableDesign {
         val minX = if (part.localX < 0) 1.0 else 12.0
         val minZ = if (part.localZ < 0) 1.0 else 12.0
         val leg = cuboid(minX, 0.0, minZ, minX + 3.0, 14.0, minZ + 3.0)
-        return VoxelShapes.union(tabletop, leg)
+        return Shapes.or(tabletop, leg)
     }
 
     /**
@@ -92,7 +92,7 @@ enum class MahjongTableDesign {
         if (part != MahjongTablePart.BOTTOM_CENTER) return tabletop
         val base = cuboid(2.0, 0.0, 2.0, 14.0, 2.0, 14.0)
         val column = cuboid(5.0, 2.0, 5.0, 11.0, 12.0, 11.0)
-        return VoxelShapes.union(tabletop, base, column)
+        return Shapes.or(tabletop, base, column)
     }
 
     /**
@@ -104,7 +104,7 @@ enum class MahjongTableDesign {
      */
     private fun rotateFromNorth(shape: VoxelShape, facing: Direction): VoxelShape {
         if (facing == Direction.NORTH || shape.isEmpty) return shape
-        val rotatedBoxes = shape.boundingBoxes.map { box ->
+        val rotatedBoxes = shape.toAabbs().map { box ->
             when (facing) {
                 Direction.EAST -> cuboid(
                     minX = (1.0 - box.maxZ) * 16.0,
@@ -133,7 +133,7 @@ enum class MahjongTableDesign {
                 else -> error("Mahjong table facing must be horizontal")
             }
         }
-        return rotatedBoxes.fold(VoxelShapes.empty(), VoxelShapes::union)
+        return rotatedBoxes.fold(Shapes.empty(), Shapes::or)
     }
 
     /**
@@ -154,7 +154,7 @@ enum class MahjongTableDesign {
         maxX: Double,
         maxY: Double,
         maxZ: Double,
-    ): VoxelShape = VoxelShapes.cuboid(
+    ): VoxelShape = Shapes.box(
         minX / 16.0,
         minY / 16.0,
         minZ / 16.0,

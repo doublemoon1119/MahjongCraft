@@ -4,16 +4,16 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileSelectionConfirmEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.render.entity.EntityRenderer
-import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.text.Text
-import net.minecraft.util.Identifier
-import net.minecraft.util.hit.EntityHitResult
-import net.minecraft.util.math.RotationAxis
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.math.Axis
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.Font
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.entity.EntityRenderer
+import net.minecraft.client.renderer.entity.EntityRendererProvider
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.phys.EntityHitResult
 import kotlin.math.abs
 import kotlin.uuid.toKotlinUuid
 
@@ -54,27 +54,27 @@ import kotlin.uuid.toKotlinUuid
  * @param context Minecraft renderer factory 提供的 client context。
  */
 class MahjongTileSelectionConfirmEntityRenderer(
-    context: EntityRendererFactory.Context,
+    context: EntityRendererProvider.Context,
 ) : EntityRenderer<MahjongTileSelectionConfirmEntity>(context) {
-    private val textRenderer: TextRenderer = context.textRenderer
+    private val textRenderer: Font = context.font
 
     override fun render(
         entity: MahjongTileSelectionConfirmEntity,
         yaw: Float,
         tickDelta: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
     ) {
         if (entity.isInvisible) return
-        val localPlayerId = MinecraftClient.getInstance().player?.uuid?.toKotlinUuid() ?: return
+        val localPlayerId = Minecraft.getInstance().player?.uuid?.toKotlinUuid() ?: return
         if (entity.holderId != localPlayerId) return
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
 
         val hovered = isHovered(entity)
-        val baseText = Text.translatable(MinecraftHudKeys.TILE_SELECTION_CONFIRM)
+        val baseText = Component.translatable(MinecraftHudKeys.TILE_SELECTION_CONFIRM)
         val measurementLabel = markedLabel(baseText)
-        val neededWidthBlocks = (((textRenderer.getWidth(measurementLabel) + PANEL_PADDING * 2) * TEXT_SCALE).toDouble()).coerceAtMost(MAX_PANEL_WIDTH_BLOCKS)
+        val neededWidthBlocks = (((textRenderer.width(measurementLabel) + PANEL_PADDING * 2) * TEXT_SCALE).toDouble()).coerceAtMost(MAX_PANEL_WIDTH_BLOCKS)
         val myOffset = MahjongTileTableLayout.tileSelectionConfirmSegmentAlongOffset(entity.segmentIndex)
         entity.isActive = abs(myOffset) <= neededWidthBlocks / 2.0
 
@@ -85,15 +85,15 @@ class MahjongTileSelectionConfirmEntityRenderer(
         val drawLabel = if (hovered) measurementLabel else baseText
 
         WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
-            panelMatrices.push()
+            panelMatrices.pushPose()
             panelMatrices.translate(0.0, MahjongTileSelectionConfirmEntity.HEIGHT / 2.0, 0.0)
-            panelMatrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(yaw))
+            panelMatrices.mulPose(Axis.YP.rotationDegrees(yaw))
             panelMatrices.translate(-myOffset, 0.0, 0.0)
             panelMatrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
             // 兩面背對背，只畫觀看者那一側的一面，兩面不會互相透出或閃爍。
-            if (!WorldPanelRenderer.facesViewer(panelMatrices)) panelMatrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f))
+            if (!WorldPanelRenderer.facesViewer(panelMatrices)) panelMatrices.mulPose(Axis.YP.rotationDegrees(180f))
             renderFace(drawLabel, confirmable, widthPx, light, panelMatrices, panelConsumers)
-            panelMatrices.pop()
+            panelMatrices.popPose()
         }
     }
 
@@ -104,7 +104,7 @@ class MahjongTileSelectionConfirmEntityRenderer(
      * @return 準心目標屬於相同 holder 與桌子時為 `true`。
      */
     private fun isHovered(entity: MahjongTileSelectionConfirmEntity): Boolean {
-        val target = (MinecraftClient.getInstance().crosshairTarget as? EntityHitResult)?.entity as? MahjongTileSelectionConfirmEntity
+        val target = (Minecraft.getInstance().hitResult as? EntityHitResult)?.entity as? MahjongTileSelectionConfirmEntity
         return target != null && target.holderId == entity.holderId && target.managedTableId == entity.managedTableId
     }
 
@@ -114,7 +114,7 @@ class MahjongTileSelectionConfirmEntityRenderer(
      * @param text 要加上標記的文字。
      * @return 前後含標記的文字。
      */
-    private fun markedLabel(text: Text): Text = Text.literal("$SELECTION_MARK_LEFT ").append(text).append(" $SELECTION_MARK_RIGHT")
+    private fun markedLabel(text: Component): Component = Component.literal("$SELECTION_MARK_LEFT ").append(text).append(" $SELECTION_MARK_RIGHT")
 
     /**
      * 繪製確認面板的一面背景與置中文字。
@@ -126,9 +126,9 @@ class MahjongTileSelectionConfirmEntityRenderer(
      * @param matrices 目前的模型矩陣。
      * @param consumers 提供面板與文字頂點緩衝。
      */
-    private fun renderFace(label: Text, confirmable: Boolean, widthPx: Float, light: Int, matrices: MatrixStack, consumers: VertexConsumerProvider) {
+    private fun renderFace(label: Component, confirmable: Boolean, widthPx: Float, light: Int, matrices: PoseStack, consumers: MultiBufferSource) {
         val textColor = if (confirmable) CONFIRMABLE_TEXT_COLOR else NOT_CONFIRMABLE_TEXT_COLOR
-        val height = textRenderer.fontHeight
+        val height = textRenderer.lineHeight
         WorldPanelRenderer.drawBackground(
             left = -widthPx / 2f,
             top = -height / 2f - PANEL_PADDING,
@@ -141,10 +141,10 @@ class MahjongTileSelectionConfirmEntityRenderer(
         )
         val maxTextWidthPx = (widthPx - PANEL_PADDING * 2f).toInt().coerceAtLeast(0)
         val fittedText = WorldPanelRenderer.fitText(textRenderer, label.string, maxTextWidthPx)
-        val fittedWidth = textRenderer.getWidth(fittedText)
+        val fittedWidth = textRenderer.width(fittedText)
         WorldPanelRenderer.drawText(
             renderer = textRenderer,
-            text = Text.literal(fittedText),
+            text = Component.literal(fittedText),
             x = -fittedWidth / 2.0f,
             y = -height / 2.0f,
             color = textColor,
@@ -156,7 +156,7 @@ class MahjongTileSelectionConfirmEntityRenderer(
     }
 
     /** 純文字顯示，不提供單一 texture。 */
-    override fun getTexture(entity: MahjongTileSelectionConfirmEntity): Identifier? = null
+    override fun getTextureLocation(entity: MahjongTileSelectionConfirmEntity): ResourceLocation? = null
 
     private companion object {
         /** 文字縮放。 */

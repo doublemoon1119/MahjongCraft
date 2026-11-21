@@ -1,13 +1,13 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.furniture.item
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleCushionPlacement
-import net.minecraft.item.Item
-import net.minecraft.item.ItemUsageContext
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.ActionResult
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Direction
+import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.InteractionResult
+import net.minecraft.world.item.Item
+import net.minecraft.world.item.context.UseOnContext
 
 /**
  * 將坐墊物品放置成可保存的坐墊 entity。
@@ -15,31 +15,31 @@ import net.minecraft.util.math.Direction
  * @param settings 原版物品設定。
  */
 class ExampleCushionItem(
-    settings: Settings,
+    settings: Properties,
 ) : Item(settings) {
     /** 在命中的平坦頂面放置坐墊，按表面高度定位，成功生成後才消耗物品。 */
-    override fun useOnBlock(context: ItemUsageContext): ActionResult {
-        val player = context.player ?: return ActionResult.PASS
-        if (context.side != Direction.UP || !player.abilities.allowModifyWorld) return ActionResult.FAIL
-        if (context.world.isClient) return ActionResult.SUCCESS
-        val world = context.world as? ServerWorld ?: return ActionResult.FAIL
-        val position = ExampleCushionPlacement.positionAt(context.blockPos, context.hitPos.y)
-        val pos = BlockPos.ofFloored(position)
-        if (!world.chunkManager.isChunkLoaded(pos.x shr 4, pos.z shr 4)) return ActionResult.FAIL
-        if (!world.canPlayerModifyAt(player, context.blockPos) || !world.canPlayerModifyAt(player, pos)) return ActionResult.FAIL
-        if (!player.canModifyAt(world, pos)) return ActionResult.FAIL
+    override fun useOn(context: UseOnContext): InteractionResult {
+        val player = context.player ?: return InteractionResult.PASS
+        if (context.clickedFace != Direction.UP || !player.abilities.mayBuild) return InteractionResult.FAIL
+        if (context.level.isClientSide) return InteractionResult.SUCCESS
+        val world = context.level as? ServerLevel ?: return InteractionResult.FAIL
+        val position = ExampleCushionPlacement.positionAt(context.clickedPos, context.clickLocation.y)
+        val pos = BlockPos.containing(position)
+        if (!world.chunkSource.hasChunk(pos.x shr 4, pos.z shr 4)) return InteractionResult.FAIL
+        if (!world.mayInteract(player, context.clickedPos) || !world.mayInteract(player, pos)) return InteractionResult.FAIL
+        if (!player.mayInteract(world, pos)) return InteractionResult.FAIL
         return if (
             ExampleCushionPlacement.place(
                 world = world,
-                player = player as ServerPlayerEntity,
-                stack = context.stack,
+                player = player as ServerPlayer,
+                stack = context.itemInHand,
                 position = position,
-                yaw = context.playerYaw,
+                yaw = context.rotation,
             )
         ) {
-            ActionResult.CONSUME
+            InteractionResult.CONSUME
         } else {
-            ActionResult.FAIL
+            InteractionResult.FAIL
         }
     }
 }

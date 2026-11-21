@@ -48,11 +48,11 @@ import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import kotlinx.coroutines.launch
-import net.minecraft.command.argument.IdentifierArgumentType
-import net.minecraft.server.command.CommandManager.argument
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.text.Text
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands.argument
+import net.minecraft.commands.Commands.literal
+import net.minecraft.commands.arguments.ResourceLocationArgument
+import net.minecraft.network.chat.Component
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import kotlin.time.Duration.Companion.seconds
@@ -102,7 +102,7 @@ class FabricDebugDecisionCommand(
      * 建立涵蓋操作、立直、分析及 rule decision 的 HUD 預覽指令：各預覽依規則分組放在 [DecisionHudRuleGroup] 的 literal
      * 底下，`clear` 不分規則；literal 節點同時提供完整 tab 補全。
      */
-    fun buildDecisionHudCommand(): LiteralArgumentBuilder<ServerCommandSource> = DecisionHudRuleGroup.entries.fold(
+    fun buildDecisionHudCommand(): LiteralArgumentBuilder<CommandSourceStack> = DecisionHudRuleGroup.entries.fold(
         initial = literal(DECISION_HUD_SUBCOMMAND).then(literal(CLEAR_ARGUMENT).executes { clearDecisionHud(it.source) }),
     ) { node, group ->
         node.then(
@@ -131,25 +131,25 @@ class FabricDebugDecisionCommand(
      * @param preview 要展示的固定決策情境。
      * @return Brigadier 指令結果碼。
      */
-    private fun previewDecisionHud(source: ServerCommandSource, preview: DecisionHudPreview): Int {
+    private fun previewDecisionHud(source: CommandSourceStack, preview: DecisionHudPreview): Int {
         val player = source.player ?: return COMMAND_FAILURE
         val gameId = Uuid.random().toString()
         debugDecisionGameIds[player.uuid] = gameId
         val analysisTileId = if (preview.isDiscardAnalysis) {
-            val direction = player.rotationVector
-            MahjongTileEntity(world = source.world).also { tile ->
-                tile.uuid = Uuid.random().toJavaUuid()
-                tile.refreshPositionAndAngles(
+            val direction = player.lookAngle
+            MahjongTileEntity(world = source.level).also { tile ->
+                tile.setUUID(Uuid.random().toJavaUuid())
+                tile.moveTo(
                     player.x + direction.x * 2.0,
                     player.eyeY - 0.5,
                     player.z + direction.z * 2.0,
-                    player.yaw,
+                    player.yRot,
                     0f,
                 )
                 tile.tilePose = MahjongTilePose.FACE_UP
                 tile.tileAssetKey = "m9"
-                source.world.spawnEntity(tile)
-                entityLifecycle.schedule(source.world, source.world.time + DEBUG_HUD_DURATION_TICKS, listOf(tile))
+                source.level.addFreshEntity(tile)
+                entityLifecycle.schedule(source.level, source.level.gameTime + DEBUG_HUD_DURATION_TICKS, listOf(tile))
             }.uuid.toString()
         } else {
             null
@@ -167,7 +167,7 @@ class FabricDebugDecisionCommand(
                 ),
             ),
         )
-        source.sendFeedback({ Text.literal("Decision HUD preview: ${preview.ruleGroup.commandName} ${preview.commandName}") }, false)
+        source.sendSuccess({ Component.literal("Decision HUD preview: ${preview.ruleGroup.commandName} ${preview.commandName}") }, false)
         return COMMAND_SUCCESS
     }
 
@@ -177,7 +177,7 @@ class FabricDebugDecisionCommand(
      * @param source 執行指令的玩家來源。
      * @return Brigadier 指令結果碼。
      */
-    private fun clearDecisionHud(source: ServerCommandSource): Int {
+    private fun clearDecisionHud(source: CommandSourceStack): Int {
         val player = source.player ?: return COMMAND_FAILURE
         val gameId = debugDecisionGameIds.remove(player.uuid) ?: return COMMAND_SUCCESS
         MahjongChannels.decisionTimerUpdate.sendTo(
@@ -189,7 +189,7 @@ class FabricDebugDecisionCommand(
     }
 
     /** 建立 development-only rule decision 測試指令樹。 */
-    fun buildRuleDecisionCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(RULE_DECISION_SUBCOMMAND)
+    fun buildRuleDecisionCommand(): LiteralArgumentBuilder<CommandSourceStack> = literal(RULE_DECISION_SUBCOMMAND)
         .then(
             literal(START_ARGUMENT)
                 .then(literal(CONFIRM_ARGUMENT).executes { startRuleDecision(it.source, RuleDecisionPreview.CONFIRM) })
@@ -215,13 +215,13 @@ class FabricDebugDecisionCommand(
                 .then(literal(CONFIRM_ARGUMENT).executes { submitRuleDecision(it.source, RuleDecisionSubmission.Confirmed) })
                 .then(
                     literal(CHOICE_ARGUMENT).then(
-                        argument(OPTION_ID_ARGUMENT, IdentifierArgumentType.identifier())
+                        argument(OPTION_ID_ARGUMENT, ResourceLocationArgument.id())
                             .suggests(::suggestRuleDecisionOptions)
                             .executes { context ->
                                 submitRuleDecision(
                                     source = context.source,
                                     submission = RuleDecisionSubmission.Choice(
-                                        optionId = IdentifierArgumentType.getIdentifier(context, OPTION_ID_ARGUMENT).toString(),
+                                        optionId = ResourceLocationArgument.getId(context, OPTION_ID_ARGUMENT).toString(),
                                     ),
                                 )
                             },
@@ -253,7 +253,7 @@ class FabricDebugDecisionCommand(
      * @return 非同步補全結果。
      */
     private fun suggestRuleDecisionOptions(
-        context: CommandContext<ServerCommandSource>,
+        context: CommandContext<CommandSourceStack>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> = suggestFromPlayerRuleDecision(context.source, builder) { input, _, suggestions ->
         val options = (input as? RuleDecisionInputSpec.SingleChoice)?.optionIds.orEmpty()
@@ -270,7 +270,7 @@ class FabricDebugDecisionCommand(
      * @return 非同步補全結果。
      */
     private fun suggestRuleDecisionTileIds(
-        context: CommandContext<ServerCommandSource>,
+        context: CommandContext<CommandSourceStack>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> = suggestFromPlayerRuleDecision(context.source, builder) { input, _, suggestions ->
         val tileSelection = input as? RuleDecisionInputSpec.TileSelection ?: return@suggestFromPlayerRuleDecision
@@ -300,7 +300,7 @@ class FabricDebugDecisionCommand(
      * @return 非同步補全結果。
      */
     private fun suggestFromPlayerRuleDecision(
-        source: ServerCommandSource,
+        source: CommandSourceStack,
         builder: SuggestionsBuilder,
         appendSuggestions: (
             input: RuleDecisionInputSpec,
@@ -345,7 +345,7 @@ class FabricDebugDecisionCommand(
      * @param maxCount 選牌情境允許的最多張數；其他情境忽略。
      * @return Brigadier 指令結果碼。
      */
-    private fun startRuleDecision(source: ServerCommandSource, preview: RuleDecisionPreview, minCount: Int = 3, maxCount: Int = 3): Int = playerTableScope.runSuspending(source) { tableId, playerId ->
+    private fun startRuleDecision(source: CommandSourceStack, preview: RuleDecisionPreview, minCount: Int = 3, maxCount: Int = 3): Int = playerTableScope.runSuspending(source) { tableId, playerId ->
         val changed = gameRepository.updateGame(tableId) { game ->
             if (game == null) return@updateGame null to false
             val input = when (preview) {
@@ -383,7 +383,7 @@ class FabricDebugDecisionCommand(
      * @param submission 要送出的測試選擇。
      * @return Brigadier 指令結果碼。
      */
-    private fun submitRuleDecision(source: ServerCommandSource, submission: RuleDecisionSubmission): Int = playerTableScope.runSuspending(source) { tableId, playerId ->
+    private fun submitRuleDecision(source: CommandSourceStack, submission: RuleDecisionSubmission): Int = playerTableScope.runSuspending(source) { tableId, playerId ->
         val windowId = gameRepository.getGame(tableId)?.pendingRuleDecision?.id ?: return@runSuspending "No rule decision window is open"
         gameFlowCoordinator.dispatch(tableId, playerId, GameCommand.SubmitRuleDecision(windowId, submission))
         advanceManager.request(tableId)
@@ -396,7 +396,7 @@ class FabricDebugDecisionCommand(
      * @param context Brigadier 指令內容。
      * @return Brigadier 指令結果碼。
      */
-    private fun timeoutRuleDecision(context: CommandContext<ServerCommandSource>): Int = playerTableScope.runSuspending(context.source) { tableId, playerId ->
+    private fun timeoutRuleDecision(context: CommandContext<CommandSourceStack>): Int = playerTableScope.runSuspending(context.source) { tableId, playerId ->
         gameRepository.updateGame(tableId) { game ->
             game?.copy(forcedAutoPlayPlayerIds = game.forcedAutoPlayPlayerIds + playerId) to Unit
         }
@@ -412,7 +412,7 @@ class FabricDebugDecisionCommand(
      * @param context Brigadier 指令內容。
      * @return Brigadier 指令結果碼。
      */
-    private fun cancelRuleDecision(context: CommandContext<ServerCommandSource>): Int = playerTableScope.runSuspending(context.source) { tableId, _ ->
+    private fun cancelRuleDecision(context: CommandContext<CommandSourceStack>): Int = playerTableScope.runSuspending(context.source) { tableId, _ ->
         gameRepository.updateGame(tableId) { game ->
             game?.copy(pendingRuleDecision = null) to Unit
         }

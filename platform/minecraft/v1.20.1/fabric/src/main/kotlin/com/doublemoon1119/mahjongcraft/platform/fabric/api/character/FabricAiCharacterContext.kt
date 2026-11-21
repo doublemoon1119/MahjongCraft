@@ -2,8 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.api.character
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
-import net.minecraft.entity.Entity
-import net.minecraft.server.world.ServerWorld
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
 import kotlin.uuid.Uuid
 
 /**
@@ -18,7 +18,7 @@ import kotlin.uuid.Uuid
  * @property participant 自動入房時已綁定的既有實體；自有角色為 null。借用能力不得換成其他實體。
  */
 class FabricAiCharacterContext private constructor(
-    val world: ServerWorld,
+    val world: ServerLevel,
     val tableId: Uuid,
     val matchId: Uuid,
     val playerId: Uuid,
@@ -42,7 +42,7 @@ class FabricAiCharacterContext private constructor(
          */
         @JvmSynthetic
         internal fun create(
-            world: ServerWorld,
+            world: ServerLevel,
             tableId: Uuid,
             matchId: Uuid,
             playerId: Uuid,

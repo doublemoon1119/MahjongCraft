@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 /**
  * [WinSettlementPresentationEntity] 排名欄位的字串編碼，同步給 client 並隨世界存檔保存。
  *
- * 抽成獨立物件是為了可測試性：實體化 entity 需要註冊表裡的 `EntityType` 與 `World`，本專案沒有
+ * 抽成獨立物件是為了可測試性：實體化 entity 需要註冊表裡的 `EntityType` 與 `Level`，本專案沒有
  * Minecraft bootstrap 的測試基礎建設。
  *
  * 每列欄位依序為：玩家 ID、座位、是否 AI、前後分數、前後名次、付款原因 ID（沒有時為空字串）。

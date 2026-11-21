@@ -3,40 +3,41 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
-import net.minecraft.entity.EntityType
-import net.minecraft.entity.data.DataTracker
-import net.minecraft.entity.data.TrackedData
-import net.minecraft.entity.data.TrackedDataHandlerRegistry
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
-import net.minecraft.world.World
+import net.minecraft.core.BlockPos
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.network.syncher.EntityDataAccessor
+import net.minecraft.network.syncher.EntityDataSerializers
+import net.minecraft.network.syncher.SynchedEntityData
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.level.Level
+import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 
 /** 等待中遊戲的三行公開提示；由 [managedTableId] 管理並在所屬桌子失效時自行銷毀。 */
 class MahjongLobbyInfoEntity(
     type: EntityType<out MahjongLobbyInfoEntity> = ModEntities.mahjongLobbyInfo,
-    world: World,
-) : AnimatedMahjongEntity<Nothing>(type, world) {
+    world: Level,
+) : AnimatedMahjongEntity<Nothing>(type, world),
+    HiddenDebugHitboxEntity {
     /** 等待中遊戲使用的規則模組 ID。 */
     var ruleModuleId: String
-        get() = dataTracker[RULE_MODULE_ID]
-        set(value) = dataTracker.set(RULE_MODULE_ID, value)
+        get() = entityData[RULE_MODULE_ID]
+        set(value) = entityData.set(RULE_MODULE_ID, value)
 
     /** 目前房間內的玩家人數。 */
     var playerCount: Int
-        get() = dataTracker[PLAYER_COUNT]
-        set(value) = dataTracker.set(PLAYER_COUNT, value)
+        get() = entityData[PLAYER_COUNT]
+        set(value) = entityData.set(PLAYER_COUNT, value)
 
     /** 規則允許的最大玩家人數。 */
     var maximumPlayerCount: Int
-        get() = dataTracker[MAXIMUM_PLAYER_COUNT]
-        set(value) = dataTracker.set(MAXIMUM_PLAYER_COUNT, value)
+        get() = entityData[MAXIMUM_PLAYER_COUNT]
+        set(value) = entityData.set(MAXIMUM_PLAYER_COUNT, value)
 
     /** 所屬麻將桌；尚未指派或資料損壞時為 `null`。 */
     var managedTableId: Uuid?
-        get() = dataTracker[MANAGED_TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
-        private set(value) = dataTracker.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
+        get() = entityData[MANAGED_TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
+        private set(value) = entityData.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
 
     /** 所屬桌子的控制方塊位置，用來檢查此等待室提示是否仍有效。 */
     private var controllerPos: BlockPos? = null
@@ -52,25 +53,25 @@ class MahjongLobbyInfoEntity(
      * @param controllerPos 該桌控制方塊位置。
      */
     fun assignToTable(tableId: Uuid, controllerPos: BlockPos) {
-        check(!world.isClient) { "Managed lobby info must be assigned by the server" }
+        check(!level().isClientSide) { "Managed lobby info must be assigned by the server" }
         managedTableId = tableId
-        this.controllerPos = controllerPos.toImmutable()
+        this.controllerPos = controllerPos.immutable()
     }
 
     override fun tick() {
         super.tick()
-        if (world.isClient) return
-        if (age % ORPHAN_CHECK_INTERVAL_TICKS != 0) return
+        if (level().isClientSide) return
+        if (tickCount % ORPHAN_CHECK_INTERVAL_TICKS != 0) return
         val expectedTableId = managedTableId ?: return discard()
         val pos = controllerPos ?: return discard()
-        MahjongTableLookup.find(world, pos, expectedTableId) ?: return discard()
+        MahjongTableLookup.find(level(), pos, expectedTableId) ?: return discard()
     }
 
-    override fun isCollidable(): Boolean = false
+    override fun canBeCollidedWith(): Boolean = false
     override fun isPushable(): Boolean = false
-    override fun canHit(): Boolean = false
+    override fun isPickable(): Boolean = false
 
-    override fun getVisibilityBoundingBox(): Box = Box(
+    override fun getBoundingBoxForCulling(): AABB = AABB(
         x - WIDTH / 2.0,
         y - HEIGHT / 2.0,
         z - WIDTH / 2.0,
@@ -81,17 +82,17 @@ class MahjongLobbyInfoEntity(
 
     override fun applyCustomStep(step: Nothing) = error("Lobby info has no custom animation step")
     override fun applyPlayMotion(step: AnimationStep.PlayMotion, startGameTime: Long) = error("Lobby info does not support motion")
-    override fun serializeCustomStep(step: Nothing, nbt: NbtCompound) = error("Lobby info has no custom animation step")
-    override fun deserializeCustomStep(nbt: NbtCompound): Nothing = error("Lobby info has no custom animation step")
+    override fun serializeCustomStep(step: Nothing, nbt: CompoundTag) = error("Lobby info has no custom animation step")
+    override fun deserializeCustomStep(nbt: CompoundTag): Nothing = error("Lobby info has no custom animation step")
 
-    override fun initDataTracker() {
-        dataTracker.startTracking(RULE_MODULE_ID, "")
-        dataTracker.startTracking(PLAYER_COUNT, 0)
-        dataTracker.startTracking(MAXIMUM_PLAYER_COUNT, 0)
-        dataTracker.startTracking(MANAGED_TABLE_ID, "")
+    override fun defineSynchedData() {
+        entityData.define(RULE_MODULE_ID, "")
+        entityData.define(PLAYER_COUNT, 0)
+        entityData.define(MAXIMUM_PLAYER_COUNT, 0)
+        entityData.define(MANAGED_TABLE_ID, "")
     }
 
-    override fun readCustomDataFromNbt(nbt: NbtCompound) {
+    override fun readAdditionalSaveData(nbt: CompoundTag) {
         ruleModuleId = nbt.getString(NBT_RULE_MODULE_ID)
         playerCount = nbt.getInt(NBT_PLAYER_COUNT)
         maximumPlayerCount = nbt.getInt(NBT_MAXIMUM_PLAYER_COUNT)
@@ -101,7 +102,7 @@ class MahjongLobbyInfoEntity(
         }
     }
 
-    override fun writeCustomDataToNbt(nbt: NbtCompound) {
+    override fun addAdditionalSaveData(nbt: CompoundTag) {
         nbt.putString(NBT_RULE_MODULE_ID, ruleModuleId)
         nbt.putInt(NBT_PLAYER_COUNT, playerCount)
         nbt.putInt(NBT_MAXIMUM_PLAYER_COUNT, maximumPlayerCount)
@@ -123,13 +124,13 @@ class MahjongLobbyInfoEntity(
         private const val NBT_CONTROLLER_X = "ControllerX"
         private const val NBT_CONTROLLER_Y = "ControllerY"
         private const val NBT_CONTROLLER_Z = "ControllerZ"
-        private val RULE_MODULE_ID: TrackedData<String> =
-            DataTracker.registerData(MahjongLobbyInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
-        private val PLAYER_COUNT: TrackedData<Int> =
-            DataTracker.registerData(MahjongLobbyInfoEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
-        private val MAXIMUM_PLAYER_COUNT: TrackedData<Int> =
-            DataTracker.registerData(MahjongLobbyInfoEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
-        private val MANAGED_TABLE_ID: TrackedData<String> =
-            DataTracker.registerData(MahjongLobbyInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val RULE_MODULE_ID: EntityDataAccessor<String> =
+            SynchedEntityData.defineId(MahjongLobbyInfoEntity::class.java, EntityDataSerializers.STRING)
+        private val PLAYER_COUNT: EntityDataAccessor<Int> =
+            SynchedEntityData.defineId(MahjongLobbyInfoEntity::class.java, EntityDataSerializers.INT)
+        private val MAXIMUM_PLAYER_COUNT: EntityDataAccessor<Int> =
+            SynchedEntityData.defineId(MahjongLobbyInfoEntity::class.java, EntityDataSerializers.INT)
+        private val MANAGED_TABLE_ID: EntityDataAccessor<String> =
+            SynchedEntityData.defineId(MahjongLobbyInfoEntity::class.java, EntityDataSerializers.STRING)
     }
 }

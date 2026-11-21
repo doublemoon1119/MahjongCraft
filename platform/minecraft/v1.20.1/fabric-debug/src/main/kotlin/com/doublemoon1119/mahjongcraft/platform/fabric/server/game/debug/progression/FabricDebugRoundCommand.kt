@@ -11,9 +11,9 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPlayerTableScope
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
-import net.minecraft.server.command.CommandManager.argument
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands.argument
+import net.minecraft.commands.Commands.literal
 import kotlin.uuid.Uuid
 
 /**
@@ -45,7 +45,7 @@ class FabricDebugRoundCommand(
      *
      * @return 包含換局及本場數設定的指令節點。
      */
-    fun buildRoundCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(ROUND_SUBCOMMAND)
+    fun buildRoundCommand(): LiteralArgumentBuilder<CommandSourceStack> = literal(ROUND_SUBCOMMAND)
         .then(literal(NEXT_SUBCOMMAND).executes { context -> advanceToNextRound(context.source) })
         .then(
             literal(COMBO_SUBCOMMAND).then(
@@ -60,7 +60,7 @@ class FabricDebugRoundCommand(
      * @param source 指令發起來源。
      * @return 指令執行狀態碼。
      */
-    private fun advanceToNextRound(source: ServerCommandSource): Int = playerTableScope.runSuspending(source) { tableId, _ ->
+    private fun advanceToNextRound(source: CommandSourceStack): Int = playerTableScope.runSuspending(source) { tableId, _ ->
         gameRepository.getTableState(tableId)
             ?: return@runSuspending "Game not found"
         if (declareExhaustiveDrawUseCase(tableId) !is Outcome.Success) {
@@ -82,7 +82,7 @@ class FabricDebugRoundCommand(
      * @param comboCount 指令參數已驗證的本場數。
      * @return 指令執行狀態碼。
      */
-    private fun setComboCount(source: ServerCommandSource, comboCount: Int): Int = playerTableScope.runSuspending(source) { tableId, _ ->
+    private fun setComboCount(source: CommandSourceStack, comboCount: Int): Int = playerTableScope.runSuspending(source) { tableId, _ ->
         val state = gameRepository.updateGame(tableId) { game ->
             val current = game?.tableState ?: return@updateGame null to null
             val updated = current.copy(comboCount = comboCount)

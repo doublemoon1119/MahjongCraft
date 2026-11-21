@@ -8,12 +8,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMar
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterButtons
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.UnsavedChangesConfirmationScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.client.gui.tooltip.Tooltip
-import net.minecraft.client.gui.widget.ButtonWidget
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.Button
+import net.minecraft.client.gui.components.Tooltip
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.network.chat.Component
 import kotlin.math.roundToInt
 
 /**
@@ -35,9 +35,9 @@ import kotlin.math.roundToInt
 class MahjongHudLayoutEditorScreen(
     private val parent: MahjongClientConfigScreen,
     initialLayout: MahjongHudLayoutConfig,
-    private val automaticControlLabels: List<Text>,
+    private val automaticControlLabels: List<Component>,
     private val previewRenderer: MahjongHudPreviewRenderer,
-) : Screen(Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_TITLE)) {
+) : Screen(Component.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_TITLE)) {
     /** 編輯器的全部可測試狀態；拖曳、選取、草稿與控制項顯示都由它決定。 */
     private var model = MahjongHudLayoutEditorModel(baseline = initialLayout)
 
@@ -45,13 +45,13 @@ class MahjongHudLayoutEditorScreen(
     private var saveFailed = false
 
     /** 套用按鈕。 */
-    private var applyButton: ButtonWidget? = null
+    private var applyButton: Button? = null
 
     /** 復原按鈕。 */
-    private var undoButton: ButtonWidget? = null
+    private var undoButton: Button? = null
 
     /** 重設配置按鈕。 */
-    private var resetButton: ButtonWidget? = null
+    private var resetButton: Button? = null
 
     /** 目前的工具列與底部按鈕列版面。 */
     private var toolbar = MahjongHudToolbarLayout(screenWidth = 0, screenHeight = 0)
@@ -60,37 +60,37 @@ class MahjongHudLayoutEditorScreen(
     private val dropdown = DropdownOverlay()
 
     /** 預覽情境按鈕；編輯沒有情境的 HUD 時停用。 */
-    private var scenarioButton: ButtonWidget? = null
+    private var scenarioButton: Button? = null
 
     /**
      * 按鈕各自的 tooltip 內容（每個元素一行），於 [renderControls] 結尾統一補畫在最上層；停用的按鈕也顯示，
-     * 讓玩家看得到停用的原因。用多行清單而不是單一 Text 內嵌 `\n`，因為 [DrawContext.drawTooltip] 的單行版本
+     * 讓玩家看得到停用的原因。用多行清單而不是單一 Text 內嵌 `\n`，因為 [GuiGraphics.renderTooltip] 的單行版本
      * 不會把 `\n` 拆成新的一行，只會把它當成一個缺字字元畫出來。
      */
-    private val toolbarTooltips = mutableMapOf<ButtonWidget, List<Text>>()
+    private val toolbarTooltips = mutableMapOf<Button, List<Component>>()
 
     /** Editor 不暫停單人遊戲或 integrated server。 */
-    override fun shouldPause(): Boolean = false
+    override fun isPauseScreen(): Boolean = false
 
     /** 建立工具列控制項與重設、復原、套用與返回按鈕。 */
     override fun init() {
         dropdown.close()
         toolbar = MahjongHudToolbarLayout(screenWidth = width, screenHeight = height)
         addToolbarButtons()
-        resetButton = addFooterButton(SettingsFooterButtons.RESET, Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_RESET)) {
+        resetButton = addFooterButton(SettingsFooterButtons.RESET, Component.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_RESET)) {
             model = model.reset()
             saveFailed = false
             refreshButtons()
         }
-        undoButton = addFooterButton(SettingsFooterButtons.UNDO, Text.translatable(MinecraftClientConfigScreenKeys.UNDO)) {
+        undoButton = addFooterButton(SettingsFooterButtons.UNDO, Component.translatable(MinecraftClientConfigScreenKeys.UNDO)) {
             model = model.undo()
             saveFailed = false
             refreshButtons()
         }
-        applyButton = addFooterButton(SettingsFooterButtons.APPLY, Text.translatable(MinecraftClientConfigScreenKeys.APPLY)) {
+        applyButton = addFooterButton(SettingsFooterButtons.APPLY, Component.translatable(MinecraftClientConfigScreenKeys.APPLY)) {
             apply(returnAfterSave = false)
         }
-        addFooterButton(SettingsFooterButtons.DONE, Text.translatable(MinecraftClientConfigScreenKeys.BACK)) { requestReturn() }
+        addFooterButton(SettingsFooterButtons.DONE, Component.translatable(MinecraftClientConfigScreenKeys.BACK)) { requestReturn() }
         refreshButtons()
         updateControlVisibility()
     }
@@ -103,9 +103,9 @@ class MahjongHudLayoutEditorScreen(
      * @param action 按下後的行為。
      * @return 已加入畫面的按鈕。
      */
-    private fun addFooterButton(index: Int, label: Text, action: () -> Unit): ButtonWidget {
+    private fun addFooterButton(index: Int, label: Component, action: () -> Unit): Button {
         val area = toolbar.footerButton(index)
-        return addDrawableChild(
+        return addRenderableWidget(
             RestartableMarqueeButtonWidget.builder(label) { action() }
                 .dimensions(area.x, area.y, area.width, area.height)
                 .build(),
@@ -115,10 +115,10 @@ class MahjongHudLayoutEditorScreen(
     /** 建立工具列的 HUD 選擇器、預覽情境、其他 HUD 的顯示方式與隱藏控制項四個控制項。 */
     private fun addToolbarButtons() {
         toolbarTooltips.clear()
-        addDrawableChild(hudSelectorButton(toolbar.control(MahjongHudToolbarLayout.HUD)))
-        scenarioButton = addDrawableChild(scenarioSelectorButton(toolbar.control(MahjongHudToolbarLayout.SCENARIO)))
-        addDrawableChild(visibilitySelectorButton(toolbar.control(MahjongHudToolbarLayout.VISIBILITY)))
-        addDrawableChild(hideControlsButtonWidget(toolbar.control(MahjongHudToolbarLayout.HIDE_CONTROLS)))
+        addRenderableWidget(hudSelectorButton(toolbar.control(MahjongHudToolbarLayout.HUD)))
+        scenarioButton = addRenderableWidget(scenarioSelectorButton(toolbar.control(MahjongHudToolbarLayout.SCENARIO)))
+        addRenderableWidget(visibilitySelectorButton(toolbar.control(MahjongHudToolbarLayout.VISIBILITY)))
+        addRenderableWidget(hideControlsButtonWidget(toolbar.control(MahjongHudToolbarLayout.HIDE_CONTROLS)))
     }
 
     /**
@@ -127,24 +127,24 @@ class MahjongHudLayoutEditorScreen(
      * @param area 控制項範圍。
      * @return 選擇器按鈕。
      */
-    private fun hudSelectorButton(area: MahjongHudToolbarLayout.Area): ButtonWidget {
+    private fun hudSelectorButton(area: MahjongHudToolbarLayout.Area): Button {
         lateinit var button: RestartableMarqueeButtonWidget
-        button = RestartableMarqueeButtonWidget.builder(Text.translatable(model.selectedElement.translationKey)) {
+        button = RestartableMarqueeButtonWidget.builder(Component.translatable(model.selectedElement.translationKey)) {
             val entries = HudElement.entries
             dropdown.toggle(
                 key = HUD_SELECTOR_KEY,
                 anchor = button,
-                options = entries.map { DropdownOption(label = Text.translatable(it.translationKey)) },
+                options = entries.map { DropdownOption(label = Component.translatable(it.translationKey)) },
                 selectedIndex = entries.indexOf(model.selectedElement),
             ) { index ->
                 model = model.selectElement(entries[index])
-                clearAndInit()
+                rebuildWidgets()
             }
         }.dimensions(area.x, area.y, area.width, area.height).build()
         button.selectorExpanded = { dropdown.isOpenFor(HUD_SELECTOR_KEY) }
         toolbarTooltips[button] = ControlTooltip.optionLines(
-            description = Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_HUD_DESCRIPTION),
-            options = HudElement.entries.map { ControlTooltip.Option(label = Text.translatable(it.translationKey), current = it == model.selectedElement) },
+            description = Component.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_HUD_DESCRIPTION),
+            options = HudElement.entries.map { ControlTooltip.Option(label = Component.translatable(it.translationKey), current = it == model.selectedElement) },
         )
         return button
     }
@@ -155,21 +155,21 @@ class MahjongHudLayoutEditorScreen(
      * @param area 控制項範圍。
      * @return 情境按鈕。
      */
-    private fun scenarioSelectorButton(area: MahjongHudToolbarLayout.Area): ButtonWidget {
-        val button = RestartableMarqueeButtonWidget.builder(Text.translatable(model.scenario.translationKey)) {
+    private fun scenarioSelectorButton(area: MahjongHudToolbarLayout.Area): Button {
+        val button = RestartableMarqueeButtonWidget.builder(Component.translatable(model.scenario.translationKey)) {
             val entries = HudPreviewScenario.entries
             model = model.selectScenario(CycleButtonInput.next(options = entries, current = model.scenario))
-            clearAndInit()
+            rebuildWidgets()
         }.pressesOnSecondaryClick().dimensions(area.x, area.y, area.width, area.height).build()
-        val description = Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_SCENARIO_DESCRIPTION)
+        val description = Component.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_SCENARIO_DESCRIPTION)
         button.active = model.selectedElement.hasScenarios
         toolbarTooltips[button] = if (button.active) {
-            selectionTooltip(description, HudPreviewScenario.entries.map { Text.translatable(it.translationKey) to (it == model.scenario) })
+            selectionTooltip(description, HudPreviewScenario.entries.map { Component.translatable(it.translationKey) to (it == model.scenario) })
         } else {
             listOf(
-                description.copy().formatted(Formatting.GRAY),
-                Text.empty(),
-                Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_SCENARIO_UNAVAILABLE, Text.translatable(model.selectedElement.translationKey)).formatted(Formatting.RED),
+                description.copy().withStyle(ChatFormatting.GRAY),
+                Component.empty(),
+                Component.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_SCENARIO_UNAVAILABLE, Component.translatable(model.selectedElement.translationKey)).withStyle(ChatFormatting.RED),
             )
         }
         return button
@@ -181,15 +181,15 @@ class MahjongHudLayoutEditorScreen(
      * @param area 控制項範圍。
      * @return 切換其他 HUD 預覽方式的按鈕。
      */
-    private fun visibilitySelectorButton(area: MahjongHudToolbarLayout.Area): ButtonWidget {
-        val button = RestartableMarqueeButtonWidget.builder(Text.translatable(model.otherHudVisibility.translationKey)) {
+    private fun visibilitySelectorButton(area: MahjongHudToolbarLayout.Area): Button {
+        val button = RestartableMarqueeButtonWidget.builder(Component.translatable(model.otherHudVisibility.translationKey)) {
             val entries = HudPreviewVisibility.entries
             model = model.selectVisibility(CycleButtonInput.next(options = entries, current = model.otherHudVisibility))
-            clearAndInit()
+            rebuildWidgets()
         }.pressesOnSecondaryClick().dimensions(area.x, area.y, area.width, area.height).build()
         toolbarTooltips[button] = selectionTooltip(
-            description = Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_VISIBILITY_DESCRIPTION),
-            options = HudPreviewVisibility.entries.map { Text.translatable(it.translationKey) to (it == model.otherHudVisibility) },
+            description = Component.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_VISIBILITY_DESCRIPTION),
+            options = HudPreviewVisibility.entries.map { Component.translatable(it.translationKey) to (it == model.otherHudVisibility) },
         )
         return button
     }
@@ -200,7 +200,7 @@ class MahjongHudLayoutEditorScreen(
      * @param area 控制項範圍。
      * @return 點擊後隱藏編輯控制項的按鈕。
      */
-    private fun hideControlsButtonWidget(area: MahjongHudToolbarLayout.Area): ButtonWidget = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_HIDE_CONTROLS)) {
+    private fun hideControlsButtonWidget(area: MahjongHudToolbarLayout.Area): Button = RestartableMarqueeButtonWidget.builder(Component.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_HIDE_CONTROLS)) {
         model = model.withControlsHidden(true)
         updateControlVisibility()
     }.dimensions(area.x, area.y, area.width, area.height).build()
@@ -212,14 +212,14 @@ class MahjongHudLayoutEditorScreen(
      * @param options 選項名稱與是否選取。
      * @return 提示框的每一行。
      */
-    private fun selectionTooltip(description: Text, options: List<Pair<Text, Boolean>>): List<Text> = ControlTooltip.optionLines(
+    private fun selectionTooltip(description: Component, options: List<Pair<Component, Boolean>>): List<Component> = ControlTooltip.optionLines(
         description = description,
         options = options.map { (label, selected) -> ControlTooltip.Option(label = label, current = selected) },
         hints = CycleButtonInput.hintTexts(optionCount = options.size),
     )
 
     /** Esc 使用與返回按鈕相同的未保存變更保護。 */
-    override fun close() {
+    override fun onClose() {
         if (model.controlsManuallyHidden) {
             model = model.withControlsHidden(false)
             updateControlVisibility()
@@ -229,12 +229,12 @@ class MahjongHudLayoutEditorScreen(
     }
 
     /** 繪製背景、參考線與全部可拖曳的 HUD 預覽。 */
-    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         measurePreviews()
         context.fill(0, 0, width, height, SCREEN_OVERLAY_COLOR)
         context.fill(width / 2, 24, width / 2 + 1, height - 34, GUIDE_COLOR)
         context.fill(0, height / 2, width, height / 2 + 1, GUIDE_COLOR)
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 10, TITLE_COLOR)
+        context.drawCenteredString(font, title, width / 2, 10, TITLE_COLOR)
         HudElement.entries.forEach { element ->
             if (element == model.selectedElement) {
                 renderPreview(context, element, bounds(element), mouseX, mouseY)
@@ -246,23 +246,23 @@ class MahjongHudLayoutEditorScreen(
             }
         }
         if (saveFailed) {
-            context.drawCenteredTextWithShadow(
-                textRenderer,
-                Text.translatable(MinecraftClientConfigScreenKeys.SAVE_FAILED).formatted(Formatting.RED),
+            context.drawCenteredString(
+                font,
+                Component.translatable(MinecraftClientConfigScreenKeys.SAVE_FAILED).withStyle(ChatFormatting.RED),
                 width / 2,
                 toolbar.footerTop - SAVE_FAILED_GAP,
                 0xFFFFFF,
             )
         }
         if (model.controlsVisible) {
-            context.matrices.push()
-            context.matrices.translate(0.0, 0.0, EDITOR_CONTROLS_Z)
+            context.pose().pushPose()
+            context.pose().translate(0.0, 0.0, EDITOR_CONTROLS_Z)
             renderControls(context, mouseX, mouseY, delta)
-            context.matrices.pop()
+            context.pose().popPose()
         } else if (model.controlsManuallyHidden && model.dragging == null) {
-            context.drawCenteredTextWithShadow(
-                textRenderer,
-                Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SHOW_CONTROLS_HINT),
+            context.drawCenteredString(
+                font,
+                Component.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SHOW_CONTROLS_HINT),
                 width / 2,
                 height - 12,
                 0xB0B0B0,
@@ -280,7 +280,7 @@ class MahjongHudLayoutEditorScreen(
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
      */
-    private fun renderTrimmedPreviewTooltip(context: DrawContext, mouseX: Int, mouseY: Int) {
+    private fun renderTrimmedPreviewTooltip(context: GuiGraphics, mouseX: Int, mouseY: Int) {
         if (model.dragging != null) return
         if (model.controlsVisible && toolbarTooltips.keys.any { it.visible && it.isHovered(mouseX, mouseY) }) return
         val element = model.hitTest(
@@ -290,15 +290,15 @@ class MahjongHudLayoutEditorScreen(
             screenHeight = height,
         ) ?: return
         if (element == model.selectedElement) return
-        val name = Text.translatable(element.translationKey)
+        val name = Component.translatable(element.translationKey)
         val position = positionText(element)
-        if (textRenderer.getWidth(name) <= previewTextWidth(bounds(element))) return
-        context.drawTooltip(textRenderer, listOf(name, Text.literal(position)), mouseX, mouseY)
+        if (font.width(name) <= previewTextWidth(bounds(element))) return
+        context.renderComponentTooltip(font, listOf(name, Component.literal(position)), mouseX, mouseY)
     }
 
     /** 左鍵按住任一預覽框時開始拖曳；按鈕點擊完全交由原版流程處理。 */
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        if (dropdown.mouseClicked(textRenderer, height, mouseX, mouseY, button)) return true
+        if (dropdown.mouseClicked(font, height, mouseX, mouseY, button)) return true
         if (model.controlsVisible && super.mouseClicked(mouseX, mouseY, button)) return true
         if (button == 0) {
             val element = model.hitTest(
@@ -342,7 +342,7 @@ class MahjongHudLayoutEditorScreen(
     override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean {
         if (button == 0 && model.dragging != null) {
             model = model.endDrag()
-            clearAndInit()
+            rebuildWidgets()
             return true
         }
         return super.mouseReleased(mouseX, mouseY, button)
@@ -350,13 +350,13 @@ class MahjongHudLayoutEditorScreen(
 
     /** HUD 清單展開時在清單內捲動。 */
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
-        if (dropdown.mouseScrolled(textRenderer, height, amount)) return true
+        if (dropdown.mouseScrolled(font, height, amount)) return true
         return super.mouseScrolled(mouseX, mouseY, amount)
     }
 
     /** HUD 清單展開時由清單處理按鍵，Esc 只收合清單。 */
     override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
-        if (dropdown.keyPressed(textRenderer, height, keyCode)) return true
+        if (dropdown.keyPressed(font, height, keyCode)) return true
         return super.keyPressed(keyCode, scanCode, modifiers)
     }
 
@@ -367,14 +367,14 @@ class MahjongHudLayoutEditorScreen(
      */
     private fun apply(returnAfterSave: Boolean) {
         if (!model.hasUnsavedChanges) {
-            if (returnAfterSave) client?.setScreen(parent)
+            if (returnAfterSave) minecraft?.setScreen(parent)
             return
         }
         if (parent.applyHudLayout(model.draft)) {
             model = model.markApplied()
             saveFailed = false
             refreshButtons()
-            if (returnAfterSave) client?.setScreen(parent)
+            if (returnAfterSave) minecraft?.setScreen(parent)
         } else {
             saveFailed = true
         }
@@ -383,13 +383,13 @@ class MahjongHudLayoutEditorScreen(
     /** 無變更時直接返回；有變更時開啟三選項確認畫面。 */
     private fun requestReturn() {
         if (!model.hasUnsavedChanges) {
-            client?.setScreen(parent)
+            minecraft?.setScreen(parent)
         } else {
-            client?.setScreen(
+            minecraft?.setScreen(
                 UnsavedChangesConfirmationScreen(
                     previousScreen = this,
                     onApply = { apply(true) },
-                    onDiscard = { client?.setScreen(parent) },
+                    onDiscard = { minecraft?.setScreen(parent) },
                     changesPreview = clientConfigDifferenceText(
                         from = MahjongClientConfigState(hudLayout = model.baseline),
                         to = MahjongClientConfigState(hudLayout = model.draft),
@@ -404,7 +404,7 @@ class MahjongHudLayoutEditorScreen(
         val tooltip = if (!model.hasUnsavedChanges) {
             null
         } else {
-            Tooltip.of(
+            Tooltip.create(
                 clientConfigDifferenceText(
                     from = MahjongClientConfigState(hudLayout = model.baseline),
                     to = MahjongClientConfigState(hudLayout = model.draft),
@@ -422,7 +422,7 @@ class MahjongHudLayoutEditorScreen(
     private fun updateControlVisibility() {
         val visible = model.controlsVisible
         if (!visible) dropdown.close()
-        children().filterIsInstance<ButtonWidget>().forEach { it.visible = visible }
+        children().filterIsInstance<Button>().forEach { it.visible = visible }
     }
 
     /**
@@ -434,7 +434,7 @@ class MahjongHudLayoutEditorScreen(
      * @param mouseY 游標垂直座標。
      * @param delta 本次繪製使用的 tick 內插比例。
      */
-    private fun renderControls(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+    private fun renderControls(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         listOf(
             MahjongHudToolbarLayout.HUD to MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_HUD,
             MahjongHudToolbarLayout.SCENARIO to MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_SCENARIO,
@@ -442,18 +442,18 @@ class MahjongHudLayoutEditorScreen(
         ).forEach { (index, key) ->
             val area = toolbar.control(index)
             val enabled = index != MahjongHudToolbarLayout.SCENARIO || scenarioButton?.active == true
-            val caption = trimPreviewText(text = Text.translatable(key).string, maxWidth = area.width, widthOf = textRenderer::getWidth)
-            context.drawTextWithShadow(textRenderer, Text.literal(caption), area.x, toolbar.captionY(index), if (enabled) CAPTION_COLOR else DISABLED_CAPTION_COLOR)
+            val caption = trimPreviewText(text = Component.translatable(key).string, maxWidth = area.width, widthOf = font::width)
+            context.drawString(font, Component.literal(caption), area.x, toolbar.captionY(index), if (enabled) CAPTION_COLOR else DISABLED_CAPTION_COLOR)
         }
-        children().filterIsInstance<ButtonWidget>().filter { it.visible }.forEach { button ->
+        children().filterIsInstance<Button>().filter { it.visible }.forEach { button ->
             context.fill(button.x, button.y, button.x + button.width, button.y + button.height, EDITOR_BUTTON_BACKING_COLOR)
         }
         super.render(context, dropdown.pointer(mouseX), dropdown.pointer(mouseY), delta)
         if (!dropdown.isOpen) {
             toolbarTooltips.entries.firstOrNull { (button, _) -> button.visible && button.isHovered(mouseX, mouseY) }
-                ?.let { (_, tooltip) -> context.drawTooltip(textRenderer, tooltip, mouseX, mouseY) }
+                ?.let { (_, tooltip) -> context.renderComponentTooltip(font, tooltip, mouseX, mouseY) }
         }
-        dropdown.render(context, textRenderer, height, mouseX, mouseY)
+        dropdown.render(context, font, height, mouseX, mouseY)
     }
 
     /**
@@ -463,7 +463,7 @@ class MahjongHudLayoutEditorScreen(
      * @param mouseY 游標垂直座標。
      * @return 游標在按鈕範圍內時為 true。
      */
-    private fun ButtonWidget.isHovered(mouseX: Int, mouseY: Int): Boolean = mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height
+    private fun Button.isHovered(mouseX: Int, mouseY: Int): Boolean = mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height
 
     /** 以範例內容量測每個 HUD 的實際尺寸，讓預覽框與實際 HUD 同寬同高；無法量測的 HUD 沿用模型的內建預設尺寸。 */
     private fun measurePreviews() {
@@ -494,11 +494,11 @@ class MahjongHudLayoutEditorScreen(
      * @param maxWidth 可用的像素寬度。
      * @return 適合預覽框寬度的純文字。
      */
-    private fun trimToPreview(text: Text, maxWidth: Int): Text = Text.literal(
+    private fun trimToPreview(text: Component, maxWidth: Int): Component = Component.literal(
         trimPreviewText(
             text = text.string,
             maxWidth = maxWidth,
-            widthOf = textRenderer::getWidth,
+            widthOf = font::width,
         ),
     )
 
@@ -546,7 +546,7 @@ class MahjongHudLayoutEditorScreen(
      * @param mouseY 游標垂直座標。
      */
     private fun renderPreview(
-        context: DrawContext,
+        context: GuiGraphics,
         element: HudElement,
         bounds: MahjongHudBounds,
         mouseX: Int,
@@ -561,7 +561,7 @@ class MahjongHudLayoutEditorScreen(
             automaticControlLabels = automaticControlLabels,
             opacity = if (hovered || model.dragging == element) PREVIEW_HOVER_OPACITY else PREVIEW_OPACITY,
         )
-        context.drawBorder(bounds.left, bounds.top, bounds.width, bounds.height, SELECTED_BORDER_COLOR)
+        context.renderOutline(bounds.left, bounds.top, bounds.width, bounds.height, SELECTED_BORDER_COLOR)
         renderPreviewLabel(context, element, bounds, hovered)
     }
 
@@ -573,16 +573,16 @@ class MahjongHudLayoutEditorScreen(
      * @param bounds 預覽框邊界。
      * @param hovered 游標是否位於預覽框內，影響文字顏色。
      */
-    private fun renderPreviewLabel(context: DrawContext, element: HudElement, bounds: MahjongHudBounds, hovered: Boolean) {
-        val label = Text.translatable(element.translationKey).append("  ").append(positionText(element))
-        val labelWidth = (textRenderer.getWidth(label) + PREVIEW_LABEL_PADDING * 2).coerceAtMost(width)
-        val labelHeight = textRenderer.fontHeight + PREVIEW_LABEL_PADDING * 2
+    private fun renderPreviewLabel(context: GuiGraphics, element: HudElement, bounds: MahjongHudBounds, hovered: Boolean) {
+        val label = Component.translatable(element.translationKey).append("  ").append(positionText(element))
+        val labelWidth = (font.width(label) + PREVIEW_LABEL_PADDING * 2).coerceAtMost(width)
+        val labelHeight = font.lineHeight + PREVIEW_LABEL_PADDING * 2
         val left = (bounds.left + bounds.width / 2 - labelWidth / 2).coerceIn(0, (width - labelWidth).coerceAtLeast(0))
         val above = bounds.top - PREVIEW_LABEL_GAP - labelHeight
         val top = (if (above >= 0) above else bounds.bottom + PREVIEW_LABEL_GAP).coerceIn(0, (height - labelHeight).coerceAtLeast(0))
         context.fill(left, top, left + labelWidth, top + labelHeight, PREVIEW_LABEL_BACKGROUND)
-        context.drawCenteredTextWithShadow(
-            textRenderer,
+        context.drawCenteredString(
+            font,
             label,
             left + labelWidth / 2,
             top + PREVIEW_LABEL_PADDING,
@@ -597,11 +597,11 @@ class MahjongHudLayoutEditorScreen(
      * @param element 欲繪製的 HUD 元件。
      * @param bounds 預覽框邊界。
      */
-    private fun renderOutline(context: DrawContext, element: HudElement, bounds: MahjongHudBounds) {
+    private fun renderOutline(context: GuiGraphics, element: HudElement, bounds: MahjongHudBounds) {
         context.fill(bounds.left, bounds.top, bounds.right, bounds.bottom, OUTLINE_BACKGROUND_COLOR)
-        context.drawBorder(bounds.left, bounds.top, bounds.width, bounds.height, OUTLINE_COLOR)
-        val label = trimToPreview(Text.translatable(element.translationKey), previewTextWidth(bounds))
-        context.drawCenteredTextWithShadow(textRenderer, label, bounds.left + bounds.width / 2, bounds.top + 7, OUTLINE_TEXT_COLOR)
+        context.renderOutline(bounds.left, bounds.top, bounds.width, bounds.height, OUTLINE_COLOR)
+        val label = trimToPreview(Component.translatable(element.translationKey), previewTextWidth(bounds))
+        context.drawCenteredString(font, label, bounds.left + bounds.width / 2, bounds.top + 7, OUTLINE_TEXT_COLOR)
     }
 
     /** Editor 配色與 Z 位移常數；工具列版位常數見 [MahjongHudToolbarLayout]。 */

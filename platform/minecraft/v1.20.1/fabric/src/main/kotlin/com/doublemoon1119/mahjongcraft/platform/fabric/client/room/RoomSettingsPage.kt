@@ -35,16 +35,16 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScre
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftControlTooltipKeys
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.Drawable
-import net.minecraft.client.gui.Element
-import net.minecraft.client.gui.Selectable
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.client.gui.tooltip.Tooltip
-import net.minecraft.client.gui.widget.ButtonWidget
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.client.gui.Font
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.Button
+import net.minecraft.client.gui.components.Renderable
+import net.minecraft.client.gui.components.Tooltip
+import net.minecraft.client.gui.components.events.GuiEventListener
+import net.minecraft.client.gui.narration.NarratableEntry
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.network.chat.Component
 import kotlin.uuid.Uuid
 
 /**
@@ -55,7 +55,7 @@ internal interface RoomSettingsPageHost {
     val screen: Screen
 
     /** 所屬畫面的文字繪製器。 */
-    val textRenderer: TextRenderer
+    val textRenderer: Font
 
     /**
      * 將元件加入所屬畫面。
@@ -64,7 +64,7 @@ internal interface RoomSettingsPageHost {
      * @param widget 要加入的元件。
      * @return 傳入的元件。
      */
-    fun <T> addWidget(widget: T): T where T : Element, T : Drawable, T : Selectable
+    fun <T> addWidget(widget: T): T where T : GuiEventListener, T : Renderable, T : NarratableEntry
 
     /** 在目前輸入事件結束後重建所屬畫面的元件。 */
     fun requestRebuild()
@@ -140,16 +140,16 @@ internal class RoomSettingsPage(
     private val statusMarquee = MarqueeState()
 
     /** 套用按鈕；唯讀時為 null。 */
-    private var applyButton: ButtonWidget? = null
+    private var applyButton: Button? = null
 
     /** 復原按鈕；唯讀時為 null。 */
-    private var undoButton: ButtonWidget? = null
+    private var undoButton: Button? = null
 
     /** 重設為預設按鈕；唯讀時為 null。 */
-    private var resetButton: ButtonWidget? = null
+    private var resetButton: Button? = null
 
     /** 完成按鈕；唯讀時為 null。 */
-    private var doneButton: ButtonWidget? = null
+    private var doneButton: Button? = null
 
     /** 依目前草稿建立規則列、分類頁籤、欄位與底部操作列；非房主只提供唯讀控制項。 */
     fun init() {
@@ -196,15 +196,15 @@ internal class RoomSettingsPage(
      * @param mouseY 游標的垂直座標。
      * @return 被截斷且正被游標指向的標籤全文；沒有時為 null。
      */
-    fun renderContent(context: DrawContext, mouseX: Int, mouseY: Int): Text? {
+    fun renderContent(context: GuiGraphics, mouseX: Int, mouseY: Int): Component? {
         val textRenderer = host.textRenderer
         val layout = layout()
         val config = draft.config ?: host.currentConfig() ?: return null
         val definition = configResolver.resolve(config).definition
         if (definition == null) {
-            context.drawCenteredTextWithShadow(
+            context.drawCenteredString(
                 textRenderer,
-                Text.translatable(MinecraftRoomScreenKeys.READ_ONLY),
+                Component.translatable(MinecraftRoomScreenKeys.READ_ONLY),
                 host.screen.width / 2,
                 layout.fieldsTop,
                 ScreenRendering.MUTED_TEXT_COLOR,
@@ -212,19 +212,19 @@ internal class RoomSettingsPage(
             return null
         }
         layout.ruleRow?.let { row ->
-            context.drawTextWithShadow(textRenderer, ruleLabel(), row.ruleLabelX, row.labelY, ScreenRendering.TEXT_COLOR)
-            context.drawTextWithShadow(textRenderer, variantLabel(), row.variantLabelX, row.labelY, ScreenRendering.TEXT_COLOR)
+            context.drawString(textRenderer, ruleLabel(), row.ruleLabelX, row.labelY, ScreenRendering.TEXT_COLOR)
+            context.drawString(textRenderer, variantLabel(), row.variantLabelX, row.labelY, ScreenRendering.TEXT_COLOR)
             ScreenRendering.divider(context, layout, row.dividerY)
         }
         ScreenRendering.tabLine(context, tabStrip(layout, definition.categories.size))
-        var hoveredLabel: Text? = null
+        var hoveredLabel: Component? = null
         val fields = GameConfigVariantResolver.visibleFields(definition).filter { it.categoryId == selectedCategoryId }
         fields.drop(fieldScroll.index).take(layout.visibleFieldCount).forEachIndexed { index, field ->
             layout.fieldStripe(index).renderIfStriped(context, fieldScroll.index + index)
             ScreenRendering.label(
                 context = context,
                 textRenderer = textRenderer,
-                label = Text.translatable(field.nameTranslationKey),
+                label = Component.translatable(field.nameTranslationKey),
                 x = layout.contentLeft,
                 y = layout.fieldLabelY(layout.fieldRowTop(index)),
                 maximumWidth = layout.labelWidth,
@@ -235,9 +235,9 @@ internal class RoomSettingsPage(
         VerticalScrollbar.render(context, layout.scrollbarLeft, layout.scrollbar(fields.size, fieldScroll.index))
         val roomPlayerCount = roomPlayerCount()
         val status = when {
-            !definition.selectable -> Text.translatable(definition.unavailableReasonTranslationKey!!)
-            draft.isStale -> Text.translatable(MinecraftRoomScreenKeys.DRAFT_STALE)
-            draft.hasInvalidFields -> Text.translatable(MinecraftRoomScreenKeys.VALIDATION_FAILED)
+            !definition.selectable -> Component.translatable(definition.unavailableReasonTranslationKey!!)
+            draft.isStale -> Component.translatable(MinecraftRoomScreenKeys.DRAFT_STALE)
+            draft.hasInvalidFields -> Component.translatable(MinecraftRoomScreenKeys.VALIDATION_FAILED)
             draft.exceedsPlayerLimit(roomPlayerCount) -> playerLimitExceededText(config, roomPlayerCount)
             else -> null
         }
@@ -401,8 +401,8 @@ internal class RoomSettingsPage(
         val ruleOptions = candidates.map { candidate ->
             DropdownOption(
                 label = ruleName(candidate.ruleModuleId),
-                description = Text.translatable(candidate.descriptionTranslationKey),
-                unavailableReason = candidate.unavailableReasonTranslationKey?.takeUnless { candidate.selectable }?.let(Text::translatable),
+                description = Component.translatable(candidate.descriptionTranslationKey),
+                unavailableReason = candidate.unavailableReasonTranslationKey?.takeUnless { candidate.selectable }?.let(Component::translatable),
             )
         }
         val ruleIndex = candidates.indexOfFirst { it.ruleModuleId == moduleId }.takeIf { it >= 0 }
@@ -414,9 +414,9 @@ internal class RoomSettingsPage(
         }.dimensions(row.ruleSelectorX, row.selectorY, row.selectorWidth, FormScreenLayout.BUTTON_HEIGHT).build().also { button ->
             button.active = canEditRoom
             button.selectorExpanded = { dropdown.isOpenFor(RULE_SELECTOR_KEY) }
-            button.tooltip = Tooltip.of(
+            button.tooltip = Tooltip.create(
                 ControlTooltip.options(
-                    description = Text.translatable(MinecraftRoomScreenKeys.RULE_SELECTOR_DESCRIPTION),
+                    description = Component.translatable(MinecraftRoomScreenKeys.RULE_SELECTOR_DESCRIPTION),
                     options = candidates.zip(ruleOptions).map { (candidate, option) ->
                         ControlTooltip.Option(
                             label = option.label,
@@ -429,15 +429,15 @@ internal class RoomSettingsPage(
         }
         host.addWidget(ruleSelector)
         host.addWidget(
-            widget = RestartableMarqueeButtonWidget.builder(Text.literal(RULE_CATALOGUE_BUTTON_LABEL)) { openRuleCatalogue() }
+            widget = RestartableMarqueeButtonWidget.builder(Component.literal(RULE_CATALOGUE_BUTTON_LABEL)) { openRuleCatalogue() }
                 .dimensions(row.catalogueX, row.catalogueY, row.catalogueSize, row.catalogueSize)
                 .build()
                 .also {
-                    it.tooltip = Tooltip.of(
-                        Text.empty()
-                            .append(Text.translatable(MinecraftRoomScreenKeys.RULE_CATALOGUE_BUTTON).formatted(Formatting.GOLD))
+                    it.tooltip = Tooltip.create(
+                        Component.empty()
+                            .append(Component.translatable(MinecraftRoomScreenKeys.RULE_CATALOGUE_BUTTON).withStyle(ChatFormatting.GOLD))
                             .append("\n")
-                            .append(Text.translatable(MinecraftRoomScreenKeys.RULE_CATALOGUE_BUTTON_DESCRIPTION).formatted(Formatting.GRAY)),
+                            .append(Component.translatable(MinecraftRoomScreenKeys.RULE_CATALOGUE_BUTTON_DESCRIPTION).withStyle(ChatFormatting.GRAY)),
                     )
                 },
         )
@@ -445,12 +445,12 @@ internal class RoomSettingsPage(
         val currentVariant = GameConfigVariantResolver.current(definition, config)
         val variantOptions = variants.map { variant ->
             DropdownOption(
-                label = Text.translatable(variant.nameTranslationKey),
-                description = Text.translatable(variant.descriptionTranslationKey),
+                label = Component.translatable(variant.nameTranslationKey),
+                description = Component.translatable(variant.descriptionTranslationKey),
             )
         }
         lateinit var variantSelector: RestartableMarqueeButtonWidget
-        variantSelector = RestartableMarqueeButtonWidget.builder(Text.translatable(currentVariant.nameTranslationKey)) {
+        variantSelector = RestartableMarqueeButtonWidget.builder(Component.translatable(currentVariant.nameTranslationKey)) {
             dropdown.toggle(
                 key = VARIANT_SELECTOR_KEY,
                 anchor = variantSelector,
@@ -467,9 +467,9 @@ internal class RoomSettingsPage(
         }.dimensions(row.variantSelectorX, row.selectorY, row.selectorWidth, FormScreenLayout.BUTTON_HEIGHT).build().also { button ->
             button.active = editable
             button.selectorExpanded = { dropdown.isOpenFor(VARIANT_SELECTOR_KEY) }
-            button.tooltip = Tooltip.of(
+            button.tooltip = Tooltip.create(
                 ControlTooltip.options(
-                    description = Text.translatable(currentVariant.descriptionTranslationKey),
+                    description = Component.translatable(currentVariant.descriptionTranslationKey),
                     options = variants.zip(variantOptions).map { (variant, option) ->
                         ControlTooltip.Option(label = option.label, current = variant.id == currentVariant.id)
                     },
@@ -536,7 +536,7 @@ internal class RoomSettingsPage(
                     y = strip.tabY(selected),
                     width = strip.tabWidth,
                     height = strip.tabHeight(selected),
-                    message = Text.translatable(category.nameTranslationKey),
+                    message = Component.translatable(category.nameTranslationKey),
                     selected = selected,
                     clipLeft = strip.left,
                     clipRight = strip.right,
@@ -570,7 +570,7 @@ internal class RoomSettingsPage(
         locked: GameConfigLockedField?,
     ) {
         val value = field.read(config)
-        val tooltip = Tooltip.of(fieldTooltip(field, config, editable, locked))
+        val tooltip = Tooltip.create(fieldTooltip(field, config, editable, locked))
         when (val editor = field.editor) {
             GameConfigEditorSpec.BooleanToggle -> {
                 val enabled = (value as GameConfigPresentationValue.BooleanValue).enabled
@@ -602,7 +602,7 @@ internal class RoomSettingsPage(
             is GameConfigEditorSpec.MultiChoice -> {
                 val selected = (value as GameConfigPresentationValue.MultiChoiceValue).optionIds
                 host.addWidget(
-                    widget = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.SELECTED_COUNT, selected.size)) {
+                    widget = RestartableMarqueeButtonWidget.builder(Component.translatable(MinecraftRoomScreenKeys.SELECTED_COUNT, selected.size)) {
                         openMultiChoice(field, editor, config, selected)
                     }.dimensions(layout.controlLeft, y, layout.controlWidth, FormScreenLayout.BUTTON_HEIGHT).build().also {
                         it.active = editable
@@ -613,7 +613,7 @@ internal class RoomSettingsPage(
             is GameConfigEditorSpec.IntegerInput -> {
                 val number = (value as GameConfigPresentationValue.IntegerValue).number
                 host.addWidget(
-                    widget = RestartableMarqueeButtonWidget.builder(Text.literal("−")) {
+                    widget = RestartableMarqueeButtonWidget.builder(Component.literal("−")) {
                         val next = RoomConfigIntegerControl.decrement(current = number, editor = editor, shiftHeld = Screen.hasShiftDown())
                         updateDraft(field, GameConfigPresentationValue.IntegerValue(next))
                     }.dimensions(layout.integerMinusX, y, FormScreenLayout.INTEGER_BUTTON_WIDTH, FormScreenLayout.BUTTON_HEIGHT).build().also {
@@ -622,31 +622,31 @@ internal class RoomSettingsPage(
                     },
                 )
                 host.addWidget(
-                    widget = CenteredIntegerTextFieldWidget(
+                    widget = CenteredIntegerEditBox(
                         fieldTextRenderer = host.textRenderer,
                         x = layout.integerTextX,
                         y = y,
                         width = layout.integerTextWidth,
                         height = FormScreenLayout.BUTTON_HEIGHT,
-                        narration = Text.translatable(field.nameTranslationKey),
+                        narration = Component.translatable(field.nameTranslationKey),
                     ).also { widget ->
-                        widget.text = number?.toString().orEmpty()
+                        widget.setValue(number?.toString().orEmpty())
                         widget.setMaxLength(11)
                         widget.setEditable(editable)
                         widget.active = editable
-                        widget.setEditableColor(ScreenRendering.TEXT_COLOR)
-                        widget.setUneditableColor(ScreenRendering.MUTED_TEXT_COLOR)
+                        widget.setTextColor(ScreenRendering.TEXT_COLOR)
+                        widget.setTextColorUneditable(ScreenRendering.MUTED_TEXT_COLOR)
                         widget.tooltip = tooltip
-                        widget.setChangedListener { raw ->
+                        widget.setResponder { raw ->
                             updateNumericDraft(field, editor, raw)
-                            widget.setEditableColor(
+                            widget.setTextColor(
                                 if (draft.isFieldInvalid(field.id)) ScreenRendering.ERROR_TEXT_COLOR else ScreenRendering.TEXT_COLOR,
                             )
                         }
                     },
                 )
                 host.addWidget(
-                    widget = RestartableMarqueeButtonWidget.builder(Text.literal("+")) {
+                    widget = RestartableMarqueeButtonWidget.builder(Component.literal("+")) {
                         val next = RoomConfigIntegerControl.increment(current = number, editor = editor, shiftHeld = Screen.hasShiftDown())
                         updateDraft(field, GameConfigPresentationValue.IntegerValue(next))
                     }.dimensions(layout.integerPlusX, y, FormScreenLayout.INTEGER_BUTTON_WIDTH, FormScreenLayout.BUTTON_HEIGHT).build().also {
@@ -722,8 +722,8 @@ internal class RoomSettingsPage(
          * @param action 點擊時執行的動作。
          * @return 已加入所屬畫面的按鈕。
          */
-        fun button(index: Int, key: String, action: () -> Unit): ButtonWidget = host.addWidget(
-            widget = RestartableMarqueeButtonWidget.builder(Text.translatable(key)) { action() }
+        fun button(index: Int, key: String, action: () -> Unit): Button = host.addWidget(
+            widget = RestartableMarqueeButtonWidget.builder(Component.translatable(key)) { action() }
                 .dimensions(footer.buttonX(index), layout.footerY, footer.buttonWidth(index), FormScreenLayout.BUTTON_HEIGHT)
                 .build(),
         )
@@ -735,7 +735,7 @@ internal class RoomSettingsPage(
         resetButton = button(SettingsFooterButtons.RESET, MinecraftRoomScreenKeys.RESET_DEFAULTS_BUTTON) {
             draft.resetTo(defaults)
             host.requestRebuild()
-        }.also { it.tooltip = Tooltip.of(resetTooltip()) }
+        }.also { it.tooltip = Tooltip.create(resetTooltip()) }
         undoButton = button(SettingsFooterButtons.UNDO, MinecraftRoomScreenKeys.UNDO) {
             draft.restoreAuthoritative(authoritative)
             host.requestRebuild()
@@ -862,16 +862,16 @@ internal class RoomSettingsPage(
         resetButton?.active = draft.canReset(defaults)
         doneButton?.active = draft.canDone(roomPlayerCount)
         val changes = if (current != null && authoritative != null && current != authoritative && !draft.isStale) {
-            Tooltip.of(gameConfigDifferenceText(configResolver, ruleNames, authoritative, current))
+            Tooltip.create(gameConfigDifferenceText(configResolver, ruleNames, authoritative, current))
         } else {
             null
         }
         val playerLimit = current?.takeIf { draft.exceedsPlayerLimit(roomPlayerCount) }?.let { config ->
-            Tooltip.of(playerLimitExceededText(config, roomPlayerCount).copy().formatted(Formatting.RED))
+            Tooltip.create(playerLimitExceededText(config, roomPlayerCount).copy().withStyle(ChatFormatting.RED))
         }
         applyButton?.tooltip = playerLimit ?: changes
         doneButton?.tooltip = playerLimit
-        undoButton?.tooltip = changes ?: Tooltip.of(undoTooltip())
+        undoButton?.tooltip = changes ?: Tooltip.create(undoTooltip())
     }
 
     /**
@@ -884,10 +884,10 @@ internal class RoomSettingsPage(
      *   顯示原因。沒有鎖定時為 null。
      * @return 完整的多行欄位提示文字。
      */
-    private fun fieldTooltip(field: GameConfigFieldDefinition, config: GameConfig, editable: Boolean, locked: GameConfigLockedField?): Text {
-        val description = Text.translatable(field.descriptionTranslationKey)
-        val lockReason = locked?.let { Text.translatable(it.reasonTranslationKey) }
-        val dependencyNotice = Text.translatable(MinecraftRoomScreenKeys.DISABLED_BY_DEPENDENCY).takeUnless { field.isEnabled(config) }
+    private fun fieldTooltip(field: GameConfigFieldDefinition, config: GameConfig, editable: Boolean, locked: GameConfigLockedField?): Component {
+        val description = Component.translatable(field.descriptionTranslationKey)
+        val lockReason = locked?.let { Component.translatable(it.reasonTranslationKey) }
+        val dependencyNotice = Component.translatable(MinecraftRoomScreenKeys.DISABLED_BY_DEPENDENCY).takeUnless { field.isEnabled(config) }
         val notice = lockReason ?: dependencyNotice
         return when (val editor = field.editor) {
             GameConfigEditorSpec.BooleanToggle -> {
@@ -923,7 +923,7 @@ internal class RoomSettingsPage(
                     description = description,
                     options = editor.optionIds.map { ControlTooltip.Option(label = optionText(it, editor), current = it in selected) },
                     hints = if (editable) ControlTooltip.chooseHints() else emptyList(),
-                    title = Text.translatable(
+                    title = Component.translatable(
                         MinecraftControlTooltipKeys.OPTIONS_SELECTED,
                         selected.size,
                         editor.minimumCount,
@@ -933,19 +933,19 @@ internal class RoomSettingsPage(
                 )
             }
             is GameConfigEditorSpec.IntegerInput -> {
-                val minimum = Text.literal(formatRoomInteger(editor.minimum))
-                val unsetLabel = Text.translatable(MinecraftRoomScreenKeys.NONE).takeIf { editor.nullable }
+                val minimum = Component.literal(formatRoomInteger(editor.minimum))
+                val unsetLabel = Component.translatable(MinecraftRoomScreenKeys.NONE).takeIf { editor.nullable }
                 ControlTooltip.range(
                     description = description,
                     range = ControlTooltip.rangeText(
                         minimum = minimum,
-                        maximum = Text.literal(formatRoomInteger(editor.maximum)),
+                        maximum = Component.literal(formatRoomInteger(editor.maximum)),
                         unsetLabel = unsetLabel,
                     ),
                     hints = if (editable) {
                         ControlTooltip.integerHints(
-                            step = Text.literal(formatRoomInteger(editor.step)),
-                            shiftStep = Text.literal(formatRoomInteger(editor.step * RoomConfigIntegerControl.SHIFT_STEP_MULTIPLIER)),
+                            step = Component.literal(formatRoomInteger(editor.step)),
+                            shiftStep = Component.literal(formatRoomInteger(editor.step * RoomConfigIntegerControl.SHIFT_STEP_MULTIPLIER)),
                             minimum = minimum,
                             unsetLabel = unsetLabel,
                         )
@@ -968,7 +968,7 @@ internal class RoomSettingsPage(
      * @param roomPlayerCount 目前房間人數。
      * @return 超過人數上限的提示文字。
      */
-    private fun playerLimitExceededText(config: GameConfig, roomPlayerCount: Int): Text = Text.translatable(
+    private fun playerLimitExceededText(config: GameConfig, roomPlayerCount: Int): Component = Component.translatable(
         MinecraftRoomScreenKeys.PLAYER_LIMIT_EXCEEDED,
         roomPlayerCount,
         ruleName(configResolver.resolve(config).ruleModuleId),
@@ -976,16 +976,16 @@ internal class RoomSettingsPage(
     )
 
     /** 建立復原按鈕的放棄草稿說明。 */
-    private fun undoTooltip(): Text = Text.empty()
-        .append(Text.translatable(MinecraftRoomScreenKeys.UNDO).formatted(Formatting.GOLD))
-        .append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.UNDO_DISCARD).formatted(Formatting.WHITE))
-        .append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.UNDO_RESTORE).formatted(Formatting.GRAY))
+    private fun undoTooltip(): Component = Component.empty()
+        .append(Component.translatable(MinecraftRoomScreenKeys.UNDO).withStyle(ChatFormatting.GOLD))
+        .append("\n• ").append(Component.translatable(MinecraftRoomScreenKeys.UNDO_DISCARD).withStyle(ChatFormatting.WHITE))
+        .append("\n• ").append(Component.translatable(MinecraftRoomScreenKeys.UNDO_RESTORE).withStyle(ChatFormatting.GRAY))
 
     /** 建立重設為預設按鈕的說明，提醒尚未儲存。 */
-    private fun resetTooltip(): Text = Text.empty()
-        .append(Text.translatable(MinecraftRoomScreenKeys.RESET_DEFAULTS_BUTTON).formatted(Formatting.GOLD))
-        .append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.RESET_DEFAULTS).formatted(Formatting.WHITE))
-        .append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.RESET_NOT_SAVED).formatted(Formatting.GRAY))
+    private fun resetTooltip(): Component = Component.empty()
+        .append(Component.translatable(MinecraftRoomScreenKeys.RESET_DEFAULTS_BUTTON).withStyle(ChatFormatting.GOLD))
+        .append("\n• ").append(Component.translatable(MinecraftRoomScreenKeys.RESET_DEFAULTS).withStyle(ChatFormatting.WHITE))
+        .append("\n• ").append(Component.translatable(MinecraftRoomScreenKeys.RESET_NOT_SAVED).withStyle(ChatFormatting.GRAY))
 
     /**
      * 依目前視窗尺寸建立設定頁版面。
@@ -997,8 +997,8 @@ internal class RoomSettingsPage(
         windowHeight = host.screen.height,
         hasPageSwitch = true,
         hasRuleRow = true,
-        ruleLabelWidth = host.textRenderer.getWidth(ruleLabel()),
-        variantLabelWidth = host.textRenderer.getWidth(variantLabel()),
+        ruleLabelWidth = host.textRenderer.width(ruleLabel()),
+        variantLabelWidth = host.textRenderer.width(variantLabel()),
     )
 
     /**
@@ -1023,10 +1023,10 @@ internal class RoomSettingsPage(
     private fun currentFieldCount(): Int = resolvedDefinition()?.let(GameConfigVariantResolver::visibleFields)?.count { it.categoryId == selectedCategoryId } ?: 0
 
     /** 規則選擇器的標籤。 */
-    private fun ruleLabel(): Text = Text.translatable(MinecraftRoomScreenKeys.RULE)
+    private fun ruleLabel(): Component = Component.translatable(MinecraftRoomScreenKeys.RULE)
 
     /** 玩法選擇器的標籤。 */
-    private fun variantLabel(): Text = Text.translatable(MinecraftRoomScreenKeys.VARIANT_SELECTOR)
+    private fun variantLabel(): Component = Component.translatable(MinecraftRoomScreenKeys.VARIANT_SELECTOR)
 
     /**
      * 取得規則名稱，未登記時顯示原始識別碼。
@@ -1034,7 +1034,7 @@ internal class RoomSettingsPage(
      * @param moduleId 規則模組識別碼。
      * @return 本地化名稱或識別碼。
      */
-    private fun ruleName(moduleId: String): Text = ruleNames.find(moduleId)?.let(Text::translatable) ?: Text.literal(moduleId)
+    private fun ruleName(moduleId: String): Component = ruleNames.find(moduleId)?.let(Component::translatable) ?: Component.literal(moduleId)
 
     /**
      * 取得布林值的本地化文字。
@@ -1042,7 +1042,7 @@ internal class RoomSettingsPage(
      * @param enabled 是否啟用。
      * @return 對應開啟或關閉的文字。
      */
-    private fun booleanText(enabled: Boolean): Text = Text.translatable(if (enabled) MinecraftRoomScreenKeys.TRUE else MinecraftRoomScreenKeys.FALSE)
+    private fun booleanText(enabled: Boolean): Component = Component.translatable(if (enabled) MinecraftRoomScreenKeys.TRUE else MinecraftRoomScreenKeys.FALSE)
 
     /**
      * 取得設定選項的本地化文字。
@@ -1051,7 +1051,7 @@ internal class RoomSettingsPage(
      * @param editor 單選或多選欄位編輯器描述。
      * @return 已登記的本地化文字；未登記翻譯鍵時顯示完整選項 ID。
      */
-    private fun optionText(optionId: String, editor: GameConfigEditorSpec.ChoiceEditor): Text = editor.translationKeyFor(optionId)?.let(Text::translatable) ?: Text.literal(optionId)
+    private fun optionText(optionId: String, editor: GameConfigEditorSpec.ChoiceEditor): Component = editor.translationKeyFor(optionId)?.let(Component::translatable) ?: Component.literal(optionId)
 
     private companion object {
         /** 規則選擇器展開清單的識別值。 */

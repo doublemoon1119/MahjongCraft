@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.excludedAppe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.toPayload
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
@@ -56,8 +56,8 @@ class AiCharacterSnapshotSender internal constructor(
      * @param expectedMatchId 同一內容準備時的場次。
      * @param playerIds 同一內容的完整名冊。
      */
-    override fun sendAuthorized(player: ServerPlayerEntity, tableId: Uuid, expectedMatchId: Uuid?, playerIds: Set<Uuid>) {
-        check(player.server.isOnThread) { "Character delivery requires the server thread" }
+    override fun sendAuthorized(player: ServerPlayer, tableId: Uuid, expectedMatchId: Uuid?, playerIds: Set<Uuid>) {
+        check(player.server.isSameThread) { "Character delivery requires the server thread" }
         val state = persistence.characterSnapshot() ?: return
         val metadata = state.characters
         val game = state.authoritative.games[tableId]
@@ -79,12 +79,12 @@ class AiCharacterSnapshotSender internal constructor(
         val references = players.keys.mapNotNull { member ->
             val actor = bindings.find(tableId, member)?.entity ?: identities[member]
                 ?.takeIf { it.sourceId == SeatedParticipantSources.WORLD_ENTITY }
-                ?.let { player.serverWorld.getEntity(it.subjectId.toJavaUuid()) }
-            actor?.takeIf { !it.isRemoved && it.world === player.world && player in PlayerLookup.tracking(it) }
+                ?.let { player.serverLevel().getEntity(it.subjectId.toJavaUuid()) }
+            actor?.takeIf { !it.isRemoved && it.level() === player.level() && player in PlayerLookup.tracking(it) }
                 ?.let { member to it.uuid.toKotlinUuid() }
         }.toMap()
         val content = Sent(state.sessionId, game?.matchId, metadata != null, players, excluded, references)
-        val key = player.networkHandler to tableId
+        val key = player.connection to tableId
         if (sent[key] == content) return
         deliveryRevision = maxOf(deliveryRevision + 1L, state.revision)
         val snapshot = AiCharacterSyncSnapshot(

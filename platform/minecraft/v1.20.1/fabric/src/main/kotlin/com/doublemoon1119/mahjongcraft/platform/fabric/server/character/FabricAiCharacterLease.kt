@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatEn
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterOwnership
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterLease
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterMountOwnership
-import net.minecraft.server.world.ServerWorld
+import net.minecraft.server.level.ServerLevel
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -19,7 +19,7 @@ import kotlin.uuid.toKotlinUuid
  */
 internal class FabricAiCharacterLease(
     override val rider: FabricAiCharacterActor,
-    private val world: ServerWorld,
+    private val world: ServerLevel,
     override val ownership: AiCharacterOwnership,
     private val tracking: FabricAiCharacterTracking,
     private val preserveSeatOnRelease: Boolean,
@@ -33,14 +33,14 @@ internal class FabricAiCharacterLease(
         val entity = rider.entity
         return entity.isAlive &&
             entity.uuid.toKotlinUuid() == entityId &&
-            entity.world === world &&
+            entity.level() === world &&
             world.getEntity(entity.uuid) === entity &&
-            world.chunkManager.isChunkLoaded(entity.blockPos.x shr 4, entity.blockPos.z shr 4)
+            world.chunkSource.hasChunk(entity.blockPosition().x shr 4, entity.blockPosition().z shr 4)
     }
 
     override fun prepare(): Boolean {
         val prepared = rider.handle.prepare()
-        check(rider.entity.uuid.toKotlinUuid() == entityId && rider.entity.world === world) { "Character identity changed during preparation" }
+        check(rider.entity.uuid.toKotlinUuid() == entityId && rider.entity.level() === world) { "Character identity changed during preparation" }
         return prepared
     }
 
@@ -49,7 +49,7 @@ internal class FabricAiCharacterLease(
         val vehicle = rider.entity.vehicle
         if (AiCharacterMountOwnership.shouldDetach(originalVehicle, rider.assignedVehicle, vehicle, preserveSeatOnRelease)) {
             rider.entity.stopRiding()
-            if (vehicle is MahjongStoolSeatEntity && !vehicle.hasPassengers()) vehicle.discard()
+            if (vehicle is MahjongStoolSeatEntity && !vehicle.isVehicle) vehicle.discard()
         }
         try {
             rider.handle.lookAt(null)

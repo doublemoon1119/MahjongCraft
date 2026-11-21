@@ -3,15 +3,15 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRulerEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerDimensions
-import net.minecraft.client.render.OverlayTexture
-import net.minecraft.client.render.RenderLayer
-import net.minecraft.client.render.VertexConsumer
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.render.entity.EntityRenderer
-import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.RotationAxis
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.blaze3d.vertex.VertexConsumer
+import com.mojang.math.Axis
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.RenderType
+import net.minecraft.client.renderer.entity.EntityRenderer
+import net.minecraft.client.renderer.entity.EntityRendererProvider
+import net.minecraft.client.renderer.texture.OverlayTexture
+import net.minecraft.resources.ResourceLocation
 
 /**
  * 把牌尺畫成半透明的純色長方條，長邊與放置者的視線垂直，依擺法平放或豎放，底面貼齊實體位置。
@@ -19,38 +19,38 @@ import net.minecraft.util.math.RotationAxis
  * @param context Minecraft renderer factory 提供的 client context。
  */
 class MahjongRulerEntityRenderer(
-    context: EntityRendererFactory.Context,
+    context: EntityRendererProvider.Context,
 ) : EntityRenderer<MahjongRulerEntity>(context) {
     override fun render(
         entity: MahjongRulerEntity,
         yaw: Float,
         tickDelta: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
     ) {
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         if (entity.isInvisible) return
-        matrices.push()
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-entity.yaw))
+        matrices.pushPose()
+        matrices.mulPose(Axis.YP.rotationDegrees(-entity.yRot))
         val rgb = MahjongRulerTint.rgb(entity.color)
         val posture = entity.posture
         RulerCuboid(
             top = MahjongRulerDimensions.height(posture).toFloat(),
             halfWidth = (MahjongRulerDimensions.width(posture) / 2.0).toFloat(),
-            consumer = vertexConsumers.getBuffer(RenderLayer.getEntityTranslucentCull(TEXTURE)),
-            entry = matrices.peek(),
+            consumer = vertexConsumers.getBuffer(RenderType.entityTranslucentCull(TEXTURE)),
+            entry = matrices.last(),
             red = (rgb shr RED_SHIFT) and CHANNEL_MASK,
             green = (rgb shr GREEN_SHIFT) and CHANNEL_MASK,
             blue = rgb and CHANNEL_MASK,
             alpha = MahjongRulerTint.alpha(entity.color),
             light = light,
         ).draw()
-        matrices.pop()
+        matrices.popPose()
     }
 
     /** 牌尺使用一張純白貼圖，顏色由頂點決定。 */
-    override fun getTexture(entity: MahjongRulerEntity): Identifier = TEXTURE
+    override fun getTextureLocation(entity: MahjongRulerEntity): ResourceLocation = TEXTURE
 
     /**
      * 一次繪製用的長方條；六個面都以外側為正面。
@@ -69,7 +69,7 @@ class MahjongRulerEntityRenderer(
         val top: Float,
         val halfWidth: Float,
         val consumer: VertexConsumer,
-        val entry: MatrixStack.Entry,
+        val entry: PoseStack.Pose,
         val red: Int,
         val green: Int,
         val blue: Int,
@@ -99,20 +99,20 @@ class MahjongRulerEntityRenderer(
          */
         private fun face(normalX: Float, normalY: Float, normalZ: Float, corners: List<Triple<Float, Float, Float>>) {
             corners.zip(FACE_UVS).forEach { (corner, uv) ->
-                consumer.vertex(entry.positionMatrix, corner.first, corner.second, corner.third)
+                consumer.vertex(entry.pose(), corner.first, corner.second, corner.third)
                     .color(red, green, blue, alpha)
-                    .texture(uv.first, uv.second)
-                    .overlay(OverlayTexture.DEFAULT_UV)
-                    .light(light)
-                    .normal(entry.normalMatrix, normalX, normalY, normalZ)
-                    .next()
+                    .uv(uv.first, uv.second)
+                    .overlayCoords(OverlayTexture.NO_OVERLAY)
+                    .uv2(light)
+                    .normal(entry.normal(), normalX, normalY, normalZ)
+                    .endVertex()
             }
         }
     }
 
     private companion object {
         /** 牌尺的純白貼圖。 */
-        val TEXTURE: Identifier = Identifier(MinecraftModMetadata.MOD_ID, "textures/entity/mahjong_ruler.png")
+        val TEXTURE: ResourceLocation = ResourceLocation(MinecraftModMetadata.MOD_ID, "textures/entity/mahjong_ruler.png")
 
         /** 長邊的一端。 */
         const val X0: Float = (-MahjongRulerDimensions.LENGTH / 2.0).toFloat()

@@ -5,9 +5,9 @@ import com.doublemoon1119.mahjongcraft.example.minecraft.presentation.ExampleTab
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.FabricTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropContent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropTarget
-import net.minecraft.entity.Entity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.Box
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 
 /** 範例攤牌籌碼的 Fabric 桌面物件種類。 */
@@ -26,7 +26,7 @@ object ExampleHandRevealChipTablePropKind : FabricTablePropKind {
 
     override fun ruleModuleIdOf(entity: Entity): String? = (entity as? ExampleHandRevealChipEntity)?.tablePropRuleModuleId?.takeIf(String::isNotBlank)
 
-    override fun findManaged(world: ServerWorld, tableId: Uuid, searchBox: Box): List<Entity> = world.getEntitiesByClass(
+    override fun findManaged(world: ServerLevel, tableId: Uuid, searchBox: AABB): List<Entity> = world.getEntitiesOfClass(
         ExampleHandRevealChipEntity::class.java,
         searchBox,
     ) { it.managedTableId == tableId }
@@ -35,13 +35,13 @@ object ExampleHandRevealChipTablePropKind : FabricTablePropKind {
         TablePropContent.CustomVariant(HAND_REVEALED_VARIANT)
     }
 
-    override fun create(world: ServerWorld, tableId: Uuid, target: TablePropTarget): Entity? {
+    override fun create(world: ServerLevel, tableId: Uuid, target: TablePropTarget): Entity? {
         if (target.content != TablePropContent.CustomVariant(HAND_REVEALED_VARIANT)) return null
         return ExampleHandRevealChipEntity(ExampleHandRevealChipEntities.handRevealChip, world).apply {
             managedTableId = tableId
             placementId = target.id
             tablePropRuleModuleId = target.ruleModuleId
-            refreshPositionAndAngles(target.x, target.y, target.z, target.yaw, 0f)
+            moveTo(target.x, target.y, target.z, target.yaw, 0f)
         }
     }
 }

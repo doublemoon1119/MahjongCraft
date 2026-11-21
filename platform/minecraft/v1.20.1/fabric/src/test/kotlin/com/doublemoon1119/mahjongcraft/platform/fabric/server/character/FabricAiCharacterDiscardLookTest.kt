@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.character
 
-import net.minecraft.util.math.Vec3d
+import net.minecraft.world.phys.Vec3
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -12,7 +12,7 @@ class FabricAiCharacterDiscardLookTest {
     @Test
     fun `discard removed by a claim or new round invalidates its look target`() {
         val tileId = Uuid.random()
-        val look = FabricAiCharacterDiscardLook(tileId, Vec3d(1.0, 2.0, 3.0), 16L)
+        val look = FabricAiCharacterDiscardLook(tileId, Vec3(1.0, 2.0, 3.0), 16L)
         assertTrue(look.isCurrent(5L, setOf(tileId)))
         assertFalse(look.isCurrent(5L, emptySet()))
         assertFalse(look.isCurrent(5L, setOf(Uuid.random())))
@@ -22,7 +22,7 @@ class FabricAiCharacterDiscardLookTest {
     @Test
     fun `discard look expires even while the public tile remains`() {
         val tileId = Uuid.random()
-        val look = FabricAiCharacterDiscardLook(tileId, Vec3d(1.0, 2.0, 3.0), 16L)
+        val look = FabricAiCharacterDiscardLook(tileId, Vec3(1.0, 2.0, 3.0), 16L)
         assertTrue(look.isCurrent(16L, setOf(tileId)))
         assertFalse(look.isCurrent(17L, setOf(tileId)))
     }

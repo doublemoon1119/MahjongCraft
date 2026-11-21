@@ -8,9 +8,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryRet
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryStorageSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryWriterStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
-import net.minecraft.text.MutableText
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.MutableComponent
 import java.util.Locale
 
 /**
@@ -19,17 +19,17 @@ import java.util.Locale
  * @param status 不包含原始錯誤內容的安全狀態。
  * @return 可送出的本地化訊息。
  */
-fun historyStatusMessage(status: HistoryWriterStatus): MutableText = prefixedConfigMessage(
-    message = Text.translatable(
+fun historyStatusMessage(status: HistoryWriterStatus): MutableComponent = prefixedConfigMessage(
+    message = Component.translatable(
         MinecraftConfigCommandKeys.HISTORY_STATUS,
         bracketedInteractiveLabel(
-            label = Text.translatable(MinecraftConfigCommandKeys.DETAILS),
-            hoverText = Text.translatable(MinecraftConfigCommandKeys.HISTORY_TITLE)
-                .formatted(Formatting.DARK_GRAY)
+            label = Component.translatable(MinecraftConfigCommandKeys.DETAILS),
+            hoverText = Component.translatable(MinecraftConfigCommandKeys.HISTORY_TITLE)
+                .withStyle(ChatFormatting.DARK_GRAY)
                 .append(presentationEntryLines(historyStatusEntries(status))),
         ),
     ),
-    color = Formatting.AQUA,
+    color = ChatFormatting.AQUA,
 )
 
 /**
@@ -40,34 +40,34 @@ fun historyStatusMessage(status: HistoryWriterStatus): MutableText = prefixedCon
  */
 private fun historyStatusEntries(status: HistoryWriterStatus): List<ConfigPresentationEntry> = listOf(
     ConfigPresentationEntry(
-        name = Text.translatable(MinecraftConfigCommandKeys.HISTORY_DATABASE),
-        displayedValue = Text.translatable(
+        name = Component.translatable(MinecraftConfigCommandKeys.HISTORY_DATABASE),
+        displayedValue = Component.translatable(
             if (status.databaseConnected) MinecraftConfigCommandKeys.HISTORY_CONNECTED else MinecraftConfigCommandKeys.HISTORY_DISCONNECTED,
         ),
     ),
     ConfigPresentationEntry(
-        name = Text.translatable(MinecraftConfigCommandKeys.HISTORY_RECORDING),
-        displayedValue = Text.translatable(
+        name = Component.translatable(MinecraftConfigCommandKeys.HISTORY_RECORDING),
+        displayedValue = Component.translatable(
             if (status.recordingEnabled) MinecraftConfigCommandKeys.HISTORY_RECORDING_ENABLED else MinecraftConfigCommandKeys.HISTORY_RECORDING_DISABLED,
         ),
     ),
     ConfigPresentationEntry(
-        name = Text.translatable(MinecraftConfigCommandKeys.HISTORY_STORAGE_STATE),
-        displayedValue = Text.translatable(
+        name = Component.translatable(MinecraftConfigCommandKeys.HISTORY_STORAGE_STATE),
+        displayedValue = Component.translatable(
             if (status.storagePaused) MinecraftConfigCommandKeys.HISTORY_STORAGE_PAUSED else MinecraftConfigCommandKeys.HISTORY_STORAGE_AVAILABLE,
         ),
     ),
     ConfigPresentationEntry(
-        name = Text.translatable(MinecraftConfigCommandKeys.HISTORY_PENDING_EVENTS),
-        displayedValue = Text.literal(status.pendingEventCount.toString()),
+        name = Component.translatable(MinecraftConfigCommandKeys.HISTORY_PENDING_EVENTS),
+        displayedValue = Component.literal(status.pendingEventCount.toString()),
     ),
     ConfigPresentationEntry(
-        name = Text.translatable(MinecraftConfigCommandKeys.HISTORY_KNOWN_GAPS),
-        displayedValue = Text.literal(status.knownGapCount.toString()),
+        name = Component.translatable(MinecraftConfigCommandKeys.HISTORY_KNOWN_GAPS),
+        displayedValue = Component.literal(status.knownGapCount.toString()),
     ),
     ConfigPresentationEntry(
-        name = Text.translatable(MinecraftConfigCommandKeys.HISTORY_ERROR),
-        displayedValue = Text.translatable(
+        name = Component.translatable(MinecraftConfigCommandKeys.HISTORY_ERROR),
+        displayedValue = Component.translatable(
             if (status.lastError == null) MinecraftConfigCommandKeys.HISTORY_ERROR_NONE else MinecraftConfigCommandKeys.HISTORY_ERROR_PRESENT,
         ),
     ),
@@ -80,9 +80,9 @@ private fun historyStatusEntries(status: HistoryWriterStatus): List<ConfigPresen
  * @param stale 是否為非即時快照。
  * @return 可送出的本地化訊息。
  */
-internal fun historyStorageMessage(snapshot: HistoryStorageSnapshot, stale: Boolean = false): MutableText = prefixedConfigMessage(
-    message = Text.translatableWithFallback(MinecraftConfigCommandKeys.HISTORY_STORAGE, "History storage"),
-    color = if (stale) Formatting.YELLOW else Formatting.AQUA,
+internal fun historyStorageMessage(snapshot: HistoryStorageSnapshot, stale: Boolean = false): MutableComponent = prefixedConfigMessage(
+    message = Component.translatableWithFallback(MinecraftConfigCommandKeys.HISTORY_STORAGE, "History storage"),
+    color = if (stale) ChatFormatting.YELLOW else ChatFormatting.AQUA,
 ).also { message ->
     val matches = listOf(
         entry(MinecraftConfigCommandKeys.HISTORY_COMPLETED_MATCHES, snapshot.completedMatchCount),
@@ -103,7 +103,7 @@ internal fun historyStorageMessage(snapshot: HistoryStorageSnapshot, stale: Bool
     message.appendStorageSection(
         key = MinecraftConfigCommandKeys.HISTORY_SECTION_MATCHES,
         fallback = "Matches",
-        summary = Text.translatableWithFallback(
+        summary = Component.translatableWithFallback(
             MinecraftConfigCommandKeys.HISTORY_MATCHES_SUMMARY,
             "Complete %s / active %s / partial %s / unconfirmed %s",
             snapshot.completedMatchCount,
@@ -115,7 +115,7 @@ internal fun historyStorageMessage(snapshot: HistoryStorageSnapshot, stale: Bool
     ).appendStorageSection(
         key = MinecraftConfigCommandKeys.HISTORY_SECTION_EVENTS,
         fallback = "Events",
-        summary = Text.translatableWithFallback(
+        summary = Component.translatableWithFallback(
             MinecraftConfigCommandKeys.HISTORY_EVENTS_SUMMARY,
             "SQL %s / outbox %s / receipts %s",
             snapshot.pendingSqlEventCount,
@@ -126,12 +126,12 @@ internal fun historyStorageMessage(snapshot: HistoryStorageSnapshot, stale: Bool
     ).appendStorageSection(
         key = MinecraftConfigCommandKeys.HISTORY_SECTION_DISK,
         fallback = "Disk",
-        summary = Text.literal(formatDiskUsage(snapshot.disk)),
+        summary = Component.literal(formatDiskUsage(snapshot.disk)),
         entries = disk,
     ).appendStorageSection(
         key = MinecraftConfigCommandKeys.HISTORY_SECTION_LIMITS,
         fallback = "Retention limits",
-        summary = Text.translatableWithFallback(
+        summary = Component.translatableWithFallback(
             MinecraftConfigCommandKeys.HISTORY_LIMITS_SUMMARY,
             "Matches: %s / days: %s / disk: %s",
             limitText(snapshot.policy.maxMatches.toLong()),
@@ -140,9 +140,9 @@ internal fun historyStorageMessage(snapshot: HistoryStorageSnapshot, stale: Bool
         ),
         entries = policyEntries(snapshot.policy),
     )
-    message.append(Text.literal("\n  ")).append(Text.translatable(MinecraftConfigCommandKeys.HISTORY_UPDATED_AT))
+    message.append(Component.literal("\n  ")).append(Component.translatable(MinecraftConfigCommandKeys.HISTORY_UPDATED_AT))
         .append(": ").append(snapshot.updatedAt.toString())
-    if (stale) message.append(Text.literal("\n  ")).append(Text.translatable(MinecraftConfigCommandKeys.HISTORY_STALE).formatted(Formatting.YELLOW))
+    if (stale) message.append(Component.literal("\n  ")).append(Component.translatable(MinecraftConfigCommandKeys.HISTORY_STALE).withStyle(ChatFormatting.YELLOW))
 }
 
 /**
@@ -151,30 +151,30 @@ internal fun historyStorageMessage(snapshot: HistoryStorageSnapshot, stale: Bool
  * @param preview 清理預覽。
  * @return 可送出的本地化訊息。
  */
-internal fun historyCleanupPreviewMessage(preview: HistoryCleanupPreview): MutableText = prefixedConfigMessage(
-    message = Text.translatable(
+internal fun historyCleanupPreviewMessage(preview: HistoryCleanupPreview): MutableComponent = prefixedConfigMessage(
+    message = Component.translatable(
         MinecraftConfigCommandKeys.HISTORY_CLEANUP_PREVIEW,
         bracketedInteractiveLabel(
-            label = Text.translatable(MinecraftConfigCommandKeys.DETAILS),
-            hoverText = Text.translatable(MinecraftConfigCommandKeys.HISTORY_CLEANUP_PREVIEW_TITLE)
-                .formatted(Formatting.DARK_GRAY)
+            label = Component.translatable(MinecraftConfigCommandKeys.DETAILS),
+            hoverText = Component.translatable(MinecraftConfigCommandKeys.HISTORY_CLEANUP_PREVIEW_TITLE)
+                .withStyle(ChatFormatting.DARK_GRAY)
                 .append(presentationEntryLines(historyCleanupPreviewEntries(preview))),
         ),
     ),
-    color = Formatting.AQUA,
+    color = ChatFormatting.AQUA,
 ).also { message ->
-    message.append(Text.literal("\n  • ").formatted(Formatting.GRAY))
-        .append(Text.translatable(MinecraftConfigCommandKeys.HISTORY_CANDIDATE_MATCHES).formatted(Formatting.GRAY))
-        .append(Text.literal(": ").formatted(Formatting.DARK_GRAY))
-        .append(Text.literal(preview.countsByReason.values.sum().toString()).formatted(Formatting.GREEN))
-        .append(Text.literal("\n  • ").formatted(Formatting.GRAY))
-        .append(Text.translatable(MinecraftConfigCommandKeys.HISTORY_LOGICAL_BYTES).formatted(Formatting.GRAY))
-        .append(Text.literal(": ").formatted(Formatting.DARK_GRAY))
-        .append(Text.literal(formatBytes(preview.logicalBytes)).formatted(Formatting.GREEN))
-        .append(Text.literal("\n  • ").formatted(Formatting.GRAY))
-        .append(Text.translatable(MinecraftConfigCommandKeys.HISTORY_ADDITIONAL_CANDIDATES).formatted(Formatting.GRAY))
-        .append(Text.literal(": ").formatted(Formatting.DARK_GRAY))
-        .append(Text.literal(preview.additionalCandidateCount.toString()).formatted(Formatting.YELLOW))
+    message.append(Component.literal("\n  • ").withStyle(ChatFormatting.GRAY))
+        .append(Component.translatable(MinecraftConfigCommandKeys.HISTORY_CANDIDATE_MATCHES).withStyle(ChatFormatting.GRAY))
+        .append(Component.literal(": ").withStyle(ChatFormatting.DARK_GRAY))
+        .append(Component.literal(preview.countsByReason.values.sum().toString()).withStyle(ChatFormatting.GREEN))
+        .append(Component.literal("\n  • ").withStyle(ChatFormatting.GRAY))
+        .append(Component.translatable(MinecraftConfigCommandKeys.HISTORY_LOGICAL_BYTES).withStyle(ChatFormatting.GRAY))
+        .append(Component.literal(": ").withStyle(ChatFormatting.DARK_GRAY))
+        .append(Component.literal(formatBytes(preview.logicalBytes)).withStyle(ChatFormatting.GREEN))
+        .append(Component.literal("\n  • ").withStyle(ChatFormatting.GRAY))
+        .append(Component.translatable(MinecraftConfigCommandKeys.HISTORY_ADDITIONAL_CANDIDATES).withStyle(ChatFormatting.GRAY))
+        .append(Component.literal(": ").withStyle(ChatFormatting.DARK_GRAY))
+        .append(Component.literal(preview.additionalCandidateCount.toString()).withStyle(ChatFormatting.YELLOW))
 }
 
 /**
@@ -183,30 +183,30 @@ internal fun historyCleanupPreviewMessage(preview: HistoryCleanupPreview): Mutab
  * @param report 清理執行報告。
  * @return 可送出的本地化訊息。
  */
-internal fun historyCleanupReportMessage(report: HistoryCleanupReport): MutableText = prefixedConfigMessage(
-    message = Text.translatable(
+internal fun historyCleanupReportMessage(report: HistoryCleanupReport): MutableComponent = prefixedConfigMessage(
+    message = Component.translatable(
         MinecraftConfigCommandKeys.HISTORY_CLEANUP_COMPLETE,
         bracketedInteractiveLabel(
-            label = Text.translatable(MinecraftConfigCommandKeys.DETAILS),
-            hoverText = Text.translatable(MinecraftConfigCommandKeys.HISTORY_CLEANUP_REPORT_TITLE)
-                .formatted(Formatting.DARK_GRAY)
+            label = Component.translatable(MinecraftConfigCommandKeys.DETAILS),
+            hoverText = Component.translatable(MinecraftConfigCommandKeys.HISTORY_CLEANUP_REPORT_TITLE)
+                .withStyle(ChatFormatting.DARK_GRAY)
                 .append(presentationEntryLines(historyCleanupReportEntries(report))),
         ),
     ),
-    color = if (report.completed) Formatting.GREEN else Formatting.YELLOW,
+    color = if (report.completed) ChatFormatting.GREEN else ChatFormatting.YELLOW,
 ).also { message ->
-    message.append(Text.literal("\n  • ").formatted(Formatting.GRAY))
-        .append(Text.translatable(MinecraftConfigCommandKeys.HISTORY_REMOVED_MATCHES).formatted(Formatting.GRAY))
-        .append(Text.literal(": ").formatted(Formatting.DARK_GRAY))
-        .append(Text.literal(report.removedMatches.toString()).formatted(Formatting.GREEN))
-        .append(Text.literal("\n  • ").formatted(Formatting.GRAY))
-        .append(Text.translatable(MinecraftConfigCommandKeys.HISTORY_NET_DISK_CHANGE).formatted(Formatting.GRAY))
-        .append(Text.literal(": ").formatted(Formatting.DARK_GRAY))
-        .append(Text.literal(formatSignedBytes(netDiskChange(report.diskBefore, report.diskAfter))))
-        .append(Text.literal("\n  • ").formatted(Formatting.GRAY))
-        .append(Text.translatable(MinecraftConfigCommandKeys.HISTORY_RESULT_STATE).formatted(Formatting.GRAY))
-        .append(Text.literal(": ").formatted(Formatting.DARK_GRAY))
-        .append(Text.translatable(if (report.completed) MinecraftConfigCommandKeys.HISTORY_RESULT_COMPLETED else MinecraftConfigCommandKeys.HISTORY_RESULT_PARTIAL))
+    message.append(Component.literal("\n  • ").withStyle(ChatFormatting.GRAY))
+        .append(Component.translatable(MinecraftConfigCommandKeys.HISTORY_REMOVED_MATCHES).withStyle(ChatFormatting.GRAY))
+        .append(Component.literal(": ").withStyle(ChatFormatting.DARK_GRAY))
+        .append(Component.literal(report.removedMatches.toString()).withStyle(ChatFormatting.GREEN))
+        .append(Component.literal("\n  • ").withStyle(ChatFormatting.GRAY))
+        .append(Component.translatable(MinecraftConfigCommandKeys.HISTORY_NET_DISK_CHANGE).withStyle(ChatFormatting.GRAY))
+        .append(Component.literal(": ").withStyle(ChatFormatting.DARK_GRAY))
+        .append(Component.literal(formatSignedBytes(netDiskChange(report.diskBefore, report.diskAfter))))
+        .append(Component.literal("\n  • ").withStyle(ChatFormatting.GRAY))
+        .append(Component.translatable(MinecraftConfigCommandKeys.HISTORY_RESULT_STATE).withStyle(ChatFormatting.GRAY))
+        .append(Component.literal(": ").withStyle(ChatFormatting.DARK_GRAY))
+        .append(Component.translatable(if (report.completed) MinecraftConfigCommandKeys.HISTORY_RESULT_COMPLETED else MinecraftConfigCommandKeys.HISTORY_RESULT_PARTIAL))
 }
 
 /**
@@ -218,10 +218,10 @@ internal fun historyCleanupReportMessage(report: HistoryCleanupReport): MutableT
  * @param entries 此分類的詳細欄位。
  * @return 可加入主訊息的分類列。
  */
-private fun MutableText.appendStorageSection(key: String, fallback: String, summary: Text, entries: List<ConfigPresentationEntry>): MutableText = append(Text.literal("\n  • "))
-    .append(bracketedInteractiveLabel(Text.translatableWithFallback(key, fallback), Text.translatable(key).append(presentationEntryLines(entries))))
-    .append(Text.literal(": ").formatted(Formatting.DARK_GRAY))
-    .append(summary.copy().formatted(Formatting.GRAY))
+private fun MutableComponent.appendStorageSection(key: String, fallback: String, summary: Component, entries: List<ConfigPresentationEntry>): MutableComponent = append(Component.literal("\n  • "))
+    .append(bracketedInteractiveLabel(Component.translatableWithFallback(key, fallback), Component.translatable(key).append(presentationEntryLines(entries))))
+    .append(Component.literal(": ").withStyle(ChatFormatting.DARK_GRAY))
+    .append(summary.copy().withStyle(ChatFormatting.GRAY))
 
 /**
  * 建立安全的 literal 值欄位，不加入玩家或牌面資料。
@@ -230,7 +230,7 @@ private fun MutableText.appendStorageSection(key: String, fallback: String, summ
  * @param value 可直接顯示的數字或已格式化字串。
  * @return 本地化欄位。
  */
-private fun entry(key: String, value: Any): ConfigPresentationEntry = ConfigPresentationEntry(Text.translatable(key), Text.literal(value.toString()))
+private fun entry(key: String, value: Any): ConfigPresentationEntry = ConfigPresentationEntry(Component.translatable(key), Component.literal(value.toString()))
 
 /**
  * 將零上限顯示為不限。
@@ -238,7 +238,7 @@ private fun entry(key: String, value: Any): ConfigPresentationEntry = ConfigPres
  * @param value 場數或天數上限。
  * @return 本地化的上限。
  */
-private fun limitText(value: Long): Text = if (value == 0L) Text.translatableWithFallback(MinecraftConfigCommandKeys.HISTORY_UNLIMITED, "unlimited") else Text.literal(value.toString())
+private fun limitText(value: Long): Component = if (value == 0L) Component.translatableWithFallback(MinecraftConfigCommandKeys.HISTORY_UNLIMITED, "unlimited") else Component.literal(value.toString())
 
 /**
  * 建立有效保留政策的短欄位列表。
@@ -247,10 +247,10 @@ private fun limitText(value: Long): Text = if (value == 0L) Text.translatableWit
  * @return 場數、期限、磁碟及部分紀錄政策。
  */
 private fun policyEntries(policy: HistoryRetentionPolicy): List<ConfigPresentationEntry> = listOf(
-    ConfigPresentationEntry(Text.translatable(MinecraftConfigCommandKeys.HISTORY_MAX_MATCHES), limitText(policy.maxMatches.toLong())),
-    ConfigPresentationEntry(Text.translatable(MinecraftConfigCommandKeys.HISTORY_RETENTION_DAYS), limitText(policy.retentionDuration.inWholeDays)),
+    ConfigPresentationEntry(Component.translatable(MinecraftConfigCommandKeys.HISTORY_MAX_MATCHES), limitText(policy.maxMatches.toLong())),
+    ConfigPresentationEntry(Component.translatable(MinecraftConfigCommandKeys.HISTORY_RETENTION_DAYS), limitText(policy.retentionDuration.inWholeDays)),
     entry(MinecraftConfigCommandKeys.HISTORY_MAX_DISK_MIB, formatBytes(policy.maxDiskBytes)),
-    ConfigPresentationEntry(Text.translatable(MinecraftConfigCommandKeys.HISTORY_INCLUDE_INTERRUPTED_MATCHES), booleanText(policy.includeInterruptedMatches)),
+    ConfigPresentationEntry(Component.translatable(MinecraftConfigCommandKeys.HISTORY_INCLUDE_INTERRUPTED_MATCHES), booleanText(policy.includeInterruptedMatches)),
 )
 
 /**
@@ -261,14 +261,14 @@ private fun policyEntries(policy: HistoryRetentionPolicy): List<ConfigPresentati
  */
 private fun historyCleanupPreviewEntries(preview: HistoryCleanupPreview): List<ConfigPresentationEntry> = buildList {
     preview.countsByReason.forEach { (reason, count) ->
-        add(ConfigPresentationEntry(Text.translatable(MinecraftConfigCommandKeys.HISTORY_CLEANUP_REASON), Text.translatable(cleanupReasonKey(reason)).append(" ").append(count.toString())))
+        add(ConfigPresentationEntry(Component.translatable(MinecraftConfigCommandKeys.HISTORY_CLEANUP_REASON), Component.translatable(cleanupReasonKey(reason)).append(" ").append(count.toString())))
     }
-    add(ConfigPresentationEntry(Text.translatable(MinecraftConfigCommandKeys.HISTORY_LOGICAL_BYTES), Text.literal(formatBytes(preview.logicalBytes))))
-    add(ConfigPresentationEntry(Text.translatable(MinecraftConfigCommandKeys.HISTORY_ADDITIONAL_CANDIDATES), Text.literal(preview.additionalCandidateCount.toString())))
-    add(ConfigPresentationEntry(Text.translatable(MinecraftConfigCommandKeys.HISTORY_ADDITIONAL_LOGICAL_BYTES), Text.literal(formatBytes(preview.additionalLogicalBytes))))
-    add(ConfigPresentationEntry(Text.translatable(MinecraftConfigCommandKeys.HISTORY_DISK_USAGE), Text.literal(formatDiskUsage(preview.disk))))
-    add(ConfigPresentationEntry(Text.translatable(MinecraftConfigCommandKeys.HISTORY_EVALUATED_AT), Text.literal(preview.evaluatedAt.toString())))
-    add(ConfigPresentationEntry(Text.translatable(MinecraftConfigCommandKeys.HISTORY_NO_EXACT_DISK_PROMISE), Text.translatable(MinecraftConfigCommandKeys.HISTORY_NO_EXACT_DISK_PROMISE)))
+    add(ConfigPresentationEntry(Component.translatable(MinecraftConfigCommandKeys.HISTORY_LOGICAL_BYTES), Component.literal(formatBytes(preview.logicalBytes))))
+    add(ConfigPresentationEntry(Component.translatable(MinecraftConfigCommandKeys.HISTORY_ADDITIONAL_CANDIDATES), Component.literal(preview.additionalCandidateCount.toString())))
+    add(ConfigPresentationEntry(Component.translatable(MinecraftConfigCommandKeys.HISTORY_ADDITIONAL_LOGICAL_BYTES), Component.literal(formatBytes(preview.additionalLogicalBytes))))
+    add(ConfigPresentationEntry(Component.translatable(MinecraftConfigCommandKeys.HISTORY_DISK_USAGE), Component.literal(formatDiskUsage(preview.disk))))
+    add(ConfigPresentationEntry(Component.translatable(MinecraftConfigCommandKeys.HISTORY_EVALUATED_AT), Component.literal(preview.evaluatedAt.toString())))
+    add(ConfigPresentationEntry(Component.translatable(MinecraftConfigCommandKeys.HISTORY_NO_EXACT_DISK_PROMISE), Component.translatable(MinecraftConfigCommandKeys.HISTORY_NO_EXACT_DISK_PROMISE)))
 }
 
 /**
@@ -278,13 +278,13 @@ private fun historyCleanupPreviewEntries(preview: HistoryCleanupPreview): List<C
  * @return 實際磁碟與回收狀態欄位。
  */
 private fun historyCleanupReportEntries(report: HistoryCleanupReport): List<ConfigPresentationEntry> = listOf(
-    ConfigPresentationEntry(Text.translatable(MinecraftConfigCommandKeys.HISTORY_REMOVED_MATCHES), Text.literal(report.removedMatches.toString())),
-    ConfigPresentationEntry(Text.translatable(MinecraftConfigCommandKeys.HISTORY_DISK_BEFORE), Text.literal(report.diskBefore?.let(::formatDiskUsage) ?: "—")),
-    ConfigPresentationEntry(Text.translatable(MinecraftConfigCommandKeys.HISTORY_DISK_AFTER), Text.literal(report.diskAfter?.let(::formatDiskUsage) ?: "—")),
-    ConfigPresentationEntry(Text.translatable(MinecraftConfigCommandKeys.HISTORY_NET_DISK_CHANGE), Text.literal(formatSignedBytes(netDiskChange(report.diskBefore, report.diskAfter)))),
-    ConfigPresentationEntry(Text.translatable(MinecraftConfigCommandKeys.HISTORY_STORAGE_AVAILABLE_RESULT), booleanText(report.storageAvailable)),
-    ConfigPresentationEntry(Text.translatable(MinecraftConfigCommandKeys.HISTORY_RECOVERY_BUSY), booleanText(report.recoveryBusy)),
-    ConfigPresentationEntry(Text.translatable(MinecraftConfigCommandKeys.HISTORY_INCREMENTAL_SUPPORTED), booleanText(report.incrementalSupported)),
+    ConfigPresentationEntry(Component.translatable(MinecraftConfigCommandKeys.HISTORY_REMOVED_MATCHES), Component.literal(report.removedMatches.toString())),
+    ConfigPresentationEntry(Component.translatable(MinecraftConfigCommandKeys.HISTORY_DISK_BEFORE), Component.literal(report.diskBefore?.let(::formatDiskUsage) ?: "—")),
+    ConfigPresentationEntry(Component.translatable(MinecraftConfigCommandKeys.HISTORY_DISK_AFTER), Component.literal(report.diskAfter?.let(::formatDiskUsage) ?: "—")),
+    ConfigPresentationEntry(Component.translatable(MinecraftConfigCommandKeys.HISTORY_NET_DISK_CHANGE), Component.literal(formatSignedBytes(netDiskChange(report.diskBefore, report.diskAfter)))),
+    ConfigPresentationEntry(Component.translatable(MinecraftConfigCommandKeys.HISTORY_STORAGE_AVAILABLE_RESULT), booleanText(report.storageAvailable)),
+    ConfigPresentationEntry(Component.translatable(MinecraftConfigCommandKeys.HISTORY_RECOVERY_BUSY), booleanText(report.recoveryBusy)),
+    ConfigPresentationEntry(Component.translatable(MinecraftConfigCommandKeys.HISTORY_INCREMENTAL_SUPPORTED), booleanText(report.incrementalSupported)),
 )
 
 /**
@@ -293,7 +293,7 @@ private fun historyCleanupReportEntries(report: HistoryCleanupReport): List<Conf
  * @param value 結果；null 表示尚未取得。
  * @return 是、否或未知的文字。
  */
-private fun booleanText(value: Boolean?): Text = Text.translatable(
+private fun booleanText(value: Boolean?): Component = Component.translatable(
     when (value) {
         true -> MinecraftConfigCommandKeys.HISTORY_YES
         false -> MinecraftConfigCommandKeys.HISTORY_NO

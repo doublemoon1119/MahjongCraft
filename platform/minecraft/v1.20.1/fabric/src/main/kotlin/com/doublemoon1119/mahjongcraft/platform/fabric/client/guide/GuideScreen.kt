@@ -22,17 +22,17 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.guide.MinecraftGuideSc
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.client.gui.screen.ingame.HandledScreen
-import net.minecraft.client.gui.tooltip.Tooltip
-import net.minecraft.item.ItemStack
-import net.minecraft.text.OrderedText
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
-import net.minecraft.util.Identifier
-import net.minecraft.util.Language
+import net.minecraft.ChatFormatting
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.Tooltip
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+import net.minecraft.locale.Language
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.util.FormattedCharSequence
+import net.minecraft.world.item.ItemStack
 import org.lwjgl.glfw.GLFW
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -62,7 +62,7 @@ internal class GuideScreen(
     internal val returnScreen: Screen?,
     private var tab: GuideTab,
     private val onTabChanged: (GuideTab) -> Unit,
-) : Screen(Text.translatable(MinecraftGuideScreenKeys.TITLE)) {
+) : Screen(Component.translatable(MinecraftGuideScreenKeys.TITLE)) {
     /** 目前頁籤的區塊；切換頁籤時重新建立。 */
     private var blocks: List<GuideBlock> = GuidePages.blocks(tab, viewer())
 
@@ -100,7 +100,7 @@ internal class GuideScreen(
     override fun init() {
         language = Language.getInstance()
         layout = GuideScreenLayout.of(width = width, height = height)
-        client?.let { recipes = GuideRecipes.find(it) }
+        minecraft?.let { recipes = GuideRecipes.find(it) }
         recipeIndex = recipeIndex.coerceIn(0, (recipes.size - 1).coerceAtLeast(0))
         content = GuideContentLayout.measure(
             blocks = blocks,
@@ -112,10 +112,10 @@ internal class GuideScreen(
         scroll.relayout(layout = layout, contentHeight = content.height)
         addTabs()
         val footer = layout.footer
-        addDrawableChild(
+        addRenderableWidget(
             RestartableMarqueeButtonWidget.builder(
-                message = Text.translatable(if (returnScreen == null) MinecraftGuideScreenKeys.CLOSE else MinecraftGuideScreenKeys.BACK),
-            ) { close() }
+                message = Component.translatable(if (returnScreen == null) MinecraftGuideScreenKeys.CLOSE else MinecraftGuideScreenKeys.BACK),
+            ) { onClose() }
                 .dimensions(
                     x = footer.buttonX(GuideScreenLayout.CLOSE_SLOT),
                     y = layout.footerY,
@@ -132,13 +132,13 @@ internal class GuideScreen(
         val strip = layout.tabs
         GuideTab.entries.forEachIndexed { index, entry ->
             val selected = entry == tab
-            addDrawableChild(
+            addRenderableWidget(
                 TabWidget(
                     x = strip.tabX(index),
                     y = strip.tabY(selected),
                     width = strip.tabWidth,
                     height = strip.tabHeight(selected),
-                    message = Text.translatable(entry.titleKey),
+                    message = Component.translatable(entry.titleKey),
                     selected = selected,
                     clipLeft = strip.left,
                     clipRight = strip.right,
@@ -160,7 +160,7 @@ internal class GuideScreen(
                     y = element.y,
                     width = element.width,
                     height = element.height,
-                ) { client?.let { openAction(element.action, this) } }
+                ) { minecraft?.let { openAction(element.action, this) } }
                 is GuideElement.Recipe -> {
                     val recipe = element.layout
                     val size = GuideRecipeLayout.CONTROL_SIZE
@@ -169,12 +169,12 @@ internal class GuideScreen(
                         Triple(recipe.nextX, PixelIcon.OPEN_RIGHT, MinecraftGuideScreenKeys.SETUP_RECIPE_NEXT) to 1,
                     ).forEach { (control, step) ->
                         val (x, icon, tooltipKey) = control
-                        val button = addContentButton(label = Text.translatable(tooltipKey), x = x, y = recipe.controlsY, width = size, height = size) {
+                        val button = addContentButton(label = Component.translatable(tooltipKey), x = x, y = recipe.controlsY, width = size, height = size) {
                             recipeIndex = Math.floorMod(recipeIndex + step, recipes.size.coerceAtLeast(1))
                         }
                         button.icon = icon
                         button.showsMessage = false
-                        button.tooltip = Tooltip.of(Text.translatable(tooltipKey))
+                        button.tooltip = Tooltip.create(Component.translatable(tooltipKey))
                         button.active = recipes.size > 1
                     }
                 }
@@ -195,7 +195,7 @@ internal class GuideScreen(
      * @return 已加入的按鈕。
      */
     private fun addContentButton(
-        label: Text,
+        label: Component,
         x: Int,
         y: Int,
         width: Int,
@@ -206,7 +206,7 @@ internal class GuideScreen(
             .dimensions(layout.contentLeft + x, layout.contentTop + y, width, height)
             .build()
         button.clickClip = { mouseX, mouseY -> layout.inContent(mouseX, mouseY) }
-        addSelectableChild(button)
+        addWidget(button)
         contentButtons += ContentButton(widget = button, x = x, y = y)
         return button
     }
@@ -224,7 +224,7 @@ internal class GuideScreen(
         yawOffsets.clear()
         draggingScene = null
         scroll.reset()
-        clearAndInit()
+        rebuildWidgets()
     }
 
     /**
@@ -233,17 +233,17 @@ internal class GuideScreen(
      * @return 看著畫面的玩家。
      */
     private fun viewer(): GuideViewer {
-        val profile = MinecraftClient.getInstance().session.profile
+        val profile = Minecraft.getInstance().user.gameProfile
         return GuideViewer(id = profile.id.toKotlinUuid(), name = profile.name)
     }
 
     /** 以目前的文字繪製器與操作面板量測內容。 */
     private fun measurer(): GuideMeasurer = object : GuideMeasurer {
-        override fun width(text: Text): Int = textRenderer.getWidth(text)
+        override fun width(text: Component): Int = font.width(text)
 
-        override fun lineCount(text: Text, width: Int): Int = textRenderer.wrapLines(text, width.coerceAtLeast(1)).size.coerceAtLeast(1)
+        override fun lineCount(text: Component, width: Int): Int = font.split(text, width.coerceAtLeast(1)).size.coerceAtLeast(1)
 
-        override fun tileName(tile: Tile): Text = tile.toNameText(tileNames)
+        override fun tileName(tile: Tile): Component = tile.toNameText(tileNames)
 
         override fun decisionPanelHeight(prompt: PlayerDecisionPromptDto, width: Int): Int = hudPreview.decisionPanelHeight(prompt, width)
     }
@@ -256,10 +256,10 @@ internal class GuideScreen(
      * @param mouseY 游標垂直位置。
      * @param delta 畫面更新比例。
      */
-    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
-        if (language !== Language.getInstance()) clearAndInit()
+    override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        if (language !== Language.getInstance()) rebuildWidgets()
         renderBackground(context)
-        ScreenRendering.title(context, textRenderer, fitClientText(textRenderer, title, layout.contentWidth), width)
+        ScreenRendering.title(context, font, fitClientText(font, title, layout.contentWidth), width)
         val tooltip = renderContent(context = context, mouseX = mouseX, mouseY = mouseY, delta = delta)
         val bar = layout.scrollbar(contentHeight = content.height, scroll = scroll.offset)
         if (bar.maximumScroll > 0) VerticalScrollbar.renderWithin(context, layout.scrollbarLeft, layout.scrollbarLeft + VerticalScrollbar.WIDTH, bar)
@@ -267,14 +267,14 @@ internal class GuideScreen(
         super.render(context, mouseX, mouseY, delta)
         if (scroll.isDragging || draggingScene != null) return
         when (tooltip) {
-            is ContentTooltip.Scene -> context.drawTooltip(
-                textRenderer,
+            is ContentTooltip.Scene -> context.renderTooltip(
+                font,
                 sceneTooltipLines(tooltip.hover.region),
                 GuideTooltipPlacement(anchorTop = tooltip.hover.top, anchorBottom = tooltip.hover.bottom),
                 mouseX,
                 mouseY,
             )
-            is ContentTooltip.Item -> context.drawTooltip(textRenderer, tooltip.lines, mouseX, mouseY)
+            is ContentTooltip.Item -> context.renderComponentTooltip(font, tooltip.lines, mouseX, mouseY)
             null -> Unit
         }
     }
@@ -289,7 +289,7 @@ internal class GuideScreen(
      * @return 游標指向的場景區塊或配方物品的提示；沒有時為 null。
      */
     private fun renderContent(
-        context: DrawContext,
+        context: GuiGraphics,
         mouseX: Int,
         mouseY: Int,
         delta: Float,
@@ -361,7 +361,7 @@ internal class GuideScreen(
      * @param originY 內容原點套用捲動後的垂直位置。
      */
     private fun renderLabel(
-        context: DrawContext,
+        context: GuiGraphics,
         label: GuideElement.Label,
         originX: Int,
         originY: Int,
@@ -374,14 +374,14 @@ internal class GuideScreen(
             GuideTextStyle.OPERATOR -> OPERATOR_COLOR
             GuideTextStyle.ACCENT -> HEADING_COLOR
         }
-        val lines = if (label.lineCount == 1 && label.width < textRenderer.getWidth(label.text)) {
-            listOf(label.text.asOrderedText())
+        val lines = if (label.lineCount == 1 && label.width < font.width(label.text)) {
+            listOf(label.text.visualOrderText)
         } else {
-            textRenderer.wrapLines(label.text, label.width.coerceAtLeast(1))
+            font.split(label.text, label.width.coerceAtLeast(1))
         }
         lines.forEachIndexed { line, text ->
-            val x = if (label.centered) originX + label.x + (label.width - textRenderer.getWidth(text)) / 2 else originX + label.x
-            context.drawTextWithShadow(textRenderer, text, x, originY + label.y + line * GuideContentLayout.LINE_HEIGHT, color)
+            val x = if (label.centered) originX + label.x + (label.width - font.width(text)) / 2 else originX + label.x
+            context.drawString(font, text, x, originY + label.y + line * GuideContentLayout.LINE_HEIGHT, color)
         }
     }
 
@@ -397,18 +397,18 @@ internal class GuideScreen(
      * @return 游標指向的物品提示；沒有時為 null。
      */
     private fun renderRecipe(
-        context: DrawContext,
+        context: GuiGraphics,
         recipe: GuideRecipeLayout,
         originX: Int,
         originY: Int,
         mouseX: Int,
         mouseY: Int,
-    ): List<Text>? {
+    ): List<Component>? {
         val current = recipes.getOrNull(recipeIndex) ?: return null
         val panelX = originX + recipe.panelLeft
         val panelY = originY + recipe.top
-        context.drawTexture(CRAFTING_TABLE_TEXTURE, panelX, panelY, 0, 0, GuideRecipeLayout.PANEL_WIDTH, GuideRecipeLayout.PANEL_TOP_HEIGHT)
-        context.drawTexture(
+        context.blit(CRAFTING_TABLE_TEXTURE, panelX, panelY, 0, 0, GuideRecipeLayout.PANEL_WIDTH, GuideRecipeLayout.PANEL_TOP_HEIGHT)
+        context.blit(
             CRAFTING_TABLE_TEXTURE,
             panelX,
             panelY + GuideRecipeLayout.PANEL_TOP_HEIGHT,
@@ -417,9 +417,9 @@ internal class GuideScreen(
             GuideRecipeLayout.PANEL_WIDTH,
             GuideRecipeLayout.PANEL_BORDER_HEIGHT,
         )
-        context.drawText(
-            textRenderer,
-            Text.translatable(MinecraftGuideScreenKeys.SETUP_RECIPE),
+        context.drawString(
+            font,
+            Component.translatable(MinecraftGuideScreenKeys.SETUP_RECIPE),
             originX + recipe.titleX,
             originY + recipe.titleY,
             CONTAINER_TITLE_COLOR,
@@ -434,16 +434,16 @@ internal class GuideScreen(
         }
         if (renderItem(context, current.output, originX + recipe.outputX, originY + recipe.outputY, mouseX, mouseY)) hovered = current.output
         val centerX = originX + recipe.centerX
-        val name = fitClientText(textRenderer, current.output.name, recipe.width)
-        context.drawCenteredTextWithShadow(textRenderer, name, centerX, originY + recipe.nameY, ScreenRendering.TEXT_COLOR)
-        context.drawCenteredTextWithShadow(
-            textRenderer,
+        val name = fitClientText(font, current.output.hoverName, recipe.width)
+        context.drawCenteredString(font, name, centerX, originY + recipe.nameY, ScreenRendering.TEXT_COLOR)
+        context.drawCenteredString(
+            font,
             "${recipeIndex + 1}/${recipes.size}",
             centerX,
             originY + recipe.controlsY + (GuideRecipeLayout.CONTROL_SIZE - GuideContentLayout.LINE_HEIGHT) / 2 + 1,
             ScreenRendering.MUTED_TEXT_COLOR,
         )
-        val client = client ?: return null
+        val client = minecraft ?: return null
         return hovered?.let { getTooltipFromItem(client, it) }
     }
 
@@ -459,7 +459,7 @@ internal class GuideScreen(
      * @return 游標指著有物品的格子時為 true。
      */
     private fun renderItem(
-        context: DrawContext,
+        context: GuiGraphics,
         stack: ItemStack?,
         x: Int,
         y: Int,
@@ -468,11 +468,11 @@ internal class GuideScreen(
     ): Boolean {
         val size = GuideRecipeLayout.ITEM_SIZE
         stack?.let {
-            context.drawItem(it, x, y)
-            context.drawItemInSlot(textRenderer, it, x, y)
+            context.renderItem(it, x, y)
+            context.renderItemDecorations(font, it, x, y)
         }
         val hovered = mouseX in x until x + size && mouseY in y until y + size
-        if (hovered) HandledScreen.drawSlotHighlight(context, x, y, 0)
+        if (hovered) AbstractContainerScreen.renderSlotHighlight(context, x, y, 0)
         return hovered && stack != null
     }
 
@@ -482,11 +482,11 @@ internal class GuideScreen(
      * @param region 游標指著的區塊。
      * @return 提示的各行。
      */
-    private fun sceneTooltipLines(region: GuideSceneRegion): List<OrderedText> {
+    private fun sceneTooltipLines(region: GuideSceneRegion): List<FormattedCharSequence> {
         val maximumWidth = (width * GuideTooltipPlacement.MAXIMUM_WIDTH_RATIO).toInt().coerceAtLeast(MINIMUM_TOOLTIP_WIDTH)
-        val lines = listOf(Text.translatable(region.nameKey)) +
-            Text.translatable(region.descriptionKey).string.split('\n').map { Text.literal(it).formatted(Formatting.GRAY) }
-        return lines.flatMap { line -> textRenderer.wrapLines(line, maximumWidth) }
+        val lines = listOf(Component.translatable(region.nameKey)) +
+            Component.translatable(region.descriptionKey).string.split('\n').map { Component.literal(it).withStyle(ChatFormatting.GRAY) }
+        return lines.flatMap { line -> font.split(line, maximumWidth) }
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
@@ -542,8 +542,8 @@ internal class GuideScreen(
     }
 
     /** 返回原畫面，或從按鍵與指令開啟時關回遊戲。 */
-    override fun close() {
-        client?.setScreen(returnScreen)
+    override fun onClose() {
+        minecraft?.setScreen(returnScreen)
     }
 
     /** 釋放場景繪製使用的資源。 */
@@ -553,7 +553,7 @@ internal class GuideScreen(
     }
 
     /** 「如何開始」不暫停單人遊戲。 */
-    override fun shouldPause(): Boolean = false
+    override fun isPauseScreen(): Boolean = false
 
     /** 內容區游標指向的東西要顯示的提示。 */
     private sealed interface ContentTooltip {
@@ -569,7 +569,7 @@ internal class GuideScreen(
          *
          * @property lines 物品提示的各行。
          */
-        data class Item(val lines: List<Text>) : ContentTooltip
+        data class Item(val lines: List<Component>) : ContentTooltip
     }
 
     /**
@@ -587,7 +587,7 @@ internal class GuideScreen(
         const val OUTSIDE = Int.MIN_VALUE / 2
 
         /** 原版工作台介面圖。 */
-        val CRAFTING_TABLE_TEXTURE: Identifier = Identifier("textures/gui/container/crafting_table.png")
+        val CRAFTING_TABLE_TEXTURE: ResourceLocation = ResourceLocation("textures/gui/container/crafting_table.png")
 
         /** 原版容器標題的文字顏色。 */
         const val CONTAINER_TITLE_COLOR = 0x404040

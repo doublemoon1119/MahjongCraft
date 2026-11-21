@@ -9,12 +9,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
-import net.minecraft.registry.RegistryKey
-import net.minecraft.registry.RegistryKeys
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
+import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.Registries
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 
 /**
@@ -61,7 +61,7 @@ class FabricMahjongTileSelectionConfirmPresenter(
                     segmentIndex = segmentIndex,
                     isPrimary = segmentIndex == primarySegmentIndex,
                 )
-                refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+                moveTo(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
             }
             if (!spawnGateway.spawn(world, panel, "tile-selection-confirm", presentation.tableId)) {
                 spawned.forEach { it.discard() }
@@ -94,10 +94,10 @@ class FabricMahjongTileSelectionConfirmPresenter(
      * @param location 桌子位置。
      * @return 對應的已載入伺服器世界；無法解析時為 null。
      */
-    private fun resolveWorld(location: TableLocation): ServerWorld? {
-        val identifier = Identifier.tryParse(location.dimensionId) ?: return null
-        val worldKey = RegistryKey.of(RegistryKeys.WORLD, identifier)
-        return serverHolder.current()?.getWorld(worldKey)
+    private fun resolveWorld(location: TableLocation): ServerLevel? {
+        val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null
+        val worldKey = ResourceKey.create(Registries.DIMENSION, identifier)
+        return serverHolder.current()?.getLevel(worldKey)
     }
 
     /**
@@ -111,11 +111,11 @@ class FabricMahjongTileSelectionConfirmPresenter(
      * @return 指定玩家所持有的面板 entity。
      */
     private fun findManagedPanelsForHolder(
-        world: ServerWorld,
+        world: ServerLevel,
         tableId: Uuid,
         controllerPos: BlockPos,
         holderId: Uuid,
-    ): List<MahjongTileSelectionConfirmEntity> = world.getEntitiesByClass(
+    ): List<MahjongTileSelectionConfirmEntity> = world.getEntitiesOfClass(
         MahjongTileSelectionConfirmEntity::class.java,
         searchBox(controllerPos),
     ) { panel -> panel.managedTableId == tableId && panel.holderId == holderId }
@@ -129,10 +129,10 @@ class FabricMahjongTileSelectionConfirmPresenter(
      * @return 該桌所有持有者的面板 entity。
      */
     private fun findManagedPanels(
-        world: ServerWorld,
+        world: ServerLevel,
         tableId: Uuid,
         controllerPos: BlockPos,
-    ): List<MahjongTileSelectionConfirmEntity> = world.getEntitiesByClass(
+    ): List<MahjongTileSelectionConfirmEntity> = world.getEntitiesOfClass(
         MahjongTileSelectionConfirmEntity::class.java,
         searchBox(controllerPos),
     ) { panel -> panel.managedTableId == tableId }
@@ -143,7 +143,7 @@ class FabricMahjongTileSelectionConfirmPresenter(
      * @param pos 桌子 controller 方塊位置。
      * @return 面板 entity 查詢用的範圍。
      */
-    private fun searchBox(pos: BlockPos) = Box(pos).expand(
+    private fun searchBox(pos: BlockPos) = AABB(pos).inflate(
         TableOverlayEntitySearch.HORIZONTAL_RADIUS,
         TableOverlayEntitySearch.VERTICAL_RADIUS,
         TableOverlayEntitySearch.HORIZONTAL_RADIUS,

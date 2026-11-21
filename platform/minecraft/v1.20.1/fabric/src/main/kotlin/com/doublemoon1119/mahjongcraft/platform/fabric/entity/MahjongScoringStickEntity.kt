@@ -7,18 +7,18 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationSte
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDenomination
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDimensions
-import net.minecraft.entity.Entity
-import net.minecraft.entity.EntityType
-import net.minecraft.entity.data.DataTracker
-import net.minecraft.entity.data.TrackedData
-import net.minecraft.entity.data.TrackedDataHandlerRegistry
-import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.item.ItemStack
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.sound.SoundEvents
-import net.minecraft.util.ActionResult
-import net.minecraft.util.Hand
-import net.minecraft.world.World
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.network.syncher.EntityDataAccessor
+import net.minecraft.network.syncher.EntityDataSerializers
+import net.minecraft.network.syncher.SynchedEntityData
+import net.minecraft.sounds.SoundEvents
+import net.minecraft.world.InteractionHand
+import net.minecraft.world.InteractionResult
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.entity.player.Player
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.level.Level
 import kotlin.uuid.Uuid
 
 /**
@@ -32,12 +32,12 @@ import kotlin.uuid.Uuid
  */
 class MahjongScoringStickEntity(
     type: EntityType<out MahjongScoringStickEntity> = ModEntities.mahjongScoringStick,
-    world: World,
+    world: Level,
 ) : AnimatedMahjongEntity<Nothing>(type, world) {
     /** 目前的點棒面額。 */
     var denomination: MahjongScoringStickDenomination
-        get() = MahjongScoringStickDenomination.fromNameOrDefault(dataTracker[DENOMINATION])
-        set(value) = dataTracker.set(DENOMINATION, value.name)
+        get() = MahjongScoringStickDenomination.fromNameOrDefault(entityData[DENOMINATION])
+        set(value) = entityData.set(DENOMINATION, value.name)
 
     /** 規則桌面物件的穩定 ID；自由放置點棒為空字串。 */
     var tablePropPlacementId: String = ""
@@ -47,39 +47,39 @@ class MahjongScoringStickEntity(
 
     /** 是否由正式牌局管理；管理中的點棒不接受自由放置互動。 */
     var managedByGame: Boolean
-        get() = dataTracker[MANAGED_BY_GAME]
-        set(value) = dataTracker.set(MANAGED_BY_GAME, value)
+        get() = entityData[MANAGED_BY_GAME]
+        set(value) = entityData.set(MANAGED_BY_GAME, value)
 
     /** 正式牌局所屬麻將桌；自由放置點棒為 null。 */
     var managedTableId: Uuid?
-        get() = dataTracker[MANAGED_TABLE_ID]
+        get() = entityData[MANAGED_TABLE_ID]
             .takeIf(String::isNotBlank)
             ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
-        private set(value) = dataTracker.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
+        private set(value) = entityData.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
 
     /** 是否正在播放由伺服器啟動的掉落動畫，理由同 [MahjongTileEntity.animating]。 */
     var animating: Boolean
-        get() = dataTracker[ANIMATING]
-        private set(value) = dataTracker.set(ANIMATING, value)
+        get() = entityData[ANIMATING]
+        private set(value) = entityData.set(ANIMATING, value)
 
     /** 動畫開始時的 server game time。 */
     val animationStartGameTime: Long
-        get() = dataTracker[ANIMATION_START_GAME_TIME]
+        get() = entityData[ANIMATION_START_GAME_TIME]
 
     /** 動畫總長度，以 server ticks 表示。 */
     val animationDurationTicks: Int
-        get() = dataTracker[ANIMATION_DURATION_TICKS]
+        get() = entityData[ANIMATION_DURATION_TICKS]
 
     /** 拋物線最高額外高度；點棒掉落固定為純直落，恆為 `0`。 */
     val animationArcHeight: Double
-        get() = dataTracker[ANIMATION_ARC_HEIGHT].toDouble()
+        get() = entityData[ANIMATION_ARC_HEIGHT].toDouble()
 
     /** 動畫起點相對 entity 最終位置的向量。 */
     val animationStartOffset: DiceAnimationVector
         get() = DiceAnimationVector(
-            x = dataTracker[ANIMATION_START_OFFSET_X].toDouble(),
-            y = dataTracker[ANIMATION_START_OFFSET_Y].toDouble(),
-            z = dataTracker[ANIMATION_START_OFFSET_Z].toDouble(),
+            x = entityData[ANIMATION_START_OFFSET_X].toDouble(),
+            y = entityData[ANIMATION_START_OFFSET_Y].toDouble(),
+            z = entityData[ANIMATION_START_OFFSET_Z].toDouble(),
         )
 
     init {
@@ -87,7 +87,7 @@ class MahjongScoringStickEntity(
     }
 
     /**
-     * 這個 entity 物件在記憶體裡第一次被 tick 到的 `world.time`；只在記憶體內，不寫進存檔，理由跟
+     * 這個 entity 物件在記憶體裡第一次被 tick 到的 `level().gameTime`；只在記憶體內，不寫進存檔，理由跟
      * `MahjongDiceEntity.firstTickWorldTime` 完全一致（避免世界重新載入一次補跑大量 tick 時誤判成
      * 早就該消失了）。
      */
@@ -102,21 +102,21 @@ class MahjongScoringStickEntity(
      */
     override fun tick() {
         super.tick()
-        if (world.isClient) return
-        if (firstTickWorldTime == Long.MIN_VALUE) firstTickWorldTime = world.time
-        if (managedByGame && world.time - firstTickWorldTime >= FALLBACK_DESPAWN_AFTER_TICKS) {
+        if (level().isClientSide) return
+        if (firstTickWorldTime == Long.MIN_VALUE) firstTickWorldTime = level().gameTime
+        if (managedByGame && level().gameTime - firstTickWorldTime >= FALLBACK_DESPAWN_AFTER_TICKS) {
             discard()
         }
     }
 
     /** 點棒扁平輕薄，不提供物理阻擋，僅供視線選取。 */
-    override fun isCollidable(): Boolean = false
+    override fun canBeCollidedWith(): Boolean = false
 
     /** 點棒不參與一般 entity 推擠。 */
     override fun isPushable(): Boolean = false
 
     /** 允許玩家視線 raycast 選取點棒，以執行右鍵互動。 */
-    override fun canHit(): Boolean = !isRemoved
+    override fun isPickable(): Boolean = !isRemoved
 
     /** 允許自由放置點棒成為左鍵回收目標。 */
     override fun isAttackable(): Boolean = !isRemoved && !managedByGame
@@ -127,11 +127,11 @@ class MahjongScoringStickEntity(
      * @param player 進行互動的玩家。
      * @param hand 玩家使用的手。
      */
-    override fun interact(player: PlayerEntity, hand: Hand): ActionResult {
-        if (managedByGame) return ActionResult.PASS
-        if (world.isClient) return ActionResult.SUCCESS
+    override fun interact(player: Player, hand: InteractionHand): InteractionResult {
+        if (managedByGame) return InteractionResult.PASS
+        if (level().isClientSide) return InteractionResult.SUCCESS
         denomination = denomination.next()
-        return ActionResult.CONSUME
+        return InteractionResult.CONSUME
     }
 
     /**
@@ -139,12 +139,12 @@ class MahjongScoringStickEntity(
      *
      * @param attacker 發起攻擊的 entity；非玩家不會回收點棒。
      */
-    override fun handleAttack(attacker: Entity): Boolean {
+    override fun skipAttackInteraction(attacker: Entity): Boolean {
         if (managedByGame) return false
-        val player = attacker as? PlayerEntity ?: return false
-        if (!world.isClient) {
-            if (!player.abilities.creativeMode) dropStack(asItemStack())
-            playSound(SoundEvents.ENTITY_ITEM_FRAME_BREAK, 1.0f, 1.0f)
+        val player = attacker as? Player ?: return false
+        if (!level().isClientSide) {
+            if (!player.abilities.instabuild) spawnAtLocation(asItemStack())
+            playSound(SoundEvents.ITEM_FRAME_BREAK, 1.0f, 1.0f)
             discard()
         }
         return true
@@ -156,13 +156,13 @@ class MahjongScoringStickEntity(
      * @param tableId 所屬麻將桌 UUID。
      */
     fun assignToTable(tableId: Uuid) {
-        check(!world.isClient) { "Managed scoring sticks must be assigned by the server" }
+        check(!level().isClientSide) { "Managed scoring sticks must be assigned by the server" }
         managedByGame = true
         managedTableId = tableId
     }
 
     /**
-     * 排定落下動畫，供積棒／立直棒的 presenter 共用——呼叫前應已經 `refreshPositionAndAngles` 到最終
+     * 排定落下動畫，供積棒／立直棒的 presenter 共用——呼叫前應已經 `moveTo` 到最終
      * 落點，真實座標全程不變，只有 render 端的視覺位移從 [DROP_HEIGHT] 內插回 `0`，手法比照
      * `FabricMahjongTileWallPresenter.startWallDropAnimations` 牌牆掉落動畫（已在最終位置、`startOffsetY`
      * 為正值即可，不需要像寶牌揭示動畫那樣額外 `Teleport` 到半空起點——那是因為寶牌指示牌揭示前已經
@@ -170,7 +170,7 @@ class MahjongScoringStickEntity(
      * 位移表達「從上方落下」，不需要移動真實座標）。
      */
     fun enqueueDropAnimation() {
-        check(!world.isClient) { "Scoring stick drop animation must be started by the server" }
+        check(!level().isClientSide) { "Scoring stick drop animation must be started by the server" }
         enqueue(
             step = AnimationStep.PlayMotion(
                 durationTicks = DROP_DURATION_TICKS,
@@ -191,12 +191,12 @@ class MahjongScoringStickEntity(
      * @param startGameTime 動畫的絕對開始遊戲時間。
      */
     override fun applyPlayMotion(step: AnimationStep.PlayMotion, startGameTime: Long) {
-        dataTracker.set(ANIMATION_START_GAME_TIME, startGameTime)
-        dataTracker.set(ANIMATION_DURATION_TICKS, step.durationTicks)
-        dataTracker.set(ANIMATION_ARC_HEIGHT, step.arcHeight.toFloat())
-        dataTracker.set(ANIMATION_START_OFFSET_X, step.startOffsetX.toFloat())
-        dataTracker.set(ANIMATION_START_OFFSET_Y, step.startOffsetY.toFloat())
-        dataTracker.set(ANIMATION_START_OFFSET_Z, step.startOffsetZ.toFloat())
+        entityData.set(ANIMATION_START_GAME_TIME, startGameTime)
+        entityData.set(ANIMATION_DURATION_TICKS, step.durationTicks)
+        entityData.set(ANIMATION_ARC_HEIGHT, step.arcHeight.toFloat())
+        entityData.set(ANIMATION_START_OFFSET_X, step.startOffsetX.toFloat())
+        entityData.set(ANIMATION_START_OFFSET_Y, step.startOffsetY.toFloat())
+        entityData.set(ANIMATION_START_OFFSET_Z, step.startOffsetZ.toFloat())
         animating = true
     }
 
@@ -218,14 +218,14 @@ class MahjongScoringStickEntity(
      * @param step 不存在的自訂動畫步驟。
      * @param nbt 原定接收動畫資料的 NBT compound。
      */
-    override fun serializeCustomStep(step: Nothing, nbt: NbtCompound) = step
+    override fun serializeCustomStep(step: Nothing, nbt: CompoundTag) = step
 
     /**
      * 點棒沒有可還原的自訂動畫步驟。
      *
      * @param nbt 原定提供動畫資料的 NBT compound。
      */
-    override fun deserializeCustomStep(nbt: NbtCompound): Nothing = error("MahjongScoringStickEntity never enqueues AnimationStep.Custom")
+    override fun deserializeCustomStep(nbt: CompoundTag): Nothing = error("MahjongScoringStickEntity never enqueues AnimationStep.Custom")
 
     /** 建立保留目前面額的點棒物品。 */
     private fun asItemStack(): ItemStack = ItemStack(ModItems.MAHJONG_SCORING_STICK).also {
@@ -233,29 +233,29 @@ class MahjongScoringStickEntity(
     }
 
     /** 創造模式中鍵複製自由點棒；牌局管理中的點棒不提供物品。 */
-    override fun getPickBlockStack(): ItemStack? = if (managedByGame) null else asItemStack()
+    override fun getPickResult(): ItemStack? = if (managedByGame) null else asItemStack()
 
     /** 初始化 client/server 同步的面額、管理狀態與動畫欄位。 */
-    override fun initDataTracker() {
-        dataTracker.startTracking(DENOMINATION, MahjongScoringStickDenomination.P100.name)
-        dataTracker.startTracking(MANAGED_BY_GAME, false)
-        dataTracker.startTracking(MANAGED_TABLE_ID, "")
-        dataTracker.startTracking(ANIMATING, false)
-        dataTracker.startTracking(ANIMATION_START_GAME_TIME, 0L)
-        dataTracker.startTracking(ANIMATION_DURATION_TICKS, 1)
-        dataTracker.startTracking(ANIMATION_ARC_HEIGHT, 0.0f)
-        dataTracker.startTracking(ANIMATION_START_OFFSET_X, 0.0f)
-        dataTracker.startTracking(ANIMATION_START_OFFSET_Y, 0.0f)
-        dataTracker.startTracking(ANIMATION_START_OFFSET_Z, 0.0f)
+    override fun defineSynchedData() {
+        entityData.define(DENOMINATION, MahjongScoringStickDenomination.P100.name)
+        entityData.define(MANAGED_BY_GAME, false)
+        entityData.define(MANAGED_TABLE_ID, "")
+        entityData.define(ANIMATING, false)
+        entityData.define(ANIMATION_START_GAME_TIME, 0L)
+        entityData.define(ANIMATION_DURATION_TICKS, 1)
+        entityData.define(ANIMATION_ARC_HEIGHT, 0.0f)
+        entityData.define(ANIMATION_START_OFFSET_X, 0.0f)
+        entityData.define(ANIMATION_START_OFFSET_Y, 0.0f)
+        entityData.define(ANIMATION_START_OFFSET_Z, 0.0f)
     }
 
     /**
      * 從世界存檔還原面額、管理狀態與動畫佇列，非法值使用安全預設。動畫佇列一併還原理由同
-     * [MahjongTileEntity.readCustomDataFromNbt]。
+     * [MahjongTileEntity.readAdditionalSaveData]。
      *
      * @param nbt entity 的持久化資料。
      */
-    override fun readCustomDataFromNbt(nbt: NbtCompound) {
+    override fun readAdditionalSaveData(nbt: CompoundTag) {
         val identity = TablePropIdentityNbt.read(nbt)
         tablePropPlacementId = identity?.placementId.orEmpty()
         tablePropRuleModuleId = identity?.ruleModuleId.orEmpty()
@@ -271,7 +271,7 @@ class MahjongScoringStickEntity(
      *
      * @param nbt 接收 entity 持久化資料的 NBT。
      */
-    override fun writeCustomDataToNbt(nbt: NbtCompound) {
+    override fun addAdditionalSaveData(nbt: CompoundTag) {
         TablePropIdentityNbt.write(nbt, tablePropPlacementId, tablePropRuleModuleId)
         MahjongScoringStickDenominationNbt.write(nbt, denomination)
         GameManagedEntityNbt.write(nbt, managedByGame, managedTableId)
@@ -298,43 +298,43 @@ class MahjongScoringStickEntity(
         private const val FALLBACK_DESPAWN_AFTER_TICKS = 20L * 60L * 60L
 
         /** 以名稱同步目前面額。 */
-        private val DENOMINATION: TrackedData<String> =
-            DataTracker.registerData(MahjongScoringStickEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val DENOMINATION: EntityDataAccessor<String> =
+            SynchedEntityData.defineId(MahjongScoringStickEntity::class.java, EntityDataSerializers.STRING)
 
         /** 同步是否由正式牌局管理。 */
-        private val MANAGED_BY_GAME: TrackedData<Boolean> =
-            DataTracker.registerData(MahjongScoringStickEntity::class.java, TrackedDataHandlerRegistry.BOOLEAN)
+        private val MANAGED_BY_GAME: EntityDataAccessor<Boolean> =
+            SynchedEntityData.defineId(MahjongScoringStickEntity::class.java, EntityDataSerializers.BOOLEAN)
 
         /** 同步正式點棒所屬麻將桌 UUID；空字串表示自由放置。 */
-        private val MANAGED_TABLE_ID: TrackedData<String> =
-            DataTracker.registerData(MahjongScoringStickEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val MANAGED_TABLE_ID: EntityDataAccessor<String> =
+            SynchedEntityData.defineId(MahjongScoringStickEntity::class.java, EntityDataSerializers.STRING)
 
         /** 同步是否正在播放掉落動畫。 */
-        private val ANIMATING: TrackedData<Boolean> =
-            DataTracker.registerData(MahjongScoringStickEntity::class.java, TrackedDataHandlerRegistry.BOOLEAN)
+        private val ANIMATING: EntityDataAccessor<Boolean> =
+            SynchedEntityData.defineId(MahjongScoringStickEntity::class.java, EntityDataSerializers.BOOLEAN)
 
         /** 同步動畫開始的 server game time。 */
-        private val ANIMATION_START_GAME_TIME: TrackedData<Long> =
-            DataTracker.registerData(MahjongScoringStickEntity::class.java, TrackedDataHandlerRegistry.LONG)
+        private val ANIMATION_START_GAME_TIME: EntityDataAccessor<Long> =
+            SynchedEntityData.defineId(MahjongScoringStickEntity::class.java, EntityDataSerializers.LONG)
 
         /** 同步動畫總長度（ticks）。 */
-        private val ANIMATION_DURATION_TICKS: TrackedData<Int> =
-            DataTracker.registerData(MahjongScoringStickEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
+        private val ANIMATION_DURATION_TICKS: EntityDataAccessor<Int> =
+            SynchedEntityData.defineId(MahjongScoringStickEntity::class.java, EntityDataSerializers.INT)
 
         /** 同步動畫拋物線最高額外高度。 */
-        private val ANIMATION_ARC_HEIGHT: TrackedData<Float> =
-            DataTracker.registerData(MahjongScoringStickEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+        private val ANIMATION_ARC_HEIGHT: EntityDataAccessor<Float> =
+            SynchedEntityData.defineId(MahjongScoringStickEntity::class.java, EntityDataSerializers.FLOAT)
 
         /** 同步動畫起點相對終點的 X 偏移。 */
-        private val ANIMATION_START_OFFSET_X: TrackedData<Float> =
-            DataTracker.registerData(MahjongScoringStickEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+        private val ANIMATION_START_OFFSET_X: EntityDataAccessor<Float> =
+            SynchedEntityData.defineId(MahjongScoringStickEntity::class.java, EntityDataSerializers.FLOAT)
 
         /** 同步動畫起點相對終點的 Y 偏移。 */
-        private val ANIMATION_START_OFFSET_Y: TrackedData<Float> =
-            DataTracker.registerData(MahjongScoringStickEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+        private val ANIMATION_START_OFFSET_Y: EntityDataAccessor<Float> =
+            SynchedEntityData.defineId(MahjongScoringStickEntity::class.java, EntityDataSerializers.FLOAT)
 
         /** 同步動畫起點相對終點的 Z 偏移。 */
-        private val ANIMATION_START_OFFSET_Z: TrackedData<Float> =
-            DataTracker.registerData(MahjongScoringStickEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+        private val ANIMATION_START_OFFSET_Z: EntityDataAccessor<Float> =
+            SynchedEntityData.defineId(MahjongScoringStickEntity::class.java, EntityDataSerializers.FLOAT)
     }
 }

@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.GameEventExc
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPlayerTableScope
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
 import com.mojang.brigadier.tree.CommandNode
-import net.minecraft.server.command.ServerCommandSource
+import net.minecraft.commands.CommandSourceStack
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.test.Test
@@ -50,7 +50,7 @@ class FabricDebugProgressionCommandTest {
     @Test
     fun `match progression keeps every built-in scenario literal`() {
         val node = command.buildMatchProgressionCommand().build()
-        assertEquals(setOf("riichi"), node.children.map(CommandNode<ServerCommandSource>::getName).toSet())
+        assertEquals(setOf("riichi"), node.children.map(CommandNode<CommandSourceStack>::getName).toSet())
         val riichi = node.getChild("riichi")
         assertNull(riichi.command, "match_progression riichi is not executable on its own")
         val children = riichi.children
@@ -66,13 +66,13 @@ class FabricDebugProgressionCommandTest {
                 "dealer_tenpai_yame",
                 "bust",
             ),
-            actual = children.map(CommandNode<ServerCommandSource>::getName).toSet(),
+            actual = children.map(CommandNode<CommandSourceStack>::getName).toSet(),
         )
         children.forEach { scenario ->
             assertNotNull(scenario.command, "${scenario.name} executes directly")
             assertEquals(
                 expected = emptySet(),
-                actual = scenario.children.map(CommandNode<ServerCommandSource>::getName).toSet(),
+                actual = scenario.children.map(CommandNode<CommandSourceStack>::getName).toSet(),
                 message = "${scenario.name} takes no argument",
             )
         }

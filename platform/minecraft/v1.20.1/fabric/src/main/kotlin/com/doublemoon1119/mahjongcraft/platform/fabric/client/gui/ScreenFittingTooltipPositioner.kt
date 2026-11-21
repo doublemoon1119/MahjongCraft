@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
-import net.minecraft.client.gui.tooltip.TooltipPositioner
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner
 import org.joml.Vector2i
 import org.joml.Vector2ic
 import kotlin.time.Duration
@@ -15,10 +15,10 @@ internal const val TOOLTIP_BACKGROUND_MARGIN = 4
  * @property shownSince 提示框開始顯示的時間，以 [measuringTimeNow] 計。
  */
 internal class ScreenFittingTooltipPositioner(
-    private val base: TooltipPositioner,
+    private val base: ClientTooltipPositioner,
     private val shownSince: Duration,
-) : TooltipPositioner {
-    override fun getPosition(
+) : ClientTooltipPositioner {
+    override fun positionTooltip(
         screenWidth: Int,
         screenHeight: Int,
         x: Int,
@@ -26,7 +26,7 @@ internal class ScreenFittingTooltipPositioner(
         width: Int,
         height: Int,
     ): Vector2ic {
-        val position = base.getPosition(screenWidth, screenHeight, x, y, width, height)
+        val position = base.positionTooltip(screenWidth, screenHeight, x, y, width, height)
         val elapsed = (measuringTimeNow() - shownSince).coerceAtLeast(Duration.ZERO)
         return Vector2i(
             position.x(),

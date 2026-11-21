@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.tile
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
-import net.minecraft.client.MinecraftClient
-import net.minecraft.util.hit.EntityHitResult
-import net.minecraft.util.hit.HitResult
+import net.minecraft.client.Minecraft
+import net.minecraft.world.phys.EntityHitResult
+import net.minecraft.world.phys.HitResult
 
 /** GameRenderer mixin 使用的靜態橋接；實際狀態仍由 Koin 管理的 controller 持有。 */
 object ClientHandTileLayoutBridge {
@@ -34,7 +34,7 @@ object ClientHandTileLayoutBridge {
      * @param tickDelta 本幀部分 tick。
      */
     @JvmStatic
-    fun beginFrame(client: MinecraftClient, tickDelta: Float) {
+    fun beginFrame(client: Minecraft, tickDelta: Float) {
         controller?.beginFrame(client, tickDelta)
     }
 
@@ -48,32 +48,32 @@ object ClientHandTileLayoutBridge {
      */
     @JvmStatic
     fun adjustTarget(
-        client: MinecraftClient,
+        client: Minecraft,
         original: HitResult?,
         tickDelta: Float,
     ): HitResult? {
         val active = controller ?: return original
         if (!active.hasOverrides) return original
-        val world = client.world ?: return original
+        val world = client.level ?: return original
         val cameraEntity = client.cameraEntity ?: return original
-        val interaction = client.interactionManager ?: return original
-        val reachDistance = if (interaction.hasExtendedReach()) 6.0 else 3.0
-        val start = cameraEntity.getCameraPosVec(tickDelta)
+        val interaction = client.gameMode ?: return original
+        val reachDistance = if (interaction.hasFarPickRange()) 6.0 else 3.0
+        val start = cameraEntity.getEyePosition(tickDelta)
         // 沿用原版的視線起點與固定 1.0 朝向插值，第三人稱也不另換成攝影機位置。
-        val end = start.add(cameraEntity.getRotationVec(1.0f).multiply(reachDistance))
-        val blockTarget = cameraEntity.raycast(interaction.reachDistance.toDouble(), tickDelta, false)
-        val blockDistance = if (blockTarget.type == HitResult.Type.BLOCK) blockTarget.pos.squaredDistanceTo(start) else Double.POSITIVE_INFINITY
+        val end = start.add(cameraEntity.getViewVector(1.0f).scale(reachDistance))
+        val blockTarget = cameraEntity.pick(interaction.pickRange.toDouble(), tickDelta, false)
+        val blockDistance = if (blockTarget.type == HitResult.Type.BLOCK) blockTarget.location.distanceToSqr(start) else Double.POSITIVE_INFINITY
         val originalEntity = (original as? EntityHitResult)?.entity
         val originalMoved = originalEntity is MahjongTileEntity && active.display(originalEntity) != null
         // 非手牌的原版命中仍是基準；舊格位上的手牌則必須重做射線，不能在沒有新命中時退回舊格位。
         val fallback = if (originalMoved) blockTarget else original
-        val fallbackDistance = fallback?.takeIf { it.type != HitResult.Type.MISS }?.pos?.squaredDistanceTo(start)
+        val fallbackDistance = fallback?.takeIf { it.type != HitResult.Type.MISS }?.location?.distanceToSqr(start)
             ?: Double.POSITIVE_INFINITY
         val candidate = findNearestHandTileTarget(
             start = start,
             end = end,
-            candidates = world.entities.filter { entity ->
-                entity !== cameraEntity && entity.rootVehicle !== cameraEntity.rootVehicle && !entity.isRemoved && entity.canHit() && !entity.isSpectator
+            candidates = world.entitiesForRendering().filter { entity ->
+                entity !== cameraEntity && entity.rootVehicle !== cameraEntity.rootVehicle && !entity.isRemoved && entity.isPickable && !entity.isSpectator
             }.map { entity ->
                 val box = if (entity is MahjongTileEntity) active.adjustedBox(entity) else entity.boundingBox
                 entity to box

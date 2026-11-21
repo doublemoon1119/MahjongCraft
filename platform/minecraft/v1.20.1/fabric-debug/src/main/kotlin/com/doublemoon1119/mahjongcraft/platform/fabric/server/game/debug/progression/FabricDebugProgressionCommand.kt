@@ -15,8 +15,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPlayerTableScope
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands.literal
 
 /**
  * 建立 `/mahjongcraft debug match_progression`：正式終局推進 policy 的唯讀決策預覽。
@@ -37,7 +37,7 @@ class FabricDebugProgressionCommand(
      *
      * @return 包含各預覽情境的指令節點。
      */
-    fun buildMatchProgressionCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(MATCH_PROGRESSION_SUBCOMMAND).then(
+    fun buildMatchProgressionCommand(): LiteralArgumentBuilder<CommandSourceStack> = literal(MATCH_PROGRESSION_SUBCOMMAND).then(
         MatchProgressionPreview.entries.fold(literal(RIICHI_ARGUMENT)) { node, preview ->
             node.then(
                 literal(preview.commandName).executes { context ->
@@ -54,7 +54,7 @@ class FabricDebugProgressionCommand(
      * @param preview 要建立的預覽情境。
      * @return 指令執行狀態碼。
      */
-    private fun previewMatchProgression(source: ServerCommandSource, preview: MatchProgressionPreview): Int = playerTableScope.runSuspending(source) { tableId, _ ->
+    private fun previewMatchProgression(source: CommandSourceStack, preview: MatchProgressionPreview): Int = playerTableScope.runSuspending(source) { tableId, _ ->
         val current = gameRepository.getTableState(tableId)
             ?: return@runSuspending "Game not found"
         if (current.players.size != RIICHI_PLAYER_COUNT) {

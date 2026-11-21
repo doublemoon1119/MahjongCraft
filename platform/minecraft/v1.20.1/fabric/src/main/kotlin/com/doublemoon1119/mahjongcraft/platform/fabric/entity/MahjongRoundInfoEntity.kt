@@ -6,14 +6,14 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationSte
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableOverlayVisibility
-import net.minecraft.entity.EntityType
-import net.minecraft.entity.data.DataTracker
-import net.minecraft.entity.data.TrackedData
-import net.minecraft.entity.data.TrackedDataHandlerRegistry
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.util.math.Box
-import net.minecraft.world.World
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.network.syncher.EntityDataAccessor
+import net.minecraft.network.syncher.EntityDataSerializers
+import net.minecraft.network.syncher.SynchedEntityData
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.level.Level
+import net.minecraft.world.phys.AABB
 import org.koin.core.context.GlobalContext
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
@@ -30,37 +30,38 @@ import kotlin.uuid.toKotlinUuid
  *
  * 除了顯示局況以外，這個 entity 還被借來當作「有沒有玩家正在看著這張桌」的信號來源：它跟牌牆
  * 同時出現、對局一結束就消失，剛好等於「這張桌子現在有沒有一場對局」，時機完全吻合，所以不需要
- * 另外開一個 entity 專門做這件事。實際做法見 [onStartedTrackingBy]／[onStoppedTrackingBy]。
+ * 另外開一個 entity 專門做這件事。實際做法見 [startSeenByPlayer]／[stopSeenByPlayer]。
  *
  * @param type Minecraft entity 類型。
  * @param world 實體所屬世界。
  */
 class MahjongRoundInfoEntity(
     type: EntityType<out MahjongRoundInfoEntity> = ModEntities.mahjongRoundInfo,
-    world: World,
-) : AnimatedMahjongEntity<Nothing>(type, world) {
+    world: Level,
+) : AnimatedMahjongEntity<Nothing>(type, world),
+    HiddenDebugHitboxEntity {
     /**
-     * 要顯示的完整內容，依序顯示——`DataTracker` 只能同步基本型別，這裡編碼成 JSON 存進一個
-     * `TrackedData<String>`，client 端 renderer 解碼後才依認得的 key 翻譯成文字，見
+     * 要顯示的完整內容，依序顯示——`SynchedEntityData` 只能同步基本型別，這裡編碼成 JSON 存進一個
+     * `EntityDataAccessor<String>`，client 端 renderer 解碼後才依認得的 key 翻譯成文字，見
      * [MahjongRoundInfoEntity] KDoc 同一套分工。各行語意由規則模組決定。
      */
     var lines: List<RoundInfoLine>
-        get() = RoundInfoLineCodec.decode(dataTracker[LINES])
-        set(value) = dataTracker.set(LINES, RoundInfoLineCodec.encode(value))
+        get() = RoundInfoLineCodec.decode(entityData[LINES])
+        set(value) = entityData.set(LINES, RoundInfoLineCodec.encode(value))
 
     /** 正式牌局所屬麻將桌；未指派時為 `null`。 */
     var managedTableId: Uuid?
-        get() = dataTracker[MANAGED_TABLE_ID]
+        get() = entityData[MANAGED_TABLE_ID]
             .takeIf(String::isNotBlank)
             ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
-        private set(value) = dataTracker.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
+        private set(value) = entityData.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
 
     init {
         setNoGravity(true)
     }
 
     /**
-     * 這個 entity 物件在記憶體裡第一次被 tick 到的 `world.time`；只在記憶體內，不寫進存檔，理由跟
+     * 這個 entity 物件在記憶體裡第一次被 tick 到的 `level().gameTime`；只在記憶體內，不寫進存檔，理由跟
      * [MahjongScoringStickEntity.firstTickWorldTime] 完全一致（避免世界重新載入一次補跑大量 tick 時
      * 誤判成早就該消失了）。
      */
@@ -79,23 +80,23 @@ class MahjongRoundInfoEntity(
      */
     override fun tick() {
         super.tick()
-        if (world.isClient) return
+        if (level().isClientSide) return
         applyVisibility()
-        if (firstTickWorldTime == Long.MIN_VALUE) firstTickWorldTime = world.time
-        if (world.time - firstTickWorldTime >= FALLBACK_DESPAWN_AFTER_TICKS) {
+        if (firstTickWorldTime == Long.MIN_VALUE) firstTickWorldTime = level().gameTime
+        if (level().gameTime - firstTickWorldTime >= FALLBACK_DESPAWN_AFTER_TICKS) {
             discard()
         }
     }
 
     /** 純視覺物件，不提供物理阻擋、不參與推擠、不能被互動選取。 */
-    override fun isCollidable(): Boolean = false
+    override fun canBeCollidedWith(): Boolean = false
 
     override fun isPushable(): Boolean = false
 
-    override fun canHit(): Boolean = false
+    override fun isPickable(): Boolean = false
 
     /** 覆蓋 billboard 的實際顯示範圍，避免攝影機只依 entity 錨點附近的小範圍進行視錐裁切。 */
-    override fun getVisibilityBoundingBox(): Box = Box(
+    override fun getBoundingBoxForCulling(): AABB = AABB(
         x - WIDTH / 2.0,
         y - HEIGHT / 2.0,
         z - WIDTH / 2.0,
@@ -118,8 +119,8 @@ class MahjongRoundInfoEntity(
      *
      * @param player 開始追蹤此局況顯示的伺服器玩家。
      */
-    override fun onStartedTrackingBy(player: ServerPlayerEntity) {
-        super.onStartedTrackingBy(player)
+    override fun startSeenByPlayer(player: ServerPlayer) {
+        super.startSeenByPlayer(player)
         val tableId = managedTableId ?: return
         GlobalContext.get().get<SpectatorObservationService>().onStartedObserving(player.uuid.toKotlinUuid(), tableId)
     }
@@ -133,8 +134,8 @@ class MahjongRoundInfoEntity(
      *
      * @param player 停止追蹤此局況顯示的伺服器玩家。
      */
-    override fun onStoppedTrackingBy(player: ServerPlayerEntity) {
-        super.onStoppedTrackingBy(player)
+    override fun stopSeenByPlayer(player: ServerPlayer) {
+        super.stopSeenByPlayer(player)
         val tableId = managedTableId ?: return
         GlobalContext.get().get<SpectatorObservationService>().onStoppedObserving(player.uuid.toKotlinUuid(), tableId)
     }
@@ -145,7 +146,7 @@ class MahjongRoundInfoEntity(
      * @param tableId 所屬麻將桌 UUID。
      */
     fun assignToTable(tableId: Uuid) {
-        check(!world.isClient) { "Managed round info display must be assigned by the server" }
+        check(!level().isClientSide) { "Managed round info display must be assigned by the server" }
         managedTableId = tableId
     }
 
@@ -155,7 +156,7 @@ class MahjongRoundInfoEntity(
      * @param gameTime 隱形 lease 結束的 server game time。
      */
     fun hideUntil(gameTime: Long) {
-        check(!world.isClient) { "Round info visibility lease must be changed by the server" }
+        check(!level().isClientSide) { "Round info visibility lease must be changed by the server" }
         val extendedUntil = TableOverlayVisibility.extend(hiddenUntilGameTime, gameTime)
         if (extendedUntil == hiddenUntilGameTime) return
         hiddenUntilGameTime = extendedUntil
@@ -168,14 +169,14 @@ class MahjongRoundInfoEntity(
      * 終局面板結束後會立即返回房間，不應先恢復局況顯示再清除；隱藏期限會保存，載入與每次更新時都依期限恢復顯示狀態。
      */
     fun hideUntilRemoved() {
-        check(!world.isClient) { "Round info visibility lease must be changed by the server" }
+        check(!level().isClientSide) { "Round info visibility lease must be changed by the server" }
         hiddenUntilGameTime = Long.MAX_VALUE
         applyVisibility()
     }
 
     /** 新局已確定開始時解除所有舊 presentation lease，立即恢復局況顯示。 */
     fun showNow() {
-        check(!world.isClient) { "Round info visibility lease must be changed by the server" }
+        check(!level().isClientSide) { "Round info visibility lease must be changed by the server" }
         hiddenUntilGameTime = Long.MIN_VALUE
         applyVisibility()
     }
@@ -201,18 +202,18 @@ class MahjongRoundInfoEntity(
      * @param step 不支援的自訂動畫步驟（型別本身為 `Nothing`）。
      * @param nbt 動畫步驟原定寫入的 NBT；此 entity 不接受該步驟。
      */
-    override fun serializeCustomStep(step: Nothing, nbt: NbtCompound) = error("Round info display has no custom animation step")
+    override fun serializeCustomStep(step: Nothing, nbt: CompoundTag) = error("Round info display has no custom animation step")
 
     /**
      * 局況顯示沒有可還原的專屬動畫。
      *
      * @param nbt 動畫步驟原定讀取的 NBT；此 entity 不接受自訂動畫步驟。
      */
-    override fun deserializeCustomStep(nbt: NbtCompound): Nothing = error("Round info display has no custom animation step")
+    override fun deserializeCustomStep(nbt: CompoundTag): Nothing = error("Round info display has no custom animation step")
 
-    override fun initDataTracker() {
-        dataTracker.startTracking(LINES, "")
-        dataTracker.startTracking(MANAGED_TABLE_ID, "")
+    override fun defineSynchedData() {
+        entityData.define(LINES, "")
+        entityData.define(MANAGED_TABLE_ID, "")
     }
 
     /**
@@ -220,8 +221,8 @@ class MahjongRoundInfoEntity(
      *
      * @param nbt entity 的持久化資料。
      */
-    override fun readCustomDataFromNbt(nbt: NbtCompound) {
-        dataTracker.set(LINES, nbt.getString(NBT_KEY_LINES))
+    override fun readAdditionalSaveData(nbt: CompoundTag) {
+        entityData.set(LINES, nbt.getString(NBT_KEY_LINES))
         managedTableId = ManagedTableNbt.read(nbt)
         hiddenUntilGameTime = TableOverlayVisibilityNbt.read(nbt)
         readAnimationQueueFromNbt(nbt)
@@ -233,8 +234,8 @@ class MahjongRoundInfoEntity(
      *
      * @param nbt 接收 entity 持久化資料的 NBT。
      */
-    override fun writeCustomDataToNbt(nbt: NbtCompound) {
-        nbt.putString(NBT_KEY_LINES, dataTracker[LINES])
+    override fun addAdditionalSaveData(nbt: CompoundTag) {
+        nbt.putString(NBT_KEY_LINES, entityData[LINES])
         ManagedTableNbt.write(nbt, managedTableId)
         TableOverlayVisibilityNbt.write(nbt, hiddenUntilGameTime)
         writeAnimationQueueToNbt(nbt)
@@ -242,7 +243,7 @@ class MahjongRoundInfoEntity(
 
     /** 依已保存的期限設定伺服器隱藏狀態；每個伺服器 tick 與期限變更時套用，是隱藏狀態的唯一來源。 */
     private fun applyVisibility() {
-        if (!world.isClient) isInvisible = TableOverlayVisibility.isHidden(hiddenUntilGameTime, world.time)
+        if (!level().isClientSide) isInvisible = TableOverlayVisibility.isHidden(hiddenUntilGameTime, level().gameTime)
     }
 
     companion object {
@@ -262,11 +263,11 @@ class MahjongRoundInfoEntity(
         private const val FALLBACK_DESPAWN_AFTER_TICKS = 20L * 60L * 60L
 
         /** 同步要顯示的完整內容，編碼格式見 [lines]。 */
-        private val LINES: TrackedData<String> =
-            DataTracker.registerData(MahjongRoundInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val LINES: EntityDataAccessor<String> =
+            SynchedEntityData.defineId(MahjongRoundInfoEntity::class.java, EntityDataSerializers.STRING)
 
         /** 同步所屬麻將桌 UUID；空字串表示尚未指派。 */
-        private val MANAGED_TABLE_ID: TrackedData<String> =
-            DataTracker.registerData(MahjongRoundInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val MANAGED_TABLE_ID: EntityDataAccessor<String> =
+            SynchedEntityData.defineId(MahjongRoundInfoEntity::class.java, EntityDataSerializers.STRING)
     }
 }

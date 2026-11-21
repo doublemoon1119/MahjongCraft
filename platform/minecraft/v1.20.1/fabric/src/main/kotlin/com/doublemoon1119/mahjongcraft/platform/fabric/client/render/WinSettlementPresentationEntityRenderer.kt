@@ -37,14 +37,14 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TILE_BACK_PREVIEW_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.backAppearance
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.render.LightmapTextureManager
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.render.entity.EntityRenderer
-import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.text.Text
-import net.minecraft.util.Identifier
+import com.mojang.blaze3d.vertex.PoseStack
+import net.minecraft.client.gui.Font
+import net.minecraft.client.renderer.LightTexture
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.entity.EntityRenderer
+import net.minecraft.client.renderer.entity.EntityRendererProvider
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
@@ -63,7 +63,7 @@ import kotlin.uuid.Uuid
  * @param tileAssets 查詢牌面樣式指定的牌身與牌背外觀。
  */
 class WinSettlementPresentationEntityRenderer(
-    context: EntityRendererFactory.Context,
+    context: EntityRendererProvider.Context,
     private val templateRegistry: WinSettlementPresentationTemplateRegistry,
     private val portraitRenderer: PlayerPortraitRenderer,
     private val tileFaceRenderer: MahjongTileFaceRenderer,
@@ -73,15 +73,15 @@ class WinSettlementPresentationEntityRenderer(
     private val tileAppearanceResolver: ClientTileAppearanceResolver,
     private val tileAssets: MinecraftTileAssetRegistry,
 ) : EntityRenderer<WinSettlementPresentationEntity>(context) {
-    private val textRenderer = context.textRenderer
+    private val textRenderer = context.font
 
     /** 宣告式版面的量測與配置；文字寬度用本 renderer 的字型量測。 */
     private val layoutSolver = PresentationLayoutSolver(
         templateRegistry = templateRegistry,
         textMeasurer = object : PresentationTextMeasurer {
-            override fun measure(text: PresentationValue.TextValue): Float = textRenderer.getWidth(Text.translatable(text.translationKey, *text.arguments.toTypedArray())).toFloat()
+            override fun measure(text: PresentationValue.TextValue): Float = textRenderer.width(Component.translatable(text.translationKey, *text.arguments.toTypedArray())).toFloat()
 
-            override fun measurePlain(text: String): Float = textRenderer.getWidth(text).toFloat()
+            override fun measurePlain(text: String): Float = textRenderer.width(text).toFloat()
         },
     )
 
@@ -92,8 +92,8 @@ class WinSettlementPresentationEntityRenderer(
         entity: WinSettlementPresentationEntity,
         yaw: Float,
         tickDelta: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
     ) {
         if (!configStore.current.presentationVisibility.winSettlementEnabled) return
@@ -105,9 +105,9 @@ class WinSettlementPresentationEntityRenderer(
         WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
             // 面板在世界畫完後才畫，期間其他實體可能已改過目前的桌子，畫之前重新指定。
             currentTableId = entity.managedTableId
-            panelMatrices.push()
+            panelMatrices.pushPose()
             panelMatrices.translate(0.0, 0.55, 0.0)
-            panelMatrices.multiply(dispatcher.rotation)
+            panelMatrices.mulPose(entityRenderDispatcher.cameraOrientation())
             panelMatrices.scale(-SCALE, -SCALE, SCALE)
             val rankingStart = entity.rankingStartTick().toDouble()
             if (elapsed < rankingStart) {
@@ -115,7 +115,7 @@ class WinSettlementPresentationEntityRenderer(
             } else {
                 renderRankingPhase(entity, elapsed - rankingStart, panelMatrices, panelConsumers)
             }
-            panelMatrices.pop()
+            panelMatrices.popPose()
         }
     }
 
@@ -131,8 +131,8 @@ class WinSettlementPresentationEntityRenderer(
     private fun renderWinnerPhase(
         entity: WinSettlementPresentationEntity,
         elapsed: Double,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         appearance: MinecraftTileSetAppearanceDefinition,
     ) {
         var index = 0
@@ -167,17 +167,17 @@ class WinSettlementPresentationEntityRenderer(
         root: PresentationLayout,
         local: Double,
         alpha: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         appearance: MinecraftTileSetAppearanceDefinition,
     ) {
         val snapshot = winner.toFieldSnapshot(entity, appearance)
         val size = layoutSolver.measure(root, snapshot)
         val scale = minOf(1f, PresentationLayoutSolver.MAX_WIDTH / size.width.coerceAtLeast(1f), PresentationLayoutSolver.MAX_HEIGHT / size.height.coerceAtLeast(1f))
-        matrices.push()
+        matrices.pushPose()
         matrices.scale(scale, scale, 1f)
         renderLayout(root, snapshot, -size.width / 2f, -size.height / 2f, local, alpha, matrices, consumers, appearance = appearance)
-        matrices.pop()
+        matrices.popPose()
     }
 
     /**
@@ -259,8 +259,8 @@ class WinSettlementPresentationEntityRenderer(
         y: Float,
         local: Double,
         alpha: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         appearance: MinecraftTileSetAppearanceDefinition,
         allocatedWidth: Float? = null,
     ) {
@@ -268,7 +268,7 @@ class WinSettlementPresentationEntityRenderer(
         val size = if (allocatedWidth != null) PresentationNodeSize(allocatedWidth, measured.height) else measured
         when (layout) {
             is PresentationLayout.Text -> (layoutSolver.resolve(layout, snapshot) as? PresentationValue.TextValue)?.let {
-                val text = Text.translatable(it.translationKey, *it.arguments.toTypedArray())
+                val text = Component.translatable(it.translationKey, *it.arguments.toTypedArray())
                 if (allocatedWidth == null) {
                     draw(text, x, y, Align.LEFT, color(layout.argb and 0xFFFFFF, alpha * ((layout.argb ushr 24) / 255f)), layout.scale, matrices, consumers)
                 } else {
@@ -282,7 +282,7 @@ class WinSettlementPresentationEntityRenderer(
                         Align.CENTER -> x + allocatedWidth / 2f
                         Align.RIGHT -> x + allocatedWidth
                     }
-                    val naturalWidth = textRenderer.getWidth(text).toFloat().coerceAtLeast(1f)
+                    val naturalWidth = textRenderer.width(text).toFloat().coerceAtLeast(1f)
                     draw(
                         text = text,
                         x = anchorX,
@@ -302,7 +302,7 @@ class WinSettlementPresentationEntityRenderer(
                     cursor += PresentationLayoutSolver.FACE_SIZE * layout.scale + if (layout.showName) layout.spacing * layout.scale else 0f
                 }
                 if (layout.showName) {
-                    draw(Text.literal(identity.displayName), cursor, y, Align.LEFT, color(layout.argb and 0xFFFFFF, alpha * ((layout.argb ushr 24) / 255f)), layout.scale, matrices, consumers)
+                    draw(Component.literal(identity.displayName), cursor, y, Align.LEFT, color(layout.argb and 0xFFFFFF, alpha * ((layout.argb ushr 24) / 255f)), layout.scale, matrices, consumers)
                 }
             }
             is PresentationLayout.Tile -> (layoutSolver.resolve(layout, snapshot) as? PresentationValue.TileValue)?.let {
@@ -347,14 +347,14 @@ class WinSettlementPresentationEntityRenderer(
                 val row = index % layout.entriesPerColumn
                 val rowX = x + column * columnWidth
                 val rowY = y + row * layout.rowHeight
-                val title = entry.translationArgument?.let { Text.translatable(entry.translationKey, it) } ?: Text.translatable(entry.translationKey)
-                val titleScale = fittedScale(textRenderer.getWidth(title).toFloat(), columnWidth - 44f, entryScale)
-                val titleY = rowY + crossAxisOffset(layout.rowHeight, textRenderer.fontHeight * titleScale, layout.verticalAlignment)
+                val title = entry.translationArgument?.let { Component.translatable(entry.translationKey, it) } ?: Component.translatable(entry.translationKey)
+                val titleScale = fittedScale(textRenderer.width(title).toFloat(), columnWidth - 44f, entryScale)
+                val titleY = rowY + crossAxisOffset(layout.rowHeight, textRenderer.lineHeight * titleScale, layout.verticalAlignment)
                 val trailing = entry.trailingTranslationKey?.let { key ->
-                    entry.trailingTranslationArgument?.let { Text.translatable(key, it) } ?: Text.translatable(key)
-                } ?: entry.trailingText.takeIf(String::isNotBlank)?.let(Text::literal)
-                val trailingY = rowY + crossAxisOffset(layout.rowHeight, textRenderer.fontHeight * entryScale, layout.verticalAlignment)
-                matrices.push()
+                    entry.trailingTranslationArgument?.let { Component.translatable(key, it) } ?: Component.translatable(key)
+                } ?: entry.trailingText.takeIf(String::isNotBlank)?.let(Component::literal)
+                val trailingY = rowY + crossAxisOffset(layout.rowHeight, textRenderer.lineHeight * entryScale, layout.verticalAlignment)
+                matrices.pushPose()
                 matrices.translate(rowX, rowY + layout.rowHeight / 2f, 0f)
                 matrices.scale(emphasisScale, emphasisScale, 1f)
                 matrices.translate(-rowX, -(rowY + layout.rowHeight / 2f), 0f)
@@ -365,7 +365,7 @@ class WinSettlementPresentationEntityRenderer(
                 }
                 draw(title, rowX, titleY, Align.LEFT, color(titleRgb, alpha * reveal), titleScale, matrices, consumers)
                 if (trailing != null) draw(trailing, x + (column + 1) * columnWidth - 5f, trailingY, Align.RIGHT, color(trailingRgb, alpha * reveal), entryScale, matrices, consumers)
-                matrices.pop()
+                matrices.popPose()
             }
             is PresentationLayout.Row -> {
                 renderContainer(layout.style, x, y, size, alpha, matrices, consumers)
@@ -440,8 +440,8 @@ class WinSettlementPresentationEntityRenderer(
         y: Float,
         local: Double,
         alpha: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         appearance: MinecraftTileSetAppearanceDefinition,
         allocatedWidth: Float?,
     ) {
@@ -472,14 +472,14 @@ class WinSettlementPresentationEntityRenderer(
             }
         }
         if (animatedAlpha <= MIN_VISIBLE_ALPHA) return
-        matrices.push()
+        matrices.pushPose()
         val originX = x + anchorOffset(size.width, layout.transformOriginX)
         val originY = y + anchorOffset(size.height, layout.transformOriginY)
         matrices.translate(originX + translateX, originY + translateY, 0f)
         matrices.scale(scaleX, scaleY, 1f)
         matrices.translate(-originX, -originY, 0f)
         renderLayout(layout.child, snapshot, x, y, local, animatedAlpha, matrices, consumers, appearance, allocatedWidth)
-        matrices.pop()
+        matrices.popPose()
     }
 
     /**
@@ -526,7 +526,7 @@ class WinSettlementPresentationEntityRenderer(
      * @param matrices 目前的模型矩陣。
      * @param consumers 提供背景頂點緩衝。
      */
-    private fun renderAnimatedOverlay(argb: Int, x: Float, y: Float, size: PresentationNodeSize, alpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
+    private fun renderAnimatedOverlay(argb: Int, x: Float, y: Float, size: PresentationNodeSize, alpha: Float, matrices: PoseStack, consumers: MultiBufferSource) {
         renderContainer(PresentationContainerStyle(backgroundArgb = argb), x, y, size, alpha, matrices, consumers)
     }
 
@@ -549,8 +549,8 @@ class WinSettlementPresentationEntityRenderer(
         size: PresentationNodeSize,
         progress: Float,
         alpha: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
         val left = x - effect.width + (size.width + effect.width * 2f) * progress
         renderAnimatedOverlay(effect.argb, left, y, PresentationNodeSize(effect.width, size.height), alpha * pulse(progress), matrices, consumers)
@@ -589,8 +589,8 @@ class WinSettlementPresentationEntityRenderer(
         x: Float,
         y: Float,
         alpha: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) = renderPlayerFace(player.playerId, player.isAi, x, y, alpha, matrices, consumers)
 
     /**
@@ -611,8 +611,8 @@ class WinSettlementPresentationEntityRenderer(
         x: Float,
         y: Float,
         alpha: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         size: Float = PresentationLayoutSolver.FACE_SIZE,
     ) = portraitRenderer.render(
         playerId = Uuid.parse(playerId),
@@ -637,19 +637,19 @@ class WinSettlementPresentationEntityRenderer(
      * @param matrices 目前的模型矩陣。
      * @param consumers 提供背景及邊框頂點緩衝。
      */
-    private fun renderContainer(style: PresentationContainerStyle, x: Float, y: Float, size: PresentationNodeSize, alpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
+    private fun renderContainer(style: PresentationContainerStyle, x: Float, y: Float, size: PresentationNodeSize, alpha: Float, matrices: PoseStack, consumers: MultiBufferSource) {
         if ((style.backgroundArgb ushr 24) == 0 && style.borderWidth <= 0f) return
-        val matrix = matrices.peek().positionMatrix
-        val buffer = consumers.getBuffer(WorldPanelRenderLayer.layer)
+        val matrix = matrices.last().pose()
+        val buffer = consumers.getBuffer(WorldPanelRenderType.layer)
         fun quad(left: Float, top: Float, right: Float, bottom: Float, argb: Int) {
             val a = (((argb ushr 24) and 0xFF) * alpha).roundToInt()
             val r = (argb ushr 16) and 0xFF
             val g = (argb ushr 8) and 0xFF
             val b = argb and 0xFF
-            buffer.vertex(matrix, left, top, 0.5f).color(r, g, b, a).next()
-            buffer.vertex(matrix, right, top, 0.5f).color(r, g, b, a).next()
-            buffer.vertex(matrix, right, bottom, 0.5f).color(r, g, b, a).next()
-            buffer.vertex(matrix, left, bottom, 0.5f).color(r, g, b, a).next()
+            buffer.vertex(matrix, left, top, 0.5f).color(r, g, b, a).endVertex()
+            buffer.vertex(matrix, right, top, 0.5f).color(r, g, b, a).endVertex()
+            buffer.vertex(matrix, right, bottom, 0.5f).color(r, g, b, a).endVertex()
+            buffer.vertex(matrix, left, bottom, 0.5f).color(r, g, b, a).endVertex()
         }
         if ((style.backgroundArgb ushr 24) != 0) quad(x, y, x + size.width, y + size.height, style.backgroundArgb)
         if (style.borderWidth > 0f && (style.borderArgb ushr 24) != 0) {
@@ -669,7 +669,7 @@ class WinSettlementPresentationEntityRenderer(
      * @param matrices 目前的模型矩陣。
      * @param consumers 提供面板、頭像與文字頂點緩衝。
      */
-    private fun renderRankingPhase(entity: WinSettlementPresentationEntity, local: Double, matrices: MatrixStack, consumers: VertexConsumerProvider) {
+    private fun renderRankingPhase(entity: WinSettlementPresentationEntity, local: Double, matrices: PoseStack, consumers: MultiBufferSource) {
         val alpha = WorldPanelRenderer.phaseAlpha(local, 0.0, 12.0, WinSettlementPresentationEntity.RANKING_TICKS.toDouble(), (WinSettlementPresentationEntity.RANKING_TICKS + WinSettlementPresentationEntity.FADE_OUT_TICKS).toDouble())
         if (alpha <= MIN_VISIBLE_ALPHA) return
         val layout = measureRankingLayout(entity.rankings)
@@ -681,7 +681,7 @@ class WinSettlementPresentationEntityRenderer(
         val paymentReasonLeftX = layout.find(SettlementRankingColumnId.PAYMENT_REASON)?.left
         val panelBottom = -20f + entity.rankings.size * 16f + 8f
         renderPanel(layout.panelHalfWidth, -55f, panelBottom, alpha, matrices, consumers)
-        draw(Text.translatable(WinSettlementTextKeys.SCORE_RANKING), 0f, -42f, Align.CENTER, color(0xFFD45A, alpha), 1.25f, matrices, consumers)
+        draw(Component.translatable(WinSettlementTextKeys.SCORE_RANKING), 0f, -42f, Align.CENTER, color(0xFFD45A, alpha), 1.25f, matrices, consumers)
         val progress = ((local - 35.0) / 48.0).coerceIn(0.0, 1.0)
         val presentation = ScoreRankingPresentation(entity.rankings.map { it.toRankingPlayer() })
         val rows = ScoreRankingAnimation.rows(presentation, progress)
@@ -698,14 +698,14 @@ class WinSettlementPresentationEntityRenderer(
                 rankChanged = snapshot.previousRank != snapshot.currentRank,
             )
             renderRankingSettledHighlight(layout.panelHalfWidth, y, rowAlpha, settledEffect, matrices, consumers)
-            matrices.push()
+            matrices.pushPose()
             matrices.translate(0f, y, 0f)
             matrices.scale(settledEffect.rowScale, settledEffect.rowScale, 1f)
-            matrices.push()
+            matrices.pushPose()
             matrices.translate(rankRightX, 0f, 0f)
             matrices.scale(settledEffect.rankScale, settledEffect.rankScale, 1f)
             draw(
-                text = Text.literal(ranks.getValue(row.player.playerId).toString()),
+                text = Component.literal(ranks.getValue(row.player.playerId).toString()),
                 x = 0f,
                 y = 0f,
                 align = Align.RIGHT,
@@ -714,17 +714,17 @@ class WinSettlementPresentationEntityRenderer(
                 matrices = matrices,
                 consumers = consumers,
             )
-            matrices.pop()
+            matrices.popPose()
             renderRankingPortrait(snapshot, faceLeftX, -1f, rowAlpha, matrices, consumers)
-            draw(Text.literal(fitPlayerName(playerName(row.player.playerId.toString()))), nameLeftX, 0f, Align.LEFT, color(0xFFFFFF, rowAlpha), 1f, matrices, consumers)
-            draw(Text.literal(row.score.toString()), scoreRightX, 0f, Align.RIGHT, color(0xFFF3C4, rowAlpha), 1f, matrices, consumers)
-            draw(Text.literal(SettlementRankingLayout.formatDelta(row.delta)), deltaRightX, 0f, Align.RIGHT, color(if (row.delta >= 0) 0x80FF80 else 0xFF8080, rowAlpha), 1f, matrices, consumers)
+            draw(Component.literal(fitPlayerName(playerName(row.player.playerId.toString()))), nameLeftX, 0f, Align.LEFT, color(0xFFFFFF, rowAlpha), 1f, matrices, consumers)
+            draw(Component.literal(row.score.toString()), scoreRightX, 0f, Align.RIGHT, color(0xFFF3C4, rowAlpha), 1f, matrices, consumers)
+            draw(Component.literal(SettlementRankingLayout.formatDelta(row.delta)), deltaRightX, 0f, Align.RIGHT, color(if (row.delta >= 0) 0x80FF80 else 0xFF8080, rowAlpha), 1f, matrices, consumers)
             val paymentReason = snapshot.paymentReasonText()
             if (paymentReasonLeftX != null && paymentReason != null) {
                 val (reasonText, reasonArgb) = paymentReason
                 draw(reasonText, paymentReasonLeftX, 0f, Align.LEFT, color(reasonArgb and 0xFFFFFF, rowAlpha), 1f, matrices, consumers)
             }
-            matrices.pop()
+            matrices.popPose()
         }
     }
 
@@ -743,8 +743,8 @@ class WinSettlementPresentationEntityRenderer(
         y: Float,
         alpha: Float,
         effect: SettlementRankingSettledEffect.State,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
         if (!effect.active) return
         val left = -panelHalfWidth + 5f
@@ -779,17 +779,17 @@ class WinSettlementPresentationEntityRenderer(
         top: Float,
         bottom: Float,
         alpha: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
         if (right <= left || alpha <= 0f) return
-        val matrix = matrices.peek().positionMatrix
-        val buffer = consumers.getBuffer(WorldPanelRenderLayer.layer)
+        val matrix = matrices.last().pose()
+        val buffer = consumers.getBuffer(WorldPanelRenderType.layer)
         val a = (alpha.coerceIn(0f, 1f) * 255).roundToInt()
-        buffer.vertex(matrix, left, top, RANKING_HIGHLIGHT_Z).color(255, 205, 92, a).next()
-        buffer.vertex(matrix, right, top, RANKING_HIGHLIGHT_Z).color(255, 238, 178, a).next()
-        buffer.vertex(matrix, right, bottom, RANKING_HIGHLIGHT_Z).color(255, 238, 178, a).next()
-        buffer.vertex(matrix, left, bottom, RANKING_HIGHLIGHT_Z).color(255, 205, 92, a).next()
+        buffer.vertex(matrix, left, top, RANKING_HIGHLIGHT_Z).color(255, 205, 92, a).endVertex()
+        buffer.vertex(matrix, right, top, RANKING_HIGHLIGHT_Z).color(255, 238, 178, a).endVertex()
+        buffer.vertex(matrix, right, bottom, RANKING_HIGHLIGHT_Z).color(255, 238, 178, a).endVertex()
+        buffer.vertex(matrix, left, bottom, RANKING_HIGHLIGHT_Z).color(255, 205, 92, a).endVertex()
     }
 
     /**
@@ -814,16 +814,16 @@ class WinSettlementPresentationEntityRenderer(
      */
     private fun measureRankingLayout(players: List<WinSettlementRankingSnapshot>): SettlementRankingLayout {
         val scoreWidth = SettlementRankingLayout.contentColumnWidth(
-            contentWidths = players.flatMap { listOf(it.previousScore, it.currentScore) }.map { textRenderer.getWidth(it.toString()).toFloat() },
+            contentWidths = players.flatMap { listOf(it.previousScore, it.currentScore) }.map { textRenderer.width(it.toString()).toFloat() },
             padding = SettlementRankingLayout.NUMERIC_COLUMN_PADDING,
             minWidth = SettlementRankingLayout.MIN_SCORE_COLUMN_WIDTH,
         )
         val deltaWidth = SettlementRankingLayout.contentColumnWidth(
-            contentWidths = players.map { textRenderer.getWidth(SettlementRankingLayout.formatDelta(it.currentScore - it.previousScore)).toFloat() },
+            contentWidths = players.map { textRenderer.width(SettlementRankingLayout.formatDelta(it.currentScore - it.previousScore)).toFloat() },
             padding = SettlementRankingLayout.NUMERIC_COLUMN_PADDING,
             minWidth = SettlementRankingLayout.MIN_DELTA_COLUMN_WIDTH,
         )
-        val paymentReasonWidths = players.mapNotNull { it.paymentReasonText()?.first?.let(textRenderer::getWidth)?.toFloat() }
+        val paymentReasonWidths = players.mapNotNull { it.paymentReasonText()?.first?.let(textRenderer::width)?.toFloat() }
         return SettlementRankingLayout.arrange(
             columns = SettlementRankingLayout.standardColumns(
                 faceSize = PresentationLayoutSolver.FACE_SIZE,
@@ -840,7 +840,7 @@ class WinSettlementPresentationEntityRenderer(
      *
      * @return 有效付款原因的文字與 ARGB 顏色；沒有原因或 ID 格式不符時為 `null`。
      */
-    private fun WinSettlementRankingSnapshot.paymentReasonText(): Pair<Text, Int>? = paymentReasonId
+    private fun WinSettlementRankingSnapshot.paymentReasonText(): Pair<Component, Int>? = paymentReasonId
         ?.takeIf { ':' in it }
         ?.let { indicatorTextResolver.resolve(PublicPlayerIndicator(it)) }
 
@@ -877,14 +877,14 @@ class WinSettlementPresentationEntityRenderer(
      * @param matrices 目前的模型矩陣。
      * @param consumers 提供面板頂點緩衝。
      */
-    private fun renderPanel(halfWidth: Float, top: Float, bottom: Float, alpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
-        val matrix = matrices.peek().positionMatrix
-        val buffer = consumers.getBuffer(WorldPanelRenderLayer.layer)
+    private fun renderPanel(halfWidth: Float, top: Float, bottom: Float, alpha: Float, matrices: PoseStack, consumers: MultiBufferSource) {
+        val matrix = matrices.last().pose()
+        val buffer = consumers.getBuffer(WorldPanelRenderType.layer)
         val a = (alpha * 0.78f * 255).roundToInt()
-        buffer.vertex(matrix, -halfWidth, top, 0.5f).color(0, 0, 0, a).next()
-        buffer.vertex(matrix, halfWidth, top, 0.5f).color(0, 0, 0, a).next()
-        buffer.vertex(matrix, halfWidth, bottom, 0.5f).color(0, 0, 0, a).next()
-        buffer.vertex(matrix, -halfWidth, bottom, 0.5f).color(0, 0, 0, a).next()
+        buffer.vertex(matrix, -halfWidth, top, 0.5f).color(0, 0, 0, a).endVertex()
+        buffer.vertex(matrix, halfWidth, top, 0.5f).color(0, 0, 0, a).endVertex()
+        buffer.vertex(matrix, halfWidth, bottom, 0.5f).color(0, 0, 0, a).endVertex()
+        buffer.vertex(matrix, -halfWidth, bottom, 0.5f).color(0, 0, 0, a).endVertex()
     }
 
     /**
@@ -906,8 +906,8 @@ class WinSettlementPresentationEntityRenderer(
         width: Float,
         height: Float,
         alpha: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         appearance: MinecraftTileSetAppearanceDefinition,
     ) {
         tileFaceRenderer.renderWorldPanel(asset, cx, cy, width, height, alpha, 0f, matrices, consumers, appearance)
@@ -925,18 +925,18 @@ class WinSettlementPresentationEntityRenderer(
      * @param matrices 目前的模型矩陣。
      * @param consumers 提供文字頂點緩衝。
      */
-    private fun draw(text: Text, x: Float, y: Float, align: Align, color: Int, scale: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
-        matrices.push()
+    private fun draw(text: Component, x: Float, y: Float, align: Align, color: Int, scale: Float, matrices: PoseStack, consumers: MultiBufferSource) {
+        matrices.pushPose()
         matrices.translate(x, y, 0f)
         matrices.scale(scale, scale, 1f)
-        val width = textRenderer.getWidth(text).toFloat()
+        val width = textRenderer.width(text).toFloat()
         val localX = when (align) {
             Align.LEFT -> 0f
             Align.CENTER -> -width / 2f
             Align.RIGHT -> -width
         }
-        textRenderer.draw(text, localX, 0f, color, false, matrices.peek().positionMatrix, consumers, TextRenderer.TextLayerType.NORMAL, 0, LightmapTextureManager.MAX_LIGHT_COORDINATE)
-        matrices.pop()
+        textRenderer.drawInBatch(text, localX, 0f, color, false, matrices.last().pose(), consumers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT)
+        matrices.popPose()
     }
 
     /**
@@ -947,7 +947,7 @@ class WinSettlementPresentationEntityRenderer(
      * @return 合成後的 ARGB 顏色。
      */
     private fun color(rgb: Int, alpha: Float) = WorldPanelRenderer.withAlpha(rgb, alpha)
-    override fun getTexture(entity: WinSettlementPresentationEntity): Identifier? = null
+    override fun getTextureLocation(entity: WinSettlementPresentationEntity): ResourceLocation? = null
 
     /** 文字相對水平錨點的對齊方式。 */
     private enum class Align {

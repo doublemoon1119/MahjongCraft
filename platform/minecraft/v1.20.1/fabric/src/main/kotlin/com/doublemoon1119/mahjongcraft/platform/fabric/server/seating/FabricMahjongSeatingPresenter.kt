@@ -4,8 +4,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterBindings
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSeatRiders
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
-import net.minecraft.entity.Entity
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.Entity
 import kotlin.uuid.Uuid
 
 /**
@@ -33,7 +33,7 @@ internal class FabricMahjongSeatingPresenter(
         SeatCollisionScope.with(riders, session.requests) {
             session.coordinator.seatAll(session.world, riders, session.requests, tableRequests)
         }.forEachIndexed { index, result ->
-            val player = riders[index] as? ServerPlayerEntity ?: return@forEachIndexed
+            val player = riders[index] as? ServerPlayer ?: return@forEachIndexed
             if (result != null) session.notify(player, result)
         }
     }

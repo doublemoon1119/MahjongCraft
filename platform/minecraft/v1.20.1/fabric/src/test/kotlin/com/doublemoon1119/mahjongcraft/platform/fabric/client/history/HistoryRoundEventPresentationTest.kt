@@ -38,8 +38,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegist
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import net.minecraft.text.Text
-import net.minecraft.text.TranslatableTextContent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -133,7 +133,7 @@ class HistoryRoundEventPresentationTest {
         assertEquals(4, presentation.transactions.single().facts.size)
         assertTrue(presentation.transactions.single().facts.all { it.outcome == null })
         val result = presentation.transactions.single().facts
-        assertEquals(listOf(MinecraftHistoryScreenKeys.ROUND_REACTION, MinecraftHistoryScreenKeys.RULE_DECISION, MinecraftHistoryScreenKeys.ROUND_RULE_EFFECT, MinecraftHistoryScreenKeys.ROUND_UNKNOWN_FACT), result.map { (it.text.content as TranslatableTextContent).key })
+        assertEquals(listOf(MinecraftHistoryScreenKeys.ROUND_REACTION, MinecraftHistoryScreenKeys.RULE_DECISION, MinecraftHistoryScreenKeys.ROUND_RULE_EFFECT, MinecraftHistoryScreenKeys.ROUND_UNKNOWN_FACT), result.map { (it.text.contents as TranslatableContents).key })
         listOf("custom:reaction", "custom:step", "custom:effect", "custom:opaque").forEachIndexed { index, id ->
             assertTrue(id in result[index].identifiers, "Raw identifier must remain available in tooltip")
             assertTrue(!result[index].text.string.contains(id), "Raw identifier must not leak into player wording")
@@ -163,7 +163,7 @@ class HistoryRoundEventPresentationTest {
                 ruleId = null,
             ).transactions.single().facts.single()
 
-            assertEquals(key, (fact.text.content as TranslatableTextContent).key)
+            assertEquals(key, (fact.text.contents as TranslatableContents).key)
             assertEquals(1, fact.actorSeat)
             assertEquals(listOf(0, 1, 2), fact.scoreChanges.keys.toList())
             assertEquals(2000 - potDeposit, fact.scoreChanges.getValue(1))
@@ -186,8 +186,8 @@ class HistoryRoundEventPresentationTest {
             ruleId = null,
         ).transactions.single().facts.single()
 
-        assertEquals("2", (fact.text.content as TranslatableTextContent).args[0].toString())
-        assertEquals("2 + 5", (fact.text.content as TranslatableTextContent).args[1].toString())
+        assertEquals("2", (fact.text.contents as TranslatableContents).args[0].toString())
+        assertEquals("2 + 5", (fact.text.contents as TranslatableContents).args[1].toString())
         assertEquals(2, fact.actorSeat)
         assertEquals(listOf(HistoryFactTypeKeys.DICE_ROLLED), fact.identifiers)
     }
@@ -262,7 +262,7 @@ class HistoryRoundEventPresentationTest {
     @Test
     fun `empty reaction uses neutral wording`() {
         val fact = presenter().present(events(HistoryReplayFactDto.Reaction(HistoryFactTypeKeys.REACTION_RESOLVED, null, null)), null).transactions.single().facts.single()
-        val argument = (fact.text.content as TranslatableTextContent).args.single() as Text
+        val argument = (fact.text.contents as TranslatableContents).args.single() as Component
         assertEquals(MinecraftHistoryScreenKeys.ROUND_REACTION_NONE, argument.string)
     }
 
@@ -273,7 +273,7 @@ class HistoryRoundEventPresentationTest {
         reasons.forEach { (reason, key) ->
             val outcome = HistoryRoundOutcomeDto(reason, emptyList(), emptyMap(), null, emptyList(), null, nextDealerSeat = null, scoreChangesBySeat = emptyMap(), winnerDetails = emptyList(), hasEarlierWinSettlement = false, winningTile = null)
             val fact = presenter().present(events(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.MATCH_COMPLETED, outcome)), null).transactions.single().facts.single()
-            assertEquals(MinecraftHistoryScreenKeys.ROUND_MATCH_COMPLETION, (fact.text.content as TranslatableTextContent).key)
+            assertEquals(MinecraftHistoryScreenKeys.ROUND_MATCH_COMPLETION, (fact.text.contents as TranslatableContents).key)
             assertEquals(key, checkNotNull(fact.outcome).reasonText.string)
             assertTrue(reason in fact.identifiers)
         }
@@ -313,9 +313,9 @@ class HistoryRoundEventPresentationTest {
                 events = events(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.MATCH_ABORTED, outcome)),
                 ruleId = null,
             ).transactions.single().facts.single()
-            assertEquals(MinecraftHistoryScreenKeys.ROUND_MATCH_ABORTED, (fact.text.content as TranslatableTextContent).key)
-            val reasonText = ((fact.text.content as TranslatableTextContent).args.single() as Text)
-            assertEquals(key, (reasonText.content as TranslatableTextContent).key)
+            assertEquals(MinecraftHistoryScreenKeys.ROUND_MATCH_ABORTED, (fact.text.contents as TranslatableContents).key)
+            val reasonText = ((fact.text.contents as TranslatableContents).args.single() as Component)
+            assertEquals(key, (reasonText.contents as TranslatableContents).key)
             assertEquals(null, fact.outcome)
             assertTrue(reason in fact.identifiers)
         }
@@ -337,8 +337,8 @@ class HistoryRoundEventPresentationTest {
             events = events(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.MATCH_ABORTED, unknown)),
             ruleId = null,
         ).transactions.single().facts.single()
-        val reasonText = ((fact.text.content as TranslatableTextContent).args.single() as Text)
-        assertEquals(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER, (reasonText.content as TranslatableTextContent).key)
+        val reasonText = ((fact.text.contents as TranslatableContents).args.single() as Component)
+        assertEquals(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER, (reasonText.contents as TranslatableContents).key)
         assertEquals(null, fact.outcome)
         assertTrue("custom:abort" in fact.identifiers)
     }
@@ -349,12 +349,12 @@ class HistoryRoundEventPresentationTest {
         val stages = mapOf(HistoryFactTypeKeys.RULE_DECISION_STARTED to MinecraftHistoryScreenKeys.RULE_DECISION_STARTED, HistoryFactTypeKeys.RULE_DECISION_SUBMITTED to MinecraftHistoryScreenKeys.RULE_DECISION_SUBMITTED, HistoryFactTypeKeys.RULE_DECISION_AUTOMATIC_RESOLVED to MinecraftHistoryScreenKeys.RULE_DECISION_NONE)
         stages.forEach { (type, key) ->
             val fact = presenter().present(events(HistoryReplayFactDto.RuleDecision(type, RuleDecisionTimingDto.ROUND_START, "custom:step", 0, null, null, null, false)), null).transactions.single().facts.single()
-            val stage = (fact.text.content as TranslatableTextContent).args[1] as Text
+            val stage = (fact.text.contents as TranslatableContents).args[1] as Component
             assertEquals(key, stage.string)
             assertTrue("custom:step" in fact.identifiers)
         }
         val fact = presenter().present(events(HistoryReplayFactDto.RuleDecision(HistoryFactTypeKeys.RULE_DECISION_AUTOMATIC_RESOLVED, RuleDecisionTimingDto.ROUND_START, "custom:step", 0, "custom:next", null, null, false)), null).transactions.single().facts.single()
-        assertEquals(MinecraftHistoryScreenKeys.RULE_DECISION_NEXT, ((fact.text.content as TranslatableTextContent).args[1] as Text).string)
+        assertEquals(MinecraftHistoryScreenKeys.RULE_DECISION_NEXT, ((fact.text.contents as TranslatableContents).args[1] as Component).string)
         assertTrue("custom:next" in fact.identifiers)
     }
 
@@ -444,10 +444,10 @@ class HistoryRoundEventPresentationTest {
 
         val presented = presenter.present(events(fact, tileCatalog = catalog), "test:rule").transactions.single().facts.single()
 
-        val title = presented.text.content as TranslatableTextContent
+        val title = presented.text.contents as TranslatableContents
         assertEquals(MinecraftHistoryScreenKeys.ROUND_REPLACEMENT_ROUND, title.key)
         assertEquals(1, title.args[0])
-        assertEquals("test.flower_replacement", (title.args[1] as Text).string)
+        assertEquals("test.flower_replacement", (title.args[1] as Component).string)
         assertEquals(null, presented.actorSeat)
         assertEquals(listOf(0, 1), presented.seatLines.map { it.seat })
         assertEquals(listOf(catalog.take(2), catalog.drop(2)), presented.seatLines.map { it.tiles })
@@ -488,9 +488,9 @@ class HistoryRoundEventPresentationTest {
         )
 
         assertEquals(listOf(0, 1, 2, 3), presentation.transactions.map { it.index }, "Every transaction keeps its place.")
-        val start = presentation.transactions[0].facts.single().text.content as TranslatableTextContent
+        val start = presentation.transactions[0].facts.single().text.contents as TranslatableContents
         assertEquals(MinecraftHistoryScreenKeys.ROUND_REPLACEMENT_STARTED, start.key)
-        assertEquals("test.flower_replacement", (start.args.single() as Text).string)
+        assertEquals("test.flower_replacement", (start.args.single() as Component).string)
         assertEquals(replacement, presentation.transactions[1].facts.single().source)
         assertEquals(otherStep, presentation.transactions[2].facts.single().source, "A step without replacement records keeps its generic line.")
         assertEquals(emptyList(), presentation.transactions[3].facts, "A transaction recorded without facts is still listed.")
@@ -511,7 +511,7 @@ class HistoryRoundEventPresentationTest {
         assertEquals(listOf(other), winPresentation.transactions[0].facts.map { it.source })
         assertEquals("test.tsumo", winPresentation.transactions[1].facts.single().text.string)
         assertEquals(0, winPresentation.transactions[1].facts.single().actorSeat)
-        assertEquals(MinecraftHistoryScreenKeys.RULE_DECISION, (passPresentation.transactions[0].facts.single().text.content as TranslatableTextContent).key)
+        assertEquals(MinecraftHistoryScreenKeys.RULE_DECISION, (passPresentation.transactions[0].facts.single().text.contents as TranslatableContents).key)
         assertEquals("test.pass", passPresentation.transactions[1].facts.single().text.string)
     }
 
@@ -523,9 +523,9 @@ class HistoryRoundEventPresentationTest {
 
         val presentation = replacementPresenter().present(transactions(listOf(started), listOf(chosen)), "test:rule")
 
-        assertEquals(MinecraftHistoryScreenKeys.RULE_DECISION, (presentation.transactions[0].facts.single().text.content as TranslatableTextContent).key)
+        assertEquals(MinecraftHistoryScreenKeys.RULE_DECISION, (presentation.transactions[0].facts.single().text.contents as TranslatableContents).key)
         val generic = presentation.transactions[1].facts.single()
-        assertEquals(MinecraftHistoryScreenKeys.RULE_DECISION, (generic.text.content as TranslatableTextContent).key)
+        assertEquals(MinecraftHistoryScreenKeys.RULE_DECISION, (generic.text.contents as TranslatableContents).key)
         assertEquals(0, generic.actorSeat)
         assertTrue("test:unnamed" in generic.identifiers)
     }
@@ -648,7 +648,7 @@ class HistoryRoundEventPresentationTest {
         val presenter = presenter()
         val outcome = HistoryOutcomePresentation(
             reasonId = RiichiExhaustiveDrawReason.Normal.id,
-            reasonText = Text.literal("draw"),
+            reasonText = Component.literal("draw"),
             classification = RoundCompletionClassification.EXHAUSTIVE_DRAW.name,
             transitionDirective = null,
             nextDealerSeat = null,

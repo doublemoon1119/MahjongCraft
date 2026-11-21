@@ -50,16 +50,16 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeating
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ArrangedTile
 import com.mojang.authlib.GameProfile
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.client.gui.tooltip.Tooltip
-import net.minecraft.client.sound.PositionedSoundInstance
-import net.minecraft.client.world.ClientWorld
-import net.minecraft.entity.LivingEntity
-import net.minecraft.registry.Registries
-import net.minecraft.text.Text
-import net.minecraft.util.Identifier
-import net.minecraft.util.Language
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.Tooltip
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.client.multiplayer.ClientLevel
+import net.minecraft.client.resources.sounds.SimpleSoundInstance
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.locale.Language
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.entity.LivingEntity
 import org.lwjgl.glfw.GLFW
 import java.util.Objects
 import kotlin.math.pow
@@ -80,7 +80,7 @@ import kotlin.uuid.toJavaUuid
  */
 internal class HistoryReplayScreen(
     private val session: HistoryBrowseSession,
-) : Screen(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_TITLE)) {
+) : Screen(Component.translatable(MinecraftHistoryScreenKeys.REPLAY_TITLE)) {
     /** 記錄擺不出牌桌的原因。 */
     private val logger = mahjongCraftLogger(HistoryReplayScreen::class)
 
@@ -167,11 +167,11 @@ internal class HistoryReplayScreen(
         )
         HistoryReplaySettlementCard(
             session = session,
-            textRenderer = textRenderer,
+            textRenderer = font,
             outcomeRows = HistoryOutcomeCardRows(session.eventPresenter, session.settlementTemplates, session.setAsideDisplays),
-            rowRenderer = HistoryCardRowRenderer(session, textRenderer, session.tileFaces, session.tileAssets, tileGroups),
+            rowRenderer = HistoryCardRowRenderer(session, font, session.tileFaces, session.tileAssets, tileGroups),
             eventPresenter = session.eventPresenter,
-            actorText = { seat -> session.controller.state.value.replay?.state?.identity?.let { actorText(it, seat) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_SEAT, seat + 1) },
+            actorText = { seat -> session.controller.state.value.replay?.state?.identity?.let { actorText(it, seat) } ?: Component.translatable(MinecraftHistoryScreenKeys.ROUND_SEAT, seat + 1) },
             participant = { seat -> session.controller.state.value.replay?.state?.identity?.let { participant(it, seat) } },
         )
     }
@@ -238,8 +238,8 @@ internal class HistoryReplayScreen(
 
     /** 建立控制項。 */
     override fun init() {
-        val labelWidth = listOf(MinecraftHistoryScreenKeys.REPLAY_VIEW, MinecraftHistoryScreenKeys.REPLAY_HAND).maxOf { textRenderer.getWidth(Text.translatable(it)) }
-        val speedWidth = RestartableMarqueeButtonWidget.selectorWidth(HistoryReplaySpeed.entries.maxOf { textRenderer.getWidth(speedText(it)) })
+        val labelWidth = listOf(MinecraftHistoryScreenKeys.REPLAY_VIEW, MinecraftHistoryScreenKeys.REPLAY_HAND).maxOf { font.width(Component.translatable(it)) }
+        val speedWidth = RestartableMarqueeButtonWidget.selectorWidth(HistoryReplaySpeed.entries.maxOf { font.width(speedText(it)) })
         layout = if (fullscreen) {
             HistoryReplayLayout.fullscreen(width = width, height = height, speedSelectorWidth = speedWidth)
         } else {
@@ -247,48 +247,48 @@ internal class HistoryReplayScreen(
         }
         clampPan()
         dropdown.close()
-        clearChildren()
+        clearWidgets()
         controlButtons.clear()
         val actions = listOf(::first, ::previous, ::togglePlay, ::next, ::last)
         val icons = listOf(PixelIcon.SKIP_FIRST, PixelIcon.STEP_BACKWARD, PixelIcon.PLAY, PixelIcon.STEP_FORWARD, PixelIcon.SKIP_LAST)
         actions.forEachIndexed { index, action ->
             val bounds = layout.controlButton(index)
-            controlButtons += addDrawableChild(
-                button(Text.empty(), bounds) { action() }.also { it.icon = icons[index] },
+            controlButtons += addRenderableWidget(
+                button(Component.empty(), bounds) { action() }.also { it.icon = icons[index] },
             )
         }
-        speedButton = addDrawableChild(button(speedText(playback.speed), layout.speedSelector()) { toggleSpeedList() })
+        speedButton = addRenderableWidget(button(speedText(playback.speed), layout.speedSelector()) { toggleSpeedList() })
         speedButton.selectorExpanded = { dropdown.isOpenFor(SPEED_KEY) }
-        viewButton = addDrawableChild(button(Text.empty(), layout.viewSelector) { toggleViewList() })
+        viewButton = addRenderableWidget(button(Component.empty(), layout.viewSelector) { toggleViewList() })
         viewButton.selectorExpanded = { dropdown.isOpenFor(VIEW_KEY) }
-        handButton = addDrawableChild(button(Text.empty(), layout.handSelector) { toggleHandList() })
+        handButton = addRenderableWidget(button(Component.empty(), layout.handSelector) { toggleHandList() })
         handButton.selectorExpanded = { dropdown.isOpenFor(HAND_KEY) }
-        visibilityButton = addDrawableChild(button(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY), layout.visibilityButton) { openVisibility() })
-        visibilityButton.tooltip = Tooltip.of(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_TOOLTIP))
+        visibilityButton = addRenderableWidget(button(Component.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY), layout.visibilityButton) { openVisibility() })
+        visibilityButton.tooltip = Tooltip.create(Component.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_TOOLTIP))
         listButton = layout.listToggle?.let { bounds ->
-            addDrawableChild(button(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_LIST), bounds) { listOpen = !listOpen })
+            addRenderableWidget(button(Component.translatable(MinecraftHistoryScreenKeys.REPLAY_LIST), bounds) { listOpen = !listOpen })
         }
         val frame = HistoryPageFrame(windowWidth = width, windowHeight = height)
-        previousRoundButton = addDrawableChild(button(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_PREVIOUS_ROUND), frame.footerSlot(0)) { changeRound(-1) })
-        nextRoundButton = addDrawableChild(button(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_NEXT_ROUND), frame.footerSlot(2)) { changeRound(1) })
-        val backButton = addDrawableChild(button(Text.translatable(MinecraftHistoryScreenKeys.BACK), frame.footerSlot(HistoryPageFrame.LAST_SLOT)) { session.backFromReplay() })
-        retryButton = addDrawableChild(button(Text.translatable(MinecraftHistoryScreenKeys.RETRY), HistoryScreenLayout.Bounds(0, 0, RETRY_WIDTH, FormScreenLayout.BUTTON_HEIGHT)) { session.controller.retry() })
+        previousRoundButton = addRenderableWidget(button(Component.translatable(MinecraftHistoryScreenKeys.REPLAY_PREVIOUS_ROUND), frame.footerSlot(0)) { changeRound(-1) })
+        nextRoundButton = addRenderableWidget(button(Component.translatable(MinecraftHistoryScreenKeys.REPLAY_NEXT_ROUND), frame.footerSlot(2)) { changeRound(1) })
+        val backButton = addRenderableWidget(button(Component.translatable(MinecraftHistoryScreenKeys.BACK), frame.footerSlot(HistoryPageFrame.LAST_SLOT)) { session.backFromReplay() })
+        retryButton = addRenderableWidget(button(Component.translatable(MinecraftHistoryScreenKeys.RETRY), HistoryScreenLayout.Bounds(0, 0, RETRY_WIDTH, FormScreenLayout.BUTTON_HEIGHT)) { session.controller.retry() })
         retryButton.visible = false
-        settlementHideButton = addDrawableChild(
-            button(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_SETTLEMENT_HIDE), HistoryScreenLayout.Bounds(0, 0, SETTLEMENT_BUTTON_WIDTH, SETTLEMENT_BUTTON_HEIGHT)) {
+        settlementHideButton = addRenderableWidget(
+            button(Component.translatable(MinecraftHistoryScreenKeys.REPLAY_SETTLEMENT_HIDE), HistoryScreenLayout.Bounds(0, 0, SETTLEMENT_BUTTON_WIDTH, SETTLEMENT_BUTTON_HEIGHT)) {
                 settlementCard.collapsed = true
             },
         )
-        settlementHideButton.tooltip = Tooltip.of(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_SETTLEMENT_HIDE_TOOLTIP))
-        settlementShowButton = addDrawableChild(
-            button(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_SETTLEMENT), HistoryScreenLayout.Bounds(0, 0, SETTLEMENT_BUTTON_WIDTH, SETTLEMENT_BUTTON_HEIGHT)) {
+        settlementHideButton.tooltip = Tooltip.create(Component.translatable(MinecraftHistoryScreenKeys.REPLAY_SETTLEMENT_HIDE_TOOLTIP))
+        settlementShowButton = addRenderableWidget(
+            button(Component.translatable(MinecraftHistoryScreenKeys.REPLAY_SETTLEMENT), HistoryScreenLayout.Bounds(0, 0, SETTLEMENT_BUTTON_WIDTH, SETTLEMENT_BUTTON_HEIGHT)) {
                 settlementCard.collapsed = false
             },
         )
-        settlementShowButton.tooltip = Tooltip.of(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_SETTLEMENT_SHOW_TOOLTIP))
+        settlementShowButton.tooltip = Tooltip.create(Component.translatable(MinecraftHistoryScreenKeys.REPLAY_SETTLEMENT_SHOW_TOOLTIP))
         settlementHideButton.visible = false
         settlementShowButton.visible = false
-        fullscreenButton = addDrawableChild(button(Text.empty(), layout.fullscreenToggle) { toggleFullscreen() })
+        fullscreenButton = addRenderableWidget(button(Component.empty(), layout.fullscreenToggle) { toggleFullscreen() })
         if (fullscreen) {
             // 全螢幕只留播放控制；視角、手牌、交易列表與底部按鈕回到一般版面才出現。
             listOfNotNull(viewButton, handButton, visibilityButton, listButton, previousRoundButton, nextRoundButton, backButton).forEach { it.visible = false }
@@ -300,7 +300,7 @@ internal class HistoryReplayScreen(
         fullscreen = !fullscreen
         listOpen = false
         lastActivity = measuringTimeNow()
-        clearAndInit()
+        rebuildWidgets()
     }
 
     /**
@@ -311,13 +311,13 @@ internal class HistoryReplayScreen(
      * @param onPress 按下時的動作。
      * @return 按鈕。
      */
-    private fun button(text: Text, bounds: HistoryScreenLayout.Bounds, onPress: () -> Unit): RestartableMarqueeButtonWidget = RestartableMarqueeButtonWidget.builder(text) { onPress() }.dimensions(bounds.x, bounds.y, bounds.width, bounds.height).build()
+    private fun button(text: Component, bounds: HistoryScreenLayout.Bounds, onPress: () -> Unit): RestartableMarqueeButtonWidget = RestartableMarqueeButtonWidget.builder(text) { onPress() }.dimensions(bounds.x, bounds.y, bounds.width, bounds.height).build()
 
     /** 歷史瀏覽不暫停整合伺服器。 */
-    override fun shouldPause(): Boolean = false
+    override fun isPauseScreen(): Boolean = false
 
     /** Esc 回到事件頁。 */
-    override fun close() {
+    override fun onClose() {
         session.backFromReplay()
     }
 
@@ -342,7 +342,7 @@ internal class HistoryReplayScreen(
      * @param mouseY 游標垂直座標。
      * @param delta 幀內插值。
      */
-    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         renderBackground(context)
         advancePlayback()
         val now = measuringTimeNow()
@@ -354,13 +354,13 @@ internal class HistoryReplayScreen(
         val replay = session.controller.state.value.replay
         updateAnimation(replay, now)
         if (!layout.fullscreen) {
-            val heading = title.copy().append(TITLE_SEPARATOR).append(Text.translatable(MinecraftHistoryScreenKeys.ROUND_NUMBER, replay?.roundNumber ?: "—"))
-            ScreenRendering.title(context, textRenderer, heading, width)
+            val heading = title.copy().append(TITLE_SEPARATOR).append(Component.translatable(MinecraftHistoryScreenKeys.ROUND_NUMBER, replay?.roundNumber ?: "—"))
+            ScreenRendering.title(context, font, heading, width)
         }
         val rows = replay?.let(::rows).orEmpty()
         val pointerX = dropdown.pointer(mouseX)
         val pointerY = dropdown.pointer(mouseY)
-        var tooltip: List<Text>? = null
+        var tooltip: List<Component>? = null
         updateControls(replay)
         renderScene(context, replay, pointerX, pointerY)
         renderSettlement(context, replay, pointerX, pointerY)?.let { tooltip = it }
@@ -377,8 +377,8 @@ internal class HistoryReplayScreen(
             renderCounter(context, replay)
         }
         super.render(context, pointerX, pointerY, delta)
-        dropdown.render(context, textRenderer, height, mouseX, mouseY)
-        if (!dropdown.isOpen && !draggingProgress && !draggingListBar) tooltip?.let { context.drawTooltip(textRenderer, it, mouseX, mouseY) }
+        dropdown.render(context, font, height, mouseX, mouseY)
+        if (!dropdown.isOpen && !draggingProgress && !draggingListBar) tooltip?.let { context.renderComponentTooltip(font, it, mouseX, mouseY) }
     }
 
     /**
@@ -453,9 +453,9 @@ internal class HistoryReplayScreen(
             it.setAlpha(controlsAlpha)
         }
         fullscreenButton.icon = if (fullscreen) PixelIcon.FULLSCREEN_EXIT else PixelIcon.FULLSCREEN_ENTER
-        val fullscreenLabel = Text.translatable(if (fullscreen) MinecraftHistoryScreenKeys.REPLAY_EXIT_FULLSCREEN else MinecraftHistoryScreenKeys.REPLAY_FULLSCREEN)
+        val fullscreenLabel = Component.translatable(if (fullscreen) MinecraftHistoryScreenKeys.REPLAY_EXIT_FULLSCREEN else MinecraftHistoryScreenKeys.REPLAY_FULLSCREEN)
         fullscreenButton.message = fullscreenLabel
-        fullscreenButton.tooltip = Tooltip.of(ControlTooltip.description(fullscreenLabel))
+        fullscreenButton.tooltip = Tooltip.create(ControlTooltip.description(fullscreenLabel))
         val labels = listOf(
             MinecraftHistoryScreenKeys.REPLAY_FIRST,
             MinecraftHistoryScreenKeys.REPLAY_PREVIOUS,
@@ -464,14 +464,14 @@ internal class HistoryReplayScreen(
             MinecraftHistoryScreenKeys.REPLAY_LAST,
         )
         controlButtons.forEachIndexed { index, button ->
-            button.message = Text.translatable(labels[index])
-            button.tooltip = Tooltip.of(ControlTooltip.description(Text.translatable(labels[index])))
+            button.message = Component.translatable(labels[index])
+            button.tooltip = Tooltip.create(ControlTooltip.description(Component.translatable(labels[index])))
         }
         val speeds = HistoryReplaySpeed.entries
         speedButton.message = speedText(playback.speed)
-        speedButton.tooltip = Tooltip.of(
+        speedButton.tooltip = Tooltip.create(
             ControlTooltip.options(
-                description = Text.translatable(MinecraftHistoryScreenKeys.REPLAY_SPEED),
+                description = Component.translatable(MinecraftHistoryScreenKeys.REPLAY_SPEED),
                 labels = speeds.map(::speedText),
                 currentIndex = speeds.indexOf(playback.speed),
             ),
@@ -482,18 +482,18 @@ internal class HistoryReplayScreen(
         viewButton.message = viewText(replay?.state, viewSeat)
         viewButton.active = players.isNotEmpty()
         val seats = viewSeats(replay?.state)
-        viewButton.tooltip = Tooltip.of(
+        viewButton.tooltip = Tooltip.create(
             ControlTooltip.options(
-                description = Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VIEW),
+                description = Component.translatable(MinecraftHistoryScreenKeys.REPLAY_VIEW),
                 labels = seats.map { viewText(replay?.state, it) },
                 currentIndex = seats.indexOf(viewSeat),
             ),
         )
-        handButton.message = Text.translatable(HAND_KEYS[if (handsOpen) 1 else 0])
-        handButton.tooltip = Tooltip.of(
+        handButton.message = Component.translatable(HAND_KEYS[if (handsOpen) 1 else 0])
+        handButton.tooltip = Tooltip.create(
             ControlTooltip.options(
-                description = Text.translatable(MinecraftHistoryScreenKeys.REPLAY_HAND),
-                labels = HAND_KEYS.map { Text.translatable(it) },
+                description = Component.translatable(MinecraftHistoryScreenKeys.REPLAY_HAND),
+                labels = HAND_KEYS.map { Component.translatable(it) },
                 currentIndex = if (handsOpen) 1 else 0,
             ),
         )
@@ -515,15 +515,15 @@ internal class HistoryReplayScreen(
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
      */
-    private fun renderScene(context: DrawContext, replay: HistoryBrowseReplayState?, mouseX: Int, mouseY: Int) {
+    private fun renderScene(context: GuiGraphics, replay: HistoryBrowseReplayState?, mouseX: Int, mouseY: Int) {
         val bounds = layout.scene
         context.fill(bounds.x, bounds.y, bounds.right, bounds.bottom, SCENE_BACKGROUND)
         val state = replay?.state
         val scene = state?.let(::scene)
         val notice = when {
-            replay == null -> Text.translatable(MinecraftHistoryScreenKeys.LOADING)
-            replay.status is HistoryBrowseStatus.Failed -> Text.translatable(replay.status.reason.translationKey)
-            state == null -> Text.translatable(MinecraftHistoryScreenKeys.LOADING)
+            replay == null -> Component.translatable(MinecraftHistoryScreenKeys.LOADING)
+            replay.status is HistoryBrowseStatus.Failed -> Component.translatable(replay.status.reason.translationKey)
+            state == null -> Component.translatable(MinecraftHistoryScreenKeys.LOADING)
             scene == null -> sceneNotice(state)
             else -> null
         }
@@ -544,10 +544,10 @@ internal class HistoryReplayScreen(
             )
         }
         if (notice != null) {
-            val lines = textRenderer.wrapLines(notice, (bounds.width - NOTICE_PADDING * 2).coerceAtLeast(1))
+            val lines = font.split(notice, (bounds.width - NOTICE_PADDING * 2).coerceAtLeast(1))
             val top = bounds.y + (bounds.height - lines.size * LINE_HEIGHT) / 2
             lines.forEachIndexed { index, line ->
-                context.drawCenteredTextWithShadow(textRenderer, line, bounds.x + bounds.width / 2, top + index * LINE_HEIGHT, TEXT_COLOR)
+                context.drawCenteredString(font, line, bounds.x + bounds.width / 2, top + index * LINE_HEIGHT, TEXT_COLOR)
             }
             if (retryButton.visible) {
                 retryButton.x = bounds.x + (bounds.width - retryButton.width) / 2
@@ -566,7 +566,7 @@ internal class HistoryReplayScreen(
      * @param state 目前牌面。
      * @return 說明文字。
      */
-    private fun sceneNotice(state: HistoryRoundStateDto): Text {
+    private fun sceneNotice(state: HistoryRoundStateDto): Component {
         val browse = session.controller.state.value
         val key = HistoryReplaySceneNotice.key(
             ruleInstalled = session.ruleInstalled(browse.summary?.detail?.summary?.ruleId),
@@ -574,7 +574,7 @@ internal class HistoryReplayScreen(
             moduleResolved = session.ruleModule(state) != null,
             hasNotes = tableDisplays.notes(state) != null,
         )
-        return Text.translatable(key)
+        return Component.translatable(key)
     }
 
     /**
@@ -671,8 +671,8 @@ internal class HistoryReplayScreen(
      * @return 內建機器人外觀的角色與以原版繪製器畫出的模型。
      */
     private fun seatedPlayers(state: HistoryRoundStateDto): Pair<List<GuideSceneFigure>, List<GuideSceneEntity>> {
-        val world = client?.world ?: return emptyList<GuideSceneFigure>() to emptyList()
-        if (playerEntities.values.any { it.world !== world }) playerEntities.clear()
+        val world = minecraft?.level ?: return emptyList<GuideSceneFigure>() to emptyList()
+        if (playerEntities.values.any { it.level() !== world }) playerEntities.clear()
         val seats = MahjongSeatingTableLayout.seatPlacements(
             layout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
             controllerX = 0,
@@ -793,7 +793,7 @@ internal class HistoryReplayScreen(
      * @param playerId 玩家識別碼。
      * @return 玩家模型。
      */
-    private fun playerEntity(world: ClientWorld, playerId: Uuid): LivingEntity {
+    private fun playerEntity(world: ClientLevel, playerId: Uuid): LivingEntity {
         val profiles = session.playerProfiles
         profiles.requestResolve(playerId)
         val profile = profiles.knownProfile(playerId) ?: GameProfile(playerId.toJavaUuid(), UNKNOWN_PROFILE_NAME)
@@ -963,8 +963,8 @@ internal class HistoryReplayScreen(
      * @param sound 聲音步驟。
      */
     private fun playSound(sound: AnimationStep.PlaySound) {
-        val event = Identifier.tryParse(sound.soundId)?.let(Registries.SOUND_EVENT::get) ?: return
-        client?.soundManager?.play(PositionedSoundInstance.master(event, sound.pitch, sound.volume))
+        val event = ResourceLocation.tryParse(sound.soundId)?.let(BuiltInRegistries.SOUND_EVENT::get) ?: return
+        minecraft?.soundManager?.play(SimpleSoundInstance.forUI(event, sound.pitch, sound.volume))
     }
 
     /**
@@ -974,24 +974,24 @@ internal class HistoryReplayScreen(
      * @param replay 目前回放。
      * @param rows 整局的交易列。
      */
-    private fun renderCaption(context: DrawContext, replay: HistoryBrowseReplayState?, rows: List<TransactionRow>) {
+    private fun renderCaption(context: GuiGraphics, replay: HistoryBrowseReplayState?, rows: List<TransactionRow>) {
         val bounds = layout.caption
         replay ?: return
         val row = rows.getOrNull(replay.step - 1)
         val label = if (replay.step == 0) {
-            Text.translatable(MinecraftHistoryScreenKeys.STATE_INITIAL).styled { it.withColor(ACCENT_COLOR) }
+            Component.translatable(MinecraftHistoryScreenKeys.STATE_INITIAL).withStyle { it.withColor(ACCENT_COLOR) }
         } else {
-            Text.translatable(MinecraftHistoryScreenKeys.REPLAY_CAPTION, replay.step).styled { it.withColor(ACCENT_COLOR) }
+            Component.translatable(MinecraftHistoryScreenKeys.REPLAY_CAPTION, replay.step).withStyle { it.withColor(ACCENT_COLOR) }
         }
         val summary = row?.summary
         val text = if (summary == null) label else label.copy().append("  ").append(summary)
         val tile = row?.tile
         val tileSpace = if (tile != null) SMALL_TILE_WIDTH + TILE_GAP else 0
         val available = (bounds.width - NOTICE_PADDING * 2 - tileSpace).coerceAtLeast(1)
-        val line = textRenderer.trimToWidth(text, available)
-        val lineWidth = textRenderer.getWidth(line)
+        val line = font.substrByWidth(text, available)
+        val lineWidth = font.width(line)
         val left = bounds.x + (bounds.width - lineWidth - tileSpace) / 2
-        context.drawTextWithShadow(textRenderer, Language.getInstance().reorder(line), left, bounds.y + (bounds.height - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2, TEXT_COLOR)
+        context.drawString(font, Language.getInstance().getVisualOrder(line), left, bounds.y + (bounds.height - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2, TEXT_COLOR)
         tile?.let { renderTile(context, it, left + lineWidth + TILE_GAP, bounds.y + (bounds.height - SMALL_TILE_HEIGHT) / 2) }
     }
 
@@ -1005,7 +1005,7 @@ internal class HistoryReplayScreen(
      * @param mouseY 游標垂直座標。
      * @return 游標指著的交易提示；沒有時為 null。
      */
-    private fun renderList(context: DrawContext, replay: HistoryBrowseReplayState?, rows: List<TransactionRow>, mouseX: Int, mouseY: Int): List<Text>? {
+    private fun renderList(context: GuiGraphics, replay: HistoryBrowseReplayState?, rows: List<TransactionRow>, mouseX: Int, mouseY: Int): List<Component>? {
         val bounds = layout.list
         replay ?: return null
         val contentHeight = rows.size * ROW_STEP
@@ -1014,7 +1014,7 @@ internal class HistoryReplayScreen(
             if (rowTop < listScroll || rowTop + ROW_HEIGHT > listScroll + bounds.height) listScroll = (rowTop - (bounds.height - ROW_HEIGHT) / 2).toDouble()
         }
         listScroll = listScroll.coerceIn(0.0, (contentHeight - bounds.height).coerceAtLeast(0).toDouble())
-        var tooltip: List<Text>? = null
+        var tooltip: List<Component>? = null
         context.enableScissor(bounds.x, bounds.y, bounds.right, bounds.bottom)
         rows.forEachIndexed { index, row ->
             val top = bounds.y + index * ROW_STEP - listScroll.toInt()
@@ -1023,17 +1023,17 @@ internal class HistoryReplayScreen(
             val hovered = mouseX >= bounds.x && mouseX < bounds.right && mouseY >= maxOf(top, bounds.y) && mouseY < minOf(top + ROW_HEIGHT, bounds.bottom)
             context.fill(bounds.x, top, bounds.right, top + ROW_HEIGHT, if (hovered) CardBackground.NEUTRAL_HOVER_COLOR else CardBackground.NEUTRAL_COLOR)
             val future = step > replay.step
-            context.drawTextWithShadow(textRenderer, textRenderer.trimToWidth(row.heading, bounds.width - ROW_PADDING * 2).let(Language.getInstance()::reorder), bounds.x + ROW_PADDING, top + ROW_PADDING, if (future) FUTURE_HEADING_COLOR else ACCENT_COLOR)
+            context.drawString(font, font.substrByWidth(row.heading, bounds.width - ROW_PADDING * 2).let(Language.getInstance()::getVisualOrder), bounds.x + ROW_PADDING, top + ROW_PADDING, if (future) FUTURE_HEADING_COLOR else ACCENT_COLOR)
             val tileSpace = if (row.tile != null) SMALL_TILE_WIDTH + TILE_GAP else 0
-            val summary = row.summary?.let { textRenderer.trimToWidth(it, (bounds.width - ROW_PADDING * 2 - tileSpace).coerceAtLeast(1)) }
+            val summary = row.summary?.let { font.substrByWidth(it, (bounds.width - ROW_PADDING * 2 - tileSpace).coerceAtLeast(1)) }
             val summaryY = top + ROW_PADDING + LINE_HEIGHT
-            summary?.let { context.drawTextWithShadow(textRenderer, Language.getInstance().reorder(it), bounds.x + ROW_PADDING, summaryY, if (future) FUTURE_TEXT_COLOR else TEXT_COLOR) }
+            summary?.let { context.drawString(font, Language.getInstance().getVisualOrder(it), bounds.x + ROW_PADDING, summaryY, if (future) FUTURE_TEXT_COLOR else TEXT_COLOR) }
             row.tile?.let { tile ->
-                val tileX = bounds.x + ROW_PADDING + (summary?.let(textRenderer::getWidth) ?: 0) + TILE_GAP
+                val tileX = bounds.x + ROW_PADDING + (summary?.let(font::width) ?: 0) + TILE_GAP
                 renderTile(context, tile, tileX, summaryY - (SMALL_TILE_HEIGHT - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2)
             }
             row.marker?.let { context.fill(bounds.right - MARKER_STRIP_WIDTH, top, bounds.right, top + ROW_HEIGHT, OPAQUE or markerColor(it)) }
-            if (step == replay.step) context.drawBorder(bounds.x, top, bounds.width, ROW_HEIGHT, CURRENT_OUTLINE)
+            if (step == replay.step) context.renderOutline(bounds.x, top, bounds.width, ROW_HEIGHT, CURRENT_OUTLINE)
             if (hovered) tooltip = listOfNotNull(row.heading, row.summary)
         }
         context.disableScissor()
@@ -1061,11 +1061,11 @@ internal class HistoryReplayScreen(
      *
      * @param context 繪製上下文。
      */
-    private fun renderSelectorLabels(context: DrawContext) {
+    private fun renderSelectorLabels(context: GuiGraphics) {
         listOf(MinecraftHistoryScreenKeys.REPLAY_VIEW to layout.viewSelector, MinecraftHistoryScreenKeys.REPLAY_HAND to layout.handSelector).forEach { (key, bounds) ->
-            val label = Text.translatable(key)
+            val label = Component.translatable(key)
             val y = bounds.y + (bounds.height - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2
-            context.drawTextWithShadow(textRenderer, label, bounds.x - layout.selectorLabelWidth - LABEL_GAP, y, MUTED_COLOR)
+            context.drawString(font, label, bounds.x - layout.selectorLabelWidth - LABEL_GAP, y, MUTED_COLOR)
         }
     }
 
@@ -1074,10 +1074,10 @@ internal class HistoryReplayScreen(
      *
      * @param context 繪製上下文。
      */
-    private fun renderSpeedLabel(context: DrawContext) {
+    private fun renderSpeedLabel(context: GuiGraphics) {
         val speed = layout.speedSelector()
-        val speedLabel = Text.translatable(MinecraftHistoryScreenKeys.REPLAY_SPEED)
-        context.drawTextWithShadow(textRenderer, speedLabel, speed.x - LABEL_GAP - textRenderer.getWidth(speedLabel), speed.y + (speed.height - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2, faded(MUTED_COLOR))
+        val speedLabel = Component.translatable(MinecraftHistoryScreenKeys.REPLAY_SPEED)
+        context.drawString(font, speedLabel, speed.x - LABEL_GAP - font.width(speedLabel), speed.y + (speed.height - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2, faded(MUTED_COLOR))
     }
 
     /**
@@ -1090,7 +1090,7 @@ internal class HistoryReplayScreen(
      * @param mouseY 游標垂直座標。
      * @return 游標指著進度條時那一步的說明；沒有時為 null。
      */
-    private fun renderProgress(context: DrawContext, replay: HistoryBrowseReplayState?, rows: List<TransactionRow>, mouseX: Int, mouseY: Int): List<Text>? {
+    private fun renderProgress(context: GuiGraphics, replay: HistoryBrowseReplayState?, rows: List<TransactionRow>, mouseX: Int, mouseY: Int): List<Component>? {
         val bounds = layout.progress
         val trackTop = bounds.y + (bounds.height - TRACK_HEIGHT) / 2
         context.fill(bounds.x, trackTop, bounds.right, trackTop + TRACK_HEIGHT, faded(TRACK_COLOR))
@@ -1115,9 +1115,9 @@ internal class HistoryReplayScreen(
         val step = stepAt(mouseX.toDouble(), stepCount)
         val row = rows.getOrNull(step - 1)
         return if (step == 0) {
-            listOf(Text.translatable(MinecraftHistoryScreenKeys.STATE_INITIAL))
+            listOf(Component.translatable(MinecraftHistoryScreenKeys.STATE_INITIAL))
         } else {
-            listOfNotNull(row?.heading ?: Text.translatable(MinecraftHistoryScreenKeys.REPLAY_CAPTION, step), row?.summary)
+            listOfNotNull(row?.heading ?: Component.translatable(MinecraftHistoryScreenKeys.REPLAY_CAPTION, step), row?.summary)
         }
     }
 
@@ -1127,14 +1127,14 @@ internal class HistoryReplayScreen(
      * @param context 繪製上下文。
      * @param replay 目前回放。
      */
-    private fun renderCounter(context: DrawContext, replay: HistoryBrowseReplayState?) {
+    private fun renderCounter(context: GuiGraphics, replay: HistoryBrowseReplayState?) {
         val stepCount = replay?.stepCount ?: return
-        val text = Text.translatable(MinecraftHistoryScreenKeys.REPLAY_COUNTER, replay.step, stepCount - 1)
-        val right = layout.speedSelector().x - LABEL_GAP * 2 - textRenderer.getWidth(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_SPEED))
+        val text = Component.translatable(MinecraftHistoryScreenKeys.REPLAY_COUNTER, replay.step, stepCount - 1)
+        val right = layout.speedSelector().x - LABEL_GAP * 2 - font.width(Component.translatable(MinecraftHistoryScreenKeys.REPLAY_SPEED))
         val available = (right - layout.counterX).coerceAtLeast(0)
         if (available <= 0) return
-        val line = textRenderer.trimToWidth(text, available)
-        context.drawTextWithShadow(textRenderer, Language.getInstance().reorder(line), layout.counterX, layout.controls.y + (layout.controls.height - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2, faded(TEXT_COLOR))
+        val line = font.substrByWidth(text, available)
+        context.drawString(font, Language.getInstance().getVisualOrder(line), layout.counterX, layout.controls.y + (layout.controls.height - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2, faded(TEXT_COLOR))
     }
 
     /**
@@ -1143,14 +1143,14 @@ internal class HistoryReplayScreen(
      * @param context 繪製上下文。
      * @param replay 目前回放。
      */
-    private fun renderRoundNumber(context: DrawContext, replay: HistoryBrowseReplayState?) {
+    private fun renderRoundNumber(context: GuiGraphics, replay: HistoryBrowseReplayState?) {
         val bounds = HistoryPageFrame(windowWidth = width, windowHeight = height).footerSlot(1)
         HistoryPaging.renderRange(
             context = context,
-            textRenderer = textRenderer,
+            textRenderer = font,
             bounds = bounds,
-            primary = Text.translatable(MinecraftHistoryScreenKeys.ROUND_NUMBER, replay?.roundNumber ?: "—"),
-            secondary = Text.translatable(MinecraftHistoryScreenKeys.REPLAY_ROUND_TOTAL, roundNumbers().size),
+            primary = Component.translatable(MinecraftHistoryScreenKeys.ROUND_NUMBER, replay?.roundNumber ?: "—"),
+            secondary = Component.translatable(MinecraftHistoryScreenKeys.REPLAY_ROUND_TOTAL, roundNumbers().size),
         )
     }
 
@@ -1162,7 +1162,7 @@ internal class HistoryReplayScreen(
      * @param x 左界。
      * @param y 上界。
      */
-    private fun renderTile(context: DrawContext, tile: TileFaceViewDto, x: Int, y: Int) {
+    private fun renderTile(context: GuiGraphics, tile: TileFaceViewDto, x: Int, y: Int) {
         val asset = tile.toHistoryAssetKey(registry = session.tileAssets, registries = session.networkRegistries)
         session.tileFaces.renderGui(context, asset, x, y, SMALL_TILE_WIDTH, SMALL_TILE_HEIGHT, appearance = session.tileAppearance())
     }
@@ -1176,17 +1176,18 @@ internal class HistoryReplayScreen(
     private fun rows(replay: HistoryBrowseReplayState): List<TransactionRow> {
         rowsCache?.takeIf { it.first == replay.eventPages }?.let { return it.second }
         val ruleId = session.controller.state.value.summary?.detail?.summary?.ruleId
+        val markers = session.eventPresenter.replayMarkers(ruleId, replay.eventPages.flatMap { it.transactions })
         val built = replay.eventPages.flatMap { page ->
-            session.eventPresenter.present(page, ruleId).transactions.zip(page.transactions).map { (transaction, saved) ->
-                val fact = transaction.facts.firstOrNull { it.actorSeat != null } ?: transaction.facts.firstOrNull()
-                val summary = fact?.let { found -> found.actorSeat?.let { actorText(page.identity, it).copy().append(" ").append(found.text) } ?: found.text }
-                TransactionRow(
-                    heading = Text.translatable(MinecraftHistoryScreenKeys.ROUND_TRANSACTION, transaction.index + 1, HistoryScreenText.timeOfDay(transaction.occurredAtEpochMillis)),
-                    summary = summary,
-                    tile = fact?.let { it.directTiles.firstOrNull() ?: it.revealedTiles.firstOrNull() },
-                    marker = session.eventPresenter.replayMarker(ruleId, saved),
-                )
-            }
+            session.eventPresenter.present(page, ruleId).transactions.map { transaction -> page.identity to transaction }
+        }.mapIndexed { index, (identity, transaction) ->
+            val fact = transaction.facts.firstOrNull { it.actorSeat != null } ?: transaction.facts.firstOrNull()
+            val summary = fact?.let { found -> found.actorSeat?.let { actorText(identity, it).copy().append(" ").append(found.text) } ?: found.text }
+            TransactionRow(
+                heading = Component.translatable(MinecraftHistoryScreenKeys.ROUND_TRANSACTION, transaction.index + 1, HistoryScreenText.timeOfDay(transaction.occurredAtEpochMillis)),
+                summary = summary,
+                tile = fact?.let { it.directTiles.firstOrNull() ?: it.revealedTiles.firstOrNull() },
+                marker = markers[index],
+            )
         }
         rowsCache = replay.eventPages to built
         return built
@@ -1208,11 +1209,11 @@ internal class HistoryReplayScreen(
      * @param seat 初始座位。
      * @return 玩家名稱。
      */
-    private fun actorText(identity: HistoryReplayIdentityDto, seat: Int): Text {
+    private fun actorText(identity: HistoryReplayIdentityDto, seat: Int): Component {
         val summary = session.controller.state.value.summary?.detail?.summary
         val id = identity.players.firstOrNull { it.initialSeatIndex == seat }?.playerId
         val participant = id?.let { playerId -> summary?.participants?.firstOrNull { it.playerId.equals(playerId, ignoreCase = true) } }
-        return participant?.let { session.participants.name(it, summary?.participants.orEmpty(), summary?.matchId) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_SEAT, seat + 1)
+        return participant?.let { session.participants.name(it, summary?.participants.orEmpty(), summary?.matchId) } ?: Component.translatable(MinecraftHistoryScreenKeys.ROUND_SEAT, seat + 1)
     }
 
     /**
@@ -1222,9 +1223,9 @@ internal class HistoryReplayScreen(
      * @param seat 觀看的玩家初始座位；自由視角為 null。
      * @return 文字。
      */
-    private fun viewText(state: HistoryRoundStateDto?, seat: Int?): Text {
-        val player = state?.players?.firstOrNull { it.initialSeatIndex == seat } ?: return Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VIEW_FREE)
-        return Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VIEW_SEAT, windText(player.seatWind), actorText(state.identity, player.initialSeatIndex))
+    private fun viewText(state: HistoryRoundStateDto?, seat: Int?): Component {
+        val player = state?.players?.firstOrNull { it.initialSeatIndex == seat } ?: return Component.translatable(MinecraftHistoryScreenKeys.REPLAY_VIEW_FREE)
+        return Component.translatable(MinecraftHistoryScreenKeys.REPLAY_VIEW_SEAT, windText(player.seatWind), actorText(state.identity, player.initialSeatIndex))
     }
 
     /**
@@ -1233,7 +1234,7 @@ internal class HistoryReplayScreen(
      * @param wind 座位風。
      * @return 名稱。
      */
-    private fun windText(wind: WindDto): Text = Text.translatable(
+    private fun windText(wind: WindDto): Component = Component.translatable(
         when (wind) {
             WindDto.EAST -> MinecraftHistoryScreenKeys.REPLAY_WIND_EAST
             WindDto.SOUTH -> MinecraftHistoryScreenKeys.REPLAY_WIND_SOUTH
@@ -1248,7 +1249,7 @@ internal class HistoryReplayScreen(
      * @param speed 速度。
      * @return 文字。
      */
-    private fun speedText(speed: HistoryReplaySpeed): Text = Text.translatable(
+    private fun speedText(speed: HistoryReplaySpeed): Component = Component.translatable(
         MinecraftHistoryScreenKeys.REPLAY_SPEED_VALUE,
         speed.multiplier.let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString() },
     )
@@ -1278,7 +1279,7 @@ internal class HistoryReplayScreen(
         dropdown.toggle(
             key = HAND_KEY,
             anchor = handButton,
-            options = HAND_KEYS.map { DropdownOption(label = Text.translatable(it)) },
+            options = HAND_KEYS.map { DropdownOption(label = Component.translatable(it)) },
             selectedIndex = if (handsOpen) 1 else 0,
         ) { index ->
             handsOpen = index == 1
@@ -1388,7 +1389,7 @@ internal class HistoryReplayScreen(
      * @return 是否處理。
      */
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        if (dropdown.mouseClicked(textRenderer, height, mouseX, mouseY, button)) return true
+        if (dropdown.mouseClicked(font, height, mouseX, mouseY, button)) return true
         if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && zoom > 1f && isOverScene(mouseX, mouseY)) {
             draggingPan = true
             return true
@@ -1449,7 +1450,7 @@ internal class HistoryReplayScreen(
      * @param mouseY 游標垂直座標。
      * @return 游標指著的內容提示；沒有時為 null。
      */
-    private fun renderSettlement(context: DrawContext, replay: HistoryBrowseReplayState?, mouseX: Int, mouseY: Int): List<Text>? {
+    private fun renderSettlement(context: GuiGraphics, replay: HistoryBrowseReplayState?, mouseX: Int, mouseY: Int): List<Component>? {
         val scene = layout.scene
         val bottom = layout.controlBar?.y ?: scene.bottom
         val showing = animation == null && settlementCard.available(replay)
@@ -1567,7 +1568,7 @@ internal class HistoryReplayScreen(
      * @return 是否處理。
      */
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
-        if (dropdown.mouseScrolled(textRenderer, height, amount)) return true
+        if (dropdown.mouseScrolled(font, height, amount)) return true
         val list = layout.list
         if (!layout.fullscreen && (layout.wide || listOpen) && mouseX >= list.x && mouseX < layout.listScrollbarX + VerticalScrollbar.WIDTH && mouseY >= list.y && mouseY < list.bottom) {
             listScroll -= amount * ROW_STEP
@@ -1592,7 +1593,7 @@ internal class HistoryReplayScreen(
      * @return 是否處理。
      */
     override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
-        if (dropdown.keyPressed(textRenderer, height, keyCode)) return true
+        if (dropdown.keyPressed(font, height, keyCode)) return true
         when (keyCode) {
             GLFW.GLFW_KEY_SPACE -> togglePlay()
             GLFW.GLFW_KEY_LEFT, GLFW.GLFW_KEY_RIGHT, GLFW.GLFW_KEY_HOME, GLFW.GLFW_KEY_END -> {
@@ -1687,8 +1688,8 @@ internal class HistoryReplayScreen(
      * @property marker 回放標記種類；不標記時為 null。
      */
     private data class TransactionRow(
-        val heading: Text,
-        val summary: Text?,
+        val heading: Component,
+        val summary: Component?,
         val tile: TileFaceViewDto?,
         val marker: GameActionReplayMarker?,
     )

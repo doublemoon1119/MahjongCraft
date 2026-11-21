@@ -15,13 +15,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MatchEndedLi
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MatchStartedListener
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RoundSettledListener
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.TableLocation
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.HoverEvent
+import net.minecraft.network.chat.MutableComponent
+import net.minecraft.network.chat.Style
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.HoverEvent
-import net.minecraft.text.MutableText
-import net.minecraft.text.Style
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.server.level.ServerPlayer
 import java.util.UUID
 import kotlin.uuid.Uuid
 
@@ -61,33 +61,33 @@ object ExampleGameEventChat {
     }
 
     /** 將訊息送給目前有管理權限的在線玩家。 */
-    private fun deliver(context: GameEventContext, message: (MinecraftServer) -> MutableText) {
+    private fun deliver(context: GameEventContext, message: (MinecraftServer) -> MutableComponent) {
         val server = try {
             FabricGameEventContexts.server(context)
         } catch (_: IllegalStateException) {
             return
         }
-        val recipients = administratorRecipients(server.playerManager.playerList) { it.hasPermissionLevel(2) }
+        val recipients = administratorRecipients(server.playerList.players) { it.hasPermissions(2) }
         if (recipients.isEmpty()) return
         val text = message(server)
-        recipients.forEach { player -> player.sendMessage(text.copy(), false) }
+        recipients.forEach { player -> player.displayClientMessage(text.copy(), false) }
     }
 
     /** 建立對局開始事件文字。 */
-    private fun startedText(event: MatchStartedEvent, context: GameEventContext, server: MinecraftServer): MutableText {
+    private fun startedText(event: MatchStartedEvent, context: GameEventContext, server: MinecraftServer): MutableComponent {
         val details = eventText(event, context, ExampleEventMessageKeys.MATCH_STARTED).also { text ->
             event.players.forEach { player ->
                 text.append(line(startedPlayerValue(player, server)))
             }
         }
         return eventMessage(
-            summary = Text.translatable(ExampleEventMessageKeys.MATCH_STARTED_SUMMARY, event.players.size),
+            summary = Component.translatable(ExampleEventMessageKeys.MATCH_STARTED_SUMMARY, event.players.size),
             details = details,
         )
     }
 
     /** 建立一局結算事件文字。 */
-    private fun settledText(event: RoundSettledEvent, context: GameEventContext, server: MinecraftServer): MutableText {
+    private fun settledText(event: RoundSettledEvent, context: GameEventContext, server: MinecraftServer): MutableComponent {
         val details = eventText(event, context, ExampleEventMessageKeys.ROUND_SETTLED).also { text ->
             text.append(line(ExampleEventMessageKeys.ROUND_NUMBER, event.roundNumber))
                 .append(line(ExampleEventMessageKeys.OUTCOME_ID, event.outcomeId))
@@ -97,7 +97,7 @@ object ExampleGameEventChat {
             event.players.forEach { player -> text.append(line(scoreChangeValue(player, server))) }
         }
         return eventMessage(
-            summary = Text.translatable(
+            summary = Component.translatable(
                 ExampleEventMessageKeys.ROUND_SETTLED_SUMMARY,
                 event.roundNumber,
             ),
@@ -106,14 +106,14 @@ object ExampleGameEventChat {
     }
 
     /** 建立對局結束事件文字。 */
-    private fun endedText(event: MatchEndedEvent, context: GameEventContext, server: MinecraftServer): MutableText {
+    private fun endedText(event: MatchEndedEvent, context: GameEventContext, server: MinecraftServer): MutableComponent {
         val details = eventText(event, context, ExampleEventMessageKeys.MATCH_ENDED).also { text ->
             text.append(line(ExampleEventMessageKeys.COMPLETION, event.completion.name))
                 .append(line(ExampleEventMessageKeys.REASON_ID, event.reasonId))
             event.standings.forEach { standing -> text.append(line(standingValue(standing, server))) }
         }
         return eventMessage(
-            summary = Text.translatable(ExampleEventMessageKeys.MATCH_ENDED_SUMMARY),
+            summary = Component.translatable(ExampleEventMessageKeys.MATCH_ENDED_SUMMARY),
             details = details,
         )
     }
@@ -125,16 +125,16 @@ object ExampleGameEventChat {
      * @param details 指向摘要時顯示的完整公開事件欄位。
      * @return 帶中括號、顏色與滑鼠懸停內容的單行摘要。
      */
-    internal fun eventMessage(summary: Text, details: Text): MutableText {
-        val style = Style.EMPTY.withColor(Formatting.AQUA)
+    internal fun eventMessage(summary: Component, details: Component): MutableComponent {
+        val style = Style.EMPTY.withColor(ChatFormatting.AQUA)
             .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, details))
-        return Text.literal("[").setStyle(style)
+        return Component.literal("[").setStyle(style)
             .append(summary.copy().setStyle(style))
-            .append(Text.literal("]").setStyle(style))
+            .append(Component.literal("]").setStyle(style))
     }
 
     /** 建立所有事件共用的識別資料文字。 */
-    private fun eventText(event: MatchEvent, context: GameEventContext, title: String): MutableText = eventText(event, context.tableLocation, title)
+    private fun eventText(event: MatchEvent, context: GameEventContext, title: String): MutableComponent = eventText(event, context.tableLocation, title)
 
     /**
      * 建立所有事件共用的識別資料文字。
@@ -144,7 +144,7 @@ object ExampleGameEventChat {
      * @param title 事件標題的翻譯鍵。
      * @return 包含共通事件欄位的聊天文字。
      */
-    private fun eventText(event: MatchEvent, tableLocation: TableLocation?, title: String): MutableText = eventText(
+    private fun eventText(event: MatchEvent, tableLocation: TableLocation?, title: String): MutableComponent = eventText(
         eventId = event.eventId,
         matchId = event.matchId,
         venueId = event.venueId,
@@ -171,10 +171,10 @@ object ExampleGameEventChat {
         ruleModuleId: String,
         tableLocation: TableLocation?,
         title: String,
-    ): MutableText = Text.translatable(ExampleEventMessageKeys.TITLE)
-        .formatted(Formatting.AQUA)
+    ): MutableComponent = Component.translatable(ExampleEventMessageKeys.TITLE)
+        .withStyle(ChatFormatting.AQUA)
         .append("\n")
-        .append(Text.translatable(title).formatted(Formatting.GOLD))
+        .append(Component.translatable(title).withStyle(ChatFormatting.GOLD))
         .append(line(ExampleEventMessageKeys.EVENT_ID, eventId.toString()))
         .append(line(ExampleEventMessageKeys.MATCH_ID, matchId.toString()))
         .append(line(ExampleEventMessageKeys.VENUE_ID, venueId.toString()))
@@ -187,11 +187,11 @@ object ExampleGameEventChat {
         )
 
     /** 建立一行翻譯文字。 */
-    private fun line(key: String, value: Any): MutableText = line(Text.translatable(key, value))
+    private fun line(key: String, value: Any): MutableComponent = line(Component.translatable(key, value))
 
     /** 將已組好的欄位文字加入聊天訊息並換行。 */
-    private fun line(value: MutableText): MutableText = Text.literal("\n")
-        .append(value.formatted(Formatting.GRAY))
+    private fun line(value: MutableComponent): MutableComponent = Component.literal("\n")
+        .append(value.withStyle(ChatFormatting.GRAY))
 
     /**
      * 從目前在線玩家中篩出有管理權限的接收者，沒有符合者時回傳空清單。
@@ -204,14 +204,14 @@ object ExampleGameEventChat {
     internal fun <T> administratorRecipients(onlinePlayers: List<T>, hasPermission: (T) -> Boolean): List<T> = onlinePlayers.filter(hasPermission)
 
     /** 建立桌子位置文字；沒有位置時交由翻譯鍵顯示未知。 */
-    internal fun locationText(location: TableLocation?): Text = location?.let { Text.literal(formatTableLocation(it)) }
-        ?: Text.translatable(ExampleEventMessageKeys.UNKNOWN_LOCATION)
+    internal fun locationText(location: TableLocation?): Component = location?.let { Component.literal(formatTableLocation(it)) }
+        ?: Component.translatable(ExampleEventMessageKeys.UNKNOWN_LOCATION)
 
     /** 將桌子位置轉成事件訊息中的單行內容。 */
     private fun formatTableLocation(location: TableLocation): String = "${location.dimensionId} (${location.x}, ${location.y}, ${location.z})"
 
     /** 建立開始事件中的玩家欄位值。 */
-    private fun startedPlayerValue(player: MatchPlayer, server: MinecraftServer): MutableText = playerValue(player.playerId, player.isAi, player.initialSeatIndex, playerName(server, player.playerId))
+    private fun startedPlayerValue(player: MatchPlayer, server: MinecraftServer): MutableComponent = playerValue(player.playerId, player.isAi, player.initialSeatIndex, playerName(server, player.playerId))
 
     /**
      * 建立玩家名稱、UUID、AI 標記與起始座位的同一行文字。
@@ -222,16 +222,16 @@ object ExampleGameEventChat {
      * @param name 當前名稱；未提供時顯示 UUID。
      * @return 帶齊四個參數的玩家翻譯文字。
      */
-    internal fun playerValue(id: Uuid, isAi: Boolean, initialSeatIndex: Int, name: Text? = null): MutableText = Text.translatable(
+    internal fun playerValue(id: Uuid, isAi: Boolean, initialSeatIndex: Int, name: Component? = null): MutableComponent = Component.translatable(
         ExampleEventMessageKeys.PLAYER,
-        name ?: Text.literal(id.toString()),
+        name ?: Component.literal(id.toString()),
         id.toString(),
         isAi.toString(),
         initialSeatIndex,
     )
 
     /** 建立結算分數欄位值。 */
-    private fun scoreChangeValue(change: RoundScoreChange, server: MinecraftServer): MutableText = scoreChangeValue(
+    private fun scoreChangeValue(change: RoundScoreChange, server: MinecraftServer): MutableComponent = scoreChangeValue(
         playerId = change.playerId,
         previousScore = change.previousScore,
         currentScore = change.currentScore,
@@ -257,10 +257,10 @@ object ExampleGameEventChat {
         currentScore: Int,
         previousRank: Int,
         currentRank: Int,
-        name: Text? = null,
-    ): MutableText = Text.translatable(
+        name: Component? = null,
+    ): MutableComponent = Component.translatable(
         ExampleEventMessageKeys.SCORE_CHANGE,
-        name ?: Text.literal(playerId.toString()),
+        name ?: Component.literal(playerId.toString()),
         playerId.toString(),
         previousScore,
         currentScore,
@@ -269,7 +269,7 @@ object ExampleGameEventChat {
     )
 
     /** 建立最終排名欄位值。 */
-    private fun standingValue(standing: MatchStanding, server: MinecraftServer): MutableText = standingValue(
+    private fun standingValue(standing: MatchStanding, server: MinecraftServer): MutableComponent = standingValue(
         playerId = standing.playerId,
         isAi = standing.isAi,
         score = standing.score,
@@ -292,10 +292,10 @@ object ExampleGameEventChat {
         isAi: Boolean,
         score: Int,
         rank: Int,
-        name: Text? = null,
-    ): MutableText = Text.translatable(
+        name: Component? = null,
+    ): MutableComponent = Component.translatable(
         ExampleEventMessageKeys.STANDING,
-        name ?: Text.literal(playerId.toString()),
+        name ?: Component.literal(playerId.toString()),
         playerId.toString(),
         isAi.toString(),
         score,
@@ -303,17 +303,17 @@ object ExampleGameEventChat {
     )
 
     /** 依 UUID 字串排序玩家識別碼並加入在線名稱。 */
-    private fun sortedPlayerNames(ids: Set<Uuid>, server: MinecraftServer): MutableText {
+    private fun sortedPlayerNames(ids: Set<Uuid>, server: MinecraftServer): MutableComponent {
         val names = formatPlayerLabels(ids) { id -> playerName(server, id).string }
-        return Text.literal(names.joinToString(", "))
+        return Component.literal(names.joinToString(", "))
     }
 
     /** 依 UUID 穩定排序玩家，找不到名稱時由呼叫端提供 UUID 文字。 */
     internal fun formatPlayerLabels(ids: Set<Uuid>, nameFor: (Uuid) -> String): List<String> = ids.sortedBy(Uuid::toString).map { id -> "${nameFor(id)} ($id)" }
 
     /** 取得在線玩家名稱；離線玩家及 AI 使用 UUID。 */
-    private fun playerName(server: MinecraftServer, id: Uuid): Text {
-        val player: ServerPlayerEntity? = server.playerManager.getPlayer(UUID.fromString(id.toString()))
-        return player?.displayName?.copy() ?: Text.literal(id.toString())
+    private fun playerName(server: MinecraftServer, id: Uuid): Component {
+        val player: ServerPlayer? = server.playerList.getPlayer(UUID.fromString(id.toString()))
+        return player?.displayName?.copy() ?: Component.literal(id.toString())
     }
 }

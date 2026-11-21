@@ -123,11 +123,11 @@ import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener
 import net.fabricmc.loader.api.FabricLoader
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.item.ModelPredicateProviderRegistry
-import net.minecraft.resource.ResourceManager
-import net.minecraft.resource.ResourceType
-import net.minecraft.util.Identifier
+import net.minecraft.client.Minecraft
+import net.minecraft.client.renderer.item.ItemProperties
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.packs.PackType
+import net.minecraft.server.packs.resources.ResourceManager
 import org.koin.core.context.GlobalContext
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
@@ -155,11 +155,11 @@ class MahjongCraftModClient : ClientModInitializer {
         characterPreviews.initialize()
         koin.get<ClientTablePropPreviews>().initialize()
         val portraits = koin.get<PlayerPortraitRenderer>()
-        ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(object : SimpleSynchronousResourceReloadListener {
-            override fun getFabricId(): Identifier = Identifier("mahjongcraft", "character_portrait_resources")
+        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(object : SimpleSynchronousResourceReloadListener {
+            override fun getFabricId(): ResourceLocation = ResourceLocation("mahjongcraft", "character_portrait_resources")
 
-            override fun reload(manager: ResourceManager) {
-                MinecraftClient.getInstance().execute { portraits.clearResources() }
+            override fun onResourceManagerReload(manager: ResourceManager) {
+                Minecraft.getInstance().execute { portraits.clearResources() }
             }
         })
         ClientAiSeatInteraction.register(
@@ -170,9 +170,9 @@ class MahjongCraftModClient : ClientModInitializer {
 
         PreparableModelLoadingPlugin.register(MahjongTileModelLoadingPlugin.DATA_LOADER, MahjongTileModelLoadingPlugin)
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.MAHJONG_TILE, MahjongTileItemRenderer)
-        ModelPredicateProviderRegistry.register(
+        ItemProperties.register(
             ModItems.MAHJONG_SCORING_STICK,
-            Identifier(MinecraftModMetadata.MOD_ID, "denomination"),
+            ResourceLocation(MinecraftModMetadata.MOD_ID, "denomination"),
         ) { stack, _, _, _ -> MahjongScoringStickItem.readDenomination(stack).toModelPredicateValue() }
         ModItems.MAHJONG_RULERS.forEach { (color, item) ->
             ColorProviderRegistry.ITEM.register({ _, _ -> MahjongRulerTint.rgb(color) }, item)
@@ -296,7 +296,7 @@ class MahjongCraftModClient : ClientModInitializer {
             val action = payload.action.toDomain(networkRegistries)
             val newSnapshot = stateStore.gameSnapshot(gameId) ?: return@registerClientReceiver
             // 這個封包也會送給旁觀者（供其畫面同步用），對局結算的聊天訊息只該發給實際入座的玩家。
-            val localPlayerId = MinecraftClient.getInstance().player?.uuid?.toKotlinUuid()
+            val localPlayerId = Minecraft.getInstance().player?.uuid?.toKotlinUuid()
             if (newSnapshot.players.none { it.id == localPlayerId }) return@registerClientReceiver
             val message = buildMatchResultChatMessage(
                 action = action,
@@ -307,7 +307,7 @@ class MahjongCraftModClient : ClientModInitializer {
                 historyCommand = if (action is GameAction.MatchEnded) historyChatEntries.createCommand(payload.historyMatchId) else null,
             )
                 ?: return@registerClientReceiver
-            MinecraftClient.getInstance().player?.sendMessage(message)
+            Minecraft.getInstance().player?.sendSystemMessage(message)
         }
         MahjongChannels.roundResult.registerClientReceiver(json) { payload ->
             val message = buildRoundResultChatMessage(
@@ -317,7 +317,7 @@ class MahjongCraftModClient : ClientModInitializer {
                 exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNames,
                 playerDisplayName = { id, isAi -> playerNames.resolve(Uuid.parse(payload.gameId), id.toString(), isAi) },
             )
-            MinecraftClient.getInstance().player?.sendMessage(message)
+            Minecraft.getInstance().player?.sendSystemMessage(message)
         }
         MahjongChannels.roomSnapshot.registerClientReceiver(json) { payload ->
             automaticControlUpdateCoordinator.clearTable(Uuid.parse(payload.roomId))
@@ -328,8 +328,8 @@ class MahjongCraftModClient : ClientModInitializer {
         }
         MahjongChannels.tableOccupancy.registerClientReceiver(json) { payload ->
             stateStore.apply(payload)
-            val client = MinecraftClient.getInstance()
-            if (!isShowingRoom(client.currentScreen)) {
+            val client = Minecraft.getInstance()
+            if (!isShowingRoom(client.screen)) {
                 client.setScreen(
                     RoomScreen(
                         stateStore = stateStore,
@@ -369,8 +369,8 @@ class MahjongCraftModClient : ClientModInitializer {
             tileAppearanceResolver.clear(tableId)
             automaticControlUpdateCoordinator.clearTable(tableId)
             handTileLayoutController.removeTable(tableId)
-            val client = MinecraftClient.getInstance()
-            if (isShowingRoomForTable(client.currentScreen, tableId)) {
+            val client = Minecraft.getInstance()
+            if (isShowingRoomForTable(client.screen, tableId)) {
                 client.setScreen(null)
             }
         }

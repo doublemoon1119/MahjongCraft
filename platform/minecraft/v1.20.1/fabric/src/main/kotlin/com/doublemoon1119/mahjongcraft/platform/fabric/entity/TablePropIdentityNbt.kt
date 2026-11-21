@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.nbt.NbtElement
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.Tag
 
 /** 規則物件身分的共用 NBT 讀寫；不改動所屬桌子或其他實體欄位。 */
 object TablePropIdentityNbt {
@@ -18,9 +18,9 @@ object TablePropIdentityNbt {
      * @param nbt 實體保存資料。
      * @return 兩個完整命名空間 ID；缺少、型別錯誤或內容無效時為 null，交由同步移除重建。
      */
-    fun read(nbt: NbtCompound): TablePropIdentity? {
-        if (!nbt.contains(NBT_KEY_PLACEMENT_ID, NbtElement.STRING_TYPE.toInt()) ||
-            !nbt.contains(NBT_KEY_RULE_MODULE_ID, NbtElement.STRING_TYPE.toInt())
+    fun read(nbt: CompoundTag): TablePropIdentity? {
+        if (!nbt.contains(NBT_KEY_PLACEMENT_ID, Tag.TAG_STRING.toInt()) ||
+            !nbt.contains(NBT_KEY_RULE_MODULE_ID, Tag.TAG_STRING.toInt())
         ) {
             return null
         }
@@ -38,7 +38,7 @@ object TablePropIdentityNbt {
      * @param ruleModuleId 來源規則 ID；自由放置物件為空字串。
      */
     fun write(
-        nbt: NbtCompound,
+        nbt: CompoundTag,
         placementId: String,
         ruleModuleId: String,
     ) {

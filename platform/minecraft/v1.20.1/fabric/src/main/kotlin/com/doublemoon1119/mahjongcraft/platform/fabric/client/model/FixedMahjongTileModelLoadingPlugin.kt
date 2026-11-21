@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.model
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
-import net.minecraft.resource.ResourceManager
+import net.minecraft.server.packs.resources.ResourceManager
 import org.koin.core.context.GlobalContext
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executor

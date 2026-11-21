@@ -2,16 +2,16 @@ package com.doublemoon1119.mahjongcraft.example.fabric.furniture.table
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureIds
 import net.fabricmc.fabric.api.`object`.builder.v1.block.entity.FabricBlockEntityTypeBuilder
-import net.minecraft.block.AbstractBlock
-import net.minecraft.block.Block
-import net.minecraft.block.Blocks
-import net.minecraft.block.entity.BlockEntityType
-import net.minecraft.block.piston.PistonBehavior
-import net.minecraft.item.BlockItem
-import net.minecraft.item.Item
-import net.minecraft.registry.Registries
-import net.minecraft.registry.Registry
-import net.minecraft.util.Identifier
+import net.minecraft.core.Registry
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.item.BlockItem
+import net.minecraft.world.item.Item
+import net.minecraft.world.level.block.Block
+import net.minecraft.world.level.block.Blocks
+import net.minecraft.world.level.block.entity.BlockEntityType
+import net.minecraft.world.level.block.state.BlockBehaviour
+import net.minecraft.world.level.material.PushReaction
 
 /**
  * 三種範例麻將桌與共用方塊實體型別的註冊點。
@@ -33,8 +33,8 @@ object ExampleTables {
         val lowTable = registerTable(ExampleFurnitureIds.LOW_TABLE, ExampleFlatTableBlock(tableSettings(Blocks.SPRUCE_PLANKS), ExampleFlatTableDesign.LOW))
         val roundTable = registerTable(ExampleFurnitureIds.ROUND_TABLE, ExampleFlatTableBlock(tableSettings(Blocks.DARK_OAK_PLANKS), ExampleFlatTableDesign.ROUND))
         blockEntityType = Registry.register(
-            Registries.BLOCK_ENTITY_TYPE,
-            Identifier(ExampleFurnitureIds.TABLE_BLOCK_ENTITY),
+            BuiltInRegistries.BLOCK_ENTITY_TYPE,
+            ResourceLocation(ExampleFurnitureIds.TABLE_BLOCK_ENTITY),
             FabricBlockEntityTypeBuilder.create(::ExampleTableBlockEntity, oneBlockTable, lowTable, roundTable).build(),
         )
     }
@@ -45,10 +45,10 @@ object ExampleTables {
      * @param baseBlock 提供材質設定基礎的原版方塊。
      * @return 桌子的方塊設定。
      */
-    private fun tableSettings(baseBlock: Block): AbstractBlock.Settings = AbstractBlock.Settings.copy(baseBlock)
+    private fun tableSettings(baseBlock: Block): BlockBehaviour.Properties = BlockBehaviour.Properties.copy(baseBlock)
         .strength(2.5f)
-        .pistonBehavior(PistonBehavior.BLOCK)
-        .solid()
+        .pushReaction(PushReaction.BLOCK)
+        .forceSolidOn()
 
     /**
      * 註冊一種桌子方塊與它的物品。
@@ -58,8 +58,8 @@ object ExampleTables {
      * @return 已註冊的方塊。
      */
     private fun registerTable(id: String, block: Block): Block {
-        val registered = Registry.register(Registries.BLOCK, Identifier(id), block)
-        Registry.register(Registries.ITEM, Identifier(id), BlockItem(registered, Item.Settings()))
+        val registered = Registry.register(BuiltInRegistries.BLOCK, ResourceLocation(id), block)
+        Registry.register(BuiltInRegistries.ITEM, ResourceLocation(id), BlockItem(registered, Item.Properties()))
         return registered
     }
 }

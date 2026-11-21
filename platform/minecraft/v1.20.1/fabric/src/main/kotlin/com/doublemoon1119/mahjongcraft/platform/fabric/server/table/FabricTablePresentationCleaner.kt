@@ -2,10 +2,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.TableOwnedPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
-import net.minecraft.entity.Entity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
+import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 
 /**
@@ -24,10 +24,10 @@ class FabricTablePresentationCleaner(
      * @param controllerPos 桌子 controller 方塊位置。
      * @return 實際移除的 entity 數量。
      */
-    fun clear(world: ServerWorld, tableId: Uuid, controllerPos: BlockPos): Int {
-        val presentations = world.getEntitiesByClass(
+    fun clear(world: ServerLevel, tableId: Uuid, controllerPos: BlockPos): Int {
+        val presentations = world.getEntitiesOfClass(
             Entity::class.java,
-            Box(controllerPos).expand(SEARCH_RADIUS),
+            AABB(controllerPos).inflate(SEARCH_RADIUS),
         ) { entity -> (entity as? TableOwnedPresentationEntity)?.managedTableId == tableId }
         presentations.forEach(Entity::discard)
         winCelebrationEffectScheduler.cancel(tableId)

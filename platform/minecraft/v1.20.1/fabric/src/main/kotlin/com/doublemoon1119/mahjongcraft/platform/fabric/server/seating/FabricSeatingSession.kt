@@ -6,11 +6,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatAssignment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatAssignmentResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftSeatingKeys
-import net.minecraft.entity.Entity
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.Component
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.Entity
 
 /**
  * 一次入座使用的世界、席位與協調器。
@@ -22,9 +22,9 @@ import net.minecraft.util.Formatting
  * @property facing 桌子的公開朝向。
  */
 class FabricSeatingSession internal constructor(
-    val world: ServerWorld,
+    val world: ServerLevel,
     val requests: List<SeatRequest>,
-    internal val coordinator: SeatAssignmentCoordinator<ServerWorld, Entity, FabricSeatSnapshot>,
+    internal val coordinator: SeatAssignmentCoordinator<ServerLevel, Entity, FabricSeatSnapshot>,
     val location: TableLocation,
     val facing: MahjongTableFacing,
 ) {
@@ -52,7 +52,7 @@ class FabricSeatingSession internal constructor(
      * @param player 入座的玩家。
      * @param result 入座結果。
      */
-    fun notify(player: ServerPlayerEntity, result: SeatAssignmentResult) {
+    fun notify(player: ServerPlayer, result: SeatAssignmentResult) {
         val key = when (result) {
             SeatAssignmentResult.SEATED, SeatAssignmentResult.STANDING -> null
             SeatAssignmentResult.OCCUPIED -> MinecraftSeatingKeys.OCCUPIED
@@ -60,6 +60,6 @@ class FabricSeatingSession internal constructor(
             SeatAssignmentResult.RIDING -> MinecraftSeatingKeys.RIDING
             SeatAssignmentResult.FAILED -> MinecraftSeatingKeys.FAILED
         }
-        if (key != null) player.sendMessage(Text.translatable(key).formatted(Formatting.YELLOW), false)
+        if (key != null) player.displayClientMessage(Component.translatable(key).withStyle(ChatFormatting.YELLOW), false)
     }
 }

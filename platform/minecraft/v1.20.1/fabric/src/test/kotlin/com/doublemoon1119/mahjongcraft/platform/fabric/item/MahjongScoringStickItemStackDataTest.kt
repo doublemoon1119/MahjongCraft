@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.item
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDenomination
-import net.minecraft.nbt.NbtCompound
+import net.minecraft.nbt.CompoundTag
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -11,7 +11,7 @@ class MahjongScoringStickItemStackDataTest {
     @Test
     fun `every denomination survives item stack round trip`() {
         MahjongScoringStickDenomination.entries.forEach { denomination ->
-            val nbt = NbtCompound()
+            val nbt = CompoundTag()
             MahjongScoringStickItemStackData.writeNbt(nbt, denomination)
             assertEquals(denomination.name, nbt.getString(MahjongScoringStickItemStackData.NBT_KEY_DENOMINATION))
             assertEquals(denomination, MahjongScoringStickItemStackData.readNbt(nbt))
@@ -21,7 +21,7 @@ class MahjongScoringStickItemStackDataTest {
     /** 缺失、未知名稱與錯誤型別均使用百分棒。 */
     @Test
     fun `invalid item denomination falls back to smallest denomination`() {
-        val nbt = NbtCompound()
+        val nbt = CompoundTag()
         assertEquals(MahjongScoringStickDenomination.P100, MahjongScoringStickItemStackData.readNbt(null))
         nbt.putString(MahjongScoringStickItemStackData.NBT_KEY_DENOMINATION, "P999")
         assertEquals(MahjongScoringStickDenomination.P100, MahjongScoringStickItemStackData.readNbt(nbt))

@@ -31,10 +31,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableL
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.fabricmc.fabric.api.networking.v1.EntityTrackingEvents
-import net.minecraft.entity.Entity
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.util.math.Vec3d
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.phys.Vec3
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -100,10 +100,10 @@ class FabricAiCharacterManager internal constructor(
             bindings.coordinator.keys().forEach { key ->
                 val actor = bindings.coordinator.find(key) ?: return@forEach
                 val location = tableLocations.get(key.tableId)?.location
-                val tableInChunk = location?.dimensionId == world.registryKey.value.toString() &&
+                val tableInChunk = location?.dimensionId == world.dimension().location().toString() &&
                     location.x shr CHUNK_SHIFT == chunk.pos.x &&
                     location.z shr CHUNK_SHIFT == chunk.pos.z
-                if (actor.entity.world === world && (actor.entity.chunkPos == chunk.pos || tableInChunk)) bindings.coordinator.remove(key)
+                if (actor.entity.level() === world && (actor.entity.chunkPosition() == chunk.pos || tableInChunk)) bindings.coordinator.remove(key)
             }
         }
     }
@@ -138,7 +138,7 @@ class FabricAiCharacterManager internal constructor(
     fun reconcile(tableId: Uuid? = null) {
         val server = activeServer ?: return
         if (serverHolder.current() !== server) return
-        check(server.isOnThread) { "AI characters require the server thread" }
+        check(server.isSameThread) { "AI characters require the server thread" }
         val snapshot = persistence.characterSnapshot()
         val games = snapshot?.authoritative?.games.orEmpty()
         val metadata = snapshot?.characters?.matches.orEmpty()
@@ -176,7 +176,7 @@ class FabricAiCharacterManager internal constructor(
                     bindings.coordinator.remove(key)
                     return@forEach
                 }
-                if (current.handle.ownership == AiCharacterOwnership.OWNED && current.expectedPosition?.squaredDistanceTo(current.entity.pos)?.let { it > POSITION_TOLERANCE_SQUARED } == true) changed = true
+                if (current.handle.ownership == AiCharacterOwnership.OWNED && current.expectedPosition?.distanceToSqr(current.entity.position())?.let { it > POSITION_TOLERANCE_SQUARED } == true) changed = true
                 return@forEach
             }
             if (ticks < retryAfter.getOrElse(key) { 0L }) return@forEach
@@ -196,7 +196,7 @@ class FabricAiCharacterManager internal constructor(
      * @param entity 原世界參與者。
      * @return 原實體仍在同一桌邊範圍內時為 true。
      */
-    private fun isNearby(seating: FabricSeatingSession, entity: Entity): Boolean = entity.world === seating.world &&
+    private fun isNearby(seating: FabricSeatingSession, entity: Entity): Boolean = entity.level() === seating.world &&
         TableInteractionReach.distance(
             x = entity.x,
             y = entity.y,
@@ -248,16 +248,16 @@ class FabricAiCharacterManager internal constructor(
             acquire = {
                 val handle = provider.acquire(context) ?: return@ensure null
                 val entity = handle.entity
-                check(entity !is ServerPlayerEntity && entity.isAlive && entity.world === seating.world) { "Character must be a non-player entity in the requested world: $capabilityId" }
+                check(entity !is ServerPlayer && entity.isAlive && entity.level() === seating.world) { "Character must be a non-player entity in the requested world: $capabilityId" }
                 val present = seating.world.getEntity(entity.uuid)
                 val ownership = handle.ownership
                 check(participant == null || (entity === participant && ownership == AiCharacterOwnership.BORROWED)) { "Room participant must borrow its exact bound entity" }
-                check(ownership != AiCharacterOwnership.OWNED || !entity.type.isSaveable) { "Owned character entity type must disable saving: $capabilityId" }
+                check(ownership != AiCharacterOwnership.OWNED || !entity.type.canSerialize()) { "Owned character entity type must disable saving: $capabilityId" }
                 val registered = if (ownership == AiCharacterOwnership.OWNED) {
                     present == null
                 } else {
                     present === entity &&
-                        seating.world.chunkManager.isChunkLoaded(entity.blockPos.x shr CHUNK_SHIFT, entity.blockPos.z shr CHUNK_SHIFT)
+                        seating.world.chunkSource.hasChunk(entity.blockPosition().x shr CHUNK_SHIFT, entity.blockPosition().z shr CHUNK_SHIFT)
                 }
                 check(registered) { "Character ownership does not match world registration: $capabilityId" }
                 FabricAiCharacterLease(
@@ -289,7 +289,7 @@ class FabricAiCharacterManager internal constructor(
      * @return 此角色已在同一場次入座時為 true。
      */
     internal fun seatAfterPlacement(key: AiCharacterBindingKey, actor: FabricAiCharacterActor): Boolean {
-        if (activeServer == null || bindings.find(key.tableId, key.playerId) !== actor || actor.entity.hasVehicle()) return false
+        if (activeServer == null || bindings.find(key.tableId, key.playerId) !== actor || actor.entity.isPassenger) return false
         val game = persistence.characterSnapshot()?.authoritative?.games?.get(key.tableId) ?: return false
         if (game.matchId != key.matchId) return false
         val roster = game.tableState.players.map { it.id }
@@ -299,7 +299,7 @@ class FabricAiCharacterManager internal constructor(
         val actors = roster.map { if (it == key.playerId) actor.entity else null }
         val result = seating.coordinator.seatAll(seating.world, actors, seating.requests)[index]
         actor.assignedVehicle = actor.entity.vehicle
-        actor.expectedPosition = actor.entity.pos
+        actor.expectedPosition = actor.entity.position()
         if (result != SeatAssignmentResult.SEATED) return false
         callback(actor, SEAT_CALLBACK) { actor.handle.seatAssigned(seating.requests[index]) }
         return true
@@ -336,7 +336,7 @@ class FabricAiCharacterManager internal constructor(
                     callback(actor, SEAT_CALLBACK) { actor.handle.seatAssigned(seating.requests[index]) }
                     callback(actor, LOOK_CALLBACK) { actor.handle.lookAt(null) }
                     actor.lookTarget = null
-                    actor.expectedPosition = actor.entity.pos
+                    actor.expectedPosition = actor.entity.position()
                 }
             } else if (actors[index] != null) {
                 val key = AiCharacterBindingKey(game.id, game.matchId, roster[index])
@@ -366,7 +366,7 @@ class FabricAiCharacterManager internal constructor(
         if (discardTarget == null) recentDiscards.remove(game.id)
         val participantTarget = game.tableState.currentPlayer.id.let { current ->
             if (current in game.aiPlayerIds) bindings.find(game.id, current)?.entity else serverHolder.findPlayer(current)
-        }?.takeIf { it.world === seating.world && !it.isRemoved && seating.world.chunkManager.isChunkLoaded(it.blockPos.x shr CHUNK_SHIFT, it.blockPos.z shr CHUNK_SHIFT) }?.eyePos
+        }?.takeIf { it.level() === seating.world && !it.isRemoved && seating.world.chunkSource.hasChunk(it.blockPosition().x shr CHUNK_SHIFT, it.blockPosition().z shr CHUNK_SHIFT) }?.eyePosition
         roster.forEachIndexed { index, playerId ->
             val actor = bindings.find(game.id, playerId) ?: return@forEachIndexed
             val placement = MahjongTileTableLayout.seatAnchorPlacement(
@@ -381,18 +381,18 @@ class FabricAiCharacterManager internal constructor(
             )
             // 看向自己手牌實際的位置，手牌隨規則的桌面配置移動時視線跟著移動；手牌還沒擺上桌時看手牌那一列的中央。
             val handTiles = game.tableState.players.firstOrNull { it.id == playerId }?.hand?.let { hand -> hand.tiles + listOfNotNull(hand.lastDrawn) }.orEmpty()
-                .mapNotNull { tile -> seating.world.getEntity(tile.id.toJavaUuid())?.takeUnless { it.isRemoved }?.pos }
+                .mapNotNull { tile -> seating.world.getEntity(tile.id.toJavaUuid())?.takeUnless { it.isRemoved }?.position() }
             val handTarget = if (handTiles.isEmpty()) {
-                Vec3d(placement.x, placement.y, placement.z)
+                Vec3(placement.x, placement.y, placement.z)
             } else {
-                Vec3d(handTiles.sumOf { it.x } / handTiles.size, handTiles.sumOf { it.y } / handTiles.size, handTiles.sumOf { it.z } / handTiles.size)
+                Vec3(handTiles.sumOf { it.x } / handTiles.size, handTiles.sumOf { it.y } / handTiles.size, handTiles.sumOf { it.z } / handTiles.size)
             }
             val requested = when (AiCharacterLookSchedule.focus(playerId, ticks)) {
                 AiCharacterLookFocus.HAND_AREA -> handTarget
                 AiCharacterLookFocus.DISCARD -> discardTarget ?: handTarget
                 AiCharacterLookFocus.PARTICIPANT -> participantTarget?.takeIf { game.tableState.currentPlayer.id != playerId } ?: handTarget
             }
-            val chosen = requested.takeIf { actor.entity.pos.squaredDistanceTo(it) <= MAX_LOOK_DISTANCE_SQUARED && actor.entity.eyePos.squaredDistanceTo(it) > SELF_LOOK_TOLERANCE }
+            val chosen = requested.takeIf { actor.entity.position().distanceToSqr(it) <= MAX_LOOK_DISTANCE_SQUARED && actor.entity.eyePosition.distanceToSqr(it) > SELF_LOOK_TOLERANCE }
             if (chosen != actor.lookTarget) {
                 actor.lookTarget = chosen
                 callback(actor, LOOK_CALLBACK) { actor.handle.lookAt(chosen) }
@@ -432,7 +432,7 @@ class FabricAiCharacterManager internal constructor(
                     }
                 }
             },
-            position = { geometry -> actor.entity.refreshPositionAndAngles(geometry.x, geometry.y, geometry.z, geometry.yaw, 0f) },
+            position = { geometry -> actor.entity.moveTo(geometry.x, geometry.y, geometry.z, geometry.yaw, 0f) },
             spawn = { spawnGateway.spawn(seating.world, actor.entity, SPAWN_SOURCE, tableId) },
             seat = {
                 val result = seating.coordinator.assign(seating.world, actor.entity, request)
@@ -446,7 +446,7 @@ class FabricAiCharacterManager internal constructor(
         if (!activated) return false
         actor.assignedVehicle = actor.entity.vehicle
         actor.handle.seatAssigned(request)
-        actor.expectedPosition = actor.entity.pos
+        actor.expectedPosition = actor.entity.position()
         return true
     }
 
@@ -462,7 +462,7 @@ class FabricAiCharacterManager internal constructor(
         tableId: Uuid,
         seatIndex: Int,
         tileId: Uuid,
-        target: Vec3d,
+        target: Vec3,
     ) {
         if (activeServer == null) return
         val game = persistence.characterSnapshot()?.authoritative?.games?.get(tableId) ?: return

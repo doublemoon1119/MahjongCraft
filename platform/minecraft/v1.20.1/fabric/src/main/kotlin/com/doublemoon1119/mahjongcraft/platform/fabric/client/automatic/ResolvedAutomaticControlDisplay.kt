@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 /**
  * 客戶端可直接呈現的一項自動操作顯示資料。
@@ -12,7 +12,7 @@ import net.minecraft.text.Text
  */
 data class ResolvedAutomaticControlDisplay(
     val controlId: String,
-    val label: Text,
-    val description: Text?,
+    val label: Component,
+    val description: Component?,
     val displayOrder: Int,
 )

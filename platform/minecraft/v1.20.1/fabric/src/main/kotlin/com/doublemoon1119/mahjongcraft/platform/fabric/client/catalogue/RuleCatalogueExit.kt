@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.screen.Screen
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.screens.Screen
 
 /** 規則一覽關閉後回到哪裡，以及開啟它的畫面是否仍然有效；由開啟規則一覽的一方提供。 */
 internal interface RuleCatalogueExit {
@@ -13,7 +13,7 @@ internal interface RuleCatalogueExit {
      *
      * @param client 目前的客戶端。
      */
-    fun back(client: MinecraftClient)
+    fun back(client: Minecraft)
 
     /**
      * 規則一覽被移除時通知，包括返回、被其他畫面取代與斷線。
@@ -28,7 +28,7 @@ internal interface RuleCatalogueExit {
      * @param client 目前的客戶端。
      * @return 仍可返回原畫面時為 true。
      */
-    fun isValid(client: MinecraftClient): Boolean = true
+    fun isValid(client: Minecraft): Boolean = true
 }
 
 /**
@@ -37,7 +37,7 @@ internal interface RuleCatalogueExit {
  * @property returnScreen 開啟規則一覽的畫面。
  */
 internal class ReturnRuleCatalogueToScreen(override val returnScreen: Screen) : RuleCatalogueExit {
-    override fun back(client: MinecraftClient) {
+    override fun back(client: Minecraft) {
         client.setScreen(returnScreen)
     }
 }
@@ -46,7 +46,7 @@ internal class ReturnRuleCatalogueToScreen(override val returnScreen: Screen) : 
 internal object CloseRuleCatalogueToGame : RuleCatalogueExit {
     override val returnScreen: Screen? = null
 
-    override fun back(client: MinecraftClient) {
+    override fun back(client: Minecraft) {
         client.setScreen(null)
     }
 }

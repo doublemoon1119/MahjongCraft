@@ -3,20 +3,20 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.api.seating
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatCollisionPolicy
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
-import net.minecraft.entity.Entity
-import net.minecraft.entity.LivingEntity
-import net.minecraft.item.BlockItem
-import net.minecraft.item.ItemPlacementContext
-import net.minecraft.item.ItemStack
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.ActionResult
-import net.minecraft.util.Hand
-import net.minecraft.util.hit.BlockHitResult
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
-import net.minecraft.util.math.Direction
-import net.minecraft.util.math.Vec3d
+import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.InteractionHand
+import net.minecraft.world.InteractionResult
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.item.BlockItem
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.context.BlockPlaceContext
+import net.minecraft.world.phys.AABB
+import net.minecraft.world.phys.BlockHitResult
+import net.minecraft.world.phys.Vec3
 
 /**
  * 一次伺服器座位放置的資料，只由 MahjongCraft 建立。
@@ -28,15 +28,15 @@ import net.minecraft.util.math.Vec3d
  * @property request MahjongCraft 決定的固定席位。
  */
 class FabricSeatPlacementContext private constructor(
-    val world: ServerWorld,
-    val player: ServerPlayerEntity,
-    val hand: Hand,
+    val world: ServerLevel,
+    val player: ServerPlayer,
+    val hand: InteractionHand,
     val rider: Entity,
     val request: SeatRequest,
 ) {
     /** 固定席位腳底所在的方塊位置。 */
     val blockPos: BlockPos
-        get() = BlockPos.ofFloored(request.seat.x, request.seat.y, request.seat.z)
+        get() = BlockPos.containing(request.seat.x, request.seat.y, request.seat.z)
 
     /**
      * 檢查完整範圍的區塊、邊界與玩家改動權限，不載入區塊。
@@ -44,21 +44,21 @@ class FabricSeatPlacementContext private constructor(
      * @param box 放置物件會占用的範圍。
      * @return 範圍可查詢且玩家獲准改動時為 true；仍須由提供者檢查碰撞與支撐。
      */
-    fun canModify(box: Box): Boolean {
-        check(world.server.isOnThread) { "Seat placement requires the server thread" }
-        if (player.isSpectator || !player.abilities.allowModifyWorld || player.world !== world) return false
-        if (box.minY < world.bottomY || box.maxY >= world.topY || !world.worldBorder.contains(box)) return false
-        val minimum = BlockPos.ofFloored(box.minX - 1.0, box.minY - 1.0, box.minZ - 1.0)
-        val maximum = BlockPos.ofFloored(box.maxX + 1.0, box.maxY, box.maxZ + 1.0)
+    fun canModify(box: AABB): Boolean {
+        check(world.server.isSameThread) { "Seat placement requires the server thread" }
+        if (player.isSpectator || !player.abilities.mayBuild || player.level() !== world) return false
+        if (box.minY < world.minBuildHeight || box.maxY >= world.maxBuildHeight || !world.worldBorder.isWithinBounds(box)) return false
+        val minimum = BlockPos.containing(box.minX - 1.0, box.minY - 1.0, box.minZ - 1.0)
+        val maximum = BlockPos.containing(box.maxX + 1.0, box.maxY, box.maxZ + 1.0)
         for (x in (minimum.x shr 4)..(maximum.x shr 4)) {
             for (z in (minimum.z shr 4)..(maximum.z shr 4)) {
-                if (!world.chunkManager.isChunkLoaded(x, z)) return false
+                if (!world.chunkSource.hasChunk(x, z)) return false
             }
         }
-        val first = BlockPos.ofFloored(box.minX, box.minY - 1.0, box.minZ)
-        val last = BlockPos.ofFloored(box.maxX, box.maxY, box.maxZ)
-        for (pos in BlockPos.iterate(first, last)) {
-            if (!world.canPlayerModifyAt(player, pos) || !player.canModifyAt(world, pos)) return false
+        val first = BlockPos.containing(box.minX, box.minY - 1.0, box.minZ)
+        val last = BlockPos.containing(box.maxX, box.maxY, box.maxZ)
+        for (pos in BlockPos.betweenClosed(first, last)) {
+            if (!world.mayInteract(player, pos) || !player.mayInteract(world, pos)) return false
         }
         return true
     }
@@ -69,13 +69,13 @@ class FabricSeatPlacementContext private constructor(
      * @param box 完整放置範圍。
      * @return 已載入、獲准改動且沒有阻擋時為 true。
      */
-    fun isSpaceClear(box: Box): Boolean = canModify(box) &&
-        world.isSpaceEmpty(rider, box) &&
-        world.getOtherEntities(rider, box) {
+    fun isSpaceClear(box: AABB): Boolean = canModify(box) &&
+        world.noCollision(rider, box) &&
+        world.getEntities(rider, box) {
             SeatCollisionPolicy.blocks(
                 removed = it.isRemoved,
                 spectator = it.isSpectator,
-                physical = it is LivingEntity || it.isCollidable,
+                physical = it is LivingEntity || it.canBeCollidedWith(),
             )
         }.isEmpty()
 
@@ -85,7 +85,7 @@ class FabricSeatPlacementContext private constructor(
      * @return 攔截器允許繼續放置時為 true。
      */
     fun allowsBlockUse(): Boolean {
-        val stack = player.getStackInHand(hand)
+        val stack = player.getItemInHand(hand)
         val before = stack.copy()
         val result = UseBlockCallback.EVENT.invoker().interact(
             player,
@@ -93,12 +93,12 @@ class FabricSeatPlacementContext private constructor(
             hand,
             supportHit(),
         )
-        return result == ActionResult.PASS &&
+        return result == InteractionResult.PASS &&
             rider.isAlive &&
-            rider.world === world &&
-            canModify(Box(blockPos)) &&
-            player.getStackInHand(hand) === stack &&
-            ItemStack.areEqual(before, stack)
+            rider.level() === world &&
+            canModify(AABB(blockPos)) &&
+            player.getItemInHand(hand) === stack &&
+            ItemStack.matches(before, stack)
     }
 
     /**
@@ -108,12 +108,12 @@ class FabricSeatPlacementContext private constructor(
      * @return 成功放置時為 true；入座由 MahjongCraft 隨後安排。
      */
     fun placeBlockItem(placementYaw: Float): Boolean {
-        val stack = player.getStackInHand(hand)
+        val stack = player.getItemInHand(hand)
         val item = stack.item as? BlockItem ?: return false
-        if (stack.isEmpty || !canModify(Box(blockPos)) || !allowsBlockUse()) return false
-        if (player.getStackInHand(hand) !== stack || stack.isEmpty) return false
-        if (!world.getBlockState(blockPos.down()).isSideSolidFullSquare(world, blockPos.down(), Direction.UP)) return false
-        val context = object : ItemPlacementContext(
+        if (stack.isEmpty || !canModify(AABB(blockPos)) || !allowsBlockUse()) return false
+        if (player.getItemInHand(hand) !== stack || stack.isEmpty) return false
+        if (!world.getBlockState(blockPos.below()).isFaceSturdy(world, blockPos.below(), Direction.UP)) return false
+        val context = object : BlockPlaceContext(
             world,
             player,
             hand,
@@ -121,13 +121,13 @@ class FabricSeatPlacementContext private constructor(
             supportHit(),
         ) {
             /** 使用提供者選擇的放置朝向，不改動玩家視角。 */
-            override fun getPlayerYaw(): Float = placementYaw
+            override fun getRotation(): Float = placementYaw
 
             /** 使用相同的水平朝向建立方塊狀態。 */
-            override fun getHorizontalPlayerFacing(): Direction = Direction.fromRotation(placementYaw.toDouble())
+            override fun getHorizontalDirection(): Direction = Direction.fromYRot(placementYaw.toDouble())
         }
-        if (context.blockPos != blockPos) return false
-        return item.place(context).isAccepted
+        if (context.clickedPos != blockPos) return false
+        return item.place(context).consumesAction()
     }
 
     /**
@@ -136,9 +136,9 @@ class FabricSeatPlacementContext private constructor(
      * @return 放置物品使用的支撐面命中。
      */
     private fun supportHit(): BlockHitResult = BlockHitResult(
-        Vec3d(blockPos.x + 0.5, blockPos.y.toDouble(), blockPos.z + 0.5),
+        Vec3(blockPos.x + 0.5, blockPos.y.toDouble(), blockPos.z + 0.5),
         Direction.UP,
-        blockPos.down(),
+        blockPos.below(),
         false,
     )
 
@@ -156,9 +156,9 @@ class FabricSeatPlacementContext private constructor(
          */
         @JvmSynthetic
         fun create(
-            world: ServerWorld,
-            player: ServerPlayerEntity,
-            hand: Hand,
+            world: ServerLevel,
+            player: ServerPlayer,
+            hand: InteractionHand,
             rider: Entity,
             request: SeatRequest,
         ): FabricSeatPlacementContext = FabricSeatPlacementContext(

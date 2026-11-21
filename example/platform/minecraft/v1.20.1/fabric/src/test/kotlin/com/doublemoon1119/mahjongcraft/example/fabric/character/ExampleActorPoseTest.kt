@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.character
 
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.nbt.NbtElement
-import net.minecraft.util.math.EulerAngle
+import net.minecraft.core.Rotations
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.Tag
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -13,47 +13,47 @@ class ExampleActorPoseTest {
     @Test
     fun `saved pose uses original angles and gravity without replacing other entity data`() {
         val original = ExampleActorPose(
-            head = EulerAngle(
+            head = Rotations(
                 4f,
                 8f,
                 0f,
             ),
-            body = EulerAngle(
+            body = Rotations(
                 0f,
                 0f,
                 0f,
             ),
-            rightArm = EulerAngle(
+            rightArm = Rotations(
                 -10f,
                 0f,
                 0f,
             ),
-            leftArm = EulerAngle(
+            leftArm = Rotations(
                 -10f,
                 0f,
                 0f,
             ),
-            rightLeg = EulerAngle(
+            rightLeg = Rotations(
                 0f,
                 0f,
                 0f,
             ),
-            leftLeg = EulerAngle(
+            leftLeg = Rotations(
                 0f,
                 0f,
                 0f,
             ),
             noGravity = false,
         )
-        val nbt = NbtCompound().apply {
+        val nbt = CompoundTag().apply {
             putString("CustomName", "Named actor")
             putBoolean("NoGravity", true)
         }
         original.writeOriginal(nbt)
         val pose = nbt.getCompound("Pose")
-        assertEquals(original.head, EulerAngle(pose.getList("Head", NbtElement.FLOAT_TYPE.toInt())))
-        assertEquals(original.rightArm, EulerAngle(pose.getList("RightArm", NbtElement.FLOAT_TYPE.toInt())))
-        assertEquals(original.rightLeg, EulerAngle(pose.getList("RightLeg", NbtElement.FLOAT_TYPE.toInt())))
+        assertEquals(original.head, Rotations(pose.getList("Head", Tag.TAG_FLOAT.toInt())))
+        assertEquals(original.rightArm, Rotations(pose.getList("RightArm", Tag.TAG_FLOAT.toInt())))
+        assertEquals(original.rightLeg, Rotations(pose.getList("RightLeg", Tag.TAG_FLOAT.toInt())))
         assertFalse(nbt.getBoolean("NoGravity"))
         assertEquals("Named actor", nbt.getString("CustomName"))
     }

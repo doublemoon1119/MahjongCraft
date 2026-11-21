@@ -4,9 +4,9 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterTargetPayload
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup
-import net.minecraft.entity.Entity
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.server.world.ServerWorld
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.Entity
 
 /**
  * 只同步已追蹤角色的公開接管標記，不包含牌局資訊或放置權限。
@@ -23,7 +23,7 @@ internal class FabricAiCharacterTracking(
      * @param bound 是否仍被接管。
      */
     fun broadcast(entity: Entity, bound: Boolean) {
-        val world = entity.world as? ServerWorld ?: return
+        val world = entity.level() as? ServerLevel ?: return
         if (world.getEntity(entity.uuid) !== entity) return
         PlayerLookup.tracking(entity).forEach { player -> send(entity, player, bound) }
     }
@@ -35,7 +35,7 @@ internal class FabricAiCharacterTracking(
      * @param player 正在追蹤的玩家。
      * @param bound 是否被接管。
      */
-    fun send(entity: Entity, player: ServerPlayerEntity, bound: Boolean) {
+    fun send(entity: Entity, player: ServerPlayer, bound: Boolean) {
         MahjongChannels.aiCharacterTarget.sendTo(
             player = player,
             json = json,

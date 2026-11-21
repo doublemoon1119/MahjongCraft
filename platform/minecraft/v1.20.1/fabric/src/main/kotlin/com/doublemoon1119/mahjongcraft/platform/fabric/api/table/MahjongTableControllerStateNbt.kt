@@ -4,7 +4,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.api.table
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.MahjongCraftInternalApi
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableControllerState
-import net.minecraft.nbt.NbtCompound
+import net.minecraft.nbt.CompoundTag
 import kotlin.uuid.Uuid
 
 /** 穩定桌子 UUID 的 NBT 欄位名稱。 */
@@ -21,7 +21,7 @@ private const val NBT_KEY_CONTINUING_WIN_PRESENTATION_BUSY_UNTIL_GAME_TIME: Stri
  *
  * @param nbt 方塊實體讀檔時取得的 NBT。
  */
-fun MahjongTableControllerState.readNbt(nbt: NbtCompound) {
+fun MahjongTableControllerState.readNbt(nbt: CompoundTag) {
     restore(
         tableId = nbt.getString(NBT_KEY_TABLE_ID)
             .takeIf(String::isNotBlank)
@@ -36,7 +36,7 @@ fun MahjongTableControllerState.readNbt(nbt: NbtCompound) {
  *
  * @param nbt 方塊實體存檔時接收欄位的 NBT。
  */
-fun MahjongTableControllerState.writeNbt(nbt: NbtCompound) {
+fun MahjongTableControllerState.writeNbt(nbt: CompoundTag) {
     nbt.putString(NBT_KEY_TABLE_ID, tableId.toString())
     nbt.putLong(NBT_KEY_PRESENTATION_BUSY_UNTIL_GAME_TIME, presentationBusyUntilGameTime)
     nbt.putLong(NBT_KEY_CONTINUING_WIN_PRESENTATION_BUSY_UNTIL_GAME_TIME, continuingWinPresentationBusyUntilGameTime)

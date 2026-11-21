@@ -11,7 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideS
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideViewer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.guide.MinecraftGuideScreenKeys
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 /**
  * 「如何開始」的頁籤。
@@ -268,9 +268,9 @@ internal object GuidePages {
             GuideBlock.Tiles(
                 items = listOf(
                     source,
-                    GuideTileItem.Operator(Text.literal(PLUS)),
+                    GuideTileItem.Operator(Component.literal(PLUS)),
                     existing,
-                    GuideTileItem.Operator(Text.literal(ARROW)),
+                    GuideTileItem.Operator(Component.literal(ARROW)),
                     labelled(result, MinecraftGuideScreenKeys.LABEL_RESULT),
                 ),
             ),
@@ -302,9 +302,9 @@ internal object GuidePages {
                     GuideTileItem.Group(WIN_TRIPLET),
                     GuideTileItem.Group(WIN_PAIR),
                     GuideTileItem.Group(listOf(m(2), m(3))),
-                    GuideTileItem.Operator(Text.literal(PLUS)),
+                    GuideTileItem.Operator(Component.literal(PLUS)),
                     labelled(listOf(m(4)), sourceKey),
-                    GuideTileItem.Operator(Text.literal(ARROW)),
+                    GuideTileItem.Operator(Component.literal(ARROW)),
                     GuideTileItem.Result(text(resultKey)),
                 ),
             ),
@@ -380,7 +380,7 @@ internal object GuidePages {
      * @param key 翻譯鍵。
      * @return 繪製時依目前語言解析的文字。
      */
-    private fun text(key: String): Text = Text.translatable(key)
+    private fun text(key: String): Component = Component.translatable(key)
 
     /**
      * 萬子。

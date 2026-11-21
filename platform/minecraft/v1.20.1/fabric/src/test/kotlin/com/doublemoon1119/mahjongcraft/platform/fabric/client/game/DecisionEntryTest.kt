@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionTileSelectionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
-import net.minecraft.text.TranslatableTextContent
+import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -100,7 +100,7 @@ class DecisionEntryTest {
         val (chi, riichi) = decisionEntriesFrom(texts, prompt)
 
         assertNull(chi.description)
-        assertEquals("mahjongcraft.riichi.action.riichi.description", (riichi.description?.content as? TranslatableTextContent)?.key)
+        assertEquals("mahjongcraft.riichi.action.riichi.description", (riichi.description?.contents as? TranslatableContents)?.key)
     }
 
     /** 動作卡沿用該候選的預覽牌與鳴牌指標索引。 */
@@ -227,7 +227,7 @@ class DecisionEntryTest {
      * @param entry 要讀取標題的卡片。
      * @return 翻譯鍵或未知動作的原始標籤。
      */
-    private fun translationKeyOf(entry: DecisionEntry): String = (entry.label.content as? TranslatableTextContent)?.key ?: entry.label.string
+    private fun translationKeyOf(entry: DecisionEntry): String = (entry.label.contents as? TranslatableContents)?.key ?: entry.label.string
 
     /**
      * 建立只含指定動作的 prompt。

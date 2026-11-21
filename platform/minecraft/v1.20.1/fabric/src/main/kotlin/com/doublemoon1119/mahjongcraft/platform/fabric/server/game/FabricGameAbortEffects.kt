@@ -21,12 +21,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
-import net.minecraft.registry.RegistryKey
-import net.minecraft.registry.RegistryKeys
+import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.Registries
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.BlockPos
+import net.minecraft.server.level.ServerLevel
 import kotlin.uuid.Uuid
 
 /**
@@ -136,13 +136,13 @@ class FabricGameAbortEffects(
 
     /** 清除附近仍由該桌管理的暫時實體；桌子已消失時也允許移除舊呈現。 */
     private fun clearPresentation(server: MinecraftServer, tableId: Uuid, location: TableLocation) {
-        val dimension = Identifier.tryParse(location.dimensionId)
+        val dimension = ResourceLocation.tryParse(location.dimensionId)
         if (dimension == null) {
             logger.warn("Could not clear aborted game presentation gameId={}: invalid dimension {}", tableId, location.dimensionId)
             return
         }
-        val worldKey = RegistryKey.of(RegistryKeys.WORLD, dimension)
-        val world: ServerWorld = server.getWorld(worldKey) ?: run {
+        val worldKey = ResourceKey.create(Registries.DIMENSION, dimension)
+        val world: ServerLevel = server.getLevel(worldKey) ?: run {
             logger.warn("Could not clear aborted game presentation gameId={}: world is unavailable", tableId)
             return
         }

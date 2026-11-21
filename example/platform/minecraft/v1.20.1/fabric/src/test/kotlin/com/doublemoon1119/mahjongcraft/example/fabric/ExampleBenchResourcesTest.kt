@@ -7,8 +7,8 @@ import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import net.minecraft.util.math.Box
-import net.minecraft.util.math.Direction
+import net.minecraft.core.Direction
+import net.minecraft.world.phys.AABB
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -31,7 +31,7 @@ class ExampleBenchResourcesTest {
                     read("models/block/$name.json").getValue("elements").jsonArray.map { element ->
                         val from = element.jsonObject.getValue("from").jsonArray.map { it.jsonPrimitive.double }
                         val to = element.jsonObject.getValue("to").jsonArray.map { it.jsonPrimitive.double }
-                        Box(
+                        AABB(
                             from[0],
                             from[1],
                             from[2],
@@ -119,7 +119,7 @@ class ExampleBenchResourcesTest {
             read("models/block/$model.json").getValue("elements").jsonArray.flatMap { element ->
                 val from = element.jsonObject.getValue("from").jsonArray.map { it.jsonPrimitive.double }
                 val to = element.jsonObject.getValue("to").jsonArray.map { it.jsonPrimitive.double }
-                val box = Box(
+                val box = AABB(
                     from[0],
                     from[1],
                     from[2],

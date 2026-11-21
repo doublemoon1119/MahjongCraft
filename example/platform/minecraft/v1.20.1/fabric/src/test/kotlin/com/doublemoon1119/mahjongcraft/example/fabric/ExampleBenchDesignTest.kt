@@ -2,8 +2,8 @@ package com.doublemoon1119.mahjongcraft.example.fabric
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.block.ExampleBenchConnections
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.block.ExampleBenchGeometry
-import net.minecraft.util.math.Box
-import net.minecraft.util.math.Direction
+import net.minecraft.core.Direction
+import net.minecraft.world.phys.AABB
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -22,7 +22,7 @@ class ExampleBenchDesignTest {
         )
         facings.forEach { facing ->
             Direction.entries.forEach { side ->
-                val expected = side == facing.rotateYClockwise() || side == facing.rotateYCounterclockwise()
+                val expected = side == facing.clockWise || side == facing.counterClockWise
                 assertEquals(
                     expected = expected,
                     actual = ExampleBenchConnections.connects(
@@ -52,7 +52,7 @@ class ExampleBenchDesignTest {
     /** 扶手只出現在端點，四朝向都不占用乘坐者上半身空間。 */
     @Test
     fun `connected ends remove only their armrests and preserve rider space in every direction`() {
-        val rider = Box(
+        val rider = AABB(
             3.2,
             9.0,
             3.2,

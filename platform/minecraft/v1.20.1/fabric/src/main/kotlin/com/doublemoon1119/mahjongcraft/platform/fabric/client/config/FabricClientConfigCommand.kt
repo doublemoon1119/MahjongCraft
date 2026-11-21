@@ -12,8 +12,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfig
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.Component
 
 /**
  * 純 client-only 指令 `/mahjongcraft_client config reload|show|screen`：跟 server 端
@@ -69,11 +69,11 @@ class FabricClientConfigCommand(
             logger.info("Client config reloaded")
             source.sendFeedback(
                 prefixedConfigMessage(
-                    message = Text.translatable(
+                    message = Component.translatable(
                         MinecraftConfigCommandKeys.RELOADED,
-                        Text.translatable(MinecraftConfigCommandKeys.CLIENT_CONFIG),
+                        Component.translatable(MinecraftConfigCommandKeys.CLIENT_CONFIG),
                     ),
-                    color = Formatting.GREEN,
+                    color = ChatFormatting.GREEN,
                 ),
             )
             COMMAND_SUCCESS
@@ -82,7 +82,7 @@ class FabricClientConfigCommand(
         is MahjongClientConfigUpdateResult.Failure -> {
             logger.warn("Client config reload failed: {}", result.message)
             source.sendError(
-                configReloadFailureMessage(Text.translatable(MinecraftConfigCommandKeys.CLIENT_CONFIG), result.message),
+                configReloadFailureMessage(Component.translatable(MinecraftConfigCommandKeys.CLIENT_CONFIG), result.message),
             )
             COMMAND_FAILURE
         }
@@ -108,7 +108,7 @@ class FabricClientConfigCommand(
 
     /** 使用 Client Config Screen 共用欄位建立目前設定訊息。 */
     private fun clientConfigShowMessage() = configShowMessage(
-        configName = Text.translatable(MinecraftConfigCommandKeys.CLIENT_CONFIG),
+        configName = Component.translatable(MinecraftConfigCommandKeys.CLIENT_CONFIG),
         displayPath = configStore.displayPath,
         entries = clientConfigEntries(configStore.current),
     )

@@ -5,8 +5,8 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueExit
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueConfigSource
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.screen.Screen
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.screens.Screen
 
 /**
  * 依歷史對局保存的設定建立規則一覽的開啟脈絡。
@@ -48,7 +48,7 @@ internal class HistoryRuleCatalogueExit(
 ) : RuleCatalogueExit {
     override val returnScreen: Screen = settings
 
-    override fun back(client: MinecraftClient) {
+    override fun back(client: Minecraft) {
         session.backFromRuleCatalogue(settings)
     }
 
@@ -56,5 +56,5 @@ internal class HistoryRuleCatalogueExit(
         session.removed(screen)
     }
 
-    override fun isValid(client: MinecraftClient): Boolean = session.isOpen
+    override fun isValid(client: Minecraft): Boolean = session.isOpen
 }

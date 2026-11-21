@@ -5,14 +5,14 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModSounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerColor
 import com.google.common.collect.ImmutableMultimap
 import com.google.common.collect.Multimap
-import net.minecraft.entity.EquipmentSlot
-import net.minecraft.entity.attribute.EntityAttribute
-import net.minecraft.entity.attribute.EntityAttributeModifier
-import net.minecraft.entity.attribute.EntityAttributes
-import net.minecraft.item.Item
-import net.minecraft.item.ItemUsageContext
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.ActionResult
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.InteractionResult
+import net.minecraft.world.entity.EquipmentSlot
+import net.minecraft.world.entity.ai.attributes.Attribute
+import net.minecraft.world.entity.ai.attributes.AttributeModifier
+import net.minecraft.world.entity.ai.attributes.Attributes
+import net.minecraft.world.item.Item
+import net.minecraft.world.item.context.UseOnContext
 
 /**
  * 牌尺 item：每種顏色一個物品。蹲下對方塊右鍵時在命中點放置同色的 [MahjongRulerEntity]；拿在主手時可以當武器，
@@ -23,14 +23,14 @@ import net.minecraft.util.ActionResult
  */
 class MahjongRulerItem(
     val color: MahjongRulerColor,
-    settings: Settings,
+    settings: Properties,
 ) : Item(settings) {
     /** 主手持有時套用的攻擊力與攻擊速度。 */
-    private val mainHandModifiers: Multimap<EntityAttribute, EntityAttributeModifier> = ImmutableMultimap.of(
-        EntityAttributes.GENERIC_ATTACK_DAMAGE,
-        EntityAttributeModifier(ATTACK_DAMAGE_MODIFIER_ID, WEAPON_MODIFIER_NAME, ATTACK_DAMAGE_BONUS, EntityAttributeModifier.Operation.ADDITION),
-        EntityAttributes.GENERIC_ATTACK_SPEED,
-        EntityAttributeModifier(ATTACK_SPEED_MODIFIER_ID, WEAPON_MODIFIER_NAME, ATTACK_SPEED_BONUS, EntityAttributeModifier.Operation.ADDITION),
+    private val mainHandModifiers: Multimap<Attribute, AttributeModifier> = ImmutableMultimap.of(
+        Attributes.ATTACK_DAMAGE,
+        AttributeModifier(BASE_ATTACK_DAMAGE_UUID, WEAPON_MODIFIER_NAME, ATTACK_DAMAGE_BONUS, AttributeModifier.Operation.ADDITION),
+        Attributes.ATTACK_SPEED,
+        AttributeModifier(BASE_ATTACK_SPEED_UUID, WEAPON_MODIFIER_NAME, ATTACK_SPEED_BONUS, AttributeModifier.Operation.ADDITION),
     )
 
     /**
@@ -38,23 +38,23 @@ class MahjongRulerItem(
      *
      * @param context 方塊互動位置、玩家及物品堆疊。
      */
-    override fun useOnBlock(context: ItemUsageContext): ActionResult {
-        val player = context.player ?: return ActionResult.PASS
-        if (!player.isSneaking) return ActionResult.PASS
-        if (context.world.isClient) return ActionResult.SUCCESS
+    override fun useOn(context: UseOnContext): InteractionResult {
+        val player = context.player ?: return InteractionResult.PASS
+        if (!player.isShiftKeyDown) return InteractionResult.PASS
+        if (context.level.isClientSide) return InteractionResult.SUCCESS
 
-        val world = context.world as ServerWorld
+        val world = context.level as ServerLevel
         val entity = MahjongRulerEntity(world = world).apply {
             color = this@MahjongRulerItem.color
-            val hitPos = context.hitPos
-            refreshPositionAndAngles(hitPos.x, hitPos.y, hitPos.z, context.playerYaw + HALF_TURN_DEGREES, 0.0f)
+            val hitPos = context.clickLocation
+            moveTo(hitPos.x, hitPos.y, hitPos.z, context.rotation + HALF_TURN_DEGREES, 0.0f)
         }
         val intersectsBlock = world.getBlockCollisions(entity, entity.boundingBox).iterator().hasNext()
-        if (intersectsBlock || !world.spawnEntity(entity)) return ActionResult.FAIL
+        if (intersectsBlock || !world.addFreshEntity(entity)) return InteractionResult.FAIL
 
-        if (!player.abilities.creativeMode) context.stack.decrement(1)
+        if (!player.abilities.instabuild) context.itemInHand.shrink(1)
         entity.playSound(ModSounds.rulerPlace, 1.0f, 1.0f)
-        return ActionResult.CONSUME
+        return InteractionResult.CONSUME
     }
 
     /**
@@ -63,7 +63,7 @@ class MahjongRulerItem(
      * @param slot 物品所在的裝備欄位。
      * @return 該欄位套用的屬性修飾。
      */
-    override fun getAttributeModifiers(slot: EquipmentSlot): Multimap<EntityAttribute, EntityAttributeModifier> = if (slot == EquipmentSlot.MAINHAND) mainHandModifiers else super.getAttributeModifiers(slot)
+    override fun getDefaultAttributeModifiers(slot: EquipmentSlot): Multimap<Attribute, AttributeModifier> = if (slot == EquipmentSlot.MAINHAND) mainHandModifiers else super.getDefaultAttributeModifiers(slot)
 
     private companion object {
         /** 屬性修飾的名稱，比照原版武器。 */

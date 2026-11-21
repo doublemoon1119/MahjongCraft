@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.hudCoordinate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 /**
  * 捨牌分析面板中的一格等待牌。
@@ -20,9 +20,9 @@ import net.minecraft.text.Text
  */
 internal data class DiscardAnalysisCell(
     val tile: TileDto,
-    val countText: Text,
+    val countText: Component,
     val countColor: Int,
-    val availabilityText: Text?,
+    val availabilityText: Component?,
 )
 
 /**
@@ -33,7 +33,7 @@ internal data class DiscardAnalysisCell(
  * @property hasAvailabilityRow 是否有任何一格需要額外一行和牌資格文字，決定格子高度。
  */
 internal data class DiscardAnalysisContent(
-    val statusTexts: List<Text>,
+    val statusTexts: List<Component>,
     val cells: List<DiscardAnalysisCell>,
     val hasAvailabilityRow: Boolean,
 )
@@ -148,7 +148,7 @@ private fun readinessAnalysisContent(
         cells = waitingTiles.map { waiting ->
             DiscardAnalysisCell(
                 tile = waiting.tile,
-                countText = Text.translatable(MinecraftHudKeys.REMAINING_TILES, waiting.remainingCount),
+                countText = Component.translatable(MinecraftHudKeys.REMAINING_TILES, waiting.remainingCount),
                 countColor = when (waiting.remainingCount) {
                     0 -> 0xAA4444
                     1 -> 0xFFD54F

@@ -4,7 +4,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.api.table
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.MahjongCraftInternalApi
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableControllerState
-import net.minecraft.nbt.NbtCompound
+import net.minecraft.nbt.CompoundTag
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -16,7 +16,7 @@ class MahjongTableControllerStateNbtTest {
         val original = MahjongTableControllerState {}
         original.extendPresentationUntil(120L)
         original.extendContinuingWinPresentationUntil(80L)
-        val nbt = NbtCompound().also(original::writeNbt)
+        val nbt = CompoundTag().also(original::writeNbt)
 
         val restored = MahjongTableControllerState {}.also { it.readNbt(nbt) }
 
@@ -31,7 +31,7 @@ class MahjongTableControllerStateNbtTest {
         val state = MahjongTableControllerState {}
         val generated = state.tableId
 
-        state.readNbt(NbtCompound().apply { putString("TableId", "not-a-uuid") })
+        state.readNbt(CompoundTag().apply { putString("TableId", "not-a-uuid") })
 
         assertEquals(generated, state.tableId)
     }

@@ -7,10 +7,10 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeat
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatAssignmentResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableInteractionReach
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
-import net.minecraft.entity.decoration.ArmorStandEntity
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.text.Text
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands.literal
+import net.minecraft.network.chat.Component
+import net.minecraft.world.entity.decoration.ArmorStand
 import kotlin.uuid.toKotlinUuid
 
 /**
@@ -26,36 +26,36 @@ internal class FabricDebugSeatedParticipantCommand(
     private val spawnGateway: FabricEntitySpawnGateway,
 ) {
     /** 建立掛在既有 development-only、op 限定根節點下的最小驗證指令。 */
-    fun build(): LiteralArgumentBuilder<ServerCommandSource> = literal("seated_participant").executes { context ->
+    fun build(): LiteralArgumentBuilder<CommandSourceStack> = literal("seated_participant").executes { context ->
         val source = context.source
-        val player = source.playerOrThrow
+        val player = source.playerOrException
         val room = persistence.characterSnapshot()?.authoritative?.rooms?.values?.firstOrNull { it.hostId == player.uuid.toKotlinUuid() && !it.isFull }
         if (room == null || room.playerIds.size !in 1..3) {
-            source.sendError(Text.translatable(DebugMessageKeys.SEATED_PARTICIPANT_UNAVAILABLE))
+            source.sendFailure(Component.translatable(DebugMessageKeys.SEATED_PARTICIPANT_UNAVAILABLE))
             return@executes 0
         }
         val seating = sessions.prepareTable(room.id) ?: return@executes 0
-        if (seating.world !== player.world ||
+        if (seating.world !== player.level() ||
             TableInteractionReach.distance(player.x, player.y, player.z, seating.location.x, seating.location.y, seating.location.z) > TableInteractionReach.SURVIVAL
         ) {
             return@executes 0
         }
         for (request in seating.requests) {
-            val actor = ArmorStandEntity(seating.world, request.seat.x, request.seat.y, request.seat.z)
-            actor.refreshPositionAndAngles(request.seat.x, request.seat.y, request.seat.z, request.seat.yaw, 0f)
-            actor.addCommandTag(DebugSeatedParticipantAdapter.TAG)
-            actor.addCommandTag("${DebugSeatedParticipantAdapter.OWNER_TAG_PREFIX}${player.uuid.toKotlinUuid()}")
+            val actor = ArmorStand(seating.world, request.seat.x, request.seat.y, request.seat.z)
+            actor.moveTo(request.seat.x, request.seat.y, request.seat.z, request.seat.yaw, 0f)
+            actor.addTag(DebugSeatedParticipantAdapter.TAG)
+            actor.addTag("${DebugSeatedParticipantAdapter.OWNER_TAG_PREFIX}${player.uuid.toKotlinUuid()}")
             if (!seating.canSeat(actor, request)) continue
             if (!spawnGateway.spawn(seating.world, actor, DebugSeatedParticipantAdapter.ID, room.id)) return@executes 0
             if (seating.assign(actor, request) != SeatAssignmentResult.SEATED) {
                 actor.discard()
-                source.sendError(Text.translatable(DebugMessageKeys.SEATED_PARTICIPANT_UNAVAILABLE))
+                source.sendFailure(Component.translatable(DebugMessageKeys.SEATED_PARTICIPANT_UNAVAILABLE))
                 return@executes 0
             }
-            source.sendFeedback({ Text.translatable(DebugMessageKeys.SEATED_PARTICIPANT_CREATED) }, false)
+            source.sendSuccess({ Component.translatable(DebugMessageKeys.SEATED_PARTICIPANT_CREATED) }, false)
             return@executes 1
         }
-        source.sendError(Text.translatable(DebugMessageKeys.SEATED_PARTICIPANT_UNAVAILABLE))
+        source.sendFailure(Component.translatable(DebugMessageKeys.SEATED_PARTICIPANT_UNAVAILABLE))
         0
     }
 }

@@ -2,16 +2,16 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongStoolBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
-import net.minecraft.entity.Dismounting
-import net.minecraft.entity.Entity
-import net.minecraft.entity.EntityType
-import net.minecraft.entity.LivingEntity
-import net.minecraft.entity.damage.DamageSource
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
-import net.minecraft.util.math.Vec3d
-import net.minecraft.world.World
+import net.minecraft.core.BlockPos
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.world.damagesource.DamageSource
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.entity.vehicle.DismountHelper
+import net.minecraft.world.level.Level
+import net.minecraft.world.phys.AABB
+import net.minecraft.world.phys.Vec3
 
 /**
  * 讓 entity 坐在麻將凳上的隱形座位，位置與高度見 [MahjongStoolSeatGeometry]。
@@ -25,14 +25,14 @@ import net.minecraft.world.World
  */
 class MahjongStoolSeatEntity(
     type: EntityType<out MahjongStoolSeatEntity> = ModEntities.mahjongStoolSeat,
-    world: World,
+    world: Level,
 ) : Entity(type, world) {
     /** 是否還需要確認同一張凳子沒有其他座位；坐下入口新建的座位在生成前已確認。 */
     private var needsOccupancyCheck = true
 
     init {
         isInvisible = true
-        noClip = true
+        noPhysics = true
         setNoGravity(true)
     }
 
@@ -43,11 +43,11 @@ class MahjongStoolSeatEntity(
 
     override fun tick() {
         super.tick()
-        if (world.isClient) return
-        val duplicated = needsOccupancyCheck && seatsAt(world, blockPos).any { it !== this }
+        if (level().isClientSide) return
+        val duplicated = needsOccupancyCheck && seatsAt(level(), blockPosition()).any { it !== this }
         needsOccupancyCheck = false
-        if (!hasPassengers() || world.getBlockState(blockPos).block !is MahjongStoolBlock || duplicated) {
-            removeAllPassengers()
+        if (!isVehicle || level().getBlockState(blockPosition()).block !is MahjongStoolBlock || duplicated) {
+            ejectPassengers()
             discard()
         }
     }
@@ -58,7 +58,7 @@ class MahjongStoolSeatEntity(
      * @param passenger 正坐在此座位上的乘客。
      * @param positionUpdater 套用乘客新位置的更新器。
      */
-    override fun updatePassengerPosition(passenger: Entity, positionUpdater: PositionUpdater) {
+    override fun positionRider(passenger: Entity, positionUpdater: MoveFunction) {
         if (!hasPassenger(passenger)) return
         positionUpdater.accept(passenger, x, MahjongStoolSeatGeometry.passengerFeetY(y), z)
     }
@@ -69,10 +69,10 @@ class MahjongStoolSeatEntity(
      * @param passenger 要離開座位的乘客。
      * @return 可供乘客站立的下座位置。
      */
-    override fun updatePassengerForDismount(passenger: LivingEntity): Vec3d = MahjongStoolSeatGeometry
-        .dismountDirections(passenger.horizontalFacing)
-        .firstNotNullOfOrNull { direction -> Dismounting.findRespawnPos(passenger.type, world, blockPos.offset(direction), false) }
-        ?: super.updatePassengerForDismount(passenger)
+    override fun getDismountLocationForPassenger(passenger: LivingEntity): Vec3 = MahjongStoolSeatGeometry
+        .dismountDirections(passenger.direction)
+        .firstNotNullOfOrNull { direction -> DismountHelper.findSafeDismountLocation(passenger.type, level(), blockPosition().relative(direction), false) }
+        ?: super.getDismountLocationForPassenger(passenger)
 
     /**
      * 座位不會受到任何傷害。
@@ -81,23 +81,23 @@ class MahjongStoolSeatEntity(
      * @param amount 傷害量；此座位一律不受傷害。
      * @return 一律回傳 `false`，表示傷害未造成效果。
      */
-    override fun damage(source: DamageSource, amount: Float): Boolean = false
+    override fun hurt(source: DamageSource, amount: Float): Boolean = false
 
-    override fun initDataTracker() = Unit
-
-    /**
-     * 座位不保存額外資料。
-     *
-     * @param nbt 未使用的 entity 持久化資料。
-     */
-    override fun readCustomDataFromNbt(nbt: NbtCompound) = Unit
+    override fun defineSynchedData() = Unit
 
     /**
      * 座位不保存額外資料。
      *
      * @param nbt 未使用的 entity 持久化資料。
      */
-    override fun writeCustomDataToNbt(nbt: NbtCompound) = Unit
+    override fun readAdditionalSaveData(nbt: CompoundTag) = Unit
+
+    /**
+     * 座位不保存額外資料。
+     *
+     * @param nbt 未使用的 entity 持久化資料。
+     */
+    override fun addAdditionalSaveData(nbt: CompoundTag) = Unit
 
     /** 座位的查詢。 */
     companion object {
@@ -108,9 +108,9 @@ class MahjongStoolSeatEntity(
          * @param stoolPos 麻將凳方塊位置。
          * @return 尚未移除且位於該方塊中的座位 entity。
          */
-        fun seatsAt(world: World, stoolPos: BlockPos): List<MahjongStoolSeatEntity> = world.getEntitiesByClass(
+        fun seatsAt(world: Level, stoolPos: BlockPos): List<MahjongStoolSeatEntity> = world.getEntitiesOfClass(
             MahjongStoolSeatEntity::class.java,
-            Box(stoolPos),
-        ) { seat -> !seat.isRemoved && seat.blockPos == stoolPos }
+            AABB(stoolPos),
+        ) { seat -> !seat.isRemoved && seat.blockPosition() == stoolPos }
     }
 }

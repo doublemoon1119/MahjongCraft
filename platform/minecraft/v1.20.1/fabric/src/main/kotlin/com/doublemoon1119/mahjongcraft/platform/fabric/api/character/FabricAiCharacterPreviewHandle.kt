@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.api.character
 
-import net.minecraft.entity.Entity
+import net.minecraft.world.entity.Entity
 
 /**
  * 供客戶端直接繪製或擷取頭像的獨立預覽物件，不加入世界、不執行 tick 或原生 AI。

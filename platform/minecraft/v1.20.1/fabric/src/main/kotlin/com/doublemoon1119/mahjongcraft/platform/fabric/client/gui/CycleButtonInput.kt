@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftCycleButtonKeys
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.network.chat.Component
 
 /**
  * 循環切換按鈕的共用操作：左鍵選擇下一項，右鍵或按住 Shift 點擊選擇上一項。
@@ -98,13 +98,13 @@ internal object CycleButtonInput {
      * @return 加上操作說明（或維持原樣）的提示內容。
      */
     fun withHint(
-        tooltip: Text,
+        tooltip: Component,
         optionCount: Int,
         active: Boolean = true,
-    ): Text {
+    ): Component {
         val hints = hintTexts(optionCount = optionCount, active = active)
         if (hints.isEmpty()) return tooltip
-        val result = Text.empty().append(tooltip).append("\n")
+        val result = Component.empty().append(tooltip).append("\n")
         hints.forEach { result.append("\n").append(it) }
         return result
     }
@@ -118,15 +118,15 @@ internal object CycleButtonInput {
      * @return 加上操作說明（或維持原樣）的提示行。
      */
     fun withHintLines(
-        lines: List<Text>,
+        lines: List<Component>,
         optionCount: Int,
         active: Boolean = true,
-    ): List<Text> {
+    ): List<Component> {
         val hints = hintTexts(optionCount = optionCount, active = active)
         if (hints.isEmpty()) return lines
         return buildList {
             addAll(lines)
-            add(Text.empty())
+            add(Component.empty())
             addAll(hints)
         }
     }
@@ -138,12 +138,12 @@ internal object CycleButtonInput {
      * @param active 按鈕是否可以操作。
      * @return 灰色的操作說明：至少三個選項時為往下與往上兩行，兩個選項時只有往下一行，其他情況為空。
      */
-    fun hintTexts(optionCount: Int, active: Boolean = true): List<Text> = when {
+    fun hintTexts(optionCount: Int, active: Boolean = true): List<Component> = when {
         !active || optionCount < MIN_OPTIONS_FOR_HINT -> emptyList()
-        optionCount < MIN_OPTIONS_FOR_PREVIOUS_HINT -> listOf(Text.translatable(MinecraftCycleButtonKeys.CLICK_NEXT).formatted(Formatting.GRAY))
+        optionCount < MIN_OPTIONS_FOR_PREVIOUS_HINT -> listOf(Component.translatable(MinecraftCycleButtonKeys.CLICK_NEXT).withStyle(ChatFormatting.GRAY))
         else -> listOf(
-            Text.translatable(MinecraftCycleButtonKeys.CLICK_NEXT).formatted(Formatting.GRAY),
-            Text.translatable(MinecraftCycleButtonKeys.CLICK_PREVIOUS).formatted(Formatting.GRAY),
+            Component.translatable(MinecraftCycleButtonKeys.CLICK_NEXT).withStyle(ChatFormatting.GRAY),
+            Component.translatable(MinecraftCycleButtonKeys.CLICK_PREVIOUS).withStyle(ChatFormatting.GRAY),
         )
     }
 }

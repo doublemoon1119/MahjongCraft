@@ -7,8 +7,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.MeldTypeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RelativeDirectionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
-import net.minecraft.text.Text
-import net.minecraft.text.Texts
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.ComponentUtils
 
 /** 將已驗證歷史桌況轉為共用牌組幾何，不重排或重新判定規則。 */
 internal object HistoryRoundStatePresenter {
@@ -211,10 +211,10 @@ internal data class HistoryExposedTiles(
      * @param areaNameKey 依移出牌區識別碼取得名稱的翻譯 key；沒有登記時為 null。
      * @return 以間隔號連接的標題。
      */
-    fun heading(areaNameKey: (String) -> String?): Text {
-        val parts = listOfNotNull(Text.translatable(MinecraftHistoryScreenKeys.STATE_MELDS).takeIf { hasMelds }) +
-            areaIds.map { Text.translatable(areaNameKey(it) ?: MinecraftHistoryScreenKeys.STATE_SET_ASIDE) }
-        return Texts.join(parts, Text.literal(" · "))
+    fun heading(areaNameKey: (String) -> String?): Component {
+        val parts = listOfNotNull(Component.translatable(MinecraftHistoryScreenKeys.STATE_MELDS).takeIf { hasMelds }) +
+            areaIds.map { Component.translatable(areaNameKey(it) ?: MinecraftHistoryScreenKeys.STATE_SET_ASIDE) }
+        return ComponentUtils.formatList(parts, Component.literal(" · "))
     }
 
     /**
@@ -223,15 +223,15 @@ internal data class HistoryExposedTiles(
      * @param nameOf 依初始座位取得玩家名稱。
      * @return 牌索引對應的說明。
      */
-    fun notes(nameOf: (Int) -> Text): Map<Int, List<HistoryTileNote>> = buildMap<Int, MutableList<HistoryTileNote>> {
+    fun notes(nameOf: (Int) -> Component): Map<Int, List<HistoryTileNote>> = buildMap<Int, MutableList<HistoryTileNote>> {
         claimedFromSeat.forEach { (tile, seat) ->
             getOrPut(tile) { mutableListOf() } += HistoryTileNote(
                 kind = HistoryTileNoteKind.CLAIMED_FROM,
-                text = Text.translatable(MinecraftHistoryScreenKeys.STATE_MELD_CLAIMED_FROM, nameOf(seat)),
+                text = Component.translatable(MinecraftHistoryScreenKeys.STATE_MELD_CLAIMED_FROM, nameOf(seat)),
             )
         }
         addedKanTiles.forEach { tile ->
-            getOrPut(tile) { mutableListOf() } += HistoryTileNote(HistoryTileNoteKind.ADDED_KAN, Text.translatable(MinecraftHistoryScreenKeys.STATE_MELD_ADDED_KAN))
+            getOrPut(tile) { mutableListOf() } += HistoryTileNote(HistoryTileNoteKind.ADDED_KAN, Component.translatable(MinecraftHistoryScreenKeys.STATE_MELD_ADDED_KAN))
         }
     }
 }

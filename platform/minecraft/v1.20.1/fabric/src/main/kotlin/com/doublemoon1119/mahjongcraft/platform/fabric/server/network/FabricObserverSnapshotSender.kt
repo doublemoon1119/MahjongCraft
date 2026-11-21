@@ -14,7 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.ReadinessAnalysisDtoMapper
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableRemovedPayloadDto
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 import kotlin.uuid.Uuid
 
 /**
@@ -130,7 +130,7 @@ class FabricObserverSnapshotSender(
     /** 已在主執行緒準備完成、可在最後檢查後立即送出的快照 payload。 */
     private sealed interface PreparedSnapshot {
         /** 已驗證仍在線的收件玩家。 */
-        val player: ServerPlayerEntity
+        val player: ServerPlayer
 
         /**
          * 房間快照與其收件玩家。
@@ -139,7 +139,7 @@ class FabricObserverSnapshotSender(
          * @property payload 已序列化的房間快照 payload。
          */
         data class Room(
-            override val player: ServerPlayerEntity,
+            override val player: ServerPlayer,
             val payload: RoomSnapshotSyncPayloadDto,
         ) : PreparedSnapshot
 
@@ -151,7 +151,7 @@ class FabricObserverSnapshotSender(
          * @property payload 已序列化的對局快照 payload。
          */
         data class Game(
-            override val player: ServerPlayerEntity,
+            override val player: ServerPlayer,
             val matchId: Uuid,
             val payload: GameSnapshotSyncPayloadDto,
         ) : PreparedSnapshot
@@ -163,7 +163,7 @@ class FabricObserverSnapshotSender(
          * @property payload 已序列化的快照清除 payload。
          */
         data class Cleared(
-            override val player: ServerPlayerEntity,
+            override val player: ServerPlayer,
             val payload: SnapshotClearedPayloadDto,
         ) : PreparedSnapshot
     }

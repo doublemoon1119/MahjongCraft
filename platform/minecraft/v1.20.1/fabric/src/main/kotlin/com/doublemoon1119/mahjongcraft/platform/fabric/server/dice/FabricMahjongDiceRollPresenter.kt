@@ -12,12 +12,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
-import net.minecraft.registry.RegistryKey
-import net.minecraft.registry.RegistryKeys
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
+import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.Registries
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 
 /**
@@ -56,12 +56,12 @@ class FabricMahjongDiceRollPresenter(
         )
         val oldDice = findManagedDice(world, presentation.tableId, controllerPos)
         val oldStages = findManagedStages(world, presentation.tableId, controllerPos)
-        val revealGameTime = world.time + presentation.extraLeadDelayTicks +
+        val revealGameTime = world.gameTime + presentation.extraLeadDelayTicks +
             MahjongDiceTableLayout.maxStartDelayTicks(presentation.dice.size) + DiceRollAnimationSpec.DEFAULT_DURATION_TICKS
         val endGameTime = revealGameTime + DiceRollAnimationSpec.EXTRA_VIEWING_TICKS
         val newDice = placements.zip(presentation.dice).map { (placement, dicePresentation) ->
             MahjongDiceEntity(world = world).apply {
-                refreshPositionAndAngles(
+                moveTo(
                     placement.finalPosition.x,
                     placement.finalPosition.y,
                     placement.finalPosition.z,
@@ -79,7 +79,7 @@ class FabricMahjongDiceRollPresenter(
             }
         }
         val stage = DiceRollPresentationEntity(world = world).apply {
-            refreshPositionAndAngles(
+            moveTo(
                 controllerPos.x + BLOCK_CENTER,
                 controllerPos.y + TABLETOP_HEIGHT + DiceRollPresentationEntity.HEIGHT_ABOVE_TABLETOP,
                 controllerPos.z + BLOCK_CENTER,
@@ -107,7 +107,7 @@ class FabricMahjongDiceRollPresenter(
         }
         oldDice.forEach(MahjongDiceEntity::discard)
         oldStages.forEach(DiceRollPresentationEntity::discard)
-        table.blockEntity.markDirty()
+        table.blockEntity.setChanged()
         return MahjongDiceRollPresentationResult.PRESENTED
     }
 
@@ -133,10 +133,10 @@ class FabricMahjongDiceRollPresenter(
      * @param location 包含維度識別碼的桌子位置。
      * @return 相符世界；識別碼無效、伺服器不存在或世界未載入時為 null。
      */
-    private fun resolveWorld(location: TableLocation): ServerWorld? {
-        val identifier = Identifier.tryParse(location.dimensionId) ?: return null
-        val worldKey = RegistryKey.of(RegistryKeys.WORLD, identifier)
-        return serverHolder.current()?.getWorld(worldKey)
+    private fun resolveWorld(location: TableLocation): ServerLevel? {
+        val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null
+        val worldKey = ResourceKey.create(Registries.DIMENSION, identifier)
+        return serverHolder.current()?.getLevel(worldKey)
     }
 
     /**
@@ -148,12 +148,12 @@ class FabricMahjongDiceRollPresenter(
      * @return 範圍內屬於該桌的骰子實體。
      */
     private fun findManagedDice(
-        world: ServerWorld,
+        world: ServerLevel,
         tableId: Uuid,
         controllerPos: BlockPos,
-    ): List<MahjongDiceEntity> = world.getEntitiesByClass(
+    ): List<MahjongDiceEntity> = world.getEntitiesOfClass(
         MahjongDiceEntity::class.java,
-        Box(controllerPos).expand(DICE_SEARCH_HORIZONTAL, DICE_SEARCH_VERTICAL, DICE_SEARCH_HORIZONTAL),
+        AABB(controllerPos).inflate(DICE_SEARCH_HORIZONTAL, DICE_SEARCH_VERTICAL, DICE_SEARCH_HORIZONTAL),
     ) { dice -> dice.managedTableId == tableId }
 
     /**
@@ -165,12 +165,12 @@ class FabricMahjongDiceRollPresenter(
      * @return 範圍內屬於該桌的結果舞台。
      */
     private fun findManagedStages(
-        world: ServerWorld,
+        world: ServerLevel,
         tableId: Uuid,
         controllerPos: BlockPos,
-    ): List<DiceRollPresentationEntity> = world.getEntitiesByClass(
+    ): List<DiceRollPresentationEntity> = world.getEntitiesOfClass(
         DiceRollPresentationEntity::class.java,
-        Box(controllerPos).expand(DICE_SEARCH_HORIZONTAL, DICE_SEARCH_VERTICAL, DICE_SEARCH_HORIZONTAL),
+        AABB(controllerPos).inflate(DICE_SEARCH_HORIZONTAL, DICE_SEARCH_VERTICAL, DICE_SEARCH_HORIZONTAL),
     ) { stage -> stage.managedTableId == tableId }
 
     /** @return 桌子位置對應的 Minecraft 方塊座標，不含維度資訊。 */

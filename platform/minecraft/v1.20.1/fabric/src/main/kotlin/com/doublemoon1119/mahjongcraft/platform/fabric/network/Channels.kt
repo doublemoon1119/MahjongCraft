@@ -8,19 +8,19 @@ import kotlinx.serialization.KSerializer
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
-import net.minecraft.network.PacketByteBuf
+import net.minecraft.network.FriendlyByteBuf
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.util.Identifier
+import net.minecraft.server.level.ServerPlayer
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
-/** JSON 字串走 [net.minecraft.network.PacketByteBuf] 內建的 varint 長度前綴字串編碼，上限字元數。 */
+/** JSON 字串走 [net.minecraft.network.FriendlyByteBuf] 內建的 varint 長度前綴字串編碼，上限字元數。 */
 private const val MAX_PAYLOAD_LENGTH = 1 shl 20
 
-/** PacketByteBuf 字串 varint 長度前綴的最大位元組數。 */
+/** FriendlyByteBuf 字串 varint 長度前綴的最大位元組數。 */
 private const val MAX_STRING_PREFIX_BYTES = 5
 
 /** 未指定頻道位元組上限時，沿用 Minecraft 字串上限所允許的最大 UTF-8 位元組數。 */
@@ -38,7 +38,7 @@ private const val DEFAULT_MAX_PAYLOAD_BYTES = MAX_PAYLOAD_LENGTH * 3
  * @return 成功解碼的結果；拒絕時為 null。結果本身可以合法攜帶 null DTO。
  */
 internal fun <T> decodeC2SPayload(
-    buf: PacketByteBuf,
+    buf: FriendlyByteBuf,
     json: NetworkJson,
     serializer: KSerializer<T>,
     maxPayloadBytes: Int?,
@@ -73,7 +73,7 @@ internal fun <T> decodeC2SPayload(
  * @return 是否已將解碼結果交給排程函式。
  */
 internal fun <T> decodeAndDispatchC2S(
-    buf: PacketByteBuf,
+    buf: FriendlyByteBuf,
     json: NetworkJson,
     serializer: KSerializer<T>,
     maxPayloadBytes: Int?,
@@ -95,14 +95,14 @@ internal fun <T> decodeAndDispatchC2S(
  * @return 完整且合法的 DTO；拒絕時為 null。
  */
 internal fun <T> decodeBoundedPayload(
-    buf: PacketByteBuf,
+    buf: FriendlyByteBuf,
     json: NetworkJson,
     serializer: KSerializer<T>,
     maxPayloadBytes: Int,
 ): T? = decodeC2SPayload(buf, json, serializer, maxPayloadBytes)?.getOrNull()
 
 /**
- * 伺服器→客戶端頻道：把 [T] 序列化成 JSON 字串，透過 [PacketByteBuf] 送給單一玩家。
+ * 伺服器→客戶端頻道：把 [T] 序列化成 JSON 字串，透過 [FriendlyByteBuf] 送給單一玩家。
  *
  * @param T 傳送的線路 DTO 型別。
  * @param id 模組命名空間內的頻道名稱。
@@ -111,7 +111,7 @@ internal fun <T> decodeBoundedPayload(
  */
 class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private val maxPayloadBytes: Int? = null) {
     /** Fabric 網路使用的頻道識別碼。 */
-    val channelId: Identifier = Identifier(MinecraftModMetadata.MOD_ID, id)
+    val channelId: ResourceLocation = ResourceLocation(MinecraftModMetadata.MOD_ID, id)
 
     /** 記錄丟棄過大回應的 logger。 */
     private val logger = mahjongCraftLogger(S2CChannel::class)
@@ -126,11 +126,11 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private 
      * @param json 線路序列化設定。
      * @param value 要傳送的線路資料。
      */
-    fun sendTo(player: ServerPlayerEntity, json: NetworkJson, value: T) {
+    fun sendTo(player: ServerPlayer, json: NetworkJson, value: T) {
         val buf = PacketByteBufs.create()
         val encoded = json.encodeToString(serializer, value)
         require(maxPayloadBytes == null || encoded.toByteArray(Charsets.UTF_8).size <= maxPayloadBytes) { "Channel response exceeds its payload limit" }
-        buf.writeString(encoded, MAX_PAYLOAD_LENGTH)
+        buf.writeUtf(encoded, MAX_PAYLOAD_LENGTH)
         ServerPlayNetworking.send(player, channelId, buf)
     }
 
@@ -146,7 +146,7 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private 
                 reportOversized(buf.readableBytes(), maxPayloadBytes)
                 return@registerGlobalReceiver
             }
-            val raw = buf.readString(MAX_PAYLOAD_LENGTH)
+            val raw = buf.readUtf(MAX_PAYLOAD_LENGTH)
             if (maxPayloadBytes != null) {
                 val rawBytes = raw.toByteArray(Charsets.UTF_8).size
                 if (rawBytes > maxPayloadBytes) {
@@ -155,7 +155,7 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private 
                 }
             }
             client.execute {
-                if (client.networkHandler === connection) handler(json.decodeFromString(serializer, raw))
+                if (client.connection === connection) handler(json.decodeFromString(serializer, raw))
             }
         }
     }
@@ -178,7 +178,7 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private 
 /**
  * 客戶端→伺服器頻道。[registerServerReceiver] 的接收回呼在網路執行緒執行，封包緩衝區在回呼結束後
  * 可能被釋放，必須同步讀完；解碼後的資料交由伺服器主執行緒上的處理函式接收，玩家身分一律用回呼收到
- * 的 [ServerPlayerEntity] 自己的 UUID，不信任封包內容宣稱的身分。
+ * 的 [ServerPlayer] 自己的 UUID，不信任封包內容宣稱的身分。
  *
  * 每個頻道都必須宣告 [rateLimit]；超過限制的要求在解碼前就被丟棄。
  *
@@ -198,7 +198,7 @@ class C2SChannel<T>(
     private val logger = mahjongCraftLogger(C2SChannel::class)
 
     /** Fabric 網路使用的頻道識別碼。 */
-    val channelId: Identifier = Identifier(MinecraftModMetadata.MOD_ID, id)
+    val channelId: ResourceLocation = ResourceLocation(MinecraftModMetadata.MOD_ID, id)
 
     /** 依 `rateLimit` 判斷要求是否接受；由接收端自行准入時為 null。 */
     private val limiter: PlayerRequestRateLimiter? = (rateLimit as? C2SRateLimit.PerPlayer)
@@ -215,7 +215,7 @@ class C2SChannel<T>(
         val buf = PacketByteBufs.create()
         val encoded = json.encodeToString(serializer, value)
         require(maxPayloadBytes == null || encoded.toByteArray(Charsets.UTF_8).size <= maxPayloadBytes) { "Channel request exceeds its payload limit" }
-        buf.writeString(encoded, MAX_PAYLOAD_LENGTH)
+        buf.writeUtf(encoded, MAX_PAYLOAD_LENGTH)
         ClientPlayNetworking.send(channelId, buf)
     }
 
@@ -226,7 +226,7 @@ class C2SChannel<T>(
      * @param json 線路序列化設定。
      * @param handler 伺服器主執行緒上的接收處理。
      */
-    fun registerServerReceiver(json: NetworkJson, handler: (MinecraftServer, ServerPlayerEntity, T) -> Unit) {
+    fun registerServerReceiver(json: NetworkJson, handler: (MinecraftServer, ServerPlayer, T) -> Unit) {
         ServerPlayNetworking.registerGlobalReceiver(channelId) { server, player, _, buf, _ ->
             val admission = limiter?.tryAcquire(player.uuid.toKotlinUuid())
             if (admission is PlayerRequestRateLimiter.Result.Dropped) {

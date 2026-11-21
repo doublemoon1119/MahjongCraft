@@ -133,12 +133,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import net.minecraft.registry.RegistryKey
-import net.minecraft.registry.RegistryKeys
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Vec3d
+import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.Registries
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.phys.Vec3
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.random.Random
@@ -293,7 +293,7 @@ class FabricGamePresentationPublisher(
             tableFacing = resolved.facing,
         )[actorSeatIndex]
         val entity = MahjongSoundTimelineEntity(world = resolved.world).apply {
-            refreshPositionAndAngles(seat.x, seat.y + SEATED_HEAD_HEIGHT, seat.z, seat.yaw, 0.0f)
+            moveTo(seat.x, seat.y + SEATED_HEAD_HEIGHT, seat.z, seat.yaw, 0.0f)
             configure(gameId, sound.soundId, sound.volume, sound.pitch, playAtGameTime)
         }
         if (!spawnGateway.spawn(resolved.world, entity, "game-action-sound", gameId)) {
@@ -464,7 +464,7 @@ class FabricGamePresentationPublisher(
                 val resolved = resolveTableContext(gameId, "publishOpeningRolls") ?: return@launchOpeningStage
                 val state = gameRepository.getTableState(gameId) ?: return@launchOpeningStage
                 val seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size)
-                val timelineAnchor = openingState.awaitWallStartGameTime(gameId) ?: resolved.world.time
+                val timelineAnchor = openingState.awaitWallStartGameTime(gameId) ?: resolved.world.gameTime
                 if (!openingOperations.mayRun(openingOperation)) return@launchOpeningStage
 
                 rolls.zip(timeline).forEachIndexed { index, (roll, segment) ->
@@ -548,7 +548,7 @@ class FabricGamePresentationPublisher(
         launchOpeningStage(gameId, "wall-structure", openingOperation, pendingOperation = "publishWallStructure") {
             val resolved = checkNotNull(resolveTableContext(gameId, "publishWallStructure")) { "Opening table is unavailable" }
             val state = checkNotNull(gameRepository.getTableState(gameId)) { "Opening game is unavailable" }
-            val wallStartGameTime = resolved.world.time
+            val wallStartGameTime = resolved.world.gameTime
 
             val presentation = MahjongTileWallPresentation(
                 tableId = gameId,
@@ -645,7 +645,7 @@ class FabricGamePresentationPublisher(
             pendingDeal?.join()
             val resolved = resolveTableContext(gameId, "publishTableSteps") ?: return@launchPendingPresentation
             var cursor = maxOf(
-                a = resolved.world.time,
+                a = resolved.world.gameTime,
                 b = resolved.tableState.presentationBusyUntilGameTime,
                 c = resolved.tableState.continuingWinPresentationBusyUntilGameTime,
             )
@@ -738,7 +738,7 @@ class FabricGamePresentationPublisher(
             tile.showActionPopup(TileActionPopupKind.DISCARD, landingTime, landingTime + TileAnimationSteps.ACTION_POPUP_DURATION_TICKS)
             val seatIndex = state.players.indexOfFirst { it.id == motion.toRow.ownerId }
             if (seatIndex >= 0) {
-                characters.onDiscard(tableId = gameId, seatIndex = seatIndex, tileId = motion.tileId, target = Vec3d(motion.to.x, motion.to.y, motion.to.z))
+                characters.onDiscard(tableId = gameId, seatIndex = seatIndex, tileId = motion.tileId, target = Vec3(motion.to.x, motion.to.y, motion.to.z))
             }
         }
         flights.filter { it.toRow.region == TileRegion.MELD || it.toRow.region == TileRegion.SET_ASIDE }
@@ -854,8 +854,8 @@ class FabricGamePresentationPublisher(
      * @param gameTime 執行的遊戲時間。
      * @param block 要在主執行緒執行的工作。
      */
-    private fun presentAt(world: ServerWorld, gameTime: Long, block: suspend () -> Unit) {
-        if (gameTime <= world.time) {
+    private fun presentAt(world: ServerLevel, gameTime: Long, block: suspend () -> Unit) {
+        if (gameTime <= world.gameTime) {
             scope.launch(dispatchers.main) { block() }
             return
         }
@@ -871,7 +871,7 @@ class FabricGamePresentationPublisher(
      * @param gameId 桌子識別碼。
      * @return 桌子所在的伺服器世界。
      */
-    private fun serverWorldOf(gameId: Uuid): ServerWorld? = tableLocationRegistry.get(gameId)?.location?.let(::resolveWorld)
+    private fun serverWorldOf(gameId: Uuid): ServerLevel? = tableLocationRegistry.get(gameId)?.location?.let(::resolveWorld)
 
     /**
      * 委派給 [tileSelectionConfirmPresenter]，採「建 Presentation、丟給專屬 presenter」的分工——桌子被移除時的清除走 [FabricTableLifecycleService.onBlockReplaced] 直接呼叫
@@ -951,7 +951,7 @@ class FabricGamePresentationPublisher(
         val openingOperation = openingOperations.getRegisteringTicket(gameId)
         val job = launchOpeningStage(gameId, "initial-deal", openingOperation, pendingOperation = "publishInitialDeal") {
             val resolved = resolveTableContext(gameId, "publishInitialDeal") ?: return@launchOpeningStage
-            val timelineAnchor = openingState.awaitWallStartGameTime(gameId) ?: resolved.world.time
+            val timelineAnchor = openingState.awaitWallStartGameTime(gameId) ?: resolved.world.gameTime
             if (!openingOperations.mayRun(openingOperation)) return@launchOpeningStage
             val openingEndGameTime = timelineAnchor + MahjongDiceRollTimeline.totalTicks(openingDiceCounts, wallDropTicks)
             val opening = openingState.consumeOpening(gameId)
@@ -990,7 +990,7 @@ class FabricGamePresentationPublisher(
                 tilePoseStates = tilePoseStates(tableState, moduleRegistry.getModule(tableState.config)),
                 dealBatchSizes = dealBatchSizes,
                 hasPhysicalWall = tableState.physicalWallLayout != null,
-                extraLeadDelayTicks = (openingEndGameTime - resolved.world.time).coerceAtLeast(0L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
+                extraLeadDelayTicks = (openingEndGameTime - resolved.world.gameTime).coerceAtLeast(0L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
             )
             val result = playerAreaPresenter.presentInitialDeal(presentation)
             // 之後的步驟從手牌實際擺放的位置接續比較，整排手牌才會一起滑到依這一局牌牆範圍排出的位置。
@@ -1006,10 +1006,10 @@ class FabricGamePresentationPublisher(
             privateHandOrderSender.sendDeal(
                 tableId = gameId,
                 state = tableState,
-                dealStartAt = resolved.world.time,
-                flipAt = resolved.world.time + presentation.extraLeadDelayTicks + MahjongTileTableLayout.dealFlipStartDelayTicks(totalTurnCount),
+                dealStartAt = resolved.world.gameTime,
+                flipAt = resolved.world.gameTime + presentation.extraLeadDelayTicks + MahjongTileTableLayout.dealFlipStartDelayTicks(totalTurnCount),
             )
-            val handFlipEndGameTime = resolved.world.time + presentation.extraLeadDelayTicks +
+            val handFlipEndGameTime = resolved.world.gameTime + presentation.extraLeadDelayTicks +
                 MahjongTileTableLayout.dealAnimationTicks(totalTurnCount)
             if (opening != null && result != MahjongPlayerAreaPresentationResult.TABLE_NOT_FOUND) {
                 val openingResult = tileWallPresenter.presentOpening(
@@ -1179,7 +1179,7 @@ class FabricGamePresentationPublisher(
                     val resolved = resolveTableContext(gameId, operation) ?: return@presentation
                     val state = gameRepository.getTableState(gameId) ?: return@presentation
                     val startAt = maxOf(
-                        a = resolved.world.time,
+                        a = resolved.world.gameTime,
                         b = resolved.tableState.presentationBusyUntilGameTime,
                         c = resolved.tableState.continuingWinPresentationBusyUntilGameTime,
                     )
@@ -1520,10 +1520,10 @@ class FabricGamePresentationPublisher(
      * @param location 提供維度識別碼的桌子位置。
      * @return 對應世界；識別碼無效、沒有伺服器或世界未載入時為 null。
      */
-    private fun resolveWorld(location: TableLocation): ServerWorld? {
-        val identifier = Identifier.tryParse(location.dimensionId) ?: return null
-        val worldKey = RegistryKey.of(RegistryKeys.WORLD, identifier)
-        return serverHolder.current()?.getWorld(worldKey)
+    private fun resolveWorld(location: TableLocation): ServerLevel? {
+        val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null
+        val worldKey = ResourceKey.create(Registries.DIMENSION, identifier)
+        return serverHolder.current()?.getLevel(worldKey)
     }
 
     /**
@@ -1685,7 +1685,7 @@ class FabricGamePresentationPublisher(
      * @property tableState 身分與請求識別碼相符的麻將桌狀態。
      */
     private data class ResolvedTableContext(
-        val world: ServerWorld,
+        val world: ServerLevel,
         val location: TableLocation,
         val facing: MahjongTableFacing,
         val tableState: MahjongTableControllerState,

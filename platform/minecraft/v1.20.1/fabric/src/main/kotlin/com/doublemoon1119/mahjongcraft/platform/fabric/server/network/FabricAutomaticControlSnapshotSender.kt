@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 import kotlin.uuid.Uuid
 
 /**
@@ -74,5 +74,5 @@ class FabricAutomaticControlSnapshotSender(
      * @property player 仍在本次啟動連線中的收件玩家。
      * @property snapshot 本人目前的操作集合；終局時為 null。
      */
-    private class PreparedControl(val player: ServerPlayerEntity, val snapshot: AutomaticControlSnapshotDto?)
+    private class PreparedControl(val player: ServerPlayer, val snapshot: AutomaticControlSnapshotDto?)
 }

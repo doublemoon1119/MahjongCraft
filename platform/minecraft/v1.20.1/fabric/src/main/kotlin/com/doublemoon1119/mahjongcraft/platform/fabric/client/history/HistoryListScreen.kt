@@ -15,16 +15,16 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RowStripe
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.client.gui.tooltip.Tooltip
-import net.minecraft.client.gui.tooltip.TooltipPositioner
-import net.minecraft.client.gui.widget.ButtonWidget
-import net.minecraft.text.OrderedText
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
-import net.minecraft.util.Language
+import net.minecraft.ChatFormatting
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.Button
+import net.minecraft.client.gui.components.Tooltip
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner
+import net.minecraft.locale.Language
+import net.minecraft.network.chat.Component
+import net.minecraft.util.FormattedCharSequence
 
 /**
  * 歷史對局分頁列表；查詢生命週期由共用瀏覽 session 管理。
@@ -33,7 +33,7 @@ import net.minecraft.util.Language
  */
 internal class HistoryListScreen(
     private val session: HistoryBrowseSession,
-) : Screen(Text.translatable(MinecraftHistoryScreenKeys.TITLE)) {
+) : Screen(Component.translatable(MinecraftHistoryScreenKeys.TITLE)) {
     /** 目前版面幾何。 */
     private var layout = HistoryScreenLayout.measure(width = 0, height = 0)
 
@@ -44,28 +44,28 @@ internal class HistoryListScreen(
     private val scroll: Double get() = session.controller.state.value.list.scrollOffset
 
     /** 上一頁按鈕。 */
-    private var previousButton: ButtonWidget? = null
+    private var previousButton: Button? = null
 
     /** 下一頁按鈕。 */
-    private var nextButton: ButtonWidget? = null
+    private var nextButton: Button? = null
 
     /** 重新查詢按鈕。 */
-    private var refreshButton: ButtonWidget? = null
+    private var refreshButton: Button? = null
 
     /** 查詢失敗時的重試按鈕。 */
-    private var retryButton: ButtonWidget? = null
+    private var retryButton: Button? = null
 
     /** 紀錄範圍按鈕。 */
-    private var scopeButton: ButtonWidget? = null
+    private var scopeButton: Button? = null
 
     /** 排序欄位選擇器。 */
-    private var sortButton: ButtonWidget? = null
+    private var sortButton: Button? = null
 
     /** 排序方向按鈕。 */
     private var directionButton: RestartableMarqueeButtonWidget? = null
 
     /** 已套用條件的篩選入口。 */
-    private var filterButton: ButtonWidget? = null
+    private var filterButton: Button? = null
 
     /** 是否正在拖曳捲軸。 */
     private var scrollDragging = false
@@ -77,7 +77,7 @@ internal class HistoryListScreen(
     private var cachedEntries: List<HistoryMatchSummaryDto> = emptyList()
 
     /** 本幀滑過的卡片提示，待內容區 scissor 關閉後繪製。 */
-    private var hoveredEntry: List<Text>? = null
+    private var hoveredEntry: List<Component>? = null
 
     /** 暫存卡片所屬條件，避免切換範圍或空結果沿用舊資料。 */
     private var cachedQuery: HistoryBrowseQuery? = null
@@ -87,13 +87,13 @@ internal class HistoryListScreen(
         layout = HistoryScreenLayout.measure(
             width = width,
             height = height,
-            showLabelWidth = textRenderer.getWidth(showLabel()),
-            sortLabelWidth = textRenderer.getWidth(sortLabel()),
+            showLabelWidth = font.width(showLabel()),
+            sortLabelWidth = font.width(sortLabel()),
         )
         scrollDragging = false
-        clearChildren()
-        filterButton = button(Text.translatable(MinecraftHistoryScreenKeys.FILTERS_BUTTON), layout.filters) { session.openFilters() }
-        scopeButton = addDrawableChild(
+        clearWidgets()
+        filterButton = button(Component.translatable(MinecraftHistoryScreenKeys.FILTERS_BUTTON), layout.filters) { session.openFilters() }
+        scopeButton = addRenderableWidget(
             RestartableMarqueeButtonWidget.builder(scopeText()) { cycleScope() }
                 .pressesOnSecondaryClick()
                 .dimensions(layout.scope.x, layout.scope.y, layout.scope.width, layout.scope.height)
@@ -104,22 +104,22 @@ internal class HistoryListScreen(
         sortSelector.selectorExpanded = { dropdown.isOpenFor(SORT_SELECTOR_KEY) }
         sortButton = sortSelector
         directionButton = button(directionText(), layout.direction) { toggleDirection() }.also { it.icon = directionIcon() }
-        refreshButton = button(Text.translatable(MinecraftHistoryScreenKeys.REFRESH), layout.refresh) { session.controller.refresh() }
-        retryButton = button(Text.translatable(MinecraftHistoryScreenKeys.RETRY), layout.refresh) {
+        refreshButton = button(Component.translatable(MinecraftHistoryScreenKeys.REFRESH), layout.refresh) { session.controller.refresh() }
+        retryButton = button(Component.translatable(MinecraftHistoryScreenKeys.RETRY), layout.refresh) {
             if (session.controller.state.value.list.status is HistoryBrowseStatus.Failed) {
                 session.controller.retry()
             } else if (session.archiveStatusController.view.value is HistoryArchiveStatusView.Failed) {
                 session.retryArchiveStatus()
             }
         }
-        previousButton = button(Text.translatable(MinecraftHistoryScreenKeys.PREVIOUS), layout.footerSlot(0)) {
+        previousButton = button(Component.translatable(MinecraftHistoryScreenKeys.PREVIOUS), layout.footerSlot(0)) {
             if (HistoryPaging.jumpsToEnd()) session.controller.firstPage() else session.controller.previousPage()
         }
-        nextButton = button(Text.translatable(MinecraftHistoryScreenKeys.NEXT), layout.footerSlot(2)) {
+        nextButton = button(Component.translatable(MinecraftHistoryScreenKeys.NEXT), layout.footerSlot(2)) {
             if (HistoryPaging.jumpsToEnd()) session.controller.lastPage() else session.controller.nextPage()
         }
         val leaveLabel = if (session.returnsToScreen) MinecraftHistoryScreenKeys.BACK else MinecraftHistoryScreenKeys.CLOSE
-        button(Text.translatable(leaveLabel), layout.footerSlot(HistoryPageFrame.LAST_SLOT)) { close() }
+        button(Component.translatable(leaveLabel), layout.footerSlot(HistoryPageFrame.LAST_SLOT)) { onClose() }
     }
 
     /**
@@ -130,17 +130,17 @@ internal class HistoryListScreen(
      * @param action 按下後的行為。
      * @return 已加入畫面的按鈕。
      */
-    private fun button(label: Text, bounds: HistoryScreenLayout.Bounds, action: () -> Unit): RestartableMarqueeButtonWidget = addDrawableChild(
+    private fun button(label: Component, bounds: HistoryScreenLayout.Bounds, action: () -> Unit): RestartableMarqueeButtonWidget = addRenderableWidget(
         RestartableMarqueeButtonWidget.builder(label) { action() }
             .dimensions(bounds.x, bounds.y, bounds.width, bounds.height)
             .build(),
     )
 
     /** 紀錄範圍按鈕左側的標籤。 */
-    private fun showLabel(): Text = Text.translatable(MinecraftHistoryScreenKeys.SHOW_LABEL)
+    private fun showLabel(): Component = Component.translatable(MinecraftHistoryScreenKeys.SHOW_LABEL)
 
     /** 排序欄位選擇器左側的標籤。 */
-    private fun sortLabel(): Text = Text.translatable(MinecraftHistoryScreenKeys.SORT_TITLE)
+    private fun sortLabel(): Component = Component.translatable(MinecraftHistoryScreenKeys.SORT_TITLE)
 
     /**
      * 展開或收合排序欄位清單。
@@ -152,25 +152,25 @@ internal class HistoryListScreen(
         dropdown.toggle(
             key = SORT_SELECTOR_KEY,
             anchor = anchor,
-            options = fields.map { DropdownOption(label = Text.translatable(it.translationKey)) },
+            options = fields.map { DropdownOption(label = Component.translatable(it.translationKey)) },
             selectedIndex = fields.indexOf(session.controller.state.value.query.sortField).takeIf { it >= 0 },
         ) { index -> selectSort(fields[index]) }
     }
 
-    override fun resize(client: MinecraftClient, width: Int, height: Int) {
+    override fun resize(client: Minecraft, width: Int, height: Int) {
         super.resize(client, width, height)
         session.controller.rememberListPosition(scroll)
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
-        if (dropdown.mouseScrolled(textRenderer, height, amount)) return true
+        if (dropdown.mouseScrolled(font, height, amount)) return true
         if (mouseY < layout.contentTop || mouseY > layout.contentBottom) return super.mouseScrolled(mouseX, mouseY, amount)
         session.controller.rememberListPosition(layout.clampScroll(scroll - amount * 18.0, contentHeight(displayEntries())))
         return true
     }
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        if (dropdown.mouseClicked(textRenderer, height, mouseX, mouseY, button)) return true
+        if (dropdown.mouseClicked(font, height, mouseX, mouseY, button)) return true
         val scrollbar = layout.scrollbar(contentHeight(displayEntries()), scroll)
         if (button == 0 && scrollbar.maximumScroll > 0 && layout.isOverScrollbar(mouseX, mouseY)) {
             scrollDragging = true
@@ -206,7 +206,7 @@ internal class HistoryListScreen(
     }
 
     override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
-        if (dropdown.keyPressed(textRenderer, height, keyCode)) return true
+        if (dropdown.keyPressed(font, height, keyCode)) return true
         return super.keyPressed(keyCode, scanCode, modifiers)
     }
 
@@ -242,13 +242,13 @@ internal class HistoryListScreen(
     }
 
     /** 取得目前紀錄範圍的按鈕文字。 */
-    private fun scopeText(): Text = Text.translatable(session.controller.state.value.query.scope.translationKey)
+    private fun scopeText(): Component = Component.translatable(session.controller.state.value.query.scope.translationKey)
 
     /** 取得目前排序欄位的按鈕文字。 */
-    private fun sortText(): Text = Text.translatable(session.controller.state.value.query.sortField.translationKey)
+    private fun sortText(): Component = Component.translatable(session.controller.state.value.query.sortField.translationKey)
 
     /** 取得目前排序方向的名稱，供旁白使用。 */
-    private fun directionText(): Text = Text.translatable(session.controller.state.value.query.sortDirection.translationKey)
+    private fun directionText(): Component = Component.translatable(session.controller.state.value.query.sortDirection.translationKey)
 
     /** 取得目前排序方向的箭頭圖示。 */
     private fun directionIcon(): PixelIcon = if (session.controller.state.value.query.sortDirection == HistorySortDirectionDto.ASC) {
@@ -258,9 +258,9 @@ internal class HistoryListScreen(
     }
 
     /** 建立紀錄範圍按鈕的選項 tooltip。 */
-    private fun scopeTooltip(): Text = ControlTooltip.options(
-        description = Text.translatable(MinecraftHistoryScreenKeys.SCOPE_TITLE),
-        labels = availableScopes().map { Text.translatable(it.translationKey) },
+    private fun scopeTooltip(): Component = ControlTooltip.options(
+        description = Component.translatable(MinecraftHistoryScreenKeys.SCOPE_TITLE),
+        labels = availableScopes().map { Component.translatable(it.translationKey) },
         currentIndex = availableScopes().indexOf(session.controller.state.value.query.scope),
         hints = CycleButtonInput.hintTexts(optionCount = availableScopes().size, active = scopeButton?.active == true),
     )
@@ -277,24 +277,24 @@ internal class HistoryListScreen(
     private fun availableSortFields(): List<HistorySortFieldDto> = if (session.controller.state.value.query.scope.coversAllMatches) listOf(HistorySortFieldDto.ENDED_AT, HistorySortFieldDto.DURATION) else HistorySortFieldDto.entries
 
     /** 建立排序欄位選擇器的選項 tooltip。 */
-    private fun sortTooltip(): Text = ControlTooltip.options(
-        description = Text.translatable(MinecraftHistoryScreenKeys.SORT_TITLE),
-        labels = availableSortFields().map { Text.translatable(it.translationKey) },
+    private fun sortTooltip(): Component = ControlTooltip.options(
+        description = Component.translatable(MinecraftHistoryScreenKeys.SORT_TITLE),
+        labels = availableSortFields().map { Component.translatable(it.translationKey) },
         currentIndex = availableSortFields().indexOf(session.controller.state.value.query.sortField),
     )
 
     /** 建立排序方向按鈕的選項 tooltip。 */
-    private fun directionTooltip(): Text = ControlTooltip.options(
-        description = Text.translatable(MinecraftHistoryScreenKeys.DIRECTION_TITLE),
-        labels = HistorySortDirectionDto.entries.map { Text.translatable(it.translationKey) },
+    private fun directionTooltip(): Component = ControlTooltip.options(
+        description = Component.translatable(MinecraftHistoryScreenKeys.DIRECTION_TITLE),
+        labels = HistorySortDirectionDto.entries.map { Component.translatable(it.translationKey) },
         currentIndex = session.controller.state.value.query.sortDirection.ordinal,
         hints = CycleButtonInput.hintTexts(optionCount = HistorySortDirectionDto.entries.size, active = directionButton?.active == true),
     )
 
     /** 僅列出已套用條件，不將尚未通過驗證的草稿混入。 */
-    private fun appliedFiltersTooltip(): Text {
+    private fun appliedFiltersTooltip(): Component {
         val filters = session.controller.state.value.query.filters
-        val lines = mutableListOf<Text>()
+        val lines = mutableListOf<Component>()
 
         /**
          * 將欄位名稱與已套用值加入提示。
@@ -302,24 +302,24 @@ internal class HistoryListScreen(
          * @param key 欄位名稱的翻譯鍵。
          * @param value 已套用值的呈現文字。
          */
-        fun add(key: String, value: Text) {
-            lines += Text.translatable(key).copy().append(": ").append(value)
+        fun add(key: String, value: Component) {
+            lines += Component.translatable(key).copy().append(": ").append(value)
         }
         filters.ruleId?.let { add(MinecraftHistoryScreenKeys.FILTER_RULE, HistoryScreenText.rule(it, session.ruleNames)) }
-        filters.playerName?.let { add(MinecraftHistoryScreenKeys.FILTER_PLAYER_NAME, Text.literal(it)) }
-        filters.matchId?.let { add(MinecraftHistoryScreenKeys.FILTER_MATCH_ID, Text.literal(it)) }
-        filters.endedAtFromEpochMillis?.let { add(MinecraftHistoryScreenKeys.FILTER_FROM, Text.literal(HistoryScreenText.endedAt(it))) }
-        filters.endedAtBeforeEpochMillis?.let { add(MinecraftHistoryScreenKeys.FILTER_THROUGH, Text.literal(HistoryScreenText.endedAt(it - 1))) }
-        filters.ownRankMin?.let { add(MinecraftHistoryScreenKeys.FILTER_MIN_RANK, Text.literal(it.toString())) }
-        filters.ownRankMax?.let { add(MinecraftHistoryScreenKeys.FILTER_MAX_RANK, Text.literal(it.toString())) }
-        filters.outcome?.let { add(MinecraftHistoryScreenKeys.FILTER_OUTCOME, Text.translatable(it.translationKey)) }
-        filters.integrity?.let { add(MinecraftHistoryScreenKeys.FILTER_INTEGRITY, Text.translatable(it.translationKey)) }
-        filters.ai?.let { add(MinecraftHistoryScreenKeys.FILTER_AI, Text.translatable(it.translationKey)) }
+        filters.playerName?.let { add(MinecraftHistoryScreenKeys.FILTER_PLAYER_NAME, Component.literal(it)) }
+        filters.matchId?.let { add(MinecraftHistoryScreenKeys.FILTER_MATCH_ID, Component.literal(it)) }
+        filters.endedAtFromEpochMillis?.let { add(MinecraftHistoryScreenKeys.FILTER_FROM, Component.literal(HistoryScreenText.endedAt(it))) }
+        filters.endedAtBeforeEpochMillis?.let { add(MinecraftHistoryScreenKeys.FILTER_THROUGH, Component.literal(HistoryScreenText.endedAt(it - 1))) }
+        filters.ownRankMin?.let { add(MinecraftHistoryScreenKeys.FILTER_MIN_RANK, Component.literal(it.toString())) }
+        filters.ownRankMax?.let { add(MinecraftHistoryScreenKeys.FILTER_MAX_RANK, Component.literal(it.toString())) }
+        filters.outcome?.let { add(MinecraftHistoryScreenKeys.FILTER_OUTCOME, Component.translatable(it.translationKey)) }
+        filters.integrity?.let { add(MinecraftHistoryScreenKeys.FILTER_INTEGRITY, Component.translatable(it.translationKey)) }
+        filters.ai?.let { add(MinecraftHistoryScreenKeys.FILTER_AI, Component.translatable(it.translationKey)) }
         return ControlTooltip.list(
-            description = Text.translatable(MinecraftHistoryScreenKeys.TOOLTIP_FILTERS),
-            title = Text.translatable(MinecraftHistoryScreenKeys.TOOLTIP_FILTERS_APPLIED),
-            lines = lines.ifEmpty { listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_NONE)) },
-            hints = listOf(Text.translatable(MinecraftHistoryScreenKeys.TOOLTIP_FILTERS_HINT).formatted(Formatting.GRAY)),
+            description = Component.translatable(MinecraftHistoryScreenKeys.TOOLTIP_FILTERS),
+            title = Component.translatable(MinecraftHistoryScreenKeys.TOOLTIP_FILTERS_APPLIED),
+            lines = lines.ifEmpty { listOf(Component.translatable(MinecraftHistoryScreenKeys.FILTER_NONE)) },
+            hints = listOf(Component.translatable(MinecraftHistoryScreenKeys.TOOLTIP_FILTERS_HINT).withStyle(ChatFormatting.GRAY)),
         )
     }
 
@@ -352,11 +352,11 @@ internal class HistoryListScreen(
         session.controller.updateQuery(query.copy(sortDirection = direction).normalized())
     }
 
-    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         val pointerX = dropdown.pointer(mouseX)
         val pointerY = dropdown.pointer(mouseY)
         renderBackground(context)
-        ScreenRendering.title(context, textRenderer, title, width)
+        ScreenRendering.title(context, font, title, width)
         val state = session.controller.state.value
         hoveredEntry = null
         val list = state.list
@@ -376,15 +376,15 @@ internal class HistoryListScreen(
         scopeButton?.active = canQuery && availableScopes().size > 1
         sortButton?.active = canQuery
         directionButton?.active = canQuery
-        filterButton?.tooltip = Tooltip.of(appliedFiltersTooltip())
+        filterButton?.tooltip = Tooltip.create(appliedFiltersTooltip())
         sortButton?.message = sortText()
         directionButton?.message = directionText()
         directionButton?.icon = directionIcon()
-        scopeButton?.tooltip = Tooltip.of(scopeTooltip())
-        sortButton?.tooltip = Tooltip.of(sortTooltip())
-        directionButton?.tooltip = Tooltip.of(directionTooltip())
-        refreshButton?.tooltip = Tooltip.of(
-            Text.translatable(
+        scopeButton?.tooltip = Tooltip.create(scopeTooltip())
+        sortButton?.tooltip = Tooltip.create(sortTooltip())
+        directionButton?.tooltip = Tooltip.create(directionTooltip())
+        refreshButton?.tooltip = Tooltip.create(
+            Component.translatable(
                 when {
                     loading -> MinecraftHistoryScreenKeys.QUERY_LOADING_TOOLTIP
                     session.controller.isRefreshCoolingDown() -> MinecraftHistoryScreenKeys.QUERY_COOLDOWN_TOOLTIP
@@ -400,36 +400,36 @@ internal class HistoryListScreen(
         refreshButton?.visible = retryButton?.visible != true
         retryButton?.active = if (list.status is HistoryBrowseStatus.Failed) session.controller.canRetry() else canQuery
         val queryHint = when {
-            loading -> Text.translatable(MinecraftHistoryScreenKeys.QUERY_LOADING_TOOLTIP)
-            session.controller.isRefreshCoolingDown() -> Text.translatable(MinecraftHistoryScreenKeys.QUERY_COOLDOWN_TOOLTIP)
+            loading -> Component.translatable(MinecraftHistoryScreenKeys.QUERY_LOADING_TOOLTIP)
+            session.controller.isRefreshCoolingDown() -> Component.translatable(MinecraftHistoryScreenKeys.QUERY_COOLDOWN_TOOLTIP)
             else -> null
         }
         listOf(scopeButton to scopeTooltip(), sortButton to sortTooltip(), directionButton to directionTooltip()).forEach { (button, tooltip) ->
-            button?.tooltip = Tooltip.of(tooltip.copy().also { text -> queryHint?.let { text.append("\n").append(it.copy().formatted(Formatting.YELLOW)) } })
+            button?.tooltip = Tooltip.create(tooltip.copy().also { text -> queryHint?.let { text.append("\n").append(it.copy().withStyle(ChatFormatting.YELLOW)) } })
         }
-        previousButton?.tooltip = Tooltip.of(HistoryPaging.buttonTooltip(MinecraftHistoryScreenKeys.HINT_PREVIOUS_PAGE, MinecraftHistoryScreenKeys.HINT_FIRST_PAGE, queryHint))
-        nextButton?.tooltip = Tooltip.of(HistoryPaging.buttonTooltip(MinecraftHistoryScreenKeys.HINT_NEXT_PAGE, MinecraftHistoryScreenKeys.HINT_LAST_PAGE, queryHint))
-        retryButton?.tooltip = queryHint?.let(Tooltip::of)
+        previousButton?.tooltip = Tooltip.create(HistoryPaging.buttonTooltip(MinecraftHistoryScreenKeys.HINT_PREVIOUS_PAGE, MinecraftHistoryScreenKeys.HINT_FIRST_PAGE, queryHint))
+        nextButton?.tooltip = Tooltip.create(HistoryPaging.buttonTooltip(MinecraftHistoryScreenKeys.HINT_NEXT_PAGE, MinecraftHistoryScreenKeys.HINT_LAST_PAGE, queryHint))
+        retryButton?.tooltip = queryHint?.let(Tooltip::create)
         HistoryScreenText.archiveStatus(archiveStatus)?.let { message ->
-            context.drawCenteredTextWithShadow(textRenderer, message, width / 2, layout.statusY, 0xffff55)
+            context.drawCenteredString(font, message, width / 2, layout.statusY, 0xffff55)
         }
-        context.drawTextWithShadow(textRenderer, showLabel(), layout.showLabelX, layout.labelY, LABEL_COLOR)
-        context.drawTextWithShadow(textRenderer, sortLabel(), layout.sortLabelX, layout.labelY, LABEL_COLOR)
+        context.drawString(font, showLabel(), layout.showLabelX, layout.labelY, LABEL_COLOR)
+        context.drawString(font, sortLabel(), layout.sortLabelX, layout.labelY, LABEL_COLOR)
         context.enableScissor(layout.contentLeft, layout.contentTop, layout.contentRight, layout.contentBottom)
         when (val status = list.status) {
-            HistoryBrowseStatus.Idle -> context.drawCenteredTextWithShadow(textRenderer, Text.translatable(MinecraftHistoryScreenKeys.LOADING), width / 2, layout.contentTop + 12, 0xffffff)
+            HistoryBrowseStatus.Idle -> context.drawCenteredString(font, Component.translatable(MinecraftHistoryScreenKeys.LOADING), width / 2, layout.contentTop + 12, 0xffffff)
             HistoryBrowseStatus.Loading -> {
                 if (displayEntries.isNotEmpty()) renderEntries(context, displayEntries, pointerX, pointerY)
-                context.drawCenteredTextWithShadow(textRenderer, Text.translatable(MinecraftHistoryScreenKeys.LOADING), width / 2, layout.contentTop + 12, 0xffffff)
+                context.drawCenteredString(font, Component.translatable(MinecraftHistoryScreenKeys.LOADING), width / 2, layout.contentTop + 12, 0xffffff)
             }
             HistoryBrowseStatus.Ready -> if (displayEntries.isEmpty()) {
-                context.drawCenteredTextWithShadow(textRenderer, Text.translatable(MinecraftHistoryScreenKeys.EMPTY), width / 2, layout.contentTop + 12, 0xffffff)
+                context.drawCenteredString(font, Component.translatable(MinecraftHistoryScreenKeys.EMPTY), width / 2, layout.contentTop + 12, 0xffffff)
             } else {
                 renderEntries(context, displayEntries, pointerX, pointerY)
             }
             is HistoryBrowseStatus.Failed -> {
                 if (displayEntries.isNotEmpty()) renderEntries(context, displayEntries, pointerX, pointerY)
-                context.drawCenteredTextWithShadow(textRenderer, Text.translatable(status.reason.translationKey), width / 2, layout.contentTop + 12, 0xff6666)
+                context.drawCenteredString(font, Component.translatable(status.reason.translationKey), width / 2, layout.contentTop + 12, 0xff6666)
             }
         }
         context.disableScissor()
@@ -437,15 +437,15 @@ internal class HistoryListScreen(
         if (list.status == HistoryBrowseStatus.Ready && list.entries.isNotEmpty()) {
             HistoryPaging.renderRange(
                 context = context,
-                textRenderer = textRenderer,
+                textRenderer = font,
                 bounds = layout.footerSlot(1),
-                primary = Text.translatable(MinecraftHistoryScreenKeys.PAGE_RANGE, list.firstEntryIndex, list.firstEntryIndex + list.entries.size - 1),
+                primary = Component.translatable(MinecraftHistoryScreenKeys.PAGE_RANGE, list.firstEntryIndex, list.firstEntryIndex + list.entries.size - 1),
                 secondary = HistoryPaging.totalText(list.totalCount),
             )
         }
         super.render(context, pointerX, pointerY, delta)
-        hoveredEntry?.let { context.drawTooltip(textRenderer, it, mouseX, mouseY) }
-        dropdown.render(context, textRenderer, height, mouseX, mouseY)
+        hoveredEntry?.let { context.renderComponentTooltip(font, it, mouseX, mouseY) }
+        dropdown.render(context, font, height, mouseX, mouseY)
     }
 
     /**
@@ -456,8 +456,8 @@ internal class HistoryListScreen(
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
      */
-    private fun renderEntries(context: DrawContext, entries: List<HistoryMatchSummaryDto>, mouseX: Int, mouseY: Int) {
-        var hover: List<Text>? = null
+    private fun renderEntries(context: GuiGraphics, entries: List<HistoryMatchSummaryDto>, mouseX: Int, mouseY: Int) {
+        var hover: List<Component>? = null
         var y = layout.contentTop - scroll.toInt()
         entries.forEach { entry ->
             val cardHeight = entryHeight(entry)
@@ -470,24 +470,24 @@ internal class HistoryListScreen(
                 context.fill(bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height, if (hovered) CARD_HOVER_BACKGROUND else CARD_BACKGROUND)
                 if (hovered) {
                     hover = listOf(
-                        Text.translatable(MinecraftHistoryScreenKeys.CARD_TOOLTIP, entry.matchId),
-                        Text.translatable(MinecraftHistoryScreenKeys.CARD_OPEN_HINT).formatted(Formatting.AQUA),
+                        Component.translatable(MinecraftHistoryScreenKeys.CARD_TOOLTIP, entry.matchId),
+                        Component.translatable(MinecraftHistoryScreenKeys.CARD_OPEN_HINT).withStyle(ChatFormatting.AQUA),
                     )
                 }
                 val measurement = cardMeasurements.getValue(entry)
                 val metadata = measurement.lines
                 metadata.forEachIndexed { index, line ->
-                    context.drawTextWithShadow(textRenderer, line, bounds.x + CARD_PADDING, y + 4 + index * 10, 0xdddddd)
+                    context.drawString(font, line, bounds.x + CARD_PADDING, y + 4 + index * 10, 0xdddddd)
                 }
                 measurement.inlineDate?.let { date ->
-                    context.drawTextWithShadow(textRenderer, Text.literal(date), bounds.right - CARD_PADDING - textRenderer.getWidth(date), y + 4, 0xaaaaaa)
+                    context.drawString(font, Component.literal(date), bounds.right - CARD_PADDING - font.width(date), y + 4, 0xaaaaaa)
                 }
                 val participantTop = y + 6 + metadata.size * 10
                 val results = entry.results.associateBy { it.playerId }
-                val ownId = MinecraftClient.getInstance().player?.uuid?.toString()
+                val ownId = Minecraft.getInstance().player?.uuid?.toString()
                 val ranked = HistoryScreenText.rankedParticipants(entry)
-                val rankWidth = ranked.maxOfOrNull { textRenderer.getWidth(results[it.playerId]?.finalRank?.toString() ?: "—") } ?: 0
-                val scoreWidth = ranked.maxOfOrNull { textRenderer.getWidth(results[it.playerId]?.finalScore?.toString() ?: "—") } ?: 0
+                val rankWidth = ranked.maxOfOrNull { font.width(results[it.playerId]?.finalRank?.toString() ?: "—") } ?: 0
+                val scoreWidth = ranked.maxOfOrNull { font.width(results[it.playerId]?.finalScore?.toString() ?: "—") } ?: 0
                 val rankX = bounds.x + CARD_PADDING
                 val faceX = rankX + rankWidth + 8
                 val nameX = faceX + 14
@@ -501,13 +501,13 @@ internal class HistoryListScreen(
                         bottom = rowY - 2 + PARTICIPANT_ROW_HEIGHT,
                     ).renderIfStriped(context, index)
                     val result = results[participant.playerId]
-                    context.drawTextWithShadow(textRenderer, Text.literal(result?.finalRank?.toString() ?: "—"), rankX, rowY + 1, 0xcccccc)
+                    context.drawString(font, Component.literal(result?.finalRank?.toString() ?: "—"), rankX, rowY + 1, 0xcccccc)
                     session.participants.render(participant, context, faceX, rowY, 10, matchId = entry.matchId)
                     val nameWidth = (scoreRight - scoreWidth - 12 - nameX).coerceAtLeast(1)
-                    val name = HistoryScreenText.trim(session.participants.name(participant, entry.participants, entry.matchId).string, nameWidth, textRenderer::getWidth)
-                    context.drawTextWithShadow(textRenderer, Text.literal(name), nameX, rowY + 1, if (participant.playerId == ownId) 0x8ed5df else 0xffffff)
+                    val name = HistoryScreenText.trim(session.participants.name(participant, entry.participants, entry.matchId).string, nameWidth, font::width)
+                    context.drawString(font, Component.literal(name), nameX, rowY + 1, if (participant.playerId == ownId) 0x8ed5df else 0xffffff)
                     val score = result?.finalScore?.toString() ?: "—"
-                    context.drawTextWithShadow(textRenderer, Text.literal(score), scoreRight - textRenderer.getWidth(score), rowY + 1, 0xdddddd)
+                    context.drawString(font, Component.literal(score), scoreRight - font.width(score), rowY + 1, 0xdddddd)
                 }
             }
             y += cardHeight
@@ -521,7 +521,7 @@ internal class HistoryListScreen(
      * @param context 畫面繪製上下文。
      * @param entries 目前顯示的對局摘要。
      */
-    private fun renderScrollbar(context: DrawContext, entries: List<HistoryMatchSummaryDto>) {
+    private fun renderScrollbar(context: GuiGraphics, entries: List<HistoryMatchSummaryDto>) {
         val scrollbar = layout.scrollbar(contentHeight(entries), scroll)
         if (scrollbar.maximumScroll == 0 || !layout.hasContent) return
         VerticalScrollbar.render(context, layout.scrollbarBounds.x, scrollbar)
@@ -567,36 +567,36 @@ internal class HistoryListScreen(
      * @property inlineDate 同列顯示的日期，另起一列時為 null。
      * @property height 卡片及列間距的高度。
      */
-    private data class CardMeasurement(val lines: List<OrderedText>, val inlineDate: String?, val height: Int)
+    private data class CardMeasurement(val lines: List<FormattedCharSequence>, val inlineDate: String?, val height: Int)
 
     /** 卡片內文字可用的寬度。 */
     private fun cardTextWidth(): Int = (layout.contentWidth - CARD_PADDING * 2).coerceAtLeast(1)
 
     /** 量測卡片文字與高度。 */
     private fun measureCard(entry: HistoryMatchSummaryDto): CardMeasurement {
-        val status = Text.literal(HistoryScreenText.duration(entry.duration)).append(" • ")
+        val status = Component.literal(HistoryScreenText.duration(entry.duration)).append(" • ")
             .append(HistoryScreenText.outcome(entry.outcome))
         if (entry.integrity == HistoryIntegrityFilterDto.INCOMPLETE) {
-            status.append(" • ").append(Text.translatable(MinecraftHistoryScreenKeys.INTEGRITY_INCOMPLETE).formatted(Formatting.YELLOW))
+            status.append(" • ").append(Component.translatable(MinecraftHistoryScreenKeys.INTEGRITY_INCOMPLETE).withStyle(ChatFormatting.YELLOW))
         }
         val rule = HistoryScreenText.rule(entry.ruleId, session.ruleNames)
         val date = HistoryScreenText.endedAt(entry.endedAtEpochMillis)
-        val inline = textRenderer.getWidth(rule) + textRenderer.getWidth(date) + 24 <= cardTextWidth()
-        val header = if (inline) listOf(rule) else listOf(rule, Text.literal(date).formatted(Formatting.GRAY))
-        val details = Text.translatable(MinecraftHistoryScreenKeys.ROUNDS, entry.roundCount ?: "—").append(" • ").append(status)
-        val lines = (header + details).flatMap { textRenderer.wrapLines(it, cardTextWidth()) }
+        val inline = font.width(rule) + font.width(date) + 24 <= cardTextWidth()
+        val header = if (inline) listOf(rule) else listOf(rule, Component.literal(date).withStyle(ChatFormatting.GRAY))
+        val details = Component.translatable(MinecraftHistoryScreenKeys.ROUNDS, entry.roundCount ?: "—").append(" • ").append(status)
+        val lines = (header + details).flatMap { font.split(it, cardTextWidth()) }
         val height = CARD_VERTICAL_PADDING + lines.size * 10 + entry.participants.size * PARTICIPANT_ROW_HEIGHT + HistoryScreenLayout.CARD_GAP
         return CardMeasurement(lines = lines, inlineDate = date.takeIf { inline }, height = height)
     }
 
     /** 下拉清單展開時，暫停底層控制項的提示框。 */
-    override fun setTooltip(lines: List<OrderedText>, positioner: TooltipPositioner, focused: Boolean) {
-        if (!dropdown.isOpen) super.setTooltip(lines, positioner, focused)
+    override fun setTooltipForNextRenderPass(lines: List<FormattedCharSequence>, positioner: ClientTooltipPositioner, focused: Boolean) {
+        if (!dropdown.isOpen) super.setTooltipForNextRenderPass(lines, positioner, focused)
     }
 
-    override fun shouldPause(): Boolean = false
+    override fun isPauseScreen(): Boolean = false
 
-    override fun close() {
+    override fun onClose() {
         session.close()
     }
 

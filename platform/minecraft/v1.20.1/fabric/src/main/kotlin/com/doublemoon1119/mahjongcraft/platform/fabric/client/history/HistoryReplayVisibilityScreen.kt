@@ -8,12 +8,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMar
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.client.gui.tooltip.Tooltip
-import net.minecraft.client.gui.tooltip.TooltipPositioner
-import net.minecraft.text.OrderedText
-import net.minecraft.text.Text
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.Tooltip
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner
+import net.minecraft.network.chat.Component
+import net.minecraft.util.FormattedCharSequence
 import org.lwjgl.glfw.GLFW
 
 /**
@@ -26,7 +26,7 @@ import org.lwjgl.glfw.GLFW
 internal data class HistoryReplayVisibilityContext(
     val seats: List<Seat>,
     val viewedSeat: Int?,
-    val viewLabel: Text,
+    val viewLabel: Component,
 ) {
     /**
      * 一家的初始座位與名稱。
@@ -34,7 +34,7 @@ internal data class HistoryReplayVisibilityContext(
      * @property initialSeat 初始座位。
      * @property label 座位風與玩家名稱。
      */
-    data class Seat(val initialSeat: Int, val label: Text)
+    data class Seat(val initialSeat: Int, val label: Component)
 }
 
 /**
@@ -49,7 +49,7 @@ internal class HistoryReplayVisibilityScreen(
     private val session: HistoryBrowseSession,
     private val replay: HistoryReplayScreen,
     private val context: HistoryReplayVisibilityContext,
-) : Screen(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY)) {
+) : Screen(Component.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY)) {
     /** 顯示設定。 */
     private val visibility: HistoryReplayVisibility get() = session.replayVisibility
 
@@ -94,19 +94,19 @@ internal class HistoryReplayVisibilityScreen(
         scrollDragging = false
         rows.filterNot { it is VisibilityRow.Heading }.forEach { row ->
             lateinit var selector: RestartableMarqueeButtonWidget
-            selector = RestartableMarqueeButtonWidget.builder(Text.empty()) { toggle(row, selector) }.build()
+            selector = RestartableMarqueeButtonWidget.builder(Component.empty()) { toggle(row, selector) }.build()
             selector.selectorExpanded = { dropdown.isOpenFor(row) }
-            selectors[row] = addDrawableChild(selector)
+            selectors[row] = addRenderableWidget(selector)
         }
         scrollIndex = scrollIndex.coerceIn(0, maximumScroll())
         val footer = layout.footer(buttonCount = 2)
-        resetButton = addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_RESET)) { visibility.reset() }
+        resetButton = addRenderableWidget(
+            RestartableMarqueeButtonWidget.builder(Component.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_RESET)) { visibility.reset() }
                 .dimensions(footer.buttonX(0), layout.footerY, footer.buttonWidth(0), FormScreenLayout.BUTTON_HEIGHT)
                 .build(),
         )
-        addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_DONE)) { close() }
+        addRenderableWidget(
+            RestartableMarqueeButtonWidget.builder(Component.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_DONE)) { onClose() }
                 .dimensions(footer.buttonX(1), layout.footerY, footer.buttonWidth(1), FormScreenLayout.BUTTON_HEIGHT)
                 .build(),
         )
@@ -140,7 +140,7 @@ internal class HistoryReplayVisibilityScreen(
         dropdown.toggle(
             key = row,
             anchor = selector,
-            options = options.map { DropdownOption(label = Text.translatable(it.translationKey)) },
+            options = options.map { DropdownOption(label = Component.translatable(it.translationKey)) },
             selectedIndex = options.indexOf(current(row)).takeIf { it >= 0 },
         ) { index -> select(row, options[index]) }
     }
@@ -203,13 +203,13 @@ internal class HistoryReplayVisibilityScreen(
      * @param row 列。
      * @return 名稱。
      */
-    private fun label(row: VisibilityRow): Text = when (row) {
-        is VisibilityRow.Heading -> Text.translatable(row.translationKey)
+    private fun label(row: VisibilityRow): Component = when (row) {
+        is VisibilityRow.Heading -> Component.translatable(row.translationKey)
         is VisibilityRow.Figure -> row.seat.label
-        is VisibilityRow.PlayerInfo -> Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_PLAYER_INFO, row.seat.label)
-        VisibilityRow.RoundInfo -> Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_ROUND_INFO)
-        VisibilityRow.TableProps -> Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_TABLE_PROPS)
-        VisibilityRow.WinEffect -> Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_WIN_EFFECT)
+        is VisibilityRow.PlayerInfo -> Component.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_PLAYER_INFO, row.seat.label)
+        VisibilityRow.RoundInfo -> Component.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_ROUND_INFO)
+        VisibilityRow.TableProps -> Component.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_TABLE_PROPS)
+        VisibilityRow.WinEffect -> Component.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_WIN_EFFECT)
     }
 
     /**
@@ -218,7 +218,7 @@ internal class HistoryReplayVisibilityScreen(
      * @param row 有選擇器的列。
      * @return 提示文字。
      */
-    private fun tooltip(row: VisibilityRow): Text {
+    private fun tooltip(row: VisibilityRow): Component {
         val description = when (row) {
             is VisibilityRow.Figure -> MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_FIGURE_DESCRIPTION
             is VisibilityRow.PlayerInfo -> MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_PLAYER_INFO_DESCRIPTION
@@ -230,10 +230,10 @@ internal class HistoryReplayVisibilityScreen(
         val reason = lockedReason(row)
         val current = current(row)
         return ControlTooltip.options(
-            description = Text.translatable(description),
+            description = Component.translatable(description),
             options = options(row).map { option ->
                 ControlTooltip.Option(
-                    label = Text.translatable(option.translationKey),
+                    label = Component.translatable(option.translationKey),
                     current = option == current,
                     unavailableReason = reason?.takeIf { option != current },
                 )
@@ -247,19 +247,19 @@ internal class HistoryReplayVisibilityScreen(
      * @param row 列。
      * @return 原因；可以調整時為 null。
      */
-    private fun lockedReason(row: VisibilityRow): Text? = when {
-        row is VisibilityRow.Figure && isViewed(row.seat) -> Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_FIGURE_VIEWED)
-        row is VisibilityRow.PlayerInfo && isViewed(row.seat) -> Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_PLAYER_INFO_VIEWED)
+    private fun lockedReason(row: VisibilityRow): Component? = when {
+        row is VisibilityRow.Figure && isViewed(row.seat) -> Component.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_FIGURE_VIEWED)
+        row is VisibilityRow.PlayerInfo && isViewed(row.seat) -> Component.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_PLAYER_INFO_VIEWED)
         else -> null
     }
 
-    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         renderBackground(context)
-        ScreenRendering.title(context, textRenderer, title, width)
+        ScreenRendering.title(context, font, title, width)
         val layout = layout
-        val viewText = Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_CURRENT_VIEW, this.context.viewLabel)
-        context.drawCenteredTextWithShadow(textRenderer, viewText, width / 2, layout.headerTop, SUBTITLE_COLOR)
-        var truncatedLabel: Text? = null
+        val viewText = Component.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_CURRENT_VIEW, this.context.viewLabel)
+        context.drawCenteredString(font, viewText, width / 2, layout.headerTop, SUBTITLE_COLOR)
+        var truncatedLabel: Component? = null
         rows.forEachIndexed { index, row ->
             val visibleIndex = index - scrollIndex
             if (visibleIndex !in 0 until layout.visibleFieldCount) return@forEachIndexed
@@ -274,24 +274,24 @@ internal class HistoryReplayVisibilityScreen(
             // 選項列比段落標題縮排一點，與對局摘要相同。
             val inset = if (heading) 0 else ROW_INSET
             val labelWidth = (if (heading) layout.contentWidth else layout.labelWidth) - inset
-            ScreenRendering.label(context, textRenderer, label(row), layout.contentLeft + inset, layout.fieldLabelY(rowTop), labelWidth, mouseX, mouseY, color)
+            ScreenRendering.label(context, font, label(row), layout.contentLeft + inset, layout.fieldLabelY(rowTop), labelWidth, mouseX, mouseY, color)
                 ?.let { truncatedLabel = it }
         }
         selectors.forEach { (row, selector) ->
-            selector.message = Text.translatable(current(row).translationKey)
+            selector.message = Component.translatable(current(row).translationKey)
             selector.active = lockedReason(row) == null
-            selector.tooltip = Tooltip.of(tooltip(row))
+            selector.tooltip = Tooltip.create(tooltip(row))
         }
         resetButton?.active = !visibility.isDefault
         VerticalScrollbar.render(context, layout.scrollbarLeft, layout.scrollbar(fieldCount = rows.size, scrollIndex = scrollIndex))
         super.render(context, dropdown.pointer(mouseX), dropdown.pointer(mouseY), delta)
-        truncatedLabel?.takeUnless { dropdown.isOpen }?.let { context.drawTooltip(textRenderer, it, mouseX, mouseY) }
-        dropdown.render(context, textRenderer, height, mouseX, mouseY)
+        truncatedLabel?.takeUnless { dropdown.isOpen }?.let { context.renderTooltip(font, it, mouseX, mouseY) }
+        dropdown.render(context, font, height, mouseX, mouseY)
     }
 
     /** 清單展開時在清單內捲動，否則逐列捲動。 */
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
-        if (dropdown.mouseScrolled(textRenderer, height, amount)) return true
+        if (dropdown.mouseScrolled(font, height, amount)) return true
         val layout = layout
         if (mouseY >= layout.fieldsTop && mouseY < layout.fieldsBottom && amount != 0.0) {
             scrollTo(scrollIndex + if (amount < 0) 1 else -1)
@@ -314,7 +314,7 @@ internal class HistoryReplayVisibilityScreen(
     }
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        if (dropdown.mouseClicked(textRenderer, height, mouseX, mouseY, button)) return true
+        if (dropdown.mouseClicked(font, height, mouseX, mouseY, button)) return true
         val layout = layout
         val scrollbar = layout.scrollbar(fieldCount = rows.size, scrollIndex = scrollIndex)
         if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && scrollbar.maximumScroll > 0 && layout.isOverScrollbar(mouseX, mouseY)) {
@@ -347,23 +347,23 @@ internal class HistoryReplayVisibilityScreen(
     }
 
     /** 下拉清單展開時不讓底層元件排入提示框。 */
-    override fun setTooltip(lines: List<OrderedText>, positioner: TooltipPositioner, focused: Boolean) {
-        if (!dropdown.isOpen) super.setTooltip(lines, positioner, focused)
+    override fun setTooltipForNextRenderPass(lines: List<FormattedCharSequence>, positioner: ClientTooltipPositioner, focused: Boolean) {
+        if (!dropdown.isOpen) super.setTooltipForNextRenderPass(lines, positioner, focused)
     }
 
     override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
-        if (dropdown.keyPressed(textRenderer, height, keyCode)) return true
+        if (dropdown.keyPressed(font, height, keyCode)) return true
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-            close()
+            onClose()
             return true
         }
         return super.keyPressed(keyCode, scanCode, modifiers)
     }
 
-    override fun shouldPause(): Boolean = false
+    override fun isPauseScreen(): Boolean = false
 
     /** 完成或按 Esc 時回到回放畫面。 */
-    override fun close() {
+    override fun onClose() {
         session.backToReplay(replay)
     }
 

@@ -25,10 +25,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import kotlinx.coroutines.launch
-import net.minecraft.text.ClickEvent
-import net.minecraft.text.MutableText
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.ClickEvent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.MutableComponent
 import kotlin.uuid.Uuid
 
 /**
@@ -81,7 +81,7 @@ class FabricPlayerFeedbackPublisher(
             val player = serverHolder.findPlayer(playerId) ?: return@launch
             when (feedback) {
                 MinecraftPlayerFeedback.GameAlreadyStarted ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_ALREADY_STARTED), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.GAME_ALREADY_STARTED), true)
                 is MinecraftPlayerFeedback.GameCreated -> {
                     feedback.location?.let { location ->
                         logger.debug(
@@ -93,77 +93,77 @@ class FabricPlayerFeedbackPublisher(
                             location.z,
                         )
                     }
-                    player.sendMessage(gameCreatedMessage(feedback.location))
+                    player.sendSystemMessage(gameCreatedMessage(feedback.location))
                 }
                 MinecraftPlayerFeedback.GameJoined ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_JOINED))
+                    player.sendSystemMessage(Component.translatable(MinecraftMessageKeys.GAME_JOINED))
                 MinecraftPlayerFeedback.PlayerNotInGame ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.PLAYER_NOT_IN_GAME), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.PLAYER_NOT_IN_GAME), true)
                 MinecraftPlayerFeedback.PlayerNotInAnyGame ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.PLAYER_NOT_IN_ANY_GAME), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.PLAYER_NOT_IN_ANY_GAME), true)
                 MinecraftPlayerFeedback.GameLeaveDeniedWhilePlaying ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_LEAVE_DENIED_WHILE_PLAYING), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.GAME_LEAVE_DENIED_WHILE_PLAYING), true)
                 MinecraftPlayerFeedback.GameDissolved ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_DISSOLVED))
+                    player.sendSystemMessage(Component.translatable(MinecraftMessageKeys.GAME_DISSOLVED))
                 MinecraftPlayerFeedback.GameLeft ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_LEFT))
+                    player.sendSystemMessage(Component.translatable(MinecraftMessageKeys.GAME_LEFT))
                 MinecraftPlayerFeedback.GameLeaveFailed ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_LEAVE_FAILED), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.GAME_LEAVE_FAILED), true)
                 MinecraftPlayerFeedback.PlayerAlreadyInGame ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.PLAYER_ALREADY_IN_GAME), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.PLAYER_ALREADY_IN_GAME), true)
                 MinecraftPlayerFeedback.GameJoinFailed ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_JOIN_FAILED), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.GAME_JOIN_FAILED), true)
                 is MinecraftPlayerFeedback.ReadyToggled ->
-                    player.sendMessage(readyToggledMessage(feedback.isReady))
+                    player.sendSystemMessage(readyToggledMessage(feedback.isReady))
                 MinecraftPlayerFeedback.HostReadyNotRequired ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.HOST_READY_NOT_REQUIRED), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.HOST_READY_NOT_REQUIRED), true)
                 MinecraftPlayerFeedback.NotGameHost ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.NOT_GAME_HOST), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.NOT_GAME_HOST), true)
                 MinecraftPlayerFeedback.InvalidPlayerCount ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.INVALID_PLAYER_COUNT), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.INVALID_PLAYER_COUNT), true)
                 MinecraftPlayerFeedback.NotAllPlayersReady ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.NOT_ALL_PLAYERS_READY), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.NOT_ALL_PLAYERS_READY), true)
                 MinecraftPlayerFeedback.GameStartFailed ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_START_FAILED), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.GAME_START_FAILED), true)
                 MinecraftPlayerFeedback.RuleUnavailable ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.RULE_UNAVAILABLE), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.RULE_UNAVAILABLE), true)
                 MinecraftPlayerFeedback.GameConfigInvalid ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_CONFIG_INVALID), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.GAME_CONFIG_INVALID), true)
                 MinecraftPlayerFeedback.AiStrategyNotFound ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.AI_STRATEGY_NOT_FOUND), true)
-                MinecraftPlayerFeedback.RoomExclusionListFull -> player.sendMessage(Text.translatable(MinecraftMessageKeys.ROOM_EXCLUSION_LIST_FULL), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.AI_STRATEGY_NOT_FOUND), true)
+                MinecraftPlayerFeedback.RoomExclusionListFull -> player.displayClientMessage(Component.translatable(MinecraftMessageKeys.ROOM_EXCLUSION_LIST_FULL), true)
                 MinecraftPlayerFeedback.RoomParticipantExcluded ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.ROOM_PARTICIPANT_EXCLUDED), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.ROOM_PARTICIPANT_EXCLUDED), true)
                 MinecraftPlayerFeedback.RoomLayoutConflict ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.ROOM_LAYOUT_CONFLICT), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.ROOM_LAYOUT_CONFLICT), true)
                 MinecraftPlayerFeedback.SeatedParticipantUnavailable ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.SEATED_PARTICIPANT_UNAVAILABLE), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.SEATED_PARTICIPANT_UNAVAILABLE), true)
                 MinecraftPlayerFeedback.TableNotReachable ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.TABLE_NOT_REACHABLE), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.TABLE_NOT_REACHABLE), true)
                 is MinecraftPlayerFeedback.StartBlockedByPlayers ->
-                    player.sendMessage(startBlockedByPlayersMessage(feedback), true)
+                    player.displayClientMessage(startBlockedByPlayersMessage(feedback), true)
                 MinecraftPlayerFeedback.StartBlockedByTableSpace ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.START_BLOCKED_TABLE_SPACE).formatted(Formatting.RED))
+                    player.sendSystemMessage(Component.translatable(MinecraftMessageKeys.START_BLOCKED_TABLE_SPACE).withStyle(ChatFormatting.RED))
                 is MinecraftPlayerFeedback.AiAdded ->
-                    player.sendMessage(aiAddedMessage(feedback.strategyKey))
+                    player.sendSystemMessage(aiAddedMessage(feedback.strategyKey))
                 MinecraftPlayerFeedback.AddAiFailed ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.ADD_AI_FAILED), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.ADD_AI_FAILED), true)
                 MinecraftPlayerFeedback.GameFull ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_FULL), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.GAME_FULL), true)
                 MinecraftPlayerFeedback.PlayerKicked ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.PLAYER_KICKED))
+                    player.sendSystemMessage(Component.translatable(MinecraftMessageKeys.PLAYER_KICKED))
                 MinecraftPlayerFeedback.KickedFromGame ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.KICKED_FROM_GAME))
+                    player.sendSystemMessage(Component.translatable(MinecraftMessageKeys.KICKED_FROM_GAME))
                 MinecraftPlayerFeedback.CannotKickSelf ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.CANNOT_KICK_SELF), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.CANNOT_KICK_SELF), true)
                 MinecraftPlayerFeedback.KickFailed ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.KICK_FAILED), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.KICK_FAILED), true)
                 is MinecraftPlayerFeedback.AiStrategyChanged ->
-                    player.sendMessage(aiStrategyChangedMessage(feedback))
+                    player.sendSystemMessage(aiStrategyChangedMessage(feedback))
                 MinecraftPlayerFeedback.TargetNotAi ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.TARGET_NOT_AI), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.TARGET_NOT_AI), true)
                 MinecraftPlayerFeedback.ChangeAiStrategyFailed ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.CHANGE_AI_STRATEGY_FAILED), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.CHANGE_AI_STRATEGY_FAILED), true)
                 is MinecraftPlayerFeedback.GameConfigChanged -> {
                     logger.debug(
                         "Game-config-changed hover playerId={} oldConfig={} newConfig={}",
@@ -171,36 +171,36 @@ class FabricPlayerFeedbackPublisher(
                         feedback.oldConfigJson,
                         feedback.newConfigJson,
                     )
-                    player.sendMessage(gameConfigChangedMessage(feedback))
+                    player.sendSystemMessage(gameConfigChangedMessage(feedback))
                 }
                 is MinecraftPlayerFeedback.GameConfigUnchanged -> {
                     logger.debug("Game-config-unchanged hover playerId={} config={}", playerId, feedback.configJson)
-                    player.sendMessage(gameConfigUnchangedMessage(feedback))
+                    player.sendSystemMessage(gameConfigUnchangedMessage(feedback))
                 }
                 MinecraftPlayerFeedback.ChangeGameConfigFailed ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.CHANGE_GAME_CONFIG_FAILED), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.CHANGE_GAME_CONFIG_FAILED), true)
                 is MinecraftPlayerFeedback.ShowGameConfig -> {
                     logger.debug("Game-config-show hover playerId={} config={}", playerId, feedback.configJson)
-                    player.sendMessage(showGameConfigMessage(feedback))
+                    player.sendSystemMessage(showGameConfigMessage(feedback))
                 }
                 MinecraftPlayerFeedback.NotYourTurn ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.NOT_YOUR_TURN), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.NOT_YOUR_TURN), true)
                 MinecraftPlayerFeedback.ForcedAutoPlayActive ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.FORCED_AUTO_PLAY_ACTIVE), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.FORCED_AUTO_PLAY_ACTIVE), true)
                 MinecraftPlayerFeedback.IllegalGameAction ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.ILLEGAL_GAME_ACTION), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.ILLEGAL_GAME_ACTION), true)
                 is MinecraftPlayerFeedback.WallExhausted -> {
                     val key = requireNotNull(ruleWordings.find(feedback.ruleModuleId, BuiltInRuleWordingIds.WALL_EXHAUSTED)) { "Wall exhausted has a built-in wording" }
-                    player.sendMessage(Text.translatable(key), true)
+                    player.displayClientMessage(Component.translatable(key), true)
                 }
                 MinecraftPlayerFeedback.UnsupportedGameAction ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.UNSUPPORTED_GAME_ACTION), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.UNSUPPORTED_GAME_ACTION), true)
                 MinecraftPlayerFeedback.TableAnimationBusy ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.TABLE_ANIMATION_BUSY), true)
+                    player.displayClientMessage(Component.translatable(MinecraftMessageKeys.TABLE_ANIMATION_BUSY), true)
                 is MinecraftPlayerFeedback.MatchAborted ->
-                    player.sendMessage(matchAbortedMessage(feedback.reasonId))
+                    player.sendSystemMessage(matchAbortedMessage(feedback.reasonId))
                 is MinecraftPlayerFeedback.ShowHand ->
-                    player.sendMessage(showHandMessage(feedback))
+                    player.sendSystemMessage(showHandMessage(feedback))
             }
         }
     }
@@ -212,16 +212,16 @@ class FabricPlayerFeedbackPublisher(
      * @param location 可選的桌子位置；為 null 時只顯示建立成功文字。
      * @return 可供玩家閱讀的建立成功訊息。
      */
-    private fun gameCreatedMessage(location: TableLocation?): MutableText {
-        val message = Text.translatable(MinecraftMessageKeys.GAME_CREATED)
+    private fun gameCreatedMessage(location: TableLocation?): MutableComponent {
+        val message = Component.translatable(MinecraftMessageKeys.GAME_CREATED)
         if (location == null) return message
 
-        var hoverText: MutableText = Text.literal("${location.x}, ${location.y}, ${location.z}")
+        var hoverText: MutableComponent = Component.literal("${location.x}, ${location.y}, ${location.z}")
         if (location.dimensionId != OVERWORLD_DIMENSION_ID) {
-            hoverText = hoverText.append("\n").append(Text.literal(location.dimensionId))
+            hoverText = hoverText.append("\n").append(Component.literal(location.dimensionId))
         }
-        return message.append(Text.literal(" "))
-            .append(bracketedInteractiveLabel(Text.translatable(MinecraftMessageKeys.GAME_CREATED_LOCATION_LABEL), hoverText))
+        return message.append(Component.literal(" "))
+            .append(bracketedInteractiveLabel(Component.translatable(MinecraftMessageKeys.GAME_CREATED_LOCATION_LABEL), hoverText))
     }
 
     /**
@@ -230,7 +230,7 @@ class FabricPlayerFeedbackPublisher(
      * @param strategyKey AI 策略註冊 key。
      * @return 含策略顯示名稱的新增訊息。
      */
-    private fun aiAddedMessage(strategyKey: String): MutableText = Text.translatable(
+    private fun aiAddedMessage(strategyKey: String): MutableComponent = Component.translatable(
         MinecraftMessageKeys.AI_ADDED,
         aiStrategyDisplayNames.resolveDisplayText(strategyKey),
     )
@@ -241,16 +241,16 @@ class FabricPlayerFeedbackPublisher(
      * @param feedback 開局遭阻擋的離線與距離過遠玩家 UUID。
      * @return 分別列出有問題成員的訊息。
      */
-    private fun startBlockedByPlayersMessage(feedback: MinecraftPlayerFeedback.StartBlockedByPlayers): MutableText {
+    private fun startBlockedByPlayersMessage(feedback: MinecraftPlayerFeedback.StartBlockedByPlayers): MutableComponent {
         val lines = buildList {
             if (feedback.offlinePlayerIds.isNotEmpty()) {
-                add(Text.translatable(MinecraftMessageKeys.START_BLOCKED_OFFLINE_PLAYERS, joinPlayerNames(feedback.offlinePlayerIds)))
+                add(Component.translatable(MinecraftMessageKeys.START_BLOCKED_OFFLINE_PLAYERS, joinPlayerNames(feedback.offlinePlayerIds)))
             }
             if (feedback.distantPlayerIds.isNotEmpty()) {
-                add(Text.translatable(MinecraftMessageKeys.START_BLOCKED_DISTANT_PLAYERS, joinPlayerNames(feedback.distantPlayerIds)))
+                add(Component.translatable(MinecraftMessageKeys.START_BLOCKED_DISTANT_PLAYERS, joinPlayerNames(feedback.distantPlayerIds)))
             }
         }
-        val message = Text.empty()
+        val message = Component.empty()
         lines.forEachIndexed { index, line ->
             if (index > 0) message.append("\n")
             message.append(line)
@@ -265,7 +265,7 @@ class FabricPlayerFeedbackPublisher(
      * @return 以逗號分隔的名稱文字。
      */
     private fun joinPlayerNames(playerIds: List<Uuid>): String = playerIds.joinToString {
-        playerIdentities.resolveKnownName(it) ?: Text.translatable(MinecraftPlayerKeys.UNKNOWN).string
+        playerIdentities.resolveKnownName(it) ?: Component.translatable(MinecraftPlayerKeys.UNKNOWN).string
     }
 
     /**
@@ -277,19 +277,19 @@ class FabricPlayerFeedbackPublisher(
      * @param feedback AI 策略變更結果與策略序號。
      * @return 本地化的新舊策略訊息。
      */
-    private fun aiStrategyChangedMessage(feedback: MinecraftPlayerFeedback.AiStrategyChanged): MutableText {
+    private fun aiStrategyChangedMessage(feedback: MinecraftPlayerFeedback.AiStrategyChanged): MutableComponent {
         if (feedback.oldStrategyKey == feedback.newStrategyKey) {
-            return Text.translatable(
+            return Component.translatable(
                 MinecraftMessageKeys.AI_STRATEGY_UNCHANGED,
                 feedback.aiSequence,
                 aiStrategyDisplayNames.resolveDisplayText(feedback.newStrategyKey),
             )
         }
-        return Text.translatable(
+        return Component.translatable(
             MinecraftMessageKeys.AI_STRATEGY_CHANGED,
             feedback.aiSequence,
-            aiStrategyDisplayNames.resolveDisplayText(feedback.oldStrategyKey).copy().formatted(Formatting.RED),
-            aiStrategyDisplayNames.resolveDisplayText(feedback.newStrategyKey).copy().formatted(Formatting.GREEN),
+            aiStrategyDisplayNames.resolveDisplayText(feedback.oldStrategyKey).copy().withStyle(ChatFormatting.RED),
+            aiStrategyDisplayNames.resolveDisplayText(feedback.newStrategyKey).copy().withStyle(ChatFormatting.GREEN),
         )
     }
 
@@ -299,13 +299,13 @@ class FabricPlayerFeedbackPublisher(
      * @param feedback 含舊、新設定 JSON 的回饋。
      * @return 可點擊並顯示設定差異的訊息。
      */
-    private fun gameConfigChangedMessage(feedback: MinecraftPlayerFeedback.GameConfigChanged): MutableText = Text.translatable(
+    private fun gameConfigChangedMessage(feedback: MinecraftPlayerFeedback.GameConfigChanged): MutableComponent = Component.translatable(
         MinecraftMessageKeys.GAME_CONFIG_CHANGED,
         bracketedInteractiveLabel(
-            label = Text.translatable(MinecraftMessageKeys.GAME_CONFIG_LABEL),
+            label = Component.translatable(MinecraftMessageKeys.GAME_CONFIG_LABEL),
             hoverText = gameConfigFormatter.changes(feedback.oldConfigJson, feedback.newConfigJson),
             clickEvent = ClickEvent(ClickEvent.Action.RUN_COMMAND, OPEN_ROOM_CONFIG_SCREEN_COMMAND),
-            color = Formatting.AQUA,
+            color = ChatFormatting.AQUA,
         ),
     )
 
@@ -315,7 +315,7 @@ class FabricPlayerFeedbackPublisher(
      * @param feedback 含目前設定 JSON 的回饋。
      * @return 顯示目前設定的訊息。
      */
-    private fun gameConfigUnchangedMessage(feedback: MinecraftPlayerFeedback.GameConfigUnchanged): MutableText = Text.translatable(
+    private fun gameConfigUnchangedMessage(feedback: MinecraftPlayerFeedback.GameConfigUnchanged): MutableComponent = Component.translatable(
         MinecraftMessageKeys.GAME_CONFIG_UNCHANGED,
         gameConfigText(feedback.configJson),
     )
@@ -328,10 +328,10 @@ class FabricPlayerFeedbackPublisher(
      * @param feedback 含要呈現之設定 JSON 的回饋。
      * @return 可點擊開啟設定編輯畫面的訊息。
      */
-    private fun showGameConfigMessage(feedback: MinecraftPlayerFeedback.ShowGameConfig): MutableText = Text.translatable(
+    private fun showGameConfigMessage(feedback: MinecraftPlayerFeedback.ShowGameConfig): MutableComponent = Component.translatable(
         MinecraftMessageKeys.SHOW_GAME_CONFIG,
         bracketedInteractiveLabel(
-            label = Text.translatable(MinecraftMessageKeys.GAME_CONFIG_LABEL),
+            label = Component.translatable(MinecraftMessageKeys.GAME_CONFIG_LABEL),
             hoverText = gameConfigHoverText(feedback.configJson),
             clickEvent = ClickEvent(ClickEvent.Action.RUN_COMMAND, OPEN_ROOM_CONFIG_SCREEN_COMMAND),
         ),
@@ -344,8 +344,8 @@ class FabricPlayerFeedbackPublisher(
      * @param color 互動標籤顏色。
      * @return 可開啟設定畫面的互動文字。
      */
-    private fun gameConfigText(configJson: String, color: Formatting = Formatting.AQUA): MutableText = bracketedInteractiveLabel(
-        label = Text.translatable(MinecraftMessageKeys.GAME_CONFIG_LABEL),
+    private fun gameConfigText(configJson: String, color: ChatFormatting = ChatFormatting.AQUA): MutableComponent = bracketedInteractiveLabel(
+        label = Component.translatable(MinecraftMessageKeys.GAME_CONFIG_LABEL),
         hoverText = gameConfigHoverText(configJson),
         clickEvent = ClickEvent(ClickEvent.Action.RUN_COMMAND, OPEN_ROOM_CONFIG_SCREEN_COMMAND),
         color = color,
@@ -357,12 +357,12 @@ class FabricPlayerFeedbackPublisher(
      * @param configJson 遊戲設定 JSON。
      * @return 完整設定的本地化 hover 文字。
      */
-    private fun gameConfigHoverText(configJson: String): MutableText = gameConfigFormatter.full(configJson)
+    private fun gameConfigHoverText(configJson: String): MutableComponent = gameConfigFormatter.full(configJson)
 
     /** 建立中止訊息，讓平台已知原因使用既有翻譯，未知原因則顯示通用結果文字。 */
-    private fun matchAbortedMessage(reasonId: String): MutableText = Text.translatable(
+    private fun matchAbortedMessage(reasonId: String): MutableComponent = Component.translatable(
         MinecraftMessageKeys.GAME_ABORTED,
-        Text.translatable(minecraftAbortReasonTranslationKey(reasonId)),
+        Component.translatable(minecraftAbortReasonTranslationKey(reasonId)),
     )
 
     /**
@@ -372,35 +372,35 @@ class FabricPlayerFeedbackPublisher(
      * @param feedback 手牌、副露、回合狀態與合法動作資料。
      * @return 組合後的手牌及可執行動作訊息。
      */
-    private fun showHandMessage(feedback: MinecraftPlayerFeedback.ShowHand): MutableText {
-        val message = Text.translatable(MinecraftMessageKeys.HAND_TITLE)
+    private fun showHandMessage(feedback: MinecraftPlayerFeedback.ShowHand): MutableComponent {
+        val message = Component.translatable(MinecraftMessageKeys.HAND_TITLE)
         feedback.standingTiles.forEach { tile ->
-            message.append(Text.literal(" ")).append(tile.toDisplayText(tileDisplayNames, tileAssetRegistry, tileEmojiRegistry))
+            message.append(Component.literal(" ")).append(tile.toDisplayText(tileDisplayNames, tileAssetRegistry, tileEmojiRegistry))
         }
 
         if (feedback.melds.isNotEmpty()) {
-            message.append(Text.literal("\n")).append(Text.translatable(MinecraftMessageKeys.HAND_MELDS_TITLE))
+            message.append(Component.literal("\n")).append(Component.translatable(MinecraftMessageKeys.HAND_MELDS_TITLE))
             feedback.melds.forEach { meld ->
-                message.append(Text.literal(" ["))
+                message.append(Component.literal(" ["))
                 meld.forEachIndexed { index, tile ->
-                    if (index > 0) message.append(Text.literal(" "))
+                    if (index > 0) message.append(Component.literal(" "))
                     message.append(tile.toDisplayText(tileDisplayNames, tileAssetRegistry, tileEmojiRegistry))
                 }
-                message.append(Text.literal("]"))
+                message.append(Component.literal("]"))
             }
         }
 
-        message.append(Text.literal("\n")).append(Text.translatable(MinecraftMessageKeys.HAND_LEGAL_ACTIONS_TITLE))
+        message.append(Component.literal("\n")).append(Component.translatable(MinecraftMessageKeys.HAND_LEGAL_ACTIONS_TITLE))
         if (feedback.legalActions.isEmpty()) {
             val emptyKey = when (feedback.turnStatus) {
                 GameTurnStatus.OWN_TURN -> MinecraftMessageKeys.HAND_NO_LEGAL_ACTIONS
                 GameTurnStatus.AWAITING_RESPONSE -> MinecraftMessageKeys.HAND_NO_RESPONSE_AVAILABLE
                 GameTurnStatus.WAITING -> MinecraftMessageKeys.HAND_WAITING
             }
-            message.append(Text.literal(" ")).append(Text.translatable(emptyKey))
+            message.append(Component.literal(" ")).append(Component.translatable(emptyKey))
         } else {
             feedback.legalActions.forEachIndexed { index, (action, referenceTile) ->
-                message.append(Text.literal(" ${index + 1}:"))
+                message.append(Component.literal(" ${index + 1}:"))
                     .append(
                         action.toDisplayText(
                             referenceTile = referenceTile,
@@ -423,16 +423,16 @@ class FabricPlayerFeedbackPublisher(
      * @param isReady 切換完成後是否已準備。
      * @return 顯示狀態變化的訊息。
      */
-    private fun readyToggledMessage(isReady: Boolean): MutableText {
+    private fun readyToggledMessage(isReady: Boolean): MutableComponent {
         val fromKey = if (isReady) MinecraftMessageKeys.READY_STATE_NOT_READY else MinecraftMessageKeys.READY_STATE_READY
-        val fromColor = if (isReady) Formatting.RED else Formatting.GREEN
+        val fromColor = if (isReady) ChatFormatting.RED else ChatFormatting.GREEN
         val toKey = if (isReady) MinecraftMessageKeys.READY_STATE_READY else MinecraftMessageKeys.READY_STATE_NOT_READY
-        val toColor = if (isReady) Formatting.GREEN else Formatting.RED
+        val toColor = if (isReady) ChatFormatting.GREEN else ChatFormatting.RED
 
-        return Text.translatable(MinecraftMessageKeys.READY_TOGGLE_PREFIX)
-            .append(Text.translatable(fromKey).formatted(fromColor))
-            .append(Text.literal(" → "))
-            .append(Text.translatable(toKey).formatted(toColor))
+        return Component.translatable(MinecraftMessageKeys.READY_TOGGLE_PREFIX)
+            .append(Component.translatable(fromKey).withStyle(fromColor))
+            .append(Component.literal(" → "))
+            .append(Component.translatable(toKey).withStyle(toColor))
     }
 
     private companion object {

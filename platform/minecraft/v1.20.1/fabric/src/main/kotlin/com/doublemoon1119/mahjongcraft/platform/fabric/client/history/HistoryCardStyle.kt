@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 /** 牌譜卡片共用的尺寸與配色。 */
 internal object HistoryCardStyle {
@@ -26,7 +26,7 @@ internal object HistoryCardStyle {
     const val HAND_INDENT = 46
 
     /** 依玩家列出牌時，每一列開頭的項目符號。 */
-    val SEAT_LINE_BULLET: Text = Text.literal("• ")
+    val SEAT_LINE_BULLET: Component = Component.literal("• ")
 
     /** 一般文字。 */
     const val TEXT_COLOR = 0xffffff

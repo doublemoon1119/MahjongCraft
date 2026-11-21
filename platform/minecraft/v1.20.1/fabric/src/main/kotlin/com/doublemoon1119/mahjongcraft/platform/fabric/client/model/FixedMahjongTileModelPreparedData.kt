@@ -9,9 +9,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.allTileAssetKeys
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import kotlinx.coroutines.CancellationException
-import net.minecraft.resource.Resource
-import net.minecraft.resource.ResourceManager
-import net.minecraft.util.Identifier
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.packs.resources.Resource
+import net.minecraft.server.packs.resources.ResourceManager
 import java.io.IOException
 import java.nio.charset.StandardCharsets
 
@@ -53,19 +53,19 @@ data class FixedMahjongTileModelPreparedData(
             val appearances = (registry.registeredAppearances + BuiltInMinecraftTileAppearances.DEFAULT)
                 .distinctBy { it.id }
             val validAppearances = appearances.filter { appearance ->
-                val coverTexture = Identifier(appearance.coverTextureId)
-                val unknownFaceTexture = Identifier(appearance.unknownFaceTextureId)
+                val coverTexture = ResourceLocation(appearance.coverTextureId)
+                val unknownFaceTexture = ResourceLocation(appearance.unknownFaceTextureId)
                 resourceManager.hasTexture(coverTexture) &&
                     resourceManager.hasTexture(unknownFaceTexture)
             }
             val variants = buildList {
                 validAppearances.forEach { appearance ->
-                    val coverTexture = Identifier(appearance.coverTextureId)
-                    val unknownFaceTexture = Identifier(appearance.unknownFaceTextureId)
+                    val coverTexture = ResourceLocation(appearance.coverTextureId)
+                    val unknownFaceTexture = ResourceLocation(appearance.unknownFaceTextureId)
                     registry.allTileAssetKeys().forEach { assetKey ->
                         val resources = registry.findResources(assetKey) ?: MinecraftTileResources.builtIn(assetKey)
-                        val sourceModel = Identifier(resources.modelId)
-                        val frontTexture = Identifier(resources.textureId)
+                        val sourceModel = ResourceLocation(resources.modelId)
+                        val frontTexture = ResourceLocation(resources.textureId)
                         val usableFrontTexture = if (resourceManager.hasTexture(frontTexture)) {
                             frontTexture
                         } else {
@@ -110,7 +110,7 @@ data class FixedMahjongTileModelPreparedData(
          * @param assetKey 牌面素材 key。
          * @return 不會與未知牌模型碰撞的 synthetic model ID。
          */
-        fun syntheticModelId(appearanceId: String, assetKey: String): Identifier = Identifier(appearanceId.substringBefore(':'), "mahjong_tile/appearance/visible/${encode(appearanceId)}/${encode(assetKey)}")
+        fun syntheticModelId(appearanceId: String, assetKey: String): ResourceLocation = ResourceLocation(appearanceId.substringBefore(':'), "mahjong_tile/appearance/visible/${encode(appearanceId)}/${encode(assetKey)}")
 
         /**
          * 建立只包含 appearance 的未知牌 synthetic model ID。
@@ -118,7 +118,7 @@ data class FixedMahjongTileModelPreparedData(
          * @param appearanceId 牌組外觀完整識別碼。
          * @return 該牌組專用的未知牌 synthetic model ID。
          */
-        fun syntheticUnknownModelId(appearanceId: String): Identifier = Identifier(appearanceId.substringBefore(':'), "mahjong_tile/appearance/unknown/${encode(appearanceId)}")
+        fun syntheticUnknownModelId(appearanceId: String): ResourceLocation = ResourceLocation(appearanceId.substringBefore(':'), "mahjong_tile/appearance/unknown/${encode(appearanceId)}")
 
         /**
          * 將任意識別字串編成只含小寫十六進位字元的模型路徑片段。
@@ -137,7 +137,7 @@ data class FixedMahjongTileModelPreparedData(
  * @param textureId 要檢查的完整 texture resource ID。
  * @return 資源存在且路徑包含 `textures/` 與 `.png` 時為 `true`。
  */
-private fun ResourceManager.hasTexture(textureId: Identifier): Boolean = textureId.isFullTextureResource() && getResource(textureId).isPresent
+private fun ResourceManager.hasTexture(textureId: ResourceLocation): Boolean = textureId.isFullTextureResource() && getResource(textureId).isPresent
 
 /**
  * 檢查模型是否繼承固定基本模型，且沒有自行改變幾何或 display。
@@ -145,7 +145,7 @@ private fun ResourceManager.hasTexture(textureId: Identifier): Boolean = texture
  * @param modelId 要檢查的模型 ID。
  * @return 模型符合固定牌模型契約時為 `true`。
  */
-private fun ResourceManager.isFixedTileModel(modelId: Identifier): Boolean {
+private fun ResourceManager.isFixedTileModel(modelId: ResourceLocation): Boolean {
     val json = getResource(modelId.toModelResourceId()).orElse(null)?.readJson() ?: return false
     return try {
         json.get("parent")?.asString == CANONICAL_TILE_MODEL.toString() &&
@@ -165,7 +165,7 @@ private fun ResourceManager.isFixedTileModel(modelId: Identifier): Boolean {
  * @return 模型 JSON 物件；無法讀取或解析時為 `null`。
  */
 private fun Resource.readJson(): JsonObject? = try {
-    getInputStream().use { JsonParser.parseReader(it.reader(StandardCharsets.UTF_8)).asJsonObject }
+    open().use { JsonParser.parseReader(it.reader(StandardCharsets.UTF_8)).asJsonObject }
 } catch (cancelled: CancellationException) {
     throw cancelled
 } catch (_: IOException) {
@@ -179,10 +179,10 @@ private fun Resource.readJson(): JsonObject? = try {
  *
  * @return 對應的 `models/...json` 資源 ID。
  */
-private fun Identifier.toModelResourceId(): Identifier = Identifier(getNamespace(), "models/${getPath()}.json")
+private fun ResourceLocation.toModelResourceId(): ResourceLocation = ResourceLocation(getNamespace(), "models/${getPath()}.json")
 
 /** 判斷資源 ID 是否明確指向 `assets/<namespace>/textures/...png`。 */
-private fun Identifier.isFullTextureResource(): Boolean = getPath().startsWith("textures/") && getPath().endsWith(".png")
+private fun ResourceLocation.isFullTextureResource(): Boolean = getPath().startsWith("textures/") && getPath().endsWith(".png")
 
 /** 固定牌模板的 canonical model ID。 */
-private val CANONICAL_TILE_MODEL = Identifier("mahjongcraft", "item/mahjong_tile_base")
+private val CANONICAL_TILE_MODEL = ResourceLocation("mahjongcraft", "item/mahjong_tile_base")

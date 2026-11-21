@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 /** 點擊一張操作卡後要執行的事。 */
 internal sealed interface DecisionEntryIntent {
@@ -36,13 +36,13 @@ internal sealed interface DecisionEntryIntent {
  * @property cardHint 按鈕附近的補充提示；沒有提示時為 `null`。
  */
 internal data class DecisionEntry(
-    val label: Text,
+    val label: Component,
     val previewTileAssetKeys: List<String>,
     val claimedTileIndex: Int?,
     val intent: DecisionEntryIntent,
-    val description: Text? = null,
-    val cardBody: Text? = null,
-    val cardHint: Text? = null,
+    val description: Component? = null,
+    val cardBody: Component? = null,
+    val cardHint: Component? = null,
 ) {
     /** 這張卡片影響版面的特徵。 */
     fun layoutCard(): DecisionCard = DecisionCard(previewTileAssetKeys.size, claimedTileIndex != null)
@@ -84,7 +84,7 @@ internal fun decisionEntriesFrom(texts: DecisionTextResolver, prompt: PlayerDeci
     when (val ruleDecision = prompt.ruleDecision) {
         RuleDecisionPromptDto.Confirmation -> add(
             element = DecisionEntry(
-                label = Text.translatable(MinecraftHudKeys.ACTION_CONFIRM),
+                label = Component.translatable(MinecraftHudKeys.ACTION_CONFIRM),
                 previewTileAssetKeys = emptyList(),
                 claimedTileIndex = null,
                 intent = DecisionEntryIntent.ConfirmRuleDecision,
@@ -103,7 +103,7 @@ internal fun decisionEntriesFrom(texts: DecisionTextResolver, prompt: PlayerDeci
         }
         is RuleDecisionPromptDto.TileSelection -> add(
             element = DecisionEntry(
-                label = Text.translatable(MinecraftHudKeys.ACTION_SELECT_TILES, ruleDecision.maxCount),
+                label = Component.translatable(MinecraftHudKeys.ACTION_SELECT_TILES, ruleDecision.maxCount),
                 previewTileAssetKeys = ruleDecision.eligibleTileAssetKeys,
                 claimedTileIndex = null,
                 intent = DecisionEntryIntent.BeginRuleDecisionTileSelection,

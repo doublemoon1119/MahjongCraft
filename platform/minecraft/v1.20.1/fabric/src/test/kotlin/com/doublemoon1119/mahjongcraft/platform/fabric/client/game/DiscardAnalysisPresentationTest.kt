@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
-import net.minecraft.text.TranslatableTextContent
+import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -27,7 +27,7 @@ class DiscardAnalysisPresentationTest {
         assertEquals(listOf(tile("a"), tile("b")), content.cells.map { it.tile })
         assertEquals(
             expected = listOf(listOf(4), listOf(2)),
-            actual = content.cells.map { assertIs<TranslatableTextContent>(it.countText.content).args.toList() },
+            actual = content.cells.map { assertIs<TranslatableContents>(it.countText.contents).args.toList() },
         )
     }
 
@@ -56,7 +56,7 @@ class DiscardAnalysisPresentationTest {
 
         assertEquals(
             expected = listOf("mahjongcraft.riichi.hud.furiten.discard"),
-            actual = content.statusTexts.map { assertIs<TranslatableTextContent>(it.content).key },
+            actual = content.statusTexts.map { assertIs<TranslatableContents>(it.contents).key },
         )
     }
 
@@ -71,7 +71,7 @@ class DiscardAnalysisPresentationTest {
 
         assertEquals(
             expected = listOf("mahjongcraft.riichi.hud.win_availability.no_yaku"),
-            actual = content.statusTexts.map { assertIs<TranslatableTextContent>(it.content).key },
+            actual = content.statusTexts.map { assertIs<TranslatableContents>(it.contents).key },
         )
         assertFalse(content.hasAvailabilityRow)
         assertEquals(listOf(null, null), content.cells.map { it.availabilityText })
@@ -98,7 +98,7 @@ class DiscardAnalysisPresentationTest {
         assertTrue(content.hasAvailabilityRow)
         assertEquals(
             expected = "mahjongcraft.riichi.hud.win_availability.tsumo_only",
-            actual = assertIs<TranslatableTextContent>(content.cells[0].availabilityText?.content).key,
+            actual = assertIs<TranslatableContents>(content.cells[0].availabilityText?.contents).key,
         )
         assertNull(content.cells[1].availabilityText)
         assertEquals(emptyList(), content.statusTexts)
@@ -115,7 +115,7 @@ class DiscardAnalysisPresentationTest {
 
         assertEquals(
             expected = listOf("mahjongcraft.riichi.hud.furiten.temporary", "mahjongcraft.riichi.hud.win_availability.no_yaku"),
-            actual = content.statusTexts.map { assertIs<TranslatableTextContent>(it.content).key },
+            actual = content.statusTexts.map { assertIs<TranslatableContents>(it.contents).key },
         )
     }
 

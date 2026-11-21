@@ -3,18 +3,18 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.character
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterPreviewHandle
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSource
+import com.mojang.blaze3d.pipeline.TextureTarget
+import com.mojang.blaze3d.platform.NativeImage
 import com.mojang.blaze3d.systems.RenderSystem
-import com.mojang.blaze3d.systems.VertexSorter
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gl.SimpleFramebuffer
-import net.minecraft.client.render.LightmapTextureManager
-import net.minecraft.client.texture.NativeImage
-import net.minecraft.client.texture.NativeImageBackedTexture
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.client.world.ClientWorld
-import net.minecraft.entity.LivingEntity
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.RotationAxis
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.blaze3d.vertex.VertexSorting
+import com.mojang.math.Axis
+import net.minecraft.client.Minecraft
+import net.minecraft.client.multiplayer.ClientLevel
+import net.minecraft.client.renderer.LightTexture
+import net.minecraft.client.renderer.texture.DynamicTexture
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.entity.LivingEntity
 import org.joml.Matrix4f
 import org.joml.Quaternionf
 
@@ -31,15 +31,15 @@ internal class NativeCharacterPreviewRenderer(private val registry: ClientAiChar
      * @param character 提供者自行解讀的公開外觀描述。
      * @return 經檢查的預覽 handle，能力不可用時為 null。
      */
-    fun create(world: ClientWorld, character: AiCharacterDefinition): FabricAiCharacterPreviewHandle? {
+    fun create(world: ClientLevel, character: AiCharacterDefinition): FabricAiCharacterPreviewHandle? {
         val capability = character.preview?.capabilityId ?: return null
         val provider = registry.find(capability)?.provider ?: return null
         val handle = provider.create(world, character) ?: return null
         val entity = handle.entity
-        check(entity.world === world && world.getEntityById(entity.id) !== entity) { "Preview factory returned a live world entity" }
+        check(entity.level() === world && world.getEntity(entity.id) !== entity) { "Preview factory returned a live world entity" }
         try {
-            check(!entity.hasVehicle() && !entity.hasPassengers()) { "Preview entity must be independent" }
-            check(entity.height.isFinite() && entity.width.isFinite() && entity.height > 0f && entity.width > 0f && entity.height <= 128f && entity.width <= 128f) { "Invalid preview dimensions" }
+            check(!entity.isPassenger && !entity.isVehicle) { "Preview entity must be independent" }
+            check(entity.bbHeight.isFinite() && entity.bbWidth.isFinite() && entity.bbHeight > 0f && entity.bbWidth > 0f && entity.bbHeight <= 128f && entity.bbWidth <= 128f) { "Invalid preview dimensions" }
         } catch (cause: Throwable) {
             try {
                 handle.close()
@@ -58,85 +58,85 @@ internal class NativeCharacterPreviewRenderer(private val registry: ClientAiChar
      * @param character 當場已保存的公開描述。
      * @return 共用一張圖片的完整與頭像來源；能力不可用時為 null。
      */
-    fun capture(world: ClientWorld, character: AiCharacterDefinition): CharacterPreviewImage? {
-        val client = MinecraftClient.getInstance()
-        check(client.isOnThread) { "Character preview requires the client thread" }
+    fun capture(world: ClientLevel, character: AiCharacterDefinition): CharacterPreviewImage? {
+        val client = Minecraft.getInstance()
+        check(client.isSameThread) { "Character preview requires the client thread" }
         var completed: CharacterPreviewImage? = null
         return try {
             CharacterPreviewRenderState().use {
                 val handle = create(world, character) ?: return@use null
                 val entity = handle.entity
                 // 現場實體的違約 handle 不執行可能刪除該實體的 close。
-                check(entity.world === world && world.getEntityById(entity.id) !== entity) { "Preview factory returned a live world entity" }
+                check(entity.level() === world && world.getEntity(entity.id) !== entity) { "Preview factory returned a live world entity" }
                 AutoCloseable { handle.close() }.use {
-                    check(!entity.hasVehicle() && !entity.hasPassengers()) { "Preview entity must be independent" }
-                    check(entity.height.isFinite() && entity.width.isFinite() && entity.height > 0f && entity.width > 0f && entity.height <= 128f && entity.width <= 128f) { "Invalid preview dimensions" }
-                    entity.yaw = 180f
-                    entity.prevYaw = 180f
+                    check(!entity.isPassenger && !entity.isVehicle) { "Preview entity must be independent" }
+                    check(entity.bbHeight.isFinite() && entity.bbWidth.isFinite() && entity.bbHeight > 0f && entity.bbWidth > 0f && entity.bbHeight <= 128f && entity.bbWidth <= 128f) { "Invalid preview dimensions" }
+                    entity.setYRot(180f)
+                    entity.yRotO = 180f
                     if (entity is LivingEntity) {
-                        entity.bodyYaw = 180f
-                        entity.prevBodyYaw = 180f
-                        entity.headYaw = 180f
-                        entity.prevHeadYaw = 180f
+                        entity.yBodyRot = 180f
+                        entity.yBodyRotO = 180f
+                        entity.yHeadRot = 180f
+                        entity.yHeadRotO = 180f
                     }
                     val region = handle.portraitRegion
-                    var framebuffer: SimpleFramebuffer? = null
-                    AutoCloseable { framebuffer?.delete() }.use {
-                        val target = SimpleFramebuffer(SIZE, SIZE, true, MinecraftClient.IS_SYSTEM_MAC).also { framebuffer = it }
+                    var framebuffer: TextureTarget? = null
+                    AutoCloseable { framebuffer?.destroyBuffers() }.use {
+                        val target = TextureTarget(SIZE, SIZE, true, Minecraft.ON_OSX).also { framebuffer = it }
                         target.setClearColor(0f, 0f, 0f, 0f)
-                        target.clear(MinecraftClient.IS_SYSTEM_MAC)
-                        target.beginWrite(true)
+                        target.clear(Minecraft.ON_OSX)
+                        target.bindWrite(true)
                         // 離屏圖片使用自己的投影與座標原點，不沿用 GUI 深度位移。
-                        RenderSystem.getModelViewStack().loadIdentity()
+                        RenderSystem.getModelViewStack().setIdentity()
                         RenderSystem.applyModelViewMatrix()
-                        RenderSystem.setProjectionMatrix(Matrix4f().setOrtho(0f, SIZE.toFloat(), SIZE.toFloat(), 0f, -1000f, 1000f), VertexSorter.BY_Z)
+                        RenderSystem.setProjectionMatrix(Matrix4f().setOrtho(0f, SIZE.toFloat(), SIZE.toFloat(), 0f, -1000f, 1000f), VertexSorting.ORTHOGRAPHIC_Z)
                         RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
                         RenderSystem.disableScissor()
                         RenderSystem.enableDepthTest()
                         RenderSystem.depthMask(true)
                         RenderSystem.enableBlend()
                         RenderSystem.defaultBlendFunc()
-                        val matrices = MatrixStack()
-                        val scale = (SIZE * 0.8f) / maxOf(entity.height, entity.width)
+                        val matrices = PoseStack()
+                        val scale = (SIZE * 0.8f) / maxOf(entity.bbHeight, entity.bbWidth)
                         matrices.translate(SIZE / 2.0, SIZE * 0.9, 0.0)
                         matrices.scale(scale, -scale, scale)
-                        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f))
+                        matrices.mulPose(Axis.YP.rotationDegrees(180f))
                         val dispatcher = client.entityRenderDispatcher
-                        dispatcher.setRotation(Quaternionf().rotationY(Math.PI.toFloat()))
-                        dispatcher.setRenderShadows(false)
-                        dispatcher.setRenderHitboxes(false)
-                        val consumers = client.bufferBuilders.entityVertexConsumers
+                        dispatcher.overrideCameraOrientation(Quaternionf().rotationY(Math.PI.toFloat()))
+                        dispatcher.setRenderShadow(false)
+                        dispatcher.setRenderHitBoxes(false)
+                        val consumers = client.renderBuffers().bufferSource()
                         try {
-                            dispatcher.render(entity, 0.0, 0.0, 0.0, 180f, 0f, matrices, consumers, LightmapTextureManager.MAX_LIGHT_COORDINATE)
+                            dispatcher.render(entity, 0.0, 0.0, 0.0, 180f, 0f, matrices, consumers, LightTexture.FULL_BRIGHT)
                         } finally {
-                            consumers.draw()
+                            consumers.endBatch()
                         }
-                        RenderSystem.bindTexture(target.colorAttachment)
+                        RenderSystem.bindTexture(target.colorTextureId)
                         val image = NativeImage(SIZE, SIZE, false)
-                        var texture: NativeImageBackedTexture? = null
-                        var registered: Identifier? = null
+                        var texture: DynamicTexture? = null
+                        var registered: ResourceLocation? = null
                         AutoCloseable {
                             try {
                                 texture?.close()
                             } finally {
-                                registered?.let(client.textureManager::destroyTexture)
+                                registered?.let(client.textureManager::release)
                             }
                         }.use {
                             try {
-                                image.loadFromTextureImage(0, false)
-                                image.mirrorVertically()
-                                texture = NativeImageBackedTexture(image)
+                                image.downloadTexture(0, false)
+                                image.flipY()
+                                texture = DynamicTexture(image)
                             } catch (cause: Throwable) {
                                 image.close()
                                 throw cause
                             }
-                            val id = client.textureManager.registerDynamicTexture("mahjongcraft_character_preview", texture)
+                            val id = client.textureManager.register("mahjongcraft_character_preview", texture)
                             registered = id
                             texture = null
                             val captured = CharacterPreviewImage(
                                 full = PlayerPortraitSource.TextureRegion(id.toString(), 0f, 0f, 1f, 1f),
                                 portrait = PlayerPortraitSource.TextureRegion(id.toString(), region?.left ?: 0f, region?.top ?: 0f, region?.right ?: 1f, region?.bottom ?: 1f),
-                                dispose = { client.textureManager.destroyTexture(id) },
+                                dispose = { client.textureManager.release(id) },
                             )
                             completed = captured
                             registered = null

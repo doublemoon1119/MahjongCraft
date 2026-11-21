@@ -10,12 +10,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfo
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
-import net.minecraft.registry.RegistryKey
-import net.minecraft.registry.RegistryKeys
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
+import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.Registries
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 
 /**
@@ -44,18 +44,18 @@ class FabricMahjongRoundInfoPresenter(
         val existing = findManagedDisplay(world, presentation.tableId, controllerPos)
         if (existing != null) {
             existing.applyPresentation(presentation)
-            existing.refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+            existing.moveTo(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
         } else {
             val display = MahjongRoundInfoEntity(world = world).apply {
                 applyPresentation(presentation)
-                refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+                moveTo(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
                 assignToTable(presentation.tableId)
             }
             if (!spawnGateway.spawn(world, display, "round-info", presentation.tableId)) {
                 return MahjongRoundInfoPresentationResult.SPAWN_FAILED
             }
         }
-        table.blockEntity.markDirty()
+        table.blockEntity.setChanged()
         return MahjongRoundInfoPresentationResult.PRESENTED
     }
 
@@ -83,10 +83,10 @@ class FabricMahjongRoundInfoPresenter(
      * @param location 桌子位置。
      * @return 對應的已載入伺服器世界；無法解析時為 null。
      */
-    private fun resolveWorld(location: TableLocation): ServerWorld? {
-        val identifier = Identifier.tryParse(location.dimensionId) ?: return null
-        val worldKey = RegistryKey.of(RegistryKeys.WORLD, identifier)
-        return serverHolder.current()?.getWorld(worldKey)
+    private fun resolveWorld(location: TableLocation): ServerLevel? {
+        val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null
+        val worldKey = ResourceKey.create(Registries.DIMENSION, identifier)
+        return serverHolder.current()?.getLevel(worldKey)
     }
 
     /**
@@ -98,12 +98,12 @@ class FabricMahjongRoundInfoPresenter(
      * @return 第一個符合桌子 UUID 的局況顯示 entity；不存在時為 null。
      */
     private fun findManagedDisplay(
-        world: ServerWorld,
+        world: ServerLevel,
         tableId: Uuid,
         controllerPos: BlockPos,
-    ): MahjongRoundInfoEntity? = world.getEntitiesByClass(
+    ): MahjongRoundInfoEntity? = world.getEntitiesOfClass(
         MahjongRoundInfoEntity::class.java,
-        Box(controllerPos).expand(
+        AABB(controllerPos).inflate(
             TableOverlayEntitySearch.HORIZONTAL_RADIUS,
             TableOverlayEntitySearch.VERTICAL_RADIUS,
             TableOverlayEntitySearch.HORIZONTAL_RADIUS,

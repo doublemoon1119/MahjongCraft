@@ -2,14 +2,14 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec
-import net.minecraft.entity.Entity
-import net.minecraft.entity.EntityType
-import net.minecraft.entity.data.DataTracker
-import net.minecraft.entity.data.TrackedData
-import net.minecraft.entity.data.TrackedDataHandlerRegistry
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.util.math.Box
-import net.minecraft.world.World
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.network.syncher.EntityDataAccessor
+import net.minecraft.network.syncher.EntityDataSerializers
+import net.minecraft.network.syncher.SynchedEntityData
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.level.Level
+import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 
 /**
@@ -20,23 +20,23 @@ import kotlin.uuid.Uuid
  */
 class DiceRollPresentationEntity(
     type: EntityType<out DiceRollPresentationEntity> = ModEntities.diceRollPresentation,
-    world: World,
+    world: Level,
 ) : Entity(type, world) {
     /** 所屬麻將桌；未完成設定或資料損壞時為 `null`。 */
     val managedTableId: Uuid?
-        get() = dataTracker[TABLE_ID].takeIf(String::isNotBlank)?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
+        get() = entityData[TABLE_ID].takeIf(String::isNotBlank)?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
 
     /** 本次擲骰的最終點數，依投擲順序排列。 */
     val points: List<Int>
-        get() = dataTracker[POINTS].split(",").mapNotNull(String::toIntOrNull).filter { it in VALID_POINT_RANGE }
+        get() = entityData[POINTS].split(",").mapNotNull(String::toIntOrNull).filter { it in VALID_POINT_RANGE }
 
     /** 最後一顆骰子停穩、結果面板開始揭示的絕對遊戲時間。 */
     val revealGameTime: Long
-        get() = dataTracker[REVEAL_GAME_TIME]
+        get() = entityData[REVEAL_GAME_TIME]
 
     /** 結果面板與桌面骰子共同結束的絕對遊戲時間。 */
     val endGameTime: Long
-        get() = dataTracker[END_GAME_TIME]
+        get() = entityData[END_GAME_TIME]
 
     init {
         setNoGravity(true)
@@ -56,16 +56,16 @@ class DiceRollPresentationEntity(
         revealGameTime: Long,
         endGameTime: Long,
     ) {
-        check(!world.isClient) { "Dice roll presentation must be configured by the server" }
+        check(!level().isClientSide) { "Dice roll presentation must be configured by the server" }
         require(points.size in SUPPORTED_DICE_COUNTS) { "Dice roll presentation must contain two or three dice" }
         require(points.all { it in VALID_POINT_RANGE }) { "Dice points must be between one and six" }
         require(endGameTime - revealGameTime == DiceRollAnimationSpec.EXTRA_VIEWING_TICKS.toLong()) {
             "Dice result duration must match the shared presentation duration"
         }
-        dataTracker.set(TABLE_ID, tableId.toString())
-        dataTracker.set(POINTS, points.joinToString(","))
-        dataTracker.set(REVEAL_GAME_TIME, revealGameTime)
-        dataTracker.set(END_GAME_TIME, endGameTime)
+        entityData.set(TABLE_ID, tableId.toString())
+        entityData.set(POINTS, points.joinToString(","))
+        entityData.set(REVEAL_GAME_TIME, revealGameTime)
+        entityData.set(END_GAME_TIME, endGameTime)
     }
 
     /**
@@ -73,19 +73,19 @@ class DiceRollPresentationEntity(
      *
      * @param tickDelta 本 tick 的部分經過時間。
      */
-    fun elapsedResultTicks(tickDelta: Float): Double = world.time + tickDelta.toDouble() - revealGameTime
+    fun elapsedResultTicks(tickDelta: Float): Double = level().gameTime + tickDelta.toDouble() - revealGameTime
 
     /** 純視覺舞台不提供碰撞。 */
-    override fun isCollidable(): Boolean = false
+    override fun canBeCollidedWith(): Boolean = false
 
     /** 純視覺舞台不參與推擠。 */
     override fun isPushable(): Boolean = false
 
     /** 純視覺舞台不能被準星選取。 */
-    override fun canHit(): Boolean = false
+    override fun isPickable(): Boolean = false
 
     /** 覆蓋完整 billboard 範圍，避免只依小型 entity 錨點進行視錐裁切。 */
-    override fun getVisibilityBoundingBox(): Box = Box(
+    override fun getBoundingBoxForCulling(): AABB = AABB(
         x - WIDTH / 2.0,
         y - HEIGHT / 2.0,
         z - WIDTH / 2.0,
@@ -97,33 +97,33 @@ class DiceRollPresentationEntity(
     /** 非法或到期的舞台由伺服器自行清除。 */
     override fun tick() {
         super.tick()
-        if (world.isClient) return
+        if (level().isClientSide) return
         val valid = managedTableId != null &&
             points.size in SUPPORTED_DICE_COUNTS &&
             endGameTime - revealGameTime == DiceRollAnimationSpec.EXTRA_VIEWING_TICKS.toLong()
-        if (!valid || world.time >= endGameTime) discard()
+        if (!valid || level().gameTime >= endGameTime) discard()
     }
 
     /** 初始化 client/server 同步欄位。 */
-    override fun initDataTracker() {
-        dataTracker.startTracking(TABLE_ID, "")
-        dataTracker.startTracking(POINTS, "")
-        dataTracker.startTracking(REVEAL_GAME_TIME, 0L)
-        dataTracker.startTracking(END_GAME_TIME, 0L)
+    override fun defineSynchedData() {
+        entityData.define(TABLE_ID, "")
+        entityData.define(POINTS, "")
+        entityData.define(REVEAL_GAME_TIME, 0L)
+        entityData.define(END_GAME_TIME, 0L)
     }
 
     /** 從世界存檔還原完整擲骰結果時間線。 */
-    override fun readCustomDataFromNbt(nbt: NbtCompound) {
-        dataTracker.set(TABLE_ID, ManagedTableNbt.read(nbt)?.toString().orEmpty())
-        dataTracker.set(POINTS, nbt.getString(NBT_KEY_POINTS))
-        dataTracker.set(REVEAL_GAME_TIME, nbt.getLong(NBT_KEY_REVEAL_GAME_TIME))
-        dataTracker.set(END_GAME_TIME, nbt.getLong(NBT_KEY_END_GAME_TIME))
+    override fun readAdditionalSaveData(nbt: CompoundTag) {
+        entityData.set(TABLE_ID, ManagedTableNbt.read(nbt)?.toString().orEmpty())
+        entityData.set(POINTS, nbt.getString(NBT_KEY_POINTS))
+        entityData.set(REVEAL_GAME_TIME, nbt.getLong(NBT_KEY_REVEAL_GAME_TIME))
+        entityData.set(END_GAME_TIME, nbt.getLong(NBT_KEY_END_GAME_TIME))
     }
 
     /** 將完整擲骰結果時間線寫入世界存檔。 */
-    override fun writeCustomDataToNbt(nbt: NbtCompound) {
+    override fun addAdditionalSaveData(nbt: CompoundTag) {
         ManagedTableNbt.write(nbt, managedTableId)
-        nbt.putString(NBT_KEY_POINTS, dataTracker[POINTS])
+        nbt.putString(NBT_KEY_POINTS, entityData[POINTS])
         nbt.putLong(NBT_KEY_REVEAL_GAME_TIME, revealGameTime)
         nbt.putLong(NBT_KEY_END_GAME_TIME, endGameTime)
     }
@@ -160,19 +160,19 @@ class DiceRollPresentationEntity(
         private const val NBT_KEY_END_GAME_TIME = "EndGameTime"
 
         /** 同步桌子 ID。 */
-        private val TABLE_ID: TrackedData<String> =
-            DataTracker.registerData(DiceRollPresentationEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val TABLE_ID: EntityDataAccessor<String> =
+            SynchedEntityData.defineId(DiceRollPresentationEntity::class.java, EntityDataSerializers.STRING)
 
         /** 同步逗號分隔的骰子點數。 */
-        private val POINTS: TrackedData<String> =
-            DataTracker.registerData(DiceRollPresentationEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val POINTS: EntityDataAccessor<String> =
+            SynchedEntityData.defineId(DiceRollPresentationEntity::class.java, EntityDataSerializers.STRING)
 
         /** 同步揭示時間。 */
-        private val REVEAL_GAME_TIME: TrackedData<Long> =
-            DataTracker.registerData(DiceRollPresentationEntity::class.java, TrackedDataHandlerRegistry.LONG)
+        private val REVEAL_GAME_TIME: EntityDataAccessor<Long> =
+            SynchedEntityData.defineId(DiceRollPresentationEntity::class.java, EntityDataSerializers.LONG)
 
         /** 同步結束時間。 */
-        private val END_GAME_TIME: TrackedData<Long> =
-            DataTracker.registerData(DiceRollPresentationEntity::class.java, TrackedDataHandlerRegistry.LONG)
+        private val END_GAME_TIME: EntityDataAccessor<Long> =
+            SynchedEntityData.defineId(DiceRollPresentationEntity::class.java, EntityDataSerializers.LONG)
     }
 }
