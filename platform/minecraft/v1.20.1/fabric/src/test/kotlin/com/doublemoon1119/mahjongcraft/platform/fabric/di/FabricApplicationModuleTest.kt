@@ -15,8 +15,6 @@ import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerStateStore
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.DefaultGameConfigProvider
@@ -67,24 +65,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTile
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.GameActionCandidateResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.PlayerDecisionPromptFactory
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricDebugCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.animation.FabricDebugAnimationCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugDecisionActionIds
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.FabricDebugDecisionCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.FabricHistoryGenerationRuntimeFactory
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.HistoryGenerationRuntimeFactory
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationMode
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.FabricDebugPresentationCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.progression.FabricDebugProgressionCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.progression.FabricDebugRoundCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.DebugScriptedAiStrategy
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.FabricDebugScenarioCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPlayerTableScope
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewEntityLifecycle
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugTilePreviewSupport
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugVirtualTableLayoutFactory
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.text.FabricDebugTextCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.BuiltInDefaultGameConfigProvider
@@ -139,8 +119,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
-import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
-import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import org.koin.core.context.startKoin
@@ -151,11 +129,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
-import kotlin.uuid.Uuid
 
 /** 驗證獨立伺服器與客戶端的 Koin 依賴完整、互相隔離，且擴充登記完成後凍結。 */
 class FabricApplicationModuleTest {
@@ -227,11 +203,6 @@ class FabricApplicationModuleTest {
             presentationRegistries = koin.get<MinecraftPresentationRegistries>(),
             fabricRegistries = koin.get<FabricExtensionRegistries>(),
             mahjongStoolSeatProvider = koin.get<MahjongStoolSeatProvider>(),
-            debugWinRoundContinuationState = koin.get<DebugWinRoundContinuationState>(),
-            minecraftEnvironment = object : MinecraftEnvironment {
-                /** 此案例只登記正式環境擴充。 */
-                override val isDevelopment: Boolean = false
-            },
             failurePolicy = FabricExtensionFailurePolicy(),
             extensions = listOf(extension),
         )
@@ -251,52 +222,7 @@ class FabricApplicationModuleTest {
         }
     }
 
-    /** 開發環境在凍結前以獨立的 debug 來源登記 debug 情境使用的腳本 AI。 */
-    @Test
-    fun `development environment registers scripted debug ai strategies before freezing`() {
-        val koin = startKoin {
-            allowOverride(false)
-            modules(fabricServerModule)
-        }.koin
-
-        val result = FabricMahjongExtensions.initialize(
-            coreRegistries = koin.get<CoreExtensionRegistries>(),
-            presentationRegistries = koin.get<MinecraftPresentationRegistries>(),
-            fabricRegistries = koin.get<FabricExtensionRegistries>(),
-            mahjongStoolSeatProvider = koin.get<MahjongStoolSeatProvider>(),
-            debugWinRoundContinuationState = koin.get<DebugWinRoundContinuationState>(),
-            minecraftEnvironment = object : MinecraftEnvironment {
-                /** 此案例以開發環境啟動擴充。 */
-                override val isDevelopment: Boolean = true
-            },
-            failurePolicy = FabricExtensionFailurePolicy(),
-            extensions = emptyList(),
-        )
-
-        assertTrue(DebugScriptedAiStrategy.TSUMOGIRI_KEY in koin.get<MahjongAiStrategyRegistry>().getAllStrategyKeys())
-        assertNotNull(koin.get<GameActionVocabularyRegistry>().find(null, DebugDecisionActionIds.TEXT_CARD))
-        val debugSource = result.sources.single { it.extensionId == "mahjongcraft:debug" }
-        assertTrue(debugSource.categories.any { it.id == "mahjongcraft:ai_strategy" && DebugScriptedAiStrategy.TSUMOGIRI_KEY in it.registrationIds })
-        assertTrue(result.sources.first().categories.none { category -> DebugScriptedAiStrategy.TSUMOGIRI_KEY in category.registrationIds })
-        val table = FakeTableStateFactory.create(
-            players = List(4) { FakeMahjongPlayerFactory.create() },
-            config = RiichiRuleConfig(),
-        )
-        val context = WinRoundContinuationContext(
-            previousTableState = table,
-            settledTableState = table,
-            winnerPlayerIds = setOf(table.players.first().id),
-            ronDiscarderId = null,
-            winningTileId = Uuid.random(),
-        )
-        val resolverRegistry = koin.get<WinRoundContinuationResolverRegistry>()
-        val ruleModule = koin.get<MahjongModuleRegistry>().getModule(table.config)
-        assertEquals(WinRoundDirective.EndRound, resolverRegistry.resolve(context, ruleModule))
-        koin.get<DebugWinRoundContinuationState>().setMode(table.id, DebugWinRoundContinuationMode.FULL)
-        assertIs<WinRoundDirective.ContinueRound>(resolverRegistry.resolve(context, ruleModule))
-    }
-
-    /** 驗證伺服器服務、內建擴充與除錯指令可解析，且不包含客戶端狀態儲存。 */
+    /** 驗證伺服器服務與內建擴充可解析，且不包含客戶端狀態儲存。 */
     @Test
     fun `server graph resolves gameplay services without client stores`() {
         val koin = startKoin {
@@ -335,11 +261,6 @@ class FabricApplicationModuleTest {
             presentationRegistries = presentationRegistries,
             fabricRegistries = koin.get<FabricExtensionRegistries>(),
             mahjongStoolSeatProvider = koin.get<MahjongStoolSeatProvider>(),
-            debugWinRoundContinuationState = koin.get<DebugWinRoundContinuationState>(),
-            minecraftEnvironment = object : MinecraftEnvironment {
-                /** 此案例驗證正式環境的完整組裝。 */
-                override val isDevelopment: Boolean = false
-            },
             failurePolicy = FabricExtensionFailurePolicy(),
             extensions = emptyList(),
         )
@@ -445,109 +366,6 @@ class FabricApplicationModuleTest {
         koin.get<FabricTableLocationValidationService>()
         koin.get<FabricAppCoroutineScope>()
         koin.get<FabricDecisionTimerScheduler>()
-        val debugRoot = koin.get<FabricDebugCommand>().build().build()
-        assertEquals("mahjongcraft", debugRoot.name)
-        assertEquals(setOf("debug"), debugRoot.children.map { it.name }.toSet())
-        val debugNode = debugRoot.children.single()
-        assertEquals(
-            expected = setOf(
-                "seated_participant",
-                "scenario",
-                "history",
-                "stress",
-                "win",
-                "showcase",
-                "dice",
-                "deal",
-                "draw",
-                "discard",
-                "exhaustive_draw_settlement",
-                "hovered_text",
-                "win_settlement",
-                "match_settlement",
-                "match_progression",
-                "decision_hud",
-                "meld",
-                "continuing_win",
-                "win_showcase_override",
-                "rule_decision",
-                "round",
-            ),
-            actual = debugNode.children.map { it.name }.toSet(),
-            message = "every family subcommand is mounted under the debug root, and nothing else is",
-        )
-        assertEquals(
-            expected = setOf("list", "load", "stress"),
-            actual = koin.get<FabricDebugScenarioCommand>().build().build().children.map { it.name }.toSet(),
-        )
-        assertEquals(
-            expected = setOf("next", "combo"),
-            actual = koin.get<FabricDebugRoundCommand>().buildRoundCommand().build().children.map { it.name }.toSet(),
-        )
-        val presentationCommand = koin.get<FabricDebugPresentationCommand>()
-        assertEquals(
-            expected = setOf("melds", "tsumo", "ron", "multi_ron", "phase"),
-            actual = presentationCommand.buildShowcaseCommand().build().children.map { it.name }.toSet(),
-        )
-        val exhaustiveDrawSettlementNode = presentationCommand.buildExhaustiveDrawSettlementCommand().build()
-        assertEquals(setOf("riichi", "abortive"), exhaustiveDrawSettlementNode.children.map { it.name }.toSet())
-        assertEquals(
-            expected = setOf("normal", "melds", "kyuushu", "score"),
-            actual = exhaustiveDrawSettlementNode.getChild("riichi").children.map { it.name }.toSet(),
-        )
-        val winSettlementNode = presentationCommand.buildWinSettlementCommand().build()
-        assertEquals(setOf("riichi", "taiwan"), winSettlementNode.children.map { it.name }.toSet())
-        assertEquals(
-            expected = setOf("tsumo", "ron", "yakuman", "pao", "nagashi"),
-            actual = winSettlementNode.getChild("riichi").children.map { it.name }.toSet(),
-        )
-        assertEquals(
-            expected = setOf("tsumo", "ron", "eight_flowers", "seven_flowers"),
-            actual = winSettlementNode.getChild("taiwan").children.map { it.name }.toSet(),
-        )
-        assertEquals(
-            expected = setOf("winner_count"),
-            actual = winSettlementNode.getChild("riichi").getChild("ron").children.map { it.name }.toSet(),
-            message = "ron keeps its optional winner count argument",
-        )
-        assertEquals(
-            expected = setOf("clear", "cue"),
-            actual = presentationCommand.buildWinShowcaseOverrideCommand().build().children.map { it.name }.toSet(),
-        )
-        koin.get<FabricDebugTextCommand>()
-        val decisionCommand = koin.get<FabricDebugDecisionCommand>()
-        val decisionHudNode = decisionCommand.buildDecisionHudCommand().build()
-        assertEquals(
-            expected = setOf("clear", "riichi", "riichi_three_player", "taiwan"),
-            actual = decisionHudNode.children.map { it.name }.toSet(),
-        )
-        assertTrue(
-            actual = decisionHudNode.getChild("riichi").children.map { it.name }
-                .containsAll(listOf("timer", "chi", "pon", "kan", "ron", "text_card", "mixed", "transparent_calls")),
-            message = "decision_hud riichi keeps its preview literals",
-        )
-        assertEquals(setOf("pull_north"), decisionHudNode.getChild("riichi_three_player").children.map { it.name }.toSet())
-        assertEquals(
-            expected = setOf(
-                "discard_analysis",
-                "discard_passed_win",
-                "discard_tsumo_only",
-                "discard_below_minimum",
-                "discard_unavailable",
-                "discard_mixed",
-            ),
-            actual = decisionHudNode.getChild("taiwan").children.map { it.name }.toSet(),
-        )
-        assertEquals(
-            expected = setOf("start", "submit", "timeout", "cancel"),
-            actual = decisionCommand.buildRuleDecisionCommand().build().children.map { it.name }.toSet(),
-        )
-        koin.get<FabricDebugProgressionCommand>()
-        koin.get<FabricDebugAnimationCommand>()
-        koin.get<DebugTilePreviewSupport>()
-        koin.get<DebugVirtualTableLayoutFactory>()
-        koin.get<DebugPreviewEntityLifecycle>()
-        koin.get<DebugPlayerTableScope>()
         koin.get<GetPlayerDecisionOptionsUseCase>()
         koin.get<GameActionCandidateResolver>()
         koin.get<PlayerDecisionPromptFactory>()
@@ -665,7 +483,6 @@ class FabricApplicationModuleTest {
 
         assertSame(koin.get<BuiltInDefaultGameConfigProvider>(), koin.get<DefaultGameConfigProvider>())
         assertSame(koin.get<MahjongStoolSeatProvider>(), koin.get<SeatProvider<*, *>>())
-        assertSame(koin.get<FabricHistoryGenerationRuntimeFactory>(), koin.get<HistoryGenerationRuntimeFactory>())
         assertSame(koin.get<ClientCoroutineScope>(), koin.get<CoroutineScope>())
         assertSame(koin.get<ClientThreadCoroutineDispatcher>(), koin.get<CoroutineDispatcher>())
     }

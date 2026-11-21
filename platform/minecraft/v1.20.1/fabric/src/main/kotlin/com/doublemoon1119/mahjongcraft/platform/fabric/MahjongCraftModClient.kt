@@ -83,7 +83,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.LatestDiscard
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.time.PauseAwareClientMonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.BuiltInFabricMahjongClientExtension
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.DebugFabricMahjongClientExtension
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongClientExtension
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongClientExtensionBootstrap
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongScoringStickItem
@@ -140,8 +139,8 @@ class MahjongCraftModClient : ClientModInitializer {
 
     override fun onInitializeClient() {
         val koin = GlobalContext.get()
-        val previewExtensions = (if (FabricLoader.getInstance().isDevelopmentEnvironment) listOf(DebugFabricMahjongClientExtension) else emptyList()) +
-            FabricLoader.getInstance().getEntrypoints(FabricMahjongClientExtensionBootstrap.ENTRYPOINT, FabricMahjongClientExtension::class.java).toList()
+        val previewExtensions = FabricLoader.getInstance()
+            .getEntrypoints(FabricMahjongClientExtensionBootstrap.ENTRYPOINT, FabricMahjongClientExtension::class.java)
         val previewSources = FabricMahjongClientExtensionBootstrap.registerAndFreeze(
             extensions = previewExtensions,
             registry = koin.get<ClientAiCharacterPreviewRegistry>(),

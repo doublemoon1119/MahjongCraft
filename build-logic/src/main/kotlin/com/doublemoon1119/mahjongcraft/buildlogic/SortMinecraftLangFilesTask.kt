@@ -1,19 +1,20 @@
 package com.doublemoon1119.mahjongcraft.buildlogic
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
+import java.io.File
 
 /** 依 key 字典序重新排列所有 Minecraft 語系檔。 */
 abstract class SortMinecraftLangFilesTask : DefaultTask() {
-    /** Minecraft 平台語系檔目錄。 */
+    /** MahjongCraft 本體與開發專用模組的語系檔目錄。 */
     @get:Internal
-    abstract val langDirectory: DirectoryProperty
+    abstract val langDirectories: ListProperty<File>
 
     /** 逐檔改寫排序後的內容。 */
     @TaskAction
     fun sort() {
-        minecraftLangFiles(langDirectory.get().asFile).forEach { file -> file.writeText(sortedLangFileText(file.readText())) }
+        langDirectories.get().flatMap(::minecraftLangFiles).forEach { file -> file.writeText(sortedLangFileText(file.readText())) }
     }
 }

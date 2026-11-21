@@ -7,12 +7,6 @@ object MinecraftMessageKeys {
     /** 暫時排除名單達到容量上限。 */
     const val ROOM_EXCLUSION_LIST_FULL = "mahjongcraft.room.exclusion_list_full"
 
-    /** 已入座測試角色已建立，由正式掃描加入。 */
-    const val DEBUG_SEATED_PARTICIPANT_CREATED = "mahjongcraft.message.debug.seated_participant.created"
-
-    /** 測試需要房主等待室與可用家具座位。 */
-    const val DEBUG_SEATED_PARTICIPANT_UNAVAILABLE = "mahjongcraft.message.debug.seated_participant.unavailable"
-
     /** 暫時排除尚未解除。 */
     const val ROOM_PARTICIPANT_EXCLUDED = "mahjongcraft.message.room_participant_excluded"
 
@@ -42,39 +36,6 @@ object MinecraftMessageKeys {
 
     /** 玩家目前不屬於任何麻將遊戲。 */
     const val PLAYER_NOT_IN_ANY_GAME = "mahjongcraft.message.player_not_in_any_game"
-
-    /** Debug 決策畫面文字卡片的標題。 */
-    const val DEBUG_DECISION_TEXT_CARD_LABEL = "mahjongcraft.message.debug.decision.text_card.label"
-
-    /** Debug 決策畫面文字卡片的內文。 */
-    const val DEBUG_DECISION_TEXT_CARD_BODY = "mahjongcraft.message.debug.decision.text_card.body"
-
-    /** Debug 決策畫面文字卡片的提示文字。 */
-    const val DEBUG_DECISION_TEXT_CARD_HINT = "mahjongcraft.message.debug.decision.text_card.hint"
-
-    /** Debug 決策畫面文字卡片的說明文字。 */
-    const val DEBUG_DECISION_TEXT_CARD_DESCRIPTION = "mahjongcraft.message.debug.decision.text_card.description"
-
-    /** 開發用自動拔北三人日麻的規則名稱。 */
-    const val DEBUG_RULE_MODULE_AUTO_NORTH_RIICHI = "mahjongcraft.message.debug.rule_module.auto_north_riichi"
-
-    /** 開發用和牌者坐莊、每局換位四人日麻的規則名稱。 */
-    const val DEBUG_RULE_MODULE_WINNER_DEALER_RIICHI = "mahjongcraft.message.debug.rule_module.winner_dealer_riichi"
-
-    /** 開發用可宣告不聽四人日麻的規則名稱。 */
-    const val DEBUG_RULE_MODULE_NOTEN_DECLARATION_RIICHI = "mahjongcraft.message.debug.rule_module.noten_declaration_riichi"
-
-    /** 開發用可宣告不聽規則中，流局時公開聽牌的選項名稱。 */
-    const val DEBUG_DECISION_REVEAL_TENPAI_LABEL = "mahjongcraft.message.debug.decision.reveal_tenpai.label"
-
-    /** 開發用可宣告不聽規則中，流局時公開聽牌的選項說明。 */
-    const val DEBUG_DECISION_REVEAL_TENPAI_DESCRIPTION = "mahjongcraft.message.debug.decision.reveal_tenpai.description"
-
-    /** 開發用可宣告不聽規則中，流局時宣告不聽的選項與動作名稱。 */
-    const val DEBUG_DECISION_DECLARE_NOTEN_LABEL = "mahjongcraft.message.debug.decision.declare_noten.label"
-
-    /** 開發用可宣告不聽規則中，流局時宣告不聽的選項說明。 */
-    const val DEBUG_DECISION_DECLARE_NOTEN_DESCRIPTION = "mahjongcraft.message.debug.decision.declare_noten.description"
 
     /** 對局進行中禁止主動離開。 */
     const val GAME_LEAVE_DENIED_WHILE_PLAYING = "mahjongcraft.message.game_leave_denied_while_playing"
@@ -524,8 +485,6 @@ object MinecraftMessageKeys {
 
     /** Minecraft 語系資源必須提供的全部玩家回饋 key。 */
     val ALL: Set<String> = setOf(
-        DEBUG_SEATED_PARTICIPANT_CREATED,
-        DEBUG_SEATED_PARTICIPANT_UNAVAILABLE,
         ROOM_PARTICIPANT_EXCLUDED,
         ROOM_LAYOUT_CONFLICT,
         SEATED_PARTICIPANT_UNAVAILABLE,
@@ -552,17 +511,6 @@ object MinecraftMessageKeys {
         GAME_JOINED,
         PLAYER_NOT_IN_GAME,
         PLAYER_NOT_IN_ANY_GAME,
-        DEBUG_DECISION_TEXT_CARD_LABEL,
-        DEBUG_DECISION_TEXT_CARD_BODY,
-        DEBUG_DECISION_TEXT_CARD_HINT,
-        DEBUG_DECISION_TEXT_CARD_DESCRIPTION,
-        DEBUG_RULE_MODULE_AUTO_NORTH_RIICHI,
-        DEBUG_RULE_MODULE_WINNER_DEALER_RIICHI,
-        DEBUG_RULE_MODULE_NOTEN_DECLARATION_RIICHI,
-        DEBUG_DECISION_REVEAL_TENPAI_LABEL,
-        DEBUG_DECISION_REVEAL_TENPAI_DESCRIPTION,
-        DEBUG_DECISION_DECLARE_NOTEN_LABEL,
-        DEBUG_DECISION_DECLARE_NOTEN_DESCRIPTION,
         GAME_LEAVE_DENIED_WHILE_PLAYING,
         GAME_DISSOLVED,
         GAME_LEFT,

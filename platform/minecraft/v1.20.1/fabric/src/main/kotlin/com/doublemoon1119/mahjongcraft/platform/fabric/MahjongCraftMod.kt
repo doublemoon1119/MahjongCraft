@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SetHandSortPrefe
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.MahjongTables
+import com.doublemoon1119.mahjongcraft.platform.fabric.development.MahjongCraftDevelopmentTools
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricClientModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricServerModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
@@ -47,8 +48,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisio
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricGameCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableGameActionService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricDebugCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryDatabasePath
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
@@ -102,14 +101,15 @@ class MahjongCraftMod : ModInitializer {
 
     override fun onInitialize() {
         val koin = startDependencyInjection()
+        // 開發工具的服務要在擴充登記之前載入，開發工具登記的擴充才能取用。
+        val developmentTools = MahjongCraftDevelopmentTools.discover(koin.get<MinecraftEnvironment>())
+        koin.loadModules(developmentTools.flatMap { it.koinModules() })
         // Koin single 建立後，必須先於 NetworkJson 與遊戲流程服務第一次被解析前完成。
         FabricMahjongExtensions.initialize(
             coreRegistries = koin.get<CoreExtensionRegistries>(),
             presentationRegistries = koin.get<MinecraftPresentationRegistries>(),
             fabricRegistries = koin.get<FabricExtensionRegistries>(),
             mahjongStoolSeatProvider = koin.get<MahjongStoolSeatProvider>(),
-            debugWinRoundContinuationState = koin.get<DebugWinRoundContinuationState>(),
-            minecraftEnvironment = koin.get<MinecraftEnvironment>(),
             failurePolicy = koin.get<ExtensionFailurePolicy>(),
         )
         ModItems.register()
@@ -270,7 +270,7 @@ class MahjongCraftMod : ModInitializer {
         koin.get<FabricHistoryQueryService>().register()
         koin.get<FabricRoomCommand>().register()
         koin.get<FabricGameCommand>().register()
-        koin.get<FabricDebugCommand>().register()
+        developmentTools.forEach { it.initialize(koin) }
 
         logger.info(koin.get<FabricRuntimeMetadata>().initializationMessage())
     }

@@ -18,7 +18,7 @@ class HistoryRetentionCoordinator {
      * @param next 新政策。
      * @param publish 發布設定與權威記錄政策的交易，不得重入此 coordinator。
      */
-    internal suspend fun apply(next: HistoryRetentionPolicy, publish: suspend () -> Unit = {}) = mutex.withLock {
+    suspend fun apply(next: HistoryRetentionPolicy, publish: suspend () -> Unit = {}) = mutex.withLock {
         publish()
         policy = next
     }

@@ -37,7 +37,7 @@ internal data class HistoryCleanupPreview(
  * @property incrementalSupported 是否支援漸進回收；尚未檢查時為 null。
  * @property completed 是否走完維護流程；回收延後及容量不足另由對應欄位表示。
  */
-internal data class HistoryCleanupReport(
+data class HistoryCleanupReport(
     val removedMatches: Long,
     val diskBefore: HistoryDiskUsage?,
     val diskAfter: HistoryDiskUsage?,
@@ -48,7 +48,7 @@ internal data class HistoryCleanupReport(
 )
 
 /** 不洩漏原始例外或路徑的 session 管理操作結果。 */
-internal sealed interface HistoryManagementResult<out T> {
+sealed interface HistoryManagementResult<out T> {
     /**
      * 已取得此 session 的結果。
      *

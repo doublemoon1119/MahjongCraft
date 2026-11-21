@@ -36,6 +36,9 @@ Run from the repository root, selecting the target explicitly:
 ./gradlew :minecraft_v1.20.1_fabric:runServer "-PmahjongcraftTarget=minecraft-v1.20.1-fabric"
 ```
 
+Development runs also load the [debug tools module](../fabric-debug/README.md), which provides the
+`/mahjongcraft debug` commands; the packaged mod does not contain it.
+
 Client and dedicated-server runs use separate directories,
 `platform/minecraft/v1.20.1/fabric/run/client` and `run/server`.
 Server startup requires the usual Minecraft server setup, including EULA acceptance;

@@ -112,7 +112,7 @@ class FabricHistoryOutboxWriter(
     @Volatile private var managementJob: Job? = null
 
     /** 目前存檔 session 識別碼；重連不改變，切換存檔時失效。 */
-    @Volatile internal var currentSessionId: Uuid? = null
+    @Volatile var currentSessionId: Uuid? = null
         private set
 
     /** 正式 session 所屬 server；無平台實例的測試為 null。 */
@@ -169,7 +169,7 @@ class FabricHistoryOutboxWriter(
      * @param id 命令建立時捕捉的 session 識別碼。
      * @return 是否仍屬於目前 session。
      */
-    internal fun isCurrentSession(id: Uuid?): Boolean = id != null && currentSessionId == id
+    fun isCurrentSession(id: Uuid?): Boolean = id != null && currentSessionId == id
 
     /**
      * 記住已結束場次的參與者與固定記錄決策，供保存尚未建立 SQL 參與者列時授權狀態查詢。
@@ -202,7 +202,7 @@ class FabricHistoryOutboxWriter(
      * @param sessionId 生成命令建立時的存檔 session。
      * @return 是否通過記錄資格與容量檢查。
      */
-    internal suspend fun beginGeneration(game: Game, sessionId: Uuid): HistoryManagementResult<Boolean> = manage(sessionId) { _, _ ->
+    suspend fun beginGeneration(game: Game, sessionId: Uuid): HistoryManagementResult<Boolean> = manage(sessionId) { _, _ ->
         val config = configState.current.history
         val eligibility = HistoryRecordingPolicy(config.enabled, config.includeAiMatches)
         eligibility.decide(game) == HistoryRecordingDecision.RECORDING && store.beginHistoryTransfer(game)
@@ -216,7 +216,7 @@ class FabricHistoryOutboxWriter(
      * @param sessionId 來源工作固定的存檔 session。
      * @return 接收、背壓或安全停止結果。
      */
-    internal suspend fun appendGeneration(matchId: Uuid, events: List<HistoryOutboxEvent>, sessionId: Uuid): HistoryManagementResult<HistoryTransferResult> = manage(sessionId) { activeDatabase, _ ->
+    suspend fun appendGeneration(matchId: Uuid, events: List<HistoryOutboxEvent>, sessionId: Uuid): HistoryManagementResult<HistoryTransferResult> = manage(sessionId) { activeDatabase, _ ->
         val result = store.appendHistoryTransfer(matchId, events)
         if (result != HistoryTransferResult.STOPPED) flushOneBatch(activeDatabase)
         result
@@ -230,7 +230,7 @@ class FabricHistoryOutboxWriter(
      * @param sessionId 固定的存檔 session。
      * @return session 管理結果。
      */
-    internal suspend fun finishGeneration(matchId: Uuid, terminal: HistoryRecordingTerminal, sessionId: Uuid): HistoryManagementResult<HistoryGenerationReceipt> = manage(sessionId) { activeDatabase, policy ->
+    suspend fun finishGeneration(matchId: Uuid, terminal: HistoryRecordingTerminal, sessionId: Uuid): HistoryManagementResult<HistoryGenerationReceipt> = manage(sessionId) { activeDatabase, policy ->
         store.finishHistoryTransfer(matchId, terminal)
         synchronizeRecordingDecisions(activeDatabase)
         archiveService.archiveReady(activeDatabase, store.snapshot(), scanAllPending = false)
@@ -248,7 +248,7 @@ class FabricHistoryOutboxWriter(
      * @param sessionId 固定的存檔 session。
      * @return 有界儲存證據，不包含 Replay 內容。
      */
-    internal suspend fun generationReceipt(matchIds: Set<Uuid>, sessionId: Uuid): HistoryManagementResult<HistoryGenerationReceipt> = manage(sessionId) { activeDatabase, _ -> activeDatabase.readGenerationReceipt(matchIds.mapTo(mutableSetOf()) { it.toString() }) }
+    suspend fun generationReceipt(matchIds: Set<Uuid>, sessionId: Uuid): HistoryManagementResult<HistoryGenerationReceipt> = manage(sessionId) { activeDatabase, _ -> activeDatabase.readGenerationReceipt(matchIds.mapTo(mutableSetOf()) { it.toString() }) }
 
     /**
      * 在來源失敗時提交中止證據；資料庫失聯亦可保存，不修改其他 session。
@@ -257,7 +257,7 @@ class FabricHistoryOutboxWriter(
      * @param terminal 來源桌子與中止時間；完整旗標在此強制為 false。
      * @param sessionId 開始生成時固定的 session。
      */
-    internal suspend fun abortGeneration(matchId: Uuid, terminal: HistoryRecordingTerminal, sessionId: Uuid) {
+    suspend fun abortGeneration(matchId: Uuid, terminal: HistoryRecordingTerminal, sessionId: Uuid) {
         retentionCoordinator.withPolicy {
             if (isCurrentSession(sessionId)) store.finishHistoryTransfer(matchId, terminal.copy(completed = false))
         }
@@ -674,7 +674,7 @@ class FabricHistoryOutboxWriter(
      *
      * @param path 歷史資料庫檔案位置。
      */
-    internal suspend fun attach(path: Path) = attachSession(path, null)
+    suspend fun attach(path: Path) = attachSession(path, null)
 
     /**
      * 初始化固定路徑與 session 身分，不沿用前一存檔的用量或工作。
@@ -1060,10 +1060,10 @@ class FabricHistoryOutboxWriter(
 }
 
 /** 每次提交的最大待寫事件數量。 */
-internal const val HISTORY_WRITE_BATCH_SIZE = 64
+const val HISTORY_WRITE_BATCH_SIZE = 64
 
 /** 背景寫入閒置時的輪詢間隔。 */
-internal val HISTORY_WRITER_IDLE_POLL_INTERVAL = 250.milliseconds
+val HISTORY_WRITER_IDLE_POLL_INTERVAL = 250.milliseconds
 
 /** 待寫事件 payload 的持久化版本。 */
 private const val PENDING_PAYLOAD_VERSION = 1
@@ -1074,7 +1074,7 @@ private const val PENDING_PAYLOAD_VERSION = 1
  * @param event 權威待寫佇列中的事件。
  * @return 帶有持久化 payload 的紀錄。
  */
-internal fun HistoryRecordingPersistenceMapper.encodePendingRecord(event: HistoryOutboxEvent): PendingHistoryRecord {
+fun HistoryRecordingPersistenceMapper.encodePendingRecord(event: HistoryOutboxEvent): PendingHistoryRecord {
     val dto = encodePendingEvent(event)
     return PendingHistoryRecord(
         matchId = dto.matchId,

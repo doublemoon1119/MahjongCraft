@@ -4,9 +4,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.MahjongTableStructureBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.LocatedMahjongTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
+import com.doublemoon1119.mahjongcraft.platform.fabric.development.TableEndListeners
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinShowcaseOverride
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricMahjongLobbyInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
@@ -37,8 +36,7 @@ import kotlin.uuid.Uuid
  *
  * @property store 讀取已發布的權威房間與對局狀態。
  * @property locations 查詢桌子位置索引。
- * @property debugWinRoundContinuationState 清除桌子專屬的開發用續局設定。
- * @property debugWinShowcaseOverride 清除桌子專屬的開發用胡牌展示設定。
+ * @property tableEndListeners 牌桌移除後通知，清掉只屬於這桌的暫存設定。
  * @property cleanupService 執行缺失桌子的權威資料清理。
  * @property cleanupQueue 依序執行權威清理，不讓主執行緒等待。
  * @property configState 讀取目前破壞政策。
@@ -56,8 +54,7 @@ import kotlin.uuid.Uuid
 class FabricTableLifecycleService(
     private val store: AuthoritativeStateStore,
     private val locations: TableLocationRegistry,
-    private val debugWinRoundContinuationState: DebugWinRoundContinuationState,
-    private val debugWinShowcaseOverride: DebugWinShowcaseOverride,
+    private val tableEndListeners: TableEndListeners,
     private val cleanupService: OrphanedTableCleanupService,
     private val cleanupQueue: TableCleanupQueue,
     private val configState: MinecraftServerConfigState,
@@ -188,7 +185,7 @@ class FabricTableLifecycleService(
     }
 
     /**
-     * 對玩家破壞當下的位置索引項目執行清理；清理未過期時一併清掉這桌的開發用 debug 設定。
+     * 對玩家破壞當下的位置索引項目執行清理；清理未過期時通知 [tableEndListeners]。
      *
      * @param entry 玩家破壞當下觀察到的位置索引項目。
      * @return 清理結果；位置索引已不再是同一個項目時為 [OrphanedTableCleanupResult.STALE_REQUEST]。
@@ -196,9 +193,7 @@ class FabricTableLifecycleService(
     internal suspend fun cleanupPlayerBroken(entry: TableLocationEntry): OrphanedTableCleanupResult {
         val result = cleanupService.cleanupPlayerBroken(entry)
         if (result != OrphanedTableCleanupResult.STALE_REQUEST) {
-            // 這兩個容器只在開發環境才會有內容，見 DebugWinShowcaseOverride／DebugWinRoundContinuationState KDoc。
-            debugWinRoundContinuationState.clear(entry.tableId)
-            debugWinShowcaseOverride.clear(entry.tableId)
+            tableEndListeners.notifyTableEnded(entry.tableId)
         }
         logger.debug("Handled player-broken Mahjong table {} with cleanup result {}", entry.tableId, result)
         return result

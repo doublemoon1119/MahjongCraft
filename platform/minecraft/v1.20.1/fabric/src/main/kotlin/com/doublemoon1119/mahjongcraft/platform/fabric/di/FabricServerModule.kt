@@ -20,6 +20,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricAi
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricRoomParticipantRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatPlacementRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.development.TableEndListeners
+import com.doublemoon1119.mahjongcraft.platform.fabric.development.WinCelebrationRequestAdjusters
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.AchievementGrantGateway
@@ -71,33 +73,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableG
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.PlayerDecisionPromptFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.ReadinessAnalysisDtoMapper
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.SpectatorObservationService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricDebugCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.animation.FabricDebugAnimationCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.character.FabricDebugSeatedParticipantCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.FabricDebugDecisionCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.FabricDebugHistoryCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.FabricHistoryGenerationRuntimeFactory
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.HistoryGenerationController
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.HistoryGenerationRuntimeFactory
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinShowcaseOverride
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.FabricDebugPresentationCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.progression.FabricDebugProgressionCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.progression.FabricDebugRoundCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.DebugGameScenarioLoader
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.DebugGameScenarioPresentationPublisher
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.DebugGameScenarioPresentationSynchronizer
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.DebugGameScenarioRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.DebugGameScenarioValidator
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.FabricDebugScenarioCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress.FabricDebugStressCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress.StressTestController
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress.StressTestEnvironmentFactory
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPlayerTableScope
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewEntityLifecycle
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugTilePreviewSupport
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugVirtualTableLayoutFactory
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.text.FabricDebugTextCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryQueryService
@@ -249,32 +224,8 @@ val fabricServerModule = module {
     single<PlayerDecisionPromptFactory>()
     single<ReadinessAnalysisDtoMapper>()
     single<SpectatorObservationService>()
-    single<FabricDebugSeatedParticipantCommand>()
-    single<FabricDebugCommand>()
-    single<FabricDebugAnimationCommand>()
-    single<FabricDebugDecisionCommand>()
-    single<FabricDebugHistoryCommand>()
-    single<FabricHistoryGenerationRuntimeFactory>() bind HistoryGenerationRuntimeFactory::class
-    single<HistoryGenerationController>()
-    single<DebugWinRoundContinuationState>()
-    single<DebugWinShowcaseOverride>()
-    single<FabricDebugPresentationCommand>()
-    single<FabricDebugProgressionCommand>()
-    single<FabricDebugRoundCommand>()
-    single<DebugGameScenarioLoader>()
-    single<DebugGameScenarioPresentationPublisher>()
-    single<DebugGameScenarioPresentationSynchronizer>()
-    single<DebugGameScenarioRegistry>()
-    single<DebugGameScenarioValidator>()
-    single<FabricDebugScenarioCommand>()
-    single<FabricDebugStressCommand>()
-    single<StressTestController>()
-    single<StressTestEnvironmentFactory>()
-    single<DebugPlayerTableScope>()
-    single<DebugPreviewEntityLifecycle>()
-    single<DebugTilePreviewSupport>()
-    single<DebugVirtualTableLayoutFactory>()
-    single<FabricDebugTextCommand>()
+    single<TableEndListeners>()
+    single<WinCelebrationRequestAdjusters>()
 
     single<FabricHistoryCommand>()
     // 量測用 observer 只在壓力測試另建的實例傳入，正式組裝不提供。

@@ -34,6 +34,8 @@ import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
 import com.doublemoon1119.mahjongcraft.logic.tile.component.publicFaceUpWallTileIds
 import com.doublemoon1119.mahjongcraft.logic.tile.component.resolveTileComponents
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
+import com.doublemoon1119.mahjongcraft.platform.fabric.development.TableEndListeners
+import com.doublemoon1119.mahjongcraft.platform.fabric.development.WinCelebrationRequestAdjusters
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongSoundTimelineEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MeldActionPopupTile
@@ -48,8 +50,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricMatchSe
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationShowcaseScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinSettlementPresentationScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinShowcaseOverride
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.showcaseWingCards
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PrivateHandOrderSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoundResultSender
@@ -166,8 +166,8 @@ import kotlin.uuid.toJavaUuid
  * @property playerIdentities 真人最後已知普通名稱來源。
  * @property openingOperations 開局呈現操作的生命週期追蹤器。
  * @property spawnGateway 主執行緒實體生成閘道。
- * @property debugWinShowcaseOverride 開發場景的胡牌展示覆寫值。
- * @property debugWinRoundContinuationState 開發場景的胡牌後流程狀態。
+ * @property winCelebrationAdjusters 和牌演出開始前調整展示請求。
+ * @property tableEndListeners 對局結束時通知，清掉只屬於這桌的暫存設定。
  * @property busyTracker 查詢／標記該桌是否呈現動畫播放中，供輸入分派入口與自動操作心跳擋下操作，見
  *   [TablePresentationBusyTracker] KDoc。
  * @property gameRepository 唯讀取得桌況、手牌與副露，建立呈現資料；不透過此元件修改權威狀態。
@@ -208,8 +208,8 @@ class FabricGamePresentationPublisher(
     private val busyTracker: TablePresentationBusyTracker,
     private val openingOperations: TableOpeningPresentationOperationTracker,
     private val spawnGateway: FabricEntitySpawnGateway,
-    private val debugWinShowcaseOverride: DebugWinShowcaseOverride,
-    private val debugWinRoundContinuationState: DebugWinRoundContinuationState,
+    private val winCelebrationAdjusters: WinCelebrationRequestAdjusters,
+    private val tableEndListeners: TableEndListeners,
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val componentRegistry: ComponentRegistry,
@@ -402,10 +402,8 @@ class FabricGamePresentationPublisher(
                 )
             },
         )
-        // 對局結束：清掉這桌的開發用中途胡牌設定與尚未用掉的 showcase 覆寫，不讓它們跨到下一場。
-        // 兩者都以 tableId 為鍵，而本專案的 gameId 就是該桌的 tableId（整個呈現層都以它查桌）。
-        debugWinRoundContinuationState.clear(gameId)
-        debugWinShowcaseOverride.clear(gameId)
+        // 對局結束：通知只屬於這桌的暫存設定清掉，不跨到下一場；gameId 就是該桌的 tableId（整個呈現層都以它查桌）。
+        tableEndListeners.notifyTableEnded(gameId)
         if (serverHolder.current() == null) return
         launchPendingPresentation(gameId, "publishMatchSettlement") {
             try {
@@ -1126,10 +1124,9 @@ class FabricGamePresentationPublisher(
      */
     override fun publishWinPresentation(gameId: Uuid, request: WinPresentationRequest) {
         roundResultSender.sendWin(gameId, request.settlement, request.roundContinues)
-        // 開發用的一次性 showcase 覆寫必須在 blocksTable 判定之前套用，之後
-        // 整段流程（阻塞判定、兩條時間軸的切分、收尾恢復可見的範圍）才會一致，見
-        // DebugWinShowcaseOverride KDoc。正式產物裡這一步永遠是原樣回傳。
-        val effectiveRequest = request.copy(celebration = debugWinShowcaseOverride.applyTo(gameId, request.celebration))
+        // 展示調整必須在 blocksTable 判定之前套用，之後整段流程（阻塞判定、兩條時間軸的切分、收尾恢復可見的範圍）
+        // 才會依據同一份請求。
+        val effectiveRequest = request.copy(celebration = winCelebrationAdjusters.adjust(gameId, request.celebration))
         val pausesContinuingRound = showcaseScheduler.pausesContinuingRound(effectiveRequest.celebration)
         val blocksTable = !effectiveRequest.roundContinues || pausesContinuingRound
         publish(gameId, "publishWinPresentation", blocksTable) { resolved, state, startAt ->

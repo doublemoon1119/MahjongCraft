@@ -121,6 +121,10 @@ dependencies {
     modCompileOnly(libs.modMenu1201)
     // 光影的陰影判斷只對 Iris 的 API 編譯；沒有安裝 Iris 時不會載入 Iris 的類別。
     modCompileOnly(libs.iris1201)
+    // 開發專用的 debug 模組只在開發執行時載入；不進入測試、不打包。它自己依賴本體，所以不帶入它的依賴。
+    localRuntime(project(path = ":minecraft_v1.20.1_fabric-debug", configuration = "namedElements")) {
+        isTransitive = false
+    }
 
     implementation(project(":minecraft_common"))
     implementation(project(":minecraft_v1.20.1_common"))

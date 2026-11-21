@@ -56,11 +56,11 @@ class RepositoryVerificationPlugin : Plugin<Project> {
             this.rootDirectory.set(rootDirectory)
             expectedReadmes.set(project.provider { expectedModuleReadmes(project) })
         }
-        val langDirectory = rootDirectory.dir(MINECRAFT_LANG_DIRECTORY)
+        val sortedLangDirectories = SORTED_MINECRAFT_LANG_DIRECTORIES.map { rootDirectory.dir(it).asFile }
         project.tasks.register("sortMinecraftLangFiles", SortMinecraftLangFilesTask::class.java) {
             group = "formatting"
             description = "Sorts MahjongCraft Minecraft language files by translation key."
-            this.langDirectory.set(langDirectory)
+            langDirectories.set(sortedLangDirectories)
         }
         val verifyMinecraftLangFileKeyOrder = project.tasks.register(
             "verifyMinecraftLangFileKeyOrder",
@@ -69,7 +69,7 @@ class RepositoryVerificationPlugin : Plugin<Project> {
             group = "verification"
             description = "Verifies MahjongCraft Minecraft language files are sorted by translation key."
             this.rootDirectory.set(rootDirectory)
-            this.langDirectory.set(langDirectory)
+            langDirectories.set(sortedLangDirectories)
         }
         val verifyMinecraftLangKeysUsed = project.tasks.register(
             "verifyMinecraftLangKeysUsed",
@@ -96,9 +96,16 @@ class RepositoryVerificationPlugin : Plugin<Project> {
 /** Minecraft 平台語系檔目錄，相對於 root project。 */
 private const val MINECRAFT_LANG_DIRECTORY: String = "platform/minecraft/common/src/jvmMain/resources/assets/mahjongcraft/lang"
 
-/** 檢查 key 是否有使用的語系檔目錄：MahjongCraft 本體與範例擴充，相對於 root project。 */
+/** 開發專用 debug 模組的語系檔目錄，相對於 root project。 */
+private const val DEBUG_MINECRAFT_LANG_DIRECTORY: String = "platform/minecraft/v1.20.1/fabric-debug/src/main/resources/assets/mahjongcraft/lang"
+
+/** 依 key 排序的語系檔目錄：MahjongCraft 本體與開發專用 debug 模組，相對於 root project。 */
+private val SORTED_MINECRAFT_LANG_DIRECTORIES: List<String> = listOf(MINECRAFT_LANG_DIRECTORY, DEBUG_MINECRAFT_LANG_DIRECTORY)
+
+/** 檢查 key 是否有使用的語系檔目錄：MahjongCraft 本體、開發專用 debug 模組與範例擴充，相對於 root project。 */
 private val MINECRAFT_LANG_DIRECTORIES: List<String> = listOf(
     MINECRAFT_LANG_DIRECTORY,
+    DEBUG_MINECRAFT_LANG_DIRECTORY,
     "example/platform/minecraft/common/src/jvmMain/resources/assets/mahjongcraft_example/lang",
 )
 

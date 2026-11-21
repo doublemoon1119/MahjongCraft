@@ -26,7 +26,7 @@ import kotlin.uuid.Uuid
  * @property seatProviders 已凍結的座位來源。
  * @property failurePolicy 第三方失敗的隔離政策。
  */
-internal class FabricSeatingSessionFactory(
+class FabricSeatingSessionFactory internal constructor(
     private val tableLocationRegistry: TableLocationRegistry,
     private val serverHolder: FabricServerHolder,
     private val seatProviders: FabricSeatProviderRegistryImpl,
