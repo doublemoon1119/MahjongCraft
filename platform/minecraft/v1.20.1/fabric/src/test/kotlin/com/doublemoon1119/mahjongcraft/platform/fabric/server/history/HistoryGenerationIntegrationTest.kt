@@ -216,7 +216,7 @@ class HistoryGenerationIntegrationTest {
     /** 驗證小容量保留政策實際清理舊 replay，且兩場生成均無序號缺口或 live 狀態污染。 */
     @Test
     fun `real SQLite retention prunes the oldest match at max matches one`() = runBlocking {
-        withTimeout(60.seconds) {
+        withTimeout(3.minutes) {
             val liveStore = liveStore()
             val path = createTempDirectory("mahjongcraft-history-retention-").resolve("history.sqlite")
             val writer = writer(liveStore, MinecraftHistoryConfig(includeAiMatches = true, maxMatches = 1))

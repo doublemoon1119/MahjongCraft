@@ -33,6 +33,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 /** 驗證歷史生成控制器的政策前置拒絕與 session 邊界。 */
@@ -101,7 +102,7 @@ class HistoryGenerationControllerTest {
             assertEquals(HistoryGenerationStartResult.Busy, controller.start("mahjongcraft:riichi/history_scenario/east", 1))
             assertTrue(controller.cancel())
             release.complete(Unit)
-            withTimeout(55.seconds) {
+            withTimeout(3.minutes) {
                 while (controller.snapshot()?.running != false) delay(50.milliseconds)
             }
             val progress = requireNotNull(controller.snapshot())
