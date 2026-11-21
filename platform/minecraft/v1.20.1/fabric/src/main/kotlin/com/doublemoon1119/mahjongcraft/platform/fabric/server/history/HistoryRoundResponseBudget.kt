@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRo
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
@@ -77,11 +78,19 @@ internal fun boundedHistoryRoundStates(
     maximumBytes: Int = HistoryQueryLimits.RESPONSE_BYTES,
 ): HistoryRoundStateResponseDto {
     val encoded = states.map { it.toDto(registries) }
-    var count = encoded.size
-    while (count > 0) {
-        val response = HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, states = encoded.take(count), errorCode = null)
-        if (encodedHistoryResponseUtf8Size(json, HistoryRoundStateResponseDto.serializer(), response) <= maximumBytes) return response
-        count--
+    val empty = HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, states = emptyList(), errorCode = null)
+    // 回覆中的桌況逐份接在陣列裡、以逗號分隔，所以每份桌況只量一次，不必重複編碼整個回覆。
+    var size = encodedHistoryResponseUtf8Size(json, HistoryRoundStateResponseDto.serializer(), empty)
+    var count = 0
+    for (state in encoded) {
+        val added = encodedHistoryResponseUtf8Size(json, HistoryRoundStateDto.serializer(), state) + if (count > 0) ARRAY_SEPARATOR_BYTES else 0
+        if (size + added > maximumBytes) break
+        size += added
+        count++
     }
+    if (count > 0) return empty.copy(states = encoded.take(count))
     return HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, states = emptyList())
 }
+
+/** 回覆的桌況陣列中，兩份桌況之間逗號的位元組數。 */
+private const val ARRAY_SEPARATOR_BYTES = 1

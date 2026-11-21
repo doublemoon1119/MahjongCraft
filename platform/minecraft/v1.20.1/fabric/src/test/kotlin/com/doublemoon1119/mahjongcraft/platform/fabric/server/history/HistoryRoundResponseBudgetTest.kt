@@ -111,4 +111,28 @@ class HistoryRoundResponseBudgetTest {
         assertEquals(listOf(HistoryRoundPositionDto.AfterTransaction(0)), trimmed.states.map { it.position })
         assertNull(trimmed.errorCode)
     }
+
+    /** 各份桌況分開量出的大小加總，與整個回覆實際編碼的大小一致，剛好放得下時不多省略。 */
+    @Test
+    fun `state responses fit exactly at the byte budget`() {
+        val identity = HistoryReplayIdentity(Uuid.random(), Uuid.random(), emptyList())
+        val states = (0 until 3).map { index ->
+            HistoryRoundState(
+                identity = identity, roundNumber = 1, position = HistoryRoundPosition.AfterTransaction(index), tileCatalog = HistoryRoundTileCatalog((listOf(Tile.Honor.East)).map(::TileFaceView)),
+                players = emptyList(), wallTiles = emptyList(), reservedTiles = emptyList(), currentPlayerSeat = 0, dealerSeat = 0, prevalentWind = Wind.EAST, roundPosition = MatchRoundPosition.initial(),
+                comboCount = 0, finishedPlayerSeats = emptySet(), hasPendingReaction = false, hasPendingRobbingReaction = false, outcome = null,
+                wallPlacements = null, discardOrder = emptyList(), tilePoses = emptyMap(), presentationNotes = null,
+            )
+        }
+        val request = HistoryRoundStateRequestDto("state", identity.matchId.toString(), roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.AfterTransaction(0), count = 3)
+        val two = boundedHistoryRoundStates(request, states.take(2), bundledNetworkJson(), DefaultNetworkDtoRegistries())
+        val twoSize = encodedHistoryResponseUtf8Size(bundledNetworkJson(), HistoryRoundStateResponseDto.serializer(), two)
+
+        val exact = boundedHistoryRoundStates(request, states, bundledNetworkJson(), DefaultNetworkDtoRegistries(), twoSize)
+        val short = boundedHistoryRoundStates(request, states, bundledNetworkJson(), DefaultNetworkDtoRegistries(), twoSize - 1)
+
+        assertEquals(2, exact.states.size)
+        assertEquals(twoSize, encodedHistoryResponseUtf8Size(bundledNetworkJson(), HistoryRoundStateResponseDto.serializer(), exact))
+        assertEquals(1, short.states.size)
+    }
 }

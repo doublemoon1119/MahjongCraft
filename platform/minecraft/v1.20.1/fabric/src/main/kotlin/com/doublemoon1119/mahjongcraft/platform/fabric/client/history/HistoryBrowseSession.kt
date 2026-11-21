@@ -115,10 +115,13 @@ internal class HistoryBrowseSession(
     private val handSorting = HistoryHandSorting()
 
     /** 上次解析的規則設定，避免每幀重複解碼。 */
-    private var sortingConfig: GameConfigDto? = null
+    private var moduleConfig: GameConfigDto? = null
 
-    /** 已解析的規則牌序；缺少規則時保留原始順序。 */
-    private var sortingOrder: TileOrder? = null
+    /** 由 [moduleConfig] 取得的規則模組；設定缺少、無法解碼或沒有安裝時為 null。 */
+    private var cachedModule: MahjongRuleModule<*>? = null
+
+    /** 最近排好手牌的回放桌況；同一份桌況與牌序不重複排序。 */
+    private val sortedStates = LinkedHashMap<SortedStateKey, HistoryRoundStateDto>()
 
     /**
      * 取得單一玩家的排序選擇。
@@ -169,7 +172,12 @@ internal class HistoryBrowseSession(
      */
     fun replayState(state: HistoryRoundStateDto): HistoryRoundStateDto {
         val order = handOrder(state) ?: return state
-        return state.copy(players = state.players.map { handSorting.sortedPlayer(it, state.tileCatalog, order) })
+        val key = SortedStateKey(state, order)
+        sortedStates[key]?.let { return it }
+        val sorted = state.copy(players = state.players.map { handSorting.sortedPlayer(it, state.tileCatalog, order) })
+        sortedStates[key] = sorted
+        while (sortedStates.size > SORTED_STATE_CACHE_SIZE) sortedStates.remove(sortedStates.keys.first())
+        return sorted
     }
 
     /**
@@ -195,25 +203,21 @@ internal class HistoryBrowseSession(
      * @return 規則模組；規則設定還沒讀到或無法解碼時為 null。
      */
     fun ruleModule(state: HistoryRoundStateDto): MahjongRuleModule<*>? {
-        val config = controller.state.value.ruleSettings?.takeIf { it.matchId == state.identity.matchId }?.config ?: return null
-        return runCatching { moduleRegistry.getModule(config.toDomain(networkRegistries).ruleConfig) }.getOrNull()
+        val config = controller.state.value.ruleSettings?.takeIf { it.matchId == state.identity.matchId }?.config
+        if (config != moduleConfig) {
+            moduleConfig = config
+            cachedModule = config?.let { runCatching { moduleRegistry.getModule(it.toDomain(networkRegistries).ruleConfig) }.getOrNull() }
+        }
+        return cachedModule
     }
 
     /**
-     * 快取並解析同場規則牌序，不套用其他對局設定。
+     * 取得同場規則牌序，不套用其他對局設定。
      *
      * @param state 目前歷史桌況。
      * @return 已註冊牌序，或設定缺少／無法解碼時為 null。
      */
-    private fun handOrder(state: HistoryRoundStateDto): TileOrder? {
-        val settings = controller.state.value.ruleSettings?.takeIf { it.matchId == state.identity.matchId }
-        val config = settings?.config
-        if (config != sortingConfig) {
-            sortingConfig = config
-            sortingOrder = config?.let { runCatching { moduleRegistry.getModule(it.toDomain(networkRegistries).ruleConfig).tileOrder }.getOrNull() }
-        }
-        return sortingOrder
-    }
+    private fun handOrder(state: HistoryRoundStateDto): TileOrder? = ruleModule(state)?.tileOrder
 
     /**
      * 依當前查詢摘要的公開規則取得牌組外觀，不使用牌目錄或手牌推測規則。
@@ -515,3 +519,32 @@ internal class HistoryBrowseSession(
         onClosed()
     }
 }
+
+/** 留著的排好手牌桌況份數：目前這一步，以及動畫前後兩步。 */
+private const val SORTED_STATE_CACHE_SIZE = 4
+
+/**
+ * 排好手牌的桌況快取鍵；桌況與牌序以同一個物件比對，不逐項比較內容。
+ *
+ * @property state 原本的桌況。
+ * @property order 規則牌序。
+ */
+private class SortedStateKey(val state: HistoryRoundStateDto, val order: TileOrder) {
+    /**
+     * 是否為同一份桌況與同一個牌序。
+     *
+     * @param other 比較對象。
+     * @return 兩者都是同一個物件時為 true。
+     */
+    override fun equals(other: Any?): Boolean = other is SortedStateKey && other.state === state && other.order === order
+
+    /**
+     * 依物件身分計算的雜湊值。
+     *
+     * @return 雜湊值。
+     */
+    override fun hashCode(): Int = HASH_MULTIPLIER * System.identityHashCode(state) + System.identityHashCode(order)
+}
+
+/** 合併兩個雜湊值時的乘數。 */
+private const val HASH_MULTIPLIER = 31

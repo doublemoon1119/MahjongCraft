@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStat
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongStoolBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.ClientAiCharacterPreviews
@@ -60,6 +61,7 @@ import net.minecraft.text.Text
 import net.minecraft.util.Identifier
 import net.minecraft.util.Language
 import org.lwjgl.glfw.GLFW
+import java.util.Objects
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.time.Duration
@@ -570,7 +572,7 @@ internal class HistoryReplayScreen(
             ruleInstalled = session.ruleInstalled(browse.summary?.detail?.summary?.ruleId),
             rulesStatus = browse.ruleSettings?.takeIf { it.matchId == state.identity.matchId }?.status,
             moduleResolved = session.ruleModule(state) != null,
-            hasNotes = ReplayTableNotes.decode(session.replayState(state).presentationNotes, session.networkRegistries) != null,
+            hasNotes = tableDisplays.notes(state) != null,
         )
         return Text.translatable(key)
     }
@@ -816,11 +818,11 @@ internal class HistoryReplayScreen(
      */
     private fun arrangement(state: HistoryRoundStateDto): Map<Int, ArrangedTile>? {
         val module = session.ruleModule(state) ?: return null
-        val sorted = session.replayState(state)
-        val notes = ReplayTableNotes.decode(sorted.presentationNotes, session.networkRegistries)
-        val handPoses = notes?.let { HistoryReplayHandReveals.handPoses(sorted, reveals(sorted, it)) }.orEmpty()
-        val key = ArrangementKey(state = state, moduleId = module.id, handsOpen = handsOpen, handPoses = handPoses)
+        val key = ArrangementKey(state = state, module = module, handsOpen = handsOpen, eventPages = session.controller.state.value.replay?.eventPages)
         if (key in arrangements) return arrangements[key]
+        val sorted = session.replayState(state)
+        val notes = tableDisplays.notes(state)
+        val handPoses = notes?.let { HistoryReplayHandReveals.handPoses(sorted, reveals(sorted, it)) }.orEmpty()
         val built = if (notes == null) {
             null
         } else {
@@ -946,8 +948,8 @@ internal class HistoryReplayScreen(
     private fun newReveals(before: HistoryRoundStateDto, after: HistoryRoundStateDto): List<HistoryReplayHandRevealMotion> {
         val sortedBefore = session.replayState(before)
         val sortedAfter = session.replayState(after)
-        val notesBefore = ReplayTableNotes.decode(sortedBefore.presentationNotes, session.networkRegistries) ?: return emptyList()
-        val notesAfter = ReplayTableNotes.decode(sortedAfter.presentationNotes, session.networkRegistries) ?: return emptyList()
+        val notesBefore = tableDisplays.notes(before) ?: return emptyList()
+        val notesAfter = tableDisplays.notes(after) ?: return emptyList()
         val previous = reveals(sortedBefore, notesBefore)
         return reveals(sortedAfter, notesAfter).filter { (index, reveal) -> previous[index] != reveal }.map { (index, reveal) ->
             val player = sortedAfter.players[index]
@@ -1637,19 +1639,38 @@ internal class HistoryReplayScreen(
     }
 
     /**
-     * 決定牌桌擺法的條件。
+     * 決定牌桌擺法的條件；牌面、規則模組與事件頁以同一個物件比對，不逐項比較內容，每一幀查詢時不必走過整份牌面。
      *
      * @property state 牌面。
-     * @property moduleId 規則模組 ID。
+     * @property module 規則模組。
      * @property handsOpen 手牌是否面朝上攤開。
-     * @property handPoses 攤牌的手牌姿態，依局內牌索引。
+     * @property eventPages 已讀到的事件頁，決定哪些贏家攤牌；不在回放時為 null。
      */
-    private data class ArrangementKey(
+    private class ArrangementKey(
         val state: HistoryRoundStateDto,
-        val moduleId: String,
+        val module: MahjongRuleModule<*>,
         val handsOpen: Boolean,
-        val handPoses: Map<Int, TilePose>,
-    )
+        val eventPages: List<HistoryRoundEventsDto>?,
+    ) {
+        /**
+         * 是否為同樣的擺法條件。
+         *
+         * @param other 比較對象。
+         * @return 牌面、規則模組與事件頁都是同一個物件，手牌選擇也相同時為 true。
+         */
+        override fun equals(other: Any?): Boolean = other is ArrangementKey &&
+            other.state === state &&
+            other.module === module &&
+            other.handsOpen == handsOpen &&
+            other.eventPages === eventPages
+
+        /**
+         * 依物件身分計算的雜湊值。
+         *
+         * @return 雜湊值。
+         */
+        override fun hashCode(): Int = Objects.hash(System.identityHashCode(state), System.identityHashCode(module), handsOpen, System.identityHashCode(eventPages))
+    }
 
     /**
      * 交易列表的一列。
