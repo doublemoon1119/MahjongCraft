@@ -13,7 +13,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInf
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropTarget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ArrangedTile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 import kotlin.uuid.Uuid
 
 /**
@@ -94,7 +94,7 @@ internal class HistoryReplayTableDisplays(private val session: HistoryBrowseSess
      * @param name 依初始座位取得玩家名稱。
      * @return 玩家資訊；沒有要畫的座位時為 null。
      */
-    fun playerInfo(state: HistoryRoundStateDto, hiddenSeat: Int?, name: (Int) -> Text): GuideScenePlayerInfo? {
+    fun playerInfo(state: HistoryRoundStateDto, hiddenSeat: Int?, name: (Int) -> Component): GuideScenePlayerInfo? {
         val shownSeats = state.players.indices.filter { index ->
             index != hiddenSeat && session.replayVisibility.playerInfo(state.players[index].initialSeatIndex)
         }.toSet()

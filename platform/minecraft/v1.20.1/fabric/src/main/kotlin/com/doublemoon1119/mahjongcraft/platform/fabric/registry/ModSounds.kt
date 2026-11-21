@@ -3,10 +3,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.registry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.MahjongAnimationSounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiGameActionVoiceSoundIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanGameActionVoiceSoundIds
-import net.minecraft.registry.Registries
-import net.minecraft.registry.Registry
-import net.minecraft.sound.SoundEvent
-import net.minecraft.util.Identifier
+import net.minecraft.core.Registry
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.sounds.SoundEvent
 
 /** MahjongCraft 內建聲音事件的註冊入口與可直接播放實例。 */
 object ModSounds {
@@ -51,9 +51,9 @@ object ModSounds {
      * @return 已加入聲音登錄表的事件實例。
      */
     private fun register(soundId: String, fixedRange: Float? = null): SoundEvent {
-        val id = Identifier(soundId)
-        val soundEvent = fixedRange?.let { SoundEvent.of(id, it) } ?: SoundEvent.of(id)
-        return Registry.register(Registries.SOUND_EVENT, id, soundEvent)
+        val id = ResourceLocation(soundId)
+        val soundEvent = fixedRange?.let { SoundEvent.createFixedRangeEvent(id, it) } ?: SoundEvent.createVariableRangeEvent(id)
+        return Registry.register(BuiltInRegistries.SOUND_EVENT, id, soundEvent)
     }
 
     /** 胡牌閃電聲音的最大可聽距離。 */

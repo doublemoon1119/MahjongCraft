@@ -7,12 +7,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.render.entity.EntityRenderer
-import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.util.Identifier
+import com.mojang.blaze3d.vertex.PoseStack
+import net.minecraft.client.gui.Font
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.entity.EntityRenderer
+import net.minecraft.client.renderer.entity.EntityRendererProvider
+import net.minecraft.resources.ResourceLocation
 
 /**
  * 將桌面中央的局況資訊畫成面向攝影機的文字面板。
@@ -22,7 +22,7 @@ import net.minecraft.util.Identifier
  * 未登記的行 ID 直接顯示原始 ID，不會讓整行消失。
  *
  * 繪製方式沿用原版實體名牌的座標方向：套用攝影機旋轉、以 `(-scale, -scale, scale)` 縮放，並使用
- * [TextRenderer.TextLayerType.NORMAL] 畫在半空中。
+ * [Font.DisplayMode.NORMAL] 畫在半空中。
  *
  * @param context Minecraft renderer factory 提供的 client context。
  * @property configStore 提供局況面板可見性設定。
@@ -32,7 +32,7 @@ import net.minecraft.util.Identifier
  * @param tileEmojiRegistry 將素材 key 轉成牌面 emoji。
  */
 class MahjongRoundInfoEntityRenderer(
-    context: EntityRendererFactory.Context,
+    context: EntityRendererProvider.Context,
     private val configStore: MahjongClientConfigStore,
     roundInfoLineDisplayRegistry: RoundInfoLineDisplayRegistry,
     tileDisplayNameRegistry: TileDisplayNameRegistry,
@@ -40,7 +40,7 @@ class MahjongRoundInfoEntityRenderer(
     tileEmojiRegistry: TileEmojiRegistry,
 ) : EntityRenderer<MahjongRoundInfoEntity>(context) {
     /** 共用 Vanilla text renderer，畫法比照 [MahjongTileEntityRenderer]。 */
-    private val textRenderer = context.textRenderer
+    private val textRenderer = context.font
 
     /** 局況文字參數診斷記錄器。 */
     private val logger = mahjongCraftLogger(MahjongRoundInfoEntityRenderer::class)
@@ -57,8 +57,8 @@ class MahjongRoundInfoEntityRenderer(
         entity: MahjongRoundInfoEntity,
         yaw: Float,
         tickDelta: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
     ) {
         if (!configStore.current.presentationVisibility.roundInfoEnabled) return
@@ -67,12 +67,12 @@ class MahjongRoundInfoEntityRenderer(
         val lines = entity.lines.map(lineTextBuilder::buildLineText)
 
         WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
-            panelMatrices.push()
-            panelMatrices.multiply(dispatcher.rotation)
+            panelMatrices.pushPose()
+            panelMatrices.mulPose(entityRenderDispatcher.cameraOrientation())
             panelMatrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
-            val lineHeight = textRenderer.fontHeight + LINE_SPACING
+            val lineHeight = textRenderer.lineHeight + LINE_SPACING
             val totalHeight = lineHeight * lines.size
-            val maxWidth = lines.maxOfOrNull(textRenderer::getWidth) ?: 0
+            val maxWidth = lines.maxOfOrNull(textRenderer::width) ?: 0
             WorldPanelRenderer.drawBackground(
                 left = -maxWidth / 2f - PANEL_PADDING,
                 top = -totalHeight / 2f - PANEL_PADDING,
@@ -84,7 +84,7 @@ class MahjongRoundInfoEntityRenderer(
                 consumers = panelConsumers,
             )
             lines.forEachIndexed { index, line ->
-                val width = textRenderer.getWidth(line)
+                val width = textRenderer.width(line)
                 val x = -width / 2.0f
                 val y = -totalHeight / 2.0f + index * lineHeight
                 WorldPanelRenderer.drawText(
@@ -99,12 +99,12 @@ class MahjongRoundInfoEntityRenderer(
                     consumers = panelConsumers,
                 )
             }
-            panelMatrices.pop()
+            panelMatrices.popPose()
         }
     }
 
     /** 純文字顯示，不提供單一 texture。 */
-    override fun getTexture(entity: MahjongRoundInfoEntity): Identifier? = null
+    override fun getTextureLocation(entity: MahjongRoundInfoEntity): ResourceLocation? = null
 
     companion object {
         /** 文字縮放。 */

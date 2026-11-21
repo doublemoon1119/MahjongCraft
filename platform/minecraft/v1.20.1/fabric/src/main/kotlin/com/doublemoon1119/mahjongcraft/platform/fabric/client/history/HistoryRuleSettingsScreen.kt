@@ -18,12 +18,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigFieldDe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigVariantResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.ResolvedGameConfigPresentation
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.client.gui.tooltip.Tooltip
-import net.minecraft.client.gui.widget.ButtonWidget
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.Button
+import net.minecraft.client.gui.components.Tooltip
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.network.chat.Component
 import org.lwjgl.glfw.GLFW
 
 /**
@@ -34,7 +34,7 @@ import org.lwjgl.glfw.GLFW
  */
 internal class HistoryRuleSettingsScreen(
     private val session: HistoryBrowseSession,
-) : Screen(Text.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_TITLE)) {
+) : Screen(Component.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_TITLE)) {
     /** 第一個可見欄位的索引。 */
     private var scrollIndex = 0
 
@@ -63,10 +63,10 @@ internal class HistoryRuleSettingsScreen(
     private var builtFor: ResolvedGameConfigPresentation? = null
 
     /** 失敗時可重新查詢的按鈕。 */
-    private var retryButton: ButtonWidget? = null
+    private var retryButton: Button? = null
 
     /** 設定載入後開啟規則一覽的按鈕，與重試按鈕共用位置。 */
-    private var catalogueButton: ButtonWidget? = null
+    private var catalogueButton: Button? = null
 
     /** 上一次建立規則一覽脈絡時的開局設定與摘要規則，避免每個 render tick 重新解碼。 */
     private var catalogueContextKey: Pair<GameConfigDto?, String?>? = null
@@ -80,24 +80,24 @@ internal class HistoryRuleSettingsScreen(
 
     override fun init() {
         dragging = false
-        clearChildren()
+        clearWidgets()
         val layout = layout
         val footer = layout.footer(buttonCount = 2)
-        retryButton = addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RETRY)) { session.controller.retry() }
+        retryButton = addRenderableWidget(
+            RestartableMarqueeButtonWidget.builder(Component.translatable(MinecraftHistoryScreenKeys.RETRY)) { session.controller.retry() }
                 .dimensions(footer.buttonX(0), layout.footerY, footer.buttonWidth(0), FormScreenLayout.BUTTON_HEIGHT)
                 .build(),
         )
-        catalogueButton = addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RULE_CATALOGUE)) {
+        catalogueButton = addRenderableWidget(
+            RestartableMarqueeButtonWidget.builder(Component.translatable(MinecraftHistoryScreenKeys.RULE_CATALOGUE)) {
                 catalogueContext?.let { session.openRuleCatalogue(settings = this, context = it) }
             }
                 .dimensions(footer.buttonX(0), layout.footerY, footer.buttonWidth(0), FormScreenLayout.BUTTON_HEIGHT)
                 .build()
-                .also { it.tooltip = Tooltip.of(Text.translatable(MinecraftHistoryScreenKeys.RULE_CATALOGUE_TOOLTIP).formatted(Formatting.GRAY)) },
+                .also { it.tooltip = Tooltip.create(Component.translatable(MinecraftHistoryScreenKeys.RULE_CATALOGUE_TOOLTIP).withStyle(ChatFormatting.GRAY)) },
         )
-        addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToSummary() }
+        addRenderableWidget(
+            RestartableMarqueeButtonWidget.builder(Component.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToSummary() }
                 .dimensions(footer.buttonX(1), layout.footerY, footer.buttonWidth(1), FormScreenLayout.BUTTON_HEIGHT)
                 .build(),
         )
@@ -122,13 +122,13 @@ internal class HistoryRuleSettingsScreen(
         tabScroll = strip.effectiveScroll
         categories.forEachIndexed { index, category ->
             val selected = index == selectedIndex
-            addDrawableChild(
+            addRenderableWidget(
                 TabWidget(
                     x = strip.tabX(index),
                     y = strip.tabY(selected),
                     width = strip.tabWidth,
                     height = strip.tabHeight(selected),
-                    message = Text.translatable(category.nameTranslationKey),
+                    message = Component.translatable(category.nameTranslationKey),
                     selected = selected,
                     clipLeft = strip.left,
                     clipRight = strip.right,
@@ -140,7 +140,7 @@ internal class HistoryRuleSettingsScreen(
                         selectedCategoryId = category.id
                         revealSelectedTab = true
                         scrollIndex = 0
-                        clearAndInit()
+                        rebuildWidgets()
                     },
                 ),
             )
@@ -215,10 +215,10 @@ internal class HistoryRuleSettingsScreen(
     }
 
     /** 歷史畫面不暫停整合伺服器。 */
-    override fun shouldPause(): Boolean = false
+    override fun isPauseScreen(): Boolean = false
 
     /** Escape 返回摘要。 */
-    override fun close() {
+    override fun onClose() {
         session.backToSummary()
     }
 
@@ -307,31 +307,31 @@ internal class HistoryRuleSettingsScreen(
     }
 
     /** 繪製規則名稱、唯讀說明、分類頁籤與目前分類的欄位。 */
-    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
-        if (presentation() !== builtFor) clearAndInit()
+    override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        if (presentation() !== builtFor) rebuildWidgets()
         renderBackground(context)
-        ScreenRendering.title(context, textRenderer, title, width)
+        ScreenRendering.title(context, font, title, width)
         val layout = layout
         val state = session.controller.state.value
         val status = state.ruleSettings?.status ?: HistoryBrowseStatus.Loading
         retryButton?.active = session.controller.canRetry()
         retryButton?.visible = status is HistoryBrowseStatus.Failed
         catalogueButton?.visible = status == HistoryBrowseStatus.Ready && ruleCatalogueContext(state.ruleSettings?.config) != null
-        retryButton?.tooltip = if (session.controller.isRefreshCoolingDown()) Tooltip.of(Text.translatable(MinecraftHistoryScreenKeys.QUERY_COOLDOWN_TOOLTIP)) else null
+        retryButton?.tooltip = if (session.controller.isRefreshCoolingDown()) Tooltip.create(Component.translatable(MinecraftHistoryScreenKeys.QUERY_COOLDOWN_TOOLTIP)) else null
         renderHeader(context, layout)
-        var hoveredTooltip: List<Text>? = null
+        var hoveredTooltip: List<Component>? = null
         when (status) {
-            HistoryBrowseStatus.Idle, HistoryBrowseStatus.Loading -> statusText(context, layout, Text.translatable(MinecraftHistoryScreenKeys.LOADING), STATUS_COLOR)
-            is HistoryBrowseStatus.Failed -> statusText(context, layout, Text.translatable(status.reason.translationKey), ERROR_COLOR)
+            HistoryBrowseStatus.Idle, HistoryBrowseStatus.Loading -> statusText(context, layout, Component.translatable(MinecraftHistoryScreenKeys.LOADING), STATUS_COLOR)
+            is HistoryBrowseStatus.Failed -> statusText(context, layout, Component.translatable(status.reason.translationKey), ERROR_COLOR)
             HistoryBrowseStatus.Ready -> if (builtFor?.definition == null) {
-                statusText(context, layout, Text.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_UNAVAILABLE), ERROR_COLOR)
+                statusText(context, layout, Component.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_UNAVAILABLE), ERROR_COLOR)
             } else {
                 ScreenRendering.tabLine(context, tabStrip(layout, builtFor?.definition?.categories?.size ?: 0))
                 hoveredTooltip = renderFields(context, layout, mouseX, mouseY)
             }
         }
         super.render(context, mouseX, mouseY, delta)
-        hoveredTooltip?.let { context.drawTooltip(textRenderer, it, mouseX, mouseY) }
+        hoveredTooltip?.let { context.renderComponentTooltip(font, it, mouseX, mouseY) }
     }
 
     /**
@@ -340,20 +340,20 @@ internal class HistoryRuleSettingsScreen(
      * @param context 繪製上下文。
      * @param layout 目前版面。
      */
-    private fun renderHeader(context: DrawContext, layout: FormScreenLayout) {
+    private fun renderHeader(context: GuiGraphics, layout: FormScreenLayout) {
         val ruleId = session.controller.state.value.summary?.detail?.summary?.ruleId ?: resolved?.ruleModuleId
         val ruleName = HistoryScreenText.rule(ruleId, session.ruleNames)
         val variant = resolved?.takeIf { it.definition?.variants?.isNotEmpty() == true }?.variant
-        val name = variant?.let { ruleName.copy().append(VARIANT_SEPARATOR).append(Text.translatable(it.nameTranslationKey)) } ?: ruleName
-        val nameText = HistoryScreenText.trim(name.string, layout.contentWidth, textRenderer::getWidth)
-        context.drawTextWithShadow(textRenderer, Text.literal(nameText), layout.contentLeft, layout.headerTop, RULE_NAME_COLOR)
-        val idLeft = layout.contentLeft + textRenderer.getWidth(nameText) + ID_GAP
+        val name = variant?.let { ruleName.copy().append(VARIANT_SEPARATOR).append(Component.translatable(it.nameTranslationKey)) } ?: ruleName
+        val nameText = HistoryScreenText.trim(name.string, layout.contentWidth, font::width)
+        context.drawString(font, Component.literal(nameText), layout.contentLeft, layout.headerTop, RULE_NAME_COLOR)
+        val idLeft = layout.contentLeft + font.width(nameText) + ID_GAP
         if (ruleId != null && ruleId != name.string && idLeft < layout.contentRight) {
-            val idText = HistoryScreenText.trim(ruleId, layout.contentRight - idLeft, textRenderer::getWidth)
-            context.drawTextWithShadow(textRenderer, Text.literal(idText), idLeft, layout.headerTop, SECONDARY_COLOR)
+            val idText = HistoryScreenText.trim(ruleId, layout.contentRight - idLeft, font::width)
+            context.drawString(font, Component.literal(idText), idLeft, layout.headerTop, SECONDARY_COLOR)
         }
-        val note = HistoryScreenText.trim(Text.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_READ_ONLY).string, layout.contentWidth, textRenderer::getWidth)
-        context.drawTextWithShadow(textRenderer, Text.literal(note), layout.contentLeft, layout.headerTop + HEADER_LINE_HEIGHT, NOTE_COLOR)
+        val note = HistoryScreenText.trim(Component.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_READ_ONLY).string, layout.contentWidth, font::width)
+        context.drawString(font, Component.literal(note), layout.contentLeft, layout.headerTop + HEADER_LINE_HEIGHT, NOTE_COLOR)
     }
 
     /**
@@ -364,8 +364,8 @@ internal class HistoryRuleSettingsScreen(
      * @param text 說明文字。
      * @param color 文字顏色。
      */
-    private fun statusText(context: DrawContext, layout: FormScreenLayout, text: Text, color: Int) {
-        context.drawCenteredTextWithShadow(textRenderer, text, width / 2, layout.fieldsTop + STATUS_OFFSET, color)
+    private fun statusText(context: GuiGraphics, layout: FormScreenLayout, text: Component, color: Int) {
+        context.drawCenteredString(font, text, width / 2, layout.fieldsTop + STATUS_OFFSET, color)
     }
 
     /**
@@ -377,24 +377,24 @@ internal class HistoryRuleSettingsScreen(
      * @param mouseY 游標垂直座標。
      * @return 游標所指欄位的提示；沒有時為 null。
      */
-    private fun renderFields(context: DrawContext, layout: FormScreenLayout, mouseX: Int, mouseY: Int): List<Text>? {
+    private fun renderFields(context: GuiGraphics, layout: FormScreenLayout, mouseX: Int, mouseY: Int): List<Component>? {
         val presentation = builtFor ?: return null
         val fields = currentFields()
         scrollIndex = scrollIndex.coerceIn(0, maximumScroll())
-        var tooltip: List<Text>? = null
+        var tooltip: List<Component>? = null
         repeat(layout.visibleFieldCount) { visibleIndex ->
             val index = scrollIndex + visibleIndex
             val field = fields.getOrNull(index) ?: return@repeat
             val rowTop = layout.fieldRowTop(visibleIndex)
             val stripe = layout.fieldStripe(visibleIndex)
             stripe.renderIfStriped(context, index)
-            val label = HistoryScreenText.trim(Text.translatable(field.nameTranslationKey).string, layout.labelWidth, textRenderer::getWidth)
-            context.drawTextWithShadow(textRenderer, Text.literal(label), layout.contentLeft, layout.fieldLabelY(rowTop), LABEL_COLOR)
+            val label = HistoryScreenText.trim(Component.translatable(field.nameTranslationKey).string, layout.labelWidth, font::width)
+            context.drawString(font, Component.literal(label), layout.contentLeft, layout.fieldLabelY(rowTop), LABEL_COLOR)
             val value = presentation.valuesByFieldId[field.id]
-            val valueText = value?.let { gameConfigPresentationText(it, field.editor) } ?: Text.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_UNAVAILABLE)
-            val shown = HistoryScreenText.trim(valueText.string, layout.controlWidth, textRenderer::getWidth)
+            val valueText = value?.let { gameConfigPresentationText(it, field.editor) } ?: Component.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_UNAVAILABLE)
+            val shown = HistoryScreenText.trim(valueText.string, layout.controlWidth, font::width)
             val valueY = layout.fieldControlY(rowTop) + (FormScreenLayout.BUTTON_HEIGHT - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2
-            context.drawTextWithShadow(textRenderer, Text.literal(shown), layout.contentRight - textRenderer.getWidth(shown), valueY, VALUE_COLOR)
+            context.drawString(font, Component.literal(shown), layout.contentRight - font.width(shown), valueY, VALUE_COLOR)
             if (mouseX >= layout.contentLeft && mouseX < layout.contentRight && mouseY >= stripe.top && mouseY < stripe.bottom) {
                 tooltip = fieldTooltip(field, value)
             }
@@ -410,9 +410,9 @@ internal class HistoryRuleSettingsScreen(
      * @param value 開局時的設定值；無法取得時為 null。
      * @return 提示的每一行。
      */
-    private fun fieldTooltip(field: GameConfigFieldDefinition, value: GameConfigPresentationValue?): List<Text> {
-        val description = Text.translatable(field.descriptionTranslationKey)
-        val editor = field.editor as? GameConfigEditorSpec.ChoiceEditor ?: return listOf(description.formatted(Formatting.GRAY))
+    private fun fieldTooltip(field: GameConfigFieldDefinition, value: GameConfigPresentationValue?): List<Component> {
+        val description = Component.translatable(field.descriptionTranslationKey)
+        val editor = field.editor as? GameConfigEditorSpec.ChoiceEditor ?: return listOf(description.withStyle(ChatFormatting.GRAY))
         val selected = when (value) {
             is GameConfigPresentationValue.ChoiceValue -> setOf(value.optionId)
             is GameConfigPresentationValue.MultiChoiceValue -> value.optionIds
@@ -422,7 +422,7 @@ internal class HistoryRuleSettingsScreen(
             description = description,
             options = editor.optionIds.map { optionId ->
                 ControlTooltip.Option(
-                    label = editor.translationKeyFor(optionId)?.let(Text::translatable) ?: Text.literal(optionId),
+                    label = editor.translationKeyFor(optionId)?.let(Component::translatable) ?: Component.literal(optionId),
                     current = optionId in selected,
                 )
             },

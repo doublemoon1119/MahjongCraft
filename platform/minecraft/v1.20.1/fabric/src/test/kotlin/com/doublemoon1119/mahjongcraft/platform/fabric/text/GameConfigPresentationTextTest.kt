@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.text
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationValue
-import net.minecraft.text.TranslatableTextContent
+import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -22,7 +22,7 @@ class GameConfigPresentationTextTest {
 
         translations.forEach { (optionId, key) ->
             val text = gameConfigPresentationText(GameConfigPresentationValue.ChoiceValue(optionId), editor)
-            assertEquals(key, (text.content as TranslatableTextContent).key)
+            assertEquals(key, (text.contents as TranslatableContents).key)
         }
     }
 
@@ -34,7 +34,7 @@ class GameConfigPresentationTextTest {
 
         listOf(gameConfigPresentationText(value), gameConfigPresentationText(value, editor)).forEach { text ->
             assertEquals(value.optionId, text.string)
-            assertFalse(text.content is TranslatableTextContent)
+            assertFalse(text.contents is TranslatableContents)
         }
     }
 

@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.example.fabric.table.ExampleHandRevealChi
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
-import net.minecraft.client.render.entity.ArmorStandEntityRenderer
+import net.minecraft.client.renderer.entity.ArmorStandRenderer
 
 /** 只在客戶端載入的範例入口，與專用伺服器的啟動流程分開。 */
 class ExampleModClient : ClientModInitializer {
@@ -16,8 +16,8 @@ class ExampleModClient : ClientModInitializer {
     /** 在客戶端註冊家具及人偶 renderer，不從伺服器入口載入繪圖類別。 */
     override fun onInitializeClient() {
         ExampleFurnitureRenderers.register()
-        EntityRendererRegistry.register(ExampleActors.actorType, ::ArmorStandEntityRenderer)
-        EntityRendererRegistry.register(ExampleActors.proxyType, ::ArmorStandEntityRenderer)
+        EntityRendererRegistry.register(ExampleActors.actorType, ::ArmorStandRenderer)
+        EntityRendererRegistry.register(ExampleActors.proxyType, ::ArmorStandRenderer)
         ExampleHandRevealChipRenderers.register()
         logger.info("Example client initialized")
     }

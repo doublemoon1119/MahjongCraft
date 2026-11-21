@@ -3,10 +3,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenar
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTablePresentationCleaner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
-import net.minecraft.registry.RegistryKey
-import net.minecraft.registry.RegistryKeys
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.Registries
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
 
 /**
  * 使用正式呈現介面重建開發情境的完整桌面；呼叫端須切換至伺服器主執行緒。
@@ -31,9 +31,9 @@ class DebugGameScenarioPresentationSynchronizer(
     fun synchronize(result: DebugGameScenarioResult) {
         val game = result.game
         val location = requireNotNull(tableLocationRegistry.get(game.id)?.location) { "No table location for debug scenario" }
-        val dimensionId = requireNotNull(Identifier.tryParse(location.dimensionId)) { "Invalid table dimension ID" }
-        val worldKey = RegistryKey.of(RegistryKeys.WORLD, dimensionId)
-        val world = requireNotNull(serverHolder.current()?.getWorld(worldKey)) { "Table world is not loaded" }
+        val dimensionId = requireNotNull(ResourceLocation.tryParse(location.dimensionId)) { "Invalid table dimension ID" }
+        val worldKey = ResourceKey.create(Registries.DIMENSION, dimensionId)
+        val world = requireNotNull(serverHolder.current()?.getLevel(worldKey)) { "Table world is not loaded" }
         presentationCleaner.clear(world, game.id, BlockPos(location.x, location.y, location.z))
         presentationPublisher.publish(result)
     }

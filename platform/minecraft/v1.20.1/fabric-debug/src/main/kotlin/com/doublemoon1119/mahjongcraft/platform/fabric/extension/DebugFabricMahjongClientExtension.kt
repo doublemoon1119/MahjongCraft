@@ -5,8 +5,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCha
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterPreviewRegion
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricAiCharacterPreviewRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.character.DebugSeatedParticipantAdapter
-import net.minecraft.entity.Entity
-import net.minecraft.entity.decoration.ArmorStandEntity
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.decoration.ArmorStand
 
 /** 開發環境以獨立護甲座模型驗證沒有明確 FACE 的角色頭像。 */
 internal object DebugFabricMahjongClientExtension : FabricMahjongClientExtension {
@@ -15,7 +15,7 @@ internal object DebugFabricMahjongClientExtension : FabricMahjongClientExtension
     override fun registerCharacterPreviews(registry: FabricAiCharacterPreviewRegistrar) {
         registry.register(
             definition = FabricAiCharacterPreviewDefinition(DebugSeatedParticipantAdapter.ID) { world, _ ->
-                val model = ArmorStandEntity(world, 0.0, 0.0, 0.0)
+                val model = ArmorStand(world, 0.0, 0.0, 0.0)
                 object : FabricAiCharacterPreviewHandle {
                     override val entity: Entity = model
 

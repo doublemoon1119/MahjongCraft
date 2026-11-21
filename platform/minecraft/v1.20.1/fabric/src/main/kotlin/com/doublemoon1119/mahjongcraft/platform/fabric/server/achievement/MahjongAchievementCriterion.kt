@@ -7,14 +7,14 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
-import net.minecraft.advancement.criterion.AbstractCriterion
-import net.minecraft.advancement.criterion.AbstractCriterionConditions
-import net.minecraft.predicate.entity.AdvancementEntityPredicateDeserializer
-import net.minecraft.predicate.entity.AdvancementEntityPredicateSerializer
-import net.minecraft.predicate.entity.LootContextPredicate
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.util.Identifier
-import net.minecraft.util.JsonHelper
+import net.minecraft.advancements.critereon.AbstractCriterionTriggerInstance
+import net.minecraft.advancements.critereon.ContextAwarePredicate
+import net.minecraft.advancements.critereon.DeserializationContext
+import net.minecraft.advancements.critereon.SerializationContext
+import net.minecraft.advancements.critereon.SimpleCriterionTrigger
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.util.GsonHelper
 
 /**
  * 「麻將成果」進度條件：玩家在同一次交易中達成指定成果時成立。
@@ -24,13 +24,13 @@ import net.minecraft.util.JsonHelper
  * - `rule`：選填，限定規則模組 ID。
  * - `statistic` 與 `at_least`：選填，玩家該統計值至少要達到 `at_least`。
  */
-class MahjongAchievementCriterion : AbstractCriterion<MahjongAchievementCriterion.Conditions>() {
-    override fun getId(): Identifier = ID
+class MahjongAchievementCriterion : SimpleCriterionTrigger<MahjongAchievementCriterion.Conditions>() {
+    override fun getId(): ResourceLocation = ID
 
-    override fun conditionsFromJson(
+    override fun createInstance(
         obj: JsonObject,
-        playerPredicate: LootContextPredicate,
-        predicateDeserializer: AdvancementEntityPredicateDeserializer,
+        playerPredicate: ContextAwarePredicate,
+        predicateDeserializer: DeserializationContext,
     ): Conditions = Conditions(playerPredicate, conditionFromJson(obj))
 
     /**
@@ -41,7 +41,7 @@ class MahjongAchievementCriterion : AbstractCriterion<MahjongAchievementCriterio
      * @param statisticValue 取得玩家目前統計值；應已包含這次交易累加的部分。
      */
     fun trigger(
-        player: ServerPlayerEntity,
+        player: ServerPlayer,
         achievements: PlayerAchievements,
         statisticValue: (String) -> Int,
     ) {
@@ -55,10 +55,10 @@ class MahjongAchievementCriterion : AbstractCriterion<MahjongAchievementCriterio
      * @property condition 與 Minecraft 版本無關的條件內容。
      */
     class Conditions(
-        playerPredicate: LootContextPredicate,
+        playerPredicate: ContextAwarePredicate,
         val condition: AchievementCondition,
-    ) : AbstractCriterionConditions(ID, playerPredicate) {
-        override fun toJson(predicateSerializer: AdvancementEntityPredicateSerializer): JsonObject = super.toJson(predicateSerializer).apply {
+    ) : AbstractCriterionTriggerInstance(ID, playerPredicate) {
+        override fun serializeToJson(predicateSerializer: SerializationContext): JsonObject = super.serializeToJson(predicateSerializer).apply {
             add(ACHIEVEMENTS, JsonArray().apply { condition.achievementIds.forEach { add(JsonPrimitive(it)) } })
             condition.ruleModuleId?.let { addProperty(RULE, it) }
             condition.statistic?.let { threshold ->
@@ -71,7 +71,7 @@ class MahjongAchievementCriterion : AbstractCriterion<MahjongAchievementCriterio
     /** 進度條件識別碼與 JSON 欄位解析。 */
     companion object {
         /** 進度 JSON 引用此條件的 trigger ID。 */
-        val ID: Identifier = Identifier(MinecraftModMetadata.MOD_ID, "mahjong_achievement")
+        val ID: ResourceLocation = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_achievement")
 
         /** 同次觸發必須達成的成果 ID 清單欄位。 */
         private const val ACHIEVEMENTS = "achievements"
@@ -92,11 +92,11 @@ class MahjongAchievementCriterion : AbstractCriterion<MahjongAchievementCriterio
          * @return 條件內容。
          */
         internal fun conditionFromJson(obj: JsonObject): AchievementCondition = AchievementCondition(
-            achievementIds = JsonHelper.getArray(obj, ACHIEVEMENTS)
-                .mapTo(linkedSetOf()) { element -> JsonHelper.asString(element, ACHIEVEMENTS) },
-            ruleModuleId = JsonHelper.getString(obj, RULE, null),
-            statistic = JsonHelper.getString(obj, STATISTIC, null)?.let { statisticId ->
-                StatisticThreshold(statisticId, JsonHelper.getInt(obj, AT_LEAST))
+            achievementIds = GsonHelper.getAsJsonArray(obj, ACHIEVEMENTS)
+                .mapTo(linkedSetOf()) { element -> GsonHelper.convertToString(element, ACHIEVEMENTS) },
+            ruleModuleId = GsonHelper.getAsString(obj, RULE, null),
+            statistic = GsonHelper.getAsString(obj, STATISTIC, null)?.let { statisticId ->
+                StatisticThreshold(statisticId, GsonHelper.getAsInt(obj, AT_LEAST))
             },
         )
     }

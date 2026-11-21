@@ -5,13 +5,13 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.world.ServerWorld
+import net.minecraft.server.level.ServerLevel
 import kotlin.coroutines.resume
 
 /**
  * 依指定世界的實際遊戲 tick 等待，不把 tick 換算成真實毫秒，也不依賴背景計時器。
  *
- * 每次伺服器 tick 都重新讀取目標世界的 [ServerWorld.time]；伺服器落後、世界暫停或切換時，等待
+ * 每次伺服器 tick 都重新讀取目標世界的 [ServerLevel.getGameTime]；伺服器落後、世界暫停或切換時，等待
  * 不會誤提前。伺服器停止時所有等待中的協程會被取消。
  */
 class FabricWorldTickWaiter {
@@ -19,7 +19,7 @@ class FabricWorldTickWaiter {
     private val lock = Any()
 
     /** 尚待指定世界時間到達的等待項目。 */
-    private val pending = FabricWorldTickWaitQueue<ServerWorld>()
+    private val pending = FabricWorldTickWaitQueue<ServerLevel>()
 
     /** 是否已登記 tick 與停止回呼。 */
     private var registered = false
@@ -42,9 +42,9 @@ class FabricWorldTickWaiter {
      * @param world 要觀察遊戲時間的世界。
      * @param targetWorldTime 要到達的絕對世界 tick。
      */
-    suspend fun await(world: ServerWorld, targetWorldTime: Long) {
-        check(world.server.isOnThread) { "World tick waits must be registered on the server thread" }
-        if (world.time >= targetWorldTime) return
+    suspend fun await(world: ServerLevel, targetWorldTime: Long) {
+        check(world.server.isSameThread) { "World tick waits must be registered on the server thread" }
+        if (world.gameTime >= targetWorldTime) return
         suspendCancellableCoroutine { continuation ->
             val handle = pending.register(
                 key = world,
@@ -62,14 +62,14 @@ class FabricWorldTickWaiter {
 
     /** 在伺服器主執行緒交付各世界已到期的等待。 */
     private fun onEndServerTick(server: MinecraftServer) {
-        server.worlds.forEach { world ->
-            pending.pollReady(world, world.time).forEach { complete -> complete() }
+        server.allLevels.forEach { world ->
+            pending.pollReady(world, world.gameTime).forEach { complete -> complete() }
         }
     }
 
     /** 停止指定伺服器各世界的等待，不交付尚未到期的完成回呼。 */
     private fun onServerStopping(server: MinecraftServer) {
-        server.worlds.forEach { world ->
+        server.allLevels.forEach { world ->
             pending.cancel(world).forEach { cancel -> cancel() }
         }
     }

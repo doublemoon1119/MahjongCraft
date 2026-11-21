@@ -17,16 +17,16 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.isKnownTileAssetKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureResourceId
+import com.mojang.blaze3d.vertex.PoseStack
 import kotlinx.coroutines.CancellationException
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.render.LightmapTextureManager
-import net.minecraft.client.render.OverlayTexture
-import net.minecraft.client.render.RenderLayer
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.util.DefaultSkinHelper
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.util.Identifier
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.renderer.LightTexture
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.RenderType
+import net.minecraft.client.renderer.texture.OverlayTexture
+import net.minecraft.client.resources.DefaultPlayerSkin
+import net.minecraft.resources.ResourceLocation
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -54,7 +54,7 @@ class PlayerPortraitRenderer internal constructor(
     private val warnedProviderIds = mutableSetOf<String>()
 
     /** 已解析的牌面貼圖快取，避免每次繪製都查詢資源管理器。 */
-    private val tileTextures = mutableMapOf<String, Identifier>()
+    private val tileTextures = mutableMapOf<String, ResourceLocation>()
 
     /** 資源重載或斷線時清除材質解析與診斷，讓已恢復資源能重新使用。 */
     fun clearResources() {
@@ -79,10 +79,10 @@ class PlayerPortraitRenderer internal constructor(
             is AiCharacterFace.TextureRegion -> PlayerPortraitSource.TextureRegion(face.resourceId, face.u0, face.v0, face.u1, face.v1)
         }
         val resource = when (face) {
-            is AiCharacterFace.Tile -> Identifier(tileTextureResourceId(face.assetKey, tileAssetRegistry))
-            is AiCharacterFace.TextureRegion -> Identifier(face.resourceId)
+            is AiCharacterFace.Tile -> ResourceLocation(tileTextureResourceId(face.assetKey, tileAssetRegistry))
+            is AiCharacterFace.TextureRegion -> ResourceLocation(face.resourceId)
         }
-        if (!MinecraftClient.getInstance().resourceManager.getResource(resource).isPresent) {
+        if (!Minecraft.getInstance().resourceManager.getResource(resource).isPresent) {
             if (warnedProviderIds.add("${snapshot.characterId}/$resource")) logger.warn("Character portrait resource is unavailable characterId={} resourceId={}", snapshot.characterId, resource)
             val fallback = previews.portrait(snapshot) ?: fallbackSource(true)
             return ResolvedPlayerPortraitSource(snapshot.characterId, fallback)
@@ -129,7 +129,7 @@ class PlayerPortraitRenderer internal constructor(
      * @param worldEntityId 同一授權快照中的即時實體 UUID。
      * @return 已直接畫出模型時為 true。
      */
-    internal fun renderActorModel(snapshot: AiCharacterSnapshot?, id: String?, context: DrawContext, area: RoomFigureArea, mouseX: Int, mouseY: Int, worldEntityId: Uuid?): Boolean {
+    internal fun renderActorModel(snapshot: AiCharacterSnapshot?, id: String?, context: GuiGraphics, area: RoomFigureArea, mouseX: Int, mouseY: Int, worldEntityId: Uuid?): Boolean {
         if (id != null && snapshot?.definition?.preview?.capabilityId != id) return false
         return previews.renderModel(snapshot, context, area, mouseX, mouseY, worldEntityId)
     }
@@ -156,8 +156,8 @@ class PlayerPortraitRenderer internal constructor(
         size: Float,
         alpha: Float,
         z: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
         renderPortraitWithFallback(
             resolved = runPresentationAttempt { resolvePortrait(playerId, isAi, characters.findPlayer(playerId)) },
@@ -188,11 +188,11 @@ class PlayerPortraitRenderer internal constructor(
     fun renderGui(
         playerId: Uuid,
         isAi: Boolean,
-        context: DrawContext,
+        context: GuiGraphics,
         x: Int,
         y: Int,
         size: Int,
-        skinTexture: Identifier? = null,
+        skinTexture: ResourceLocation? = null,
     ) {
         renderPortraitWithFallback(
             resolved = runPresentationAttempt { resolvePortrait(playerId, isAi, characters.findPlayer(playerId)) },
@@ -219,7 +219,7 @@ class PlayerPortraitRenderer internal constructor(
      * @param y 左上角垂直位置。
      * @param size 頭像邊長。
      */
-    fun renderExcludedGui(tableId: Uuid, playerId: Uuid, isAi: Boolean, context: DrawContext, x: Int, y: Int, size: Int) {
+    fun renderExcludedGui(tableId: Uuid, playerId: Uuid, isAi: Boolean, context: GuiGraphics, x: Int, y: Int, size: Int) {
         val snapshot = characters.find(tableId)?.excludedPlayers?.get(playerId)
         renderPortraitWithFallback(
             resolved = runPresentationAttempt { resolvePortrait(playerId, isAi, snapshot) },
@@ -247,11 +247,11 @@ class PlayerPortraitRenderer internal constructor(
         playerId: Uuid,
         matchId: Uuid,
         isAi: Boolean,
-        context: DrawContext,
+        context: GuiGraphics,
         x: Int,
         y: Int,
         size: Int,
-        skinTexture: Identifier? = null,
+        skinTexture: ResourceLocation? = null,
     ) {
         renderPortraitWithFallback(
             resolved = runPresentationAttempt { resolvePortrait(playerId, isAi, characters.history(matchId, playerId)) },
@@ -281,26 +281,26 @@ class PlayerPortraitRenderer internal constructor(
     private fun renderGuiSource(
         source: PlayerPortraitSource,
         playerId: Uuid,
-        context: DrawContext,
+        context: GuiGraphics,
         x: Int,
         y: Int,
         size: Int,
-        skinTexture: Identifier?,
+        skinTexture: ResourceLocation?,
     ) {
         when (source) {
             PlayerPortraitSource.PlayerSkinFace -> {
                 val texture = skinTexture
                     ?: profiles.resolvedSkinTexture(playerId)
-                    ?: MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(playerId.toJavaUuid())?.skinTexture
-                    ?: DefaultSkinHelper.getTexture(playerId.toJavaUuid())
-                context.drawTexture(texture, x, y, size, size, 8f, 8f, 8, 8, 64, 64)
+                    ?: Minecraft.getInstance().connection?.getPlayerInfo(playerId.toJavaUuid())?.skinLocation
+                    ?: DefaultPlayerSkin.getDefaultSkin(playerId.toJavaUuid())
+                context.blit(texture, x, y, size, size, 8f, 8f, 8, 8, 64, 64)
             }
             is PlayerPortraitSource.TileFace -> {
                 val width = (size * TILE_ASPECT_RATIO).toInt()
-                context.drawTexture(resolveTileTexture(source.assetKey), x + (size - width) / 2, y, width, size, 0f, 0f, 16, 16, 16, 16)
+                context.blit(resolveTileTexture(source.assetKey), x + (size - width) / 2, y, width, size, 0f, 0f, 16, 16, 16, 16)
             }
             is PlayerPortraitSource.TextureRegion -> {
-                context.drawTexture(Identifier(source.resourceId), x, y, size, size, source.u0 * 256f, source.v0 * 256f, ((source.u1 - source.u0) * 256f).toInt(), ((source.v1 - source.v0) * 256f).toInt(), 256, 256)
+                context.blit(ResourceLocation(source.resourceId), x, y, size, size, source.u0 * 256f, source.v0 * 256f, ((source.u1 - source.u0) * 256f).toInt(), ((source.v1 - source.v0) * 256f).toInt(), 256, 256)
             }
         }
     }
@@ -326,8 +326,8 @@ class PlayerPortraitRenderer internal constructor(
         size: Float,
         alpha: Float,
         z: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) = when (source) {
         PlayerPortraitSource.PlayerSkinFace -> renderSkin(playerId, x, y, size, alpha, z, matrices, consumers)
         is PlayerPortraitSource.TileFace -> {
@@ -335,7 +335,7 @@ class PlayerPortraitRenderer internal constructor(
             renderRegion(resolveTileTexture(source.assetKey), x + (size - width) / 2f, y, width, size, alpha, z, 0f, 0f, 1f, 1f, false, matrices, consumers)
         }
         is PlayerPortraitSource.TextureRegion -> renderRegion(
-            texture = Identifier(source.resourceId), x = x, y = y, width = size, height = size, alpha = alpha, z = z,
+            texture = ResourceLocation(source.resourceId), x = x, y = y, width = size, height = size, alpha = alpha, z = z,
             u0 = source.u0, v0 = source.v0, u1 = source.u1, v1 = source.v1, usesEntityLayer = false, matrices = matrices, consumers = consumers,
         )
     }
@@ -359,13 +359,13 @@ class PlayerPortraitRenderer internal constructor(
         size: Float,
         alpha: Float,
         z: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
         val uuid = playerId.toJavaUuid()
         val texture = profiles.resolvedSkinTexture(playerId)
-            ?: MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(uuid)?.skinTexture
-            ?: DefaultSkinHelper.getTexture(uuid)
+            ?: Minecraft.getInstance().connection?.getPlayerInfo(uuid)?.skinLocation
+            ?: DefaultPlayerSkin.getDefaultSkin(uuid)
         renderRegion(texture, x, y, size, size, alpha, z, 8f / 64f, 8f / 64f, 16f / 64f, 16f / 64f, true, matrices, consumers)
     }
 
@@ -388,7 +388,7 @@ class PlayerPortraitRenderer internal constructor(
      * @param consumers 提供貼圖頂點緩衝。
      */
     private fun renderRegion(
-        texture: Identifier,
+        texture: ResourceLocation,
         x: Float,
         y: Float,
         width: Float,
@@ -400,19 +400,19 @@ class PlayerPortraitRenderer internal constructor(
         u1: Float,
         v1: Float,
         usesEntityLayer: Boolean,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
-        val layer = if (usesEntityLayer) RenderLayer.getEntityTranslucent(texture) else ExhaustiveDrawSettlementTileFaceRenderLayer.get(texture)
+        val layer = if (usesEntityLayer) RenderType.entityTranslucent(texture) else ExhaustiveDrawSettlementTileFaceRenderLayer.get(texture)
         val buffer = consumers.getBuffer(layer)
-        val matrix = matrices.peek().positionMatrix
+        val matrix = matrices.last().pose()
         val a = (alpha.coerceIn(0f, 1f) * 255).roundToInt()
         fun vertex(px: Float, py: Float, u: Float, v: Float) {
-            val vertex = buffer.vertex(matrix, px, py, z).color(255, 255, 255, a).texture(u, v)
+            val vertex = buffer.vertex(matrix, px, py, z).color(255, 255, 255, a).uv(u, v)
             if (usesEntityLayer) {
-                vertex.overlay(OverlayTexture.DEFAULT_UV).light(LightmapTextureManager.MAX_LIGHT_COORDINATE).normal(0f, 0f, 1f).next()
+                vertex.overlayCoords(OverlayTexture.NO_OVERLAY).uv2(LightTexture.FULL_BRIGHT).normal(0f, 0f, 1f).endVertex()
             } else {
-                vertex.light(LightmapTextureManager.MAX_LIGHT_COORDINATE).next()
+                vertex.uv2(LightTexture.FULL_BRIGHT).endVertex()
             }
         }
         vertex(x, y, u0, v0)
@@ -427,12 +427,12 @@ class PlayerPortraitRenderer internal constructor(
      * @param assetKey 牌面資產 key。
      * @return 可用的貼圖識別碼。
      */
-    private fun resolveTileTexture(assetKey: String): Identifier = tileTextures.getOrPut(assetKey) {
-        val requested = Identifier(tileTextureResourceId(assetKey, tileAssetRegistry))
-        if (MinecraftClient.getInstance().resourceManager.getResource(requested).isPresent) {
+    private fun resolveTileTexture(assetKey: String): ResourceLocation = tileTextures.getOrPut(assetKey) {
+        val requested = ResourceLocation(tileTextureResourceId(assetKey, tileAssetRegistry))
+        if (Minecraft.getInstance().resourceManager.getResource(requested).isPresent) {
             requested
         } else {
-            Identifier(tileTextureResourceId(UNKNOWN_TILE_ASSET_KEY, tileAssetRegistry))
+            ResourceLocation(tileTextureResourceId(UNKNOWN_TILE_ASSET_KEY, tileAssetRegistry))
         }
     }
 

@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropTarget
-import net.minecraft.client.world.ClientWorld
-import net.minecraft.entity.Entity
+import net.minecraft.client.multiplayer.ClientLevel
+import net.minecraft.world.entity.Entity
 
 /** 客戶端主執行緒的桌上物件預覽工廠，例如牌譜回放畫出當時桌上的點棒；不得搜尋或接管世界實體。 */
 fun interface FabricTablePropPreviewProvider {
@@ -15,5 +15,5 @@ fun interface FabricTablePropPreviewProvider {
      * @param target 物件的身分、所屬規則與內容；座標不代表任何世界位置。
      * @return 不在世界中的新實體；內容無法呈現時為 null。
      */
-    fun create(world: ClientWorld, target: TablePropTarget): Entity?
+    fun create(world: ClientLevel, target: TablePropTarget): Entity?
 }

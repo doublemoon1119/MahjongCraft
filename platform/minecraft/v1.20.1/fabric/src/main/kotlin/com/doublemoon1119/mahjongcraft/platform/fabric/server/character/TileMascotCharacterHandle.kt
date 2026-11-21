@@ -26,7 +26,7 @@ internal class TileMascotCharacterHandle(
 
     override fun seatAssigned(request: SeatRequest) {
         entity.seatYaw = request.seat.yaw
-        entity.yaw = request.seat.yaw
-        entity.pitch = 0f
+        entity.setYRot(request.seat.yaw)
+        entity.setXRot(0f)
     }
 }

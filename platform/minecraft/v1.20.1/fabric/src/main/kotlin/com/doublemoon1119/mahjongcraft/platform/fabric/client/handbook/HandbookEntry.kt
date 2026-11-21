@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.handbook
 
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.item.ItemStack
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.world.item.ItemStack
 
 /**
  * 麻將手冊快捷畫面上的一個入口。

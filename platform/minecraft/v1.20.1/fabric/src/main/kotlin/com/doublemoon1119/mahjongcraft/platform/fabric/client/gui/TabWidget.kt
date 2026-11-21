@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder
-import net.minecraft.client.gui.widget.PressableWidget
-import net.minecraft.text.Text
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.AbstractButton
+import net.minecraft.client.gui.narration.NarrationElementOutput
+import net.minecraft.network.chat.Component
 
 /**
  * 分類頁籤列中的一個頁籤。
@@ -30,13 +30,13 @@ internal class TabWidget(
     y: Int,
     width: Int,
     height: Int,
-    message: Text,
+    message: Component,
     private val selected: Boolean,
     private val clipLeft: Int,
     private val clipRight: Int,
     private val onFocus: () -> Unit = {},
     private val onSelect: () -> Unit,
-) : PressableWidget(x, y, width, height, message) {
+) : AbstractButton(x, y, width, height, message) {
     /** 頁籤名稱的跑馬燈進度。 */
     private val labelMarquee = MarqueeState()
 
@@ -50,7 +50,7 @@ internal class TabWidget(
         if (!selected) onSelect()
     }
 
-    override fun renderButton(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderWidget(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         val visibleLeft = x.coerceAtLeast(clipLeft)
         val visibleRight = (x + width).coerceAtMost(clipRight)
         if (visibleLeft >= visibleRight) return
@@ -70,7 +70,7 @@ internal class TabWidget(
         }
         MarqueeText.draw(
             context = context,
-            textRenderer = MinecraftClient.getInstance().textRenderer,
+            textRenderer = Minecraft.getInstance().font,
             text = message,
             left = x + TEXT_PADDING,
             width = (width - TEXT_PADDING * 2).coerceAtLeast(1),
@@ -87,7 +87,7 @@ internal class TabWidget(
 
     override fun isMouseOver(mouseX: Double, mouseY: Double): Boolean = mouseX >= clipLeft && mouseX < clipRight && super.isMouseOver(mouseX, mouseY)
 
-    override fun appendClickableNarrations(builder: NarrationMessageBuilder) = appendDefaultNarrations(builder)
+    override fun updateWidgetNarration(builder: NarrationElementOutput) = defaultButtonNarrationText(builder)
 
     private companion object {
         /** 文字左右預留的像素數。 */

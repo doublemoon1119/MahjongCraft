@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageK
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 /**
  * 將 [GameAction] 轉成人類可讀的顯示文字，供對局指令的候選 tooltip 與回饋訊息共用。放在 Fabric 模組
@@ -45,7 +45,7 @@ fun GameAction.toDisplayText(
     tileAssetRegistry: MinecraftTileAssetRegistry,
     tileEmojiRegistry: TileEmojiRegistry,
     exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
-): Text {
+): Component {
     val actionId = vocabularyActionId()
     val messageKey = actionVocabularyRegistry.find(ruleModuleId, actionId)?.messageKey
     return when (this) {
@@ -60,13 +60,13 @@ fun GameAction.toDisplayText(
                         tileEmojiRegistry = tileEmojiRegistry,
                     )
                 }
-                ?: Text.literal(actionId)
-        GameAction.Tsumo, GameAction.Pass -> messageKey?.let(Text::translatable) ?: Text.literal(actionId)
-        is GameAction.Extension -> messageKey?.let(Text::translatable) ?: Text.literal(value.id)
+                ?: Component.literal(actionId)
+        GameAction.Tsumo, GameAction.Pass -> messageKey?.let(Component::translatable) ?: Component.literal(actionId)
+        is GameAction.Extension -> messageKey?.let(Component::translatable) ?: Component.literal(value.id)
         is GameAction.ExhaustiveDraw -> exhaustiveDrawText(messageKey, exhaustiveDrawReasonDisplayNameRegistry)
-        GameAction.MatchEnded -> Text.translatable(MinecraftMessageKeys.GAME_ACTION_MATCH_ENDED)
-        is GameAction.DiceRolled -> Text.translatable(MinecraftMessageKeys.GAME_ACTION_DICE_ROLLED)
-        GameAction.GameStarted, GameAction.RoundStarted, GameAction.Draw -> Text.literal(this::class.simpleName ?: "")
+        GameAction.MatchEnded -> Component.translatable(MinecraftMessageKeys.GAME_ACTION_MATCH_ENDED)
+        is GameAction.DiceRolled -> Component.translatable(MinecraftMessageKeys.GAME_ACTION_DICE_ROLLED)
+        GameAction.GameStarted, GameAction.RoundStarted, GameAction.Draw -> Component.literal(this::class.simpleName ?: "")
     }
 }
 
@@ -86,9 +86,9 @@ private fun tileActionText(
     displayNameRegistry: TileDisplayNameRegistry,
     tileAssetRegistry: MinecraftTileAssetRegistry,
     tileEmojiRegistry: TileEmojiRegistry,
-): Text = Text.translatable(
+): Component = Component.translatable(
     key,
-    referenceTile?.toDisplayText(displayNameRegistry, tileAssetRegistry, tileEmojiRegistry) ?: Text.literal("?"),
+    referenceTile?.toDisplayText(displayNameRegistry, tileAssetRegistry, tileEmojiRegistry) ?: Component.literal("?"),
 )
 
 /**
@@ -104,5 +104,5 @@ private fun tileActionText(
 private fun GameAction.ExhaustiveDraw.exhaustiveDrawText(
     messageKey: String?,
     registry: ExhaustiveDrawReasonDisplayNameRegistry,
-): Text = (messageKey ?: registry.find(reason.id))?.let(Text::translatable)
-    ?: Text.translatable(MinecraftMessageKeys.GAME_ACTION_EXHAUSTIVE_DRAW)
+): Component = (messageKey ?: registry.find(reason.id))?.let(Component::translatable)
+    ?: Component.translatable(MinecraftMessageKeys.GAME_ACTION_EXHAUSTIVE_DRAW)

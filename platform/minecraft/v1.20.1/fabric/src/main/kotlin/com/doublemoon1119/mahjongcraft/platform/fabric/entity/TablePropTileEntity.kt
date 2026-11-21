@@ -3,12 +3,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
-import net.minecraft.entity.Entity
-import net.minecraft.entity.EntityType
-import net.minecraft.entity.data.DataTracker
-import net.minecraft.entity.data.TrackedDataHandlerRegistry
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.world.World
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.network.syncher.EntityDataSerializers
+import net.minecraft.network.syncher.SynchedEntityData
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.level.Level
 import kotlin.uuid.Uuid
 
 /**
@@ -22,7 +22,7 @@ import kotlin.uuid.Uuid
  */
 class TablePropTileEntity(
     type: EntityType<out TablePropTileEntity> = ModEntities.tablePropTile,
-    world: World,
+    world: Level,
 ) : Entity(type, world) {
     /** 所屬桌子；未指派或保存資料無效時為 null。 */
     var managedTableId: Uuid? = null
@@ -38,32 +38,32 @@ class TablePropTileEntity(
 
     /** 所有觀察者都可見的牌面資產。 */
     var assetKey: String
-        get() = dataTracker[ASSET_KEY]
-        set(value) = dataTracker.set(ASSET_KEY, value)
+        get() = entityData[ASSET_KEY]
+        set(value) = entityData.set(ASSET_KEY, value)
 
     /** 所屬規則選用的公開牌組外觀 ID。 */
     var appearanceId: String
-        get() = dataTracker[APPEARANCE_ID]
-        set(value) = dataTracker.set(APPEARANCE_ID, value)
+        get() = entityData[APPEARANCE_ID]
+        set(value) = entityData.set(APPEARANCE_ID, value)
 
     init {
         setNoGravity(true)
-        noClip = true
+        noPhysics = true
     }
 
     /** 展示副本不阻擋物件。 */
-    override fun isCollidable(): Boolean = false
+    override fun canBeCollidedWith(): Boolean = false
 
     /** 展示副本不參與推擠。 */
     override fun isPushable(): Boolean = false
 
     /** 展示副本不能成為選牌或攻擊目標。 */
-    override fun canHit(): Boolean = false
+    override fun isPickable(): Boolean = false
 
     /** 初始化只含公開資料的同步欄位。 */
-    override fun initDataTracker() {
-        dataTracker.startTracking(ASSET_KEY, UNKNOWN_TILE_ASSET_KEY)
-        dataTracker.startTracking(APPEARANCE_ID, BuiltInMinecraftTileAppearances.DEFAULT.id)
+    override fun defineSynchedData() {
+        entityData.define(ASSET_KEY, UNKNOWN_TILE_ASSET_KEY)
+        entityData.define(APPEARANCE_ID, BuiltInMinecraftTileAppearances.DEFAULT.id)
     }
 
     /**
@@ -71,7 +71,7 @@ class TablePropTileEntity(
      *
      * @param nbt 接收資料的實體存檔。
      */
-    override fun writeCustomDataToNbt(nbt: NbtCompound) {
+    override fun addAdditionalSaveData(nbt: CompoundTag) {
         ManagedTableNbt.write(nbt, managedTableId)
         TablePropIdentityNbt.write(nbt, placementId, tablePropRuleModuleId)
         nbt.putString(NBT_KEY_FACE, faceData)
@@ -84,7 +84,7 @@ class TablePropTileEntity(
      *
      * @param nbt 已保存的實體資料。
      */
-    override fun readCustomDataFromNbt(nbt: NbtCompound) {
+    override fun readAdditionalSaveData(nbt: CompoundTag) {
         managedTableId = ManagedTableNbt.read(nbt)
         val identity = TablePropIdentityNbt.read(nbt)
         placementId = identity?.placementId.orEmpty()
@@ -105,9 +105,9 @@ class TablePropTileEntity(
         const val NBT_KEY_APPEARANCE_ID = "AppearanceId"
 
         /** 只同步已公開的牌面資產。 */
-        val ASSET_KEY = DataTracker.registerData(TablePropTileEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        val ASSET_KEY = SynchedEntityData.defineId(TablePropTileEntity::class.java, EntityDataSerializers.STRING)
 
         /** 同步完整牌組外觀 ID。 */
-        val APPEARANCE_ID = DataTracker.registerData(TablePropTileEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        val APPEARANCE_ID = SynchedEntityData.defineId(TablePropTileEntity::class.java, EntityDataSerializers.STRING)
     }
 }

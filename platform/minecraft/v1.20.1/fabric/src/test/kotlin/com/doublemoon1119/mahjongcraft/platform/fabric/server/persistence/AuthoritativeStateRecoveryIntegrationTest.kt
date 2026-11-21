@@ -79,7 +79,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoom
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlinx.coroutines.test.runTest
-import net.minecraft.nbt.NbtCompound
+import net.minecraft.nbt.CompoundTag
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -515,7 +515,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
          */
         suspend fun restore(source: AuthoritativeStateSnapshot) {
             val savedState = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry()).apply { update(source) }
-            val nbt = savedState.writeNbt(NbtCompound())
+            val nbt = savedState.save(CompoundTag())
             val restored = MahjongAuthoritativePersistentState.fromNbt(nbt, codec, testCharacterRegistry()).snapshot
             store.load(restored)
             restorer.restore(restored)

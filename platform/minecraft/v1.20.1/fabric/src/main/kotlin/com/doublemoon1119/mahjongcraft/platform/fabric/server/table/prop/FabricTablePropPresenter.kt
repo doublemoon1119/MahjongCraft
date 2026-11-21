@@ -16,14 +16,14 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.intersectsTableP
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.updateTablePropScene
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import kotlinx.coroutines.CancellationException
-import net.minecraft.entity.Entity
-import net.minecraft.registry.RegistryKey
-import net.minecraft.registry.RegistryKeys
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.BlockPos
+import net.minecraft.ChatFormatting
+import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.Registries
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
 import kotlin.uuid.Uuid
 
 /**
@@ -132,7 +132,7 @@ class FabricTablePropPresenter(
             )
             if (!applied) return fail(presentation, world, existing, spawned, "Entity creation or spawn rejected")
             notifiedFailures.remove(presentation.tableId)
-            table.blockEntity.markDirty()
+            table.blockEntity.setChanged()
             return TablePropPresentationResult.PRESENTED
         } catch (cancelled: CancellationException) {
             existing.forEach { it.entity.discard() }
@@ -159,7 +159,7 @@ class FabricTablePropPresenter(
      */
     private fun fail(
         presentation: TablePropPresentation,
-        world: ServerWorld,
+        world: ServerLevel,
         existing: List<ManagedProp>,
         spawned: List<Entity>,
         diagnostic: String,
@@ -169,8 +169,8 @@ class FabricTablePropPresenter(
         val previousFailure = notifiedFailures.put(presentation.tableId, diagnostic)
         if (previousFailure != diagnostic) logger.warn("Cleared rule props for table {} rule {}: {}", presentation.tableId, presentation.ruleModuleId, diagnostic)
         if (previousFailure == null) {
-            world.players.filter { it.squaredDistanceTo(presentation.tableLocation.x.toDouble(), presentation.tableLocation.y.toDouble(), presentation.tableLocation.z.toDouble()) <= 32.0 * 32.0 }.forEach {
-                it.sendMessage(Text.translatable(MinecraftMessageKeys.TABLE_RULE_PROPS_UNAVAILABLE).formatted(Formatting.YELLOW), false)
+            world.players().filter { it.distanceToSqr(presentation.tableLocation.x.toDouble(), presentation.tableLocation.y.toDouble(), presentation.tableLocation.z.toDouble()) <= 32.0 * 32.0 }.forEach {
+                it.displayClientMessage(Component.translatable(MinecraftMessageKeys.TABLE_RULE_PROPS_UNAVAILABLE).withStyle(ChatFormatting.YELLOW), false)
             }
         }
         return TablePropPresentationResult.SPAWN_FAILED
@@ -201,7 +201,7 @@ class FabricTablePropPresenter(
      * @param controllerPos controller 方塊位置。
      * @return entity 與負責種類配對的清單。
      */
-    private fun findManagedProps(world: ServerWorld, tableId: Uuid, controllerPos: BlockPos): List<ManagedProp> {
+    private fun findManagedProps(world: ServerLevel, tableId: Uuid, controllerPos: BlockPos): List<ManagedProp> {
         val searchBox = FabricTablePropSearchArea.box(controllerPos)
         return kindRegistry.kinds.flatMap { kind ->
             kind.findManaged(world, tableId, searchBox).map { entity -> ManagedProp(kind, entity) }
@@ -214,10 +214,10 @@ class FabricTablePropPresenter(
      * @param location 桌子位置。
      * @return 對應的已載入伺服器世界；無法解析時為 null。
      */
-    private fun resolveWorld(location: TableLocation): ServerWorld? {
-        val identifier = Identifier.tryParse(location.dimensionId) ?: return null
-        val worldKey = RegistryKey.of(RegistryKeys.WORLD, identifier)
-        return serverHolder.current()?.getWorld(worldKey)
+    private fun resolveWorld(location: TableLocation): ServerLevel? {
+        val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null
+        val worldKey = ResourceKey.create(Registries.DIMENSION, identifier)
+        return serverHolder.current()?.getLevel(worldKey)
     }
 
     /**
@@ -254,7 +254,7 @@ class FabricTablePropPresenter(
                 x = entity.x,
                 y = entity.y,
                 z = entity.z,
-                yaw = entity.yaw,
+                yaw = entity.yRot,
             )
         }
     }

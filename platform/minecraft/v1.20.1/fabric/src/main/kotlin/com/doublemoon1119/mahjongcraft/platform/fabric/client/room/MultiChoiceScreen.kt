@@ -8,14 +8,14 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.client.gui.tooltip.Tooltip
-import net.minecraft.client.gui.widget.ButtonWidget
-import net.minecraft.screen.ScreenTexts
-import net.minecraft.text.OrderedText
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.Button
+import net.minecraft.client.gui.components.Tooltip
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.network.chat.CommonComponents
+import net.minecraft.network.chat.Component
+import net.minecraft.util.FormattedCharSequence
 import org.lwjgl.glfw.GLFW
 
 /**
@@ -38,7 +38,7 @@ internal class MultiChoiceScreen(
     private val editor: GameConfigEditorSpec.MultiChoice,
     initialSelection: Set<String>,
     private val onApply: (Set<String>) -> Unit,
-) : Screen(Text.translatable(fieldName)) {
+) : Screen(Component.translatable(fieldName)) {
     /** 只在子畫面內修改的選取草稿。 */
     private val selected = initialSelection.toMutableSet()
 
@@ -49,13 +49,13 @@ internal class MultiChoiceScreen(
     private val checkboxes = linkedMapOf<String, RestartableMarqueeButtonWidget>()
 
     /** 完成按鈕。 */
-    private var doneButton: ButtonWidget? = null
+    private var doneButton: Button? = null
 
     /** 全選按鈕。 */
-    private var selectAllButton: ButtonWidget? = null
+    private var selectAllButton: Button? = null
 
     override fun init() {
-        clearChildren()
+        clearWidgets()
         checkboxes.clear()
         scroll.clamp(layout().maximumScroll)
         val layout = layout()
@@ -64,23 +64,23 @@ internal class MultiChoiceScreen(
                 .dimensions(layout.checkboxX, layout.rowTop(index), layout.checkboxSize, layout.checkboxSize)
                 .build()
                 .also { it.showsMessage = false }
-            checkboxes[optionId] = addDrawableChild(checkbox)
+            checkboxes[optionId] = addRenderableWidget(checkbox)
         }
-        selectAllButton = footerButton(MultiChoiceLayout.SELECT_ALL, Text.translatable(MinecraftRoomScreenKeys.SELECT_ALL)) {
+        selectAllButton = footerButton(MultiChoiceLayout.SELECT_ALL, Component.translatable(MinecraftRoomScreenKeys.SELECT_ALL)) {
             if (MultiChoiceSelection.canSelectAll(editor)) {
                 selected.clear()
                 selected += editor.optionIds
                 refreshSelectionControls()
             }
         }
-        footerButton(MultiChoiceLayout.CLEAR, Text.translatable(MinecraftRoomScreenKeys.CLEAR_SELECTION)) {
+        footerButton(MultiChoiceLayout.CLEAR, Component.translatable(MinecraftRoomScreenKeys.CLEAR_SELECTION)) {
             selected.clear()
             refreshSelectionControls()
         }
-        footerButton(MultiChoiceLayout.CANCEL, ScreenTexts.CANCEL) { close() }.also {
-            it.tooltip = Tooltip.of(Text.translatable(MinecraftRoomScreenKeys.MULTI_CHOICE_CANCEL_HINT).formatted(Formatting.GRAY))
+        footerButton(MultiChoiceLayout.CANCEL, CommonComponents.GUI_CANCEL) { onClose() }.also {
+            it.tooltip = Tooltip.create(Component.translatable(MinecraftRoomScreenKeys.MULTI_CHOICE_CANCEL_HINT).withStyle(ChatFormatting.GRAY))
         }
-        doneButton = footerButton(MultiChoiceLayout.DONE, Text.translatable(MinecraftRoomScreenKeys.DONE)) {
+        doneButton = footerButton(MultiChoiceLayout.DONE, Component.translatable(MinecraftRoomScreenKeys.DONE)) {
             if (MultiChoiceSelection.canApply(selected, editor)) onApply(selected.toSet())
         }
         refreshSelectionControls()
@@ -94,9 +94,9 @@ internal class MultiChoiceScreen(
      * @param action 按下後的行為。
      * @return 已加入畫面的按鈕。
      */
-    private fun footerButton(index: Int, label: Text, action: () -> Unit): ButtonWidget {
+    private fun footerButton(index: Int, label: Component, action: () -> Unit): Button {
         val layout = layout()
-        return addDrawableChild(
+        return addRenderableWidget(
             RestartableMarqueeButtonWidget.builder(label) { action() }
                 .dimensions(layout.footer.buttonX(index), layout.footerY, layout.footer.buttonWidth(index), BUTTON_HEIGHT)
                 .build(),
@@ -132,16 +132,16 @@ internal class MultiChoiceScreen(
         }
         val canApply = MultiChoiceSelection.canApply(selected, editor)
         doneButton?.active = canApply
-        doneButton?.tooltip = Tooltip.of(
+        doneButton?.tooltip = Tooltip.create(
             if (canApply) {
-                Text.translatable(MinecraftRoomScreenKeys.MULTI_CHOICE_DONE_HINT).formatted(Formatting.GRAY)
+                Component.translatable(MinecraftRoomScreenKeys.MULTI_CHOICE_DONE_HINT).withStyle(ChatFormatting.GRAY)
             } else {
-                Text.translatable(MinecraftRoomScreenKeys.SELECTION_OUT_OF_RANGE, editor.minimumCount, editor.maximumCount).formatted(Formatting.RED)
+                Component.translatable(MinecraftRoomScreenKeys.SELECTION_OUT_OF_RANGE, editor.minimumCount, editor.maximumCount).withStyle(ChatFormatting.RED)
             },
         )
         val canSelectAll = MultiChoiceSelection.canSelectAll(editor)
         selectAllButton?.active = canSelectAll
-        selectAllButton?.tooltip = if (canSelectAll) null else Tooltip.of(Text.translatable(MinecraftRoomScreenKeys.SELECT_ALL_UNAVAILABLE, editor.maximumCount).formatted(Formatting.RED))
+        selectAllButton?.tooltip = if (canSelectAll) null else Tooltip.create(Component.translatable(MinecraftRoomScreenKeys.SELECT_ALL_UNAVAILABLE, editor.maximumCount).withStyle(ChatFormatting.RED))
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
@@ -164,7 +164,7 @@ internal class MultiChoiceScreen(
         if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && index != null) {
             val checkbox = checkboxes[editor.optionIds[index]]
             if (checkbox?.active == true) {
-                client?.soundManager?.let(checkbox::playDownSound)
+                minecraft?.soundManager?.let(checkbox::playDownSound)
                 checkbox.onPress()
                 setFocused(checkbox)
                 return true
@@ -188,21 +188,21 @@ internal class MultiChoiceScreen(
     }
 
     /** 放棄這次的勾選並返回房間設定頁。 */
-    override fun close() {
-        client?.setScreen(parent)
+    override fun onClose() {
+        minecraft?.setScreen(parent)
     }
 
-    override fun shouldPause(): Boolean = false
+    override fun isPauseScreen(): Boolean = false
 
-    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         renderBackground(context)
         val layout = layout()
-        ScreenRendering.title(context, textRenderer, fitClientText(textRenderer, title, layout.contentWidth), width)
-        context.drawCenteredTextWithShadow(
-            textRenderer,
+        ScreenRendering.title(context, font, fitClientText(font, title, layout.contentWidth), width)
+        context.drawCenteredString(
+            font,
             fitClientText(
-                textRenderer = textRenderer,
-                text = Text.translatable(MinecraftRoomScreenKeys.SELECTION_LIMITS, selected.size, editor.minimumCount, editor.maximumCount),
+                textRenderer = font,
+                text = Component.translatable(MinecraftRoomScreenKeys.SELECTION_LIMITS, selected.size, editor.minimumCount, editor.maximumCount),
                 maximumWidth = layout.contentWidth,
             ),
             width / 2,
@@ -217,9 +217,9 @@ internal class MultiChoiceScreen(
             val hovered = hoveredIndex == scroll.index + index
             if (hovered && checkbox?.active == true) context.fill(area.left, area.top, area.right, area.bottom, HOVER_COLOR)
             if (checkbox != null) checkbox.outlined = hovered && checkbox.active
-            context.drawTextWithShadow(
-                textRenderer,
-                fitClientText(textRenderer, optionText(optionId), layout.labelWidth),
+            context.drawString(
+                font,
+                fitClientText(font, optionText(optionId), layout.labelWidth),
                 layout.contentLeft,
                 layout.rowTop(index) + (BUTTON_HEIGHT - VISIBLE_TEXT_HEIGHT) / 2,
                 if (checkbox?.active == true) LABEL_COLOR else DISABLED_LABEL_COLOR,
@@ -229,9 +229,9 @@ internal class MultiChoiceScreen(
         if (bar.maximumScroll > 0) VerticalScrollbar.render(context, layout.scrollbarX, bar)
         super.render(context, mouseX, mouseY, delta)
         if (hoveredIndex != null) {
-            optionTooltip(editor.optionIds[hoveredIndex], layout)?.let { context.drawOrderedTooltip(textRenderer, it, mouseX, mouseY) }
+            optionTooltip(editor.optionIds[hoveredIndex], layout)?.let { context.renderTooltip(font, it, mouseX, mouseY) }
         } else if (mouseX in layout.contentLeft until layout.contentRight && mouseY in TITLE_HOVER_TOP until layout.rowsTop - 2) {
-            context.drawOrderedTooltip(textRenderer, wrap(listOf(Text.translatable(fieldDescriptionKey).formatted(Formatting.GRAY)), layout.contentWidth), mouseX, mouseY)
+            context.renderTooltip(font, wrap(listOf(Component.translatable(fieldDescriptionKey).withStyle(ChatFormatting.GRAY)), layout.contentWidth), mouseX, mouseY)
         }
     }
 
@@ -242,14 +242,14 @@ internal class MultiChoiceScreen(
      * @param layout 目前版面。
      * @return 提示的每一行；沒有內容時為 null。
      */
-    private fun optionTooltip(optionId: String, layout: MultiChoiceLayout): List<OrderedText>? {
+    private fun optionTooltip(optionId: String, layout: MultiChoiceLayout): List<FormattedCharSequence>? {
         val name = optionText(optionId)
         val lines = buildList {
-            if (textRenderer.getWidth(name) > layout.labelWidth) add(name.copy().formatted(Formatting.WHITE))
-            editor.descriptionTranslationKeyFor(optionId)?.let { add(Text.translatable(it).formatted(Formatting.GRAY)) }
+            if (font.width(name) > layout.labelWidth) add(name.copy().withStyle(ChatFormatting.WHITE))
+            editor.descriptionTranslationKeyFor(optionId)?.let { add(Component.translatable(it).withStyle(ChatFormatting.GRAY)) }
             if (!canToggle(optionId)) {
-                if (isNotEmpty()) add(Text.empty())
-                add(Text.translatable(MinecraftRoomScreenKeys.OPTION_AT_MAXIMUM, editor.maximumCount).formatted(Formatting.RED))
+                if (isNotEmpty()) add(Component.empty())
+                add(Component.translatable(MinecraftRoomScreenKeys.OPTION_AT_MAXIMUM, editor.maximumCount).withStyle(ChatFormatting.RED))
             }
         }
         return lines.takeIf { it.isNotEmpty() }?.let { wrap(it, layout.contentWidth) }
@@ -262,15 +262,15 @@ internal class MultiChoiceScreen(
      * @param maximumWidth 提示可用的寬度。
      * @return 換行後的提示行。
      */
-    private fun wrap(lines: List<Text>, maximumWidth: Int): List<OrderedText> = lines.flatMap { line ->
-        if (line.string.isEmpty()) listOf(line.asOrderedText()) else textRenderer.wrapLines(line, maximumWidth)
+    private fun wrap(lines: List<Component>, maximumWidth: Int): List<FormattedCharSequence> = lines.flatMap { line ->
+        if (line.string.isEmpty()) listOf(line.visualOrderText) else font.split(line, maximumWidth)
     }
 
     /** 建立所有繪製與輸入共用的版面。 */
     private fun layout(): MultiChoiceLayout = MultiChoiceLayout(width, height, editor.optionIds.size, scroll.index)
 
     /** 取得名稱的明確翻譯，未登記時保留完整 ID。 */
-    private fun optionText(optionId: String): Text = editor.translationKeyFor(optionId)?.let(Text::translatable) ?: Text.literal(optionId)
+    private fun optionText(optionId: String): Component = editor.translationKeyFor(optionId)?.let(Component::translatable) ?: Component.literal(optionId)
 
     /** 尺寸與顏色。 */
     private companion object {

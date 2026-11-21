@@ -8,10 +8,10 @@ import com.doublemoon1119.mahjongcraft.example.fabric.event.ExampleGameEventChat
 import com.doublemoon1119.mahjongcraft.example.fabric.event.ExampleGameEventChat.scoreChangeValue
 import com.doublemoon1119.mahjongcraft.example.fabric.event.ExampleGameEventChat.standingValue
 import com.doublemoon1119.mahjongcraft.example.minecraft.text.ExampleEventMessageKeys
-import net.minecraft.text.HoverEvent
-import net.minecraft.text.Text
-import net.minecraft.text.TranslatableTextContent
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.HoverEvent
+import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -23,14 +23,14 @@ class ExampleGameEventChatTest {
     /** 事件摘要以 AQUA 色中括號標籤顯示，文字與括號都有相同懸停內容。 */
     @Test
     fun `event summary stays on one line and hover keeps details`() {
-        val message = eventMessage(Text.literal("Round 1 settled"), Text.literal("event details"))
+        val message = eventMessage(Component.literal("Round 1 settled"), Component.literal("event details"))
 
         assertEquals("[Round 1 settled]", message.string)
         (listOf(message) + message.siblings).forEach { part ->
-            assertEquals(Formatting.AQUA.colorValue, part.style.color?.rgb)
+            assertEquals(ChatFormatting.AQUA.color, part.style.color?.value)
             assertEquals(
                 expected = "event details",
-                actual = assertIs<Text>(part.style.hoverEvent?.getValue(HoverEvent.Action.SHOW_TEXT)).string,
+                actual = assertIs<Component>(part.style.hoverEvent?.getValue(HoverEvent.Action.SHOW_TEXT)).string,
             )
             assertEquals(null, part.style.clickEvent)
         }
@@ -50,7 +50,7 @@ class ExampleGameEventChatTest {
         val first = Uuid.parse("00000000-0000-0000-0000-000000000001")
         val second = Uuid.parse("00000000-0000-0000-0000-000000000002")
 
-        assertEquals(ExampleEventMessageKeys.UNKNOWN_LOCATION, assertIs<TranslatableTextContent>(locationText(null).content).key)
+        assertEquals(ExampleEventMessageKeys.UNKNOWN_LOCATION, assertIs<TranslatableContents>(locationText(null).contents).key)
         assertEquals(
             expected = listOf("Alice ($first)", "$second ($second)"),
             actual = formatPlayerLabels(setOf(second, first)) { id -> if (id == first) "Alice" else id.toString() },
@@ -61,15 +61,15 @@ class ExampleGameEventChatTest {
     @Test
     fun `player line keeps every translation argument and uuid fallback`() {
         val id = Uuid.parse("00000000-0000-0000-0000-000000000001")
-        val offline = assertIs<TranslatableTextContent>(playerValue(id, true, 2).content)
+        val offline = assertIs<TranslatableContents>(playerValue(id, true, 2).contents)
         assertEquals(ExampleEventMessageKeys.PLAYER, offline.key)
         assertEquals(4, offline.args.size)
-        assertEquals(id.toString(), assertIs<Text>(offline.args[0]).string)
+        assertEquals(id.toString(), assertIs<Component>(offline.args[0]).string)
         assertEquals(id.toString(), offline.args[1])
         assertEquals("true", offline.args[2])
         assertEquals(2, offline.args[3])
-        val online = assertIs<TranslatableTextContent>(playerValue(id, false, 1, Text.literal("Alice")).content)
-        assertEquals("Alice", assertIs<Text>(online.args[0]).string)
+        val online = assertIs<TranslatableContents>(playerValue(id, false, 1, Component.literal("Alice")).contents)
+        assertEquals("Alice", assertIs<Component>(online.args[0]).string)
         assertEquals(id.toString(), online.args[1])
     }
 
@@ -88,7 +88,7 @@ class ExampleGameEventChatTest {
             title = ExampleEventMessageKeys.MATCH_STARTED,
         )
 
-        val fields = content.siblings.mapNotNull { it.siblings.singleOrNull()?.content as? TranslatableTextContent }
+        val fields = content.siblings.mapNotNull { it.siblings.singleOrNull()?.contents as? TranslatableContents }
         assertEquals(eventId.toString(), fields.single { it.key == ExampleEventMessageKeys.EVENT_ID }.args.single())
         assertEquals(matchId.toString(), fields.single { it.key == ExampleEventMessageKeys.MATCH_ID }.args.single())
         assertEquals(venueId.toString(), fields.single { it.key == ExampleEventMessageKeys.VENUE_ID }.args.single())
@@ -99,20 +99,20 @@ class ExampleGameEventChatTest {
     @Test
     fun `settlement and standing lines keep every value`() {
         val id = Uuid.parse("00000000-0000-0000-0000-000000000004")
-        val score = assertIs<TranslatableTextContent>(
-            value = scoreChangeValue(id, 100, 120, 2, 1, Text.literal("Alice")).content,
+        val score = assertIs<TranslatableContents>(
+            value = scoreChangeValue(id, 100, 120, 2, 1, Component.literal("Alice")).contents,
         )
         assertEquals(ExampleEventMessageKeys.SCORE_CHANGE, score.key)
-        assertEquals("Alice", assertIs<Text>(score.args[0]).string)
+        assertEquals("Alice", assertIs<Component>(score.args[0]).string)
         assertEquals(id.toString(), score.args[1])
         assertEquals(100, score.args[2])
         assertEquals(120, score.args[3])
         assertEquals(2, score.args[4])
         assertEquals(1, score.args[5])
 
-        val standing = assertIs<TranslatableTextContent>(standingValue(id, true, 120, 1).content)
+        val standing = assertIs<TranslatableContents>(standingValue(id, true, 120, 1).contents)
         assertEquals(ExampleEventMessageKeys.STANDING, standing.key)
-        assertEquals(id.toString(), assertIs<Text>(standing.args[0]).string)
+        assertEquals(id.toString(), assertIs<Component>(standing.args[0]).string)
         assertEquals(id.toString(), standing.args[1])
         assertEquals("true", standing.args[2])
         assertEquals(120, standing.args[3])

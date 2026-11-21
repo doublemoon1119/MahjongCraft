@@ -46,21 +46,21 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
 import com.mojang.authlib.GameProfile
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.Drawable
-import net.minecraft.client.gui.Element
-import net.minecraft.client.gui.Selectable
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.client.gui.tooltip.Tooltip
-import net.minecraft.client.gui.tooltip.TooltipPositioner
-import net.minecraft.client.network.OtherClientPlayerEntity
-import net.minecraft.entity.LivingEntity
-import net.minecraft.text.OrderedText
-import net.minecraft.text.Text
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.Font
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.Renderable
+import net.minecraft.client.gui.components.Tooltip
+import net.minecraft.client.gui.components.events.GuiEventListener
+import net.minecraft.client.gui.narration.NarratableEntry
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner
+import net.minecraft.client.player.RemotePlayer
+import net.minecraft.core.BlockPos
+import net.minecraft.network.chat.Component
+import net.minecraft.util.FormattedCharSequence
+import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.phys.AABB
 import java.util.UUID
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -108,7 +108,7 @@ class RoomScreen(
     private val ruleCatalogue: RuleCatalogueScreenController,
     private val tableSpaceObstructions: ClientTableSpaceObstructionStore,
     openSettings: Boolean = false,
-) : Screen(Text.translatable(MinecraftRoomScreenKeys.TITLE)) {
+) : Screen(Component.translatable(MinecraftRoomScreenKeys.TITLE)) {
     /** 外觀解析與呈現降級的診斷記錄。 */
     private val logger = mahjongCraftLogger(RoomScreen::class)
 
@@ -160,7 +160,7 @@ class RoomScreen(
     private var wasRoomMember = stateStore.tableOccupancy(tableId)?.occupancy == TableOccupancyDto.ROOM && stateStore.roomSnapshot(tableId)?.isInRoom == true
 
     /** 玩家模型預覽快取；未取得外觀資料時也可保存佔位模型。 */
-    private val profilePreviews = mutableMapOf<Uuid, OtherClientPlayerEntity>()
+    private val profilePreviews = mutableMapOf<Uuid, RemotePlayer>()
 
     /** 決定各成員的模型或頭像呈現方式。 */
     private val appearanceResolver = RoomMemberAppearanceResolver(appearanceSources, portraitRenderer::hasCharacterPreview)
@@ -174,8 +174,8 @@ class RoomScreen(
     override fun init() {
         dropdown.close()
         val pageSwitchLeft = width / 2 - FormScreenLayout.PAGE_SWITCH_WIDTH - FormScreenLayout.PAGE_SWITCH_GAP / 2
-        addDrawableChild(pageButton(pageSwitchLeft, MinecraftRoomScreenKeys.PAGE_ROOM, Page.ROOM))
-        addDrawableChild(
+        addRenderableWidget(pageButton(pageSwitchLeft, MinecraftRoomScreenKeys.PAGE_ROOM, Page.ROOM))
+        addRenderableWidget(
             pageButton(
                 x = pageSwitchLeft + FormScreenLayout.PAGE_SWITCH_WIDTH + FormScreenLayout.PAGE_SWITCH_GAP,
                 key = MinecraftRoomScreenKeys.PAGE_SETTINGS,
@@ -184,17 +184,17 @@ class RoomScreen(
         )
         val room = stateStore.roomSnapshot(tableId)
         if (room?.isHost == true && room.excludedPlayerIds.isNotEmpty()) {
-            addDrawableChild(
+            addRenderableWidget(
                 RoomExcludedParticipantsButton(
                     x = width / 2 + FormScreenLayout.PAGE_SWITCH_WIDTH + FormScreenLayout.PAGE_SWITCH_GAP * 3 / 2,
                     y = FormScreenLayout.PAGE_SWITCH_Y,
                     count = { stateStore.roomSnapshot(tableId)?.excludedPlayerIds?.size ?: 0 },
                     open = {
-                        client?.setScreen(
+                        minecraft?.setScreen(
                             RoomExcludedParticipantsScreen(
                                 parent = this,
                                 readRoom = { stateStore.roomSnapshot(tableId) },
-                                name = { id -> Text.literal(displayNames.resolve(tableId, id.toString(), id in stateStore.roomSnapshot(tableId)?.excludedAiPlayerIds.orEmpty())) },
+                                name = { id -> Component.literal(displayNames.resolve(tableId, id.toString(), id in stateStore.roomSnapshot(tableId)?.excludedAiPlayerIds.orEmpty())) },
                                 face = { context, id, x, y, size -> portraitRenderer.renderExcludedGui(tableId, id, id in stateStore.roomSnapshot(tableId)?.excludedAiPlayerIds.orEmpty(), context, x, y, size) },
                                 allow = { id -> send(RoomActionDto.AllowParticipant(tableId.toString(), id.toString())) },
                                 allowAll = { send(RoomActionDto.AllowAllParticipants(tableId.toString())) },
@@ -219,7 +219,7 @@ class RoomScreen(
      * @param target 點擊後要顯示的頁面。
      * @return 切換頁面並要求重建控制項的按鈕。
      */
-    private fun pageButton(x: Int, key: String, target: Page): RestartableMarqueeButtonWidget = RestartableMarqueeButtonWidget.builder(Text.translatable(key)) {
+    private fun pageButton(x: Int, key: String, target: Page): RestartableMarqueeButtonWidget = RestartableMarqueeButtonWidget.builder(Component.translatable(key)) {
         if (page != target) {
             page = target
             rebuild()
@@ -267,7 +267,7 @@ class RoomScreen(
                     )
                     button(MinecraftRoomScreenKeys.DISBAND, RoomActionDto.Disband(table.tableId))
                 } else {
-                    val selfId = client?.player?.uuid?.let(UUID::toString)
+                    val selfId = minecraft?.player?.uuid?.let(UUID::toString)
                     val ready = room.readyPlayerIds.any { it.toString() == selfId }
                     button(
                         key = if (ready) MinecraftRoomScreenKeys.CANCEL_READY else MinecraftRoomScreenKeys.READY,
@@ -312,12 +312,12 @@ class RoomScreen(
                 )
             }
             if (!room.isHost) return@forEachIndexed
-            addDrawableChild(
-                RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.KICK)) {
+            addRenderableWidget(
+                RestartableMarqueeButtonWidget.builder(Component.translatable(MinecraftRoomScreenKeys.KICK)) {
                     send(RoomActionDto.Kick(tableIdText, targetId.toString()))
                 }.dimensions(cardX + grid.cardWidth - RoomMemberGridLayout.CARD_RIGHT_INSET - KICK_BUTTON_SIZE - KICK_BUTTON_INSET, cardY + KICK_BUTTON_INSET, KICK_BUTTON_SIZE, KICK_BUTTON_SIZE).build().also {
                     it.icon = PixelIcon.CROSS
-                    it.tooltip = Tooltip.of(Text.translatable(MinecraftRoomScreenKeys.KICK))
+                    it.tooltip = Tooltip.create(Component.translatable(MinecraftRoomScreenKeys.KICK))
                 },
             )
         }
@@ -336,8 +336,8 @@ class RoomScreen(
             val slot = close - actions.size + index
             addActionButton(grid.footer.buttonX(slot), grid.footerY, grid.footer.buttonWidth(slot), action)
         }
-        addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.CLOSE)) {
+        addRenderableWidget(
+            RestartableMarqueeButtonWidget.builder(Component.translatable(MinecraftRoomScreenKeys.CLOSE)) {
                 closeEntireScreen()
             }.dimensions(grid.footer.buttonX(close), grid.footerY, grid.footer.buttonWidth(close), FormScreenLayout.BUTTON_HEIGHT).build(),
         )
@@ -376,14 +376,14 @@ class RoomScreen(
         }.dimensions(x, y, width, AI_STRATEGY_BUTTON_HEIGHT).build()
         selector.active = editable && keys.isNotEmpty()
         selector.selectorExpanded = { dropdown.isOpenFor(selectorKey) }
-        selector.tooltip = Tooltip.of(
+        selector.tooltip = Tooltip.create(
             ControlTooltip.options(
-                description = Text.translatable(MinecraftRoomScreenKeys.AI_STRATEGY_TITLE),
+                description = Component.translatable(MinecraftRoomScreenKeys.AI_STRATEGY_TITLE),
                 labels = keys.map(::aiStrategyText),
                 currentIndex = keys.indexOf(current),
             ),
         )
-        addDrawableChild(selector)
+        addRenderableWidget(selector)
     }
 
     /**
@@ -395,12 +395,12 @@ class RoomScreen(
      * @param button 包含名稱、操作、啟用狀態與提示的按鈕設定。
      */
     private fun addActionButton(x: Int, y: Int, width: Int, button: ActionButton) {
-        addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(button.key)) {
+        addRenderableWidget(
+            RestartableMarqueeButtonWidget.builder(Component.translatable(button.key)) {
                 send(button.action)
             }.dimensions(x, y, width, 20).build().also { widget ->
                 widget.active = button.active
-                button.tooltipKey?.let { widget.tooltip = Tooltip.of(Text.translatable(it)) }
+                button.tooltipKey?.let { widget.tooltip = Tooltip.create(Component.translatable(it)) }
             },
         )
     }
@@ -418,13 +418,13 @@ class RoomScreen(
      * @param strategyKey 策略識別碼。
      * @return 策略的顯示文字。
      */
-    private fun aiStrategyText(strategyKey: String?): Text = strategyKey?.let { key ->
-        aiStrategyNames.find(key)?.let(Text::translatable) ?: Text.literal(key)
-    } ?: Text.literal("AI")
+    private fun aiStrategyText(strategyKey: String?): Component = strategyKey?.let { key ->
+        aiStrategyNames.find(key)?.let(Component::translatable) ?: Component.literal(key)
+    } ?: Component.literal("AI")
 
-    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         renderBackground(context)
-        ScreenRendering.title(context, textRenderer, title, width)
+        ScreenRendering.title(context, font, title, width)
         val pointerX = dropdown.pointer(mouseX)
         val pointerY = dropdown.pointer(mouseY)
         val labelTooltip = when (page) {
@@ -435,12 +435,12 @@ class RoomScreen(
             Page.SETTINGS -> settingsPage.renderContent(context, pointerX, pointerY)
         }
         super.render(context, pointerX, pointerY, delta)
-        labelTooltip?.let { context.drawTooltip(textRenderer, it, mouseX, mouseY) }
-        dropdown.render(context, textRenderer, height, mouseX, mouseY)
+        labelTooltip?.let { context.renderTooltip(font, it, mouseX, mouseY) }
+        dropdown.render(context, font, height, mouseX, mouseY)
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
-        if (dropdown.mouseScrolled(textRenderer, height, amount)) return true
+        if (dropdown.mouseScrolled(font, height, amount)) return true
         if (amount == 0.0) return super.mouseScrolled(mouseX, mouseY, amount)
         if (page == Page.SETTINGS) return settingsPage.mouseScrolled(mouseX, mouseY, amount)
         if (page == Page.ROOM && stateStore.tableOccupancy(tableId)?.occupancy == TableOccupancyDto.GAME) {
@@ -465,7 +465,7 @@ class RoomScreen(
     }
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        if (dropdown.mouseClicked(textRenderer, height, mouseX, mouseY, button)) return true
+        if (dropdown.mouseClicked(font, height, mouseX, mouseY, button)) return true
         if (page == Page.SETTINGS && settingsPage.mouseClicked(mouseX, mouseY, button)) return true
         if (page == Page.ROOM && button == 0) {
             if (stateStore.tableOccupancy(tableId)?.occupancy == TableOccupancyDto.GAME) {
@@ -522,12 +522,12 @@ class RoomScreen(
     }
 
     /** 下拉清單展開時不讓底層元件排入提示框。 */
-    override fun setTooltip(lines: List<OrderedText>, positioner: TooltipPositioner, focused: Boolean) {
-        if (!dropdown.isOpen) super.setTooltip(lines, positioner, focused)
+    override fun setTooltipForNextRenderPass(lines: List<FormattedCharSequence>, positioner: ClientTooltipPositioner, focused: Boolean) {
+        if (!dropdown.isOpen) super.setTooltipForNextRenderPass(lines, positioner, focused)
     }
 
     override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
-        if (dropdown.keyPressed(textRenderer, height, keyCode)) return true
+        if (dropdown.keyPressed(font, height, keyCode)) return true
         return super.keyPressed(keyCode, scanCode, modifiers)
     }
 
@@ -537,7 +537,7 @@ class RoomScreen(
         super.tick()
         if (rebuildRequested) {
             rebuildRequested = false
-            clearAndInit()
+            rebuildWidgets()
             return
         }
         if (!isTableStillAvailable()) {
@@ -546,7 +546,7 @@ class RoomScreen(
         }
         if (tableSpaceObstructions.isObstructed(tableId) != lastSpaceObstructed) {
             lastSpaceObstructed = tableSpaceObstructions.isObstructed(tableId)
-            clearAndInit()
+            rebuildWidgets()
             return
         }
         if (stateStore.tableOccupancy(tableId) != lastTable || stateStore.roomSnapshot(tableId) != lastRoomSnapshot) {
@@ -572,14 +572,14 @@ class RoomScreen(
                 page = Page.ROOM
                 settingsPage.clearDraft()
             }
-            clearAndInit()
+            rebuildWidgets()
             return
         }
         val authoritative = currentConfig() ?: return
         val outcome = settingsPage.syncAuthoritative(authoritative)
         if (outcome is RoomSettingsDraft.Outcome.Adopted) {
             if (outcome.returnToRoom) page = Page.ROOM
-            clearAndInit()
+            rebuildWidgets()
         }
     }
 
@@ -597,10 +597,10 @@ class RoomScreen(
         val y = table.tableY ?: return true
         val z = table.tableZ ?: return true
         val expectedDimension = table.dimensionId ?: return true
-        val player = client?.player ?: return false
-        val world = client?.world ?: return false
-        if (world.registryKey.value.toString() != expectedDimension) return false
-        if (player.squaredDistanceTo(x + 0.5, y + 0.5, z + 0.5) > 64.0) return false
+        val player = minecraft?.player ?: return false
+        val world = minecraft?.level ?: return false
+        if (world.dimension().location().toString() != expectedDimension) return false
+        if (player.distanceToSqr(x + 0.5, y + 0.5, z + 0.5) > 64.0) return false
         return world.getBlockEntity(BlockPos(x, y, z)) is MahjongTableController
     }
 
@@ -611,16 +611,16 @@ class RoomScreen(
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
      */
-    private fun renderRoom(context: DrawContext, mouseX: Int, mouseY: Int) {
+    private fun renderRoom(context: GuiGraphics, mouseX: Int, mouseY: Int) {
         val table = stateStore.tableOccupancy(tableId) ?: return
         when (table.occupancy) {
-            TableOccupancyDto.VACANT -> context.drawCenteredTextWithShadow(textRenderer, Text.translatable(MinecraftRoomScreenKeys.EMPTY), width / 2, 70, 0xFFFFFF)
+            TableOccupancyDto.VACANT -> context.drawCenteredString(font, Component.translatable(MinecraftRoomScreenKeys.EMPTY), width / 2, 70, 0xFFFFFF)
             TableOccupancyDto.GAME -> {
                 renderPlayingMembers(context, mouseX, mouseY)
                 val grid = playingGrid()
-                context.drawCenteredTextWithShadow(
-                    textRenderer,
-                    fitClientText(textRenderer, Text.translatable(MinecraftRoomScreenKeys.PLAYING), grid.contentRight - grid.contentLeft),
+                context.drawCenteredString(
+                    font,
+                    fitClientText(font, Component.translatable(MinecraftRoomScreenKeys.PLAYING), grid.contentRight - grid.contentLeft),
                     width / 2,
                     grid.statusY,
                     STATUS_COLOR,
@@ -649,7 +649,7 @@ class RoomScreen(
      * @param mouseY 游標垂直座標，用於模型預覽朝向。
      */
     private fun renderPlayingMembers(
-        context: DrawContext,
+        context: GuiGraphics,
         mouseX: Int,
         mouseY: Int,
     ) {
@@ -664,9 +664,9 @@ class RoomScreen(
             context.fill(x + 2, y, x + grid.cardWidth - RoomMemberGridLayout.CARD_RIGHT_INSET, y + grid.cardHeight, CardBackground.COLOR)
             val infoTop = grid.infoTop(gridRow)
             renderMemberAppearance(context, player.playerId, player.isAi, figureArea(grid, x, y, infoTop), mouseX, mouseY)
-            context.drawCenteredTextWithShadow(
-                textRenderer,
-                fitClientText(textRenderer, Text.literal(playerInfoDisplayName(player) { id -> displayNames.resolve(tableId, id.toString(), true) }), grid.cardWidth - 12),
+            context.drawCenteredString(
+                font,
+                fitClientText(font, Component.literal(playerInfoDisplayName(player) { id -> displayNames.resolve(tableId, id.toString(), true) }), grid.cardWidth - 12),
                 x + grid.cardWidth / 2,
                 grid.nameTop(infoTop),
                 0xFFFFFF,
@@ -677,9 +677,9 @@ class RoomScreen(
             val scrollable = grid.maximumInfoScroll(rows.size) > 0
             val textWidth = grid.cardWidth - 12 - if (scrollable) INFO_SCROLLBAR_RESERVED_WIDTH * 2 else 0
             rows.drop(scroll.index).take(grid.visibleInfoRows).forEachIndexed { infoRowIndex, row ->
-                context.drawCenteredTextWithShadow(
-                    textRenderer,
-                    fitClientText(textRenderer, row.first, textWidth),
+                context.drawCenteredString(
+                    font,
+                    fitClientText(font, row.first, textWidth),
                     x + grid.cardWidth / 2,
                     infoTop + infoRowIndex * RoomMemberGridLayout.INFO_ROW_HEIGHT,
                     row.second,
@@ -725,13 +725,13 @@ class RoomScreen(
      */
     private fun resolvePlayerInfoEntity(): MahjongPlayerInfoEntity? {
         val table = stateStore.tableOccupancy(tableId) ?: return null
-        val world = client?.world ?: return null
+        val world = minecraft?.level ?: return null
         val x = table.tableX ?: return null
         val y = table.tableY ?: return null
         val z = table.tableZ ?: return null
-        return world.getEntitiesByClass(
+        return world.getEntitiesOfClass(
             MahjongPlayerInfoEntity::class.java,
-            Box(x - 4.0, y - 4.0, z - 4.0, x + 5.0, y + 5.0, z + 5.0),
+            AABB(x - 4.0, y - 4.0, z - 4.0, x + 5.0, y + 5.0, z + 5.0),
         ) { it.managedTableId == tableId }.firstOrNull()
     }
 
@@ -746,7 +746,7 @@ class RoomScreen(
      * @param mouseY 游標垂直座標，用於模型預覽朝向。
      */
     private fun renderMembers(
-        context: DrawContext,
+        context: GuiGraphics,
         playerIds: List<Uuid>,
         aiIds: Set<Uuid>,
         memberStatus: MemberStatus,
@@ -765,9 +765,9 @@ class RoomScreen(
             val ai = playerId in aiIds
             val statusTop = grid.statusTop(row)
             renderMemberAppearance(context, playerId, ai, figureArea(grid, x, y, statusTop), mouseX, mouseY)
-            context.drawCenteredTextWithShadow(
-                textRenderer,
-                fitClientText(textRenderer, memberName(playerId, ai), grid.cardWidth - 12),
+            context.drawCenteredString(
+                font,
+                fitClientText(font, memberName(playerId, ai), grid.cardWidth - 12),
                 x + grid.cardWidth / 2,
                 grid.nameTop(statusTop),
                 0xFFFFFF,
@@ -775,15 +775,15 @@ class RoomScreen(
             val status = when (memberStatus) {
                 MemberStatus.Playing -> null
                 is MemberStatus.Waiting -> when {
-                    playerId == memberStatus.hostId -> Text.translatable(MinecraftRoomScreenKeys.HOST)
+                    playerId == memberStatus.hostId -> Component.translatable(MinecraftRoomScreenKeys.HOST)
                     ai -> null
-                    playerId in memberStatus.readyPlayerIds -> Text.translatable(MinecraftRoomScreenKeys.MEMBER_READY)
-                    else -> Text.translatable(MinecraftRoomScreenKeys.MEMBER_NOT_READY)
+                    playerId in memberStatus.readyPlayerIds -> Component.translatable(MinecraftRoomScreenKeys.MEMBER_READY)
+                    else -> Component.translatable(MinecraftRoomScreenKeys.MEMBER_NOT_READY)
                 }
             }
             status?.let {
                 val highlighted = memberStatus is MemberStatus.Waiting && playerId in memberStatus.readyPlayerIds
-                context.drawCenteredTextWithShadow(textRenderer, it, x + grid.cardWidth / 2, statusTop, if (highlighted) 0x88FF88 else 0xAAAAAA)
+                context.drawCenteredString(font, it, x + grid.cardWidth / 2, statusTop, if (highlighted) 0x88FF88 else 0xAAAAAA)
             }
         }
         renderMemberGridScrollbar(context, grid)
@@ -800,7 +800,7 @@ class RoomScreen(
      * @param mouseY 游標垂直座標，用於模型朝向。
      */
     private fun renderMemberAppearance(
-        context: DrawContext,
+        context: GuiGraphics,
         playerId: Uuid,
         ai: Boolean,
         area: RoomFigureArea,
@@ -814,9 +814,9 @@ class RoomScreen(
         val character = characters.find(tableId)?.players?.get(playerId)
         val worldEntityId = characters.find(tableId)?.worldEntityIds?.get(playerId)
         val liveAvailable = if (ai) {
-            worldEntityId != null && client?.world?.entities?.any { it.uuid == worldEntityId.toJavaUuid() && !it.isRemoved } == true
+            worldEntityId != null && minecraft?.level?.entitiesForRendering()?.any { it.uuid == worldEntityId.toJavaUuid() && !it.isRemoved } == true
         } else {
-            client?.world?.getPlayerByUuid(playerId.toJavaUuid()) != null
+            minecraft?.level?.getPlayerByUUID(playerId.toJavaUuid()) != null
         }
         val resolution = appearanceResolver.resolve(playerId, ai, character?.definition, liveAvailable)
         when (val warning = resolution.warning) {
@@ -866,7 +866,7 @@ class RoomScreen(
      * @param context 畫面繪製情境。
      * @param grid 成員卡片版面幾何。
      */
-    private fun renderMemberGridScrollbar(context: DrawContext, grid: RoomMemberGridLayout) {
+    private fun renderMemberGridScrollbar(context: GuiGraphics, grid: RoomMemberGridLayout) {
         if (grid.scrollbar.maximumScroll == 0) return
         VerticalScrollbar.render(context, grid.scrollbarLeft, grid.scrollbar)
     }
@@ -896,7 +896,7 @@ class RoomScreen(
      * @param isAi 是否使用 AI 外觀。
      * @param area 卡片上畫人物的範圍與放大倍數。
      */
-    private fun renderPortrait(context: DrawContext, playerId: Uuid, isAi: Boolean, area: RoomFigureArea) {
+    private fun renderPortrait(context: GuiGraphics, playerId: Uuid, isAi: Boolean, area: RoomFigureArea) {
         if (area.portraitSize == 0) return
         portraitRenderer.render(
             playerId = playerId,
@@ -906,8 +906,8 @@ class RoomScreen(
             size = area.portraitSize.toFloat(),
             alpha = 1f,
             z = 200f,
-            matrices = context.matrices,
-            consumers = MinecraftClient.getInstance().bufferBuilders.entityVertexConsumers,
+            matrices = context.pose(),
+            consumers = Minecraft.getInstance().renderBuffers().bufferSource(),
         )
     }
 
@@ -922,7 +922,7 @@ class RoomScreen(
      * @param ai 是否由 AI 操控。
      * @return 名稱或尚未解析完成的替代文字。
      */
-    private fun memberName(playerId: Uuid, ai: Boolean): Text = Text.literal(displayNames.resolve(tableId, playerId.toString(), ai))
+    private fun memberName(playerId: Uuid, ai: Boolean): Component = Component.literal(displayNames.resolve(tableId, playerId.toString(), ai))
 
     /**
      * 優先使用玩家列表或已解析的名稱；未知時要求解析器載入，依解析器的帳號政策決定是否外部查詢。
@@ -931,7 +931,7 @@ class RoomScreen(
      * @return 已知名稱；載入中或無法解析時為 null。
      */
     private fun resolveLocalPlayerName(playerId: Uuid): String? {
-        val name = client?.networkHandler?.getPlayerListEntry(playerId.toJavaUuid())?.profile?.name
+        val name = minecraft?.connection?.getPlayerInfo(playerId.toJavaUuid())?.profile?.name
             ?: profileResolver.resolvedProfile(playerId)?.name
         if (name == null) profileResolver.requestResolve(playerId)
         return name
@@ -969,10 +969,10 @@ class RoomScreen(
      * @return 可用的玩家或預覽模型；客戶端世界不可用時為 null。
      */
     private fun resolvePlayerPreview(playerId: Uuid): LivingEntity? {
-        val minecraft = client ?: return null
-        minecraft.world?.getPlayerByUuid(playerId.toJavaUuid())?.let { return it }
-        val world = minecraft.world ?: return null
-        val listEntry = minecraft.networkHandler?.getPlayerListEntry(playerId.toJavaUuid())
+        val minecraft = minecraft ?: return null
+        minecraft.level?.getPlayerByUUID(playerId.toJavaUuid())?.let { return it }
+        val world = minecraft.level ?: return null
+        val listEntry = minecraft.connection?.getPlayerInfo(playerId.toJavaUuid())
         val profile = listEntry?.profile ?: profileResolver.resolvedProfile(playerId)
         if (profile == null) {
             profileResolver.requestResolve(playerId)
@@ -981,17 +981,17 @@ class RoomScreen(
             }
         }
         profilePreviews[playerId]?.takeUnless { it is OfflinePlayerPreviewEntity }?.let { return it }
-        return OtherClientPlayerEntity(world, profile).also { profilePreviews[playerId] = it }
+        return RemotePlayer(world, profile).also { profilePreviews[playerId] = it }
     }
 
     /** Esc 在設定頁返回成員頁，有尚未套用的修改時先確認；在成員頁才離開整個畫面。 */
-    override fun close() {
+    override fun onClose() {
         if (page == Page.SETTINGS) settingsPage.close() else closeEntireScreen()
     }
 
     /** 關閉整個 RoomScreen，不套用設定頁的階層式 Esc 行為。 */
     private fun closeEntireScreen() {
-        client?.setScreen(null)
+        minecraft?.setScreen(null)
     }
 
     /** 在目前輸入事件完成後安全重建 widgets，避免舊 widget 被重新設為 focus。 */
@@ -999,17 +999,17 @@ class RoomScreen(
         rebuildRequested = true
     }
 
-    override fun shouldPause(): Boolean = false
+    override fun isPauseScreen(): Boolean = false
 
     /** 設定頁借用本畫面能力的接口。 */
     private inner class SettingsPageHost : RoomSettingsPageHost {
         override val screen: Screen
             get() = this@RoomScreen
 
-        override val textRenderer: TextRenderer
-            get() = this@RoomScreen.textRenderer
+        override val textRenderer: Font
+            get() = this@RoomScreen.font
 
-        override fun <T> addWidget(widget: T): T where T : Element, T : Drawable, T : Selectable = addDrawableChild(widget)
+        override fun <T> addWidget(widget: T): T where T : GuiEventListener, T : Renderable, T : NarratableEntry = addRenderableWidget(widget)
 
         override fun requestRebuild() = rebuild()
 
@@ -1019,11 +1019,11 @@ class RoomScreen(
         }
 
         override fun openScreen(screen: Screen) {
-            client?.setScreen(screen)
+            minecraft?.setScreen(screen)
         }
 
         override fun openRuleCatalogue(context: RuleCatalogueBrowseContext) {
-            client?.setScreen(ruleCatalogue.createScreen(context = context, exit = RoomRuleCatalogueExit(this@RoomScreen)))
+            minecraft?.setScreen(ruleCatalogue.createScreen(context = context, exit = RoomRuleCatalogueExit(this@RoomScreen)))
         }
 
         override fun currentConfig(): GameConfig? = this@RoomScreen.currentConfig()

@@ -10,12 +10,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.findFor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 /**
  * 將 [Tile] 轉成人類可讀的顯示文字，供對局指令的手牌列表、候選 tooltip 與回饋訊息共用。
  *
- * 放在 Fabric 模組（而非 `platform/minecraft/common`）——`net.minecraft.text.Text` 只在有實際
+ * 放在 Fabric 模組（而非 `platform/minecraft/common`）——`net.minecraft.network.chat.Component` 只在有實際
  * Minecraft 依賴的 loader 模組才看得到，`platform/minecraft/common` 刻意不依賴任何版本的 Minecraft，
  * 比照 [FabricPlayerFeedbackPublisher]「共用模型在 common、實際組 Text 在 Fabric」的既有分工。
  *
@@ -36,10 +36,10 @@ fun Tile.toDisplayText(
     displayNameRegistry: TileDisplayNameRegistry,
     tileAssetRegistry: MinecraftTileAssetRegistry,
     tileEmojiRegistry: TileEmojiRegistry,
-): Text {
+): Component {
     val text = toNameText(displayNameRegistry)
     val emoji = tileEmojiRegistry.findFor(toAssetKey(tileAssetRegistry), tileAssetRegistry) ?: return text
-    return Text.literal("$emoji ").append(text)
+    return Component.literal("$emoji ").append(text)
 }
 
 /**
@@ -50,18 +50,18 @@ fun Tile.toDisplayText(
  * @param displayNameRegistry 擴充牌種顯示名稱查詢來源。
  * @return 本地化牌名。
  */
-fun Tile.toNameText(displayNameRegistry: TileDisplayNameRegistry): Text = when (this) {
-    is Tile.Numeric -> Text.translatable(suit.toMessageKey(), value)
-    Tile.Honor.East -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_EAST)
-    Tile.Honor.South -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_SOUTH)
-    Tile.Honor.West -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_WEST)
-    Tile.Honor.North -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_NORTH)
-    Tile.Honor.Red -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_RED)
-    Tile.Honor.Green -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_GREEN)
-    Tile.Honor.White -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_WHITE)
+fun Tile.toNameText(displayNameRegistry: TileDisplayNameRegistry): Component = when (this) {
+    is Tile.Numeric -> Component.translatable(suit.toMessageKey(), value)
+    Tile.Honor.East -> Component.translatable(MinecraftMessageKeys.TILE_HONOR_EAST)
+    Tile.Honor.South -> Component.translatable(MinecraftMessageKeys.TILE_HONOR_SOUTH)
+    Tile.Honor.West -> Component.translatable(MinecraftMessageKeys.TILE_HONOR_WEST)
+    Tile.Honor.North -> Component.translatable(MinecraftMessageKeys.TILE_HONOR_NORTH)
+    Tile.Honor.Red -> Component.translatable(MinecraftMessageKeys.TILE_HONOR_RED)
+    Tile.Honor.Green -> Component.translatable(MinecraftMessageKeys.TILE_HONOR_GREEN)
+    Tile.Honor.White -> Component.translatable(MinecraftMessageKeys.TILE_HONOR_WHITE)
     is Tile.Extension -> displayNameRegistry.find(typeId)
-        ?.let(Text::translatable)
-        ?: Text.literal(typeId.toString())
+        ?.let(Component::translatable)
+        ?: Component.literal(typeId.toString())
 }
 
 /**
@@ -78,11 +78,11 @@ fun TileFaceView.toDisplayText(
     displayNameRegistry: TileDisplayNameRegistry,
     tileAssetRegistry: MinecraftTileAssetRegistry,
     tileEmojiRegistry: TileEmojiRegistry,
-): Text {
+): Component {
     val styleName = appearanceId?.let { displayNameRegistry.findStyle(it, tile) } ?: return tile.toDisplayText(displayNameRegistry, tileAssetRegistry, tileEmojiRegistry)
-    val text = Text.translatable(styleName)
+    val text = Component.translatable(styleName)
     val emoji = tileEmojiRegistry.findFor(toAssetKey(tileAssetRegistry), tileAssetRegistry) ?: return text
-    return Text.literal("$emoji ").append(text)
+    return Component.literal("$emoji ").append(text)
 }
 
 /**
@@ -91,9 +91,9 @@ fun TileFaceView.toDisplayText(
  * @param displayNameRegistry 牌種與外觀樣式的名稱查詢來源。
  * @return 本地化牌名。
  */
-fun TileFaceView.toNameText(displayNameRegistry: TileDisplayNameRegistry): Text = appearanceId
+fun TileFaceView.toNameText(displayNameRegistry: TileDisplayNameRegistry): Component = appearanceId
     ?.let { displayNameRegistry.findStyle(it, tile) }
-    ?.let(Text::translatable)
+    ?.let(Component::translatable)
     ?: tile.toNameText(displayNameRegistry)
 
 /**

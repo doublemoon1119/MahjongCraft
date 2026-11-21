@@ -4,9 +4,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropContent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropKindDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPlacement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropTarget
-import net.minecraft.entity.Entity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.Box
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 
 /**
@@ -47,7 +47,7 @@ interface FabricTablePropKind {
      * @param searchBox 限定搜尋範圍的方塊盒。
      * @return 此種類中由該桌管理的 entity。
      */
-    fun findManaged(world: ServerWorld, tableId: Uuid, searchBox: Box): List<Entity>
+    fun findManaged(world: ServerLevel, tableId: Uuid, searchBox: AABB): List<Entity>
 
     /**
      * 讀取實體保存的型別化公開內容。
@@ -68,7 +68,7 @@ interface FabricTablePropKind {
      * @param tableId 要管理新 entity 的桌子 UUID。
      * @param target 物件種類、變體與落點。
      */
-    fun create(world: ServerWorld, tableId: Uuid, target: TablePropTarget): Entity?
+    fun create(world: ServerLevel, tableId: Uuid, target: TablePropTarget): Entity?
 
     /**
      * 同一批新 entity 全部成功加入世界後呼叫，例如開始不推擠其他物件的出現動畫。

@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 /**
  * 依決策提示指定的規則模組，解析決策介面上的用語。
@@ -35,11 +35,11 @@ class DecisionTextResolver(
      * @param actionId 動作或規則選擇選項識別碼。
      * @return 已登記的本地化名稱；未登記時顯示原始識別碼。
      */
-    fun actionLabel(ruleModuleId: String?, actionId: String): Text {
+    fun actionLabel(ruleModuleId: String?, actionId: String): Component {
         val translationKey = actionVocabulary.find(ruleModuleId, actionId)?.labelKey
             ?: exhaustiveDrawReasonDisplayNames.find(actionId)
             ?: ruleDecisionDisplayNames.find(actionId)
-        return translationKey?.let(Text::translatable) ?: Text.literal(actionId)
+        return translationKey?.let(Component::translatable) ?: Component.literal(actionId)
     }
 
     /**
@@ -48,7 +48,7 @@ class DecisionTextResolver(
      * @param ruleModuleId 決策所屬規則；null 時使用中立用語。
      * @return 已登記的本地化名稱。
      */
-    fun skipLabel(ruleModuleId: String?): Text = actionLabel(ruleModuleId, PASS_ACTION_ID)
+    fun skipLabel(ruleModuleId: String?): Component = actionLabel(ruleModuleId, PASS_ACTION_ID)
 
     /**
      * 取得操作卡提示框與選牌提示使用的動作說明。
@@ -57,9 +57,9 @@ class DecisionTextResolver(
      * @param actionId 動作識別碼。
      * @return 本地化說明；未登記說明時為 null。
      */
-    fun actionDescription(ruleModuleId: String?, actionId: String): Text? = actionVocabulary.find(ruleModuleId, actionId)
+    fun actionDescription(ruleModuleId: String?, actionId: String): Component? = actionVocabulary.find(ruleModuleId, actionId)
         ?.descriptionKey
-        ?.let(Text::translatable)
+        ?.let(Component::translatable)
 
     /**
      * 取得操作卡中央的簡短說明。
@@ -68,9 +68,9 @@ class DecisionTextResolver(
      * @param actionId 動作識別碼。
      * @return 本地化說明；未登記時為 null。
      */
-    fun actionCardBody(ruleModuleId: String?, actionId: String): Text? = actionVocabulary.find(ruleModuleId, actionId)
+    fun actionCardBody(ruleModuleId: String?, actionId: String): Component? = actionVocabulary.find(ruleModuleId, actionId)
         ?.cardBodyKey
-        ?.let(Text::translatable)
+        ?.let(Component::translatable)
 
     /**
      * 取得操作卡按鈕附近的補充提示。
@@ -79,9 +79,9 @@ class DecisionTextResolver(
      * @param actionId 動作識別碼。
      * @return 本地化提示；未登記時為 null。
      */
-    fun actionCardHint(ruleModuleId: String?, actionId: String): Text? = actionVocabulary.find(ruleModuleId, actionId)
+    fun actionCardHint(ruleModuleId: String?, actionId: String): Component? = actionVocabulary.find(ruleModuleId, actionId)
         ?.cardHintKey
-        ?.let(Text::translatable)
+        ?.let(Component::translatable)
 
     /**
      * 取得動作在操作卡中的顯示順序。
@@ -99,7 +99,7 @@ class DecisionTextResolver(
      * @param statusId 狀態識別碼。
      * @return 本地化名稱；未登記時顯示原始識別碼。
      */
-    fun statusText(ruleModuleId: String?, statusId: String): Text = decisionStatusDisplayNames.find(ruleModuleId, statusId)
-        ?.let(Text::translatable)
-        ?: Text.literal(statusId)
+    fun statusText(ruleModuleId: String?, statusId: String): Component = decisionStatusDisplayNames.find(ruleModuleId, statusId)
+        ?.let(Component::translatable)
+        ?: Component.literal(statusId)
 }

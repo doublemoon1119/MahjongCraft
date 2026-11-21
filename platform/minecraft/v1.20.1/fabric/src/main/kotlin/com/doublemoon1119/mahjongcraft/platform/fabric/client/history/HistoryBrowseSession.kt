@@ -32,8 +32,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRe
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.screen.Screen
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.screens.Screen
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 
@@ -395,7 +395,7 @@ internal class HistoryBrowseSession(
      */
     fun backToReplay(replay: HistoryReplayScreen) {
         if (closed) {
-            MinecraftClient.getInstance().setScreen(null)
+            Minecraft.getInstance().setScreen(null)
             return
         }
         navigate(replay)
@@ -421,7 +421,7 @@ internal class HistoryBrowseSession(
      */
     fun backFromRuleCatalogue(settings: Screen) {
         if (closed) {
-            MinecraftClient.getInstance().setScreen(null)
+            Minecraft.getInstance().setScreen(null)
             return
         }
         navigate(settings)
@@ -456,7 +456,7 @@ internal class HistoryBrowseSession(
     fun close() {
         if (closed) return
         dispose()
-        MinecraftClient.getInstance().setScreen(parent)
+        Minecraft.getInstance().setScreen(parent)
     }
 
     /**
@@ -487,8 +487,8 @@ internal class HistoryBrowseSession(
             }
         }
         if (!closed && controller.state.value.closed) {
-            val client = MinecraftClient.getInstance()
-            val ownsScreen = client.currentScreen === screen
+            val client = Minecraft.getInstance()
+            val ownsScreen = client.screen === screen
             dispose()
             if (ownsScreen) client.setScreen(null)
         }
@@ -502,7 +502,7 @@ internal class HistoryBrowseSession(
     private fun navigate(next: Screen) {
         navigating = true
         try {
-            MinecraftClient.getInstance().setScreen(next)
+            Minecraft.getInstance().setScreen(next)
             screen = next
         } finally {
             navigating = false

@@ -3,12 +3,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
-import net.minecraft.entity.EntityType
-import net.minecraft.entity.data.DataTracker
-import net.minecraft.entity.data.TrackedData
-import net.minecraft.entity.data.TrackedDataHandlerRegistry
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.world.World
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.network.syncher.EntityDataAccessor
+import net.minecraft.network.syncher.EntityDataSerializers
+import net.minecraft.network.syncher.SynchedEntityData
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.level.Level
 import kotlin.uuid.Uuid
 
 /**
@@ -17,7 +17,7 @@ import kotlin.uuid.Uuid
  * 伺服器端互動不需要任何邏輯，實際送出仍走既有的 `decisionSelection` channel，見
  * `PlayerDecisionHudController` 對這個 entity 類型的 client 端攔截處理。
  *
- * 跟 [MahjongTileEntity] 一樣有真正的碰撞箱、可被右鍵互動（覆寫 [canHit] 為預設可互動），不像
+ * 跟 [MahjongTileEntity] 一樣有真正的碰撞箱、可被右鍵互動（覆寫 [isPickable] 為預設可互動），不像
  * [MahjongRoundInfoEntity] 刻意設計成純視覺、不可互動。
  *
  * **一個確認面板由多個這個類別的 instance 拼湊而成**（見 `FabricMahjongTileSelectionConfirmPresenter`
@@ -34,7 +34,7 @@ import kotlin.uuid.Uuid
  */
 class MahjongTileSelectionConfirmEntity(
     type: EntityType<out MahjongTileSelectionConfirmEntity> = ModEntities.mahjongTileSelectionConfirm,
-    world: World,
+    world: Level,
 ) : AnimatedMahjongEntity<Nothing>(type, world) {
     /**
      * 這個確認面板屬於哪位玩家。透過原版 entity tracking 廣播給範圍內所有玩家（Minecraft 沒有內建的
@@ -47,18 +47,18 @@ class MahjongTileSelectionConfirmEntity(
      * per-player 封包。
      */
     var holderId: Uuid?
-        get() = dataTracker[HOLDER_ID].takeIf(String::isNotBlank)?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
-        private set(value) = dataTracker.set(HOLDER_ID, value?.toString().orEmpty())
+        get() = entityData[HOLDER_ID].takeIf(String::isNotBlank)?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
+        private set(value) = entityData.set(HOLDER_ID, value?.toString().orEmpty())
 
     /** 正式牌局所屬麻將桌；未指派時為 `null`，供伺服器端依 [MahjongRoundInfoEntity.managedTableId] 同款模式查找既有 entity。 */
     var managedTableId: Uuid?
-        get() = dataTracker[MANAGED_TABLE_ID].takeIf(String::isNotBlank)?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
-        private set(value) = dataTracker.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
+        get() = entityData[MANAGED_TABLE_ID].takeIf(String::isNotBlank)?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
+        private set(value) = entityData.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
 
     /** 這一組拼湊面板中唯一負責實際畫出文字／背景的 instance；其餘只提供碰撞箱，見類別 KDoc。 */
     var isPrimary: Boolean
-        get() = dataTracker[IS_PRIMARY]
-        private set(value) = dataTracker.set(IS_PRIMARY, value)
+        get() = entityData[IS_PRIMARY]
+        private set(value) = entityData.set(IS_PRIMARY, value)
 
     /**
      * 這個 instance 在整組拼湊面板中沿排列方向的位置索引（`0` 到
@@ -67,8 +67,8 @@ class MahjongTileSelectionConfirmEntity(
      * 後跟目前實際文字寬度比對，決定 [isActive]。
      */
     var segmentIndex: Int
-        get() = dataTracker[SEGMENT_INDEX]
-        private set(value) = dataTracker.set(SEGMENT_INDEX, value)
+        get() = entityData[SEGMENT_INDEX]
+        private set(value) = entityData.set(SEGMENT_INDEX, value)
 
     /**
      * 這個 instance 目前是否落在目前實際文字寬度範圍內、要回應右鍵——僅供本地 client 使用，不追蹤也不
@@ -83,7 +83,7 @@ class MahjongTileSelectionConfirmEntity(
     }
 
     /**
-     * 這個 entity 物件在記憶體裡第一次被 tick 到的 `world.time`；只在記憶體內，不寫進存檔，理由同
+     * 這個 entity 物件在記憶體裡第一次被 tick 到的 `level().gameTime`；只在記憶體內，不寫進存檔，理由同
      * [MahjongRoundInfoEntity.firstTickWorldTime]。
      */
     private var firstTickWorldTime: Long = Long.MIN_VALUE
@@ -96,20 +96,20 @@ class MahjongTileSelectionConfirmEntity(
      */
     override fun tick() {
         super.tick()
-        if (world.isClient) return
-        if (firstTickWorldTime == Long.MIN_VALUE) firstTickWorldTime = world.time
-        if (world.time - firstTickWorldTime >= FALLBACK_DESPAWN_AFTER_TICKS) {
+        if (level().isClientSide) return
+        if (firstTickWorldTime == Long.MIN_VALUE) firstTickWorldTime = level().gameTime
+        if (level().gameTime - firstTickWorldTime >= FALLBACK_DESPAWN_AFTER_TICKS) {
             discard()
         }
     }
 
     /** 純互動用途，不提供物理阻擋、不參與推擠。 */
-    override fun isCollidable(): Boolean = false
+    override fun canBeCollidedWith(): Boolean = false
 
     override fun isPushable(): Boolean = false
 
     /** 允許玩家視線 raycast 選取，以執行右鍵確認送出；見 [isActive]。 */
-    override fun canHit(): Boolean = !isInvisible && !isRemoved && isActive
+    override fun isPickable(): Boolean = !isInvisible && !isRemoved && isActive
 
     /**
      * 指派這個確認面板屬於哪位玩家、哪張桌子、在整組拼湊面板中的位置索引（見 [segmentIndex]），並標記
@@ -121,7 +121,7 @@ class MahjongTileSelectionConfirmEntity(
      * @param isPrimary 是否為負責繪製面板的主要片段。
      */
     fun assignToHolder(tableId: Uuid, playerId: Uuid, segmentIndex: Int, isPrimary: Boolean) {
-        check(!world.isClient) { "Confirm panel holder must be assigned by the server" }
+        check(!level().isClientSide) { "Confirm panel holder must be assigned by the server" }
         managedTableId = tableId
         holderId = playerId
         this.segmentIndex = segmentIndex
@@ -149,20 +149,20 @@ class MahjongTileSelectionConfirmEntity(
      * @param step 不支援的自訂動畫步驟（型別本身為 `Nothing`）。
      * @param nbt 動畫步驟原定寫入的 NBT；此 entity 不接受該步驟。
      */
-    override fun serializeCustomStep(step: Nothing, nbt: NbtCompound) = error("Tile selection confirm panel has no custom animation step")
+    override fun serializeCustomStep(step: Nothing, nbt: CompoundTag) = error("Tile selection confirm panel has no custom animation step")
 
     /**
      * 確認面板沒有可還原的專屬動畫。
      *
      * @param nbt 動畫步驟原定讀取的 NBT；此 entity 不接受自訂動畫步驟。
      */
-    override fun deserializeCustomStep(nbt: NbtCompound): Nothing = error("Tile selection confirm panel has no custom animation step")
+    override fun deserializeCustomStep(nbt: CompoundTag): Nothing = error("Tile selection confirm panel has no custom animation step")
 
-    override fun initDataTracker() {
-        dataTracker.startTracking(HOLDER_ID, "")
-        dataTracker.startTracking(MANAGED_TABLE_ID, "")
-        dataTracker.startTracking(IS_PRIMARY, true)
-        dataTracker.startTracking(SEGMENT_INDEX, 0)
+    override fun defineSynchedData() {
+        entityData.define(HOLDER_ID, "")
+        entityData.define(MANAGED_TABLE_ID, "")
+        entityData.define(IS_PRIMARY, true)
+        entityData.define(SEGMENT_INDEX, 0)
     }
 
     /**
@@ -170,7 +170,7 @@ class MahjongTileSelectionConfirmEntity(
      *
      * @param nbt entity 的持久化資料。
      */
-    override fun readCustomDataFromNbt(nbt: NbtCompound) {
+    override fun readAdditionalSaveData(nbt: CompoundTag) {
         holderId = nbt.getString(NBT_KEY_HOLDER_ID)
             .takeIf(String::isNotBlank)
             ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
@@ -184,7 +184,7 @@ class MahjongTileSelectionConfirmEntity(
      *
      * @param nbt 接收 entity 持久化資料的 NBT。
      */
-    override fun writeCustomDataToNbt(nbt: NbtCompound) {
+    override fun addAdditionalSaveData(nbt: CompoundTag) {
         holderId?.let { nbt.putString(NBT_KEY_HOLDER_ID, it.toString()) }
         ManagedTableNbt.write(nbt, managedTableId)
         nbt.putBoolean(NBT_KEY_IS_PRIMARY, isPrimary)
@@ -216,19 +216,19 @@ class MahjongTileSelectionConfirmEntity(
         private const val FALLBACK_DESPAWN_AFTER_TICKS = 20L * 60L * 5L
 
         /** 同步所屬玩家 UUID；空字串表示尚未指派。 */
-        private val HOLDER_ID: TrackedData<String> =
-            DataTracker.registerData(MahjongTileSelectionConfirmEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val HOLDER_ID: EntityDataAccessor<String> =
+            SynchedEntityData.defineId(MahjongTileSelectionConfirmEntity::class.java, EntityDataSerializers.STRING)
 
         /** 同步這個 instance 是否為負責顯示的那一個；見 [isPrimary]。 */
-        private val IS_PRIMARY: TrackedData<Boolean> =
-            DataTracker.registerData(MahjongTileSelectionConfirmEntity::class.java, TrackedDataHandlerRegistry.BOOLEAN)
+        private val IS_PRIMARY: EntityDataAccessor<Boolean> =
+            SynchedEntityData.defineId(MahjongTileSelectionConfirmEntity::class.java, EntityDataSerializers.BOOLEAN)
 
         /** 同步所屬麻將桌 UUID；空字串表示尚未指派。 */
-        private val MANAGED_TABLE_ID: TrackedData<String> =
-            DataTracker.registerData(MahjongTileSelectionConfirmEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val MANAGED_TABLE_ID: EntityDataAccessor<String> =
+            SynchedEntityData.defineId(MahjongTileSelectionConfirmEntity::class.java, EntityDataSerializers.STRING)
 
         /** 同步這個 instance 在整組拼湊面板中的位置索引；見 [segmentIndex]。 */
-        private val SEGMENT_INDEX: TrackedData<Int> =
-            DataTracker.registerData(MahjongTileSelectionConfirmEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
+        private val SEGMENT_INDEX: EntityDataAccessor<Int> =
+            SynchedEntityData.defineId(MahjongTileSelectionConfirmEntity::class.java, EntityDataSerializers.INT)
     }
 }

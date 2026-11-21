@@ -10,12 +10,12 @@ import com.mojang.brigadier.builder.ArgumentBuilder
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import kotlinx.coroutines.launch
-import net.minecraft.command.CommandSource
-import net.minecraft.command.argument.IdentifierArgumentType
-import net.minecraft.server.command.CommandManager.argument
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands.argument
+import net.minecraft.commands.Commands.literal
+import net.minecraft.commands.SharedSuggestionProvider
+import net.minecraft.commands.arguments.ResourceLocationArgument
 import kotlin.uuid.toKotlinUuid
 
 /**
@@ -39,7 +39,7 @@ class FabricDebugStressCommand(
     private val dispatchers: CoroutineDispatchers,
 ) {
     /** 建立可掛入 debug root 的壓力測試指令節點。 */
-    fun build(): LiteralArgumentBuilder<ServerCommandSource> = literal(STRESS_SUBCOMMAND)
+    fun build(): LiteralArgumentBuilder<CommandSourceStack> = literal(STRESS_SUBCOMMAND)
         .then(
             literal(FIXED_SUBCOMMAND).then(
                 scenarioArgument().then(
@@ -55,8 +55,8 @@ class FabricDebugStressCommand(
         .then(literal(CLEAR_SUBCOMMAND).executes(::clear))
 
     /** 情境引數，提供所有情境的 tab 補全。 */
-    private fun scenarioArgument() = argument(SCENARIO_ARGUMENT, IdentifierArgumentType.identifier())
-        .suggests { _, builder -> CommandSource.suggestMatching(HeadlessHistoryScenario.entries.map { it.identifier }, builder) }
+    private fun scenarioArgument() = argument(SCENARIO_ARGUMENT, ResourceLocationArgument.id())
+        .suggests { _, builder -> SharedSuggestionProvider.suggest(HeadlessHistoryScenario.entries.map { it.identifier }, builder) }
 
     /**
      * 讓 [node] 本身可以執行，並接上選用的具名選項文字。
@@ -66,16 +66,16 @@ class FabricDebugStressCommand(
      * @param mode 由指令內容取得桌數安排。
      * @return 接好執行器與選項引數的原節點。
      */
-    private fun <T : ArgumentBuilder<ServerCommandSource, T>> withOptions(
+    private fun <T : ArgumentBuilder<CommandSourceStack, T>> withOptions(
         node: T,
-        mode: (CommandContext<ServerCommandSource>) -> StressTestMode,
+        mode: (CommandContext<CommandSourceStack>) -> StressTestMode,
     ): T = node
         .executes { start(it, mode(it), optionsText = "") }
         .then(
             argument(OPTIONS_ARGUMENT, StringArgumentType.greedyString())
                 .suggests { _, builder ->
                     val (offset, candidates) = stressOptionSuggestions(builder.remaining)
-                    CommandSource.suggestMatching(candidates, builder.createOffset(builder.start + offset))
+                    SharedSuggestionProvider.suggest(candidates, builder.createOffset(builder.start + offset))
                 }
                 .executes { start(it, mode(it), StringArgumentType.getString(it, OPTIONS_ARGUMENT)) },
         )
@@ -89,7 +89,7 @@ class FabricDebugStressCommand(
      * @return 選項有誤時為失敗值，否則為排程成功值，不代表測試已啟動。
      */
     private fun start(
-        context: CommandContext<ServerCommandSource>,
+        context: CommandContext<CommandSourceStack>,
         mode: StressTestMode,
         optionsText: String,
     ): Int {
@@ -97,21 +97,21 @@ class FabricDebugStressCommand(
         val options = when (val parsed = parseStressRunOptions(optionsText)) {
             is StressOptionsParseResult.Parsed -> parsed.options
             is StressOptionsParseResult.Invalid -> {
-                source.sendError(stressOptionErrorMessage(parsed.error))
+                source.sendFailure(stressOptionErrorMessage(parsed.error))
                 return FAILURE
             }
         }
-        val scenarioId = IdentifierArgumentType.getIdentifier(context, SCENARIO_ARGUMENT).toString()
+        val scenarioId = ResourceLocationArgument.getId(context, SCENARIO_ARGUMENT).toString()
         scope.launch(dispatchers.main) {
             val result = controller.start(source.server, scenarioId, mode, options, source.player?.uuid?.toKotlinUuid())
             when (result) {
                 is StressTestStartResult.Started -> {
-                    source.sendFeedback({ stressTestStartedMessage(result.seed) }, false)
-                    if (!source.server.isDedicated) source.sendFeedback({ stressTestMessage(StressDebugKeys.INTEGRATED_SERVER_HINT, Formatting.YELLOW) }, false)
+                    source.sendSuccess({ stressTestStartedMessage(result.seed) }, false)
+                    if (!source.server.isDedicatedServer) source.sendSuccess({ stressTestMessage(StressDebugKeys.INTEGRATED_SERVER_HINT, ChatFormatting.YELLOW) }, false)
                 }
-                StressTestStartResult.Busy -> source.sendError(stressTestMessage(StressDebugKeys.BUSY, Formatting.RED))
-                StressTestStartResult.InvalidScenario -> source.sendError(stressTestMessage(StressDebugKeys.INVALID_SCENARIO, Formatting.RED))
-                StressTestStartResult.StorageUnavailable -> source.sendError(stressTestMessage(StressDebugKeys.STORAGE_UNAVAILABLE, Formatting.RED))
+                StressTestStartResult.Busy -> source.sendFailure(stressTestMessage(StressDebugKeys.BUSY, ChatFormatting.RED))
+                StressTestStartResult.InvalidScenario -> source.sendFailure(stressTestMessage(StressDebugKeys.INVALID_SCENARIO, ChatFormatting.RED))
+                StressTestStartResult.StorageUnavailable -> source.sendFailure(stressTestMessage(StressDebugKeys.STORAGE_UNAVAILABLE, ChatFormatting.RED))
             }
         }
         return SUCCESS
@@ -123,13 +123,13 @@ class FabricDebugStressCommand(
      * @param context 接收報告或錯誤訊息的指令來源。
      * @return 有報告可輸出時為成功值，否則為失敗值。
      */
-    private fun status(context: CommandContext<ServerCommandSource>): Int {
+    private fun status(context: CommandContext<CommandSourceStack>): Int {
         val report = controller.report()
         if (report == null) {
-            context.source.sendError(stressTestMessage(StressDebugKeys.NO_REPORT, Formatting.RED))
+            context.source.sendFailure(stressTestMessage(StressDebugKeys.NO_REPORT, ChatFormatting.RED))
             return FAILURE
         }
-        context.source.sendFeedback({ stressTestReportMessage(report) }, false)
+        context.source.sendSuccess({ stressTestReportMessage(report) }, false)
         return SUCCESS
     }
 
@@ -139,13 +139,13 @@ class FabricDebugStressCommand(
      * @param context 接收結果的指令來源。
      * @return 工作排程成功值，不代表原本有測試正在執行。
      */
-    private fun stop(context: CommandContext<ServerCommandSource>): Int {
+    private fun stop(context: CommandContext<CommandSourceStack>): Int {
         val source = context.source
         scope.launch(dispatchers.main) {
             if (controller.stop()) {
-                controller.report()?.let { report -> source.sendFeedback({ stressTestReportMessage(report) }, false) }
+                controller.report()?.let { report -> source.sendSuccess({ stressTestReportMessage(report) }, false) }
             } else {
-                source.sendError(stressTestMessage(StressDebugKeys.NOT_RUNNING, Formatting.RED))
+                source.sendFailure(stressTestMessage(StressDebugKeys.NOT_RUNNING, ChatFormatting.RED))
             }
         }
         return SUCCESS
@@ -157,13 +157,13 @@ class FabricDebugStressCommand(
      * @param context 接收結果的指令來源。
      * @return 工作排程成功值，不代表資料庫已清除。
      */
-    private fun clear(context: CommandContext<ServerCommandSource>): Int {
+    private fun clear(context: CommandContext<CommandSourceStack>): Int {
         val source = context.source
         scope.launch(dispatchers.main) {
             when (controller.clear()) {
-                StressTestClearResult.CLEARED -> source.sendFeedback({ stressTestMessage(StressDebugKeys.CLEARED, Formatting.GREEN) }, false)
-                StressTestClearResult.NOTHING_TO_CLEAR -> source.sendError(stressTestMessage(StressDebugKeys.NOTHING_TO_CLEAR, Formatting.RED))
-                StressTestClearResult.RUNNING -> source.sendError(stressTestMessage(StressDebugKeys.CLEAR_WHILE_RUNNING, Formatting.RED))
+                StressTestClearResult.CLEARED -> source.sendSuccess({ stressTestMessage(StressDebugKeys.CLEARED, ChatFormatting.GREEN) }, false)
+                StressTestClearResult.NOTHING_TO_CLEAR -> source.sendFailure(stressTestMessage(StressDebugKeys.NOTHING_TO_CLEAR, ChatFormatting.RED))
+                StressTestClearResult.RUNNING -> source.sendFailure(stressTestMessage(StressDebugKeys.CLEAR_WHILE_RUNNING, ChatFormatting.RED))
             }
         }
         return SUCCESS

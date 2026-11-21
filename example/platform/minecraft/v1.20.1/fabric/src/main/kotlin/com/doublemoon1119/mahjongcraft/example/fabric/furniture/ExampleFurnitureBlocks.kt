@@ -2,15 +2,15 @@ package com.doublemoon1119.mahjongcraft.example.fabric.furniture
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.block.ExampleBenchBlock
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.block.ExampleChairBlock
-import net.minecraft.block.AbstractBlock
-import net.minecraft.block.Block
-import net.minecraft.block.BlockState
-import net.minecraft.block.Blocks
-import net.minecraft.item.BlockItem
-import net.minecraft.item.Item
-import net.minecraft.registry.Registries
-import net.minecraft.registry.Registry
-import net.minecraft.util.Identifier
+import net.minecraft.core.Registry
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.item.BlockItem
+import net.minecraft.world.item.Item
+import net.minecraft.world.level.block.Block
+import net.minecraft.world.level.block.Blocks
+import net.minecraft.world.level.block.state.BlockBehaviour
+import net.minecraft.world.level.block.state.BlockState
 
 /** 範例家具方塊與對應物品的集中註冊點。 */
 object ExampleFurnitureBlocks {
@@ -23,7 +23,7 @@ object ExampleFurnitureBlocks {
         private set
 
     /** 判斷方塊是否使用範例的方塊座位服務。 */
-    fun isSeat(state: BlockState): Boolean = isRegistered() && (state.isOf(chair) || state.isOf(bench))
+    fun isSeat(state: BlockState): Boolean = isRegistered() && (state.`is`(chair) || state.`is`(bench))
 
     /** 確認方塊座位是否已完成原生註冊。 */
     fun isRegistered(): Boolean = ::chair.isInitialized && ::bench.isInitialized
@@ -31,22 +31,22 @@ object ExampleFurnitureBlocks {
     /** 註冊椅子、長凳與對應物品；座位保持實心，不被水流沖走。 */
     fun register() {
         chair = Registry.register(
-            Registries.BLOCK,
-            Identifier(ExampleFurnitureIds.CHAIR),
+            BuiltInRegistries.BLOCK,
+            ResourceLocation(ExampleFurnitureIds.CHAIR),
             ExampleChairBlock(
-                settings = AbstractBlock.Settings.copy(Blocks.OAK_PLANKS).strength(1.5f).solid(),
+                settings = BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS).strength(1.5f).forceSolidOn(),
             ),
         )
         Registry.register(
-            Registries.ITEM,
-            Identifier(ExampleFurnitureIds.CHAIR),
-            BlockItem(chair, Item.Settings()),
+            BuiltInRegistries.ITEM,
+            ResourceLocation(ExampleFurnitureIds.CHAIR),
+            BlockItem(chair, Item.Properties()),
         )
         bench = Registry.register(
-            Registries.BLOCK,
-            Identifier(ExampleFurnitureIds.BENCH),
-            ExampleBenchBlock(AbstractBlock.Settings.copy(Blocks.OAK_PLANKS).strength(1.5f).solid()),
+            BuiltInRegistries.BLOCK,
+            ResourceLocation(ExampleFurnitureIds.BENCH),
+            ExampleBenchBlock(BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS).strength(1.5f).forceSolidOn()),
         )
-        Registry.register(Registries.ITEM, Identifier(ExampleFurnitureIds.BENCH), BlockItem(bench, Item.Settings()))
+        Registry.register(BuiltInRegistries.ITEM, ResourceLocation(ExampleFurnitureIds.BENCH), BlockItem(bench, Item.Properties()))
     }
 }

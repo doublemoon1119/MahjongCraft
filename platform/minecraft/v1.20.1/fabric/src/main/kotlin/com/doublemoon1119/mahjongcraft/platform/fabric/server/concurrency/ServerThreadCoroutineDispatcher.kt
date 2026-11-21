@@ -47,7 +47,7 @@ class ServerThreadCoroutineDispatcher(
      */
     override fun isDispatchNeeded(context: CoroutineContext): Boolean {
         val server = serverHolder.current() ?: return true
-        return !server.isOnThread
+        return !server.isSameThread
     }
 
     override fun dispatch(context: CoroutineContext, block: Runnable) {
@@ -73,7 +73,7 @@ class ServerThreadCoroutineDispatcher(
 
     override fun drainUntil(isDone: () -> Boolean, timeout: Duration): Boolean {
         val server = serverHolder.current()
-        check(server == null || server.isOnThread) { "Main-thread work can only be drained on the server thread" }
+        check(server == null || server.isSameThread) { "Main-thread work can only be drained on the server thread" }
         return queue.drainUntil(isDone, timeout)
     }
 }

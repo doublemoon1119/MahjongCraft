@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.text.Text
+import net.minecraft.client.gui.Font
+import net.minecraft.network.chat.Component
 
 /**
  * 自動操作狀態列的文字內容與量測。
@@ -12,10 +12,10 @@ import net.minecraft.text.Text
  */
 internal object AutomaticControlStatusHudText {
     /** 啟用中的圓點。 */
-    val ENABLED_DOT: Text = Text.literal("●")
+    val ENABLED_DOT: Component = Component.literal("●")
 
     /** 未啟用的圓點。 */
-    val DISABLED_DOT: Text = Text.literal("○")
+    val DISABLED_DOT: Component = Component.literal("○")
 
     /** 圓點與項目名稱之間的間距。 */
     const val DOT_LABEL_GAP: Int = 5
@@ -29,7 +29,7 @@ internal object AutomaticControlStatusHudText {
      * @param renderer 文字量測器。
      * @return 圓點預留寬度（像素）。
      */
-    fun dotWidth(renderer: TextRenderer): Int = maxOf(renderer.getWidth(ENABLED_DOT), renderer.getWidth(DISABLED_DOT))
+    fun dotWidth(renderer: Font): Int = maxOf(renderer.width(ENABLED_DOT), renderer.width(DISABLED_DOT))
 
     /**
      * 量測每一列「圓點＋間距＋名稱」含陰影的實際寬度。
@@ -38,9 +38,9 @@ internal object AutomaticControlStatusHudText {
      * @param labels 依顯示順序排列的項目名稱。
      * @return 與名稱順序相同的各列寬度（像素）。
      */
-    fun rowWidths(renderer: TextRenderer, labels: List<Text>): List<Int> {
+    fun rowWidths(renderer: Font, labels: List<Component>): List<Int> {
         val dotWidth = dotWidth(renderer)
-        return labels.map { label -> dotWidth + DOT_LABEL_GAP + renderer.getWidth(label) + SHADOW_EXTENT }
+        return labels.map { label -> dotWidth + DOT_LABEL_GAP + renderer.width(label) + SHADOW_EXTENT }
     }
 
     /**
@@ -49,7 +49,7 @@ internal object AutomaticControlStatusHudText {
      * @param renderer 文字量測器。
      * @return 文字高度加陰影範圍（像素）。
      */
-    fun textHeight(renderer: TextRenderer): Int = renderer.fontHeight + SHADOW_EXTENT
+    fun textHeight(renderer: Font): Int = renderer.lineHeight + SHADOW_EXTENT
 
     /**
      * 建立放不下時代表剩餘項數的摘要文字。
@@ -57,7 +57,7 @@ internal object AutomaticControlStatusHudText {
      * @param hiddenCount 未能顯示的項目數。
      * @return 可本地化的項目數摘要。
      */
-    fun summaryText(hiddenCount: Int): Text = Text.translatable(
+    fun summaryText(hiddenCount: Int): Component = Component.translatable(
         MinecraftClientConfigScreenKeys.HUD_AUTOMATIC_CONTROL_MORE,
         hiddenCount,
     )
@@ -69,5 +69,5 @@ internal object AutomaticControlStatusHudText {
      * @param hiddenCount 未能顯示的項目數。
      * @return 摘要寬度加陰影範圍（像素）。
      */
-    fun summaryWidth(renderer: TextRenderer, hiddenCount: Int): Int = renderer.getWidth(summaryText(hiddenCount)) + SHADOW_EXTENT
+    fun summaryWidth(renderer: Font, hiddenCount: Int): Int = renderer.width(summaryText(hiddenCount)) + SHADOW_EXTENT
 }

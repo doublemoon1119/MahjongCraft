@@ -5,9 +5,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.guide.MinecraftGuideSc
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLean
-import net.minecraft.block.BlockState
-import net.minecraft.entity.Entity
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.level.block.state.BlockState
 import kotlin.uuid.Uuid
 
 /**

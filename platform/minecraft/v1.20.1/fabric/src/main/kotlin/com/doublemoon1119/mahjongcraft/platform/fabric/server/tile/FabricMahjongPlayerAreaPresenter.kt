@@ -19,12 +19,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerArea
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationResult
-import net.minecraft.registry.RegistryKey
-import net.minecraft.registry.RegistryKeys
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
+import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.Registries
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
@@ -98,7 +98,7 @@ class FabricMahjongPlayerAreaPresenter(
         }
 
         if (!presentation.revealsHand) {
-            val startGameTime = maxOf(world.time, presentation.earliestStartGameTime)
+            val startGameTime = maxOf(world.gameTime, presentation.earliestStartGameTime)
             val winningTile = claimTile(presentation.winningTileId)
             val result = if (winningTile == null) MahjongPlayerAreaPresentationResult.SPAWN_FAILED else MahjongPlayerAreaPresentationResult.PRESENTED
             return MahjongWinCelebrationResult(result, winningTile?.let { startGameTime })
@@ -113,7 +113,7 @@ class FabricMahjongPlayerAreaPresenter(
 
         // 整條慶祝動畫鏈都由這個起點推導；接在呼叫端指定的時間軸之後，讓同一條時間軸上的連續胡牌
         // 演出依序播放而不重疊（預設 0 等同 world.time，維持既有行為）。
-        val reorderStartGameTime = maxOf(world.time, presentation.earliestStartGameTime)
+        val reorderStartGameTime = maxOf(world.gameTime, presentation.earliestStartGameTime)
         val timings = HandRevealSteps.winTimings(presentation.isTsumo)
 
         val claimedStandingTiles = linkedMapOf<Uuid, MahjongTileEntity>()
@@ -172,7 +172,7 @@ class FabricMahjongPlayerAreaPresenter(
             reorderStartGameTime + timings.end
         }
 
-        table.blockEntity.markDirty()
+        table.blockEntity.setChanged()
         val result = if (missingTileCount > 0) {
             logger.warn(
                 "publishWinCelebration tableId={} presented with {} missing tile(s)",
@@ -242,7 +242,7 @@ class FabricMahjongPlayerAreaPresenter(
         val totalTurnCount = presentation.dealBatchSizes.size * seatCount
         // 所有牌共用同一個算好的絕對翻牌時刻，不靠每張牌各自用減法反推剩餘等待時間湊出同一個目標，
         // 理由見 AnimationStep.WaitUntil KDoc。
-        val flipAbsoluteGameTime = world.time + presentation.extraLeadDelayTicks +
+        val flipAbsoluteGameTime = world.gameTime + presentation.extraLeadDelayTicks +
             MahjongTileTableLayout.dealFlipStartDelayTicks(totalTurnCount)
         var batchStart = 0
         val flipSoundSeatIndices = mutableSetOf<Int>()
@@ -253,7 +253,7 @@ class FabricMahjongPlayerAreaPresenter(
                 // 絕對時刻，不是相對等待——這批（同一次抓的所有牌）疊加進去的既有佇列可能還殘留著牌牆
                 // 掉落動畫沒播完的 step（見 AnimationStep.WaitUntil KDoc），如果用相對 Wait 表達，殘留
                 // 得比較久的牌會被拖慢、晚起飛，導致同一次抓的牌看起來分批起飛而不是一起。
-                val liftAbsoluteGameTime = world.time + presentation.extraLeadDelayTicks +
+                val liftAbsoluteGameTime = world.gameTime + presentation.extraLeadDelayTicks +
                     MahjongTileTableLayout.dealBatchStartDelayTicks(globalTurnIndex)
                 var dealSoundScheduled = false
                 tileIds.drop(batchStart).take(batchSize).forEachIndexed { indexInBatch, tileId ->
@@ -307,7 +307,7 @@ class FabricMahjongPlayerAreaPresenter(
             batchStart += batchSize
         }
 
-        table.blockEntity.markDirty()
+        table.blockEntity.setChanged()
         if (missingTileCount > 0) {
             logger.warn(
                 "presentInitialDeal tableId={} presented with {} missing tile(s)",
@@ -342,10 +342,10 @@ class FabricMahjongPlayerAreaPresenter(
      * @param location 桌子位置。
      * @return 對應的已載入伺服器世界；無法解析時為 null。
      */
-    private fun resolveWorld(location: TableLocation): ServerWorld? {
-        val identifier = Identifier.tryParse(location.dimensionId) ?: return null
-        val worldKey = RegistryKey.of(RegistryKeys.WORLD, identifier)
-        return serverHolder.current()?.getWorld(worldKey)
+    private fun resolveWorld(location: TableLocation): ServerLevel? {
+        val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null
+        val worldKey = ResourceKey.create(Registries.DIMENSION, identifier)
+        return serverHolder.current()?.getLevel(worldKey)
     }
 
     /**
@@ -357,12 +357,12 @@ class FabricMahjongPlayerAreaPresenter(
      * @return 由該桌管理的牌 entity。
      */
     private fun findManagedTiles(
-        world: ServerWorld,
+        world: ServerLevel,
         tableId: Uuid,
         controllerPos: BlockPos,
-    ): List<MahjongTileEntity> = world.getEntitiesByClass(
+    ): List<MahjongTileEntity> = world.getEntitiesOfClass(
         MahjongTileEntity::class.java,
-        Box(controllerPos).expand(TILE_SEARCH_HORIZONTAL, TILE_SEARCH_VERTICAL, TILE_SEARCH_HORIZONTAL),
+        AABB(controllerPos).inflate(TILE_SEARCH_HORIZONTAL, TILE_SEARCH_VERTICAL, TILE_SEARCH_HORIZONTAL),
     ) { tile -> tile.managedTableId == tableId }
 
     /**

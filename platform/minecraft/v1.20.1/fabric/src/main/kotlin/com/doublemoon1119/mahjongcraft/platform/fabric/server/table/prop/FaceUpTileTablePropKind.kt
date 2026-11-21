@@ -7,9 +7,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropContent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropTarget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
-import net.minecraft.entity.Entity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.Box
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 
 /**
@@ -28,7 +28,7 @@ internal class FaceUpTileTablePropKind(
 
     override fun ruleModuleIdOf(entity: Entity): String? = (entity as? TablePropTileEntity)?.tablePropRuleModuleId?.takeIf(String::isNotBlank)
 
-    override fun findManaged(world: ServerWorld, tableId: Uuid, searchBox: Box): List<Entity> = world.getEntitiesByClass(
+    override fun findManaged(world: ServerLevel, tableId: Uuid, searchBox: AABB): List<Entity> = world.getEntitiesOfClass(
         TablePropTileEntity::class.java,
         searchBox,
     ) { it.managedTableId == tableId }
@@ -39,7 +39,7 @@ internal class FaceUpTileTablePropKind(
         ?.let { prop -> faceCodec.decode(prop.faceData) }
         ?.let(TablePropContent::FaceUpTile)
 
-    override fun create(world: ServerWorld, tableId: Uuid, target: TablePropTarget): Entity? {
+    override fun create(world: ServerLevel, tableId: Uuid, target: TablePropTarget): Entity? {
         val content = target.content as? TablePropContent.FaceUpTile ?: return null
         val appearance = tileAssets.findAppearanceForRule(target.ruleModuleId) ?: return null
         return TablePropTileEntity(world = world).apply {
@@ -49,7 +49,7 @@ internal class FaceUpTileTablePropKind(
             assetKey = content.face.toAssetKey(tileAssets)
             appearanceId = appearance.id
             tablePropRuleModuleId = target.ruleModuleId
-            refreshPositionAndAngles(target.x, target.y, target.z, target.yaw, 0f)
+            moveTo(target.x, target.y, target.z, target.yaw, 0f)
         }
     }
 }

@@ -21,11 +21,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
-import net.minecraft.block.BlockState
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.BlockPos
-import net.minecraft.world.WorldAccess
+import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.level.LevelAccessor
+import net.minecraft.world.level.block.state.BlockState
 import kotlin.uuid.Uuid
 
 /**
@@ -75,7 +75,7 @@ class FabricTableLifecycleService(
     /** 註冊 Fabric 玩家破壞前後事件。 */
     fun registerEvents() {
         PlayerBlockBreakEvents.BEFORE.register { world, player, pos, state, _ ->
-            val serverPlayer = player as? ServerPlayerEntity
+            val serverPlayer = player as? ServerPlayer
             if (state.block is MahjongTableStructureBlock && serverPlayer != null && dataStatus.rejectIfUnavailable(serverPlayer)) {
                 return@register false
             }
@@ -114,7 +114,7 @@ class FabricTableLifecycleService(
      * @param world 被替換方塊所在世界。
      * @param table 被替換的桌子控制點。
      */
-    internal fun onBlockReplaced(world: ServerWorld, table: LocatedMahjongTable) {
+    internal fun onBlockReplaced(world: ServerLevel, table: LocatedMahjongTable) {
         val tableId = table.tableId
         if (!dataStatus.isMahjongAvailable) {
             logger.warn("Mahjong table {} was removed while mahjong data is unavailable; its saved state is left for the next session", tableId)
@@ -158,7 +158,7 @@ class FabricTableLifecycleService(
      * @param state 該位置的方塊狀態。
      * @return 目前破壞政策允許時為 true。
      */
-    internal fun canBreak(world: WorldAccess, pos: BlockPos, state: BlockState): Boolean {
+    internal fun canBreak(world: LevelAccessor, pos: BlockPos, state: BlockState): Boolean {
         val block = state.block as? MahjongTableStructureBlock ?: return true
         val table = block.mahjongTableControllerPos(world, pos, state)?.let { MahjongTableLookup.find(world, it) }
         if (table == null) {

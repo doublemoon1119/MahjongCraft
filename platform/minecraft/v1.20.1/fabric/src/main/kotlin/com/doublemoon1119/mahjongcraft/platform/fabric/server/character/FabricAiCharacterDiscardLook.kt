@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.character
 
-import net.minecraft.util.math.Vec3d
+import net.minecraft.world.phys.Vec3
 import kotlin.uuid.Uuid
 
 /**
@@ -12,7 +12,7 @@ import kotlin.uuid.Uuid
  */
 internal class FabricAiCharacterDiscardLook(
     val tileId: Uuid,
-    val position: Vec3d,
+    val position: Vec3,
     val expiresAt: Long,
 ) {
     /**

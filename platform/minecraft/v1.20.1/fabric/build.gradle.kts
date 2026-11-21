@@ -113,7 +113,7 @@ val excludeFlkBundledKotlinx: ModuleDependency.() -> Unit = {
 
 dependencies {
     minecraft(libs.minecraft1201)
-    mappings("net.fabricmc:yarn:${libs.versions.yarnMappings1201.get()}:v2")
+    mappings(loom.officialMojangMappings())
     modImplementation(libs.fabric.loader)
     modImplementation(libs.fabricApi1201)
     modImplementation(libs.fabric.language.kotlin)

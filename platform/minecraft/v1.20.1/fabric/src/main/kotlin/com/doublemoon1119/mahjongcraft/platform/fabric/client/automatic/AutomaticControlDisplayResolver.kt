@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 /**
  * 將自動操作 ID 解析為本地化顯示資料，並安全保留未登記的第三方 ID。
@@ -44,8 +44,8 @@ class AutomaticControlDisplayResolver(
         }
         return ResolvedAutomaticControlDisplay(
             controlId = controlId,
-            label = display?.let { Text.translatable(it.labelTranslationKey) } ?: Text.literal(controlId),
-            description = display?.let { Text.translatable(it.descriptionTranslationKey) },
+            label = display?.let { Component.translatable(it.labelTranslationKey) } ?: Component.literal(controlId),
+            description = display?.let { Component.translatable(it.descriptionTranslationKey) },
             displayOrder = display?.displayOrder ?: UNKNOWN_DISPLAY_ORDER,
         )
     }

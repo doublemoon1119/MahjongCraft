@@ -2,14 +2,14 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
-import net.minecraft.block.Blocks
-import net.minecraft.entity.EntityType
-import net.minecraft.entity.data.DataTracker
-import net.minecraft.entity.data.TrackedData
-import net.minecraft.entity.data.TrackedDataHandlerRegistry
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.registry.Registries
-import net.minecraft.world.World
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.network.syncher.EntityDataAccessor
+import net.minecraft.network.syncher.EntityDataSerializers
+import net.minecraft.network.syncher.SynchedEntityData
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.level.Level
+import net.minecraft.world.level.block.Blocks
 import kotlin.uuid.Uuid
 
 /**
@@ -20,36 +20,36 @@ import kotlin.uuid.Uuid
  */
 class WinCelebrationShowcaseEntity(
     type: EntityType<out WinCelebrationShowcaseEntity> = ModEntities.winCelebrationShowcase,
-    world: World,
+    world: Level,
 ) : SimpleAnimatedMahjongEntity(type, world),
     TableOwnedPresentationEntity {
     /** 所屬麻將桌。 */
     override val managedTableId: Uuid?
-        get() = dataTracker[TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
+        get() = entityData[TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
 
     /** 整段演出的開始時間。 */
-    val startGameTime: Long get() = dataTracker[START_GAME_TIME]
+    val startGameTime: Long get() = entityData[START_GAME_TIME]
 
     /** 整段演出的結束時間。 */
-    val endGameTime: Long get() = dataTracker[END_GAME_TIME]
+    val endGameTime: Long get() = entityData[END_GAME_TIME]
 
     /** 跨重載保持一致的動畫 seed。 */
-    val animationSeed: Long get() = dataTracker[ANIMATION_SEED]
+    val animationSeed: Long get() = entityData[ANIMATION_SEED]
 
     /** 共享胡牌張牌面 asset key。 */
-    val winningTileAssetKey: String get() = dataTracker[WINNING_TILE_ASSET_KEY]
+    val winningTileAssetKey: String get() = entityData[WINNING_TILE_ASSET_KEY]
 
     /** 胡牌張完整起飛所需快照；尚未寫入資料時為 null。 */
     val winningTileSnapshot: ShowcaseWinningTileSnapshot?
-        get() = decodeWinningTile(dataTracker[WINNING_TILE_SNAPSHOT])
+        get() = decodeWinningTile(entityData[WINNING_TILE_SNAPSHOT])
 
     /** 全部贏家翼資料。 */
     val wings: List<ShowcaseWingSnapshot>
-        get() = decodeWings(dataTracker[WINGS])
+        get() = decodeWings(entityData[WINGS])
 
     /** 正式展示階段的額外宣告式音效。 */
     val extraSounds: List<ShowcaseSoundSnapshot>
-        get() = decodeSounds(dataTracker[EXTRA_SOUNDS])
+        get() = decodeSounds(entityData[EXTRA_SOUNDS])
 
     init {
         setNoGravity(true)
@@ -75,17 +75,17 @@ class WinCelebrationShowcaseEntity(
         wings: List<ShowcaseWingSnapshot>,
         extraSounds: List<ShowcaseSoundSnapshot> = emptyList(),
     ) {
-        check(!world.isClient) { "Showcase stage must be configured by the server" }
+        check(!level().isClientSide) { "Showcase stage must be configured by the server" }
         require(endGameTime > startGameTime) { "Showcase end time must be after start time" }
         require(wings.size in 1..3) { "Showcase must contain one to three winner wings" }
-        dataTracker.set(TABLE_ID, tableId.toString())
-        dataTracker.set(START_GAME_TIME, startGameTime)
-        dataTracker.set(END_GAME_TIME, endGameTime)
-        dataTracker.set(ANIMATION_SEED, animationSeed)
-        dataTracker.set(WINNING_TILE_ASSET_KEY, winningTile.assetKey)
-        dataTracker.set(WINNING_TILE_SNAPSHOT, encodeWinningTile(winningTile))
-        dataTracker.set(WINGS, encodeWings(wings))
-        dataTracker.set(EXTRA_SOUNDS, encodeSounds(extraSounds))
+        entityData.set(TABLE_ID, tableId.toString())
+        entityData.set(START_GAME_TIME, startGameTime)
+        entityData.set(END_GAME_TIME, endGameTime)
+        entityData.set(ANIMATION_SEED, animationSeed)
+        entityData.set(WINNING_TILE_ASSET_KEY, winningTile.assetKey)
+        entityData.set(WINNING_TILE_SNAPSHOT, encodeWinningTile(winningTile))
+        entityData.set(WINGS, encodeWings(wings))
+        entityData.set(EXTRA_SOUNDS, encodeSounds(extraSounds))
         enqueueShowcaseSounds(startGameTime)
     }
 
@@ -95,25 +95,25 @@ class WinCelebrationShowcaseEntity(
      * @param tickDelta 本 tick 的部分經過時間。
      * @return 從演出開始起算的經過 tick 數，包含部分 tick。
      */
-    fun elapsedTicks(tickDelta: Float): Double = world.time.toDouble() + tickDelta - startGameTime
+    fun elapsedTicks(tickDelta: Float): Double = level().gameTime.toDouble() + tickDelta - startGameTime
 
     /** 純視覺舞台不提供碰撞。 */
-    override fun isCollidable(): Boolean = false
+    override fun canBeCollidedWith(): Boolean = false
 
     /** 純視覺舞台不參與推擠。 */
     override fun isPushable(): Boolean = false
 
     /** 純視覺舞台不能被選取。 */
-    override fun canHit(): Boolean = false
+    override fun isPickable(): Boolean = false
 
     /** 驗證時間線並在整段演出結束後自行移除。 */
     override fun tick() {
         super.tick()
-        if (!world.isClient && endGameTime - startGameTime !in MINIMUM_VALID_DURATION_TICKS..MAXIMUM_VALID_DURATION_TICKS) {
+        if (!level().isClientSide && endGameTime - startGameTime !in MINIMUM_VALID_DURATION_TICKS..MAXIMUM_VALID_DURATION_TICKS) {
             discard()
             return
         }
-        if (endGameTime > startGameTime && world.time >= endGameTime) discard()
+        if (endGameTime > startGameTime && level().gameTime >= endGameTime) discard()
     }
 
     /**
@@ -122,7 +122,7 @@ class WinCelebrationShowcaseEntity(
      * @param startGameTime 整段演出的絕對開始遊戲時間。
      */
     private fun enqueueShowcaseSounds(startGameTime: Long) {
-        val tntPlaceSoundId = Registries.SOUND_EVENT.getId(Blocks.TNT.defaultState.soundGroup.placeSound).toString()
+        val tntPlaceSoundId = BuiltInRegistries.SOUND_EVENT.getKey(Blocks.TNT.defaultBlockState().soundType.placeSound).toString()
         val cues = buildList {
             wings.indices.forEach { index ->
                 add(soundStep(startGameTime, WinCelebrationCinematicTimeline.FIREWORK_LAUNCH_TICK, FIREWORK_SOUND_ID, 0.75f, 0.96f + index * 0.05f))
@@ -160,15 +160,15 @@ class WinCelebrationShowcaseEntity(
         return AnimationStep.PlaySound(soundId, volume, pitch, playAtGameTime, playAtGameTime + SOUND_GRACE_TICKS)
     }
 
-    override fun initDataTracker() {
-        dataTracker.startTracking(TABLE_ID, "")
-        dataTracker.startTracking(START_GAME_TIME, 0L)
-        dataTracker.startTracking(END_GAME_TIME, 0L)
-        dataTracker.startTracking(ANIMATION_SEED, 0L)
-        dataTracker.startTracking(WINNING_TILE_ASSET_KEY, "")
-        dataTracker.startTracking(WINNING_TILE_SNAPSHOT, "")
-        dataTracker.startTracking(WINGS, "")
-        dataTracker.startTracking(EXTRA_SOUNDS, "")
+    override fun defineSynchedData() {
+        entityData.define(TABLE_ID, "")
+        entityData.define(START_GAME_TIME, 0L)
+        entityData.define(END_GAME_TIME, 0L)
+        entityData.define(ANIMATION_SEED, 0L)
+        entityData.define(WINNING_TILE_ASSET_KEY, "")
+        entityData.define(WINNING_TILE_SNAPSHOT, "")
+        entityData.define(WINGS, "")
+        entityData.define(EXTRA_SOUNDS, "")
     }
 
     /**
@@ -176,15 +176,15 @@ class WinCelebrationShowcaseEntity(
      *
      * @param nbt 儲存此實體資料的 NBT 複合標籤。
      */
-    override fun readCustomDataFromNbt(nbt: NbtCompound) {
-        dataTracker.set(TABLE_ID, ManagedTableNbt.read(nbt)?.toString().orEmpty())
-        dataTracker.set(START_GAME_TIME, nbt.getLong(NBT_KEY_START_GAME_TIME))
-        dataTracker.set(END_GAME_TIME, nbt.getLong(NBT_KEY_END_GAME_TIME))
-        dataTracker.set(ANIMATION_SEED, nbt.getLong(NBT_KEY_ANIMATION_SEED))
-        dataTracker.set(WINNING_TILE_ASSET_KEY, nbt.getString(NBT_KEY_WINNING_TILE_ASSET_KEY))
-        dataTracker.set(WINNING_TILE_SNAPSHOT, nbt.getString(NBT_KEY_WINNING_TILE_SNAPSHOT))
-        dataTracker.set(WINGS, nbt.getString(NBT_KEY_WINGS))
-        dataTracker.set(EXTRA_SOUNDS, nbt.getString(NBT_KEY_EXTRA_SOUNDS))
+    override fun readAdditionalSaveData(nbt: CompoundTag) {
+        entityData.set(TABLE_ID, ManagedTableNbt.read(nbt)?.toString().orEmpty())
+        entityData.set(START_GAME_TIME, nbt.getLong(NBT_KEY_START_GAME_TIME))
+        entityData.set(END_GAME_TIME, nbt.getLong(NBT_KEY_END_GAME_TIME))
+        entityData.set(ANIMATION_SEED, nbt.getLong(NBT_KEY_ANIMATION_SEED))
+        entityData.set(WINNING_TILE_ASSET_KEY, nbt.getString(NBT_KEY_WINNING_TILE_ASSET_KEY))
+        entityData.set(WINNING_TILE_SNAPSHOT, nbt.getString(NBT_KEY_WINNING_TILE_SNAPSHOT))
+        entityData.set(WINGS, nbt.getString(NBT_KEY_WINGS))
+        entityData.set(EXTRA_SOUNDS, nbt.getString(NBT_KEY_EXTRA_SOUNDS))
         readAnimationQueueFromNbt(nbt)
     }
 
@@ -193,15 +193,15 @@ class WinCelebrationShowcaseEntity(
      *
      * @param nbt 接收此實體資料的 NBT 複合標籤。
      */
-    override fun writeCustomDataToNbt(nbt: NbtCompound) {
+    override fun addAdditionalSaveData(nbt: CompoundTag) {
         ManagedTableNbt.write(nbt, managedTableId)
         nbt.putLong(NBT_KEY_START_GAME_TIME, startGameTime)
         nbt.putLong(NBT_KEY_END_GAME_TIME, endGameTime)
         nbt.putLong(NBT_KEY_ANIMATION_SEED, animationSeed)
         nbt.putString(NBT_KEY_WINNING_TILE_ASSET_KEY, winningTileAssetKey)
-        nbt.putString(NBT_KEY_WINNING_TILE_SNAPSHOT, dataTracker[WINNING_TILE_SNAPSHOT])
-        nbt.putString(NBT_KEY_WINGS, dataTracker[WINGS])
-        nbt.putString(NBT_KEY_EXTRA_SOUNDS, dataTracker[EXTRA_SOUNDS])
+        nbt.putString(NBT_KEY_WINNING_TILE_SNAPSHOT, entityData[WINNING_TILE_SNAPSHOT])
+        nbt.putString(NBT_KEY_WINGS, entityData[WINGS])
+        nbt.putString(NBT_KEY_EXTRA_SOUNDS, entityData[EXTRA_SOUNDS])
         writeAnimationQueueToNbt(nbt)
     }
 
@@ -272,28 +272,28 @@ class WinCelebrationShowcaseEntity(
         private const val TITLE_SOUND_ID = "minecraft:ui.toast.challenge_complete"
 
         /** 同步管理此舞台的麻將桌 UUID。 */
-        private val TABLE_ID: TrackedData<String> = DataTracker.registerData(WinCelebrationShowcaseEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val TABLE_ID: EntityDataAccessor<String> = SynchedEntityData.defineId(WinCelebrationShowcaseEntity::class.java, EntityDataSerializers.STRING)
 
         /** 同步整段演出的絕對開始遊戲時間。 */
-        private val START_GAME_TIME: TrackedData<Long> = DataTracker.registerData(WinCelebrationShowcaseEntity::class.java, TrackedDataHandlerRegistry.LONG)
+        private val START_GAME_TIME: EntityDataAccessor<Long> = SynchedEntityData.defineId(WinCelebrationShowcaseEntity::class.java, EntityDataSerializers.LONG)
 
         /** 同步整段演出的絕對結束遊戲時間。 */
-        private val END_GAME_TIME: TrackedData<Long> = DataTracker.registerData(WinCelebrationShowcaseEntity::class.java, TrackedDataHandlerRegistry.LONG)
+        private val END_GAME_TIME: EntityDataAccessor<Long> = SynchedEntityData.defineId(WinCelebrationShowcaseEntity::class.java, EntityDataSerializers.LONG)
 
         /** 同步跨重載保持一致的動畫 seed。 */
-        private val ANIMATION_SEED: TrackedData<Long> = DataTracker.registerData(WinCelebrationShowcaseEntity::class.java, TrackedDataHandlerRegistry.LONG)
+        private val ANIMATION_SEED: EntityDataAccessor<Long> = SynchedEntityData.defineId(WinCelebrationShowcaseEntity::class.java, EntityDataSerializers.LONG)
 
         /** 同步胡牌張牌面 asset key。 */
-        private val WINNING_TILE_ASSET_KEY: TrackedData<String> = DataTracker.registerData(WinCelebrationShowcaseEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val WINNING_TILE_ASSET_KEY: EntityDataAccessor<String> = SynchedEntityData.defineId(WinCelebrationShowcaseEntity::class.java, EntityDataSerializers.STRING)
 
         /** 同步胡牌張的牌面與起飛位置快照字串。 */
-        private val WINNING_TILE_SNAPSHOT: TrackedData<String> = DataTracker.registerData(WinCelebrationShowcaseEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val WINNING_TILE_SNAPSHOT: EntityDataAccessor<String> = SynchedEntityData.defineId(WinCelebrationShowcaseEntity::class.java, EntityDataSerializers.STRING)
 
         /** 同步贏家翼及其牌列快照字串。 */
-        private val WINGS: TrackedData<String> = DataTracker.registerData(WinCelebrationShowcaseEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val WINGS: EntityDataAccessor<String> = SynchedEntityData.defineId(WinCelebrationShowcaseEntity::class.java, EntityDataSerializers.STRING)
 
         /** 同步額外宣告式音效快照字串。 */
-        private val EXTRA_SOUNDS: TrackedData<String> = DataTracker.registerData(WinCelebrationShowcaseEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val EXTRA_SOUNDS: EntityDataAccessor<String> = SynchedEntityData.defineId(WinCelebrationShowcaseEntity::class.java, EntityDataSerializers.STRING)
 
         /**
          * 將胡牌張快照欄位以控制字元分隔，編成同步字串。
@@ -330,7 +330,7 @@ class WinCelebrationShowcaseEntity(
          * 使用不會出現在 Identifier／asset key 的控制字元編碼同步資料。
          *
          * @param wings 待編碼的贏家翼與牌列快照。
-         * @return 可供 DataTracker 同步的緊湊字串。
+         * @return 可供 SynchedEntityData 同步的緊湊字串。
          */
         private fun encodeWings(wings: List<ShowcaseWingSnapshot>): String = wings.joinToString("\u001e") { wing ->
             listOf(
@@ -385,10 +385,10 @@ class WinCelebrationShowcaseEntity(
             }.orEmpty()
 
         /**
-         * 將額外音效編碼成 DataTracker 可同步的緊湊字串。
+         * 將額外音效編碼成 SynchedEntityData 可同步的緊湊字串。
          *
          * @param sounds 待編碼的額外音效快照。
-         * @return 可供 DataTracker 同步的緊湊字串。
+         * @return 可供 SynchedEntityData 同步的緊湊字串。
          */
         private fun encodeSounds(sounds: List<ShowcaseSoundSnapshot>): String = sounds.joinToString("\u001e") { sound ->
             listOf(sound.soundId, sound.tickOffset, sound.volume, sound.pitch).joinToString("\u001f")

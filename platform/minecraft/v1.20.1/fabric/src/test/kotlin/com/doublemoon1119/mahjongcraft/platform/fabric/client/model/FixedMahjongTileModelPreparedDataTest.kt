@@ -3,11 +3,13 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.model
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
-import net.minecraft.resource.Resource
-import net.minecraft.resource.ResourceManager
-import net.minecraft.resource.ResourcePack
-import net.minecraft.util.Identifier
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.packs.PackResources
+import net.minecraft.server.packs.PathPackResources
+import net.minecraft.server.packs.resources.Resource
+import net.minecraft.server.packs.resources.ResourceManager
 import java.io.ByteArrayInputStream
+import java.nio.file.Path
 import java.util.Optional
 import java.util.function.Predicate
 import java.util.stream.Stream
@@ -28,8 +30,8 @@ class FixedMahjongTileModelPreparedDataTest {
             )
         }
 
-        assertEquals(Identifier(BuiltInMinecraftTileAppearances.DEFAULT.unknownFaceTextureId), variant.frontTextureId)
-        assertEquals(Identifier("mahjongcraft", "item/mahjong_tile/mahjong_tile_m1"), variant.templateModelId)
+        assertEquals(ResourceLocation(BuiltInMinecraftTileAppearances.DEFAULT.unknownFaceTextureId), variant.frontTextureId)
+        assertEquals(ResourceLocation("mahjongcraft", "item/mahjong_tile/mahjong_tile_m1"), variant.templateModelId)
     }
 
     /** 未知牌變體固定使用 canonical 幾何與該牌組共用 cover。 */
@@ -42,9 +44,9 @@ class FixedMahjongTileModelPreparedDataTest {
             )
         }
 
-        assertEquals(Identifier("mahjongcraft", "item/mahjong_tile_base"), variant.templateModelId)
-        assertEquals(Identifier(BuiltInMinecraftTileAppearances.DEFAULT.coverTextureId), variant.coverTextureId)
-        assertEquals(Identifier(BuiltInMinecraftTileAppearances.DEFAULT.unknownFaceTextureId), variant.frontTextureId)
+        assertEquals(ResourceLocation("mahjongcraft", "item/mahjong_tile_base"), variant.templateModelId)
+        assertEquals(ResourceLocation(BuiltInMinecraftTileAppearances.DEFAULT.coverTextureId), variant.coverTextureId)
+        assertEquals(ResourceLocation(BuiltInMinecraftTileAppearances.DEFAULT.unknownFaceTextureId), variant.frontTextureId)
     }
 
     /** 牌面模型缺失時，變體仍使用該牌面貼圖與 canonical 固定幾何。 */
@@ -59,8 +61,8 @@ class FixedMahjongTileModelPreparedDataTest {
             )
         }
 
-        assertEquals(Identifier("mahjongcraft", "textures/item/mahjong_tile/mahjong_tile_m1.png"), variant.frontTextureId)
-        assertEquals(Identifier("mahjongcraft", "item/mahjong_tile_base"), variant.templateModelId)
+        assertEquals(ResourceLocation("mahjongcraft", "textures/item/mahjong_tile/mahjong_tile_m1.png"), variant.frontTextureId)
+        assertEquals(ResourceLocation("mahjongcraft", "item/mahjong_tile_base"), variant.templateModelId)
     }
 
     /** 模型 JSON 的 parent 型別錯誤時，不會讓資源重載失敗，並回退固定幾何。 */
@@ -75,7 +77,7 @@ class FixedMahjongTileModelPreparedDataTest {
             )
         }
 
-        assertEquals(Identifier("mahjongcraft", "item/mahjong_tile_base"), variant.templateModelId)
+        assertEquals(ResourceLocation("mahjongcraft", "item/mahjong_tile_base"), variant.templateModelId)
     }
 
     /** 外觀缺少必要 cover 時，effective appearance 會回退內建預設牌組。 */
@@ -135,7 +137,7 @@ class FixedMahjongTileModelPreparedDataTest {
         private val missingModels: Set<String> = emptySet(),
         private val malformedModels: Set<String> = emptySet(),
     ) : ResourceManager {
-        override fun getResource(id: Identifier): Optional<Resource> {
+        override fun getResource(id: ResourceLocation): Optional<Resource> {
             val path = id.path
             val assetKey = path.substringAfterLast('/').removePrefix("mahjong_tile_").substringBeforeLast('.')
             if (path.startsWith("textures/") && missingTextures.contains(assetKey)) return Optional.empty()
@@ -151,13 +153,13 @@ class FixedMahjongTileModelPreparedDataTest {
             } else {
                 byteArrayOf(0)
             }
-            return Optional.of(Resource(null as ResourcePack?) { ByteArrayInputStream(bytes) })
+            return Optional.of(Resource(PathPackResources("test", Path.of(""), true)) { ByteArrayInputStream(bytes) })
         }
 
-        override fun getAllNamespaces(): Set<String> = emptySet()
-        override fun getAllResources(id: Identifier): List<Resource> = emptyList()
-        override fun findResources(startingPath: String, allowedPathPredicate: Predicate<Identifier>): Map<Identifier, Resource> = emptyMap()
-        override fun findAllResources(startingPath: String, allowedPathPredicate: Predicate<Identifier>): Map<Identifier, List<Resource>> = emptyMap()
-        override fun streamResourcePacks(): Stream<ResourcePack> = Stream.empty()
+        override fun getNamespaces(): Set<String> = emptySet()
+        override fun getResourceStack(id: ResourceLocation): List<Resource> = emptyList()
+        override fun listResources(startingPath: String, allowedPathPredicate: Predicate<ResourceLocation>): Map<ResourceLocation, Resource> = emptyMap()
+        override fun listResourceStacks(startingPath: String, allowedPathPredicate: Predicate<ResourceLocation>): Map<ResourceLocation, List<Resource>> = emptyMap()
+        override fun listPacks(): Stream<PackResources> = Stream.empty()
     }
 }

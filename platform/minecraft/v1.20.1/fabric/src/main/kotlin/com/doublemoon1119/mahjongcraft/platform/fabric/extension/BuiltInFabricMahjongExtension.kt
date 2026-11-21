@@ -18,8 +18,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.Registered
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
-import net.minecraft.entity.Entity
-import net.minecraft.server.world.ServerWorld
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
 
 /**
  * 提供 Fabric 平台內建桌面物件與座位 provider 的 extension。
@@ -29,7 +29,7 @@ import net.minecraft.server.world.ServerWorld
  * @property componentViews 公開展示牌保存組件公開效果所用的轉換。
  */
 internal class BuiltInFabricMahjongExtension(
-    private val seatProvider: SeatProvider<ServerWorld, Entity>,
+    private val seatProvider: SeatProvider<ServerLevel, Entity>,
     private val tileAssets: MinecraftTileAssetRegistry,
     private val componentViews: ComponentViewPersistenceRegistry,
 ) : FabricMahjongExtension {

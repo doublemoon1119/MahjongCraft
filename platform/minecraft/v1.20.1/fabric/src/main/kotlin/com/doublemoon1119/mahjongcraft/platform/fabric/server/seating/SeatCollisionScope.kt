@@ -1,15 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.seating
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
-import net.minecraft.entity.Entity
-import net.minecraft.util.math.Box
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
 /** 同步整桌換位時辨識已安排離開的成員，不略過外部實體或互相重疊的目的位置。 */
 internal object SeatCollisionScope {
     /** 只在目前同步呼叫所在執行緒保存本批目的位置，不跨協程等待。 */
-    private val targets = ThreadLocal<Map<Uuid, Box>?>()
+    private val targets = ThreadLocal<Map<Uuid, AABB>?>()
 
     /**
      * 在同步整桌安排期間提供目的位置，巢狀呼叫結束後恢復上一層。
@@ -28,7 +28,7 @@ internal object SeatCollisionScope {
         val plans = riders.mapIndexedNotNull { index, rider ->
             rider?.let {
                 val target = requests[index].seat
-                it.uuid.toKotlinUuid() to it.boundingBox.offset(target.x - it.x, target.y - it.y, target.z - it.z)
+                it.uuid.toKotlinUuid() to it.boundingBox.move(target.x - it.x, target.y - it.y, target.z - it.z)
             }
         }.toMap()
         require(plans.size == riders.count { it != null }) { "Batch riders must be unique" }
@@ -42,7 +42,7 @@ internal object SeatCollisionScope {
      * @param action 不可暫停的入座操作。
      * @return 入座操作的結果。
      */
-    fun <T> withPlans(plans: Map<Uuid, Box>, action: () -> T): T {
+    fun <T> withPlans(plans: Map<Uuid, AABB>, action: () -> T): T {
         val previous = targets.get()
         targets.set(plans.toMap())
         return try {

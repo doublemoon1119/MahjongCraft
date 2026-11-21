@@ -3,8 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.guide
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideViewer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.guide.MinecraftGuideScreenKeys
-import net.minecraft.text.Text
-import net.minecraft.text.TranslatableTextContent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -104,5 +104,5 @@ class GuidePagesTest {
      * @param text 翻譯文字。
      * @return 翻譯鍵。
      */
-    private fun key(text: Text): String = (text.content as TranslatableTextContent).key
+    private fun key(text: Component): String = (text.contents as TranslatableContents).key
 }

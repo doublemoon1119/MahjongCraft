@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.block
 
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Direction
+import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
 
 /** 3×3×2 麻將桌的純座標換算；不讀取或修改 Minecraft 世界。 */
 object MahjongTableStructure {
@@ -29,7 +29,7 @@ object MahjongTableStructure {
     fun position(controllerPos: BlockPos, part: MahjongTablePart, facing: Direction): BlockPos {
         require(facing.axis.isHorizontal) { "Mahjong table facing must be horizontal" }
         val (x, z) = rotate(part.localX, part.localZ, facing)
-        return controllerPos.add(x, part.localY, z)
+        return controllerPos.offset(x, part.localY, z)
     }
 
     /**
@@ -44,7 +44,7 @@ object MahjongTableStructure {
     fun controllerPosition(partPos: BlockPos, part: MahjongTablePart, facing: Direction): BlockPos {
         require(facing.axis.isHorizontal) { "Mahjong table facing must be horizontal" }
         val (x, z) = rotate(part.localX, part.localZ, facing)
-        return partPos.add(-x, -part.localY, -z)
+        return partPos.offset(-x, -part.localY, -z)
     }
 
     /**

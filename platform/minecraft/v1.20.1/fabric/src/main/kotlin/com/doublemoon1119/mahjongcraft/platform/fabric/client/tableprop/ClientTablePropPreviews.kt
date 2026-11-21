@@ -8,9 +8,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropTarget
 import net.fabricmc.api.EnvType
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.loader.api.FabricLoader
-import net.minecraft.client.world.ClientWorld
-import net.minecraft.entity.Entity
-import net.minecraft.util.crash.CrashException
+import net.minecraft.ReportedException
+import net.minecraft.client.multiplayer.ClientLevel
+import net.minecraft.world.entity.Entity
 import kotlin.coroutines.cancellation.CancellationException
 
 /**
@@ -36,7 +36,7 @@ internal class ClientTablePropPreviews(
     private val reported = mutableMapOf<String, String>()
 
     /** 目前實體所屬世界；切換時清理全部實體。 */
-    private var world: ClientWorld? = null
+    private var world: ClientLevel? = null
 
     /** 本機重試時鐘，不依賴世界遊戲時間。 */
     private var ticks = 0L
@@ -48,8 +48,8 @@ internal class ClientTablePropPreviews(
     fun initialize() {
         check(FabricLoader.getInstance().environmentType == EnvType.CLIENT)
         ClientTickEvents.END_CLIENT_TICK.register { client ->
-            if (world !== client.world) clear()
-            world = client.world
+            if (world !== client.level) clear()
+            world = client.level
             ticks++
             val current = world ?: return@register
             models.processOne { key ->
@@ -117,7 +117,7 @@ internal class ClientTablePropPreviews(
         return try {
             block()
         } catch (cause: Throwable) {
-            val root = (cause as? CrashException)?.cause ?: cause
+            val root = (cause as? ReportedException)?.cause ?: cause
             if (root is CancellationException || !failures.isIsolatable(root)) throw root
             val signature = "${cause::class.qualifiedName}:${cause.message}"
             if (reported.put(key.kind, signature) != signature) logger.warn("Table prop preview failed kind={}", key.kind, cause)

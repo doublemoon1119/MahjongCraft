@@ -6,9 +6,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRenderin
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.handbook.MinecraftHandbookScreenKeys
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.text.Text
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.network.chat.Component
 import org.lwjgl.glfw.GLFW
 
 /**
@@ -21,17 +21,17 @@ import org.lwjgl.glfw.GLFW
  */
 internal class HandbookScreen(
     private val entries: List<HandbookEntry>,
-    private val openHint: () -> Text,
-) : Screen(Text.translatable(MinecraftHandbookScreenKeys.TITLE)) {
+    private val openHint: () -> Component,
+) : Screen(Component.translatable(MinecraftHandbookScreenKeys.TITLE)) {
     /** 入口清單的捲動位置。 */
     private val scroll = ScrollState()
 
     override fun init() {
-        clearChildren()
+        clearWidgets()
         scroll.clamp(layout().maximumScroll)
         val layout = layout()
         entries.drop(scroll.index).take(layout.visibleCount).forEachIndexed { visibleIndex, entry ->
-            addDrawableChild(
+            addRenderableWidget(
                 HandbookEntryButton(
                     x = layout.entryLeft,
                     y = layout.entryTop(visibleIndex),
@@ -44,8 +44,8 @@ internal class HandbookScreen(
         }
         val closeX = layout.footer.buttonX(HandbookScreenLayout.CLOSE)
         val closeWidth = layout.footer.buttonWidth(HandbookScreenLayout.CLOSE)
-        addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHandbookScreenKeys.CLOSE)) { close() }
+        addRenderableWidget(
+            RestartableMarqueeButtonWidget.builder(Component.translatable(MinecraftHandbookScreenKeys.CLOSE)) { onClose() }
                 .dimensions(closeX, layout.footerY, closeWidth, BUTTON_HEIGHT)
                 .build(),
         )
@@ -83,18 +83,18 @@ internal class HandbookScreen(
         return handled || super.mouseReleased(mouseX, mouseY, button)
     }
 
-    override fun shouldPause(): Boolean = false
+    override fun isPauseScreen(): Boolean = false
 
-    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         renderBackground(context)
         val layout = layout()
-        ScreenRendering.title(context, textRenderer, fitClientText(textRenderer, title, layout.contentWidth), width)
+        ScreenRendering.title(context, font, fitClientText(font, title, layout.contentWidth), width)
         val bar = layout.scrollbar
         if (bar.maximumScroll > 0) VerticalScrollbar.render(context, layout.scrollbarX, bar)
         if (layout.showsOpenHint) {
-            context.drawCenteredTextWithShadow(
-                textRenderer,
-                fitClientText(textRenderer, openHint(), layout.contentWidth),
+            context.drawCenteredString(
+                font,
+                fitClientText(font, openHint(), layout.contentWidth),
                 width / 2,
                 layout.openHintY,
                 HINT_COLOR,

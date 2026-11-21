@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.tooltip.TooltipPositioner
-import net.minecraft.client.gui.widget.ButtonWidget
-import net.minecraft.text.Text
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.Button
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner
+import net.minecraft.network.chat.Component
 import kotlin.time.Duration
 
 /**
@@ -27,9 +27,9 @@ internal class RestartableMarqueeButtonWidget private constructor(
     y: Int,
     width: Int,
     height: Int,
-    message: Text,
-    onPress: PressAction,
-) : ButtonWidget(x, y, width, height, message, onPress, DEFAULT_NARRATION_SUPPLIER) {
+    message: Component,
+    onPress: OnPress,
+) : Button(x, y, width, height, message, onPress, DEFAULT_NARRATION) {
     /** 是否以白色外框標示選中狀態。 */
     var outlined: Boolean = false
 
@@ -60,17 +60,17 @@ internal class RestartableMarqueeButtonWidget private constructor(
     /** 本次提示框播放起點的單調時鐘時間。 */
     private var tooltipStartedAt = Duration.ZERO
 
-    override fun renderButton(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderWidget(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         val originalMessage = message
         try {
-            message = Text.empty()
-            super.renderButton(context, mouseX, mouseY, delta)
+            message = Component.empty()
+            super.renderWidget(context, mouseX, mouseY, delta)
         } finally {
             message = originalMessage
         }
 
-        val hoveredNow = isHovered
-        val selectedNow = isSelected
+        val hoveredNow = isHovered()
+        val selectedNow = isHoveredOrFocused
         if (hoveredNow && !hoveredLastFrame) hoverStartedAt = measuringTimeNow()
         if ((hoveredNow && !hoveredLastFrame) || (selectedNow && !selectedLastFrame)) tooltipStartedAt = measuringTimeNow()
         hoveredLastFrame = hoveredNow
@@ -89,7 +89,7 @@ internal class RestartableMarqueeButtonWidget private constructor(
         }
         val expanded = selectorExpanded?.invoke()
         if (expanded != null) renderSelectorArrow(context, expanded)
-        if (outlined || expanded == true) context.drawBorder(x, y, width, height, OUTLINE_COLOR)
+        if (outlined || expanded == true) context.renderOutline(x, y, width, height, OUTLINE_COLOR)
     }
 
     /**
@@ -98,7 +98,7 @@ internal class RestartableMarqueeButtonWidget private constructor(
      * @param context 本幀繪製環境。
      * @param expanded 清單是否展開；展開時箭頭向上。
      */
-    private fun renderSelectorArrow(context: DrawContext, expanded: Boolean) {
+    private fun renderSelectorArrow(context: GuiGraphics, expanded: Boolean) {
         PixelIcons.arrow(
             context = context,
             x = x + width - SELECTOR_ARROW_RIGHT_INSET - PixelIcons.ARROW_WIDTH,
@@ -113,7 +113,7 @@ internal class RestartableMarqueeButtonWidget private constructor(
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
         if (button != SECONDARY_MOUSE_BUTTON || !pressesOnSecondaryClick) return super.mouseClicked(mouseX, mouseY, button)
         if (!active || !visible || !clicked(mouseX, mouseY)) return false
-        playDownSound(MinecraftClient.getInstance().soundManager)
+        playDownSound(Minecraft.getInstance().soundManager)
         CycleButtonInput.duringSecondaryClick { onPress() }
         return true
     }
@@ -125,15 +125,15 @@ internal class RestartableMarqueeButtonWidget private constructor(
      * @param text 欲繪製的文字。
      * @param hovered 游標是否位於按鈕上。
      */
-    private fun renderMessage(context: DrawContext, text: Text, hovered: Boolean) {
-        val textRenderer = MinecraftClient.getInstance().textRenderer
+    private fun renderMessage(context: GuiGraphics, text: Component, hovered: Boolean) {
+        val textRenderer = Minecraft.getInstance().font
         val padding = if (selectorExpanded == null) HORIZONTAL_PADDING else SELECTOR_TEXT_PADDING
         val availableWidth = (width - padding * 2).coerceAtLeast(1)
-        val textWidth = textRenderer.getWidth(text)
+        val textWidth = textRenderer.width(text)
         val textY = y + (height - VANILLA_VISIBLE_TEXT_HEIGHT) / 2
         val color = if (active) 0xFFFFFF else 0xA0A0A0
         if (textWidth <= availableWidth) {
-            context.drawTextWithShadow(textRenderer, text, x + (width - textWidth) / 2, textY, color)
+            context.drawString(textRenderer, text, x + (width - textWidth) / 2, textY, color)
             return
         }
 
@@ -141,12 +141,12 @@ internal class RestartableMarqueeButtonWidget private constructor(
         val elapsed = if (hovered) (measuringTimeNow() - hoverStartedAt).coerceAtLeast(Duration.ZERO) else Duration.ZERO
         val scrollX = MarqueeTiming.offset(elapsed, overflow)
         context.enableScissor(x + padding, y, x + width - padding, y + height)
-        context.drawTextWithShadow(textRenderer, text, x + padding - scrollX, textY, color)
+        context.drawString(textRenderer, text, x + padding - scrollX, textY, color)
         context.disableScissor()
     }
 
-    override fun getTooltipPositioner(): TooltipPositioner = ScreenFittingTooltipPositioner(
-        base = super.getTooltipPositioner(),
+    override fun createTooltipPositioner(): ClientTooltipPositioner = ScreenFittingTooltipPositioner(
+        base = super.createTooltipPositioner(),
         shownSince = tooltipStartedAt,
     )
 
@@ -157,8 +157,8 @@ internal class RestartableMarqueeButtonWidget private constructor(
      * @property onPress 按下按鈕時執行的動作。
      */
     internal class Builder(
-        private val message: Text,
-        private val onPress: PressAction,
+        private val message: Component,
+        private val onPress: OnPress,
     ) {
         /** 按鈕左界。 */
         private var x = 0
@@ -239,6 +239,6 @@ internal class RestartableMarqueeButtonWidget private constructor(
          * @param onPress 按下按鈕時執行的動作。
          * @return 使用預設位置與尺寸的建構器。
          */
-        fun builder(message: Text, onPress: PressAction): Builder = Builder(message, onPress)
+        fun builder(message: Component, onPress: OnPress): Builder = Builder(message, onPress)
     }
 }

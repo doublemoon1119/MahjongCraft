@@ -27,9 +27,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.drawDecisionT
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.mojang.blaze3d.systems.RenderSystem
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.text.Text
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.network.chat.Component
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -58,7 +58,7 @@ class MahjongHudPreviewRenderer(
     internal fun size(
         element: HudElement,
         scenario: HudPreviewScenario,
-        automaticControlLabels: List<Text>,
+        automaticControlLabels: List<Component>,
         screenWidth: Int,
         screenHeight: Int,
     ): MahjongHudPreviewSize? = when (element) {
@@ -87,22 +87,22 @@ class MahjongHudPreviewRenderer(
      * @param opacity 預覽的不透明度。
      */
     internal fun render(
-        context: DrawContext,
+        context: GuiGraphics,
         element: HudElement,
         scenario: HudPreviewScenario,
         layout: MahjongHudLayoutConfig,
-        automaticControlLabels: List<Text>,
+        automaticControlLabels: List<Component>,
         opacity: Float,
     ) {
-        context.draw()
+        context.flush()
         RenderSystem.enableBlend()
-        context.setShaderColor(1f, 1f, 1f, opacity)
+        context.setColor(1f, 1f, 1f, opacity)
         when (element) {
             HudElement.DECISION -> renderDecisionPanel(
                 context = context,
                 prompt = scenario.prompt,
-                screenWidth = context.scaledWindowWidth,
-                screenHeight = context.scaledWindowHeight,
+                screenWidth = context.guiWidth(),
+                screenHeight = context.guiHeight(),
                 panelRatioY = layout.decisionPanelY,
                 opacity = opacity,
             )
@@ -121,8 +121,8 @@ class MahjongHudPreviewRenderer(
                 ratioY = layout.automaticControlStatusY,
             )
         }
-        context.draw()
-        context.setShaderColor(1f, 1f, 1f, 1f)
+        context.flush()
+        context.setColor(1f, 1f, 1f, 1f)
         RenderSystem.disableBlend()
     }
 
@@ -145,12 +145,12 @@ class MahjongHudPreviewRenderer(
      * @param top 範圍上界。
      * @param width 範圍寬度。
      */
-    internal fun renderDecisionPanelAt(context: DrawContext, prompt: PlayerDecisionPromptDto, left: Int, top: Int, width: Int) {
+    internal fun renderDecisionPanelAt(context: GuiGraphics, prompt: PlayerDecisionPromptDto, left: Int, top: Int, width: Int) {
         val layout = decisionLayout(prompt, width, MEASURE_HEIGHT, panelRatioY = 0.0)
-        context.matrices.push()
-        context.matrices.translate(left.toDouble(), (top - layout.groupTop).toDouble(), 0.0)
+        context.pose().pushPose()
+        context.pose().translate(left.toDouble(), (top - layout.groupTop).toDouble(), 0.0)
         renderDecisionPanel(context, prompt, width, MEASURE_HEIGHT, panelRatioY = 0.0, opacity = 1f)
-        context.matrices.pop()
+        context.pose().popPose()
     }
 
     /**
@@ -164,14 +164,14 @@ class MahjongHudPreviewRenderer(
      * @param opacity 預覽不透明度。
      */
     private fun renderDecisionPanel(
-        context: DrawContext,
+        context: GuiGraphics,
         prompt: PlayerDecisionPromptDto,
         screenWidth: Int,
         screenHeight: Int,
         panelRatioY: Double,
         opacity: Float,
     ) {
-        val renderer = MinecraftClient.getInstance().textRenderer
+        val renderer = Minecraft.getInstance().font
         val content = decisionContent(prompt, screenWidth)
         val measured = measureDecisionPanel(content, screenWidth, screenHeight, panelRatioY)
         val layout = measured.geometry
@@ -179,12 +179,12 @@ class MahjongHudPreviewRenderer(
         val placements = layout.cardPlacements(scroll)
 
         /** 以預覽不透明度繪製按鈕，並恢復後續內容使用的著色。 */
-        fun renderButton(label: Text, bounds: DecisionBounds) {
+        fun renderButton(label: Component, bounds: DecisionBounds) {
             val button = RestartableMarqueeButtonWidget.builder(label) {}.dimensions(bounds.x, bounds.y, bounds.width, bounds.height).build()
             button.setAlpha(opacity)
             button.render(context, NO_POINTER, NO_POINTER, 0f)
-            context.draw()
-            context.setShaderColor(1f, 1f, 1f, opacity)
+            context.flush()
+            context.setColor(1f, 1f, 1f, opacity)
         }
         context.drawDecisionPanel(
             renderer = renderer,
@@ -204,7 +204,7 @@ class MahjongHudPreviewRenderer(
         context.drawDecisionTimer(
             renderer = renderer,
             parts = PREVIEW_TIMER_PARTS,
-            y = layout.headerTextTop(renderer.fontHeight),
+            y = layout.headerTextTop(renderer.lineHeight),
             centerX = layout.timerLeft + decisionTimerWidth(renderer, PREVIEW_TIMER_PARTS, HEADER_TIMER_SCALE) / 2,
             scale = HEADER_TIMER_SCALE,
         )
@@ -221,7 +221,7 @@ class MahjongHudPreviewRenderer(
         prompt = prompt,
         texts = decisionHud.decisionTexts,
         resolvePlayerName = decisionHud::resolveTriggerPlayerName,
-        renderer = MinecraftClient.getInstance().textRenderer,
+        renderer = Minecraft.getInstance().font,
         screenWidth = screenWidth,
     )
 
@@ -256,7 +256,7 @@ class MahjongHudPreviewRenderer(
         screenHeight: Int,
         panelRatioY: Double,
     ): MeasuredDecisionPanel {
-        val renderer = MinecraftClient.getInstance().textRenderer
+        val renderer = Minecraft.getInstance().font
         return decisionPanelLayout(
             content = content,
             renderer = renderer,
@@ -294,7 +294,7 @@ class MahjongHudPreviewRenderer(
      * @param labels 要呈現的項目名稱。
      * @return 與名稱順序相同的範例狀態列。
      */
-    private fun automaticControlRows(labels: List<Text>): List<AutomaticControlStatusRow> = labels.mapIndexed { index, label ->
+    private fun automaticControlRows(labels: List<Component>): List<AutomaticControlStatusRow> = labels.mapIndexed { index, label ->
         AutomaticControlStatusRow(controlId = "preview:$index", label = label, enabled = index % 2 == 0)
     }
 
@@ -306,8 +306,8 @@ class MahjongHudPreviewRenderer(
      * @param screenHeight 畫面高度。
      * @return 自動操作狀態版面；沒有項目時為 `null`。
      */
-    private fun automaticControlLayout(labels: List<Text>, screenWidth: Int, screenHeight: Int) = labels.takeIf { it.isNotEmpty() }?.let {
-        val renderer = MinecraftClient.getInstance().textRenderer
+    private fun automaticControlLayout(labels: List<Component>, screenWidth: Int, screenHeight: Int) = labels.takeIf { it.isNotEmpty() }?.let {
+        val renderer = Minecraft.getInstance().font
         automaticControlStatusHudLayout(
             rowWidths = AutomaticControlStatusHudText.rowWidths(renderer, labels),
             textHeight = AutomaticControlStatusHudText.textHeight(renderer),

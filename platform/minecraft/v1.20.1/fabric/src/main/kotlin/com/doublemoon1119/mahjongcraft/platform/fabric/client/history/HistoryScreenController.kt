@@ -23,8 +23,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfileRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.screen.Screen
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.screens.Screen
 import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.uuid.Uuid
 
@@ -149,9 +149,9 @@ class HistoryScreenController internal constructor(
      * @param matchId 已驗證的對局識別碼；一般列表為 null。
      */
     private fun requestOpen(parent: Screen?, matchId: String? = null) {
-        val client = MinecraftClient.getInstance()
-        val connection = client.networkHandler ?: return
-        if (client.world == null || client.player == null || active != null) return
+        val client = Minecraft.getInstance()
+        val connection = client.connection ?: return
+        if (client.level == null || client.player == null || active != null) return
         pending = OpenRequest(parent, connection, transport.sessionRevision.value, matchId)
     }
 
@@ -160,13 +160,13 @@ class HistoryScreenController internal constructor(
      *
      * @param client 客戶端執行環境。
      */
-    private fun tick(client: MinecraftClient) {
+    private fun tick(client: Minecraft) {
         active?.tick()
         val request = pending ?: return
         pending = null
-        if (!request.isValid(client.networkHandler, transport.sessionRevision.value)) return
-        if (client.world == null || client.player == null || active != null) return
-        if (request.parent != null && client.currentScreen !== request.parent) return
+        if (!request.isValid(client.connection, transport.sessionRevision.value)) return
+        if (client.level == null || client.player == null || active != null) return
+        if (request.parent != null && client.screen !== request.parent) return
         val session = HistoryBrowseSession(
             transport = transport,
             archiveStatus = archiveStatus,

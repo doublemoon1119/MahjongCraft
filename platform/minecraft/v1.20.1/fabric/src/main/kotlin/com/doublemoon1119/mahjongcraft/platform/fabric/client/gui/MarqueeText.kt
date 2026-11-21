@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.fitClientText
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.text.Text
+import net.minecraft.client.gui.Font
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.network.chat.Component
 import kotlin.time.Duration
 
 /**
@@ -50,9 +50,9 @@ internal object MarqueeText {
      * @param centered 文字放得下或被截斷時是否在範圍內置中；否則靠左。
      */
     fun draw(
-        context: DrawContext,
-        textRenderer: TextRenderer,
-        text: Text,
+        context: GuiGraphics,
+        textRenderer: Font,
+        text: Component,
         left: Int,
         width: Int,
         y: Int,
@@ -61,16 +61,16 @@ internal object MarqueeText {
         subject: Any?,
         centered: Boolean = false,
     ) {
-        val overflow = textRenderer.getWidth(text) - width
+        val overflow = textRenderer.width(text) - width
         val scrollX = state.offset(subject.takeIf { overflow > 0 }, overflow)
         if (overflow <= 0 || subject == null) {
             val fitted = fitClientText(textRenderer, text, width)
-            val x = if (centered) left + (width - textRenderer.getWidth(fitted)) / 2 else left
-            context.drawTextWithShadow(textRenderer, fitted, x, y, color)
+            val x = if (centered) left + (width - textRenderer.width(fitted)) / 2 else left
+            context.drawString(textRenderer, fitted, x, y, color)
             return
         }
-        context.enableScissor(left, y - 1, left + width, y + textRenderer.fontHeight + 1)
-        context.drawTextWithShadow(textRenderer, text, left - scrollX, y, color)
+        context.enableScissor(left, y - 1, left + width, y + textRenderer.lineHeight + 1)
+        context.drawString(textRenderer, text, left - scrollX, y, color)
         context.disableScissor()
     }
 }

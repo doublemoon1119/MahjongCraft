@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.room
 
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
 
 /**
  * `/mahjongcraft room join|leave` 的桌子座標引數格式：`x_y_z`（例如 `123_64_-456`）。

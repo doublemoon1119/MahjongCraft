@@ -16,17 +16,17 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowser
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueConfigSource
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.client.gui.tooltip.Tooltip
-import net.minecraft.client.gui.tooltip.TooltipPositioner
-import net.minecraft.client.gui.widget.ButtonWidget
-import net.minecraft.client.gui.widget.TextFieldWidget
-import net.minecraft.text.OrderedText
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
-import net.minecraft.util.Language
+import net.minecraft.ChatFormatting
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.Button
+import net.minecraft.client.gui.components.EditBox
+import net.minecraft.client.gui.components.Tooltip
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner
+import net.minecraft.locale.Language
+import net.minecraft.network.chat.Component
+import net.minecraft.util.FormattedCharSequence
 
 /**
  * 可切換規則、分類與搜尋的唯讀規則一覽；上方控制區、分類頁籤與底部按鈕固定，只有中間的條目會捲動。
@@ -43,7 +43,7 @@ internal class RuleCatalogueScreen(
     private val tileFaces: MahjongTileFaceRenderer,
     private val openingContext: RuleCatalogueBrowseContext,
     private val exit: RuleCatalogueExit,
-) : Screen(Text.translatable(MinecraftRuleCatalogueScreenKeys.TITLE)) {
+) : Screen(Component.translatable(MinecraftRuleCatalogueScreenKeys.TITLE)) {
     /** 返回時回到的畫面；直接關回遊戲時為 null。 */
     internal val returnScreen: Screen? get() = exit.returnScreen
 
@@ -80,13 +80,13 @@ internal class RuleCatalogueScreen(
     private var revealSelectedTab = true
 
     /** 搜尋輸入框。 */
-    private lateinit var search: TextFieldWidget
+    private lateinit var search: EditBox
 
     /** 清除搜尋按鈕。 */
-    private lateinit var clear: ButtonWidget
+    private lateinit var clear: Button
 
     /** 視窗大小改變後重建控制項，捲到選中的頁籤，並保留原本有鍵盤焦點的頁籤。 */
-    override fun resize(client: MinecraftClient, width: Int, height: Int) {
+    override fun resize(client: Minecraft, width: Int, height: Int) {
         val focusedIndex = children().filterIsInstance<TabWidget>().indexOfFirst { it === focused }
         revealSelectedTab = true
         super.resize(client, width, height)
@@ -108,8 +108,8 @@ internal class RuleCatalogueScreen(
         layout = RuleCatalogueScreenLayout.measure(
             width = width,
             height = height,
-            clearWidth = textRenderer.getWidth(presenter.text(MinecraftRuleCatalogueScreenKeys.CLEAR)) + CLEAR_PADDING,
-            sourceLabelWidth = sourceLabel().takeIf { openingContext.source != RuleCatalogueConfigSource.GENERAL }?.let(textRenderer::getWidth),
+            clearWidth = font.width(presenter.text(MinecraftRuleCatalogueScreenKeys.CLEAR)) + CLEAR_PADDING,
+            sourceLabelWidth = sourceLabel().takeIf { openingContext.source != RuleCatalogueConfigSource.GENERAL }?.let(font::width),
         )
         addRuleSelector()
         addCategoryTabs()
@@ -118,7 +118,7 @@ internal class RuleCatalogueScreen(
         button(
             label = presenter.text(if (exit.returnScreen == null) MinecraftRuleCatalogueScreenKeys.CLOSE else MinecraftRuleCatalogueScreenKeys.BACK),
             bounds = layout.close,
-        ) { close() }
+        ) { onClose() }
         remeasureContent()
         scroll.relayout(layout = layout, contentHeight = contentHeight)
     }
@@ -137,13 +137,13 @@ internal class RuleCatalogueScreen(
             dropdown.toggle(
                 key = RULE_SELECTOR_KEY,
                 anchor = selector,
-                options = options.map { DropdownOption(label = Text.literal(it.displayName)) },
+                options = options.map { DropdownOption(label = Component.literal(it.displayName)) },
                 selectedIndex = options.indexOf(selected).takeIf { it >= 0 },
             ) { index -> changed(browser.selectRule(options[index].ruleModuleId)) }
         }
         selector.active = options.size > 1
         selector.selectorExpanded = { dropdown.isOpenFor(RULE_SELECTOR_KEY) }
-        selector.tooltip = Tooltip.of(optionTooltip(descriptionKeys = description, current = name, options = options.map { it.displayName }))
+        selector.tooltip = Tooltip.create(optionTooltip(descriptionKeys = description, current = name, options = options.map { it.displayName }))
     }
 
     /** 分類頁籤，「全部分類」排第一；頁籤放不下時可左右捲動，選中的頁籤保持看得見。 */
@@ -158,13 +158,13 @@ internal class RuleCatalogueScreen(
         tabScroll = strip.effectiveScroll
         options.forEachIndexed { index, (categoryId, nameKey) ->
             val selected = index == selectedIndex
-            addDrawableChild(
+            addRenderableWidget(
                 TabWidget(
                     x = strip.tabX(index),
                     y = strip.tabY(selected),
                     width = strip.tabWidth,
                     height = strip.tabHeight(selected),
-                    message = Text.literal(presenter.text(nameKey)),
+                    message = Component.literal(presenter.text(nameKey)),
                     selected = selected,
                     clipLeft = strip.left,
                     clipRight = strip.right,
@@ -196,21 +196,21 @@ internal class RuleCatalogueScreen(
     /** 搜尋輸入框與清除按鈕。 */
     private fun addSearchControls() {
         val bounds = layout.search
-        search = TextFieldWidget(
-            textRenderer,
+        search = EditBox(
+            font,
             bounds.x + TEXT_FIELD_BORDER,
             bounds.y + TEXT_FIELD_BORDER,
             (bounds.width - TEXT_FIELD_BORDER * 2).coerceAtLeast(1),
             bounds.height - TEXT_FIELD_BORDER * 2,
-            Text.literal(presenter.text(MinecraftRuleCatalogueScreenKeys.SEARCH)),
+            Component.literal(presenter.text(MinecraftRuleCatalogueScreenKeys.SEARCH)),
         )
         search.setMaxLength(MAX_SEARCH_LENGTH)
-        search.text = state.searchText
-        search.setPlaceholder(Text.literal(presenter.text(MinecraftRuleCatalogueScreenKeys.SEARCH_HINT)).formatted(Formatting.DARK_GRAY))
-        search.tooltip = Tooltip.of(Text.literal(presenter.text(MinecraftRuleCatalogueScreenKeys.SEARCH_TOOLTIP)).formatted(Formatting.GRAY))
-        search.setChangedListener(::searchChanged)
-        addDrawableChild(search)
-        clear = button(label = presenter.text(MinecraftRuleCatalogueScreenKeys.CLEAR), bounds = layout.clear) { search.text = "" }
+        search.setValue(state.searchText)
+        search.setHint(Component.literal(presenter.text(MinecraftRuleCatalogueScreenKeys.SEARCH_HINT)).withStyle(ChatFormatting.DARK_GRAY))
+        search.tooltip = Tooltip.create(Component.literal(presenter.text(MinecraftRuleCatalogueScreenKeys.SEARCH_TOOLTIP)).withStyle(ChatFormatting.GRAY))
+        search.setResponder(::searchChanged)
+        addRenderableWidget(search)
+        clear = button(label = presenter.text(MinecraftRuleCatalogueScreenKeys.CLEAR), bounds = layout.clear) { search.setValue("") }
         clear.active = state.searchText.isNotEmpty()
     }
 
@@ -233,7 +233,7 @@ internal class RuleCatalogueScreen(
             dropdown.toggle(
                 key = SOURCE_SELECTOR_KEY,
                 anchor = selector,
-                options = names.map { DropdownOption(label = Text.literal(it)) },
+                options = names.map { DropdownOption(label = Component.literal(it)) },
                 selectedIndex = sources.indexOf(state.configSource).takeIf { it >= 0 },
             ) { index ->
                 changed(if (sources[index] == RuleCatalogueConfigSource.GENERAL) browser.useGeneralExplanation() else browser.restoreOpeningConfig())
@@ -241,11 +241,11 @@ internal class RuleCatalogueScreen(
         }
         selector.active = onOpeningRule
         selector.selectorExpanded = { dropdown.isOpenFor(SOURCE_SELECTOR_KEY) }
-        selector.tooltip = Tooltip.of(optionTooltip(descriptionKeys = description, current = current, options = names))
+        selector.tooltip = Tooltip.create(optionTooltip(descriptionKeys = description, current = current, options = names))
     }
 
     /** 設定來源選擇器左側的標籤。 */
-    private fun sourceLabel(): Text = Text.literal(presenter.text(MinecraftRuleCatalogueScreenKeys.SOURCE_LABEL))
+    private fun sourceLabel(): Component = Component.literal(presenter.text(MinecraftRuleCatalogueScreenKeys.SOURCE_LABEL))
 
     /**
      * 建立選項按鈕的提示：說明、全部選項與目前選項，以及可操作時的操作提示。
@@ -260,10 +260,10 @@ internal class RuleCatalogueScreen(
         descriptionKeys: List<String>,
         current: String,
         options: List<String>,
-        hints: List<Text> = emptyList(),
-    ): Text = ControlTooltip.options(
-        description = Text.literal(descriptionKeys.joinToString("\n") { presenter.text(it) }),
-        labels = options.map { Text.literal(it) },
+        hints: List<Component> = emptyList(),
+    ): Component = ControlTooltip.options(
+        description = Component.literal(descriptionKeys.joinToString("\n") { presenter.text(it) }),
+        labels = options.map { Component.literal(it) },
         currentIndex = options.indexOf(current),
         hints = hints,
     )
@@ -280,8 +280,8 @@ internal class RuleCatalogueScreen(
         label: String,
         bounds: CatalogueRect,
         action: () -> Unit,
-    ): RestartableMarqueeButtonWidget = addDrawableChild(
-        RestartableMarqueeButtonWidget.builder(Text.literal(label)) { action() }
+    ): RestartableMarqueeButtonWidget = addRenderableWidget(
+        RestartableMarqueeButtonWidget.builder(Component.literal(label)) { action() }
             .dimensions(bounds.x, bounds.y, bounds.width, bounds.height)
             .build(),
     )
@@ -294,7 +294,7 @@ internal class RuleCatalogueScreen(
     private fun changed(effective: Boolean) {
         if (!effective) return
         scroll.reset()
-        clearAndInit()
+        rebuildWidgets()
     }
 
     /**
@@ -324,21 +324,21 @@ internal class RuleCatalogueScreen(
      * @param mouseY 游標垂直位置。
      * @param delta 畫面更新比例。
      */
-    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
-        if (language !== Language.getInstance()) clearAndInit()
+    override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+        if (language !== Language.getInstance()) rebuildWidgets()
         renderBackground(context)
-        ScreenRendering.title(context, textRenderer, title, width)
+        ScreenRendering.title(context, font, title, width)
         val pointerX = dropdown.pointer(mouseX)
         val pointerY = dropdown.pointer(mouseY)
         val contentTooltip = renderContent(context = context, mouseX = pointerX, mouseY = pointerY)
         renderScrollbar(context)
         ScreenRendering.tabLine(context, layout.tabStrip(tabCount = categoryOptions().size, scroll = tabScroll))
         layout.sourceLabelY?.let { labelY ->
-            context.drawTextWithShadow(textRenderer, sourceLabel(), layout.contentLeft, labelY, SOURCE_LABEL_COLOR)
+            context.drawString(font, sourceLabel(), layout.contentLeft, labelY, SOURCE_LABEL_COLOR)
         }
         super.render(context, pointerX, pointerY, delta)
-        if (contentTooltip.isNotEmpty() && !scroll.isDragging) context.drawTooltip(textRenderer, contentTooltip, mouseX, mouseY)
-        dropdown.render(context, textRenderer, height, mouseX, mouseY)
+        if (contentTooltip.isNotEmpty() && !scroll.isDragging) context.renderComponentTooltip(font, contentTooltip, mouseX, mouseY)
+        dropdown.render(context, font, height, mouseX, mouseY)
     }
 
     /**
@@ -350,10 +350,10 @@ internal class RuleCatalogueScreen(
      * @return 游標指向的文字或牌面提示；沒有時為空集合。
      */
     private fun renderContent(
-        context: DrawContext,
+        context: GuiGraphics,
         mouseX: Int,
         mouseY: Int,
-    ): List<Text> {
+    ): List<Component> {
         val bounds = layout.contentBounds
         if (bounds.height <= 0) return emptyList()
         val pointerInside = bounds.contains(mouseX.toDouble(), mouseY.toDouble())
@@ -366,7 +366,7 @@ internal class RuleCatalogueScreen(
                 val hovered = pointerInside && rect.contains(mouseX.toDouble(), mouseY.toDouble())
                 context.fill(rect.x, rect.y, rect.right, rect.bottom, if (hovered) CARD_HOVER_BACKGROUND else CARD_BACKGROUND)
                 card.lines.forEach { line ->
-                    context.drawTextWithShadow(textRenderer, line.text, rect.x + line.x, rect.y + line.y, line.color)
+                    context.drawString(font, line.text, rect.x + line.x, rect.y + line.y, line.color)
                     val area = CatalogueRect(x = rect.x + line.x, y = rect.y + line.y, width = line.width, height = LINE_HIT_HEIGHT)
                     if (hovered && line.tooltip.isNotEmpty() && area.contains(mouseX.toDouble(), mouseY.toDouble())) tooltip = line.tooltip
                 }
@@ -387,12 +387,12 @@ internal class RuleCatalogueScreen(
             top += card.height + CARD_GAP
         }
         catalogueStatusKey(state.status)?.let { key ->
-            textRenderer.wrapLines(Text.literal(presenter.text(key)), bounds.width).forEachIndexed { index, line ->
-                context.drawTextWithShadow(textRenderer, line, bounds.x, bounds.y + RuleCatalogueScreenLayout.GAP + index * LINE_HIT_HEIGHT, STATUS_COLOR)
+            font.split(Component.literal(presenter.text(key)), bounds.width).forEachIndexed { index, line ->
+                context.drawString(font, line, bounds.x, bounds.y + RuleCatalogueScreenLayout.GAP + index * LINE_HIT_HEIGHT, STATUS_COLOR)
             }
         }
         context.disableScissor()
-        return tooltip.map(Text::literal)
+        return tooltip.map(Component::literal)
     }
 
     /**
@@ -400,7 +400,7 @@ internal class RuleCatalogueScreen(
      *
      * @param context 繪製內容。
      */
-    private fun renderScrollbar(context: DrawContext) {
+    private fun renderScrollbar(context: GuiGraphics) {
         val bar = layout.scrollbar(contentHeight = contentHeight, scroll = scroll.offset)
         if (bar.maximumScroll == 0) return
         val track = layout.scrollbarBounds
@@ -416,7 +416,7 @@ internal class RuleCatalogueScreen(
      * @return 是否處理事件。
      */
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
-        if (dropdown.mouseScrolled(textRenderer, height, amount)) return true
+        if (dropdown.mouseScrolled(font, height, amount)) return true
         val strip = layout.tabStrip(tabCount = categoryOptions().size, scroll = tabScroll)
         if (strip.contains(mouseX, mouseY) && strip.maximumScroll > 0) {
             val next = strip.scrollByWheel(amount)
@@ -442,7 +442,7 @@ internal class RuleCatalogueScreen(
      * @return 是否處理事件。
      */
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        if (dropdown.mouseClicked(textRenderer, height, mouseX, mouseY, button)) return true
+        if (dropdown.mouseClicked(font, height, mouseX, mouseY, button)) return true
         if (button == 0 && layout.scrollbarBounds.contains(mouseX, mouseY) && scroll.press(mouseY = mouseY, layout = layout, contentHeight = contentHeight)) {
             return true
         }
@@ -479,26 +479,26 @@ internal class RuleCatalogueScreen(
     }
 
     /** 下拉清單展開時不讓底層元件排入提示框。 */
-    override fun setTooltip(lines: List<OrderedText>, positioner: TooltipPositioner, focused: Boolean) {
-        if (!dropdown.isOpen) super.setTooltip(lines, positioner, focused)
+    override fun setTooltipForNextRenderPass(lines: List<FormattedCharSequence>, positioner: ClientTooltipPositioner, focused: Boolean) {
+        if (!dropdown.isOpen) super.setTooltipForNextRenderPass(lines, positioner, focused)
     }
 
     override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
-        if (dropdown.keyPressed(textRenderer, height, keyCode)) return true
+        if (dropdown.keyPressed(font, height, keyCode)) return true
         return super.keyPressed(keyCode, scanCode, modifiers)
     }
 
     override fun charTyped(chr: Char, modifiers: Int): Boolean = dropdown.isOpen || super.charTyped(chr, modifiers)
 
     /** 依開啟來源返回原畫面或回到遊戲。 */
-    override fun close() {
-        client?.let(exit::back)
+    override fun onClose() {
+        minecraft?.let(exit::back)
     }
 
     /** 開啟規則一覽的來源失效時直接關回遊戲。 */
     override fun tick() {
         super.tick()
-        val client = client ?: return
+        val client = minecraft ?: return
         if (!exit.isValid(client)) client.setScreen(null)
     }
 
@@ -509,7 +509,7 @@ internal class RuleCatalogueScreen(
     }
 
     /** 規則一覽不暫停單人遊戲。 */
-    override fun shouldPause(): Boolean = false
+    override fun isPauseScreen(): Boolean = false
 
     /** 畫面配色與尺寸。 */
     private companion object {

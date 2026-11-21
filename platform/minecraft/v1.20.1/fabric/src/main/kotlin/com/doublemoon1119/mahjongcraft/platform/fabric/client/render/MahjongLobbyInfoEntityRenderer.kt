@@ -4,12 +4,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClie
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongLobbyInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.render.entity.EntityRenderer
-import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.text.Text
-import net.minecraft.util.Identifier
+import com.mojang.blaze3d.vertex.PoseStack
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.entity.EntityRenderer
+import net.minecraft.client.renderer.entity.EntityRendererProvider
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
 
 /**
  * 將等待中遊戲渲染成面向觀看者的三行半透明提示面板。
@@ -19,40 +19,40 @@ import net.minecraft.util.Identifier
  * @param configStore 提供 lobby 面板可見性設定。
  */
 class MahjongLobbyInfoEntityRenderer(
-    context: EntityRendererFactory.Context,
+    context: EntityRendererProvider.Context,
     private val ruleNames: RuleModuleDisplayNameRegistry,
     private val configStore: MahjongClientConfigStore,
 ) : EntityRenderer<MahjongLobbyInfoEntity>(context) {
-    private val textRenderer = context.textRenderer
+    private val textRenderer = context.font
 
     override fun render(
         entity: MahjongLobbyInfoEntity,
         yaw: Float,
         tickDelta: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
     ) {
         if (!configStore.current.presentationVisibility.lobbyInfoEnabled) return
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
-        val ruleName = ruleNames.find(entity.ruleModuleId)?.let(Text::translatable) ?: Text.literal(entity.ruleModuleId)
+        val ruleName = ruleNames.find(entity.ruleModuleId)?.let(Component::translatable) ?: Component.literal(entity.ruleModuleId)
         val lines = listOf(
-            Text.translatable(MinecraftRoomScreenKeys.LOBBY_WAITING) to TITLE_COLOR,
-            Text.translatable(
+            Component.translatable(MinecraftRoomScreenKeys.LOBBY_WAITING) to TITLE_COLOR,
+            Component.translatable(
                 MinecraftRoomScreenKeys.LOBBY_SUMMARY,
                 ruleName,
                 entity.playerCount,
                 entity.maximumPlayerCount,
             ) to if (entity.playerCount >= entity.maximumPlayerCount) FULL_COLOR else TEXT_COLOR,
-            Text.translatable(MinecraftRoomScreenKeys.LOBBY_VIEW_DETAILS) to HINT_COLOR,
+            Component.translatable(MinecraftRoomScreenKeys.LOBBY_VIEW_DETAILS) to HINT_COLOR,
         )
         WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
-            panelMatrices.push()
-            panelMatrices.multiply(dispatcher.rotation)
+            panelMatrices.pushPose()
+            panelMatrices.mulPose(entityRenderDispatcher.cameraOrientation())
             panelMatrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
-            val lineHeight = textRenderer.fontHeight + LINE_SPACING
+            val lineHeight = textRenderer.lineHeight + LINE_SPACING
             val totalHeight = lines.size * lineHeight
-            val maximumWidth = lines.maxOf { textRenderer.getWidth(it.first) }
+            val maximumWidth = lines.maxOf { textRenderer.width(it.first) }
             WorldPanelRenderer.drawBackground(
                 left = -maximumWidth / 2f - PANEL_PADDING,
                 top = -totalHeight / 2f - PANEL_PADDING,
@@ -67,7 +67,7 @@ class MahjongLobbyInfoEntityRenderer(
                 WorldPanelRenderer.drawText(
                     renderer = textRenderer,
                     text = line,
-                    x = -textRenderer.getWidth(line) / 2f,
+                    x = -textRenderer.width(line) / 2f,
                     y = -totalHeight / 2f + index * lineHeight,
                     color = color,
                     z = TEXT_Z,
@@ -76,11 +76,11 @@ class MahjongLobbyInfoEntityRenderer(
                     consumers = panelConsumers,
                 )
             }
-            panelMatrices.pop()
+            panelMatrices.popPose()
         }
     }
 
-    override fun getTexture(entity: MahjongLobbyInfoEntity): Identifier? = null
+    override fun getTextureLocation(entity: MahjongLobbyInfoEntity): ResourceLocation? = null
 
     private companion object {
         const val TEXT_SCALE = 0.025f

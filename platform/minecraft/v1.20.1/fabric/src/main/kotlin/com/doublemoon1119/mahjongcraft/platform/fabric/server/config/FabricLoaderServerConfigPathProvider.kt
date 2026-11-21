@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.config
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.server.MinecraftServer
-import net.minecraft.util.WorldSavePath
+import net.minecraft.world.level.storage.LevelResource
 import java.nio.file.Path
 
 /** 由世界存檔或 Fabric Loader config directory 解析 server config 位置。 */
@@ -15,8 +15,8 @@ class FabricLoaderServerConfigPathProvider : FabricServerConfigPathProvider {
      * @return 設定檔的實際路徑與可供訊息使用的顯示路徑。
      */
     override fun get(server: MinecraftServer): FabricServerConfigLocation = resolve(
-        isDedicated = server.isDedicated,
-        worldSavePath = server.getSavePath(WorldSavePath.ROOT),
+        isDedicated = server.isDedicatedServer,
+        worldSavePath = server.getWorldPath(LevelResource.ROOT),
         loaderConfigPath = FabricLoader.getInstance().configDir,
     )
 

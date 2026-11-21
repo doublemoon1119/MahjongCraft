@@ -5,9 +5,9 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayFac
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.text.Text
+import net.minecraft.client.gui.Font
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.network.chat.Component
 import kotlin.math.max
 
 /**
@@ -26,11 +26,11 @@ import kotlin.math.max
  */
 internal class HistoryReplaySettlementCard(
     private val session: HistoryBrowseSession,
-    private val textRenderer: TextRenderer,
+    private val textRenderer: Font,
     private val outcomeRows: HistoryOutcomeCardRows,
     private val rowRenderer: HistoryCardRowRenderer,
     private val eventPresenter: HistoryRoundEventPresenter,
-    private val actorText: (Int) -> Text,
+    private val actorText: (Int) -> Component,
     private val participant: (Int) -> HistoryParticipantSummaryDto?,
 ) {
     /** 卡片是否收起。 */
@@ -77,7 +77,7 @@ internal class HistoryReplaySettlementCard(
      * @param mouseY 游標垂直座標。
      * @return 游標指著的內容提示；沒有時為 null。
      */
-    fun render(context: DrawContext, scene: HistoryScreenLayout.Bounds, bottom: Int, replay: HistoryBrowseReplayState?, mouseX: Int, mouseY: Int): List<Text>? {
+    fun render(context: GuiGraphics, scene: HistoryScreenLayout.Bounds, bottom: Int, replay: HistoryBrowseReplayState?, mouseX: Int, mouseY: Int): List<Component>? {
         bounds = null
         replay ?: return null
         val index = latestSettlementIndex(replay)
@@ -98,12 +98,12 @@ internal class HistoryReplaySettlementCard(
         val card = HistoryScreenLayout.Bounds(x = scene.x + (scene.width - width) / 2, y = bottom - MARGIN - height, width = width, height = height)
         bounds = card
         context.fill(card.x, card.y, card.right, card.bottom, BACKGROUND)
-        context.drawTextWithShadow(textRenderer, Text.translatable(MinecraftHistoryScreenKeys.REPLAY_SETTLEMENT), card.x + PADDING, card.y + PADDING, HistoryCardStyle.ACCENT_COLOR)
+        context.drawString(textRenderer, Component.translatable(MinecraftHistoryScreenKeys.REPLAY_SETTLEMENT), card.x + PADDING, card.y + PADDING, HistoryCardStyle.ACCENT_COLOR)
         val contentTop = card.y + PADDING + TITLE_HEIGHT
         val viewHeight = card.bottom - PADDING - contentTop
         scroll = scroll.coerceIn(0.0, max(0, contentHeight - viewHeight).toDouble())
         val hovered = mouseX in card.x until card.right && mouseY in contentTop until card.bottom - PADDING
-        var tooltip: List<Text>? = null
+        var tooltip: List<Component>? = null
         context.enableScissor(card.x, contentTop, card.right, card.bottom - PADDING)
         try {
             var y = contentTop - scroll.toInt()

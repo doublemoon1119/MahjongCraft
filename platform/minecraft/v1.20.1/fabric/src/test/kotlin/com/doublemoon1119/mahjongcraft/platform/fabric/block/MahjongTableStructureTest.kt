@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.block
 
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Direction
+import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -10,7 +10,7 @@ class MahjongTableStructureTest {
     /** 每個朝向都應產生 18 個不重複且位於 3×3×2 bounds 內的位置。 */
     @Test
     fun `placements cover unique three by three by two structure for every facing`() {
-        Direction.Type.HORIZONTAL.forEach { facing ->
+        Direction.Plane.HORIZONTAL.forEach { facing ->
             val controller = BlockPos(12, 64, -7)
             val positions = MahjongTableStructure.placements(controller, facing).values
 
@@ -29,7 +29,7 @@ class MahjongTableStructureTest {
     fun `controller position round trips every part and facing`() {
         val controller = BlockPos(-20, 5, 31)
 
-        Direction.Type.HORIZONTAL.forEach { facing ->
+        Direction.Plane.HORIZONTAL.forEach { facing ->
             MahjongTablePart.entries.forEach { part ->
                 val partPos = MahjongTableStructure.position(controller, part, facing)
 
@@ -41,7 +41,7 @@ class MahjongTableStructureTest {
     /** 向東旋轉時，朝北的局部北側應落在 controller 東側。 */
     @Test
     fun `east facing rotates north edge to east side`() {
-        val controller = BlockPos.ORIGIN
+        val controller = BlockPos.ZERO
 
         assertEquals(
             expected = BlockPos(1, 0, 0),

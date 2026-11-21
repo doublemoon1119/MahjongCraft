@@ -7,10 +7,10 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjon
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.DiscardSource
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.text.Text
-import net.minecraft.util.hit.EntityHitResult
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.network.chat.Component
+import net.minecraft.world.phys.EntityHitResult
 import kotlin.uuid.toKotlinUuid
 
 /**
@@ -32,10 +32,10 @@ class DiscardSourceHudRenderer(
      *
      * @param context 本幀繪製環境。
      */
-    fun render(context: DrawContext) {
+    fun render(context: GuiGraphics) {
         if (!configStore.current.presentationVisibility.discardSourceEnabled) return
-        val client = MinecraftClient.getInstance()
-        val tile = (client.crosshairTarget as? EntityHitResult)?.entity as? MahjongTileEntity ?: return
+        val client = Minecraft.getInstance()
+        val tile = (client.hitResult as? EntityHitResult)?.entity as? MahjongTileEntity ?: return
         if (!tile.managedByGame || tile.animating) return
         val tableId = tile.managedTableId ?: return
         val tileId = tile.uuid.toKotlinUuid()
@@ -43,10 +43,10 @@ class DiscardSourceHudRenderer(
         val snapshot = stateStore.gameSnapshot(tableId) ?: return
         val source = DiscardSource.of(snapshot, tileId, client.player?.uuid?.toKotlinUuid()) ?: return
         val text = discardSourceText(source.relation) { playerNames.resolve(tableId, source.discarderId.toString()) }
-        val renderer = client.textRenderer
-        val x = (context.scaledWindowWidth - renderer.getWidth(text)) / 2
-        val y = context.scaledWindowHeight / 2 + CROSSHAIR_GAP
-        context.drawTextWithShadow(renderer, text, x, y, TEXT_COLOR)
+        val renderer = client.font
+        val x = (context.guiWidth() - renderer.width(text)) / 2
+        val y = context.guiHeight() / 2 + CROSSHAIR_GAP
+        context.drawString(renderer, text, x, y, TEXT_COLOR)
     }
 
     private companion object {
@@ -65,10 +65,10 @@ class DiscardSourceHudRenderer(
  * @param discarderName 打出者的顯示名稱；自己打的牌不會取用。
  * @return 可直接顯示的文字。
  */
-internal fun discardSourceText(relation: RelativeDirection?, discarderName: () -> String): Text = when (relation) {
-    RelativeDirection.Self -> Text.translatable(MinecraftHudKeys.DISCARD_SOURCE_SELF)
-    null -> Text.translatable(MinecraftHudKeys.DISCARD_SOURCE, discarderName())
-    else -> Text.translatable(MinecraftHudKeys.DISCARD_SOURCE_SEATED, Text.translatable(relationKey(relation)), discarderName())
+internal fun discardSourceText(relation: RelativeDirection?, discarderName: () -> String): Component = when (relation) {
+    RelativeDirection.Self -> Component.translatable(MinecraftHudKeys.DISCARD_SOURCE_SELF)
+    null -> Component.translatable(MinecraftHudKeys.DISCARD_SOURCE, discarderName())
+    else -> Component.translatable(MinecraftHudKeys.DISCARD_SOURCE_SEATED, Component.translatable(relationKey(relation)), discarderName())
 }
 
 /**

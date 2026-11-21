@@ -26,7 +26,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveD
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegistryImpl
-import net.minecraft.text.TranslatableTextContent
+import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -44,8 +44,8 @@ class HistoryWinDetailPresentationTest {
         val presenter = presenter()
         val dora = presenter.detailLabel("mahjongcraft:riichi", RiichiWinSettlementIds.DORA_FIELD, templates)
         val ura = presenter.detailLabel("mahjongcraft:riichi", RiichiWinSettlementIds.URA_DORA_FIELD, templates)
-        assertEquals(RiichiTranslationKeys.SETTLEMENT_DORA_INDICATOR, (dora?.content as? TranslatableTextContent)?.key)
-        assertEquals(RiichiTranslationKeys.SETTLEMENT_URA_DORA_INDICATOR, (ura?.content as? TranslatableTextContent)?.key)
+        assertEquals(RiichiTranslationKeys.SETTLEMENT_DORA_INDICATOR, (dora?.contents as? TranslatableContents)?.key)
+        assertEquals(RiichiTranslationKeys.SETTLEMENT_URA_DORA_INDICATOR, (ura?.contents as? TranslatableContents)?.key)
         assertNull(presenter.detailLabel("custom:rule", RiichiWinSettlementIds.DORA_FIELD, templates))
         assertNull(presenter.detailLabel("mahjongcraft:riichi", "custom:field", templates))
         assertNull(presenter.detailLabel(null, RiichiWinSettlementIds.DORA_FIELD, templates))
@@ -59,9 +59,9 @@ class HistoryWinDetailPresentationTest {
         assertEquals("−500", presenter.scoreChangeText(-500).string)
         assertEquals("±0", presenter.scoreChangeText(0).string)
         assertEquals("−2147483648", presenter.scoreChangeText(Int.MIN_VALUE).string)
-        assertEquals(0x91c998, presenter.scoreChangeText(1).style.color?.rgb)
-        assertEquals(0xde9696, presenter.scoreChangeText(-1).style.color?.rgb)
-        assertEquals(0xaaaaaa, presenter.scoreChangeText(0).style.color?.rgb)
+        assertEquals(0x91c998, presenter.scoreChangeText(1).style.color?.value)
+        assertEquals(0xde9696, presenter.scoreChangeText(-1).style.color?.value)
+        assertEquals(0xaaaaaa, presenter.scoreChangeText(0).style.color?.value)
     }
 
     /** 多家和牌保留各自詳情，不依座位排列將役種交給另一位玩家。 */
@@ -111,15 +111,15 @@ class HistoryWinDetailPresentationTest {
             ),
         )
         val rows = presenter().detailText(RiichiWinSettlementIds.YAKU_FIELD, yaku, templates)
-        assertEquals(RiichiYakuTranslationKeys.keyFor(RiichiYakuType.Riichi), (rows[0].content as TranslatableTextContent).key)
-        val han = rows[0].siblings.last().content as TranslatableTextContent
+        assertEquals(RiichiYakuTranslationKeys.keyFor(RiichiYakuType.Riichi), (rows[0].contents as TranslatableContents).key)
+        val han = rows[0].siblings.last().contents as TranslatableContents
         assertEquals(RiichiTranslationKeys.SETTLEMENT_HAN, han.key)
         assertEquals(listOf("1"), han.args.toList())
-        assertEquals(RiichiYakuTranslationKeys.keyFor(RiichiYakuType.Daisangen), (rows[1].content as TranslatableTextContent).key)
-        assertEquals("mahjongcraft.riichi.settlement.yakuman_2x", (rows[1].siblings.last().content as TranslatableTextContent).key)
+        assertEquals(RiichiYakuTranslationKeys.keyFor(RiichiYakuType.Daisangen), (rows[1].contents as TranslatableContents).key)
+        assertEquals("mahjongcraft.riichi.settlement.yakuman_2x", (rows[1].siblings.last().contents as TranslatableContents).key)
 
         val hanFu = HistoryWinDetailValueDto.Quantities(listOf(HistoryWinDetailQuantityDto(RiichiWinSettlementIds.HAN, 3), HistoryWinDetailQuantityDto(RiichiWinSettlementIds.FU, 30)))
-        val summary = presenter().detailText(RiichiWinSettlementIds.HAN_FU_FIELD, hanFu, templates).single().content as TranslatableTextContent
+        val summary = presenter().detailText(RiichiWinSettlementIds.HAN_FU_FIELD, hanFu, templates).single().contents as TranslatableContents
         assertEquals(RiichiTranslationKeys.SETTLEMENT_HAN_FU, summary.key)
         assertEquals(listOf("3", "30"), summary.args.toList())
     }
@@ -133,7 +133,7 @@ class HistoryWinDetailPresentationTest {
         }
         val value = HistoryWinDetailValueDto.Entries(listOf(HistoryWinDetailValueDto.Entries.EntryDto("custom:pattern", HistoryWinDetailQuantityDto("custom:point", 7), nameQuantity = null, appliesToSomePayersOnly = false)))
         val row = presenter().detailText("custom:patterns", value, templates).single()
-        assertEquals("custom:pattern", (row.content as TranslatableTextContent).key)
+        assertEquals("custom:pattern", (row.contents as TranslatableContents).key)
         assertTrue(row.string.endsWith("7 custom:point"))
     }
 
@@ -160,7 +160,7 @@ class HistoryWinDetailPresentationTest {
             tileCatalog = emptyList(),
         )
         val fact = presenter().present(events, "custom:rule").transactions.single().facts.single()
-        assertEquals(MinecraftHistoryScreenKeys.ROUND_WIN_SETTLEMENT, (fact.text.content as TranslatableTextContent).key)
+        assertEquals(MinecraftHistoryScreenKeys.ROUND_WIN_SETTLEMENT, (fact.text.contents as TranslatableContents).key)
         return checkNotNull(fact.outcome)
     }
 }

@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.character
 
-import net.minecraft.entity.Entity
+import net.minecraft.world.entity.Entity
 
 /** 將原生卸載與已確認離開分開，不能因區塊暫時不可用而刪除房間成員。 */
 internal object FabricParticipantRemovalPolicy {

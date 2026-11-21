@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client
 
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.text.Text
+import net.minecraft.client.gui.Font
+import net.minecraft.network.chat.Component
 
 /**
  * 依客戶端字型實際寬度裁切文字，供不同 client 畫面共用相同的省略規則。
@@ -12,10 +12,10 @@ import net.minecraft.text.Text
  * @return 原始文字或附加省略號的裁切文字；寬度不為正時為空文字。
  */
 internal fun fitClientText(
-    textRenderer: TextRenderer,
-    text: Text,
+    textRenderer: Font,
+    text: Component,
     maximumWidth: Int,
-): Text = fitClientText(text, maximumWidth, textRenderer::getWidth)
+): Component = fitClientText(text, maximumWidth, textRenderer::width)
 
 /**
  * 以注入的寬度量測函式裁切文字，供沒有 client renderer 的測試驗證邊界。
@@ -26,15 +26,15 @@ internal fun fitClientText(
  * @return 原始文字或附加省略號的裁切文字。
  */
 internal fun fitClientText(
-    text: Text,
+    text: Component,
     maximumWidth: Int,
-    width: (Text) -> Int,
-): Text {
-    if (maximumWidth <= 0) return Text.empty()
+    width: (Component) -> Int,
+): Component {
+    if (maximumWidth <= 0) return Component.empty()
     if (width(text) <= maximumWidth) return text
     val raw = text.string
     val suffix = "..."
     var end = raw.length
-    while (end > 0 && width(Text.literal(raw.substring(0, end) + suffix)) > maximumWidth) end--
-    return Text.literal(raw.substring(0, end) + suffix)
+    while (end > 0 && width(Component.literal(raw.substring(0, end) + suffix)) > maximumWidth) end--
+    return Component.literal(raw.substring(0, end) + suffix)
 }

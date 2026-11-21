@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
-import net.minecraft.text.ClickEvent
-import net.minecraft.text.HoverEvent
-import net.minecraft.text.Text
-import net.minecraft.text.TranslatableTextContent
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.ClickEvent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.HoverEvent
+import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -70,7 +70,7 @@ class FabricMahjongDataStatusTest {
         )
         assertEquals(listOf("example:custom_rule"), translatable(messages[3]).args.toList())
         assertEquals(listOf(4, 2), translatable(messages[7]).args.toList())
-        assertEquals(Formatting.RED.colorValue, mainText(messages[4]).style.color?.rgb)
+        assertEquals(ChatFormatting.RED.color, mainText(messages[4]).style.color?.value)
     }
 
     /** 檔案路徑可點擊複製，複製的內容是路徑本身。 */
@@ -78,7 +78,7 @@ class FabricMahjongDataStatusTest {
     fun `file path can be copied`() {
         val fileLine = dataProblemMessages(listOf(problem(MahjongDataSource.HISTORY_DATABASE)))[2]
 
-        val path = translatable(fileLine).args.single() as Text
+        val path = translatable(fileLine).args.single() as Component
         val click = assertNotNull(path.style.clickEvent)
         assertEquals(ClickEvent.Action.COPY_TO_CLIPBOARD, click.action)
         assertEquals("data/test.dat", click.value)
@@ -110,7 +110,7 @@ class FabricMahjongDataStatusTest {
     fun `unreadable summary is shown on hover`() {
         val causeLine = mainText(dataProblemMessages(listOf(problem(MahjongDataSource.HISTORY_DATABASE))).last())
 
-        assertEquals(MinecraftMessageKeys.DATA_CAUSE_UNREADABLE, (causeLine.content as TranslatableTextContent).key)
+        assertEquals(MinecraftMessageKeys.DATA_CAUSE_UNREADABLE, (causeLine.contents as TranslatableContents).key)
         val hover = causeLine.siblings.firstNotNullOf { it.style.hoverEvent?.getValue(HoverEvent.Action.SHOW_TEXT) }
         assertTrue(hover.string.startsWith("IOException: locked"))
     }
@@ -121,7 +121,7 @@ class FabricMahjongDataStatusTest {
      * @param text 由 [dataProblemMessages] 建立的訊息。
      * @return 縮排後的訊息，沒有縮排時為原訊息。
      */
-    private fun mainText(text: Text): Text = if (text.content is TranslatableTextContent) text else text.siblings.single()
+    private fun mainText(text: Component): Component = if (text.contents is TranslatableContents) text else text.siblings.single()
 
     /**
      * 取出訊息本身的翻譯內容。
@@ -129,7 +129,7 @@ class FabricMahjongDataStatusTest {
      * @param text 由 [dataProblemMessages] 建立的訊息。
      * @return 訊息的翻譯 key 與參數。
      */
-    private fun translatable(text: Text): TranslatableTextContent = mainText(text).content as TranslatableTextContent
+    private fun translatable(text: Component): TranslatableContents = mainText(text).contents as TranslatableContents
 
     /**
      * 建立指定來源、原因無法判斷的問題。

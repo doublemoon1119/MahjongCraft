@@ -5,16 +5,16 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.DiceRollPresentati
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDicePoint
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
-import net.minecraft.client.render.OverlayTexture
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.render.entity.EntityRenderer
-import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.render.model.json.ModelTransformationMode
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.item.ItemStack
-import net.minecraft.text.Text
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.RotationAxis
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.math.Axis
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.entity.EntityRenderer
+import net.minecraft.client.renderer.entity.EntityRendererProvider
+import net.minecraft.client.renderer.texture.OverlayTexture
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.item.ItemDisplayContext
+import net.minecraft.world.item.ItemStack
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -25,22 +25,22 @@ import kotlin.math.sin
  * @param configStore 控制擲骰結果面板可見性的客戶端設定。
  */
 class DiceRollPresentationEntityRenderer(
-    context: EntityRendererFactory.Context,
+    context: EntityRendererProvider.Context,
     private val configStore: MahjongClientConfigStore,
 ) : EntityRenderer<DiceRollPresentationEntity>(context) {
     /** 共用原版 item renderer，讓結果模型與桌面骰子使用相同模型及材質。 */
     private val itemRenderer = context.itemRenderer
 
     /** 共用原版文字 renderer。 */
-    private val textRenderer = context.textRenderer
+    private val textRenderer = context.font
 
     /** 依絕對遊戲時間繪製結果面板；結果尚未揭示或已結束時不渲染。 */
     override fun render(
         entity: DiceRollPresentationEntity,
         yaw: Float,
         tickDelta: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
     ) {
         if (!configStore.current.presentationVisibility.diceResultEnabled) return
@@ -58,8 +58,8 @@ class DiceRollPresentationEntityRenderer(
         val panelWidth = panelWidth(points.size)
 
         WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
-            panelMatrices.push()
-            panelMatrices.multiply(dispatcher.rotation)
+            panelMatrices.pushPose()
+            panelMatrices.mulPose(entityRenderDispatcher.cameraOrientation())
             panelMatrices.scale(-PIXEL_SCALE, -PIXEL_SCALE, PIXEL_SCALE)
             WorldPanelRenderer.drawBackground(
                 left = -panelWidth / 2f,
@@ -73,7 +73,7 @@ class DiceRollPresentationEntityRenderer(
             )
             renderDice(points, visualScale, panelMatrices, panelConsumers, light)
             renderTotal(points.sum(), alpha, panelMatrices, panelConsumers, light)
-            panelMatrices.pop()
+            panelMatrices.popPose()
         }
     }
 
@@ -89,8 +89,8 @@ class DiceRollPresentationEntityRenderer(
     private fun renderDice(
         points: List<Int>,
         scale: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         light: Int,
     ) {
         val groupWidth = (points.size - 1) * DICE_CENTER_GAP
@@ -116,28 +116,28 @@ class DiceRollPresentationEntityRenderer(
         centerX: Float,
         centerY: Float,
         scale: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         light: Int,
     ) {
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(centerX.toDouble(), centerY.toDouble(), DICE_Z.toDouble())
         matrices.scale(DICE_PIXEL_SIZE * scale, DICE_PIXEL_SIZE * scale, DICE_PIXEL_SIZE * scale)
-        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(RESULT_FACE_ROTATION_DEGREES))
-        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(point.xRotationDegrees))
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(point.yRotationDegrees))
+        matrices.mulPose(Axis.XP.rotationDegrees(RESULT_FACE_ROTATION_DEGREES))
+        matrices.mulPose(Axis.XP.rotationDegrees(point.xRotationDegrees))
+        matrices.mulPose(Axis.YP.rotationDegrees(point.yRotationDegrees))
         matrices.translate(0.0, DICE_MODEL_CENTER_OFFSET_Y, 0.0)
-        itemRenderer.renderItem(
+        itemRenderer.renderStatic(
             DICE_STACK,
-            ModelTransformationMode.HEAD,
+            ItemDisplayContext.HEAD,
             light,
-            OverlayTexture.DEFAULT_UV,
+            OverlayTexture.NO_OVERLAY,
             matrices,
             consumers,
             null,
             point.value,
         )
-        matrices.pop()
+        matrices.popPose()
     }
 
     /**
@@ -152,12 +152,12 @@ class DiceRollPresentationEntityRenderer(
     private fun renderTotal(
         total: Int,
         alpha: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         light: Int,
     ) {
-        val text = Text.translatable(MinecraftMessageKeys.DICE_ROLL_TOTAL, total)
-        val x = -textRenderer.getWidth(text) / 2f
+        val text = Component.translatable(MinecraftMessageKeys.DICE_ROLL_TOTAL, total)
+        val x = -textRenderer.width(text) / 2f
         WorldPanelRenderer.drawText(
             renderer = textRenderer,
             text = text,
@@ -206,7 +206,7 @@ class DiceRollPresentationEntityRenderer(
     private fun panelWidth(diceCount: Int): Float = HORIZONTAL_PADDING * 2f + DICE_PIXEL_SIZE + (diceCount - 1) * DICE_CENTER_GAP
 
     /** ItemRenderer 自行解析材質，因此 entity renderer 不提供單一 texture。 */
-    override fun getTexture(entity: DiceRollPresentationEntity): Identifier? = null
+    override fun getTextureLocation(entity: DiceRollPresentationEntity): ResourceLocation? = null
 
     companion object {
         /** 支援的骰子數量。 */

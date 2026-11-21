@@ -7,11 +7,11 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTabl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableController
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableControllerState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
-import net.minecraft.block.BlockState
-import net.minecraft.block.entity.BlockEntity
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.state.property.Properties
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.world.level.block.entity.BlockEntity
+import net.minecraft.world.level.block.state.BlockState
+import net.minecraft.world.level.block.state.properties.BlockStateProperties
 
 /**
  * 內建麻將桌的控制方塊實體，位於結構底層中央。
@@ -25,19 +25,19 @@ class MahjongTableBlockEntity(
 ) : BlockEntity(ModBlocks.mahjongTableBlockEntity, pos, state),
     MahjongTableController {
     /** 桌子 ID 與呈現時間軸，隨此方塊實體存讀檔。 */
-    override val mahjongTableState: MahjongTableControllerState = MahjongTableControllerState(::markDirty)
+    override val mahjongTableState: MahjongTableControllerState = MahjongTableControllerState(::setChanged)
 
     /** 由控制方塊狀態的水平朝向決定。 */
     override val mahjongTableFacing: MahjongTableFacing
-        get() = cachedState.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
+        get() = blockState.getValue(BlockStateProperties.HORIZONTAL_FACING).toMahjongTableFacing()
 
     /**
      * 從方塊實體 NBT 還原麻將桌狀態。
      *
      * @param nbt 要讀取的 NBT 欄位。
      */
-    override fun readNbt(nbt: NbtCompound) {
-        super.readNbt(nbt)
+    override fun load(nbt: CompoundTag) {
+        super.load(nbt)
         mahjongTableState.readNbt(nbt)
     }
 
@@ -46,8 +46,8 @@ class MahjongTableBlockEntity(
      *
      * @param nbt 接收序列化欄位的 NBT。
      */
-    override fun writeNbt(nbt: NbtCompound) {
-        super.writeNbt(nbt)
+    override fun saveAdditional(nbt: CompoundTag) {
+        super.saveAdditional(nbt)
         mahjongTableState.writeNbt(nbt)
     }
 }

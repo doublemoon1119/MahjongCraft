@@ -9,8 +9,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharac
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterOwnership
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterPreview
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
-import net.minecraft.entity.Entity
-import net.minecraft.entity.decoration.ArmorStandEntity
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.decoration.ArmorStand
 import kotlin.uuid.Uuid
 
 /** 只在開發環境登記的最小借用 adapter，以已入座護甲座驗證正式公開接點。 */
@@ -29,14 +29,14 @@ internal object DebugSeatedParticipantAdapter {
 
     /** 只描述與驗證，不在辨識時接管或改動世界。 */
     val PARTICIPANT: FabricRoomParticipantProvider = object : FabricRoomParticipantProvider {
-        override fun describe(entity: Entity): FabricRoomParticipant? = if (entity is ArmorStandEntity && TAG in entity.commandTags) FabricRoomParticipant(CHARACTER, RandomAiStrategy.KEY) else null
+        override fun describe(entity: Entity): FabricRoomParticipant? = if (entity is ArmorStand && TAG in entity.tags) FabricRoomParticipant(CHARACTER, RandomAiStrategy.KEY) else null
 
-        override fun canJoin(entity: Entity, hostId: Uuid): Boolean = authorized(entity.commandTags, hostId)
+        override fun canJoin(entity: Entity, hostId: Uuid): Boolean = authorized(entity.tags, hostId)
     }
 
     /** 護甲座沒有尋路 AI，借用期間無須改動原生行為或保存旗標。 */
     val WORLD: FabricAiCharacterProvider = FabricAiCharacterProvider { context ->
-        val actor = context.participant as? ArmorStandEntity ?: return@FabricAiCharacterProvider null
+        val actor = context.participant as? ArmorStand ?: return@FabricAiCharacterProvider null
         object : FabricAiCharacterHandle {
             override val entity: Entity = actor
 

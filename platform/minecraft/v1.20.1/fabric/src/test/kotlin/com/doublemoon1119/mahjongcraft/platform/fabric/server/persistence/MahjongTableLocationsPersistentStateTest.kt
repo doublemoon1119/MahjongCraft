@@ -3,8 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.nbt.NbtElement
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.Tag
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.uuid.Uuid
@@ -27,7 +27,7 @@ class MahjongTableLocationsPersistentStateTest {
         val state = MahjongTableLocationsPersistentState.create()
         state.update(mapOf(first.tableId to first, second.tableId to second))
 
-        val restored = MahjongTableLocationsPersistentState.fromNbt(state.writeNbt(NbtCompound()))
+        val restored = MahjongTableLocationsPersistentState.fromNbt(state.save(CompoundTag()))
 
         assertEquals(setOf(first, second), restored.entries.toSet())
     }
@@ -35,7 +35,7 @@ class MahjongTableLocationsPersistentStateTest {
     /** 有版本欄位但沒有任何桌子位置時視為空索引。 */
     @Test
     fun `test missing entries load empty state`() {
-        val nbt = NbtCompound().apply {
+        val nbt = CompoundTag().apply {
             putInt(MahjongTableLocationsPersistentState.NBT_KEY_VERSION, MahjongTableLocationsPersistentState.CURRENT_VERSION)
         }
 
@@ -45,7 +45,7 @@ class MahjongTableLocationsPersistentStateTest {
     /** 寫入時附上目前格式版本。 */
     @Test
     fun `test written nbt carries the current format version`() {
-        val nbt = MahjongTableLocationsPersistentState.create().writeNbt(NbtCompound())
+        val nbt = MahjongTableLocationsPersistentState.create().save(CompoundTag())
 
         assertEquals(
             expected = MahjongTableLocationsPersistentState.CURRENT_VERSION,
@@ -59,7 +59,7 @@ class MahjongTableLocationsPersistentStateTest {
         val entry = TableLocationEntry(Uuid.random(), TableLocation("minecraft:overworld", 1, 2, 3), 5)
         val state = MahjongTableLocationsPersistentState.create()
         state.update(mapOf(entry.tableId to entry))
-        val nbt = state.writeNbt(NbtCompound()).apply { remove(MahjongTableLocationsPersistentState.NBT_KEY_VERSION) }
+        val nbt = state.save(CompoundTag()).apply { remove(MahjongTableLocationsPersistentState.NBT_KEY_VERSION) }
 
         assertEquals(emptyList(), MahjongTableLocationsPersistentState.fromNbt(nbt).entries)
     }
@@ -70,9 +70,9 @@ class MahjongTableLocationsPersistentStateTest {
         val valid = TableLocationEntry(Uuid.random(), TableLocation("minecraft:overworld", 4, 5, 6), 2)
         val state = MahjongTableLocationsPersistentState.create()
         state.update(mapOf(valid.tableId to valid))
-        val nbt = state.writeNbt(NbtCompound())
-        nbt.getList(MahjongTableLocationsPersistentState.NBT_KEY_ENTRIES, NbtElement.COMPOUND_TYPE.toInt())
-            .add(NbtCompound().apply { putString(MahjongTableLocationsPersistentState.NBT_KEY_TABLE_ID, "not-a-uuid") })
+        val nbt = state.save(CompoundTag())
+        nbt.getList(MahjongTableLocationsPersistentState.NBT_KEY_ENTRIES, Tag.TAG_COMPOUND.toInt())
+            .add(CompoundTag().apply { putString(MahjongTableLocationsPersistentState.NBT_KEY_TABLE_ID, "not-a-uuid") })
 
         assertEquals(listOf(valid), MahjongTableLocationsPersistentState.fromNbt(nbt).entries)
     }
@@ -83,7 +83,7 @@ class MahjongTableLocationsPersistentStateTest {
         val entry = TableLocationEntry(Uuid.random(), TableLocation("minecraft:overworld", 7, 8, 9), 1)
         val state = MahjongTableLocationsPersistentState.create()
         state.update(mapOf(entry.tableId to entry))
-        val nbt = state.writeNbt(NbtCompound()).apply {
+        val nbt = state.save(CompoundTag()).apply {
             putInt(
                 MahjongTableLocationsPersistentState.NBT_KEY_VERSION,
                 MahjongTableLocationsPersistentState.CURRENT_VERSION + 1,
@@ -98,7 +98,7 @@ class MahjongTableLocationsPersistentStateTest {
     fun `test missing or mistyped coordinates do not become zero`() {
         val valid = TableLocationEntry(Uuid.random(), TableLocation("minecraft:overworld", 4, 5, 6), 2)
         val nbt = indexedNbt(valid)
-        val entries = nbt.getList(MahjongTableLocationsPersistentState.NBT_KEY_ENTRIES, NbtElement.COMPOUND_TYPE.toInt())
+        val entries = nbt.getList(MahjongTableLocationsPersistentState.NBT_KEY_ENTRIES, Tag.TAG_COMPOUND.toInt())
         entries.add(
             entries.getCompound(0).copy().apply {
                 putString(MahjongTableLocationsPersistentState.NBT_KEY_TABLE_ID, Uuid.random().toString())
@@ -120,7 +120,7 @@ class MahjongTableLocationsPersistentStateTest {
     fun `test duplicate table ids keep the first valid entry`() {
         val first = TableLocationEntry(Uuid.random(), TableLocation("minecraft:overworld", 4, 5, 6), 2)
         val nbt = indexedNbt(first)
-        val entries = nbt.getList(MahjongTableLocationsPersistentState.NBT_KEY_ENTRIES, NbtElement.COMPOUND_TYPE.toInt())
+        val entries = nbt.getList(MahjongTableLocationsPersistentState.NBT_KEY_ENTRIES, Tag.TAG_COMPOUND.toInt())
         entries.add(entries.getCompound(0).copy().apply { putInt("X", 99) })
         val restored = MahjongTableLocationsPersistentState.fromNbt(nbt).entries
 
@@ -143,7 +143,7 @@ class MahjongTableLocationsPersistentStateTest {
      * @param entry 要寫入索引的桌子位置。
      * @return 含目前格式版本與該筆位置的 NBT compound。
      */
-    private fun indexedNbt(entry: TableLocationEntry): NbtCompound = MahjongTableLocationsPersistentState.create().apply {
+    private fun indexedNbt(entry: TableLocationEntry): CompoundTag = MahjongTableLocationsPersistentState.create().apply {
         update(mapOf(entry.tableId to entry))
-    }.writeNbt(NbtCompound())
+    }.save(CompoundTag())
 }

@@ -2,28 +2,28 @@ package com.doublemoon1119.mahjongcraft.example.fabric.furniture.table
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.MahjongTableStructureBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.MahjongTables
-import net.minecraft.block.Block
-import net.minecraft.block.BlockRenderType
-import net.minecraft.block.BlockState
-import net.minecraft.block.BlockWithEntity
-import net.minecraft.block.ShapeContext
-import net.minecraft.block.Waterloggable
-import net.minecraft.block.entity.BlockEntity
-import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.fluid.FluidState
-import net.minecraft.item.ItemPlacementContext
-import net.minecraft.state.StateManager
-import net.minecraft.state.property.Properties
-import net.minecraft.util.ActionResult
-import net.minecraft.util.Hand
-import net.minecraft.util.hit.BlockHitResult
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Direction
-import net.minecraft.util.shape.VoxelShape
-import net.minecraft.util.shape.VoxelShapes
-import net.minecraft.world.BlockView
-import net.minecraft.world.World
-import net.minecraft.world.WorldAccess
+import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
+import net.minecraft.world.InteractionHand
+import net.minecraft.world.InteractionResult
+import net.minecraft.world.entity.player.Player
+import net.minecraft.world.item.context.BlockPlaceContext
+import net.minecraft.world.level.BlockGetter
+import net.minecraft.world.level.Level
+import net.minecraft.world.level.LevelAccessor
+import net.minecraft.world.level.block.BaseEntityBlock
+import net.minecraft.world.level.block.Block
+import net.minecraft.world.level.block.RenderShape
+import net.minecraft.world.level.block.SimpleWaterloggedBlock
+import net.minecraft.world.level.block.entity.BlockEntity
+import net.minecraft.world.level.block.state.BlockState
+import net.minecraft.world.level.block.state.StateDefinition
+import net.minecraft.world.level.block.state.properties.BlockStateProperties
+import net.minecraft.world.level.material.FluidState
+import net.minecraft.world.phys.BlockHitResult
+import net.minecraft.world.phys.shapes.CollisionContext
+import net.minecraft.world.phys.shapes.Shapes
+import net.minecraft.world.phys.shapes.VoxelShape
 
 /**
  * 只占一格的範例麻將桌：方塊本身就是控制方塊，模型畫成 3×3 大小，碰撞與選取只占自己那一格。
@@ -33,75 +33,77 @@ import net.minecraft.world.WorldAccess
  * @param settings Minecraft 方塊設定。
  */
 class ExampleOneBlockTableBlock(
-    settings: Settings,
-) : BlockWithEntity(settings),
+    settings: Properties,
+) : BaseEntityBlock(settings),
     MahjongTableStructureBlock,
-    Waterloggable {
+    SimpleWaterloggedBlock {
     /** 預設朝北、不含水。 */
     init {
-        defaultState = stateManager.defaultState
-            .with(Properties.HORIZONTAL_FACING, Direction.NORTH)
-            .with(Properties.WATERLOGGED, false)
+        registerDefaultState(
+            stateDefinition.any()
+                .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH)
+                .setValue(BlockStateProperties.WATERLOGGED, false),
+        )
     }
 
     /** 每個方塊都是控制方塊，都建立方塊實體。 */
-    override fun createBlockEntity(pos: BlockPos, state: BlockState): BlockEntity = ExampleTableBlockEntity(pos, state)
+    override fun newBlockEntity(pos: BlockPos, state: BlockState): BlockEntity = ExampleTableBlockEntity(pos, state)
 
     /** 以方塊模型繪製。 */
-    override fun getRenderType(state: BlockState): BlockRenderType = BlockRenderType.MODEL
+    override fun getRenderShape(state: BlockState): RenderShape = RenderShape.MODEL
 
     /** 這張桌子只有一格，控制方塊就是自己。 */
     override fun mahjongTableControllerPos(
-        world: BlockView,
+        world: BlockGetter,
         pos: BlockPos,
         state: BlockState,
-    ): BlockPos? = pos.takeIf { state.isOf(this) }
+    ): BlockPos? = pos.takeIf { state.`is`(this) }
 
     /** 右鍵交給 MahjongCraft 開啟房間畫面。 */
     @Suppress("OVERRIDE_DEPRECATION")
-    override fun onUse(
+    override fun use(
         state: BlockState,
-        world: World,
+        world: Level,
         pos: BlockPos,
-        player: PlayerEntity,
-        hand: Hand,
+        player: Player,
+        hand: InteractionHand,
         hit: BlockHitResult,
-    ): ActionResult = MahjongTables.interact(world, pos, state, player)
+    ): InteractionResult = MahjongTables.interact(world, pos, state, player)
 
     /** 方塊被換成其他方塊時，趁方塊實體仍存在請 MahjongCraft 清理整局呈現。 */
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-    override fun onStateReplaced(
+    override fun onRemove(
         state: BlockState,
-        world: World,
+        world: Level,
         pos: BlockPos,
         newState: BlockState,
         moved: Boolean,
     ) {
-        if (!state.isOf(newState.block)) MahjongTables.onControllerRemoved(world, pos)
-        super.onStateReplaced(state, world, pos, newState, moved)
+        if (!state.`is`(newState.block)) MahjongTables.onControllerRemoved(world, pos)
+        super.onRemove(state, world, pos, newState, moved)
     }
 
     /** 放置時讓桌子朝向玩家，放在水源中時含水。 */
-    override fun getPlacementState(context: ItemPlacementContext): BlockState = defaultState
-        .with(Properties.HORIZONTAL_FACING, context.horizontalPlayerFacing.opposite)
-        .waterloggedAt(context.world, context.blockPos)
+    override fun getStateForPlacement(context: BlockPlaceContext): BlockState = defaultBlockState()
+        .setValue(BlockStateProperties.HORIZONTAL_FACING, context.horizontalDirection.opposite)
+        .waterloggedAt(context.level, context.clickedPos)
 
     /** 碰撞只占自己這一格：桌面板與中央桌腳。 */
     @Suppress("OVERRIDE_DEPRECATION")
     override fun getCollisionShape(
         state: BlockState,
-        world: BlockView,
+        world: BlockGetter,
         pos: BlockPos,
-        context: ShapeContext,
+        context: CollisionContext,
     ): VoxelShape = SHAPE
 
     /** 選取框與碰撞相同。 */
     @Suppress("OVERRIDE_DEPRECATION")
-    override fun getOutlineShape(
+    override fun getShape(
         state: BlockState,
-        world: BlockView,
+        world: BlockGetter,
         pos: BlockPos,
-        context: ShapeContext,
+        context: CollisionContext,
     ): VoxelShape = SHAPE
 
     /** 含水時回報水源的流體狀態。 */
@@ -110,29 +112,29 @@ class ExampleOneBlockTableBlock(
 
     /** 含水時排程水流更新。 */
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-    override fun getStateForNeighborUpdate(
+    override fun updateShape(
         state: BlockState,
         direction: Direction,
         neighborState: BlockState,
-        world: WorldAccess,
+        world: LevelAccessor,
         pos: BlockPos,
         neighborPos: BlockPos,
     ): BlockState {
         state.scheduleWaterTickIfWaterlogged(world, pos)
-        return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos)
+        return super.updateShape(state, direction, neighborState, world, pos, neighborPos)
     }
 
     /** 宣告朝向與含水狀態。 */
-    override fun appendProperties(builder: StateManager.Builder<Block, BlockState>) {
-        builder.add(Properties.HORIZONTAL_FACING, Properties.WATERLOGGED)
+    override fun createBlockStateDefinition(builder: StateDefinition.Builder<Block, BlockState>) {
+        builder.add(BlockStateProperties.HORIZONTAL_FACING, BlockStateProperties.WATERLOGGED)
     }
 
     /** 共用的形狀。 */
     private companion object {
         /** 桌面板與中央桌腳。 */
-        val SHAPE: VoxelShape = VoxelShapes.union(
-            createCuboidShape(0.0, 13.0, 0.0, 16.0, 16.0, 16.0),
-            createCuboidShape(6.0, 0.0, 6.0, 10.0, 13.0, 10.0),
+        val SHAPE: VoxelShape = Shapes.or(
+            box(0.0, 13.0, 0.0, 16.0, 16.0, 16.0),
+            box(6.0, 0.0, 6.0, 10.0, 13.0, 10.0),
         )
     }
 }

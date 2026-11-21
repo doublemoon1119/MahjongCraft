@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.model
 
-import net.minecraft.client.render.model.json.JsonUnbakedModel
-import net.minecraft.util.Identifier
+import net.minecraft.client.renderer.block.model.BlockModel
+import net.minecraft.resources.ResourceLocation
 
 /**
  * 固定牌模型的材質變體描述。
@@ -15,17 +15,17 @@ import net.minecraft.util.Identifier
  * @property coverTextureId 牌組共用牌體圖集的完整資源 ID。
  */
 class FixedMahjongTileModelVariant(
-    val modelId: Identifier,
-    val templateModelId: Identifier,
-    val frontTextureId: Identifier,
-    val coverTextureId: Identifier,
+    val modelId: ResourceLocation,
+    val templateModelId: ResourceLocation,
+    val frontTextureId: ResourceLocation,
+    val coverTextureId: ResourceLocation,
 ) {
     /**
      * 建立供 Fabric model resolver 解析的 JSON 未烘焙模型。
      *
      * @return 只覆寫材質槽、並保留模板 parent 的未烘焙模型。
      */
-    fun toUnbakedModel(): JsonUnbakedModel = JsonUnbakedModel.deserialize(
+    fun toUnbakedModel(): BlockModel = BlockModel.fromString(
         """
         {
           "parent": "$templateModelId",
@@ -36,14 +36,14 @@ class FixedMahjongTileModelVariant(
           }
         }
         """.trimIndent(),
-    ).also { it.id = modelId.toString() }
+    ).also { it.name = modelId.toString() }
 
     /**
      * 將完整貼圖資源 ID 轉換為 Minecraft model JSON 的材質參照格式。
      *
      * @return 不含 `textures/` 前綴與 `.png` 後綴的材質參照。
      */
-    private fun Identifier.toModelTextureReference(): String {
+    private fun ResourceLocation.toModelTextureReference(): String {
         val originalPath = getPath()
         val path = originalPath.removePrefix("textures/").removeSuffix(".png")
         return "${getNamespace()}:$path"

@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.api.seating
 
-import net.minecraft.item.ItemStack
+import net.minecraft.world.item.ItemStack
 
 /** 提供座位物品的辨識與放置，不取代已存在座位的解析能力。 */
 interface FabricSeatPlacementProvider {

@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
-import net.minecraft.nbt.NbtCompound
+import net.minecraft.nbt.CompoundTag
 
 /**
  * [MahjongTileEntity.nonBlockingPresentationUntilGameTime]（「動畫不阻塞全桌」豁免的絕對到期 game
@@ -8,7 +8,7 @@ import net.minecraft.nbt.NbtCompound
  *
  * 這個欄位必須跟著世界存檔往返：牌的動畫佇列本身就是持久化的，若豁免沒有一起存下來，重啟後還沒播完
  * 的中途胡牌收尾動畫就會突然開始阻塞全桌。抽成獨立物件的唯一理由是**可測試性**——實體化一個
- * [MahjongTileEntity] 需要註冊表裡的 `EntityType` 與一個 `World`，本專案沒有 Minecraft bootstrap 的
+ * [MahjongTileEntity] 需要註冊表裡的 `EntityType` 與一個 `Level`，本專案沒有 Minecraft bootstrap 的
  * 測試基礎建設，因此讀寫規則本身抽出來才能被直接覆蓋（見 `NonBlockingPresentationLeaseCodecTest`）。
  */
 internal object NonBlockingPresentationLeaseCodec {
@@ -24,7 +24,7 @@ internal object NonBlockingPresentationLeaseCodec {
      * @param nbt 目的 NBT compound。
      * @param untilGameTime 豁免 lease 的絕對到期時間。
      */
-    fun write(nbt: NbtCompound, untilGameTime: Long) {
+    fun write(nbt: CompoundTag, untilGameTime: Long) {
         nbt.putLong(NBT_KEY, untilGameTime)
     }
 
@@ -34,5 +34,5 @@ internal object NonBlockingPresentationLeaseCodec {
      * @param nbt 含豁免到期欄位的 NBT compound。
      * @return 豁免的絕對到期時間；缺少欄位時使用 [NO_LEASE]。
      */
-    fun read(nbt: NbtCompound): Long = nbt.getLong(NBT_KEY)
+    fun read(nbt: CompoundTag): Long = nbt.getLong(NBT_KEY)
 }

@@ -5,8 +5,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClie
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.minecraft.client.MinecraftClient
-import net.minecraft.util.hit.EntityHitResult
+import net.minecraft.client.Minecraft
+import net.minecraft.world.phys.EntityHitResult
 import kotlin.math.sin
 import kotlin.uuid.toKotlinUuid
 
@@ -26,18 +26,18 @@ class MatchingTileHighlightController(
      *
      * @param client Minecraft client 狀態與當前世界。
      */
-    private fun tick(client: MinecraftClient) {
-        val tiles = client.world?.entities?.filterIsInstance<MahjongTileEntity>()?.toList().orEmpty()
+    private fun tick(client: Minecraft) {
+        val tiles = client.level?.entitiesForRendering()?.filterIsInstance<MahjongTileEntity>()?.toList().orEmpty()
         tiles.forEach(MahjongTileEntity::clearMatchingHighlight)
         if (!configStore.current.presentationVisibility.matchingTileHighlightEnabled) return
-        val target = (client.crosshairTarget as? EntityHitResult)?.entity as? MahjongTileEntity ?: return
+        val target = (client.hitResult as? EntityHitResult)?.entity as? MahjongTileEntity ?: return
         if (!target.canParticipate()) return
         val tableId = target.managedTableId ?: return
         val targetTile = stateStore.findManagedTileSnapshot(tableId, target.uuid.toKotlinUuid())?.tile ?: return
         val snapshot = stateStore.gameSnapshot(tableId) ?: return
         val interpretation = moduleRegistry.getModule(snapshot.config).createTileInterpretationPolicy()
         val canonicalTarget = interpretation.canonicalize(targetTile)
-        val time = target.world.time + client.tickDelta.toDouble()
+        val time = target.level().gameTime + client.frameTime.toDouble()
         val targetColor = targetColor(time)
         val otherMatchColor = otherMatchColor(time)
         tiles.asSequence()

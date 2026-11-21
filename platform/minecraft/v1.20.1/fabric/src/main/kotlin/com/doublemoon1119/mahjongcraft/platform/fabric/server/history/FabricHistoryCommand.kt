@@ -12,10 +12,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands.literal
+import net.minecraft.network.chat.Component
 import kotlin.uuid.Uuid
 
 /**
@@ -37,7 +37,7 @@ class FabricHistoryCommand(
                 literal(MinecraftModMetadata.MOD_ID)
                     .then(
                         literal(HISTORY_SUBCOMMAND)
-                            .requires { source -> source.hasPermissionLevel(REQUIRED_PERMISSION_LEVEL) }
+                            .requires { source -> source.hasPermission(REQUIRED_PERMISSION_LEVEL) }
                             .then(literal(STATUS_SUBCOMMAND).executes { context -> status(context.source) })
                             .then(literal(RETRY_SUBCOMMAND).executes { context -> retry(context.source) })
                             .then(
@@ -59,10 +59,10 @@ class FabricHistoryCommand(
      * @param source 已通過 OP 權限檢查的命令來源。
      * @return Brigadier 的成功接收值，不表示非同步工作已完成。
      */
-    private fun status(source: ServerCommandSource): Int {
+    private fun status(source: CommandSourceStack): Int {
         val session = writer.currentSessionId
         launchSessionBound(session, { writer.status() }) { status ->
-            source.sendFeedback({ historyStatusMessage(status) }, false)
+            source.sendSuccess({ historyStatusMessage(status) }, false)
         }
         return COMMAND_SUCCESS
     }
@@ -73,23 +73,23 @@ class FabricHistoryCommand(
      * @param source 已通過 OP 權限檢查的命令來源。
      * @return Brigadier 的成功接收值。
      */
-    private fun retry(source: ServerCommandSource): Int {
+    private fun retry(source: CommandSourceStack): Int {
         val session = writer.currentSessionId
         val server = source.server
         launchSessionBound(session, { writer.retry(server, session) }) { result ->
             when (result) {
-                HistoryRetryResult.Reconnected -> source.sendFeedback(
-                    { prefixedConfigMessage(Text.translatable(MinecraftConfigCommandKeys.HISTORY_RECONNECTED), Formatting.GREEN) },
+                HistoryRetryResult.Reconnected -> source.sendSuccess(
+                    { prefixedConfigMessage(Component.translatable(MinecraftConfigCommandKeys.HISTORY_RECONNECTED), ChatFormatting.GREEN) },
                     false,
                 )
 
-                HistoryRetryResult.AlreadyConnected -> source.sendFeedback(
-                    { prefixedConfigMessage(Text.translatable(MinecraftConfigCommandKeys.HISTORY_ALREADY_CONNECTED), Formatting.YELLOW) },
+                HistoryRetryResult.AlreadyConnected -> source.sendSuccess(
+                    { prefixedConfigMessage(Component.translatable(MinecraftConfigCommandKeys.HISTORY_ALREADY_CONNECTED), ChatFormatting.YELLOW) },
                     false,
                 )
 
-                HistoryRetryResult.Failed -> source.sendError(
-                    prefixedConfigMessage(Text.translatable(MinecraftConfigCommandKeys.HISTORY_RECONNECT_FAILED), Formatting.RED),
+                HistoryRetryResult.Failed -> source.sendFailure(
+                    prefixedConfigMessage(Component.translatable(MinecraftConfigCommandKeys.HISTORY_RECONNECT_FAILED), ChatFormatting.RED),
                 )
             }
         }
@@ -102,12 +102,12 @@ class FabricHistoryCommand(
      * @param source 已通過 OP 權限檢查的命令來源。
      * @return Brigadier 的成功接收值。
      */
-    private fun storage(source: ServerCommandSource): Int {
+    private fun storage(source: CommandSourceStack): Int {
         val session = writer.currentSessionId
-        source.sendFeedback({ Text.translatable(MinecraftConfigCommandKeys.HISTORY_STORAGE_STARTED) }, false)
+        source.sendSuccess({ Component.translatable(MinecraftConfigCommandKeys.HISTORY_STORAGE_STARTED) }, false)
         launchSessionBound(session, { writer.storage(session) }) { result ->
             when (result) {
-                is HistoryManagementResult.Success -> source.sendFeedback({ historyStorageMessage(result.value) }, false)
+                is HistoryManagementResult.Success -> source.sendSuccess({ historyStorageMessage(result.value) }, false)
                 is HistoryManagementResult.Busy,
                 is HistoryManagementResult.Disconnected,
                 is HistoryManagementResult.Failed,
@@ -124,16 +124,16 @@ class FabricHistoryCommand(
      * @param source 已通過 OP 權限檢查的命令來源。
      * @return Brigadier 的成功接收值。
      */
-    private fun cleanupPreview(source: ServerCommandSource): Int {
+    private fun cleanupPreview(source: CommandSourceStack): Int {
         val session = writer.currentSessionId
-        source.sendFeedback({ Text.translatable(MinecraftConfigCommandKeys.HISTORY_PREVIEW_STARTED) }, false)
+        source.sendSuccess({ Component.translatable(MinecraftConfigCommandKeys.HISTORY_PREVIEW_STARTED) }, false)
         launchSessionBound(session, { writer.previewCleanup(session) }) { result ->
             when (result) {
-                is HistoryManagementResult.Success -> source.sendFeedback({ historyCleanupPreviewMessage(result.value) }, false)
+                is HistoryManagementResult.Success -> source.sendSuccess({ historyCleanupPreviewMessage(result.value) }, false)
                 is HistoryManagementResult.Busy,
                 is HistoryManagementResult.Disconnected,
                 is HistoryManagementResult.Failed,
-                -> source.sendError(Text.translatable(result.commandErrorKey() ?: MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_FAILED))
+                -> source.sendFailure(Component.translatable(result.commandErrorKey() ?: MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_FAILED))
                 HistoryManagementResult.SessionChanged -> Unit
             }
         }
@@ -146,17 +146,17 @@ class FabricHistoryCommand(
      * @param source 已通過 OP 權限檢查的命令來源。
      * @return Brigadier 的成功接收值。
      */
-    private fun cleanupRun(source: ServerCommandSource): Int {
+    private fun cleanupRun(source: CommandSourceStack): Int {
         val session = writer.currentSessionId
-        source.sendFeedback({ Text.translatable(MinecraftConfigCommandKeys.HISTORY_CLEANUP_STARTED) }, false)
+        source.sendSuccess({ Component.translatable(MinecraftConfigCommandKeys.HISTORY_CLEANUP_STARTED) }, false)
         launchSessionBound(session, { writer.runCleanup(session) }) { result ->
             when (result) {
-                is HistoryManagementResult.Success -> source.sendFeedback({ historyCleanupReportMessage(result.value) }, false)
+                is HistoryManagementResult.Success -> source.sendSuccess({ historyCleanupReportMessage(result.value) }, false)
                 is HistoryManagementResult.Busy,
                 is HistoryManagementResult.Disconnected,
-                -> source.sendError(Text.translatable(result.commandErrorKey() ?: MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_FAILED))
-                is HistoryManagementResult.Failed -> result.cleanup?.let { source.sendFeedback({ historyCleanupReportMessage(it) }, false) }
-                    ?: source.sendError(Text.translatable(result.commandErrorKey() ?: MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_FAILED))
+                -> source.sendFailure(Component.translatable(result.commandErrorKey() ?: MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_FAILED))
+                is HistoryManagementResult.Failed -> result.cleanup?.let { source.sendSuccess({ historyCleanupReportMessage(it) }, false) }
+                    ?: source.sendFailure(Component.translatable(result.commandErrorKey() ?: MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_FAILED))
                 HistoryManagementResult.SessionChanged -> Unit
             }
         }
@@ -170,11 +170,11 @@ class FabricHistoryCommand(
      * @param key 安全的本地化原因。
      * @param cached 同 session 最後成功的快照。
      */
-    private fun storageFailure(source: ServerCommandSource, key: String, cached: HistoryStorageSnapshot?) {
+    private fun storageFailure(source: CommandSourceStack, key: String, cached: HistoryStorageSnapshot?) {
         if (cached == null) {
-            source.sendError(prefixedConfigMessage(Text.translatable(key), Formatting.RED))
+            source.sendFailure(prefixedConfigMessage(Component.translatable(key), ChatFormatting.RED))
         } else {
-            source.sendFeedback({ historyStorageMessage(cached, stale = true).append("\n  ").append(Text.translatable(key).formatted(Formatting.YELLOW)) }, false)
+            source.sendSuccess({ historyStorageMessage(cached, stale = true).append("\n  ").append(Component.translatable(key).withStyle(ChatFormatting.YELLOW)) }, false)
         }
     }
 

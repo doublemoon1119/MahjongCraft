@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.block
 
-import net.minecraft.util.math.Direction
+import net.minecraft.core.Direction
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -12,8 +12,8 @@ class MahjongTableDesignTest {
     fun `all bottom collision profiles keep fixed table surface height`() {
         MahjongTableDesign.entries.forEach { design ->
             MahjongTablePart.entries.filter { part -> part.localY == 0 }.forEach { part ->
-                Direction.Type.HORIZONTAL.forEach { facing ->
-                    assertEquals(1.0, design.collisionShape(part, facing).boundingBox.maxY)
+                Direction.Plane.HORIZONTAL.forEach { facing ->
+                    assertEquals(1.0, design.collisionShape(part, facing).bounds().maxY)
                 }
             }
         }
@@ -24,7 +24,7 @@ class MahjongTableDesignTest {
     fun `top collision contains empty center and one pixel rim`() {
         MahjongTableDesign.entries.forEach { design ->
             assertTrue(design.collisionShape(MahjongTablePart.TOP_CENTER, Direction.NORTH).isEmpty)
-            val edge = design.collisionShape(MahjongTablePart.TOP_NORTH, Direction.NORTH).boundingBox
+            val edge = design.collisionShape(MahjongTablePart.TOP_NORTH, Direction.NORTH).bounds()
 
             assertEquals(1.0 / 16.0, edge.maxY)
             assertEquals(1.0 / 16.0, edge.maxZ)
@@ -44,10 +44,10 @@ class MahjongTableDesignTest {
     fun `outline matches rendered geometry for parts with models`() {
         MahjongTableDesign.entries.forEach { design ->
             MahjongTablePart.entries.filter { part -> part != MahjongTablePart.TOP_CENTER }.forEach { part ->
-                Direction.Type.HORIZONTAL.forEach { facing ->
+                Direction.Plane.HORIZONTAL.forEach { facing ->
                     assertEquals(
-                        expected = design.collisionShape(part, facing).boundingBoxes,
-                        actual = design.outlineShape(part, facing).boundingBoxes,
+                        expected = design.collisionShape(part, facing).toAabbs(),
+                        actual = design.outlineShape(part, facing).toAabbs(),
                     )
                 }
             }
@@ -59,10 +59,10 @@ class MahjongTableDesignTest {
     fun `four leg profile reaches floor only at corners`() {
         val corner = MahjongTableDesign.FOUR_LEG
             .collisionShape(MahjongTablePart.BOTTOM_NORTH_WEST, Direction.NORTH)
-            .boundingBoxes
+            .toAabbs()
         val edge = MahjongTableDesign.FOUR_LEG
             .collisionShape(MahjongTablePart.BOTTOM_NORTH, Direction.NORTH)
-            .boundingBoxes
+            .toAabbs()
 
         assertTrue(corner.any { box -> box.minY == 0.0 })
         assertTrue(edge.all { box -> box.minY == 14.0 / 16.0 })
@@ -73,10 +73,10 @@ class MahjongTableDesignTest {
     fun `pedestal profile reaches floor only at controller`() {
         val center = MahjongTableDesign.PEDESTAL
             .collisionShape(MahjongTablePart.BOTTOM_CENTER, Direction.NORTH)
-            .boundingBoxes
+            .toAabbs()
         val edge = MahjongTableDesign.PEDESTAL
             .collisionShape(MahjongTablePart.BOTTOM_NORTH, Direction.NORTH)
-            .boundingBoxes
+            .toAabbs()
 
         assertTrue(center.any { box -> box.minY == 0.0 })
         assertTrue(edge.all { box -> box.minY == 12.0 / 16.0 })
@@ -87,7 +87,7 @@ class MahjongTableDesignTest {
     fun `rim collision rotates with table facing`() {
         val eastFacingEdge = MahjongTableDesign.FOUR_LEG
             .collisionShape(MahjongTablePart.TOP_NORTH, Direction.EAST)
-            .boundingBox
+            .bounds()
 
         assertEquals(15.0 / 16.0, eastFacingEdge.minX)
         assertEquals(1.0, eastFacingEdge.maxX)

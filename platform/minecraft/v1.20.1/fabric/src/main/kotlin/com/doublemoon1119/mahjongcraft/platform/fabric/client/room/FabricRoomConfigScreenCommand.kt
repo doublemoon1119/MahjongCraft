@@ -24,8 +24,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageK
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.minecraft.client.MinecraftClient
-import net.minecraft.text.Text
+import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.Component
 import kotlin.uuid.toKotlinUuid
 
 /**
@@ -40,8 +40,8 @@ import kotlin.uuid.toKotlinUuid
  * 指令本身只設定 [pendingOpen]，真正的 [openScreen] 呼叫延後到下一次 [ClientTickEvents.END_CLIENT_TICK]
  * 才執行：在聊天室手動輸入指令按下 Enter 時，vanilla `ChatScreen.keyPressed()` 會在指令執行完「之後」
  * 、在同一次呼叫內無條件再呼叫一次 `client.setScreen(null)` 關閉聊天視窗，如果 `setScreen(RoomScreen)`
- * 跟指令本身同步發生在那一次呼叫裡，會被這個收尾動作立刻蓋掉（已在遊戲內實測確認）。`MinecraftClient`
- * 是 `ReentrantThreadExecutor`，`execute { ... }` 只有在呼叫端不在 client 執行緒上、或目前正在跑佇列
+ * 跟指令本身同步發生在那一次呼叫裡，會被這個收尾動作立刻蓋掉（已在遊戲內實測確認）。`Minecraft`
+ * 是 `ReentrantBlockableEventLoop`，`execute { ... }` 只有在呼叫端不在 client 執行緒上、或目前正在跑佇列
  * 任務時才會真的排入佇列，從指令 callback（本來就在 client 執行緒、且不是佇列任務）呼叫只會原地同步
  * 執行，並不會真的延後——必須改用 tick 事件才能確保排到 `keyPressed()` 整個呼叫鏈結束之後。點擊聊天
  * 訊息裡的連結不會觸發 `ChatScreen` 這段收尾邏輯，本來就不受影響。
@@ -112,12 +112,12 @@ class FabricRoomConfigScreenCommand(
 
     /** 資格檢查通過才開畫面，否則在本地顯示原因（純本機顯示，不送到伺服器）。 */
     private fun openScreen() {
-        val client = MinecraftClient.getInstance()
+        val client = Minecraft.getInstance()
         val localPlayerId = client.player?.uuid?.toKotlinUuid()
         val tableId = localPlayerId?.let(stateStore::findTableWhereSeated)
         val snapshot = tableId?.let(stateStore::roomSnapshot)
         if (tableId == null || snapshot == null || !snapshot.isInRoom) {
-            client.inGameHud.setOverlayMessage(Text.translatable(MinecraftMessageKeys.PLAYER_NOT_IN_ANY_GAME), false)
+            client.gui.setOverlayMessage(Component.translatable(MinecraftMessageKeys.PLAYER_NOT_IN_ANY_GAME), false)
             return
         }
         client.setScreen(

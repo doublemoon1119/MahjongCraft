@@ -23,8 +23,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.winningHandFaceDownIndices
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerLevel
 import kotlin.uuid.Uuid
 
 /**
@@ -56,7 +56,7 @@ class FabricWinSettlementPresentationScheduler(
      * @return 舞台固定結束的絕對 game time；未能生成時為 null。
      */
     fun schedule(
-        world: ServerWorld,
+        world: ServerLevel,
         tableId: Uuid,
         controllerPos: BlockPos,
         placement: MahjongTileWallPlacement,
@@ -64,7 +64,7 @@ class FabricWinSettlementPresentationScheduler(
         request: WinSettlementPresentationRequest,
         tileAssetsById: Map<Uuid, String>,
     ): Long? {
-        val start = maxOf(world.time, earliestStartGameTime)
+        val start = maxOf(world.gameTime, earliestStartGameTime)
         // 精簡面板直接跳過贏家段：不送任何 winner snapshot，rankingStartTick 因此是 0，面板一開場
         // 就是分數變動動畫。牌桌上贏家的牌已經攤開了，「誰放銃給誰」從分數增減就看得出來，面板再
         // 重現一次只是讓其他仍在局中的玩家乾等。
@@ -134,7 +134,7 @@ class FabricWinSettlementPresentationScheduler(
                 revealTiming = timing,
                 customSoundCues = soundCues,
             )
-            refreshPositionAndAngles(placement.x, placement.y + STAGE_HEIGHT_OFFSET, placement.z, placement.yaw, 0f)
+            moveTo(placement.x, placement.y + STAGE_HEIGHT_OFFSET, placement.z, placement.yaw, 0f)
         }
         if (!spawnGateway.spawn(world, stage, "win-settlement", tableId)) return null
         if (!request.includesWinnerDetails) {

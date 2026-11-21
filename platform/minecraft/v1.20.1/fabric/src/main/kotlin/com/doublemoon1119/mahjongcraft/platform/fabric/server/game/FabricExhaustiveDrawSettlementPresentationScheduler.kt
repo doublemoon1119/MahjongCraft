@@ -14,8 +14,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeat
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.HandRevealSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerLevel
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
@@ -47,7 +47,7 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
      * @return 舞台固定結束的絕對 game time；未能生成時為 null。
      */
     fun schedule(
-        world: ServerWorld,
+        world: ServerLevel,
         tableId: Uuid,
         controllerPos: BlockPos,
         tableFacing: MahjongTableFacing,
@@ -57,7 +57,7 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
         revealedTileAssetsById: Map<Uuid, String>,
         handShiftsBySeat: Map<Int, Double>,
     ): Long? {
-        val startGameTime = world.time
+        val startGameTime = world.gameTime
         val playerSnapshots = request.players.map { player ->
             val ranking = player.ranking
             ExhaustiveDrawSettlementPlayerSnapshot(
@@ -82,7 +82,7 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
                 reasonId = request.reasonId,
                 players = playerSnapshots,
             )
-            refreshPositionAndAngles(placement.x, placement.y + STAGE_HEIGHT_OFFSET, placement.z, placement.yaw, 0f)
+            moveTo(placement.x, placement.y + STAGE_HEIGHT_OFFSET, placement.z, placement.yaw, 0f)
         }
         if (!spawnGateway.spawn(world, stage, "exhaustive-draw-settlement", tableId)) return null
         val endGameTime = startGameTime + ExhaustiveDrawSettlementPresentationEntity.durationTicks(playerSnapshots)

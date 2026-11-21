@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
-import net.minecraft.client.render.RenderLayer
-import net.minecraft.client.render.RenderPhase
-import net.minecraft.client.render.VertexFormat
-import net.minecraft.client.render.VertexFormats
-import net.minecraft.util.Identifier
+import com.mojang.blaze3d.vertex.DefaultVertexFormat
+import com.mojang.blaze3d.vertex.VertexFormat
+import net.minecraft.client.renderer.RenderStateShard
+import net.minecraft.client.renderer.RenderType
+import net.minecraft.resources.ResourceLocation
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 internal object WinCelebrationTitleRenderLayer {
     /** 以貼圖識別碼為鍵的 render layer 快取。 */
-    private val layers = ConcurrentHashMap<Identifier, RenderLayer>()
+    private val layers = ConcurrentHashMap<ResourceLocation, RenderType>()
 
     /**
      * 取得或建立指定貼圖共用的標題 render layer。
@@ -23,7 +23,7 @@ internal object WinCelebrationTitleRenderLayer {
      * @param texture 標題圖片的資源識別碼。
      * @return 對應的快取 render layer。
      */
-    fun get(texture: Identifier): RenderLayer = layers.computeIfAbsent(texture, ::create)
+    fun get(texture: ResourceLocation): RenderType = layers.computeIfAbsent(texture, ::create)
 
     /**
      * 建立供該標題貼圖使用的透明、無方向光 render layer。
@@ -31,20 +31,20 @@ internal object WinCelebrationTitleRenderLayer {
      * @param texture 標題圖片的資源識別碼。
      * @return 啟用透明混合並寫入深度的 render layer。
      */
-    private fun create(texture: Identifier): RenderLayer {
-        val phases = RenderLayer.MultiPhaseParameters.builder()
-            .texture(RenderPhase.Texture(texture, false, false))
-            .program(RenderPhase.POSITION_COLOR_TEXTURE_LIGHTMAP_PROGRAM)
-            .transparency(RenderPhase.TRANSLUCENT_TRANSPARENCY)
-            .depthTest(RenderPhase.LEQUAL_DEPTH_TEST)
-            .cull(RenderPhase.DISABLE_CULLING)
-            .lightmap(RenderPhase.DISABLE_LIGHTMAP)
-            .writeMaskState(RenderPhase.ALL_MASK)
-            .build(false)
-        return RenderLayer.of(
+    private fun create(texture: ResourceLocation): RenderType {
+        val phases = RenderType.CompositeState.builder()
+            .setTextureState(RenderStateShard.TextureStateShard(texture, false, false))
+            .setShaderState(RenderStateShard.POSITION_COLOR_TEX_LIGHTMAP_SHADER)
+            .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
+            .setDepthTestState(RenderStateShard.LEQUAL_DEPTH_TEST)
+            .setCullState(RenderStateShard.NO_CULL)
+            .setLightmapState(RenderStateShard.NO_LIGHTMAP)
+            .setWriteMaskState(RenderStateShard.COLOR_DEPTH_WRITE)
+            .createCompositeState(false)
+        return RenderType.create(
             "mahjongcraft_win_celebration_title",
-            VertexFormats.POSITION_COLOR_TEXTURE_LIGHT,
-            VertexFormat.DrawMode.QUADS,
+            DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP,
+            VertexFormat.Mode.QUADS,
             BUFFER_SIZE,
             false,
             true,

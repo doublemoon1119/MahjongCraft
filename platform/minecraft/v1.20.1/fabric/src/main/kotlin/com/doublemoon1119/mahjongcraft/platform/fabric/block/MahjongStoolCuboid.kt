@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.block
 
-import net.minecraft.util.shape.VoxelShape
-import net.minecraft.util.shape.VoxelShapes
+import net.minecraft.world.phys.shapes.Shapes
+import net.minecraft.world.phys.shapes.VoxelShape
 
 /**
  * 以模型像素表示的麻將凳長方體，供模型資源與 Fabric 碰撞測試對齊。
@@ -22,7 +22,7 @@ data class MahjongStoolCuboid(
     val maxZ: Double,
 ) {
     /** 將模型像素座標轉成 Minecraft block 單位的 [VoxelShape]。 */
-    fun toVoxelShape(): VoxelShape = VoxelShapes.cuboid(
+    fun toVoxelShape(): VoxelShape = Shapes.box(
         minX / MODEL_SIZE,
         minY / MODEL_SIZE,
         minZ / MODEL_SIZE,

@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.example.fabric
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.table.ExampleFlatTableDesign
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.table.ExampleFlatTablePart
-import net.minecraft.util.function.BooleanBiFunction
-import net.minecraft.util.shape.VoxelShape
-import net.minecraft.util.shape.VoxelShapes
+import net.minecraft.world.phys.shapes.BooleanOp
+import net.minecraft.world.phys.shapes.Shapes
+import net.minecraft.world.phys.shapes.VoxelShape
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -17,7 +17,7 @@ class ExampleFlatTableDesignTest {
     fun `every part stays inside its own block`() {
         ExampleFlatTableDesign.entries.forEach { design ->
             ExampleFlatTablePart.entries.forEach { part ->
-                val box = design.shape(part).boundingBox
+                val box = design.shape(part).bounds()
                 assertEquals(1.0, box.maxY, "Expected $design $part to end at the top of its block")
                 assertTrue(box.minX >= 0.0 && box.maxX <= 1.0 && box.minZ >= 0.0 && box.maxZ <= 1.0, "Expected $design $part to stay in its block")
             }
@@ -39,8 +39,8 @@ class ExampleFlatTableDesignTest {
     /** 圓桌轉角削掉外側，只保留靠近中央的部分。 */
     @Test
     fun `round table corners are cut on the outer side`() {
-        val northWest = ExampleFlatTableDesign.ROUND.shape(ExampleFlatTablePart.NORTH_WEST).boundingBox
-        val southEast = ExampleFlatTableDesign.ROUND.shape(ExampleFlatTablePart.SOUTH_EAST).boundingBox
+        val northWest = ExampleFlatTableDesign.ROUND.shape(ExampleFlatTablePart.NORTH_WEST).bounds()
+        val southEast = ExampleFlatTableDesign.ROUND.shape(ExampleFlatTablePart.SOUTH_EAST).bounds()
 
         assertEquals(3.0 / 16.0, northWest.minX)
         assertEquals(1.0, northWest.maxX)
@@ -55,7 +55,7 @@ class ExampleFlatTableDesignTest {
      * @param z 探測範圍最小 z，方塊內 0～16 座標。
      * @return 3×3 大小、高度在桌面以下的探測範圍。
      */
-    private fun underTabletop(x: Int, z: Int): VoxelShape = VoxelShapes.cuboid(x / 16.0, 0.0, z / 16.0, (x + 3) / 16.0, 12.0 / 16.0, (z + 3) / 16.0)
+    private fun underTabletop(x: Int, z: Int): VoxelShape = Shapes.box(x / 16.0, 0.0, z / 16.0, (x + 3) / 16.0, 12.0 / 16.0, (z + 3) / 16.0)
 
     /**
      * 判斷形狀是否與探測範圍重疊。
@@ -63,5 +63,5 @@ class ExampleFlatTableDesignTest {
      * @param probe 探測範圍。
      * @return 有任何重疊時為 true。
      */
-    private fun VoxelShape.overlaps(probe: VoxelShape): Boolean = VoxelShapes.matchesAnywhere(this, probe, BooleanBiFunction.AND)
+    private fun VoxelShape.overlaps(probe: VoxelShape): Boolean = Shapes.joinIsNotEmpty(this, probe, BooleanOp.AND)
 }

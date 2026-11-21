@@ -14,13 +14,13 @@ import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import net.minecraft.command.CommandSource
-import net.minecraft.command.argument.IdentifierArgumentType
-import net.minecraft.server.command.CommandManager.argument
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands.argument
+import net.minecraft.commands.Commands.literal
+import net.minecraft.commands.SharedSuggestionProvider
+import net.minecraft.commands.arguments.ResourceLocationArgument
+import net.minecraft.network.chat.Component
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -38,11 +38,11 @@ class FabricDebugHistoryCommand(
     private val dispatchers: CoroutineDispatchers,
 ) {
     /** 建立可掛入既有 debug root 的歷史指令節點。 */
-    fun build(): LiteralArgumentBuilder<ServerCommandSource> = literal(HISTORY_SUBCOMMAND)
+    fun build(): LiteralArgumentBuilder<CommandSourceStack> = literal(HISTORY_SUBCOMMAND)
         .then(
             literal(GENERATE_SUBCOMMAND)
                 .then(
-                    argument(SCENARIO_ARGUMENT, IdentifierArgumentType.identifier())
+                    argument(SCENARIO_ARGUMENT, ResourceLocationArgument.id())
                         .suggests(::suggestScenarios)
                         .then(argument(COUNT_ARGUMENT, IntegerArgumentType.integer(MIN_COUNT, MAX_COUNT)).executes(::generate)),
                 ),
@@ -56,13 +56,13 @@ class FabricDebugHistoryCommand(
      * @param context Brigadier 指令內容。
      * @return 指令已接受的結果碼；實際工作於協程中執行。
      */
-    private fun generate(context: CommandContext<ServerCommandSource>): Int {
-        val scenario = IdentifierArgumentType.getIdentifier(context, SCENARIO_ARGUMENT).toString()
+    private fun generate(context: CommandContext<CommandSourceStack>): Int {
+        val scenario = ResourceLocationArgument.getId(context, SCENARIO_ARGUMENT).toString()
         val count = IntegerArgumentType.getInteger(context, COUNT_ARGUMENT)
         val source = context.source
         val session = writer.currentSessionId
         if (session == null) {
-            source.sendError(message(HistoryDebugKeys.STORAGE_UNAVAILABLE, "History storage is unavailable", Formatting.RED))
+            source.sendFailure(message(HistoryDebugKeys.STORAGE_UNAVAILABLE, "History storage is unavailable", ChatFormatting.RED))
             return FAILURE
         }
         scope.launch(dispatchers.main) {
@@ -70,12 +70,12 @@ class FabricDebugHistoryCommand(
             withContext(dispatchers.main) {
                 if (!writer.isCurrentSession(session)) return@withContext
                 when (result) {
-                    HistoryGenerationStartResult.Started -> source.sendFeedback({ message(HistoryDebugKeys.STARTED, "History generation started", Formatting.GREEN) }, false)
-                    HistoryGenerationStartResult.Busy -> source.sendError(message(HistoryDebugKeys.BUSY, "A history generation batch is already running", Formatting.RED))
-                    HistoryGenerationStartResult.InvalidScenario -> source.sendError(message(HistoryDebugKeys.INVALID_SCENARIO, "Invalid history generation scenario", Formatting.RED))
-                    HistoryGenerationStartResult.SessionUnavailable -> source.sendError(message(HistoryDebugKeys.STORAGE_UNAVAILABLE, "History storage is unavailable", Formatting.RED))
-                    HistoryGenerationStartResult.PolicyRejected -> source.sendError(message(HistoryDebugKeys.POLICY_REJECTED, "History generation was rejected by policy", Formatting.RED))
-                    HistoryGenerationStartResult.StorageUnavailable -> source.sendError(message(HistoryDebugKeys.STORAGE_UNAVAILABLE, "History storage is unavailable", Formatting.RED))
+                    HistoryGenerationStartResult.Started -> source.sendSuccess({ message(HistoryDebugKeys.STARTED, "History generation started", ChatFormatting.GREEN) }, false)
+                    HistoryGenerationStartResult.Busy -> source.sendFailure(message(HistoryDebugKeys.BUSY, "A history generation batch is already running", ChatFormatting.RED))
+                    HistoryGenerationStartResult.InvalidScenario -> source.sendFailure(message(HistoryDebugKeys.INVALID_SCENARIO, "Invalid history generation scenario", ChatFormatting.RED))
+                    HistoryGenerationStartResult.SessionUnavailable -> source.sendFailure(message(HistoryDebugKeys.STORAGE_UNAVAILABLE, "History storage is unavailable", ChatFormatting.RED))
+                    HistoryGenerationStartResult.PolicyRejected -> source.sendFailure(message(HistoryDebugKeys.POLICY_REJECTED, "History generation was rejected by policy", ChatFormatting.RED))
+                    HistoryGenerationStartResult.StorageUnavailable -> source.sendFailure(message(HistoryDebugKeys.STORAGE_UNAVAILABLE, "History storage is unavailable", ChatFormatting.RED))
                 }
             }
         }
@@ -88,12 +88,12 @@ class FabricDebugHistoryCommand(
      * @param context Brigadier 指令內容。
      * @return 指令結果碼。
      */
-    private fun status(context: CommandContext<ServerCommandSource>): Int {
+    private fun status(context: CommandContext<CommandSourceStack>): Int {
         val progress = controller.snapshot()
         if (progress == null) {
-            context.source.sendError(message(HistoryDebugKeys.NO_BATCH, "There is no active history generation batch", Formatting.RED))
+            context.source.sendFailure(message(HistoryDebugKeys.NO_BATCH, "There is no active history generation batch", ChatFormatting.RED))
         } else {
-            context.source.sendFeedback({ historyGenerationProgressMessage(progress) }, false)
+            context.source.sendSuccess({ historyGenerationProgressMessage(progress) }, false)
         }
         return if (progress == null) FAILURE else SUCCESS
     }
@@ -104,12 +104,12 @@ class FabricDebugHistoryCommand(
      * @param context Brigadier 指令內容。
      * @return 指令結果碼。
      */
-    private fun cancel(context: CommandContext<ServerCommandSource>): Int {
+    private fun cancel(context: CommandContext<CommandSourceStack>): Int {
         if (!controller.cancel()) {
-            context.source.sendError(message(HistoryDebugKeys.NO_BATCH, "There is no active history generation batch", Formatting.RED))
+            context.source.sendFailure(message(HistoryDebugKeys.NO_BATCH, "There is no active history generation batch", ChatFormatting.RED))
             return FAILURE
         }
-        context.source.sendFeedback({ message(HistoryDebugKeys.CANCEL_REQUESTED, "History generation cancellation requested", Formatting.YELLOW) }, false)
+        context.source.sendSuccess({ message(HistoryDebugKeys.CANCEL_REQUESTED, "History generation cancellation requested", ChatFormatting.YELLOW) }, false)
         return SUCCESS
     }
 
@@ -120,7 +120,7 @@ class FabricDebugHistoryCommand(
      * @param builder 補全結果建構器。
      * @return 非同步補全結果。
      */
-    private fun suggestScenarios(context: CommandContext<ServerCommandSource>, builder: SuggestionsBuilder): CompletableFuture<Suggestions> = CommandSource.suggestMatching(HeadlessHistoryScenario.entries.map { it.identifier }, builder)
+    private fun suggestScenarios(context: CommandContext<CommandSourceStack>, builder: SuggestionsBuilder): CompletableFuture<Suggestions> = SharedSuggestionProvider.suggest(HeadlessHistoryScenario.entries.map { it.identifier }, builder)
 
     /**
      * 建立帶有固定前綴與英文 fallback 的安全回覆。
@@ -130,7 +130,7 @@ class FabricDebugHistoryCommand(
      * @param color 回覆顏色。
      * @return 可送出的訊息。
      */
-    private fun message(key: String, fallback: String, color: Formatting) = prefixedConfigMessage(Text.translatableWithFallback(key, fallback), color)
+    private fun message(key: String, fallback: String, color: ChatFormatting) = prefixedConfigMessage(Component.translatableWithFallback(key, fallback), color)
 
     private companion object {
         /** 歷史生成指令群組名稱。 */

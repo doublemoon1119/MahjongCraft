@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
-import net.minecraft.client.gui.DrawContext
+import net.minecraft.client.gui.GuiGraphics
 
 /**
  * 用像素直接繪製的小圖示：選擇器箭頭、目前選項的打勾，以及 [PixelIcon] 列出的按鈕圖示。
@@ -33,7 +33,7 @@ internal object PixelIcons {
      * @param pointsUp 箭頭是否向上；否則向下。
      * @param color 不含透明度的 RGB 顏色。
      */
-    fun arrow(context: DrawContext, x: Int, y: Int, pointsUp: Boolean, color: Int) {
+    fun arrow(context: GuiGraphics, x: Int, y: Int, pointsUp: Boolean, color: Int) {
         val rows = (if (pointsUp) ARROW_DOWN_ROWS.reversed() else ARROW_DOWN_ROWS).map(::listOf)
         draw(context, x, y, rows, color)
     }
@@ -46,7 +46,7 @@ internal object PixelIcons {
      * @param y 打勾上界。
      * @param color 不含透明度的 RGB 顏色。
      */
-    fun check(context: DrawContext, x: Int, y: Int, color: Int) {
+    fun check(context: GuiGraphics, x: Int, y: Int, color: Int) {
         draw(context, x, y, PixelIcon.CHECK.rows, color)
     }
 
@@ -59,7 +59,7 @@ internal object PixelIcons {
      * @param y 圖示上界。
      * @param color 不含透明度的 RGB 顏色。
      */
-    fun icon(context: DrawContext, icon: PixelIcon, x: Int, y: Int, color: Int) {
+    fun icon(context: GuiGraphics, icon: PixelIcon, x: Int, y: Int, color: Int) {
         draw(context, x, y, icon.rows, color)
     }
 
@@ -72,7 +72,7 @@ internal object PixelIcons {
      * @param rows 每一列的像素範圍。
      * @param color 不含透明度的 RGB 顏色。
      */
-    private fun draw(context: DrawContext, x: Int, y: Int, rows: List<List<Pair<Int, Int>>>, color: Int) {
+    private fun draw(context: GuiGraphics, x: Int, y: Int, rows: List<List<Pair<Int, Int>>>, color: Int) {
         fillRows(context, x + 1, y + 1, rows, shadowOf(color))
         fillRows(context, x, y, rows, OPAQUE or color)
     }
@@ -86,7 +86,7 @@ internal object PixelIcons {
      * @param rows 每一列的像素範圍。
      * @param argb 含透明度的顏色。
      */
-    private fun fillRows(context: DrawContext, x: Int, y: Int, rows: List<List<Pair<Int, Int>>>, argb: Int) {
+    private fun fillRows(context: GuiGraphics, x: Int, y: Int, rows: List<List<Pair<Int, Int>>>, argb: Int) {
         rows.forEachIndexed { rowIndex, runs ->
             runs.forEach { (start, length) -> context.fill(x + start, y + rowIndex, x + start + length, y + rowIndex + 1, argb) }
         }

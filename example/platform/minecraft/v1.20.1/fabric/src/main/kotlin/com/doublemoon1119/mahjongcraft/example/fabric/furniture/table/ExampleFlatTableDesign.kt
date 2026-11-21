@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.furniture.table
 
-import net.minecraft.util.shape.VoxelShape
-import net.minecraft.util.shape.VoxelShapes
+import net.minecraft.world.phys.shapes.Shapes
+import net.minecraft.world.phys.shapes.VoxelShape
 
 /**
  * 3×3 單層範例桌子的外觀款式；兩種款式的結構相同，只有每一格的形狀不同，與方塊模型一致。
@@ -36,7 +36,7 @@ enum class ExampleFlatTableDesign {
                 part.offsetX != 0 && part.offsetZ != 0 -> northWestCornerBoxes().map { it.mirroredFor(part) }
                 else -> listOf(TABLETOP)
             }
-            boxes.map { it.toShape() }.reduce(VoxelShapes::union)
+            boxes.map { it.toShape() }.reduce(Shapes::or)
         }
     }
 
@@ -86,7 +86,7 @@ enum class ExampleFlatTableDesign {
             this(x1.toDouble(), y1.toDouble(), z1.toDouble(), x2.toDouble(), y2.toDouble(), z2.toDouble())
 
         /** @return 對應的碰撞形狀。 */
-        fun toShape(): VoxelShape = VoxelShapes.cuboid(x1 / BLOCK_SIZE, y1 / BLOCK_SIZE, z1 / BLOCK_SIZE, x2 / BLOCK_SIZE, y2 / BLOCK_SIZE, z2 / BLOCK_SIZE)
+        fun toShape(): VoxelShape = Shapes.box(x1 / BLOCK_SIZE, y1 / BLOCK_SIZE, z1 / BLOCK_SIZE, x2 / BLOCK_SIZE, y2 / BLOCK_SIZE, z2 / BLOCK_SIZE)
 
         /**
          * 把以西北角描述的長方體鏡像到指定轉角。

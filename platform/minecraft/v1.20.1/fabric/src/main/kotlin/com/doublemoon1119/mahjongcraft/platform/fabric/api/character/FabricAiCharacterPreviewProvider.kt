@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.api.character
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
-import net.minecraft.client.world.ClientWorld
+import net.minecraft.client.multiplayer.ClientLevel
 
 /** 客戶端主執行緒的模型預覽工廠，不得搜尋或接管世界實體。 */
 fun interface FabricAiCharacterPreviewProvider {
@@ -12,5 +12,5 @@ fun interface FabricAiCharacterPreviewProvider {
      * @param character 含完整參數的當場公開描述。
      * @return 可直接繪製及截取頭像的獨立物件；能力暫時不可用時為 null。
      */
-    fun create(world: ClientWorld, character: AiCharacterDefinition): FabricAiCharacterPreviewHandle?
+    fun create(world: ClientLevel, character: AiCharacterDefinition): FabricAiCharacterPreviewHandle?
 }

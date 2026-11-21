@@ -9,12 +9,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntit
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
-import net.minecraft.registry.RegistryKey
-import net.minecraft.registry.RegistryKeys
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
+import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.Registries
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 
 /**
@@ -54,7 +54,7 @@ class FabricMahjongLobbyInfoPresenter(
         entity.ruleModuleId = moduleRegistry.getModule(config.ruleConfig).id
         entity.playerCount = playerCount
         entity.maximumPlayerCount = config.ruleConfig.maxPlayers
-        entity.refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0f)
+        entity.moveTo(placement.x, placement.y, placement.z, placement.yaw, 0f)
         return true
     }
 
@@ -79,7 +79,7 @@ class FabricMahjongLobbyInfoPresenter(
      * @param controllerPos 桌子控制方塊座標。
      * @return 搜尋範圍內所有符合桌子 UUID 的提示實體。
      */
-    private fun findAll(world: ServerWorld, tableId: Uuid, controllerPos: BlockPos): List<MahjongLobbyInfoEntity> = world.getEntitiesByClass(MahjongLobbyInfoEntity::class.java, Box(controllerPos).expand(4.0)) {
+    private fun findAll(world: ServerLevel, tableId: Uuid, controllerPos: BlockPos): List<MahjongLobbyInfoEntity> = world.getEntitiesOfClass(MahjongLobbyInfoEntity::class.java, AABB(controllerPos).inflate(4.0)) {
         it.managedTableId == tableId
     }
 
@@ -89,8 +89,8 @@ class FabricMahjongLobbyInfoPresenter(
      * @param location 桌子所在位置。
      * @return 對應的伺服器世界；維度 ID 無效、伺服器不存在或世界未載入時為 null。
      */
-    private fun resolveWorld(location: TableLocation): ServerWorld? {
-        val identifier = Identifier.tryParse(location.dimensionId) ?: return null
-        return serverHolder.current()?.getWorld(RegistryKey.of(RegistryKeys.WORLD, identifier))
+    private fun resolveWorld(location: TableLocation): ServerLevel? {
+        val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null
+        return serverHolder.current()?.getLevel(ResourceKey.create(Registries.DIMENSION, identifier))
     }
 }

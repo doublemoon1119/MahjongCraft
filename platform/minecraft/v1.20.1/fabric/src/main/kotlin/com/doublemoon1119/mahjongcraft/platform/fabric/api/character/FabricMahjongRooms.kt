@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.api.character
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableInteractionReach
-import net.minecraft.entity.Entity
+import net.minecraft.world.entity.Entity
 
 /**
  * 已登記實體的伺服器端空席查詢，不提供客戶端封包或全服房間目錄。

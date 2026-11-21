@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.block
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSpace
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

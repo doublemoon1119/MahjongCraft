@@ -5,8 +5,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCata
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueConfigSource
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.screen.Screen
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.screens.Screen
 import kotlin.uuid.Uuid
 
 /**
@@ -35,11 +35,11 @@ internal fun roomRuleCatalogueContext(
 internal class RoomRuleCatalogueExit(private val room: RoomScreen) : RuleCatalogueExit {
     override val returnScreen: Screen = room
 
-    override fun back(client: MinecraftClient) {
+    override fun back(client: Minecraft) {
         client.setScreen(if (room.isTableStillAvailable()) room else null)
     }
 
-    override fun isValid(client: MinecraftClient): Boolean = room.isTableStillAvailable()
+    override fun isValid(client: Minecraft): Boolean = room.isTableStillAvailable()
 }
 
 /**

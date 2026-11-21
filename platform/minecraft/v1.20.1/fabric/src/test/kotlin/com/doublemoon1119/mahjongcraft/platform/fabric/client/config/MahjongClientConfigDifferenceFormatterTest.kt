@@ -6,8 +6,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
-import net.minecraft.text.Text
-import net.minecraft.text.TranslatableTextContent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -26,8 +26,8 @@ class MahjongClientConfigDifferenceFormatterTest {
         val summary = clientConfigDifferenceText(from, to)
 
         val changeNames = summary.siblings.mapNotNull { sibling ->
-            val change = sibling.content as? TranslatableTextContent ?: return@mapNotNull null
-            (change.args.firstOrNull() as? Text)?.content as? TranslatableTextContent
+            val change = sibling.contents as? TranslatableContents ?: return@mapNotNull null
+            (change.args.firstOrNull() as? Component)?.contents as? TranslatableContents
         }
 
         assertTrue(changeNames.any { it.key == "mahjongcraft.client_config.presentation.automatic_control_status" })
@@ -47,9 +47,9 @@ class MahjongClientConfigDifferenceFormatterTest {
         val summary = clientConfigDifferenceText(from, to)
 
         val change = summary.siblings
-            .mapNotNull { it.content as? TranslatableTextContent }
+            .mapNotNull { it.contents as? TranslatableContents }
             .single { it.key == "mahjongcraft.hud_layout.change.xy" }
-        val name = assertIs<TranslatableTextContent>(assertIs<Text>(change.args[0]).content)
+        val name = assertIs<TranslatableContents>(assertIs<Component>(change.args[0]).contents)
 
         assertEquals("mahjongcraft.hud_layout.automatic_control_status", name.key)
     }
@@ -79,13 +79,13 @@ class MahjongClientConfigDifferenceFormatterTest {
         val config = MahjongClientConfigState()
 
         val summary = clientConfigDifferenceText(config, config, remote, AutomaticControlDisplayResolver(registry))
-        val changes = summary.siblings.mapNotNull { it.content as? TranslatableTextContent }
-        val names = changes.map { assertIs<Text>(it.args[0]) }
+        val changes = summary.siblings.mapNotNull { it.contents as? TranslatableContents }
+        val names = changes.map { assertIs<Component>(it.args[0]) }
 
         assertEquals(2, changes.size)
-        assertEquals("example.auto", assertIs<TranslatableTextContent>(names[0].content).key)
+        assertEquals("example.auto", assertIs<TranslatableContents>(names[0].contents).key)
         assertTrue(names[1].string.contains("example:unknown"))
-        assertEquals("mahjongcraft.client_config.enabled", assertIs<TranslatableTextContent>(assertIs<Text>(changes[0].args[1]).content).key)
-        assertEquals("mahjongcraft.client_config.disabled", assertIs<TranslatableTextContent>(assertIs<Text>(changes[0].args[2]).content).key)
+        assertEquals("mahjongcraft.client_config.enabled", assertIs<TranslatableContents>(assertIs<Component>(changes[0].args[1]).contents).key)
+        assertEquals("mahjongcraft.client_config.disabled", assertIs<TranslatableContents>(assertIs<Component>(changes[0].args[2]).contents).key)
     }
 }

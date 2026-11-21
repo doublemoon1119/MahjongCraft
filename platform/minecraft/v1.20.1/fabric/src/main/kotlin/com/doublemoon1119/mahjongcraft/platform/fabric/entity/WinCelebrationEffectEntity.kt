@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
-import net.minecraft.entity.EntityType
-import net.minecraft.world.World
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.level.Level
 
 /**
  * 承載胡牌與後續役種動畫的具體視覺 entity type；共用時間軸、目標追蹤與持久化由
@@ -13,7 +13,7 @@ import net.minecraft.world.World
  */
 class WinCelebrationEffectEntity(
     type: EntityType<out WinCelebrationEffectEntity> = ModEntities.winCelebrationEffect,
-    world: World,
+    world: Level,
 ) : AnimatedVisualEffectEntity(type, world) {
     companion object {
         /** 視錐剔除使用的非零寬度，涵蓋 renderer 的三叉戟與最大水平半徑。 */

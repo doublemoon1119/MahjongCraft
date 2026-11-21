@@ -2,8 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.api.character
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterOwnership
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
-import net.minecraft.entity.Entity
-import net.minecraft.util.math.Vec3d
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.phys.Vec3
 
 /**
  * 一次接管固定世界角色的能力；所有回呼只在伺服器主執行緒執行。
@@ -50,5 +50,5 @@ interface FabricAiCharacterHandle {
      *
      * @param target 已載入範圍中的公開目標位置；null 表示停止注視。相同目標不會逐 tick 重送。
      */
-    fun lookAt(target: Vec3d?) = Unit
+    fun lookAt(target: Vec3?) = Unit
 }

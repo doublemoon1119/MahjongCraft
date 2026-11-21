@@ -36,7 +36,7 @@ class FabricMahjongLobbyInfoLifecycleService(
     fun registerEvents() {
         ServerChunkEvents.CHUNK_LOAD.register { world, chunk ->
             val key = DimensionChunkKey(
-                dimensionId = world.registryKey.value.toString(),
+                dimensionId = world.dimension().location().toString(),
                 chunkX = chunk.pos.x,
                 chunkZ = chunk.pos.z,
             )

@@ -13,10 +13,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands.literal
+import net.minecraft.network.chat.Component
 
 /**
  * 註冊限制管理員使用的 server config reload 與 show 指令。
@@ -48,7 +48,7 @@ class FabricServerConfigCommand(
                 literal(MinecraftModMetadata.MOD_ID)
                     .then(
                         literal("config")
-                            .requires { source -> source.hasPermissionLevel(REQUIRED_PERMISSION_LEVEL) }
+                            .requires { source -> source.hasPermission(REQUIRED_PERMISSION_LEVEL) }
                             .then(literal("reload").executes { context -> reload(context.source) })
                             .then(literal("show").executes { context -> show(context.source) }),
                     ),
@@ -62,7 +62,7 @@ class FabricServerConfigCommand(
      * @param source 發起 reload 的管理員命令來源。
      * @return 表示已排程重新載入的成功結果碼，不代表設定已載入成功。
      */
-    private fun reload(source: ServerCommandSource): Int {
+    private fun reload(source: CommandSourceStack): Int {
         scope.launch {
             val result = configManager.reload()
             withContext(dispatchers.main) { reportReload(source, result) }
@@ -77,18 +77,18 @@ class FabricServerConfigCommand(
      * @param result 完整設定與記錄政策的更新結果。
      * @return Brigadier 結果碼。
      */
-    private fun reportReload(source: ServerCommandSource, result: MinecraftServerConfigUpdateResult): Int = when (result) {
+    private fun reportReload(source: CommandSourceStack, result: MinecraftServerConfigUpdateResult): Int = when (result) {
         is MinecraftServerConfigUpdateResult.Success -> {
             mahjongTileCollisionService.applyToLoaded(source.server, result.config)
-            logger.info("Server config reloaded by {}", source.name)
-            source.sendFeedback(
+            logger.info("Server config reloaded by {}", source.textName)
+            source.sendSuccess(
                 {
                     prefixedConfigMessage(
-                        message = Text.translatable(
+                        message = Component.translatable(
                             MinecraftConfigCommandKeys.RELOADED,
-                            Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG),
+                            Component.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG),
                         ),
-                        color = Formatting.GREEN,
+                        color = ChatFormatting.GREEN,
                     )
                 },
                 false,
@@ -96,9 +96,9 @@ class FabricServerConfigCommand(
             COMMAND_SUCCESS
         }
         is MinecraftServerConfigUpdateResult.Failure -> {
-            logger.warn("Server config reload requested by {} failed: {}", source.name, result.message)
-            source.sendError(
-                configReloadFailureMessage(Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG), result.message),
+            logger.warn("Server config reload requested by {} failed: {}", source.textName, result.message)
+            source.sendFailure(
+                configReloadFailureMessage(Component.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG), result.message),
             )
             COMMAND_FAILURE
         }
@@ -110,14 +110,14 @@ class FabricServerConfigCommand(
      * @param source 發起 show 的管理員命令來源。
      * @return 訊息送出後的成功結果碼。
      */
-    private fun show(source: ServerCommandSource): Int {
+    private fun show(source: CommandSourceStack): Int {
         logger.debug(
             "Effective server config hover displayedTo={} path={} config={}",
-            source.name,
+            source.textName,
             configManager.displayPath,
             configManager.formattedCurrentToml(),
         )
-        source.sendFeedback(
+        source.sendSuccess(
             {
                 serverConfigShowMessage(configManager.displayPath, configManager.current)
             },

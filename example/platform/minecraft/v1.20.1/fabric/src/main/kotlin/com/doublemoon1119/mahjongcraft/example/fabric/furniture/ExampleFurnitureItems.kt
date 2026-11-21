@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.furniture
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.item.ExampleCushionItem
-import net.minecraft.item.Item
-import net.minecraft.registry.Registries
-import net.minecraft.registry.Registry
-import net.minecraft.util.Identifier
+import net.minecraft.core.Registry
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.item.Item
 
 /** 範例家具物品的集中註冊點。 */
 object ExampleFurnitureItems {
@@ -15,9 +15,9 @@ object ExampleFurnitureItems {
     /** 註冊範例坐墊物品。 */
     fun register() {
         cushion = Registry.register(
-            Registries.ITEM,
-            Identifier(ExampleFurnitureIds.CUSHION),
-            ExampleCushionItem(Item.Settings().maxCount(16)),
+            BuiltInRegistries.ITEM,
+            ResourceLocation(ExampleFurnitureIds.CUSHION),
+            ExampleCushionItem(Item.Properties().stacksTo(16)),
         )
     }
 }

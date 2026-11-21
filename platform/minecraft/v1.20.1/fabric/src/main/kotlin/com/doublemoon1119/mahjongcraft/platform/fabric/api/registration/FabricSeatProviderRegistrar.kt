@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.api.registration
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
-import net.minecraft.entity.Entity
-import net.minecraft.server.world.ServerWorld
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
 
 /**
  * 擴充登記 Fabric 原生座位 provider 時取得的登記介面。
@@ -22,6 +22,6 @@ interface FabricSeatProviderRegistrar {
      * @param definition 包含命名空間識別碼、解析能力與優先序的完整描述。
      */
     fun register(
-        definition: RegisteredSeatProvider<ServerWorld, Entity>,
+        definition: RegisteredSeatProvider<ServerLevel, Entity>,
     )
 }

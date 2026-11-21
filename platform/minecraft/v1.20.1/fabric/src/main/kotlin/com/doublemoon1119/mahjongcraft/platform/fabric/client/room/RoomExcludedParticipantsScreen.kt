@@ -12,13 +12,13 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayou
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.ExcludedParticipantIdentity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.screen.ConfirmScreen
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.client.gui.tooltip.Tooltip
-import net.minecraft.client.gui.widget.ButtonWidget
-import net.minecraft.client.gui.widget.TextFieldWidget
-import net.minecraft.text.Text
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.Button
+import net.minecraft.client.gui.components.EditBox
+import net.minecraft.client.gui.components.Tooltip
+import net.minecraft.client.gui.screens.ConfirmScreen
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.network.chat.Component
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
@@ -37,12 +37,12 @@ import kotlin.uuid.Uuid
 internal class RoomExcludedParticipantsScreen(
     private val parent: Screen,
     private val readRoom: () -> RoomSnapshot?,
-    private val name: (Uuid) -> Text,
-    private val face: (DrawContext, Uuid, Int, Int, Int) -> Unit,
+    private val name: (Uuid) -> Component,
+    private val face: (GuiGraphics, Uuid, Int, Int, Int) -> Unit,
     private val allow: (Uuid) -> Unit,
     private val allowAll: () -> Unit,
     private val clock: MonotonicClock,
-) : Screen(Text.translatable(MinecraftRoomScreenKeys.EXCLUDED_PARTICIPANTS)) {
+) : Screen(Component.translatable(MinecraftRoomScreenKeys.EXCLUDED_PARTICIPANTS)) {
     /** 既有清單捲動與滑塊拖曳行為。 */
     private val scroll = ScrollState()
 
@@ -65,13 +65,13 @@ internal class RoomExcludedParticipantsScreen(
     private val pending = mutableMapOf<Uuid, Duration>()
 
     /** 只保留畫面可見列的解除按鈕。 */
-    private val rowButtons = mutableListOf<ButtonWidget>()
+    private val rowButtons = mutableListOf<Button>()
 
     /** 保留搜尋焦點，清單刷新不重建整個畫面。 */
-    private lateinit var search: TextFieldWidget
+    private lateinit var search: EditBox
 
     /** 等待中不能重複送出全部解除。 */
-    private lateinit var clearAll: ButtonWidget
+    private lateinit var clearAll: Button
 
     /** 內容寬度、底部按鈕列與捲軸位置沿用設定頁版面。 */
     private val frame: FormScreenLayout
@@ -96,23 +96,23 @@ internal class RoomExcludedParticipantsScreen(
     private val scrollbar: ScrollbarLayout get() = ScrollbarLayout(top, bottom, filtered.size, rows, scroll.index, minOf(12, (bottom - top).coerceAtLeast(0)))
 
     override fun init() {
-        search = TextFieldWidget(textRenderer, left + 1, SEARCH_Y + 1, listWidth - 2, FormScreenLayout.BUTTON_HEIGHT - 2, Text.translatable(MinecraftRoomScreenKeys.EXCLUDED_SEARCH))
+        search = EditBox(font, left + 1, SEARCH_Y + 1, listWidth - 2, FormScreenLayout.BUTTON_HEIGHT - 2, Component.translatable(MinecraftRoomScreenKeys.EXCLUDED_SEARCH))
         search.setMaxLength(128)
-        search.text = query
-        search.setPlaceholder(Text.translatable(MinecraftRoomScreenKeys.EXCLUDED_SEARCH))
-        search.setChangedListener {
+        search.setValue(query)
+        search.setHint(Component.translatable(MinecraftRoomScreenKeys.EXCLUDED_SEARCH))
+        search.setResponder {
             query = it
             scroll.reset()
             refreshRows()
         }
-        addDrawableChild(search)
+        addRenderableWidget(search)
         val footer = frame.footer(buttonCount = FOOTER_SLOTS)
-        clearAll = addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.ALLOW_ALL_REJOINING)) { confirmClearAll() }
+        clearAll = addRenderableWidget(
+            RestartableMarqueeButtonWidget.builder(Component.translatable(MinecraftRoomScreenKeys.ALLOW_ALL_REJOINING)) { confirmClearAll() }
                 .dimensions(footer.buttonX(0), frame.footerY, footer.buttonWidth(0), FormScreenLayout.BUTTON_HEIGHT).build(),
         )
-        addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.DONE)) { close() }
+        addRenderableWidget(
+            RestartableMarqueeButtonWidget.builder(Component.translatable(MinecraftRoomScreenKeys.DONE)) { onClose() }
                 .dimensions(footer.buttonX(FOOTER_SLOTS - 1), frame.footerY, footer.buttonWidth(FOOTER_SLOTS - 1), FormScreenLayout.BUTTON_HEIGHT).build(),
         )
         refreshRows()
@@ -120,7 +120,7 @@ internal class RoomExcludedParticipantsScreen(
 
     /** 依權威名單、顯示名稱或 UUID 篩選，只重建可見列，保留搜尋焦點與游標。 */
     private fun refreshRows() {
-        rowButtons.forEach(::remove)
+        rowButtons.forEach(::removeWidget)
         rowButtons.clear()
         val room = readRoom()?.takeIf { it.isHost }
         entries = room?.excludedPlayerIds.orEmpty()
@@ -139,17 +139,17 @@ internal class RoomExcludedParticipantsScreen(
         }
         scroll.clamp((filtered.size - rows).coerceAtLeast(0))
         filtered.drop(scroll.index).take(rows).forEachIndexed { index, id ->
-            val button = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.ALLOW_REJOINING).append(": ").append(Text.literal(labels[id].orEmpty()))) {
+            val button = RestartableMarqueeButtonWidget.builder(Component.translatable(MinecraftRoomScreenKeys.ALLOW_REJOINING).append(": ").append(Component.literal(labels[id].orEmpty()))) {
                 pending[id] = clock.now() + CONFIRMATION_TIMEOUT
                 allow(id)
                 refreshRows()
             }.dimensions(left + listWidth - FormScreenLayout.BUTTON_HEIGHT - ROW_BUTTON_INSET, top + index * ROW_HEIGHT + 8, FormScreenLayout.BUTTON_HEIGHT, FormScreenLayout.BUTTON_HEIGHT)
                 .build().also {
                     it.icon = PixelIcon.CROSS
-                    it.tooltip = Tooltip.of(Text.translatable(MinecraftRoomScreenKeys.ALLOW_REJOINING))
+                    it.tooltip = Tooltip.create(Component.translatable(MinecraftRoomScreenKeys.ALLOW_REJOINING))
                     it.active = id !in pending
                 }
-            rowButtons += addDrawableChild(button)
+            rowButtons += addRenderableWidget(button)
         }
         if (::clearAll.isInitialized) clearAll.active = entries.isNotEmpty() && pending.isEmpty()
     }
@@ -162,48 +162,48 @@ internal class RoomExcludedParticipantsScreen(
                     readRoom()?.excludedPlayerIds.orEmpty().forEach { pending[it] = clock.now() + CONFIRMATION_TIMEOUT }
                     allowAll()
                 }
-                client?.setScreen(this@RoomExcludedParticipantsScreen)
+                minecraft?.setScreen(this@RoomExcludedParticipantsScreen)
             },
-            Text.translatable(MinecraftRoomScreenKeys.ALLOW_ALL_REJOINING),
-            Text.translatable(MinecraftRoomScreenKeys.ALLOW_ALL_CONFIRMATION),
+            Component.translatable(MinecraftRoomScreenKeys.ALLOW_ALL_REJOINING),
+            Component.translatable(MinecraftRoomScreenKeys.ALLOW_ALL_CONFIRMATION),
         ) {
-            override fun shouldPause(): Boolean = false
+            override fun isPauseScreen(): Boolean = false
         }
-        client?.setScreen(confirmation)
+        minecraft?.setScreen(confirmation)
     }
 
     override fun tick() {
         search.tick()
         val room = readRoom()
         if (room == null || !room.isHost) {
-            close()
+            onClose()
             return
         }
         val expired = pending.entries.removeAll { (id, deadline) -> id !in room.excludedPlayerIds || clock.now() >= deadline }
         if (room.excludedPlayerIds != entries || expired || entries.any { (it !in pending && labels[it] != name(it).string) || identities[it] != ExcludedParticipantIdentity.resolve(room, it) }) refreshRows()
     }
 
-    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         val room = readRoom()
         if (room == null || !room.isHost) {
-            close()
+            onClose()
             return
         }
         // 網路快照可能在兩次 tick 之間更新，繪製前先移除已不在名單上的卡片。
         if (room.excludedPlayerIds != entries) refreshRows()
         renderBackground(context)
-        ScreenRendering.title(context, textRenderer, title, width)
+        ScreenRendering.title(context, font, title, width)
         filtered.drop(scroll.index).take(rows).forEachIndexed { index, id ->
             val y = top + index * ROW_HEIGHT
             val hovered = mouseX in left until left + listWidth && mouseY in y until y + ROW_HEIGHT - 4
             context.fill(left, y, left + listWidth, y + ROW_HEIGHT - 4, if (hovered) 0xA0404040.toInt() else 0x90202020.toInt())
             face(context, id, left + 4, y + 6, 24)
-            context.drawTextWithShadow(textRenderer, fitClientText(textRenderer, Text.literal(labels[id].orEmpty()), listWidth - 70), left + 36, y + 5, 0xFFFFFF)
+            context.drawString(font, fitClientText(font, Component.literal(labels[id].orEmpty()), listWidth - 70), left + 36, y + 5, 0xFFFFFF)
             identities[id]?.let { identity ->
-                val value = Text.translatable(MinecraftRoomScreenKeys.EXCLUDED_UUID, identity.id.toString())
-                context.drawTextWithShadow(
-                    textRenderer,
-                    fitClientText(textRenderer, value, listWidth - 70),
+                val value = Component.translatable(MinecraftRoomScreenKeys.EXCLUDED_UUID, identity.id.toString())
+                context.drawString(
+                    font,
+                    fitClientText(font, value, listWidth - 70),
                     left + 36,
                     y + 19,
                     0xA0A0A0,
@@ -212,7 +212,7 @@ internal class RoomExcludedParticipantsScreen(
         }
         if (filtered.isEmpty()) {
             val key = if (entries.isEmpty()) MinecraftRoomScreenKeys.EXCLUDED_EMPTY else MinecraftRoomScreenKeys.EXCLUDED_NO_RESULTS
-            context.drawCenteredTextWithShadow(textRenderer, Text.translatable(key), width / 2, top + 16, 0xA0A0A0)
+            context.drawCenteredString(font, Component.translatable(key), width / 2, top + 16, 0xA0A0A0)
         }
         val bar = scrollbar
         if (bar.maximumScroll > 0 && rows > 0) {
@@ -223,9 +223,9 @@ internal class RoomExcludedParticipantsScreen(
             val y = top + index * ROW_HEIGHT
             if (mouseX in (left + 36) until (left + listWidth - 28) && mouseY in (y + 17) until (y + 31)) {
                 identities[id]?.let {
-                    context.drawTooltip(
-                        textRenderer,
-                        Text.translatable(MinecraftRoomScreenKeys.EXCLUDED_UUID, it.id.toString()),
+                    context.renderTooltip(
+                        font,
+                        Component.translatable(MinecraftRoomScreenKeys.EXCLUDED_UUID, it.id.toString()),
                         mouseX,
                         mouseY,
                     )
@@ -272,11 +272,11 @@ internal class RoomExcludedParticipantsScreen(
         return super.mouseReleased(mouseX, mouseY, button)
     }
 
-    override fun close() {
-        client?.setScreen(parent)
+    override fun onClose() {
+        minecraft?.setScreen(parent)
     }
 
-    override fun shouldPause(): Boolean = false
+    override fun isPauseScreen(): Boolean = false
 
     /** 清單的固定列高與既有回覆等待上限。 */
     private companion object {

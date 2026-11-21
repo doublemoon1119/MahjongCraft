@@ -4,10 +4,10 @@ import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurniture
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity.ExampleCushionEntity
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity.ExampleSeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatState
-import net.minecraft.entity.Entity
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.Box
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.phys.AABB
 
 /** 真人手動入座、人偶建立與座位 provider 共用的坐墊服務。 */
 internal object ExampleCushionSeatService {
@@ -20,22 +20,22 @@ internal object ExampleCushionSeatService {
      * @return 本格座位目前狀態。
      */
     fun inspect(
-        world: ServerWorld,
+        world: ServerLevel,
         cushion: ExampleCushionEntity,
         rider: Entity,
     ): SeatState {
-        if (rider.world !== world || cushion.world !== world || cushion.isRemoved || !ExampleFurnitureEntities.isRegistered()) return SeatState.INVALID
-        if (!world.chunkManager.isChunkLoaded(cushion.blockX shr 4, cushion.blockZ shr 4)) return SeatState.INVALID
+        if (rider.level() !== world || cushion.level() !== world || cushion.isRemoved || !ExampleFurnitureEntities.isRegistered()) return SeatState.INVALID
+        if (!world.chunkSource.hasChunk(cushion.blockX shr 4, cushion.blockZ shr 4)) return SeatState.INVALID
         if (rider.vehicle === cushion) return SeatState.SEATED
-        val occupancy = ExampleFurnitureSeatRules.occupancyState(rider.hasVehicle(), cushion.hasPassengers())
+        val occupancy = ExampleFurnitureSeatRules.occupancyState(rider.isPassenger, cushion.isVehicle)
         if (occupancy != SeatState.AVAILABLE) return occupancy
-        val body = Box(
-            cushion.x - rider.width / 2.0,
+        val body = AABB(
+            cushion.x - rider.bbWidth / 2.0,
             cushion.y + 0.2,
-            cushion.z - rider.width / 2.0,
-            cushion.x + rider.width / 2.0,
-            ExampleSeatGeometry.cushionFeetY(cushion.y) + rider.height,
-            cushion.z + rider.width / 2.0,
+            cushion.z - rider.bbWidth / 2.0,
+            cushion.x + rider.bbWidth / 2.0,
+            ExampleSeatGeometry.cushionFeetY(cushion.y) + rider.bbHeight,
+            cushion.z + rider.bbWidth / 2.0,
         )
         return if (ExampleFurnitureSpace.isClear(
                 world = world,
@@ -60,7 +60,7 @@ internal object ExampleCushionSeatService {
      * @return 入座成功時為 true。
      */
     fun sit(
-        world: ServerWorld,
+        world: ServerLevel,
         cushion: ExampleCushionEntity,
         rider: Entity,
         yaw: Float,
@@ -73,17 +73,17 @@ internal object ExampleCushionSeatService {
         ) {
             return false
         }
-        val original = rider.pos
-        val originalYaw = rider.yaw
-        val pitch = rider.pitch
+        val original = rider.position()
+        val originalYaw = rider.yRot
+        val pitch = rider.xRot
         return ExampleSeatAttempt.run(
             create = { cushion },
             spawn = { true },
             mount = { rider.startRiding(it, true) },
             finish = {
-                it.updatePassengerPosition(rider)
-                if (rider is ServerPlayerEntity) {
-                    rider.networkHandler.requestTeleport(
+                it.positionRider(rider)
+                if (rider is ServerPlayer) {
+                    rider.connection.teleport(
                         rider.x,
                         rider.y,
                         rider.z,
@@ -91,7 +91,7 @@ internal object ExampleCushionSeatService {
                         pitch,
                     )
                 } else {
-                    rider.refreshPositionAndAngles(
+                    rider.moveTo(
                         rider.x,
                         rider.y,
                         rider.z,
@@ -103,8 +103,8 @@ internal object ExampleCushionSeatService {
             },
             restore = {
                 if (rider.vehicle === cushion) rider.stopRiding()
-                if (rider is ServerPlayerEntity) {
-                    rider.networkHandler.requestTeleport(
+                if (rider is ServerPlayer) {
+                    rider.connection.teleport(
                         original.x,
                         original.y,
                         original.z,
@@ -112,7 +112,7 @@ internal object ExampleCushionSeatService {
                         pitch,
                     )
                 } else {
-                    rider.refreshPositionAndAngles(
+                    rider.moveTo(
                         original.x,
                         original.y,
                         original.z,

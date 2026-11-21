@@ -5,12 +5,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatEn
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatCollisionPolicy
-import net.minecraft.entity.Entity
-import net.minecraft.entity.LivingEntity
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
+import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.phys.AABB
 
 /**
  * 讓任何 entity 坐上麻將凳的伺服器端入口；玩家右鍵凳子與開局入座都透過這裡。
@@ -34,12 +34,12 @@ class MahjongStoolSeatService(
      * @return 是否坐下。
      */
     fun sit(
-        world: ServerWorld,
+        world: ServerLevel,
         stoolPos: BlockPos,
         entity: Entity,
-        seatYaw: Float = entity.yaw,
+        seatYaw: Float = entity.yRot,
     ): Boolean {
-        if (!world.chunkManager.isChunkLoaded(stoolPos.x shr 4, stoolPos.z shr 4)) return false
+        if (!world.chunkSource.hasChunk(stoolPos.x shr 4, stoolPos.z shr 4)) return false
         val stool = world.getBlockState(stoolPos).block as? MahjongStoolBlock ?: return false
         if (!canSit(
                 world = world,
@@ -51,7 +51,7 @@ class MahjongStoolSeatService(
         }
         if (!SeatSupportCleanup.clearEmpty(
                 supports = MahjongStoolSeatEntity.seatsAt(world, stoolPos),
-                hasPassengers = Entity::hasPassengers,
+                hasPassengers = Entity::isVehicle,
                 discard = Entity::discard,
             )
         ) {
@@ -60,7 +60,7 @@ class MahjongStoolSeatService(
 
         val seatTopY = stoolPos.y + stool.design.seatHeight
         val seat = MahjongStoolSeatEntity(world = world).apply {
-            refreshPositionAndAngles(
+            moveTo(
                 stoolPos.x + HALF_BLOCK,
                 MahjongStoolSeatGeometry.seatY(seatTopY),
                 stoolPos.z + HALF_BLOCK,
@@ -92,7 +92,7 @@ class MahjongStoolSeatService(
                 return false
             }
             if (!entity.startRiding(seat, true)) return false
-            seat.updatePassengerPosition(entity)
+            seat.positionRider(entity)
             synchronizeSeatedFacing(entity, seatYaw)
             if (entity.vehicle !== seat) return false
             seated = true
@@ -111,21 +111,21 @@ class MahjongStoolSeatService(
      * @param seatYaw 座位要求的水平面向。
      */
     private fun synchronizeSeatedFacing(entity: Entity, seatYaw: Float) {
-        if (entity is ServerPlayerEntity) {
-            entity.networkHandler.requestTeleport(
+        if (entity is ServerPlayer) {
+            entity.connection.teleport(
                 entity.x,
                 entity.y,
                 entity.z,
                 seatYaw,
-                entity.pitch,
+                entity.xRot,
             )
         } else {
-            entity.refreshPositionAndAngles(
+            entity.moveTo(
                 entity.x,
                 entity.y,
                 entity.z,
                 seatYaw,
-                entity.pitch,
+                entity.xRot,
             )
         }
     }
@@ -139,14 +139,14 @@ class MahjongStoolSeatService(
      * @return 凳子存在、未被占用且乘坐空間足夠時為 true。
      */
     fun canSit(
-        world: ServerWorld,
+        world: ServerLevel,
         stoolPos: BlockPos,
         entity: Entity,
     ): Boolean {
-        if (!world.chunkManager.isChunkLoaded(stoolPos.x shr 4, stoolPos.z shr 4)) return false
+        if (!world.chunkSource.hasChunk(stoolPos.x shr 4, stoolPos.z shr 4)) return false
         val stool = world.getBlockState(stoolPos).block as? MahjongStoolBlock ?: return false
-        if (entity.world !== world || entity.hasVehicle()) return false
-        if (SeatSupportCleanup.isOccupied(MahjongStoolSeatEntity.seatsAt(world, stoolPos), Entity::hasPassengers)) return false
+        if (entity.level() !== world || entity.isPassenger) return false
+        if (SeatSupportCleanup.isOccupied(MahjongStoolSeatEntity.seatsAt(world, stoolPos), Entity::isVehicle)) return false
         val seatTopY = stoolPos.y + stool.design.seatHeight
         val seatX = stoolPos.x + HALF_BLOCK
         val seatZ = stoolPos.z + HALF_BLOCK
@@ -184,16 +184,16 @@ class MahjongStoolSeatService(
      * @return 乘坐者身體範圍沒有方塊阻擋時為 true。
      */
     private fun hasRoomAbove(
-        world: ServerWorld,
+        world: ServerLevel,
         entity: Entity,
         seatX: Double,
         seatY: Double,
         seatZ: Double,
         seatTopY: Double,
     ): Boolean {
-        val halfWidth = entity.width / 2.0
-        val headY = MahjongStoolSeatGeometry.passengerFeetY(seatY) + entity.height
-        val body = Box(
+        val halfWidth = entity.bbWidth / 2.0
+        val headY = MahjongStoolSeatGeometry.passengerFeetY(seatY) + entity.bbHeight
+        val body = AABB(
             seatX - halfWidth,
             seatTopY,
             seatZ - halfWidth,
@@ -201,28 +201,28 @@ class MahjongStoolSeatService(
             headY,
             seatZ + halfWidth,
         )
-        val minimum = BlockPos.ofFloored(
+        val minimum = BlockPos.containing(
             body.minX - COLLISION_MARGIN,
             body.minY,
             body.minZ - COLLISION_MARGIN,
         )
-        val maximum = BlockPos.ofFloored(
+        val maximum = BlockPos.containing(
             body.maxX + COLLISION_MARGIN,
             body.maxY,
             body.maxZ + COLLISION_MARGIN,
         )
-        if (minimum.y < world.bottomY || maximum.y >= world.topY || !world.worldBorder.contains(body)) return false
+        if (minimum.y < world.minBuildHeight || maximum.y >= world.maxBuildHeight || !world.worldBorder.isWithinBounds(body)) return false
         for (chunkX in (minimum.x shr 4)..(maximum.x shr 4)) {
             for (chunkZ in (minimum.z shr 4)..(maximum.z shr 4)) {
-                if (!world.chunkManager.isChunkLoaded(chunkX, chunkZ)) return false
+                if (!world.chunkSource.hasChunk(chunkX, chunkZ)) return false
             }
         }
         return !world.getBlockCollisions(entity, body).iterator().hasNext() &&
-            world.getOtherEntities(entity, body) {
+            world.getEntities(entity, body) {
                 SeatCollisionPolicy.blocks(
                     removed = it.isRemoved,
                     spectator = it.isSpectator,
-                    physical = it is LivingEntity || it.isCollidable,
+                    physical = it is LivingEntity || it.canBeCollidedWith(),
                 ) &&
                     !SeatCollisionScope.ignores(entity, it)
             }.isEmpty()

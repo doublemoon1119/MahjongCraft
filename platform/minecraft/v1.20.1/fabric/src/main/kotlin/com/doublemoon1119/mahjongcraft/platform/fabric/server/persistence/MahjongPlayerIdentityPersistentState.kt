@@ -2,10 +2,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.nbt.NbtElement
-import net.minecraft.nbt.NbtList
-import net.minecraft.world.PersistentState
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.ListTag
+import net.minecraft.nbt.Tag
+import net.minecraft.world.level.saveddata.SavedData
 import java.util.UUID
 
 /**
@@ -15,7 +15,7 @@ import java.util.UUID
  */
 class MahjongPlayerIdentityPersistentState private constructor(
     initialNames: Map<UUID, String>,
-) : PersistentState() {
+) : SavedData() {
     /** 目前已知的玩家普通名稱，不含聊天樣式或互動資料。 */
     private val names = initialNames.toMutableMap()
 
@@ -46,7 +46,7 @@ class MahjongPlayerIdentityPersistentState private constructor(
         if (normalized.isEmpty() || normalized.length > MAX_NAME_LENGTH) return false
         if (names[playerId] == normalized) return false
         names[playerId] = normalized
-        markDirty()
+        setDirty()
         return true
     }
 
@@ -56,12 +56,12 @@ class MahjongPlayerIdentityPersistentState private constructor(
      * @param nbt Minecraft 要寫入的 NBT compound。
      * @return 寫入完成的 [nbt]。
      */
-    override fun writeNbt(nbt: NbtCompound): NbtCompound {
+    override fun save(nbt: CompoundTag): CompoundTag {
         nbt.putInt(NBT_KEY_VERSION, CURRENT_VERSION)
-        val entries = NbtList()
+        val entries = ListTag()
         names.forEach { (playerId, name) ->
             entries.add(
-                NbtCompound().apply {
+                CompoundTag().apply {
                     putString(NBT_KEY_PLAYER_ID, playerId.toString())
                     putString(NBT_KEY_NAME, name)
                 },
@@ -74,7 +74,7 @@ class MahjongPlayerIdentityPersistentState private constructor(
     companion object {
         private val logger = mahjongCraftLogger(MahjongPlayerIdentityPersistentState::class)
 
-        /** Minecraft PersistentStateManager 使用的伺服器級索引 key。 */
+        /** Minecraft DimensionDataStorage 使用的伺服器級索引 key。 */
         const val STORAGE_KEY: String = "${MinecraftModMetadata.MOD_ID}_player_identity"
 
         /** 建立空白身分索引。 */
@@ -86,8 +86,8 @@ class MahjongPlayerIdentityPersistentState private constructor(
          * @param nbt Minecraft 讀出的身分索引 NBT。
          * @return 載入完成的身分索引；格式錯誤時回傳空索引。
          */
-        fun fromNbt(nbt: NbtCompound): MahjongPlayerIdentityPersistentState {
-            if (!nbt.contains(NBT_KEY_VERSION, NbtElement.INT_TYPE.toInt())) {
+        fun fromNbt(nbt: CompoundTag): MahjongPlayerIdentityPersistentState {
+            if (!nbt.contains(NBT_KEY_VERSION, Tag.TAG_INT.toInt())) {
                 logger.error("Ignoring player identity index because the format version is missing")
                 return create()
             }
@@ -96,17 +96,17 @@ class MahjongPlayerIdentityPersistentState private constructor(
                 logger.error("Ignoring player identity index with unsupported format version {}", version)
                 return create()
             }
-            if (!nbt.contains(NBT_KEY_ENTRIES, NbtElement.LIST_TYPE.toInt())) {
+            if (!nbt.contains(NBT_KEY_ENTRIES, Tag.TAG_LIST.toInt())) {
                 logger.error("Ignoring player identity index because the entries field is missing or invalid")
                 return create()
             }
             val names = buildMap {
-                val entries = nbt.getList(NBT_KEY_ENTRIES, NbtElement.COMPOUND_TYPE.toInt())
+                val entries = nbt.getList(NBT_KEY_ENTRIES, Tag.TAG_COMPOUND.toInt())
                 repeat(entries.size) { index ->
                     runCatching {
                         val entry = entries.getCompound(index)
-                        require(entry.contains(NBT_KEY_PLAYER_ID, NbtElement.STRING_TYPE.toInt()))
-                        require(entry.contains(NBT_KEY_NAME, NbtElement.STRING_TYPE.toInt()))
+                        require(entry.contains(NBT_KEY_PLAYER_ID, Tag.TAG_STRING.toInt()))
+                        require(entry.contains(NBT_KEY_NAME, Tag.TAG_STRING.toInt()))
                         val playerId = UUID.fromString(entry.getString(NBT_KEY_PLAYER_ID))
                         val name = entry.getString(NBT_KEY_NAME).trim()
                         require(name.isNotEmpty() && name.length <= MAX_NAME_LENGTH)

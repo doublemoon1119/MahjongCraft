@@ -29,12 +29,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.event.player.UseEntityCallback
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.text.Text
-import net.minecraft.util.ActionResult
-import net.minecraft.util.hit.EntityHitResult
-import net.minecraft.util.hit.HitResult
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.network.chat.Component
+import net.minecraft.world.InteractionResult
+import net.minecraft.world.phys.EntityHitResult
+import net.minecraft.world.phys.HitResult
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -76,7 +76,7 @@ class PlayerDecisionHudController(
      * @param playerId 來源玩家的 UUID 字串。
      * @return AI 名稱、已知普通名稱或本地化未知玩家名稱。
      */
-    fun resolveTriggerPlayerName(playerId: String): String = playerNames.decisionTrigger(MinecraftClient.getInstance().player?.uuid?.toKotlinUuid(), playerId)
+    fun resolveTriggerPlayerName(playerId: String): String = playerNames.decisionTrigger(Minecraft.getInstance().player?.uuid?.toKotlinUuid(), playerId)
 
     /** 玩家以 Esc 暫時收起的 decision key。 */
     private var dismissedDecisionKey: String? = null
@@ -95,32 +95,32 @@ class PlayerDecisionHudController(
         activeController = this
         ClientTickEvents.END_CLIENT_TICK.register(::tick)
         UseEntityCallback.EVENT.register { _, world, _, entity, _ ->
-            if (world.isClient && entity is MahjongTileEntity && entity.managedByGame) {
+            if (world.isClientSide && entity is MahjongTileEntity && entity.managedByGame) {
                 if (submissionTracker.isPending()) {
-                    ActionResult.SUCCESS
+                    InteractionResult.SUCCESS
                 } else if (toggleTile(entity)) {
-                    ActionResult.SUCCESS
+                    InteractionResult.SUCCESS
                 } else if (canUsePhysicalTileDirectly()) {
-                    ActionResult.PASS
+                    InteractionResult.PASS
                 } else if (promptStore.prompt?.isInteractive == true) {
                     reopen()
-                    ActionResult.SUCCESS
+                    InteractionResult.SUCCESS
                 } else {
-                    ActionResult.PASS
+                    InteractionResult.PASS
                 }
-            } else if (world.isClient && entity is MahjongTileSelectionConfirmEntity) {
-                if (confirmTileSelection(entity)) ActionResult.SUCCESS else ActionResult.PASS
+            } else if (world.isClientSide && entity is MahjongTileSelectionConfirmEntity) {
+                if (confirmTileSelection(entity)) InteractionResult.SUCCESS else InteractionResult.PASS
             } else {
-                ActionResult.PASS
+                InteractionResult.PASS
             }
         }
     }
 
     /** 右鍵任意自己的實體手牌時重新開啟仍有效的操作介面。 */
     fun reopen() {
-        val client = MinecraftClient.getInstance()
+        val client = Minecraft.getInstance()
         val prompt = promptStore.prompt ?: return
-        if (!prompt.isInteractive || client.currentScreen != null || submissionTracker.isPending()) return
+        if (!prompt.isInteractive || client.screen != null || submissionTracker.isPending()) return
         dismissedDecisionKey = null
         client.setScreen(PlayerDecisionScreen(prompt, timerStore.state?.phase?.isReaction == true, this))
     }
@@ -146,7 +146,7 @@ class PlayerDecisionHudController(
      * @param orientation 牌面朝向。
      */
     fun renderTileFace(
-        context: DrawContext,
+        context: GuiGraphics,
         assetKey: String,
         x: Int,
         y: Int,
@@ -183,7 +183,7 @@ class PlayerDecisionHudController(
         val request = tileSelection.beginAction(action)
         promptStore.beginTileSelection(prompt.decisionKey, action.token)
         dismissedDecisionKey = prompt.decisionKey
-        MinecraftClient.getInstance().setScreen(null)
+        Minecraft.getInstance().setScreen(null)
         if (request != null) sendBeginTileSelection(prompt, request)
     }
 
@@ -195,7 +195,7 @@ class PlayerDecisionHudController(
     fun beginDirectDiscard(prompt: PlayerDecisionPromptDto) {
         tileSelection.beginDirectDiscard(prompt.decisionKey)
         dismissedDecisionKey = prompt.decisionKey
-        MinecraftClient.getInstance().setScreen(null)
+        Minecraft.getInstance().setScreen(null)
     }
 
     /** 只有已明確選擇普通出牌時，右鍵才可傳到實體牌——選牌情境由 [toggleTile] 先行攔截。 */
@@ -213,7 +213,7 @@ class PlayerDecisionHudController(
     fun beginRuleDecisionTileSelection(prompt: PlayerDecisionPromptDto) {
         val request = tileSelection.beginRuleDecision(prompt)
         dismissedDecisionKey = prompt.decisionKey
-        MinecraftClient.getInstance().setScreen(null)
+        Minecraft.getInstance().setScreen(null)
         if (request != null) sendBeginTileSelection(prompt, request)
     }
 
@@ -237,7 +237,7 @@ class PlayerDecisionHudController(
      * @param prompt 用於尋找目前選牌動作的決策提示。
      * @return 動作說明；沒有對應動作或說明時為 null。
      */
-    private fun activeActionDescription(prompt: PlayerDecisionPromptDto): Text? {
+    private fun activeActionDescription(prompt: PlayerDecisionPromptDto): Component? {
         val token = tileSelection.activeActionToken ?: return null
         val action = prompt.actions.firstOrNull { it.token == token } ?: return null
         return decisionTexts.actionDescription(prompt.ruleModuleId, action.actionId)
@@ -258,7 +258,7 @@ class PlayerDecisionHudController(
     private fun confirmTileSelection(entity: MahjongTileSelectionConfirmEntity): Boolean {
         if (submissionTracker.isPending()) return true
         val prompt = promptStore.prompt ?: return false
-        val localPlayerId = MinecraftClient.getInstance().player?.uuid?.toKotlinUuid() ?: return false
+        val localPlayerId = Minecraft.getInstance().player?.uuid?.toKotlinUuid() ?: return false
         if (entity.holderId != localPlayerId) return false
         return applyOutcome(prompt, tileSelection.confirm(prompt, promptStore.isTileSelectionActive()))
     }
@@ -327,7 +327,7 @@ class PlayerDecisionHudController(
             json = json,
             value = PlayerDecisionSelectionDto(gameId.toString(), prompt.decisionKey, kind, token, tileIds, submissionId),
         )
-        (MinecraftClient.getInstance().currentScreen as? PlayerDecisionScreen)?.refreshSubmissionState()
+        (Minecraft.getInstance().screen as? PlayerDecisionScreen)?.refreshSubmissionState()
     }
 
     /**
@@ -337,7 +337,7 @@ class PlayerDecisionHudController(
      */
     fun handleSubmissionResult(result: PlayerDecisionSubmissionResultDto) {
         if (submissionTracker.acknowledge(result) == AcknowledgementEffect.UNLOCKED) {
-            (MinecraftClient.getInstance().currentScreen as? PlayerDecisionScreen)?.refreshSubmissionState()
+            (Minecraft.getInstance().screen as? PlayerDecisionScreen)?.refreshSubmissionState()
         }
     }
 
@@ -360,11 +360,11 @@ class PlayerDecisionHudController(
      *
      * @param client 目前客戶端。
      */
-    private fun tick(client: MinecraftClient) {
+    private fun tick(client: Minecraft) {
         syncSelectionHighlights(client)
         val prompt = promptStore.prompt
         if (prompt == null) {
-            if (client.currentScreen is PlayerDecisionScreen) client.setScreen(null)
+            if (client.screen is PlayerDecisionScreen) client.setScreen(null)
             submissionTracker.applyAuthoritativeDecision(null, promptStore.updateSequence)
             dismissedDecisionKey = null
             openedDecisionKey = null
@@ -376,13 +376,13 @@ class PlayerDecisionHudController(
         if (pendingForOtherDecision) clearLocalDecisionState()
         applySubmissionTimeout(client)
         tileSelection.syncTo(prompt.decisionKey, promptStore.isTileSelectionActive())
-        val openScreen = client.currentScreen as? PlayerDecisionScreen
+        val openScreen = client.screen as? PlayerDecisionScreen
         if (openScreen != null && openScreen.decisionKey != prompt.decisionKey) {
             client.setScreen(null)
             openedDecisionKey = null
             tileSelection.clearSelections()
         }
-        if (!prompt.isInteractive || client.currentScreen != null || prompt.decisionKey == openedDecisionKey) return
+        if (!prompt.isInteractive || client.screen != null || prompt.decisionKey == openedDecisionKey) return
         openedDecisionKey = prompt.decisionKey
         dismissedDecisionKey = null
         client.setScreen(PlayerDecisionScreen(prompt, timerStore.state?.phase?.isReaction == true, this))
@@ -393,14 +393,14 @@ class PlayerDecisionHudController(
      *
      * @param client 目前客戶端。
      */
-    private fun applySubmissionTimeout(client: MinecraftClient) {
+    private fun applySubmissionTimeout(client: Minecraft) {
         val messageKey = when (submissionTracker.checkTimeout()) {
             TimeoutEffect.NONE -> return
             TimeoutEffect.RESYNCING -> MinecraftMessageKeys.DECISION_CONFIRMATION_RESYNCING
             TimeoutEffect.UNLOCKED -> MinecraftMessageKeys.DECISION_CONFIRMATION_RETRY
         }
-        client.player?.sendMessage(Text.translatable(messageKey), true)
-        (client.currentScreen as? PlayerDecisionScreen)?.refreshSubmissionState()
+        client.player?.displayClientMessage(Component.translatable(messageKey), true)
+        (client.screen as? PlayerDecisionScreen)?.refreshSubmissionState()
     }
 
     /** 清除只屬於上一個 decision 的本機互動狀態。 */
@@ -414,9 +414,9 @@ class PlayerDecisionHudController(
      *
      * @param client 提供目前世界與牌實體的客戶端。
      */
-    private fun syncSelectionHighlights(client: MinecraftClient) {
+    private fun syncSelectionHighlights(client: Minecraft) {
         val selectedIds = tileSelection.highlightedTileIds()
-        val tiles = client.world?.entities?.filterIsInstance<MahjongTileEntity>().orEmpty()
+        val tiles = client.level?.entitiesForRendering()?.filterIsInstance<MahjongTileEntity>().orEmpty()
         tiles.forEach { tile ->
             if (tile.uuid.toString() in selectedIds) {
                 tile.setSelectionHighlight(SELECTION_HIGHLIGHT_COLOR)
@@ -431,16 +431,16 @@ class PlayerDecisionHudController(
      *
      * @param context 本幀繪製環境。
      */
-    private fun renderBeforeChat(context: DrawContext) {
-        val client = MinecraftClient.getInstance()
-        if (client.options.hudHidden) return
-        if (client.currentScreen is MahjongHudLayoutEditorScreen) return
+    private fun renderBeforeChat(context: GuiGraphics) {
+        val client = Minecraft.getInstance()
+        if (client.options.hideGui) return
+        if (client.screen is MahjongHudLayoutEditorScreen) return
         automaticControlStatusHudRenderer.render(context)
-        if (client.currentScreen !is PlayerDecisionScreen) {
+        if (client.screen !is PlayerDecisionScreen) {
             renderCompactDecisionHud(context)
         }
-        if (client.currentScreen == null) {
-            renderHandAnalysis(context, promptStore.prompt, client.crosshairTarget)
+        if (client.screen == null) {
+            renderHandAnalysis(context, promptStore.prompt, client.hitResult)
             discardSourceHudRenderer.render(context)
         }
     }
@@ -450,10 +450,10 @@ class PlayerDecisionHudController(
      *
      * @param context 本幀繪製環境。
      */
-    private fun renderCompactDecisionHud(context: DrawContext) {
-        val client = MinecraftClient.getInstance()
+    private fun renderCompactDecisionHud(context: GuiGraphics) {
+        val client = Minecraft.getInstance()
         if (!configStore.current.presentationVisibility.compactPromptEnabled) return
-        if (client.options.hudHidden) return
+        if (client.options.hideGui) return
         val timerParts = currentTimerParts() ?: return
         val prompt = promptStore.prompt
         val content = compactDecisionHudContent(
@@ -483,17 +483,17 @@ class PlayerDecisionHudController(
      * @param ratioY 垂直位置比例。
      */
     internal fun renderCompactHud(
-        context: DrawContext,
+        context: GuiGraphics,
         content: CompactDecisionHudContent,
         timerParts: List<DecisionTimerPart>,
         ratioX: Double,
         ratioY: Double,
     ) {
-        val renderer = MinecraftClient.getInstance().textRenderer
-        val descriptionLines = compactDescriptionLines(content, context.scaledWindowWidth)
+        val renderer = Minecraft.getInstance().font
+        val descriptionLines = compactDescriptionLines(content, context.guiWidth())
         val layout = compactHudLayout(
-            screenWidth = context.scaledWindowWidth,
-            screenHeight = context.scaledWindowHeight,
+            screenWidth = context.guiWidth(),
+            screenHeight = context.guiHeight(),
             content = content,
             ratioX = ratioX,
             ratioY = ratioY,
@@ -505,18 +505,18 @@ class PlayerDecisionHudController(
                 renderCompactLines(
                     context = context,
                     layout = layout,
-                    title = Text.translatable(MinecraftHudKeys.TILE_SELECTION_IN_PROGRESS),
+                    title = Component.translatable(MinecraftHudKeys.TILE_SELECTION_IN_PROGRESS),
                     detail = tileSelectionDetailText(content.progress),
                 )
                 descriptionLines.forEachIndexed { index, line ->
-                    context.drawCenteredTextWithShadow(renderer, line, layout.centerX, layout.descriptionLineTop(index), COMPACT_HUD_DETAIL_COLOR)
+                    context.drawCenteredString(renderer, line, layout.centerX, layout.descriptionLineTop(index), COMPACT_HUD_DETAIL_COLOR)
                 }
             }
             CompactDecisionHudContent.ReopenReminder -> renderCompactLines(
                 context = context,
                 layout = layout,
-                title = Text.translatable(MinecraftHudKeys.WAITING_FOR_ACTION),
-                detail = Text.translatable(MinecraftHudKeys.REOPEN_ACTION),
+                title = Component.translatable(MinecraftHudKeys.WAITING_FOR_ACTION),
+                detail = Component.translatable(MinecraftHudKeys.REOPEN_ACTION),
             )
         }
     }
@@ -538,20 +538,20 @@ class PlayerDecisionHudController(
         ratioX: Double,
         ratioY: Double,
     ): CompactDecisionHudLayout {
-        val renderer = MinecraftClient.getInstance().textRenderer
+        val renderer = Minecraft.getInstance().font
         val descriptionLines = compactDescriptionLines(content, screenWidth)
         val headingWidths = when (content) {
             CompactDecisionHudContent.TimerOnly -> emptyList()
             CompactDecisionHudContent.ReopenReminder -> listOf(
-                renderer.getWidth(Text.translatable(MinecraftHudKeys.WAITING_FOR_ACTION)),
-                renderer.getWidth(Text.translatable(MinecraftHudKeys.REOPEN_ACTION)),
+                renderer.width(Component.translatable(MinecraftHudKeys.WAITING_FOR_ACTION)),
+                renderer.width(Component.translatable(MinecraftHudKeys.REOPEN_ACTION)),
             )
             is CompactDecisionHudContent.TileSelection -> listOf(
-                renderer.getWidth(Text.translatable(MinecraftHudKeys.TILE_SELECTION_IN_PROGRESS)),
-                renderer.getWidth(tileSelectionDetailText(content.progress)),
+                renderer.width(Component.translatable(MinecraftHudKeys.TILE_SELECTION_IN_PROGRESS)),
+                renderer.width(tileSelectionDetailText(content.progress)),
             )
         }
-        val textWidth = maxOf(descriptionLines.maxOfOrNull(renderer::getWidth) ?: 0, headingWidths.maxOrNull() ?: 0)
+        val textWidth = maxOf(descriptionLines.maxOfOrNull(renderer::width) ?: 0, headingWidths.maxOrNull() ?: 0)
         return CompactDecisionHudLayout(
             screenWidth = screenWidth,
             screenHeight = screenHeight,
@@ -572,7 +572,7 @@ class PlayerDecisionHudController(
      */
     private fun compactDescriptionLines(content: CompactDecisionHudContent, screenWidth: Int) = (content as? CompactDecisionHudContent.TileSelection)?.description
         ?.let {
-            MinecraftClient.getInstance().textRenderer.wrapLines(it, compactDescriptionMaximumWidth(screenWidth))
+            Minecraft.getInstance().font.split(it, compactDescriptionMaximumWidth(screenWidth))
         }
         .orEmpty()
 
@@ -584,10 +584,10 @@ class PlayerDecisionHudController(
      * @param title 第一行提示。
      * @param detail 第二行提示。
      */
-    private fun renderCompactLines(context: DrawContext, layout: CompactDecisionHudLayout, title: Text, detail: Text) {
-        val renderer = MinecraftClient.getInstance().textRenderer
-        context.drawCenteredTextWithShadow(renderer, title, layout.centerX, layout.groupTop, COMPACT_HUD_TITLE_COLOR)
-        context.drawCenteredTextWithShadow(renderer, detail, layout.centerX, layout.detailTextTop, COMPACT_HUD_DETAIL_COLOR)
+    private fun renderCompactLines(context: GuiGraphics, layout: CompactDecisionHudLayout, title: Component, detail: Component) {
+        val renderer = Minecraft.getInstance().font
+        context.drawCenteredString(renderer, title, layout.centerX, layout.groupTop, COMPACT_HUD_TITLE_COLOR)
+        context.drawCenteredString(renderer, detail, layout.centerX, layout.detailTextTop, COMPACT_HUD_DETAIL_COLOR)
     }
 
     /**
@@ -607,13 +607,13 @@ class PlayerDecisionHudController(
      * @param scale 文字縮放；單獨顯示的精簡倒數放大以便辨識，操作面板標題列內與標題同尺寸。
      */
     fun renderTimerOverlay(
-        context: DrawContext,
+        context: GuiGraphics,
         y: Int,
-        centerX: Int = context.scaledWindowWidth / 2,
+        centerX: Int = context.guiWidth() / 2,
         scale: Float = TIMER_SCALE,
     ) {
         val parts = currentTimerParts() ?: return
-        context.drawDecisionTimer(MinecraftClient.getInstance().textRenderer, parts, y, centerX, scale)
+        context.drawDecisionTimer(Minecraft.getInstance().font, parts, y, centerX, scale)
     }
 
     /**
@@ -623,7 +623,7 @@ class PlayerDecisionHudController(
      * @return 倒數寬度；沒有有效計時時為 null。
      */
     fun timerOverlayWidth(scale: Float = TIMER_SCALE): Int? = currentTimerParts()?.let { parts ->
-        decisionTimerWidth(MinecraftClient.getInstance().textRenderer, parts, scale)
+        decisionTimerWidth(Minecraft.getInstance().font, parts, scale)
     }
 
     /** 目前倒數的文字片段；沒有有效計時時為 null，兩段時間都已用完時為空清單。 */
@@ -642,10 +642,10 @@ class PlayerDecisionHudController(
      * @param prompt 目前決策提示，沒有時為 null。
      * @param hit 準星命中結果，沒有時為 null。
      */
-    private fun renderHandAnalysis(context: DrawContext, prompt: PlayerDecisionPromptDto?, hit: HitResult?) {
+    private fun renderHandAnalysis(context: GuiGraphics, prompt: PlayerDecisionPromptDto?, hit: HitResult?) {
         if (!configStore.current.presentationVisibility.discardAnalysisEnabled) return
         val pointedTile = (hit as? EntityHitResult)?.entity as? MahjongTileEntity
-        val client = MinecraftClient.getInstance()
+        val client = Minecraft.getInstance()
         val playerId = client.player?.uuid?.toKotlinUuid()
         val tableId = playerId?.let(stateStore::findTableWhereSeated)
         val selection = selectHandAnalysis(
@@ -681,7 +681,7 @@ class PlayerDecisionHudController(
         content: DiscardAnalysisContent,
         ratioY: Double,
     ): DiscardAnalysisLayout {
-        val renderer = MinecraftClient.getInstance().textRenderer
+        val renderer = Minecraft.getInstance().font
         return DiscardAnalysisLayout(
             screenWidth = screenWidth,
             screenHeight = screenHeight,
@@ -690,11 +690,11 @@ class PlayerDecisionHudController(
             widestCellContentWidth = content.cells.maxOfOrNull { cell ->
                 maxOf(
                     a = DiscardAnalysisLayout.TILE_WIDTH,
-                    b = renderer.getWidth(cell.countText),
-                    c = cell.availabilityText?.let(renderer::getWidth) ?: 0,
+                    b = renderer.width(cell.countText),
+                    c = cell.availabilityText?.let(renderer::width) ?: 0,
                 )
             } ?: DiscardAnalysisLayout.TILE_WIDTH,
-            widestStatusTextWidth = content.statusTexts.maxOfOrNull(renderer::getWidth) ?: 0,
+            widestStatusTextWidth = content.statusTexts.maxOfOrNull(renderer::width) ?: 0,
             hasAvailabilityRow = content.hasAvailabilityRow,
             ratioY = ratioY,
         )
@@ -707,9 +707,9 @@ class PlayerDecisionHudController(
      * @param content 手牌分析內容。
      * @param ratioY 垂直位置比例。
      */
-    internal fun renderAnalysisPanel(context: DrawContext, content: DiscardAnalysisContent, ratioY: Double) {
-        val renderer = MinecraftClient.getInstance().textRenderer
-        val layout = analysisLayout(context.scaledWindowWidth, context.scaledWindowHeight, content, ratioY)
+    internal fun renderAnalysisPanel(context: GuiGraphics, content: DiscardAnalysisContent, ratioY: Double) {
+        val renderer = Minecraft.getInstance().font
+        val layout = analysisLayout(context.guiWidth(), context.guiHeight(), content, ratioY)
         context.fill(
             layout.panelLeft,
             layout.panelTop,
@@ -718,7 +718,7 @@ class PlayerDecisionHudController(
             ANALYSIS_PANEL_BACKGROUND,
         )
         content.statusTexts.forEachIndexed { index, text ->
-            context.drawCenteredTextWithShadow(renderer, text, layout.panelCenterX, layout.statusTextTop(index), ANALYSIS_STATUS_COLOR)
+            context.drawCenteredString(renderer, text, layout.panelCenterX, layout.statusTextTop(index), ANALYSIS_STATUS_COLOR)
         }
         if (content.statusTexts.isNotEmpty()) {
             context.fill(
@@ -733,9 +733,9 @@ class PlayerDecisionHudController(
             val bounds = layout.tileBounds(index)
             tileFaceRenderer.renderGui(context, cell.tile.toDomain().toAssetKey(tileAssetRegistry), bounds.x, bounds.y, bounds.width, bounds.height)
             val centerX = layout.cellCenterX(index)
-            context.drawCenteredTextWithShadow(renderer, cell.countText, centerX, layout.countTextTop(index), cell.countColor)
+            context.drawCenteredString(renderer, cell.countText, centerX, layout.countTextTop(index), cell.countColor)
             cell.availabilityText?.let { text ->
-                context.drawCenteredTextWithShadow(renderer, text, centerX, layout.availabilityTextTop(index), ANALYSIS_AVAILABILITY_COLOR)
+                context.drawCenteredString(renderer, text, centerX, layout.availabilityTextTop(index), ANALYSIS_AVAILABILITY_COLOR)
             }
         }
     }
@@ -752,7 +752,7 @@ class PlayerDecisionHudController(
          * @param context 繪製環境。
          */
         @JvmStatic
-        fun renderPassiveHudBeforeChat(context: DrawContext) {
+        fun renderPassiveHudBeforeChat(context: GuiGraphics) {
             activeController?.renderBeforeChat(context)
         }
 

@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlSnapshotDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInMinecraftAutomaticControlIds
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 /**
  * 一列只反映已確認設定或權威快照的自動操作狀態。
@@ -13,7 +13,7 @@ import net.minecraft.text.Text
  */
 internal data class AutomaticControlStatusRow(
     val controlId: String,
-    val label: Text,
+    val label: Component,
     val enabled: Boolean,
 )
 

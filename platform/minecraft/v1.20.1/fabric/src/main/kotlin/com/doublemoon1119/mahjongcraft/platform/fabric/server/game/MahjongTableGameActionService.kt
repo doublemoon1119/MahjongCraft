@@ -36,7 +36,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -99,7 +99,7 @@ class MahjongTableGameActionService(
      * @param player 執行互動的玩家。
      * @param tileId 被互動的手牌識別碼。
      */
-    fun interactWithHandTile(player: ServerPlayerEntity, tileId: Uuid) {
+    fun interactWithHandTile(player: ServerPlayer, tileId: Uuid) {
         if (dataStatus.rejectIfUnavailable(player)) return
         discard(player, tileId)
     }
@@ -110,7 +110,7 @@ class MahjongTableGameActionService(
      * @param player 提交選擇的玩家。
      * @param selection HUD 傳來的決策選擇與識別資料。
      */
-    fun select(player: ServerPlayerEntity, selection: PlayerDecisionSelectionDto) {
+    fun select(player: ServerPlayer, selection: PlayerDecisionSelectionDto) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -281,7 +281,7 @@ class MahjongTableGameActionService(
      * @param result 提交處理結果。
      */
     private fun replyToFinalSubmission(
-        player: ServerPlayerEntity,
+        player: ServerPlayer,
         selection: PlayerDecisionSelectionDto,
         result: PlayerDecisionSubmissionResultKindDto,
     ) {
@@ -299,7 +299,7 @@ class MahjongTableGameActionService(
      * @param player 執行捨牌的玩家。
      * @param tileId 要打出的手牌識別碼。
      */
-    fun discard(player: ServerPlayerEntity, tileId: Uuid) {
+    fun discard(player: ServerPlayer, tileId: Uuid) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -316,7 +316,7 @@ class MahjongTableGameActionService(
      * @param selectedTileIds 契約要求額外選取的手牌識別碼。
      */
     fun act(
-        player: ServerPlayerEntity,
+        player: ServerPlayer,
         candidate: GameActionCandidate,
         selectedTileIds: List<Uuid> = emptyList(),
     ) {
@@ -372,7 +372,7 @@ class MahjongTableGameActionService(
      *
      * @param player 要顯示手牌資訊的玩家。
      */
-    fun showHand(player: ServerPlayerEntity) {
+    fun showHand(player: ServerPlayer) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {

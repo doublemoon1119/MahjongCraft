@@ -19,7 +19,7 @@ class FabricRuntimeMetadata {
 
     /** 讀取目前執行中的 Minecraft 版本。 */
     val minecraftVersion: String
-        get() = SharedConstants.getGameVersion().name
+        get() = SharedConstants.getCurrentVersion().name
 
     /** 組成包含 mod、loader 與 Minecraft 版本的初始化訊息。 */
     fun initializationMessage(): String = "${MinecraftModMetadata.MOD_NAME} $modVersion (Fabric, Minecraft $minecraftVersion) initialized."

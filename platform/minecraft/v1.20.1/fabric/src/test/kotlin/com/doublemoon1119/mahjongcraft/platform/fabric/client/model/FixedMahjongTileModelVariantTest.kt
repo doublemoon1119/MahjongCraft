@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.model
 
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelResolver
-import net.minecraft.client.render.model.ModelLoader
-import net.minecraft.client.render.model.UnbakedModel
-import net.minecraft.client.render.model.json.JsonUnbakedModel
-import net.minecraft.util.Identifier
+import net.minecraft.client.renderer.block.model.BlockModel
+import net.minecraft.client.resources.model.ModelBakery
+import net.minecraft.client.resources.model.UnbakedModel
+import net.minecraft.resources.ResourceLocation
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -19,30 +19,30 @@ class FixedMahjongTileModelVariantTest {
         val variant = variant()
         val model = variant.toUnbakedModel()
 
-        assertEquals(variant.modelId.toString(), model.id)
-        assertEquals(setOf(variant.templateModelId), model.modelDependencies.toSet())
+        assertEquals(variant.modelId.toString(), model.name)
+        assertEquals(setOf(variant.templateModelId), model.dependencies.toSet())
         assertEquals(
-            expected = Identifier("example", "item/mahjong_tile/inverted_five_pin"),
-            actual = model.resolveSprite("0").textureId,
+            expected = ResourceLocation("example", "item/mahjong_tile/inverted_five_pin"),
+            actual = model.getMaterial("0").texture(),
         )
         assertEquals(
-            expected = Identifier("example", "item/mahjong_tile/example_cover"),
-            actual = model.resolveSprite("1").textureId,
+            expected = ResourceLocation("example", "item/mahjong_tile/example_cover"),
+            actual = model.getMaterial("1").texture(),
         )
         assertEquals(
-            expected = Identifier("example", "item/mahjong_tile/example_cover"),
-            actual = model.resolveSprite("particle").textureId,
+            expected = ResourceLocation("example", "item/mahjong_tile/example_cover"),
+            actual = model.getMaterial("particle").texture(),
         )
 
-        val template = JsonUnbakedModel.deserialize(
+        val template = BlockModel.fromString(
             """
             {
               "display": {"gui": {"rotation": [15, 150, 0], "scale": [0.7, 0.7, 0.7]}}
             }
             """.trimIndent(),
         )
-        model.setParents { id -> if (id == variant.templateModelId) template else null }
-        assertEquals(template.getTransformations().gui, model.getTransformations().gui)
+        model.resolveParents { id -> if (id == variant.templateModelId) template else null }
+        assertEquals(template.transforms.gui, model.transforms.gui)
     }
 
     /** resolver 只接管已登記的 synthetic ID，其他模型交回 vanilla 載入流程。 */
@@ -53,7 +53,7 @@ class FixedMahjongTileModelVariantTest {
         val context = TestResolverContext(variant.modelId)
 
         assertNotNull(resolver.resolveModel(context))
-        assertNull(resolver.resolveModel(context.copy(requestedId = Identifier("example", "item/other"))))
+        assertNull(resolver.resolveModel(context.copy(requestedId = ResourceLocation("example", "item/other"))))
     }
 
     /** 可見與未知牌 synthetic ID 不會因為 asset key 剛好叫 unknown 而互相覆蓋。 */
@@ -69,10 +69,10 @@ class FixedMahjongTileModelVariantTest {
 
     /** 建立使用第三方 namespace 的固定牌模型變體測試資料。 */
     private fun variant(): FixedMahjongTileModelVariant = FixedMahjongTileModelVariant(
-        modelId = Identifier("example", "mahjong_tile/variant/demo"),
-        templateModelId = Identifier("mahjongcraft", "item/mahjong_tile_base"),
-        frontTextureId = Identifier("example", "textures/item/mahjong_tile/inverted_five_pin.png"),
-        coverTextureId = Identifier("example", "textures/item/mahjong_tile/example_cover.png"),
+        modelId = ResourceLocation("example", "mahjong_tile/variant/demo"),
+        templateModelId = ResourceLocation("mahjongcraft", "item/mahjong_tile_base"),
+        frontTextureId = ResourceLocation("example", "textures/item/mahjong_tile/inverted_five_pin.png"),
+        coverTextureId = ResourceLocation("example", "textures/item/mahjong_tile/example_cover.png"),
     )
 
     /**
@@ -81,12 +81,12 @@ class FixedMahjongTileModelVariantTest {
      * @property requestedId 本次 resolver 查詢的 synthetic model ID。
      */
     private data class TestResolverContext(
-        private val requestedId: Identifier,
+        private val requestedId: ResourceLocation,
     ) : ModelResolver.Context {
-        override fun id(): Identifier = requestedId
+        override fun id(): ResourceLocation = requestedId
 
-        override fun getOrLoadModel(id: Identifier): UnbakedModel = JsonUnbakedModel.deserialize("{}")
+        override fun getOrLoadModel(id: ResourceLocation): UnbakedModel = BlockModel.fromString("{}")
 
-        override fun loader(): ModelLoader = error("Not needed by this test")
+        override fun loader(): ModelBakery = error("Not needed by this test")
     }
 }

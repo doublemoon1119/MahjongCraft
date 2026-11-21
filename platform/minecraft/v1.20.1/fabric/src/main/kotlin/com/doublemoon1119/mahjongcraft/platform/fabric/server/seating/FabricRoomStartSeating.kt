@@ -4,9 +4,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatEn
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatAssignmentResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatCollisionPolicy
-import net.minecraft.entity.Entity
-import net.minecraft.entity.LivingEntity
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.LivingEntity
 import kotlin.math.abs
 
 /**
@@ -43,7 +43,7 @@ internal class FabricRoomStartSeating(
         }
         val participants = riders.filterNotNull().filter {
             val body = it.boundingBox
-            SeatCollisionPolicy.blocks(it.isRemoved, it.isSpectator, it is LivingEntity || it.isCollidable) &&
+            SeatCollisionPolicy.blocks(it.isRemoved, it.isSpectator, it is LivingEntity || it.canBeCollidedWith()) &&
                 body.maxX > body.minX &&
                 body.maxY > body.minY &&
                 body.maxZ > body.minZ
@@ -66,12 +66,12 @@ internal class FabricRoomStartSeating(
         val temporary = changed.keys.mapNotNull { it.vehicle }.filter { vehicle -> originals.values.none { it.vehicle === vehicle } }
         changed.keys.forEach { it.stopRiding() }
         for ((rider, original) in changed) {
-            if (!rider.isAlive || rider.world !== original.world) {
+            if (!rider.isAlive || rider.level() !== original.world) {
                 logger.warn("Unable to restore start seating riderId={}", rider.uuid)
                 continue
             }
-            if (rider is ServerPlayerEntity) {
-                rider.networkHandler.requestTeleport(
+            if (rider is ServerPlayer) {
+                rider.connection.teleport(
                     original.x,
                     original.y,
                     original.z,
@@ -79,7 +79,7 @@ internal class FabricRoomStartSeating(
                     original.pitch,
                 )
             } else {
-                rider.refreshPositionAndAngles(
+                rider.moveTo(
                     original.x,
                     original.y,
                     original.z,
@@ -89,7 +89,7 @@ internal class FabricRoomStartSeating(
             }
         }
         for ((rider, original) in changed) {
-            if (!rider.isAlive || rider.world !== original.world) continue
+            if (!rider.isAlive || rider.level() !== original.world) continue
             val vehicle = original.vehicle
             if (vehicle != null) {
                 val restored = vehicle.isAlive && rider.startRiding(vehicle, true)
@@ -102,6 +102,6 @@ internal class FabricRoomStartSeating(
                 }
             }
         }
-        temporary.filterIsInstance<MahjongStoolSeatEntity>().filterNot { it.hasPassengers() }.forEach(Entity::discard)
+        temporary.filterIsInstance<MahjongStoolSeatEntity>().filterNot { it.isVehicle }.forEach(Entity::discard)
     }
 }

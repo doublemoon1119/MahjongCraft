@@ -2,12 +2,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
-import net.minecraft.entity.EntityType
-import net.minecraft.entity.data.DataTracker
-import net.minecraft.entity.data.TrackedData
-import net.minecraft.entity.data.TrackedDataHandlerRegistry
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.world.World
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.network.syncher.EntityDataAccessor
+import net.minecraft.network.syncher.EntityDataSerializers
+import net.minecraft.network.syncher.SynchedEntityData
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.level.Level
 import kotlin.uuid.Uuid
 
 /**
@@ -18,12 +18,12 @@ import kotlin.uuid.Uuid
  */
 class MahjongSoundTimelineEntity(
     type: EntityType<out MahjongSoundTimelineEntity> = ModEntities.mahjongSoundTimeline,
-    world: World,
+    world: Level,
 ) : SimpleAnimatedMahjongEntity(type, world),
     TableOwnedPresentationEntity {
     /** 所屬麻將桌。 */
     override val managedTableId: Uuid?
-        get() = dataTracker[TABLE_ID].takeIf(String::isNotBlank)?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
+        get() = entityData[TABLE_ID].takeIf(String::isNotBlank)?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
 
     init {
         setNoGravity(true)
@@ -40,8 +40,8 @@ class MahjongSoundTimelineEntity(
      * @param playAtGameTime 預定播放的絕對 server game time。
      */
     fun configure(tableId: Uuid, soundId: String, volume: Float, pitch: Float, playAtGameTime: Long) {
-        check(!world.isClient) { "Sound timeline must be configured by the server" }
-        dataTracker.set(TABLE_ID, tableId.toString())
+        check(!level().isClientSide) { "Sound timeline must be configured by the server" }
+        entityData.set(TABLE_ID, tableId.toString())
         enqueue(
             step = AnimationStep.PlaySound(
                 soundId = soundId,
@@ -55,11 +55,11 @@ class MahjongSoundTimelineEntity(
 
     override fun tick() {
         super.tick()
-        if (!world.isClient && !isAnimating) discard()
+        if (!level().isClientSide && !isAnimating) discard()
     }
 
-    override fun initDataTracker() {
-        dataTracker.startTracking(TABLE_ID, "")
+    override fun defineSynchedData() {
+        entityData.define(TABLE_ID, "")
     }
 
     /**
@@ -67,8 +67,8 @@ class MahjongSoundTimelineEntity(
      *
      * @param nbt entity 的持久化資料。
      */
-    override fun readCustomDataFromNbt(nbt: NbtCompound) {
-        dataTracker.set(TABLE_ID, ManagedTableNbt.read(nbt)?.toString().orEmpty())
+    override fun readAdditionalSaveData(nbt: CompoundTag) {
+        entityData.set(TABLE_ID, ManagedTableNbt.read(nbt)?.toString().orEmpty())
         readAnimationQueueFromNbt(nbt)
     }
 
@@ -77,7 +77,7 @@ class MahjongSoundTimelineEntity(
      *
      * @param nbt 接收 entity 持久化資料的 NBT。
      */
-    override fun writeCustomDataToNbt(nbt: NbtCompound) {
+    override fun addAdditionalSaveData(nbt: CompoundTag) {
         ManagedTableNbt.write(nbt, managedTableId)
         writeAnimationQueueToNbt(nbt)
     }
@@ -91,7 +91,7 @@ class MahjongSoundTimelineEntity(
         private const val SOUND_GRACE_TICKS: Long = 20L
 
         /** 同步所屬麻將桌 UUID。 */
-        private val TABLE_ID: TrackedData<String> =
-            DataTracker.registerData(MahjongSoundTimelineEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val TABLE_ID: EntityDataAccessor<String> =
+            SynchedEntityData.defineId(MahjongSoundTimelineEntity::class.java, EntityDataSerializers.STRING)
     }
 }

@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.character
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterHandle
-import net.minecraft.entity.Entity
-import net.minecraft.util.math.Vec3d
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.phys.Vec3
 
 /**
  * 已確認固定身分的原生角色及暫態呈現狀態。
@@ -17,13 +17,13 @@ internal class FabricAiCharacterActor(
     val capabilityId: String,
 ) {
     /** 入座後的腳底位置，用於發現被外部移走的角色。 */
-    var expectedPosition: Vec3d? = null
+    var expectedPosition: Vec3? = null
 
     /** 本次接管最後安排的載具，不代表後來由其他系統接手的載具。 */
     var assignedVehicle: Entity? = null
 
     /** 目前已通知的公開注視目標。 */
-    var lookTarget: Vec3d? = null
+    var lookTarget: Vec3? = null
 
     /** 本次接管中已停用的回饋種類，避免重複報錯。 */
     val failedCallbacks: MutableSet<String> = mutableSetOf()

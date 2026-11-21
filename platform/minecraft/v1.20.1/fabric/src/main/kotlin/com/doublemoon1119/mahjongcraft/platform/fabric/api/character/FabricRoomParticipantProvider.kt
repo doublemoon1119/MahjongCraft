@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.api.character
 
-import net.minecraft.entity.Entity
+import net.minecraft.world.entity.Entity
 import kotlin.uuid.Uuid
 
 /**

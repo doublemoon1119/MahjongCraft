@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogge
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterBindingKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterLeaseCoordinator
-import net.minecraft.entity.Entity
+import net.minecraft.world.entity.Entity
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 

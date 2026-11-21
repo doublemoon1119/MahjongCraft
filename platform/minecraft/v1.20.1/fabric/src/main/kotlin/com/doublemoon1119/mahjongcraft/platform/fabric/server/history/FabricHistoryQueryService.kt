@@ -53,7 +53,7 @@ import kotlinx.serialization.encodeToString
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -112,7 +112,7 @@ class FabricHistoryQueryService(
             settingsServer = server
             settingsPublisher.start { interval ->
                 if (settingsServer === server) {
-                    server.playerManager.playerList.forEach { player ->
+                    server.playerList.players.forEach { player ->
                         MahjongChannels.historyQuerySettings.sendTo(player, json, HistoryQuerySettingsPayload(interval))
                     }
                 }
@@ -139,7 +139,7 @@ class FabricHistoryQueryService(
      *
      * @param player 已建立連線的玩家。
      */
-    private fun sendQuerySettings(player: ServerPlayerEntity) {
+    private fun sendQuerySettings(player: ServerPlayer) {
         MahjongChannels.historyQuerySettings.sendTo(player, json, HistoryQuerySettingsPayload(configState.current.history.queryMinimumInterval))
     }
 
@@ -150,7 +150,7 @@ class FabricHistoryQueryService(
      * @param player 已驗證連線玩家。
      * @param request 有界事件要求。
      */
-    private fun receiveRoundEvents(server: MinecraftServer, player: ServerPlayerEntity, request: HistoryRoundEventsRequestDto) {
+    private fun receiveRoundEvents(server: MinecraftServer, player: ServerPlayer, request: HistoryRoundEventsRequestDto) {
         receiveRoundQuery(
             server = server, player = player, requestId = request.requestId, matchId = request.matchId, wireScope = request.scope,
             failure = { HistoryRoundEventsResponseDto(request.requestId, request.matchId, request.roundNumber, request.startTransactionIndex, errorCode = it, events = null) },
@@ -173,7 +173,7 @@ class FabricHistoryQueryService(
      * @param player 已驗證連線玩家。
      * @param request 有界狀態要求。
      */
-    private fun receiveRoundState(server: MinecraftServer, player: ServerPlayerEntity, request: HistoryRoundStateRequestDto) {
+    private fun receiveRoundState(server: MinecraftServer, player: ServerPlayer, request: HistoryRoundStateRequestDto) {
         receiveRoundQuery(
             server = server, player = player, requestId = request.requestId, matchId = request.matchId, wireScope = request.scope,
             failure = { HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, errorCode = it, states = emptyList()) },
@@ -206,7 +206,7 @@ class FabricHistoryQueryService(
      */
     private fun <R : Any> receiveRoundQuery(
         server: MinecraftServer,
-        player: ServerPlayerEntity,
+        player: ServerPlayer,
         requestId: String,
         matchId: String,
         wireScope: HistoryQueryScopeDto,
@@ -273,7 +273,7 @@ class FabricHistoryQueryService(
      * @param player 已驗證連線玩家。
      * @param request 有界線路要求。
      */
-    private fun receiveArchiveStatus(server: MinecraftServer, player: ServerPlayerEntity, request: HistoryArchiveStatusRequestDto) {
+    private fun receiveArchiveStatus(server: MinecraftServer, player: ServerPlayer, request: HistoryArchiveStatusRequestDto) {
         if (!validRequestId(request.requestId)) return
         val access = player.queryAccess()
         val initialPolicy = policy()
@@ -332,7 +332,7 @@ class FabricHistoryQueryService(
      * @param player 已驗證連線玩家。
      * @param request 有界線路要求。
      */
-    private fun receiveList(server: MinecraftServer, player: ServerPlayerEntity, request: HistoryListRequestDto) {
+    private fun receiveList(server: MinecraftServer, player: ServerPlayer, request: HistoryListRequestDto) {
         if (!validRequestId(request.requestId)) return
         val access = player.queryAccess()
         val source = sourceFor(request.scope) ?: return MahjongChannels.historyListResponse.sendTo(
@@ -466,7 +466,7 @@ class FabricHistoryQueryService(
      * @param player 已驗證連線玩家。
      * @param request 有界線路要求。
      */
-    private fun receiveSummary(server: MinecraftServer, player: ServerPlayerEntity, request: HistorySummaryRequestDto) {
+    private fun receiveSummary(server: MinecraftServer, player: ServerPlayer, request: HistorySummaryRequestDto) {
         if (!validRequestId(request.requestId)) return
         val access = player.queryAccess()
         val source = sourceFor(request.scope) ?: return MahjongChannels.historySummaryResponse.sendTo(
@@ -539,7 +539,7 @@ class FabricHistoryQueryService(
      * @param player 已驗證連線玩家。
      * @param request 有界線路要求。
      */
-    private fun receiveRuleSettings(server: MinecraftServer, player: ServerPlayerEntity, request: HistoryRuleSettingsRequestDto) {
+    private fun receiveRuleSettings(server: MinecraftServer, player: ServerPlayer, request: HistoryRuleSettingsRequestDto) {
         if (!validRequestId(request.requestId)) return
         val access = player.queryAccess()
         val source = sourceFor(request.scope) ?: return MahjongChannels.historyRuleSettingsResponse.sendTo(
@@ -643,7 +643,7 @@ class FabricHistoryQueryService(
      * @param sessionId 原資料來源 session。
      * @return 仍可安全回覆原要求。
      */
-    private fun sameConnection(server: MinecraftServer, player: ServerPlayerEntity, source: HistoryDataSource, sessionId: Uuid?): Boolean = server.playerManager.getPlayer(player.uuid) === player &&
+    private fun sameConnection(server: MinecraftServer, player: ServerPlayer, source: HistoryDataSource, sessionId: Uuid?): Boolean = server.playerList.getPlayer(player.uuid) === player &&
         (source.writer.isCurrentSession(sessionId) || sessionId == null && source.writer.currentSessionId == null)
 
     /**
@@ -664,7 +664,7 @@ class FabricHistoryQueryService(
      * @param player 已驗證的收件玩家。
      * @param playerIds 回應中涉及的玩家 UUID 字串。
      */
-    private suspend fun sendIdentities(player: ServerPlayerEntity, playerIds: Collection<String>) {
+    private suspend fun sendIdentities(player: ServerPlayer, playerIds: Collection<String>) {
         playerIdentities.send(
             targetId = player.uuid.toKotlinUuid(),
             playerIds = playerIds.mapNotNull { runCatching { Uuid.parse(it) }.getOrNull() },
@@ -677,7 +677,7 @@ class FabricHistoryQueryService(
  *
  * @return 目前 UUID 與 OP 2 資格。
  */
-private fun ServerPlayerEntity.queryAccess(): HistoryQueryAccess = HistoryQueryAccess(uuid.toKotlinUuid(), hasPermissionLevel(2))
+private fun ServerPlayer.queryAccess(): HistoryQueryAccess = HistoryQueryAccess(uuid.toKotlinUuid(), hasPermissions(2))
 
 /**
  * 判斷目前連線是否可使用全部對局查詢範圍。

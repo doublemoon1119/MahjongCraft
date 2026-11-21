@@ -2,12 +2,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
-import net.minecraft.entity.EntityType
-import net.minecraft.entity.data.DataTracker
-import net.minecraft.entity.data.TrackedData
-import net.minecraft.entity.data.TrackedDataHandlerRegistry
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.world.World
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.network.syncher.EntityDataAccessor
+import net.minecraft.network.syncher.EntityDataSerializers
+import net.minecraft.network.syncher.SynchedEntityData
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.level.Level
 import kotlin.uuid.Uuid
 
 /**
@@ -18,26 +18,26 @@ import kotlin.uuid.Uuid
  */
 class ExhaustiveDrawSettlementPresentationEntity(
     type: EntityType<out ExhaustiveDrawSettlementPresentationEntity> = ModEntities.exhaustiveDrawSettlementPresentation,
-    world: World,
+    world: Level,
 ) : SimpleAnimatedMahjongEntity(type, world),
     TableOwnedPresentationEntity {
 
     /** 所屬麻將桌。 */
     override val managedTableId: Uuid?
-        get() = dataTracker[TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
+        get() = entityData[TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
 
     /** 舞台開始的絕對遊戲時間。 */
-    val startGameTime: Long get() = dataTracker[START_GAME_TIME]
+    val startGameTime: Long get() = entityData[START_GAME_TIME]
 
     /** 舞台結束的絕對遊戲時間。 */
-    val endGameTime: Long get() = dataTracker[END_GAME_TIME]
+    val endGameTime: Long get() = entityData[END_GAME_TIME]
 
     /** 完整 namespaced 流局原因 ID。 */
-    val reasonId: String get() = dataTracker[REASON_ID]
+    val reasonId: String get() = entityData[REASON_ID]
 
     /** 全部座位的排行關鍵影格。 */
     val players: List<ExhaustiveDrawSettlementPlayerSnapshot>
-        get() = decodePlayers(dataTracker[PLAYERS])
+        get() = decodePlayers(entityData[PLAYERS])
 
     /** 是否需要先呈現實際等待牌；單純的流局宣告不占用獨立階段。 */
     val hasInformationPhase: Boolean get() = players.any { it.waitingTileAssetKeys.isNotEmpty() }
@@ -60,14 +60,14 @@ class ExhaustiveDrawSettlementPresentationEntity(
         reasonId: String,
         players: List<ExhaustiveDrawSettlementPlayerSnapshot>,
     ) {
-        check(!world.isClient) { "Round settlement stage must be configured by the server" }
+        check(!level().isClientSide) { "Round settlement stage must be configured by the server" }
         require(players.isNotEmpty()) { "Round settlement must contain at least one player" }
         require(reasonId.isNotBlank()) { "Round settlement reason ID must not be blank" }
-        dataTracker.set(TABLE_ID, tableId.toString())
-        dataTracker.set(START_GAME_TIME, startGameTime)
-        dataTracker.set(END_GAME_TIME, startGameTime + durationTicks(players))
-        dataTracker.set(REASON_ID, reasonId)
-        dataTracker.set(PLAYERS, encodePlayers(players))
+        entityData.set(TABLE_ID, tableId.toString())
+        entityData.set(START_GAME_TIME, startGameTime)
+        entityData.set(END_GAME_TIME, startGameTime + durationTicks(players))
+        entityData.set(REASON_ID, reasonId)
+        entityData.set(PLAYERS, encodePlayers(players))
         enqueueSettlementSounds(startGameTime)
     }
 
@@ -76,22 +76,22 @@ class ExhaustiveDrawSettlementPresentationEntity(
      *
      * @param tickDelta 本 tick 的部分經過時間。
      */
-    fun elapsedTicks(tickDelta: Float): Double = world.time + tickDelta.toDouble() - startGameTime
+    fun elapsedTicks(tickDelta: Float): Double = level().gameTime + tickDelta.toDouble() - startGameTime
 
-    override fun isCollidable(): Boolean = false
+    override fun canBeCollidedWith(): Boolean = false
 
     override fun isPushable(): Boolean = false
 
-    override fun canHit(): Boolean = false
+    override fun isPickable(): Boolean = false
 
     override fun tick() {
         super.tick()
-        if (world.isClient) return
+        if (level().isClientSide) return
         if (endGameTime - startGameTime != durationTicks(players)) {
             discard()
             return
         }
-        if (endGameTime > startGameTime && world.time >= endGameTime) discard()
+        if (endGameTime > startGameTime && level().gameTime >= endGameTime) discard()
     }
 
     /**
@@ -159,29 +159,29 @@ class ExhaustiveDrawSettlementPresentationEntity(
         player.waitingTileAssetKeys.isNotEmpty()
     }
 
-    override fun initDataTracker() {
-        dataTracker.startTracking(TABLE_ID, "")
-        dataTracker.startTracking(START_GAME_TIME, 0L)
-        dataTracker.startTracking(END_GAME_TIME, 0L)
-        dataTracker.startTracking(REASON_ID, "")
-        dataTracker.startTracking(PLAYERS, "")
+    override fun defineSynchedData() {
+        entityData.define(TABLE_ID, "")
+        entityData.define(START_GAME_TIME, 0L)
+        entityData.define(END_GAME_TIME, 0L)
+        entityData.define(REASON_ID, "")
+        entityData.define(PLAYERS, "")
     }
 
-    override fun readCustomDataFromNbt(nbt: NbtCompound) {
-        dataTracker.set(TABLE_ID, ManagedTableNbt.read(nbt)?.toString().orEmpty())
-        dataTracker.set(START_GAME_TIME, nbt.getLong(NBT_START_GAME_TIME))
-        dataTracker.set(END_GAME_TIME, nbt.getLong(NBT_END_GAME_TIME))
-        dataTracker.set(REASON_ID, nbt.getString(NBT_REASON_ID))
-        dataTracker.set(PLAYERS, nbt.getString(NBT_PLAYERS))
+    override fun readAdditionalSaveData(nbt: CompoundTag) {
+        entityData.set(TABLE_ID, ManagedTableNbt.read(nbt)?.toString().orEmpty())
+        entityData.set(START_GAME_TIME, nbt.getLong(NBT_START_GAME_TIME))
+        entityData.set(END_GAME_TIME, nbt.getLong(NBT_END_GAME_TIME))
+        entityData.set(REASON_ID, nbt.getString(NBT_REASON_ID))
+        entityData.set(PLAYERS, nbt.getString(NBT_PLAYERS))
         readAnimationQueueFromNbt(nbt)
     }
 
-    override fun writeCustomDataToNbt(nbt: NbtCompound) {
+    override fun addAdditionalSaveData(nbt: CompoundTag) {
         ManagedTableNbt.write(nbt, managedTableId)
         nbt.putLong(NBT_START_GAME_TIME, startGameTime)
         nbt.putLong(NBT_END_GAME_TIME, endGameTime)
         nbt.putString(NBT_REASON_ID, reasonId)
-        nbt.putString(NBT_PLAYERS, dataTracker[PLAYERS])
+        nbt.putString(NBT_PLAYERS, entityData[PLAYERS])
         writeAnimationQueueToNbt(nbt)
     }
 
@@ -253,25 +253,25 @@ class ExhaustiveDrawSettlementPresentationEntity(
         fun informationRowRevealTick(index: Int): Long = INFORMATION_ROW_REVEAL_START_TICK +
             index.coerceAtLeast(0) * INFORMATION_ROW_REVEAL_INTERVAL_TICKS
 
-        private val TABLE_ID: TrackedData<String> = DataTracker.registerData(
+        private val TABLE_ID: EntityDataAccessor<String> = SynchedEntityData.defineId(
             ExhaustiveDrawSettlementPresentationEntity::class.java,
-            TrackedDataHandlerRegistry.STRING,
+            EntityDataSerializers.STRING,
         )
-        private val START_GAME_TIME: TrackedData<Long> = DataTracker.registerData(
+        private val START_GAME_TIME: EntityDataAccessor<Long> = SynchedEntityData.defineId(
             ExhaustiveDrawSettlementPresentationEntity::class.java,
-            TrackedDataHandlerRegistry.LONG,
+            EntityDataSerializers.LONG,
         )
-        private val END_GAME_TIME: TrackedData<Long> = DataTracker.registerData(
+        private val END_GAME_TIME: EntityDataAccessor<Long> = SynchedEntityData.defineId(
             ExhaustiveDrawSettlementPresentationEntity::class.java,
-            TrackedDataHandlerRegistry.LONG,
+            EntityDataSerializers.LONG,
         )
-        private val REASON_ID: TrackedData<String> = DataTracker.registerData(
+        private val REASON_ID: EntityDataAccessor<String> = SynchedEntityData.defineId(
             ExhaustiveDrawSettlementPresentationEntity::class.java,
-            TrackedDataHandlerRegistry.STRING,
+            EntityDataSerializers.STRING,
         )
-        private val PLAYERS: TrackedData<String> = DataTracker.registerData(
+        private val PLAYERS: EntityDataAccessor<String> = SynchedEntityData.defineId(
             ExhaustiveDrawSettlementPresentationEntity::class.java,
-            TrackedDataHandlerRegistry.STRING,
+            EntityDataSerializers.STRING,
         )
 
         /**

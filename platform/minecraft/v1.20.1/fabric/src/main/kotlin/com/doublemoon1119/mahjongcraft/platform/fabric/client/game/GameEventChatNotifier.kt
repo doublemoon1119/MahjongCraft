@@ -16,11 +16,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcom
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultKindDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultPayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
-import net.minecraft.client.MinecraftClient
-import net.minecraft.text.ClickEvent
-import net.minecraft.text.MutableText
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.ClickEvent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.MutableComponent
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
@@ -43,14 +43,14 @@ fun buildRoundResultChatMessage(
     roundOutcomeDisplayNameRegistry: RoundOutcomeDisplayNameRegistry,
     exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
     playerDisplayName: ((Uuid, Boolean) -> String)? = null,
-): Text {
+): Component {
     val orderedAiPlayerIds = result.players.filter { it.isAi }.sortedBy { it.seatIndex }.map { Uuid.parse(it.playerId) }
-    val details: MutableText = Text.empty()
+    val details: MutableComponent = Component.empty()
     result.players.sortedBy { it.currentRank }.forEachIndexed { index, player ->
         val playerId = Uuid.parse(player.playerId)
-        if (index > 0) details.append(Text.literal("\n"))
+        if (index > 0) details.append(Component.literal("\n"))
         details.append(
-            Text.translatable(
+            Component.translatable(
                 MinecraftMessageKeys.ROUND_RESULT_PLAYER_LINE,
                 playerDisplayName?.invoke(playerId, player.isAi)
                     ?: resolvePlayerDisplayName(playerId, player.isAi, orderedAiPlayerIds),
@@ -86,17 +86,17 @@ private fun roundOutcomeText(
     actionVocabularyRegistry: GameActionVocabularyRegistry,
     roundOutcomeDisplayNameRegistry: RoundOutcomeDisplayNameRegistry,
     exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
-): Text = when (result.outcomeId) {
-    BuiltInRoundOutcomeIds.TSUMO -> Text.translatable(winActionLabelKey(actionVocabularyRegistry, result.ruleModuleId, BuiltInGameActionIds.TSUMO))
-    BuiltInRoundOutcomeIds.RON -> Text.translatable(winActionLabelKey(actionVocabularyRegistry, result.ruleModuleId, BuiltInGameActionIds.RON))
+): Component = when (result.outcomeId) {
+    BuiltInRoundOutcomeIds.TSUMO -> Component.translatable(winActionLabelKey(actionVocabularyRegistry, result.ruleModuleId, BuiltInGameActionIds.TSUMO))
+    BuiltInRoundOutcomeIds.RON -> Component.translatable(winActionLabelKey(actionVocabularyRegistry, result.ruleModuleId, BuiltInGameActionIds.RON))
     else -> (
         actionVocabularyRegistry.find(result.ruleModuleId, result.outcomeId)?.messageKey
             ?: roundOutcomeDisplayNameRegistry.find(result.outcomeId)
             ?: exhaustiveDrawReasonDisplayNameRegistry.find(result.outcomeId)
-        )?.let(Text::translatable)
+        )?.let(Component::translatable)
         ?: when (result.kind) {
-            RoundResultKindDto.DRAW -> Text.translatable(MinecraftMessageKeys.GAME_ACTION_EXHAUSTIVE_DRAW)
-            RoundResultKindDto.WIN -> Text.literal(result.outcomeId)
+            RoundResultKindDto.DRAW -> Component.translatable(MinecraftMessageKeys.GAME_ACTION_EXHAUSTIVE_DRAW)
+            RoundResultKindDto.WIN -> Component.literal(result.outcomeId)
         }
 }
 
@@ -133,12 +133,12 @@ fun buildMatchResultChatMessage(
     module: MahjongRuleModule<*>,
     historyCommand: String? = null,
     playerDisplayName: ((Uuid, Boolean) -> String)? = null,
-): Text? {
+): Component? {
     if (action !is GameAction.MatchEnded) return null
 
-    val details = Text.empty()
+    val details = Component.empty()
     appendRankingLines(details, newSnapshot.players.sortedWith(module.compareForMatchRanking()), aiPlayerIds, playerDisplayName)
-    if (historyCommand != null) details.append(Text.literal("\n").append(Text.translatable(HISTORY_OPEN_HINT_KEY).formatted(Formatting.AQUA)))
+    if (historyCommand != null) details.append(Component.literal("\n").append(Component.translatable(HISTORY_OPEN_HINT_KEY).withStyle(ChatFormatting.AQUA)))
     return buildMatchResultChatText(details, historyCommand?.let { ClickEvent(ClickEvent.Action.RUN_COMMAND, it) })
 }
 
@@ -154,16 +154,16 @@ private const val HISTORY_OPEN_HINT_KEY = MinecraftHistoryScreenKeys.OPEN_HINT
  * @param playerDisplayName 自訂名稱解析器；未提供時使用玩家清單與 AI 名稱。
  */
 private fun appendRankingLines(
-    message: MutableText,
+    message: MutableComponent,
     rankedPlayers: List<MahjongPlayerSnapshot>,
     aiPlayerIds: Set<Uuid>,
     playerDisplayName: ((Uuid, Boolean) -> String)?,
 ) {
     val orderedAiPlayerIds = rankedPlayers.filter { it.id in aiPlayerIds }.sortedBy { it.initialSeatIndex }.map { it.id }
     rankedPlayers.forEachIndexed { index, player ->
-        if (index > 0) message.append(Text.literal("\n"))
+        if (index > 0) message.append(Component.literal("\n"))
         message.append(
-            Text.translatable(
+            Component.translatable(
                 MinecraftMessageKeys.RANKING_LINE,
                 (index + 1).toString(),
                 playerDisplayName?.invoke(player.id, player.id in aiPlayerIds)
@@ -185,7 +185,7 @@ private fun appendRankingLines(
  */
 private fun resolvePlayerDisplayName(id: Uuid, isAi: Boolean, orderedAiPlayerIds: List<Uuid>): String {
     if (isAi) return aiPlayerDisplayName(id, orderedAiPlayerIds)
-    val name = MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(id.toJavaUuid())?.profile?.name
+    val name = Minecraft.getInstance().connection?.getPlayerInfo(id.toJavaUuid())?.profile?.name
     return name ?: id.toString().take(8)
 }
 

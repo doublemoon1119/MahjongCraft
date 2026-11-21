@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.character
 
-import net.minecraft.entity.Entity
+import net.minecraft.world.entity.Entity
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

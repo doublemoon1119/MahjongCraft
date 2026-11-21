@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.block
 
-import net.minecraft.util.math.Direction
-import net.minecraft.util.shape.VoxelShape
-import net.minecraft.util.shape.VoxelShapes
+import net.minecraft.core.Direction
+import net.minecraft.world.phys.shapes.Shapes
+import net.minecraft.world.phys.shapes.VoxelShape
 
 /**
  * 麻將凳固定款式及其碰撞與選取幾何。
@@ -27,9 +27,9 @@ enum class MahjongStoolDesign(
     ),
     ;
 
-    /** 完全貼合 [cuboids] 的碰撞與選取形狀。 */
-    val shape: VoxelShape = cuboids.fold(VoxelShapes.empty()) { shape, cuboid ->
-        VoxelShapes.union(shape, cuboid.toVoxelShape())
+    /** 完全貼合 [cubes] 的碰撞與選取形狀。 */
+    val shape: VoxelShape = cuboids.fold(Shapes.empty()) { shape, cuboid ->
+        Shapes.or(shape, cuboid.toVoxelShape())
     }
 
     /** 凳面相對方塊底部的高度，以方塊為單位；坐下時乘客的屁股底面貼齊此高度。 */
@@ -39,8 +39,8 @@ enum class MahjongStoolDesign(
     fun shapeFor(facing: Direction): VoxelShape = when (facing) {
         Direction.EAST,
         Direction.WEST,
-        -> cuboids.fold(VoxelShapes.empty()) { shape, cuboid ->
-            VoxelShapes.union(shape, cuboid.rotateQuarterTurn().toVoxelShape())
+        -> cuboids.fold(Shapes.empty()) { shape, cuboid ->
+            Shapes.or(shape, cuboid.rotateQuarterTurn().toVoxelShape())
         }
         else -> shape
     }

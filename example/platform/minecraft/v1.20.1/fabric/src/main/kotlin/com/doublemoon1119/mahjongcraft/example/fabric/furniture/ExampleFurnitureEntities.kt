@@ -3,12 +3,12 @@ package com.doublemoon1119.mahjongcraft.example.fabric.furniture
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity.ExampleChairSeatEntity
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity.ExampleCushionEntity
 import net.fabricmc.fabric.api.`object`.builder.v1.entity.FabricEntityTypeBuilder
-import net.minecraft.entity.EntityDimensions
-import net.minecraft.entity.EntityType
-import net.minecraft.entity.SpawnGroup
-import net.minecraft.registry.Registries
-import net.minecraft.registry.Registry
-import net.minecraft.util.Identifier
+import net.minecraft.core.Registry
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.entity.EntityDimensions
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.entity.MobCategory
 
 /** 範例家具 entity type 的集中註冊點。 */
 object ExampleFurnitureEntities {
@@ -26,9 +26,9 @@ object ExampleFurnitureEntities {
     /** 註冊範例家具的兩種 entity type；兩者都不會自然生成。 */
     fun register() {
         chairSeat = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier(ExampleFurnitureIds.CHAIR_SEAT),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::ExampleChairSeatEntity)
+            BuiltInRegistries.ENTITY_TYPE,
+            ResourceLocation(ExampleFurnitureIds.CHAIR_SEAT),
+            FabricEntityTypeBuilder.create(MobCategory.MISC, ::ExampleChairSeatEntity)
                 .dimensions(EntityDimensions.fixed(0.25f, 0.25f))
                 .trackRangeChunks(10)
                 .trackedUpdateRate(10)
@@ -36,9 +36,9 @@ object ExampleFurnitureEntities {
                 .build(),
         )
         cushion = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier(ExampleFurnitureIds.CUSHION),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::ExampleCushionEntity)
+            BuiltInRegistries.ENTITY_TYPE,
+            ResourceLocation(ExampleFurnitureIds.CUSHION),
+            FabricEntityTypeBuilder.create(MobCategory.MISC, ::ExampleCushionEntity)
                 .dimensions(EntityDimensions.fixed(0.75f, 0.2f))
                 .trackRangeChunks(10)
                 .trackedUpdateRate(10)

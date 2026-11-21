@@ -2,8 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
-import net.minecraft.text.Text
-import net.minecraft.text.TranslatableTextContent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -25,7 +25,7 @@ class DiscardSourceTextTest {
         val content = discardSourceText(RelativeDirection.Left) { "Steve" }.translatable()
 
         assertEquals(MinecraftHudKeys.DISCARD_SOURCE_SEATED, content.key)
-        assertEquals(MinecraftHudKeys.RELATION_LEFT, (content.args[0] as Text).translatable().key)
+        assertEquals(MinecraftHudKeys.RELATION_LEFT, (content.args[0] as Component).translatable().key)
         assertEquals("Steve", content.args[1])
     }
 
@@ -39,5 +39,5 @@ class DiscardSourceTextTest {
     }
 
     /** @return 這段文字的翻譯內容。 */
-    private fun Text.translatable(): TranslatableTextContent = content as TranslatableTextContent
+    private fun Component.translatable(): TranslatableContents = contents as TranslatableContents
 }

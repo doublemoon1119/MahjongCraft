@@ -35,7 +35,6 @@ detekt = "2.0.0-alpha.6"
 # 避免 Gradle version catalog 的巢狀 accessor 在數字開頭區段產生不穩定的名稱。
 fabric-loom = "1.17.19"
 minecraft1201 = "1.20.1"
-yarnMappings1201 = "1.20.1+build.10"
 fabric-loader = "0.19.3"
 fabricApi1201 = "0.92.11+1.20.1"
 fabric-language-kotlin = "1.13.14+kotlin.2.4.20"

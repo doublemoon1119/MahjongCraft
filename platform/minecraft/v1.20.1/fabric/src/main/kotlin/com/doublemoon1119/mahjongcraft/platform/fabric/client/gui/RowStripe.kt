@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
-import net.minecraft.client.gui.DrawContext
+import net.minecraft.client.gui.GuiGraphics
 
 /**
  * 一列一列的版面中，隔列加上的淡白色底色範圍；用來在標籤與右端的值或控制項相距很遠時，讓眼睛對得上同一列。
@@ -22,7 +22,7 @@ internal data class RowStripe(
      * @param context 畫面繪製情境。
      * @param rowIndex 這一列在完整清單中的順序，從 0 開始。
      */
-    fun renderIfStriped(context: DrawContext, rowIndex: Int) {
+    fun renderIfStriped(context: GuiGraphics, rowIndex: Int) {
         if (isStriped(rowIndex)) context.fill(left, top, right, bottom, COLOR)
     }
 

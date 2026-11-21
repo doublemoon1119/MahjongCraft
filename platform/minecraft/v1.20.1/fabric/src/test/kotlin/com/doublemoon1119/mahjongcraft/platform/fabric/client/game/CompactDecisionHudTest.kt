@@ -3,8 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
-import net.minecraft.text.Text
-import net.minecraft.text.TranslatableTextContent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -93,7 +93,7 @@ class CompactDecisionHudTest {
     /** 選牌提示帶著所屬動作的說明。 */
     @Test
     fun `carries the description of the selected action`() {
-        val description = Text.literal("description")
+        val description = Component.literal("description")
         val content = compactDecisionHudContent(
             prompt = interactivePrompt(),
             dismissedDecisionKey = null,
@@ -174,7 +174,7 @@ class CompactDecisionHudTest {
     /** 還沒選滿最低張數時提示還缺幾張。 */
     @Test
     fun `asks for the missing tiles below the minimum`() {
-        val content = assertIs<TranslatableTextContent>(tileSelectionDetailText(DecisionTileSelectionState.Progress(1, 3..4)).content)
+        val content = assertIs<TranslatableContents>(tileSelectionDetailText(DecisionTileSelectionState.Progress(1, 3..4)).contents)
 
         assertEquals("mahjongcraft.hud.tile_selection_need_more", content.key)
         assertEquals(listOf(2, 1, 4), content.args.toList())
@@ -183,7 +183,7 @@ class CompactDecisionHudTest {
     /** 落在合法範圍內時提示可以確認。 */
     @Test
     fun `says the selection is ready inside the valid range`() {
-        val content = assertIs<TranslatableTextContent>(tileSelectionDetailText(DecisionTileSelectionState.Progress(3, 2..4)).content)
+        val content = assertIs<TranslatableContents>(tileSelectionDetailText(DecisionTileSelectionState.Progress(3, 2..4)).contents)
 
         assertEquals("mahjongcraft.hud.tile_selection_ready", content.key)
         assertEquals(listOf(3, 4), content.args.toList())
@@ -192,7 +192,7 @@ class CompactDecisionHudTest {
     /** 剛好選滿上限時同樣只提示可以確認。 */
     @Test
     fun `says the selection is ready at the maximum`() {
-        val content = assertIs<TranslatableTextContent>(tileSelectionDetailText(DecisionTileSelectionState.Progress(4, 2..4)).content)
+        val content = assertIs<TranslatableContents>(tileSelectionDetailText(DecisionTileSelectionState.Progress(4, 2..4)).contents)
 
         assertEquals("mahjongcraft.hud.tile_selection_ready", content.key)
     }

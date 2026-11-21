@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.mojang.blaze3d.systems.RenderSystem
+import com.mojang.blaze3d.vertex.PoseStack
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.util.math.MatrixStack
+import net.minecraft.client.Minecraft
+import net.minecraft.client.renderer.MultiBufferSource
 import org.joml.Matrix3f
 import org.joml.Matrix4f
 
@@ -33,21 +33,21 @@ internal object WorldPanelDeferral {
      * @param consumers 立刻畫時使用的繪製緩衝來源。
      * @param panel 以指定的座標轉換與繪製緩衝畫出整個面板。
      */
-    fun draw(matrices: MatrixStack, consumers: VertexConsumerProvider, panel: (MatrixStack, VertexConsumerProvider) -> Unit) {
+    fun draw(matrices: PoseStack, consumers: MultiBufferSource, panel: (PoseStack, MultiBufferSource) -> Unit) {
         if (ShaderShadowPass.active()) return
-        val entry = matrices.peek()
-        val position = Matrix4f(entry.positionMatrix)
-        val normal = Matrix3f(entry.normalMatrix)
+        val entry = matrices.last()
+        val position = Matrix4f(entry.pose())
+        val normal = Matrix3f(entry.normal())
         val distanceSquared = position.m30().toDouble().let { it * it } +
             position.m31().toDouble().let { it * it } +
             position.m32().toDouble().let { it * it }
         val queued = queue.submit(distanceSquared) {
-            val stack = MatrixStack()
-            stack.peek().positionMatrix.set(position)
-            stack.peek().normalMatrix.set(normal)
-            val immediate = MinecraftClient.getInstance().bufferBuilders.entityVertexConsumers
+            val stack = PoseStack()
+            stack.last().pose().set(position)
+            stack.last().normal().set(normal)
+            val immediate = Minecraft.getInstance().renderBuffers().bufferSource()
             panel(stack, immediate)
-            immediate.draw()
+            immediate.endBatch()
         }
         if (!queued) panel(matrices, consumers)
     }
@@ -61,13 +61,13 @@ internal object WorldPanelDeferral {
         val panels = queue.drain()
         if (panels.isEmpty()) return
         val modelView = RenderSystem.getModelViewStack()
-        modelView.push()
-        modelView.loadIdentity()
+        modelView.pushPose()
+        modelView.setIdentity()
         RenderSystem.applyModelViewMatrix()
         try {
             panels.forEach { it() }
         } finally {
-            modelView.pop()
+            modelView.popPose()
             RenderSystem.applyModelViewMatrix()
         }
     }

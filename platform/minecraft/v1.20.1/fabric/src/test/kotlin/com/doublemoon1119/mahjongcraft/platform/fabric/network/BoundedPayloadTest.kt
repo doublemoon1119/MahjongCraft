@@ -16,7 +16,7 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
-import net.minecraft.network.PacketByteBuf
+import net.minecraft.network.FriendlyByteBuf
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -107,7 +107,7 @@ class BoundedPayloadTest {
     /** 原始 buffer 超過上限時應在讀取字串前拒絕。 */
     @Test
     fun `encoded buffer limit rejects before decoding`() {
-        val buffer = PacketByteBuf(Unpooled.buffer())
+        val buffer = FriendlyByteBuf(Unpooled.buffer())
         buffer.writeBytes(ByteArray(128))
         val serializer = CountingDeserializer()
 
@@ -124,7 +124,7 @@ class BoundedPayloadTest {
     /** 損壞的 VarInt 字串長度前綴應安全拒絕。 */
     @Test
     fun `damaged string prefix is rejected`() {
-        val buffer = PacketByteBuf(Unpooled.buffer())
+        val buffer = FriendlyByteBuf(Unpooled.buffer())
         buffer.writeBytes(ByteArray(6) { 0x80.toByte() })
 
         assertNull(decodeBoundedPayload(buffer, bundledNetworkJson(), String.serializer(), 128))
@@ -234,13 +234,13 @@ class BoundedPayloadTest {
                 bufferFor("{}"),
                 bufferFor("{\"unknown\":true}"),
                 bufferFor("\"valid\"").also { it.writeByte(1) },
-                PacketByteBuf(Unpooled.buffer()).also { it.writeBytes(ByteArray(6) { 0x80.toByte() }) },
-                PacketByteBuf(Unpooled.buffer()).also { it.writeVarInt(-1) },
-                PacketByteBuf(Unpooled.buffer()).also {
+                FriendlyByteBuf(Unpooled.buffer()).also { it.writeBytes(ByteArray(6) { 0x80.toByte() }) },
+                FriendlyByteBuf(Unpooled.buffer()).also { it.writeVarInt(-1) },
+                FriendlyByteBuf(Unpooled.buffer()).also {
                     it.writeVarInt(100)
                     it.writeByte(1)
                 },
-                PacketByteBuf(Unpooled.buffer()).also { it.writeByte(0x80) },
+                FriendlyByteBuf(Unpooled.buffer()).also { it.writeByte(0x80) },
             )
             var dispatches = 0
             for (buffer in invalidBuffers) {
@@ -254,7 +254,7 @@ class BoundedPayloadTest {
     @Test
     fun `overbudget declared length never invokes deserializer`() {
         val serializer = CountingDeserializer()
-        val buffer = PacketByteBuf(Unpooled.buffer()).also {
+        val buffer = FriendlyByteBuf(Unpooled.buffer()).also {
             it.writeVarInt(129)
             it.writeByte(1)
         }
@@ -280,7 +280,7 @@ class BoundedPayloadTest {
     @Test
     fun `utf8 replacement matches native string decoding`() {
         val bytes = byteArrayOf(0x22, 0xC3.toByte(), 0x28, 0x22)
-        val nativeJson = rawBufferFor(bytes).readString(1 shl 20)
+        val nativeJson = rawBufferFor(bytes).readUtf(1 shl 20)
         val expected = Json.decodeFromString(String.serializer(), nativeJson)
         assertEquals(expected, decodeC2SPayload(rawBufferFor(bytes), bundledNetworkJson(), String.serializer(), null)?.getOrThrow())
     }
@@ -291,7 +291,7 @@ class BoundedPayloadTest {
      * @param bytes 要放入封包的原始字串位元組。
      * @return 可測試超限或損壞字串的 buffer。
      */
-    private fun rawBufferFor(bytes: ByteArray): PacketByteBuf = PacketByteBuf(Unpooled.buffer()).also {
+    private fun rawBufferFor(bytes: ByteArray): FriendlyByteBuf = FriendlyByteBuf(Unpooled.buffer()).also {
         it.writeVarInt(bytes.size)
         it.writeBytes(bytes)
     }
@@ -302,7 +302,7 @@ class BoundedPayloadTest {
      * @param payload 待驗證的 JSON 字串。
      * @return 可由接收端讀取的測試 buffer。
      */
-    private fun bufferFor(payload: String): PacketByteBuf = PacketByteBuf(Unpooled.buffer()).also { it.writeString(payload, 1 shl 20) }
+    private fun bufferFor(payload: String): FriendlyByteBuf = FriendlyByteBuf(Unpooled.buffer()).also { it.writeUtf(payload, 1 shl 20) }
 
     /**
      * 讓測試可以驗證解碼例外不會被安全邊界錯誤吞掉的序列化器。

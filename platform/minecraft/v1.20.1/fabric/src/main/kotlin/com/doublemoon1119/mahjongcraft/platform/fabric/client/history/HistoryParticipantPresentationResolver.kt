@@ -6,8 +6,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterClientStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerKeys
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.text.Text
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.network.chat.Component
 import kotlin.uuid.Uuid
 
 /**
@@ -39,10 +39,10 @@ class HistoryParticipantPresentationResolver(
      * @param matchId 歷史場次，沒有時不查目前角色。
      * @return 原生玩家名稱、AI 名稱或未知玩家文字。
      */
-    fun name(participant: HistoryParticipantSummaryDto, participants: List<HistoryParticipantSummaryDto>, matchId: String? = null): Text {
-        val id = parseUuid(participant.playerId) ?: return Text.translatable(MinecraftPlayerKeys.UNKNOWN)
+    fun name(participant: HistoryParticipantSummaryDto, participants: List<HistoryParticipantSummaryDto>, matchId: String? = null): Component {
+        val id = parseUuid(participant.playerId) ?: return Component.translatable(MinecraftPlayerKeys.UNKNOWN)
         val aiIds = participants.filter { it.aiStrategyId != null }.sortedBy { it.seatIndex }.mapNotNull { parseUuid(it.playerId) }
-        return Text.literal(names.historical(id, matchId?.let(::parseUuid), participant.aiStrategyId != null, aiIds))
+        return Component.literal(names.historical(id, matchId?.let(::parseUuid), participant.aiStrategyId != null, aiIds))
     }
 
     /**
@@ -55,7 +55,7 @@ class HistoryParticipantPresentationResolver(
      * @param size 頭像邊長。
      * @param matchId 歷史場次。
      */
-    fun render(participant: HistoryParticipantSummaryDto, context: DrawContext, x: Int, y: Int, size: Int, matchId: String? = null) {
+    fun render(participant: HistoryParticipantSummaryDto, context: GuiGraphics, x: Int, y: Int, size: Int, matchId: String? = null) {
         val parsedId = parseUuid(participant.playerId)
         val id = parsedId ?: FALLBACK_UUID
         val isAi = participant.aiStrategyId != null

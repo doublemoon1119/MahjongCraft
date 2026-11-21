@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.tile
 
-import net.minecraft.util.math.Box
-import net.minecraft.util.math.Vec3d
+import net.minecraft.world.phys.AABB
+import net.minecraft.world.phys.Vec3
 
 /**
  * 不依賴世界實體的射線命中結果。
@@ -12,7 +12,7 @@ import net.minecraft.util.math.Vec3d
  */
 internal data class HandTileTarget<T>(
     val payload: T,
-    val position: Vec3d,
+    val position: Vec3,
     val distanceSquared: Double,
 )
 
@@ -27,14 +27,14 @@ internal data class HandTileTarget<T>(
  * @return 最近的有效候選；沒有命中時回傳 null。
  */
 internal fun <T> findNearestHandTileTarget(
-    start: Vec3d,
-    end: Vec3d,
-    candidates: Iterable<Pair<T, Box>>,
+    start: Vec3,
+    end: Vec3,
+    candidates: Iterable<Pair<T, AABB>>,
     occlusionDistanceSquared: Double = Double.POSITIVE_INFINITY,
     maximumDistanceSquared: Double = Double.POSITIVE_INFINITY,
 ): HandTileTarget<T>? = candidates.mapNotNull { (payload, box) ->
-    val position = box.raycast(start, end).orElse(null) ?: return@mapNotNull null
-    val distanceSquared = position.squaredDistanceTo(start)
+    val position = box.clip(start, end).orElse(null) ?: return@mapNotNull null
+    val distanceSquared = position.distanceToSqr(start)
     if (distanceSquared >= occlusionDistanceSquared || distanceSquared > maximumDistanceSquared) return@mapNotNull null
     HandTileTarget(payload, position, distanceSquared)
 }.minByOrNull(HandTileTarget<T>::distanceSquared)

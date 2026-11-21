@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop
 
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
-import net.minecraft.util.math.ChunkPos
+import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.level.ChunkPos
+import net.minecraft.world.phys.AABB
 
 /** 原生規則物件的共同搜尋範圍與實體載入條件，不強制載入區塊。 */
 internal object FabricTablePropSearchArea {
@@ -19,7 +19,7 @@ internal object FabricTablePropSearchArea {
      * @param pos 桌子的基準方塊位置。
      * @return 與載入條件檢查使用相同邊界的搜尋盒。
      */
-    fun box(pos: BlockPos): Box = Box(pos).expand(HORIZONTAL_RADIUS, VERTICAL_RADIUS, HORIZONTAL_RADIUS)
+    fun box(pos: BlockPos): AABB = AABB(pos).inflate(HORIZONTAL_RADIUS, VERTICAL_RADIUS, HORIZONTAL_RADIUS)
 
     /**
      * 確認落點在可重新找回的範圍內，拒絕極端偏移及非有限座標。
@@ -47,10 +47,10 @@ internal object FabricTablePropSearchArea {
      * @param pos 桌子的基準方塊位置。
      * @return 搜尋範圍的所有區塊都已能查詢保存實體時為 true。
      */
-    fun entitiesLoaded(world: ServerWorld, pos: BlockPos): Boolean = entitiesLoaded(
+    fun entitiesLoaded(world: ServerLevel, pos: BlockPos): Boolean = entitiesLoaded(
         pos = pos,
-        blocksLoaded = { x, z -> world.chunkManager.isChunkLoaded(x, z) },
-        savedEntitiesLoaded = world::isChunkLoaded,
+        blocksLoaded = { x, z -> world.chunkSource.hasChunk(x, z) },
+        savedEntitiesLoaded = world::areEntitiesLoaded,
     )
 
     /**
@@ -67,10 +67,10 @@ internal object FabricTablePropSearchArea {
         savedEntitiesLoaded: (Long) -> Boolean,
     ): Boolean {
         val bounds = box(pos)
-        val min = BlockPos.ofFloored(bounds.minX, bounds.minY, bounds.minZ)
-        val max = BlockPos.ofFloored(bounds.maxX, bounds.maxY, bounds.maxZ)
+        val min = BlockPos.containing(bounds.minX, bounds.minY, bounds.minZ)
+        val max = BlockPos.containing(bounds.maxX, bounds.maxY, bounds.maxZ)
         return ((min.x shr 4)..(max.x shr 4)).all { x ->
-            ((min.z shr 4)..(max.z shr 4)).all { z -> blocksLoaded(x, z) && savedEntitiesLoaded(ChunkPos.toLong(x, z)) }
+            ((min.z shr 4)..(max.z shr 4)).all { z -> blocksLoaded(x, z) && savedEntitiesLoaded(ChunkPos.asLong(x, z)) }
         }
     }
 }

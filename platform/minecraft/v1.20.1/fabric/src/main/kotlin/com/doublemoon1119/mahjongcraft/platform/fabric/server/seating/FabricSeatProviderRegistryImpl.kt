@@ -3,13 +3,13 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.seating
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
-import net.minecraft.entity.Entity
-import net.minecraft.server.world.ServerWorld
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
 
 /** [FabricSeatProviderRegistrar] 的記憶體實作。 */
 internal class FabricSeatProviderRegistryImpl : FabricSeatProviderRegistrar {
     /** 依 provider 識別碼保存登記資料。 */
-    private val providersById = linkedMapOf<String, RegisteredSeatProvider<ServerWorld, Entity>>()
+    private val providersById = linkedMapOf<String, RegisteredSeatProvider<ServerLevel, Entity>>()
 
     override val registrationKeys: Set<String>
         get() = providersById.keys.toSet()
@@ -18,7 +18,7 @@ internal class FabricSeatProviderRegistryImpl : FabricSeatProviderRegistrar {
         private set
 
     override fun register(
-        definition: RegisteredSeatProvider<ServerWorld, Entity>,
+        definition: RegisteredSeatProvider<ServerLevel, Entity>,
     ) {
         val id = definition.id
         check(!isFrozen) { "Seat provider registry is frozen" }
@@ -38,6 +38,6 @@ internal class FabricSeatProviderRegistryImpl : FabricSeatProviderRegistrar {
      *
      * @return 依優先序由高到低、同優先序依 ID 排列的 provider。
      */
-    fun entries(): List<RegisteredSeatProvider<ServerWorld, Entity>> = providersById.values
-        .sortedWith(compareByDescending<RegisteredSeatProvider<ServerWorld, Entity>> { it.priority }.thenBy { it.id })
+    fun entries(): List<RegisteredSeatProvider<ServerLevel, Entity>> = providersById.values
+        .sortedWith(compareByDescending<RegisteredSeatProvider<ServerLevel, Entity>> { it.priority }.thenBy { it.id })
 }

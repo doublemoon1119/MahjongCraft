@@ -10,12 +10,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSpaceObstru
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSpaceObstructionPayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSpaceObstructionSync
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
-import net.minecraft.registry.RegistryKey
-import net.minecraft.registry.RegistryKeys
+import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.Registries
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.BlockPos
+import net.minecraft.server.level.ServerLevel
 import kotlin.uuid.toJavaUuid
 
 /**
@@ -90,7 +90,7 @@ class FabricTableSpaceObstructionService(
                 dimensionId = location.dimensionId,
                 cells = cells.map { TableSpaceCellDto(it.x, it.y, it.z) },
             )
-            val recipientIds = room.humanPlayerIds.filterTo(mutableSetOf()) { server.playerManager.getPlayer(it.toJavaUuid()) != null }
+            val recipientIds = room.humanPlayerIds.filterTo(mutableSetOf()) { server.playerList.getPlayer(it.toJavaUuid()) != null }
             deliver(server, sync.update(tableId, payload, recipientIds))
         }
     }
@@ -103,7 +103,7 @@ class FabricTableSpaceObstructionService(
      */
     private fun deliver(server: MinecraftServer, deliveries: List<TableSpaceObstructionDelivery>) {
         deliveries.forEach { delivery ->
-            val player = server.playerManager.getPlayer(delivery.recipientId.toJavaUuid()) ?: return@forEach
+            val player = server.playerList.getPlayer(delivery.recipientId.toJavaUuid()) ?: return@forEach
             MahjongChannels.tableSpaceObstruction.sendTo(player, json, delivery.payload)
         }
     }
@@ -115,9 +115,9 @@ class FabricTableSpaceObstructionService(
      * @param location 桌子位置。
      * @return 桌子所在世界；維度不存在時為 null。
      */
-    private fun resolveWorld(server: MinecraftServer, location: TableLocation): ServerWorld? {
-        val id = Identifier.tryParse(location.dimensionId) ?: return null
-        return server.getWorld(RegistryKey.of(RegistryKeys.WORLD, id))
+    private fun resolveWorld(server: MinecraftServer, location: TableLocation): ServerLevel? {
+        val id = ResourceLocation.tryParse(location.dimensionId) ?: return null
+        return server.getLevel(ResourceKey.create(Registries.DIMENSION, id))
     }
 
     /** 檢查頻率。 */

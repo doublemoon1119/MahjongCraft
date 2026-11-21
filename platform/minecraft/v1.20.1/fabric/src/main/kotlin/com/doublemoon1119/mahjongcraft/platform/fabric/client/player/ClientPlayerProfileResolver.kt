@@ -3,9 +3,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.player
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.mojang.authlib.GameProfile
 import com.mojang.authlib.minecraft.MinecraftProfileTexture
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.texture.PlayerSkinProvider
-import net.minecraft.util.Identifier
+import net.minecraft.client.Minecraft
+import net.minecraft.client.resources.SkinManager
+import net.minecraft.resources.ResourceLocation
 import java.util.LinkedHashMap
 import java.util.LinkedHashSet
 import kotlin.time.Duration.Companion.seconds
@@ -94,9 +94,9 @@ class ClientPlayerProfileResolver {
      * @param playerId 玩家識別碼。
      * @return 線上玩家資料；玩家離線或尚未收到資料時為 null。
      */
-    fun onlineProfile(playerId: Uuid): GameProfile? = MinecraftClient.getInstance()
-        .networkHandler
-        ?.getPlayerListEntry(playerId.toJavaUuid())
+    fun onlineProfile(playerId: Uuid): GameProfile? = Minecraft.getInstance()
+        .connection
+        ?.getPlayerInfo(playerId.toJavaUuid())
         ?.profile
 
     /**
@@ -105,9 +105,9 @@ class ClientPlayerProfileResolver {
      * @param playerId 玩家識別碼。
      * @return 原生皮膚材質；尚未解析或材質不可用時為 null。
      */
-    fun resolvedSkinTexture(playerId: Uuid): Identifier? {
-        val client = MinecraftClient.getInstance()
-        client.networkHandler?.getPlayerListEntry(playerId.toJavaUuid())?.let { return it.skinTexture }
+    fun resolvedSkinTexture(playerId: Uuid): ResourceLocation? {
+        val client = Minecraft.getInstance()
+        client.connection?.getPlayerInfo(playerId.toJavaUuid())?.let { return it.skinLocation }
         if (!supportsNativePlayerSkinLookup(playerId)) return null
         synchronized(skins) { skins[playerId] }?.let { return it.texture }
         val profile = knownProfile(playerId) ?: return null
@@ -122,7 +122,7 @@ class ClientPlayerProfileResolver {
      * @return 原版模型名稱：細手臂為 `slim`，一般手臂為 `default`；皮膚尚未取得時為 null。
      */
     fun resolvedSkinModel(playerId: Uuid): String? {
-        MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(playerId.toJavaUuid())?.let { return it.model }
+        Minecraft.getInstance().connection?.getPlayerInfo(playerId.toJavaUuid())?.let { return it.modelName }
         return synchronized(skins) { skins[playerId] }?.model
     }
 
@@ -137,7 +137,7 @@ class ClientPlayerProfileResolver {
     }
 
     /**
-     * 透過 Minecraft 原生 PlayerSkinProvider 非同步載入指定 profile 的 skin。
+     * 透過 Minecraft 原生 SkinManager 非同步載入指定 profile 的 skin。
      *
      * @param playerId 玩家 UUID。
      * @param profile 已知玩家 profile。
@@ -166,14 +166,14 @@ class ClientPlayerProfileResolver {
         }
         val generation = sessionGeneration
         runCatching {
-            MinecraftClient.getInstance().skinProvider.loadSkin(
+            Minecraft.getInstance().skinManager.registerSkins(
                 profile,
-                PlayerSkinProvider.SkinTextureAvailableCallback { type, texture, profileTexture ->
-                    if (type != MinecraftProfileTexture.Type.SKIN) return@SkinTextureAvailableCallback
-                    MinecraftClient.getInstance().execute {
+                SkinManager.SkinTextureCallback { type, texture, profileTexture ->
+                    if (type != MinecraftProfileTexture.Type.SKIN) return@SkinTextureCallback
+                    Minecraft.getInstance().execute {
                         if (generation == sessionGeneration) {
                             if (texture != null) {
-                                val model = if (profileTexture?.getMetadata(MODEL_METADATA) == SLIM_MODEL) SLIM_MODEL else DEFAULT_MODEL
+                                val model = if (profileTexture.getMetadata(MODEL_METADATA) == SLIM_MODEL) SLIM_MODEL else DEFAULT_MODEL
                                 synchronized(skins) { skins[playerId] = LoadedSkin(texture, model) }
                             } else {
                                 rememberSkinFailure(playerId)
@@ -229,7 +229,7 @@ class ClientPlayerProfileResolver {
      * @property texture 皮膚材質。
      * @property model 原版模型名稱：`slim` 或 `default`。
      */
-    private data class LoadedSkin(val texture: Identifier, val model: String)
+    private data class LoadedSkin(val texture: ResourceLocation, val model: String)
 
     private companion object {
         /** 皮膚資料中記錄手臂款式的欄位。 */

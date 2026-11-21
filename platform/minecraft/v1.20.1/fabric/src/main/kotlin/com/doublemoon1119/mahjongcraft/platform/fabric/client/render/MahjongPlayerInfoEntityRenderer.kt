@@ -10,13 +10,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInf
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.shownDeltaFor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.render.entity.EntityRenderer
-import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.text.Text
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.RotationAxis
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.math.Axis
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.entity.EntityRenderer
+import net.minecraft.client.renderer.entity.EntityRendererProvider
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
 import kotlin.math.max
 import kotlin.uuid.Uuid
 
@@ -30,20 +30,20 @@ import kotlin.uuid.Uuid
  * @property displayNames 依已授權描述解析需本地翻譯的角色名稱。
  */
 class MahjongPlayerInfoEntityRenderer(
-    context: EntityRendererFactory.Context,
+    context: EntityRendererProvider.Context,
     private val portraits: PlayerPortraitRenderer,
     private val indicatorTextResolver: PublicPlayerIndicatorTextResolver,
     private val configStore: MahjongClientConfigStore,
     private val displayNames: ClientPlayerDisplayNameResolver,
 ) : EntityRenderer<MahjongPlayerInfoEntity>(context) {
-    private val textRenderer = context.textRenderer
+    private val textRenderer = context.font
 
     override fun render(
         entity: MahjongPlayerInfoEntity,
         yaw: Float,
         tickDelta: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
     ) {
         if (!configStore.current.presentationVisibility.playerInfoEnabled) return
@@ -65,8 +65,8 @@ class MahjongPlayerInfoEntityRenderer(
      */
     fun renderPanels(
         entity: MahjongPlayerInfoEntity,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
         shownSeat: (Int) -> Boolean,
     ) {
@@ -89,17 +89,17 @@ class MahjongPlayerInfoEntityRenderer(
             names = names,
         )
         val scoreChanges = entity.scoreChanges
-        val gameTime = entity.world.time
+        val gameTime = entity.level().gameTime
         players.filter { shownSeat(it.seatIndex) }.forEach { player ->
             val shownDelta = scoreChanges.shownDeltaFor(player.seatIndex, gameTime)
             val side = rotateSide(seatLayout.sideOf(player.seatIndex), entity.tableFacing.ordinal)
-            matrices.push()
+            matrices.pushPose()
             val offset = sideOffset(side)
             matrices.translate(offset.first, PANEL_HEIGHT, offset.second)
-            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(sideYaw(side)))
+            matrices.mulPose(Axis.YP.rotationDegrees(sideYaw(side)))
             matrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
             // 兩面背對背，只畫觀看者那一側的一面，兩面不會互相透出或閃爍。
-            if (!WorldPanelRenderer.facesViewer(matrices)) matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f))
+            if (!WorldPanelRenderer.facesViewer(matrices)) matrices.mulPose(Axis.YP.rotationDegrees(180f))
             renderFace(
                 player = player,
                 isDealer = entity.dealerPlayerId == player.playerId,
@@ -110,7 +110,7 @@ class MahjongPlayerInfoEntityRenderer(
                 consumers = vertexConsumers,
                 names = names,
             )
-            matrices.pop()
+            matrices.popPose()
         }
     }
 
@@ -132,8 +132,8 @@ class MahjongPlayerInfoEntityRenderer(
         shownDelta: Int?,
         width: Float,
         light: Int,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         names: Map<Uuid, String>,
     ) {
         val indicators = player.indicators.map(indicatorTextResolver::resolve)
@@ -143,35 +143,35 @@ class MahjongPlayerInfoEntityRenderer(
         val top = -height / 2f + PANEL_PADDING
         portraits.render(player.playerId, player.isAi, left + PANEL_PADDING, top, PORTRAIT_SIZE, 1f, TEXT_Z, matrices, consumers)
         val nameX = left + PANEL_PADDING + PORTRAIT_SIZE + PORTRAIT_GAP
-        val suffixWidth = textRenderer.getWidth(windText(player.seatWind)).toFloat() +
-            if (isDealer) textRenderer.getWidth(DEALER_MARK) + COLUMN_GAP else 0f
+        val suffixWidth = textRenderer.width(windText(player.seatWind)).toFloat() +
+            if (isDealer) textRenderer.width(DEALER_MARK) + COLUMN_GAP else 0f
         val displayName = names.getValue(player.playerId)
         val fitted = WorldPanelRenderer.fitText(textRenderer, displayName, (left + width - PANEL_PADDING - nameX - suffixWidth).toInt())
-        WorldPanelRenderer.drawText(textRenderer, Text.literal(fitted), nameX, top + 1f, NAME_COLOR, TEXT_Z, light, matrices, consumers)
+        WorldPanelRenderer.drawText(textRenderer, Component.literal(fitted), nameX, top + 1f, NAME_COLOR, TEXT_Z, light, matrices, consumers)
         var right = left + width - PANEL_PADDING
         if (isDealer) {
-            WorldPanelRenderer.drawText(textRenderer, Text.literal(DEALER_MARK), right - textRenderer.getWidth(DEALER_MARK), top + 1f, DEALER_COLOR, TEXT_Z, light, matrices, consumers)
-            right -= textRenderer.getWidth(DEALER_MARK) + COLUMN_GAP
+            WorldPanelRenderer.drawText(textRenderer, Component.literal(DEALER_MARK), right - textRenderer.width(DEALER_MARK), top + 1f, DEALER_COLOR, TEXT_Z, light, matrices, consumers)
+            right -= textRenderer.width(DEALER_MARK) + COLUMN_GAP
         }
         val wind = windText(player.seatWind)
-        WorldPanelRenderer.drawText(textRenderer, wind, right - textRenderer.getWidth(wind), top + 1f, WIND_COLOR, TEXT_Z, light, matrices, consumers)
+        WorldPanelRenderer.drawText(textRenderer, wind, right - textRenderer.width(wind), top + 1f, WIND_COLOR, TEXT_Z, light, matrices, consumers)
         val scoreY = top + FIRST_ROW_HEIGHT
-        val score = Text.literal(player.score.toString())
+        val score = Component.literal(player.score.toString())
         val delta = shownDelta?.let { change ->
-            Text.literal(if (change > 0) "+$change" else "−${-change.toLong()}") to if (change > 0) SCORE_GAIN_COLOR else SCORE_LOSS_COLOR
+            Component.literal(if (change > 0) "+$change" else "−${-change.toLong()}") to if (change > 0) SCORE_GAIN_COLOR else SCORE_LOSS_COLOR
         }
-        val deltaWidth = delta?.let { (text, _) -> textRenderer.getWidth(text) + COLUMN_GAP } ?: 0f
-        val scoreX = left + (width - textRenderer.getWidth(score) - deltaWidth) / 2f
+        val deltaWidth = delta?.let { (text, _) -> textRenderer.width(text) + COLUMN_GAP } ?: 0f
+        val scoreX = left + (width - textRenderer.width(score) - deltaWidth) / 2f
         WorldPanelRenderer.drawText(textRenderer, score, scoreX, scoreY, SCORE_COLOR, TEXT_Z, light, matrices, consumers)
         delta?.let { (text, color) ->
             WorldPanelRenderer.drawText(
-                renderer = textRenderer, text = text, x = scoreX + textRenderer.getWidth(score) + COLUMN_GAP,
+                renderer = textRenderer, text = text, x = scoreX + textRenderer.width(score) + COLUMN_GAP,
                 y = scoreY, color = color, z = TEXT_Z, light = light, matrices = matrices, consumers = consumers,
             )
         }
         indicators.forEachIndexed { index, (text, color) ->
             WorldPanelRenderer.drawText(
-                renderer = textRenderer, text = text, x = left + (width - textRenderer.getWidth(text)) / 2f,
+                renderer = textRenderer, text = text, x = left + (width - textRenderer.width(text)) / 2f,
                 y = scoreY + SCORE_ROW_HEIGHT + index * INDICATOR_ROW_HEIGHT, color = color, z = TEXT_Z, light = light, matrices = matrices, consumers = consumers,
             )
         }
@@ -194,11 +194,11 @@ class MahjongPlayerInfoEntityRenderer(
         players.forEach { player ->
             val displayName = names.getValue(player.playerId)
             val header = PANEL_PADDING * 2 + PORTRAIT_SIZE + PORTRAIT_GAP +
-                textRenderer.getWidth(displayName.take(MAX_NAME_CHARACTERS)) + COLUMN_GAP + textRenderer.getWidth(windText(player.seatWind)) +
-                if (player.playerId == dealerPlayerId) textRenderer.getWidth(DEALER_MARK) + COLUMN_GAP else 0f
-            val score = PANEL_PADDING * 2 + textRenderer.getWidth(player.score.toString())
+                textRenderer.width(displayName.take(MAX_NAME_CHARACTERS)) + COLUMN_GAP + textRenderer.width(windText(player.seatWind)) +
+                if (player.playerId == dealerPlayerId) textRenderer.width(DEALER_MARK) + COLUMN_GAP else 0f
+            val score = PANEL_PADDING * 2 + textRenderer.width(player.score.toString())
             val indicator = player.indicators.maxOfOrNull {
-                PANEL_PADDING * 2 + textRenderer.getWidth(indicatorTextResolver.resolve(it).first)
+                PANEL_PADDING * 2 + textRenderer.width(indicatorTextResolver.resolve(it).first)
             } ?: 0f
             width = max(width, max(header, max(score, indicator)))
         }
@@ -211,7 +211,7 @@ class MahjongPlayerInfoEntityRenderer(
      * @param wind 要顯示的座風。
      * @return 對應風牌翻譯 key 的文字。
      */
-    private fun windText(wind: Wind): Text = Text.translatable(
+    private fun windText(wind: Wind): Component = Component.translatable(
         when (wind) {
             Wind.EAST -> MinecraftMessageKeys.TILE_HONOR_EAST
             Wind.SOUTH -> MinecraftMessageKeys.TILE_HONOR_SOUTH
@@ -258,7 +258,7 @@ class MahjongPlayerInfoEntityRenderer(
         MahjongTableSide.WEST -> 90f
     }
 
-    override fun getTexture(entity: MahjongPlayerInfoEntity): Identifier? = null
+    override fun getTextureLocation(entity: MahjongPlayerInfoEntity): ResourceLocation? = null
 
     private companion object {
         const val TEXT_SCALE = 0.014f

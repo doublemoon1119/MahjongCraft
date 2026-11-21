@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.text
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.HistoryGenerationFailure
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.HistoryGenerationProgress
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryDiskUsage
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
@@ -47,7 +47,7 @@ class HistoryGenerationChatFormattingTest {
         val bullets = message.siblings.filter { it.string.contains("•") }
 
         assertTrue(bullets.isNotEmpty())
-        assertTrue(bullets.all { it.style.color?.rgb == Formatting.GRAY.colorValue })
+        assertTrue(bullets.all { it.style.color?.value == ChatFormatting.GRAY.color })
         assertTrue(!message.string.contains("mahjongcraft.debug.history."))
     }
 

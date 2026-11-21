@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop
 
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.ChunkPos
+import net.minecraft.core.BlockPos
+import net.minecraft.world.level.ChunkPos
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -30,12 +30,12 @@ class FabricTablePropSearchAreaTest {
                 },
             ),
         )
-        assertEquals(setOf(ChunkPos.toLong(-1, -1), ChunkPos.toLong(-1, 0), ChunkPos.toLong(0, -1), ChunkPos.toLong(0, 0)), queried)
+        assertEquals(setOf(ChunkPos.asLong(-1, -1), ChunkPos.asLong(-1, 0), ChunkPos.asLong(0, -1), ChunkPos.asLong(0, 0)), queried)
         assertFalse(
             actual = FabricTablePropSearchArea.entitiesLoaded(
                 pos = BlockPos(0, 64, 0),
                 blocksLoaded = { _, _ -> true },
-                savedEntitiesLoaded = { it != ChunkPos.toLong(-1, -1) },
+                savedEntitiesLoaded = { it != ChunkPos.asLong(-1, -1) },
             ),
         )
     }

@@ -6,15 +6,15 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDenomination
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationSpec
-import net.minecraft.client.render.OverlayTexture
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.render.entity.EntityRenderer
-import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.render.model.json.ModelTransformationMode
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.item.ItemStack
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.RotationAxis
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.math.Axis
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.entity.EntityRenderer
+import net.minecraft.client.renderer.entity.EntityRendererProvider
+import net.minecraft.client.renderer.texture.OverlayTexture
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.item.ItemDisplayContext
+import net.minecraft.world.item.ItemStack
 
 /**
  * 使用既有點棒 item model 呈現面額的 client renderer；面額切換交給 vanilla item model predicate 解析。
@@ -22,7 +22,7 @@ import net.minecraft.util.math.RotationAxis
  * @param context Minecraft renderer factory 提供的 client context。
  */
 class MahjongScoringStickEntityRenderer(
-    context: EntityRendererFactory.Context,
+    context: EntityRendererProvider.Context,
 ) : EntityRenderer<MahjongScoringStickEntity>(context) {
     /** 共用 Vanilla item renderer，避免建立另一套點棒模型格式。 */
     private val itemRenderer = context.itemRenderer
@@ -32,13 +32,13 @@ class MahjongScoringStickEntityRenderer(
         entity: MahjongScoringStickEntity,
         yaw: Float,
         tickDelta: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
     ) {
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         if (entity.isInvisible) return
-        val elapsedAnimationTicks = entity.world.time.toDouble() + tickDelta - entity.animationStartGameTime
+        val elapsedAnimationTicks = entity.level().gameTime.toDouble() + tickDelta - entity.animationStartGameTime
         val animationFrame = if (entity.animating) {
             TileMotionAnimation(
                 spec = TileMotionAnimationSpec(
@@ -51,26 +51,26 @@ class MahjongScoringStickEntityRenderer(
         } else {
             null
         }
-        matrices.push()
+        matrices.pushPose()
         if (animationFrame != null) matrices.translate(animationFrame.offset.x, animationFrame.offset.y, animationFrame.offset.z)
         matrices.translate(0.0, MahjongScoringStickEntity.STICK_HEIGHT / 2.0, 0.0)
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-entity.yaw + 180.0f))
+        matrices.mulPose(Axis.YP.rotationDegrees(-entity.yRot + 180.0f))
         matrices.translate(0.0, MODEL_Y_CENTER_COMPENSATION, 0.0)
-        itemRenderer.renderItem(
+        itemRenderer.renderStatic(
             stickStacks.getValue(entity.denomination),
-            ModelTransformationMode.HEAD,
+            ItemDisplayContext.HEAD,
             light,
-            OverlayTexture.DEFAULT_UV,
+            OverlayTexture.NO_OVERLAY,
             matrices,
             vertexConsumers,
-            entity.world,
+            entity.level(),
             entity.id,
         )
-        matrices.pop()
+        matrices.popPose()
     }
 
     /** ItemRenderer 依 model predicate 自行解析材質，因此 entity renderer 不提供單一 texture。 */
-    override fun getTexture(entity: MahjongScoringStickEntity): Identifier? = null
+    override fun getTextureLocation(entity: MahjongScoringStickEntity): ResourceLocation? = null
 
     companion object {
         /**

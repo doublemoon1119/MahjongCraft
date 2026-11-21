@@ -11,14 +11,14 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener
 import net.fabricmc.loader.api.FabricLoader
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.world.ClientWorld
-import net.minecraft.entity.Entity
-import net.minecraft.resource.ResourceManager
-import net.minecraft.resource.ResourceType
-import net.minecraft.util.Identifier
-import net.minecraft.util.crash.CrashException
+import net.minecraft.ReportedException
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.multiplayer.ClientLevel
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.packs.PackType
+import net.minecraft.server.packs.resources.ResourceManager
+import net.minecraft.world.entity.Entity
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -48,7 +48,7 @@ internal class ClientAiCharacterPreviews(
     private val liveRetryAt = linkedMapOf<Uuid, Long>()
 
     /** 目前預覽資源所屬世界；切換時清理全部資源。 */
-    private var world: ClientWorld? = null
+    private var world: ClientLevel? = null
 
     /** 模型重試與頭像截圖分開，頭像失敗不阻止直接模型。 */
     private val modelRetryAt = linkedMapOf<AiCharacterDefinition, Long>()
@@ -66,8 +66,8 @@ internal class ClientAiCharacterPreviews(
     fun initialize() {
         check(FabricLoader.getInstance().environmentType == EnvType.CLIENT)
         ClientTickEvents.END_CLIENT_TICK.register { client ->
-            if (world !== client.world) clear()
-            world = client.world
+            if (world !== client.level) clear()
+            world = client.level
             ticks++
             val current = world ?: return@register
             models.processOne { character ->
@@ -83,7 +83,7 @@ internal class ClientAiCharacterPreviews(
                         if (image == null) postpone(character) else retryAt.remove(character)
                     }
                 } catch (cause: Throwable) {
-                    val root = (cause as? CrashException)?.cause ?: cause
+                    val root = (cause as? ReportedException)?.cause ?: cause
                     if (root is CancellationException || !failures.isIsolatable(root)) throw root
                     val id = character.preview?.capabilityId ?: character.id
                     val signature = "${cause::class.qualifiedName}:${cause.message}"
@@ -93,11 +93,11 @@ internal class ClientAiCharacterPreviews(
                 }
             }
         }
-        ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(object : SimpleSynchronousResourceReloadListener {
-            override fun getFabricId(): Identifier = Identifier("mahjongcraft", "character_previews")
+        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(object : SimpleSynchronousResourceReloadListener {
+            override fun getFabricId(): ResourceLocation = ResourceLocation("mahjongcraft", "character_previews")
 
-            override fun reload(manager: ResourceManager) {
-                MinecraftClient.getInstance().execute { clear() }
+            override fun onResourceManagerReload(manager: ResourceManager) {
+                Minecraft.getInstance().execute { clear() }
             }
         })
     }
@@ -151,11 +151,11 @@ internal class ClientAiCharacterPreviews(
      * @param worldEntityId 目前已授權的即時參照；歷史必須為 null。
      * @return 成功繪製模型時為 true，否則由頭像備援。
      */
-    fun renderModel(snapshot: AiCharacterSnapshot?, context: DrawContext, area: RoomFigureArea, mouseX: Int, mouseY: Int, worldEntityId: Uuid? = null): Boolean {
-        val current = MinecraftClient.getInstance().world ?: return false
+    fun renderModel(snapshot: AiCharacterSnapshot?, context: GuiGraphics, area: RoomFigureArea, mouseX: Int, mouseY: Int, worldEntityId: Uuid? = null): Boolean {
+        val current = Minecraft.getInstance().level ?: return false
         if (world !== current) return false
         val character = snapshot?.definition
-        val live = worldEntityId?.let { id -> current.entities.firstOrNull { it.uuid == id.toJavaUuid() && !it.isRemoved } }
+        val live = worldEntityId?.let { id -> current.entitiesForRendering().firstOrNull { it.uuid == id.toJavaUuid() && !it.isRemoved } }
         if (live != null && ticks >= liveRetryAt.getOrElse(worldEntityId) { 0L }) {
             if (attempt(null) { GuiEntityModelRenderer.render(live, context, area, mouseX, mouseY) } == true) return true
             if (liveRetryAt.size >= 64 && worldEntityId !in liveRetryAt) liveRetryAt.remove(liveRetryAt.keys.first())
@@ -176,7 +176,7 @@ internal class ClientAiCharacterPreviews(
      * @return 已建立的模型；排隊中、能力缺失或等待重試時為 null。
      */
     fun sceneModel(snapshot: AiCharacterSnapshot?): Entity? {
-        if (world !== MinecraftClient.getInstance().world) return null
+        if (world !== Minecraft.getInstance().level) return null
         val character = snapshot?.definition ?: return null
         if (!hasFactory(character.preview?.capabilityId ?: return null)) return null
         if (ticks < modelRetryAt.getOrElse(character) { 0L }) return null
@@ -205,7 +205,7 @@ internal class ClientAiCharacterPreviews(
         return try {
             block()
         } catch (cause: Throwable) {
-            val root = (cause as? CrashException)?.cause ?: cause
+            val root = (cause as? ReportedException)?.cause ?: cause
             if (root is CancellationException || !failures.isIsolatable(root)) throw root
             val id = character?.preview?.capabilityId ?: character?.id ?: "loaded_entity"
             val signature = "${cause::class.qualifiedName}:${cause.message}"
@@ -234,7 +234,7 @@ internal class ClientAiCharacterPreviews(
      * @return 已有圖片，或 null。
      */
     private fun image(snapshot: AiCharacterSnapshot?): CharacterPreviewImage? {
-        if (world !== MinecraftClient.getInstance().world) return null
+        if (world !== Minecraft.getInstance().level) return null
         val character = snapshot?.definition ?: return null
         val capability = character.preview?.capabilityId ?: return null
         if (registry.find(capability) == null) return null

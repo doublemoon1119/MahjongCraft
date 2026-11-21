@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.fitClientText
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.text.Text
+import net.minecraft.client.gui.Font
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.network.chat.Component
 
 /** 各畫面共用的文字與線條繪製：標題、頁籤底線、分隔線、標籤與狀態文字。 */
 internal object ScreenRendering {
@@ -30,8 +30,8 @@ internal object ScreenRendering {
      * @param title 標題文字。
      * @param windowWidth 視窗寬度。
      */
-    fun title(context: DrawContext, textRenderer: TextRenderer, title: Text, windowWidth: Int) {
-        context.drawCenteredTextWithShadow(textRenderer, title, windowWidth / 2, FormScreenLayout.TITLE_Y, FormScreenLayout.TITLE_COLOR)
+    fun title(context: GuiGraphics, textRenderer: Font, title: Component, windowWidth: Int) {
+        context.drawCenteredString(textRenderer, title, windowWidth / 2, FormScreenLayout.TITLE_Y, FormScreenLayout.TITLE_COLOR)
     }
 
     /**
@@ -40,7 +40,7 @@ internal object ScreenRendering {
      * @param context 畫面繪製情境。
      * @param strip 頁籤列版面。
      */
-    fun tabLine(context: DrawContext, strip: TabStripLayout) {
+    fun tabLine(context: GuiGraphics, strip: TabStripLayout) {
         context.fill(strip.left, strip.lineY, strip.right, strip.lineY + 1, TAB_LINE_COLOR)
     }
 
@@ -51,7 +51,7 @@ internal object ScreenRendering {
      * @param layout 畫面版面。
      * @param y 分隔線的 Y 座標。
      */
-    fun divider(context: DrawContext, layout: FormScreenLayout, y: Int) {
+    fun divider(context: GuiGraphics, layout: FormScreenLayout, y: Int) {
         context.fill(layout.contentLeft, y, layout.contentRight, y + 1, DIVIDER_COLOR)
     }
 
@@ -70,20 +70,20 @@ internal object ScreenRendering {
      * @return 標籤被截斷且游標停在上面時為標籤全文，供提示框顯示；否則為 null。
      */
     fun label(
-        context: DrawContext,
-        textRenderer: TextRenderer,
-        label: Text,
+        context: GuiGraphics,
+        textRenderer: Font,
+        label: Component,
         x: Int,
         y: Int,
         maximumWidth: Int,
         mouseX: Int,
         mouseY: Int,
         color: Int = TEXT_COLOR,
-    ): Text? {
+    ): Component? {
         val fitted = fitClientText(textRenderer, label, maximumWidth)
-        context.drawTextWithShadow(textRenderer, fitted, x, y, color)
+        context.drawString(textRenderer, fitted, x, y, color)
         val truncated = fitted.string != label.string
-        val hovered = mouseX in x until x + maximumWidth && mouseY in y until y + textRenderer.fontHeight
+        val hovered = mouseX in x until x + maximumWidth && mouseY in y until y + textRenderer.lineHeight
         return label.takeIf { truncated && hovered }
     }
 
@@ -100,17 +100,17 @@ internal object ScreenRendering {
      * @param mouseY 游標的垂直座標。
      */
     fun status(
-        context: DrawContext,
-        textRenderer: TextRenderer,
+        context: GuiGraphics,
+        textRenderer: Font,
         layout: FormScreenLayout,
-        message: Text,
+        message: Component,
         color: Int,
         marquee: MarqueeState,
         mouseX: Int,
         mouseY: Int,
     ) {
         val hovered = mouseX in layout.contentLeft until layout.contentRight &&
-            mouseY in layout.statusY until layout.statusY + textRenderer.fontHeight
+            mouseY in layout.statusY until layout.statusY + textRenderer.lineHeight
         MarqueeText.draw(
             context = context,
             textRenderer = textRenderer,

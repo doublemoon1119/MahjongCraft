@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomP
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomParticipantProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomVacancy
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricRoomParticipantRegistry
-import net.minecraft.entity.Entity
+import net.minecraft.world.entity.Entity
 import java.lang.reflect.Modifier
 import kotlin.test.Test
 import kotlin.test.assertEquals

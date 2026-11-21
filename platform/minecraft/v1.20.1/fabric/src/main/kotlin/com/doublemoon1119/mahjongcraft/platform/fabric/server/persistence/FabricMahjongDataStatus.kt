@@ -2,12 +2,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.bracketedInteractiveLabel
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.ClickEvent
-import net.minecraft.text.HoverEvent
-import net.minecraft.text.MutableText
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.ClickEvent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.HoverEvent
+import net.minecraft.network.chat.MutableComponent
+import net.minecraft.server.level.ServerPlayer
 
 /**
  * 記錄目前 server session 中無法讀取的麻將資料，並決定麻將功能是否可用與如何通知玩家。
@@ -45,9 +45,9 @@ class FabricMahjongDataStatus {
      * @param player 試圖使用麻將功能的玩家。
      * @return 麻將功能停用、應拒絕操作時為 true。
      */
-    fun rejectIfUnavailable(player: ServerPlayerEntity): Boolean {
+    fun rejectIfUnavailable(player: ServerPlayer): Boolean {
         if (isMahjongAvailable) return false
-        player.sendMessage(Text.translatable(MinecraftMessageKeys.DATA_UNAVAILABLE), true)
+        player.displayClientMessage(Component.translatable(MinecraftMessageKeys.DATA_UNAVAILABLE), true)
         return true
     }
 
@@ -58,12 +58,12 @@ class FabricMahjongDataStatus {
      *
      * @param player 剛進入世界的玩家。
      */
-    fun notifyOnJoin(player: ServerPlayerEntity) {
+    fun notifyOnJoin(player: ServerPlayer) {
         val current = problems
         if (current.isEmpty()) return
-        val isHost = player.server.isHost(player.gameProfile)
-        if (!receivesDetailedNotice(player.hasPermissionLevel(DETAILED_NOTICE_PERMISSION_LEVEL), isHost)) return
-        dataProblemMessages(current).forEach { player.sendMessage(it, false) }
+        val isHost = player.server.isSingleplayerOwner(player.gameProfile)
+        if (!receivesDetailedNotice(player.hasPermissions(DETAILED_NOTICE_PERMISSION_LEVEL), isHost)) return
+        dataProblemMessages(current).forEach { player.displayClientMessage(it, false) }
     }
 
     private companion object {
@@ -90,14 +90,14 @@ internal fun receivesDetailedNotice(hasAdminPermission: Boolean, isHost: Boolean
  * @param problems 無法讀取的資料。
  * @return 由客戶端依語系組字的訊息行。
  */
-internal fun dataProblemMessages(problems: List<MahjongDataProblem>): List<Text> = buildList {
-    add(Text.translatable(MinecraftMessageKeys.DATA_PROBLEM_HEADER).formatted(Formatting.GOLD))
+internal fun dataProblemMessages(problems: List<MahjongDataProblem>): List<Component> = buildList {
+    add(Component.translatable(MinecraftMessageKeys.DATA_PROBLEM_HEADER).withStyle(ChatFormatting.GOLD))
     problems.forEach { problem ->
         val isAuthoritative = problem.source == MahjongDataSource.AUTHORITATIVE_STATE
-        add(Text.translatable(problemKey(problem.source)).formatted(Formatting.YELLOW))
+        add(Component.translatable(problemKey(problem.source)).withStyle(ChatFormatting.YELLOW))
         add(indented(fileLine(problem.file, unchanged = isAuthoritative)))
         add(indented(causeLine(problem.cause)))
-        if (isAuthoritative) add(indented(Text.translatable(MinecraftMessageKeys.DATA_RECOVERY_LAST_RESORT).formatted(Formatting.RED)))
+        if (isAuthoritative) add(indented(Component.translatable(MinecraftMessageKeys.DATA_RECOVERY_LAST_RESORT).withStyle(ChatFormatting.RED)))
     }
 }
 
@@ -121,14 +121,14 @@ private fun problemKey(source: MahjongDataSource): String = when (source) {
  * @param unchanged 是否註明檔案未被變更。
  * @return 帶可複製路徑的訊息。
  */
-private fun fileLine(file: String, unchanged: Boolean): MutableText {
-    val path = Text.literal(file).styled { style ->
-        style.withColor(Formatting.AQUA)
+private fun fileLine(file: String, unchanged: Boolean): MutableComponent {
+    val path = Component.literal(file).withStyle { style ->
+        style.withColor(ChatFormatting.AQUA)
             .withClickEvent(ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, file))
-            .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.translatable(MinecraftMessageKeys.DATA_FILE_COPY_HINT)))
+            .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable(MinecraftMessageKeys.DATA_FILE_COPY_HINT)))
     }
     val key = if (unchanged) MinecraftMessageKeys.DATA_FILE_UNCHANGED else MinecraftMessageKeys.DATA_FILE
-    return Text.translatable(key, path).formatted(Formatting.GRAY)
+    return Component.translatable(key, path).withStyle(ChatFormatting.GRAY)
 }
 
 /**
@@ -137,24 +137,24 @@ private fun fileLine(file: String, unchanged: Boolean): MutableText {
  * @param cause 原因分類。
  * @return 原因訊息。
  */
-private fun causeLine(cause: MahjongDataLoadCause): MutableText = when (cause) {
-    is MahjongDataLoadCause.MissingExtension -> Text.translatable(MinecraftMessageKeys.DATA_CAUSE_MISSING_EXTENSION, cause.typeKey)
-        .formatted(Formatting.GRAY)
-        .append(Text.literal(" "))
-        .append(detailLabel(Text.translatable(MinecraftMessageKeys.DATA_CAUSE_MISSING_EXTENSION_DETAIL, cause.typeKey)))
-    is MahjongDataLoadCause.NewerFormat -> Text.translatable(
+private fun causeLine(cause: MahjongDataLoadCause): MutableComponent = when (cause) {
+    is MahjongDataLoadCause.MissingExtension -> Component.translatable(MinecraftMessageKeys.DATA_CAUSE_MISSING_EXTENSION, cause.typeKey)
+        .withStyle(ChatFormatting.GRAY)
+        .append(Component.literal(" "))
+        .append(detailLabel(Component.translatable(MinecraftMessageKeys.DATA_CAUSE_MISSING_EXTENSION_DETAIL, cause.typeKey)))
+    is MahjongDataLoadCause.NewerFormat -> Component.translatable(
         MinecraftMessageKeys.DATA_CAUSE_NEWER_FORMAT,
         cause.savedVersion,
         cause.supportedVersion,
-    ).formatted(Formatting.GRAY)
-    is MahjongDataLoadCause.Unreadable -> Text.translatable(MinecraftMessageKeys.DATA_CAUSE_UNREADABLE)
-        .formatted(Formatting.GRAY)
-        .append(Text.literal(" "))
+    ).withStyle(ChatFormatting.GRAY)
+    is MahjongDataLoadCause.Unreadable -> Component.translatable(MinecraftMessageKeys.DATA_CAUSE_UNREADABLE)
+        .withStyle(ChatFormatting.GRAY)
+        .append(Component.literal(" "))
         .append(
             detailLabel(
-                detail = Text.literal(cause.summary)
-                    .append(Text.literal("\n"))
-                    .append(Text.translatable(MinecraftMessageKeys.DATA_CAUSE_UNREADABLE_DETAIL)),
+                detail = Component.literal(cause.summary)
+                    .append(Component.literal("\n"))
+                    .append(Component.translatable(MinecraftMessageKeys.DATA_CAUSE_UNREADABLE_DETAIL)),
             ),
         )
 }
@@ -165,7 +165,7 @@ private fun causeLine(cause: MahjongDataLoadCause): MutableText = when (cause) {
  * @param detail 指向時顯示的內容。
  * @return 互動標籤。
  */
-private fun detailLabel(detail: Text): MutableText = bracketedInteractiveLabel(Text.translatable(MinecraftMessageKeys.DATA_DETAIL_LABEL), detail)
+private fun detailLabel(detail: Component): MutableComponent = bracketedInteractiveLabel(Component.translatable(MinecraftMessageKeys.DATA_DETAIL_LABEL), detail)
 
 /**
  * 在訊息前加上縮排，表示它屬於上一行的資料。
@@ -173,7 +173,7 @@ private fun detailLabel(detail: Text): MutableText = bracketedInteractiveLabel(T
  * @param text 要縮排的訊息。
  * @return 帶縮排的訊息。
  */
-private fun indented(text: Text): MutableText = Text.literal(DETAIL_INDENT).append(text)
+private fun indented(text: Component): MutableComponent = Component.literal(DETAIL_INDENT).append(text)
 
 /** 檔案、原因與恢復建議相對於資料標題的縮排。 */
 private const val DETAIL_INDENT: String = "  "

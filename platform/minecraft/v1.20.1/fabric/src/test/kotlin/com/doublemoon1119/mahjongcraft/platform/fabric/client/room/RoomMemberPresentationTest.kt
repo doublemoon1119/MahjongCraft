@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerInd
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
-import net.minecraft.text.TranslatableTextContent
+import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -29,7 +29,7 @@ class RoomMemberPresentationTest {
         val rows = presentation.infoRows(entry(seatWind = Wind.SOUTH), dealerPlayerId = OTHER_PLAYER_ID)
 
         assertEquals(RoomMemberPresentation.WIND_COLOR, rows.first().second)
-        val content = assertIs<TranslatableTextContent>(rows.first().first.content)
+        val content = assertIs<TranslatableContents>(rows.first().first.contents)
         assertEquals(MinecraftMessageKeys.TILE_HONOR_SOUTH, content.key)
     }
 
@@ -79,7 +79,7 @@ class RoomMemberPresentationTest {
     @Test
     fun `maps every seat wind to its own key`() {
         val keys = Wind.entries.map { wind ->
-            assertIs<TranslatableTextContent>(RoomMemberPresentation.windText(wind).content).key
+            assertIs<TranslatableContents>(RoomMemberPresentation.windText(wind).contents).key
         }
 
         assertEquals(keys.toSet().size, keys.size, "Expected every seat wind to use its own translation key.")

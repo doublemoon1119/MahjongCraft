@@ -1,18 +1,18 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureBlocks
-import net.minecraft.entity.Dismounting
-import net.minecraft.entity.Entity
-import net.minecraft.entity.Entity.PositionUpdater
-import net.minecraft.entity.EntityType
-import net.minecraft.entity.LivingEntity
-import net.minecraft.entity.damage.DamageSource
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
-import net.minecraft.util.math.Direction
-import net.minecraft.util.math.Vec3d
-import net.minecraft.world.World
+import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.world.damagesource.DamageSource
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.Entity.MoveFunction
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.entity.vehicle.DismountHelper
+import net.minecraft.world.level.Level
+import net.minecraft.world.phys.AABB
+import net.minecraft.world.phys.Vec3
 
 /**
  * 範例椅子與長凳共用的隱形支撐；有乘客時由原版保存，無乘客或家具失效時移除。
@@ -22,14 +22,14 @@ import net.minecraft.world.World
  */
 class ExampleChairSeatEntity(
     type: EntityType<out ExampleChairSeatEntity>,
-    world: World,
+    world: Level,
 ) : Entity(type, world) {
     /** 是否需要在載入後重新檢查同一張椅子上的座位。 */
     private var needsOccupancyCheck = true
 
     init {
         isInvisible = true
-        noClip = true
+        noPhysics = true
         setNoGravity(true)
     }
 
@@ -41,48 +41,48 @@ class ExampleChairSeatEntity(
     /** 載入後核對乘客、家具與重複支撐；失效時只釋放本席。 */
     override fun tick() {
         super.tick()
-        if (world.isClient) return
-        val duplicate = needsOccupancyCheck && seatsAt(world, blockPos).any { it !== this }
+        if (level().isClientSide) return
+        val duplicate = needsOccupancyCheck && seatsAt(level(), blockPosition()).any { it !== this }
         needsOccupancyCheck = false
-        if (!hasPassengers() || !ExampleFurnitureBlocks.isRegistered() || !ExampleFurnitureBlocks.isSeat(world.getBlockState(blockPos)) || duplicate) {
-            removeAllPassengers()
+        if (!isVehicle || !ExampleFurnitureBlocks.isRegistered() || !ExampleFurnitureBlocks.isSeat(level().getBlockState(blockPosition())) || duplicate) {
+            ejectPassengers()
             discard()
         }
     }
 
     /** 將乘客腳底定位在範例椅子的固定坐姿高度。 */
-    override fun updatePassengerPosition(passenger: Entity, positionUpdater: PositionUpdater) {
+    override fun positionRider(passenger: Entity, positionUpdater: MoveFunction) {
         if (hasPassenger(passenger)) {
             positionUpdater.accept(passenger, x, ExampleSeatGeometry.passengerFeetY(y), z)
         }
     }
 
     /** 優先在乘客面向的相鄰方塊尋找安全下座位置。 */
-    override fun updatePassengerForDismount(passenger: LivingEntity): Vec3d = Direction.fromRotation(passenger.headYaw.toDouble()).let { facing ->
-        listOf(facing, facing.rotateYClockwise(), facing.rotateYCounterclockwise(), facing.opposite)
+    override fun getDismountLocationForPassenger(passenger: LivingEntity): Vec3 = Direction.fromYRot(passenger.yHeadRot.toDouble()).let { facing ->
+        listOf(facing, facing.clockWise, facing.counterClockWise, facing.opposite)
             .firstNotNullOfOrNull { direction ->
-                Dismounting.findRespawnPos(passenger.type, world, blockPos.offset(direction), false)
+                DismountHelper.findSafeDismountLocation(passenger.type, level(), blockPosition().relative(direction), false)
             }
-    } ?: super.updatePassengerForDismount(passenger)
+    } ?: super.getDismountLocationForPassenger(passenger)
 
     /** 隱形座位不接受傷害。 */
-    override fun damage(source: DamageSource, amount: Float): Boolean = false
+    override fun hurt(source: DamageSource, amount: Float): Boolean = false
 
     /** 方塊位置與乘客由原版保存，沒有額外欄位。 */
-    override fun readCustomDataFromNbt(nbt: NbtCompound) = Unit
+    override fun readAdditionalSaveData(nbt: CompoundTag) = Unit
 
     /** 方塊位置與乘客由原版保存，沒有額外欄位。 */
-    override fun writeCustomDataToNbt(nbt: NbtCompound) = Unit
+    override fun addAdditionalSaveData(nbt: CompoundTag) = Unit
 
     /** entity 不需要資料追蹤欄位。 */
-    override fun initDataTracker() = Unit
+    override fun defineSynchedData() = Unit
 
     /** 查詢指定方塊上的範例椅子座位。 */
     companion object {
         /** 查詢指定位置仍存在的範例椅子座位。 */
-        fun seatsAt(world: World, pos: BlockPos): List<ExampleChairSeatEntity> = world.getEntitiesByClass(
+        fun seatsAt(world: Level, pos: BlockPos): List<ExampleChairSeatEntity> = world.getEntitiesOfClass(
             ExampleChairSeatEntity::class.java,
-            Box(pos),
-        ) { seat -> !seat.isRemoved && seat.blockPos == pos }
+            AABB(pos),
+        ) { seat -> !seat.isRemoved && seat.blockPosition() == pos }
     }
 }

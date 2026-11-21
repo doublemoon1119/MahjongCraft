@@ -12,9 +12,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetA
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TILE_BACK_PREVIEW_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.backAppearance
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.network.chat.Component
 
 /**
  * 歷史各頁共用牌面繪製，保持方向、材質與標籤一致。
@@ -51,14 +51,14 @@ internal class HistoryTileGroupRenderer(
      * @return 游標指向的牌與其提示，或 null。
      */
     fun render(
-        context: DrawContext,
+        context: GuiGraphics,
         layout: HistoryTileGroupLayout,
         catalog: List<TileFaceViewDto>,
         x: Int,
         y: Int,
         mouseX: Int,
         mouseY: Int,
-        taken: Map<Int, Text> = emptyMap(),
+        taken: Map<Int, Component> = emptyMap(),
         markers: Map<Int, Set<String>> = emptyMap(),
         notes: Map<Int, List<HistoryTileNote>> = emptyMap(),
         linkedTile: Int? = null,
@@ -83,11 +83,11 @@ internal class HistoryTileGroupRenderer(
             if (isTaken) {
                 context.drawOutline(left, top, right, bottom, TAKEN_COLOR)
             } else {
-                context.matrices.push()
-                context.matrices.translate((x + placement.x).toDouble(), (y + placement.y).toDouble(), 0.0)
-                context.matrices.scale(nominalWidth / BASE_WIDTH, nominalHeight / BASE_HEIGHT, 1f)
+                context.pose().pushPose()
+                context.pose().translate((x + placement.x).toDouble(), (y + placement.y).toDouble(), 0.0)
+                context.pose().scale(nominalWidth / BASE_WIDTH, nominalHeight / BASE_HEIGHT, 1f)
                 faces.renderGui(context, asset, 0, 0, BASE_WIDTH, BASE_HEIGHT, placement.orientation, tileAppearance)
-                context.matrices.pop()
+                context.pose().popPose()
             }
             // 色層只畫在這張牌自己的範圍內，不佔用牌與牌之間的間隔；折角畫在色層之上保持清楚。
             if (isLinkedClaimHighlight(placement.tile, linkedTile, isTaken, notes[placement.tile].orEmpty())) {
@@ -110,7 +110,7 @@ internal class HistoryTileGroupRenderer(
                         catalogIndex = placement.tile.takeIf { showCatalogIndex },
                         takenBy = taken[placement.tile],
                         markerLabels = markers[placement.tile].orEmpty().sorted().map { marker ->
-                            markerDisplays.find(marker)?.let { Text.translatable(it.labelTranslationKey) } ?: Text.literal(marker)
+                            markerDisplays.find(marker)?.let { Component.translatable(it.labelTranslationKey) } ?: Component.literal(marker)
                         } + notes[placement.tile].orEmpty().map { it.text },
                     ),
                 )
@@ -128,7 +128,7 @@ internal class HistoryTileGroupRenderer(
      * @param bottom 下界（不含）。
      * @param color ARGB 顏色。
      */
-    private fun DrawContext.drawOutline(
+    private fun GuiGraphics.drawOutline(
         left: Int,
         top: Int,
         right: Int,
@@ -179,15 +179,15 @@ internal class HistoryTileGroupRenderer(
  * @return 依序顯示的提示文字。
  */
 internal fun historyTileTooltip(
-    name: Text,
+    name: Component,
     catalogIndex: Int?,
-    takenBy: Text?,
-    markerLabels: List<Text>,
-): List<Text> = buildList {
-    catalogIndex?.let { add(Text.translatable(MinecraftHistoryScreenKeys.STATE_TILE_INDEX, it).formatted(Formatting.GRAY)) }
+    takenBy: Component?,
+    markerLabels: List<Component>,
+): List<Component> = buildList {
+    catalogIndex?.let { add(Component.translatable(MinecraftHistoryScreenKeys.STATE_TILE_INDEX, it).withStyle(ChatFormatting.GRAY)) }
     add(name)
-    takenBy?.let { add(it.copy().formatted(Formatting.GRAY)) }
-    markerLabels.forEach { add(it.copy().formatted(Formatting.GRAY)) }
+    takenBy?.let { add(it.copy().withStyle(ChatFormatting.GRAY)) }
+    markerLabels.forEach { add(it.copy().withStyle(ChatFormatting.GRAY)) }
 }
 
 /**
@@ -212,7 +212,7 @@ internal fun isLinkedClaimHighlight(
  * @property tile 局內牌索引；獨立展示牌面時為列內位置。
  * @property tooltip 這張牌的滑鼠提示。
  */
-internal data class HistoryTileHit(val tile: Int, val tooltip: List<Text>)
+internal data class HistoryTileHit(val tile: Int, val tooltip: List<Component>)
 
 /**
  * 牌組中一張牌的額外說明，依種類在牌的左上角畫上不同顏色的折角。
@@ -220,7 +220,7 @@ internal data class HistoryTileHit(val tile: Int, val tooltip: List<Text>)
  * @property kind 說明種類。
  * @property text 滑鼠提示中的說明文字。
  */
-internal data class HistoryTileNote(val kind: HistoryTileNoteKind, val text: Text)
+internal data class HistoryTileNote(val kind: HistoryTileNoteKind, val text: Component)
 
 /**
  * 牌張說明的種類與折角顏色。

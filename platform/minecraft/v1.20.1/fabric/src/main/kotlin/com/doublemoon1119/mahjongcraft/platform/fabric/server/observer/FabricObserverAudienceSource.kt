@@ -6,10 +6,10 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlinx.coroutines.withContext
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup
-import net.minecraft.registry.RegistryKey
-import net.minecraft.registry.RegistryKeys
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.Registries
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -34,8 +34,8 @@ class FabricObserverAudienceSource(
         val server = serverHolder.current() ?: return@withContext emptyMap()
         buildMap {
             locations.snapshot().forEach { (id, entry) ->
-                val dimension = Identifier.tryParse(entry.location.dimensionId) ?: return@forEach
-                val world = server.getWorld(RegistryKey.of(RegistryKeys.WORLD, dimension)) ?: return@forEach
+                val dimension = ResourceLocation.tryParse(entry.location.dimensionId) ?: return@forEach
+                val world = server.getLevel(ResourceKey.create(Registries.DIMENSION, dimension)) ?: return@forEach
                 val position = BlockPos(entry.location.x, entry.location.y, entry.location.z)
                 val observerIds = PlayerLookup.tracking(world, position)
                     .mapTo(mutableSetOf()) { player -> player.uuid.toKotlinUuid() }

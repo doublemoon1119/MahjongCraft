@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerLevel
 
 /**
  * 將 Fabric 1.20.1 世界與方塊座標轉為版本無關的桌子位置。
@@ -10,8 +10,8 @@ import net.minecraft.util.math.BlockPos
  * @param pos 要轉換的方塊座標。
  * @return 含維度 ID 與座標的桌子位置。
  */
-fun ServerWorld.toTableLocation(pos: BlockPos): TableLocation = TableLocation(
-    dimensionId = registryKey.value.toString(),
+fun ServerLevel.toTableLocation(pos: BlockPos): TableLocation = TableLocation(
+    dimensionId = dimension().location().toString(),
     x = pos.x,
     y = pos.y,
     z = pos.z,

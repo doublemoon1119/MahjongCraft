@@ -5,9 +5,9 @@ import com.mojang.datafixers.DataFixer
 import com.mojang.datafixers.schemas.Schema
 import com.mojang.serialization.Dynamic
 import net.minecraft.SharedConstants
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.world.PersistentState
-import net.minecraft.world.PersistentStateManager
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.world.level.saveddata.SavedData
+import net.minecraft.world.level.storage.DimensionDataStorage
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.Test
@@ -30,10 +30,10 @@ class StrictPersistentStateLoadingTest {
         }
         assertEquals(1, created)
         assertEquals("new-world", state.value)
-        state.markDirty()
+        state.setDirty()
         manager.save()
         assertTrue(Files.exists(directory.resolve(FILE_NAME)))
-        val second = PersistentStateManager(directory.toFile(), IdentityDataFixer)
+        val second = DimensionDataStorage(directory.toFile(), IdentityDataFixer)
         assertEquals("new-world", loadPersistentStateStrict(second, directory.resolve(FILE_NAME), KEY, ::decode) { error("Saved data must not use the create function") }.value)
     }
 
@@ -42,7 +42,7 @@ class StrictPersistentStateLoadingTest {
     fun `decode failure cannot register or save an empty replacement`() = withManager { directory, manager ->
         val file = directory.resolve(FILE_NAME)
         TestState("original").apply {
-            markDirty()
+            setDirty()
             save(file.toFile())
         }
         val before = Files.readAllBytes(file)
@@ -89,11 +89,11 @@ class StrictPersistentStateLoadingTest {
      *
      * @param test 使用暫存目錄與管理器執行的測試。
      */
-    private fun withManager(test: (Path, PersistentStateManager) -> Unit) {
-        SharedConstants.createGameVersion()
+    private fun withManager(test: (Path, DimensionDataStorage) -> Unit) {
+        SharedConstants.tryDetectVersion()
         val directory = Files.createTempDirectory("mahjongcraft-strict-state-")
         try {
-            test(directory, PersistentStateManager(directory.toFile(), IdentityDataFixer))
+            test(directory, DimensionDataStorage(directory.toFile(), IdentityDataFixer))
         } finally {
             Files.deleteIfExists(directory.resolve(FILE_NAME))
             Files.deleteIfExists(directory)
@@ -106,16 +106,16 @@ class StrictPersistentStateLoadingTest {
      * @param nbt 已解壓的資料內容。
      * @return 保留原測試文字的狀態。
      */
-    private fun decode(nbt: NbtCompound): TestState = TestState(nbt.getString(VALUE_KEY))
+    private fun decode(nbt: CompoundTag): TestState = TestState(nbt.getString(VALUE_KEY))
 
     /**
      * 只保存一段文字的原生狀態。
      *
      * @property value 測試用保存內容。
      */
-    private class TestState(val value: String) : PersistentState() {
+    private class TestState(val value: String) : SavedData() {
         /** 將測試文字完整寫入原生 NBT 容器。 */
-        override fun writeNbt(nbt: NbtCompound): NbtCompound = nbt.apply { putString(VALUE_KEY, value) }
+        override fun save(nbt: CompoundTag): CompoundTag = nbt.apply { putString(VALUE_KEY, value) }
     }
 
     /** 測試不遷移遊戲資料，只讓原生管理器走完整的 NBT 載入流程。 */

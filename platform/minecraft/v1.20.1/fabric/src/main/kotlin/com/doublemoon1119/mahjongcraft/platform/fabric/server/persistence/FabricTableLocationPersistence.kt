@@ -38,7 +38,7 @@ class FabricTableLocationPersistence(
                     registry.setDirtyListener(state::update)
                     logger.debug("Attached table location persistence with {} saved location(s)", state.entries.size)
 
-                    val availableDimensions = server.worlds.map { it.registryKey.value.toString() }.toSet()
+                    val availableDimensions = server.allLevels.map { it.dimension().location().toString() }.toSet()
                     registry.snapshot().values
                         .map { it.location.dimensionId }
                         .filterNot(availableDimensions::contains)
@@ -83,7 +83,7 @@ class FabricTableLocationPersistence(
             ),
         )
         MahjongTableLocationsPersistentState.create().also { rebuilt ->
-            server.overworld.persistentStateManager.set(MahjongTableLocationsPersistentState.STORAGE_KEY, rebuilt)
+            server.overworld().dataStorage.set(MahjongTableLocationsPersistentState.STORAGE_KEY, rebuilt)
         }
     }
 

@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.gui.DrawContext
+import net.minecraft.client.gui.Font
+import net.minecraft.client.gui.GuiGraphics
 import kotlin.math.ceil
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -55,7 +55,7 @@ private fun Duration.displayedSeconds(): Int = ceil(this / 1.seconds).toInt()
  * @param scale 文字縮放倍率。
  * @return 縮放後向上取整的像素寬度。
  */
-internal fun decisionTimerWidth(renderer: TextRenderer, parts: List<DecisionTimerPart>, scale: Float): Int = ceil(parts.sumOf { renderer.getWidth(it.text) } * scale).toInt()
+internal fun decisionTimerWidth(renderer: Font, parts: List<DecisionTimerPart>, scale: Float): Int = ceil(parts.sumOf { renderer.width(it.text) } * scale).toInt()
 
 /**
  * 以指定水平中心與上緣繪製縮放後的倒數文字。
@@ -66,23 +66,23 @@ internal fun decisionTimerWidth(renderer: TextRenderer, parts: List<DecisionTime
  * @param centerX 縮放後文字的水平中心。
  * @param scale 文字縮放倍率。
  */
-internal fun DrawContext.drawDecisionTimer(
-    renderer: TextRenderer,
+internal fun GuiGraphics.drawDecisionTimer(
+    renderer: Font,
     parts: List<DecisionTimerPart>,
     y: Int,
     centerX: Int,
     scale: Float,
 ) {
     if (parts.isEmpty()) return
-    val width = parts.sumOf { renderer.getWidth(it.text) }
-    matrices.push()
-    matrices.scale(scale, scale, 1f)
+    val width = parts.sumOf { renderer.width(it.text) }
+    pose().pushPose()
+    pose().scale(scale, scale, 1f)
     var x = centerX / scale - width / 2f
     parts.forEach { part ->
-        drawTextWithShadow(renderer, part.text, x.toInt(), (y / scale).toInt(), part.color)
-        x += renderer.getWidth(part.text)
+        drawString(renderer, part.text, x.toInt(), (y / scale).toInt(), part.color)
+        x += renderer.width(part.text)
     }
-    matrices.pop()
+    pose().popPose()
 }
 
 /** 基本時間的文字顏色。 */

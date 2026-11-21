@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.furniture.table
 
-import net.minecraft.util.StringIdentifiable
+import net.minecraft.util.StringRepresentable
 
 /**
  * 3×3 單層範例桌子中的一格，以世界方向表示相對中央的位置；桌子朝向只影響牌桌布局，不改變各格位置。
@@ -11,7 +11,7 @@ import net.minecraft.util.StringIdentifiable
 enum class ExampleFlatTablePart(
     val offsetX: Int,
     val offsetZ: Int,
-) : StringIdentifiable {
+) : StringRepresentable {
     /** 中央，也是桌子的控制方塊。 */
     CENTER(0, 0),
 
@@ -41,5 +41,5 @@ enum class ExampleFlatTablePart(
     ;
 
     /** @return 方塊狀態中使用的小寫名稱。 */
-    override fun asString(): String = name.lowercase()
+    override fun getSerializedName(): String = name.lowercase()
 }

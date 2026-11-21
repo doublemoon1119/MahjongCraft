@@ -21,8 +21,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistryImpl
-import net.minecraft.text.Text
-import net.minecraft.text.TranslatableTextContent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -66,15 +66,15 @@ class GameConfigDifferenceFormatterTest {
             from = before,
             to = after,
         )
-        val change = text.siblings.last().content as TranslatableTextContent
+        val change = text.siblings.last().contents as TranslatableContents
 
         assertEquals(MinecraftRoomScreenKeys.CONFIG_VALUE_CHANGE, change.key)
         assertEquals(
             expected = "mahjongcraft.room.config.field.base_seconds",
-            actual = ((change.args[0] as Text).content as TranslatableTextContent).key,
+            actual = ((change.args[0] as Component).contents as TranslatableContents).key,
         )
-        assertEquals(beforeBaseSeconds.toString(), (change.args[1] as Text).string)
-        assertEquals(afterBaseSeconds.toString(), (change.args[2] as Text).string)
+        assertEquals(beforeBaseSeconds.toString(), (change.args[1] as Component).string)
+        assertEquals(afterBaseSeconds.toString(), (change.args[2] as Component).string)
     }
 
     /** 第三方規則宣告規則選擇後，規則選擇時間的實際差異會出現在摘要中。 */
@@ -99,15 +99,15 @@ class GameConfigDifferenceFormatterTest {
             to = after,
         )
         val change = text.siblings.single { sibling ->
-            val content = sibling.content as? TranslatableTextContent ?: return@single false
+            val content = sibling.contents as? TranslatableContents ?: return@single false
             content.key == MinecraftRoomScreenKeys.CONFIG_VALUE_CHANGE &&
-                (content.args[0] as Text).content is TranslatableTextContent &&
-                ((content.args[0] as Text).content as TranslatableTextContent).key ==
+                (content.args[0] as Component).contents is TranslatableContents &&
+                ((content.args[0] as Component).contents as TranslatableContents).key ==
                 "mahjongcraft.room.config.field.rule_decision_base_seconds"
-        }.content as TranslatableTextContent
+        }.contents as TranslatableContents
 
-        assertEquals(beforeRuleDecisionSeconds.toString(), (change.args[1] as Text).string)
-        assertEquals(afterRuleDecisionSeconds.toString(), (change.args[2] as Text).string)
+        assertEquals(beforeRuleDecisionSeconds.toString(), (change.args[1] as Component).string)
+        assertEquals(afterRuleDecisionSeconds.toString(), (change.args[2] as Component).string)
     }
 
     /** 建立指定是否提供規則選擇時間的第三方設定解析器。 */

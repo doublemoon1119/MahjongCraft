@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.table
 
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.render.RenderLayer
-import net.minecraft.client.render.WorldRenderer
-import net.minecraft.util.math.Box
+import net.minecraft.client.Minecraft
+import net.minecraft.client.renderer.LevelRenderer
+import net.minecraft.client.renderer.RenderType
+import net.minecraft.world.phys.AABB
 
 /**
  * 在世界中以紅色線框標出等待開局桌子被擋住的擺牌格。
@@ -17,22 +17,22 @@ class TableSpaceObstructionRenderer(
     /** 註冊世界繪製事件。 */
     fun registerEvents() {
         WorldRenderEvents.BEFORE_DEBUG_RENDER.register { context ->
-            val world = MinecraftClient.getInstance().world ?: return@register
-            val cells = store.cellsIn(world.registryKey.value.toString())
+            val world = Minecraft.getInstance().level ?: return@register
+            val cells = store.cellsIn(world.dimension().location().toString())
             if (cells.isEmpty()) return@register
             val consumers = context.consumers() ?: return@register
-            val camera = context.camera().pos
-            val lines = consumers.getBuffer(RenderLayer.getLines())
+            val camera = context.camera().position
+            val lines = consumers.getBuffer(RenderType.lines())
             cells.forEach { cell ->
-                val box = Box(
+                val box = AABB(
                     cell.x.toDouble(),
                     cell.y.toDouble(),
                     cell.z.toDouble(),
                     cell.x + 1.0,
                     cell.y + 1.0,
                     cell.z + 1.0,
-                ).expand(OUTLINE_INFLATION).offset(-camera.x, -camera.y, -camera.z)
-                WorldRenderer.drawBox(context.matrixStack(), lines, box, RED, GREEN, BLUE, ALPHA)
+                ).inflate(OUTLINE_INFLATION).move(-camera.x, -camera.y, -camera.z)
+                LevelRenderer.renderLineBox(context.matrixStack(), lines, box, RED, GREEN, BLUE, ALPHA)
             }
         }
     }

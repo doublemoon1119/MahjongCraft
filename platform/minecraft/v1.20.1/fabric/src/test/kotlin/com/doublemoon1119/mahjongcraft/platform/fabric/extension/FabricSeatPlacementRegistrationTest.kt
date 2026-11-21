@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricRo
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatPlacementRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistryImpl
-import net.minecraft.item.ItemStack
+import net.minecraft.world.item.ItemStack
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

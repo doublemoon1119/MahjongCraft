@@ -5,11 +5,11 @@ import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurniture
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity.ExampleChairSeatEntity
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity.ExampleSeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatState
-import net.minecraft.entity.Entity
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
+import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.phys.AABB
 
 /** 範例椅子與長凳手動右鍵、建立人偶及座位 provider 共用的入座服務。 */
 class ExampleChairSeatService {
@@ -23,7 +23,7 @@ class ExampleChairSeatService {
      * @return 入座與定位皆完成時為 true。
      */
     fun sit(
-        world: ServerWorld,
+        world: ServerLevel,
         pos: BlockPos,
         rider: Entity,
         yaw: Float,
@@ -39,7 +39,7 @@ class ExampleChairSeatService {
         }
         if (!ExampleSeatSupportCleanup.clearEmpty(
                 supports = ExampleChairSeatEntity.seatsAt(world, pos),
-                hasPassengers = Entity::hasPassengers,
+                hasPassengers = Entity::isVehicle,
                 discard = Entity::discard,
             )
         ) {
@@ -48,10 +48,10 @@ class ExampleChairSeatService {
         val originalX = rider.x
         val originalY = rider.y
         val originalZ = rider.z
-        val originalYaw = rider.yaw
-        val originalPitch = rider.pitch
+        val originalYaw = rider.yRot
+        val originalPitch = rider.xRot
         val seat = ExampleChairSeatEntity(ExampleFurnitureEntities.chairSeat, world).apply {
-            refreshPositionAndAngles(
+            moveTo(
                 pos.x + 0.5,
                 ExampleSeatGeometry.chairSeatY(pos.y),
                 pos.z + 0.5,
@@ -62,17 +62,17 @@ class ExampleChairSeatService {
         }
         return ExampleSeatAttempt.run(
             create = { seat },
-            spawn = { world.spawnEntity(it) },
+            spawn = { world.addFreshEntity(it) },
             mount = { rider.startRiding(it, true) },
             finish = {
-                it.updatePassengerPosition(rider)
+                it.positionRider(rider)
                 faceTable(rider, yaw)
                 rider.vehicle === it
             },
             restore = {
                 if (rider.vehicle === seat) rider.stopRiding()
-                if (rider is ServerPlayerEntity) {
-                    rider.networkHandler.requestTeleport(
+                if (rider is ServerPlayer) {
+                    rider.connection.teleport(
                         originalX,
                         originalY,
                         originalZ,
@@ -80,7 +80,7 @@ class ExampleChairSeatService {
                         originalPitch,
                     )
                 } else {
-                    rider.refreshPositionAndAngles(
+                    rider.moveTo(
                         originalX,
                         originalY,
                         originalZ,
@@ -102,30 +102,30 @@ class ExampleChairSeatService {
      * @return 椅子可安全使用時為 true。
      */
     fun canSit(
-        world: ServerWorld,
+        world: ServerLevel,
         pos: BlockPos,
         rider: Entity,
     ): Boolean {
         if (!ExampleFurnitureEntities.isRegistered()) return false
-        if (!world.chunkManager.isChunkLoaded(pos.x shr 4, pos.z shr 4)) return false
+        if (!world.chunkSource.hasChunk(pos.x shr 4, pos.z shr 4)) return false
         if (!ExampleFurnitureBlocks.isSeat(world.getBlockState(pos))) return false
-        if (rider.world !== world) return false
+        if (rider.level() !== world) return false
         if (ExampleFurnitureSeatRules.occupancyState(
-                hasVehicle = rider.hasVehicle(),
-                occupied = ExampleSeatSupportCleanup.isOccupied(ExampleChairSeatEntity.seatsAt(world, pos), Entity::hasPassengers),
+                hasVehicle = rider.isPassenger,
+                occupied = ExampleSeatSupportCleanup.isOccupied(ExampleChairSeatEntity.seatsAt(world, pos), Entity::isVehicle),
             ) != SeatState.AVAILABLE
         ) {
             return false
         }
         val seatY = ExampleSeatGeometry.chairSeatY(pos.y)
         val feetY = ExampleSeatGeometry.passengerFeetY(seatY)
-        val body = Box(
-            pos.x + 0.5 - rider.width / 2.0,
+        val body = AABB(
+            pos.x + 0.5 - rider.bbWidth / 2.0,
             pos.y + ExampleSeatGeometry.CHAIR_TOP_HEIGHT,
-            pos.z + 0.5 - rider.width / 2.0,
-            pos.x + 0.5 + rider.width / 2.0,
-            feetY + rider.height,
-            pos.z + 0.5 + rider.width / 2.0,
+            pos.z + 0.5 - rider.bbWidth / 2.0,
+            pos.x + 0.5 + rider.bbWidth / 2.0,
+            feetY + rider.bbHeight,
+            pos.z + 0.5 + rider.bbWidth / 2.0,
         )
         return ExampleFurnitureSpace.isClear(
             world = world,
@@ -136,21 +136,21 @@ class ExampleChairSeatService {
 
     /** 將成功入座者面向標準座位要求，保留原本仰角。 */
     private fun faceTable(rider: Entity, yaw: Float) {
-        if (rider is ServerPlayerEntity) {
-            rider.networkHandler.requestTeleport(
+        if (rider is ServerPlayer) {
+            rider.connection.teleport(
                 rider.x,
                 rider.y,
                 rider.z,
                 yaw,
-                rider.pitch,
+                rider.xRot,
             )
         } else {
-            rider.refreshPositionAndAngles(
+            rider.moveTo(
                 rider.x,
                 rider.y,
                 rider.z,
                 yaw,
-                rider.pitch,
+                rider.xRot,
             )
         }
     }

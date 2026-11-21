@@ -16,10 +16,10 @@ import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
-import net.minecraft.server.command.CommandManager.argument
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands.argument
+import net.minecraft.commands.Commands.literal
+import net.minecraft.server.level.ServerPlayer
 import java.util.concurrent.CompletableFuture
 import kotlin.uuid.toKotlinUuid
 
@@ -100,7 +100,7 @@ class FabricGameCommand(
      * @param source 指令呼叫來源。
      * @return Brigadier 命令結果碼。
      */
-    private fun hand(source: ServerCommandSource): Int = withPlayer(source) { player ->
+    private fun hand(source: CommandSourceStack): Int = withPlayer(source) { player ->
         gameActionService.showHand(player)
     }
 
@@ -110,7 +110,7 @@ class FabricGameCommand(
      * @param context 含有指令來源與手牌候選 token 的 Brigadier 情境。
      * @return Brigadier 命令結果碼。
      */
-    private fun discard(context: CommandContext<ServerCommandSource>): Int = withPlayer(context.source) { player ->
+    private fun discard(context: CommandContext<CommandSourceStack>): Int = withPlayer(context.source) { player ->
         val token = StringArgumentType.getString(context, TILE_ARGUMENT)
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -130,7 +130,7 @@ class FabricGameCommand(
      * @param tileTokens 額外選取的手牌候選 token。
      * @return Brigadier 命令結果碼。
      */
-    private fun act(context: CommandContext<ServerCommandSource>, tileTokens: List<String>): Int = withPlayer(context.source) { player ->
+    private fun act(context: CommandContext<CommandSourceStack>, tileTokens: List<String>): Int = withPlayer(context.source) { player ->
         val token = StringArgumentType.getString(context, ACTION_ARGUMENT)
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -157,7 +157,7 @@ class FabricGameCommand(
      * @param action 以來源玩家執行的動作。
      * @return Brigadier 命令結果碼。
      */
-    private fun withPlayer(source: ServerCommandSource, action: (ServerPlayerEntity) -> Unit): Int {
+    private fun withPlayer(source: CommandSourceStack, action: (ServerPlayer) -> Unit): Int {
         val player = source.player ?: return COMMAND_FAILURE
         action(player)
         return COMMAND_SUCCESS
@@ -171,7 +171,7 @@ class FabricGameCommand(
      * @return 非同步建立的候選建議。
      */
     private fun suggestHandTiles(
-        context: CommandContext<ServerCommandSource>,
+        context: CommandContext<CommandSourceStack>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> {
         val future = CompletableFuture<Suggestions>()
@@ -200,7 +200,7 @@ class FabricGameCommand(
      * @return 非同步建立的候選建議。
      */
     private fun suggestActions(
-        context: CommandContext<ServerCommandSource>,
+        context: CommandContext<CommandSourceStack>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> {
         val future = CompletableFuture<Suggestions>()
@@ -238,7 +238,7 @@ class FabricGameCommand(
      * @return 非同步建立的候選建議。
      */
     private fun suggestActionTiles(
-        context: CommandContext<ServerCommandSource>,
+        context: CommandContext<CommandSourceStack>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> {
         val future = CompletableFuture<Suggestions>()
@@ -288,7 +288,7 @@ class FabricGameCommand(
      * @param argumentName 要讀取的引數名稱。
      * @return 依輸入順序排列的非空白 token。
      */
-    private fun parseTileTokens(context: CommandContext<ServerCommandSource>, argumentName: String): List<String> = StringArgumentType.getString(context, argumentName).split(Regex("\\s+")).filter(String::isNotBlank)
+    private fun parseTileTokens(context: CommandContext<CommandSourceStack>, argumentName: String): List<String> = StringArgumentType.getString(context, argumentName).split(Regex("\\s+")).filter(String::isNotBlank)
 
     private companion object {
         /**

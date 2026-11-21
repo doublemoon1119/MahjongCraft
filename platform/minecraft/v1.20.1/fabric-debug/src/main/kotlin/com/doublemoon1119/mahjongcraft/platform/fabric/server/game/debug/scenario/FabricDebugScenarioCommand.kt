@@ -9,12 +9,12 @@ import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import net.minecraft.command.CommandSource
-import net.minecraft.command.argument.IdentifierArgumentType
-import net.minecraft.server.command.CommandManager.argument
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.text.Text
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands.argument
+import net.minecraft.commands.Commands.literal
+import net.minecraft.commands.SharedSuggestionProvider
+import net.minecraft.commands.arguments.ResourceLocationArgument
+import net.minecraft.network.chat.Component
 import java.util.concurrent.CompletableFuture
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
@@ -34,18 +34,18 @@ class FabricDebugScenarioCommand(
     private val dispatchers: CoroutineDispatchers,
 ) {
     /** 建立可掛入既有除錯指令根節點的情境指令節點。 */
-    fun build(): LiteralArgumentBuilder<ServerCommandSource> = literal(SCENARIO_SUBCOMMAND)
+    fun build(): LiteralArgumentBuilder<CommandSourceStack> = literal(SCENARIO_SUBCOMMAND)
         .then(literal(LIST_SUBCOMMAND).executes(::listScenarios))
         .then(
             literal(LOAD_SUBCOMMAND).then(
-                argument(SCENARIO_ID_ARGUMENT, IdentifierArgumentType.identifier())
+                argument(SCENARIO_ID_ARGUMENT, ResourceLocationArgument.id())
                     .suggests(::suggestScenarioIds)
                     .executes(::loadScenario),
             ),
         )
         .then(
             literal(STRESS_SUBCOMMAND).then(
-                argument(SCENARIO_ID_ARGUMENT, IdentifierArgumentType.identifier())
+                argument(SCENARIO_ID_ARGUMENT, ResourceLocationArgument.id())
                     .suggests(::suggestScenarioIds)
                     .then(
                         argument(PRESENTATION_COUNT_ARGUMENT, IntegerArgumentType.integer(MIN_PRESENTATION_COUNT, MAX_PRESENTATION_COUNT))
@@ -60,12 +60,12 @@ class FabricDebugScenarioCommand(
      * @param context 指令來源與已解析的引數。
      * @return 指令成功回傳值。
      */
-    private fun listScenarios(context: CommandContext<ServerCommandSource>): Int {
+    private fun listScenarios(context: CommandContext<CommandSourceStack>): Int {
         val message = buildString {
             appendLine("Debug scenarios:")
             registry.getAll().forEach { scenario -> appendLine("- ${scenario.id}") }
         }.trimEnd()
-        context.source.sendFeedback({ Text.literal(message) }, false)
+        context.source.sendSuccess({ Component.literal(message) }, false)
         return SUCCESS
     }
 
@@ -75,7 +75,7 @@ class FabricDebugScenarioCommand(
      * @param context 指令來源與情境 ID 引數。
      * @return 成功排程時為成功值；來源不是玩家時為失敗值，不代表情境已載入成功。
      */
-    private fun loadScenario(context: CommandContext<ServerCommandSource>): Int = runScenarioCommand(context) { playerId, scenarioId -> loader.load(playerId, scenarioId) }
+    private fun loadScenario(context: CommandContext<CommandSourceStack>): Int = runScenarioCommand(context) { playerId, scenarioId -> loader.load(playerId, scenarioId) }
 
     /**
      * 非同步重建指定情境的演出內容，檢查實體生成與開局時序。
@@ -83,7 +83,7 @@ class FabricDebugScenarioCommand(
      * @param context 指令來源、情境 ID 與重建次數。
      * @return 成功排程時為成功值；來源不是玩家時為失敗值，不代表重建已完成。
      */
-    private fun stressScenario(context: CommandContext<ServerCommandSource>): Int {
+    private fun stressScenario(context: CommandContext<CommandSourceStack>): Int {
         val presentationCount = IntegerArgumentType.getInteger(context, PRESENTATION_COUNT_ARGUMENT)
         return runScenarioCommand(context) { playerId, scenarioId -> loader.stress(playerId, scenarioId, presentationCount) }
     }
@@ -96,32 +96,32 @@ class FabricDebugScenarioCommand(
      * @return 成功排程時為成功值；來源不是玩家時為失敗值。
      */
     private fun runScenarioCommand(
-        context: CommandContext<ServerCommandSource>,
+        context: CommandContext<CommandSourceStack>,
         operation: suspend (Uuid, String) -> DebugGameScenarioLoadResult,
     ): Int {
         val source = context.source
-        val player = runCatching { source.playerOrThrow }.getOrElse {
-            source.sendError(Text.literal("This debug scenario requires a player"))
+        val player = runCatching { source.playerOrException }.getOrElse {
+            source.sendFailure(Component.literal("This debug scenario requires a player"))
             return FAILURE
         }
-        val scenarioId = IdentifierArgumentType.getIdentifier(context, SCENARIO_ID_ARGUMENT).toString()
+        val scenarioId = ResourceLocationArgument.getId(context, SCENARIO_ID_ARGUMENT).toString()
         scope.launch {
             val result = operation(player.uuid.toKotlinUuid(), scenarioId)
             withContext(dispatchers.main) {
                 when (result) {
-                    is DebugGameScenarioLoadResult.Success -> source.sendFeedback(
+                    is DebugGameScenarioLoadResult.Success -> source.sendSuccess(
                         {
                             val suffix = if (result.presentationCount > 1) {
                                 " (${result.presentationCount} presentations)"
                             } else {
                                 ""
                             }
-                            Text.literal("Loaded debug scenario: ${result.scenarioId}$suffix")
+                            Component.literal("Loaded debug scenario: ${result.scenarioId}$suffix")
                         },
                         false,
                     )
 
-                    is DebugGameScenarioLoadResult.Rejected -> source.sendError(Text.literal(result.reason))
+                    is DebugGameScenarioLoadResult.Rejected -> source.sendFailure(Component.literal(result.reason))
                 }
             }
         }
@@ -136,9 +136,9 @@ class FabricDebugScenarioCommand(
      * @return 補全建議的非同步結果。
      */
     private fun suggestScenarioIds(
-        context: CommandContext<ServerCommandSource>,
+        context: CommandContext<CommandSourceStack>,
         builder: SuggestionsBuilder,
-    ): CompletableFuture<Suggestions> = CommandSource.suggestMatching(registry.getAll().map { it.id }, builder)
+    ): CompletableFuture<Suggestions> = SharedSuggestionProvider.suggest(registry.getAll().map { it.id }, builder)
 
     private companion object {
         /** 指令成功回傳值。 */

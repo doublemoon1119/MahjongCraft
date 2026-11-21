@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDenomination
-import net.minecraft.nbt.NbtCompound
+import net.minecraft.nbt.CompoundTag
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -14,7 +14,7 @@ class MahjongScoringStickDenominationNbtTest {
     @Test
     fun `every denomination survives a name round trip`() {
         MahjongScoringStickDenomination.entries.forEach { denomination ->
-            val nbt = NbtCompound()
+            val nbt = CompoundTag()
 
             MahjongScoringStickDenominationNbt.write(nbt, denomination)
 
@@ -26,14 +26,14 @@ class MahjongScoringStickDenominationNbtTest {
     /** 缺少欄位、名稱無效或型別不符時使用百分棒。 */
     @Test
     fun `unknown values fall back to the smallest denomination`() {
-        assertEquals(MahjongScoringStickDenomination.P100, MahjongScoringStickDenominationNbt.read(NbtCompound()))
+        assertEquals(MahjongScoringStickDenomination.P100, MahjongScoringStickDenominationNbt.read(CompoundTag()))
         assertEquals(
             expected = MahjongScoringStickDenomination.P100,
-            actual = MahjongScoringStickDenominationNbt.read(NbtCompound().apply { putString(key, "P999") }),
+            actual = MahjongScoringStickDenominationNbt.read(CompoundTag().apply { putString(key, "P999") }),
         )
         assertEquals(
             expected = MahjongScoringStickDenomination.P100,
-            actual = MahjongScoringStickDenominationNbt.read(NbtCompound().apply { putInt(key, 99) }),
+            actual = MahjongScoringStickDenominationNbt.read(CompoundTag().apply { putInt(key, 99) }),
         )
     }
 }

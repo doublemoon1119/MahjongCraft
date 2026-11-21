@@ -67,7 +67,7 @@ object TileAnimationSteps {
         val wallX = tile.x
         val wallY = tile.y
         val wallZ = tile.z
-        val wallYaw = tile.yaw
+        val wallYaw = tile.yRot
         val peakY = wallY + DEAL_LIFT_HEIGHT
         val snapGapEndGameTime = liftAbsoluteGameTime + MahjongTileTableLayout.DEAL_LIFT_DURATION_TICKS +
             MahjongTileTableLayout.DEAL_SNAP_GAP_TICKS

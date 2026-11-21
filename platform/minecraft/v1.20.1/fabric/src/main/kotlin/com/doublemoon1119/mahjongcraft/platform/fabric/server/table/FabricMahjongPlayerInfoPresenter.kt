@@ -10,12 +10,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInf
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerScoreChange
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
-import net.minecraft.registry.RegistryKey
-import net.minecraft.registry.RegistryKeys
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
+import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.Registries
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 
 /**
@@ -37,14 +37,14 @@ class FabricMahjongPlayerInfoPresenter(private val serverHolder: FabricServerHol
             ?: return MahjongPlayerInfoPresentationResult.TABLE_NOT_FOUND
 
         val entity = find(world, presentation.tableId, controllerPos) ?: MahjongPlayerInfoEntity(world = world).apply {
-            refreshPositionAndAngles(controllerPos.x + 0.5, controllerPos.y.toDouble(), controllerPos.z + 0.5, 0f, 0f)
+            moveTo(controllerPos.x + 0.5, controllerPos.y.toDouble(), controllerPos.z + 0.5, 0f, 0f)
             assignToTable(presentation.tableId, controllerPos)
             if (!spawnGateway.spawn(world, this, "player-info", presentation.tableId)) return MahjongPlayerInfoPresentationResult.SPAWN_FAILED
         }
         entity.players = presentation.players
         entity.dealerPlayerId = presentation.dealerPlayerId
         entity.tableFacing = tableFacing
-        table.blockEntity.markDirty()
+        table.blockEntity.setChanged()
         return MahjongPlayerInfoPresentationResult.PRESENTED
     }
 
@@ -57,7 +57,7 @@ class FabricMahjongPlayerInfoPresenter(private val serverHolder: FabricServerHol
         if (changes.isEmpty()) return
         val world = resolveWorld(tableLocation) ?: return
         val entity = find(world, tableId, tableLocation.toBlockPos()) ?: return
-        entity.scoreChanges = entity.scoreChanges.filter { it.endGameTime > world.time } + changes
+        entity.scoreChanges = entity.scoreChanges.filter { it.endGameTime > world.gameTime } + changes
     }
 
     override fun clear(tableId: Uuid, tableLocation: TableLocation): Int {
@@ -74,9 +74,9 @@ class FabricMahjongPlayerInfoPresenter(private val serverHolder: FabricServerHol
      * @param location 桌子位置。
      * @return 對應世界；無法解析或尚未載入時為 null。
      */
-    private fun resolveWorld(location: TableLocation): ServerWorld? {
-        val identifier = Identifier.tryParse(location.dimensionId) ?: return null
-        return serverHolder.current()?.getWorld(RegistryKey.of(RegistryKeys.WORLD, identifier))
+    private fun resolveWorld(location: TableLocation): ServerLevel? {
+        val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null
+        return serverHolder.current()?.getLevel(ResourceKey.create(Registries.DIMENSION, identifier))
     }
 
     /**
@@ -87,7 +87,7 @@ class FabricMahjongPlayerInfoPresenter(private val serverHolder: FabricServerHol
      * @param pos 桌子 controller 方塊位置。
      * @return 找到的 entity；不存在時為 null。
      */
-    private fun find(world: ServerWorld, tableId: Uuid, pos: BlockPos): MahjongPlayerInfoEntity? = findAll(world, tableId, pos).firstOrNull()
+    private fun find(world: ServerLevel, tableId: Uuid, pos: BlockPos): MahjongPlayerInfoEntity? = findAll(world, tableId, pos).firstOrNull()
 
     /**
      * 搜尋桌子 controller 附近且 table UUID 相符的玩家資訊 entity。
@@ -97,9 +97,9 @@ class FabricMahjongPlayerInfoPresenter(private val serverHolder: FabricServerHol
      * @param pos 桌子 controller 方塊位置。
      * @return 符合桌子 UUID 的 entity 清單。
      */
-    private fun findAll(world: ServerWorld, tableId: Uuid, pos: BlockPos): List<MahjongPlayerInfoEntity> = world.getEntitiesByClass(
+    private fun findAll(world: ServerLevel, tableId: Uuid, pos: BlockPos): List<MahjongPlayerInfoEntity> = world.getEntitiesOfClass(
         MahjongPlayerInfoEntity::class.java,
-        Box(pos).expand(TableOverlayEntitySearch.HORIZONTAL_RADIUS, TableOverlayEntitySearch.VERTICAL_RADIUS, TableOverlayEntitySearch.HORIZONTAL_RADIUS),
+        AABB(pos).inflate(TableOverlayEntitySearch.HORIZONTAL_RADIUS, TableOverlayEntitySearch.VERTICAL_RADIUS, TableOverlayEntitySearch.HORIZONTAL_RADIUS),
     ) { it.managedTableId == tableId }
 
     /**

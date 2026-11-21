@@ -19,9 +19,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistryImpl
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
-import net.minecraft.text.LiteralTextContent
-import net.minecraft.text.Text
-import net.minecraft.text.TranslatableTextContent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.contents.LiteralContents
+import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -65,13 +65,13 @@ class RoundInfoLineTextBuilderTest {
         val decodedLines = RoundInfoLineCodec.decode(RoundInfoLineCodec.encode(providerLines))
 
         val text = builder.buildLineText(decodedLines.single())
-        val content = assertIs<TranslatableTextContent>(text.content)
+        val content = assertIs<TranslatableContents>(text.contents)
         assertEquals("thirdparty.round_info.line", content.key)
-        val tileText = assertIs<Text>(content.args[0])
-        assertEquals("🀫 ", assertIs<LiteralTextContent>(tileText.content).string())
-        assertEquals("thirdparty.tile.flower", assertIs<TranslatableTextContent>(tileText.siblings.single().content).key)
-        val messageText = assertIs<Text>(content.args[1])
-        assertEquals("thirdparty.round_info.exchange_enabled", assertIs<TranslatableTextContent>(messageText.content).key)
+        val tileText = assertIs<Component>(content.args[0])
+        assertEquals("🀫 ", assertIs<LiteralContents>(tileText.contents).text())
+        assertEquals("thirdparty.tile.flower", assertIs<TranslatableContents>(tileText.siblings.single().contents).key)
+        val messageText = assertIs<Component>(content.args[1])
+        assertEquals("thirdparty.round_info.exchange_enabled", assertIs<TranslatableContents>(messageText.contents).key)
         assertEquals(emptyList(), warnings)
     }
 
@@ -92,9 +92,9 @@ class RoundInfoLineTextBuilderTest {
             args = listOf(RoundInfoArgument.TileValue(Tile.Extension(TileTypeId.parse("thirdparty:unnamed")))),
         )
 
-        val content = assertIs<TranslatableTextContent>(builder.buildLineText(line).content)
+        val content = assertIs<TranslatableContents>(builder.buildLineText(line).contents)
 
-        assertEquals("thirdparty:unnamed", assertIs<LiteralTextContent>(assertIs<Text>(content.args.single()).content).string())
+        assertEquals("thirdparty:unnamed", assertIs<LiteralContents>(assertIs<Component>(content.args.single()).contents).text())
     }
 
     /** 數字、風位與已登記的訊息參數依各自種類組成文字。 */
@@ -111,7 +111,7 @@ class RoundInfoLineTextBuilderTest {
             tileEmojiRegistry = TileEmojiRegistryImpl(),
         ) { }
 
-        val content = assertIs<TranslatableTextContent>(
+        val content = assertIs<TranslatableContents>(
             value = builder.buildLineText(
                 line = RoundInfoLine(
                     key = "example:line",
@@ -121,12 +121,12 @@ class RoundInfoLineTextBuilderTest {
                         RoundInfoArgument.Message("example:enabled"),
                     ),
                 ),
-            ).content,
+            ).contents,
         )
 
         assertEquals(3, content.args[0])
-        assertEquals("mahjongcraft.message.tile_honor_south", assertIs<TranslatableTextContent>(assertIs<Text>(content.args[1]).content).key)
-        assertEquals("example.enabled", assertIs<TranslatableTextContent>(assertIs<Text>(content.args[2]).content).key)
+        assertEquals("mahjongcraft.message.tile_honor_south", assertIs<TranslatableContents>(assertIs<Component>(content.args[1]).contents).key)
+        assertEquals("example.enabled", assertIs<TranslatableContents>(assertIs<Component>(content.args[2]).contents).key)
     }
 
     /** 未登記訊息 ID 與無法辨識參數各依契約退回，並且只警告一次。 */
@@ -152,9 +152,9 @@ class RoundInfoLineTextBuilderTest {
             ),
         )
 
-        val content = assertIs<TranslatableTextContent>(builder.buildLineText(line).content)
-        assertEquals("thirdparty:missing", assertIs<LiteralTextContent>(assertIs<Text>(content.args[0]).content).string())
-        assertEquals("?", assertIs<LiteralTextContent>(assertIs<Text>(content.args[2]).content).string())
+        val content = assertIs<TranslatableContents>(builder.buildLineText(line).contents)
+        assertEquals("thirdparty:missing", assertIs<LiteralContents>(assertIs<Component>(content.args[0]).contents).text())
+        assertEquals("?", assertIs<LiteralContents>(assertIs<Component>(content.args[2]).contents).text())
         builder.buildLineText(line)
         builder.buildLineText(RoundInfoLine("example:line", listOf(RoundInfoArgument.Message("thirdparty:another_missing"))))
 

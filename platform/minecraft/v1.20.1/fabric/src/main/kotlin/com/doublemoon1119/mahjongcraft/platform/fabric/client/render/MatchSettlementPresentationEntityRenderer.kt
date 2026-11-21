@@ -9,15 +9,15 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BUILT_IN_MA
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.render.LightmapTextureManager
-import net.minecraft.client.render.VertexConsumer
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.render.entity.EntityRenderer
-import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.text.Text
-import net.minecraft.util.Identifier
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.blaze3d.vertex.VertexConsumer
+import net.minecraft.client.gui.Font
+import net.minecraft.client.renderer.LightTexture
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.entity.EntityRenderer
+import net.minecraft.client.renderer.entity.EntityRendererProvider
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
 import org.joml.Matrix4f
 import kotlin.math.roundToInt
 import kotlin.math.sin
@@ -33,7 +33,7 @@ import kotlin.uuid.Uuid
  * @param configStore 提供終局頒獎面板的可見性設定。
  */
 class MatchSettlementPresentationEntityRenderer(
-    context: EntityRendererFactory.Context,
+    context: EntityRendererProvider.Context,
     private val templates: MatchSettlementPresentationTemplateRegistry,
     private val portraitRenderer: PlayerPortraitRenderer,
     private val playerNames: ClientPlayerDisplayNameResolver,
@@ -41,7 +41,7 @@ class MatchSettlementPresentationEntityRenderer(
 ) : EntityRenderer<MatchSettlementPresentationEntity>(context) {
     private val logger = mahjongCraftLogger(MatchSettlementPresentationEntityRenderer::class)
 
-    private val textRenderer = context.textRenderer
+    private val textRenderer = context.font
     private val warnedUnknownTemplateKeys = mutableSetOf<String>()
 
     /** 目前這次 [render] 呼叫所屬的桌子 ID，[resolvePlayerName] 解析名稱時查詢用；每次 render 開頭重設。 */
@@ -51,8 +51,8 @@ class MatchSettlementPresentationEntityRenderer(
         entity: MatchSettlementPresentationEntity,
         yaw: Float,
         tickDelta: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
     ) {
         if (!configStore.current.presentationVisibility.matchSettlementEnabled) return
@@ -70,13 +70,13 @@ class MatchSettlementPresentationEntityRenderer(
         WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
             // 面板在世界畫完後才畫，期間其他實體可能已改過目前的桌子，畫之前重新指定。
             currentTableId = entity.managedTableId
-            panelMatrices.push()
+            panelMatrices.pushPose()
             panelMatrices.translate(0.0, 0.55, 0.0)
-            panelMatrices.multiply(dispatcher.rotation)
+            panelMatrices.mulPose(entityRenderDispatcher.cameraOrientation())
             panelMatrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
             renderPanel(layout, template, alpha, panelMatrices, panelConsumers)
             drawText(
-                text = Text.translatable(template.titleTranslationKey),
+                text = Component.translatable(template.titleTranslationKey),
                 anchorX = 0f,
                 y = TITLE_Y,
                 alignment = Alignment.CENTER,
@@ -91,7 +91,7 @@ class MatchSettlementPresentationEntityRenderer(
                 if (progress <= 0f) return@forEach
                 renderPlacement(player, layout, template, alpha * progress, progress, panelMatrices, panelConsumers)
             }
-            panelMatrices.pop()
+            panelMatrices.popPose()
         }
     }
 
@@ -112,16 +112,16 @@ class MatchSettlementPresentationEntityRenderer(
         template: MatchSettlementPresentationTemplate,
         alpha: Float,
         revealProgress: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
         val champion = player.finalRank == 1
         val placement = layout.placements.getValue(player.finalRank)
         val displayName = fitPlayerName(resolvePlayerName(player), placement.nameWidth)
-        val rankText = Text.translatable(MinecraftMessageKeys.MATCH_SETTLEMENT_RANK, player.finalRank)
+        val rankText = Component.translatable(MinecraftMessageKeys.MATCH_SETTLEMENT_RANK, player.finalRank)
         if (champion) renderChampionHighlight(displayName, rankText, placement.y, alpha, revealProgress, matrices, consumers)
         val bounce = if (champion) championScale(revealProgress) else 1f
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(placement.x, placement.y - (1f - revealProgress) * PLACEMENT_REVEAL_OFFSET, 0f)
         matrices.scale(bounce, bounce, 1f)
         val faceSize = if (champion) CHAMPION_FACE_SIZE else PLACEMENT_FACE_SIZE
@@ -129,7 +129,7 @@ class MatchSettlementPresentationEntityRenderer(
         val rankY = nameY + 11f
         renderPortrait(player, -faceSize / 2f, 0f, faceSize, alpha, matrices, consumers)
         drawText(
-            text = Text.literal(displayName),
+            text = Component.literal(displayName),
             anchorX = 0f,
             y = nameY,
             alignment = Alignment.CENTER,
@@ -146,7 +146,7 @@ class MatchSettlementPresentationEntityRenderer(
             matrices = matrices,
             consumers = consumers,
         )
-        matrices.pop()
+        matrices.popPose()
     }
 
     /**
@@ -162,18 +162,18 @@ class MatchSettlementPresentationEntityRenderer(
      */
     private fun renderChampionHighlight(
         displayName: String,
-        rankText: Text,
+        rankText: Component,
         y: Float,
         alpha: Float,
         progress: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
-        val matrix = matrices.peek().positionMatrix
+        val matrix = matrices.last().pose()
         val buffer = consumers.getBuffer(WorldPanelRenderLayer.layer)
         val settle = 1f - (1f - progress) * (1f - progress)
         val offset = (1f - settle) * CORNER_ENTRY_OFFSET
-        val contentWidth = maxOf(CHAMPION_FACE_SIZE, textRenderer.getWidth(displayName).toFloat(), textRenderer.getWidth(rankText).toFloat())
+        val contentWidth = maxOf(CHAMPION_FACE_SIZE, textRenderer.width(displayName).toFloat(), textRenderer.width(rankText).toFloat())
         val halfWidth = contentWidth / 2f + CHAMPION_FRAME_HORIZONTAL_PADDING
         val left = -halfWidth - offset
         val right = halfWidth + offset
@@ -231,10 +231,10 @@ class MatchSettlementPresentationEntityRenderer(
         val right = maxOf(x1, x2)
         val top = minOf(y1, y2)
         val bottom = maxOf(y1, y2)
-        buffer.vertex(matrix, left, top, HIGHLIGHT_Z).color(255, 211, 82, alpha).next()
-        buffer.vertex(matrix, right, top, HIGHLIGHT_Z).color(255, 241, 170, alpha).next()
-        buffer.vertex(matrix, right, bottom, HIGHLIGHT_Z).color(255, 241, 170, alpha).next()
-        buffer.vertex(matrix, left, bottom, HIGHLIGHT_Z).color(255, 211, 82, alpha).next()
+        buffer.vertex(matrix, left, top, HIGHLIGHT_Z).color(255, 211, 82, alpha).endVertex()
+        buffer.vertex(matrix, right, top, HIGHLIGHT_Z).color(255, 241, 170, alpha).endVertex()
+        buffer.vertex(matrix, right, bottom, HIGHLIGHT_Z).color(255, 241, 170, alpha).endVertex()
+        buffer.vertex(matrix, left, bottom, HIGHLIGHT_Z).color(255, 211, 82, alpha).endVertex()
     }
 
     /**
@@ -250,20 +250,20 @@ class MatchSettlementPresentationEntityRenderer(
         layout: Layout,
         template: MatchSettlementPresentationTemplate,
         alpha: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
-        val matrix = matrices.peek().positionMatrix
+        val matrix = matrices.last().pose()
         val buffer = consumers.getBuffer(WorldPanelRenderLayer.layer)
         val color = template.backgroundArgb
         val a = ((((color ushr 24) and 0xFF) * alpha).roundToInt()).coerceIn(0, 255)
         val red = color ushr 16 and 0xFF
         val green = color ushr 8 and 0xFF
         val blue = color and 0xFF
-        buffer.vertex(matrix, -layout.panelHalfWidth, PANEL_TOP, PANEL_Z).color(red, green, blue, a).next()
-        buffer.vertex(matrix, layout.panelHalfWidth, PANEL_TOP, PANEL_Z).color(red, green, blue, a).next()
-        buffer.vertex(matrix, layout.panelHalfWidth, layout.panelBottom, PANEL_Z).color(red, green, blue, a).next()
-        buffer.vertex(matrix, -layout.panelHalfWidth, layout.panelBottom, PANEL_Z).color(red, green, blue, a).next()
+        buffer.vertex(matrix, -layout.panelHalfWidth, PANEL_TOP, PANEL_Z).color(red, green, blue, a).endVertex()
+        buffer.vertex(matrix, layout.panelHalfWidth, PANEL_TOP, PANEL_Z).color(red, green, blue, a).endVertex()
+        buffer.vertex(matrix, layout.panelHalfWidth, layout.panelBottom, PANEL_Z).color(red, green, blue, a).endVertex()
+        buffer.vertex(matrix, -layout.panelHalfWidth, layout.panelBottom, PANEL_Z).color(red, green, blue, a).endVertex()
     }
 
     /**
@@ -283,8 +283,8 @@ class MatchSettlementPresentationEntityRenderer(
         y: Float,
         size: Float,
         alpha: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) = portraitRenderer.render(
         playerId = Uuid.parse(player.playerId),
         isAi = player.isAi,
@@ -406,26 +406,26 @@ class MatchSettlementPresentationEntityRenderer(
      * @param scale 文字縮放倍率。
      */
     private fun drawText(
-        text: Text,
+        text: Component,
         anchorX: Float,
         y: Float,
         alignment: Alignment,
         color: Int,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         scale: Float = 1f,
     ) {
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(anchorX, y, 0f)
         matrices.scale(scale, scale, 1f)
-        val width = textRenderer.getWidth(text).toFloat()
+        val width = textRenderer.width(text).toFloat()
         val x = when (alignment) {
             Alignment.LEFT -> 0f
             Alignment.CENTER -> -width / 2f
             Alignment.RIGHT -> -width
         }
-        textRenderer.draw(text, x, 0f, color, false, matrices.peek().positionMatrix, consumers, TextRenderer.TextLayerType.NORMAL, 0, LightmapTextureManager.MAX_LIGHT_COORDINATE)
-        matrices.pop()
+        textRenderer.drawInBatch(text, x, 0f, color, false, matrices.last().pose(), consumers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT)
+        matrices.popPose()
     }
 
     /**
@@ -437,7 +437,7 @@ class MatchSettlementPresentationEntityRenderer(
      */
     private fun withAlpha(rgb: Int, alpha: Float): Int = WorldPanelRenderer.withAlpha(rgb, alpha)
 
-    override fun getTexture(entity: MatchSettlementPresentationEntity): Identifier? = null
+    override fun getTextureLocation(entity: MatchSettlementPresentationEntity): ResourceLocation? = null
 
     private enum class Alignment { LEFT, CENTER, RIGHT }
 

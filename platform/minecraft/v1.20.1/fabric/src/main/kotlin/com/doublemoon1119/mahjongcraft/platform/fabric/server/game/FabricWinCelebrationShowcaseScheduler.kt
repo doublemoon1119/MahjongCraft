@@ -16,8 +16,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.winningHandFaceDownIndices
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerLevel
 import kotlin.random.Random
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -110,7 +110,7 @@ class FabricWinCelebrationShowcaseScheduler(
      * @return 舞台固定結束的絕對 game time；無法播放或生成時為 null。
      */
     fun schedule(
-        world: ServerWorld,
+        world: ServerLevel,
         tableId: Uuid,
         controllerPos: BlockPos,
         stagePlacement: MahjongTileWallPlacement,
@@ -135,7 +135,7 @@ class FabricWinCelebrationShowcaseScheduler(
             startOffsetX = winningTile.x - stagePlacement.x,
             startOffsetY = winningTile.y - stagePlacement.y,
             startOffsetZ = winningTile.z - stagePlacement.z,
-            startYaw = winningTile.yaw,
+            startYaw = winningTile.yRot,
         )
         val missingBySeat = mutableMapOf<Int, MutableList<Uuid>>()
         val snapshots = wings.mapIndexed { wingIndex, wing ->
@@ -155,7 +155,7 @@ class FabricWinCelebrationShowcaseScheduler(
                         startOffsetX = tile.x - stagePlacement.x,
                         startOffsetY = tile.y - stagePlacement.y,
                         startOffsetZ = tile.z - stagePlacement.z,
-                        startYaw = tile.yaw,
+                        startYaw = tile.yRot,
                         group = card.group,
                         standYaw = wing.standYaw,
                         backAppearanceId = card.backAppearanceId,
@@ -178,7 +178,7 @@ class FabricWinCelebrationShowcaseScheduler(
             .map { ShowcaseSoundSnapshot(it.soundId, it.tickOffset, it.volume, it.pitch) }
         val stage = WinCelebrationShowcaseEntity(world = world).apply {
             configure(tableId, startGameTime, endGameTime, Random.nextLong(), winningTileSnapshot, snapshots, extraSounds)
-            refreshPositionAndAngles(stagePlacement.x, stagePlacement.y, stagePlacement.z, stagePlacement.yaw, 0.0f)
+            moveTo(stagePlacement.x, stagePlacement.y, stagePlacement.z, stagePlacement.yaw, 0.0f)
         }
         if (!spawnGateway.spawn(world, stage, "win-celebration-showcase", tableId)) return null
 

@@ -55,11 +55,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFe
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
-import net.minecraft.registry.RegistryKey
-import net.minecraft.registry.RegistryKeys
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.Registries
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.level.ServerPlayer
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -147,7 +147,7 @@ class MahjongTableRoomService internal constructor(
      * @param player Fabric 驗證過的封包來源玩家。
      * @param action RoomScreen 傳來的操作 DTO。
      */
-    fun handleRoomAction(player: ServerPlayerEntity, action: RoomActionDto) {
+    fun handleRoomAction(player: ServerPlayer, action: RoomActionDto) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val tableId = runCatching { Uuid.parse(action.venueId) }.getOrNull() ?: return
         when (action) {
@@ -194,7 +194,7 @@ class MahjongTableRoomService internal constructor(
      * @param tableId 操作要求指定的桌子 UUID。
      * @param action membership 相符時執行的操作。
      */
-    private fun withMatchingMembership(player: ServerPlayerEntity, tableId: Uuid, action: (ServerPlayerEntity) -> Unit) {
+    private fun withMatchingMembership(player: ServerPlayer, tableId: Uuid, action: (ServerPlayer) -> Unit) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
             if (membershipRepository.getVenueId(playerId) == tableId) {
@@ -248,7 +248,7 @@ class MahjongTableRoomService internal constructor(
      * @param table 要顯示的麻將桌。
      * @param player 接收桌子狀態的玩家。
      */
-    internal fun openRoomScreen(table: LocatedMahjongTable, player: ServerPlayerEntity) {
+    internal fun openRoomScreen(table: LocatedMahjongTable, player: ServerPlayer) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val tableId = table.tableId
         val ticket = tableStateDelivery.capture(tableId) ?: return
@@ -261,7 +261,7 @@ class MahjongTableRoomService internal constructor(
      * @param ticket 排程前捕捉的桌子與 session 來源。
      * @param player 原請求的玩家；連線已被取代時不送出回覆。
      */
-    private suspend fun sendCurrentOccupancy(ticket: FabricTableStateTicket, player: ServerPlayerEntity) {
+    private suspend fun sendCurrentOccupancy(ticket: FabricTableStateTicket, player: ServerPlayer) {
         val playerId = player.uuid.toKotlinUuid()
         tableStateDelivery.prepareAndSend(
             ticket = ticket,
@@ -296,7 +296,7 @@ class MahjongTableRoomService internal constructor(
      * @param tableId 要建立房間的桌子 UUID。
      * @param player 發起建立操作的玩家。
      */
-    fun createFromScreen(tableId: Uuid, player: ServerPlayerEntity) {
+    fun createFromScreen(tableId: Uuid, player: ServerPlayer) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -320,7 +320,7 @@ class MahjongTableRoomService internal constructor(
      * @param tableId 要加入的桌子 UUID。
      * @param player 發起加入操作的玩家。
      */
-    fun joinFromScreen(tableId: Uuid, player: ServerPlayerEntity) {
+    fun joinFromScreen(tableId: Uuid, player: ServerPlayer) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -343,10 +343,10 @@ class MahjongTableRoomService internal constructor(
      * @param player 執行桌旁操作的玩家。
      * @return 玩家與桌子位於同一維度且距離在設定範圍內時為 true。
      */
-    private fun isTableReachable(tableId: Uuid, player: ServerPlayerEntity): Boolean {
+    private fun isTableReachable(tableId: Uuid, player: ServerPlayer): Boolean {
         val location = tableLocationRegistry.get(tableId)?.location ?: return false
-        if (player.serverWorld.registryKey.value.toString() != location.dimensionId) return false
-        return player.squaredDistanceTo(location.x + 0.5, location.y + 0.5, location.z + 0.5) <= MAX_ROOM_SCREEN_DISTANCE_SQUARED
+        if (player.serverLevel().dimension().location().toString() != location.dimensionId) return false
+        return player.distanceToSqr(location.x + 0.5, location.y + 0.5, location.z + 0.5) <= MAX_ROOM_SCREEN_DISTANCE_SQUARED
     }
 
     /**
@@ -355,7 +355,7 @@ class MahjongTableRoomService internal constructor(
      * @param tableId 要離開的桌子 UUID。
      * @param player 發起離開操作的玩家。
      */
-    private fun leaveFromScreen(tableId: Uuid, player: ServerPlayerEntity) {
+    private fun leaveFromScreen(tableId: Uuid, player: ServerPlayer) {
         val playerId = player.uuid.toKotlinUuid()
         val ticket = tableStateDelivery.capture(tableId) ?: return
         scope.launch(dispatchers.main) {
@@ -388,7 +388,7 @@ class MahjongTableRoomService internal constructor(
      * @param table 玩家互動的麻將桌。
      * @param player 發起互動的玩家。
      */
-    internal fun interact(table: LocatedMahjongTable, player: ServerPlayerEntity) {
+    internal fun interact(table: LocatedMahjongTable, player: ServerPlayer) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val tableId = table.tableId
         val playerId = player.uuid.toKotlinUuid()
@@ -445,7 +445,7 @@ class MahjongTableRoomService internal constructor(
      * @param table 玩家互動的麻將桌。
      * @param player 發起離開操作的玩家。
      */
-    internal fun leave(table: LocatedMahjongTable, player: ServerPlayerEntity) {
+    internal fun leave(table: LocatedMahjongTable, player: ServerPlayer) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val tableId = table.tableId
         val playerId = player.uuid.toKotlinUuid()
@@ -491,7 +491,7 @@ class MahjongTableRoomService internal constructor(
      *
      * @param player 要切換準備狀態的玩家。
      */
-    fun ready(player: ServerPlayerEntity) {
+    fun ready(player: ServerPlayer) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -530,7 +530,7 @@ class MahjongTableRoomService internal constructor(
      *
      * @param player 發起開始操作的房主。
      */
-    fun start(player: ServerPlayerEntity) {
+    fun start(player: ServerPlayer) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -624,8 +624,8 @@ class MahjongTableRoomService internal constructor(
      */
     private fun isTableSpaceObstructed(tableId: Uuid): Boolean {
         val location = tableLocationRegistry.get(tableId)?.location ?: return false
-        val dimension = Identifier.tryParse(location.dimensionId) ?: return false
-        val world = serverHolder.current()?.getWorld(RegistryKey.of(RegistryKeys.WORLD, dimension)) ?: return false
+        val dimension = ResourceLocation.tryParse(location.dimensionId) ?: return false
+        val world = serverHolder.current()?.getLevel(ResourceKey.create(Registries.DIMENSION, dimension)) ?: return false
         val cells = TableSpaceObstructionScanner.obstructedCells(world, BlockPos(location.x, location.y, location.z))
         return !cells.isNullOrEmpty()
     }
@@ -642,7 +642,7 @@ class MahjongTableRoomService internal constructor(
      * @param tableId 玩家所屬桌子 UUID。
      * @return 玩家可在桌旁互動時為 true。
      */
-    private fun isPlayerReachable(player: ServerPlayerEntity, tableId: Uuid): Boolean {
+    private fun isPlayerReachable(player: ServerPlayer, tableId: Uuid): Boolean {
         val location = tableLocationRegistry.get(tableId)?.location ?: return false
         return reachableTableResolver.resolve(player, BlockPos(location.x, location.y, location.z)) != null
     }
@@ -667,7 +667,7 @@ class MahjongTableRoomService internal constructor(
      * @param player 發起新增操作的房主。
      * @param strategyKey AI 使用的策略登記 key；不傳時使用 [AddAiPlayerUseCase] 的預設策略。
      */
-    fun addAi(player: ServerPlayerEntity, strategyKey: String?) {
+    fun addAi(player: ServerPlayer, strategyKey: String?) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -693,7 +693,7 @@ class MahjongTableRoomService internal constructor(
      * @param player 發起踢除操作的房主。
      * @param targetPlayerId 要移出房間的成員 UUID。
      */
-    fun kick(player: ServerPlayerEntity, targetPlayerId: Uuid) {
+    fun kick(player: ServerPlayer, targetPlayerId: Uuid) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch(dispatchers.main) {
@@ -721,7 +721,7 @@ class MahjongTableRoomService internal constructor(
      * @param player 操作者，權限由權威用例重驗。
      * @param previousPlayerId 被排除者上次的成員編號；null 表示解除全部。
      */
-    fun allowRejoining(player: ServerPlayerEntity, previousPlayerId: Uuid?) {
+    fun allowRejoining(player: ServerPlayer, previousPlayerId: Uuid?) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch(dispatchers.main) {
@@ -740,7 +740,7 @@ class MahjongTableRoomService internal constructor(
      * @param targetAiId 欲更換策略的 AI 玩家 Uuid，必須是房間內的 AI。
      * @param strategyKey 新的策略登記 key。
      */
-    fun changeAiStrategy(player: ServerPlayerEntity, targetAiId: Uuid, strategyKey: String) {
+    fun changeAiStrategy(player: ServerPlayer, targetAiId: Uuid, strategyKey: String) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -773,7 +773,7 @@ class MahjongTableRoomService internal constructor(
      *
      * @param player 要查看房間設定的玩家。
      */
-    fun showConfig(player: ServerPlayerEntity) {
+    fun showConfig(player: ServerPlayer) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -796,7 +796,7 @@ class MahjongTableRoomService internal constructor(
      * @param player 發起更新操作的房主。
      * @param newConfig 要套用的新設定。
      */
-    fun updateConfig(player: ServerPlayerEntity, newConfig: GameConfig) {
+    fun updateConfig(player: ServerPlayer, newConfig: GameConfig) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {

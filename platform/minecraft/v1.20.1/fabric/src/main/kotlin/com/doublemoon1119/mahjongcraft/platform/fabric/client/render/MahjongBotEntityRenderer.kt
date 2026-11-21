@@ -5,17 +5,17 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongBotEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.math.Axis
 import net.fabricmc.fabric.api.client.model.loading.v1.FabricBakedModelManager
-import net.minecraft.client.render.OverlayTexture
-import net.minecraft.client.render.RenderLayer
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.render.entity.EntityRenderer
-import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.render.model.json.ModelTransformationMode
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.screen.PlayerScreenHandler
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.RotationAxis
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.RenderType
+import net.minecraft.client.renderer.entity.EntityRenderer
+import net.minecraft.client.renderer.entity.EntityRendererProvider
+import net.minecraft.client.renderer.texture.OverlayTexture
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.inventory.InventoryMenu
+import net.minecraft.world.item.ItemDisplayContext
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -25,7 +25,7 @@ import kotlin.math.sin
  * @param context 客戶端 renderer 建立情境。
  */
 class MahjongBotEntityRenderer(
-    context: EntityRendererFactory.Context,
+    context: EntityRendererProvider.Context,
 ) : EntityRenderer<MahjongBotEntity>(context) {
     /** 一對手臂共用的小方柱模型。 */
     private val arm = LimbDimensions(
@@ -45,7 +45,7 @@ class MahjongBotEntityRenderer(
     private val modelManager = context.modelManager
 
     /** 以標準烘焙模型及圖集畫出四肢。 */
-    private val blockModelRenderer = context.blockRenderManager.modelRenderer
+    private val blockModelRenderer = context.blockRenderDispatcher.modelRenderer
 
     init {
         shadowRadius = SHADOW_RADIUS
@@ -56,8 +56,8 @@ class MahjongBotEntityRenderer(
         entity: MahjongBotEntity,
         yaw: Float,
         tickDelta: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
     ) {
         renderPose(
@@ -67,7 +67,7 @@ class MahjongBotEntityRenderer(
             matrices = matrices,
             vertexConsumers = vertexConsumers,
             light = light,
-            seated = entity.hasVehicle(),
+            seated = entity.isPassenger,
         )
     }
 
@@ -88,8 +88,8 @@ class MahjongBotEntityRenderer(
         entity: MahjongBotEntity,
         yaw: Float,
         tickDelta: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
         seated: Boolean,
         swingProgress: Float = entity.swingProgress(tickDelta),
@@ -99,14 +99,14 @@ class MahjongBotEntityRenderer(
         val hipY = if (seated) MahjongStoolSeatGeometry.SEATED_BOTTOM_HEIGHT.toFloat() else LEG_LENGTH
         val swing = MahjongBotArmAnimation.swingDegrees(swingProgress)
         val phase = (entity.uuid.hashCode().toLong() and IDLE_PHASE_MASK).toDouble() / IDLE_PHASE_MASK * (2.0 * PI)
-        val idleTime = (entity.age + tickDelta).toDouble() * IDLE_SPEED + phase
+        val idleTime = (entity.tickCount + tickDelta).toDouble() * IDLE_SPEED + phase
         val idleLeft = sin(idleTime).toFloat() * IDLE_SWING_ANGLE
         val idleRight = sin(idleTime + PI).toFloat() * IDLE_SWING_ANGLE
-        matrices.push()
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f - yaw))
+        matrices.pushPose()
+        matrices.mulPose(Axis.YP.rotationDegrees(180f - yaw))
         renderLeg(-LEG_OFFSET, hipY, seated, SEATED_LEG_SPREAD, matrices, vertexConsumers, light, alpha)
         renderLeg(LEG_OFFSET, hipY, seated, -SEATED_LEG_SPREAD, matrices, vertexConsumers, light, alpha)
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(0f, hipY, 0f)
         renderLimb(arm, -ARM_OFFSET, SHOULDER_HEIGHT, idleLeft, matrices, vertexConsumers, light, alpha = alpha)
         renderLimb(
@@ -126,15 +126,15 @@ class MahjongBotEntityRenderer(
         MahjongTileItemRenderer.renderWithAppearance(
             appearanceId = BuiltInMinecraftTileAppearances.DEFAULT.id,
             assetKey = entity.faceAssetKey,
-            mode = ModelTransformationMode.HEAD,
+            mode = ItemDisplayContext.HEAD,
             matrices = matrices,
             vertexConsumers = vertexConsumers,
             light = light,
-            overlay = OverlayTexture.DEFAULT_UV,
+            overlay = OverlayTexture.NO_OVERLAY,
             alpha = alpha,
         )
-        matrices.pop()
-        matrices.pop()
+        matrices.popPose()
+        matrices.popPose()
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
     }
 
@@ -155,16 +155,16 @@ class MahjongBotEntityRenderer(
         y: Float,
         seated: Boolean,
         spread: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         light: Int,
         alpha: Float,
     ) {
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(x, y, 0f)
-        if (seated) matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(spread))
+        if (seated) matrices.mulPose(Axis.YP.rotationDegrees(spread))
         renderLimb(leg, 0f, 0f, if (seated) SEATED_LEG_ANGLE else 0f, matrices, consumers, light, alpha = alpha)
-        matrices.pop()
+        matrices.popPose()
     }
 
     /**
@@ -186,27 +186,27 @@ class MahjongBotEntityRenderer(
         x: Float,
         y: Float,
         angle: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         light: Int,
         yaw: Float = 0f,
         roll: Float = 0f,
         alpha: Float = 1f,
     ) {
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(x, y, 0f)
-        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(roll))
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(yaw))
-        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(angle))
+        matrices.mulPose(Axis.ZP.rotationDegrees(roll))
+        matrices.mulPose(Axis.YP.rotationDegrees(yaw))
+        matrices.mulPose(Axis.XP.rotationDegrees(angle))
         matrices.scale(dimensions.width, dimensions.length, dimensions.depth)
         matrices.translate(-0.5, -1.0, -0.5)
         val model = (modelManager as FabricBakedModelManager).getModel(LIMB_MODEL_ID) ?: modelManager.missingModel
-        blockModelRenderer.render(
-            matrices.peek(),
+        blockModelRenderer.renderModel(
+            matrices.last(),
             if (alpha < 1f) {
-                AlphaVertexConsumer(consumers.getBuffer(RenderLayer.getItemEntityTranslucentCull(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE)), alpha)
+                AlphaVertexConsumer(consumers.getBuffer(RenderType.itemEntityTranslucentCull(InventoryMenu.BLOCK_ATLAS)), alpha)
             } else {
-                consumers.getBuffer(RenderLayer.getEntityCutout(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE))
+                consumers.getBuffer(RenderType.entityCutout(InventoryMenu.BLOCK_ATLAS))
             },
             null,
             model,
@@ -214,13 +214,13 @@ class MahjongBotEntityRenderer(
             1f,
             1f,
             light,
-            OverlayTexture.DEFAULT_UV,
+            OverlayTexture.NO_OVERLAY,
         )
-        matrices.pop()
+        matrices.popPose()
     }
 
     /** 牌體模型從方塊材質圖集選取自己的公開材質。 */
-    override fun getTexture(entity: MahjongBotEntity): Identifier = PlayerScreenHandler.BLOCK_ATLAS_TEXTURE
+    override fun getTextureLocation(entity: MahjongBotEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     /**
      * 從關節向下延伸的方柱尺寸；各面材質由共用模型指定。
@@ -238,7 +238,7 @@ class MahjongBotEntityRenderer(
     /** 固定角色比例，不改變任何正式麻將牌模型尺寸。 */
     private companion object {
         /** 四肢模型繼承牌體圖集，六面都使用白色區域。 */
-        val LIMB_MODEL_ID: Identifier = Identifier(BuiltInAiCharacters.TILE_MASCOT_LIMB_MODEL_ID)
+        val LIMB_MODEL_ID: ResourceLocation = ResourceLocation(BuiltInAiCharacters.TILE_MASCOT_LIMB_MODEL_ID)
 
         /** 牌體世界高度。 */
         const val BODY_HEIGHT: Float = 0.8f

@@ -15,7 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTableProp
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropContent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
-import net.minecraft.entity.Entity
+import net.minecraft.world.entity.Entity
 
 /**
  * 內建角色與桌上物件也透過客戶端公開登記入口建立預覽。

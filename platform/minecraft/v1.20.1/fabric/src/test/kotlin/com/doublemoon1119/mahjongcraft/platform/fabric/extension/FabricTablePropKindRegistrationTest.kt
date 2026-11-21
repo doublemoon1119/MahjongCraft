@@ -22,9 +22,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDimensi
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropKindDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropTarget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
-import net.minecraft.entity.Entity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.Box
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.phys.AABB
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -36,8 +36,8 @@ import kotlin.uuid.Uuid
 /** 驗證 Fabric 規則桌面物件種類的登記順序、凍結與錯誤診斷。 */
 class FabricTablePropKindRegistrationTest {
     /** 與桌面物件 registry 一起傳入啟動流程的空座位 provider。 */
-    private class FakeProvider : SeatProvider<ServerWorld, Entity> {
-        override fun resolve(world: ServerWorld, request: SeatRequest): List<SeatTarget<ServerWorld, Entity>> = emptyList()
+    private class FakeProvider : SeatProvider<ServerLevel, Entity> {
+        override fun resolve(world: ServerLevel, request: SeatRequest): List<SeatTarget<ServerLevel, Entity>> = emptyList()
     }
 
     /**
@@ -76,11 +76,11 @@ class FabricTablePropKindRegistrationTest {
         override fun placementIdOf(entity: Entity): String? = null
 
         override fun ruleModuleIdOf(entity: Entity): String? = null
-        override fun findManaged(world: ServerWorld, tableId: Uuid, searchBox: Box): List<Entity> = emptyList()
+        override fun findManaged(world: ServerLevel, tableId: Uuid, searchBox: AABB): List<Entity> = emptyList()
 
         override fun contentOf(entity: Entity): TablePropContent? = null
 
-        override fun create(world: ServerWorld, tableId: Uuid, target: TablePropTarget): Entity? = null
+        override fun create(world: ServerLevel, tableId: Uuid, target: TablePropTarget): Entity? = null
     }
 
     /**

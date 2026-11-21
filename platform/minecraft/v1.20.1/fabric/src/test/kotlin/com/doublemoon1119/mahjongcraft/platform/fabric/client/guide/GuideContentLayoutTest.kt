@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.previewProm
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideScene
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneView
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -14,13 +14,13 @@ import kotlin.test.assertTrue
 class GuideContentLayoutTest {
     /** 每個字元寬 [CHARACTER_WIDTH]、換行字元一定換行的量測。 */
     private val measurer = object : GuideMeasurer {
-        override fun width(text: Text): Int = text.string.length * CHARACTER_WIDTH
+        override fun width(text: Component): Int = text.string.length * CHARACTER_WIDTH
 
-        override fun lineCount(text: Text, width: Int): Int = text.string.split('\n').sumOf { line ->
+        override fun lineCount(text: Component, width: Int): Int = text.string.split('\n').sumOf { line ->
             maxOf(1, (line.length * CHARACTER_WIDTH + width - 1) / width)
         }
 
-        override fun tileName(tile: Tile): Text = Text.literal("NN")
+        override fun tileName(tile: Tile): Component = Component.literal("NN")
 
         override fun decisionPanelHeight(prompt: PlayerDecisionPromptDto, width: Int): Int = PANEL_HEIGHT
     }
@@ -29,9 +29,9 @@ class GuideContentLayoutTest {
     @Test
     fun `blocks stack with gaps and headings get extra space`() {
         val layout = measure(
-            GuideBlock.Heading(Text.literal("Title")),
-            GuideBlock.Paragraph(Text.literal("one\ntwo")),
-            GuideBlock.Heading(Text.literal("Next")),
+            GuideBlock.Heading(Component.literal("Title")),
+            GuideBlock.Paragraph(Component.literal("one\ntwo")),
+            GuideBlock.Heading(Component.literal("Next")),
         )
 
         val labels = layout.elements.filterIsInstance<GuideElement.Label>()
@@ -44,7 +44,7 @@ class GuideContentLayoutTest {
     @Test
     fun `paragraphs wrap to the content width`() {
         val layout = GuideContentLayout.measure(
-            blocks = listOf(GuideBlock.Paragraph(Text.literal("x".repeat(30)))),
+            blocks = listOf(GuideBlock.Paragraph(Component.literal("x".repeat(30)))),
             width = 60,
             measurer = measurer,
             hasRecipes = true,
@@ -62,7 +62,7 @@ class GuideContentLayoutTest {
         val plusWidth = CHARACTER_WIDTH
         val width = groupWidth * 2 + GuideContentLayout.ITEM_GAP + GuideContentLayout.ITEM_GAP / 2
         val layout = GuideContentLayout.measure(
-            blocks = listOf(GuideBlock.Tiles(listOf(group, GuideTileItem.Operator(Text.literal("+")), group))),
+            blocks = listOf(GuideBlock.Tiles(listOf(group, GuideTileItem.Operator(Component.literal("+")), group))),
             width = width,
             measurer = measurer,
             hasRecipes = true,
@@ -83,7 +83,7 @@ class GuideContentLayoutTest {
     /** 有標籤的牌組在牌面上方留一行標籤，附名稱的牌在牌面下方留一行牌名。 */
     @Test
     fun `labels and names add bands around the tiles`() {
-        val labelled = measure(GuideBlock.Tiles(listOf(GuideTileItem.Group(listOf(Tile.Honor.Red), Text.literal("L")))))
+        val labelled = measure(GuideBlock.Tiles(listOf(GuideTileItem.Group(listOf(Tile.Honor.Red), Component.literal("L")))))
         val named = measure(GuideBlock.Tiles(listOf(GuideTileItem.Named(Tile.Honor.Red))))
 
         assertEquals(LINE, labelled.elements.filterIsInstance<GuideElement.TileFace>().single().y)
@@ -96,7 +96,7 @@ class GuideContentLayoutTest {
     @Test
     fun `steps are numbered and indented`() {
         val layout = measure(
-            GuideBlock.Steps(listOf(GuideStep(Text.literal("a"), Text.literal("hint")), GuideStep(Text.literal("b")))),
+            GuideBlock.Steps(listOf(GuideStep(Component.literal("a"), Component.literal("hint")), GuideStep(Component.literal("b")))),
         )
 
         val labels = layout.elements.filterIsInstance<GuideElement.Label>()
@@ -109,7 +109,7 @@ class GuideContentLayoutTest {
     /** 找不到合成配方時配方區塊不佔空間，也不多出間距。 */
     @Test
     fun `missing recipes take no space`() {
-        val blocks = listOf(GuideBlock.Paragraph(Text.literal("a")), GuideBlock.Recipe, GuideBlock.Paragraph(Text.literal("b")))
+        val blocks = listOf(GuideBlock.Paragraph(Component.literal("a")), GuideBlock.Recipe, GuideBlock.Paragraph(Component.literal("b")))
         val without = GuideContentLayout.measure(blocks = blocks, width = WIDTH, measurer = measurer, hasRecipes = false, viewportHeight = VIEWPORT)
         val with = GuideContentLayout.measure(blocks = blocks, width = WIDTH, measurer = measurer, hasRecipes = true, viewportHeight = VIEWPORT)
 
@@ -121,7 +121,7 @@ class GuideContentLayoutTest {
     /** 分隔段落先畫分隔線，再放標題與內容。 */
     @Test
     fun `sections start with a divider`() {
-        val layout = measure(GuideBlock.Section(Text.literal("T"), listOf(GuideBlock.Paragraph(Text.literal("body")))))
+        val layout = measure(GuideBlock.Section(Component.literal("T"), listOf(GuideBlock.Paragraph(Component.literal("body")))))
 
         val divider = layout.elements.first()
         val labels = layout.elements.filterIsInstance<GuideElement.Label>()
@@ -133,7 +133,7 @@ class GuideContentLayoutTest {
     /** 卡片底色包住標題與內容，四周留白，底色先於內容繪製。 */
     @Test
     fun `cards wrap their content with padding`() {
-        val layout = measure(GuideBlock.Card(Text.literal("T"), listOf(GuideBlock.Paragraph(Text.literal("body")))))
+        val layout = measure(GuideBlock.Card(Component.literal("T"), listOf(GuideBlock.Paragraph(Component.literal("body")))))
 
         val background = layout.elements.first() as GuideElement.CardBackground
         val labels = layout.elements.filterIsInstance<GuideElement.Label>()
@@ -148,7 +148,7 @@ class GuideContentLayoutTest {
     @Test
     fun `scene height follows the ratio within its limits`() {
         val scene = GuideScene(blocks = emptyList(), figures = emptyList(), tiles = emptyList(), view = GuideSceneView(yawDegrees = 0f, pitchDegrees = 0f))
-        val ratio = measure(GuideBlock.Scene(scene = scene, heightRatio = 0.25f, minimumHeight = 10, maximumHeight = 500, captions = listOf(Text.literal("c"))))
+        val ratio = measure(GuideBlock.Scene(scene = scene, heightRatio = 0.25f, minimumHeight = 10, maximumHeight = 500, captions = listOf(Component.literal("c"))))
         val clamped = measure(GuideBlock.Scene(scene = scene, heightRatio = 2f, minimumHeight = 10, maximumHeight = 120))
 
         val view = ratio.elements.filterIsInstance<GuideElement.SceneView>().single()
@@ -164,7 +164,7 @@ class GuideContentLayoutTest {
     fun `scenes fit within the visible content height`() {
         val scene = GuideScene(blocks = emptyList(), figures = emptyList(), tiles = emptyList(), view = GuideSceneView(yawDegrees = 0f, pitchDegrees = 0f))
         val layout = GuideContentLayout.measure(
-            blocks = listOf(GuideBlock.Scene(scene = scene, heightRatio = 1f, minimumHeight = 150, maximumHeight = 400, captions = listOf(Text.literal("c")))),
+            blocks = listOf(GuideBlock.Scene(scene = scene, heightRatio = 1f, minimumHeight = 150, maximumHeight = 400, captions = listOf(Component.literal("c")))),
             width = WIDTH,
             measurer = measurer,
             hasRecipes = true,
@@ -178,8 +178,8 @@ class GuideContentLayoutTest {
     /** 按鈕依文字加寬但不窄於下限；範例面板使用量測出的高度。 */
     @Test
     fun `buttons and panels use their measured sizes`() {
-        val button = measure(GuideBlock.Button(Text.literal("Open"), GuideAction.HISTORY)).elements.single() as GuideElement.ActionButton
-        val wide = measure(GuideBlock.Button(Text.literal("x".repeat(40)), GuideAction.CLIENT_CONFIG)).elements.single() as GuideElement.ActionButton
+        val button = measure(GuideBlock.Button(Component.literal("Open"), GuideAction.HISTORY)).elements.single() as GuideElement.ActionButton
+        val wide = measure(GuideBlock.Button(Component.literal("x".repeat(40)), GuideAction.CLIENT_CONFIG)).elements.single() as GuideElement.ActionButton
         val panel = measure(GuideBlock.DecisionPanel(previewPrompt(triggerTileAssetKey = "m1", fromLeftPlayer = false, actions = emptyList())))
 
         assertEquals(GuideContentLayout.MINIMUM_BUTTON_WIDTH, button.width)

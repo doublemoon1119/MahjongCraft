@@ -2,13 +2,13 @@ package com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureEntities
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity.ExampleCushionEntity
-import net.minecraft.entity.Entity
-import net.minecraft.item.ItemStack
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
-import net.minecraft.util.math.Vec3d
+import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.phys.AABB
+import net.minecraft.world.phys.Vec3
 import kotlin.math.abs
 import kotlin.math.floor
 
@@ -29,23 +29,23 @@ internal object ExampleCushionPlacement {
      * @return 坐墊已成功生成時為 true。
      */
     fun place(
-        world: ServerWorld,
-        player: ServerPlayerEntity,
+        world: ServerLevel,
+        player: ServerPlayer,
         stack: ItemStack,
-        position: Vec3d,
+        position: Vec3,
         yaw: Float,
         ignoredActor: Entity? = null,
     ): Boolean {
-        if (stack.isEmpty || !player.abilities.allowModifyWorld || player.isSpectator) return false
-        val pos = BlockPos.ofFloored(position)
-        if (!world.canPlayerModifyAt(player, pos) || !player.canModifyAt(world, pos)) return false
+        if (stack.isEmpty || !player.abilities.mayBuild || player.isSpectator) return false
+        val pos = BlockPos.containing(position)
+        if (!world.mayInteract(player, pos) || !player.mayInteract(world, pos)) return false
         val entity = ExampleCushionEntity(ExampleFurnitureEntities.cushion, world).apply {
-            refreshPositionAndAngles(position.x, position.y, position.z, snapYaw(yaw), 0.0f)
+            moveTo(position.x, position.y, position.z, snapYaw(yaw), 0.0f)
         }
         if (hasSupport(world, entity.boundingBox) != true) return false
         if (!ExampleFurnitureSpace.isClear(world, ignoredActor ?: entity, entity.boundingBox)) return false
-        if (!world.spawnEntity(entity)) return false
-        if (!player.abilities.creativeMode) stack.decrement(1)
+        if (!world.addFreshEntity(entity)) return false
+        if (!player.abilities.instabuild) stack.shrink(1)
         return true
     }
 
@@ -56,7 +56,7 @@ internal object ExampleCushionPlacement {
      * @param surfaceY 命中頂面的世界 Y 座標，可為半格或其他非整數高度。
      * @return 坐墊底面的世界位置。
      */
-    fun positionAt(blockPos: BlockPos, surfaceY: Double): Vec3d = Vec3d(blockPos.x + 0.5, surfaceY, blockPos.z + 0.5)
+    fun positionAt(blockPos: BlockPos, surfaceY: Double): Vec3 = Vec3(blockPos.x + 0.5, surfaceY, blockPos.z + 0.5)
 
     /**
      * 將放置朝向對齊最近的四個水平正方向。
@@ -73,7 +73,7 @@ internal object ExampleCushionPlacement {
      * @param surfaces 支撐方塊形狀拆成的世界座標包圍盒。
      * @return 有水平重疊且高度相接的頂面時為 true。
      */
-    fun hasSurfaceSupport(cushion: Box, surfaces: List<Box>): Boolean = surfaces.any { surface ->
+    fun hasSurfaceSupport(cushion: AABB, surfaces: List<AABB>): Boolean = surfaces.any { surface ->
         abs(surface.maxY - cushion.minY) <= SURFACE_EPSILON &&
             surface.maxX > cushion.minX + SURFACE_EPSILON &&
             surface.minX < cushion.maxX - SURFACE_EPSILON &&
@@ -90,15 +90,15 @@ internal object ExampleCushionPlacement {
      * @param cushion 坐墊包圍盒。
      * @return 是否有支撐；所需區塊未載入時為 null。
      */
-    fun hasSupport(world: ServerWorld, cushion: Box): Boolean? {
-        val minimum = BlockPos.ofFloored(cushion.minX, cushion.minY - SURFACE_EPSILON, cushion.minZ)
-        val maximum = BlockPos.ofFloored(cushion.maxX - SURFACE_EPSILON, cushion.minY - SURFACE_EPSILON, cushion.maxZ - SURFACE_EPSILON)
-        val surfaces = mutableListOf<Box>()
+    fun hasSupport(world: ServerLevel, cushion: AABB): Boolean? {
+        val minimum = BlockPos.containing(cushion.minX, cushion.minY - SURFACE_EPSILON, cushion.minZ)
+        val maximum = BlockPos.containing(cushion.maxX - SURFACE_EPSILON, cushion.minY - SURFACE_EPSILON, cushion.maxZ - SURFACE_EPSILON)
+        val surfaces = mutableListOf<AABB>()
         for (x in minimum.x..maximum.x) {
             for (z in minimum.z..maximum.z) {
-                if (!world.chunkManager.isChunkLoaded(x shr 4, z shr 4)) return null
+                if (!world.chunkSource.hasChunk(x shr 4, z shr 4)) return null
                 val pos = BlockPos(x, minimum.y, z)
-                surfaces += world.getBlockState(pos).getOutlineShape(world, pos).boundingBoxes.map { it.offset(pos) }
+                surfaces += world.getBlockState(pos).getShape(world, pos).toAabbs().map { it.move(pos) }
             }
         }
         return hasSurfaceSupport(cushion, surfaces)

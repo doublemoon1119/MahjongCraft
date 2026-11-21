@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.character
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatGeometry
-import net.minecraft.util.math.Box
+import net.minecraft.world.phys.AABB
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -212,7 +212,7 @@ class ExampleActorReturnToSeatTest {
     }
 
     /** 人偶在指定位置的完整身體範圍。 */
-    private fun standingBody(): Box = Box(
+    private fun standingBody(): AABB = AABB(
         0.25,
         64.0,
         0.25,

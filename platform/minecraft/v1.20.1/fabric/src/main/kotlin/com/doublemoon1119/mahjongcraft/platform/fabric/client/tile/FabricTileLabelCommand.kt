@@ -11,10 +11,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageK
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
-import net.minecraft.client.MinecraftClient
-import net.minecraft.text.MutableText
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.MutableComponent
 
 /**
  * 純 client-only 指令 `/mahjongcraft_client label toggle`：切換牌面角落輔助標籤（給非中文圈玩家看的
@@ -48,14 +48,14 @@ class FabricTileLabelCommand(
         val enabled = !configStore.current.tileLabelsEnabled
         return when (val result = configStore.setTileLabelsEnabled(enabled)) {
             is MahjongClientConfigUpdateResult.Success -> {
-                MinecraftClient.getInstance().player?.sendMessage(tileLabelsToggledMessage(enabled), false)
+                Minecraft.getInstance().player?.displayClientMessage(tileLabelsToggledMessage(enabled), false)
                 COMMAND_SUCCESS
             }
 
             is MahjongClientConfigUpdateResult.Failure -> {
-                MinecraftClient.getInstance().player?.sendMessage(
+                Minecraft.getInstance().player?.displayClientMessage(
                     configSaveFailureMessage(
-                        settingName = Text.translatable(MinecraftClientConfigScreenKeys.TILE_LABELS),
+                        settingName = Component.translatable(MinecraftClientConfigScreenKeys.TILE_LABELS),
                         details = result.message,
                     ),
                     false,
@@ -71,18 +71,18 @@ class FabricTileLabelCommand(
      *
      * @param enabled 切換後是否為開啟狀態。
      */
-    private fun tileLabelsToggledMessage(enabled: Boolean): MutableText {
+    private fun tileLabelsToggledMessage(enabled: Boolean): MutableComponent {
         val fromKey =
             if (enabled) MinecraftMessageKeys.TILE_LABELS_STATE_OFF else MinecraftMessageKeys.TILE_LABELS_STATE_ON
-        val fromColor = if (enabled) Formatting.RED else Formatting.GREEN
+        val fromColor = if (enabled) ChatFormatting.RED else ChatFormatting.GREEN
         val toKey =
             if (enabled) MinecraftMessageKeys.TILE_LABELS_STATE_ON else MinecraftMessageKeys.TILE_LABELS_STATE_OFF
-        val toColor = if (enabled) Formatting.GREEN else Formatting.RED
+        val toColor = if (enabled) ChatFormatting.GREEN else ChatFormatting.RED
 
-        return Text.translatable(MinecraftMessageKeys.TILE_LABELS_TOGGLE_PREFIX)
-            .append(Text.translatable(fromKey).formatted(fromColor))
-            .append(Text.literal(" → "))
-            .append(Text.translatable(toKey).formatted(toColor))
+        return Component.translatable(MinecraftMessageKeys.TILE_LABELS_TOGGLE_PREFIX)
+            .append(Component.translatable(fromKey).withStyle(fromColor))
+            .append(Component.literal(" → "))
+            .append(Component.translatable(toKey).withStyle(toColor))
     }
 
     private companion object {

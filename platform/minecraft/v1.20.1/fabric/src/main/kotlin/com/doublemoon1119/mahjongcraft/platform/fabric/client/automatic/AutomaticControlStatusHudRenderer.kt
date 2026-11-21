@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.screen.ChatScreen
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.screens.ChatScreen
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -27,10 +27,10 @@ class AutomaticControlStatusHudRenderer(
      *
      * @param context 本次 GUI 繪製環境。
      */
-    fun render(context: DrawContext) {
-        val client = MinecraftClient.getInstance()
-        if (client.options.hudHidden || !configStore.current.presentationVisibility.automaticControlStatusEnabled) return
-        if (client.currentScreen != null && client.currentScreen !is ChatScreen) return
+    fun render(context: GuiGraphics) {
+        val client = Minecraft.getInstance()
+        if (client.options.hideGui || !configStore.current.presentationVisibility.automaticControlStatusEnabled) return
+        if (client.screen != null && client.screen !is ChatScreen) return
         val playerId = client.player?.uuid?.toKotlinUuid() ?: return
         val snapshot = coordinator.snapshot() ?: return
         val gameId = runCatching { Uuid.parse(snapshot.gameId) }.getOrNull() ?: return
@@ -57,31 +57,31 @@ class AutomaticControlStatusHudRenderer(
      * @param ratioY 垂直位置比例。
      */
     internal fun renderRows(
-        context: DrawContext,
+        context: GuiGraphics,
         rows: List<AutomaticControlStatusRow>,
         ratioX: Double,
         ratioY: Double,
     ) {
-        val renderer = MinecraftClient.getInstance().textRenderer
+        val renderer = Minecraft.getInstance().font
         val dotWidth = AutomaticControlStatusHudText.dotWidth(renderer)
         val layout = automaticControlStatusHudLayout(
             rowWidths = AutomaticControlStatusHudText.rowWidths(renderer, rows.map { it.label }),
             textHeight = AutomaticControlStatusHudText.textHeight(renderer),
-            screenWidth = context.scaledWindowWidth,
-            screenHeight = context.scaledWindowHeight,
+            screenWidth = context.guiWidth(),
+            screenHeight = context.guiHeight(),
             ratioX = ratioX,
             ratioY = ratioY,
             summaryWidth = { AutomaticControlStatusHudText.summaryWidth(renderer, it) },
         ) ?: return
 
-        context.matrices.push()
-        context.matrices.translate(layout.bounds.left.toDouble(), layout.bounds.top.toDouble(), 0.0)
-        context.matrices.scale(layout.scale, layout.scale, 1f)
+        context.pose().pushPose()
+        context.pose().translate(layout.bounds.left.toDouble(), layout.bounds.top.toDouble(), 0.0)
+        context.pose().scale(layout.scale, layout.scale, 1f)
         context.fill(0, 0, layout.rawWidth, layout.rawHeight, BACKGROUND_COLOR)
         layout.placements.forEach { placement ->
             val index = placement.rowIndex
             if (index == null) {
-                context.drawTextWithShadow(
+                context.drawString(
                     renderer,
                     AutomaticControlStatusHudText.summaryText(layout.hiddenCount),
                     placement.x,
@@ -90,14 +90,14 @@ class AutomaticControlStatusHudRenderer(
                 )
             } else {
                 val row = rows[index]
-                context.drawTextWithShadow(
+                context.drawString(
                     renderer,
                     if (row.enabled) AutomaticControlStatusHudText.ENABLED_DOT else AutomaticControlStatusHudText.DISABLED_DOT,
                     placement.x,
                     placement.y,
                     if (row.enabled) ENABLED_COLOR else DISABLED_COLOR,
                 )
-                context.drawTextWithShadow(
+                context.drawString(
                     renderer,
                     row.label,
                     placement.x + dotWidth + AutomaticControlStatusHudText.DOT_LABEL_GAP,
@@ -106,7 +106,7 @@ class AutomaticControlStatusHudRenderer(
                 )
             }
         }
-        context.matrices.pop()
+        context.pose().popPose()
     }
 
     private companion object {

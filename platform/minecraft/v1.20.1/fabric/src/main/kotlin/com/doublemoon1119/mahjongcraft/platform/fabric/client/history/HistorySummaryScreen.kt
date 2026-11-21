@@ -11,16 +11,16 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RowStripe
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.client.gui.tooltip.Tooltip
-import net.minecraft.client.gui.widget.ButtonWidget
-import net.minecraft.client.sound.PositionedSoundInstance
-import net.minecraft.sound.SoundEvents
-import net.minecraft.text.OrderedText
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.Button
+import net.minecraft.client.gui.components.Tooltip
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.client.resources.sounds.SimpleSoundInstance
+import net.minecraft.network.chat.Component
+import net.minecraft.sounds.SoundEvents
+import net.minecraft.util.FormattedCharSequence
 import org.lwjgl.glfw.GLFW
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeMark
@@ -35,7 +35,7 @@ import kotlin.time.TimeSource
  */
 internal class HistorySummaryScreen(
     private val session: HistoryBrowseSession,
-) : Screen(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_TITLE)) {
+) : Screen(Component.translatable(MinecraftHistoryScreenKeys.SUMMARY_TITLE)) {
     /** 目前摘要幾何。 */
     private var layout = HistorySummaryLayout.measure(0, 0)
 
@@ -49,7 +49,7 @@ internal class HistorySummaryScreen(
     private var grabOffset = 0.0
 
     /** 重試按鈕。 */
-    private var retryButton: ButtonWidget? = null
+    private var retryButton: Button? = null
 
     /** 對局 ID 旁的複製按鈕；隨內容捲動，由本畫面在內容裁切範圍內繪製。 */
     private lateinit var copyButton: RestartableMarqueeButtonWidget
@@ -68,22 +68,22 @@ internal class HistorySummaryScreen(
         layout = HistorySummaryLayout.measure(width, height)
         scroll = session.controller.state.value.summary?.scrollOffset ?: 0.0
         dragging = false
-        clearChildren()
+        clearWidgets()
         val retry = layout.footerSlot(HistoryPageFrame.LAST_SLOT - 1)
-        retryButton = addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RETRY)) { if (session.controller.canRetry()) session.controller.retry() }
+        retryButton = addRenderableWidget(
+            RestartableMarqueeButtonWidget.builder(Component.translatable(MinecraftHistoryScreenKeys.RETRY)) { if (session.controller.canRetry()) session.controller.retry() }
                 .dimensions(retry.x, retry.y, retry.width, retry.height)
                 .build(),
         )
         val back = layout.footerSlot(HistoryPageFrame.LAST_SLOT)
-        addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToList() }
+        addRenderableWidget(
+            RestartableMarqueeButtonWidget.builder(Component.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToList() }
                 .dimensions(back.x, back.y, back.width, back.height)
                 .build(),
         )
-        copyButton = miniButton(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_COPY)) { copyMatchId() }
-        ruleSettingsButton = miniButton(Text.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_TITLE)) { session.openRuleSettings() }.also {
-            it.tooltip = Tooltip.of(ControlTooltip.description(Text.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_OPEN_HINT)))
+        copyButton = miniButton(Component.translatable(MinecraftHistoryScreenKeys.SUMMARY_COPY)) { copyMatchId() }
+        ruleSettingsButton = miniButton(Component.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_TITLE)) { session.openRuleSettings() }.also {
+            it.tooltip = Tooltip.create(ControlTooltip.description(Component.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_OPEN_HINT)))
         }
     }
 
@@ -94,9 +94,9 @@ internal class HistorySummaryScreen(
      * @param action 按下後的行為。
      * @return 建立的按鈕。
      */
-    private fun miniButton(label: Text, action: () -> Unit): RestartableMarqueeButtonWidget = addSelectableChild(
+    private fun miniButton(label: Component, action: () -> Unit): RestartableMarqueeButtonWidget = addWidget(
         RestartableMarqueeButtonWidget.builder(label) { action() }
-            .dimensions(0, 0, textRenderer.getWidth(label) + MINI_BUTTON_PADDING * 2, MINI_BUTTON_HEIGHT)
+            .dimensions(0, 0, font.width(label) + MINI_BUTTON_PADDING * 2, MINI_BUTTON_HEIGHT)
             .build().also {
                 it.visible = false
                 it.clickClip = { x, y -> layout.containsContent(x, y) }
@@ -110,15 +110,15 @@ internal class HistorySummaryScreen(
     }
 
     /** Escape 與關閉行為均返回列表。 */
-    override fun close() = session.backToList()
+    override fun onClose() = session.backToList()
 
     /** 摘要與其他歷史畫面一致，不暫停整合伺服器。 */
-    override fun shouldPause(): Boolean = false
+    override fun isPauseScreen(): Boolean = false
 
     /** 將對局 ID 複製到剪貼簿，並在複製按鈕的提示中短暫顯示已複製。 */
     private fun copyMatchId() {
         val detail = detail() ?: return
-        MinecraftClient.getInstance().keyboard.clipboard = detail.summary.matchId
+        Minecraft.getInstance().keyboardHandler.clipboard = detail.summary.matchId
         copiedAt = TimeSource.Monotonic.markNow()
     }
 
@@ -171,7 +171,7 @@ internal class HistorySummaryScreen(
 
     /** 播放與按鈕相同的點擊音效。 */
     private fun playClickSound() {
-        MinecraftClient.getInstance().soundManager.play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0f))
+        Minecraft.getInstance().soundManager.play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f))
     }
 
     /**
@@ -216,28 +216,28 @@ internal class HistorySummaryScreen(
     }
 
     /** 繪製摘要畫面。 */
-    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         renderBackground(context)
-        ScreenRendering.title(context, textRenderer, title, width)
+        ScreenRendering.title(context, font, title, width)
         val summary = session.controller.state.value.summary
         val status = summary?.status ?: HistoryBrowseStatus.Loading
         scroll = layout.clampScroll(scroll, contentHeight(detail()))
         copyButton.visible = false
         ruleSettingsButton.visible = false
-        var hoveredTooltip: List<Text>? = null
+        var hoveredTooltip: List<Component>? = null
         retryButton?.active = session.controller.canRetry()
         retryButton?.visible = status is HistoryBrowseStatus.Failed
-        retryButton?.tooltip = if (session.controller.isRefreshCoolingDown()) Tooltip.of(Text.translatable(MinecraftHistoryScreenKeys.QUERY_COOLDOWN_TOOLTIP)) else null
+        retryButton?.tooltip = if (session.controller.isRefreshCoolingDown()) Tooltip.create(Component.translatable(MinecraftHistoryScreenKeys.QUERY_COOLDOWN_TOOLTIP)) else null
         context.enableScissor(layout.left, layout.contentTop, layout.right, layout.contentBottom)
         when (status) {
-            HistoryBrowseStatus.Idle, HistoryBrowseStatus.Loading -> message(context, Text.translatable(MinecraftHistoryScreenKeys.LOADING), STATUS_COLOR)
-            is HistoryBrowseStatus.Failed -> message(context, Text.translatable(status.reason.translationKey), ERROR_COLOR)
+            HistoryBrowseStatus.Idle, HistoryBrowseStatus.Loading -> message(context, Component.translatable(MinecraftHistoryScreenKeys.LOADING), STATUS_COLOR)
+            is HistoryBrowseStatus.Failed -> message(context, Component.translatable(status.reason.translationKey), ERROR_COLOR)
             HistoryBrowseStatus.Ready -> summary?.detail?.let { hoveredTooltip = renderDetail(context, it, mouseX, mouseY, delta) }
         }
         context.disableScissor()
         renderScrollbar(context, contentHeight(detail()))
         super.render(context, mouseX, mouseY, delta)
-        hoveredTooltip?.let { context.drawTooltip(textRenderer, it, mouseX, mouseY) }
+        hoveredTooltip?.let { context.renderComponentTooltip(font, it, mouseX, mouseY) }
     }
 
     /**
@@ -250,25 +250,25 @@ internal class HistorySummaryScreen(
      * @param delta 畫面更新比例。
      * @return 游標所指且可見內容的提示。
      */
-    private fun renderDetail(context: DrawContext, detail: HistoryMatchDetailDto, mouseX: Int, mouseY: Int, delta: Float): List<Text>? {
+    private fun renderDetail(context: GuiGraphics, detail: HistoryMatchDetailDto, mouseX: Int, mouseY: Int, delta: Float): List<Component>? {
         val offset = scrollOffset(detail)
         val pointerInside = !dragging && layout.containsContent(mouseX.toDouble(), mouseY.toDouble())
         val keyWidth = keyColumnWidth(detail)
         val rankWidth = rankColumnWidth(detail)
-        var tooltip: List<Text>? = null
+        var tooltip: List<Component>? = null
         rows(detail).forEach { row ->
             val top = rowTop(row, offset)
             if (top + row.height < layout.contentTop || top > layout.contentBottom) return@forEach
             val hovered = pointerInside && layout.containsRow(mouseX.toDouble(), mouseY.toDouble(), top, row.height)
             when (row) {
-                is HeadingRow -> context.drawTextWithShadow(textRenderer, row.text, layout.left, top + 2, HEADING_COLOR)
+                is HeadingRow -> context.drawString(font, row.text, layout.left, top + 2, HEADING_COLOR)
                 is FieldRow -> tooltip = renderField(context, row, top, keyWidth, hovered) ?: tooltip
                 is RankHeaderRow -> renderRankHeader(context, top, rankWidth)
                 is ParticipantRow -> tooltip = renderParticipant(context, row, top, rankWidth, hovered, mouseX) ?: tooltip
-                is NoteRow -> context.drawTextWithShadow(textRenderer, row.text, layout.left + ROW_INSET, top + 2, NOTE_COLOR)
+                is NoteRow -> context.drawString(font, row.text, layout.left + ROW_INSET, top + 2, NOTE_COLOR)
                 is RoundRow -> {
                     renderRound(context, row, top, hovered)
-                    if (hovered) tooltip = listOf(Text.translatable(MinecraftHistoryScreenKeys.ROUND_OPEN_HINT).formatted(Formatting.GRAY))
+                    if (hovered) tooltip = listOf(Component.translatable(MinecraftHistoryScreenKeys.ROUND_OPEN_HINT).withStyle(ChatFormatting.GRAY))
                 }
             }
         }
@@ -276,11 +276,11 @@ internal class HistorySummaryScreen(
         val pointerX = if (pointerInside) mouseX else OFFSCREEN_POINTER
         val pointerY = if (pointerInside) mouseY else OFFSCREEN_POINTER
         val copied = copiedAt?.elapsedNow()?.let { it < COPIED_NOTICE } == true
-        copyButton.tooltip = Tooltip.of(
+        copyButton.tooltip = Tooltip.create(
             if (copied) {
-                Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_MATCH_ID_COPIED).formatted(Formatting.GREEN)
+                Component.translatable(MinecraftHistoryScreenKeys.SUMMARY_MATCH_ID_COPIED).withStyle(ChatFormatting.GREEN)
             } else {
-                Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_COPY_MATCH_ID).formatted(Formatting.GRAY)
+                Component.translatable(MinecraftHistoryScreenKeys.SUMMARY_COPY_MATCH_ID).withStyle(ChatFormatting.GRAY)
             },
         )
         copyButton.render(context, pointerX, pointerY, delta)
@@ -298,14 +298,14 @@ internal class HistorySummaryScreen(
      * @param hovered 游標是否在這一列上。
      * @return 游標所指時的提示；沒有時為 null。
      */
-    private fun renderField(context: DrawContext, row: FieldRow, top: Int, keyWidth: Int, hovered: Boolean): List<Text>? {
+    private fun renderField(context: GuiGraphics, row: FieldRow, top: Int, keyWidth: Int, hovered: Boolean): List<Component>? {
         stripe(top, row.height).renderIfStriped(context, row.stripeIndex)
         val textY = top + (row.height - VISIBLE_TEXT_HEIGHT) / 2
-        context.drawTextWithShadow(textRenderer, row.key, layout.left + ROW_INSET, textY, KEY_COLOR)
+        context.drawString(font, row.key, layout.left + ROW_INSET, textY, KEY_COLOR)
         val valueLeft = layout.left + ROW_INSET + keyWidth
         val valueRight = layout.right - ROW_INSET - (actionButton(row.action)?.let { it.width + BUTTON_GAP } ?: 0)
-        val shown = HistoryScreenText.trim(row.value.string, (valueRight - valueLeft).coerceAtLeast(1), textRenderer::getWidth)
-        context.drawTextWithShadow(textRenderer, Text.literal(shown), valueLeft, textY, VALUE_COLOR)
+        val shown = HistoryScreenText.trim(row.value.string, (valueRight - valueLeft).coerceAtLeast(1), font::width)
+        context.drawString(font, Component.literal(shown), valueLeft, textY, VALUE_COLOR)
         if (!hovered) return null
         return when {
             row.tooltip != null -> row.tooltip
@@ -321,12 +321,12 @@ internal class HistorySummaryScreen(
      * @param top 捲動後的列上界。
      * @param rankWidth 名次欄寬度。
      */
-    private fun renderRankHeader(context: DrawContext, top: Int, rankWidth: Int) {
+    private fun renderRankHeader(context: GuiGraphics, top: Int, rankWidth: Int) {
         val y = top + 2
-        context.drawTextWithShadow(textRenderer, Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_RANK_HEADER), layout.left + ROW_INSET, y, KEY_COLOR)
-        context.drawTextWithShadow(textRenderer, Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_PLAYER_HEADER), layout.left + ROW_INSET + rankWidth + FACE_WIDTH, y, KEY_COLOR)
-        val score = Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_SCORE_HEADER)
-        context.drawTextWithShadow(textRenderer, score, layout.right - ROW_INSET - textRenderer.getWidth(score), y, KEY_COLOR)
+        context.drawString(font, Component.translatable(MinecraftHistoryScreenKeys.SUMMARY_RANK_HEADER), layout.left + ROW_INSET, y, KEY_COLOR)
+        context.drawString(font, Component.translatable(MinecraftHistoryScreenKeys.SUMMARY_PLAYER_HEADER), layout.left + ROW_INSET + rankWidth + FACE_WIDTH, y, KEY_COLOR)
+        val score = Component.translatable(MinecraftHistoryScreenKeys.SUMMARY_SCORE_HEADER)
+        context.drawString(font, score, layout.right - ROW_INSET - font.width(score), y, KEY_COLOR)
     }
 
     /**
@@ -340,18 +340,18 @@ internal class HistorySummaryScreen(
      * @param mouseX 游標水平座標。
      * @return 名稱被截斷且游標停在名稱上時的完整名稱；沒有時為 null。
      */
-    private fun renderParticipant(context: DrawContext, row: ParticipantRow, top: Int, rankWidth: Int, hovered: Boolean, mouseX: Int): List<Text>? {
+    private fun renderParticipant(context: GuiGraphics, row: ParticipantRow, top: Int, rankWidth: Int, hovered: Boolean, mouseX: Int): List<Component>? {
         stripe(top, row.height).renderIfStriped(context, row.stripeIndex)
         val textY = top + (row.height - VISIBLE_TEXT_HEIGHT) / 2
         val faceX = layout.left + ROW_INSET + rankWidth
         val nameX = faceX + FACE_WIDTH
-        context.drawTextWithShadow(textRenderer, row.rank, layout.left + ROW_INSET, textY, KEY_COLOR)
+        context.drawString(font, row.rank, layout.left + ROW_INSET, textY, KEY_COLOR)
         session.participants.render(row.participant, context, faceX, textY - 1, FACE_SIZE, matchId = detail()?.summary?.matchId)
         val scoreRight = layout.right - ROW_INSET
-        val nameWidth = (scoreRight - textRenderer.getWidth(row.score) - COLUMN_GAP - nameX).coerceAtLeast(1)
-        val name = HistoryScreenText.trim(row.name.string, nameWidth, textRenderer::getWidth)
-        context.drawTextWithShadow(textRenderer, Text.literal(name), nameX, textY, row.nameColor)
-        context.drawTextWithShadow(textRenderer, row.score, scoreRight - textRenderer.getWidth(row.score), textY, VALUE_COLOR)
+        val nameWidth = (scoreRight - font.width(row.score) - COLUMN_GAP - nameX).coerceAtLeast(1)
+        val name = HistoryScreenText.trim(row.name.string, nameWidth, font::width)
+        context.drawString(font, Component.literal(name), nameX, textY, row.nameColor)
+        context.drawString(font, row.score, scoreRight - font.width(row.score), textY, VALUE_COLOR)
         return if (hovered && name != row.name.string && mouseX >= nameX && mouseX < nameX + nameWidth) listOf(row.name) else null
     }
 
@@ -363,16 +363,16 @@ internal class HistorySummaryScreen(
      * @param top 捲動後的列上界。
      * @param hovered 游標是否在這一列上。
      */
-    private fun renderRound(context: DrawContext, row: RoundRow, top: Int, hovered: Boolean) {
+    private fun renderRound(context: GuiGraphics, row: RoundRow, top: Int, hovered: Boolean) {
         val bottom = top + row.height - ROUND_GAP
         context.fill(layout.left, top, layout.right, bottom, if (hovered) ROUND_HOVER_BACKGROUND else ROUND_BACKGROUND)
-        if (hovered) context.drawBorder(layout.left, top, layout.right - layout.left, bottom - top, OUTLINE_COLOR)
+        if (hovered) context.renderOutline(layout.left, top, layout.right - layout.left, bottom - top, OUTLINE_COLOR)
         val textY = top + (bottom - top - VISIBLE_TEXT_HEIGHT) / 2
-        context.drawTextWithShadow(textRenderer, row.label, layout.left + ROW_INSET, textY, VALUE_COLOR)
+        context.drawString(font, row.label, layout.left + ROW_INSET, textY, VALUE_COLOR)
         val timesLeft = layout.left + ROW_INSET + roundLabelWidth
         val arrowX = layout.right - ROW_INSET - PixelIcon.OPEN_RIGHT.width
-        val times = HistoryScreenText.trim(row.times.string, (arrowX - COLUMN_GAP - timesLeft).coerceAtLeast(1), textRenderer::getWidth)
-        context.drawTextWithShadow(textRenderer, Text.literal(times), timesLeft, textY, NOTE_COLOR)
+        val times = HistoryScreenText.trim(row.times.string, (arrowX - COLUMN_GAP - timesLeft).coerceAtLeast(1), font::width)
+        context.drawString(font, Component.literal(times), timesLeft, textY, NOTE_COLOR)
         PixelIcons.icon(context, PixelIcon.OPEN_RIGHT, arrowX, top + (bottom - top - PixelIcon.OPEN_RIGHT.height) / 2, VALUE_COLOR)
     }
 
@@ -445,7 +445,7 @@ internal class HistorySummaryScreen(
          */
         fun heading(key: String) {
             if (rows.isNotEmpty()) top += SECTION_GAP
-            add(HeadingRow(top = top, text = Text.translatable(key)))
+            add(HeadingRow(top = top, text = Component.translatable(key)))
         }
 
         /**
@@ -453,8 +453,8 @@ internal class HistorySummaryScreen(
          *
          * @param text 說明文字。
          */
-        fun note(text: Text) {
-            textRenderer.wrapLines(text, (layout.right - layout.left - ROW_INSET * 2).coerceAtLeast(1)).forEach { line ->
+        fun note(text: Component) {
+            font.split(text, (layout.right - layout.left - ROW_INSET * 2).coerceAtLeast(1)).forEach { line ->
                 add(NoteRow(top = top, text = line))
             }
         }
@@ -462,24 +462,24 @@ internal class HistorySummaryScreen(
         heading(MinecraftHistoryScreenKeys.SUMMARY_BASIC)
         val integrityKey = if (summary.integrity == HistoryIntegrityFilterDto.COMPLETE) MinecraftHistoryScreenKeys.INTEGRITY_COMPLETE else MinecraftHistoryScreenKeys.INTEGRITY_INCOMPLETE
         val fields = listOf(
-            FieldContent(MinecraftHistoryScreenKeys.SUMMARY_MATCH_ID, Text.literal(summary.matchId), action = FieldAction.COPY_MATCH_ID),
+            FieldContent(MinecraftHistoryScreenKeys.SUMMARY_MATCH_ID, Component.literal(summary.matchId), action = FieldAction.COPY_MATCH_ID),
             FieldContent(MinecraftHistoryScreenKeys.SUMMARY_RULE, HistoryScreenText.rule(summary.ruleId, session.ruleNames), action = FieldAction.RULE_SETTINGS),
-            FieldContent(MinecraftHistoryScreenKeys.SUMMARY_STARTED_AT, Text.literal(HistoryScreenText.endedAt(summary.startedAtEpochMillis))),
-            FieldContent(MinecraftHistoryScreenKeys.SUMMARY_ENDED_AT, Text.literal(HistoryScreenText.endedAt(summary.endedAtEpochMillis))),
-            FieldContent(MinecraftHistoryScreenKeys.SUMMARY_DURATION, Text.literal(HistoryScreenText.duration(summary.duration))),
+            FieldContent(MinecraftHistoryScreenKeys.SUMMARY_STARTED_AT, Component.literal(HistoryScreenText.endedAt(summary.startedAtEpochMillis))),
+            FieldContent(MinecraftHistoryScreenKeys.SUMMARY_ENDED_AT, Component.literal(HistoryScreenText.endedAt(summary.endedAtEpochMillis))),
+            FieldContent(MinecraftHistoryScreenKeys.SUMMARY_DURATION, Component.literal(HistoryScreenText.duration(summary.duration))),
             FieldContent(
                 keyId = MinecraftHistoryScreenKeys.SUMMARY_OUTCOME,
-                value = HistoryScreenText.outcome(summary.outcome).copy().append(VALUE_SEPARATOR).append(Text.translatable(integrityKey)),
-                tooltip = listOf(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_INTEGRITY_TOOLTIP, Text.translatable(integrityKey))),
+                value = HistoryScreenText.outcome(summary.outcome).copy().append(VALUE_SEPARATOR).append(Component.translatable(integrityKey)),
+                tooltip = listOf(Component.translatable(MinecraftHistoryScreenKeys.SUMMARY_INTEGRITY_TOOLTIP, Component.translatable(integrityKey))),
             ),
         )
         fields.forEachIndexed { index, field ->
-            add(FieldRow(top = top, stripeIndex = index, key = Text.translatable(field.keyId), value = field.value, tooltip = field.tooltip, action = field.action))
+            add(FieldRow(top = top, stripeIndex = index, key = Component.translatable(field.keyId), value = field.value, tooltip = field.tooltip, action = field.action))
         }
         heading(MinecraftHistoryScreenKeys.SUMMARY_RANKING)
         add(RankHeaderRow(top = top))
         val results = summary.results.associateBy { it.playerId }
-        val ownId = MinecraftClient.getInstance().player?.uuid?.toString()
+        val ownId = Minecraft.getInstance().player?.uuid?.toString()
         HistoryScreenText.rankedParticipants(summary).forEachIndexed { index, participant ->
             val result = results[participant.playerId]
             add(
@@ -487,24 +487,24 @@ internal class HistorySummaryScreen(
                     top = top,
                     stripeIndex = index,
                     participant = participant,
-                    rank = Text.literal(result?.finalRank?.toString() ?: "—"),
+                    rank = Component.literal(result?.finalRank?.toString() ?: "—"),
                     name = session.participants.name(participant, summary.participants, summary.matchId),
-                    score = Text.literal(result?.finalScore?.toString() ?: "—"),
+                    score = Component.literal(result?.finalScore?.toString() ?: "—"),
                     nameColor = if (participant.playerId == ownId) OWN_NAME_COLOR else VALUE_COLOR,
                 ),
             )
         }
-        if (!summary.resultsAvailable || summary.results.isEmpty()) note(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_RESULTS_UNAVAILABLE))
+        if (!summary.resultsAvailable || summary.results.isEmpty()) note(Component.translatable(MinecraftHistoryScreenKeys.SUMMARY_RESULTS_UNAVAILABLE))
         heading(MinecraftHistoryScreenKeys.SUMMARY_ROUND_COUNT)
         if (detail.rounds.isEmpty()) {
-            note(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_ROUNDS_EMPTY))
+            note(Component.translatable(MinecraftHistoryScreenKeys.SUMMARY_ROUNDS_EMPTY))
         } else {
             val rounds = detail.rounds.sortedBy { it.roundNumber }.map { round ->
                 RoundRow(
                     top = 0,
                     roundNumber = round.roundNumber,
-                    label = Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_ROUND_LABEL, round.roundNumber),
-                    times = Text.translatable(
+                    label = Component.translatable(MinecraftHistoryScreenKeys.SUMMARY_ROUND_LABEL, round.roundNumber),
+                    times = Component.translatable(
                         MinecraftHistoryScreenKeys.SUMMARY_ROUND_TIMES,
                         HistoryScreenText.endedAt(round.startedAtEpochMillis),
                         HistoryScreenText.endedAt(round.endedAtEpochMillis),
@@ -512,7 +512,7 @@ internal class HistorySummaryScreen(
                     ),
                 )
             }
-            roundLabelWidth = (rounds.maxOfOrNull { textRenderer.getWidth(it.label) } ?: 0) + COLUMN_GAP
+            roundLabelWidth = (rounds.maxOfOrNull { font.width(it.label) } ?: 0) + COLUMN_GAP
             rounds.forEach { add(it.copy(top = top)) }
         }
         return rows
@@ -525,7 +525,7 @@ internal class HistorySummaryScreen(
      * @return 名稱欄寬度。
      */
     private fun keyColumnWidth(detail: HistoryMatchDetailDto): Int = (
-        rows(detail).filterIsInstance<FieldRow>().maxOfOrNull { textRenderer.getWidth(it.key) }?.plus(COLUMN_GAP) ?: 0
+        rows(detail).filterIsInstance<FieldRow>().maxOfOrNull { font.width(it.key) }?.plus(COLUMN_GAP) ?: 0
         ).coerceAtMost((layout.right - layout.left) / 2)
 
     /**
@@ -535,8 +535,8 @@ internal class HistorySummaryScreen(
      * @return 含欄間距的像素寬度。
      */
     private fun rankColumnWidth(detail: HistoryMatchDetailDto): Int = maxOf(
-        a = textRenderer.getWidth(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_RANK_HEADER)),
-        b = detail.summary.results.maxOfOrNull { textRenderer.getWidth(it.finalRank?.toString() ?: "—") } ?: textRenderer.getWidth("—"),
+        a = font.width(Component.translatable(MinecraftHistoryScreenKeys.SUMMARY_RANK_HEADER)),
+        b = detail.summary.results.maxOfOrNull { font.width(it.finalRank?.toString() ?: "—") } ?: font.width("—"),
     ) + COLUMN_GAP
 
     /**
@@ -570,7 +570,7 @@ internal class HistorySummaryScreen(
      * @param context 繪製上下文。
      * @param height 內容總高度。
      */
-    private fun renderScrollbar(context: DrawContext, height: Int) {
+    private fun renderScrollbar(context: GuiGraphics, height: Int) {
         val bar = layout.scrollbar(height, scroll)
         if (bar.maximumScroll <= 0 || layout.contentBottom <= layout.contentTop) return
         VerticalScrollbar.render(context, layout.scrollbarBounds().x, bar)
@@ -586,9 +586,9 @@ internal class HistorySummaryScreen(
      * @param text 已翻譯的訊息。
      * @param color 文字顏色。
      */
-    private fun message(context: DrawContext, text: Text, color: Int) {
-        textRenderer.wrapLines(text, (layout.right - layout.left).coerceAtLeast(1)).forEachIndexed { index, line ->
-            context.drawTextWithShadow(textRenderer, line, layout.left, layout.contentTop + MESSAGE_OFFSET + index * textRenderer.fontHeight, color)
+    private fun message(context: GuiGraphics, text: Component, color: Int) {
+        font.split(text, (layout.right - layout.left).coerceAtLeast(1)).forEachIndexed { index, line ->
+            context.drawString(font, line, layout.left, layout.contentTop + MESSAGE_OFFSET + index * font.lineHeight, color)
         }
     }
 
@@ -611,8 +611,8 @@ internal class HistorySummaryScreen(
      */
     private data class FieldContent(
         val keyId: String,
-        val value: Text,
-        val tooltip: List<Text>? = null,
+        val value: Component,
+        val tooltip: List<Component>? = null,
         val action: FieldAction? = null,
     )
 
@@ -631,7 +631,7 @@ internal class HistorySummaryScreen(
      * @property top 列上界。
      * @property text 標題文字。
      */
-    private data class HeadingRow(override val top: Int, val text: Text) : SummaryRow {
+    private data class HeadingRow(override val top: Int, val text: Component) : SummaryRow {
         override val height: Int get() = HEADING_HEIGHT
     }
 
@@ -648,9 +648,9 @@ internal class HistorySummaryScreen(
     private data class FieldRow(
         override val top: Int,
         val stripeIndex: Int,
-        val key: Text,
-        val value: Text,
-        val tooltip: List<Text>?,
+        val key: Component,
+        val value: Component,
+        val tooltip: List<Component>?,
         val action: FieldAction?,
     ) : SummaryRow {
         override val height: Int get() = FIELD_HEIGHT
@@ -680,9 +680,9 @@ internal class HistorySummaryScreen(
         override val top: Int,
         val stripeIndex: Int,
         val participant: HistoryParticipantSummaryDto,
-        val rank: Text,
-        val name: Text,
-        val score: Text,
+        val rank: Component,
+        val name: Component,
+        val score: Component,
         val nameColor: Int,
     ) : SummaryRow {
         override val height: Int get() = PARTICIPANT_HEIGHT
@@ -694,7 +694,7 @@ internal class HistorySummaryScreen(
      * @property top 列上界。
      * @property text 已換行的文字。
      */
-    private data class NoteRow(override val top: Int, val text: OrderedText) : SummaryRow {
+    private data class NoteRow(override val top: Int, val text: FormattedCharSequence) : SummaryRow {
         override val height: Int get() = NOTE_HEIGHT
     }
 
@@ -709,8 +709,8 @@ internal class HistorySummaryScreen(
     private data class RoundRow(
         override val top: Int,
         val roundNumber: Int,
-        val label: Text,
-        val times: Text,
+        val label: Component,
+        val times: Component,
     ) : SummaryRow {
         override val height: Int get() = ROUND_HEIGHT
     }

@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationQueueDriver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableOverlayVisibility
-import net.minecraft.nbt.NbtCompound
+import net.minecraft.nbt.CompoundTag
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -15,7 +15,7 @@ class TableOverlayVisibilityNbtTest {
     @Test
     fun `finite and permanent deadlines round trip through nbt`() {
         listOf(100L, Long.MAX_VALUE).forEach { deadline ->
-            val nbt = NbtCompound()
+            val nbt = CompoundTag()
             TableOverlayVisibilityNbt.write(nbt, deadline)
             assertEquals(deadline, TableOverlayVisibilityNbt.read(nbt))
         }
@@ -25,10 +25,10 @@ class TableOverlayVisibilityNbtTest {
     @Test
     fun `missing or invalid deadline does not hide the overlay`() {
         val samples = listOf(
-            NbtCompound(),
-            NbtCompound().apply { putLong("HiddenUntilGameTime", 0L) },
-            NbtCompound().apply { putLong("HiddenUntilGameTime", -1L) },
-            NbtCompound().apply { putString("HiddenUntilGameTime", "invalid") },
+            CompoundTag(),
+            CompoundTag().apply { putLong("HiddenUntilGameTime", 0L) },
+            CompoundTag().apply { putLong("HiddenUntilGameTime", -1L) },
+            CompoundTag().apply { putString("HiddenUntilGameTime", "invalid") },
         )
         samples.forEach { nbt ->
             val deadline = TableOverlayVisibilityNbt.read(nbt)
@@ -40,7 +40,7 @@ class TableOverlayVisibilityNbtTest {
     /** 解除後重用同一份 NBT，舊的無期限隱藏不會留下來。 */
     @Test
     fun `clearing removes a previously saved permanent deadline`() {
-        val nbt = NbtCompound()
+        val nbt = CompoundTag()
         TableOverlayVisibilityNbt.write(nbt, Long.MAX_VALUE)
         TableOverlayVisibilityNbt.write(nbt, Long.MIN_VALUE)
         assertFalse(nbt.contains("HiddenUntilGameTime"))
@@ -50,7 +50,7 @@ class TableOverlayVisibilityNbtTest {
     /** 隱藏期限的讀寫不影響資訊內容。 */
     @Test
     fun `writing a deadline preserves unrelated presentation data`() {
-        val nbt = NbtCompound().apply { putString("Lines", "presentation") }
+        val nbt = CompoundTag().apply { putString("Lines", "presentation") }
         TableOverlayVisibilityNbt.write(nbt, 100L)
         assertEquals("presentation", nbt.getString("Lines"))
     }
@@ -64,7 +64,7 @@ class TableOverlayVisibilityNbtTest {
             currentGameTime = 50L,
         )
         assertEquals(listOf(AnimationStep.WaitUntil(100L), AnimationStep.SetInvisible(false)), progress.remainingQueue)
-        val nbt = NbtCompound()
+        val nbt = CompoundTag()
         TableOverlayVisibilityNbt.write(nbt, 100L)
         val restored = TableOverlayVisibilityNbt.read(nbt)
         assertTrue(TableOverlayVisibility.isHidden(restored, 50L))
@@ -80,7 +80,7 @@ class TableOverlayVisibilityNbtTest {
             currentGameTime = 50L,
         )
         assertTrue(progress.remainingQueue.isEmpty())
-        val nbt = NbtCompound()
+        val nbt = CompoundTag()
         TableOverlayVisibilityNbt.write(nbt, Long.MAX_VALUE)
         assertTrue(TableOverlayVisibility.isHidden(TableOverlayVisibilityNbt.read(nbt), 50L))
     }

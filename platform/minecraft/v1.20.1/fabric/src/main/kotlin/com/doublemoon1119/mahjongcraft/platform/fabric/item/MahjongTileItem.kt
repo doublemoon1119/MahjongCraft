@@ -6,15 +6,15 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModSounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.allTileAssetKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.nextTileAssetKey
-import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.item.Item
-import net.minecraft.item.ItemStack
-import net.minecraft.item.ItemUsageContext
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.ActionResult
-import net.minecraft.util.Hand
-import net.minecraft.util.TypedActionResult
-import net.minecraft.world.World
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.InteractionHand
+import net.minecraft.world.InteractionResult
+import net.minecraft.world.InteractionResultHolder
+import net.minecraft.world.entity.player.Player
+import net.minecraft.world.item.Item
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.context.UseOnContext
+import net.minecraft.world.level.Level
 import org.koin.core.context.GlobalContext
 
 /**
@@ -25,7 +25,7 @@ import org.koin.core.context.GlobalContext
  *
  * @param settings 原版物品設定。
  */
-class MahjongTileItem(settings: Settings) : Item(settings) {
+class MahjongTileItem(settings: Properties) : Item(settings) {
     /**
      * 非蹲下右鍵空氣時切換牌面；蹲下時交由方塊互動入口判斷是否放置。
      *
@@ -33,11 +33,11 @@ class MahjongTileItem(settings: Settings) : Item(settings) {
      * @param user 使用物品的玩家。
      * @param hand 玩家使用的手。
      */
-    override fun use(world: World, user: PlayerEntity, hand: Hand): TypedActionResult<ItemStack> {
-        val stack = user.getStackInHand(hand)
-        if (user.isSneaking) return TypedActionResult.pass(stack)
-        if (!world.isClient) advanceTileAssetKey(stack)
-        return TypedActionResult.success(stack, world.isClient)
+    override fun use(world: Level, user: Player, hand: InteractionHand): InteractionResultHolder<ItemStack> {
+        val stack = user.getItemInHand(hand)
+        if (user.isShiftKeyDown) return InteractionResultHolder.pass(stack)
+        if (!world.isClientSide) advanceTileAssetKey(stack)
+        return InteractionResultHolder.sidedSuccess(stack, world.isClientSide)
     }
 
     /**
@@ -45,28 +45,28 @@ class MahjongTileItem(settings: Settings) : Item(settings) {
      *
      * @param context 方塊互動位置、玩家及物品堆疊。
      */
-    override fun useOnBlock(context: ItemUsageContext): ActionResult {
-        val player = context.player ?: return ActionResult.PASS
-        if (context.world.isClient) return ActionResult.SUCCESS
+    override fun useOn(context: UseOnContext): InteractionResult {
+        val player = context.player ?: return InteractionResult.PASS
+        if (context.level.isClientSide) return InteractionResult.SUCCESS
 
-        if (!player.isSneaking) {
-            advanceTileAssetKey(context.stack)
-            return ActionResult.CONSUME
+        if (!player.isShiftKeyDown) {
+            advanceTileAssetKey(context.itemInHand)
+            return InteractionResult.CONSUME
         }
 
-        val world = context.world as ServerWorld
+        val world = context.level as ServerLevel
         val entity = MahjongTileEntity(world = world).apply {
-            tileAssetKey = readTileAssetKey(context.stack)
+            tileAssetKey = readTileAssetKey(context.itemInHand)
             tilePose = MahjongTilePose.STANDING
-            val hitPos = context.hitPos
-            refreshPositionAndAngles(hitPos.x, hitPos.y, hitPos.z, context.playerYaw + 180.0f, 0.0f)
+            val hitPos = context.clickLocation
+            moveTo(hitPos.x, hitPos.y, hitPos.z, context.rotation + 180.0f, 0.0f)
         }
         val intersectsBlock = world.getBlockCollisions(entity, entity.boundingBox).iterator().hasNext()
-        if (intersectsBlock || !world.spawnEntity(entity)) return ActionResult.FAIL
+        if (intersectsBlock || !world.addFreshEntity(entity)) return InteractionResult.FAIL
 
-        if (!player.abilities.creativeMode) context.stack.decrement(1)
+        if (!player.abilities.instabuild) context.itemInHand.shrink(1)
         entity.playSound(ModSounds.tileDiscardLand, 1.0f, 1.0f)
-        return ActionResult.CONSUME
+        return InteractionResult.CONSUME
     }
 
     companion object {

@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.tree.CommandNode
-import net.minecraft.server.command.ServerCommandSource
+import net.minecraft.commands.CommandSourceStack
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -28,7 +28,7 @@ class FabricDebugAnimationCommandTest {
 
         assertEquals(FabricDebugAnimationCommand.DICE_SUBCOMMAND, dice.name)
         assertNotNull(dice.command, "runs without an explicit dice count")
-        assertEquals(setOf("2", "3", "multi"), dice.children.map(CommandNode<ServerCommandSource>::getName).toSet())
+        assertEquals(setOf("2", "3", "multi"), dice.children.map(CommandNode<CommandSourceStack>::getName).toSet())
     }
 
     /** 單張牌動畫子指令都同時提供「不帶 tile」與「帶 tile」兩種路徑。 */
@@ -58,13 +58,13 @@ class FabricDebugAnimationCommandTest {
                 FabricDebugAnimationCommand.KAN_ARGUMENT,
                 FabricDebugAnimationCommand.ADDED_KAN_ARGUMENT,
             ),
-            actual = meld.children.map(CommandNode<ServerCommandSource>::getName).toSet(),
+            actual = meld.children.map(CommandNode<CommandSourceStack>::getName).toSet(),
         )
         meld.children.forEach { claim ->
             assertNotNull(claim.command, "${claim.name} runs without a tile argument")
             assertEquals(
                 expected = setOf(DebugTilePreviewSupport.TILE_ARGUMENT),
-                actual = claim.children.map(CommandNode<ServerCommandSource>::getName).toSet(),
+                actual = claim.children.map(CommandNode<CommandSourceStack>::getName).toSet(),
                 message = "${claim.name} exposes exactly one tile argument",
             )
         }
@@ -84,7 +84,7 @@ class FabricDebugAnimationCommandTest {
      */
     private fun assertOptionalTileArgument(
         name: String,
-        builder: LiteralArgumentBuilder<ServerCommandSource>,
+        builder: LiteralArgumentBuilder<CommandSourceStack>,
     ) {
         val node = builder.build()
 
@@ -92,7 +92,7 @@ class FabricDebugAnimationCommandTest {
         assertNotNull(node.command, "$name runs without a tile argument")
         assertEquals(
             expected = setOf(DebugTilePreviewSupport.TILE_ARGUMENT),
-            actual = node.children.map(CommandNode<ServerCommandSource>::getName).toSet(),
+            actual = node.children.map(CommandNode<CommandSourceStack>::getName).toSet(),
             message = "$name exposes exactly one tile argument",
         )
     }

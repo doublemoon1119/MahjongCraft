@@ -3,13 +3,13 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server
 import com.doublemoon1119.mahjongcraft.platform.fabric.MahjongCraftMod
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerThreadCoroutineDispatcher
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
 /**
  * 持有目前運行中的 [MinecraftServer]，供 Koin 綁定的 `GameEventPublisher`/`RoomEventPublisher` 用
- * [Uuid] 查找對應的 [ServerPlayerEntity] 送封包，也供 [ServerThreadCoroutineDispatcher]
+ * [Uuid] 查找對應的 [ServerPlayer] 送封包，也供 [ServerThreadCoroutineDispatcher]
  * 把協程排程丟回伺服器主執行緒。set/clear 時機由 [MahjongCraftMod] 掛在
  * `ServerLifecycleEvents.SERVER_STARTED`/`SERVER_STOPPING`。
  */
@@ -52,7 +52,7 @@ class FabricServerHolder {
      * @param playerId 要查找的玩家 UUID。
      * @return 找到的玩家，或玩家不在線／server 不存在時的 null。
      */
-    fun findPlayer(playerId: Uuid): ServerPlayerEntity? = activeSession?.server?.playerManager?.getPlayer(playerId.toJavaUuid())
+    fun findPlayer(playerId: Uuid): ServerPlayer? = activeSession?.server?.playerList?.getPlayer(playerId.toJavaUuid())
 
     /**
      * 一次伺服器啟動的不可變身分。

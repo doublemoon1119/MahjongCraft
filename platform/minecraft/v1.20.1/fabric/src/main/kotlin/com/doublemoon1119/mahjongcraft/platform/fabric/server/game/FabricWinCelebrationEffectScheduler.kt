@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogge
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.WinCelebrationEffectSteps
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
-import net.minecraft.server.world.ServerWorld
+import net.minecraft.server.level.ServerLevel
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 import kotlin.uuid.Uuid
@@ -48,7 +48,7 @@ class FabricWinCelebrationEffectScheduler(private val spawnGateway: FabricEntity
      * @param endGameTime 效果到期的絕對 game time，必須晚於起始時間。
      */
     fun schedule(
-        world: ServerWorld,
+        world: ServerLevel,
         tableId: Uuid,
         targetTileId: Uuid,
         startGameTime: Long,
@@ -71,7 +71,7 @@ class FabricWinCelebrationEffectScheduler(private val spawnGateway: FabricEntity
                 endGameTime = endGameTime,
             )
             WinCelebrationEffectSteps.sounds(startGameTime).forEach { enqueue(step = it) }
-            refreshPositionAndAngles(tile.x, tile.y, tile.z, 0.0f, 0.0f)
+            moveTo(tile.x, tile.y, tile.z, 0.0f, 0.0f)
         }
         val task = Task(
             world = world,
@@ -111,7 +111,7 @@ class FabricWinCelebrationEffectScheduler(private val spawnGateway: FabricEntity
             val iterator = tasksByTargetTileId.values.iterator()
             while (iterator.hasNext()) {
                 val task = iterator.next()
-                val now = task.world.time
+                val now = task.world.gameTime
                 if (now >= task.endGameTime) {
                     task.effect.discard()
                     iterator.remove()
@@ -133,7 +133,7 @@ class FabricWinCelebrationEffectScheduler(private val spawnGateway: FabricEntity
      * @property effect 此任務生成的效果 entity。
      */
     private data class Task(
-        val world: ServerWorld,
+        val world: ServerLevel,
         val tableId: Uuid,
         val targetTileId: Uuid,
         val endGameTime: Long,

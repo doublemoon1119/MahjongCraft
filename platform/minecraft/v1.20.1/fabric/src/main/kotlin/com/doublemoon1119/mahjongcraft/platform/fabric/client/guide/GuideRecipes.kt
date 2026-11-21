@@ -2,12 +2,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.guide
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongStoolBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
-import net.minecraft.client.MinecraftClient
-import net.minecraft.item.BlockItem
-import net.minecraft.item.ItemStack
-import net.minecraft.recipe.Ingredient
-import net.minecraft.recipe.RecipeType
-import net.minecraft.recipe.ShapedRecipe
+import net.minecraft.client.Minecraft
+import net.minecraft.world.item.BlockItem
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.crafting.Ingredient
+import net.minecraft.world.item.crafting.RecipeType
+import net.minecraft.world.item.crafting.ShapedRecipe
 
 /**
  * 一個合成配方在 3×3 材料格中的擺法。
@@ -27,12 +27,12 @@ internal object GuideRecipes {
      * @param client 客戶端。
      * @return 配方；沒有世界或找不到時為空清單。
      */
-    fun find(client: MinecraftClient): List<GuideRecipe> {
-        val world = client.world ?: return emptyList()
-        val registries = world.registryManager
-        return world.recipeManager.listAllOfType(RecipeType.CRAFTING)
+    fun find(client: Minecraft): List<GuideRecipe> {
+        val world = client.level ?: return emptyList()
+        val registries = world.registryAccess()
+        return world.recipeManager.getAllRecipesFor(RecipeType.CRAFTING)
             .mapNotNull { recipe ->
-                val output = recipe.getOutput(registries)
+                val output = recipe.getResultItem(registries)
                 val order = when ((output.item as? BlockItem)?.block) {
                     is MahjongTableBlock -> TABLE_ORDER
                     is MahjongStoolBlock -> STOOL_ORDER
@@ -58,7 +58,7 @@ internal object GuideRecipes {
             val row = index / width
             val column = index % width
             if (row < GuideRecipeLayout.GRID_SIZE && column < GuideRecipeLayout.GRID_SIZE) {
-                slots[row * GuideRecipeLayout.GRID_SIZE + column] = ingredient.matchingStacks.filterNot(ItemStack::isEmpty)
+                slots[row * GuideRecipeLayout.GRID_SIZE + column] = ingredient.items.filterNot(ItemStack::isEmpty)
             }
         }
         return slots

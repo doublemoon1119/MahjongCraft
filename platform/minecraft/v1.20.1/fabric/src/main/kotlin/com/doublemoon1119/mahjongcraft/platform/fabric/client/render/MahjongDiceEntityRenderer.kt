@@ -3,15 +3,15 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimation
-import net.minecraft.client.render.OverlayTexture
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.render.entity.EntityRenderer
-import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.render.model.json.ModelTransformationMode
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.item.ItemStack
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.RotationAxis
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.math.Axis
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.entity.EntityRenderer
+import net.minecraft.client.renderer.entity.EntityRendererProvider
+import net.minecraft.client.renderer.texture.OverlayTexture
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.item.ItemDisplayContext
+import net.minecraft.world.item.ItemStack
 import org.joml.Quaternionf
 
 /**
@@ -20,7 +20,7 @@ import org.joml.Quaternionf
  * @param context Minecraft entity renderer 共用資源。
  */
 class MahjongDiceEntityRenderer(
-    context: EntityRendererFactory.Context,
+    context: EntityRendererProvider.Context,
 ) : EntityRenderer<MahjongDiceEntity>(context) {
     /** 共用 Vanilla item renderer，避免建立另一套 cube model loader。 */
     private val itemRenderer = context.itemRenderer
@@ -30,8 +30,8 @@ class MahjongDiceEntityRenderer(
         entity: MahjongDiceEntity,
         yaw: Float,
         tickDelta: Float,
-        matrices: MatrixStack,
-        vertexConsumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
         light: Int,
     ) {
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
@@ -43,43 +43,43 @@ class MahjongDiceEntityRenderer(
         val animationFrame = if (entity.rolling) {
             ROLL_ANIMATION.frame(
                 seed = entity.animationSeed,
-                elapsedTicks = entity.world.time.toDouble() + tickDelta - entity.animationStartGameTime,
+                elapsedTicks = entity.level().gameTime.toDouble() + tickDelta - entity.animationStartGameTime,
                 startOffset = entity.animationStartOffset,
             )
         } else {
             null
         }
-        matrices.push()
+        matrices.pushPose()
         if (animationFrame != null) {
             matrices.translate(animationFrame.offset.x, animationFrame.offset.y, animationFrame.offset.z)
         }
         matrices.translate(0.0, MahjongDiceEntity.SIZE / 2.0, 0.0)
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-entity.yaw + 180.0f))
+        matrices.mulPose(Axis.YP.rotationDegrees(-entity.yRot + 180.0f))
         if (animationFrame != null) {
             val rotation = animationFrame.rotation
-            matrices.multiply(
+            matrices.mulPose(
                 Quaternionf(rotation.x.toFloat(), rotation.y.toFloat(), rotation.z.toFloat(), rotation.w.toFloat()),
             )
         }
-        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(entity.point.xRotationDegrees))
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(entity.point.yRotationDegrees))
+        matrices.mulPose(Axis.XP.rotationDegrees(entity.point.xRotationDegrees))
+        matrices.mulPose(Axis.YP.rotationDegrees(entity.point.yRotationDegrees))
         matrices.scale(DICE_MODEL_SCALE, DICE_MODEL_SCALE, DICE_MODEL_SCALE)
         matrices.translate(0.0, DICE_MODEL_CENTER_OFFSET_Y, 0.0)
-        itemRenderer.renderItem(
+        itemRenderer.renderStatic(
             DICE_STACK,
-            ModelTransformationMode.HEAD,
+            ItemDisplayContext.HEAD,
             light,
-            OverlayTexture.DEFAULT_UV,
+            OverlayTexture.NO_OVERLAY,
             matrices,
             vertexConsumers,
-            entity.world,
+            entity.level(),
             entity.id,
         )
-        matrices.pop()
+        matrices.popPose()
     }
 
     /** ItemRenderer 自行解析材質，因此 entity renderer 不提供單一 texture。 */
-    override fun getTexture(entity: MahjongDiceEntity): Identifier? = null
+    override fun getTextureLocation(entity: MahjongDiceEntity): ResourceLocation? = null
 
     companion object {
         /** 舊模型由 `10/16 block` 縮放成 `0.125 block` 所需比例。 */

@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.player
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 import kotlin.uuid.Uuid
 
 /**
@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
  * @param name 已解析的玩家名稱；null 時使用離線玩家翻譯文字。
  * @return 玩家名稱或本地化的離線玩家文字。
  */
-fun resolvedPlayerNameText(name: String?): Text = name?.let(Text::literal) ?: Text.translatable(MinecraftRoomScreenKeys.OFFLINE_PLAYER)
+fun resolvedPlayerNameText(name: String?): Component = name?.let(Component::literal) ?: Component.translatable(MinecraftRoomScreenKeys.OFFLINE_PLAYER)
 
 /**
  * 只有需要本地翻譯的 AI 名稱才交給角色解析器，其他已解析名稱及真人備援維持原值。

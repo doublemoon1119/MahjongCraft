@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.block
 
-import net.minecraft.util.function.BooleanBiFunction
-import net.minecraft.util.math.Direction
-import net.minecraft.util.shape.VoxelShapes
+import net.minecraft.core.Direction
+import net.minecraft.world.phys.shapes.BooleanOp
+import net.minecraft.world.phys.shapes.Shapes
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -15,7 +15,7 @@ class MahjongStoolDesignTest {
         MahjongStoolDesign.entries.forEach { design ->
             val expectedHeight = 9.0
             assertEquals(expectedHeight, design.cuboids.maxOf(MahjongStoolCuboid::maxY))
-            assertEquals(expectedHeight / 16.0, design.shape.boundingBox.maxY)
+            assertEquals(expectedHeight / 16.0, design.shape.bounds().maxY)
         }
     }
 
@@ -24,7 +24,7 @@ class MahjongStoolDesignTest {
     fun `seat height matches the top of the collision shape`() {
         MahjongStoolDesign.entries.forEach { design ->
             assertEquals(9.0 / 16.0, design.seatHeight)
-            assertEquals(design.shape.boundingBox.maxY, design.seatHeight)
+            assertEquals(design.shape.bounds().maxY, design.seatHeight)
         }
     }
 
@@ -34,10 +34,10 @@ class MahjongStoolDesignTest {
         MahjongStoolDesign.entries.forEach { design ->
             design.cuboids.forEach { cuboid ->
                 assertTrue(
-                    actual = !VoxelShapes.matchesAnywhere(
+                    actual = !Shapes.joinIsNotEmpty(
                         cuboid.toVoxelShape(),
                         design.shape,
-                        BooleanBiFunction.ONLY_FIRST,
+                        BooleanOp.ONLY_FIRST,
                     ),
                 )
             }
@@ -56,13 +56,13 @@ class MahjongStoolDesignTest {
     /** 東西朝向會交換木製凳碰撞的長軸與短軸。 */
     @Test
     fun `wooden shape rotates with horizontal facing`() {
-        val north = MahjongStoolDesign.WOODEN.shapeFor(Direction.NORTH).boundingBox
-        val east = MahjongStoolDesign.WOODEN.shapeFor(Direction.EAST).boundingBox
+        val north = MahjongStoolDesign.WOODEN.shapeFor(Direction.NORTH).bounds()
+        val east = MahjongStoolDesign.WOODEN.shapeFor(Direction.EAST).bounds()
 
-        assertEquals(14.0 / 16.0, north.xLength)
-        assertEquals(8.0 / 16.0, north.zLength)
-        assertEquals(8.0 / 16.0, east.xLength)
-        assertEquals(14.0 / 16.0, east.zLength)
+        assertEquals(14.0 / 16.0, north.xsize)
+        assertEquals(8.0 / 16.0, north.zsize)
+        assertEquals(8.0 / 16.0, east.xsize)
+        assertEquals(14.0 / 16.0, east.zsize)
     }
 
     /** 塑膠款使用單一長方體涵蓋座面與四面鏤空支架。 */

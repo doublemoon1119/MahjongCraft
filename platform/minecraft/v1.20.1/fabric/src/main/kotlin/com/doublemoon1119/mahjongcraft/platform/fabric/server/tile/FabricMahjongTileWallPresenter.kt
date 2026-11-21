@@ -25,12 +25,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionDecision
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionPlanner
-import net.minecraft.registry.RegistryKey
-import net.minecraft.registry.RegistryKeys
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
+import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.Registries
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
@@ -54,7 +54,7 @@ class FabricMahjongTileWallPresenter(
      *
      * 每張新牌 entity 的 UUID 在加入世界前直接設為對應 [IdentifiedTile.id]，
      * 沿用 [MahjongTileEntity] 既有 KDoc 早已寫下的設計意圖——此時 entity 尚未加入 world 的 UUID
-     * 索引，是唯一安全能覆寫 UUID 的時機點；`world.spawnEntity` 之後才變更會與世界既有索引不一致。
+     * 索引，是唯一安全能覆寫 UUID 的時機點；`level.addFreshEntity` 之後才變更會與世界既有索引不一致。
      *
      * [MahjongTileWallPresentation.animateOpening] 啟用時，所有牌只依
      * [MahjongTileWallPresentation.assemblyStructure] 生成；初次發牌與手牌翻起完成後，呼叫端再以
@@ -104,8 +104,8 @@ class FabricMahjongTileWallPresenter(
                 placement = if (restoresFinalStateImmediately) finalPlacement else TileWallPlacement(assemblyPosition),
             )
             assemblyPosition to MahjongTileEntity(world = world).apply {
-                uuid = tileId.toJavaUuid()
-                refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+                setUUID(tileId.toJavaUuid())
+                moveTo(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
                 tilePose = if (restoresFinalStateImmediately && tileId in presentation.revealedTileIds) {
                     MahjongTilePose.FACE_UP
                 } else {
@@ -123,7 +123,7 @@ class FabricMahjongTileWallPresenter(
             spawnedTiles += tile
         }
         oldTiles.forEach(MahjongTileEntity::discard)
-        table.blockEntity.markDirty()
+        table.blockEntity.setChanged()
         if (newTiles.isNotEmpty()) {
             startWallDropAnimations(world, newTiles)
         }
@@ -273,7 +273,7 @@ class FabricMahjongTileWallPresenter(
      * 每面牌牆同時由玩家右側（[TileWallPosition.stack] 為 `0`，見 [MahjongTileTableLayout.wallPlacement]
      * KDoc）至左側依序半空生成掉落，形成波浪感——`stack` 越大延遲越久開始掉落，四面牌牆各自獨立套用
      * 同一套延遲公式（[MahjongTileTableLayout.WAVE_STEP_TICKS]）、同時開始，天然同步成波浪；`layer`
-     * 不影響延遲，同一墩兩層一起落下。牌張本身已經 `refreshPositionAndAngles` 到掉落終點，這裡只需要
+     * 不影響延遲，同一墩兩層一起落下。牌張本身已經 `moveTo` 到掉落終點，這裡只需要
      * 疊加半空起點的動畫，起訖姿態相同（[MahjongTilePose.FACE_DOWN]），只有位置在動。「延遲到期前先
      * 隱形」用 [AnimationStep.SetInvisible] 表達，不是像過去那樣提前把動畫起點設在未來、靠 renderer
      * 端另外判斷「還沒到期」來隱藏——理由見 [AnimatedMahjongEntity] KDoc。
@@ -286,7 +286,7 @@ class FabricMahjongTileWallPresenter(
      * @param tilesWithPosition 每張牌的牌牆位置與 entity 配對。
      */
     private fun startWallDropAnimations(
-        world: ServerWorld,
+        world: ServerLevel,
         tilesWithPosition: List<Pair<TileWallPosition, MahjongTileEntity>>,
     ) {
         tilesWithPosition.forEach { (position, tile) ->
@@ -294,7 +294,7 @@ class FabricMahjongTileWallPresenter(
             val initialPose = tile.tilePose
             val steps = mutableListOf<AnimationStep<MahjongTilePose>>(
                 AnimationStep.SetInvisible(true),
-                AnimationStep.WaitUntil(world.time + startDelayTicks),
+                AnimationStep.WaitUntil(world.gameTime + startDelayTicks),
                 AnimationStep.SetInvisible(false),
                 AnimationStep.PlayMotion(
                     durationTicks = TileMotionAnimationSpec.DEFAULT_DURATION_TICKS,
@@ -307,7 +307,7 @@ class FabricMahjongTileWallPresenter(
                 ),
             )
             if (position.layer == WALL_STACK_SOUND_LAYER) {
-                val landingGameTime = world.time + startDelayTicks + TileMotionAnimationSpec.DEFAULT_DURATION_TICKS
+                val landingGameTime = world.gameTime + startDelayTicks + TileMotionAnimationSpec.DEFAULT_DURATION_TICKS
                 steps += wallStackLandingSound(landingGameTime)
             }
             tile.enqueueAll(steps)
@@ -456,7 +456,7 @@ class FabricMahjongTileWallPresenter(
      * （`tile.x`／`tile.y`／`tile.z`／`tile.yaw`）就是動畫的起訖點，不需要重新查詢牌牆結構座標——這張
      * 牌本來就已經在開門後的正確位置，手法同開局發牌動畫（`TileAnimationSteps.scheduleDealBatch`）
      * 讀取 entity 自身座標的既有慣例。同一次呼叫裡的牌全部立刻起飛，不需要額外的共用等待時刻：這裡
-     * 是同步方法、一個 tick 內跑完整個迴圈，[net.minecraft.server.world.ServerWorld.getTime] 對每張牌
+     * 是同步方法、一個 tick 內跑完整個迴圈，[net.minecraft.server.level.ServerLevel.getGameTime] 對每張牌
      * 而言都是同一個值，天然同步。
      *
      * @param tableId 牌所屬桌子的 UUID。
@@ -471,8 +471,8 @@ class FabricMahjongTileWallPresenter(
             .filter { tile -> tile.uuid.toKotlinUuid() in revealedTileIds }
             .associateBy { tile -> tile.uuid.toKotlinUuid() }
         managedTiles.values.forEachIndexed { index, tile ->
-            val soundGameTime = if (index == 0) world.time + REVEAL_LIFT_DURATION_TICKS else null
-            tile.enqueueAll(revealFlipAnimationSteps(tile.x, tile.y, tile.z, tile.yaw, soundGameTime))
+            val soundGameTime = if (index == 0) world.gameTime + REVEAL_LIFT_DURATION_TICKS else null
+            tile.enqueueAll(revealFlipAnimationSteps(tile.x, tile.y, tile.z, tile.yRot, soundGameTime))
         }
         val missingTileCount = revealedTileIds.size - managedTiles.size
         if (missingTileCount > 0) {
@@ -505,10 +505,10 @@ class FabricMahjongTileWallPresenter(
      * @param location 要解析世界的桌子位置。
      * @return 對應的已載入伺服器世界；ID 無效或未載入時為 null。
      */
-    private fun resolveWorld(location: TableLocation): ServerWorld? {
-        val identifier = Identifier.tryParse(location.dimensionId) ?: return null
-        val worldKey = RegistryKey.of(RegistryKeys.WORLD, identifier)
-        return serverHolder.current()?.getWorld(worldKey)
+    private fun resolveWorld(location: TableLocation): ServerLevel? {
+        val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null
+        val worldKey = ResourceKey.create(Registries.DIMENSION, identifier)
+        return serverHolder.current()?.getLevel(worldKey)
     }
 
     /**
@@ -522,12 +522,12 @@ class FabricMahjongTileWallPresenter(
      * @return 搜尋範圍內由該桌管理的牌 entity。
      */
     private fun findManagedTiles(
-        world: ServerWorld,
+        world: ServerLevel,
         tableId: Uuid,
         controllerPos: BlockPos,
-    ): List<MahjongTileEntity> = world.getEntitiesByClass(
+    ): List<MahjongTileEntity> = world.getEntitiesOfClass(
         MahjongTileEntity::class.java,
-        Box(controllerPos).expand(TILE_SEARCH_HORIZONTAL, TILE_SEARCH_VERTICAL, TILE_SEARCH_HORIZONTAL),
+        AABB(controllerPos).inflate(TILE_SEARCH_HORIZONTAL, TILE_SEARCH_VERTICAL, TILE_SEARCH_HORIZONTAL),
     ) { tile -> tile.managedTableId == tableId }
 
     /**

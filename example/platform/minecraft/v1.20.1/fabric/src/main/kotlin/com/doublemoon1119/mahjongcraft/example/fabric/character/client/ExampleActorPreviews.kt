@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.example.fabric.character.client
 import com.doublemoon1119.mahjongcraft.example.fabric.character.ExampleActors
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterPreviewHandle
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterPreviewProvider
-import net.minecraft.entity.Entity
+import net.minecraft.world.entity.Entity
 
 /** 只從公開描述建立獨立人偶；不搜尋世界本人、不加入世界或執行 tick。 */
 internal object ExampleActorPreviews {

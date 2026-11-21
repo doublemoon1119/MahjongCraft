@@ -18,7 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AiCharacterSnapshotDelivery
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PlayerIdentitySender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 import kotlin.uuid.Uuid
 
 /**
@@ -98,7 +98,7 @@ class RoomEventPublisherImpl(
      * @property payload 已序列化所需內容的房間更新 payload。
      */
     private data class PreparedRoomUpdate(
-        val player: ServerPlayerEntity,
+        val player: ServerPlayer,
         val payload: RoomUpdatePayloadDto,
     )
 }

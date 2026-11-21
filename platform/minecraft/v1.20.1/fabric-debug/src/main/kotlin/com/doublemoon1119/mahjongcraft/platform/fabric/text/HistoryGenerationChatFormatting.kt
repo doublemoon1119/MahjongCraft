@@ -4,9 +4,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.HistoryGenerationProgress
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryDiskUsage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.HistoryDebugKeys
-import net.minecraft.text.MutableText
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.MutableComponent
 import java.util.Locale
 
 /**
@@ -15,23 +15,23 @@ import java.util.Locale
  * @param progress 不包含玩家與牌面的批次進度。
  * @return 具有單一 prefix 與條列內容的訊息。
  */
-internal fun historyGenerationProgressMessage(progress: HistoryGenerationProgress): MutableText = prefixedConfigMessage(
+internal fun historyGenerationProgressMessage(progress: HistoryGenerationProgress): MutableComponent = prefixedConfigMessage(
     message = label(HistoryDebugKeys.PROGRESS),
-    color = if (progress.failure == null && progress.running) Formatting.AQUA else Formatting.YELLOW,
+    color = if (progress.failure == null && progress.running) ChatFormatting.AQUA else ChatFormatting.YELLOW,
 ).also { message ->
-    message.append(generationEntry(HistoryDebugKeys.SCENARIO, Text.literal(progress.scenarioId), Formatting.GRAY))
-        .append(generationEntry(HistoryDebugKeys.REQUESTED, progress.requested, Formatting.GREEN))
-        .append(generationEntry(HistoryDebugKeys.GENERATED, progress.generated, Formatting.GREEN))
-        .append(generationEntry(HistoryDebugKeys.ARCHIVED, progress.archived, Formatting.GREEN))
-        .append(generationEntry(HistoryDebugKeys.PRUNED, progress.pruned, Formatting.YELLOW))
-        .append(generationEntry(HistoryDebugKeys.PENDING, progress.pending, Formatting.YELLOW))
-        .append(generationEntry(HistoryDebugKeys.FAILED, progress.failed, Formatting.YELLOW))
-        .append(generationEntry(HistoryDebugKeys.ELAPSED_SECONDS, formatSeconds(progress.elapsed.inWholeMilliseconds), Formatting.GRAY))
-        .append(generationEntry(HistoryDebugKeys.DISK_BEFORE, formatDisk(progress.diskBefore), Formatting.GRAY))
-        .append(generationEntry(HistoryDebugKeys.DISK_AFTER, formatDisk(progress.diskAfter), Formatting.GRAY))
-        .append(generationEntry(HistoryDebugKeys.REPLAY_TOTAL, formatBytes(progress.replayBytes), Formatting.GRAY))
-        .append(generationEntry(HistoryDebugKeys.REPLAY_AVERAGE, formatBytes(averageReplayBytes(progress)), Formatting.GRAY))
-        .append(generationEntry(HistoryDebugKeys.REPLAY_MAXIMUM, formatBytes(progress.largestReplayBytes), Formatting.GRAY))
+    message.append(generationEntry(HistoryDebugKeys.SCENARIO, Component.literal(progress.scenarioId), ChatFormatting.GRAY))
+        .append(generationEntry(HistoryDebugKeys.REQUESTED, progress.requested, ChatFormatting.GREEN))
+        .append(generationEntry(HistoryDebugKeys.GENERATED, progress.generated, ChatFormatting.GREEN))
+        .append(generationEntry(HistoryDebugKeys.ARCHIVED, progress.archived, ChatFormatting.GREEN))
+        .append(generationEntry(HistoryDebugKeys.PRUNED, progress.pruned, ChatFormatting.YELLOW))
+        .append(generationEntry(HistoryDebugKeys.PENDING, progress.pending, ChatFormatting.YELLOW))
+        .append(generationEntry(HistoryDebugKeys.FAILED, progress.failed, ChatFormatting.YELLOW))
+        .append(generationEntry(HistoryDebugKeys.ELAPSED_SECONDS, formatSeconds(progress.elapsed.inWholeMilliseconds), ChatFormatting.GRAY))
+        .append(generationEntry(HistoryDebugKeys.DISK_BEFORE, formatDisk(progress.diskBefore), ChatFormatting.GRAY))
+        .append(generationEntry(HistoryDebugKeys.DISK_AFTER, formatDisk(progress.diskAfter), ChatFormatting.GRAY))
+        .append(generationEntry(HistoryDebugKeys.REPLAY_TOTAL, formatBytes(progress.replayBytes), ChatFormatting.GRAY))
+        .append(generationEntry(HistoryDebugKeys.REPLAY_AVERAGE, formatBytes(averageReplayBytes(progress)), ChatFormatting.GRAY))
+        .append(generationEntry(HistoryDebugKeys.REPLAY_MAXIMUM, formatBytes(progress.largestReplayBytes), ChatFormatting.GRAY))
         .append(
             generationEntry(
                 key = HistoryDebugKeys.CANCEL_STATE,
@@ -44,12 +44,12 @@ internal fun historyGenerationProgressMessage(progress: HistoryGenerationProgres
                         HistoryDebugKeys.COMPLETED
                     },
                 ),
-                valueColor = Formatting.YELLOW,
+                valueColor = ChatFormatting.YELLOW,
             ),
         )
     progress.failure?.let { failure ->
-        message.append(generationEntry(HistoryDebugKeys.FAILED, label(failureKey(failure)), Formatting.YELLOW))
-    } ?: message.append(generationEntry(HistoryDebugKeys.PROGRESS, label(if (progress.running) HistoryDebugKeys.RUNNING else HistoryDebugKeys.COMPLETED), Formatting.GRAY))
+        message.append(generationEntry(HistoryDebugKeys.FAILED, label(failureKey(failure)), ChatFormatting.YELLOW))
+    } ?: message.append(generationEntry(HistoryDebugKeys.PROGRESS, label(if (progress.running) HistoryDebugKeys.RUNNING else HistoryDebugKeys.COMPLETED), ChatFormatting.GRAY))
 }
 
 /**
@@ -60,11 +60,11 @@ internal fun historyGenerationProgressMessage(progress: HistoryGenerationProgres
  * @param valueColor 值的顯示顏色。
  * @return 可加入進度訊息的欄位列。
  */
-private fun generationEntry(key: String, value: Any, valueColor: Formatting): MutableText = Text.literal("\n  • ")
-    .formatted(Formatting.GRAY)
-    .append(label(key).formatted(Formatting.GRAY))
-    .append(Text.literal(": ").formatted(Formatting.DARK_GRAY))
-    .append((value as? Text)?.copy()?.formatted(valueColor) ?: Text.literal(value.toString()).formatted(valueColor))
+private fun generationEntry(key: String, value: Any, valueColor: ChatFormatting): MutableComponent = Component.literal("\n  • ")
+    .withStyle(ChatFormatting.GRAY)
+    .append(label(key).withStyle(ChatFormatting.GRAY))
+    .append(Component.literal(": ").withStyle(ChatFormatting.DARK_GRAY))
+    .append((value as? Component)?.copy()?.withStyle(valueColor) ?: Component.literal(value.toString()).withStyle(valueColor))
 
 /**
  * 建立具備英文 console fallback 的欄位文字。
@@ -72,7 +72,7 @@ private fun generationEntry(key: String, value: Any, valueColor: Formatting): Mu
  * @param key 欄位翻譯鍵。
  * @return 帶 fallback 的本地化文字。
  */
-private fun label(key: String): MutableText = Text.translatableWithFallback(key, fallbackLabel(key))
+private fun label(key: String): MutableComponent = Component.translatableWithFallback(key, fallbackLabel(key))
 
 /**
  * 依穩定翻譯鍵提供不依賴語言檔的英文欄位名稱。

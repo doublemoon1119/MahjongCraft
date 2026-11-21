@@ -14,7 +14,7 @@ import com.mojang.brigadier.tree.CommandNode
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import net.minecraft.server.command.ServerCommandSource
+import net.minecraft.commands.CommandSourceStack
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -54,13 +54,13 @@ class FabricDebugHistoryCommandTest {
         val node = command.build().build()
 
         assertEquals("history", node.name)
-        assertEquals(setOf("generate", "status", "cancel"), node.children.map(CommandNode<ServerCommandSource>::getName).toSet())
+        assertEquals(setOf("generate", "status", "cancel"), node.children.map(CommandNode<CommandSourceStack>::getName).toSet())
         assertNotNull(node.getChild("status")?.command)
         assertNotNull(node.getChild("cancel")?.command)
         val generate = node.getChild("generate")
         assertNotNull(generate)
         assertNotNull(generate.getChild("scenario"))
-        assertEquals(setOf("count"), generate.getChild("scenario")!!.children.map(CommandNode<ServerCommandSource>::getName).toSet())
+        assertEquals(setOf("count"), generate.getChild("scenario")!!.children.map(CommandNode<CommandSourceStack>::getName).toSet())
     }
 
     /** 測試使用的應用協程作用域。 */

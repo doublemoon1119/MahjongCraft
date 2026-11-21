@@ -7,11 +7,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileResources
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
-import net.minecraft.resource.Resource
-import net.minecraft.resource.ResourceManager
-import net.minecraft.resource.ResourcePack
-import net.minecraft.util.Identifier
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.packs.PackResources
+import net.minecraft.server.packs.PathPackResources
+import net.minecraft.server.packs.resources.Resource
+import net.minecraft.server.packs.resources.ResourceManager
 import java.io.ByteArrayInputStream
+import java.nio.file.Path
 import java.util.Optional
 import java.util.function.Predicate
 import java.util.stream.Stream
@@ -52,13 +54,13 @@ class ResourceCatalogueTileArtTest {
                 ),
             ),
         )
-        resources.availableIds += Identifier("example", "textures/item/mahjong_tile/inverted_five_pin.png")
+        resources.availableIds += ResourceLocation("example", "textures/item/mahjong_tile/inverted_five_pin.png")
 
         val art = ResourceCatalogueTileArt(assets = assets, resources = resources)
 
         assertEquals("example_inverted_five_pin", art.resolve(TileFaceView(Tile.Extension(typeId))).assetKey)
         assertEquals(
-            expected = Identifier("example", "textures/item/mahjong_tile/inverted_five_pin.png"),
+            expected = ResourceLocation("example", "textures/item/mahjong_tile/inverted_five_pin.png"),
             actual = resources.requested.single(),
         )
 
@@ -74,34 +76,34 @@ class ResourceCatalogueTileArtTest {
         var available = false
 
         /** 目前存在的資源 ID。 */
-        val availableIds = mutableSetOf<Identifier>()
+        val availableIds = mutableSetOf<ResourceLocation>()
 
         /** 所有被查詢的資源 ID。 */
-        val requested = mutableListOf<Identifier>()
+        val requested = mutableListOf<ResourceLocation>()
 
         /** 依 [available] 回傳空資源或空串流的測試資源。 */
-        override fun getResource(id: Identifier): Optional<Resource> {
+        override fun getResource(id: ResourceLocation): Optional<Resource> {
             requested += id
             return if (available || id in availableIds) {
-                Optional.of(Resource(null as ResourcePack?) { ByteArrayInputStream(ByteArray(0)) })
+                Optional.of(Resource(PathPackResources("test", Path.of(""), true)) { ByteArrayInputStream(ByteArray(0)) })
             } else {
                 Optional.empty()
             }
         }
 
         /** 測試資源不宣告 namespace。 */
-        override fun getAllNamespaces(): Set<String> = emptySet()
+        override fun getNamespaces(): Set<String> = emptySet()
 
         /** 測試資源不列出同一 ID 的多個資源。 */
-        override fun getAllResources(id: Identifier): List<Resource> = emptyList()
+        override fun getResourceStack(id: ResourceLocation): List<Resource> = emptyList()
 
         /** 測試資源不列出符合路徑的單一資源。 */
-        override fun findResources(startingPath: String, allowedPathPredicate: Predicate<Identifier>): Map<Identifier, Resource> = emptyMap()
+        override fun listResources(startingPath: String, allowedPathPredicate: Predicate<ResourceLocation>): Map<ResourceLocation, Resource> = emptyMap()
 
         /** 測試資源不列出符合路徑的資源集合。 */
-        override fun findAllResources(startingPath: String, allowedPathPredicate: Predicate<Identifier>): Map<Identifier, List<Resource>> = emptyMap()
+        override fun listResourceStacks(startingPath: String, allowedPathPredicate: Predicate<ResourceLocation>): Map<ResourceLocation, List<Resource>> = emptyMap()
 
         /** 測試資源沒有可串流的資源包。 */
-        override fun streamResourcePacks(): Stream<ResourcePack> = Stream.empty()
+        override fun listPacks(): Stream<PackResources> = Stream.empty()
     }
 }

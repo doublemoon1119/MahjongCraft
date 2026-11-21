@@ -2,49 +2,49 @@ package com.doublemoon1119.mahjongcraft.example.fabric.character
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureBlocks
 import com.doublemoon1119.mahjongcraft.example.minecraft.text.ExampleCharacterMessageKeys
-import net.minecraft.client.item.TooltipContext
-import net.minecraft.item.Item
-import net.minecraft.item.ItemStack
-import net.minecraft.item.ItemUsageContext
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.text.Text
-import net.minecraft.util.ActionResult
-import net.minecraft.world.World
+import net.minecraft.network.chat.Component
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.InteractionResult
+import net.minecraft.world.item.Item
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.TooltipFlag
+import net.minecraft.world.item.context.UseOnContext
+import net.minecraft.world.level.Level
 
 /**
  * 在地面或既有範例座位建立人偶，不傳送或指定房間。
  *
  * @param settings 原生物品設定。
  */
-class ExampleActorItem(settings: Settings) : Item(settings) {
+class ExampleActorItem(settings: Properties) : Item(settings) {
     /** 座位使用命中本格，其餘使用一般方塊外側；權限及耗材由建立服務核對。 */
-    override fun useOnBlock(context: ItemUsageContext): ActionResult {
-        val player = context.player ?: return ActionResult.PASS
-        if (context.world.isClient) return ActionResult.SUCCESS
-        val world = context.world as? ServerWorld ?: return ActionResult.FAIL
-        val hit = context.blockPos
-        val pos = if (ExampleFurnitureBlocks.isSeat(world.getBlockState(hit))) hit else hit.offset(context.side)
+    override fun useOn(context: UseOnContext): InteractionResult {
+        val player = context.player ?: return InteractionResult.PASS
+        if (context.level.isClientSide) return InteractionResult.SUCCESS
+        val world = context.level as? ServerLevel ?: return InteractionResult.FAIL
+        val hit = context.clickedPos
+        val pos = if (ExampleFurnitureBlocks.isSeat(world.getBlockState(hit))) hit else hit.relative(context.clickedFace)
         return if (ExampleActorPlacement.placeAtBlock(
                 world = world,
                 player = player,
-                stack = context.stack,
+                stack = context.itemInHand,
                 pos = pos,
             )
         ) {
-            ActionResult.CONSUME
+            InteractionResult.CONSUME
         } else {
-            ActionResult.FAIL
+            InteractionResult.FAIL
         }
     }
 
     /** 直接說明取得後的使用方式與房主限制。 */
-    override fun appendTooltip(
+    override fun appendHoverText(
         stack: ItemStack,
-        world: World?,
-        tooltip: MutableList<Text>,
-        context: TooltipContext,
+        world: Level?,
+        tooltip: MutableList<Component>,
+        context: TooltipFlag,
     ) {
-        tooltip += Text.translatable(ExampleCharacterMessageKeys.ITEM_HINT)
-        tooltip += Text.translatable(ExampleCharacterMessageKeys.OWNER_HINT)
+        tooltip += Component.translatable(ExampleCharacterMessageKeys.ITEM_HINT)
+        tooltip += Component.translatable(ExampleCharacterMessageKeys.OWNER_HINT)
     }
 }

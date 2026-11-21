@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.network
 
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 import kotlin.uuid.Uuid
 
 /** 已授權桌況旁的公開角色交付邊界，不提供查詢或授權。 */
@@ -13,5 +13,5 @@ fun interface AiCharacterSnapshotDelivery {
      * @param expectedMatchId 準備同一快照時的場次，等待室為 null。
      * @param playerIds 同一快照的完整名冊。
      */
-    fun sendAuthorized(player: ServerPlayerEntity, tableId: Uuid, expectedMatchId: Uuid?, playerIds: Set<Uuid>)
+    fun sendAuthorized(player: ServerPlayer, tableId: Uuid, expectedMatchId: Uuid?, playerIds: Set<Uuid>)
 }

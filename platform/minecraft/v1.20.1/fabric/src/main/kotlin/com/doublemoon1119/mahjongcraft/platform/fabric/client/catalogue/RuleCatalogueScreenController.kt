@@ -9,8 +9,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.screen.Screen
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.screens.Screen
 
 /**
  * 開啟規則一覽：一般說明延後到下一個客戶端 tick 開啟，避免指令執行後關閉聊天畫面時蓋掉新畫面；房間與歷史畫面立即切換。
@@ -43,9 +43,9 @@ class RuleCatalogueScreenController internal constructor(
 
     /** 在下一個 client tick 開啟一般說明的規則一覽，供指令與快捷鍵使用。 */
     fun openGeneral() {
-        val client = MinecraftClient.getInstance()
-        val connection = client.networkHandler ?: return
-        val world = client.world ?: return
+        val client = Minecraft.getInstance()
+        val connection = client.connection ?: return
+        val world = client.level ?: return
         pending = OpenRequest(connection, world)
     }
 
@@ -63,7 +63,7 @@ class RuleCatalogueScreenController internal constructor(
      * @param categoryId 開啟時要選擇的分類，例如 [BuiltInRuleCatalogueCategoryIds.BASICS]；所選規則沒有這個分類或為 null 時選擇全部分類。
      */
     fun openFrom(returnScreen: Screen, categoryId: String?) {
-        MinecraftClient.getInstance().setScreen(
+        Minecraft.getInstance().setScreen(
             createScreen(
                 context = RuleCatalogueBrowseContext(),
                 exit = ReturnRuleCatalogueToScreen(returnScreen),
@@ -85,7 +85,7 @@ class RuleCatalogueScreenController internal constructor(
         exit: RuleCatalogueExit,
         initialCategoryId: String? = null,
     ): Screen {
-        val client = MinecraftClient.getInstance()
+        val client = Minecraft.getInstance()
         return RuleCatalogueScreen(
             browser = RuleCatalogueBrowser(
                 catalogues = catalogueRegistry,
@@ -96,7 +96,7 @@ class RuleCatalogueScreenController internal constructor(
             ),
             presenter = RuleCataloguePresenter(
                 translate = ::currentLanguageTranslation,
-                metrics = TextRendererCatalogueMetrics(client.textRenderer),
+                metrics = TextRendererCatalogueMetrics(client.font),
                 tileArt = ResourceCatalogueTileArt(assets = tileAssets, resources = client.resourceManager),
             ),
             tileFaces = tileFaces,
@@ -110,7 +110,7 @@ class RuleCatalogueScreenController internal constructor(
      *
      * @param client 當前 Minecraft client。
      */
-    private fun tick(client: MinecraftClient) {
+    private fun tick(client: Minecraft) {
         val request = pending ?: return
         pending = null
         if (!request.isValid(client)) return
@@ -134,5 +134,5 @@ private data class OpenRequest(
      * @param client 當前客戶端。
      * @return 是否可安全開啟。
      */
-    fun isValid(client: MinecraftClient): Boolean = client.networkHandler === connection && client.world === world
+    fun isValid(client: Minecraft): Boolean = client.connection === connection && client.level === world
 }

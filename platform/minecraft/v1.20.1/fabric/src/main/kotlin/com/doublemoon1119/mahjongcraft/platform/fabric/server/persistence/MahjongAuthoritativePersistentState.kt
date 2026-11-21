@@ -13,9 +13,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.nbt.NbtElement
-import net.minecraft.world.PersistentState
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.Tag
+import net.minecraft.world.level.saveddata.SavedData
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.Uuid
 
@@ -36,9 +36,9 @@ class MahjongAuthoritativePersistentState private constructor(
     initialSnapshot: AuthoritativeStateSnapshot,
     characters: AiCharacterMetadata?,
     registry: AiCharacterRegistry,
-    private val originalCharacterData: NbtElement?,
+    private val originalCharacterData: Tag?,
     val characterDataFailure: Throwable?,
-) : PersistentState() {
+) : SavedData() {
     /** 記錄保存容量與診斷的 logger。 */
     private val logger = mahjongCraftLogger(MahjongAuthoritativePersistentState::class)
 
@@ -49,7 +49,7 @@ class MahjongAuthoritativePersistentState private constructor(
     private val participantCaptureScopes = ParticipantCaptureScopes()
 
     /** 同時保存權威與角色資料的單一來源。 */
-    private val characterState = AiCharacterStateStore(registry, ::markDirty).apply { restore(initialSnapshot, characters) }
+    private val characterState = AiCharacterStateStore(registry, ::setDirty).apply { restore(initialSnapshot, characters) }
 
     /** 目前的權威牌局；與角色快照共用同一保存封套。 */
     val snapshot: AuthoritativeStateSnapshot get() = characterState.snapshot().authoritative
@@ -157,7 +157,7 @@ class MahjongAuthoritativePersistentState private constructor(
      * @param nbt 世界提供的保存容器。
      * @return 寫入後的容器。
      */
-    override fun writeNbt(nbt: NbtCompound): NbtCompound {
+    override fun save(nbt: CompoundTag): CompoundTag {
         val current = characterState.snapshot()
         val authoritative = current.authoritative
         val encoded = codec.encode(authoritative.rooms.values, authoritative.games.values, authoritative.historyRecordingState).encodeToByteArray()
@@ -213,17 +213,17 @@ class MahjongAuthoritativePersistentState private constructor(
          * @return 包含角色讀取狀態的保存容器。
          */
         fun fromNbt(
-            nbt: NbtCompound,
+            nbt: CompoundTag,
             codec: AuthoritativeStatePersistenceCodec,
             registry: AiCharacterRegistry,
         ): MahjongAuthoritativePersistentState {
-            require(nbt.contains(NBT_KEY_STATE, NbtElement.BYTE_ARRAY_TYPE.toInt())) { "Authoritative saved state is missing its byte array payload" }
+            require(nbt.contains(NBT_KEY_STATE, Tag.TAG_BYTE_ARRAY.toInt())) { "Authoritative saved state is missing its byte array payload" }
             val decoded = codec.decode(nbt.getByteArray(NBT_KEY_STATE).decodeToString())
             val snapshot = AuthoritativeStateSnapshot(decoded.rooms, decoded.games, decoded.historyRecordingState)
             val original = nbt.get(NBT_KEY_CHARACTERS)?.copy()
             var failure: Throwable? = null
             val metadata = try {
-                require(nbt.contains(NBT_KEY_CHARACTERS, NbtElement.BYTE_ARRAY_TYPE.toInt())) { "Character saved state is missing its byte array payload" }
+                require(nbt.contains(NBT_KEY_CHARACTERS, Tag.TAG_BYTE_ARRAY.toInt())) { "Character saved state is missing its byte array payload" }
                 AiCharacterMetadataCodec().decode(nbt.getByteArray(NBT_KEY_CHARACTERS).decodeToString(throwOnInvalidSequence = true)).also { loaded ->
                     val rosters = snapshot.rooms.mapValues { (_, room) -> room.aiPlayerStrategyKeys.keys } +
                         snapshot.games.mapValues { (_, game) -> game.aiPlayerStrategyKeys.keys }

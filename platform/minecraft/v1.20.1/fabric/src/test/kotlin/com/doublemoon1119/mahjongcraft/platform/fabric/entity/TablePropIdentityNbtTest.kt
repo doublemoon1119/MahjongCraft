@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
-import net.minecraft.nbt.NbtCompound
+import net.minecraft.nbt.CompoundTag
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -11,7 +11,7 @@ class TablePropIdentityNbtTest {
     /** 兩個完整身分一起保存並還原，不影響所屬桌子欄位。 */
     @Test
     fun `identity round trip preserves the owning table`() {
-        val nbt = NbtCompound().apply { putString("ManagedTableId", "table-marker") }
+        val nbt = CompoundTag().apply { putString("ManagedTableId", "table-marker") }
         TablePropIdentityNbt.write(nbt, "example:token/first", "example:rule")
         assertEquals(TablePropIdentity("example:token/first", "example:rule"), TablePropIdentityNbt.read(nbt))
         assertEquals("example:token/first", nbt.getString("TablePropPlacementId"))
@@ -22,9 +22,9 @@ class TablePropIdentityNbtTest {
     /** 缺少一個欄位、型別錯誤或識別碼不完整時不建立半套身分。 */
     @Test
     fun `missing malformed and wrong type identities are rejected`() {
-        assertNull(TablePropIdentityNbt.read(NbtCompound()))
-        assertNull(TablePropIdentityNbt.read(NbtCompound().apply { putString("TablePropPlacementId", "example:token") }))
-        val nbt = NbtCompound()
+        assertNull(TablePropIdentityNbt.read(CompoundTag()))
+        assertNull(TablePropIdentityNbt.read(CompoundTag().apply { putString("TablePropPlacementId", "example:token") }))
+        val nbt = CompoundTag()
         TablePropIdentityNbt.write(nbt, "example:token", "example:rule")
         nbt.putInt("TablePropRuleModuleId", 1)
         assertNull(TablePropIdentityNbt.read(nbt))
@@ -36,7 +36,7 @@ class TablePropIdentityNbtTest {
     @Test
     fun `empty or invalid identity clears both stale fields only`() {
         for (id in listOf("", "missing_namespace")) {
-            val nbt = NbtCompound().apply { putString("OtherField", "value") }
+            val nbt = CompoundTag().apply { putString("OtherField", "value") }
             TablePropIdentityNbt.write(nbt, "example:token", "example:rule")
             TablePropIdentityNbt.write(nbt, id, "example:rule")
             assertNull(TablePropIdentityNbt.read(nbt))

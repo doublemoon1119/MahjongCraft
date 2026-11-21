@@ -14,15 +14,15 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.findFor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tilePreviewTexture
 import com.mojang.blaze3d.systems.RenderSystem
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.render.LightmapTextureManager
-import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.text.Text
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.RotationAxis
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.math.Axis
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.Font
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.renderer.LightTexture
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
 import org.joml.Matrix4f
 import kotlin.math.roundToInt
 
@@ -54,7 +54,7 @@ class MahjongTileFaceRenderer(
      * @param appearance 公開規則指定的牌組外觀，不依隱藏牌種選擇。
      */
     fun renderGui(
-        context: DrawContext,
+        context: GuiGraphics,
         assetKey: String,
         x: Int,
         y: Int,
@@ -67,16 +67,16 @@ class MahjongTileFaceRenderer(
             renderUprightGui(context, assetKey, x, y, width, height, appearance)
             return
         }
-        context.matrices.push()
+        context.pose().pushPose()
         if (orientation == DecisionTileOrientationDto.ROTATED_RIGHT) {
-            context.matrices.translate((x + height).toDouble(), y.toDouble(), 0.0)
-            context.matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(90f))
+            context.pose().translate((x + height).toDouble(), y.toDouble(), 0.0)
+            context.pose().mulPose(Axis.ZP.rotationDegrees(90f))
         } else {
-            context.matrices.translate(x.toDouble(), (y + width).toDouble(), 0.0)
-            context.matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(-90f))
+            context.pose().translate(x.toDouble(), (y + width).toDouble(), 0.0)
+            context.pose().mulPose(Axis.ZP.rotationDegrees(-90f))
         }
         renderUprightGui(context, assetKey, 0, 0, width, height, appearance)
-        context.matrices.pop()
+        context.pose().popPose()
     }
 
     /**
@@ -101,21 +101,21 @@ class MahjongTileFaceRenderer(
         height: Float,
         alpha: Float,
         z: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         appearance: MinecraftTileSetAppearanceDefinition = BuiltInMinecraftTileAppearances.DEFAULT,
     ) {
         val preview = resolvePreviewTexture(assetKey, appearance)
-        val buffer = consumers.getBuffer(ExhaustiveDrawSettlementTileFaceRenderLayer.get(Identifier(preview.resourceId)))
-        val matrix = matrices.peek().positionMatrix
+        val buffer = consumers.getBuffer(ExhaustiveDrawSettlementTileFaceRenderLayer.get(ResourceLocation(preview.resourceId)))
+        val matrix = matrices.last().pose()
         val left = centerX - width / 2f
         val right = centerX + width / 2f
         val top = centerY - height / 2f
         val bottom = centerY + height / 2f
         val opacity = (alpha.coerceIn(0f, 1f) * 255).roundToInt()
         fun vertex(x: Float, y: Float, u: Float, v: Float) {
-            buffer.vertex(matrix, x, y, z).color(255, 255, 255, opacity).texture(u, v)
-                .light(LightmapTextureManager.MAX_LIGHT_COORDINATE).next()
+            buffer.vertex(matrix, x, y, z).color(255, 255, 255, opacity).uv(u, v)
+                .uv2(LightTexture.FULL_BRIGHT).endVertex()
         }
         vertex(left, top, preview.u0, preview.v0)
         vertex(right, top, preview.u1, preview.v0)
@@ -137,8 +137,8 @@ class MahjongTileFaceRenderer(
      */
     fun renderModelLabels(
         assetKey: String,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         light: Int,
     ) {
         val label = tileLabelRegistry.findFor(assetKey, tileAssetRegistry) ?: return
@@ -159,13 +159,13 @@ class MahjongTileFaceRenderer(
     private fun renderModelLabel(
         label: TileLabelText,
         isLeft: Boolean,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
         light: Int,
     ) {
-        val renderer = MinecraftClient.getInstance().textRenderer
+        val renderer = Minecraft.getInstance().font
         val metrics = tileLabelMetrics(MahjongTileEntity.TILE_WIDTH, MahjongTileEntity.TILE_HEIGHT)
-        matrices.push()
+        matrices.pushPose()
         val halfWidth = MahjongTileEntity.TILE_WIDTH / 2.0
         val halfHeight = MahjongTileEntity.TILE_HEIGHT / 2.0
         matrices.translate(
@@ -173,19 +173,19 @@ class MahjongTileFaceRenderer(
             halfHeight - metrics.marginY,
             -(MahjongTileEntity.TILE_DEPTH / 2.0) - MODEL_LABEL_SURFACE_OFFSET,
         )
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f))
+        matrices.mulPose(Axis.YP.rotationDegrees(180f))
         matrices.scale(metrics.scale, -metrics.scale, metrics.scale)
-        val originX = if (isLeft) 0f else -renderer.getWidth(label.text).toFloat()
+        val originX = if (isLeft) 0f else -renderer.width(label.text).toFloat()
         drawLabelWithOutline(
             renderer = renderer,
             label = label,
             x = originX,
             y = 0f,
-            matrix = matrices.peek().positionMatrix,
+            matrix = matrices.last().pose(),
             consumers = consumers,
             light = light,
         )
-        matrices.pop()
+        matrices.popPose()
     }
 
     /**
@@ -213,14 +213,14 @@ class MahjongTileFaceRenderer(
         alpha: Float,
         alignRight: Boolean,
         z: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
     ) {
-        val renderer = MinecraftClient.getInstance().textRenderer
+        val renderer = Minecraft.getInstance().font
         val metrics = tileLabelMetrics(width, height)
-        val textWidth = renderer.getWidth(label.text) * metrics.scale
+        val textWidth = renderer.width(label.text) * metrics.scale
         val x = if (alignRight) right - metrics.marginX - textWidth else left + metrics.marginX
-        matrices.push()
+        matrices.pushPose()
         matrices.translate(x.toDouble(), (top + metrics.marginY).toDouble(), (z - WORLD_LABEL_Z_OFFSET).toDouble())
         matrices.scale(metrics.scale, metrics.scale, 1f)
         drawLabelWithOutline(
@@ -228,12 +228,12 @@ class MahjongTileFaceRenderer(
             label = label,
             x = 0f,
             y = 0f,
-            matrix = matrices.peek().positionMatrix,
+            matrix = matrices.last().pose(),
             consumers = consumers,
-            light = LightmapTextureManager.MAX_LIGHT_COORDINATE,
+            light = LightTexture.FULL_BRIGHT,
             alpha = alpha,
         )
-        matrices.pop()
+        matrices.popPose()
     }
 
     /**
@@ -248,7 +248,7 @@ class MahjongTileFaceRenderer(
      * @param appearance 公開規則指定的牌組外觀。
      */
     private fun renderUprightGui(
-        context: DrawContext,
+        context: GuiGraphics,
         assetKey: String,
         x: Int,
         y: Int,
@@ -260,8 +260,8 @@ class MahjongTileFaceRenderer(
         // 平面預覽貼圖可帶半透明像素（例如透明牌墊的白底），繪製時開啟混合；不透明貼圖不受影響。
         RenderSystem.enableBlend()
         RenderSystem.defaultBlendFunc()
-        context.drawTexture(
-            Identifier(preview.resourceId),
+        context.blit(
+            ResourceLocation(preview.resourceId),
             x,
             y,
             width,
@@ -291,26 +291,26 @@ class MahjongTileFaceRenderer(
      * @param height 牌面高度。
      * @param alignRight 是否靠右側對齊。
      */
-    private fun renderGuiLabel(context: DrawContext, label: TileLabelText, x: Int, y: Int, width: Int, height: Int, alignRight: Boolean) {
-        val renderer = MinecraftClient.getInstance().textRenderer
+    private fun renderGuiLabel(context: GuiGraphics, label: TileLabelText, x: Int, y: Int, width: Int, height: Int, alignRight: Boolean) {
+        val renderer = Minecraft.getInstance().font
         val metrics = tileLabelMetrics(width.toFloat(), height.toFloat())
-        val labelWidth = renderer.getWidth(label.text) * metrics.scale
+        val labelWidth = renderer.width(label.text) * metrics.scale
         val drawX = if (alignRight) x + width - metrics.marginX - labelWidth else x + metrics.marginX
-        context.matrices.push()
-        context.matrices.translate(drawX.toDouble(), (y + metrics.marginY).toDouble(), LABEL_Z)
-        context.matrices.scale(metrics.scale, metrics.scale, 1f)
+        context.pose().pushPose()
+        context.pose().translate(drawX.toDouble(), (y + metrics.marginY).toDouble(), LABEL_Z)
+        context.pose().scale(metrics.scale, metrics.scale, 1f)
         drawLabelWithOutline(
             renderer = renderer,
             label = label,
             x = 0f,
             y = 0f,
-            matrix = context.matrices.peek().positionMatrix,
-            consumers = context.vertexConsumers,
-            light = LightmapTextureManager.MAX_LIGHT_COORDINATE,
+            matrix = context.pose().last().pose(),
+            consumers = context.bufferSource(),
+            light = LightTexture.FULL_BRIGHT,
         )
-        context.matrices.pop()
+        context.pose().popPose()
         // 與原版繪製文字相同，立即送出暫存的文字，讓標籤套用目前的裁切範圍與繪製順序。
-        context.draw()
+        context.flush()
     }
 
     /**
@@ -326,17 +326,17 @@ class MahjongTileFaceRenderer(
      * @param alpha 顯示透明度。
      */
     private fun drawLabelWithOutline(
-        renderer: TextRenderer,
+        renderer: Font,
         label: TileLabelText,
         x: Float,
         y: Float,
         matrix: Matrix4f,
-        consumers: VertexConsumerProvider,
+        consumers: MultiBufferSource,
         light: Int,
         alpha: Float = 1f,
     ) {
-        renderer.drawWithOutline(
-            Text.literal(label.text).asOrderedText(),
+        renderer.drawInBatch8xOutline(
+            Component.literal(label.text).visualOrderText,
             x,
             y,
             withAlpha(label.color.toArgb(), alpha),
@@ -379,12 +379,12 @@ class MahjongTileFaceRenderer(
     private fun resolvePreviewTexture(assetKey: String, appearance: MinecraftTileSetAppearanceDefinition): MinecraftTilePreviewTexture {
         val effectiveAppearance = MahjongTileModelLoadingPlugin.effectiveAppearance(appearance)
         val requested = tilePreviewTexture(assetKey, tileAssetRegistry, effectiveAppearance)
-        val requestedId = Identifier(requested.resourceId)
-        return if (MinecraftClient.getInstance().resourceManager.getResource(requestedId).isPresent) {
+        val requestedId = ResourceLocation(requested.resourceId)
+        return if (Minecraft.getInstance().resourceManager.getResource(requestedId).isPresent) {
             requested
         } else {
             val unknownPreview = MinecraftTilePreviewTexture(effectiveAppearance.unknownFaceTextureId, 0f, 0f, 1f, 1f)
-            if (MinecraftClient.getInstance().resourceManager.getResource(Identifier(unknownPreview.resourceId)).isPresent) {
+            if (Minecraft.getInstance().resourceManager.getResource(ResourceLocation(unknownPreview.resourceId)).isPresent) {
                 unknownPreview
             } else {
                 MinecraftTilePreviewTexture(BuiltInMinecraftTileAppearances.DEFAULT.unknownFaceTextureId, 0f, 0f, 1f, 1f)

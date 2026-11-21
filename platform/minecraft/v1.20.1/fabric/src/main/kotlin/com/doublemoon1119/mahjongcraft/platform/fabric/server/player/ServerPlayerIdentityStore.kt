@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.player
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.MahjongPlayerIdentityPersistentState
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
@@ -48,7 +48,7 @@ class ServerPlayerIdentityStore(
      * 在伺服器主執行緒解析玩家普通名稱，並在看見線上玩家時更新持久化索引。
      *
      * @param playerId 玩家 UUID。
-     * @return 線上 GameProfile、已保存名稱或原版 UserCache 名稱；都不存在時為 null。
+     * @return 線上 GameProfile、已保存名稱或原版 GameProfileCache 名稱；都不存在時為 null。
      */
     fun resolveKnownName(playerId: Uuid): String? {
         serverHolder.findPlayer(playerId)?.let { player ->
@@ -59,7 +59,7 @@ class ServerPlayerIdentityStore(
             }
         }
         nameOf(playerId)?.let { return it }
-        val cached = serverHolder.current()?.userCache?.getByUuid(playerId.toJavaUuid())?.orElse(null)?.name
+        val cached = serverHolder.current()?.profileCache?.get(playerId.toJavaUuid())?.orElse(null)?.name
         if (!cached.isNullOrBlank()) remember(playerId, cached)
         return cached
     }
@@ -70,7 +70,7 @@ class ServerPlayerIdentityStore(
      * @param player 登入的伺服器玩家。
      * @return 名稱有變更且已寫入索引時為 true。
      */
-    fun remember(player: ServerPlayerEntity): Boolean = remember(player.uuid.toKotlinUuid(), player.gameProfile.name)
+    fun remember(player: ServerPlayer): Boolean = remember(player.uuid.toKotlinUuid(), player.gameProfile.name)
 
     /**
      * 依目前伺服器中的線上玩家資料記錄名稱；找不到玩家時安全略過。
@@ -94,7 +94,7 @@ class ServerPlayerIdentityStore(
     }
 
     /** 取得目前伺服器 overworld 的持久化名稱索引；必須在伺服器主執行緒呼叫。 */
-    private fun state(): MahjongPlayerIdentityPersistentState? = serverHolder.current()?.overworld?.persistentStateManager?.getOrCreate(
+    private fun state(): MahjongPlayerIdentityPersistentState? = serverHolder.current()?.overworld()?.dataStorage?.computeIfAbsent(
         MahjongPlayerIdentityPersistentState::fromNbt,
         MahjongPlayerIdentityPersistentState::create,
         MahjongPlayerIdentityPersistentState.STORAGE_KEY,
