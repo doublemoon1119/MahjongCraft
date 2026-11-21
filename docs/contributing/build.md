@@ -82,5 +82,7 @@
 - CI builds pass the short commit hash as [build metadata](minecraft-build.md#mod-versions), so a Minecraft mod built
   by CI reads like `0.4.0-SNAPSHOT+1.20.1-fabric.a0f6307` and its JAR like
   `mahjongcraft-fabric-1.20.1-0.4.0-SNAPSHOT+a0f6307.jar`. Local builds leave it out.
-- A failed job uploads its test and detekt reports; a passing platform target uploads its mod JAR,
-  without debug modules or sources. Both are kept for seven days and are not releases.
+- A failed job uploads its test and detekt reports. A passing job runs `collectCiArtifacts`, which gathers
+  the target's distributable files into `build/ci/artifacts/`, and uploads them; a target without
+  distributable files, such as `core`, uploads nothing. Each platform's build convention decides what is
+  distributable. Both uploads are kept for seven days and are not releases.

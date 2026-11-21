@@ -15,6 +15,8 @@ configure<MinecraftModPackagingExtension> {
     displayName.set("MahjongCraft Extension Example")
     description.set("An isolated example of extending MahjongCraft.")
     archiveBaseName.set("mahjongcraft-example-fabric-1.20.1")
+    // 範例模組不是交付給玩家的成品，CI 不收集它的 JAR。
+    distributable.set(false)
     dependencyRequirements.put("minecraft", libs.versions.minecraft1201)
     dependencyRequirements.put("fabricLoader", libs.versions.fabricLoaderRequirement1201)
     dependencyRequirements.put("fabricApi", libs.versions.fabricApiRequirement1201)
