@@ -250,7 +250,7 @@ private fun queryFailure(code: HistoryQueryErrorCode): HistoryQueryResult.Failur
 /** 名稱比對可展開的最大玩家數，避免 SQL 參數數量超出查詢限制。 */
 private const val MAX_HISTORY_NAME_MATCHES = 512
 
-/** 規則設定查詢允許解析的完整 Replay 上限；不等同於線路回應大小上限。 */
+/** 規則設定查詢允許解析的完整 Replay 解壓後上限；不等同於線路回應大小上限。 */
 private const val MAX_RULE_SETTINGS_REPLAY_BYTES = HISTORY_REPLAY_QUERY_BYTES
 
 /**

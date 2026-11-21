@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryPruningConfirmation
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshotCodec
 import org.jetbrains.exposed.v1.core.ColumnType
 import org.jetbrains.exposed.v1.core.IntegerColumnType
@@ -134,11 +135,18 @@ internal sealed interface HistoryReplayPayloadRead {
     /** 查無已完成 Replay。 */
     data object Missing : HistoryReplayPayloadRead
 
-    /** Replay 超過查詢允許的解析大小。 */
+    /** Replay 的存放大小或解壓後大小超過允許上限。 */
     data object TooLarge : HistoryReplayPayloadRead
 
     /**
-     * 已讀取且尚未解碼的 Replay JSON。
+     * 存放內容無法還原成文字：不是完整的 gzip 資料、CRC 不符，或解壓後不是有效 UTF-8。
+     *
+     * @property cause 還原失敗的原因，只供診斷記錄。
+     */
+    data class Unreadable(val cause: Exception) : HistoryReplayPayloadRead
+
+    /**
+     * 已解壓且尚未解析的 Replay JSON。
      *
      * @property payload 通過大小限制的 Replay JSON 文字。
      */
@@ -173,6 +181,9 @@ internal class SqliteHistoryDatabase private constructor(
     val path: Path,
     private val database: Database,
 ) {
+    /** 記錄無法還原的 Replay 等讀取診斷的 logger。 */
+    private val logger = mahjongCraftLogger(SqliteHistoryDatabase::class)
+
     /**
      * 同鍵、同內容重送視為成功；同鍵、不同內容拒絕且不覆寫原事件。
      *
@@ -396,29 +407,39 @@ internal class SqliteHistoryDatabase private constructor(
     }
 
     /**
-     * 以資料庫端大小檢查讀取單場 Replay；不把超大內容載入 Kotlin 記憶體。
+     * 讀取並解壓單場 Replay；先在資料庫端檢查存放大小，不把超大內容載入 Kotlin 記憶體，解壓在交易結束後進行。
+     *
+     * 上限指解壓後的 UTF-8 位元組數；gzip 存放大小不會明顯大於原文，存放大小超過同一上限時直接視為過大。
+     * 無法還原的內容（例如開發期間以未壓縮文字存下的牌譜）只讓該場 Replay 無法讀取並記錄警告；資料列不刪除，其他
+     * 場次不受影響，也沒有自動轉換。
      *
      * @param matchId 欲讀取的對局識別碼。
-     * @param maximumBytes 允許載入與解析的 UTF-8 位元組上限。
-     * @return 缺少、超過大小限制，或受限的 Replay JSON。
+     * @param maximumBytes 允許載入與解析的解壓後 UTF-8 位元組上限。
+     * @return 缺少、超過大小限制、無法還原，或受限的 Replay JSON。
      */
-    fun readReplayPayload(matchId: String, maximumBytes: Int): HistoryReplayPayloadRead = transaction(database) {
+    fun readReplayPayload(matchId: String, maximumBytes: Int): HistoryReplayPayloadRead {
         require(matchId.isNotBlank()) { "History match ID must not be blank" }
         require(maximumBytes > 0) { "History replay size limit must be positive" }
-        val payloadBytes = TransactionManager.current().exec(
-            stmt = "SELECT length(CAST(payload AS BLOB)) FROM history_replay WHERE match_id = ?",
-            args = listOf(VarCharColumnType() to matchId),
-        ) { result ->
-            if (result.next()) result.getLong(1) else null
-        } ?: return@transaction HistoryReplayPayloadRead.Missing
-        if (payloadBytes > maximumBytes.toLong()) {
-            HistoryReplayPayloadRead.TooLarge
-        } else {
-            val payload = HistoryReplayTable.select(HistoryReplayTable.payload)
+        var stored = ByteArray(0)
+        val rejected = transaction(database) {
+            val storedBytes = TransactionManager.current().exec(
+                stmt = "SELECT length(CAST(payload AS BLOB)) FROM history_replay WHERE match_id = ?",
+                args = listOf(VarCharColumnType() to matchId),
+            ) { result ->
+                if (result.next()) result.getLong(1) else null
+            } ?: return@transaction HistoryReplayPayloadRead.Missing
+            if (storedBytes > maximumBytes.toLong()) return@transaction HistoryReplayPayloadRead.TooLarge
+            stored = HistoryReplayTable.select(HistoryReplayTable.payload)
                 .where { HistoryReplayTable.matchId eq matchId }
                 .single()[HistoryReplayTable.payload]
-            HistoryReplayPayloadRead.Found(payload)
+            null
         }
+        if (rejected != null) return rejected
+        val read = HistoryReplayPayloadCodec.decompress(stored, maximumBytes)
+        if (read is HistoryReplayPayloadRead.Unreadable) {
+            logger.warn("History replay payload for match {} cannot be restored", matchId, read.cause)
+        }
+        return read
     }
 
     /**
@@ -446,7 +467,7 @@ internal class SqliteHistoryDatabase private constructor(
      * 查詢至多一百個生成場次的封存及清理證據，不反序列化 Replay。
      *
      * @param matchIds 此批工作建立的場次 ID。
-     * @return 仍存在的 Replay 大小、已清理 ID 及目前磁碟大小。
+     * @return 仍存在的 Replay 存放位元組數（壓縮後）、已清理 ID 及目前磁碟大小。
      */
     fun readGenerationReceipt(matchIds: Set<String>): HistoryGenerationReceipt {
         require(matchIds.size <= 100) { "History generation receipt is limited to 100 matches" }
@@ -470,18 +491,34 @@ internal class SqliteHistoryDatabase private constructor(
     /**
      * 完成資料表摘要與 Replay 的單一交易；成功後才刪除原始事件。
      *
+     * Replay 以 [HistoryReplayPayloadCodec] 壓縮後存放，壓縮在交易開始前完成。同場已有 Replay 時比對解壓後的文字，
+     * 不比對壓縮後的位元組；既有內容無法還原或解壓後超過 [HISTORY_REPLAY_QUERY_BYTES] 時視為內容衝突。
+     *
      * @param record 已驗證完整的封存資料。
      * @return 新封存成功時為 `true`；已清理或相同 Replay 已存在時為 `false`。
      */
-    fun archive(record: HistoryArchiveRecord): Boolean = transaction(database) {
-        if (isTombstoned(record.matchId)) return@transaction false
+    fun archive(record: HistoryArchiveRecord): Boolean {
+        val compressedReplay = HistoryReplayPayloadCodec.compress(record.replayPayload)
+        return transaction(database) { archiveInTransaction(record, compressedReplay) }
+    }
+
+    /**
+     * 在呼叫端的 SQLite 交易中寫入封存資料。
+     *
+     * @param record 已驗證完整的封存資料。
+     * @param compressedReplay [HistoryArchiveRecord.replayPayload] 的存放位元組。
+     * @return 新封存成功時為 `true`；已清理或相同 Replay 已存在時為 `false`。
+     */
+    private fun archiveInTransaction(record: HistoryArchiveRecord, compressedReplay: ByteArray): Boolean {
+        if (isTombstoned(record.matchId)) return false
         check(
             HistoryRecordingStopTable.selectAll().where { HistoryRecordingStopTable.matchId eq record.matchId }.empty(),
         ) { "History replay cannot be archived after recording stopped" }
         val existing = HistoryReplayTable.selectAll().where { HistoryReplayTable.matchId eq record.matchId }.singleOrNull()
         if (existing != null) {
-            check(existing[HistoryReplayTable.payload] == record.replayPayload) { "History replay identity conflicts with existing content" }
-            return@transaction false
+            val restored = HistoryReplayPayloadCodec.decompress(existing[HistoryReplayTable.payload], HISTORY_REPLAY_QUERY_BYTES)
+            check(restored == HistoryReplayPayloadRead.Found(record.replayPayload)) { "History replay identity conflicts with existing content" }
+            return false
         }
         check(HistoryGapTable.selectAll().where { HistoryGapTable.matchId eq record.matchId }.empty()) {
             "History replay cannot be archived with a known sequence gap"
@@ -490,7 +527,7 @@ internal class SqliteHistoryDatabase private constructor(
             it[matchId] = record.matchId
             it[formatVersion] = 1
             it[createdAtEpochMillis] = record.endedAtEpochMillis
-            it[payload] = record.replayPayload
+            it[payload] = compressedReplay
         }
         HistoryMatchTable.insert {
             it[matchId] = record.matchId
@@ -531,7 +568,7 @@ internal class SqliteHistoryDatabase private constructor(
             }
         }
         HistoryPendingEventTable.deleteWhere { HistoryPendingEventTable.matchId eq record.matchId }
-        true
+        return true
     }
 
     /**
@@ -1031,10 +1068,10 @@ internal class SqliteHistoryDatabase private constructor(
         }
 
     /**
-     * 以 SQLite UTF-8 BLOB 長度計算指定對局的邏輯 payload 大小。
+     * 以 SQLite BLOB 長度計算指定對局的邏輯 payload 大小。
      *
      * @param matchIds 要計算的對局 ID 集合。
-     * @return 指定對局的 Replay、暫存事件及角色外觀 UTF-8 位元組總數。
+     * @return 指定對局的 Replay 存放位元組數（壓縮後），加上暫存事件及角色外觀的 UTF-8 位元組總數。
      */
     fun logicalPayloadBytes(matchIds: Collection<String>): Long = transaction(database) {
         logicalPayloadBytesInTransaction(matchIds)
@@ -1106,10 +1143,10 @@ internal class SqliteHistoryDatabase private constructor(
     }
 
     /**
-     * 在目前 SQLite 交易中計算 payload 的 UTF-8 位元組數，不載入文字內容。
+     * 在目前 SQLite 交易中計算 payload 的存放位元組數，不載入內容。
      *
      * @param matchIds 要計算的場次，同一 ID 只計一次。
-     * @return Replay、SQL 暫存事件與角色外觀的邏輯大小。
+     * @return Replay 壓縮後的存放大小，加上 SQL 暫存事件與角色外觀的 UTF-8 位元組數。
      */
     private fun logicalPayloadBytesInTransaction(matchIds: Collection<String>): Long {
         if (matchIds.isEmpty()) return 0L

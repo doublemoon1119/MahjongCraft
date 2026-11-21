@@ -70,15 +70,16 @@ class SqliteHistoryQueryTest {
         assertEquals(1L, statistics.tombstoneCount)
     }
 
-    /** Unicode payload 必須依 UTF-8 BLOB 長度計算，且查詢不依賴載入 payload。 */
+    /** Replay 依壓縮後的存放長度、Unicode 暫存事件依 UTF-8 長度計算，且查詢不依賴載入 payload。 */
     @Test
-    fun `test logical payload bytes count unicode replay and pending`() {
+    fun `test logical payload bytes count stored replay and unicode pending`() {
         val database = openDatabase()
         insertMatch(database.path, "unicode", 1L, 2L)
         insertReplay(database.path, "unicode", "龍a")
         insertPending(database.path, "unicode", "😀")
 
-        assertEquals("龍a😀".toByteArray(Charsets.UTF_8).size.toLong(), database.logicalPayloadBytes(listOf("unicode")))
+        val expected = HistoryReplayPayloadCodec.compress("龍a").size + "😀".toByteArray(Charsets.UTF_8).size
+        assertEquals(expected.toLong(), database.logicalPayloadBytes(listOf("unicode")))
     }
 
     /** 分頁必須套用邊界、同時間排序、游標列刪除與排除 ID。 */
@@ -140,7 +141,7 @@ class SqliteHistoryQueryTest {
         insertMatch(database.path, quotedId, 1L, 2L)
         insertReplay(database.path, quotedId, "é")
 
-        assertEquals(2L, database.logicalPayloadBytes(listOf(quotedId)))
+        assertEquals(HistoryReplayPayloadCodec.compress("é").size.toLong(), database.logicalPayloadBytes(listOf(quotedId)))
         assertTrue(database.readSummaryPage(excludedMatchIds = setOf("other")).entries.any { it.matchId == quotedId })
         assertTrue(database.readSummaryPage(excludedMatchIds = setOf(quotedId)).entries.none { it.matchId == quotedId })
         assertTrue(database.readSummaryPage(cursor = HistorySummaryCursor(1L, "q'abc")).entries.any { it.matchId == quotedId })
@@ -510,12 +511,7 @@ class SqliteHistoryQueryTest {
      * @param id 對局 ID。
      * @param payload Replay payload。
      */
-    private fun insertReplay(path: Path, id: String, payload: String) = sql(
-        path = path,
-        statement = "INSERT INTO history_replay(match_id, format_version, created_at_epoch_millis, payload) VALUES (?, 1, 1, ?)",
-        id,
-        payload,
-    )
+    private fun insertReplay(path: Path, id: String, payload: String) = insertStoredReplay(path = path, matchId = id, json = payload)
 
     /**
      * 寫入暫存事件列。

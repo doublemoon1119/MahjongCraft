@@ -123,11 +123,7 @@ class HistoryStorageQueryServiceTest {
      * @param path 歷史資料庫檔案路徑。
      * @param id 場次識別碼。
      */
-    private fun insertReplay(path: Path, id: String) = sql(
-        path = path,
-        statement = "INSERT INTO history_replay(match_id, format_version, created_at_epoch_millis, payload) VALUES (?, 1, 1, '{}')",
-        id,
-    )
+    private fun insertReplay(path: Path, id: String) = insertStoredReplay(path = path, matchId = id, json = "{}")
 
     /**
      * 寫入尚未封存的 SQL 事件。

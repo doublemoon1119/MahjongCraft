@@ -138,7 +138,7 @@ class HistoryRoundQueryReaderTest {
         assertFailure(result, HistoryQueryErrorCode.NOT_AVAILABLE)
     }
 
-    /** 驗證 Replay 超過 SQL 位元組上限時不會載入或解析完整文字。 */
+    /** 驗證 Replay 解壓後超過位元組上限時不會解析文字。 */
     @Test
     fun `oversized replay is rejected before parsing`() = runTest {
         val database = openDatabase()
@@ -155,6 +155,27 @@ class HistoryRoundQueryReaderTest {
         )
 
         assertFailure(result, HistoryQueryErrorCode.CONTENT_TOO_LARGE)
+        assertFalse(parsed)
+    }
+
+    /** 驗證無法解壓的 Replay（例如未壓縮的文字）回報無法取得，且不會解析。 */
+    @Test
+    fun `unreadable stored replay is reported as not available`() = runTest {
+        val database = openDatabase()
+        val fixture = insertCompletedMatch(database.path)
+        sql(database.path, "UPDATE history_replay SET payload = ? WHERE match_id = ?", "{}", fixture.matchId)
+        var parsed = false
+
+        val result = read(
+            database = database,
+            matchId = fixture.matchId,
+            parse = {
+                parsed = true
+                successDocument()
+            },
+        )
+
+        assertFailure(result, HistoryQueryErrorCode.NOT_AVAILABLE)
         assertFalse(parsed)
     }
 
@@ -280,7 +301,7 @@ class HistoryRoundQueryReaderTest {
             TABLE_ID,
             "mahjongcraft:riichi",
         )
-        sql(path, "INSERT INTO history_replay(match_id, format_version, created_at_epoch_millis, payload) VALUES (?, 1, 1, ?)", matchId, payload)
+        insertStoredReplay(path = path, matchId = matchId.toString(), json = payload)
         sql(path, "INSERT INTO history_participant(match_id, seat_index, player_id, ai_strategy_id) VALUES (?, 0, ?, NULL)", matchId, PLAYER_ID)
         return MatchFixture(matchId, TABLE_ID, PLAYER_ID)
     }
