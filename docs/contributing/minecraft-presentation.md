@@ -603,6 +603,26 @@ attempt does not fall through to another provider.
   table or stool recipes are shown as they are. They are drawn on the vanilla crafting table texture,
   so resource packs that restyle it restyle the guide too.
 
+## Round replays
+
+- A replay lays out each step with the same `TableTileArrangement` as the live table, using the match's
+  rule module on the client and the match's saved rule settings. Moves between steps come from the same
+  `TableStepMotionPlanner`. Do not build a separate layout or animation for replays.
+- The client calls the rule's `sideStackCounts` and `sideArrangement` with the match's saved settings, so a
+  rule extension must also be installed on a client for that client to replay its matches. When the client
+  does not have the match's rule, the replay buttons are disabled and their tooltips say why. When a step
+  still cannot be laid out, the replay names the reason instead of showing a loading message.
+- The saved replay keeps only the table state. Anything else the live table needs to place tiles or draw
+  the table is worked out by the rule or the table from the full state during play, so it is recorded
+  into `ReplayTableNotes` when the match is saved, and replays never call the rule for it again. Examples
+  are the wall positions still to be reached from `roundReach`, the scattered discard pattern, corner
+  widths, round info, player indicators, table props and which hands are revealed at an exhaustive draw.
+  When the live layout starts using another such value, record it there as well; never work it out again
+  on the client from the saved state.
+- Win records keep the winning tile even when the hand is not revealed, and winners of one discard
+  share it. The win effect and hand reveals use timing shared with the live table
+  (`WinCelebrationEffectSteps`, `HandRevealSteps`), so change their pacing in one place.
+
 ## Public API Compatibility
 
 The [shared compatibility policy](extensions-and-registries.md#public-api-compatibility) defines how to
