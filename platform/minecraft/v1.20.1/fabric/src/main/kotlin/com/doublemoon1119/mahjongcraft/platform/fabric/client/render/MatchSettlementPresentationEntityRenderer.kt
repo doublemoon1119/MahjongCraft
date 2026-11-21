@@ -170,7 +170,7 @@ class MatchSettlementPresentationEntityRenderer(
         consumers: MultiBufferSource,
     ) {
         val matrix = matrices.last().pose()
-        val buffer = consumers.getBuffer(WorldPanelRenderLayer.layer)
+        val buffer = consumers.getBuffer(WorldPanelRenderType.layer)
         val settle = 1f - (1f - progress) * (1f - progress)
         val offset = (1f - settle) * CORNER_ENTRY_OFFSET
         val contentWidth = maxOf(CHAMPION_FACE_SIZE, textRenderer.width(displayName).toFloat(), textRenderer.width(rankText).toFloat())
@@ -254,7 +254,7 @@ class MatchSettlementPresentationEntityRenderer(
         consumers: MultiBufferSource,
     ) {
         val matrix = matrices.last().pose()
-        val buffer = consumers.getBuffer(WorldPanelRenderLayer.layer)
+        val buffer = consumers.getBuffer(WorldPanelRenderType.layer)
         val color = template.backgroundArgb
         val a = ((((color ushr 24) and 0xFF) * alpha).roundToInt()).coerceIn(0, 255)
         val red = color ushr 16 and 0xFF

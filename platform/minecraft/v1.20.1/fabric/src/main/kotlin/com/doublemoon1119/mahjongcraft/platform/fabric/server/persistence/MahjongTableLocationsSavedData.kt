@@ -15,7 +15,7 @@ import kotlin.uuid.Uuid
  *
  * @param initialEntries 從既有世界存檔還原的位置項目。
  */
-class MahjongTableLocationsPersistentState private constructor(
+class MahjongTableLocationsSavedData private constructor(
     initialEntries: Collection<TableLocationEntry>,
 ) : SavedData() {
     /** 目前等待 Minecraft 世界儲存流程寫入的不可變位置集合。 */
@@ -59,13 +59,13 @@ class MahjongTableLocationsPersistentState private constructor(
 
     /** 建立與讀取位置 [SavedData] 的固定 metadata。 */
     companion object {
-        private val logger = mahjongCraftLogger(MahjongTableLocationsPersistentState::class)
+        private val logger = mahjongCraftLogger(MahjongTableLocationsSavedData::class)
 
         /** `DimensionDataStorage` 使用的世界存檔 key。 */
         const val STORAGE_KEY: String = "${MinecraftModMetadata.MOD_ID}_table_locations"
 
         /** 建立空的位置 state。 */
-        fun create(): MahjongTableLocationsPersistentState = MahjongTableLocationsPersistentState(emptyList())
+        fun create(): MahjongTableLocationsSavedData = MahjongTableLocationsSavedData(emptyList())
 
         /**
          * 從 Minecraft NBT 還原完整位置 state。
@@ -80,7 +80,7 @@ class MahjongTableLocationsPersistentState private constructor(
          * @param nbt Minecraft 讀出的持久化 NBT。
          * @return 還原完成的位置索引；格式版本無效時為空索引。
          */
-        fun fromNbt(nbt: CompoundTag): MahjongTableLocationsPersistentState {
+        fun fromNbt(nbt: CompoundTag): MahjongTableLocationsSavedData {
             if (nbt.contains(NBT_KEY_VERSION) && !nbt.contains(NBT_KEY_VERSION, Tag.TAG_INT.toInt())) {
                 logger.error("Ignoring Mahjong table location index with an invalid format version type")
                 return create()
@@ -135,7 +135,7 @@ class MahjongTableLocationsPersistentState private constructor(
                     }
                 }
             }
-            return MahjongTableLocationsPersistentState(entries)
+            return MahjongTableLocationsSavedData(entries)
         }
 
         /** 這個索引目前的格式版本。 */

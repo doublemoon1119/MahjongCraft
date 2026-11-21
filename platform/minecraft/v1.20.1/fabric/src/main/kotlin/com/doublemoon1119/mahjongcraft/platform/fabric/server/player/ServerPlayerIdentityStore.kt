@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.player
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.MahjongPlayerIdentityPersistentState
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.MahjongPlayerIdentitySavedData
 import net.minecraft.server.level.ServerPlayer
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -94,9 +94,9 @@ class ServerPlayerIdentityStore(
     }
 
     /** 取得目前伺服器 overworld 的持久化名稱索引；必須在伺服器主執行緒呼叫。 */
-    private fun state(): MahjongPlayerIdentityPersistentState? = serverHolder.current()?.overworld()?.dataStorage?.computeIfAbsent(
-        MahjongPlayerIdentityPersistentState::fromNbt,
-        MahjongPlayerIdentityPersistentState::create,
-        MahjongPlayerIdentityPersistentState.STORAGE_KEY,
+    private fun state(): MahjongPlayerIdentitySavedData? = serverHolder.current()?.overworld()?.dataStorage?.computeIfAbsent(
+        MahjongPlayerIdentitySavedData::fromNbt,
+        MahjongPlayerIdentitySavedData::create,
+        MahjongPlayerIdentitySavedData.STORAGE_KEY,
     )
 }

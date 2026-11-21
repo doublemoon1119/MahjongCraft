@@ -1176,7 +1176,7 @@ class WinCelebrationShowcaseEntityRenderer(
         matrices.mulPose(billboardRotation)
         matrices.scale((TITLE_IMAGE_SCALE * revealScale).toFloat(), (TITLE_IMAGE_SCALE * revealScale).toFloat(), (TITLE_IMAGE_SCALE * revealScale).toFloat())
         val entry = matrices.last()
-        val buffer = consumers.getBuffer(WinCelebrationTitleRenderLayer.get(texture))
+        val buffer = consumers.getBuffer(WinCelebrationTitleRenderType.get(texture))
         val revealAlpha = fade * smoothStep((reveal / 0.22).coerceIn(0.0, 1.0))
         titleVertex(buffer, entry.pose(), -1f, -0.5f, 0f, 1f, 1f, revealAlpha)
         titleVertex(buffer, entry.pose(), 1f, -0.5f, 0f, 0f, 1f, revealAlpha)

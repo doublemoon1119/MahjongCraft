@@ -13,7 +13,7 @@ import java.util.UUID
  *
  * @param initialNames 從既有世界存檔載入的玩家名稱對應。
  */
-class MahjongPlayerIdentityPersistentState private constructor(
+class MahjongPlayerIdentitySavedData private constructor(
     initialNames: Map<UUID, String>,
 ) : SavedData() {
     /** 目前已知的玩家普通名稱，不含聊天樣式或互動資料。 */
@@ -72,13 +72,13 @@ class MahjongPlayerIdentityPersistentState private constructor(
     }
 
     companion object {
-        private val logger = mahjongCraftLogger(MahjongPlayerIdentityPersistentState::class)
+        private val logger = mahjongCraftLogger(MahjongPlayerIdentitySavedData::class)
 
         /** Minecraft DimensionDataStorage 使用的伺服器級索引 key。 */
         const val STORAGE_KEY: String = "${MinecraftModMetadata.MOD_ID}_player_identity"
 
         /** 建立空白身分索引。 */
-        fun create(): MahjongPlayerIdentityPersistentState = MahjongPlayerIdentityPersistentState(emptyMap())
+        fun create(): MahjongPlayerIdentitySavedData = MahjongPlayerIdentitySavedData(emptyMap())
 
         /**
          * 從可重建 NBT 索引載入玩家名稱；單筆錯誤不影響世界載入。
@@ -86,7 +86,7 @@ class MahjongPlayerIdentityPersistentState private constructor(
          * @param nbt Minecraft 讀出的身分索引 NBT。
          * @return 載入完成的身分索引；格式錯誤時回傳空索引。
          */
-        fun fromNbt(nbt: CompoundTag): MahjongPlayerIdentityPersistentState {
+        fun fromNbt(nbt: CompoundTag): MahjongPlayerIdentitySavedData {
             if (!nbt.contains(NBT_KEY_VERSION, Tag.TAG_INT.toInt())) {
                 logger.error("Ignoring player identity index because the format version is missing")
                 return create()
@@ -116,7 +116,7 @@ class MahjongPlayerIdentityPersistentState private constructor(
                     }
                 }
             }
-            return MahjongPlayerIdentityPersistentState(names)
+            return MahjongPlayerIdentitySavedData(names)
         }
 
         /** 目前的身分索引格式版本。 */

@@ -32,7 +32,7 @@ object WorldPanelRenderer {
         consumers: MultiBufferSource,
     ) {
         val matrix = matrices.last().pose()
-        val buffer = consumers.getBuffer(WorldPanelRenderLayer.layer)
+        val buffer = consumers.getBuffer(WorldPanelRenderType.layer)
         val alpha = color ushr 24 and 0xFF
         val red = color ushr 16 and 0xFF
         val green = color ushr 8 and 0xFF

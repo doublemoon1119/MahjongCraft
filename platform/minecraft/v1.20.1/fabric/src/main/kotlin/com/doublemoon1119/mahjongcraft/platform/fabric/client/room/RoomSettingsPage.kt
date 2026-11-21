@@ -622,7 +622,7 @@ internal class RoomSettingsPage(
                     },
                 )
                 host.addWidget(
-                    widget = CenteredIntegerTextFieldWidget(
+                    widget = CenteredIntegerEditBox(
                         fieldTextRenderer = host.textRenderer,
                         x = layout.integerTextX,
                         y = y,

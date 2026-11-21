@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap
  * 使用原版 position-color-texture-lightmap shader 保留光影模組相容性；該 shader 不讀取法線，
  * 並由 full-bright 頂點資料保持圖片原色。透明混合與深度寫入同時開啟，避免稍後繪製的雲層穿透標題。
  */
-internal object WinCelebrationTitleRenderLayer {
+internal object WinCelebrationTitleRenderType {
     /** 以貼圖識別碼為鍵的 render layer 快取。 */
     private val layers = ConcurrentHashMap<ResourceLocation, RenderType>()
 

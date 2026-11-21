@@ -21,14 +21,14 @@ import java.nio.file.Path
  * @param create 檔案確定不存在時建立的新資料。
  * @return 原管理器快取或成功載入的資料。
  */
-internal fun <S : SavedData> loadPersistentStateStrict(
+internal fun <S : SavedData> loadSavedDataStrict(
     server: MinecraftServer,
     key: String,
     decode: (CompoundTag) -> S,
     create: () -> S,
-): S = loadPersistentStateStrict(
+): S = loadSavedDataStrict(
     manager = server.overworld().dataStorage,
-    dataFile = server.getWorldPath(LevelResource.ROOT).resolve(PersistentStateStoragePaths.DIRECTORY).resolve(key + PersistentStateStoragePaths.EXTENSION),
+    dataFile = server.getWorldPath(LevelResource.ROOT).resolve(SavedDataStoragePaths.DIRECTORY).resolve(key + SavedDataStoragePaths.EXTENSION),
     key = key,
     decode = decode,
     create = create,
@@ -48,7 +48,7 @@ internal fun <S : SavedData> loadPersistentStateStrict(
  * @param create 確認無既有檔案時建立資料的函式。
  * @return 管理器持有的有效資料。
  */
-internal fun <S : SavedData> loadPersistentStateStrict(
+internal fun <S : SavedData> loadSavedDataStrict(
     manager: DimensionDataStorage,
     dataFile: Path,
     key: String,
@@ -80,10 +80,10 @@ internal fun <S : SavedData> loadPersistentStateStrict(
  * @param key 存檔管理器的固定資料名稱。
  * @return 以 `/` 分隔的相對路徑，例如 `data/<key>.dat`。
  */
-internal fun persistentStateDisplayPath(key: String): String = PersistentStateStoragePaths.DIRECTORY + "/" + key + PersistentStateStoragePaths.EXTENSION
+internal fun savedDataDisplayPath(key: String): String = SavedDataStoragePaths.DIRECTORY + "/" + key + SavedDataStoragePaths.EXTENSION
 
 /** Minecraft 1.20.1 overworld 持久化管理器使用的檔案位置。 */
-private object PersistentStateStoragePaths {
+private object SavedDataStoragePaths {
     /** 世界根目錄內的持久化資料目錄。 */
     const val DIRECTORY = "data"
 

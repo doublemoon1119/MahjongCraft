@@ -403,7 +403,7 @@ class PlayerPortraitRenderer internal constructor(
         matrices: PoseStack,
         consumers: MultiBufferSource,
     ) {
-        val layer = if (usesEntityLayer) RenderType.entityTranslucent(texture) else ExhaustiveDrawSettlementTileFaceRenderLayer.get(texture)
+        val layer = if (usesEntityLayer) RenderType.entityTranslucent(texture) else ExhaustiveDrawSettlementTileFaceRenderType.get(texture)
         val buffer = consumers.getBuffer(layer)
         val matrix = matrices.last().pose()
         val a = (alpha.coerceIn(0f, 1f) * 255).roundToInt()

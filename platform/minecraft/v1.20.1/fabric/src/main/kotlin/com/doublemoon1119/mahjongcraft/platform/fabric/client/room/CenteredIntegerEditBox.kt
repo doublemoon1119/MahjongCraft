@@ -15,7 +15,7 @@ import net.minecraft.network.chat.Component
  * @param height 輸入框高度。
  * @param narration 供輔助朗讀使用的欄位名稱。
  */
-internal class CenteredIntegerTextFieldWidget(
+internal class CenteredIntegerEditBox(
     private val fieldTextRenderer: Font,
     x: Int,
     y: Int,

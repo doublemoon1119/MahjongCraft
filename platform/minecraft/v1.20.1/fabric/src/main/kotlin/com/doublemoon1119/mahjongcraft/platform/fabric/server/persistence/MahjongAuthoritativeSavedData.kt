@@ -31,7 +31,7 @@ import kotlin.uuid.Uuid
  * @property originalCharacterData 讀取失敗時須原樣保留的區段。
  * @property characterDataFailure 角色區段的讀取失敗；不代表牌局區段無法讀取。
  */
-class MahjongAuthoritativePersistentState private constructor(
+class MahjongAuthoritativeSavedData private constructor(
     private val codec: AuthoritativeStatePersistenceCodec,
     initialSnapshot: AuthoritativeStateSnapshot,
     characters: AiCharacterMetadata?,
@@ -40,7 +40,7 @@ class MahjongAuthoritativePersistentState private constructor(
     val characterDataFailure: Throwable?,
 ) : SavedData() {
     /** 記錄保存容量與診斷的 logger。 */
-    private val logger = mahjongCraftLogger(MahjongAuthoritativePersistentState::class)
+    private val logger = mahjongCraftLogger(MahjongAuthoritativeSavedData::class)
 
     /** 不受網路序列化設定影響的角色 codec。 */
     private val characterCodec = AiCharacterMetadataCodec()
@@ -195,7 +195,7 @@ class MahjongAuthoritativePersistentState private constructor(
          * @param registry 已登記的角色描述。
          * @return 可接受角色選擇的初始容器。
          */
-        fun create(codec: AuthoritativeStatePersistenceCodec, registry: AiCharacterRegistry): MahjongAuthoritativePersistentState = MahjongAuthoritativePersistentState(
+        fun create(codec: AuthoritativeStatePersistenceCodec, registry: AiCharacterRegistry): MahjongAuthoritativeSavedData = MahjongAuthoritativeSavedData(
             codec = codec,
             initialSnapshot = AuthoritativeStateSnapshot(),
             characters = AiCharacterMetadata(emptyMap(), emptyMap()),
@@ -216,7 +216,7 @@ class MahjongAuthoritativePersistentState private constructor(
             nbt: CompoundTag,
             codec: AuthoritativeStatePersistenceCodec,
             registry: AiCharacterRegistry,
-        ): MahjongAuthoritativePersistentState {
+        ): MahjongAuthoritativeSavedData {
             require(nbt.contains(NBT_KEY_STATE, Tag.TAG_BYTE_ARRAY.toInt())) { "Authoritative saved state is missing its byte array payload" }
             val decoded = codec.decode(nbt.getByteArray(NBT_KEY_STATE).decodeToString())
             val snapshot = AuthoritativeStateSnapshot(decoded.rooms, decoded.games, decoded.historyRecordingState)
@@ -238,7 +238,7 @@ class MahjongAuthoritativePersistentState private constructor(
                 failure = cause
                 null
             }
-            return MahjongAuthoritativePersistentState(
+            return MahjongAuthoritativeSavedData(
                 codec = codec,
                 initialSnapshot = snapshot,
                 characters = metadata,

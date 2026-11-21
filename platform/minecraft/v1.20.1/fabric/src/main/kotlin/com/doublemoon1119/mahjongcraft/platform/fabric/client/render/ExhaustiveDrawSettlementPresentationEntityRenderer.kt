@@ -167,7 +167,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         vertexConsumers: MultiBufferSource,
     ) {
         val matrix = matrices.last().pose()
-        val buffer = vertexConsumers.getBuffer(WorldPanelRenderLayer.layer)
+        val buffer = vertexConsumers.getBuffer(WorldPanelRenderType.layer)
         val panelAlpha = (alpha * PANEL_ALPHA * 255).roundToInt()
         buffer.vertex(matrix, -panelHalfWidth, PANEL_TOP, PANEL_Z).color(0, 0, 0, panelAlpha).endVertex()
         buffer.vertex(matrix, panelHalfWidth, PANEL_TOP, PANEL_Z).color(0, 0, 0, panelAlpha).endVertex()
@@ -309,7 +309,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     ) {
         if (right <= left || alpha <= 0f) return
         val matrix = matrices.last().pose()
-        val buffer = vertexConsumers.getBuffer(WorldPanelRenderLayer.layer)
+        val buffer = vertexConsumers.getBuffer(WorldPanelRenderType.layer)
         val a = (alpha.coerceIn(0f, 1f) * 255).roundToInt()
         buffer.vertex(matrix, left, top, RANKING_HIGHLIGHT_Z).color(255, 205, 92, a).endVertex()
         buffer.vertex(matrix, right, top, RANKING_HIGHLIGHT_Z).color(255, 238, 178, a).endVertex()

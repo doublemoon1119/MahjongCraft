@@ -106,7 +106,7 @@ class MahjongTileFaceRenderer(
         appearance: MinecraftTileSetAppearanceDefinition = BuiltInMinecraftTileAppearances.DEFAULT,
     ) {
         val preview = resolvePreviewTexture(assetKey, appearance)
-        val buffer = consumers.getBuffer(ExhaustiveDrawSettlementTileFaceRenderLayer.get(ResourceLocation(preview.resourceId)))
+        val buffer = consumers.getBuffer(ExhaustiveDrawSettlementTileFaceRenderType.get(ResourceLocation(preview.resourceId)))
         val matrix = matrices.last().pose()
         val left = centerX - width / 2f
         val right = centerX + width / 2f

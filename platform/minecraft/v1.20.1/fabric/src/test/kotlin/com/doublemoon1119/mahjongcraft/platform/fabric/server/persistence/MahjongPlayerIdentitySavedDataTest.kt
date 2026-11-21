@@ -7,16 +7,16 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/** [MahjongPlayerIdentityPersistentState] 的格式與錯誤資料測試。 */
-class MahjongPlayerIdentityPersistentStateTest {
+/** [MahjongPlayerIdentitySavedData] 的格式與錯誤資料測試。 */
+class MahjongPlayerIdentitySavedDataTest {
     /** 確認版本一索引可完整往返玩家名稱。 */
     @Test
     fun `round trips version one player names`() {
         val playerId = UUID.randomUUID()
-        val state = MahjongPlayerIdentityPersistentState.create()
+        val state = MahjongPlayerIdentitySavedData.create()
 
         assertTrue(state.remember(playerId, "PlayerOne"))
-        val restored = MahjongPlayerIdentityPersistentState.fromNbt(state.save(CompoundTag()))
+        val restored = MahjongPlayerIdentitySavedData.fromNbt(state.save(CompoundTag()))
 
         assertEquals("PlayerOne", restored.nameOf(playerId))
     }
@@ -24,26 +24,26 @@ class MahjongPlayerIdentityPersistentStateTest {
     /** 確認未知格式版本不會被當成可用身分資料。 */
     @Test
     fun `rejects unsupported format version`() {
-        val nbt = MahjongPlayerIdentityPersistentState.create().save(CompoundTag()).apply {
-            putInt("Version", MahjongPlayerIdentityPersistentState.CURRENT_VERSION + 1)
+        val nbt = MahjongPlayerIdentitySavedData.create().save(CompoundTag()).apply {
+            putInt("Version", MahjongPlayerIdentitySavedData.CURRENT_VERSION + 1)
         }
 
-        assertEquals(emptyMap(), MahjongPlayerIdentityPersistentState.fromNbt(nbt).snapshot())
+        assertEquals(emptyMap(), MahjongPlayerIdentitySavedData.fromNbt(nbt).snapshot())
     }
 
     /** 確認單筆損壞項目會略過，其他可讀項目仍能載入。 */
     @Test
     fun `skips malformed entries`() {
         val playerId = UUID.randomUUID()
-        val entries = MahjongPlayerIdentityPersistentState.create().apply {
+        val entries = MahjongPlayerIdentitySavedData.create().apply {
             remember(playerId, "PlayerOne")
         }.save(CompoundTag()).getList("Entries", Tag.TAG_COMPOUND.toInt())
         entries.add(CompoundTag().apply { putString("PlayerId", "invalid") })
         val nbt = CompoundTag().apply {
-            putInt("Version", MahjongPlayerIdentityPersistentState.CURRENT_VERSION)
+            putInt("Version", MahjongPlayerIdentitySavedData.CURRENT_VERSION)
             put("Entries", entries)
         }
 
-        assertEquals("PlayerOne", MahjongPlayerIdentityPersistentState.fromNbt(nbt).nameOf(playerId))
+        assertEquals("PlayerOne", MahjongPlayerIdentitySavedData.fromNbt(nbt).nameOf(playerId))
     }
 }

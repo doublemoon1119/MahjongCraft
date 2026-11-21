@@ -19,12 +19,12 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 /** 使用真正的原生管理器驗證解碼失敗不會觸發建立空資料或覆寫原檔。 */
-class StrictPersistentStateLoadingTest {
+class StrictSavedDataLoadingTest {
     /** 檔案確定不存在時才能建立新資料，保存後可由新管理器讀回。 */
     @Test
     fun `missing state can be created saved and loaded`() = withManager { directory, manager ->
         var created = 0
-        val state = loadPersistentStateStrict(manager, directory.resolve(FILE_NAME), KEY, ::decode) {
+        val state = loadSavedDataStrict(manager, directory.resolve(FILE_NAME), KEY, ::decode) {
             created++
             TestState("new-world")
         }
@@ -34,7 +34,7 @@ class StrictPersistentStateLoadingTest {
         manager.save()
         assertTrue(Files.exists(directory.resolve(FILE_NAME)))
         val second = DimensionDataStorage(directory.toFile(), IdentityDataFixer)
-        assertEquals("new-world", loadPersistentStateStrict(second, directory.resolve(FILE_NAME), KEY, ::decode) { error("Saved data must not use the create function") }.value)
+        assertEquals("new-world", loadSavedDataStrict(second, directory.resolve(FILE_NAME), KEY, ::decode) { error("Saved data must not use the create function") }.value)
     }
 
     /** 原版吞掉解碼例外後，嚴格入口仍拒絕建立空資料；後續 save 不改寫原始位元組。 */
@@ -49,7 +49,7 @@ class StrictPersistentStateLoadingTest {
         val expected = IllegalArgumentException("Unsupported saved data")
         var created = false
         val actual = assertFailsWith<IllegalArgumentException> {
-            loadPersistentStateStrict(
+            loadSavedDataStrict(
                 manager = manager,
                 dataFile = file,
                 key = KEY,
@@ -74,7 +74,7 @@ class StrictPersistentStateLoadingTest {
         Files.write(file, corrupt)
         var created = false
         assertFailsWith<IllegalStateException> {
-            loadPersistentStateStrict(manager, file, KEY, ::decode) {
+            loadSavedDataStrict(manager, file, KEY, ::decode) {
                 created = true
                 TestState("empty")
             }

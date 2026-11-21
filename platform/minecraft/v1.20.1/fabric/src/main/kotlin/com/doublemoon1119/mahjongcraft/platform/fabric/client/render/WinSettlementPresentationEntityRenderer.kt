@@ -640,7 +640,7 @@ class WinSettlementPresentationEntityRenderer(
     private fun renderContainer(style: PresentationContainerStyle, x: Float, y: Float, size: PresentationNodeSize, alpha: Float, matrices: PoseStack, consumers: MultiBufferSource) {
         if ((style.backgroundArgb ushr 24) == 0 && style.borderWidth <= 0f) return
         val matrix = matrices.last().pose()
-        val buffer = consumers.getBuffer(WorldPanelRenderLayer.layer)
+        val buffer = consumers.getBuffer(WorldPanelRenderType.layer)
         fun quad(left: Float, top: Float, right: Float, bottom: Float, argb: Int) {
             val a = (((argb ushr 24) and 0xFF) * alpha).roundToInt()
             val r = (argb ushr 16) and 0xFF
@@ -784,7 +784,7 @@ class WinSettlementPresentationEntityRenderer(
     ) {
         if (right <= left || alpha <= 0f) return
         val matrix = matrices.last().pose()
-        val buffer = consumers.getBuffer(WorldPanelRenderLayer.layer)
+        val buffer = consumers.getBuffer(WorldPanelRenderType.layer)
         val a = (alpha.coerceIn(0f, 1f) * 255).roundToInt()
         buffer.vertex(matrix, left, top, RANKING_HIGHLIGHT_Z).color(255, 205, 92, a).endVertex()
         buffer.vertex(matrix, right, top, RANKING_HIGHLIGHT_Z).color(255, 238, 178, a).endVertex()
@@ -879,7 +879,7 @@ class WinSettlementPresentationEntityRenderer(
      */
     private fun renderPanel(halfWidth: Float, top: Float, bottom: Float, alpha: Float, matrices: PoseStack, consumers: MultiBufferSource) {
         val matrix = matrices.last().pose()
-        val buffer = consumers.getBuffer(WorldPanelRenderLayer.layer)
+        val buffer = consumers.getBuffer(WorldPanelRenderType.layer)
         val a = (alpha * 0.78f * 255).roundToInt()
         buffer.vertex(matrix, -halfWidth, top, 0.5f).color(0, 0, 0, a).endVertex()
         buffer.vertex(matrix, halfWidth, top, 0.5f).color(0, 0, 0, a).endVertex()
