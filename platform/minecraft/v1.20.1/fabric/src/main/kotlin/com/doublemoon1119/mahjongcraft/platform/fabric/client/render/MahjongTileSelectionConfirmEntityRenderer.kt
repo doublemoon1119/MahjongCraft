@@ -90,12 +90,9 @@ class MahjongTileSelectionConfirmEntityRenderer(
             panelMatrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(yaw))
             panelMatrices.translate(-myOffset, 0.0, 0.0)
             panelMatrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
+            // 兩面背對背，只畫觀看者那一側的一面，兩面不會互相透出或閃爍。
+            if (!WorldPanelRenderer.facesViewer(panelMatrices)) panelMatrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f))
             renderFace(drawLabel, confirmable, widthPx, light, panelMatrices, panelConsumers)
-            panelMatrices.push()
-            panelMatrices.translate(0.0, 0.0, BACK_FACE_OFFSET.toDouble())
-            panelMatrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f))
-            renderFace(drawLabel, confirmable, widthPx, light, panelMatrices, panelConsumers)
-            panelMatrices.pop()
             panelMatrices.pop()
         }
     }
@@ -167,9 +164,6 @@ class MahjongTileSelectionConfirmEntityRenderer(
 
         /** 單一背景四周的像素 padding。 */
         const val PANEL_PADDING: Float = 5f
-
-        /** 背面相對正面向法線方向平移的距離，避免兩面共平面產生 Z-fighting。 */
-        const val BACK_FACE_OFFSET: Float = 0.02f
 
         /** 已選數量落在合法範圍內、右鍵真的會送出時的文字顏色。 */
         const val CONFIRMABLE_TEXT_COLOR: Int = 0xFF6BCB6B.toInt()
