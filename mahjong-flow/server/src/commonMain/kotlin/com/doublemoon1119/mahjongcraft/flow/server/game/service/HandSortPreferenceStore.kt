@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
-import java.util.concurrent.ConcurrentHashMap
+import com.doublemoon1119.mahjongcraft.flow.common.concurrent.concurrentMutableMap
 import kotlin.uuid.Uuid
 
 /**
@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
  */
 class HandSortPreferenceStore {
     /** 以玩家識別碼索引本次 server session 的手牌整理偏好。 */
-    private val preferences = ConcurrentHashMap<Uuid, Boolean>()
+    private val preferences = concurrentMutableMap<Uuid, Boolean>()
 
     /**
      * 查詢 [playerId] 目前是否啟用自動整理手牌；未曾設定過視為 `false`。

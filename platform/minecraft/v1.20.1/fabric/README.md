@@ -45,7 +45,7 @@ Server startup requires the usual Minecraft server setup, including EULA accepta
 these tasks are interactive development launches, not automated tests.
 
 Compatibility checks can load extra mods into development runs with `-PmahjongcraftDevMods`
-(see [Build](../../../../docs/contributing/build.md#development-runtime-mods)). This module and the
+(see [Minecraft Build](../../../../docs/contributing/minecraft-build.md#development-runtime-mods)). This module and the
 example module declare the same groups:
 
 - `iris`: Sodium and Iris, for checking rendering with and without a shader pack. Loom drops the libraries

@@ -76,7 +76,7 @@ class RepositoryTasksConfigurationCacheTest {
         assertEquals(TaskOutcome.SUCCESS, result.task(":verifyProjectVersionPolicy")?.outcome)
     }
 
-    /** target 管理任務可在 configuration cache 下執行與重用。 */
+    /** target 管理任務與 CI 目標矩陣可在 configuration cache 下執行與重用。 */
     @Test
     fun `target tasks reuse configuration cache`() = withFixture { root ->
         prepareBuild(root)
@@ -86,11 +86,15 @@ class RepositoryTasksConfigurationCacheTest {
         runner(root, "switchTarget", "-PtoTarget=test-target", "--configuration-cache").build()
         val switched = root.resolve("local.dev.properties").readText()
         runner(root, "clearTarget", "--configuration-cache").build()
+        val firstMatrix = runner(root, "writeCiTargetMatrix", "--configuration-cache").build()
+        val secondMatrix = runner(root, "writeCiTargetMatrix", "--configuration-cache").build()
 
         assertTrue(first.output.contains("test-target"))
         assertStoredThenReused(first, second)
         assertTrue(switched.contains("mahjongcraftTarget=test-target"))
         assertTrue(!root.resolve("local.dev.properties").exists())
+        assertStoredThenReused(firstMatrix, secondMatrix)
+        assertTrue(root.resolve("build/ci/target-matrix.json").readText().contains("\"target\":\"test-target\""))
     }
 
     /**
@@ -145,6 +149,7 @@ class RepositoryTasksConfigurationCacheTest {
             ai-version = "1.0.0"
             extension-api-version = "1.0.0"
             bundled-extensions-version = "1.0.0"
+            core-java-toolchain = "17"
             """.trimIndent() + "\n",
         )
         root.resolve("settings.gradle.kts").writeText(
