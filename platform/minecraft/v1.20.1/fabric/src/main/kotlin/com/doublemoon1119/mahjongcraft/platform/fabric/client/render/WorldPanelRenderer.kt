@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
+import com.mojang.blaze3d.systems.RenderSystem
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.util.math.MatrixStack
@@ -71,6 +72,14 @@ object WorldPanelRenderer {
         renderer.draw(text, x, y, color, false, matrices.peek().positionMatrix, consumers, TextRenderer.TextLayerType.NORMAL, 0, light)
         matrices.pop()
     }
+
+    /**
+     * 雙面面板在目前的座標轉換下，觀看者是否在正面那一側；不是時只畫轉了半圈的背面。
+     *
+     * @param matrices 面板正面的座標轉換。
+     * @return 在正面那一側時為 true。
+     */
+    fun facesViewer(matrices: MatrixStack): Boolean = PanelFacing.facesViewer(matrices.peek().positionMatrix, RenderSystem.getProjectionMatrix())
 
     /**
      * 依實際字型像素寬度截斷並補 `...`；寬度連省略號都容納不了時仍保留省略號。

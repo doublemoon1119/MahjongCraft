@@ -98,6 +98,8 @@ class MahjongPlayerInfoEntityRenderer(
             matrices.translate(offset.first, PANEL_HEIGHT, offset.second)
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(sideYaw(side)))
             matrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
+            // 兩面背對背，只畫觀看者那一側的一面，兩面不會互相透出或閃爍。
+            if (!WorldPanelRenderer.facesViewer(matrices)) matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f))
             renderFace(
                 player = player,
                 isDealer = entity.dealerPlayerId == player.playerId,
@@ -108,20 +110,6 @@ class MahjongPlayerInfoEntityRenderer(
                 consumers = vertexConsumers,
                 names = names,
             )
-            matrices.push()
-            matrices.translate(0.0, 0.0, BACK_FACE_OFFSET.toDouble())
-            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f))
-            renderFace(
-                player = player,
-                isDealer = entity.dealerPlayerId == player.playerId,
-                shownDelta = shownDelta,
-                width = width,
-                light = light,
-                matrices = matrices,
-                consumers = vertexConsumers,
-                names = names,
-            )
-            matrices.pop()
             matrices.pop()
         }
     }
@@ -276,7 +264,6 @@ class MahjongPlayerInfoEntityRenderer(
         const val TEXT_SCALE = 0.014f
         const val PANEL_HEIGHT = 2.7
         const val PANEL_DISTANCE = 3.1
-        const val BACK_FACE_OFFSET = 0.02f
         const val TEXT_Z = -0.02f
         const val PANEL_PADDING = 7f
         const val PORTRAIT_SIZE = 12f
