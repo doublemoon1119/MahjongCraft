@@ -7,7 +7,10 @@ import org.gradle.language.jvm.tasks.ProcessResources
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.withType
 
-/** 套用 Minecraft loader module 的 target Java、archive 與 metadata 政策，並讓整個建置的重新映射任務排隊執行。 */
+/**
+ * 套用 Minecraft loader module 的 target Java、archive 與 metadata 政策，讓整個建置的重新映射任務排隊執行，並提供
+ * 開發執行時可選載入的模組組合。
+ */
 class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
     /** 套用 JVM convention 並設定 loader-specific build 行為。 */
     override fun apply(project: Project) = with(project) {
@@ -50,8 +53,44 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
             }
         }
         serializeRemapTasks()
+        alignLoomRuntimeJava()
+        configureDevMods()
     }
 }
+
+/**
+ * 讓 Fabric Loom 依目標的 Java 版本決定 Minecraft 的執行函式庫。
+ *
+ * Loom 預設以執行 Gradle 的 Java 判斷，Gradle 跑在 Java 19 以上時會把 LWJGL 換成較新的版本；開發執行實際使用目標的
+ * Java 工具鏈，換掉後會與玩家的環境不同，例如 Sodium 會拒絕啟動。已經手動指定時不覆寫。
+ */
+private fun Project.alignLoomRuntimeJava() {
+    if (findProperty(LOOM_RUNTIME_JAVA_PROPERTY) == null) {
+        extensions.extraProperties[LOOM_RUNTIME_JAVA_PROPERTY] = targetJavaToolchain().toString()
+    }
+}
+
+/** Fabric Loom 決定執行函式庫時使用的 Java 版本 property。 */
+private const val LOOM_RUNTIME_JAVA_PROPERTY = "fabric.loom.runtimeJavaCompatibilityVersion"
+
+/**
+ * 建立開發執行時可選載入模組的 `devMods` 擴充；開關選中卻沒有宣告的組合在專案設定完成後報錯。
+ *
+ * Fabric Loom 模組預設把選中的組合加入只在開發執行時載入的 `modLocalRuntime`。
+ */
+private fun Project.configureDevMods() {
+    val selected = MinecraftDevMods.parse(providers.gradleProperty(MinecraftDevMods.PROPERTY_NAME).orNull)
+    val devMods = extensions.create("devMods", MinecraftDevModsExtension::class.java, selected, dependencies)
+    pluginManager.withPlugin(FABRIC_LOOM_PLUGIN_ID) {
+        devMods.configurationName.convention(LOOM_LOCAL_RUNTIME_CONFIGURATION)
+    }
+    afterEvaluate {
+        MinecraftDevMods.requireDeclared(path, selected, devMods.groupNames)
+    }
+}
+
+/** Fabric Loom 只在開發執行時載入、不打包也不發布的模組設定。 */
+private const val LOOM_LOCAL_RUNTIME_CONFIGURATION = "modLocalRuntime"
 
 /**
  * 讓這個模組的 Fabric Loom 重新映射任務使用整個建置共用的單一名額；其他任務照常並行。

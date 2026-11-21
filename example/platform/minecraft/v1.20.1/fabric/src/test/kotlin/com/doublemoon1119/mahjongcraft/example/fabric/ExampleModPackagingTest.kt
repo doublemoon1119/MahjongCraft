@@ -102,6 +102,24 @@ class ExampleModPackagingTest {
         }
     }
 
+    /** 正式 mod 宣告 ModMenu 進入點並把 ModMenu 列為建議安裝，但不包含 ModMenu 本身，也不要求玩家安裝。 */
+    @Test
+    fun `main jar offers the ModMenu integration without bundling or requiring ModMenu`() {
+        ZipFile(System.getProperty("mahjongcraft.mainJar")).use { jar ->
+            val paths = jar.entries().asSequence().map { it.name }.toList()
+            val metadata = Json.parseToJsonElement(jar.getInputStream(jar.getEntry("fabric.mod.json")).reader().readText()).jsonObject
+            val entrypoint = metadata.getValue("entrypoints").jsonObject.getValue("modmenu").jsonArray.single().jsonObject
+            val integration = entrypoint.getValue("value").jsonPrimitive.content
+
+            assertEquals("kotlin", entrypoint.getValue("adapter").jsonPrimitive.content)
+            assertTrue("${integration.replace('.', '/')}.class" in paths, integration)
+            assertEquals("*", metadata.getValue("suggests").jsonObject.getValue("modmenu").jsonPrimitive.content)
+            assertFalse("modmenu" in metadata.getValue("depends").jsonObject)
+            assertFalse(paths.any { it.startsWith("com/terraformersmc/") })
+            assertFalse(paths.any { it.startsWith("META-INF/jars/") && it.contains("modmenu", ignoreCase = true) })
+        }
+    }
+
     /** 確認 Fabric metadata 的執行依賴已注入實際需求，而不是留下模板 placeholder。 */
     private fun assertFabricDependencyRequirements(metadata: JsonObject) {
         val dependencies = metadata.getValue("depends").jsonObject

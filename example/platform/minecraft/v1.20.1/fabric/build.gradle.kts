@@ -33,6 +33,27 @@ val mainModArtifact = configurations.create("mainModArtifact") {
     isTransitive = false
 }
 
+repositories {
+    // 相容測試模組只發布在 Modrinth 的 Maven 倉庫；這個倉庫只提供 Modrinth 的套件。
+    exclusiveContent {
+        forRepository { maven("https://api.modrinth.com/maven") { name = "Modrinth" } }
+        filter { includeGroup("maven.modrinth") }
+    }
+}
+
+// 與本體相同的相容測試組合，讓範例的開發執行也能在同樣的環境中測試；本體的組合不會傳到這裡。
+devMods {
+    group(
+        "iris",
+        libs.sodium1201,
+        libs.iris1201,
+        libs.irisJcpp1201,
+        libs.irisGlslTransformer1201,
+        libs.irisAntlrRuntime1201,
+    )
+    group("modmenu", libs.modMenu1201)
+}
+
 loom {
     mods {
         create("mahjongcraft_example") {

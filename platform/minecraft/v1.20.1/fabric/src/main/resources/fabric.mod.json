@@ -31,7 +31,16 @@
         "adapter": "kotlin",
         "value": "com.doublemoon1119.mahjongcraft.platform.fabric.MahjongCraftModClient"
       }
+    ],
+    "modmenu": [
+      {
+        "adapter": "kotlin",
+        "value": "com.doublemoon1119.mahjongcraft.platform.fabric.client.modmenu.MahjongCraftModMenuIntegration"
+      }
     ]
+  },
+  "suggests": {
+    "modmenu": "*"
   },
   "depends": {
     "fabricloader": "${dependencyRequirements.fabricLoader}",

@@ -45,6 +45,17 @@ fabricLoaderRequirement1201 = ">=0.19.0"
 fabricApiRequirement1201 = "*"
 fabricLanguageKotlinRequirement1201 = ">=1.13.14"
 
+# Fabric 1.20.1 開發執行時可選載入的相容測試模組（-PmahjongcraftDevMods），從 Modrinth 的 Maven 倉庫取得；
+# ModMenu 同時是 ModMenu 整合的編譯依賴，但不打包。
+modMenu1201 = "7.2.2"
+iris1201 = "1.7.6+1.20.1"
+sodium1201 = "mc1.20.1-0.5.13-fabric"
+# Iris 打包在自己 JAR 中的程式庫。Loom 為開發環境轉換模組時會拿掉內嵌的程式庫，改由 Maven 依賴提供，
+# 但 Modrinth 的 Iris 沒有宣告這些依賴，所以 iris 組合另外列出；版本與 Iris 內嵌的一致。
+irisJcpp1201 = "1.4.14"
+irisGlslTransformer1201 = "2.0.1"
+irisAntlrRuntime1201 = "4.13.1"
+
 [libraries]
 
 # Build-logic implementation dependencies
@@ -75,6 +86,12 @@ minecraft1201 = { group = "com.mojang", name = "minecraft", version.ref = "minec
 fabric-loader = { group = "net.fabricmc", name = "fabric-loader", version.ref = "fabric-loader" }
 fabricApi1201 = { group = "net.fabricmc.fabric-api", name = "fabric-api", version.ref = "fabricApi1201" }
 fabric-language-kotlin = { group = "net.fabricmc", name = "fabric-language-kotlin", version.ref = "fabric-language-kotlin" }
+modMenu1201 = { group = "maven.modrinth", name = "modmenu", version.ref = "modMenu1201" }
+iris1201 = { group = "maven.modrinth", name = "iris", version.ref = "iris1201" }
+sodium1201 = { group = "maven.modrinth", name = "sodium", version.ref = "sodium1201" }
+irisJcpp1201 = { group = "org.anarres", name = "jcpp", version.ref = "irisJcpp1201" }
+irisGlslTransformer1201 = { group = "io.github.douira", name = "glsl-transformer", version.ref = "irisGlslTransformer1201" }
+irisAntlrRuntime1201 = { group = "org.antlr", name = "antlr4-runtime", version.ref = "irisAntlrRuntime1201" }
 
 [plugins]
 
