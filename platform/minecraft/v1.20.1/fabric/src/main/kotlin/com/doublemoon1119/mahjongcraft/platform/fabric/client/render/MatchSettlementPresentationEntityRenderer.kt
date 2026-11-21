@@ -67,28 +67,32 @@ class MatchSettlementPresentationEntityRenderer(
         val layout = measureLayout(entity.players.size)
         val revealIndexByPlayer = entity.revealSequence().mapIndexed { index, player -> player.playerId to index }.toMap()
 
-        matrices.push()
-        matrices.translate(0.0, 0.55, 0.0)
-        matrices.multiply(dispatcher.rotation)
-        matrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
-        renderPanel(layout, template, alpha, matrices, vertexConsumers)
-        drawText(
-            text = Text.translatable(template.titleTranslationKey),
-            anchorX = 0f,
-            y = TITLE_Y,
-            alignment = Alignment.CENTER,
-            color = withAlpha(template.titleRgb, alpha),
-            matrices = matrices,
-            consumers = vertexConsumers,
-            scale = TITLE_SCALE,
-        )
-        entity.players.sortedBy(MatchSettlementPlayerSnapshot::finalRank).forEach { player ->
-            val revealIndex = revealIndexByPlayer.getValue(player.playerId)
-            val progress = rowRevealProgress(elapsed, revealIndex, entity.rowRevealIntervalTicks)
-            if (progress <= 0f) return@forEach
-            renderPlacement(player, layout, template, alpha * progress, progress, matrices, vertexConsumers)
+        WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
+            // 面板在世界畫完後才畫，期間其他實體可能已改過目前的桌子，畫之前重新指定。
+            currentTableId = entity.managedTableId
+            panelMatrices.push()
+            panelMatrices.translate(0.0, 0.55, 0.0)
+            panelMatrices.multiply(dispatcher.rotation)
+            panelMatrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
+            renderPanel(layout, template, alpha, panelMatrices, panelConsumers)
+            drawText(
+                text = Text.translatable(template.titleTranslationKey),
+                anchorX = 0f,
+                y = TITLE_Y,
+                alignment = Alignment.CENTER,
+                color = withAlpha(template.titleRgb, alpha),
+                matrices = panelMatrices,
+                consumers = panelConsumers,
+                scale = TITLE_SCALE,
+            )
+            entity.players.sortedBy(MatchSettlementPlayerSnapshot::finalRank).forEach { player ->
+                val revealIndex = revealIndexByPlayer.getValue(player.playerId)
+                val progress = rowRevealProgress(elapsed, revealIndex, entity.rowRevealIntervalTicks)
+                if (progress <= 0f) return@forEach
+                renderPlacement(player, layout, template, alpha * progress, progress, panelMatrices, panelConsumers)
+            }
+            panelMatrices.pop()
         }
-        matrices.pop()
     }
 
     /**
@@ -166,7 +170,7 @@ class MatchSettlementPresentationEntityRenderer(
         consumers: VertexConsumerProvider,
     ) {
         val matrix = matrices.peek().positionMatrix
-        val buffer = consumers.getBuffer(ExhaustiveDrawSettlementPanelRenderLayer.layer)
+        val buffer = consumers.getBuffer(WorldPanelRenderLayer.layer)
         val settle = 1f - (1f - progress) * (1f - progress)
         val offset = (1f - settle) * CORNER_ENTRY_OFFSET
         val contentWidth = maxOf(CHAMPION_FACE_SIZE, textRenderer.getWidth(displayName).toFloat(), textRenderer.getWidth(rankText).toFloat())
@@ -250,7 +254,7 @@ class MatchSettlementPresentationEntityRenderer(
         consumers: VertexConsumerProvider,
     ) {
         val matrix = matrices.peek().positionMatrix
-        val buffer = consumers.getBuffer(ExhaustiveDrawSettlementPanelRenderLayer.layer)
+        val buffer = consumers.getBuffer(WorldPanelRenderLayer.layer)
         val color = template.backgroundArgb
         val a = ((((color ushr 24) and 0xFF) * alpha).roundToInt()).coerceIn(0, 255)
         val red = color ushr 16 and 0xFF

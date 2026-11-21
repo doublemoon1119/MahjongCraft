@@ -177,7 +177,9 @@ class MahjongTileEntityRenderer(
         }
         tileFaceRenderer.renderModelLabels(assetKey, matrices, vertexConsumers, effectiveLight)
         matrices.pop()
-        renderActionPopup(entity, assetKey, appearance.definition, tickDelta, matrices, vertexConsumers)
+        WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
+            renderActionPopup(entity, assetKey, appearance.definition, tickDelta, panelMatrices, panelConsumers)
+        }
     }
 
     /**

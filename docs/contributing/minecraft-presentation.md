@@ -13,6 +13,20 @@ rules come from collisions that only showed up in game, so check them even when 
 - A width that reserves space for something, such as the corner area a hand yields to, must match what is
   actually placed there. Test that they agree.
 
+## World panels
+
+- Panels drawn in the world, such as round info, player info, dice results, settlements and tile popups, go
+  through `WorldPanelDeferral.draw`. During world rendering it records the panel's transform and draws every
+  panel after the rest of the world, clouds and weather included, from far to near. Vanilla does not sort
+  entities by distance, so a panel drawn in the entity pass would hide entities drawn later behind it.
+- Panel backgrounds use `WorldPanelRenderLayer`, which tests depth but does not write it, so everything
+  behind a panel shows through. Text, portraits and tile faces inside a panel keep writing depth.
+- A panel is not drawn while a shader mod renders its shadow map (`ShaderShadowPass`), so panels cast no
+  shadows and the deferral never records the light's view. Outside world rendering, for example in replay
+  and guide scenes, `draw` runs the panel immediately.
+- The deferred draw runs after other entities have rendered. Do not let it read renderer fields that a later
+  entity can overwrite; set them inside the draw or capture the values.
+
 ## Moving objects that are already on the table
 
 - Flow publishes each transaction as an ordered list of `TableStep`s: the table state after the step plus

@@ -5,11 +5,16 @@ import net.minecraft.client.render.RenderPhase
 import net.minecraft.client.render.VertexFormat
 import net.minecraft.client.render.VertexFormats
 
-/** 結算面板使用的半透明純色層；寫入自身深度，避免稍後繪製的雲層穿透面板。 */
-internal object ExhaustiveDrawSettlementPanelRenderLayer {
-    /** 結算面板 quad 使用的半透明且寫入深度的 render layer。 */
+/**
+ * 世界面板的半透明純色底色。
+ *
+ * 只做深度測試、不寫入深度：面板由 [WorldPanelDeferral] 等整個世界畫完才畫，後方的實體、半透明方塊與雲都已經畫好，
+ * 能透過底色看到；前方的東西照常擋住面板。
+ */
+internal object WorldPanelRenderLayer {
+    /** 面板底色的四邊形使用的繪製圖層。 */
     val layer: RenderLayer = RenderLayer.of(
-        "mahjongcraft_exhaustive_draw_settlement_panel",
+        "mahjongcraft_world_panel",
         VertexFormats.POSITION_COLOR,
         VertexFormat.DrawMode.QUADS,
         256,
@@ -20,7 +25,7 @@ internal object ExhaustiveDrawSettlementPanelRenderLayer {
             .transparency(RenderPhase.TRANSLUCENT_TRANSPARENCY)
             .depthTest(RenderPhase.LEQUAL_DEPTH_TEST)
             .cull(RenderPhase.DISABLE_CULLING)
-            .writeMaskState(RenderPhase.ALL_MASK)
+            .writeMaskState(RenderPhase.COLOR_MASK)
             .build(false),
     )
 }

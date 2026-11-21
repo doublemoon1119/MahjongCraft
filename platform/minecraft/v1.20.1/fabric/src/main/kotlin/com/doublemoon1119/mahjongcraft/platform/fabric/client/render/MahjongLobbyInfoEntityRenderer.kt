@@ -46,36 +46,38 @@ class MahjongLobbyInfoEntityRenderer(
             ) to if (entity.playerCount >= entity.maximumPlayerCount) FULL_COLOR else TEXT_COLOR,
             Text.translatable(MinecraftRoomScreenKeys.LOBBY_VIEW_DETAILS) to HINT_COLOR,
         )
-        matrices.push()
-        matrices.multiply(dispatcher.rotation)
-        matrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
-        val lineHeight = textRenderer.fontHeight + LINE_SPACING
-        val totalHeight = lines.size * lineHeight
-        val maximumWidth = lines.maxOf { textRenderer.getWidth(it.first) }
-        WorldPanelRenderer.drawBackground(
-            left = -maximumWidth / 2f - PANEL_PADDING,
-            top = -totalHeight / 2f - PANEL_PADDING,
-            right = maximumWidth / 2f + PANEL_PADDING,
-            bottom = totalHeight / 2f + PANEL_PADDING,
-            color = BACKGROUND_COLOR,
-            z = 0f,
-            matrices = matrices,
-            consumers = vertexConsumers,
-        )
-        lines.forEachIndexed { index, (line, color) ->
-            WorldPanelRenderer.drawText(
-                renderer = textRenderer,
-                text = line,
-                x = -textRenderer.getWidth(line) / 2f,
-                y = -totalHeight / 2f + index * lineHeight,
-                color = color,
-                z = TEXT_Z,
-                light = light,
-                matrices = matrices,
-                consumers = vertexConsumers,
+        WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
+            panelMatrices.push()
+            panelMatrices.multiply(dispatcher.rotation)
+            panelMatrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
+            val lineHeight = textRenderer.fontHeight + LINE_SPACING
+            val totalHeight = lines.size * lineHeight
+            val maximumWidth = lines.maxOf { textRenderer.getWidth(it.first) }
+            WorldPanelRenderer.drawBackground(
+                left = -maximumWidth / 2f - PANEL_PADDING,
+                top = -totalHeight / 2f - PANEL_PADDING,
+                right = maximumWidth / 2f + PANEL_PADDING,
+                bottom = totalHeight / 2f + PANEL_PADDING,
+                color = BACKGROUND_COLOR,
+                z = 0f,
+                matrices = panelMatrices,
+                consumers = panelConsumers,
             )
+            lines.forEachIndexed { index, (line, color) ->
+                WorldPanelRenderer.drawText(
+                    renderer = textRenderer,
+                    text = line,
+                    x = -textRenderer.getWidth(line) / 2f,
+                    y = -totalHeight / 2f + index * lineHeight,
+                    color = color,
+                    z = TEXT_Z,
+                    light = light,
+                    matrices = panelMatrices,
+                    consumers = panelConsumers,
+                )
+            }
+            panelMatrices.pop()
         }
-        matrices.pop()
     }
 
     override fun getTexture(entity: MahjongLobbyInfoEntity): Identifier? = null

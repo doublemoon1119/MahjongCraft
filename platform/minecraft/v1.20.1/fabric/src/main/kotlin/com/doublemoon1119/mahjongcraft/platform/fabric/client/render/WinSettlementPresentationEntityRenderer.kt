@@ -102,17 +102,21 @@ class WinSettlementPresentationEntityRenderer(
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         val elapsed = entity.elapsedTicks(tickDelta)
         if (elapsed < 0.0 || elapsed > entity.endGameTime - entity.startGameTime) return
-        matrices.push()
-        matrices.translate(0.0, 0.55, 0.0)
-        matrices.multiply(dispatcher.rotation)
-        matrices.scale(-SCALE, -SCALE, SCALE)
-        val rankingStart = entity.rankingStartTick().toDouble()
-        if (elapsed < rankingStart) {
-            renderWinnerPhase(entity, elapsed, matrices, vertexConsumers, appearance)
-        } else {
-            renderRankingPhase(entity, elapsed - rankingStart, matrices, vertexConsumers)
+        WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
+            // 面板在世界畫完後才畫，期間其他實體可能已改過目前的桌子，畫之前重新指定。
+            currentTableId = entity.managedTableId
+            panelMatrices.push()
+            panelMatrices.translate(0.0, 0.55, 0.0)
+            panelMatrices.multiply(dispatcher.rotation)
+            panelMatrices.scale(-SCALE, -SCALE, SCALE)
+            val rankingStart = entity.rankingStartTick().toDouble()
+            if (elapsed < rankingStart) {
+                renderWinnerPhase(entity, elapsed, panelMatrices, panelConsumers, appearance)
+            } else {
+                renderRankingPhase(entity, elapsed - rankingStart, panelMatrices, panelConsumers)
+            }
+            panelMatrices.pop()
         }
-        matrices.pop()
     }
 
     /**
@@ -636,7 +640,7 @@ class WinSettlementPresentationEntityRenderer(
     private fun renderContainer(style: PresentationContainerStyle, x: Float, y: Float, size: PresentationNodeSize, alpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
         if ((style.backgroundArgb ushr 24) == 0 && style.borderWidth <= 0f) return
         val matrix = matrices.peek().positionMatrix
-        val buffer = consumers.getBuffer(ExhaustiveDrawSettlementPanelRenderLayer.layer)
+        val buffer = consumers.getBuffer(WorldPanelRenderLayer.layer)
         fun quad(left: Float, top: Float, right: Float, bottom: Float, argb: Int) {
             val a = (((argb ushr 24) and 0xFF) * alpha).roundToInt()
             val r = (argb ushr 16) and 0xFF
@@ -780,7 +784,7 @@ class WinSettlementPresentationEntityRenderer(
     ) {
         if (right <= left || alpha <= 0f) return
         val matrix = matrices.peek().positionMatrix
-        val buffer = consumers.getBuffer(ExhaustiveDrawSettlementPanelRenderLayer.layer)
+        val buffer = consumers.getBuffer(WorldPanelRenderLayer.layer)
         val a = (alpha.coerceIn(0f, 1f) * 255).roundToInt()
         buffer.vertex(matrix, left, top, RANKING_HIGHLIGHT_Z).color(255, 205, 92, a).next()
         buffer.vertex(matrix, right, top, RANKING_HIGHLIGHT_Z).color(255, 238, 178, a).next()
@@ -875,7 +879,7 @@ class WinSettlementPresentationEntityRenderer(
      */
     private fun renderPanel(halfWidth: Float, top: Float, bottom: Float, alpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
         val matrix = matrices.peek().positionMatrix
-        val buffer = consumers.getBuffer(ExhaustiveDrawSettlementPanelRenderLayer.layer)
+        val buffer = consumers.getBuffer(WorldPanelRenderLayer.layer)
         val a = (alpha * 0.78f * 255).roundToInt()
         buffer.vertex(matrix, -halfWidth, top, 0.5f).color(0, 0, 0, a).next()
         buffer.vertex(matrix, halfWidth, top, 0.5f).color(0, 0, 0, a).next()
