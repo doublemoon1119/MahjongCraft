@@ -31,6 +31,9 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   SemVer build metadata, for example `0.4.0-SNAPSHOT+1.20.1-fabric`. Both come from the module's directory,
   as its JAR name `mahjongcraft-fabric-1.20.1-<version>.jar` does. Build metadata does not affect version
   ordering, so dependency checks compare only the release train version.
+- A loader module's mod JAR is distributable unless its packaging sets `distributable` to `false`, as
+  development-only modules and examples do. Distributable mods are what `collectCiArtifacts` gathers for CI:
+  the remapped JAR for Fabric Loom modules, otherwise the plain JAR.
 - `-PmahjongcraftBuildMetadata=<value>` appends `.<value>` to the metadata version and `+<value>` to the JAR
   version, for example to identify a CI build by its commit. It must be dot-separated letters, digits and
   hyphens, and it leaves project versions and the version policy unchanged.

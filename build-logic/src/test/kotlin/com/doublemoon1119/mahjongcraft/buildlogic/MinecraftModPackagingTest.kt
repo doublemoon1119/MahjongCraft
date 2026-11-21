@@ -50,6 +50,23 @@ class MinecraftModPackagingTest {
         assertTrue(result.output.contains("Invalid -PmahjongcraftBuildMetadata value"), result.output)
     }
 
+    /** CI 只收集交付給玩家的模組 JAR；標示為非成品的模組（例如範例）不收集。 */
+    @Test
+    fun `ci artifacts contain only distributable mods`() = withFixture { root ->
+        prepareFixture(root)
+        root.resolve("build.gradle").writeText(
+            "plugins {\n    id(\"mahjongcraft.target-management\")\n}\n" + root.resolve("build.gradle").readText(),
+        )
+        root.resolve("example/platform/minecraft/v1.20.1/fabric/build.gradle").appendText(
+            "\nminecraftModPackaging {\n    distributable = false\n}\n",
+        )
+
+        runner(root, "collectCiArtifacts").build()
+
+        val collected = root.resolve("build/ci/artifacts").list().orEmpty().sorted()
+        assertEquals(listOf("mahjongcraft-fabric-1.20.1-0.0.0-dev.jar"), collected)
+    }
+
     /** example 可覆寫自己的 metadata 與 archive 名稱，但不會改變正式 mod 的 root ID。 */
     @Test
     fun `example packaging can override metadata without changing formal id`() = withFixture { root ->

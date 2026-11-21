@@ -5,11 +5,13 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.BasePluginExtension
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.withType
 import org.gradle.language.jvm.tasks.ProcessResources
 import java.util.Optional
+import java.util.concurrent.Callable
 
 /**
  * 套用 Minecraft loader module 的 target Java、archive 與 metadata 政策，讓整個建置的重新映射任務排隊執行，並提供
@@ -27,6 +29,7 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
         packaging.displayName.convention(rootProject.extensions.extraProperties["projectDisplayName"].toString())
         packaging.description.convention("Bring Mahjong to Minecraft and play with your friends.")
         packaging.icon.convention(rootProject.layout.projectDirectory.file("docs/assets/branding/logo.png"))
+        packaging.distributable.convention(true)
         packaging.archiveBaseName.convention("$rootProjectId-${platformLoader()}-${platformMinecraftVersion()}")
         extensions.configure<BasePluginExtension> {
             archivesName.set(packaging.archiveBaseName)
@@ -61,9 +64,35 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
                 expand(metadata.get())
             }
         }
+        contributeCiArtifact(packaging)
         serializeRemapTasks()
         alignLoomRuntimeJava()
         configureDevMods()
+    }
+}
+
+/**
+ * 把這個模組交付給玩家的 JAR 接到 root 的 [CI_ARTIFACTS_TASK_NAME]；[MinecraftModPackagingExtension.distributable] 為否時不接。
+ *
+ * Fabric Loom 模組交付的是重新映射後的 `remapJar`，其他模組是 `jar`。root 沒有套用 target 管理外掛時（例如只建置部分專案的
+ * 測試建置）不做任何事。
+ *
+ * @param packaging 這個模組的打包設定。
+ */
+private fun Project.contributeCiArtifact(packaging: MinecraftModPackagingExtension) {
+    val project = this
+    rootProject.pluginManager.withPlugin("mahjongcraft.target-management") {
+        rootProject.tasks.named(CI_ARTIFACTS_TASK_NAME, Sync::class.java).configure {
+            from(
+                Callable {
+                    when {
+                        !packaging.distributable.get() -> emptyList<Any>()
+                        project.tasks.names.contains("remapJar") -> listOf(project.tasks.named("remapJar"))
+                        else -> listOf(project.tasks.named("jar"))
+                    }
+                },
+            )
+        }
     }
 }
 

@@ -11,6 +11,7 @@ import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.options.Option
 import java.io.File
@@ -38,6 +39,11 @@ class TargetManagementPlugin : Plugin<Project> {
             this.rootDirectory.set(rootDirectory)
             coreJavaToolchain.set(project.provider { project.catalogVersion("core-java-toolchain").toInt() })
             outputFile.set(project.layout.buildDirectory.file("ci/target-matrix.json"))
+        }
+        project.tasks.register(CI_ARTIFACTS_TASK_NAME, Sync::class.java) {
+            group = "mahjong"
+            description = "Collects the distributable mods of the selected target into one directory for CI to upload."
+            into(project.layout.buildDirectory.dir("ci/artifacts"))
         }
         project.tasks.register("switchTarget", SwitchTargetTask::class.java) {
             group = "mahjong"
@@ -183,3 +189,8 @@ internal fun updateLocalProperty(file: File, targetId: String?) {
         Files.move(temporaryFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING)
     }
 }
+
+/**
+ * 收集目前目標所有交付成品的 root 任務名稱；各平台的建置慣例把自己的成品接到這個任務。
+ */
+const val CI_ARTIFACTS_TASK_NAME: String = "collectCiArtifacts"

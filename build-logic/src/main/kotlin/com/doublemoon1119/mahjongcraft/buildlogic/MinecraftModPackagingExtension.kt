@@ -23,4 +23,9 @@ abstract class MinecraftModPackagingExtension {
 
     /** 由版本與 loader 模組指定的執行依賴範圍；metadata 以 dependencyRequirements 取得。 */
     abstract val dependencyRequirements: MapProperty<String, String>
+
+    /**
+     * 產出的模組是否為交付給玩家的成品；預設為是。只在開發時使用的模組與範例模組設為否，CI 不收集它們的產出。
+     */
+    abstract val distributable: Property<Boolean>
 }

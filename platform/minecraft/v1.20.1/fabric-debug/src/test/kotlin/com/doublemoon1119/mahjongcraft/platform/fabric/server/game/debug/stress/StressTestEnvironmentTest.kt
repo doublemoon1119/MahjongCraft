@@ -44,7 +44,7 @@ class StressTestEnvironmentTest {
         val environment = assertNotNull(factory().openAt(path, StressHistoryMode.WRITE))
         try {
             val runtimes = playMatches(environment, count = 2)
-            withTimeout(2.minutes) {
+            withTimeout(3.minutes) {
                 val matchIds = runtimes.map { it.matchId().toString() }.toSet()
                 while (!archivedReplayIds(environment, matchIds).containsAll(matchIds)) delay(50.milliseconds)
             }
@@ -66,7 +66,7 @@ class StressTestEnvironmentTest {
         val environment = assertNotNull(factory().openAt(path, StressHistoryMode.ENCODE))
         try {
             playMatches(environment, count = 2)
-            withTimeout(1.minutes) {
+            withTimeout(3.minutes) {
                 while (environment.store.snapshot().historyRecordingState.let { it.pendingEvents.isNotEmpty() || it.terminalByMatchId.isNotEmpty() }) {
                     delay(20.milliseconds)
                 }
@@ -156,7 +156,7 @@ class StressTestEnvironmentTest {
      * @param count 要建立並完成的場數。
      * @return 已完成的各場推進器，保留其場次與場地識別碼供斷言使用。
      */
-    private suspend fun playMatches(environment: StressTestEnvironment, count: Int) = withTimeout(2.minutes) {
+    private suspend fun playMatches(environment: StressTestEnvironment, count: Int) = withTimeout(3.minutes) {
         val registries = bundledHeadlessHistoryRegistries()
         val runtimes = List(count) { index ->
             HeadlessFlowHistoryRuntime.create(

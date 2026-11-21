@@ -10,6 +10,8 @@ version = libs.versions.minecraft.mod.version.get()
 
 configure<com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtension> {
     modId.set("mahjongcraft_debug")
+    // 只在開發時使用，CI 不收集它的 JAR。
+    distributable.set(false)
     displayName.set("MahjongCraft Debug Tools")
     description.set("Development-only debug commands and tools for MahjongCraft.")
     dependencyRequirements.put("minecraft", libs.versions.minecraft1201)
