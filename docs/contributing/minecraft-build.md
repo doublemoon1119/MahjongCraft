@@ -1,11 +1,11 @@
 # Minecraft Build
 
-Build rules for the Minecraft modules: the cross-version common layer, version-common modules and loader
+Build rules for the Minecraft modules: the cross-version common layer, version mod modules and loader
 modules. General Gradle configuration, targets, examples and CI are in [Build](build.md).
 
 ## Java and Remapping
 
-- Minecraft version-common and loader modules use the Java policy declared by their selected platform target
+- Minecraft version mod and loader modules use the Java policy declared by their selected platform target
   in `gradle/platform-targets.toml`, not the core Java policy.
 - Minecraft code uses Mojang's official names, which Fabric Loom modules select with
   `loom.officialMojangMappings()`. Code, comments and documentation name Minecraft classes and members
@@ -18,6 +18,17 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   without applying them, so every module loads the same plugin classes. Modules that apply different plugin
   sets would otherwise load Loom in separate class loaders, and Loom fails when it reaches another project, for
   example while an IDE sync creates `genSources` tasks. Declare a new loader's plugins there as well.
+
+## Version Mod Modules
+
+- Each Minecraft version has one mod module, such as `platform/minecraft/v1.20.1/mod`, for the code and resources
+  that call that Minecraft version but no loader API. Its build applies the ModDevGradle legacy plugin in vanilla
+  mode, so it compiles and tests against vanilla Minecraft with Mojang names and fails when code uses a loader API.
+- Loader modules compile the mod module's sources and package its resources together with their own, instead of
+  depending on its JAR. That JAR uses Mojang names, while each loader remaps the combined output to its own runtime
+  names. The mod module's JAR is never distributed.
+- Logic that does not need Minecraft classes belongs in the cross-version common layer instead, so the code each
+  new Minecraft version copies stays small.
 
 ## Mod Dependency Requirements
 

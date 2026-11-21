@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.fabric.entity
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity
 
 import net.minecraft.nbt.CompoundTag
 

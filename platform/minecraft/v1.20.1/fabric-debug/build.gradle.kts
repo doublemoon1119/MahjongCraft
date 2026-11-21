@@ -46,7 +46,6 @@ dependencies {
     // 執行與測試時沿用本體完整的依賴清單。
     runtimeOnly(project(path = ":minecraft_v1.20.1_fabric", configuration = "namedRuntimeElements"))
     implementation(project(":minecraft_common"))
-    implementation(project(":minecraft_v1.20.1_common"))
     implementation(project(":mahjong-logic"))
     implementation(project(":mahjong-ai"))
     implementation(project(":mahjong-flow:mahjong-flow-common"))

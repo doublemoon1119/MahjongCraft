@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.fabric.entity
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationQueueDriver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
