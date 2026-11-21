@@ -38,6 +38,27 @@ configurations.create("namedRuntimeElements") {
     outgoing.artifact(tasks.named("jar"))
 }
 
+repositories {
+    // ModMenu 與相容測試模組只發布在 Modrinth 的 Maven 倉庫；這個倉庫只提供 Modrinth 的套件。
+    exclusiveContent {
+        forRepository { maven("https://api.modrinth.com/maven") { name = "Modrinth" } }
+        filter { includeGroup("maven.modrinth") }
+    }
+}
+
+// 開發執行時可選載入的相容測試模組，以 -PmahjongcraftDevMods 選擇；不打包，也不成為模組的依賴。
+devMods {
+    group(
+        "iris",
+        libs.sodium1201,
+        libs.iris1201,
+        libs.irisJcpp1201,
+        libs.irisGlslTransformer1201,
+        libs.irisAntlrRuntime1201,
+    )
+    group("modmenu", libs.modMenu1201)
+}
+
 loom {
     accessWidenerPath = file("src/main/resources/mahjongcraft.accesswidener")
 
@@ -96,6 +117,8 @@ dependencies {
     modImplementation(libs.fabric.loader)
     modImplementation(libs.fabricApi1201)
     modImplementation(libs.fabric.language.kotlin)
+    // ModMenu 整合只對 ModMenu 的 API 編譯；玩家有安裝 ModMenu 時才會載入整合的進入點。
+    modCompileOnly(libs.modMenu1201)
 
     implementation(project(":minecraft_common"))
     implementation(project(":minecraft_v1.20.1_common"))

@@ -127,15 +127,21 @@ class MahjongClientConfigScreenController(
      * @param parent 返回目標；null 表示關回遊戲。
      */
     private fun open(client: MinecraftClient, parent: Screen?) {
-        client.setScreen(
-            MahjongClientConfigScreen(
-                parent = parent,
-                configStore = configStore,
-                automaticCoordinator = automaticCoordinator,
-                displayResolver = displayResolver,
-                preferenceService = preferenceService,
-                hudPreviewRenderer = hudPreviewRenderer,
-            ),
-        )
+        client.setScreen(screen(parent))
     }
+
+    /**
+     * 建立設定畫面但不開啟，供其他模組的畫面自己切換，例如模組清單的設定按鈕。
+     *
+     * @param parent 返回目標；null 表示關回遊戲。
+     * @return 設定畫面。
+     */
+    fun screen(parent: Screen?): Screen = MahjongClientConfigScreen(
+        parent = parent,
+        configStore = configStore,
+        automaticCoordinator = automaticCoordinator,
+        displayResolver = displayResolver,
+        preferenceService = preferenceService,
+        hudPreviewRenderer = hudPreviewRenderer,
+    )
 }

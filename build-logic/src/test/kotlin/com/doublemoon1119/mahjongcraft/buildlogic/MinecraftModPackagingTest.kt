@@ -97,6 +97,29 @@ class MinecraftModPackagingTest {
         assertTrue(second.output.contains("Configuration cache entry reused"), second.output)
     }
 
+    /** Loom 依目標的 Java 工具鏈決定執行函式庫；手動指定的值不被覆寫。 */
+    @Test
+    fun `loom runtime java follows the target toolchain unless set`() = withFixture { root ->
+        prepareFixture(root)
+        root.resolve("platform/v1.20.1/fabric/build.gradle").appendText(
+            """
+
+            def loomRuntimeJava = findProperty("fabric.loom.runtimeJavaCompatibilityVersion")
+            tasks.register("printLoomRuntimeJava") {
+                doLast {
+                    println("loom runtime java: " + loomRuntimeJava)
+                }
+            }
+            """.trimIndent() + "\n",
+        )
+
+        val derived = runner(root, ":formal:printLoomRuntimeJava").build()
+        val explicit = runner(root, ":formal:printLoomRuntimeJava", "-Pfabric.loom.runtimeJavaCompatibilityVersion=21").build()
+
+        assertTrue(derived.output.contains("loom runtime java: 17"), derived.output)
+        assertTrue(explicit.output.contains("loom runtime java: 21"), explicit.output)
+    }
+
     /** 建立不含 Minecraft Loom 的最小正式／範例 loader fixture。 */
     private fun prepareFixture(root: File) {
         root.resolve("gradle/libs.versions.toml").apply {

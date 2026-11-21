@@ -41,6 +41,23 @@ Client and dedicated-server runs use separate directories,
 Server startup requires the usual Minecraft server setup, including EULA acceptance;
 these tasks are interactive development launches, not automated tests.
 
+Compatibility checks can load extra mods into development runs with `-PmahjongcraftDevMods`
+(see [Build](../../../../docs/contributing/build.md#development-runtime-mods)). This module and the
+example module declare the same groups:
+
+- `iris`: Sodium and Iris, for checking rendering with and without a shader pack. Loom drops the libraries
+  a mod bundles in its own JAR and expects them as Maven dependencies, which Iris on Modrinth does not
+  declare, so the group also lists the libraries Iris bundles, at the versions it bundles. Shader packs are
+  not part of the repository; put one in `run/client/shaderpacks` and select it in the game's video settings.
+- `modmenu`: ModMenu, for checking the mod list entry, whose settings button opens the client settings.
+
+```shell
+./gradlew :minecraft_v1.20.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftDevMods=iris,modmenu"
+```
+
+The ModMenu integration itself is part of the mod: it compiles against the ModMenu API without bundling
+it, and `fabric.mod.json` lists ModMenu under `suggests`.
+
 ## Dependency injection
 
 The common module holds runtime metadata and the services both graphs share; server and client
