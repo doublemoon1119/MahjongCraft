@@ -1,8 +1,9 @@
 plugins {
     alias(libs.plugins.mahjongcraft.minecraft.loader)
-    // 與本體相同的 Kotlin 編譯器外掛組合：外掛組合不同時兩個專案以不同的類別載入器載入 Loom，Loom 設定 Minecraft 會失敗。
+    // debug 情境與規則的資料類型以 kotlinx.serialization 編碼。
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.fabric.loom)
+    // 讓 debugKoinApplication 在編譯期檢查 debug 服務的依賴。
     alias(libs.plugins.koin.compiler)
 }
 

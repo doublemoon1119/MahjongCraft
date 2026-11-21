@@ -11,6 +11,10 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   build-wide slot, so remapping runs one task at a time while other work stays parallel. Two remap tasks running at
   once in the same daemon can fail with `ClosedFileSystemException` while reading a classpath JAR. New loader or
   version modules inherit this through the convention; do not add per-module workarounds.
+- The root build script declares the Gradle plugins that Minecraft modules apply, such as Fabric Loom,
+  without applying them, so every module loads the same plugin classes. Modules that apply different plugin
+  sets would otherwise load Loom in separate class loaders, and Loom fails when it reaches another project, for
+  example while an IDE sync creates `genSources` tasks. Declare a new loader's plugins there as well.
 
 ## Mod Dependency Requirements
 
