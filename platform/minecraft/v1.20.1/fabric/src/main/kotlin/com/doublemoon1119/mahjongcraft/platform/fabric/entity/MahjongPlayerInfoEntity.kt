@@ -33,7 +33,8 @@ import kotlin.uuid.Uuid
 class MahjongPlayerInfoEntity(
     type: EntityType<out MahjongPlayerInfoEntity> = ModEntities.mahjongPlayerInfo,
     world: Level,
-) : AnimatedMahjongEntity<Nothing>(type, world) {
+) : AnimatedMahjongEntity<Nothing>(type, world),
+    HiddenDebugHitboxEntity {
     /** 同一份解不出來的玩家資料只記錄一次警告。 */
     private val unreadablePlayers = DistinctFailureGate<String>()
 

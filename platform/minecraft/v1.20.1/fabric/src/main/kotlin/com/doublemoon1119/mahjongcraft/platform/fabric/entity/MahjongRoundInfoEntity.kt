@@ -38,7 +38,8 @@ import kotlin.uuid.toKotlinUuid
 class MahjongRoundInfoEntity(
     type: EntityType<out MahjongRoundInfoEntity> = ModEntities.mahjongRoundInfo,
     world: Level,
-) : AnimatedMahjongEntity<Nothing>(type, world) {
+) : AnimatedMahjongEntity<Nothing>(type, world),
+    HiddenDebugHitboxEntity {
     /**
      * 要顯示的完整內容，依序顯示——`SynchedEntityData` 只能同步基本型別，這裡編碼成 JSON 存進一個
      * `EntityDataAccessor<String>`，client 端 renderer 解碼後才依認得的 key 翻譯成文字，見

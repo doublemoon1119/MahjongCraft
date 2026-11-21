@@ -23,7 +23,8 @@ class WinSettlementPresentationEntity(
     type: EntityType<out WinSettlementPresentationEntity> = ModEntities.winSettlementPresentation,
     world: Level,
 ) : SimpleAnimatedMahjongEntity(type, world),
-    TableOwnedPresentationEntity {
+    TableOwnedPresentationEntity,
+    HiddenDebugHitboxEntity {
     /** 所屬麻將桌；資料未設定或損壞時為 `null`。 */
     override val managedTableId: Uuid? get() = entityData[TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
 

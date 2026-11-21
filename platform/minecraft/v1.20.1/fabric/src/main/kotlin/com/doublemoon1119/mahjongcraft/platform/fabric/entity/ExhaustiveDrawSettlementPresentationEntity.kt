@@ -20,7 +20,8 @@ class ExhaustiveDrawSettlementPresentationEntity(
     type: EntityType<out ExhaustiveDrawSettlementPresentationEntity> = ModEntities.exhaustiveDrawSettlementPresentation,
     world: Level,
 ) : SimpleAnimatedMahjongEntity(type, world),
-    TableOwnedPresentationEntity {
+    TableOwnedPresentationEntity,
+    HiddenDebugHitboxEntity {
 
     /** 所屬麻將桌。 */
     override val managedTableId: Uuid?

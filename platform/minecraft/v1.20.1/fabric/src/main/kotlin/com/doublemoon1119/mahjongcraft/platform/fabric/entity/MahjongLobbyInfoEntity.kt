@@ -17,7 +17,8 @@ import kotlin.uuid.Uuid
 class MahjongLobbyInfoEntity(
     type: EntityType<out MahjongLobbyInfoEntity> = ModEntities.mahjongLobbyInfo,
     world: Level,
-) : AnimatedMahjongEntity<Nothing>(type, world) {
+) : AnimatedMahjongEntity<Nothing>(type, world),
+    HiddenDebugHitboxEntity {
     /** 等待中遊戲使用的規則模組 ID。 */
     var ruleModuleId: String
         get() = entityData[RULE_MODULE_ID]

@@ -22,7 +22,8 @@ class MatchSettlementPresentationEntity(
     type: EntityType<out MatchSettlementPresentationEntity> = ModEntities.matchSettlementPresentation,
     world: Level,
 ) : SimpleAnimatedMahjongEntity(type, world),
-    TableOwnedPresentationEntity {
+    TableOwnedPresentationEntity,
+    HiddenDebugHitboxEntity {
 
     /** 所屬麻將桌。 */
     override val managedTableId: Uuid?

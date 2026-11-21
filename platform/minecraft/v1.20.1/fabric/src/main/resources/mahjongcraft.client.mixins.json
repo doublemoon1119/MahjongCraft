@@ -6,6 +6,7 @@
     "GuiMixin",
     "GameRendererMixin",
     "EntityRenderDispatcherAccessor",
+    "EntityRenderDispatcherMixin",
     "LivingEntityRendererMixin"
   ],
   "injectors": {
