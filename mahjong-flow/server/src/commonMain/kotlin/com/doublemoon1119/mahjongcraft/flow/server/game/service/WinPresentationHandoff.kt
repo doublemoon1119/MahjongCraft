@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
+import com.doublemoon1119.mahjongcraft.flow.common.concurrent.concurrentMutableMap
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SettledWinPresentation
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
 
 /**
@@ -24,7 +24,7 @@ import kotlin.uuid.Uuid
  */
 class WinPresentationHandoff {
     /** 以對局識別碼索引、等待同一派發流程取走的胡牌呈現資料。 */
-    private val presentationsByGameId = ConcurrentHashMap<Uuid, SettledWinPresentation>()
+    private val presentationsByGameId = concurrentMutableMap<Uuid, SettledWinPresentation>()
 
     /**
      * 暫存 [gameId] 這次胡牌的呈現內容，覆寫任何尚未被取走的舊值。
