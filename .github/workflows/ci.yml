@@ -1,0 +1,94 @@
+# Runs the same full verification as a local pre-commit check, once per build target.
+# The targets come from gradle/platform-targets.toml through the writeCiTargetMatrix task,
+# so a new platform target is verified without editing this file.
+name: CI
+
+# Runs on every push and pull request. Branches created before this workflow existed do not contain it,
+# so pushes to them do not run CI.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Gradle itself runs on this JDK, the same version used for local development.
+  GRADLE_JAVA_VERSION: "25"
+
+jobs:
+  targets:
+    name: List targets
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ env.GRADLE_JAVA_VERSION }}
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+      - name: Write target matrix
+        id: matrix
+        run: |
+          ./gradlew writeCiTargetMatrix
+          echo "matrix=$(cat build/ci/target-matrix.json)" >> "$GITHUB_OUTPUT"
+
+  verify:
+    name: Verify (${{ matrix.target }})
+    needs: targets
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.targets.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v7
+      # The target's toolchain JDK is installed first; the JDK running Gradle is installed last,
+      # so it becomes JAVA_HOME. Gradle finds the toolchain through the JAVA_HOME_<version>_X64 variable.
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.javaToolchain }}
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ env.GRADLE_JAVA_VERSION }}
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+      - name: Build and verify
+        run: >-
+          ./gradlew build detektAll --continue --stacktrace
+          "-PmahjongcraftTarget=${{ matrix.target }}"
+          "-PmahjongcraftExample=${{ matrix.examples }}"
+          "-PmahjongcraftBuildMetadata=${GITHUB_SHA::7}"
+          "-Porg.gradle.java.installations.fromEnv=JAVA_HOME_${{ matrix.javaToolchain }}_X64"
+          "-Porg.gradle.java.installations.auto-download=false"
+          "-Pkotlin.compiler.execution.strategy=in-process"
+          "-Dorg.gradle.jvmargs=-Xmx5g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
+      - name: Upload reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reports-${{ matrix.target }}
+          path: "**/build/reports/"
+          retention-days: 7
+      - name: Upload mod JAR
+        if: success() && matrix.target != 'core'
+        uses: actions/upload-artifact@v7
+        with:
+          name: jar-${{ matrix.target }}
+          path: |
+            platform/**/build/libs/*.jar
+            !platform/**/*-debug/**
+            !**/*-sources.jar
+          if-no-files-found: error
+          retention-days: 7

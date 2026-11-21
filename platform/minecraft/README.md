@@ -41,4 +41,5 @@ extensions register platform mappings during initialization, while event listene
 committed game results. Event and seating API compatibility is limited to the scope in
 [Public API Compatibility](../../docs/contributing/extensions-and-registries.md#public-api-compatibility), not by every public class in the Minecraft modules.
 
-See [Build](../../docs/contributing/build.md) for selecting and building a target.
+See [Build](../../docs/contributing/build.md) for selecting and building a target, and
+[Minecraft Build](../../docs/contributing/minecraft-build.md) for build rules specific to these modules.

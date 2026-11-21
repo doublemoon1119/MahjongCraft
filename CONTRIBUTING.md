@@ -15,8 +15,11 @@ kind of change you are making; the rules in them apply even when this file does 
   session lifetime.
 - [Architecture](docs/contributing/architecture.md): module responsibilities, dependencies, and where
   code belongs.
-- [Build](docs/contributing/build.md): Gradle configuration, platform targets and release versions.
+- [Build](docs/contributing/build.md): Gradle configuration, platform targets, release versions, examples
+  and CI.
 - [Persistence](docs/contributing/persistence.md): anything stored on disk.
+- [Minecraft build](docs/contributing/minecraft-build.md): build settings of the Minecraft modules, including
+  mod dependency requirements, mod versions and development runtime mods.
 - [Minecraft presentation](docs/contributing/minecraft-presentation.md): how tiles, melds and table props are
   placed and animated on the Minecraft table, including the local player's own hand, and how screens
   are laid out.
@@ -46,6 +49,8 @@ kind of change you are making; the rules in them apply even when this file does 
 - Use `-PmahjongcraftTarget=core` for an explicit core-only build even when local development
   settings select a Minecraft target. Use `./gradlew switchTarget -PtoTarget=<target-id>` to persist
   a local selection, or `./gradlew clearTarget` to restore the core-only default.
+- CI reruns the same verification for every target on pushes and pull requests (see
+  [Build](docs/contributing/build.md#continuous-integration)); it does not replace this local check.
 - A passing build does not mean warning-free: compiler warnings (e.g. redundant casts, unused
   imports) do not fail the build, so check the compiler output explicitly.
 - Fix flagged warnings/violations before committing, unless they are pre-existing and unrelated to

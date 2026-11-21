@@ -10,7 +10,7 @@ import kotlin.test.assertTrue
 
 /** 以 Gradle TestKit 驗證 Minecraft loader module 的 metadata 與產物隔離。 */
 class MinecraftModPackagingTest {
-    /** 未覆寫時沿用 root mod 的 ID、名稱、說明、圖示與 archive 名稱。 */
+    /** 未覆寫時沿用 root mod 的 ID、名稱、說明、圖示與 archive 名稱；版本在 `+` 之後標示 Minecraft 版本與載入器。 */
     @Test
     fun `defaults preserve formal mod packaging`() = withFixture { root ->
         prepareFixture(root)
@@ -23,8 +23,31 @@ class MinecraftModPackagingTest {
         assertTrue(metadata.contains("\"name\": \"MahjongCraft\""), metadata)
         assertTrue(metadata.contains("\"description\": \"Bring Mahjong to Minecraft and play with your friends.\""), metadata)
         assertTrue(metadata.contains("\"icon\": \"assets/mahjongcraft/icon.png\""), metadata)
+        assertTrue(metadata.contains("\"version\": \"0.0.0-dev+1.20.1-fabric\""), metadata)
         assertTrue(root.resolve("platform/v1.20.1/fabric/build/resources/main/assets/mahjongcraft/icon.png").isFile)
         assertTrue(root.resolve("platform/v1.20.1/fabric/build/libs/mahjongcraft-fabric-1.20.1-0.0.0-dev.jar").isFile)
+    }
+
+    /** 指定建置資訊時，模組 metadata 的版本在平台之後接 `.建置資訊`，產出檔名接 `+建置資訊`，專案版本不變。 */
+    @Test
+    fun `build metadata is appended to the mod version and archive name`() = withFixture { root ->
+        prepareFixture(root)
+
+        runner(root, ":formal:processResources", ":formal:jar", "-PmahjongcraftBuildMetadata=a0f6307").build()
+
+        val metadata = root.resolve("platform/v1.20.1/fabric/build/resources/main/fabric.mod.json").readText()
+        assertTrue(metadata.contains("\"version\": \"0.0.0-dev+1.20.1-fabric.a0f6307\""), metadata)
+        assertTrue(root.resolve("platform/v1.20.1/fabric/build/libs/mahjongcraft-fabric-1.20.1-0.0.0-dev+a0f6307.jar").isFile)
+    }
+
+    /** 建置資訊不符合 SemVer 時建置失敗，不產出版本字串錯誤的模組。 */
+    @Test
+    fun `invalid build metadata fails the build`() = withFixture { root ->
+        prepareFixture(root)
+
+        val result = runner(root, ":formal:processResources", "-PmahjongcraftBuildMetadata=not valid!").buildAndFail()
+
+        assertTrue(result.output.contains("Invalid -PmahjongcraftBuildMetadata value"), result.output)
     }
 
     /** example 可覆寫自己的 metadata 與 archive 名稱，但不會改變正式 mod 的 root ID。 */

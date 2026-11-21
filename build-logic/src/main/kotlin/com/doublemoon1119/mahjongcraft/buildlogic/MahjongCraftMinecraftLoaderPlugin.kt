@@ -1,11 +1,15 @@
 package com.doublemoon1119.mahjongcraft.buildlogic
 
+import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.BasePluginExtension
-import org.gradle.language.jvm.tasks.ProcessResources
+import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.withType
+import org.gradle.language.jvm.tasks.ProcessResources
+import java.util.Optional
 
 /**
  * 套用 Minecraft loader module 的 target Java、archive 與 metadata 政策，讓整個建置的重新映射任務排隊執行，並提供
@@ -23,14 +27,19 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
         packaging.displayName.convention(rootProject.extensions.extraProperties["projectDisplayName"].toString())
         packaging.description.convention("Bring Mahjong to Minecraft and play with your friends.")
         packaging.icon.convention(rootProject.layout.projectDirectory.file("docs/assets/branding/logo.png"))
-        packaging.archiveBaseName.convention("$rootProjectId-${projectDir.name}-${projectDir.parentFile.name.removePrefix("v")}")
+        packaging.archiveBaseName.convention("$rootProjectId-${platformLoader()}-${platformMinecraftVersion()}")
         extensions.configure<BasePluginExtension> {
             archivesName.set(packaging.archiveBaseName)
+        }
+        val buildMetadata = buildMetadata()
+        val modVersion = buildMetadata.map { metadata -> "$version+${platformMinecraftVersion()}-${platformLoader()}${metadata.map { ".$it" }.orElse("")}" }
+        tasks.withType<AbstractArchiveTask>().configureEach {
+            archiveVersion.set(buildMetadata.map { metadata -> "$version${metadata.map { "+$it" }.orElse("")}" })
         }
         tasks.withType<ProcessResources>().configureEach {
             val metadata = provider {
                 mapOf(
-                    "version" to version.toString(),
+                    "version" to modVersion.get(),
                     "id" to packaging.modId.get(),
                     "name" to packaging.displayName.get(),
                     "description" to packaging.description.get(),
@@ -57,6 +66,48 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
         configureDevMods()
     }
 }
+
+/**
+ * 模組目錄名稱代表的載入器，例如 `platform/minecraft/v1.20.1/fabric` 的 `fabric`。
+ *
+ * @return 載入器名稱。
+ */
+private fun Project.platformLoader(): String = projectDir.name
+
+/**
+ * 模組上層目錄名稱代表的 Minecraft 版本，例如 `platform/minecraft/v1.20.1/fabric` 的 `1.20.1`。
+ *
+ * @return 不含 `v` 前綴的 Minecraft 版本。
+ */
+private fun Project.platformMinecraftVersion(): String = projectDir.parentFile.name.removePrefix("v")
+
+/**
+ * [BUILD_METADATA_PROPERTY] 指定的建置資訊，例如 CI 傳入的 commit 編號；格式不符 SemVer 建置資訊時建置失敗。
+ *
+ * 模組 metadata 的版本固定寫成 `<專案版本>+<Minecraft 版本>-<載入器>`，有建置資訊時再接 `.<建置資訊>`；產出的檔名已含
+ * 載入器與 Minecraft 版本，只在專案版本後接 `+<建置資訊>`。`+` 之後依 SemVer 不影響版本比較，專案版本與各模組的版本
+ * 政策都不變。
+ *
+ * @return 建置資訊；沒有指定時為空。
+ */
+private fun Project.buildMetadata(): Provider<Optional<String>> {
+    val property = providers.gradleProperty(BUILD_METADATA_PROPERTY)
+    return provider {
+        val metadata = property.orNull?.trim()?.takeIf(String::isNotEmpty)
+        if (metadata != null && !BUILD_METADATA_PATTERN.matches(metadata)) {
+            throw GradleException(
+                "Invalid -P$BUILD_METADATA_PROPERTY value '$metadata'; use dot-separated letters, digits and hyphens",
+            )
+        }
+        Optional.ofNullable(metadata)
+    }
+}
+
+/** 附加在模組版本後的建置資訊，例如 CI 的 commit 編號。 */
+private const val BUILD_METADATA_PROPERTY = "mahjongcraftBuildMetadata"
+
+/** SemVer 建置資訊：以點分隔、每段為英數字與連字號。 */
+private val BUILD_METADATA_PATTERN = Regex("[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*")
 
 /**
  * 讓 Fabric Loom 依目標的 Java 版本決定 Minecraft 的執行函式庫。

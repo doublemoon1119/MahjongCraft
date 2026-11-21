@@ -32,6 +32,13 @@ class TargetManagementPlugin : Plugin<Project> {
             description = "Lists the built-in core target and all catalog-backed platform targets."
             this.rootDirectory.set(rootDirectory)
         }
+        project.tasks.register("writeCiTargetMatrix", WriteCiTargetMatrixTask::class.java) {
+            group = "mahjong"
+            description = "Writes the targets CI verifies, with their Java toolchains, as a GitHub Actions matrix."
+            this.rootDirectory.set(rootDirectory)
+            coreJavaToolchain.set(project.provider { project.catalogVersion("core-java-toolchain").toInt() })
+            outputFile.set(project.layout.buildDirectory.file("ci/target-matrix.json"))
+        }
         project.tasks.register("switchTarget", SwitchTargetTask::class.java) {
             group = "mahjong"
             description = "Updates local.dev.properties with a validated MahjongCraft target."
