@@ -1101,7 +1101,13 @@ internal class HistoryReplayScreen(
         rows.forEachIndexed { index, row ->
             val marker = row.marker ?: return@forEachIndexed
             val x = bounds.x + bounds.width * (index + 1) / lastStep
-            context.fill(x - 1, bounds.y, x + 1, bounds.bottom, faded(markerColor(marker)))
+            // 鳴牌最常出現，只畫在軌道上的短刻度；宣告與和牌畫滿進度條的高度，不靠顏色也分得出來。
+            val (top, bottom) = if (marker == GameActionReplayMarker.MELD) {
+                trackTop - SHORT_MARKER_OVERHANG to trackTop + TRACK_HEIGHT + SHORT_MARKER_OVERHANG
+            } else {
+                bounds.y to bounds.bottom
+            }
+            context.fill(x - 1, top, x + 1, bottom, faded(markerColor(marker)))
         }
         context.fill(currentX - KNOB_HALF_WIDTH, bounds.y, currentX + KNOB_HALF_WIDTH, bounds.bottom, faded(KNOB_BORDER))
         context.fill(currentX - KNOB_HALF_WIDTH + 1, bounds.y + 1, currentX + KNOB_HALF_WIDTH - 1, bounds.bottom - 1, faded(KNOB_COLOR))
@@ -1740,6 +1746,9 @@ internal class HistoryReplayScreen(
         /** 進度條軌道的高度。 */
         const val TRACK_HEIGHT = 2
 
+        /** 鳴牌短刻度超出軌道上下緣的像素。 */
+        const val SHORT_MARKER_OVERHANG = 1
+
         /** 目前位置標示的半寬。 */
         const val KNOB_HALF_WIDTH = 3
 
@@ -1821,8 +1830,8 @@ internal class HistoryReplayScreen(
         /** 還沒播到的交易說明。 */
         const val FUTURE_TEXT_COLOR = 0x9A9A9A
 
-        /** 鳴牌標記。 */
-        const val MELD_COLOR = 0xFF9F43
+        /** 鳴牌標記：最常出現，用低彩度的青灰色，不搶過宣告與和牌。 */
+        const val MELD_COLOR = 0x7FA39A
 
         /** 宣告標記。 */
         const val DECLARATION_COLOR = 0x55AAFF
