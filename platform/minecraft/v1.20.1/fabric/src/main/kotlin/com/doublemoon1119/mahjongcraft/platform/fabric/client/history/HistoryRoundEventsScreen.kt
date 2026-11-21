@@ -141,8 +141,7 @@ internal class HistoryRoundEventsScreen(
         replayButton = addDrawableChild(
             RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_OPEN)) { session.openReplay(0) }
                 .dimensions(layout.left + headerButtonWidth + HEADER_BUTTON_GAP, HEADER_BUTTON_TOP, headerButtonWidth, FormScreenLayout.BUTTON_HEIGHT)
-                .build()
-                .also { it.tooltip = Tooltip.of(ControlTooltip.description(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_OPEN_TOOLTIP))) },
+                .build(),
         )
     }
 
@@ -158,7 +157,7 @@ internal class HistoryRoundEventsScreen(
             .build()
             .also {
                 it.icon = PixelIcon.PLAY
-                it.tooltip = Tooltip.of(ControlTooltip.description(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_OPEN_HERE_TOOLTIP)))
+                it.tooltip = Tooltip.of(replayTooltip(MinecraftHistoryScreenKeys.REPLAY_OPEN_HERE_TOOLTIP, ruleInstalled()))
                 it.visible = false
                 it.clickClip = { x, y -> layout.containsCard(x, y, layout.contentTop, layout.viewportHeight) }
                 addSelectableChild(it)
@@ -289,8 +288,30 @@ internal class HistoryRoundEventsScreen(
         refreshButton?.tooltip = tooltip
         initialButton?.active = canQuery && status == HistoryBrowseStatus.Ready
         initialButton?.tooltip = tooltip
-        replayButton?.active = status == HistoryBrowseStatus.Ready
+        val installed = ruleInstalled()
+        replayButton?.active = installed && canQuery && status == HistoryBrowseStatus.Ready
+        replayButton?.tooltip = Tooltip.of(replayTooltip(MinecraftHistoryScreenKeys.REPLAY_OPEN_TOOLTIP, installed))
+        replayButtons.values.forEach { it.tooltip = Tooltip.of(replayTooltip(MinecraftHistoryScreenKeys.REPLAY_OPEN_HERE_TOOLTIP, installed)) }
     }
+
+    /**
+     * 這台電腦是否裝有這場對局使用的規則；沒裝時回放按鈕停用。
+     *
+     * @return 裝有該規則或無從判斷時為 true。
+     */
+    private fun ruleInstalled(): Boolean = session.ruleInstalled(session.controller.state.value.summary?.detail?.summary?.ruleId)
+
+    /**
+     * 回放按鈕的提示框；這台電腦沒有這場對局的規則時寫出無法回放的原因。
+     *
+     * @param descriptionKey 按鈕說明的翻譯鍵。
+     * @param installed 這台電腦是否裝有這場對局的規則。
+     * @return 提示文字。
+     */
+    private fun replayTooltip(descriptionKey: String, installed: Boolean): Text = ControlTooltip.description(
+        description = Text.translatable(descriptionKey),
+        notice = Text.translatable(MinecraftHistoryScreenKeys.REPLAY_RULE_NOT_INSTALLED).takeUnless { installed },
+    )
 
     /**
      * 測量繪製與高度共用的卡片列。
@@ -438,6 +459,8 @@ internal class HistoryRoundEventsScreen(
         val pointerX = if (pointerInside) mouseX else OFFSCREEN_POINTER
         val pointerY = if (pointerInside) mouseY else OFFSCREEN_POINTER
         var tooltip: List<Text>? = null
+        val canQuery = session.controller.canQueryRound()
+        val canReplay = canQuery && ruleInstalled()
         cards.forEach { card ->
             if (top + card.height >= layout.contentTop && top < layout.contentBottom) {
                 val hovered = !dragging && layout.containsCard(mouseX.toDouble(), mouseY.toDouble(), top, card.height - 4)
@@ -457,14 +480,14 @@ internal class HistoryRoundEventsScreen(
                             replay.y = button.y
                             val text = HistoryScreenText.trim(row.text.string, (replay.x - CARD_PADDING - layout.left - CARD_PADDING).coerceAtLeast(1), textRenderer::getWidth)
                             context.drawTextWithShadow(textRenderer, Text.literal(text), layout.left + CARD_PADDING, y + (row.height - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2, HistoryCardStyle.ACCENT_COLOR)
-                            renderCardButton(context, replay, pointerX, pointerY, delta)
-                            renderCardButton(context, button, pointerX, pointerY, delta)
+                            renderCardButton(context, replay, canReplay, pointerX, pointerY, delta)
+                            renderCardButton(context, button, canQuery, pointerX, pointerY, delta)
                         }
                         is HistoryCardRow.StateLink -> {
                             val button = stateButton(row.index, inline = true)
                             button.x = layout.left + row.indent
                             button.y = y + (row.height - button.height) / 2
-                            renderCardButton(context, button, pointerX, pointerY, delta)
+                            renderCardButton(context, button, canQuery, pointerX, pointerY, delta)
                         }
                     }
                     y += row.height
@@ -480,12 +503,13 @@ internal class HistoryRoundEventsScreen(
      *
      * @param context 繪製上下文。
      * @param button 要繪製的按鈕。
+     * @param active 按鈕是否可點。
      * @param pointerX 交給按鈕的游標水平座標；游標不在內容區時在畫面外。
      * @param pointerY 交給按鈕的游標垂直座標；游標不在內容區時在畫面外。
      * @param delta 畫面更新比例。
      */
-    private fun renderCardButton(context: DrawContext, button: RestartableMarqueeButtonWidget, pointerX: Int, pointerY: Int, delta: Float) {
-        button.active = session.controller.canQueryRound()
+    private fun renderCardButton(context: DrawContext, button: RestartableMarqueeButtonWidget, active: Boolean, pointerX: Int, pointerY: Int, delta: Float) {
+        button.active = active
         button.visible = button.y + button.height > layout.contentTop && button.y < layout.contentBottom
         button.render(context, pointerX, pointerY, delta)
     }

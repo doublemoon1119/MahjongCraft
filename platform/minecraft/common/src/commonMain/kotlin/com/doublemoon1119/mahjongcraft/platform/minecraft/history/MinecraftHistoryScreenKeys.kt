@@ -788,6 +788,12 @@ object MinecraftHistoryScreenKeys {
     /** 牌譜缺少擺放牌桌所需資料時的說明。 */
     const val REPLAY_UNAVAILABLE = "mahjongcraft.history_screen.replay.unavailable"
 
+    /** 這台電腦沒有裝這場對局使用的規則，無法回放的說明。 */
+    const val REPLAY_RULE_NOT_INSTALLED = "mahjongcraft.history_screen.replay.rule_not_installed"
+
+    /** 這一步的牌桌擺不出來時的說明。 */
+    const val REPLAY_ARRANGEMENT_FAILED = "mahjongcraft.history_screen.replay.arrangement_failed"
+
     /** 視角選項中的東家。 */
     const val REPLAY_WIND_EAST = "mahjongcraft.history_screen.replay.wind.east"
 

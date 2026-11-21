@@ -31,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideS
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneTileGlow
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneView
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatGeometry
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionReplayMarker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
@@ -78,6 +79,9 @@ import kotlin.uuid.toJavaUuid
 internal class HistoryReplayScreen(
     private val session: HistoryBrowseSession,
 ) : Screen(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_TITLE)) {
+    /** 記錄擺不出牌桌的原因。 */
+    private val logger = mahjongCraftLogger(HistoryReplayScreen::class)
+
     /** 版面。 */
     private var layout = HistoryReplayLayout.measure(width = 0, height = 0, labelWidth = 0, speedSelectorWidth = 0)
 
@@ -518,8 +522,7 @@ internal class HistoryReplayScreen(
             replay == null -> Text.translatable(MinecraftHistoryScreenKeys.LOADING)
             replay.status is HistoryBrowseStatus.Failed -> Text.translatable(replay.status.reason.translationKey)
             state == null -> Text.translatable(MinecraftHistoryScreenKeys.LOADING)
-            scene == null && state.wallPlacements == null -> Text.translatable(MinecraftHistoryScreenKeys.REPLAY_UNAVAILABLE)
-            scene == null -> rulesNotice()
+            scene == null -> sceneNotice(state)
             else -> null
         }
         if (scene != null) {
@@ -556,13 +559,20 @@ internal class HistoryReplayScreen(
     }
 
     /**
-     * 規則設定還沒讀到或讀取失敗時的說明。
+     * 取得牌面後仍擺不出牌桌時的說明，例如規則還在讀取、這台電腦沒有裝這套規則或這一步擺不出來。
      *
+     * @param state 目前牌面。
      * @return 說明文字。
      */
-    private fun rulesNotice(): Text {
-        val status = session.controller.state.value.ruleSettings?.status
-        return if (status is HistoryBrowseStatus.Failed) Text.translatable(status.reason.translationKey) else Text.translatable(MinecraftHistoryScreenKeys.LOADING)
+    private fun sceneNotice(state: HistoryRoundStateDto): Text {
+        val browse = session.controller.state.value
+        val key = HistoryReplaySceneNotice.key(
+            ruleInstalled = session.ruleInstalled(browse.summary?.detail?.summary?.ruleId),
+            rulesStatus = browse.ruleSettings?.takeIf { it.matchId == state.identity.matchId }?.status,
+            moduleResolved = session.ruleModule(state) != null,
+            hasNotes = ReplayTableNotes.decode(session.replayState(state).presentationNotes, session.networkRegistries) != null,
+        )
+        return Text.translatable(key)
     }
 
     /**
@@ -811,7 +821,7 @@ internal class HistoryReplayScreen(
         val handPoses = notes?.let { HistoryReplayHandReveals.handPoses(sorted, reveals(sorted, it)) }.orEmpty()
         val key = ArrangementKey(state = state, moduleId = module.id, handsOpen = handsOpen, handPoses = handPoses)
         if (key in arrangements) return arrangements[key]
-        val built = if (sorted.wallPlacements == null || notes == null) {
+        val built = if (notes == null) {
             null
         } else {
             runCatching {
@@ -824,7 +834,7 @@ internal class HistoryReplayScreen(
                     sidewaysMarker = { session.discardMarkers.find(it)?.sideways == true },
                     handPoses = handPoses,
                 )
-            }.getOrNull()
+            }.onFailure { logger.warn("Replay table arrangement failed for round {} at {}", state.roundNumber, state.position, it) }.getOrNull()
         }
         arrangements[key] = built
         while (arrangements.size > ARRANGEMENT_CACHE_SIZE) arrangements.remove(arrangements.keys.first())

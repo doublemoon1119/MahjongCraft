@@ -61,12 +61,19 @@ class HistoryReplayArrangementTest {
         assertMatchesLive(TableTileLayoutProfile(discardArea = TableDiscardArea.SCATTERED))
     }
 
+    /** 規則沒有實體牌牆時，牌譜與對局中一樣把牌牆排在桌子中央。 */
+    @Test
+    fun `replay arrangement without a physical wall matches the live table`() = runTest {
+        assertMatchesLive(TableTileLayoutProfile.STANDARD, physicalWall = false)
+    }
+
     /**
      * 比對開局與打出一張牌後兩份桌況的擺放。
      *
      * @param profile 這次使用的桌面牌位配置。
+     * @param physicalWall 是否有實體牌牆；沒有時兩邊都不使用牌牆格位。
      */
-    private suspend fun assertMatchesLive(profile: TableTileLayoutProfile) {
+    private suspend fun assertMatchesLive(profile: TableTileLayoutProfile, physicalWall: Boolean = true) {
         val module = RiichiRuleModule(RULE_MODULE_ID, RiichiRuleConfig(redDoraCount = 0))
         val modules = MahjongModuleRegistryImpl().apply {
             register(MahjongModuleDefinition(RiichiRuleConfig::class, RULE_MODULE_ID) { config, id -> RiichiRuleModule(id, config) })
@@ -98,11 +105,11 @@ class HistoryReplayArrangementTest {
         val reader = CompactReplayRoundReader(registries.componentViews)
         listOf(HistoryRoundPosition.Initial to table, HistoryRoundPosition.AfterTransaction(1) to changed).forEach { (position, live) ->
             val saved = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader.readState(document, matchId, 1, position)).value
-            val dto = saved.toDto(DefaultNetworkDtoRegistries())
+            val dto = saved.toDto(DefaultNetworkDtoRegistries()).let { if (physicalWall) it else it.copy(wallPlacements = null) }
             val notes = assertNotNull(ReplayTableNotes.decode(dto.presentationNotes, networkRegistries))
             val replayed = HistoryReplayArrangement.arrange(dto, notes, module, profile) { false }
 
-            assertEquals(placements(live(live, module, profile)), placements(replayed.values.map { it.placement to it.pose }))
+            assertEquals(placements(live(live, module, profile, physicalWall)), placements(replayed.values.map { it.placement to it.pose }))
             // 攤開手牌只改變手牌，其他牌的位置與姿態不變。
             val opened = HistoryReplayArrangement.arrange(dto, notes, module, profile, sidewaysMarker = { false }, openHands = true)
             val handTiles = dto.players.flatMap { it.handTiles + listOfNotNull(it.lastDrawn) }.toSet()
@@ -117,9 +124,10 @@ class HistoryReplayArrangementTest {
      * @param state 權威桌況。
      * @param module 規則模組。
      * @param profile 桌面牌位配置。
+     * @param physicalWall 是否有實體牌牆。
      * @return 每張牌的位置與姿態。
      */
-    private fun live(state: TableState, module: RiichiRuleModule, profile: TableTileLayoutProfile): List<Pair<MahjongTileWallPlacement, TilePose>> {
+    private fun live(state: TableState, module: RiichiRuleModule, profile: TableTileLayoutProfile, physicalWall: Boolean): List<Pair<MahjongTileWallPlacement, TilePose>> {
         val projection = MahjongTileWallProjectionContext(
             controllerX = 0,
             controllerY = 0,
@@ -136,12 +144,12 @@ class HistoryReplayArrangementTest {
                 controllerZ = 0,
                 tableFacing = MahjongTableFacing.NORTH,
                 seatLayout = MahjongTableSeatLayout.forPlayerCount(PLAYERS),
-                table = state.toArrangementState(),
+                table = state.toArrangementState().let { if (physicalWall) it else it.copy(wallPlacements = null) },
                 tileLayout = profile,
                 cornerWidthBySeat = emptyMap(),
                 handPoseStates = emptyList(),
-                wallProjection = projection,
-                wallClearance = projection.clearance(assertNotNull(module.createPhysicalWallLayoutPolicy()).roundReach(state)),
+                wallProjection = projection.takeIf { physicalWall },
+                wallClearance = projection.clearance(assertNotNull(module.createPhysicalWallLayoutPolicy()).roundReach(state)).takeIf { physicalWall },
                 faceUpWallTileIds = emptySet(),
             ),
         ).values.map { it.placement to it.pose }

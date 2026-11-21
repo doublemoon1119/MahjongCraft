@@ -181,6 +181,14 @@ internal class HistoryBrowseSession(
     fun canSortHand(state: HistoryRoundStateDto): Boolean = handOrder(state) != null
 
     /**
+     * 這台電腦是否裝有某場對局使用的規則，例如只裝在伺服器上的第三方規則不算。
+     *
+     * @param ruleId 規則模組識別碼；摘要沒有記錄時為 null。
+     * @return 裝有該規則或無從判斷時為 true。
+     */
+    fun ruleInstalled(ruleId: String?): Boolean = ruleId == null || ruleId in moduleRegistry.getAllModuleIds()
+
+    /**
      * 取得這場對局的規則模組，供牌桌場景擺牌。
      *
      * @param state 目前歷史桌況。
