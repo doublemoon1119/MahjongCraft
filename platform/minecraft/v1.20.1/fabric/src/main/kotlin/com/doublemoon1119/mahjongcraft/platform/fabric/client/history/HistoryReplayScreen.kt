@@ -1176,17 +1176,18 @@ internal class HistoryReplayScreen(
     private fun rows(replay: HistoryBrowseReplayState): List<TransactionRow> {
         rowsCache?.takeIf { it.first == replay.eventPages }?.let { return it.second }
         val ruleId = session.controller.state.value.summary?.detail?.summary?.ruleId
+        val markers = session.eventPresenter.replayMarkers(ruleId, replay.eventPages.flatMap { it.transactions })
         val built = replay.eventPages.flatMap { page ->
-            session.eventPresenter.present(page, ruleId).transactions.zip(page.transactions).map { (transaction, saved) ->
-                val fact = transaction.facts.firstOrNull { it.actorSeat != null } ?: transaction.facts.firstOrNull()
-                val summary = fact?.let { found -> found.actorSeat?.let { actorText(page.identity, it).copy().append(" ").append(found.text) } ?: found.text }
-                TransactionRow(
-                    heading = Component.translatable(MinecraftHistoryScreenKeys.ROUND_TRANSACTION, transaction.index + 1, HistoryScreenText.timeOfDay(transaction.occurredAtEpochMillis)),
-                    summary = summary,
-                    tile = fact?.let { it.directTiles.firstOrNull() ?: it.revealedTiles.firstOrNull() },
-                    marker = session.eventPresenter.replayMarker(ruleId, saved),
-                )
-            }
+            session.eventPresenter.present(page, ruleId).transactions.map { transaction -> page.identity to transaction }
+        }.mapIndexed { index, (identity, transaction) ->
+            val fact = transaction.facts.firstOrNull { it.actorSeat != null } ?: transaction.facts.firstOrNull()
+            val summary = fact?.let { found -> found.actorSeat?.let { actorText(identity, it).copy().append(" ").append(found.text) } ?: found.text }
+            TransactionRow(
+                heading = Component.translatable(MinecraftHistoryScreenKeys.ROUND_TRANSACTION, transaction.index + 1, HistoryScreenText.timeOfDay(transaction.occurredAtEpochMillis)),
+                summary = summary,
+                tile = fact?.let { it.directTiles.firstOrNull() ?: it.revealedTiles.firstOrNull() },
+                marker = markers[index],
+            )
         }
         rowsCache = replay.eventPages to built
         return built

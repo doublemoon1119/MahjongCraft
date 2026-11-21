@@ -63,13 +63,13 @@ internal class HistoryRoundEventPresenter(
     private val markerClassifier = HistoryReplayMarkerClassifier(actionVocabulary)
 
     /**
-     * 取得一筆交易在回放時的標記種類。
+     * 依序取得各筆交易在回放時的標記種類，見 [HistoryReplayMarkerClassifier.markersOf]。
      *
      * @param ruleId 對局摘要中的規則模組 ID。
-     * @param transaction 牌譜交易。
-     * @return 標記種類；不需要標記時為 null。
+     * @param transactions 依發生順序排列的牌譜交易。
+     * @return 與 [transactions] 一一對應的標記種類；不需要標記時為 null。
      */
-    fun replayMarker(ruleId: String?, transaction: HistoryReplayTransactionDto): GameActionReplayMarker? = markerClassifier.markerOf(ruleId, transaction)
+    fun replayMarkers(ruleId: String?, transactions: List<HistoryReplayTransactionDto>): List<GameActionReplayMarker?> = markerClassifier.markersOf(ruleId, transactions)
 
     /**
      * 將單局事件轉換為保留原始順序的呈現模型。
