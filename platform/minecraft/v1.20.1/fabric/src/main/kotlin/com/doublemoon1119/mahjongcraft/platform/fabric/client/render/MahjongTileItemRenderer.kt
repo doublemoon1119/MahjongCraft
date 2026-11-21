@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileModelResourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureAssetPath
@@ -157,6 +158,33 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
     }
 
     /**
+     * 以公開牌組外觀繪製這張牌時是否使用半透明圖層；與 [renderWithAppearance] 選擇圖層的依據相同。
+     *
+     * @param appearanceId 牌組共用外觀的完整識別碼。
+     * @param assetKey 牌面素材 key。
+     * @return 牌身外觀為半透明時為 true。
+     */
+    fun isTranslucent(appearanceId: String, assetKey: String): Boolean {
+        val registry = GlobalContext.get().get<MinecraftTileAssetRegistry>()
+        return effectiveAppearance(registry, assetKey, appearanceId)?.translucent == true
+    }
+
+    /**
+     * 一張牌實際使用的牌身外觀：牌面指定的牌身外觀優先，其次是規則的牌組外觀。
+     *
+     * @param registry 牌面素材登記表。
+     * @param assetKey 牌面素材 key。
+     * @param appearanceId 規則的牌組外觀識別碼；未指定時為 null。
+     * @return 生效的外觀；兩者都沒有時為 null。
+     */
+    private fun effectiveAppearance(
+        registry: MinecraftTileAssetRegistry,
+        assetKey: String,
+        appearanceId: String?,
+    ): MinecraftTileSetAppearanceDefinition? = (registry.findBodyAppearance(assetKey) ?: appearanceId?.let(registry::findAppearance))
+        ?.let(MahjongTileModelLoadingPlugin::effectiveAppearance)
+
+    /**
      * 依牌面 key 與牌組外觀選擇已烘焙或固定幾何 fallback 後繪製牌面；外觀樣式指定牌身時改用該牌身外觀。
      *
      * @param assetKey 牌面素材 key。
@@ -179,8 +207,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         alpha: Float = 1f,
     ) {
         val registry = GlobalContext.get().get<MinecraftTileAssetRegistry>()
-        val appearance = (registry.findBodyAppearance(assetKey) ?: appearanceId?.let(registry::findAppearance))
-            ?.let(MahjongTileModelLoadingPlugin::effectiveAppearance)
+        val appearance = effectiveAppearance(registry, assetKey, appearanceId)
         val resource = registry.findResources(assetKey)
         val textureId = resource?.textureId?.let(::Identifier)
             ?: Identifier(tileTextureResourceId(assetKey, registry))

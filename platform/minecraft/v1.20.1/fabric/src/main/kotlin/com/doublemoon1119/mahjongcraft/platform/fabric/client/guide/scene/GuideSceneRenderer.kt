@@ -157,9 +157,12 @@ internal class GuideSceneRenderer : AutoCloseable {
                 }
                 renderFigures(client, scene.figures.filter { it.alpha >= 1f }, context, consumers)
                 renderEntities(client, scene.entities.filter { it.alpha >= 1f }, context, consumers)
-                scene.tiles.forEach { tile -> renderTile(tile, context, consumers) }
+                val tiles = GuideSceneTileDrawOrder.split(scene.tiles, sceneToScreen, ::isTranslucent)
+                tiles.opaque.forEach { tile -> renderTile(tile, context, consumers) }
                 renderInfo(client, scene, rotation, context, consumers)
-                // 半透明的人物最後畫：不透明的東西先全部畫進畫面，半透明的部分才透得出它後面的牌。
+                // 半透明的牌與人物最後畫：不透明的東西先全部畫進畫面，半透明的部分才透得出它後面的東西。
+                consumers.draw()
+                tiles.translucentFarToNear.forEach { tile -> renderTile(tile, context, consumers) }
                 consumers.draw()
                 renderFigures(client, scene.figures.filter { it.alpha < 1f }, context, consumers)
                 renderEntities(client, scene.entities.filter { it.alpha < 1f }, context, consumers)
@@ -382,6 +385,16 @@ internal class GuideSceneRenderer : AutoCloseable {
             matrices.pop()
         }
     }
+
+    /**
+     * 這張牌是否以半透明方式繪製；看不到牌面的牌以未知牌畫出，不是半透明。
+     *
+     * @param tile 場景中的牌。
+     * @return 半透明時為 true。
+     */
+    private fun isTranslucent(tile: GuideSceneTile): Boolean = tile.assetKey?.let { assetKey ->
+        MahjongTileItemRenderer.isTranslucent(appearanceId = BuiltInMinecraftTileAppearances.DEFAULT.id, assetKey = assetKey)
+    } == true
 
     /**
      * 以對局中相同的擺法與姿態繪製一張牌。
