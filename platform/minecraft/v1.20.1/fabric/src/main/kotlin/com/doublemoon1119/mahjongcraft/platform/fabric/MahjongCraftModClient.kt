@@ -64,6 +64,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.TablePropTi
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationEffectEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationShowcaseEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinSettlementPresentationEntityRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WorldPanelDeferral
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricRoomConfigScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.RoomScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.isShowingRoom
@@ -226,6 +227,7 @@ class MahjongCraftModClient : ClientModInitializer {
         val characterState = koin.get<AiCharacterClientStateStore>()
         val tableSpaceObstructions = koin.get<ClientTableSpaceObstructionStore>()
         koin.get<TableSpaceObstructionRenderer>().registerEvents()
+        WorldPanelDeferral.register()
         val handTileLayoutController = koin.get<ClientHandTileLayoutController>()
         ClientHandTileLayoutBridge.activate(handTileLayoutController)
         val automaticControlUpdateCoordinator = koin.get<ClientAutomaticControlUpdateCoordinator>()

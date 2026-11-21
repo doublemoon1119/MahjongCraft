@@ -57,22 +57,24 @@ class DiceRollPresentationEntityRenderer(
         val visualScale = entranceScale * exitScale
         val panelWidth = panelWidth(points.size)
 
-        matrices.push()
-        matrices.multiply(dispatcher.rotation)
-        matrices.scale(-PIXEL_SCALE, -PIXEL_SCALE, PIXEL_SCALE)
-        WorldPanelRenderer.drawBackground(
-            left = -panelWidth / 2f,
-            top = -PANEL_HEIGHT / 2f,
-            right = panelWidth / 2f,
-            bottom = PANEL_HEIGHT / 2f,
-            color = WorldPanelRenderer.withAlpha(PANEL_RGB, alpha * PANEL_BASE_ALPHA),
-            z = 0f,
-            matrices = matrices,
-            consumers = vertexConsumers,
-        )
-        renderDice(points, visualScale, matrices, vertexConsumers, light)
-        renderTotal(points.sum(), alpha, matrices, vertexConsumers, light)
-        matrices.pop()
+        WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
+            panelMatrices.push()
+            panelMatrices.multiply(dispatcher.rotation)
+            panelMatrices.scale(-PIXEL_SCALE, -PIXEL_SCALE, PIXEL_SCALE)
+            WorldPanelRenderer.drawBackground(
+                left = -panelWidth / 2f,
+                top = -PANEL_HEIGHT / 2f,
+                right = panelWidth / 2f,
+                bottom = PANEL_HEIGHT / 2f,
+                color = WorldPanelRenderer.withAlpha(PANEL_RGB, alpha * PANEL_BASE_ALPHA),
+                z = 0f,
+                matrices = panelMatrices,
+                consumers = panelConsumers,
+            )
+            renderDice(points, visualScale, panelMatrices, panelConsumers, light)
+            renderTotal(points.sum(), alpha, panelMatrices, panelConsumers, light)
+            panelMatrices.pop()
+        }
     }
 
     /**

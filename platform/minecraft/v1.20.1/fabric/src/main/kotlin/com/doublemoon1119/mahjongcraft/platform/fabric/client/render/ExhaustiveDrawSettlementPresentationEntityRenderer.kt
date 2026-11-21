@@ -84,66 +84,70 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         val sharedPanelHalfWidth = maxOf(rankingLayout.panelHalfWidth, informationLayout.panelHalfWidth)
         val sharedPanelBottom = maxOf(rankingLayout.panelBottom, informationLayout.panelBottom)
 
-        matrices.push()
-        matrices.translate(0.0, 0.55, 0.0)
-        matrices.multiply(dispatcher.rotation)
-        matrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
-        renderPanel(sharedPanelHalfWidth, sharedPanelBottom, panelAlpha, matrices, vertexConsumers)
-        renderTitle(entity.reasonId, panelAlpha, matrices, vertexConsumers)
-        informationPlayers.forEachIndexed { index, player ->
-            val rowProgress = informationRowRevealProgress(elapsed, index)
-            val rowAlpha = informationAlpha * rowProgress
-            if (rowAlpha > 0f) {
-                drawInformationRow(
-                    player = player,
-                    reasonId = entity.reasonId,
-                    layout = informationLayout,
-                    y = FIRST_ROW_Y + index * INFORMATION_ROW_HEIGHT - (1f - rowProgress) * INFORMATION_ROW_REVEAL_OFFSET,
-                    alpha = rowAlpha,
-                    matrices = matrices,
-                    vertexConsumers = vertexConsumers,
-                    appearance = appearance,
+        WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
+            // 面板在世界畫完後才畫，期間其他實體可能已改過目前的桌子，畫之前重新指定。
+            currentTableId = entity.managedTableId
+            panelMatrices.push()
+            panelMatrices.translate(0.0, 0.55, 0.0)
+            panelMatrices.multiply(dispatcher.rotation)
+            panelMatrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
+            renderPanel(sharedPanelHalfWidth, sharedPanelBottom, panelAlpha, panelMatrices, panelConsumers)
+            renderTitle(entity.reasonId, panelAlpha, panelMatrices, panelConsumers)
+            informationPlayers.forEachIndexed { index, player ->
+                val rowProgress = informationRowRevealProgress(elapsed, index)
+                val rowAlpha = informationAlpha * rowProgress
+                if (rowAlpha > 0f) {
+                    drawInformationRow(
+                        player = player,
+                        reasonId = entity.reasonId,
+                        layout = informationLayout,
+                        y = FIRST_ROW_Y + index * INFORMATION_ROW_HEIGHT - (1f - rowProgress) * INFORMATION_ROW_REVEAL_OFFSET,
+                        alpha = rowAlpha,
+                        matrices = panelMatrices,
+                        vertexConsumers = panelConsumers,
+                        appearance = appearance,
+                    )
+                }
+            }
+            val rankingPresentation = ScoreRankingPresentation(entity.players.map { player -> player.toScoreRankingPlayer() })
+            val scoreRows = ScoreRankingAnimation.rows(rankingPresentation, scoreProgress)
+            val liveRanks = ScoreRankingAnimation.liveRanks(scoreRows)
+            val snapshotsById = entity.players.associateBy { KotlinUuid.parse(it.playerId) }
+            val animatedRows = scoreRows.sortedBy { it.player.previousRank }.mapIndexed { rowIndex, row ->
+                AnimatedRow(
+                    player = snapshotsById.getValue(row.player.playerId),
+                    revealIndex = rowIndex,
+                    score = row.score,
+                    delta = row.delta,
+                    position = row.position,
                 )
             }
+            animatedRows.forEach { row ->
+                val player = row.player
+                val rowProgress = rowRevealProgress(elapsed, row.revealIndex, hasInformationPhase)
+                if (rowProgress <= 0f) return@forEach
+                val targetY = FIRST_ROW_Y + (row.position - 1.0).toFloat() * ROW_HEIGHT
+                val settledEffect = SettlementRankingSettledEffect.resolve(
+                    elapsed = elapsed,
+                    settledTick = ExhaustiveDrawSettlementPresentationEntity.rankingSettledSoundTick(hasInformationPhase).toDouble(),
+                    rankChanged = player.previousRank != player.currentRank,
+                )
+                drawRow(
+                    player = player,
+                    reasonId = entity.reasonId,
+                    displayedRank = liveRanks.getValue(KotlinUuid.parse(player.playerId)),
+                    layout = rankingLayout,
+                    score = row.score,
+                    delta = row.delta,
+                    y = targetY - (1f - rowProgress) * ROW_REVEAL_OFFSET,
+                    alpha = rankingAlpha * rowProgress,
+                    settledEffect = settledEffect,
+                    matrices = panelMatrices,
+                    vertexConsumers = panelConsumers,
+                )
+            }
+            panelMatrices.pop()
         }
-        val rankingPresentation = ScoreRankingPresentation(entity.players.map { player -> player.toScoreRankingPlayer() })
-        val scoreRows = ScoreRankingAnimation.rows(rankingPresentation, scoreProgress)
-        val liveRanks = ScoreRankingAnimation.liveRanks(scoreRows)
-        val snapshotsById = entity.players.associateBy { KotlinUuid.parse(it.playerId) }
-        val animatedRows = scoreRows.sortedBy { it.player.previousRank }.mapIndexed { rowIndex, row ->
-            AnimatedRow(
-                player = snapshotsById.getValue(row.player.playerId),
-                revealIndex = rowIndex,
-                score = row.score,
-                delta = row.delta,
-                position = row.position,
-            )
-        }
-        animatedRows.forEach { row ->
-            val player = row.player
-            val rowProgress = rowRevealProgress(elapsed, row.revealIndex, hasInformationPhase)
-            if (rowProgress <= 0f) return@forEach
-            val targetY = FIRST_ROW_Y + (row.position - 1.0).toFloat() * ROW_HEIGHT
-            val settledEffect = SettlementRankingSettledEffect.resolve(
-                elapsed = elapsed,
-                settledTick = ExhaustiveDrawSettlementPresentationEntity.rankingSettledSoundTick(hasInformationPhase).toDouble(),
-                rankChanged = player.previousRank != player.currentRank,
-            )
-            drawRow(
-                player = player,
-                reasonId = entity.reasonId,
-                displayedRank = liveRanks.getValue(KotlinUuid.parse(player.playerId)),
-                layout = rankingLayout,
-                score = row.score,
-                delta = row.delta,
-                y = targetY - (1f - rowProgress) * ROW_REVEAL_OFFSET,
-                alpha = rankingAlpha * rowProgress,
-                settledEffect = settledEffect,
-                matrices = matrices,
-                vertexConsumers = vertexConsumers,
-            )
-        }
-        matrices.pop()
     }
 
     /**
@@ -163,7 +167,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         vertexConsumers: VertexConsumerProvider,
     ) {
         val matrix = matrices.peek().positionMatrix
-        val buffer = vertexConsumers.getBuffer(ExhaustiveDrawSettlementPanelRenderLayer.layer)
+        val buffer = vertexConsumers.getBuffer(WorldPanelRenderLayer.layer)
         val panelAlpha = (alpha * PANEL_ALPHA * 255).roundToInt()
         buffer.vertex(matrix, -panelHalfWidth, PANEL_TOP, PANEL_Z).color(0, 0, 0, panelAlpha).next()
         buffer.vertex(matrix, panelHalfWidth, PANEL_TOP, PANEL_Z).color(0, 0, 0, panelAlpha).next()
@@ -305,7 +309,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     ) {
         if (right <= left || alpha <= 0f) return
         val matrix = matrices.peek().positionMatrix
-        val buffer = vertexConsumers.getBuffer(ExhaustiveDrawSettlementPanelRenderLayer.layer)
+        val buffer = vertexConsumers.getBuffer(WorldPanelRenderLayer.layer)
         val a = (alpha.coerceIn(0f, 1f) * 255).roundToInt()
         buffer.vertex(matrix, left, top, RANKING_HIGHLIGHT_Z).color(255, 205, 92, a).next()
         buffer.vertex(matrix, right, top, RANKING_HIGHLIGHT_Z).color(255, 238, 178, a).next()

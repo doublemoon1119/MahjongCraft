@@ -119,6 +119,8 @@ dependencies {
     modImplementation(libs.fabric.language.kotlin)
     // ModMenu 整合只對 ModMenu 的 API 編譯；玩家有安裝 ModMenu 時才會載入整合的進入點。
     modCompileOnly(libs.modMenu1201)
+    // 光影的陰影判斷只對 Iris 的 API 編譯；沒有安裝 Iris 時不會載入 Iris 的類別。
+    modCompileOnly(libs.iris1201)
 
     implementation(project(":minecraft_common"))
     implementation(project(":minecraft_v1.20.1_common"))

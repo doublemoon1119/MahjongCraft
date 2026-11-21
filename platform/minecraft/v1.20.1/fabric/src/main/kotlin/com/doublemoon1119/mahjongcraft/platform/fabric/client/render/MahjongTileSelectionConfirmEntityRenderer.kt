@@ -84,18 +84,20 @@ class MahjongTileSelectionConfirmEntityRenderer(
         val widthPx = (neededWidthBlocks / TEXT_SCALE).toFloat()
         val drawLabel = if (hovered) measurementLabel else baseText
 
-        matrices.push()
-        matrices.translate(0.0, MahjongTileSelectionConfirmEntity.HEIGHT / 2.0, 0.0)
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(yaw))
-        matrices.translate(-myOffset, 0.0, 0.0)
-        matrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
-        renderFace(drawLabel, confirmable, widthPx, light, matrices, vertexConsumers)
-        matrices.push()
-        matrices.translate(0.0, 0.0, BACK_FACE_OFFSET.toDouble())
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f))
-        renderFace(drawLabel, confirmable, widthPx, light, matrices, vertexConsumers)
-        matrices.pop()
-        matrices.pop()
+        WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
+            panelMatrices.push()
+            panelMatrices.translate(0.0, MahjongTileSelectionConfirmEntity.HEIGHT / 2.0, 0.0)
+            panelMatrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(yaw))
+            panelMatrices.translate(-myOffset, 0.0, 0.0)
+            panelMatrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
+            renderFace(drawLabel, confirmable, widthPx, light, panelMatrices, panelConsumers)
+            panelMatrices.push()
+            panelMatrices.translate(0.0, 0.0, BACK_FACE_OFFSET.toDouble())
+            panelMatrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f))
+            renderFace(drawLabel, confirmable, widthPx, light, panelMatrices, panelConsumers)
+            panelMatrices.pop()
+            panelMatrices.pop()
+        }
     }
 
     /**

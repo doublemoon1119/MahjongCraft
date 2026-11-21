@@ -31,7 +31,7 @@ object WorldPanelRenderer {
         consumers: VertexConsumerProvider,
     ) {
         val matrix = matrices.peek().positionMatrix
-        val buffer = consumers.getBuffer(ExhaustiveDrawSettlementPanelRenderLayer.layer)
+        val buffer = consumers.getBuffer(WorldPanelRenderLayer.layer)
         val alpha = color ushr 24 and 0xFF
         val red = color ushr 16 and 0xFF
         val green = color ushr 8 and 0xFF

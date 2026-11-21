@@ -66,39 +66,41 @@ class MahjongRoundInfoEntityRenderer(
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         val lines = entity.lines.map(lineTextBuilder::buildLineText)
 
-        matrices.push()
-        matrices.multiply(dispatcher.rotation)
-        matrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
-        val lineHeight = textRenderer.fontHeight + LINE_SPACING
-        val totalHeight = lineHeight * lines.size
-        val maxWidth = lines.maxOfOrNull(textRenderer::getWidth) ?: 0
-        WorldPanelRenderer.drawBackground(
-            left = -maxWidth / 2f - PANEL_PADDING,
-            top = -totalHeight / 2f - PANEL_PADDING,
-            right = maxWidth / 2f + PANEL_PADDING,
-            bottom = totalHeight / 2f + PANEL_PADDING,
-            color = BACKGROUND_COLOR,
-            z = 0f,
-            matrices = matrices,
-            consumers = vertexConsumers,
-        )
-        lines.forEachIndexed { index, line ->
-            val width = textRenderer.getWidth(line)
-            val x = -width / 2.0f
-            val y = -totalHeight / 2.0f + index * lineHeight
-            WorldPanelRenderer.drawText(
-                renderer = textRenderer,
-                text = line,
-                x = x,
-                y = y,
-                color = TEXT_COLOR,
-                z = TEXT_Z,
-                light = light,
-                matrices = matrices,
-                consumers = vertexConsumers,
+        WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
+            panelMatrices.push()
+            panelMatrices.multiply(dispatcher.rotation)
+            panelMatrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
+            val lineHeight = textRenderer.fontHeight + LINE_SPACING
+            val totalHeight = lineHeight * lines.size
+            val maxWidth = lines.maxOfOrNull(textRenderer::getWidth) ?: 0
+            WorldPanelRenderer.drawBackground(
+                left = -maxWidth / 2f - PANEL_PADDING,
+                top = -totalHeight / 2f - PANEL_PADDING,
+                right = maxWidth / 2f + PANEL_PADDING,
+                bottom = totalHeight / 2f + PANEL_PADDING,
+                color = BACKGROUND_COLOR,
+                z = 0f,
+                matrices = panelMatrices,
+                consumers = panelConsumers,
             )
+            lines.forEachIndexed { index, line ->
+                val width = textRenderer.getWidth(line)
+                val x = -width / 2.0f
+                val y = -totalHeight / 2.0f + index * lineHeight
+                WorldPanelRenderer.drawText(
+                    renderer = textRenderer,
+                    text = line,
+                    x = x,
+                    y = y,
+                    color = TEXT_COLOR,
+                    z = TEXT_Z,
+                    light = light,
+                    matrices = panelMatrices,
+                    consumers = panelConsumers,
+                )
+            }
+            panelMatrices.pop()
         }
-        matrices.pop()
     }
 
     /** 純文字顯示，不提供單一 texture。 */

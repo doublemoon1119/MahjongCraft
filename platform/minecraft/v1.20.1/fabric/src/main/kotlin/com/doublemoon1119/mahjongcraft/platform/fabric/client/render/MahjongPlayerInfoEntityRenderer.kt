@@ -49,7 +49,9 @@ class MahjongPlayerInfoEntityRenderer(
         if (!configStore.current.presentationVisibility.playerInfoEnabled) return
         if (entity.isInvisible) return
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
-        renderPanels(entity, matrices, vertexConsumers, light) { true }
+        WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
+            renderPanels(entity, panelMatrices, panelConsumers, light) { true }
+        }
     }
 
     /**
