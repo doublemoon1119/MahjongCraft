@@ -515,6 +515,7 @@ class HistoryQueryLoadMeasurementTest {
     private fun openFixture(): SqliteHistoryDatabase {
         val path = createTempDirectory("mahjongcraft-history-query-load-").resolve("history.sqlite")
         val database = SqliteHistoryDatabase.open(path)
+        val storedEmptyReplay = HistoryReplayPayloadCodec.compress("{}")
         DriverManager.getConnection("jdbc:sqlite:$path").use { connection ->
             connection.autoCommit = false
             connection.prepareStatement(
@@ -522,7 +523,7 @@ class HistoryQueryLoadMeasurementTest {
                     "VALUES (?, ?, ?, NULL, 'COMPLETED', ?, ?)",
             ).use { match ->
                 connection.prepareStatement(
-                    "INSERT INTO history_replay(match_id, format_version, created_at_epoch_millis, payload) VALUES (?, 1, ?, '{}')",
+                    "INSERT INTO history_replay(match_id, format_version, created_at_epoch_millis, payload) VALUES (?, 1, ?, ?)",
                 ).use { replay ->
                     connection.prepareStatement(
                         "INSERT INTO history_participant(match_id, seat_index, player_id, ai_strategy_id) VALUES (?, ?, ?, NULL)",
@@ -537,6 +538,7 @@ class HistoryQueryLoadMeasurementTest {
                             match.addBatch()
                             replay.setString(1, id)
                             replay.setLong(2, (index + 1).toLong())
+                            replay.setBytes(3, storedEmptyReplay)
                             replay.addBatch()
                             repeat(PARTICIPANTS_PER_MATCH) { seat ->
                                 participant.setString(1, id)

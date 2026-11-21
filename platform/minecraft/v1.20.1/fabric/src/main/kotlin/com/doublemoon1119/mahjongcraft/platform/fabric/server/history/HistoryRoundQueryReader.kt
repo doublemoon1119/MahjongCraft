@@ -14,7 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.Re
 import kotlinx.serialization.json.JsonObject
 import kotlin.uuid.Uuid
 
-/** 正式歷史查詢允許讀入的 Replay UTF-8 位元組上限。 */
+/** 正式歷史查詢允許讀入的 Replay 解壓後 UTF-8 位元組上限。 */
 internal const val HISTORY_REPLAY_QUERY_BYTES: Int = DEFAULT_REPLAY_JSON_BYTES
 
 /**
@@ -49,6 +49,7 @@ internal suspend fun <T> readAuthorizedHistoryRound(
     val payload = when (val result = database.readReplayPayload(matchId.toString(), HISTORY_REPLAY_QUERY_BYTES)) {
         HistoryReplayPayloadRead.Missing -> return historyRoundFailure(HistoryQueryErrorCode.NOT_AVAILABLE)
         HistoryReplayPayloadRead.TooLarge -> return historyRoundFailure(HistoryQueryErrorCode.CONTENT_TOO_LARGE)
+        is HistoryReplayPayloadRead.Unreadable -> return historyRoundFailure(HistoryQueryErrorCode.NOT_AVAILABLE)
         is HistoryReplayPayloadRead.Found -> result.payload
     }
     val document = when (val parsed = parse(payload)) {

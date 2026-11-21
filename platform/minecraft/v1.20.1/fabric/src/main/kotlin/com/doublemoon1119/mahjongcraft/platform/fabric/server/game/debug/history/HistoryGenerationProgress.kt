@@ -19,8 +19,8 @@ import kotlin.time.Duration
  * @property elapsed 已經過的單調時間。
  * @property diskBefore 生成前的實際主檔及附屬檔大小；未知時為 null。
  * @property diskAfter 最後成功查詢的實際磁碟大小；未知時為 null。
- * @property replayBytes 已確認的批次 Replay payload 位元組合計，不是磁碟釋放量。
- * @property largestReplayBytes 已確認的最大單場 Replay payload 位元組數。
+ * @property replayBytes 已確認的批次 Replay 存放位元組（壓縮後）合計，不是磁碟釋放量。
+ * @property largestReplayBytes 已確認的最大單場 Replay 存放位元組數（壓縮後）。
  * @property replaySampleCount 已量得 Replay payload 大小的場數，作為平均值的分母。
  */
 internal data class HistoryGenerationProgress(

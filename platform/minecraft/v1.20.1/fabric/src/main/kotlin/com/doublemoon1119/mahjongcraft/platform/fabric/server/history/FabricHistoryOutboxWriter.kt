@@ -426,7 +426,7 @@ class FabricHistoryOutboxWriter(
      * 在正式資料庫 session 內解碼 Replay header 的開局設定。
      *
      * @param matchId 欲讀取的對局識別碼。
-     * @param maximumBytes 允許載入與解析的 Replay UTF-8 位元組上限。
+     * @param maximumBytes 允許載入與解析的 Replay 解壓後 UTF-8 位元組上限。
      * @param sessionId 收到要求時捕捉的世界 session。
      * @return 開局時保存的遊戲設定，或受管理邊界限制的失敗結果。
      */
@@ -438,6 +438,7 @@ class FabricHistoryOutboxWriter(
         when (val read = activeDatabase.readReplayPayload(matchId.toString(), maximumBytes)) {
             HistoryReplayPayloadRead.Missing -> throw IllegalStateException("History replay is not available")
             HistoryReplayPayloadRead.TooLarge -> throw IllegalStateException("History replay exceeds the query size limit")
+            is HistoryReplayPayloadRead.Unreadable -> throw IllegalStateException("History replay cannot be restored")
             is HistoryReplayPayloadRead.Found -> {
                 val parsed = parseBoundedReplayJson(read.payload, ReplayJsonParseLimits(maximumUtf8Bytes = maximumBytes))
                 val document = (parsed as? ReplayReadResult.Success)?.value

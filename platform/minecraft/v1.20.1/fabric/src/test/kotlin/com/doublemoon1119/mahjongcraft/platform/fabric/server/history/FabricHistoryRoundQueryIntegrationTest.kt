@@ -50,15 +50,11 @@ class FabricHistoryRoundQueryIntegrationTest {
         val payload = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, ReplayPresentationNotes.NONE).toString()
         val path = createTempDirectory("history-round-integration-").resolve("history.sqlite")
         SqliteHistoryDatabase.open(path)
+        insertStoredReplay(path = path, matchId = matchId.toString(), json = payload, createdAtEpochMillis = 2L)
         DriverManager.getConnection("jdbc:sqlite:$path").use { connection ->
             connection.prepareStatement("INSERT INTO history_match(match_id, table_id, rule_id, status, started_at_epoch_millis, ended_at_epoch_millis) VALUES (?, ?, 'mahjongcraft:riichi', 'COMPLETED', 1, 2)").use {
                 it.setString(1, matchId.toString())
                 it.setString(2, table.id.toString())
-                it.executeUpdate()
-            }
-            connection.prepareStatement("INSERT INTO history_replay(match_id, format_version, created_at_epoch_millis, payload) VALUES (?, 1, 2, ?)").use {
-                it.setString(1, matchId.toString())
-                it.setString(2, payload)
                 it.executeUpdate()
             }
             table.players.forEach { player ->

@@ -32,7 +32,7 @@ internal data class HistoryRetentionPolicy(
  * @property startedAtEpochMillis 開局 UTC 時間。
  * @property endedAtEpochMillis 結束或確認終止 UTC 時間。
  * @property interrupted 是否為部分或中止紀錄，而非完整 Replay。
- * @property logicalBytes 事件或 Replay 的 UTF-8 資料大小；不等於可回收的磁碟量。
+ * @property logicalBytes 事件的 UTF-8 大小或 Replay 壓縮後的存放大小；不等於可回收的磁碟量。
  */
 internal data class HistoryRetentionCandidate(
     val matchId: String,

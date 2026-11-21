@@ -110,7 +110,9 @@ internal object HistoryReplayTable : Table("history_replay") {
     val matchId = varchar("match_id", 36)
     val formatVersion = integer("format_version")
     val createdAtEpochMillis = long("created_at_epoch_millis")
-    val payload = text("payload")
+
+    /** Replay JSON 經 [HistoryReplayPayloadCodec] 壓縮後的 BLOB。 */
+    val payload = binary("payload")
     override val primaryKey = PrimaryKey(matchId)
 }
 

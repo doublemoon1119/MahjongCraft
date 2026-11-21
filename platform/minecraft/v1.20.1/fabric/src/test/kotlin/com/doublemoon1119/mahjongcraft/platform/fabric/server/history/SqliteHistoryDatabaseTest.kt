@@ -7,6 +7,8 @@ import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -76,25 +78,16 @@ class SqliteHistoryDatabaseTest {
         }
     }
 
-    /** 已封存 Replay 可讀取，且讀取前會套用位元組上限。 */
+    /** 已封存 Replay 可讀取；存放大小與解壓後大小都套用同一個位元組上限。 */
     @Test
     fun `test replay payload read is bounded`() {
         val path = createTempDirectory("mahjongcraft-history-").resolve("history.sqlite")
         val database = SqliteHistoryDatabase.open(path)
         val matchId = Uuid.random().toString()
-        database.archive(
-            record = HistoryArchiveRecord(
-                matchId = matchId,
-                tableId = Uuid.random().toString(),
-                ruleId = "mahjongcraft:test",
-                dimensionId = null,
-                startedAtEpochMillis = 1L,
-                endedAtEpochMillis = 2L,
-                participants = emptyList(),
-                rounds = emptyList(),
-                replayPayload = "{\"payload\":true}",
-            ),
-        )
+        val repetitiveMatchId = Uuid.random().toString()
+        val repetitive = "{\"payload\":\"${"x".repeat(1_000)}\"}"
+        database.archive(record = archiveRecord(matchId = matchId, replayPayload = "{\"payload\":true}"))
+        database.archive(record = archiveRecord(matchId = repetitiveMatchId, replayPayload = repetitive))
 
         assertEquals(
             expected = HistoryReplayPayloadRead.Found("{\"payload\":true}"),
@@ -102,6 +95,77 @@ class SqliteHistoryDatabaseTest {
         )
         assertEquals(HistoryReplayPayloadRead.TooLarge, database.readReplayPayload(matchId, 4))
         assertEquals(HistoryReplayPayloadRead.Missing, database.readReplayPayload(Uuid.random().toString(), 64))
+        assertEquals(HistoryReplayPayloadRead.Found(repetitive), database.readReplayPayload(repetitiveMatchId, repetitive.length))
+        assertEquals(HistoryReplayPayloadRead.TooLarge, database.readReplayPayload(repetitiveMatchId, repetitive.length - 1))
+    }
+
+    /** 封存的 Replay 以壓縮後的 BLOB 存放，存放大小小於 JSON 原文。 */
+    @Test
+    fun `test archived replay is stored as compressed blob`() {
+        val path = createTempDirectory("mahjongcraft-history-").resolve("history.sqlite")
+        val database = SqliteHistoryDatabase.open(path)
+        val matchId = Uuid.random().toString()
+        val replay = "{\"rounds\":[${List(200) { "{\"tile\":\"m1\",\"seat\":${it % 4}}" }.joinToString(",")}]}"
+        database.archive(record = archiveRecord(matchId = matchId, replayPayload = replay))
+
+        DriverManager.getConnection("jdbc:sqlite:$path").use { connection ->
+            connection.prepareStatement("SELECT typeof(payload), length(payload) FROM history_replay WHERE match_id = ?").use { statement ->
+                statement.setString(1, matchId)
+                statement.executeQuery().use { rows ->
+                    assertTrue(rows.next())
+                    assertEquals("blob", rows.getString(1))
+                    assertTrue(rows.getLong(2) < replay.length, "Stored replay should be smaller than its JSON text")
+                }
+            }
+        }
+        assertEquals(replay, readStoredReplay(path, matchId))
+    }
+
+    /** 同場重複封存時比對解壓後內容：相同回傳 false，不同或既有內容無法還原時拒絕且不覆寫。 */
+    @Test
+    fun `test repeated replay archive compares restored content`() {
+        val path = createTempDirectory("mahjongcraft-history-").resolve("history.sqlite")
+        val database = SqliteHistoryDatabase.open(path)
+        val matchId = Uuid.random().toString()
+        assertTrue(database.archive(record = archiveRecord(matchId = matchId, replayPayload = "{\"same\":1}")))
+
+        assertFalse(database.archive(record = archiveRecord(matchId = matchId, replayPayload = "{\"same\":1}")))
+        val conflict = assertFailsWith<IllegalStateException> {
+            database.archive(record = archiveRecord(matchId = matchId, replayPayload = "{\"same\":2}"))
+        }
+        assertEquals("History replay identity conflicts with existing content", conflict.message)
+        assertEquals("{\"same\":1}", readStoredReplay(path, matchId))
+
+        DriverManager.getConnection("jdbc:sqlite:$path").use { connection ->
+            connection.prepareStatement("UPDATE history_replay SET payload = ? WHERE match_id = ?").use { statement ->
+                statement.setString(1, "{\"same\":1}")
+                statement.setString(2, matchId)
+                statement.executeUpdate()
+            }
+        }
+        assertFailsWith<IllegalStateException> {
+            database.archive(record = archiveRecord(matchId = matchId, replayPayload = "{\"same\":1}"))
+        }
+    }
+
+    /** 未壓縮的文字 Replay 讀取時回報無法還原，資料列保留不刪除。 */
+    @Test
+    fun `test uncompressed replay text is unreadable`() {
+        val path = createTempDirectory("mahjongcraft-history-").resolve("history.sqlite")
+        val database = SqliteHistoryDatabase.open(path)
+        val matchId = Uuid.random().toString()
+        DriverManager.getConnection("jdbc:sqlite:$path").use { connection ->
+            connection.prepareStatement(
+                "INSERT INTO history_replay(match_id, format_version, created_at_epoch_millis, payload) VALUES (?, 1, 1, ?)",
+            ).use { statement ->
+                statement.setString(1, matchId)
+                statement.setString(2, "{\"payload\":true}")
+                statement.executeUpdate()
+            }
+        }
+
+        assertIs<HistoryReplayPayloadRead.Unreadable>(database.readReplayPayload(matchId, 64))
+        assertTrue(matchId in database.readReplayIds())
     }
 
     /** 同鍵不同內容必須報錯，不覆寫資料庫內原本的權威事件。 */
@@ -302,5 +366,24 @@ class SqliteHistoryDatabaseTest {
         occurredAtEpochMillis = 1234L,
         payloadVersion = 1,
         payload = payload,
+    )
+
+    /**
+     * 建立沒有參與者與局資料的最小封存資料。
+     *
+     * @param matchId 對局 ID。
+     * @param replayPayload Replay JSON 文字。
+     * @return 可直接封存的資料。
+     */
+    private fun archiveRecord(matchId: String, replayPayload: String): HistoryArchiveRecord = HistoryArchiveRecord(
+        matchId = matchId,
+        tableId = "00000000-0000-0000-0000-000000000002",
+        ruleId = "mahjongcraft:test",
+        dimensionId = null,
+        startedAtEpochMillis = 1L,
+        endedAtEpochMillis = 2L,
+        participants = emptyList(),
+        rounds = emptyList(),
+        replayPayload = replayPayload,
     )
 }

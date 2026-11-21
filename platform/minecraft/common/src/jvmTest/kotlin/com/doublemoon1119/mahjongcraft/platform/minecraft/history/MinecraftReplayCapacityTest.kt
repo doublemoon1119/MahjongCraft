@@ -111,7 +111,7 @@ class MinecraftReplayCapacityTest {
         /** JSON 上限。 */
         const val MAX_JSON_BYTES = 290_000
 
-        /** gzip 上限。 */
+        /** gzip 上限；歷史資料庫以 gzip 預設等級壓縮存放牌譜，這也是單場牌譜的存檔大小上限。 */
         const val MAX_GZIP_BYTES = 40_000
 
         /** 量測結果的紀錄。 */

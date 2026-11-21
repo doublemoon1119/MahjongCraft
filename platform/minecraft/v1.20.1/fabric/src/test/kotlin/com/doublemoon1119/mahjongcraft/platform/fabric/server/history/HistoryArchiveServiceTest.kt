@@ -186,16 +186,10 @@ class HistoryArchiveServiceTest {
                     assertEquals(listOf(1, 2, 3), roundNumbers)
                 }
             }
-            connection.prepareStatement("SELECT payload FROM history_replay WHERE match_id = ?").use { statement ->
-                statement.setString(1, matchId.toString())
-                statement.executeQuery().use { rows ->
-                    assertTrue(rows.next())
-                    val decoded = CompactReplayCodec.decodeCompact(Json.parseToJsonElement(rows.getString(1)).jsonObject)
-                    assertEquals(3, decoded.size)
-                    assertTrue(decoded.all { it.isNotEmpty() })
-                }
-            }
         }
+        val decoded = CompactReplayCodec.decodeCompact(Json.parseToJsonElement(readStoredReplay(path, matchId.toString())).jsonObject)
+        assertEquals(3, decoded.size)
+        assertTrue(decoded.all { it.isNotEmpty() })
     }
 
     /** 終局事件仍留在 Game 時不能提前封存；返回房間後可以原子封存。 */
@@ -356,15 +350,9 @@ class HistoryArchiveServiceTest {
         assertEquals(emptyList(), database.readPending(matchId.toString()))
         assertTrue(matchId.toString() in database.readReplayIds())
         DriverManager.getConnection("jdbc:sqlite:${path.toAbsolutePath()}").use { connection ->
-            connection.prepareStatement("SELECT payload FROM history_replay WHERE match_id = ?").use { statement ->
-                statement.setString(1, matchId.toString())
-                statement.executeQuery().use { rows ->
-                    assertTrue(rows.next())
-                    val replay = CompactReplayCodec.decodeCompact(Json.parseToJsonElement(rows.getString(1)).jsonObject)
-                    val players = replay.last().last().projection.jsonObject.getValue("players").jsonArray
-                    assertEquals(finalTable.players.first().score, players.first().jsonObject.getValue("score").jsonPrimitive.int)
-                }
-            }
+            val replay = CompactReplayCodec.decodeCompact(Json.parseToJsonElement(readStoredReplay(path, matchId.toString())).jsonObject)
+            val players = replay.last().last().projection.jsonObject.getValue("players").jsonArray
+            assertEquals(finalTable.players.first().score, players.first().jsonObject.getValue("score").jsonPrimitive.int)
             connection.prepareStatement("SELECT final_score FROM history_participant_result WHERE match_id = ? AND seat_index = 0").use { statement ->
                 statement.setString(1, matchId.toString())
                 statement.executeQuery().use { rows ->
