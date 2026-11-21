@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRo
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
@@ -46,7 +47,7 @@ class FabricHistoryRoundQueryIntegrationTest {
             HistoryOutboxEvent(matchId, table.id, 1, 1L, 1L, 1L, null, HistoryFact.MatchStarted(table, GameFlowConfig(), emptyMap())),
             HistoryOutboxEvent(matchId, table.id, 1, 2L, 2L, 2L, null, HistoryFact.MatchCompleted("test:completed", table.players.associate { it.id to it.score })),
         )
-        val payload = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries).toString()
+        val payload = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, ReplayPresentationNotes.NONE).toString()
         val path = createTempDirectory("history-round-integration-").resolve("history.sqlite")
         SqliteHistoryDatabase.open(path)
         DriverManager.getConnection("jdbc:sqlite:$path").use { connection ->
@@ -75,6 +76,7 @@ class FabricHistoryRoundQueryIntegrationTest {
             dispatchers = QueryTestDispatchers,
             moduleRegistry = MahjongModuleRegistryImpl(),
             locations = TableLocationRegistry(),
+            presentationNotes = ReplayPresentationNotes.NONE,
             configState = MinecraftServerConfigState(MinecraftServerConfig(history = MinecraftHistoryConfig(retention = Duration.ZERO, includeAiMatches = true))),
             retentionCoordinator = HistoryRetentionCoordinator(),
         )
@@ -84,9 +86,9 @@ class FabricHistoryRoundQueryIntegrationTest {
             val access = HistoryQueryAccess(table.players.first().id, false)
             val page = assertIs<HistoryManagementResult.Success<*>>(writer.queryRoundEvents(access, matchId, HistoryQueryScope.OWN, 1, 0, 20, session))
             assertIs<HistoryQueryResult.Success<*>>(page.value)
-            val state = writer.queryRoundState(access, matchId, HistoryQueryScope.OWN, 1, HistoryRoundPosition.Initial, session)
+            val state = writer.queryRoundStates(access, matchId, HistoryQueryScope.OWN, 1, HistoryRoundPosition.Initial, 1, session)
             val value = assertIs<HistoryQueryResult.Success<*>>(assertIs<HistoryManagementResult.Success<*>>(state).value)
-            assertEquals(table.players.size, assertIs<HistoryRoundState>(value.value).players.size)
+            assertEquals(table.players.size, assertIs<List<*>>(value.value).filterIsInstance<HistoryRoundState>().single().players.size)
             assertIs<HistoryQueryResult.Success<*>>(
                 value = assertIs<HistoryManagementResult.Success<*>>(writer.confirmRoundPublication(access, matchId, HistoryQueryScope.OWN, session)).value,
             )
@@ -100,7 +102,7 @@ class FabricHistoryRoundQueryIntegrationTest {
             val confirmation = assertIs<HistoryManagementResult.Success<*>>(writer.confirmRoundPublication(access, matchId, HistoryQueryScope.OWN, session))
             assertEquals(HistoryQueryErrorCode.NOT_AVAILABLE, assertIs<HistoryQueryResult.Failure>(confirmation.value).error.code)
             writer.detach()
-            assertIs<HistoryManagementResult.SessionChanged>(writer.queryRoundState(access, matchId, HistoryQueryScope.OWN, 1, HistoryRoundPosition.Initial, session))
+            assertIs<HistoryManagementResult.SessionChanged>(writer.queryRoundStates(access, matchId, HistoryQueryScope.OWN, 1, HistoryRoundPosition.Initial, 1, session))
         } finally {
             writer.detach()
         }

@@ -5,6 +5,9 @@ internal object FabricExtensionRegistrationCategoryIds {
     /** 客戶端獨立角色預覽分類。 */
     const val AI_CHARACTER_PREVIEW: String = "mahjongcraft:ai_character_preview"
 
+    /** 客戶端桌上物件預覽分類。 */
+    const val TABLE_PROP_PREVIEW: String = "mahjongcraft:table_prop_preview"
+
     /** 既有實體參加能力分類。 */
     const val ROOM_PARTICIPANT: String = "mahjongcraft:room_participant"
 

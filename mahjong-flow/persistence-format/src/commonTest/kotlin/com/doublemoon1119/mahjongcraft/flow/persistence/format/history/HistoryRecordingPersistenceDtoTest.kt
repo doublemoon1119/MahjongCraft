@@ -471,7 +471,7 @@ class HistoryRecordingPersistenceDtoTest {
                     sequence = 1L,
                     occurredAtEpochMillis = 1L,
                     actorPlayerId = winner,
-                    fact = HistoryFact.WinSettled("mahjongcraft:ron", listOf(details), listOf(Uuid.random())),
+                    fact = HistoryFact.WinSettled("mahjongcraft:ron", listOf(details), listOf(Uuid.random()), winningTileId = Uuid.random()),
                 ),
             ),
         )

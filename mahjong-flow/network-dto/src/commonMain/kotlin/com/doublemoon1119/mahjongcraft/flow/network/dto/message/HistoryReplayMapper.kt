@@ -46,6 +46,7 @@ fun HistoryRoundStateRequestDto.toDomain(): HistoryRoundStateRequest = HistoryRo
     scope = scope.toDomain(),
     roundNumber = roundNumber,
     position = position.toDomain(),
+    count = count,
 )
 
 /**
@@ -164,6 +165,7 @@ private fun HistoryRoundOutcome.toDto(registries: NetworkDtoConverter): HistoryR
     scoreChangesBySeat = scoreChangesBySeat,
     winnerDetails = winnerDetails.map { it.toDto(registries) },
     hasEarlierWinSettlement = hasEarlierWinSettlement,
+    winningTile = winningTile?.tileIndex,
 )
 
 /**
@@ -247,6 +249,10 @@ fun HistoryRoundState.toDto(registries: NetworkDtoConverter): HistoryRoundStateD
     hasPendingReaction = hasPendingReaction,
     hasPendingRobbingReaction = hasPendingRobbingReaction,
     outcome = outcome?.toDto(registries),
+    wallPlacements = wallPlacements?.entries?.associate { (tile, placement) -> tile.tileIndex to placement.toDto() },
+    discardOrder = discardOrder.map { it.tileIndex },
+    tilePoses = tilePoses.entries.associate { (tile, pose) -> tile.tileIndex to pose.toDto() },
+    presentationNotes = presentationNotes,
 )
 
 /**

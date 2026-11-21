@@ -3,7 +3,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
-import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterClientStateStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerKeys
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.text.Text
 import kotlin.uuid.Uuid
@@ -13,11 +15,22 @@ import kotlin.uuid.Uuid
  *
  * @property names 目前與歷史共用的名稱解析器。
  * @property portraits 既有 portrait source 的 GUI 繪製器。
+ * @property characters 各場保存的 AI 角色外觀。
  */
 class HistoryParticipantPresentationResolver(
     private val names: ClientPlayerDisplayNameResolver,
     private val portraits: PlayerPortraitRenderer,
+    private val characters: AiCharacterClientStateStore,
 ) {
+    /**
+     * 取得 AI 參與者在該場保存的角色外觀，不以目前世界中的角色代替。
+     *
+     * @param playerId AI 識別碼。
+     * @param matchId 歷史場次。
+     * @return 保存的外觀；沒有時為 null。
+     */
+    fun character(playerId: Uuid, matchId: String?): AiCharacterSnapshot? = matchId?.let(::parseUuid)?.let { characters.history(it, playerId) }
+
     /**
      * 取得參與者顯示名稱；profile 不在快取時使用穩定的未知玩家翻譯文字。
      *
@@ -27,7 +40,7 @@ class HistoryParticipantPresentationResolver(
      * @return 原生玩家名稱、AI 名稱或未知玩家文字。
      */
     fun name(participant: HistoryParticipantSummaryDto, participants: List<HistoryParticipantSummaryDto>, matchId: String? = null): Text {
-        val id = parseUuid(participant.playerId) ?: return Text.translatable(UNKNOWN_PLAYER_KEY)
+        val id = parseUuid(participant.playerId) ?: return Text.translatable(MinecraftPlayerKeys.UNKNOWN)
         val aiIds = participants.filter { it.aiStrategyId != null }.sortedBy { it.seatIndex }.mapNotNull { parseUuid(it.playerId) }
         return Text.literal(names.historical(id, matchId?.let(::parseUuid), participant.aiStrategyId != null, aiIds))
     }
@@ -69,8 +82,5 @@ class HistoryParticipantPresentationResolver(
     private companion object {
         /** 避免無效 UUID 使 GUI portrait 缺席。 */
         val FALLBACK_UUID: Uuid = Uuid.parse("00000000-0000-0000-0000-000000000000")
-
-        /** 真人名稱未知時使用的翻譯鍵。 */
-        const val UNKNOWN_PLAYER_KEY = MinecraftHistoryScreenKeys.PLAYER_UNKNOWN
     }
 }

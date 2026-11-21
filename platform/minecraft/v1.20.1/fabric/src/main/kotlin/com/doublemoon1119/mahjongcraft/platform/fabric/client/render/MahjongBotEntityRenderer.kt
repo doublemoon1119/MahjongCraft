@@ -81,6 +81,8 @@ class MahjongBotEntityRenderer(
      * @param vertexConsumers 頂點緩衝。
      * @param light 光照。
      * @param seated 是否以坐姿繪製。
+     * @param swingProgress 揮手進度，0 到 1；預設依實體收到的揮手通知計算。
+     * @param alpha 0 到 1 之間的不透明度；小於 1 時以半透明圖層畫出淡化的機器人。
      */
     fun renderPose(
         entity: MahjongBotEntity,
@@ -90,10 +92,11 @@ class MahjongBotEntityRenderer(
         vertexConsumers: VertexConsumerProvider,
         light: Int,
         seated: Boolean,
+        swingProgress: Float = entity.swingProgress(tickDelta),
+        alpha: Float = 1f,
     ) {
         if (entity.isInvisible) return
         val hipY = if (seated) MahjongStoolSeatGeometry.SEATED_BOTTOM_HEIGHT.toFloat() else LEG_LENGTH
-        val swingProgress = entity.swingProgress(tickDelta)
         val swing = MahjongBotArmAnimation.swingDegrees(swingProgress)
         val phase = (entity.uuid.hashCode().toLong() and IDLE_PHASE_MASK).toDouble() / IDLE_PHASE_MASK * (2.0 * PI)
         val idleTime = (entity.age + tickDelta).toDouble() * IDLE_SPEED + phase
@@ -101,11 +104,11 @@ class MahjongBotEntityRenderer(
         val idleRight = sin(idleTime + PI).toFloat() * IDLE_SWING_ANGLE
         matrices.push()
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f - yaw))
-        renderLeg(-LEG_OFFSET, hipY, seated, SEATED_LEG_SPREAD, matrices, vertexConsumers, light)
-        renderLeg(LEG_OFFSET, hipY, seated, -SEATED_LEG_SPREAD, matrices, vertexConsumers, light)
+        renderLeg(-LEG_OFFSET, hipY, seated, SEATED_LEG_SPREAD, matrices, vertexConsumers, light, alpha)
+        renderLeg(LEG_OFFSET, hipY, seated, -SEATED_LEG_SPREAD, matrices, vertexConsumers, light, alpha)
         matrices.push()
         matrices.translate(0f, hipY, 0f)
-        renderLimb(arm, -ARM_OFFSET, SHOULDER_HEIGHT, idleLeft, matrices, vertexConsumers, light)
+        renderLimb(arm, -ARM_OFFSET, SHOULDER_HEIGHT, idleLeft, matrices, vertexConsumers, light, alpha = alpha)
         renderLimb(
             dimensions = arm,
             x = ARM_OFFSET,
@@ -116,6 +119,7 @@ class MahjongBotEntityRenderer(
             light = light,
             yaw = MahjongBotArmAnimation.yawDegrees(swingProgress),
             roll = MahjongBotArmAnimation.rollDegrees(swingProgress),
+            alpha = alpha,
         )
         matrices.translate(0f, BODY_HEIGHT / 2f, 0f)
         matrices.scale(BODY_SCALE, BODY_SCALE, BODY_SCALE)
@@ -127,6 +131,7 @@ class MahjongBotEntityRenderer(
             vertexConsumers = vertexConsumers,
             light = light,
             overlay = OverlayTexture.DEFAULT_UV,
+            alpha = alpha,
         )
         matrices.pop()
         matrices.pop()
@@ -143,6 +148,7 @@ class MahjongBotEntityRenderer(
      * @param matrices 目前模型矩陣。
      * @param consumers 頂點緩衝。
      * @param light 世界光照。
+     * @param alpha 0 到 1 之間的不透明度。
      */
     private fun renderLeg(
         x: Float,
@@ -152,11 +158,12 @@ class MahjongBotEntityRenderer(
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
         light: Int,
+        alpha: Float,
     ) {
         matrices.push()
         matrices.translate(x, y, 0f)
         if (seated) matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(spread))
-        renderLimb(leg, 0f, 0f, if (seated) SEATED_LEG_ANGLE else 0f, matrices, consumers, light)
+        renderLimb(leg, 0f, 0f, if (seated) SEATED_LEG_ANGLE else 0f, matrices, consumers, light, alpha = alpha)
         matrices.pop()
     }
 
@@ -172,6 +179,7 @@ class MahjongBotEntityRenderer(
      * @param light 世界光照。
      * @param yaw 手臂的水平旋轉角度。
      * @param roll 手臂向身體內側的旋轉角度。
+     * @param alpha 0 到 1 之間的不透明度；小於 1 時改用半透明圖層。
      */
     private fun renderLimb(
         dimensions: LimbDimensions,
@@ -183,6 +191,7 @@ class MahjongBotEntityRenderer(
         light: Int,
         yaw: Float = 0f,
         roll: Float = 0f,
+        alpha: Float = 1f,
     ) {
         matrices.push()
         matrices.translate(x, y, 0f)
@@ -194,7 +203,11 @@ class MahjongBotEntityRenderer(
         val model = (modelManager as FabricBakedModelManager).getModel(LIMB_MODEL_ID) ?: modelManager.missingModel
         blockModelRenderer.render(
             matrices.peek(),
-            consumers.getBuffer(RenderLayer.getEntityCutout(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE)),
+            if (alpha < 1f) {
+                AlphaVertexConsumer(consumers.getBuffer(RenderLayer.getItemEntityTranslucentCull(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE)), alpha)
+            } else {
+                consumers.getBuffer(RenderLayer.getEntityCutout(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE))
+            },
             null,
             model,
             1f,

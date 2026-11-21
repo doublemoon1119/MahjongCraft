@@ -221,6 +221,12 @@ rules come from collisions that only showed up in game, so check them even when 
 - A native prop kind owns one `TablePropKindDefinition`: its ID, actual model dimensions and pure
   content validator. Register that kind once through the existing extension callback. Use the same
   dimensions for rendering and occupancy; an entity's selection box is not its model size.
+- Client scenes that are not part of the world, such as round replays, draw props from the same
+  description. A client cannot use the server kind, so register a client preview with the same
+  `TablePropKindDefinition` and a factory that builds a detached entity from the public content. For
+  example, the Fabric client extension registers `FabricTablePropPreviewDefinition` values through
+  `FabricTablePropPreviewRegistrar`. The framework owns and discards the entity and sets its position.
+  A kind without a client preview is not drawn there and takes no space.
 - The layout checks rotated bounds in all three dimensions, including collisions between seat and
   central props. Touching layers are allowed. Central allocation is deterministic and bounded, not an
   optimal packing solver. An invalid scene or failed spawn clears the failed scene and reports the
@@ -514,11 +520,12 @@ attempt does not fall through to another provider.
   `TabWidget` for tabs, `ButtonRowLayout` for a row of equal-width buttons, `DropdownOverlay` for
   selector lists, `ControlTooltip` for control tooltips, `VerticalScrollbar` and `HorizontalScrollbar`
   for scrollbars, `CardBackground` for card colours, `wrapLinesBalanced` for card text that wraps and
-  `ScreenRendering` for titles, labels and status lines. Do not place widgets by hand or copy their
-  sizes. Sizes and colours live in those components; change them there and extend the layout tests.
-- Draw only the vanilla translucent background. Do not add a full-screen overlay or a panel behind the
-  content. The exception is the decision panel, which opens over the table during a match without
-  pausing it: it keeps its own background so its cards stay readable over the world behind them.
+  `ScreenRendering` for titles, labels and status lines. Start from their sizes and colours. A screen
+  that needs a different look may choose its own; when other screens could use it too, add it to the
+  shared component instead, as `CardBackground` does with its neutral colours.
+- Use the vanilla translucent background by default. A part of the content that needs to stand apart
+  from what is behind it may have its own backing, such as the decision panel over the world during a
+  match or a table scene drawn in a screen. Do not cover the whole screen with an overlay.
 - Mark the current page, or a selector whose list is open, with the white outline
   (`RestartableMarqueeButtonWidget.outlined`). Keep the disabled look for buttons that cannot be pressed;
   it does not mean "you are here".
@@ -550,9 +557,10 @@ attempt does not fall through to another provider.
   - A full settings page has Reset, Undo, Apply and Done, and asks before Esc discards unapplied
     changes.
   - A confirmation names its action on one button and has Cancel on the other.
-- Content is at most `FormScreenLayout.MAX_CONTENT_WIDTH` wide and centred on every screen except
-  editors that need the whole window, such as the HUD layout editor. Stripe every other row on screens
-  made of rows, and put scrollbars in the margin to the right of the content.
+- Content on form and list screens is at most `FormScreenLayout.MAX_CONTENT_WIDTH` wide and centred.
+  Screens built around one view, such as the HUD layout editor and the round replay, may use the whole
+  window. Stripe every other row on screens made of rows, and put scrollbars in the margin to the right
+  of the content.
 - Draw icons with `PixelIcons` and `PixelIcon`, not with text symbols, so their size and weight do not
   depend on the font. A button that shows only an icon still names its action in its tooltip.
 - Text that acts as a control is a button or a whole clickable row, never underlined text. Controls
@@ -594,6 +602,26 @@ attempt does not fall through to another provider.
 - Recipes come from the world's recipe manager when the screen opens, so data packs that change the
   table or stool recipes are shown as they are. They are drawn on the vanilla crafting table texture,
   so resource packs that restyle it restyle the guide too.
+
+## Round replays
+
+- A replay lays out each step with the same `TableTileArrangement` as the live table, using the match's
+  rule module on the client and the match's saved rule settings. Moves between steps come from the same
+  `TableStepMotionPlanner`. Do not build a separate layout or animation for replays.
+- The client calls the rule's `sideStackCounts` and `sideArrangement` with the match's saved settings, so a
+  rule extension must also be installed on a client for that client to replay its matches. When the client
+  does not have the match's rule, the replay buttons are disabled and their tooltips say why. When a step
+  still cannot be laid out, the replay names the reason instead of showing a loading message.
+- The saved replay keeps only the table state. Anything else the live table needs to place tiles or draw
+  the table is worked out by the rule or the table from the full state during play, so it is recorded
+  into `ReplayTableNotes` when the match is saved, and replays never call the rule for it again. Examples
+  are the wall positions still to be reached from `roundReach`, the scattered discard pattern, corner
+  widths, round info, player indicators, table props and which hands are revealed at an exhaustive draw.
+  When the live layout starts using another such value, record it there as well; never work it out again
+  on the client from the saved state.
+- Win records keep the winning tile even when the hand is not revealed, and winners of one discard
+  share it. The win effect and hand reveals use timing shared with the live table
+  (`WinCelebrationEffectSteps`, `HandRevealSteps`), so change their pacing in one place.
 
 ## Public API Compatibility
 

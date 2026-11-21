@@ -24,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayRoundReader
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayJsonParseLimits
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadResult
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.parseBoundedReplayJson
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
@@ -65,6 +66,7 @@ import kotlin.uuid.Uuid
  * @property dispatchers 平台提供的 I/O dispatcher。
  * @param moduleRegistry 解析開局使用的規則模組；只交給封存服務。
  * @param locations 取得牌桌位置摘要；只交給封存服務。
+ * @param presentationNotes 為牌譜每份桌況附上擺放附註的來源；只交給封存服務。
  * @property configState 目前有效的不可變設定，供 session 初始化使用。
  * @property retentionCoordinator 將清理與有效政策更新排序的協調邊界。
  * @property observer 接收背景工作各環節耗時與寫入事件數；null 時不量測。
@@ -76,6 +78,7 @@ class FabricHistoryOutboxWriter(
     private val dispatchers: CoroutineDispatchers,
     moduleRegistry: MahjongModuleRegistry,
     locations: TableLocationRegistry,
+    presentationNotes: ReplayPresentationNotes,
     private val configState: MinecraftServerConfigState,
     private val retentionCoordinator: HistoryRetentionCoordinator,
     private val observer: HistoryWriterObserver? = null,
@@ -91,7 +94,7 @@ class FabricHistoryOutboxWriter(
     private val replayRegistries: PersistenceRegistries = registries
 
     /** 對帳待寫事件並建立完整 Replay 的服務。 */
-    private val archiveService = HistoryArchiveService(mapper, registries, moduleRegistry, locations, characterAppearance)
+    private val archiveService = HistoryArchiveService(mapper, registries, moduleRegistry, locations, presentationNotes, characterAppearance)
 
     /** 共用唯讀 preview 與清理政策的 I/O 維護服務。 */
     private val retentionService = HistoryRetentionService(store)
@@ -474,29 +477,31 @@ class FabricHistoryOutboxWriter(
     }
 
     /**
-     * 在唯一 session 與政策 lease 內重建已授權交易位置。
+     * 在唯一 session 與政策 lease 內，一次走過重建已授權的連續交易位置。
      *
      * @param access 可信連線身分。
      * @param matchId 對局識別碼。
      * @param queryScope 要求範圍。
      * @param roundNumber 保存局序號。
-     * @param position 初始桌況或指定交易後。
+     * @param position 第一個位置：初始桌況或指定交易後。
+     * @param count 最多幾個連續位置。
      * @param sessionId 收到要求時的世界 session。
-     * @return 完整狀態或安全錯誤。
+     * @return 依位置先後排列的完整狀態或安全錯誤。
      */
-    internal suspend fun queryRoundState(
+    internal suspend fun queryRoundStates(
         access: HistoryQueryAccess,
         matchId: Uuid,
         queryScope: HistoryQueryScope,
         roundNumber: Int,
         position: HistoryRoundPosition,
+        count: Int,
         sessionId: Uuid?,
-    ): HistoryManagementResult<HistoryQueryResult<HistoryRoundState>> = manage(sessionId) { activeDatabase, _ ->
+    ): HistoryManagementResult<HistoryQueryResult<List<HistoryRoundState>>> = manage(sessionId) { activeDatabase, _ ->
         readAuthorizedHistoryRound(
             database = activeDatabase, access = access, policy = historyQueryPolicy(), matchId = matchId, scope = queryScope, excluded = excludedHistoryMatches(),
             parse = { parseBoundedReplayJson(it) },
-            read = { CompactReplayRoundReader(replayRegistries.componentViews).readState(it, matchId, roundNumber, position) },
-            identity = { it.identity },
+            read = { CompactReplayRoundReader(replayRegistries.componentViews).readStates(it, matchId, roundNumber, position, count) },
+            identity = { it.first().identity },
         )
     }
 

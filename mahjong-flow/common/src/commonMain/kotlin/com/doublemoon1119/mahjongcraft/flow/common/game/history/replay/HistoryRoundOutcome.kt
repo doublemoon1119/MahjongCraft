@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
  * @property classification 保存的局結算分類；整場完成事實不含此資料。
  * @property responsibleSeats 保存的責任玩家座位；整場完成事實不含此資料。
  * @property transitionDirective 保存的下一任莊家；整場完成事實不含此資料。
+ * @property winningTile 胡牌結算的和牌張，不論是否攤牌；其他結算或沒有和牌張時為 null。
  */
 data class HistoryRoundOutcome(
     val reasonId: String,
@@ -25,4 +26,5 @@ data class HistoryRoundOutcome(
     val scoreChangesBySeat: Map<Int, Int> = emptyMap(),
     val winnerDetails: List<HistoryWinnerDetails> = emptyList(),
     val hasEarlierWinSettlement: Boolean = false,
+    val winningTile: HistoryTileReference? = null,
 )

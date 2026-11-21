@@ -582,6 +582,9 @@ class CompactReplayRoundReaderTest {
         )
         put(ReplaySourceKeys.TILE_WALL, buildJsonObject { put(ReplaySourceKeys.WALL_TILES, JsonArray(wallTiles.map(::JsonPrimitive))) })
         put(ReplaySourceKeys.RESERVED_WALL_TILES, JsonArray(reservedTiles.map(::JsonPrimitive)))
+        put(ReplaySourceKeys.PHYSICAL_WALL_LAYOUT, JsonNull)
+        put(ReplaySourceKeys.DISCARD_ORDER, JsonArray(emptyList()))
+        put(ReplayFormatKeys.PRESENTATION_NOTES, JsonNull)
         put(ReplaySourceKeys.DEALER_PLAYER_ID, 0)
         put(ReplaySourceKeys.CURRENT_PLAYER_INDEX, 0)
         put(

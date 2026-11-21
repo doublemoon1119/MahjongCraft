@@ -215,7 +215,7 @@ class TableTileArrangementTest {
         controllerZ = 0,
         tableFacing = MahjongTableFacing.NORTH,
         seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
-        tableState = state,
+        table = state.toArrangementState(),
         tileLayout = TableTileLayoutProfile.STANDARD,
         cornerWidthBySeat = emptyMap(),
         handPoseStates = emptyList(),

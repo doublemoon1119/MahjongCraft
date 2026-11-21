@@ -28,4 +28,7 @@ object HistoryQueryLimits {
 
     /** 歷史事件頁的預設交易數量。 */
     const val DEFAULT_REPLAY_PAGE_SIZE: Int = 20
+
+    /** 一次桌況查詢最多回傳的連續位置數。 */
+    const val MAX_ROUND_STATES: Int = 16
 }

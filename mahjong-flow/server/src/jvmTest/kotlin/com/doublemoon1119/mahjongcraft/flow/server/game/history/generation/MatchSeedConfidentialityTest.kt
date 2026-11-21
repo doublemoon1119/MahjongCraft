@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toRuntimeSta
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryOutboxEventPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.seededRandomMoveHeadlessHistoryRegistries
@@ -53,7 +54,7 @@ class MatchSeedConfidentialityTest {
         val historyText = events.joinToString(separator = "\n") { event ->
             persistenceJson.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), mapper.encodePendingEvent(event))
         }
-        val replayText = CompactReplayCodec.encodeCompact(events, mapper, registries).toString()
+        val replayText = CompactReplayCodec.encodeCompact(events, mapper, registries, ReplayPresentationNotes.NONE).toString()
         assertFalse(forms.any { it in historyText }, "History events must not contain the seed.")
         assertFalse(forms.any { it in replayText }, "The replay must not contain the seed.")
     }

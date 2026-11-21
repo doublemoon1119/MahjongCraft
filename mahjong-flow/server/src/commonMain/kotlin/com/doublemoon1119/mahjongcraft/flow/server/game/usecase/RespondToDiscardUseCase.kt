@@ -19,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.actionScoredHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.winSettlementHistoryDetails
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.winSettlementWinningTileId
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedGameActionContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
@@ -167,6 +168,7 @@ class RespondToDiscardUseCase(
                                             outcomeId = settlement.outcomeId,
                                             winDetails = winSettlementHistoryDetails(settlement),
                                             responsiblePlayerIds = listOfNotNull(resolution.ronDiscarderId),
+                                            winningTileId = winSettlementWinningTileId(settlement),
                                         ),
                                     ),
                                 )

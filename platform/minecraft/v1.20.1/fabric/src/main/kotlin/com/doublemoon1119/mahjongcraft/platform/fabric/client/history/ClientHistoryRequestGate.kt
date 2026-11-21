@@ -22,12 +22,17 @@ internal enum class ClientHistoryRequestPriority {
 /**
  * 同一 client 連線共用的歷史查詢送出冷卻；前景查詢與保存狀態輪詢不可各自繞過它。
  *
+ * 伺服器在主執行緒的下一個 tick 才處理收到的查詢並量間隔，處理時刻可能比送出時晚將近一個 tick；
+ * 兩次送出之間在公布的間隔外再多等 [processingMargin]，伺服器量到的間隔才不會短於限制。
+ *
  * @property minimumInterval 目前連線公布的最短查詢間隔。
+ * @property processingMargin 公布間隔之外多等的時間，例如一個伺服器 tick。
  * @property now 單調時間來源。
  * @property sessionRevision 目前 client 連線工作階段版本。
  */
 internal class ClientHistoryRequestGate(
     private val minimumInterval: () -> Duration,
+    private val processingMargin: Duration,
     private val now: () -> Duration,
     private val sessionRevision: () -> Long,
 ) {
@@ -70,7 +75,7 @@ internal class ClientHistoryRequestGate(
                     if (priority == ClientHistoryRequestPriority.BACKGROUND && foregroundWaiters > 0) {
                         true to null
                     } else {
-                        val remaining = (lastSentAt?.plus(minimumInterval()) ?: now()) - now()
+                        val remaining = (lastSentAt?.plus(minimumInterval() + processingMargin) ?: now()) - now()
                         if (remaining <= Duration.ZERO) {
                             lastSentAt = now()
                             false to null
@@ -99,5 +104,11 @@ internal class ClientHistoryRequestGate(
                 }
             }
         }
+    }
+
+    /** 送出間隔的處理餘裕。 */
+    companion object {
+        /** 伺服器一個 tick 的時間；伺服器在主執行緒的下一個 tick 才處理收到的查詢。 */
+        val SERVER_TICK: Duration = 50.milliseconds
     }
 }

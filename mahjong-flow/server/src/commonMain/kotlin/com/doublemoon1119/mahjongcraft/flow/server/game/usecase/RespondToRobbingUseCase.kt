@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.actionScoredHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.winSettlementHistoryDetails
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.winSettlementWinningTileId
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
@@ -140,6 +141,7 @@ class RespondToRobbingUseCase(
                                             outcomeId = settlement.outcomeId,
                                             winDetails = winSettlementHistoryDetails(settlement),
                                             responsiblePlayerIds = listOfNotNull(resolution.ronDiscarderId),
+                                            winningTileId = winSettlementWinningTileId(settlement),
                                         ),
                                     ),
                                 )

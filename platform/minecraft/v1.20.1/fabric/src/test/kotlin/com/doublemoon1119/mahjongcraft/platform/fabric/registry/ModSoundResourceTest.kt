@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.registry
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongAnimationSounds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.MahjongAnimationSounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiGameActionVoiceSoundIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanGameActionVoiceSoundIds
 import kotlinx.serialization.json.Json

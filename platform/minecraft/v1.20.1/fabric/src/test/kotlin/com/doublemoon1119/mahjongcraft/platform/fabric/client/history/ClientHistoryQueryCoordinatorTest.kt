@@ -160,16 +160,16 @@ class ClientHistoryQueryCoordinatorTest {
         val coordinator = ClientHistoryQueryCoordinator(sender, ClientHistoryQuerySettings())
         val eventsId = coordinator.queryRoundEvents(HistoryRoundEventsRequestDto("caller", "match", roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20))
         assertEquals(eventsId, sender.roundEventsRequest?.requestId)
-        coordinator.applyRoundState(HistoryRoundStateResponseDto("wrong", "match", 1, HistoryRoundPositionDto.Initial, state = null, errorCode = null))
+        coordinator.applyRoundState(HistoryRoundStateResponseDto("wrong", "match", 1, HistoryRoundPositionDto.Initial, states = emptyList(), errorCode = null))
         assertIs<ClientHistoryQueryState.Loading>(coordinator.state.value)
         coordinator.applyRoundEvents(HistoryRoundEventsResponseDto(eventsId, "other-match", 1, 0, events = null, errorCode = null))
         assertIs<ClientHistoryQueryState.Loading>(coordinator.state.value)
         coordinator.applyRoundEvents(HistoryRoundEventsResponseDto(eventsId, "match", 1, 0, events = null, errorCode = null))
         assertIs<ClientHistoryQueryState.RoundEventsResult>(coordinator.state.value)
 
-        val stateId = coordinator.queryRoundState(HistoryRoundStateRequestDto("caller", "match", roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial))
+        val stateId = coordinator.queryRoundState(HistoryRoundStateRequestDto("caller", "match", roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial, count = 1))
         assertEquals(stateId, sender.roundStateRequest?.requestId)
-        coordinator.applyRoundState(HistoryRoundStateResponseDto(stateId, "match", 1, HistoryRoundPositionDto.Initial, state = null, errorCode = null))
+        coordinator.applyRoundState(HistoryRoundStateResponseDto(stateId, "match", 1, HistoryRoundPositionDto.Initial, states = emptyList(), errorCode = null))
         assertIs<ClientHistoryQueryState.RoundStateResult>(coordinator.state.value)
     }
 

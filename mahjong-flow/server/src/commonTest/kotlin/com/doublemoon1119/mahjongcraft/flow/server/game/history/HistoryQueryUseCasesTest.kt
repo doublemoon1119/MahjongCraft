@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryError
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryErrorCode
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryFilters
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryLimits
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryPolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryRepository
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryResult
@@ -45,7 +46,7 @@ class HistoryQueryUseCasesTest {
             access = access,
             request = HistoryRoundEventsRequest(matchId, HistoryQueryScope.ALL, roundNumber = 1),
         )
-        val state = GetHistoryRoundStateUseCase(repository) { HistoryQueryPolicy() }(
+        val state = GetHistoryRoundStatesUseCase(repository) { HistoryQueryPolicy() }(
             access = access,
             request = HistoryRoundStateRequest(matchId, HistoryQueryScope.ALL, roundNumber = 1),
         )
@@ -53,6 +54,19 @@ class HistoryQueryUseCasesTest {
         assertError(state, HistoryQueryErrorCode.ACCESS_DENIED)
         assertEquals(0, repository.roundEventsCalls)
         assertEquals(0, repository.roundStateCalls)
+    }
+
+    /** 一次要求的桌況數量必須介於 1 與上限之間，否則不抵達 repository。 */
+    @Test
+    fun `round state count must stay within the limit`() = runTest {
+        val repository = RecordingHistoryQueryRepository()
+        val access = HistoryQueryAccess(Uuid.random(), isAdministrator = false)
+        val useCase = GetHistoryRoundStatesUseCase(repository) { HistoryQueryPolicy() }
+        listOf(0, HistoryQueryLimits.MAX_ROUND_STATES + 1).forEach { count ->
+            assertError(useCase(access, HistoryRoundStateRequest(Uuid.random(), HistoryQueryScope.OWN, roundNumber = 1, count = count)), HistoryQueryErrorCode.INVALID_REQUEST)
+        }
+        useCase(access, HistoryRoundStateRequest(Uuid.random(), HistoryQueryScope.OWN, roundNumber = 1, count = HistoryQueryLimits.MAX_ROUND_STATES))
+        assertEquals(1, repository.roundStateCalls)
     }
 
     /** 停用政策不能讓單局 Replay 查詢抵達 repository。 */
@@ -385,10 +399,10 @@ class HistoryQueryUseCasesTest {
             return HistoryQueryResult.Failure(HistoryQueryError(HistoryQueryErrorCode.NOT_AVAILABLE, "No test history"))
         }
 
-        override suspend fun roundState(
+        override suspend fun roundStates(
             access: HistoryQueryAccess,
             request: HistoryRoundStateRequest,
-        ): HistoryQueryResult<HistoryRoundState> {
+        ): HistoryQueryResult<List<HistoryRoundState>> {
             roundStateCalls++
             return HistoryQueryResult.Failure(HistoryQueryError(HistoryQueryErrorCode.NOT_AVAILABLE, "No test history"))
         }

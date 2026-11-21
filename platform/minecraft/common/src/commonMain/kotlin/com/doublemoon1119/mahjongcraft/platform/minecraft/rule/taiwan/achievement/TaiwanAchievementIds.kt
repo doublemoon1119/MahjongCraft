@@ -41,7 +41,7 @@ object TaiwanAchievementIds {
     /** 七搶一。 */
     val SEVEN_FLOWERS: String = MahjongCraftMetadata.id("taiwan/seven_flowers")
 
-    /** 一般胡牌結算台種與對應成果。 */
+    /** 胡牌結算台種與對應成果，包含花胡。 */
     private val taiAchievements: Map<TaiwanTaiType, String> = mapOf(
         TaiwanTaiType.AllExposed to ALL_EXPOSED,
         TaiwanTaiType.FullFlush to FULL_FLUSH,
@@ -52,6 +52,8 @@ object TaiwanAchievementIds {
         TaiwanTaiType.HeavenlyWin to HEAVENLY_WIN,
         TaiwanTaiType.EarthlyWin to EARTHLY_WIN,
         TaiwanTaiType.HumanWin to HUMAN_WIN,
+        TaiwanTaiType.EightFlowers to EIGHT_FLOWERS,
+        TaiwanTaiType.SevenFlowers to SEVEN_FLOWERS,
     )
 
     /** 查詢台種對應的成果；沒有專屬成果的台種回傳 null。 */

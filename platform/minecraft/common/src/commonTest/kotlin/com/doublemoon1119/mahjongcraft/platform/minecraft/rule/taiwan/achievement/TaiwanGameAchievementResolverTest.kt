@@ -16,9 +16,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
-import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
-import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
-import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -56,6 +53,8 @@ class TaiwanGameAchievementResolverTest {
             TaiwanTaiType.HeavenlyWin to TaiwanAchievementIds.HEAVENLY_WIN,
             TaiwanTaiType.EarthlyWin to TaiwanAchievementIds.EARTHLY_WIN,
             TaiwanTaiType.HumanWin to TaiwanAchievementIds.HUMAN_WIN,
+            TaiwanTaiType.EightFlowers to TaiwanAchievementIds.EIGHT_FLOWERS,
+            TaiwanTaiType.SevenFlowers to TaiwanAchievementIds.SEVEN_FLOWERS,
         )
 
         expected.forEach { (type, achievement) ->
@@ -63,28 +62,14 @@ class TaiwanGameAchievementResolverTest {
         }
     }
 
-    /** 八仙過海依規則結果的胡牌詳情授予；七搶一沒有詳情時改用結果摘要的受益者。 */
+    /** 花胡與其他胡牌一樣由胡牌結算的台種授予：八仙過海與七搶一各自取得成果。 */
     @Test
-    fun `flower outcomes credit details or summary beneficiaries`() {
+    fun `flower wins credit their winners`() {
         val game = taiwanGame()
         val (first, second) = game.tableState.players
-        val eightFlowers = HistoryFact.RuleEffectResolved(
-            reasonId = TaiwanRoundOutcomeIds.EIGHT_FLOWERS,
-            roundCompletion = null,
-            winDetails = listOf(HistoryWinDetails(first.id, emptyList())),
-        )
-        val sevenFlowers = HistoryFact.RuleEffectResolved(
-            reasonId = TaiwanRoundOutcomeIds.SEVEN_FLOWERS,
-            roundCompletion = RoundCompletionSummary(
-                outcomeId = TaiwanRoundOutcomeIds.SEVEN_FLOWERS,
-                classification = RoundCompletionClassification.WIN,
-                beneficiaryPlayerIds = setOf(second.id),
-                responsiblePlayerIds = emptySet(),
-                transitionDirective = RoundTransitionDirective.PassToNextSeat,
-                settledScoresByPlayerId = game.tableState.players.associate { it.id to it.score },
-            ),
-            winDetails = emptyList(),
-        )
+
+        val eightFlowers = win(first.id, TaiwanTaiType.EightFlowers, outcomeId = TaiwanRoundOutcomeIds.EIGHT_FLOWERS)
+        val sevenFlowers = win(second.id, TaiwanTaiType.SevenFlowers, outcomeId = TaiwanRoundOutcomeIds.SEVEN_FLOWERS)
 
         assertEquals(mapOf(first.id to setOf(TaiwanAchievementIds.EIGHT_FLOWERS)), resolve(game, eightFlowers))
         assertEquals(mapOf(second.id to setOf(TaiwanAchievementIds.SEVEN_FLOWERS)), resolve(game, sevenFlowers))
@@ -151,14 +136,15 @@ class TaiwanGameAchievementResolverTest {
     }
 
     /**
-     * 建立自摸結算事實，台數欄位列出指定台種。
+     * 建立胡牌結算事實，台數欄位列出指定台種。
      *
      * @param winnerId 胡牌玩家 UUID。
      * @param types 成立的台種。
+     * @param outcomeId 胡牌原因，預設為自摸。
      * @return 對應的胡牌歷史事實。
      */
-    private fun win(winnerId: Uuid, vararg types: TaiwanTaiType) = HistoryFact.WinSettled(
-        outcomeId = BuiltInRoundOutcomeIds.TSUMO,
+    private fun win(winnerId: Uuid, vararg types: TaiwanTaiType, outcomeId: String = BuiltInRoundOutcomeIds.TSUMO) = HistoryFact.WinSettled(
+        outcomeId = outcomeId,
         winDetails = listOf(
             element = HistoryWinDetails(
                 playerId = winnerId,

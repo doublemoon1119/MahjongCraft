@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.HistoryTilePresentationResolverImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessFlowHistoryRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryScenario
@@ -184,6 +185,7 @@ class StressTestEnvironmentTest {
             dispatchers = TestDispatchers,
             moduleRegistry = moduleRegistry,
             locations = TableLocationRegistry(),
+            presentationNotes = ReplayPresentationNotes.NONE,
             tilePresentationResolver = HistoryTilePresentationResolverImpl(moduleRegistry, bundledCoreExtensionRegistries().componentRegistry),
         )
     }

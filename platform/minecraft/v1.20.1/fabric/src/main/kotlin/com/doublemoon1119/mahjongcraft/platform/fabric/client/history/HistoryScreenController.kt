@@ -3,8 +3,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.ClientAiCharacterPreviews
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tableprop.ClientTablePropPreviews
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
@@ -16,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcom
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfileRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.MinecraftClient
@@ -46,6 +51,11 @@ import kotlin.uuid.Uuid
  * @property ruleCatalogue 從規則設定頁開啟規則一覽。
  * @property archiveStatus 保存狀態查詢。
  * @property dispatcher 客戶端主執行緒排程。
+ * @property tileLayoutProfiles 規則的桌面牌位配置，供牌桌場景擺牌。
+ * @property playerProfiles 牌桌場景中真人玩家模型的皮膚來源。
+ * @property characterPreviews 牌桌場景中 AI 角色預覽模型的來源。
+ * @property tablePropPreviews 牌桌場景中桌上物件的實體來源。
+ * @property clientConfig 玩家的顯示設定，例如牌桌場景的最新捨牌與同種牌提示。
  */
 class HistoryScreenController internal constructor(
     private val transport: HistoryQueryTransport,
@@ -68,10 +78,16 @@ class HistoryScreenController internal constructor(
     private val ruleCatalogue: RuleCatalogueScreenController,
     private val archiveStatus: HistoryArchiveStatusTransport,
     private val dispatcher: ClientThreadCoroutineDispatcher,
+    private val tileLayoutProfiles: TableTileLayoutProfileRegistry,
+    private val playerProfiles: ClientPlayerProfileResolver,
+    private val characterPreviews: ClientAiCharacterPreviews,
+    private val tablePropPreviews: ClientTablePropPreviews,
+    private val clientConfig: MahjongClientConfigStore,
 ) {
     /** 同一 client 連線共用的歷史查詢送出 gate。 */
     private val requestGate = ClientHistoryRequestGate(
         minimumInterval = { transport.minimumInterval.value },
+        processingMargin = ClientHistoryRequestGate.SERVER_TICK,
         now = { System.nanoTime().nanoseconds },
         sessionRevision = { transport.sessionRevision.value },
     )
@@ -167,6 +183,11 @@ class HistoryScreenController internal constructor(
             tileAssets = tileAssets,
             tileDisplayNames = tileDisplayNames,
             ruleCatalogue = ruleCatalogue,
+            tileLayoutProfiles = tileLayoutProfiles,
+            playerProfiles = playerProfiles,
+            characterPreviews = characterPreviews,
+            tablePropPreviews = tablePropPreviews,
+            clientConfig = clientConfig,
             dispatcher = dispatcher,
             parent = request.parent,
             initialMatchId = request.matchId,

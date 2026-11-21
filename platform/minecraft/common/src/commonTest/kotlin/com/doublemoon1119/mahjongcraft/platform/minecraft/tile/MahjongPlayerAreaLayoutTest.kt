@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import kotlin.math.abs
+import kotlin.math.hypot
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -33,6 +34,18 @@ class MahjongPlayerAreaLayoutTest {
         assertTrue(laidDown.standing.all { it.footprint == MahjongTileFootprint.LYING })
         assertEquals(PublicHandOrder.arrange(ids), standing.standing.map { it.tileId })
         assertEquals(ids, laidDown.standing.map { it.tileId })
+    }
+
+    /** 立牌順序可以公開時，直立的牌也照傳入順序排列，位置與公開順序共用同一組格位。 */
+    @Test
+    fun `public standing order keeps the supplied order for upright tiles`() {
+        val ids = List(13) { Uuid.random() }
+        val hidden = MahjongPlayerAreaLayout.compute(inputForPose(ids, handIsLaidDown = false))
+        val public = MahjongPlayerAreaLayout.compute(inputForPose(ids, handIsLaidDown = false).copy(standingOrderPublic = true))
+
+        assertTrue(public.standing.all { it.footprint == MahjongTileFootprint.STANDING })
+        assertEquals(ids, public.standing.map { it.tileId })
+        assertEquals(hidden.standing.map { it.placement }, public.standing.map { it.placement })
     }
 
     /** 已攤牌的立牌遵循傳入牌序，關閉排序時不自作主張重排；摸牌位不加入立牌列。 */
@@ -239,6 +252,33 @@ class MahjongPlayerAreaLayoutTest {
                 }
             }
         }
+    }
+
+    /** 疊在橫放牌旁的加槓牌與那張橫放牌前後緊貼，中間只隔固定的小間距。 */
+    @Test
+    fun `added kan tile sits right beside the sideways tile`() {
+        val addedKan = MeldSpec(MeldType.AddedKan, RelativeDirection.Right, 4).create()
+        val input = MahjongPlayerAreaLayoutInput(
+            controllerX = 0,
+            controllerY = 0,
+            controllerZ = 0,
+            tableFacing = MahjongTableFacing.NORTH,
+            seatLayout = MahjongTableSeatLayout.forPlayerCount(4),
+            seatIndex = 0,
+            tileLayout = TableTileLayoutProfile.STANDARD,
+            wallClearance = null,
+            standingTileIds = List(10) { Uuid.random() },
+            drawnTileId = null,
+            melds = listOf(addedKan),
+            setAsideTileIds = emptyList(),
+            cornerWidth = 0.0,
+        )
+        val meld = MahjongPlayerAreaLayout.compute(input).melds.single().associateBy { it.tileId }
+        val claimed = meld.getValue(requireNotNull(addedKan.calledTileId)).placement
+        val added = meld.getValue(addedKan.tileIds.last()).placement
+
+        val distance = hypot(added.x - claimed.x, added.z - claimed.z)
+        assertEquals(MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING, distance, EPSILON)
     }
 
     /** 台麻的副露全部直立，加槓四張排成一列。 */

@@ -67,7 +67,9 @@ actors back; other integrations decide how to move their own actors.
 [`ExampleFabricMahjongClientExtension.kt`](src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleFabricMahjongClientExtension.kt)
 is declared under `mahjongcraft:client_extension`. Its factory creates an independent entity without
 adding it to the world. Preview disposal discards only that independent object. The public appearance
-descriptor stores capability IDs, not native objects or arbitrary NBT.
+descriptor stores capability IDs, not native objects or arbitrary NBT. The same client extension
+registers a hand-reveal chip preview with the server kind's definition, so round replays draw the chip
+too.
 
 The bench reuses the chair's support and mount service. Cushions use the same mount service from
 manual interaction, actor placement and their provider. No example reaches into MahjongCraft's DI,

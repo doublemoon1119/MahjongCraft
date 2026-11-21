@@ -11,12 +11,19 @@ import kotlin.uuid.Uuid
  */
 fun TilePoseState.toDto(): TilePoseStateDto = TilePoseStateDto(
     tileId = tileId.toString(),
-    pose = when (pose) {
-        TilePose.UPRIGHT -> TilePoseDto.UPRIGHT
-        TilePose.FACE_UP -> TilePoseDto.FACE_UP
-        TilePose.FACE_DOWN -> TilePoseDto.FACE_DOWN
-    },
+    pose = pose.toDto(),
 )
+
+/**
+ * 將擺放姿態轉換成網路資料。
+ *
+ * @return 對應的姿態資料。
+ */
+fun TilePose.toDto(): TilePoseDto = when (this) {
+    TilePose.UPRIGHT -> TilePoseDto.UPRIGHT
+    TilePose.FACE_UP -> TilePoseDto.FACE_UP
+    TilePose.FACE_DOWN -> TilePoseDto.FACE_DOWN
+}
 
 /**
  * 還原逐張姿態的網路資料。
@@ -25,9 +32,16 @@ fun TilePoseState.toDto(): TilePoseStateDto = TilePoseStateDto(
  */
 fun TilePoseStateDto.toDomain(): TilePoseState = TilePoseState(
     tileId = Uuid.parse(tileId),
-    pose = when (pose) {
-        TilePoseDto.UPRIGHT -> TilePose.UPRIGHT
-        TilePoseDto.FACE_UP -> TilePose.FACE_UP
-        TilePoseDto.FACE_DOWN -> TilePose.FACE_DOWN
-    },
+    pose = pose.toDomain(),
 )
+
+/**
+ * 還原擺放姿態的網路資料。
+ *
+ * @return 對應的擺放姿態。
+ */
+fun TilePoseDto.toDomain(): TilePose = when (this) {
+    TilePoseDto.UPRIGHT -> TilePose.UPRIGHT
+    TilePoseDto.FACE_UP -> TilePose.FACE_UP
+    TilePoseDto.FACE_DOWN -> TilePose.FACE_DOWN
+}

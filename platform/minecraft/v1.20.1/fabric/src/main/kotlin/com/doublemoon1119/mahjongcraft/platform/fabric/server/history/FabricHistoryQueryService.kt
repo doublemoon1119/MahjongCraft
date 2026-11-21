@@ -28,7 +28,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.GetHistoryRoundEventsUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.history.GetHistoryRoundStateUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.GetHistoryRoundStatesUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.GetHistoryRuleSettingsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.GetHistorySummaryUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.ListHistoryUseCase
@@ -167,7 +167,7 @@ class FabricHistoryQueryService(
     }
 
     /**
-     * 接收指定交易後的桌況要求，不建立可操作的遊戲狀態。
+     * 接收從指定位置起連續幾個位置的桌況要求，不建立可操作的遊戲狀態。
      *
      * @param server 目前伺服器。
      * @param player 已驗證連線玩家。
@@ -176,15 +176,15 @@ class FabricHistoryQueryService(
     private fun receiveRoundState(server: MinecraftServer, player: ServerPlayerEntity, request: HistoryRoundStateRequestDto) {
         receiveRoundQuery(
             server = server, player = player, requestId = request.requestId, matchId = request.matchId, wireScope = request.scope,
-            failure = { HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, errorCode = it, state = null) },
+            failure = { HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, errorCode = it, states = emptyList()) },
             query = { access, repository ->
-                when (val result = GetHistoryRoundStateUseCase(repository, ::policy)(access, request.toDomain())) {
-                    is HistoryQueryResult.Failure -> HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, errorCode = result.error.code.toDto(), state = null)
-                    is HistoryQueryResult.Success -> boundedHistoryRoundState(request, result.value, json, networkRegistries)
+                when (val result = GetHistoryRoundStatesUseCase(repository, ::policy)(access, request.toDomain())) {
+                    is HistoryQueryResult.Failure -> HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, errorCode = result.error.code.toDto(), states = emptyList())
+                    is HistoryQueryResult.Success -> boundedHistoryRoundStates(request, result.value, json, networkRegistries)
                 }
             },
-            hasContent = { it.state != null },
-            participants = { it.state?.identity?.players.orEmpty().filter { identity -> identity.aiStrategyId == null }.mapNotNull { identity -> identity.playerId } },
+            hasContent = { it.states.isNotEmpty() },
+            participants = { it.states.firstOrNull()?.identity?.players.orEmpty().filter { identity -> identity.aiStrategyId == null }.mapNotNull { identity -> identity.playerId } },
             send = { MahjongChannels.historyRoundStateResponse.sendTo(player, json, it) },
         )
     }

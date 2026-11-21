@@ -225,6 +225,14 @@ internal class RestartableMarqueeButtonWidget private constructor(
         private const val SECONDARY_MOUSE_BUTTON = 1
 
         /**
+         * 選擇器完整顯示一段文字所需的寬度，包含兩側避開箭頭的留白。
+         *
+         * @param textWidth 文字寬度。
+         * @return 按鈕寬度。
+         */
+        fun selectorWidth(textWidth: Int): Int = textWidth + SELECTOR_TEXT_PADDING * 2
+
+        /**
          * 建立按鈕建構器。
          *
          * @param message 按鈕文字。

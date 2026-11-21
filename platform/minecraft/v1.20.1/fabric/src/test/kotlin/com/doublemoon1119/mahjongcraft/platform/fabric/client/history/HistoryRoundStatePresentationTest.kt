@@ -297,7 +297,12 @@ class HistoryRoundStatePresentationTest {
                 scoreChangesBySeat = emptyMap(),
                 winnerDetails = it,
                 hasEarlierWinSettlement = false,
+                winningTile = null,
             )
         },
+        wallPlacements = null,
+        discardOrder = emptyList(),
+        tilePoses = emptyMap(),
+        presentationNotes = null,
     )
 }

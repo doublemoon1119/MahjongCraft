@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.history.replay
 
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 
 /**
  * 歷史局桌況。
@@ -22,6 +24,10 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
  * @property hasPendingReaction 是否仍有待處理的捨牌反應，不包含可執行命令。
  * @property hasPendingRobbingReaction 是否仍有待處理的搶和反應，不包含可執行命令。
  * @property outcome 結算結果。
+ * @property wallPlacements 牌牆與保留區的牌在實體牌牆中的格位；規則沒有實體牌牆時為 null。
+ * @property discardOrder 全桌依打出先後排列的捨牌，包含已被鳴走的牌。
+ * @property tilePoses 保存了共同姿態的牌，例如正面朝上的牌牆牌或攤開的手牌；沒有列出的牌維持所在區域的預設姿態。
+ * @property presentationNotes 保存時由外層附上的呈現附註原文（JSON 物件）；沒有附註時為 null。內容由附上它的外層解讀。
  */
 data class HistoryRoundState(
     val identity: HistoryReplayIdentity,
@@ -40,4 +46,8 @@ data class HistoryRoundState(
     val hasPendingReaction: Boolean,
     val hasPendingRobbingReaction: Boolean,
     val outcome: HistoryRoundOutcome?,
+    val wallPlacements: Map<HistoryTileReference, TileWallPlacement>?,
+    val discardOrder: List<HistoryTileReference>,
+    val tilePoses: Map<HistoryTileReference, TilePose>,
+    val presentationNotes: String?,
 )

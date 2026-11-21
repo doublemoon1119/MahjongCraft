@@ -103,13 +103,57 @@ class CompactReplayRoundReader(
      * @return 歷史專用桌況，不建立可操作的權威遊戲狀態。
      */
     suspend fun readState(document: JsonObject, expectedMatchId: Uuid, roundNumber: Int, position: HistoryRoundPosition): ReplayReadResult<HistoryRoundState> = read { budget ->
+        collectStates(document, expectedMatchId, roundNumber, position, 1, budget).single()
+    }
+
+    /**
+     * 由本局初始投影一次走過，重建從指定位置起連續幾個位置的桌況。
+     *
+     * @param document 已解析的 Replay 文件。
+     * @param expectedMatchId 欲讀取的對局識別碼。
+     * @param roundNumber 保存的局序號。
+     * @param start 第一個位置：初始位置或指定交易之後。
+     * @param count 最多幾個位置；本局交易不足時只回傳到最後一筆交易之後。
+     * @return 依位置先後排列的歷史專用桌況，至少一個。
+     */
+    suspend fun readStates(
+        document: JsonObject,
+        expectedMatchId: Uuid,
+        roundNumber: Int,
+        start: HistoryRoundPosition,
+        count: Int,
+    ): ReplayReadResult<List<HistoryRoundState>> = read { budget -> collectStates(document, expectedMatchId, roundNumber, start, count, budget) }
+
+    /**
+     * 從本局開頭逐筆套用交易，收集指定範圍內每個位置的桌況。
+     *
+     * @param document 已解析的 Replay 文件。
+     * @param expectedMatchId 欲讀取的對局識別碼。
+     * @param roundNumber 保存的局序號。
+     * @param start 第一個位置。
+     * @param count 最多幾個位置，至少一個。
+     * @param budget 本次讀取的工作預算。
+     * @return 依位置先後排列的桌況。
+     */
+    private suspend fun collectStates(
+        document: JsonObject,
+        expectedMatchId: Uuid,
+        roundNumber: Int,
+        start: HistoryRoundPosition,
+        count: Int,
+        budget: ReplayReadBudget,
+    ): List<HistoryRoundState> {
+        require(count >= 1) { "Replay state count must be positive" }
         val source = CompactReplayReadDocument.open(document, expectedMatchId, budget)
         val round = selectRound(source, roundNumber)
-        val last = when (position) {
+        val first = when (start) {
             HistoryRoundPosition.Initial -> -1
-            is HistoryRoundPosition.AfterTransaction -> position.index.also { if (it !in round.transactions.indices) missing() }
+            is HistoryRoundPosition.AfterTransaction -> start.index.also { if (it !in round.transactions.indices) missing() }
         }
+        val last = minOf(first + count - 1, round.transactions.lastIndex)
         val cursor = cursor(source, round, budget)
+        val states = mutableListOf<HistoryRoundState>()
+        if (first < 0) states += snapshot(cursor, source, round.number, HistoryRoundPosition.Initial, budget)
         for (index in 0..last) {
             yield()
             val beforeScores = scoreSnapshot(cursor.projection, source.identity.players.size, budget)
@@ -143,9 +187,37 @@ class CompactReplayRoundReader(
                     else -> null
                 }
             }.lastOrNull()?.let { cursor.outcome = it }
+            if (index >= first) states += snapshot(cursor, source, round.number, HistoryRoundPosition.AfterTransaction(index), budget)
         }
-        HistoryReplayProjectionMapper.mapState(cursor.projection, source.identity, round.number, position, catalog(cursor, budget), budget, componentViews, cursor.presentations.mapValues { it.value.pose }).copy(outcome = cursor.outcome)
+        return states
     }
+
+    /**
+     * 取出目前走到的位置的桌況。
+     *
+     * @param cursor 走到該位置的讀取狀態。
+     * @param source 已開啟的 Replay 文件。
+     * @param roundNumber 局序號。
+     * @param position 目前位置。
+     * @param budget 本次讀取的工作預算。
+     * @return 歷史專用桌況。
+     */
+    private fun snapshot(
+        cursor: Cursor,
+        source: CompactReplayReadDocument,
+        roundNumber: Int,
+        position: HistoryRoundPosition,
+        budget: ReplayReadBudget,
+    ): HistoryRoundState = HistoryReplayProjectionMapper.mapState(
+        projection = cursor.projection,
+        identity = source.identity,
+        roundNumber = roundNumber,
+        position = position,
+        tileCatalog = catalog(cursor, budget),
+        budget = budget,
+        componentViews = componentViews,
+        poses = cursor.presentations.mapValues { it.value.pose },
+    ).copy(outcome = cursor.outcome)
 
     /**
      * 在複製局內牌目錄前記帳，不讓交易數繞過集合複製預算。

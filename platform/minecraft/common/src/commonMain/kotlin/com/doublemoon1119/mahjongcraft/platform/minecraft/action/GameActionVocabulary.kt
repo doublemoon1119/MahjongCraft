@@ -14,6 +14,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
  * 例如吃、碰等基本動作。
  * @property cardBodyKey 操作卡中央說明的 translation key；`null` 代表不顯示中央說明。
  * @property cardHintKey 操作卡按鈕附近提示的 translation key；`null` 代表不顯示額外提示。
+ * @property replayMarker 規則擴充動作在回放時的標記種類；`null` 代表不標記。吃、碰、槓、和牌等核心動作依動作種類
+ * 固定標記，不讀這個欄位。
  */
 data class GameActionVocabulary(
     val labelKey: String,
@@ -22,6 +24,7 @@ data class GameActionVocabulary(
     val descriptionKey: String? = null,
     val cardBodyKey: String? = null,
     val cardHintKey: String? = null,
+    val replayMarker: GameActionReplayMarker? = null,
 ) {
     init {
         require(labelKey.isNotBlank()) { "Game action label key must not be blank" }

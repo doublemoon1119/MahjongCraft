@@ -71,12 +71,12 @@ class PlayerDecisionHudController(
     clock: PauseAwareClientMonotonicClock,
 ) {
     /**
-     * 使用共用名稱來源解析決策的真人來源，不另行查詢外部服務。
+     * 使用共用名稱來源解析伺服器沒有附上名稱的觸發玩家，例如名稱需要本地翻譯的 AI 角色；不另行查詢外部服務。
      *
      * @param playerId 來源玩家的 UUID 字串。
-     * @return 已知普通名稱或本地化未知玩家名稱。
+     * @return AI 名稱、已知普通名稱或本地化未知玩家名稱。
      */
-    fun resolveTriggerPlayerName(playerId: String): String = playerNames.resolve(null, playerId, false)
+    fun resolveTriggerPlayerName(playerId: String): String = playerNames.decisionTrigger(MinecraftClient.getInstance().player?.uuid?.toKotlinUuid(), playerId)
 
     /** 玩家以 Esc 暫時收起的 decision key。 */
     private var dismissedDecisionKey: String? = null

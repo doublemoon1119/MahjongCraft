@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecording
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
@@ -431,6 +432,7 @@ class FabricHistoryOutboxWriterTest {
         registries = bundledPersistenceRegistries(),
         moduleRegistry = MahjongModuleRegistryImpl(),
         locations = TableLocationRegistry(),
+        presentationNotes = ReplayPresentationNotes.NONE,
         configState = configState,
         retentionCoordinator = HistoryRetentionCoordinator(),
         dispatchers = object : CoroutineDispatchers {

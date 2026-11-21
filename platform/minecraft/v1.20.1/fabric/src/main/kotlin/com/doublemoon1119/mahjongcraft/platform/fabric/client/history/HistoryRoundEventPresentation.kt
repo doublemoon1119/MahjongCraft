@@ -17,10 +17,12 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionReplayMarker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MinecraftMatchAbortReasonIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayMarkerClassifier
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileSetAsideDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.EntryEmphasis
@@ -57,6 +59,18 @@ internal class HistoryRoundEventPresenter(
     private val setAsideDisplays: HistoryTileSetAsideDisplayRegistry,
     private val ruleWordings: RuleWordingRegistry,
 ) {
+    /** 回放標記分類，與事件文字共用同一份動作用語。 */
+    private val markerClassifier = HistoryReplayMarkerClassifier(actionVocabulary)
+
+    /**
+     * 取得一筆交易在回放時的標記種類。
+     *
+     * @param ruleId 對局摘要中的規則模組 ID。
+     * @param transaction 牌譜交易。
+     * @return 標記種類；不需要標記時為 null。
+     */
+    fun replayMarker(ruleId: String?, transaction: HistoryReplayTransactionDto): GameActionReplayMarker? = markerClassifier.markerOf(ruleId, transaction)
+
     /**
      * 將單局事件轉換為保留原始順序的呈現模型。
      *

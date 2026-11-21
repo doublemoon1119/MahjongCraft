@@ -71,6 +71,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.isShowingRoom
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.table.ClientTableSpaceObstructionStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.table.TableSpaceObstructionRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tableprop.ClientTablePropPreviewRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tableprop.ClientTablePropPreviews
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientDiscardSettlementTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientHandTileLayoutBridge
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientHandTileLayoutController
@@ -142,7 +144,8 @@ class MahjongCraftModClient : ClientModInitializer {
         val previewSources = FabricMahjongClientExtensionBootstrap.registerAndFreeze(
             extensions = previewExtensions,
             registry = koin.get<ClientAiCharacterPreviewRegistry>(),
-            builtIn = BuiltInFabricMahjongClientExtension,
+            tablePropRegistry = koin.get<ClientTablePropPreviewRegistry>(),
+            builtIn = BuiltInFabricMahjongClientExtension(tileAssets = koin.get<MinecraftTileAssetRegistry>()),
             failurePolicy = koin.get(),
         )
         val previewReport = ExtensionRegistrationReport(previewSources)
@@ -150,6 +153,7 @@ class MahjongCraftModClient : ClientModInitializer {
         if (logger.isDebugEnabled) logger.debug(ExtensionRegistrationReportFormatter.formatDetails(previewReport))
         val characterPreviews = koin.get<ClientAiCharacterPreviews>()
         characterPreviews.initialize()
+        koin.get<ClientTablePropPreviews>().initialize()
         val portraits = koin.get<PlayerPortraitRenderer>()
         ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(object : SimpleSynchronousResourceReloadListener {
             override fun getFabricId(): Identifier = Identifier("mahjongcraft", "character_portrait_resources")

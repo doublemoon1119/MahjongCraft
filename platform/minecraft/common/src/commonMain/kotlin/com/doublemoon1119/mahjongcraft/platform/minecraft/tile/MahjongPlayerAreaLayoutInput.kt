@@ -23,6 +23,8 @@ import kotlin.uuid.Uuid
  * @property cornerWidth 桌角物件佔用的寬度。
  * @property tilePoseStates 逐張手牌姿態，決定每張牌占用的桌面範圍。
  * @property unsortedTileIds 直接補進立牌、還沒理過的牌，依補進的順序排列；共享布局把它們接在立牌最右邊。
+ * @property standingOrderPublic 立牌順序是否可以公開，例如每一家牌面都看得到的牌譜回放；為 true 時直立的牌也照
+ * [standingTileIds] 排列，否則只有完整公開平放時才沿用。
  */
 data class MahjongPlayerAreaLayoutInput(
     val controllerX: Int,
@@ -40,4 +42,5 @@ data class MahjongPlayerAreaLayoutInput(
     val cornerWidth: Double,
     val tilePoseStates: List<TilePoseState> = emptyList(),
     val unsortedTileIds: List<Uuid> = emptyList(),
+    val standingOrderPublic: Boolean = false,
 )

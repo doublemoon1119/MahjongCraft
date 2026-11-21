@@ -70,6 +70,23 @@ internal class HistoryHandSorting {
     }
 
     /**
+     * 把玩家立著的手牌依規則排好，最近摸的牌不變；不使用排序偏好，例如牌譜回放一律排好。
+     *
+     * @param player 已驗證的玩家桌況。
+     * @param catalog 同一筆歷史桌況的牌面目錄。
+     * @param order 規則提供的牌面排序策略。
+     * @return 手牌排好的玩家桌況；最近摸的牌原本也列在手牌中時，排在最後。
+     */
+    fun sortedPlayer(
+        player: HistoryReplayPlayerStateDto,
+        catalog: List<TileFaceViewDto>,
+        order: TileOrder,
+    ): HistoryReplayPlayerStateDto {
+        val drawn = player.lastDrawn?.takeIf { it in player.handTiles }
+        return player.copy(handTiles = orderedTiles(player, catalog, order) + listOfNotNull(drawn))
+    }
+
+    /**
      * 對局與玩家的顯示偏好鍵。
      *
      * @property matchId 對局識別碼。

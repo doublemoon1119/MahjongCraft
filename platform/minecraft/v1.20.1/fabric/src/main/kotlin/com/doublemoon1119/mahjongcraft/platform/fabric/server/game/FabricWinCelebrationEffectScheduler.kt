@@ -1,13 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongAnimationSounds
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongVisualEffectKeys
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationEffectEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
-import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.WinCelebrationEffectSteps
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.server.world.ServerWorld
 import java.util.concurrent.ConcurrentHashMap
@@ -72,24 +70,7 @@ class FabricWinCelebrationEffectScheduler(private val spawnGateway: FabricEntity
                 startGameTime = startGameTime,
                 endGameTime = endGameTime,
             )
-            enqueue(
-                step = AnimationStep.PlaySound(
-                    soundId = MahjongAnimationSounds.TRIDENT_HIT_GROUND,
-                    volume = 1.0f,
-                    pitch = 1.0f,
-                    playAtGameTime = startGameTime + MahjongTileTableLayout.WIN_TRIDENT_FALL_DURATION_TICKS,
-                    expiresAtGameTime = startGameTime + MahjongTileTableLayout.WIN_TRIDENT_FALL_DURATION_TICKS + MahjongAnimationSounds.EVENT_GRACE_TICKS,
-                ),
-            )
-            enqueue(
-                step = AnimationStep.PlaySound(
-                    soundId = MahjongAnimationSounds.WIN_LIGHTNING,
-                    volume = 0.9f,
-                    pitch = 1.0f,
-                    playAtGameTime = startGameTime + MahjongTileTableLayout.WIN_LIGHTNING_START_TICK,
-                    expiresAtGameTime = startGameTime + MahjongTileTableLayout.WIN_LIGHTNING_START_TICK + MahjongAnimationSounds.EVENT_GRACE_TICKS,
-                ),
-            )
+            WinCelebrationEffectSteps.sounds(startGameTime).forEach { enqueue(step = it) }
             refreshPositionAndAngles(tile.x, tile.y, tile.z, 0.0f, 0.0f)
         }
         val task = Task(

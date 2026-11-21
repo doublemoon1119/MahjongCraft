@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.HandRevealSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongInitialDealPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
@@ -51,8 +52,7 @@ class FabricMahjongPlayerAreaPresenter(
      *    [MahjongTileTableLayout.handPlacement]，
      *    全部共用同一個絕對定位時刻，定位後等待 [MahjongTileTableLayout.WIN_POST_REORDER_DELAY_TICKS] 再開始倒牌流程。
      * 2. 自摸（[MahjongWinCelebrationPresentation.isTsumo]）才有的中繼步驟：自摸牌
-     *    （[MahjongWinCelebrationPresentation.winningTileId]，此時已經是 [MahjongWinCelebrationPresentation.organizedStandingTileIds] 之
-     *    一）單獨倒下（[TileAnimationSteps.scheduleLaydown]），姿態從立牌轉平放牌面朝上，位置不變。
+     *    （[MahjongWinCelebrationPresentation.winningTileId]，步驟 1 已放到手牌右側的摸牌位）單獨倒下（[TileAnimationSteps.scheduleLaydown]），姿態從立牌轉平放牌面朝上，位置不變。
      * 3. 其餘立牌（自摸時排除自摸牌，榮和／搶槓時是全部）在共用的絕對時刻一起倒下——自摸要等自摸牌
      *    倒下播完、再等 [MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS]；榮和／搶槓省略自摸牌
      *    那一步，直接在整理到位及短暫停頓後等待同一個常數。
@@ -114,7 +114,7 @@ class FabricMahjongPlayerAreaPresenter(
         // 整條慶祝動畫鏈都由這個起點推導；接在呼叫端指定的時間軸之後，讓同一條時間軸上的連續胡牌
         // 演出依序播放而不重疊（預設 0 等同 world.time，維持既有行為）。
         val reorderStartGameTime = maxOf(world.time, presentation.earliestStartGameTime)
-        val reorderEndGameTime = reorderStartGameTime + MahjongTileTableLayout.WIN_POST_REORDER_DELAY_TICKS
+        val timings = HandRevealSteps.winTimings(presentation.isTsumo)
 
         val claimedStandingTiles = linkedMapOf<Uuid, MahjongTileEntity>()
         standingHandTileIds.forEachIndexed { orderIndex, tileId ->
@@ -160,21 +160,16 @@ class FabricMahjongPlayerAreaPresenter(
         }
 
         val handLaydownEndGameTime = winningTile?.let {
-            if (presentation.isTsumo) {
-                val winTileLaydownStartGameTime = reorderEndGameTime
-                val winTileLaydownEndGameTime = winTileLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
-                TileAnimationSteps.scheduleLaydown(winningTile, winTileLaydownStartGameTime, playGroupSound = true)
-
-                val restLaydownStartGameTime = winTileLaydownEndGameTime + MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS
-                val restTiles = (claimedStandingTiles - presentation.winningTileId).values.toList()
-                TileAnimationSteps.scheduleGroupLaydown(restTiles, restLaydownStartGameTime)
-                restLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
-            } else {
-                val handLaydownStartGameTime = reorderEndGameTime + MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS
-                val handTiles = claimedStandingTiles.values.toList()
-                TileAnimationSteps.scheduleGroupLaydown(handTiles, handLaydownStartGameTime)
-                handLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
+            timings.winningTileLaydown?.let { winningTileLaydown ->
+                TileAnimationSteps.scheduleLaydown(winningTile, reorderStartGameTime + winningTileLaydown, playGroupSound = true)
             }
+            val handTiles = if (presentation.isTsumo) {
+                (claimedStandingTiles - presentation.winningTileId).values.toList()
+            } else {
+                claimedStandingTiles.values.toList()
+            }
+            TileAnimationSteps.scheduleGroupLaydown(handTiles, reorderStartGameTime + timings.handLaydown)
+            reorderStartGameTime + timings.end
         }
 
         table.blockEntity.markDirty()

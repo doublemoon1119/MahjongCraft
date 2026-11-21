@@ -142,10 +142,11 @@ internal object ControlTooltip {
      * 建立只有說明的提示框，用於沒有對應值的動作按鈕。
      *
      * @param description 按鈕說明。
-     * @return 灰色的說明文字。
+     * @param notice 紅字提醒，例如按鈕停用的原因；沒有時為 null。
+     * @return 灰色的說明文字，以及紅字提醒。
      */
-    fun description(description: Text): Text {
-        val lines = composeLines(description = description, status = emptyList(), notice = null, hints = emptyList())
+    fun description(description: Text, notice: Text? = null): Text {
+        val lines = composeLines(description = description, status = emptyList(), notice = notice, hints = emptyList())
         return joinLines(lines)
     }
 

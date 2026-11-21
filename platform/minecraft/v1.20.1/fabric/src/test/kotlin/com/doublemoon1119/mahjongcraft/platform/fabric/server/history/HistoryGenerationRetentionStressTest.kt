@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftHistoryConfig
@@ -117,6 +118,7 @@ class HistoryGenerationRetentionStressTest {
             dispatchers = TestDispatchers,
             moduleRegistry = modules,
             locations = TableLocationRegistry(),
+            presentationNotes = ReplayPresentationNotes.NONE,
             configState = MinecraftServerConfigState(MinecraftServerConfig(history = history)),
             retentionCoordinator = HistoryRetentionCoordinator(),
         )

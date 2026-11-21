@@ -431,43 +431,6 @@ class MahjongTileEntityRenderer(
     }
 
     /**
-     * 本人過渡使用連續翻轉角補償牌底，模型組裝時只套用一次。
-     *
-     * @param rotationDegrees 本幀的絕對翻轉角。
-     * @return 模型原點相對牌底的位置差。
-     */
-    private fun displayPoseOriginOffset(rotationDegrees: Float): Triple<Double, Double, Double> = if (rotationDegrees >= 0.0f) {
-        lerpPoseOriginOffset(0.0f, 90.0f, (rotationDegrees / 90.0f).toDouble().coerceIn(0.0, 1.0))
-    } else {
-        lerpPoseOriginOffset(-90.0f, 0.0f, ((rotationDegrees + 90.0f) / 90.0f).toDouble().coerceIn(0.0, 1.0))
-    }
-
-    /**
-     * 翻牌動畫（[MahjongTilePose.FACE_DOWN] ↔ [MahjongTilePose.STANDING]）播放期間的姿態補償位移。
-     *
-     * [poseOriginOffset] 只為三個離散姿態定義補償位移，動畫中的姿態旋轉角（[TileMotionAnimationFrame.poseRotationDegrees]）
-     * 則是連續內插的；`entity.tilePose` 只表示終點姿態，整段套用它的補償位移會讓旋轉角與位移對不上，牌會偏移，
-     * 旋轉軸心也不落在牌底。
-     *
-     * 因此依同一個 `progress` 在起訖姿態的補償位移之間線性內插：起訖兩端與靜態渲染完全一致，播放前後不會跳動；
-     * 中間過程不是嚴格的單一軸心剛體旋轉（三個姿態的補償位移各自調校、沒有共用幾何軸心），但觀感接近繞牌底翻起。
-     *
-     * @param startRotationDegrees 起始姿態角度。
-     * @param endRotationDegrees 結束姿態角度。
-     * @param progress 內插進度，0 對應起點，1 對應終點。
-     * @return 起訖補償位移的線性內插值。
-     */
-    private fun lerpPoseOriginOffset(startRotationDegrees: Float, endRotationDegrees: Float, progress: Double): Triple<Double, Double, Double> {
-        val (startX, startY, startZ) = poseOriginOffset(startRotationDegrees)
-        val (endX, endY, endZ) = poseOriginOffset(endRotationDegrees)
-        return Triple(
-            first = startX + (endX - startX) * progress,
-            second = startY + (endY - startY) * progress,
-            third = startZ + (endZ - startZ) * progress,
-        )
-    }
-
-    /**
      * ItemRenderer 自行解析材質，因此 entity renderer 不提供單一 texture。
      *
      * @param entity 正在繪製的牌張 entity。
@@ -535,6 +498,43 @@ class MahjongTileEntityRenderer(
     private fun VertexConsumerProvider.glintOnly(): VertexConsumerProvider = VertexConsumerProvider { _ -> this.getBuffer(RenderLayer.getDirectEntityGlint()) }
 
     companion object {
+        /**
+         * 本人過渡使用連續翻轉角補償牌底，模型組裝時只套用一次。
+         *
+         * @param rotationDegrees 本幀的絕對翻轉角。
+         * @return 模型原點相對牌底的位置差。
+         */
+        internal fun displayPoseOriginOffset(rotationDegrees: Float): Triple<Double, Double, Double> = if (rotationDegrees >= 0.0f) {
+            lerpPoseOriginOffset(0.0f, 90.0f, (rotationDegrees / 90.0f).toDouble().coerceIn(0.0, 1.0))
+        } else {
+            lerpPoseOriginOffset(-90.0f, 0.0f, ((rotationDegrees + 90.0f) / 90.0f).toDouble().coerceIn(0.0, 1.0))
+        }
+
+        /**
+         * 翻牌動畫（[MahjongTilePose.FACE_DOWN] ↔ [MahjongTilePose.STANDING]）播放期間的姿態補償位移。
+         *
+         * [poseOriginOffset] 只為三個離散姿態定義補償位移，動畫中的姿態旋轉角（[TileMotionAnimationFrame.poseRotationDegrees]）
+         * 則是連續內插的；`entity.tilePose` 只表示終點姿態，整段套用它的補償位移會讓旋轉角與位移對不上，牌會偏移，
+         * 旋轉軸心也不落在牌底。
+         *
+         * 因此依同一個 `progress` 在起訖姿態的補償位移之間線性內插：起訖兩端與靜態渲染完全一致，播放前後不會跳動；
+         * 中間過程不是嚴格的單一軸心剛體旋轉（三個姿態的補償位移各自調校、沒有共用幾何軸心），但觀感接近繞牌底翻起。
+         *
+         * @param startRotationDegrees 起始姿態角度。
+         * @param endRotationDegrees 結束姿態角度。
+         * @param progress 內插進度，0 對應起點，1 對應終點。
+         * @return 起訖補償位移的線性內插值。
+         */
+        private fun lerpPoseOriginOffset(startRotationDegrees: Float, endRotationDegrees: Float, progress: Double): Triple<Double, Double, Double> {
+            val (startX, startY, startZ) = poseOriginOffset(startRotationDegrees)
+            val (endX, endY, endZ) = poseOriginOffset(endRotationDegrees)
+            return Triple(
+                first = startX + (endX - startX) * progress,
+                second = startY + (endY - startY) * progress,
+                third = startZ + (endZ - startZ) * progress,
+            )
+        }
+
         /**
          * 依姿態旋轉角換算原點補償位移，讓 [MahjongTilePose] 三種姿態各自「牌底」都貼齊 render() 套用
          * 姿態旋轉前的錨點位置（entity 世界座標，經過動畫位移後的位置）——這個位移是套用在姿態旋轉

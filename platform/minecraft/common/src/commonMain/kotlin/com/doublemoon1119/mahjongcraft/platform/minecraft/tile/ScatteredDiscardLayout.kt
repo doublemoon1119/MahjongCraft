@@ -14,6 +14,7 @@ import kotlin.uuid.Uuid
  *
  * 每一局從 [PATTERN_SEEDS] 挑一張位置表：位置表事先在牌牆內側、擲骰區之外排滿互不重疊的位置，每個位置有自己的角度。
  * 打出的牌依全桌打牌順序逐張挑一個空位：優先在打牌者那一側的空位中隨機挑，那一側滿了才挑最靠近打牌者的空位。
+ * 隨機只取決於位置表種子與這是第幾張捨牌，牌譜回放時能挑到同一個空位。
  * 只有剛打出的牌能被鳴走，下一張打出前就已確定，所以被鳴走的牌讓出的位置可以給之後打出的牌使用；牌河上同時存在的牌
  * 不超過活牌張數加一。一張牌的位置只取決於它自己與比它先打出的牌，之後打出的牌與鳴牌都不會讓它移動。
  */
@@ -22,10 +23,11 @@ internal object ScatteredDiscardLayout {
      * 依全桌打牌順序為每張牌挑位置。
      *
      * @param slots 這一局的位置表。
+     * @param patternSeed 這一局的位置表種子，與捨牌順序一起決定隨機挑的空位。
      * @param discards 依打出先後排列的牌、打牌者所在方向的單位向量 (x, z) 與是否已被鳴走；包含被鳴走的牌。
      * @return 每張牌的位置與角度；位置表沒有空位時疊到上一層，內建規則的牌數不會用完位置表。
      */
-    fun assign(slots: List<ScatteredDiscard>, discards: List<ScatterRequest>): Map<Uuid, ScatteredDiscard> {
+    fun assign(slots: List<ScatteredDiscard>, patternSeed: Int, discards: List<ScatterRequest>): Map<Uuid, ScatteredDiscard> {
         val used = BooleanArray(slots.size)
         return discards.withIndex().associate { (order, discard) ->
             val (tileId, towardX, towardZ, isTaken) = discard
@@ -36,7 +38,7 @@ internal object ScatteredDiscardLayout {
             } else {
                 val ownSide = free.filter { facing(it) > 0.0 }
                 if (ownSide.isNotEmpty()) {
-                    ownSide[tileId.toLongs { most, least -> Random(most xor least) }.nextInt(ownSide.size)]
+                    ownSide[Random((patternSeed.toLong() shl Int.SIZE_BITS) or order.toLong()).nextInt(ownSide.size)]
                 } else {
                     free.maxBy(::facing)
                 }
@@ -52,16 +54,15 @@ internal object ScatteredDiscardLayout {
     }
 
     /**
-     * 這一局使用的位置表，同一張桌子相鄰兩局一定不同。
+     * 這一局使用的位置表種子，同一張桌子相鄰兩局一定不同。牌譜保存這個種子，回放時用它排出同一張位置表。
      *
      * @param tableId 桌子。
      * @param roundSerial 本場第幾局。
-     * @param reach 位置離桌心最遠的距離，沿 X 與 Z 各自計算。
-     * @return 位置表。
+     * @return 位置表種子。
      */
-    fun roundPattern(tableId: Uuid, roundSerial: Int, reach: Double): List<ScatteredDiscard> {
+    fun roundPatternSeed(tableId: Uuid, roundSerial: Int): Int {
         val tableOffset = tableId.toLongs { most, least -> (most xor least).mod(PATTERN_SEEDS.size.toLong()).toInt() }
-        return pattern(PATTERN_SEEDS[(tableOffset + roundSerial).mod(PATTERN_SEEDS.size)], reach)
+        return PATTERN_SEEDS[(tableOffset + roundSerial).mod(PATTERN_SEEDS.size)]
     }
 
     /**

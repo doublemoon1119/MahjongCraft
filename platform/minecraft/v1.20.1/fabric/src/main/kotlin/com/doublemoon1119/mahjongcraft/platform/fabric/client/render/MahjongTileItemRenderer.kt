@@ -14,6 +14,7 @@ import net.fabricmc.fabric.api.client.model.loading.v1.FabricBakedModelManager
 import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.render.RenderLayer
+import net.minecraft.client.render.VertexConsumer
 import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.model.BakedModel
 import net.minecraft.client.render.model.json.ModelTransformationMode
@@ -78,6 +79,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
      * @param vertexConsumers 頂點緩衝提供者。
      * @param light 世界光照值。
      * @param overlay 覆蓋貼圖座標。
+     * @param alpha 0 到 1 之間的不透明度；小於 1 時以半透明圖層畫出淡化的牌。
      */
     fun renderWithAppearance(
         appearanceId: String,
@@ -87,6 +89,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         vertexConsumers: VertexConsumerProvider,
         light: Int,
         overlay: Int,
+        alpha: Float = 1f,
     ) {
         matrices.push()
         matrices.translate(-0.5, -0.5, -0.5)
@@ -99,6 +102,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
                 vertexConsumers = vertexConsumers,
                 light = light,
                 overlay = overlay,
+                alpha = alpha,
             )
         } finally {
             matrices.pop()
@@ -162,6 +166,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
      * @param vertexConsumers 頂點緩衝提供者。
      * @param light 世界光照值。
      * @param overlay 覆蓋貼圖座標。
+     * @param alpha 0 到 1 之間的不透明度。
      */
     private fun renderInternal(
         assetKey: String,
@@ -171,6 +176,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         vertexConsumers: VertexConsumerProvider,
         light: Int,
         overlay: Int,
+        alpha: Float = 1f,
     ) {
         val registry = GlobalContext.get().get<MinecraftTileAssetRegistry>()
         val appearance = (registry.findBodyAppearance(assetKey) ?: appearanceId?.let(registry::findAppearance))
@@ -200,6 +206,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
             overlay = overlay,
             assetKey = assetKey,
             translucent = appearance?.translucent == true,
+            alpha = alpha,
         )
     }
 
@@ -217,6 +224,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
      * @param overlay 覆蓋貼圖座標。
      * @param assetKey 用於缺少資源警告的素材 key。
      * @param translucent 是否以半透明方式繪製，牌面從背面也看得到；用於帶半透明貼圖的牌身外觀。
+     * @param alpha 0 到 1 之間的不透明度。
      */
     private fun renderModel(
         model: BakedModel?,
@@ -230,6 +238,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         overlay: Int,
         assetKey: String = UNKNOWN_TILE_ASSET_KEY,
         translucent: Boolean = false,
+        alpha: Float = 1f,
     ) {
         val client = MinecraftClient.getInstance()
 
@@ -251,18 +260,18 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         matrices.translate(-0.5, -0.5, -0.5)
 
         if (model != null) {
-            drawBakedModel(model, matrices, vertexConsumers, light, overlay, translucent)
+            drawBakedModel(model, matrices, vertexConsumers, light, overlay, translucent, alpha)
         } else if (fallbackModel != null && !client.resourceManager.getResource(fallbackTextureId).isPresent) {
-            drawBakedModel(fallbackModel, matrices, vertexConsumers, light, overlay, translucent)
+            drawBakedModel(fallbackModel, matrices, vertexConsumers, light, overlay, translucent, alpha)
         } else {
             if (client.resourceManager.getResource(fallbackTextureId).isPresent) {
-                drawDynamicCuboid(fallbackTextureId, coverTextureId, matrices, vertexConsumers, light, overlay, translucent)
+                drawDynamicCuboid(fallbackTextureId, coverTextureId, matrices, vertexConsumers, light, overlay, translucent, alpha)
             } else {
                 if (reportedMissingTextureKeys.add(assetKey)) {
                     logger.warn("No mahjong tile texture found for asset key '{}'; falling back to unknown", assetKey)
                 }
                 findBakedModel(UNKNOWN_TILE_ASSET_KEY)?.let { unknownModel ->
-                    drawBakedModel(unknownModel, matrices, vertexConsumers, light, overlay)
+                    drawBakedModel(unknownModel, matrices, vertexConsumers, light, overlay, alpha = alpha)
                 }
             }
         }
@@ -271,13 +280,20 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
     }
 
     /**
-     * 牌使用的繪製圖層：一般牌用鏤空圖層；半透明牌用不剔除背面的半透明圖層，讓牌面從背面也看得到。
+     * 牌使用的頂點緩衝：一般牌用鏤空圖層；半透明牌用不剔除背面的半透明圖層，讓牌面從背面也看得到；淡化的牌用剔除背面的
+     * 半透明圖層並把不透明度乘上比例，與原版畫看得見的隱形生物相同。
      *
+     * @param vertexConsumers 頂點緩衝提供者。
      * @param texture 圖層使用的貼圖。
      * @param translucent 是否為半透明牌。
-     * @return 繪製圖層。
+     * @param alpha 0 到 1 之間的不透明度。
+     * @return 頂點緩衝。
      */
-    private fun tileLayer(texture: Identifier, translucent: Boolean): RenderLayer = if (translucent) RenderLayer.getEntityTranslucent(texture) else RenderLayer.getEntityCutout(texture)
+    private fun tileBuffer(vertexConsumers: VertexConsumerProvider, texture: Identifier, translucent: Boolean, alpha: Float): VertexConsumer = when {
+        alpha < 1f -> AlphaVertexConsumer(vertexConsumers.getBuffer(RenderLayer.getItemEntityTranslucentCull(texture)), alpha)
+        translucent -> vertexConsumers.getBuffer(RenderLayer.getEntityTranslucent(texture))
+        else -> vertexConsumers.getBuffer(RenderLayer.getEntityCutout(texture))
+    }
 
     /**
      * 依 asset key 查詢 [MahjongTileModelLoadingPlugin] 登記的已烘焙模型。
@@ -311,6 +327,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
      * @param light 世界光照值。
      * @param overlay 覆蓋貼圖座標。
      * @param translucent 是否以不剔除背面的半透明圖層繪製。
+     * @param alpha 0 到 1 之間的不透明度。
      */
     private fun drawBakedModel(
         model: BakedModel,
@@ -319,8 +336,9 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         light: Int,
         overlay: Int,
         translucent: Boolean = false,
+        alpha: Float = 1f,
     ) {
-        val buffer = vertexConsumers.getBuffer(tileLayer(BLOCK_ATLAS_TEXTURE, translucent))
+        val buffer = tileBuffer(vertexConsumers, BLOCK_ATLAS_TEXTURE, translucent, alpha)
         val entry = matrices.peek()
         model.getQuads(null, null, quadRandom).forEach { quad ->
             buffer.quad(entry, quad, 1.0f, 1.0f, 1.0f, light, overlay)
@@ -337,6 +355,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
      * @param light 世界光照值。
      * @param overlay 覆蓋貼圖座標。
      * @param translucent 是否以半透明圖層繪製。
+     * @param alpha 0 到 1 之間的不透明度。
      */
     private fun drawDynamicCuboid(
         faceTextureId: Identifier,
@@ -346,12 +365,13 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         light: Int,
         overlay: Int,
         translucent: Boolean = false,
+        alpha: Float = 1f,
     ) {
         // 此處只處理缺少有效模型的回退立方體，非正面五面沿用牌組共用 cover 牌體材質圖集。
         // 有效的自訂模型不經此流程，其各面材質與 UV 由模型 JSON 定義。
         val entry = matrices.peek()
-        val faceBuffer = vertexConsumers.getBuffer(tileLayer(faceTextureId, translucent))
-        val coverBuffer = vertexConsumers.getBuffer(tileLayer(coverTextureId, translucent))
+        val faceBuffer = tileBuffer(vertexConsumers, faceTextureId, translucent, alpha)
+        val coverBuffer = tileBuffer(vertexConsumers, coverTextureId, translucent, alpha)
 
         CUBOID_FACES.forEach { face ->
             val buffer = if (face.usesFaceTexture) faceBuffer else coverBuffer

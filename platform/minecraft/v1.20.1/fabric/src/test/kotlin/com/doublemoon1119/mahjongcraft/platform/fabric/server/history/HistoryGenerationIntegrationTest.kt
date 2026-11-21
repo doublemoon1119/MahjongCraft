@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessFlowHistoryRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryMatchRunner
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryProgress
@@ -101,7 +102,7 @@ class HistoryGenerationIntegrationTest {
         assertTrue(entry.rounds.size > 1, "The generated match should archive more than one round.")
         entry.rounds.forEach { round ->
             val events = writer.queryRoundEvents(access, matchId, HistoryQueryScope.ALL, round.roundNumber, 0, 1, session)
-            val state = writer.queryRoundState(access, matchId, HistoryQueryScope.ALL, round.roundNumber, HistoryRoundPosition.Initial, session)
+            val state = writer.queryRoundStates(access, matchId, HistoryQueryScope.ALL, round.roundNumber, HistoryRoundPosition.Initial, 1, session)
             assertIs<HistoryQueryResult.Success<*>>(assertIs<HistoryManagementResult.Success<*>>(events).value, "Round ${round.roundNumber} events must be readable.")
             assertIs<HistoryQueryResult.Success<*>>(assertIs<HistoryManagementResult.Success<*>>(state).value, "Round ${round.roundNumber} state must be readable.")
         }
@@ -337,6 +338,7 @@ class HistoryGenerationIntegrationTest {
         dispatchers = TestDispatchers,
         moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
         locations = TableLocationRegistry(),
+        presentationNotes = ReplayPresentationNotes.NONE,
         configState = MinecraftServerConfigState(MinecraftServerConfig(history = historyConfig)),
         retentionCoordinator = HistoryRetentionCoordinator(),
     )

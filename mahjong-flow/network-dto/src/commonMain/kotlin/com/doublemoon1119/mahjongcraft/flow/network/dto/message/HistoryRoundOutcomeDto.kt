@@ -15,6 +15,7 @@ import kotlinx.serialization.Serializable
  * @property scoreChangesBySeat 該次結算相對於交易前的分數變化。
  * @property winnerDetails 各贏家的規則專屬詳情。
  * @property hasEarlierWinSettlement 是否已有較早的胡牌結算事實。
+ * @property winningTile 胡牌結算的和牌張索引，不論是否攤牌；其他結算或沒有和牌張時為 null。
  */
 @Serializable
 data class HistoryRoundOutcomeDto(
@@ -28,4 +29,5 @@ data class HistoryRoundOutcomeDto(
     val scoreChangesBySeat: Map<Int, Int>,
     val winnerDetails: List<HistoryWinnerDetailsDto>,
     val hasEarlierWinSettlement: Boolean,
+    val winningTile: Int?,
 )

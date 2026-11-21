@@ -145,11 +145,13 @@ sealed interface HistoryFact {
      * @property outcomeId 胡牌結算原因識別碼。
      * @property winDetails 各贏家的已解析公開詳情。
      * @property responsiblePlayerIds 放銃或其他責任玩家 UUID；自摸時為空清單。
+     * @property winningTileId 這次胡牌的和牌張，不論是否攤牌都記下；一炮多響的贏家共用同一張；沒有和牌張時為 null。
      */
     data class WinSettled(
         val outcomeId: String,
         val winDetails: List<HistoryWinDetails>,
         val responsiblePlayerIds: List<Uuid> = emptyList(),
+        val winningTileId: Uuid? = null,
     ) : HistoryFact
 
     /**

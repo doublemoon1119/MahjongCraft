@@ -294,7 +294,7 @@ internal object GuideScenes {
      * @param seats 標準座位。
      * @return 凳子方塊。
      */
-    private fun stools(seats: List<SeatGeometry>): List<GuideSceneBlock> {
+    internal fun stools(seats: List<SeatGeometry>): List<GuideSceneBlock> {
         val stool = ModBlocks.woodenMahjongStool as MahjongStoolBlock
         return seats.map { seat ->
             val towardTable = Direction.getFacing(TABLE_CENTER - seat.x, 0.0, TABLE_CENTER - seat.z)
@@ -306,7 +306,7 @@ internal object GuideScenes {
     }
 
     /** 朝北木製麻將桌的 18 個方塊，controller 在原點。 */
-    private fun tableBlocks(): List<GuideSceneBlock> {
+    internal fun tableBlocks(): List<GuideSceneBlock> {
         val table = ModBlocks.woodenMahjongTable
         return MahjongTableStructure.placements(BlockPos.ORIGIN, Direction.NORTH).map { (part, position) ->
             GuideSceneBlock(
@@ -317,7 +317,7 @@ internal object GuideScenes {
     }
 
     /** 桌椅下方的地板：涵蓋桌子與四張凳子，兩種淺色方塊交錯，一格一個方塊。 */
-    private fun floor(): List<GuideSceneBlock> = (-FLOOR_RADIUS..FLOOR_RADIUS).flatMap { x ->
+    internal fun floor(): List<GuideSceneBlock> = (-FLOOR_RADIUS..FLOOR_RADIUS).flatMap { x ->
         (-FLOOR_RADIUS..FLOOR_RADIUS).map { z ->
             val block = if ((x + z) % 2 == 0) Blocks.WHITE_CONCRETE else Blocks.SNOW_BLOCK
             GuideSceneBlock(state = block.defaultState, position = BlockPos(x, -1, z))

@@ -101,6 +101,9 @@ internal object ReplayFormatKeys {
     /** 玩家投影中不分規則的牌河清單。 */
     const val DISCARDS = "discards"
 
+    /** 桌況投影中外層附上的呈現附註。 */
+    const val PRESENTATION_NOTES = "presentationNotes"
+
     /** 牌河項目的牌。 */
     const val DISCARD_TILE = "tile"
 

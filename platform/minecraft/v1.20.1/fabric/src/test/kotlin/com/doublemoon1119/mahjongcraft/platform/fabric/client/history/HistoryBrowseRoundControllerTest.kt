@@ -1,5 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryLimits
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryIntegrityFilterDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
@@ -22,16 +25,20 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStat
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundSummaryDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiRedDoraViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPositionDto
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledNetworkJson
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledNetworkDtos
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,8 +51,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /** 驗證單局歷史瀏覽的局選擇、事件分頁、牌面導航、快取與過期回應隔離。 */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -440,6 +449,259 @@ class HistoryBrowseRoundControllerTest {
         assertEquals(HistoryBrowseStatus.Ready, controller.state.value.rounds.getValue(1).eventsStatus)
     }
 
+    /** 回放先要目前這一步起的一段牌面，再在背景讀完整局事件（快取裡的事件頁直接沿用），最後預先要後面的牌面。 */
+    @Test
+    fun `test replay reads the current state then the whole round then states ahead`() = runTest {
+        val transport = FakeRoundHistoryTransport()
+        val controller = openReplay(transport)
+
+        val first = transport.roundStateRequests.last()
+        assertEquals(HistoryRoundPositionDto.Initial, first.position)
+        assertEquals(HistoryQueryLimits.MAX_ROUND_STATES, first.count)
+        assertEquals(HistoryBrowsePage.ROUND_REPLAY, controller.state.value.page)
+        assertEquals(HistoryBrowseStatus.Loading, controller.state.value.replay?.status)
+
+        transport.respondStates()
+        runCurrent()
+        val ready = assertNotNull(controller.state.value.replay)
+        assertEquals(HistoryBrowseStatus.Ready, ready.status)
+        assertEquals(HistoryRoundPositionDto.Initial, ready.state?.position)
+        assertEquals(TRANSACTION_COUNT + 1, ready.stepCount)
+        assertTrue(controller.isReplayStepReady(HistoryQueryLimits.MAX_ROUND_STATES - 1))
+        assertFalse(controller.isReplayStepReady(HistoryQueryLimits.MAX_ROUND_STATES))
+
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        assertEquals(EVENTS_PAGE, transport.roundEventsRequests.last().startTransactionIndex)
+        assertEquals(1, controller.state.value.replay?.eventPages?.size)
+        transport.respondEvents(roundNumber = 1, start = EVENTS_PAGE, transactionIndexes = (EVENTS_PAGE until TRANSACTION_COUNT).toList(), transactionCount = TRANSACTION_COUNT)
+        runCurrent()
+        val complete = assertNotNull(controller.state.value.replay)
+        assertEquals(HistoryBrowseStatus.Ready, complete.eventsStatus)
+        assertEquals(TRANSACTION_COUNT, complete.eventPages.sumOf { it.transactions.size })
+
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        val second = transport.roundStateRequests.last()
+        assertEquals(HistoryRoundPositionDto.AfterTransaction(HistoryQueryLimits.MAX_ROUND_STATES - 1), second.position)
+        assertEquals(HistoryQueryLimits.MAX_ROUND_STATES, second.count)
+    }
+
+    /** 移到已取得的步數立即顯示且不另外查詢；跳到沒取得的步數時，還沒送出的預先讀取改從該步開始要。 */
+    @Test
+    fun `test replay moves use received states and request missing steps`() = runTest {
+        val transport = FakeRoundHistoryTransport()
+        val controller = openReplay(transport)
+        transport.respondStates()
+        runCurrent()
+        assertTrue(controller.replayTo(5))
+        val nearby = assertNotNull(controller.state.value.replay)
+        assertEquals(HistoryBrowseStatus.Ready, nearby.status)
+        assertEquals(HistoryRoundPositionDto.AfterTransaction(4), nearby.state?.position)
+
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        transport.respondEvents(roundNumber = 1, start = EVENTS_PAGE, transactionIndexes = (EVENTS_PAGE until TRANSACTION_COUNT).toList(), transactionCount = TRANSACTION_COUNT)
+        runCurrent()
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        transport.respondStates()
+        runCurrent()
+        assertTrue(controller.replayTo(TRANSACTION_COUNT))
+        val far = assertNotNull(controller.state.value.replay)
+        assertEquals(HistoryBrowseStatus.Loading, far.status)
+        assertEquals(null, far.state)
+
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        val request = transport.roundStateRequests.last()
+        assertEquals(HistoryRoundPositionDto.AfterTransaction(TRANSACTION_COUNT - 1), request.position)
+        assertEquals(1, request.count)
+        transport.respondStates()
+        runCurrent()
+        assertEquals(HistoryBrowseStatus.Ready, controller.state.value.replay?.status)
+    }
+
+    /** 暫時失敗先自動重試同一段三次（0.5、1、2 秒後），都失敗才顯示失敗；手動重試再要同一段。 */
+    @Test
+    fun `test replay retries temporary failures before showing them`() = runTest {
+        val transport = FakeRoundHistoryTransport()
+        val controller = openReplay(transport)
+        val failed = transport.roundStateRequests.last()
+        listOf(500.milliseconds, 1.seconds, 2.seconds).forEach { wait ->
+            transport.respondStatesError(HistoryQueryErrorCodeDto.BUSY)
+            runCurrent()
+            assertEquals(HistoryBrowseStatus.Loading, controller.state.value.replay?.status)
+            val sent = transport.roundStateRequests.size
+            advanceTimeBy(wait - 1.milliseconds)
+            runCurrent()
+            assertEquals(sent, transport.roundStateRequests.size)
+            advanceTimeBy(1.milliseconds)
+            runCurrent()
+            assertEquals(sent + 1, transport.roundStateRequests.size)
+            assertEquals(failed.position, transport.roundStateRequests.last().position)
+            assertEquals(failed.count, transport.roundStateRequests.last().count)
+        }
+        transport.respondStatesError(HistoryQueryErrorCodeDto.BUSY)
+        runCurrent()
+        assertIs<HistoryBrowseStatus.Failed>(controller.state.value.replay?.status)
+
+        advanceTimeBy(5.seconds)
+        runCurrent()
+        assertEquals(4, transport.roundStateRequests.size)
+        assertEquals(1, transport.roundEventsRequests.size)
+        assertTrue(controller.retry())
+        runCurrent()
+        val retried = transport.roundStateRequests.last()
+        assertEquals(failed.position, retried.position)
+        assertEquals(failed.count, retried.count)
+        assertEquals(HistoryBrowseStatus.Loading, controller.state.value.replay?.status)
+    }
+
+    /** 重試也不會好的失敗立即顯示，不自動重試。 */
+    @Test
+    fun `test replay shows lasting failures immediately`() = runTest {
+        val transport = FakeRoundHistoryTransport()
+        val controller = openReplay(transport)
+        transport.respondStatesError(HistoryQueryErrorCodeDto.ACCESS_DENIED)
+        runCurrent()
+        assertIs<HistoryBrowseStatus.Failed>(controller.state.value.replay?.status)
+
+        advanceTimeBy(5.seconds)
+        runCurrent()
+        assertEquals(1, transport.roundStateRequests.size)
+    }
+
+    /** 自動重試成功後次數歸零，之後的暫時失敗又能自動重試。 */
+    @Test
+    fun `test replay retry count resets after success`() = runTest {
+        val transport = FakeRoundHistoryTransport()
+        val controller = openReplay(transport)
+        transport.respondStatesError(HistoryQueryErrorCodeDto.BUSY)
+        runCurrent()
+        advanceTimeBy(500.milliseconds)
+        runCurrent()
+        transport.respondStatesError(HistoryQueryErrorCodeDto.BUSY)
+        runCurrent()
+        advanceTimeBy(1.seconds)
+        runCurrent()
+        transport.respondStates()
+        runCurrent()
+        assertEquals(HistoryBrowseStatus.Ready, controller.state.value.replay?.status)
+
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        val events = transport.roundEventsRequests.size
+        transport.respondEventsError(HistoryQueryErrorCodeDto.BUSY)
+        runCurrent()
+        advanceTimeBy(500.milliseconds)
+        runCurrent()
+        assertEquals(events + 1, transport.roundEventsRequests.size)
+        assertEquals(HistoryBrowseStatus.Loading, controller.state.value.replay?.eventsStatus)
+    }
+
+    /** 結束回放回到事件頁，之後才到的回放回覆不會再寫回。 */
+    @Test
+    fun `test leaving replay discards late states`() = runTest {
+        val transport = FakeRoundHistoryTransport()
+        val controller = openReplay(transport)
+        assertTrue(controller.backFromReplay())
+        transport.respondStates()
+        runCurrent()
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+
+        assertEquals(HistoryBrowsePage.ROUND_EVENTS, controller.state.value.page)
+        assertEquals(null, controller.state.value.replay)
+        assertEquals(1, transport.roundStateRequests.size)
+        assertFalse(controller.replayTo(1))
+    }
+
+    /** 還不知道交易總數時，等原本在途的事件頁回來後先要第一頁事件，知道後才從指定步數要牌面；不在事件頁時不接受回放。 */
+    @Test
+    fun `test replay without a known count reads the first event page first`() = runTest {
+        val transport = FakeRoundHistoryTransport()
+        val controller = openRound(transport)
+        assertFalse(controller.replayRound(2))
+        assertTrue(controller.showReplay(3))
+        assertFalse(controller.showReplay(0))
+        transport.respondEvents(roundNumber = 1, start = 0, next = EVENTS_PAGE, transactionCount = TRANSACTION_COUNT)
+        runCurrent()
+        assertEquals(null, controller.state.value.replay?.stepCount)
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        transport.respondRuleSettings()
+        runCurrent()
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        assertEquals(2, transport.roundEventsRequests.size)
+        assertEquals(null, controller.state.value.replay?.stepCount)
+
+        transport.respondEvents(roundNumber = 1, start = 0, next = EVENTS_PAGE, transactionCount = TRANSACTION_COUNT)
+        runCurrent()
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+
+        assertEquals(TRANSACTION_COUNT + 1, controller.state.value.replay?.stepCount)
+        assertEquals(3, controller.state.value.replay?.step)
+        assertEquals(HistoryRoundPositionDto.AfterTransaction(2), transport.roundStateRequests.single().position)
+    }
+
+    /** 回放換局停在新一局的初始牌面；返回事件頁時讀取新一局的事件頁。 */
+    @Test
+    fun `test replay changes round and returns to the new round events`() = runTest {
+        val transport = FakeRoundHistoryTransport()
+        val controller = openReplay(transport)
+        transport.respondStates()
+        runCurrent()
+
+        assertTrue(controller.replayRound(2))
+        val changed = assertNotNull(controller.state.value.replay)
+        assertEquals(2, changed.roundNumber)
+        assertEquals(0, changed.step)
+        assertEquals(null, changed.state)
+        assertEquals(2, controller.state.value.selectedRoundNumber)
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        assertEquals(2, transport.roundEventsRequests.last().roundNumber)
+        transport.respondEvents(roundNumber = 2, start = 0, transactionIndexes = listOf(0, 1, 2), transactionCount = 3)
+        runCurrent()
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        val request = transport.roundStateRequests.last()
+        assertEquals(2, request.roundNumber)
+        assertEquals(HistoryRoundPositionDto.Initial, request.position)
+        assertEquals(4, request.count)
+
+        assertTrue(controller.backFromReplay())
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        assertEquals(HistoryBrowsePage.ROUND_EVENTS, controller.state.value.page)
+        assertNotNull(controller.state.value.rounds.getValue(2).events)
+    }
+
+    /**
+     * 開到第一局的事件頁並從初始牌面開始回放，停在第一次回放查詢送出之後。
+     *
+     * @param transport 可手動回覆的模擬傳輸。
+     * @return 使用虛擬時間的瀏覽控制器。
+     */
+    private suspend fun TestScope.openReplay(transport: FakeRoundHistoryTransport): HistoryBrowseController {
+        val controller = openRound(transport)
+        transport.respondEvents(roundNumber = 1, start = 0, next = EVENTS_PAGE, transactionCount = TRANSACTION_COUNT)
+        runCurrent()
+        assertTrue(controller.showReplay(0))
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        // 擺牌需要規則設定，回放先要規則設定。
+        assertEquals(1, transport.ruleSettingsRequests.size)
+        transport.respondRuleSettings()
+        runCurrent()
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        return controller
+    }
+
     /** 關閉控制器會清除局選擇與所有單局狀態。 */
     @Test
     fun `test close clears round state and rejects further navigation`() = runTest {
@@ -532,6 +794,10 @@ class HistoryBrowseRoundControllerTest {
         hasPendingReaction = false,
         hasPendingRobbingReaction = false,
         outcome = null,
+        wallPlacements = null,
+        discardOrder = emptyList(),
+        tilePoses = emptyMap(),
+        presentationNotes = null,
     )
 
     /** 模擬局內查詢傳輸，只暴露要求與手動回覆。 */
@@ -578,12 +844,24 @@ class HistoryBrowseRoundControllerTest {
         }
 
         /**
-         * 產生規則設定要求的測試用識別碼；此替身不需保留其 payload。
+         * 記錄規則設定要求並回報等待狀態。
          *
          * @param request 規則設定要求。
          * @return 模擬配對識別碼。
          */
-        override fun queryRuleSettings(request: HistoryRuleSettingsRequestDto): String = "rules-${++nextId}"
+        override fun queryRuleSettings(request: HistoryRuleSettingsRequestDto): String = "rules-${++nextId}".also {
+            ruleSettingsRequests += it
+            mutableState.value = ClientHistoryQueryState.Loading(it)
+        }
+
+        /** 已送出的規則設定要求識別碼。 */
+        val ruleSettingsRequests = mutableListOf<String>()
+
+        /** 回覆最後一筆規則設定要求。 */
+        fun respondRuleSettings() {
+            val config = GameConfig(RiichiRuleConfig()).toDto(registries = DefaultNetworkDtoRegistries().apply { registerBundledNetworkDtos() })
+            mutableState.value = ClientHistoryQueryState.RuleSettingsResult(HistoryRuleSettingsResponseDto(ruleSettingsRequests.last(), config, errorCode = null))
+        }
 
         /**
          * 記錄事件頁查詢。
@@ -693,7 +971,37 @@ class HistoryBrowseRoundControllerTest {
          */
         fun respondState(roundNumber: Int, position: HistoryRoundPositionDto, requestId: String = roundStateRequests.last().requestId) {
             mutableState.value = ClientHistoryQueryState.RoundStateResult(
-                response = HistoryRoundStateResponseDto(requestId, MATCH_ID, roundNumber, position, state(roundNumber, position), errorCode = null),
+                response = HistoryRoundStateResponseDto(requestId, MATCH_ID, roundNumber, position, listOf(state(roundNumber, position)), errorCode = null),
+            )
+        }
+
+        /**
+         * 依最後一筆桌況要求回覆要求數量的連續桌況。
+         *
+         * @param request 要回覆的桌況要求。
+         */
+        fun respondStates(request: HistoryRoundStateRequestDto = roundStateRequests.last()) {
+            val states = (0 until request.count).map { offset ->
+                val position = when (val start = request.position) {
+                    HistoryRoundPositionDto.Initial -> if (offset == 0) start else HistoryRoundPositionDto.AfterTransaction(offset - 1)
+                    is HistoryRoundPositionDto.AfterTransaction -> HistoryRoundPositionDto.AfterTransaction(start.index + offset)
+                }
+                state(request.roundNumber, position)
+            }
+            mutableState.value = ClientHistoryQueryState.RoundStateResult(
+                response = HistoryRoundStateResponseDto(request.requestId, MATCH_ID, request.roundNumber, request.position, states, errorCode = null),
+            )
+        }
+
+        /**
+         * 回覆最後一筆桌況要求的穩定錯誤。
+         *
+         * @param errorCode 伺服器拒絕原因。
+         */
+        fun respondStatesError(errorCode: HistoryQueryErrorCodeDto) {
+            val request = roundStateRequests.last()
+            mutableState.value = ClientHistoryQueryState.RoundStateResult(
+                response = HistoryRoundStateResponseDto(request.requestId, MATCH_ID, request.roundNumber, request.position, emptyList(), errorCode = errorCode),
             )
         }
     }
@@ -708,5 +1016,11 @@ class HistoryBrowseRoundControllerTest {
 
         /** 測試用玩家 UUID。 */
         const val PLAYER_ID = "00000000-0000-0000-0000-000000000003"
+
+        /** 回放測試的本局交易總數。 */
+        const val TRANSACTION_COUNT = 40
+
+        /** 回放測試的事件頁大小。 */
+        const val EVENTS_PAGE = HistoryRoundNavigation.EVENTS_PAGE_SIZE
     }
 }

@@ -65,6 +65,9 @@ Use `discarderPlayerIds` only when the source establishes a discard win.
 that distinction from the outcome ID. A rule result may also appear in `RuleResultsResolvedEvent`;
 these are two views of the same committed activity, not two wins to count.
 
+A win that a rule decision completes, such as a special flower win, is an ordinary win settlement.
+Its method is `UNKNOWN` unless the committed facts record how the winning tile arrived.
+
 Each rule result keeps its reason ID, detail winners and optional summary beneficiaries separate.
 Some results have details without a summary. Others have only a summary. Decide which list your
 feature needs rather than combining them automatically. Rule-result events retain submission order

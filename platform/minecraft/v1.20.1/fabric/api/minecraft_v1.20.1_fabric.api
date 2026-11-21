@@ -134,6 +134,12 @@ public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/
 	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/tableprop/FabricTablePropKind;)V
 }
 
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/api/registration/FabricTablePropPreviewRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/tableprop/FabricTablePropPreviewDefinition;)V
+}
+
 public final class com/doublemoon1119/mahjongcraft/platform/fabric/api/seating/FabricSeatPlacementContext {
 	public final fun allowsBlockUse ()Z
 	public final fun canModify (Lnet/minecraft/util/math/Box;)Z
@@ -187,9 +193,21 @@ public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/
 	public abstract fun ruleModuleIdOf (Lnet/minecraft/entity/Entity;)Ljava/lang/String;
 }
 
+public final class com/doublemoon1119/mahjongcraft/platform/fabric/api/tableprop/FabricTablePropPreviewDefinition {
+	public fun <init> (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/table/TablePropKindDefinition;Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/tableprop/FabricTablePropPreviewProvider;)V
+	public final fun getDefinition ()Lcom/doublemoon1119/mahjongcraft/platform/minecraft/table/TablePropKindDefinition;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getProvider ()Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/tableprop/FabricTablePropPreviewProvider;
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/api/tableprop/FabricTablePropPreviewProvider {
+	public abstract fun create (Lnet/minecraft/client/world/ClientWorld;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/table/TablePropTarget;)Lnet/minecraft/entity/Entity;
+}
+
 public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/extension/FabricMahjongClientExtension {
 	public abstract fun getId ()Ljava/lang/String;
 	public abstract fun registerCharacterPreviews (Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/registration/FabricAiCharacterPreviewRegistrar;)V
+	public fun registerTablePropPreviews (Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/registration/FabricTablePropPreviewRegistrar;)V
 }
 
 public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/extension/FabricMahjongExtension {

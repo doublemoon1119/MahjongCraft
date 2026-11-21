@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSource
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.ClientAiCharacterPreviewRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tableprop.ClientTablePropPreviewRegistry
 
 /** 客戶端採用相同的登記、來源錯誤回報與成功後凍結流程。 */
 internal object FabricMahjongClientExtensionBootstrap {
@@ -14,7 +15,8 @@ internal object FabricMahjongClientExtensionBootstrap {
      * 依序登記內建與第三方客戶端能力，任何登記錯誤都停止初始化。
      *
      * @param extensions 第三方入口，沿用 loader 提供順序。
-     * @param registry 客戶端自己的登記表。
+     * @param registry 客戶端自己的角色預覽登記表。
+     * @param tablePropRegistry 客戶端自己的桌上物件預覽登記表。
      * @param builtIn 不屬於特定規則的內建能力。
      * @param failurePolicy 取消與致命錯誤的傳遞規則。
      * @return 依內建及第三方來源區分的登記增量。
@@ -22,26 +24,35 @@ internal object FabricMahjongClientExtensionBootstrap {
     fun registerAndFreeze(
         extensions: Iterable<FabricMahjongClientExtension>,
         registry: ClientAiCharacterPreviewRegistry,
+        tablePropRegistry: ClientTablePropPreviewRegistry,
         builtIn: FabricMahjongClientExtension,
         failurePolicy: ExtensionFailurePolicy,
     ): List<ExtensionRegistrationSource> {
         val sources = mutableListOf<ExtensionRegistrationSource>()
         var before = registry.registrationSnapshot()
+        var propsBefore = tablePropRegistry.registrationSnapshot()
         val ids = mutableSetOf<String>()
         for (extension in listOf(builtIn) + extensions) {
             try {
                 NamespacedId.requireValid(extension.id) { "Invalid client extension ID" }
                 require(ids.add(extension.id)) { "Duplicate client extension ID: ${extension.id}" }
                 extension.registerCharacterPreviews(registry)
+                extension.registerTablePropPreviews(tablePropRegistry)
                 val after = registry.registrationSnapshot()
-                sources += ExtensionRegistrationSource(if (extension === builtIn) null else extension.id, before.additionsSince(after))
+                val propsAfter = tablePropRegistry.registrationSnapshot()
+                sources += ExtensionRegistrationSource(
+                    extensionId = if (extension === builtIn) null else extension.id,
+                    categories = before.additionsSince(after) + propsBefore.additionsSince(propsAfter),
+                )
                 before = after
+                propsBefore = propsAfter
             } catch (cause: Throwable) {
                 if (!failurePolicy.isIsolatable(cause)) throw cause
                 throw FabricMahjongExtensionRegistrationException(extension.id, cause)
             }
         }
         registry.freeze()
+        tablePropRegistry.freeze()
         return sources
     }
 }

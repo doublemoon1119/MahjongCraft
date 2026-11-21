@@ -1,7 +1,7 @@
-package com.doublemoon1119.mahjongcraft.platform.fabric.entity
+package com.doublemoon1119.mahjongcraft.platform.minecraft.animation
 
 /** 牌與骰子動畫使用的語意聲音 ID。 */
-internal object MahjongAnimationSounds {
+object MahjongAnimationSounds {
     /** 麻將牌落到牌河時使用的聲音。 */
     const val TILE_DISCARD_LAND: String = "mahjongcraft:tile.discard_land"
 

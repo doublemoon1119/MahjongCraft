@@ -67,6 +67,7 @@ private fun validateHistoryRoundRequest(request: HistoryRoundEventsRequest): His
 private fun validateHistoryRoundStateRequest(request: HistoryRoundStateRequest): HistoryQueryError? {
     val position = request.position
     if (request.roundNumber <= 0 ||
+        request.count !in 1..HistoryQueryLimits.MAX_ROUND_STATES ||
         (position is HistoryRoundPosition.AfterTransaction && position.index < 0)
     ) {
         return HistoryQueryError(HistoryQueryErrorCode.INVALID_REQUEST, "History round state request is invalid")
@@ -256,12 +257,12 @@ class GetHistoryRoundEventsUseCase(
 }
 
 /**
- * 以授權範圍查詢單局指定位置桌況的一次性伺服器用例。
+ * 以授權範圍查詢單局從指定位置起連續幾個位置桌況的一次性伺服器用例。
  *
  * @property repository 提供已授權資料邊界的 repository。
  * @property policyProvider 讀取當前伺服器查詢政策的函式。
  */
-class GetHistoryRoundStateUseCase(
+class GetHistoryRoundStatesUseCase(
     private val repository: HistoryQueryRepository,
     private val policyProvider: () -> HistoryQueryPolicy,
 ) {
@@ -270,15 +271,15 @@ class GetHistoryRoundStateUseCase(
      *
      * @param access 可信任的發起者資訊。
      * @param request 單局桌況查詢要求。
-     * @return 指定位置桌況或穩定錯誤。
+     * @return 依位置先後排列的桌況或穩定錯誤。
      */
     suspend operator fun invoke(
         access: HistoryQueryAccess,
         request: HistoryRoundStateRequest,
-    ): HistoryQueryResult<HistoryRoundState> {
+    ): HistoryQueryResult<List<HistoryRoundState>> {
         val policy = policyProvider()
         validateHistoryAccess(access, policy, request.scope)?.let { return HistoryQueryResult.Failure(it) }
         validateHistoryRoundStateRequest(request)?.let { return HistoryQueryResult.Failure(it) }
-        return repository.roundState(access, request)
+        return repository.roundStates(access, request)
     }
 }

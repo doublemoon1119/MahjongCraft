@@ -52,6 +52,7 @@ class HistoryWinningHandRecordingTest {
         assertEquals(secondStanding, details[1].hand?.standingTileIds)
         assertEquals(winning, details[0].hand?.winningTileId)
         assertEquals(winning, details[1].hand?.winningTileId)
+        assertEquals(winning, winSettlementWinningTileId(request(outcomeId = "mahjongcraft:ron", winners = listOf(winnerPresentation(first, 0, firstStanding, winning), winnerPresentation(second, 1, secondStanding, winning)))))
     }
 
     /** 特殊等價胡牌結果不偽造和牌張。 */
@@ -69,6 +70,7 @@ class HistoryWinningHandRecordingTest {
 
         assertEquals(standing, details.single().hand?.standingTileIds)
         assertNull(details.single().hand?.winningTileId)
+        assertNull(winSettlementWinningTileId(request(outcomeId = "mahjongcraft:special", winners = listOf(winnerPresentation(winner, 0, standing, null)))))
     }
 
     /**

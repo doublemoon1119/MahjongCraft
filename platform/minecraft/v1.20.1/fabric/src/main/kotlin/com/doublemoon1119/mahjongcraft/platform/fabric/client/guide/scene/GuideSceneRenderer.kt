@@ -4,10 +4,14 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongBotE
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongPlayerInfoEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileItemRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.SceneEntityTranslucency
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationEffectGeometry
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.LatestDiscardHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongBotEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
@@ -24,8 +28,15 @@ import net.minecraft.client.render.Tessellator
 import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.VertexFormat
 import net.minecraft.client.render.VertexFormats
+import net.minecraft.client.render.entity.EntityRenderDispatcher
+import net.minecraft.client.render.entity.LivingEntityRenderer
+import net.minecraft.client.render.entity.model.EntityModelLayers
+import net.minecraft.client.render.entity.model.TridentEntityModel
 import net.minecraft.client.render.model.json.ModelTransformationMode
 import net.minecraft.client.world.ClientWorld
+import net.minecraft.entity.Entity
+import net.minecraft.entity.LivingEntity
+import net.minecraft.util.Hand
 import net.minecraft.util.math.RotationAxis
 import org.joml.Matrix4f
 import org.joml.Quaternionf
@@ -55,6 +66,16 @@ internal class GuideSceneRenderer : AutoCloseable {
     /** 繪製玩家資訊的預覽實體。 */
     private var playerInfoEntity: MahjongPlayerInfoEntity? = null
 
+    /** 胡牌特效的畫法；第一次畫特效時才建立。 */
+    private var winEffectGeometry: WinCelebrationEffectGeometry? = null
+
+    /** 讓坐著的生物騎乘的凳子座位，與遊戲中坐凳子時相同；不在世界中，也不是生物，不影響乘客的朝向。 */
+    private var seatEntity: Entity? = null
+
+    /** 上一次繪製時滑鼠指著、離鏡頭最近的牌的 [GuideSceneTile.key]；沒有指著牌時為 null。 */
+    var hoveredTileKey: Int? = null
+        private set
+
     /**
      * 在指定範圍內繪製場景，並回傳滑鼠指著的區塊。
      *
@@ -67,6 +88,9 @@ internal class GuideSceneRenderer : AutoCloseable {
      * @param mouseX 滑鼠水平位置。
      * @param mouseY 滑鼠垂直位置。
      * @param yawOffset 玩家拖曳轉動的水平角度，加在場景視角上；只有可轉動的場景使用。
+     * @param zoom 在放得下整個範圍的大小上再放大的倍數。
+     * @param panX 放大後場景中心往右移動的像素。
+     * @param panY 放大後場景中心往下移動的像素。
      * @return 滑鼠指著、離鏡頭最近的東西所屬的區塊與它在畫面上的範圍；沒有指著任何區塊時為 null。
      */
     fun render(
@@ -79,15 +103,18 @@ internal class GuideSceneRenderer : AutoCloseable {
         mouseX: Int,
         mouseY: Int,
         yawOffset: Float = 0f,
+        zoom: Float = 1f,
+        panX: Float = 0f,
+        panY: Float = 0f,
     ): GuideSceneHover? {
         if (width <= 0 || height <= 0 || scene.blocks.isEmpty() && scene.figures.isEmpty() && scene.tiles.isEmpty()) return null
         val client = MinecraftClient.getInstance()
         val yaw = scene.view.yawDegrees + if (scene.rotatable) yawOffset else 0f
         val rotation = rotation(scene.view.pitchDegrees, yaw)
         val bounds = if (scene.rotatable) rotatableBounds(scene, rotation) else projectedBounds(scene, rotation)
-        val scale = min(width / bounds.width, height / bounds.height) * FILL_RATIO
-        val centerX = left + width / 2.0
-        val centerY = top + height / 2.0
+        val scale = min(width / bounds.width, height / bounds.height) * FILL_RATIO * zoom
+        val centerX = left + width / 2.0 + panX
+        val centerY = top + height / 2.0 + panY
         val clip = if (scene.focus == null) {
             ScreenRect(left, top, left + width, top + height)
         } else {
@@ -114,6 +141,7 @@ internal class GuideSceneRenderer : AutoCloseable {
             matrices.multiply(Quaternionf().setFromNormalized(rotation))
             val sceneToScreen = Matrix4f(matrices.peek().positionMatrix)
             val hovered = if (clip.contains(mouseX, mouseY)) hoveredRegion(scene, sceneToScreen, scale, mouseX, mouseY) else null
+            hoveredTileKey = if (clip.contains(mouseX, mouseY)) hoveredTile(scene, sceneToScreen, mouseX, mouseY) else null
             RenderSystem.setShaderLights(
                 Vector3f(-SIDE_LIGHT, UP_LIGHT, FRONT_LIGHT).normalize(),
                 Vector3f(SIDE_LIGHT, UP_LIGHT, FRONT_LIGHT).normalize(),
@@ -127,9 +155,15 @@ internal class GuideSceneRenderer : AutoCloseable {
                     client.blockRenderManager.renderBlockAsEntity(block.state, matrices, consumers, FULL_LIGHT, OverlayTexture.DEFAULT_UV)
                     matrices.pop()
                 }
-                renderFigures(client, scene.figures, context, consumers)
+                renderFigures(client, scene.figures.filter { it.alpha >= 1f }, context, consumers)
+                renderEntities(client, scene.entities.filter { it.alpha >= 1f }, context, consumers)
                 scene.tiles.forEach { tile -> renderTile(tile, context, consumers) }
                 renderInfo(client, scene, rotation, context, consumers)
+                // 半透明的人物最後畫：不透明的東西先全部畫進畫面，半透明的部分才透得出它後面的牌。
+                consumers.draw()
+                renderFigures(client, scene.figures.filter { it.alpha < 1f }, context, consumers)
+                renderEntities(client, scene.entities.filter { it.alpha < 1f }, context, consumers)
+                renderWinEffects(client, scene.winEffects, context, consumers)
             } finally {
                 consumers.draw()
             }
@@ -139,6 +173,7 @@ internal class GuideSceneRenderer : AutoCloseable {
                     hovered != null && tile.region == hovered.region -> tile to HOVER_COLOR
                     tile.glow == GuideSceneTileGlow.TARGET -> tile to MatchingTileHighlightController.targetColor(time)
                     tile.glow == GuideSceneTileGlow.MATCHING -> tile to MatchingTileHighlightController.otherMatchColor(time)
+                    tile.glow == GuideSceneTileGlow.LATEST_DISCARD -> tile to LatestDiscardHighlightController.HIGHLIGHT_COLOR
                     else -> null
                 }
             }
@@ -203,6 +238,21 @@ internal class GuideSceneRenderer : AutoCloseable {
     }
 
     /**
+     * 找出滑鼠指著、離鏡頭最近且有 [GuideSceneTile.key] 的牌。
+     *
+     * @param scene 場景。
+     * @param sceneToScreen 場景座標換算成畫面座標的矩陣。
+     * @param mouseX 滑鼠水平位置。
+     * @param mouseY 滑鼠垂直位置。
+     * @return 牌的識別值；沒有指著這樣的牌時為 null。
+     */
+    private fun hoveredTile(scene: GuideScene, sceneToScreen: Matrix4f, mouseX: Int, mouseY: Int): Int? = scene.tiles
+        .mapNotNull { tile -> tile.key?.let { key -> key to projectBox(tileModelMatrix(sceneToScreen, tile), tileModelMin(), tileModelMax()) } }
+        .filter { (_, box) -> mouseX >= box.minX && mouseX <= box.maxX && mouseY >= box.minY && mouseY <= box.maxY }
+        .maxByOrNull { (_, box) -> box.depth }
+        ?.first
+
+    /**
      * 玩家資訊面板在場景座標中的大略範圍，與遊戲中面板的位置相同。
      *
      * @param info 玩家資訊。
@@ -240,6 +290,7 @@ internal class GuideSceneRenderer : AutoCloseable {
         val renderer = client.entityRenderDispatcher.getRenderer(entity) as? MahjongBotEntityRenderer ?: return
         val matrices = context.matrices
         figures.forEach { figure ->
+            if (figure.alpha <= 0f) return@forEach
             entity.faceAssetKey = figure.faceAssetKey
             matrices.push()
             matrices.translate(figure.x, figure.y, figure.z)
@@ -251,6 +302,8 @@ internal class GuideSceneRenderer : AutoCloseable {
                 vertexConsumers = consumers,
                 light = FULL_LIGHT,
                 seated = figure.seated,
+                swingProgress = figure.swingProgress,
+                alpha = figure.alpha,
             )
             matrices.pop()
         }
@@ -299,6 +352,38 @@ internal class GuideSceneRenderer : AutoCloseable {
     }
 
     /**
+     * 在胡牌張的位置畫出胡牌特效，與半透明的東西一起最後畫，不擋住後面的牌。
+     *
+     * @param client 目前客戶端。
+     * @param effects 要畫的特效。
+     * @param context GUI 繪製上下文，矩陣已套用場景視角。
+     * @param consumers 頂點緩衝。
+     */
+    private fun renderWinEffects(
+        client: MinecraftClient,
+        effects: List<GuideSceneWinEffect>,
+        context: DrawContext,
+        consumers: VertexConsumerProvider,
+    ) {
+        if (effects.isEmpty()) return
+        val geometry = winEffectGeometry
+            ?: WinCelebrationEffectGeometry(TridentEntityModel(client.entityModelLoader.getModelPart(EntityModelLayers.TRIDENT))).also { winEffectGeometry = it }
+        val matrices = context.matrices
+        effects.forEach { effect ->
+            matrices.push()
+            matrices.translate(effect.x, effect.y, effect.z)
+            geometry.render(
+                elapsedTicks = effect.elapsedTicks,
+                seed = effect.seed,
+                matrices = matrices,
+                vertexConsumers = consumers,
+                light = FULL_LIGHT,
+            )
+            matrices.pop()
+        }
+    }
+
+    /**
      * 以對局中相同的擺法與姿態繪製一張牌。
      *
      * @param tile 要繪製的牌。
@@ -309,9 +394,18 @@ internal class GuideSceneRenderer : AutoCloseable {
         val matrices = context.matrices
         matrices.push()
         matrices.translate(tile.x, tile.y, tile.z)
+        // 往前進方向的傾斜繞牌底、以世界水平軸旋轉，在朝向之前套用，與對局中的牌相同。
+        if (tile.lean.degrees != 0.0f) {
+            matrices.multiply(Quaternionf().rotateAxis(Math.toRadians(tile.lean.degrees.toDouble()).toFloat(), tile.lean.axisX.toFloat(), 0.0f, tile.lean.axisZ.toFloat()))
+        }
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-tile.yaw + HALF_TURN_DEGREES))
-        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(tile.pose.rotationDegrees))
-        val (offsetX, offsetY, offsetZ) = MahjongTileEntityRenderer.poseOriginOffset(tile.pose.rotationDegrees)
+        val poseDegrees = tile.poseDegrees ?: tile.pose.rotationDegrees
+        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(poseDegrees))
+        val (offsetX, offsetY, offsetZ) = if (tile.poseDegrees != null) {
+            MahjongTileEntityRenderer.displayPoseOriginOffset(poseDegrees)
+        } else {
+            MahjongTileEntityRenderer.poseOriginOffset(poseDegrees)
+        }
         matrices.translate(offsetX, offsetY, offsetZ)
         val assetKey = tile.assetKey
         if (assetKey == null) {
@@ -463,6 +557,109 @@ internal class GuideSceneRenderer : AutoCloseable {
     }
 
     /**
+     * 用原版繪製器畫出實體；坐姿的實體在繪製期間騎在不在世界中的座位上。
+     *
+     * 原版依實體與鏡頭的距離決定是否畫名牌；實體不在世界中，繪製前放到遠離鏡頭的位置，名牌就不會出現。
+     *
+     * @param client 目前客戶端。
+     * @param entities 要畫的生物。
+     * @param context GUI 繪製上下文，矩陣已套用場景視角。
+     * @param consumers 繪製用的頂點緩衝。
+     */
+    private fun renderEntities(
+        client: MinecraftClient,
+        entities: List<GuideSceneEntity>,
+        context: DrawContext,
+        consumers: VertexConsumerProvider,
+    ) {
+        if (entities.isEmpty()) return
+        val world = client.world ?: return
+        val dispatcher = client.entityRenderDispatcher
+        val seat = seatEntity(world)
+        dispatcher.setRenderShadows(false)
+        try {
+            entities.forEach { figure ->
+                if (!canDraw(figure, dispatcher)) return@forEach
+                val draw = { renderEntity(figure, seat, dispatcher, context, consumers) }
+                val guard = figure.guard
+                if (guard == null) draw() else guard.run(draw)
+            }
+        } finally {
+            dispatcher.setRenderShadows(true)
+        }
+    }
+
+    /**
+     * 判斷一個實體這一幀要不要畫：不透明度為 0 時不畫；半透明時只有原版生物繪製器畫的生物能畫，其他不畫。
+     *
+     * @param figure 要畫的實體與不透明度。
+     * @param dispatcher 原版實體繪製器。
+     * @return 要畫時為 true。
+     */
+    private fun canDraw(figure: GuideSceneEntity, dispatcher: EntityRenderDispatcher): Boolean = when {
+        figure.alpha <= 0f -> false
+        figure.alpha >= 1f -> true
+        else -> figure.entity is LivingEntity && dispatcher.getRenderer(figure.entity) is LivingEntityRenderer<*, *>
+    }
+
+    /**
+     * 畫出一個實體，畫完後離開座位，不影響同一個實體在其他畫面的繪製。
+     *
+     * @param figure 要畫的實體與位置。
+     * @param seat 坐姿使用的座位。
+     * @param dispatcher 原版實體繪製器。
+     * @param context GUI 繪製上下文，矩陣已套用場景視角。
+     * @param consumers 繪製用的頂點緩衝。
+     */
+    private fun renderEntity(
+        figure: GuideSceneEntity,
+        seat: Entity,
+        dispatcher: EntityRenderDispatcher,
+        context: DrawContext,
+        consumers: VertexConsumerProvider,
+    ) {
+        val entity = figure.entity
+        entity.stopRiding()
+        if (figure.seated) entity.startRiding(seat, true)
+        try {
+            entity.setPosition(0.0, DETACHED_Y, 0.0)
+            if (entity is LivingEntity) {
+                entity.bodyYaw = figure.yaw
+                entity.prevBodyYaw = figure.yaw
+                entity.headYaw = figure.yaw
+                entity.prevHeadYaw = figure.yaw
+                entity.preferredHand = Hand.MAIN_HAND
+                entity.handSwingProgress = figure.swingProgress
+                entity.lastHandSwingProgress = figure.swingProgress
+            }
+            entity.yaw = figure.yaw
+            entity.prevYaw = figure.yaw
+            entity.pitch = 0f
+            entity.prevPitch = 0f
+            val render = { dispatcher.render(entity, figure.x, figure.y, figure.z, figure.yaw, 1f, context.matrices, consumers, FULL_LIGHT) }
+            if (figure.alpha < 1f) SceneEntityTranslucency.render(figure.alpha, render) else render()
+        } finally {
+            entity.stopRiding()
+            if (entity is LivingEntity) {
+                entity.handSwingProgress = 0f
+                entity.lastHandSwingProgress = 0f
+            }
+        }
+    }
+
+    /**
+     * 取得屬於 [world] 的座位實體；世界改變時重建。
+     *
+     * @param world 目前客戶端世界。
+     * @return 不在世界中的座位實體。
+     */
+    private fun seatEntity(world: ClientWorld): Entity {
+        seatEntity?.takeIf { it.world === world }?.let { return it }
+        seatEntity?.discard()
+        return MahjongStoolSeatEntity(world = world).also { seatEntity = it }
+    }
+
+    /**
      * 取得屬於 [world] 的角色預覽實體；世界改變時重建。
      *
      * @param world 目前客戶端世界。
@@ -500,6 +697,8 @@ internal class GuideSceneRenderer : AutoCloseable {
 
     /** 釋放預覽實體。 */
     override fun close() {
+        seatEntity?.discard()
+        seatEntity = null
         figureEntity?.discard()
         figureEntity = null
         roundInfoEntity?.discard()
@@ -544,12 +743,13 @@ internal class GuideSceneRenderer : AutoCloseable {
     }
 
     /**
-     * 場景中所有方塊、角色與牌在 Z 方向的中心。
+     * 場景在 Z 方向的中心：有顯示或框住的範圍時取該範圍，否則取所有方塊、角色與牌。
      *
      * @param scene 場景。
      * @return Z 方向範圍的中點。
      */
     private fun sceneCenterZ(scene: GuideScene): Float {
+        (scene.focus ?: scene.frame)?.let { return ((it.minZ + it.maxZ) / 2.0).toFloat() }
         val zs = scene.blocks.flatMap { listOf(it.position.z.toDouble(), it.position.z + 1.0) } +
             scene.figures.map { it.z } +
             scene.tiles.map { it.z }
@@ -586,7 +786,7 @@ internal class GuideSceneRenderer : AutoCloseable {
                 }
             }
         }
-        val focus = scene.focus
+        val focus = scene.focus ?: scene.frame
         if (focus != null) {
             includeBox(
                 minCorner = Vector3f(focus.minX.toFloat(), focus.minY.toFloat(), focus.minZ.toFloat()),
@@ -679,6 +879,9 @@ internal class GuideSceneRenderer : AutoCloseable {
 
         /** 最亮的方塊與天空光照。 */
         const val FULL_LIGHT: Int = LightmapTextureManager.MAX_LIGHT_COORDINATE
+
+        /** 繪製實體前放置的高度，遠離鏡頭，名牌不會出現。 */
+        const val DETACHED_Y: Double = -10_000.0
 
         /** 計算範圍時，角色的半寬。 */
         const val FIGURE_HALF_WIDTH: Double = 0.45

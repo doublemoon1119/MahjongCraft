@@ -29,10 +29,10 @@ object MahjongPlayerAreaLayout {
             standingTileCount = input.standingTileIds.size,
             playerCount = input.seatLayout.playerCount,
         )
-        // 只有全部立牌已公開平放時才使用玩家牌序；仍有隱藏或直立牌時不洩漏私人排序。還沒理過的牌依補進順序接在最右邊。
+        // 只有全部立牌已公開平放或牌序本來就公開時才使用玩家牌序；仍有隱藏或直立牌時不洩漏私人排序。還沒理過的牌依補進順序接在最右邊。
         val faceUpIds = input.tilePoseStates.filter { it.pose == TilePose.FACE_UP }.mapTo(mutableSetOf()) { it.tileId }
         val unsorted = input.unsortedTileIds.filter { it in input.standingTileIds }
-        val standingOrder = if (input.standingTileIds.all { it in faceUpIds }) {
+        val standingOrder = if (input.standingOrderPublic || input.standingTileIds.all { it in faceUpIds }) {
             input.standingTileIds
         } else {
             PublicHandOrder.arrange(input.standingTileIds - unsorted.toSet()) + unsorted
@@ -291,7 +291,8 @@ object MahjongPlayerAreaLayout {
      * @return 局部座標。
      */
     private fun cornerTile(slot: PlannedSlot, alongOffsetFromCorner: Double, depthOffset: Double): PlannedTile {
-        val halfDepth = if (slot.isSideways) MahjongTileDimensions.TILE_WIDTH / 2.0 else MahjongTileDimensions.TILE_HEIGHT / 2.0
+        // 疊在橫放牌旁的加槓牌同樣橫放，前後只佔牌的寬度。
+        val halfDepth = if (slot.isSideways || slot.isAddedBeside) MahjongTileDimensions.TILE_WIDTH / 2.0 else MahjongTileDimensions.TILE_HEIGHT / 2.0
         return PlannedTile(
             tileId = slot.tileId,
             x = MahjongTileTableLayout.MELD_AREA_CORNER_OFFSET - alongOffsetFromCorner,

@@ -81,6 +81,7 @@ class CompactReplayCodecTest {
             events = events,
             mapper = HistoryRecordingPersistenceMapper(registries),
             registries = registries,
+            presentationNotes = ReplayPresentationNotes.NONE,
         )
 
         val transactions = CompactReplayCodec.decodeCompact(document).flatten()
@@ -146,6 +147,7 @@ class CompactReplayCodecTest {
             events = events,
             mapper = HistoryRecordingPersistenceMapper(registries),
             registries = registries,
+            presentationNotes = ReplayPresentationNotes.NONE,
         )
 
         val content = CompactReplayDictionary.decode(document.getValue(ReplayFormatKeys.PAYLOAD) as JsonObject)
@@ -178,6 +180,7 @@ class CompactReplayCodecTest {
             events = events,
             mapper = HistoryRecordingPersistenceMapper(registries),
             registries = registries,
+            presentationNotes = ReplayPresentationNotes.NONE,
         )
 
         val content = CompactReplayDictionary.decode(document.getValue(ReplayFormatKeys.PAYLOAD) as JsonObject) as JsonObject
@@ -214,7 +217,7 @@ class CompactReplayCodecTest {
             HistoryOutboxEvent(matchId, state.id, 1, 4, 4, 300, null, HistoryFact.ReturnedToRoom),
         )
         val registries = bundledPersistenceRegistries()
-        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, ReplayPresentationNotes.NONE)
 
         val limited = CompactReplayRoundReader(registries.componentViews, ReplayReadLimits(maxPresentationTypes = 1))
             .readState(document, matchId, 1, HistoryRoundPosition.Initial)
@@ -298,6 +301,7 @@ class CompactReplayCodecTest {
                 events = listOf(event),
                 mapper = HistoryRecordingPersistenceMapper(registries),
                 registries = registries,
+                presentationNotes = ReplayPresentationNotes.NONE,
             )
         }
         assertEquals("Aborted matches cannot be archived as complete replays", error.message)

@@ -27,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayDictionary
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayRoundReader
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadError
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadLimits
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadResult
@@ -80,6 +81,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -159,7 +162,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, base.id, 4, 100L, HistoryFact.MatchCompleted("test:completed", pulled.players.associate { it.id to it.score })).copy(transactionFirstSequence = 3),
         )
         val registries = bundledPersistenceRegistries()
-        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, ReplayPresentationNotes.NONE)
 
         val initial = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.Initial)).value
         val after = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.AfterTransaction(1))).value
@@ -239,7 +242,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, base.id, 5, 150L, HistoryFact.MatchCompleted("test:completed", base.players.associate { it.id to it.score })).copy(transactionFirstSequence = 4),
         )
         val registries = bundledPersistenceRegistries()
-        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, ReplayPresentationNotes.NONE)
 
         val read = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(reader().readEvents(document, matchId, 1, 0, 20)).value
         val facts = read.transactions.flatMap { it.facts }
@@ -298,7 +301,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, base.id, 5, 250L, HistoryFact.TilePresentationChanged(mapOf(redFive.id to redPresentation.copy(audience = HistoryTileAudience.Public)))).copy(transactionFirstSequence = 3),
         )
         val registries = bundledPersistenceRegistries()
-        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, ReplayPresentationNotes.NONE)
 
         val state = assertIs<ReplayReadResult.Success<HistoryRoundState>>(
             value = reader().readState(document, matchId, 1, HistoryRoundPosition.Initial),
@@ -343,7 +346,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, base.id, 4, 250L, HistoryFact.MatchCompleted("test:completed", scores)).copy(transactionFirstSequence = 3),
         )
         val registries = bundledPersistenceRegistries()
-        val transactions = CompactReplayCodec.decodeCompact(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)).single()
+        val transactions = CompactReplayCodec.decodeCompact(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, ReplayPresentationNotes.NONE)).single()
 
         val before = transactions.first().projection.melds()
         val after = transactions[1].projection.melds()
@@ -408,7 +411,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, table.id, 3, 250L, HistoryFact.MatchCompleted("test:completed", changed.players.associate { it.id to it.score })),
         )
         val registries = bundledPersistenceRegistries()
-        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, ReplayPresentationNotes.NONE)
         val initial = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.Initial)).value
         val after = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.AfterTransaction(1))).value
 
@@ -418,6 +421,61 @@ class CompactReplayRoundReaderGenuineTest {
         val drawn = after.players.single { it.initialSeatIndex == after.currentPlayerSeat }.lastDrawn
         assertEquals(draw.tile?.tile, drawn?.let { after.tileCatalog.tiles[it.tileIndex].tile })
         assertEquals(initial.wallTiles.size - 1, after.wallTiles.size)
+        assertNull(initial.wallPlacements)
+    }
+
+    /** 有實體牌牆的局保存牌牆格位、打牌順序與外層附註，讀回後與對局中的桌況一致。 */
+    @Test
+    fun `reader restores wall placements and discard order`() = runTest {
+        val module = RiichiRuleModule("mahjongcraft:riichi", RiichiRuleConfig())
+        val table = GameInitializer.initialize(Uuid.random(), List(4) { Uuid.random() }, module, randomness = testRoundRandomness()).tableState
+        val layout = assertNotNull(table.physicalWallLayout)
+        val discarder = table.currentPlayer
+        val discarded = discarder.hand.tiles.first()
+        val changed = table.copy(
+            players = table.players.map { player ->
+                if (player.id != discarder.id) {
+                    player
+                } else {
+                    player.copy(hand = player.hand.copy(tiles = player.hand.tiles - discarded), discardPile = player.discardPile.discardTile(discarded))
+                }
+            },
+            discardOrder = listOf(discarded.id),
+        )
+        val matchId = Uuid.random()
+        val events = listOf(
+            event(matchId, table.id, 1, 0L, HistoryFact.MatchStarted(table, GameFlowConfig(), emptyMap())),
+            event(matchId, table.id, 2, 125L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:discard", changed))),
+            event(matchId, table.id, 3, 250L, HistoryFact.MatchCompleted("test:completed", changed.players.associate { it.id to it.score })),
+        )
+        val registries = bundledPersistenceRegistries()
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, ReplayPresentationNotes { state -> JsonObject(mapOf("discards" to JsonPrimitive(state.discardOrder.size))) })
+        val initial = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.Initial)).value
+        val after = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.AfterTransaction(1))).value
+
+        val placements = assertNotNull(initial.wallPlacements)
+        assertEquals(layout.placements.size, placements.size)
+        assertEquals(layout.placements.values.toSet(), placements.values.toSet())
+        assertEquals(emptyList(), initial.discardOrder)
+        val discardEntry = after.players.single { it.initialSeatIndex == discarder.initialSeatIndex }.discards.single()
+        assertEquals(listOf(discardEntry.tile), after.discardOrder)
+        assertEquals(discarded.tile, after.tileCatalog.tiles[discardEntry.tile.tileIndex].tile)
+        assertEquals("""{"discards":0}""", initial.presentationNotes)
+        assertEquals("""{"discards":1}""", after.presentationNotes)
+    }
+
+    /** 一次讀取連續幾個位置，與逐一讀取的結果相同；本局交易不足時只讀到最後一筆交易之後。 */
+    @Test
+    fun `reader returns consecutive states in one pass`() = runTest {
+        val fixture = fixture()
+        val positions = listOf(HistoryRoundPosition.Initial, HistoryRoundPosition.AfterTransaction(0), HistoryRoundPosition.AfterTransaction(1), HistoryRoundPosition.AfterTransaction(2))
+        val single = positions.map { assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(fixture.document, fixture.matchId, 1, it)).value }
+
+        val fromStart = assertIs<ReplayReadResult.Success<List<HistoryRoundState>>>(reader().readStates(fixture.document, fixture.matchId, 1, HistoryRoundPosition.Initial, 3)).value
+        val tail = assertIs<ReplayReadResult.Success<List<HistoryRoundState>>>(reader().readStates(fixture.document, fixture.matchId, 1, HistoryRoundPosition.AfterTransaction(1), 16)).value
+
+        assertEquals(single.take(3), fromStart)
+        assertEquals(single.drop(2), tail)
     }
 
     /** 驗證真實桌況檢查點產生的差異能重建玩家分數與牌參照。 */
@@ -688,7 +746,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, base.id, 4, 100L, HistoryFact.MatchCompleted("test:completed", scores)).copy(transactionFirstSequence = 3),
         )
         val registries = bundledPersistenceRegistries()
-        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, ReplayPresentationNotes.NONE)
 
         val state = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.AfterTransaction(1))).value
         val discards = state.players.single { it.initialSeatIndex == 0 }.discards
@@ -765,7 +823,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, first.id, 6, 500L, HistoryFact.MatchCompleted("test:completed", next.players.associate { it.id to it.score })),
         )
         val registries = bundledPersistenceRegistries()
-        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, ReplayPresentationNotes.NONE)
 
         listOf(25_000, 26_000, 27_000).forEachIndexed { index, score ->
             val roundNumber = index + 1
@@ -801,7 +859,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, table.id, 5, 250L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:settled", settled))).copy(transactionFirstSequence = 3),
         )
         val registries = bundledPersistenceRegistries()
-        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, changed, settled)
+        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, ReplayPresentationNotes.NONE), matchId, table, changed, settled)
     }
 
     /**
@@ -872,7 +930,7 @@ class CompactReplayRoundReaderGenuineTest {
             add(event(matchId, table.id, if (intermediate == null) 5 else 6, 300L, HistoryFact.MatchCompleted("test:completed", settledScores)))
         }
         val registries = bundledPersistenceRegistries()
-        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, settled, settled)
+        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, ReplayPresentationNotes.NONE), matchId, table, settled, settled)
     }
 
     /** 建立語意上對應反應完成後才成立途中流局的正式 Replay 文件。 */
@@ -925,7 +983,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, table.id, 7, 200L, HistoryFact.MatchCompleted("test:completed", scores)).copy(transactionFirstSequence = 6),
         )
         val registries = bundledPersistenceRegistries()
-        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, abortiveState, abortiveState)
+        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, ReplayPresentationNotes.NONE), matchId, table, abortiveState, abortiveState)
     }
 
     /**
@@ -992,7 +1050,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, table.id, 7, 400L, HistoryFact.MatchCompleted("test:completed", continued.players.associate { it.id to it.score })).copy(transactionFirstSequence = 6),
         )
         val registries = bundledPersistenceRegistries()
-        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, changed, continued)
+        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, ReplayPresentationNotes.NONE), matchId, table, changed, continued)
     }
 
     /**

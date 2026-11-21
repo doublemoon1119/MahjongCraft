@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.di
 
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
@@ -21,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscard
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileSetAsideDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileSetAsideDisplayRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.ReplayTableNotesRecorder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
@@ -113,6 +115,7 @@ val minecraftCommonModule = module {
 
     single<RoundInfoLineDisplayRegistryImpl>() bind RoundInfoLineDisplayRegistry::class
     single<TablePropDescriberRegistryImpl>() bind TablePropDescriberRegistry::class
+    single<ReplayTableNotesRecorder>() bind ReplayPresentationNotes::class
     single<TableTileLayoutProfileRegistryImpl>() bind TableTileLayoutProfileRegistry::class
 
     single<MinecraftTileAssetRegistryImpl>() bind MinecraftTileAssetRegistry::class

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.histor
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
@@ -32,6 +33,7 @@ class FabricDebugHistoryCommandTest {
             dispatchers = TestDispatchers,
             moduleRegistry = MahjongModuleRegistryImpl(),
             locations = TableLocationRegistry(),
+            presentationNotes = ReplayPresentationNotes.NONE,
             configState = MinecraftServerConfigState(),
             retentionCoordinator = HistoryRetentionCoordinator(),
         )

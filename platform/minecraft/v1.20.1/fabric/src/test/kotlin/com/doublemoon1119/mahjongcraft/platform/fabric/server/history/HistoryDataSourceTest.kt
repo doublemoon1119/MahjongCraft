@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
@@ -61,6 +62,7 @@ class HistoryDataSourceTest {
                 dispatchers = TestDispatchers,
                 moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
                 locations = TableLocationRegistry(),
+                presentationNotes = ReplayPresentationNotes.NONE,
                 configState = MinecraftServerConfigState(MinecraftServerConfig()),
                 retentionCoordinator = HistoryRetentionCoordinator(),
             ),

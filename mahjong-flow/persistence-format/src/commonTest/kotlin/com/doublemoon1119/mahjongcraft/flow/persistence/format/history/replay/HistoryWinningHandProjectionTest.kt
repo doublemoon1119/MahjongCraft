@@ -36,6 +36,7 @@ class HistoryWinningHandProjectionTest {
                 ReplaySourceKeys.OUTCOME_ID to JsonPrimitive("test:ron"),
                 ReplaySourceKeys.RESPONSIBLE_PLAYER_IDS to JsonArray(listOf(JsonPrimitive(2))),
                 ReplaySourceKeys.WIN_DETAILS to details,
+                ReplaySourceKeys.WINNING_TILE to JsonPrimitive(1),
             ),
         )
         val encoded = CompactFactCodec.encode(fact, linkedMapOf(), linkedMapOf())
@@ -56,6 +57,7 @@ class HistoryWinningHandProjectionTest {
         assertEquals(1, winners[0].hand?.winningTile?.tileIndex)
         assertEquals(listOf(3, 4), winners[1].hand?.standingTiles?.map(HistoryTileReference::tileIndex))
         assertEquals(1, winners[1].hand?.winningTile?.tileIndex)
+        assertEquals(1, completion.outcome?.winningTile?.tileIndex)
     }
 
     /** 和牌詳情未保存時，精簡編碼及歷史投影均維持 optional hand 為 null。 */
@@ -75,6 +77,7 @@ class HistoryWinningHandProjectionTest {
         val completion = assertIs<HistoryReplayFact.Completion>(projected)
 
         assertNull(completion.outcome?.winnerDetails?.single()?.hand)
+        assertNull(completion.outcome?.winningTile)
     }
 
     /**

@@ -53,6 +53,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientAutoma
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.table.ClientTableSpaceObstructionStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.table.TableSpaceObstructionRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tableprop.ClientTablePropPreviewRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tableprop.ClientTablePropPreviews
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientDiscardSettlementTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientHandTileLayoutController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.DiscardSourceHudRenderer
@@ -130,6 +132,8 @@ val fabricClientModule = module {
     single<ClientAiCharacterPreviewRegistry>()
     single<NativeCharacterPreviewRenderer>()
     single<ClientAiCharacterPreviews>()
+    single<ClientTablePropPreviewRegistry>()
+    single<ClientTablePropPreviews>()
     single<PlayerPortraitRenderer>()
     single<PublicPlayerIndicatorTextResolver>()
 

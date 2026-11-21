@@ -36,10 +36,10 @@ class ClientPlayerProfileResolver {
     /** 已啟動皮膚查詢的 UUID，避免重複呼叫原生 provider。 */
     private val requested = LinkedHashSet<Uuid>()
 
-    /** 已完成原生 skin 載入的有限材質快取。 */
-    private val skins = object : LinkedHashMap<Uuid, Identifier>(SKIN_CACHE_LIMIT, 0.75f, true) {
+    /** 已完成原生 skin 載入的有限材質與手臂款式快取。 */
+    private val skins = object : LinkedHashMap<Uuid, LoadedSkin>(SKIN_CACHE_LIMIT, 0.75f, true) {
         override fun removeEldestEntry(
-            eldest: MutableMap.MutableEntry<Uuid, Identifier>?,
+            eldest: MutableMap.MutableEntry<Uuid, LoadedSkin>?,
         ): Boolean = size > SKIN_CACHE_LIMIT
     }
 
@@ -109,10 +109,21 @@ class ClientPlayerProfileResolver {
         val client = MinecraftClient.getInstance()
         client.networkHandler?.getPlayerListEntry(playerId.toJavaUuid())?.let { return it.skinTexture }
         if (!supportsNativePlayerSkinLookup(playerId)) return null
-        synchronized(skins) { skins[playerId] }?.let { return it }
+        synchronized(skins) { skins[playerId] }?.let { return it.texture }
         val profile = knownProfile(playerId) ?: return null
         requestSkin(playerId, profile)
         return null
+    }
+
+    /**
+     * 取得已解析皮膚的手臂款式，與 [resolvedSkinTexture] 使用同一份皮膚。
+     *
+     * @param playerId 玩家識別碼。
+     * @return 原版模型名稱：細手臂為 `slim`，一般手臂為 `default`；皮膚尚未取得時為 null。
+     */
+    fun resolvedSkinModel(playerId: Uuid): String? {
+        MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(playerId.toJavaUuid())?.let { return it.model }
+        return synchronized(skins) { skins[playerId] }?.model
     }
 
     /**
@@ -157,12 +168,13 @@ class ClientPlayerProfileResolver {
         runCatching {
             MinecraftClient.getInstance().skinProvider.loadSkin(
                 profile,
-                PlayerSkinProvider.SkinTextureAvailableCallback { type, texture, _ ->
+                PlayerSkinProvider.SkinTextureAvailableCallback { type, texture, profileTexture ->
                     if (type != MinecraftProfileTexture.Type.SKIN) return@SkinTextureAvailableCallback
                     MinecraftClient.getInstance().execute {
                         if (generation == sessionGeneration) {
                             if (texture != null) {
-                                synchronized(skins) { skins[playerId] = texture }
+                                val model = if (profileTexture?.getMetadata(MODEL_METADATA) == SLIM_MODEL) SLIM_MODEL else DEFAULT_MODEL
+                                synchronized(skins) { skins[playerId] = LoadedSkin(texture, model) }
                             } else {
                                 rememberSkinFailure(playerId)
                             }
@@ -211,7 +223,24 @@ class ClientPlayerProfileResolver {
         true
     }
 
+    /**
+     * 已載入的皮膚。
+     *
+     * @property texture 皮膚材質。
+     * @property model 原版模型名稱：`slim` 或 `default`。
+     */
+    private data class LoadedSkin(val texture: Identifier, val model: String)
+
     private companion object {
+        /** 皮膚資料中記錄手臂款式的欄位。 */
+        const val MODEL_METADATA = "model"
+
+        /** 細手臂的原版模型名稱。 */
+        const val SLIM_MODEL = "slim"
+
+        /** 一般手臂的原版模型名稱。 */
+        const val DEFAULT_MODEL = "default"
+
         /** 單一客戶端工作階段最多保留的已解析 profile 數量。 */
         const val PROFILE_CACHE_LIMIT = 256
 

@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.example.minecraft.tile.registerExampleTil
 import com.doublemoon1119.mahjongcraft.example.minecraft.tile.registerExampleTileEmojis
 import com.doublemoon1119.mahjongcraft.example.minecraft.tile.registerExampleTileLabels
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionReplayMarker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameDefinition
@@ -99,6 +100,7 @@ open class ExampleMinecraftMahjongExtension :
                     descriptionKey = ExampleMinecraftMessageKeys.REVEAL_HAND_DESCRIPTION,
                     cardBodyKey = ExampleMinecraftMessageKeys.REVEAL_HAND_CARD_BODY,
                     cardHintKey = ExampleMinecraftMessageKeys.REVEAL_HAND_CARD_HINT,
+                    replayMarker = GameActionReplayMarker.DECLARATION,
                 ),
             ),
         )

@@ -114,6 +114,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PlannedTileMotion
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PlannedTileMotionSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableStepMotionPlanner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileArrangement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileArrangementInput
@@ -125,7 +126,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionPlanner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UnsortedHandTiles
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.WinCelebrationEffectSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.backAppearance
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toArrangementState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -677,17 +680,14 @@ class FabricGamePresentationPublisher(
             excludedTileIds = rearrangedTileIds,
             dropsOnArrival = { tileId -> state.physicalWallLayout == null && resolved.findTile(tileId) == null },
         )
-        // 一起落到同一排的牌只播一次落地聲。
-        val soundTileIds = motions.groupBy { it.kind to it.toRow }.values.mapTo(mutableSetOf()) { group -> group.first().tileId }
-        // 先離開、再讓位、最後從牌牆摸進來；後一段等前一段完成。
         val phaseStarts = TableStepMotionPlanner.phaseStartTicks(motions)
+        val tileSteps = PlannedTileMotionSteps.forStep(motions, startGameTime)
         motions.forEach { motion ->
             val tile = resolved.findTile(motion.tileId) ?: (
                 if (motion.kind == TileMotionKind.DROP) spawnTableTile(spawnGateway, resolved.world, gameId, motion.tileId, motion.to) else null
                 ) ?: return@forEach
             tile.assignToTable(gameId)
-            val motionStart = startGameTime + phaseStarts.getValue(TableStepMotionPlanner.phaseOf(motion.kind))
-            TileAnimationSteps.schedulePlannedMotion(tile, motion, motionStart, playLandingSound = motion.tileId in soundTileIds)
+            TileAnimationSteps.schedule(tile, tileSteps.getValue(motion.tileId))
         }
         privateHandOrderSender.sendStep(
             tableId = gameId,
@@ -797,7 +797,7 @@ class FabricGamePresentationPublisher(
                 controllerZ = resolved.location.z,
                 tableFacing = resolved.facing,
                 seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
-                tableState = state,
+                table = state.toArrangementState(),
                 tileLayout = tileLayoutFor(state),
                 cornerWidthBySeat = describerFor(state).cornerWidthsBySeat(state),
                 handPoseStates = tilePoseStates(state, module),
@@ -1090,9 +1090,8 @@ class FabricGamePresentationPublisher(
      * 順序（`Hand.organize`，不論贏家原本是否啟用自動整理手牌），委託
      * [MahjongPlayerAreaPresenter.presentWinCelebration] 排定「重排 → （自摸牌單獨倒下 →）等待 → 立牌一起
      * 倒下」序列，最後把算出來的「立牌全部倒下完成」絕對 game time 交給 [effectScheduler] 接續排定
-     * 降臨特效——特效鎖定的目標位置固定是 [WinCelebrationRequest.winningTileId] 目前所在座標：自摸時它已經併入贏家手牌、
-     * 停在整理後的格位；榮和／搶槓時它仍在放銃者的牌河或副露區，天然就是「胡牌張目前所在座標」，
-     * 不需要額外判斷。
+     * 降臨特效——特效鎖定的目標位置固定是 [WinCelebrationRequest.winningTileId] 目前所在座標：自摸時它不併入整理後的手牌，
+     * 而是放在手牌右邊剛摸到的牌的位置；榮和／搶槓時它仍在放銃者的牌河或副露區；不攤牌時它留在原處。
      *
      * 同一請求包含所有贏家，逐位排定理牌與倒牌，再以最晚的倒牌完成時間排定一次共用特效。
      * 一炮多響的贏家共用 [WinCelebrationRequest.winningTileId] 指定的和牌張。
@@ -1367,8 +1366,8 @@ class FabricGamePresentationPublisher(
             requestedWinner.seatIndex to (organizedHand.tiles to melds)
         }
         if (handLaydownEndGameTime != null) {
-            val effectStartGameTime = checkNotNull(handLaydownEndGameTime) + MahjongTileTableLayout.WIN_PRE_EFFECT_DELAY_TICKS
-            val effectEndGameTime = effectStartGameTime + MahjongTileTableLayout.WIN_EFFECT_DURATION_TICKS
+            val effectStartGameTime = checkNotNull(handLaydownEndGameTime) + WinCelebrationEffectSteps.START_DELAY_TICKS
+            val effectEndGameTime = effectStartGameTime + WinCelebrationEffectSteps.DURATION_TICKS
             effectScheduler.schedule(
                 world = resolved.world,
                 tableId = gameId,
@@ -1649,15 +1648,9 @@ class FabricGamePresentationPublisher(
      * @param dealerSeatIndex 此次牌牆呈現使用的莊家座位。
      * @return 與砌牆、開門及後續更新共用的桌邊對應。
      */
-    private fun wallSideLayout(state: TableState, dealerSeatIndex: Int): MahjongTileWallSideLayout {
-        val arrangement = checkNotNull(moduleRegistry.getModule(state.config).createWallLayout(state.players.size)) {
-            "Rule provides no wall layout"
-        }.sideArrangement(dealerSeatIndex)
-        return MahjongTileWallSideLayout.resolve(
-            arrangement = arrangement,
-            dealerSide = MahjongTableSeatLayout.forPlayerCount(state.players.size).sideOf(dealerSeatIndex),
-        )
-    }
+    private fun wallSideLayout(state: TableState, dealerSeatIndex: Int): MahjongTileWallSideLayout = checkNotNull(
+        MahjongTileWallSideLayout.forRule(moduleRegistry.getModule(state.config), state.players.size, dealerSeatIndex),
+    ) { "Rule provides no wall layout" }
 
     /**
      * 在伺服器主執行緒解析位置、世界、水平朝向及對應的麻將桌方塊實體。

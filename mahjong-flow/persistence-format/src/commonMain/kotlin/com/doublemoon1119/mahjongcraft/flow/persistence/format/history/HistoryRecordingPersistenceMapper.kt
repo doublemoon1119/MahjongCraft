@@ -212,6 +212,7 @@ class HistoryRecordingPersistenceMapper(
             outcomeId = fact.outcomeId,
             winDetails = fact.winDetails.map { it.toPersistenceDto(registries.componentViews) },
             responsiblePlayerIds = fact.responsiblePlayerIds.map(Uuid::toString),
+            winningTileId = fact.winningTileId?.toString(),
         )
         is HistoryFact.MatchCompleted -> HistoryFactPersistenceDto.MatchCompleted(
             reasonId = fact.reasonId,
@@ -293,6 +294,7 @@ class HistoryRecordingPersistenceMapper(
             outcomeId = dto.outcomeId,
             winDetails = dto.winDetails.map { it.toDomain(registries.componentViews) },
             responsiblePlayerIds = dto.responsiblePlayerIds.map(Uuid::parse),
+            winningTileId = dto.winningTileId?.let(Uuid::parse),
         )
         is HistoryFactPersistenceDto.MatchCompleted -> HistoryFact.MatchCompleted(
             reasonId = dto.reasonId,

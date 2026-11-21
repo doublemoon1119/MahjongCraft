@@ -14,6 +14,7 @@ import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.world.ClientWorld
+import net.minecraft.entity.Entity
 import net.minecraft.resource.ResourceManager
 import net.minecraft.resource.ResourceType
 import net.minecraft.util.Identifier
@@ -164,6 +165,32 @@ internal class ClientAiCharacterPreviews(
         if (!hasFactory(character.preview?.capabilityId ?: return false)) return false
         val model = models.request(character) ?: return false
         return attempt(character) { GuiEntityModelRenderer.render(model.handle.entity, context, area, mouseX, mouseY) } == true
+    }
+
+    /**
+     * 取得可放進場景直接繪製的獨立模型；建立工作在 tick 中排隊執行，繪製失敗後的等待期間不回傳。
+     *
+     * 模型與卡片預覽共用同一份快取，呼叫端畫完後須讓它離開座位等暫時狀態。
+     *
+     * @param snapshot 歷史保存的完整外觀。
+     * @return 已建立的模型；排隊中、能力缺失或等待重試時為 null。
+     */
+    fun sceneModel(snapshot: AiCharacterSnapshot?): Entity? {
+        if (world !== MinecraftClient.getInstance().world) return null
+        val character = snapshot?.definition ?: return null
+        if (!hasFactory(character.preview?.capabilityId ?: return null)) return null
+        if (ticks < modelRetryAt.getOrElse(character) { 0L }) return null
+        return models.request(character)?.handle?.entity
+    }
+
+    /**
+     * 隔離繪製 [sceneModel] 模型時提供者造成的失敗；同類錯誤僅回報一次，失敗的外觀在等待重試期間不再提供模型。
+     *
+     * @param snapshot 模型所屬的外觀。
+     * @param draw 繪製工作。
+     */
+    fun guardSceneModel(snapshot: AiCharacterSnapshot, draw: () -> Unit) {
+        attempt(snapshot.definition) { draw() }
     }
 
     /**
