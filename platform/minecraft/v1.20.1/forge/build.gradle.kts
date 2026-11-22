@@ -22,6 +22,9 @@ version = libs.versions.minecraft.mod.version.get()
 /** Forge 專用 mixin 的設定檔名稱。 */
 val forgeMixinConfig = "mahjongcraft.forge.mixins.json"
 
+/** 與 Fabric 共用、放在 :minecraft_v1.20.1_mod 的 mixin 的設定檔名稱。 */
+val sharedMixinConfig = "mahjongcraft.mixins.json"
+
 configure<MinecraftModPackagingExtension> {
     // 載入器接點尚未全部實作，不交付給玩家。
     distributable.set(false)
@@ -75,6 +78,10 @@ dependencies {
     compileOnly(mc1201.oculus)
     // 產生 Forge 執行時名稱用的 mixin refmap。
     annotationProcessor(variantOf(mc1201.mixin) { classifier("processor") })
+    // 共用的 mixin 使用 MixinExtras；Forge 1.20.1 沒有附帶，開發執行由這個依賴提供，正式 JAR 以 jar-in-jar 附帶。
+    compileOnly(mc1201.mixinextras.common)
+    annotationProcessor(mc1201.mixinextras.common)
+    implementation(mc1201.mixinextras.forge)
 }
 
 // 正式 JAR 以 jar-in-jar 附帶函式庫；Kotlin for Forge 已提供的函式庫不附帶。
@@ -103,6 +110,7 @@ val jarJarExternalLibraries = configurations.create("jarJarExternalLibraries") {
 }
 dependencies {
     minecraftModLibraries.addTo(jarJarExternalLibraries.name, kinds = setOf(MinecraftModLibraryKind.EXTERNAL), excludeRuntimeProvided = true)
+    jarJarExternalLibraries(mc1201.mixinextras.forge)
 }
 tasks.named<JarJar>("jarJar") {
     configuration(jarJarExternalLibraries)
@@ -111,13 +119,14 @@ tasks.named<JarJar>("jarJar") {
 mixin {
     add(sourceSets.main.get(), "mahjongcraft.refmap.json")
     config(forgeMixinConfig)
+    config(sharedMixinConfig)
 }
 
 tasks.jar {
     // Koin 編譯外掛產生的 hints 只在編譯期使用；minecraft_common 的 JAR 也有這個套件，Forge 不允許兩個 JAR 有同名套件。
     exclude("org/koin/plugin/hints/**")
     // ModDevGradle 不會寫入這個屬性；正式環境的 Forge 只從這裡找到 mixin 設定。
-    manifest.attributes("MixinConfigs" to forgeMixinConfig)
+    manifest.attributes("MixinConfigs" to listOf(forgeMixinConfig, sharedMixinConfig).joinToString(","))
 }
 
 val verifyNoSplitPackages = tasks.register<VerifyNoSplitPackagesTask>("verifyNoSplitPackages") {

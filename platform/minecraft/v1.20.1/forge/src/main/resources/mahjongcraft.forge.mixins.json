@@ -7,7 +7,11 @@
   "mixins": [
     "LevelChunkMixin",
     "ServerLevelEntityCallbacksMixin",
-    "ServerPlayerGameModeMixin"
+    "ServerPlayerGameModeMixin",
+    "MahjongTileItemMixin"
+  ],
+  "client": [
+    "ModelBakeryMixin"
   ],
   "injectors": {
     "defaultRequire": 1

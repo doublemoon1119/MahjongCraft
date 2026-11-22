@@ -23,7 +23,7 @@ import org.koin.core.Koin
 import org.koin.core.context.startKoin
 import thedarkcolour.kotlinforforge.forge.MOD_BUS
 
-/** Forge mod 的初始化入口；安裝 Forge 實作、組裝 runtime graph、登記擴充後交給 [MahjongCraftBootstrap]。 */
+/** Forge mod 的初始化入口；安裝 Forge 實作、組裝 runtime graph、登記擴充後交給 [MahjongCraftBootstrap]，用戶端再交給 [MahjongCraftForgeClient]。 */
 @Mod(MinecraftModMetadata.MOD_ID)
 object MahjongCraftForge {
     init {
@@ -44,6 +44,7 @@ object MahjongCraftForge {
             extensions = ForgeExtensionDiscovery.discover(),
         )
         MahjongCraftBootstrap(koin = koin, events = ForgeServerEvents, registrar = registrar).initialize(developmentTools)
+        if (ForgeLoaderPlatform.isClient) MahjongCraftForgeClient.initialize(MOD_BUS)
     }
 
     /**
