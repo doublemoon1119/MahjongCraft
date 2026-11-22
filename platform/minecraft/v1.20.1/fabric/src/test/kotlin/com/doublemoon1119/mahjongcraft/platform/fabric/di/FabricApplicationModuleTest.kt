@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerStateStore
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpdatePublisher
@@ -52,6 +53,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
@@ -62,6 +64,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.ServerConfi
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DecisionTimerScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.TableLocationPersistence
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.PlayerConnectionLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatProviderRegistryImpl
@@ -88,6 +91,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPre
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileSetAsideDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.LoaderPlatform
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.GameActionCandidateResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.PlayerDecisionPromptFactory
@@ -123,6 +127,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
+import org.koin.dsl.module
+import java.nio.file.Path
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -455,7 +461,7 @@ class FabricApplicationModuleTest {
     fun `client graph resolves integrated server services and client stores`() {
         val koin = startKoin {
             allowOverride(false)
-            modules(fabricServerModule, fabricClientModule)
+            modules(fabricServerModule, modClientModule)
         }.koin
 
         koin.get<GameFlowCoordinator>()
@@ -473,17 +479,55 @@ class FabricApplicationModuleTest {
         assertIs<TileDisplayNameRegistryImpl>(presentation.tileDisplayNameRegistry)
     }
 
+    /**
+     * 與載入器無關的 server 與 client 模組，只要再提供載入器資訊與擴充失敗判斷就能組出完整服務，
+     * 且不含 Fabric 擴充登記使用的集合。
+     */
+    @Test
+    fun `loader neutral graphs only need loader bindings`() {
+        val loaderModule = module {
+            single<LoaderPlatform> { TestLoaderPlatform }
+            single<ExtensionFailurePolicy> { ExtensionFailurePolicy.Default }
+        }
+        val koin = startKoin {
+            allowOverride(false)
+            modules(modServerModule, modClientModule, loaderModule)
+        }.koin
+
+        koin.get<GameFlowCoordinator>()
+        koin.get<MahjongTableRoomService>()
+        koin.get<PlayerConnectionLifecycleService>()
+        koin.get<CoreExtensionRegistries>()
+        koin.get<MinecraftPresentationRegistries>()
+        koin.get<RuntimeMetadata>()
+        koin.get<MinecraftEnvironment>()
+        koin.get<ClientMahjongStateStore>()
+        koin.get<MahjongClientConfigStore>()
+        assertNull(koin.getOrNull<FabricExtensionRegistries>())
+    }
+
     /** 只以介面取用的服務，在 client 依賴圖（含 integrated server）中解析到預期的實作，且與實作型別取得的是同一個 single。 */
     @Test
     fun `graphs bind services that consumers resolve by interface`() {
         val koin = startKoin {
             allowOverride(false)
-            modules(fabricServerModule, fabricClientModule)
+            modules(fabricServerModule, modClientModule)
         }.koin
 
         assertSame(koin.get<BuiltInDefaultGameConfigProvider>(), koin.get<DefaultGameConfigProvider>())
         assertSame(koin.get<MahjongStoolSeatProvider>(), koin.get<SeatProvider<*, *>>())
         assertSame(koin.get<ClientCoroutineScope>(), koin.get<CoroutineScope>())
         assertSame(koin.get<ClientThreadCoroutineDispatcher>(), koin.get<CoroutineDispatcher>())
+    }
+
+    /** 測試用的載入器資訊，不依賴任何載入器。 */
+    private object TestLoaderPlatform : LoaderPlatform {
+        override val name: String = "test"
+        override val isClient: Boolean = true
+        override val isDevelopment: Boolean = false
+        override val configDirectory: Path = Path.of("config")
+        override val modVersion: String = "test"
+
+        override fun isModLoaded(modId: String): Boolean = false
     }
 }

@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricServerModule
+import com.doublemoon1119.mahjongcraft.platform.fabric.di.modServerModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.animation.FabricDebugAnimationCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.character.FabricDebugSeatedParticipantCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.FabricDebugDecisionCommand
@@ -32,7 +32,7 @@ import org.koin.dsl.bind
 import org.koin.dsl.module
 import org.koin.plugin.module.dsl.single
 
-/** debug 工具的伺服器服務；開發環境載入本體的 Koin，依賴本體 [fabricServerModule] 提供的服務。 */
+/** debug 工具的伺服器服務；開發環境載入本體的 Koin，依賴本體 [modServerModule] 提供的服務。 */
 val debugServerModule: Module = module {
     single<FabricDebugSeatedParticipantCommand>()
     single<FabricDebugCommand>()

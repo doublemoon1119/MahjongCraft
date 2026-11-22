@@ -73,12 +73,12 @@ import org.koin.dsl.module
 import org.koin.plugin.module.dsl.single
 
 /**
- * Fabric client 使用的 Koin 定義。
+ * Minecraft client 使用的 Koin 定義，與載入器無關。
  *
  * 此 module 只由 Minecraft client graph 載入，包含 HUD、renderer 與其他 client-only adapter；dedicated server graph 不載入此 module。
  */
-val fabricClientModule = module {
-    includes(flowClientModule, fabricCommonModule)
+val modClientModule = module {
+    includes(flowClientModule, modCommonModule)
 
     single<AutomaticControlDisplayResolver>()
     single<AutomaticControlStatusHudRenderer>()
