@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchiev
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.PlayerAchievements
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.StatisticThreshold
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.achievement.AchievementGrantGateway
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.createTestAppCoroutineScope

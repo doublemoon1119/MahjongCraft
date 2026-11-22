@@ -12,7 +12,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerAiPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.vocabularyActionId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionPlayerRelationDto
@@ -20,6 +19,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionTileSelectionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.GameActionCandidate
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.player.ServerAiPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import java.security.MessageDigest

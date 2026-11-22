@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.seating
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableLookup
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatAssignmentCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout

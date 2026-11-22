@@ -6,6 +6,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.BuiltInRuleC
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowser
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.CloseRuleCatalogueToGame
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.ReturnRuleCatalogueToScreen
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.RuleCatalogueExit
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents

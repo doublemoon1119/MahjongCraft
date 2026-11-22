@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSetti
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryQuerySender
 
 /**
  * 使用 Fabric 歷史查詢頻道傳送要求的實作。

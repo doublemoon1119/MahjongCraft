@@ -5,6 +5,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.GameManagedEntityNbt
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongScoringStickDenominationNbt
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TablePropIdentityNbt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDenomination
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDimensions
 import net.minecraft.nbt.CompoundTag

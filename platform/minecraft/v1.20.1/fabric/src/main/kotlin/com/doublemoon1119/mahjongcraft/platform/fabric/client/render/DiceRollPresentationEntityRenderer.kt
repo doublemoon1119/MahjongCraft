@@ -2,8 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.DiceRollPresentationEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDicePoint
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongDicePoint
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.math.Axis

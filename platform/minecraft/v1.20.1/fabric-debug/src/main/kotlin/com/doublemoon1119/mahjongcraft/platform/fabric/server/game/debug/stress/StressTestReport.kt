@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryWriterStage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryWriterStage
 
 /**
  * 壓力測試一次執行的結果與目前數據。

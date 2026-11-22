@@ -7,10 +7,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MinecraftMatchAbortReasonIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.OrphanedTablePolicy
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.OrphanedTableCleanupResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlin.uuid.Uuid

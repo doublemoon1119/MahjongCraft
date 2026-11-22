@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigUpdateResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutoSortHandPreferenceSender
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Comparator

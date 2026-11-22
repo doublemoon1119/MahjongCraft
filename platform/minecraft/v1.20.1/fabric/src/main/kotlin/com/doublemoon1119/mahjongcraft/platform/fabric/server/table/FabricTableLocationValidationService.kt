@@ -1,9 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableLookup
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableCleanupQueue
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TablePropRefreshQueue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.DimensionChunkKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEntry

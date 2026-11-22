@@ -9,6 +9,11 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.text.historyStorageMessag
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.prefixedConfigMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryManagementResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryRetryResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryStorageSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.cachedSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.commandErrorKey
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback

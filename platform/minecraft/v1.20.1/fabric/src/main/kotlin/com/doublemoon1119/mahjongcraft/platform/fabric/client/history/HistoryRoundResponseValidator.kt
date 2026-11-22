@@ -15,7 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetail
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinnerDetailsDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
-import com.doublemoon1119.mahjongcraft.platform.fabric.network.HistoryQueryLimits
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.HistoryQueryLimits
 import kotlin.uuid.Uuid
 
 /** 單局歷史回覆的可接受結果。 */

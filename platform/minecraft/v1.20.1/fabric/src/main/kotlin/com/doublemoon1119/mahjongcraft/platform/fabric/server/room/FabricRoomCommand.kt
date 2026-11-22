@@ -2,10 +2,13 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.room
 
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.LocatedMahjongTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricRoomConfigScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.LocatedMahjongTable
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.RoomMemberCandidate
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.TableCoordinateArgument
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.resolveDisplayText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher

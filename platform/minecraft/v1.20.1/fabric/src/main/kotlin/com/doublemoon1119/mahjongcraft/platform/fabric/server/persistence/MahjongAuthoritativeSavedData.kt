@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence
 
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.AuthoritativeStatePersistenceCodec
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterMetadataCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterParticipantCapture
@@ -11,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterStateSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import net.minecraft.nbt.CompoundTag

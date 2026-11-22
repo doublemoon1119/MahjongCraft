@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.character
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.RoomFigureArea
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.RoomModelPreviewLayout
 import com.mojang.blaze3d.platform.Lighting
 import com.mojang.blaze3d.systems.RenderSystem
 import net.minecraft.client.Minecraft

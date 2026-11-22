@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.api.table
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.playSpaceCells
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableLookup
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.playSpaceCells
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSpace
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel

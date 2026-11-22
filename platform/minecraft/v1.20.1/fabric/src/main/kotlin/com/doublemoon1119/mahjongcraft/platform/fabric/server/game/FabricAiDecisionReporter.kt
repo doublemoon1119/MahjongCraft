@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionReporter
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import kotlin.uuid.Uuid
 
 /** 把 AI 決策沒有等到策略結果的情況記成 warn。 */

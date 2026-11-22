@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueExit
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueConfigSource
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.RuleCatalogueExit
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.Screen
 import kotlin.uuid.Uuid

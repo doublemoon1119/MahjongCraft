@@ -17,7 +17,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.LeaveRoomUseCase
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricMahjongRooms
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomParticipant
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomVacancy
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricRoomStartSeating
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatEnvironment
@@ -31,6 +30,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.RoomDiscover
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.SeatedParticipantObservation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.SeatedParticipantSources
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.SeatedParticipantStartPreflight
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.SeatedParticipantPresence
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.DimensionChunkKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableInteractionReach

@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.registry
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongDiceItem
-import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongHandbookItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongRulerItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongScoringStickItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.item.MahjongHandbookItem
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerColor
 import net.minecraft.core.Registry
 import net.minecraft.core.registries.BuiltInRegistries

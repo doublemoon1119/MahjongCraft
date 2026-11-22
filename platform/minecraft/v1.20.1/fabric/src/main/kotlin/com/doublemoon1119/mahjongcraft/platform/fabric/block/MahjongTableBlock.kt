@@ -3,7 +3,13 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.block
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.MahjongTableStructureBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.MahjongTables
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableDesign
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTablePart
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableStructure
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.scheduleWaterTickIfWaterlogged
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.waterloggedAt
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.waterloggedFluidState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel

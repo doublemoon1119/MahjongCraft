@@ -1,13 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOption
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOverlay
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.FormScreenLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOption
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOverlay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.FormScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.screens.Screen

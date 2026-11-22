@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.entity
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.entity.Entity
 import java.util.concurrent.atomic.AtomicReference

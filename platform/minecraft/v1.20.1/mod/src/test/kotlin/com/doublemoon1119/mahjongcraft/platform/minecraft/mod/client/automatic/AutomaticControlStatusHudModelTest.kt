@@ -1,0 +1,72 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic
+
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlSnapshotDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInMinecraftAutomaticControlIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+
+/** 驗證常駐 HUD 僅使用本機已保存偏好與本局權威快照。 */
+class AutomaticControlStatusHudModelTest {
+    /** 已註冊內建自動操作名稱的測試 resolver。 */
+    private val displays = AutomaticControlDisplayResolver(
+        registry = AutomaticControlDisplayRegistryImpl().apply {
+            BuiltInMinecraftMahjongExtension.registerAutomaticControlDisplays(this)
+            freeze()
+        },
+    )
+
+    /** 永久自動理牌偏好排第一，其餘本局控制項依權威快照與顯示順序呈現。 */
+    @Test
+    fun `auto sort is first and round controls use authoritative state`() {
+        val rows = automaticControlStatusRows(
+            activeGameId = "game-a",
+            snapshot = snapshot(
+                supported = setOf("mahjongcraft:auto_tsumogiri", "mahjongcraft:auto_win", "example:custom"),
+                enabled = setOf("mahjongcraft:auto_win", "example:custom"),
+            ),
+            autoSortHandEnabled = true,
+            displays = displays,
+        )
+
+        assertEquals(
+            expected = listOf(
+                BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND,
+                "mahjongcraft:auto_win",
+                "mahjongcraft:auto_tsumogiri",
+                "example:custom",
+            ),
+            actual = rows.map { it.controlId },
+        )
+        assertEquals(listOf(true, true, false, true), rows.map { it.enabled })
+        assertEquals("example:custom", rows.last().label.string)
+    }
+
+    /** 缺少快照、快照屬於舊對局或沒有本局控制項時隱藏整個 HUD。 */
+    @Test
+    fun `missing stale or unsupported snapshot hides entire hud`() {
+        assertTrue(automaticControlStatusRows("game-a", null, true, displays).isEmpty())
+        assertTrue(automaticControlStatusRows("game-b", snapshot(), true, displays).isEmpty())
+        assertTrue(automaticControlStatusRows("game-a", snapshot(supported = emptySet()), true, displays).isEmpty())
+    }
+
+    /**
+     * 建立測試用自動操作權威快照。
+     *
+     * @param supported 伺服器支援的控制項 ID。
+     * @param enabled 伺服器目前啟用的控制項 ID。
+     * @return 固定屬於 `game-a` 的快照。
+     */
+    private fun snapshot(
+        supported: Set<String> = setOf("mahjongcraft:auto_win"),
+        enabled: Set<String> = emptySet(),
+    ) = AutomaticControlSnapshotDto(
+        gameId = "game-a",
+        ruleModuleId = "mahjongcraft:riichi",
+        revision = 1,
+        supportedControlIds = supported,
+        enabledControlIds = enabled,
+    )
+}

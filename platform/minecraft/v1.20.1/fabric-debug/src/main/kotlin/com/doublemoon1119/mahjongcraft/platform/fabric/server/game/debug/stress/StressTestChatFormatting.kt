@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryWriterStage
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.prefixedConfigMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.StressDebugKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryWriterStage
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent

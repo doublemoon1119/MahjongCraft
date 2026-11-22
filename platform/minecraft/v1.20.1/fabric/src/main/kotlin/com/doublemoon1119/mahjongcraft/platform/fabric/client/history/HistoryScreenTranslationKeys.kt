@@ -8,6 +8,9 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScop
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortDirectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortFieldDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseFailure
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseFilterError
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseFilterField
 
 /** 結果篩選選項的顯示文字翻譯鍵。 */
 internal val HistoryOutcomeFilterDto.translationKey: String

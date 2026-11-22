@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlSnapshotDto
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.AutomaticControlDisplayResolver
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlDraftState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.AutomaticControlDisplayResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutomaticControlDraftState
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test

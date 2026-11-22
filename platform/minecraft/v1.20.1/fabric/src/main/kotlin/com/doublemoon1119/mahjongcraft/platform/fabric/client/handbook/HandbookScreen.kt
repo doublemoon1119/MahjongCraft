@@ -1,11 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.handbook
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.fitClientText
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.handbook.MinecraftHandbookScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.fitClientText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScrollState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.handbook.HandbookEntry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.handbook.HandbookScreenLayout
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component

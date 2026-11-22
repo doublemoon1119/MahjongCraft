@@ -1,12 +1,12 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.registry
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongStoolBlock
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongStoolDesign
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableDesign
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongStoolDesign
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableDesign
 import net.fabricmc.fabric.api.`object`.builder.v1.block.entity.FabricBlockEntityTypeBuilder
 import net.minecraft.core.Registry
 import net.minecraft.core.registries.BuiltInRegistries

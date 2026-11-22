@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationQueueDriver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag

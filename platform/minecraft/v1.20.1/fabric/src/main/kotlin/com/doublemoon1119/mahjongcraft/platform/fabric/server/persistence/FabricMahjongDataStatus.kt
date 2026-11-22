@@ -1,6 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.bracketedInteractiveLabel
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.MahjongDataLoadCause
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.MahjongDataProblem
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.MahjongDataSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.ClickEvent

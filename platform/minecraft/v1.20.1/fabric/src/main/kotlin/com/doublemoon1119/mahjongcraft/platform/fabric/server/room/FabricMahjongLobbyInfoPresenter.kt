@@ -2,10 +2,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.room
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongLobbyInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout

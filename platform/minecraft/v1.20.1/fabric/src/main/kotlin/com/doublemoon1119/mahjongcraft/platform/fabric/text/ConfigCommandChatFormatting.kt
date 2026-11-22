@@ -9,6 +9,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MissingAiPlayer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.OrphanedTablePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.TableBreakPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.ConfigPresentationEntry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.ConfigPresentationSection
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component

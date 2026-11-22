@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.Headl
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessStepTimer
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryWriterStage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryWriterStage
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledHeadlessHistoryRegistries
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test

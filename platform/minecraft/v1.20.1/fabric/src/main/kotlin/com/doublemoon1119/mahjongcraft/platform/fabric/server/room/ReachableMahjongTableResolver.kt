@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.room
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.LocatedMahjongTable
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.LocatedMahjongTable
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.DimensionChunkKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSpace
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableInteractionReach

@@ -4,9 +4,13 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresentation
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPresentationEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SettlementRankingColumnId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SettlementRankingLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SettlementRankingSettledEffect
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.WorldPanelRenderType
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ExhaustiveDrawSettlementPlayerSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ScoreRankingAnimation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.exhaustiveDrawSettlementStatusTranslationKey

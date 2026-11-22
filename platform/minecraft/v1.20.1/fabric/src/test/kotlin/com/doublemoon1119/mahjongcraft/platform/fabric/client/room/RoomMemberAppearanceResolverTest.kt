@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.RoomMemberAppearanceResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceDefinition

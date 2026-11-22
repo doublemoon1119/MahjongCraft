@@ -1,8 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.guide
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideViewer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.guide.MinecraftGuideScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideAction
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideBlock
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideTileItem
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideViewer
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test

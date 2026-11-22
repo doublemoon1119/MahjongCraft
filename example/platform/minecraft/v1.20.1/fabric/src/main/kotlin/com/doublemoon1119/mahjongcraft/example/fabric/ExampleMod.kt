@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.example.fabric.event.ExampleGameEventChat
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurniture
 import com.doublemoon1119.mahjongcraft.example.fabric.registry.ExampleItemGroups
 import com.doublemoon1119.mahjongcraft.example.fabric.table.ExampleHandRevealChipEntities
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import net.fabricmc.api.ModInitializer
 
 /** 範例 mod 的共用啟動入口，不建立第二份 MahjongCraft 依賴注入容器。 */

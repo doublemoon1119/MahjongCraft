@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.handbook
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.fitClientText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.fitClientText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.handbook.HandbookEntry
 import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics

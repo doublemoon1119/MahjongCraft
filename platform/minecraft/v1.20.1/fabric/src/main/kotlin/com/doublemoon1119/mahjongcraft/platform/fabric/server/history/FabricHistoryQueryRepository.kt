@@ -29,6 +29,18 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySum
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundEvents
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryManagementResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryStoredMatchState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistoryAiFilter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistoryCursor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistoryIntegrityFilter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistoryMatchOutcome
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistoryOutcomeFilter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistoryPageDirection
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistoryQuery
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistoryQueryEntry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistorySortDirection
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistorySortField
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 

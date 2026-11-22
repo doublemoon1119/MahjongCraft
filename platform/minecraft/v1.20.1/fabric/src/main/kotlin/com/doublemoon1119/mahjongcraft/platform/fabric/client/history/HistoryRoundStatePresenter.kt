@@ -7,6 +7,9 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.MeldTypeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RelativeDirectionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryTileGroupLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryTileGroupLayoutCalculator
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryTilePlacement
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.ComponentUtils
 

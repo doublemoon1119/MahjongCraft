@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryQueryAdmission
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryQueryAdmissionLimits
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.createTestAppCoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher

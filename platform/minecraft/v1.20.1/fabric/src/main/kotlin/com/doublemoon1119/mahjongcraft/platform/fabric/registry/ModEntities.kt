@@ -11,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRulerEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongSoundTimelineEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileSelectionConfirmEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MatchSettlementPresentationEntity
@@ -20,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationEffe
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationShowcaseEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropDefinitions

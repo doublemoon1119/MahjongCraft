@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.tableprop
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.CharacterPreviewCache
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.CharacterPreviewCache
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropKindDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropTarget
 import net.fabricmc.api.EnvType

@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.MahjongTableStructureBlock
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.playSpaceCells
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.playSpaceCells
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSpace
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSpaceObstruction
 import net.minecraft.core.BlockPos

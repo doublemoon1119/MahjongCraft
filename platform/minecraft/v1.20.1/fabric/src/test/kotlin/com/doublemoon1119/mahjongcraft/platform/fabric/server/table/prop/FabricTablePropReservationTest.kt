@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TablePropRefreshQueue
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TablePropRefreshQueue
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

@@ -7,6 +7,7 @@
 
 plugins {
     alias(libs.plugins.mahjongcraft.minecraft.mod)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.moddev.legacyforge)
 }
 
@@ -15,6 +16,8 @@ version = libs.versions.minecraft.mod.version.get()
 legacyForge {
     // 原版模式：只提供套用 Mojang 名稱的原版 Minecraft，不含任何載入器。
     mcpVersion = libs.versions.minecraft1201.get()
+    // 預設讀取 src/main/resources/META-INF/accesstransformer.cfg；開放的對象與 Fabric 的 access widener 相同，Forge 執行時讀同一份。
+    validateAccessTransformers = true
     // 測試同樣以原版 Minecraft 編譯與執行。
     addModdingDependenciesTo(sourceSets.test.get())
 }
@@ -27,8 +30,38 @@ tasks.withType<net.neoforged.nfrtgradle.NeoFormRuntimeTask>().configureEach {
     )
 }
 
+tasks.withType<Test>().configureEach {
+    // 將測試期間由 Minecraft logging 建立的相對檔案限制在可由 clean 移除的 build 目錄。
+    val testRunDirectory = layout.buildDirectory.dir("test-runs/$name")
+    workingDir(testRunDirectory)
+    doFirst {
+        testRunDirectory.get().asFile.mkdirs()
+    }
+}
+
+// 與載入器模組使用相同的專案模組與函式庫；載入器模組編譯這裡的原始碼時自行宣告同樣的依賴，並負責打包。
 dependencies {
     implementation(project(":minecraft_common"))
+    implementation(project(":mahjong-logic"))
+    implementation(project(":mahjong-ai"))
+    implementation(project(":mahjong-flow:mahjong-flow-common"))
+    implementation(project(":mahjong-flow:mahjong-flow-client"))
+    implementation(project(":mahjong-flow:mahjong-flow-server"))
+    implementation(project(":mahjong-flow:mahjong-flow-network-dto"))
+    implementation(project(":mahjong-flow:mahjong-flow-persistence-format"))
+    implementation(project(":mahjong-extension-api"))
+    implementation(project(":mahjong-bundled-extensions"))
+    implementation(project.dependencies.platform(libs.koin.bom))
+    implementation(libs.koin.core)
+    implementation(libs.kotlinx.coroutines)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.ktoml.core)
+    implementation(libs.exposed.core)
+    implementation(libs.exposed.jdbc)
+    implementation(libs.sqlite.jdbc)
 
     testImplementation(kotlin("test"))
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(project(":testing:testing-mahjong-logic"))
+    testImplementation(project(":testing:testing-mahjong-flow"))
 }

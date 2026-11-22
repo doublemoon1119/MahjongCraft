@@ -11,6 +11,9 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.GameActionCandidate
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.HandTileCandidate
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.ResolvedGameActionCandidates
 import kotlin.uuid.Uuid
 
 /**

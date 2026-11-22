@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.network.AutomaticControlSnapshotSender
 import net.minecraft.server.level.ServerPlayer
 import kotlin.uuid.Uuid
 

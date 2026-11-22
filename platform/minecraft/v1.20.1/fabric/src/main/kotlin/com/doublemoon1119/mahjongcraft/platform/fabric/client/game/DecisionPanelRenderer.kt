@@ -1,12 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CardBackground
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ClaimedTileMarker
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.HorizontalScrollbar
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.wrapLinesBalanced
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionPlayerRelationDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionBounds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionCard
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionCardLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.CardBackground
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ClaimedTileMarker
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.HorizontalScrollbar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.wrapLinesBalanced
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphics

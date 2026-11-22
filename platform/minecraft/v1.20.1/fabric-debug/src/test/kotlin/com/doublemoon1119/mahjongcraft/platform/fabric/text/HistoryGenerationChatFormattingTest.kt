@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.text
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.HistoryGenerationFailure
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.HistoryGenerationProgress
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryDiskUsage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryDiskUsage
 import net.minecraft.ChatFormatting
 import kotlin.test.Test
 import kotlin.test.assertTrue

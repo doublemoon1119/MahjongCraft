@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClie
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileModelLoadingPlugin
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileOrientationDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ExhaustiveDrawSettlementTileFaceRenderType
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTilePreviewTexture

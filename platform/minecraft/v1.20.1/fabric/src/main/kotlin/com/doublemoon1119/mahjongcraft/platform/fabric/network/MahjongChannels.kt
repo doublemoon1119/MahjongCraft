@@ -28,6 +28,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTimer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryQuerySettingsPayload
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.C2SRateLimit
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.C2SRateLimits
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.HistoryQueryLimits
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerIdentityPayload
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyPayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultPayloadDto

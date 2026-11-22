@@ -6,9 +6,14 @@ import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementPresentationEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementRankingSnapshot
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementWinnerSnapshot
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.winSettlementTileGroups
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.PublicPlayerIndicatorTextResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SettlementRankingColumnId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SettlementRankingLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SettlementRankingSettledEffect
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.WorldPanelRenderType
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementRankingSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementWinnerSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.winSettlementTileGroups
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementTemplateKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.EntryEmphasis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExtensionPresentationField

@@ -8,8 +8,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.GameEventExclusions
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPlayerTableScope
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.GameEventExclusions
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
 import com.mojang.brigadier.tree.CommandNode
 import net.minecraft.commands.CommandSourceStack

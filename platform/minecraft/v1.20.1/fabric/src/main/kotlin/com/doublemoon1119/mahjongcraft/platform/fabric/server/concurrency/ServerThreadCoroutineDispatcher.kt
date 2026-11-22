@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency.MainThreadDrain
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency.MainThreadTaskQueue
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Delay

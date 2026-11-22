@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.guide
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ButtonRowLayout
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.FormScreenLayout
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.PixelScrollViewport
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.TabStripLayout
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ButtonRowLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.FormScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelScrollViewport
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScrollbarLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.TabStripLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
 
 /**
  * 「如何開始」畫面的版面：標題、三個頁籤、可捲動的內容區與底部按鈕列，左右邊界與設定類畫面相同。

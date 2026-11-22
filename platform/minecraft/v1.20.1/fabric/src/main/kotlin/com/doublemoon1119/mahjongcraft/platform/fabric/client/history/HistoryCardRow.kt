@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryCardStyle
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryTileGroupLayout
 import net.minecraft.network.chat.Component
 import net.minecraft.util.FormattedCharSequence
 import kotlin.math.ceil

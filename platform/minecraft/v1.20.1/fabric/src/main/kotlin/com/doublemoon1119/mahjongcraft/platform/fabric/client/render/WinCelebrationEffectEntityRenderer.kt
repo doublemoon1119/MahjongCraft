@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongVisualEffectKeys
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationEffectEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongVisualEffectKeys
 import com.mojang.blaze3d.vertex.PoseStack
 import net.minecraft.client.model.TridentModel
 import net.minecraft.client.model.geom.ModelLayers

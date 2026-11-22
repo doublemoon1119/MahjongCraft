@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutoSortHandPreferenceSender
 
 /**
  * 透過 Fabric 封包通道同步自動整理手牌偏好。

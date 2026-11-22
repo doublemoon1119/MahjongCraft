@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutomaticControlResultKind
+
 /**
  * 一筆本局自動操作指令完成後的結果。
  *

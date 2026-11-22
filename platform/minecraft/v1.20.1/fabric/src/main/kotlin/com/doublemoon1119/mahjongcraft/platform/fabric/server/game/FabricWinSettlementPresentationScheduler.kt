@@ -2,17 +2,17 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementDetailSnapshot
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementMeldSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementPresentationEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementRankingSnapshot
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementRevealTimingSnapshot
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementSoundCueSnapshot
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementWinnerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementDetailSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementMeldSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementRankingSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementRevealTimingSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementSoundCueSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementWinnerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementTemplateKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationTimelineAnchor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue

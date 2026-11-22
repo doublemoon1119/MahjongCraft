@@ -1,10 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableLookup
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableOverlayEntitySearch
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter

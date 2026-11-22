@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueExit
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueConfigSource
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.RuleCatalogueExit
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.Screen
 

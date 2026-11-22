@@ -2,8 +2,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.seating
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongStoolBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatGeometry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatCollisionScope
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatSupportCleanup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatCollisionPolicy
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel

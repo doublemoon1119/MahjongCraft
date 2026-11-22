@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.example.fabric
 
 import com.doublemoon1119.mahjongcraft.example.minecraft.ExampleMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.FixedMahjongTileModelPreparedData
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model.FixedMahjongTileModelPreparedData
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.packs.PackResources

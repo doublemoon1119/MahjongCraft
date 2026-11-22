@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ManagedTableNbt
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TablePropIdentityNbt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import net.minecraft.nbt.CompoundTag

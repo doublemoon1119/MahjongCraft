@@ -5,11 +5,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.character
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortHandler
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatingSessionFactory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.WorldParticipantPresenceMonitor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableInteractionReach
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job

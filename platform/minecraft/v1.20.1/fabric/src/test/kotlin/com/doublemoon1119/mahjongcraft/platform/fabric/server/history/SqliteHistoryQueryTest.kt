@@ -1,5 +1,16 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryStoredMatchState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistorySummaryCursor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistoryAiFilter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistoryCursor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistoryIntegrityFilter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistoryMatchOutcome
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistoryOutcomeFilter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistoryPageDirection
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistoryQuery
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistorySortDirection
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistorySortField
 import java.nio.file.Path
 import java.sql.DriverManager
 import kotlin.io.path.createTempDirectory

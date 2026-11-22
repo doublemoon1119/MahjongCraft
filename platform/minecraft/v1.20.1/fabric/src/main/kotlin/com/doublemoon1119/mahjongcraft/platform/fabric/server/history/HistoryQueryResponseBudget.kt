@@ -15,7 +15,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRe
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
-import com.doublemoon1119.mahjongcraft.platform.fabric.network.HistoryQueryLimits
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.HistoryQueryLimits
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.encodedHistoryResponseUtf8Size
 import kotlin.uuid.Uuid
 
 /**

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.FormScreenLayout
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.screens.Screen

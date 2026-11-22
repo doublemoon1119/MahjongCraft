@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.item
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModSounds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModSounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDenomination
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.InteractionHand

@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryWriterObserver
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryWriterStage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryWriterObserver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryWriterStage
 import kotlin.time.Duration
 
 /**

@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.config
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.configReloadFailureMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.prefixedConfigMessage
@@ -10,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.text.serverConfigShowMess
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback

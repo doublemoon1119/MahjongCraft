@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.mixin.client;
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.HiddenDebugHitboxEntity;
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.HiddenDebugHitboxEntity;
 import com.llamalad7.mixinextras.injector.WrapWithCondition;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;

@@ -1,14 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOption
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOverlay
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.PixelScrollState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.TabWidget
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.applyTabScroll
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.BuiltInRuleCatalogueCategoryIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.MinecraftRuleCatalogueScreenKeys
@@ -16,6 +9,16 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowser
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueConfigSource
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.CatalogueRect
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.RuleCatalogueExit
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.RuleCatalogueScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOption
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOverlay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelScrollState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.TabWidget
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.applyTabScroll
 import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics

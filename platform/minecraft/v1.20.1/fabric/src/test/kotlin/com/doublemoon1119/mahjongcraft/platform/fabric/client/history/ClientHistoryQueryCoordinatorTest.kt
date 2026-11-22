@@ -19,6 +19,10 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortDirec
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortFieldDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryResponseDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.ClientHistoryQueryCoordinator
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.ClientHistoryQuerySettings
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.ClientHistoryQueryState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryQuerySender
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

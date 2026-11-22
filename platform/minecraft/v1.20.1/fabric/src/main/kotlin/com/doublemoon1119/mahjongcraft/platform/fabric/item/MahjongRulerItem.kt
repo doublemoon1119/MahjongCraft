@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.item
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRulerEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModSounds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModSounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerColor
 import com.google.common.collect.ImmutableMultimap
 import com.google.common.collect.Multimap

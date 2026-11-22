@@ -12,6 +12,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjong
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.TablePresentationBusyPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.GameManagedEntityNbt
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTilePose
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MeldActionPopupTile
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.NonBlockingPresentationLeaseCodec
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TileActionPopupKind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TileActionPopupKindNbt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions

@@ -3,6 +3,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.CLIENT_COMMAND_ROOT
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.configSaveFailureMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.AutomaticControlCommandMode
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.AutomaticControlDisplayResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutomaticControlResultKind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.suggestion.Suggestions

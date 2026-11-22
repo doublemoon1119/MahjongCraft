@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.tile
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationQueueDriver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import kotlin.test.Test
 import kotlin.test.assertEquals

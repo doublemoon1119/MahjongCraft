@@ -1,6 +1,12 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.ClientHistoryArchiveStatusState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.ClientHistoryRequestGate
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.ClientHistoryRequestPriority
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryArchiveStatusTransport
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryArchiveStatusView
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseTiming
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay

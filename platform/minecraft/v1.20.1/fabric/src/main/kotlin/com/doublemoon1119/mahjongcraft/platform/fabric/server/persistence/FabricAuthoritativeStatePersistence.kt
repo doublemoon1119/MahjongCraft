@@ -7,10 +7,16 @@ import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateR
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateBusyException
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterParticipantCapture
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterStateSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.MahjongDataProblem
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.MahjongDataSource
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.attachPersistenceState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.classifyDataLoadFailure
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.loadSavedDataStrict
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.savedDataDisplayPath
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.FabricGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropSearchArea
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TablePropRefreshQueue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.core.BlockPos

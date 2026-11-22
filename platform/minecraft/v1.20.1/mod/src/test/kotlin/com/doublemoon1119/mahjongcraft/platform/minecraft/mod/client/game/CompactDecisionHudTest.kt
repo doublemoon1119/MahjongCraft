@@ -1,0 +1,257 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game
+
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.contents.TranslatableContents
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
+
+/** 驗證精簡 HUD 的顯示決策與版位。 */
+class CompactDecisionHudTest {
+    /** 說明可用畫面整行寬度，極窄畫面仍提供有效的換行寬度。 */
+    @Test
+    fun `uses screen space rather than the standard group width for descriptions`() {
+        assertEquals(838, compactDescriptionMaximumWidth(854))
+        assertEquals(1, compactDescriptionMaximumWidth(8))
+    }
+
+    /** 完整說明比標準群組寬時，依實際文字寬度擴張且不超出畫面。 */
+    @Test
+    fun `expands the compact group for text while staying within the screen`() {
+        val wide = layout(expanded = true).copy(contentWidth = 400)
+        assertEquals(400, wide.groupWidth)
+        assertEquals((wide.screenWidth - 400) / 2, wide.groupLeft)
+        assertEquals(wide.screenWidth, wide.copy(contentWidth = 2000).groupWidth)
+        assertEquals(CompactDecisionHudLayout.GROUP_WIDTH, wide.copy(contentWidth = 10).groupWidth)
+    }
+
+    /** 沒有 prompt 時只顯示倒數。 */
+    @Test
+    fun `shows only the timer without a prompt`() {
+        assertEquals(CompactDecisionHudContent.TimerOnly, content(prompt = null))
+    }
+
+    /** 操作介面還開著時不提醒重開。 */
+    @Test
+    fun `shows no reminder while the screen was never dismissed`() {
+        assertEquals(CompactDecisionHudContent.TimerOnly, content(dismissedDecisionKey = null))
+    }
+
+    /** 收起仍然有效的操作介面後提醒可以重開。 */
+    @Test
+    fun `reminds the player after dismissing an interactive prompt`() {
+        assertEquals(CompactDecisionHudContent.ReopenReminder, content(dismissedDecisionKey = DECISION_KEY))
+    }
+
+    /** 收起的是上一個決策的畫面時不提醒。 */
+    @Test
+    fun `shows no reminder for a dismissed key of another decision`() {
+        assertEquals(CompactDecisionHudContent.TimerOnly, content(dismissedDecisionKey = "other-decision"))
+    }
+
+    /** 沒有任何可選內容的 prompt 不提醒重開。 */
+    @Test
+    fun `shows no reminder for a prompt with nothing to choose`() {
+        assertEquals(
+            expected = CompactDecisionHudContent.TimerOnly,
+            actual = content(prompt = PlayerDecisionPromptDto(decisionKey = DECISION_KEY, ruleModuleId = null, actions = emptyList(), triggerTileAssetKey = null, triggerPlayerId = null, triggerPlayerName = null, triggerPlayerRelation = null, triggerActionId = null, ruleDecision = null, discardAnalyses = emptyList()), dismissedDecisionKey = DECISION_KEY),
+        )
+    }
+
+    /** 只有規則選擇的 prompt 仍算需要玩家選擇。 */
+    @Test
+    fun `treats a rule decision only prompt as interactive`() {
+        val prompt = PlayerDecisionPromptDto(decisionKey = DECISION_KEY, ruleDecision = RuleDecisionPromptDto.Confirmation, ruleModuleId = null, actions = emptyList(), triggerTileAssetKey = null, triggerPlayerId = null, triggerPlayerName = null, triggerPlayerRelation = null, triggerActionId = null, discardAnalyses = emptyList())
+
+        assertTrue(prompt.isInteractive)
+    }
+
+    /** 玩家已進入實體牌操作模式時不提醒重開。 */
+    @Test
+    fun `shows no reminder once a physical selection is active`() {
+        assertEquals(
+            expected = CompactDecisionHudContent.TimerOnly,
+            actual = content(dismissedDecisionKey = DECISION_KEY, isPhysicalSelectionActive = true),
+        )
+    }
+
+    /** 進行中的選牌進度優先於重開提醒。 */
+    @Test
+    fun `prefers the selection progress over the reminder`() {
+        val content = content(
+            dismissedDecisionKey = DECISION_KEY,
+            tileSelectionProgress = DecisionTileSelectionState.Progress(1, 2..3),
+        )
+
+        assertEquals(DecisionTileSelectionState.Progress(1, 2..3), assertIs<CompactDecisionHudContent.TileSelection>(content).progress)
+    }
+
+    /** 選牌提示帶著所屬動作的說明。 */
+    @Test
+    fun `carries the description of the selected action`() {
+        val description = Component.literal("description")
+        val content = compactDecisionHudContent(
+            prompt = interactivePrompt(),
+            dismissedDecisionKey = null,
+            isPhysicalSelectionActive = true,
+            tileSelectionProgress = DecisionTileSelectionState.Progress(0, 1..1),
+            tileSelectionDescription = description,
+        )
+
+        assertEquals(description, assertIs<CompactDecisionHudContent.TileSelection>(content).description)
+    }
+
+    /** 說明行插在標題與細節文字之間，群組隨行數長高，倒數仍貼齊下緣。 */
+    @Test
+    fun `makes room for description lines between the title and the detail`() {
+        val plain = layout(expanded = true)
+        val described = CompactDecisionHudLayout(854, 480, 0.5, 0.5, expanded = true, descriptionLineCount = 2)
+
+        assertEquals(plain.groupHeight + 2 * CompactDecisionHudLayout.TEXT_LINE_HEIGHT, described.groupHeight)
+        assertEquals(described.groupTop + CompactDecisionHudLayout.TEXT_LINE_HEIGHT, described.descriptionLineTop(0))
+        assertEquals(described.descriptionLineTop(1) + CompactDecisionHudLayout.TEXT_LINE_HEIGHT, described.detailTextTop)
+        assertEquals(described.groupTop + described.groupHeight, described.timerTop + CompactDecisionHudLayout.TIMER_HEIGHT)
+    }
+
+    /** 只有倒數時群組維持倒數本身的高度。 */
+    @Test
+    fun `keeps the group at the timer height for the timer alone`() {
+        assertEquals(CompactDecisionHudLayout.TIMER_HEIGHT, layout(expanded = false).groupHeight)
+    }
+
+    /** 有提示文字時群組展開。 */
+    @Test
+    fun `expands the group for the hint lines`() {
+        assertEquals(CompactDecisionHudLayout.EXPANDED_HEIGHT, layout(expanded = true).groupHeight)
+    }
+
+    /** 倒數固定貼齊群組下緣，展開與否都一樣。 */
+    @Test
+    fun `anchors the timer to the bottom of the group`() {
+        val collapsed = layout(expanded = false)
+        val expanded = layout(expanded = true)
+
+        assertEquals(collapsed.groupTop + collapsed.groupHeight, collapsed.timerTop + CompactDecisionHudLayout.TIMER_HEIGHT)
+        assertEquals(expanded.groupTop + expanded.groupHeight, expanded.timerTop + CompactDecisionHudLayout.TIMER_HEIGHT)
+    }
+
+    /** 提示文字由群組上緣往下排，第二行接在第一行之後。 */
+    @Test
+    fun `stacks the hint lines from the top of the group`() {
+        val layout = layout(expanded = true)
+
+        assertEquals(layout.groupTop + CompactDecisionHudLayout.TEXT_LINE_HEIGHT, layout.detailTextTop)
+        assertTrue(layout.detailTextTop < layout.timerTop)
+    }
+
+    /** 畫面比群組固定寬度還窄時，群組讓給畫面寬度。 */
+    @Test
+    fun `shrinks the group to a narrow screen`() {
+        assertEquals(120, layout(expanded = true, screenWidth = 120).groupWidth)
+    }
+
+    /** 位置比例 1 讓群組貼齊畫面右下角。 */
+    @Test
+    fun `anchors the group to the bottom right at ratio one`() {
+        val layout = layout(expanded = true, ratioX = 1.0, ratioY = 1.0)
+
+        assertEquals(layout.screenWidth - layout.groupWidth, layout.groupLeft)
+        assertEquals(layout.screenHeight - layout.groupHeight, layout.groupTop)
+    }
+
+    /** 文字以群組水平中心對齊。 */
+    @Test
+    fun `centres the text within the group`() {
+        val layout = layout(expanded = true)
+
+        assertEquals(layout.groupLeft + layout.groupWidth / 2, layout.centerX)
+    }
+
+    /** 還沒選滿最低張數時提示還缺幾張。 */
+    @Test
+    fun `asks for the missing tiles below the minimum`() {
+        val content = assertIs<TranslatableContents>(tileSelectionDetailText(DecisionTileSelectionState.Progress(1, 3..4)).contents)
+
+        assertEquals("mahjongcraft.hud.tile_selection_need_more", content.key)
+        assertEquals(listOf(2, 1, 4), content.args.toList())
+    }
+
+    /** 落在合法範圍內時提示可以確認。 */
+    @Test
+    fun `says the selection is ready inside the valid range`() {
+        val content = assertIs<TranslatableContents>(tileSelectionDetailText(DecisionTileSelectionState.Progress(3, 2..4)).contents)
+
+        assertEquals("mahjongcraft.hud.tile_selection_ready", content.key)
+        assertEquals(listOf(3, 4), content.args.toList())
+    }
+
+    /** 剛好選滿上限時同樣只提示可以確認。 */
+    @Test
+    fun `says the selection is ready at the maximum`() {
+        val content = assertIs<TranslatableContents>(tileSelectionDetailText(DecisionTileSelectionState.Progress(4, 2..4)).contents)
+
+        assertEquals("mahjongcraft.hud.tile_selection_ready", content.key)
+    }
+
+    /**
+     * 組出顯示決策。
+     *
+     * @param prompt 目前權威決策提示。
+     * @param dismissedDecisionKey 已收起畫面的決策鍵。
+     * @param isPhysicalSelectionActive 是否已有實體牌選取操作。
+     * @param tileSelectionProgress 目前選牌進度。
+     * @return 依 prompt 與本機狀態決定的精簡 HUD 內容。
+     */
+    private fun content(
+        prompt: PlayerDecisionPromptDto? = interactivePrompt(),
+        dismissedDecisionKey: String? = null,
+        isPhysicalSelectionActive: Boolean = false,
+        tileSelectionProgress: DecisionTileSelectionState.Progress? = null,
+    ) = compactDecisionHudContent(prompt, dismissedDecisionKey, isPhysicalSelectionActive, tileSelectionProgress)
+
+    /**
+     * 建立含一個動作候選的 prompt。
+     *
+     * @return 使用固定決策鍵與榮和候選的測試 prompt。
+     */
+    private fun interactivePrompt() = PlayerDecisionPromptDto(
+        decisionKey = DECISION_KEY,
+        actions = listOf(PlayerDecisionActionDto(token = "token-1", actionId = "mahjongcraft:ron", referenceTileAssetKey = null, previewTileAssetKeys = emptyList(), claimedTileIndex = null, tileSelection = null)),
+        ruleModuleId = null,
+        triggerTileAssetKey = null,
+        triggerPlayerId = null,
+        triggerPlayerName = null,
+        triggerPlayerRelation = null,
+        triggerActionId = null,
+        ruleDecision = null,
+        discardAnalyses = emptyList(),
+    )
+
+    /**
+     * 建立測試用的版位。
+     *
+     * @param expanded 是否顯示提示文字。
+     * @param screenWidth 畫面寬度。
+     * @param screenHeight 畫面高度。
+     * @param ratioX 水平位置比例。
+     * @param ratioY 垂直位置比例。
+     * @return 依指定尺寸與位置建立的精簡 HUD 版位。
+     */
+    private fun layout(
+        expanded: Boolean,
+        screenWidth: Int = 854,
+        screenHeight: Int = 480,
+        ratioX: Double = 0.5,
+        ratioY: Double = 0.5,
+    ) = CompactDecisionHudLayout(screenWidth, screenHeight, ratioX, ratioY, expanded)
+
+    /** 測試用識別值。 */
+    private companion object {
+        /** 測試用決策鍵。 */
+        const val DECISION_KEY = "decision-1"
+    }
+}

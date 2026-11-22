@@ -10,7 +10,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.ClientSessionLifecycleOwner
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutoSortHandPreferenceService
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlUpdateCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.FabricAutomaticControlCommand
@@ -23,7 +22,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.FabricClien
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigUpdateResult
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.ClientDecisionPromptStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.PlayerDecisionHudController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildMatchResultChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildRoundResultChatMessage
@@ -31,15 +29,11 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.FabricGuideS
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.GuideScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.handbook.FabricHandbookScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.handbook.MahjongHandbookScreenController
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.ClientHistoryArchiveStatusCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.ClientHistoryChatEntryStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.ClientHistoryQueryCoordinator
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.ClientHistoryQuerySettings
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.FabricHistoryScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.HistoryScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileModelLoadingPlugin
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ClientTileAppearanceResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.DiceRollPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ExhaustiveDrawSettlementPresentationEntityRenderer
@@ -49,7 +43,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongLobb
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongPlayerInfoEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongRoundInfoEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongRulerEntityRenderer
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongRulerTint
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongScoringStickEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongSoundTimelineEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongStoolSeatEntityRenderer
@@ -59,7 +52,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTile
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileSelectionConfirmEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MatchSettlementPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PublicPlayerIndicatorTextResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.TablePropTileEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationEffectEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationShowcaseEntityRenderer
@@ -70,7 +62,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.RoomScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.isShowingRoom
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.isShowingRoomForTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.table.ClientTableSpaceObstructionStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.table.TableSpaceObstructionRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tableprop.ClientTablePropPreviewRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tableprop.ClientTablePropPreviews
@@ -86,8 +77,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.extension.BuiltInFabricMa
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongClientExtension
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongClientExtensionBootstrap
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongScoringStickItem
-import com.doublemoon1119.mahjongcraft.platform.fabric.item.toModelPredicateValue
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
@@ -99,6 +88,17 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.toCharacterS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.toSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.toDomain
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.ClientSessionLifecycleOwner
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.ClientDecisionPromptStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.ClientHistoryArchiveStatusCoordinator
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.ClientHistoryQueryCoordinator
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.ClientHistoryQuerySettings
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.ClientPlayerProfileResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.MahjongRulerTint
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.PublicPlayerIndicatorTextResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.table.ClientTableSpaceObstructionStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.item.toModelPredicateValue
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerIdentityPayload
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver

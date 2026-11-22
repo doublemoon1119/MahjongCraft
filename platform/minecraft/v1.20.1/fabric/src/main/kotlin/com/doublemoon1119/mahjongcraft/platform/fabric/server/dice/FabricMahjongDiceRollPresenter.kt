@@ -1,9 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.dice
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.DiceRollPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDicePoint
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec
@@ -11,6 +9,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableLookup
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongDicePoint
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.Registries

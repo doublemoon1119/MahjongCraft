@@ -3,9 +3,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.tile
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.AnimatedMahjongEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.MahjongAnimationSounds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.HandRevealSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement

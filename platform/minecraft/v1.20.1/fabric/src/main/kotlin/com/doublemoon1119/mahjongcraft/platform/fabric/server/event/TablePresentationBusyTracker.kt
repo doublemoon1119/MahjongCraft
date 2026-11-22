@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.DiceRollPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableControllerState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import net.minecraft.core.BlockPos

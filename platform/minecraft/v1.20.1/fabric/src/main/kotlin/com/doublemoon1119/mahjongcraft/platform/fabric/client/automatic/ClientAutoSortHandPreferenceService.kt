@@ -3,7 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigUpdateResult
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutoSortHandPreferenceSender
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 
 /**
  * 統一管理永久自動整理手牌偏好的原子保存與同步順序。

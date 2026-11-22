@@ -12,9 +12,9 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.Persiste
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.HistoryResultProjector
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshotCodec
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlinx.serialization.json.JsonObject
 import kotlin.uuid.Uuid

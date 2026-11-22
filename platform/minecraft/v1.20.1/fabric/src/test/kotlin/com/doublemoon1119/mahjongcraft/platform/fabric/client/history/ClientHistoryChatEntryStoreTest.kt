@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEven
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.ClientHistoryQueryState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryQueryTransport
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.test.Test

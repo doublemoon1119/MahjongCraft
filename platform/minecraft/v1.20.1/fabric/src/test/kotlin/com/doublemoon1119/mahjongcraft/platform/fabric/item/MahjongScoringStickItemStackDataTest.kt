@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.item
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.item.toModelPredicateValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDenomination
 import net.minecraft.nbt.CompoundTag
 import kotlin.test.Test

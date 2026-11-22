@@ -15,7 +15,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.event.FabricGameEventContexts
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.AchievementGrantGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.FabricAchievementService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.BuiltInAchievementIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
@@ -28,6 +27,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RoundSettled
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventDeliveryReporter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventScheduler
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventSubscriptions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.achievement.AchievementGrantGateway
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.GameEventExclusions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules

@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.character
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatCollisionScope
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatCollisionScope
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.server.level.ServerLevel

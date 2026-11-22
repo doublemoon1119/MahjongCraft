@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.guide
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongStoolBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideRecipeLayout
 import net.minecraft.client.Minecraft
 import net.minecraft.world.item.BlockItem
 import net.minecraft.world.item.ItemStack

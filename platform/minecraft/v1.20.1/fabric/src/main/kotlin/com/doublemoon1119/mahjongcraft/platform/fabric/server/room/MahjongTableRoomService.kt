@@ -35,7 +35,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.UpdateConfigUseC
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.LocatedMahjongTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricSeatedParticipantService
@@ -44,6 +43,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.Fabric
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateTicket
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TableSpaceObstructionScanner
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.LocatedMahjongTable
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.MinecraftRoomFeedbackResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomConfigSubmission
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RulePresentationRequirements

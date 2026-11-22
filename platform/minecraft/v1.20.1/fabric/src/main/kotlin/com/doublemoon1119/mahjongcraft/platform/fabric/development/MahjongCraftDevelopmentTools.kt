@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.development
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.development.MahjongCraftDevelopmentEntrypoint
 import net.fabricmc.loader.api.FabricLoader
 
 /** 找出開發專用模組的進入點；正式環境一律沒有。 */

@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatch
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.GameEventExclusions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.GameEventExclusions
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.minecraft.commands.CommandSourceStack

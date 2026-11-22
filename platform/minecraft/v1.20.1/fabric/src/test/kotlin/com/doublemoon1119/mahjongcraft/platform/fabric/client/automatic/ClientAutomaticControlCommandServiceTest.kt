@@ -9,6 +9,10 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClie
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientAutomaticControlStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInMinecraftAutomaticControlIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.AutomaticControlCommandMode
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutoSortHandPreferenceSender
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutomaticControlRequestSender
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutomaticControlResultKind
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Comparator

@@ -3,13 +3,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.character
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterContext
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatingSession
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatingSessionFactory
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatCollisionScope
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterOwnership
@@ -21,6 +19,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSeatRiders
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.SeatedParticipantSources
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatCollisionScope
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatAssignmentResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableInteractionReach

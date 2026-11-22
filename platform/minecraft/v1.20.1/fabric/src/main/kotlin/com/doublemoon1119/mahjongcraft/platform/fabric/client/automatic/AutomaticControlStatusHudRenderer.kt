@@ -2,6 +2,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.AutomaticControlDisplayResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.AutomaticControlStatusHudText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.AutomaticControlStatusRow
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.automaticControlStatusHudLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.automaticControlStatusRows
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.screens.ChatScreen

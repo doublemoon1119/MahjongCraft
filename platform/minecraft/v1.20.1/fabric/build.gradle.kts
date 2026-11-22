@@ -101,6 +101,10 @@ sourceSets {
 kotlin.sourceSets.main {
     kotlin.srcDir(minecraftModDirectory.resolve("src/main/kotlin"))
 }
+// mod 模組的 access transformer 給 Forge 與 mod 模組自己編譯用；Fabric 讀自己的 access widener。
+tasks.processResources {
+    exclude("META-INF/accesstransformer.cfg")
+}
 
 // fabric-language-kotlin 以 nested jar 形式內附 kotlinx-coroutines-core／kotlinx-serialization-json，
 // 版本與 gradle/libs.versions.toml 固定的版本一致。這裡拉進來的專案模組若傳遞帶到同一個 artifact，

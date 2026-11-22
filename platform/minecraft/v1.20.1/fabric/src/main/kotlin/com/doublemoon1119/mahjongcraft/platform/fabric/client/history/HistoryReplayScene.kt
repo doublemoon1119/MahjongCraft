@@ -1,17 +1,18 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideScene
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneBox
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneFigure
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneTile
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneView
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneWinEffect
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideScenes
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayArrangement
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideScene
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneBox
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneFigure
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneTile
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneView
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneWinEffect
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryReplayWinEffectFrame
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ArrangedTile

@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionTileSelectionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionCard
 import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertEquals

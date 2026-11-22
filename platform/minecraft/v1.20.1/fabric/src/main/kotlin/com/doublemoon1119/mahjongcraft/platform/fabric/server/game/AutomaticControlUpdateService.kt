@@ -9,9 +9,9 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.UpdatePlayerAutomaticControlsResult
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.UpdatePlayerAutomaticControlsUseCase
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
-import com.doublemoon1119.mahjongcraft.platform.fabric.network.ClientRequestIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.ClientRequestIds
 import kotlinx.coroutines.CancellationException
 import kotlin.uuid.Uuid
 

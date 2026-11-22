@@ -9,8 +9,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.Headl
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryManagementResult
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryWriterStage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryManagementResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryWriterStage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledHeadlessHistoryRegistries

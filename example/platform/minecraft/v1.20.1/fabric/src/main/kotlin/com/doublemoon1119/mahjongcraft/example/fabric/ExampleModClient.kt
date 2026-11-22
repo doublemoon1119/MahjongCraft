@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.example.fabric
 import com.doublemoon1119.mahjongcraft.example.fabric.character.ExampleActors
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.client.ExampleFurnitureRenderers
 import com.doublemoon1119.mahjongcraft.example.fabric.table.ExampleHandRevealChipRenderers
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
 import net.minecraft.client.renderer.entity.ArmorStandRenderer

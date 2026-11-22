@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.character
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterBindingKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterLeaseCoordinator
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import net.minecraft.world.entity.Entity
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid

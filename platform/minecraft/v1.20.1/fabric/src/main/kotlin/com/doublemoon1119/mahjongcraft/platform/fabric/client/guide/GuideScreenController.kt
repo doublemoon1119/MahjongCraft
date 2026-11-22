@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.BuiltInRuleCatalogueCategoryIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.guide.MinecraftGuideScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideAction
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.mojang.blaze3d.platform.InputConstants

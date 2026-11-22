@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.development.MahjongCraftDevelopmentEntrypoint
-import com.doublemoon1119.mahjongcraft.platform.fabric.development.TableEndListeners
-import com.doublemoon1119.mahjongcraft.platform.fabric.development.WinCelebrationRequestAdjusters
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinShowcaseOverride
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.development.MahjongCraftDevelopmentEntrypoint
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.development.TableEndListeners
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.development.WinCelebrationRequestAdjusters
 import org.koin.core.Koin
 import org.koin.core.module.Module
 

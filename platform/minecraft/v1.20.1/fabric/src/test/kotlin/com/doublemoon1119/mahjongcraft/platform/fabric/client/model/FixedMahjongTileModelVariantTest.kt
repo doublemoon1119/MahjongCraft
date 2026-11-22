@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.model
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model.FixedMahjongTileModelPreparedData
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model.FixedMahjongTileModelVariant
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelResolver
 import net.minecraft.client.renderer.block.model.BlockModel
 import net.minecraft.client.resources.model.ModelBakery

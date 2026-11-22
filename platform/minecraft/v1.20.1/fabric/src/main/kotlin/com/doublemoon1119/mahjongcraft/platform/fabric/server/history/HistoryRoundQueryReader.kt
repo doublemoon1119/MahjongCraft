@@ -11,6 +11,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.DEFAULT_REPLAY_JSON_BYTES
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadError
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryStoredMatchState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistoryQueryEntry
 import kotlinx.serialization.json.JsonObject
 import kotlin.uuid.Uuid
 

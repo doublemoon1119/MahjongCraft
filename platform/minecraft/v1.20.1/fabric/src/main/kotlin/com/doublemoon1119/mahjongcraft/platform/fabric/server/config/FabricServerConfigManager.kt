@@ -2,13 +2,14 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.config
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryRetentionCoordinator
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.retentionPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigTomlCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.historyRecordingPolicy
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryRetentionCoordinator
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.retentionPolicy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock

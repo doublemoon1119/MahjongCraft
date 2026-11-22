@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableLookup
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.HiddenDebugHitboxEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ManagedTableNbt
 import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.network.syncher.EntityDataAccessor

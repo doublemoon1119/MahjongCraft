@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.TableOwnedPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TableOwnedPresentationEntity
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.entity.Entity

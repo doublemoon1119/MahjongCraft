@@ -6,11 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.DiceRollPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDicePoint
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MeldActionPopupTile
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.TileActionPopupKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewDefaults
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewEntityLifecycle
@@ -21,6 +17,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollTimeline
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongDicePoint
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTilePose
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MeldActionPopupTile
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TileActionPopupKind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement

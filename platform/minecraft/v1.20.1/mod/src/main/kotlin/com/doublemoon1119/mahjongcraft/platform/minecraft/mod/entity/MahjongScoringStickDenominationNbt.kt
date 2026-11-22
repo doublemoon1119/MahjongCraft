@@ -1,0 +1,37 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity
+
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDenomination
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.Tag
+
+/**
+ * 點棒面額的持久化讀寫。
+ *
+ * 一律以 enum 名稱保存：名稱不受 enum 宣告順序影響，在中間插入新面額時既有存檔仍然指向同一種點棒。
+ */
+internal object MahjongScoringStickDenominationNbt {
+    /** 點棒面額的固定保存鍵。 */
+    private const val NBT_KEY_DENOMINATION = "Denomination"
+
+    /**
+     * 以名稱寫入面額。
+     *
+     * @param nbt 目的 NBT compound。
+     * @param denomination 要保存的面額。
+     */
+    fun write(nbt: CompoundTag, denomination: MahjongScoringStickDenomination) {
+        nbt.putString(NBT_KEY_DENOMINATION, denomination.name)
+    }
+
+    /**
+     * 讀取面額；缺少名稱或名稱無效時使用百分棒。
+     *
+     * @param nbt 含面額欄位的 NBT compound。
+     * @return 欄位中的有效面額；欄位不存在或名稱無效時為百分棒。
+     */
+    fun read(nbt: CompoundTag): MahjongScoringStickDenomination = when {
+        nbt.contains(NBT_KEY_DENOMINATION, Tag.TAG_STRING.toInt()) ->
+            MahjongScoringStickDenomination.fromNameOrDefault(nbt.getString(NBT_KEY_DENOMINATION))
+        else -> MahjongScoringStickDenomination.P100
+    }
+}

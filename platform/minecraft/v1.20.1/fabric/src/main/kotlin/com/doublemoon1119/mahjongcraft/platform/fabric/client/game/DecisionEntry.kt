@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionCard
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import net.minecraft.network.chat.Component
 

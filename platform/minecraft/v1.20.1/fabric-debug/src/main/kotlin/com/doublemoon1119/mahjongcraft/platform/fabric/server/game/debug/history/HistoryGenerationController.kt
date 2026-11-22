@@ -10,11 +10,11 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.Headl
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryProgress
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryScenario
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryGenerationReceipt
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryManagementResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryGenerationReceipt
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryManagementResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job

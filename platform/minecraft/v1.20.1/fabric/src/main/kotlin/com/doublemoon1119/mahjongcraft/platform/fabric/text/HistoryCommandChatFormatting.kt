@@ -1,13 +1,14 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.text
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryCleanupPreview
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryCleanupReason
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryCleanupReport
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryDiskUsage
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryRetentionPolicy
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryStorageSnapshot
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryWriterStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryCleanupPreview
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryCleanupReason
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryCleanupReport
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryDiskUsage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryRetentionPolicy
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryStorageSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryWriterStatus
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.ConfigPresentationEntry
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent

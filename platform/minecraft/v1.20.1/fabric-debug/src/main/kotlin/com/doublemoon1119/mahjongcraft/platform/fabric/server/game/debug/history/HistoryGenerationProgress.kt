@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryDiskUsage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryDiskUsage
 import kotlin.time.Duration
 
 /**

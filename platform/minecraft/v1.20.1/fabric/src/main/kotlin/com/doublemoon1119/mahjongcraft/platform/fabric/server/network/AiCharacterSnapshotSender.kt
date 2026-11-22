@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.SeatedParticipantSources
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.excludedAppearancesFor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.toPayload
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.network.AiCharacterSnapshotDelivery
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.server.level.ServerPlayer

@@ -13,10 +13,10 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.BuiltInFab
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolPlacementProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FaceUpTileTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.ScoringStickTablePropKind
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.TablePropTileFaceCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.prop.TablePropTileFaceCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.entity.Entity

@@ -8,12 +8,12 @@ import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerM
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.LeaveRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.SyncRoomSnapshotUseCase
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricSessionBackgroundScope
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AutomaticControlSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.DisconnectedPlayerPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.network.AutomaticControlSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay

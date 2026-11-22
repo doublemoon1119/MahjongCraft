@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.FabricTablePropKind
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TablePropRefreshQueue
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableLookup
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TablePropRefreshQueue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropLayoutResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresentation

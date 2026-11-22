@@ -19,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.encodedHistoryResponseUtf8Size
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledNetworkJson
 import kotlinx.serialization.json.Json
 import kotlin.test.Test

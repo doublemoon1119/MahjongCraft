@@ -1,9 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModAchievements
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.AchievementGrantExecutor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.PlayerAchievements
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModAchievements
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.achievement.AchievementGrantGateway
 import net.minecraft.stats.Stats
 
 /**

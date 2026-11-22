@@ -17,9 +17,14 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTim
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.winningTileBobOffset
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.winningTileTicksFromBottom
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ShowcaseCardSnapshot
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationCinematicTimeline
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationShowcaseEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ShowcaseCardSlot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ShowcaseFormationLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ShowcaseFormationMetrics
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.TileRenderAppearanceContext
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.WinCelebrationTitleRenderType
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ShowcaseCardSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinCelebrationCinematicTimeline
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.ShowcaseVisualLayer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry

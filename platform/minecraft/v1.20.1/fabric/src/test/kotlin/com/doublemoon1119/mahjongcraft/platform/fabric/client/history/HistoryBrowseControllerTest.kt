@@ -35,6 +35,12 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRe
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPositionDto
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.ClientHistoryQueryState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseFailure
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowsePage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseQuery
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseStatus
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryQueryTransport
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledNetworkJson
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledNetworkDtos
 import kotlinx.coroutines.ExperimentalCoroutinesApi

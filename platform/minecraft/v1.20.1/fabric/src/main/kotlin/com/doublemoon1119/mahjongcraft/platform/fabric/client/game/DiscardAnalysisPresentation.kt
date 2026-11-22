@@ -5,8 +5,9 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HandReadinessAna
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.hudCoordinate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.hudCoordinate
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionBounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import net.minecraft.network.chat.Component
 

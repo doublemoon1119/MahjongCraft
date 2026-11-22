@@ -2,14 +2,14 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.fitClientText
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.FormScreenLayout
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.PixelIcon
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.fitClientText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.FormScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelIcon
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScrollState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScrollbarLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.ExcludedParticipantIdentity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import net.minecraft.client.gui.GuiGraphics

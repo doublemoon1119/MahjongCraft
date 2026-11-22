@@ -2,10 +2,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
 import com.akuleshov7.ktoml.Toml
 import com.akuleshov7.ktoml.TomlInputConfig
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import net.fabricmc.loader.api.FabricLoader

@@ -1,9 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongBotArmAnimation
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongBotEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.AlphaVertexConsumer
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongBotArmAnimation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.math.Axis

@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.PanelFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.WorldPanelRenderType
 import com.mojang.blaze3d.systems.RenderSystem
 import com.mojang.blaze3d.vertex.PoseStack
 import net.minecraft.client.gui.Font

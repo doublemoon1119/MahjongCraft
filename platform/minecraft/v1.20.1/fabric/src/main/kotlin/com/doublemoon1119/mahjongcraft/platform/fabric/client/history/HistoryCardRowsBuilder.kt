@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryCardStyle
 import net.minecraft.ChatFormatting
 import net.minecraft.client.gui.Font
 import net.minecraft.network.chat.Component

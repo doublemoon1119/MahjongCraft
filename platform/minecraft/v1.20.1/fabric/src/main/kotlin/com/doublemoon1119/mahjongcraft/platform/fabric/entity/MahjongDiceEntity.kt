@@ -6,6 +6,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationSte
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.MahjongAnimationSounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.GameManagedEntityNbt
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongDicePoint
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.network.syncher.EntityDataAccessor
 import net.minecraft.network.syncher.EntityDataSerializers

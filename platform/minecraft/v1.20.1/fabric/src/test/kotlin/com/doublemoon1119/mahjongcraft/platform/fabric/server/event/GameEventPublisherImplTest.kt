@@ -12,13 +12,13 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryRetentionCoordinator
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AiCharacterSnapshotDelivery
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PlayerIdentitySender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FakeTableStateDeliveryEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryRetentionCoordinator
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.network.AiCharacterSnapshotDelivery
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledNetworkJson
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries

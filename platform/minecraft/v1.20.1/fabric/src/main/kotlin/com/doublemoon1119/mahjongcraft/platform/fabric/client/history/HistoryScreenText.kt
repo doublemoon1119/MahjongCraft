@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryMatchSumm
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryOutcomeFilterDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryArchiveStatusView
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import net.minecraft.network.chat.Component
 import java.time.Instant

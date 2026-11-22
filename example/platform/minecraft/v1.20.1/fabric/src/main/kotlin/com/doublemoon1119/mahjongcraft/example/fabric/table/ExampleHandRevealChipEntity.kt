@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.table
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ManagedTableNbt
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.TablePropIdentityNbt
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ManagedTableNbt
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TablePropIdentityNbt
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityType

@@ -2,13 +2,13 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideScenePlayerInfo
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneRenderGuard
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneRoundInfo
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tableprop.ClientTablePropPreviews
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayTableProps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.ReplayTableNotes
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideScenePlayerInfo
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneRenderGuard
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneRoundInfo
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropTarget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ArrangedTile

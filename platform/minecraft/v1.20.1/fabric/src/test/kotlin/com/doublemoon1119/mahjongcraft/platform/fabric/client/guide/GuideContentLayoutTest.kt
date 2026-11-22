@@ -2,9 +2,18 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.guide
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.previewPrompt
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideScene
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneView
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideAction
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideBlock
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideContentLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideElement
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideMeasurer
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideRecipeLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideStep
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideTextStyle
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideTileItem
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideScene
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneView
 import net.minecraft.network.chat.Component
 import kotlin.test.Test
 import kotlin.test.assertEquals

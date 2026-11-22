@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongBotE
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongPlayerInfoEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileItemRenderer
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.SceneEntityTranslucency
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationEffectGeometry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.LatestDiscardHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
@@ -13,6 +12,17 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoE
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideScene
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneFigure
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneHover
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideScenePlayerInfo
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneRegion
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneTile
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneTileDrawOrder
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneTileGlow
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneWinEffect
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SceneEntityTranslucency
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
 import com.mojang.blaze3d.platform.Lighting

@@ -37,8 +37,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.flower.calculateTa
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationCinematicTimeline
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricExhaustiveDrawSettlementPresentationScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricMatchSettlementPresentationScheduler
@@ -53,6 +51,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugVirtualTableLayoutFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.showcaseWingCards
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTilePose
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinCelebrationCinematicTimeline
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout

@@ -33,9 +33,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.GetHistoryRuleSe
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.GetHistorySummaryUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.ListHistoryUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
-import com.doublemoon1119.mahjongcraft.platform.fabric.network.ClientRequestIds
-import com.doublemoon1119.mahjongcraft.platform.fabric.network.HistoryQueryLimits
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricSessionBackgroundScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PlayerIdentitySender
@@ -47,6 +44,14 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.toNetworkDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryQuerySettingsPayload
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.ClientRequestIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.HistoryQueryLimits
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryManagementResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryQueryAdmission
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryQueryAdmissionLimits
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryQuerySettingsPublisher
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.queryErrorCode
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString

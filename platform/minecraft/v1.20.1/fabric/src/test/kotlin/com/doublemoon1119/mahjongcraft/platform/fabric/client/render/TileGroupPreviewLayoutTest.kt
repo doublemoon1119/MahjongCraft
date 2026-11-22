@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.TileGroupPreviewEntry
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals

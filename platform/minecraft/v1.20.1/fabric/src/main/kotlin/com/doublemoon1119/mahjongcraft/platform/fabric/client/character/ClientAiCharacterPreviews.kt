@@ -2,9 +2,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.character
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterPreviewHandle
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.CharacterPreviewCache
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.CharacterPreviewImage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.RoomFigureArea
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSource
 import net.fabricmc.api.EnvType
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents

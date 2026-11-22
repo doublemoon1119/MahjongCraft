@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.item
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDicePoint
-import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModSounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongDicePoint
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModSounds
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.InteractionResult

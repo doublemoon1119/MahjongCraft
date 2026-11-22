@@ -2,9 +2,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.TabStripLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroupRole
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.RuleCatalogueScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.RuleCatalogueTileLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.TabStripLayout
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

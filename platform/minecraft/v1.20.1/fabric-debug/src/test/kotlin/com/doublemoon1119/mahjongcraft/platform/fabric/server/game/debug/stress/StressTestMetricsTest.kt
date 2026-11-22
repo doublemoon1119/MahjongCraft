@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryWriterStage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryWriterStage
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.readLines
 import kotlin.test.Test

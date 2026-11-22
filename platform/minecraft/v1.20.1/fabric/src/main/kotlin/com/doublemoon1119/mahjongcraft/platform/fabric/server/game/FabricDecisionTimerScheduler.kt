@@ -9,7 +9,9 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimeoutService
-import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.DecisionTickProcessor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.GameAdvanceRotation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
