@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTimeSource
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
@@ -34,6 +33,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.GameAc
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.GameActionCandidateResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.MinecraftGameFeedbackResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.PlayerDecisionPromptFactory
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.decisionPhaseFor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.resolveFinalDecisionSubmission
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.MahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.GameTurnStatus
@@ -217,20 +217,8 @@ class MahjongTableGameActionService(
     ): ResolvedSelectionPrompt? {
         val gameId = runCatching { Uuid.parse(selection.gameId) }.getOrNull() ?: return null
         val game = gameRepository.getGame(gameId) ?: return null
-        val state = game.tableState
         val ruleDecision = game.pendingRuleDecision
-        val phase = if (
-            ruleDecision != null &&
-            playerId in ruleDecision.participantPlayerIds &&
-            playerId !in ruleDecision.completedPlayerIds
-        ) {
-            when (ruleDecision.step.timeSource) {
-                RuleDecisionTimeSource.RULE_DECISION_TIME -> PlayerDecisionPhase.RULE_DECISION
-                RuleDecisionTimeSource.ACTION_TIME -> PlayerDecisionPhase.RULE_ACTION
-            }
-        } else {
-            actionContextResolver.resolveFor(state, playerId)?.phase
-        } ?: return null
+        val phase = game.decisionPhaseFor(playerId, actionContextResolver) ?: return null
         val prompt = promptFactory.create(gameId, playerId, phase) ?: return null
         return if (prompt.decisionKey == selection.decisionKey) {
             ResolvedSelectionPrompt(

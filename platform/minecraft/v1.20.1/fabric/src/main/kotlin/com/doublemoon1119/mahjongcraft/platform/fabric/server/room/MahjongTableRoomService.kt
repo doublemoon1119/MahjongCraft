@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.RoomSnapshotDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SyncGameSnapshotUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
@@ -40,6 +41,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.SeatedParticipantService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TableSpaceObstructionScanner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.LocatedMahjongTable
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.decisionPhaseFor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.AuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.MahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.MinecraftRoomFeedbackResolver
@@ -106,6 +108,7 @@ import kotlin.uuid.toKotlinUuid
  * @property moduleRegistry 建立房間設定使用的規則模組，檢查能否在麻將桌上呈現。
  * @property seatedParticipants 外部實體的開局前席位複核。
  * @property allowParticipant 房主解除排除的權威操作。
+ * @property actionContextResolver 判斷對局目前是否正在等某位玩家做決定。
  */
 class MahjongTableRoomService internal constructor(
     private val scope: AppCoroutineScope,
@@ -142,6 +145,7 @@ class MahjongTableRoomService internal constructor(
     private val moduleRegistry: MahjongModuleRegistry,
     private val seatedParticipants: SeatedParticipantService,
     private val allowParticipant: AllowRoomParticipantUseCase,
+    private val actionContextResolver: PlayerActionContextResolver,
 ) {
     /**
      * 將 RoomScreen 的強型別操作路由到既有權威 use case；封包中的玩家身分一律忽略。
@@ -247,12 +251,16 @@ class MahjongTableRoomService internal constructor(
     /**
      * 只送出桌子目前的公開佔用狀態並開啟 RoomScreen，不建立、加入或離開房間。
      *
+     * 這張桌子的對局正在等這位玩家做決定時不開啟、也不提示：此時點到桌子幾乎都是想點麻將牌時的誤觸。
+     *
      * @param table 要顯示的麻將桌。
      * @param player 接收桌子狀態的玩家。
      */
     internal fun openRoomScreen(table: LocatedMahjongTable, player: ServerPlayer) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val tableId = table.tableId
+        val game = authoritativeStateStore.state.value.games[tableId]
+        if (game?.decisionPhaseFor(player.uuid.toKotlinUuid(), actionContextResolver) != null) return
         val ticket = tableStateDelivery.capture(tableId) ?: return
         scope.launch(dispatchers.main) { sendCurrentOccupancy(ticket, player) }
     }
