@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricClientModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricServerModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
+import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricModRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricServerEvents
 import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.FabricRuntimeMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.C2SChannel
@@ -113,10 +114,10 @@ class MahjongCraftMod : ModInitializer {
             mahjongStoolSeatProvider = koin.get<MahjongStoolSeatProvider>(),
             failurePolicy = koin.get<ExtensionFailurePolicy>(),
         )
-        ModItems.register()
-        ModSounds.register()
-        ModEntities.register()
-        ModAchievements.register()
+        ModItems.register(FabricModRegistrar)
+        ModSounds.register(FabricModRegistrar)
+        ModEntities.register(FabricModRegistrar)
+        ModAchievements.register(FabricModRegistrar)
         val characterSnapshots = koin.get<AiCharacterSnapshotSender>()
         characterSnapshots.registerEvents(FabricServerEvents)
         val aiCharacters = koin.get<AiCharacterManager>()
@@ -134,8 +135,8 @@ class MahjongCraftMod : ModInitializer {
             roomService = koin.get<MahjongTableRoomService>(),
             tableLifecycleService = tableLifecycleService,
         )
-        ModBlocks.register(seatService = koin.get<MahjongStoolSeatService>())
-        ModItemGroups.register()
+        ModBlocks.register(registrar = FabricModRegistrar, seatService = koin.get<MahjongStoolSeatService>())
+        ModItemGroups.register(FabricModRegistrar)
         tableLifecycleService.registerEvents(FabricServerEvents)
         tableLocationValidation.registerEvents(FabricServerEvents)
         tablePropRefreshScheduler.registerEvents(FabricServerEvents)

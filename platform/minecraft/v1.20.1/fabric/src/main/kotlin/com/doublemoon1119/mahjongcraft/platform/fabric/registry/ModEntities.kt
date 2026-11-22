@@ -20,274 +20,349 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationShow
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatGeometry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.RegisteredEntry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.MahjongEntityTypes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropDefinitions
-import net.fabricmc.fabric.api.`object`.builder.v1.entity.FabricEntityTypeBuilder
-import net.minecraft.core.Registry
-import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.core.registries.Registries
 import net.minecraft.resources.ResourceLocation
-import net.minecraft.world.entity.EntityDimensions
 import net.minecraft.world.entity.EntityType
-import net.minecraft.world.entity.MobCategory
 
-/** MahjongCraft Fabric entity type 的集中註冊點。 */
+/** MahjongCraft 實體型別的集中登記點；各型別在 [register] 登記完成後才能讀取。 */
 object ModEntities {
-    /** 無形且可持久化的單次聲音時間線 entity type；由 [register] 初始化。 */
-    lateinit var mahjongSoundTimeline: EntityType<MahjongSoundTimelineEntity>
-        private set
+    private lateinit var mahjongSoundTimelineEntry: RegisteredEntry<EntityType<MahjongSoundTimelineEntity>>
 
-    /** 麻將骰子 entity type；由 [register] 初始化。 */
-    lateinit var mahjongDice: EntityType<MahjongDiceEntity>
-        private set
+    /** 無形且可持久化的單次聲音時間線 entity type。 */
+    val mahjongSoundTimeline: EntityType<MahjongSoundTimelineEntity>
+        get() = mahjongSoundTimelineEntry.get()
 
-    /** 擲骰聚合結果面板 entity type；由 [register] 初始化。 */
-    lateinit var diceRollPresentation: EntityType<DiceRollPresentationEntity>
-        private set
+    private lateinit var mahjongDiceEntry: RegisteredEntry<EntityType<MahjongDiceEntity>>
 
-    /** 麻將牌 entity type；由 [register] 初始化。 */
-    lateinit var mahjongTile: EntityType<MahjongTileEntity>
-        private set
+    /** 麻將骰子 entity type。 */
+    val mahjongDice: EntityType<MahjongDiceEntity>
+        get() = mahjongDiceEntry.get()
+
+    private lateinit var diceRollPresentationEntry: RegisteredEntry<EntityType<DiceRollPresentationEntity>>
+
+    /** 擲骰聚合結果面板 entity type。 */
+    val diceRollPresentation: EntityType<DiceRollPresentationEntity>
+        get() = diceRollPresentationEntry.get()
+
+    private lateinit var mahjongTileEntry: RegisteredEntry<EntityType<MahjongTileEntity>>
+
+    /** 麻將牌 entity type。 */
+    val mahjongTile: EntityType<MahjongTileEntity>
+        get() = mahjongTileEntry.get()
+
+    private lateinit var tablePropTileEntry: RegisteredEntry<EntityType<TablePropTileEntity>>
 
     /** 公開桌面展示牌的獨立實體類型。 */
-    lateinit var tablePropTile: EntityType<TablePropTileEntity>
-        private set
+    val tablePropTile: EntityType<TablePropTileEntity>
+        get() = tablePropTileEntry.get()
 
-    /** 多選選牌確認面板 entity type；由 [register] 初始化。 */
-    lateinit var mahjongTileSelectionConfirm: EntityType<MahjongTileSelectionConfirmEntity>
-        private set
+    private lateinit var mahjongTileSelectionConfirmEntry: RegisteredEntry<EntityType<MahjongTileSelectionConfirmEntity>>
 
-    /** 麻將點棒 entity type；由 [register] 初始化。 */
-    lateinit var mahjongScoringStick: EntityType<MahjongScoringStickEntity>
-        private set
+    /** 多選選牌確認面板 entity type。 */
+    val mahjongTileSelectionConfirm: EntityType<MahjongTileSelectionConfirmEntity>
+        get() = mahjongTileSelectionConfirmEntry.get()
 
-    /** 放在方塊上的牌尺 entity type；由 [register] 初始化。 */
-    lateinit var mahjongRuler: EntityType<MahjongRulerEntity>
-        private set
+    private lateinit var mahjongScoringStickEntry: RegisteredEntry<EntityType<MahjongScoringStickEntity>>
 
-    /** 桌面中央局況顯示 entity type；由 [register] 初始化。 */
-    lateinit var mahjongRoundInfo: EntityType<MahjongRoundInfoEntity>
-        private set
+    /** 麻將點棒 entity type。 */
+    val mahjongScoringStick: EntityType<MahjongScoringStickEntity>
+        get() = mahjongScoringStickEntry.get()
 
-    /** 桌級玩家公開資訊 entity type；由 [register] 初始化。 */
-    lateinit var mahjongPlayerInfo: EntityType<MahjongPlayerInfoEntity>
-        private set
+    private lateinit var mahjongRulerEntry: RegisteredEntry<EntityType<MahjongRulerEntity>>
 
-    /** 等待中遊戲提示 entity type；由 [register] 初始化。 */
-    lateinit var mahjongLobbyInfo: EntityType<MahjongLobbyInfoEntity>
-        private set
+    /** 放在方塊上的牌尺 entity type。 */
+    val mahjongRuler: EntityType<MahjongRulerEntity>
+        get() = mahjongRulerEntry.get()
 
-    /** 胡牌慶祝視覺效果 entity type；由 [register] 初始化。 */
-    lateinit var winCelebrationEffect: EntityType<WinCelebrationEffectEntity>
-        private set
+    private lateinit var mahjongRoundInfoEntry: RegisteredEntry<EntityType<MahjongRoundInfoEntity>>
 
-    /** 役種加碼共享舞台 entity type；由 [register] 初始化。 */
-    lateinit var winCelebrationShowcase: EntityType<WinCelebrationShowcaseEntity>
-        private set
+    /** 桌面中央局況顯示 entity type。 */
+    val mahjongRoundInfo: EntityType<MahjongRoundInfoEntity>
+        get() = mahjongRoundInfoEntry.get()
 
-    /** 統一流局結算排行舞台 entity type；由 [register] 初始化。 */
-    lateinit var exhaustiveDrawSettlementPresentation: EntityType<ExhaustiveDrawSettlementPresentationEntity>
-        private set
+    private lateinit var mahjongPlayerInfoEntry: RegisteredEntry<EntityType<MahjongPlayerInfoEntity>>
+
+    /** 桌級玩家公開資訊 entity type。 */
+    val mahjongPlayerInfo: EntityType<MahjongPlayerInfoEntity>
+        get() = mahjongPlayerInfoEntry.get()
+
+    private lateinit var mahjongLobbyInfoEntry: RegisteredEntry<EntityType<MahjongLobbyInfoEntity>>
+
+    /** 等待中遊戲提示 entity type。 */
+    val mahjongLobbyInfo: EntityType<MahjongLobbyInfoEntity>
+        get() = mahjongLobbyInfoEntry.get()
+
+    private lateinit var winCelebrationEffectEntry: RegisteredEntry<EntityType<WinCelebrationEffectEntity>>
+
+    /** 胡牌慶祝視覺效果 entity type。 */
+    val winCelebrationEffect: EntityType<WinCelebrationEffectEntity>
+        get() = winCelebrationEffectEntry.get()
+
+    private lateinit var winCelebrationShowcaseEntry: RegisteredEntry<EntityType<WinCelebrationShowcaseEntity>>
+
+    /** 役種加碼共享舞台 entity type。 */
+    val winCelebrationShowcase: EntityType<WinCelebrationShowcaseEntity>
+        get() = winCelebrationShowcaseEntry.get()
+
+    private lateinit var exhaustiveDrawSettlementPresentationEntry: RegisteredEntry<EntityType<ExhaustiveDrawSettlementPresentationEntity>>
+
+    /** 統一流局結算排行舞台 entity type。 */
+    val exhaustiveDrawSettlementPresentation: EntityType<ExhaustiveDrawSettlementPresentationEntity>
+        get() = exhaustiveDrawSettlementPresentationEntry.get()
+
+    private lateinit var winSettlementPresentationEntry: RegisteredEntry<EntityType<WinSettlementPresentationEntity>>
 
     /** 胡牌詳情與最終排行舞台 entity type。 */
-    lateinit var winSettlementPresentation: EntityType<WinSettlementPresentationEntity>
-        private set
+    val winSettlementPresentation: EntityType<WinSettlementPresentationEntity>
+        get() = winSettlementPresentationEntry.get()
+
+    private lateinit var matchSettlementPresentationEntry: RegisteredEntry<EntityType<MatchSettlementPresentationEntity>>
 
     /** 終局最終排行舞台 entity type。 */
-    lateinit var matchSettlementPresentation: EntityType<MatchSettlementPresentationEntity>
-        private set
+    val matchSettlementPresentation: EntityType<MatchSettlementPresentationEntity>
+        get() = matchSettlementPresentationEntry.get()
 
-    /** 麻將凳的隱形座位 entity type；由 [register] 初始化。 */
-    lateinit var mahjongStoolSeat: EntityType<MahjongStoolSeatEntity>
-        private set
+    private lateinit var mahjongStoolSeatEntry: RegisteredEntry<EntityType<MahjongStoolSeatEntity>>
+
+    /** 麻將凳的隱形座位 entity type。 */
+    val mahjongStoolSeat: EntityType<MahjongStoolSeatEntity>
+        get() = mahjongStoolSeatEntry.get()
+
+    private lateinit var mahjongBotEntry: RegisteredEntry<EntityType<MahjongBotEntity>>
 
     /** 不寫入區塊存檔的麻將機器人；由角色生命週期恢復。 */
-    lateinit var mahjongBot: EntityType<MahjongBotEntity>
-        private set
+    val mahjongBot: EntityType<MahjongBotEntity>
+        get() = mahjongBotEntry.get()
 
-    /** 註冊骰子、牌張、點棒、牌尺、座位與各種呈現實體的類型；皆不自然生成。 */
-    fun register() {
-        mahjongBot = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE,
-            ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_bot"),
-            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongBotEntity)
-                .dimensions(EntityDimensions.fixed(MahjongBotEntity.WIDTH, MahjongBotEntity.HEIGHT))
-                .trackRangeBlocks(32)
-                .trackedUpdateRate(1)
-                .disableSaving()
-                .fireImmune()
-                .build(),
-        )
-        mahjongSoundTimeline = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE,
-            ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_sound_timeline"),
-            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongSoundTimelineEntity)
-                .dimensions(EntityDimensions.fixed(MahjongSoundTimelineEntity.SIZE, MahjongSoundTimelineEntity.SIZE))
-                .trackRangeBlocks(32)
-                .trackedUpdateRate(1)
-                .fireImmune()
-                .build(),
-        )
-        mahjongDice = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE,
-            ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_dice"),
-            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongDiceEntity)
-                .dimensions(EntityDimensions.fixed(MahjongDiceEntity.SIZE, MahjongDiceEntity.SIZE))
-                .trackRangeBlocks(16)
-                .trackedUpdateRate(10)
-                .fireImmune()
-                .build(),
-        )
-        diceRollPresentation = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE,
-            ResourceLocation(MinecraftModMetadata.MOD_ID, "dice_roll_presentation"),
-            FabricEntityTypeBuilder.create(MobCategory.MISC, ::DiceRollPresentationEntity)
-                .dimensions(EntityDimensions.fixed(DiceRollPresentationEntity.WIDTH, DiceRollPresentationEntity.HEIGHT))
-                .trackRangeBlocks(32)
-                .trackedUpdateRate(1)
-                .fireImmune()
-                .build(),
-        )
-        mahjongTile = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE,
-            ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_tile"),
-            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongTileEntity)
-                .dimensions(EntityDimensions.fixed(MahjongTileEntity.TILE_WIDTH, MahjongTileEntity.TILE_HEIGHT))
-                .trackRangeBlocks(16)
-                .trackedUpdateRate(10)
-                .fireImmune()
-                .build(),
-        )
-        tablePropTile = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE,
-            ResourceLocation(MinecraftModMetadata.MOD_ID, "table_prop_tile"),
-            FabricEntityTypeBuilder.create(MobCategory.MISC, ::TablePropTileEntity)
-                .dimensions(EntityDimensions.fixed(BuiltInTablePropDefinitions.FACE_UP_TILE.dimensions.depth.toFloat(), BuiltInTablePropDefinitions.FACE_UP_TILE.dimensions.height.toFloat()))
-                .trackRangeBlocks(16)
-                .trackedUpdateRate(10)
-                .fireImmune()
-                .build(),
-        )
-        mahjongTileSelectionConfirm = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE,
-            ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_tile_selection_confirm"),
-            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongTileSelectionConfirmEntity)
-                .dimensions(EntityDimensions.fixed(MahjongTileSelectionConfirmEntity.WIDTH, MahjongTileSelectionConfirmEntity.HEIGHT))
-                .trackRangeBlocks(16)
-                .trackedUpdateRate(10)
-                .fireImmune()
-                .build(),
-        )
-        mahjongScoringStick = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE,
-            ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_scoring_stick"),
-            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongScoringStickEntity)
-                .dimensions(EntityDimensions.fixed(MahjongScoringStickEntity.STICK_WIDTH, MahjongScoringStickEntity.STICK_HEIGHT))
-                .trackRangeBlocks(16)
-                .trackedUpdateRate(10)
-                .fireImmune()
-                .build(),
-        )
-        mahjongRuler = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE,
-            ResourceLocation(MinecraftModMetadata.MOD_ID, MahjongRulerColor.BASE_ITEM_PATH),
-            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongRulerEntity)
-                .dimensions(EntityDimensions.fixed(MahjongRulerDimensions.LENGTH.toFloat(), MahjongRulerDimensions.BROAD_SIDE.toFloat()))
-                .trackRangeBlocks(16)
-                .trackedUpdateRate(10)
-                .fireImmune()
-                .build(),
-        )
-        mahjongRoundInfo = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE,
-            ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_round_info"),
-            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongRoundInfoEntity)
-                .dimensions(EntityDimensions.fixed(MahjongRoundInfoEntity.WIDTH, MahjongRoundInfoEntity.HEIGHT))
-                .trackRangeBlocks(16)
-                .trackedUpdateRate(10)
-                .fireImmune()
-                .build(),
-        )
-        mahjongPlayerInfo = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE,
-            ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_player_info"),
-            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongPlayerInfoEntity)
-                .dimensions(EntityDimensions.fixed(MahjongPlayerInfoEntity.WIDTH, MahjongPlayerInfoEntity.HEIGHT))
-                .trackRangeBlocks(32)
-                .trackedUpdateRate(10)
-                .fireImmune()
-                .build(),
-        )
-        mahjongLobbyInfo = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE,
-            ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_lobby_info"),
-            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongLobbyInfoEntity)
-                .dimensions(EntityDimensions.fixed(MahjongLobbyInfoEntity.WIDTH, MahjongLobbyInfoEntity.HEIGHT))
-                .trackRangeBlocks(32)
-                .trackedUpdateRate(1)
-                .fireImmune()
-                .build(),
-        )
-        winCelebrationEffect = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE,
-            ResourceLocation(MinecraftModMetadata.MOD_ID, "win_celebration_effect"),
-            FabricEntityTypeBuilder.create(MobCategory.MISC, ::WinCelebrationEffectEntity)
-                .dimensions(EntityDimensions.fixed(WinCelebrationEffectEntity.WIDTH, WinCelebrationEffectEntity.HEIGHT))
-                .trackRangeBlocks(16)
-                .trackedUpdateRate(1)
-                .fireImmune()
-                .build(),
-        )
-        winCelebrationShowcase = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE,
-            ResourceLocation(MinecraftModMetadata.MOD_ID, "win_celebration_showcase"),
-            FabricEntityTypeBuilder.create(MobCategory.MISC, ::WinCelebrationShowcaseEntity)
-                .dimensions(EntityDimensions.fixed(WinCelebrationShowcaseEntity.WIDTH, WinCelebrationShowcaseEntity.HEIGHT))
-                .trackRangeBlocks(32)
-                .trackedUpdateRate(1)
-                .fireImmune()
-                .build(),
-        )
-        exhaustiveDrawSettlementPresentation = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE,
-            ResourceLocation(MinecraftModMetadata.MOD_ID, "exhaustive_draw_settlement_presentation"),
-            FabricEntityTypeBuilder.create(MobCategory.MISC, ::ExhaustiveDrawSettlementPresentationEntity)
-                .dimensions(EntityDimensions.fixed(ExhaustiveDrawSettlementPresentationEntity.WIDTH, ExhaustiveDrawSettlementPresentationEntity.HEIGHT))
-                .trackRangeBlocks(32)
-                .trackedUpdateRate(1)
-                .fireImmune()
-                .build(),
-        )
-        winSettlementPresentation = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE,
-            ResourceLocation(MinecraftModMetadata.MOD_ID, "win_settlement_presentation"),
-            FabricEntityTypeBuilder.create(MobCategory.MISC, ::WinSettlementPresentationEntity)
-                .dimensions(EntityDimensions.fixed(WinSettlementPresentationEntity.WIDTH, WinSettlementPresentationEntity.HEIGHT))
-                .trackRangeBlocks(32)
-                .trackedUpdateRate(1)
-                .fireImmune()
-                .build(),
-        )
-        matchSettlementPresentation = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE,
-            ResourceLocation(MinecraftModMetadata.MOD_ID, "match_settlement_presentation"),
-            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MatchSettlementPresentationEntity)
-                .dimensions(EntityDimensions.fixed(MatchSettlementPresentationEntity.WIDTH, MatchSettlementPresentationEntity.HEIGHT))
-                .trackRangeBlocks(32)
-                .trackedUpdateRate(1)
-                .fireImmune()
-                .build(),
-        )
-        mahjongStoolSeat = Registry.register(
-            BuiltInRegistries.ENTITY_TYPE,
-            ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_stool_seat"),
-            FabricEntityTypeBuilder.create(MobCategory.MISC, ::MahjongStoolSeatEntity)
-                .dimensions(EntityDimensions.fixed(MahjongStoolSeatGeometry.SEAT_SIZE, MahjongStoolSeatGeometry.SEAT_SIZE))
+    /**
+     * 登記骰子、牌張、點棒、牌尺、座位與各種呈現實體的類型；皆不自然生成。
+     *
+     * @param registrar 寫入登記表的方式。
+     */
+    fun register(registrar: ModRegistrar) {
+        mahjongBotEntry = registrar.register(
+            registry = Registries.ENTITY_TYPE,
+            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_bot"),
+        ) {
+            MahjongEntityTypes.create(
+                factory = ::MahjongBotEntity,
+                width = MahjongBotEntity.WIDTH,
+                height = MahjongBotEntity.HEIGHT,
+                trackingRangeChunks = MahjongEntityTypes.chunksCovering(blocks = 32),
+                updateInterval = 1,
+                saveable = false,
+            )
+        }
+        mahjongSoundTimelineEntry = registrar.register(
+            registry = Registries.ENTITY_TYPE,
+            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_sound_timeline"),
+        ) {
+            MahjongEntityTypes.create(
+                factory = ::MahjongSoundTimelineEntity,
+                width = MahjongSoundTimelineEntity.SIZE,
+                height = MahjongSoundTimelineEntity.SIZE,
+                trackingRangeChunks = MahjongEntityTypes.chunksCovering(blocks = 32),
+                updateInterval = 1,
+            )
+        }
+        mahjongDiceEntry = registrar.register(
+            registry = Registries.ENTITY_TYPE,
+            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_dice"),
+        ) {
+            MahjongEntityTypes.create(
+                factory = ::MahjongDiceEntity,
+                width = MahjongDiceEntity.SIZE,
+                height = MahjongDiceEntity.SIZE,
+                trackingRangeChunks = MahjongEntityTypes.chunksCovering(blocks = 16),
+                updateInterval = 10,
+            )
+        }
+        diceRollPresentationEntry = registrar.register(
+            registry = Registries.ENTITY_TYPE,
+            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "dice_roll_presentation"),
+        ) {
+            MahjongEntityTypes.create(
+                factory = ::DiceRollPresentationEntity,
+                width = DiceRollPresentationEntity.WIDTH,
+                height = DiceRollPresentationEntity.HEIGHT,
+                trackingRangeChunks = MahjongEntityTypes.chunksCovering(blocks = 32),
+                updateInterval = 1,
+            )
+        }
+        mahjongTileEntry = registrar.register(
+            registry = Registries.ENTITY_TYPE,
+            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_tile"),
+        ) {
+            MahjongEntityTypes.create(
+                factory = ::MahjongTileEntity,
+                width = MahjongTileEntity.TILE_WIDTH,
+                height = MahjongTileEntity.TILE_HEIGHT,
+                trackingRangeChunks = MahjongEntityTypes.chunksCovering(blocks = 16),
+                updateInterval = 10,
+            )
+        }
+        tablePropTileEntry = registrar.register(
+            registry = Registries.ENTITY_TYPE,
+            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "table_prop_tile"),
+        ) {
+            MahjongEntityTypes.create(
+                factory = ::TablePropTileEntity,
+                width = BuiltInTablePropDefinitions.FACE_UP_TILE.dimensions.depth.toFloat(),
+                height = BuiltInTablePropDefinitions.FACE_UP_TILE.dimensions.height.toFloat(),
+                trackingRangeChunks = MahjongEntityTypes.chunksCovering(blocks = 16),
+                updateInterval = 10,
+            )
+        }
+        mahjongTileSelectionConfirmEntry = registrar.register(
+            registry = Registries.ENTITY_TYPE,
+            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_tile_selection_confirm"),
+        ) {
+            MahjongEntityTypes.create(
+                factory = ::MahjongTileSelectionConfirmEntity,
+                width = MahjongTileSelectionConfirmEntity.WIDTH,
+                height = MahjongTileSelectionConfirmEntity.HEIGHT,
+                trackingRangeChunks = MahjongEntityTypes.chunksCovering(blocks = 16),
+                updateInterval = 10,
+            )
+        }
+        mahjongScoringStickEntry = registrar.register(
+            registry = Registries.ENTITY_TYPE,
+            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_scoring_stick"),
+        ) {
+            MahjongEntityTypes.create(
+                factory = ::MahjongScoringStickEntity,
+                width = MahjongScoringStickEntity.STICK_WIDTH,
+                height = MahjongScoringStickEntity.STICK_HEIGHT,
+                trackingRangeChunks = MahjongEntityTypes.chunksCovering(blocks = 16),
+                updateInterval = 10,
+            )
+        }
+        mahjongRulerEntry = registrar.register(
+            registry = Registries.ENTITY_TYPE,
+            id = ResourceLocation(MinecraftModMetadata.MOD_ID, MahjongRulerColor.BASE_ITEM_PATH),
+        ) {
+            MahjongEntityTypes.create(
+                factory = ::MahjongRulerEntity,
+                width = MahjongRulerDimensions.LENGTH.toFloat(),
+                height = MahjongRulerDimensions.BROAD_SIDE.toFloat(),
+                trackingRangeChunks = MahjongEntityTypes.chunksCovering(blocks = 16),
+                updateInterval = 10,
+            )
+        }
+        mahjongRoundInfoEntry = registrar.register(
+            registry = Registries.ENTITY_TYPE,
+            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_round_info"),
+        ) {
+            MahjongEntityTypes.create(
+                factory = ::MahjongRoundInfoEntity,
+                width = MahjongRoundInfoEntity.WIDTH,
+                height = MahjongRoundInfoEntity.HEIGHT,
+                trackingRangeChunks = MahjongEntityTypes.chunksCovering(blocks = 16),
+                updateInterval = 10,
+            )
+        }
+        mahjongPlayerInfoEntry = registrar.register(
+            registry = Registries.ENTITY_TYPE,
+            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_player_info"),
+        ) {
+            MahjongEntityTypes.create(
+                factory = ::MahjongPlayerInfoEntity,
+                width = MahjongPlayerInfoEntity.WIDTH,
+                height = MahjongPlayerInfoEntity.HEIGHT,
+                trackingRangeChunks = MahjongEntityTypes.chunksCovering(blocks = 32),
+                updateInterval = 10,
+            )
+        }
+        mahjongLobbyInfoEntry = registrar.register(
+            registry = Registries.ENTITY_TYPE,
+            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_lobby_info"),
+        ) {
+            MahjongEntityTypes.create(
+                factory = ::MahjongLobbyInfoEntity,
+                width = MahjongLobbyInfoEntity.WIDTH,
+                height = MahjongLobbyInfoEntity.HEIGHT,
+                trackingRangeChunks = MahjongEntityTypes.chunksCovering(blocks = 32),
+                updateInterval = 1,
+            )
+        }
+        winCelebrationEffectEntry = registrar.register(
+            registry = Registries.ENTITY_TYPE,
+            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "win_celebration_effect"),
+        ) {
+            MahjongEntityTypes.create(
+                factory = ::WinCelebrationEffectEntity,
+                width = WinCelebrationEffectEntity.WIDTH,
+                height = WinCelebrationEffectEntity.HEIGHT,
+                trackingRangeChunks = MahjongEntityTypes.chunksCovering(blocks = 16),
+                updateInterval = 1,
+            )
+        }
+        winCelebrationShowcaseEntry = registrar.register(
+            registry = Registries.ENTITY_TYPE,
+            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "win_celebration_showcase"),
+        ) {
+            MahjongEntityTypes.create(
+                factory = ::WinCelebrationShowcaseEntity,
+                width = WinCelebrationShowcaseEntity.WIDTH,
+                height = WinCelebrationShowcaseEntity.HEIGHT,
+                trackingRangeChunks = MahjongEntityTypes.chunksCovering(blocks = 32),
+                updateInterval = 1,
+            )
+        }
+        exhaustiveDrawSettlementPresentationEntry = registrar.register(
+            registry = Registries.ENTITY_TYPE,
+            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "exhaustive_draw_settlement_presentation"),
+        ) {
+            MahjongEntityTypes.create(
+                factory = ::ExhaustiveDrawSettlementPresentationEntity,
+                width = ExhaustiveDrawSettlementPresentationEntity.WIDTH,
+                height = ExhaustiveDrawSettlementPresentationEntity.HEIGHT,
+                trackingRangeChunks = MahjongEntityTypes.chunksCovering(blocks = 32),
+                updateInterval = 1,
+            )
+        }
+        winSettlementPresentationEntry = registrar.register(
+            registry = Registries.ENTITY_TYPE,
+            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "win_settlement_presentation"),
+        ) {
+            MahjongEntityTypes.create(
+                factory = ::WinSettlementPresentationEntity,
+                width = WinSettlementPresentationEntity.WIDTH,
+                height = WinSettlementPresentationEntity.HEIGHT,
+                trackingRangeChunks = MahjongEntityTypes.chunksCovering(blocks = 32),
+                updateInterval = 1,
+            )
+        }
+        matchSettlementPresentationEntry = registrar.register(
+            registry = Registries.ENTITY_TYPE,
+            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "match_settlement_presentation"),
+        ) {
+            MahjongEntityTypes.create(
+                factory = ::MatchSettlementPresentationEntity,
+                width = MatchSettlementPresentationEntity.WIDTH,
+                height = MatchSettlementPresentationEntity.HEIGHT,
+                trackingRangeChunks = MahjongEntityTypes.chunksCovering(blocks = 32),
+                updateInterval = 1,
+            )
+        }
+        mahjongStoolSeatEntry = registrar.register(
+            registry = Registries.ENTITY_TYPE,
+            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_stool_seat"),
+        ) {
+            MahjongEntityTypes.create(
+                factory = ::MahjongStoolSeatEntity,
+                width = MahjongStoolSeatGeometry.SEAT_SIZE,
+                height = MahjongStoolSeatGeometry.SEAT_SIZE,
                 // 與原版的船相同，讓看得到乘客的玩家也看得到座位
-                .trackRangeChunks(10)
-                .trackedUpdateRate(10)
-                .fireImmune()
-                .build(),
-        )
+                trackingRangeChunks = 10,
+                updateInterval = 10,
+            )
+        }
     }
 }

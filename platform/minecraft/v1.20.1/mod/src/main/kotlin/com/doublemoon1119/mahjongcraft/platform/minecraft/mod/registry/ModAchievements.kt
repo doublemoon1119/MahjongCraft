@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.AchievementStatisticIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.achievement.MahjongAchievementCriterion
 import net.minecraft.advancements.CriteriaTriggers
-import net.minecraft.core.Registry
-import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.core.registries.Registries
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.stats.StatFormatter
 import net.minecraft.stats.Stats
@@ -22,14 +22,22 @@ object ModAchievements {
      */
     private val statistics = mutableMapOf<String, ResourceLocation>()
 
-    /** 註冊進度條件與全部通用統計；必須在 registry 凍結前呼叫。 */
-    fun register() {
+    /**
+     * 登記進度條件與全部通用統計。
+     *
+     * 統計項目在統計 ID 寫入登記表之後才建立，統計畫面因此會列出玩家還沒獲得過的統計。
+     *
+     * @param registrar 寫入登記表的方式。
+     */
+    fun register(registrar: ModRegistrar) {
         mahjongAchievementCriterion = CriteriaTriggers.register(MahjongAchievementCriterion())
         AchievementStatisticIds.ALL.forEach { statisticId ->
             val id = ResourceLocation(statisticId)
-            Registry.register(BuiltInRegistries.CUSTOM_STAT, id, id)
-            Stats.CUSTOM.get(id, StatFormatter.DEFAULT)
+            registrar.register(registry = Registries.CUSTOM_STAT, id = id) { id }
             statistics[statisticId] = id
+        }
+        registrar.afterRegistration {
+            statistics.values.forEach { id -> Stats.CUSTOM.get(id, StatFormatter.DEFAULT) }
         }
     }
 
