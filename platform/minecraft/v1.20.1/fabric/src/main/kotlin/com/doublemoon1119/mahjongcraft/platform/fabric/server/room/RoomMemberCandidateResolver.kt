@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.RoomMemberCandidate
 import kotlin.uuid.Uuid
 
@@ -20,7 +20,7 @@ import kotlin.uuid.Uuid
 class RoomMemberCandidateResolver(
     private val membershipRepository: PlayerMembershipRepository,
     private val roomRepository: RoomRepository,
-    private val serverHolder: FabricServerHolder,
+    private val serverHolder: ServerHolder,
 ) {
     /**
      * 列出 [playerId] 目前所在房間內，除房主外的所有候選成員。

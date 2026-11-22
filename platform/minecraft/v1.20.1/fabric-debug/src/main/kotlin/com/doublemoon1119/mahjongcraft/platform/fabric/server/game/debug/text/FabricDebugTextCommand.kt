@@ -6,15 +6,15 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewDefaults
-import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildMatchResultChatText
-import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildRoundResultChatText
-import com.doublemoon1119.mahjongcraft.platform.fabric.text.configShowMessage
-import com.doublemoon1119.mahjongcraft.platform.fabric.text.serverConfigEntries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigManager
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.buildMatchResultChatText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.buildRoundResultChatText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.configShowMessage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.serverConfigEntries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
@@ -44,7 +44,7 @@ import kotlin.uuid.toKotlinUuid
  */
 class FabricDebugTextCommand(
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
-    private val serverConfigManager: FabricServerConfigManager,
+    private val serverConfigManager: ServerConfigManager,
     private val json: NetworkJson,
     private val networkRegistries: NetworkDtoRegistries,
     private val actionVocabularyRegistry: GameActionVocabularyRegistry,

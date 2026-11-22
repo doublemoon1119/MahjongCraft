@@ -15,7 +15,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.event.FabricGameEventContexts
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.FabricAchievementService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.BuiltInAchievementIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.PlayerAchievements
@@ -28,7 +27,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventDeliver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventScheduler
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventSubscriptions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.achievement.AchievementGrantGateway
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.achievement.AchievementService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.GameEventExclusions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.SnapshotGameEventLocationSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
@@ -88,7 +89,7 @@ class CommittedFactsDispatcherTest {
             store = store,
             achievementService = achievementService(gateway),
             moduleRegistry = moduleRegistry,
-            locations = FabricGameEventLocationSource(locations),
+            locations = SnapshotGameEventLocationSource(locations),
             reporter = reporter,
             exclusions = exclusions,
             failurePolicy = FabricExtensionFailurePolicy(),
@@ -310,9 +311,9 @@ class CommittedFactsDispatcherTest {
      */
     private fun achievementService(
         gateway: AchievementGrantGateway,
-    ): FabricAchievementService {
+    ): AchievementService {
         val dispatchers = TestCoroutineDispatchers()
-        return FabricAchievementService(
+        return AchievementService(
             scope = createTestAppCoroutineScope(dispatchers),
             dispatchers = dispatchers,
             resolverRegistry = GameAchievementResolverRegistryImpl(),

@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.network
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ArrangedTile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PrivateHandOrder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PrivateHandOrderEntry
@@ -18,7 +18,7 @@ import kotlin.uuid.Uuid
  * @property json 線路序列化設定。
  */
 class PrivateHandOrderSender(
-    private val serverHolder: FabricServerHolder,
+    private val serverHolder: ServerHolder,
     private val json: NetworkJson,
 ) {
     /**

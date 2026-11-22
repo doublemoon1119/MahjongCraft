@@ -7,10 +7,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.AutomaticControlStatusHudRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongHudLayoutEditorScreen
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileSelectionConfirmEntityRenderer
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.DiscardSourceHudRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.time.PauseAwareClientMonotonicClock
@@ -23,12 +21,16 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionKindDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.AcknowledgementEffect
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.ClientDecisionPromptStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.CompactDecisionHudContent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.CompactDecisionHudLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionSubmissionTracker
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionTextResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionTileSelectionState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionTimerDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionTimerPart
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.TimeoutEffect
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.compactDecisionHudContent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.compactDescriptionMaximumWidth
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.decisionTimerParts
@@ -36,6 +38,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.decisi
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.drawDecisionTimer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.isInteractive
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.tileSelectionDetailText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.ClientPlayerDisplayNameResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry

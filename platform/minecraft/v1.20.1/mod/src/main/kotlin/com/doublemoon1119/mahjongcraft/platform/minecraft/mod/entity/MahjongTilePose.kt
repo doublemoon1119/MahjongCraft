@@ -23,7 +23,7 @@ enum class MahjongTilePose {
 
     /**
      * 轉成以局部 X 軸為基準的 renderer 旋轉角度；牌牆生成掉落動畫（
-     * `FabricMahjongTileWallPresenter.present`）也需要這個值當作 [AnimationStep.PlayMotion]
+     * `EntityMahjongTileWallPresenter.present`）也需要這個值當作 [AnimationStep.PlayMotion]
      * 的起訖姿態旋轉角，因此定義在姿態本身而不是 renderer 專屬檔案，讓 server 端呼叫端不需要依賴
      * client 端渲染檔案。
      */

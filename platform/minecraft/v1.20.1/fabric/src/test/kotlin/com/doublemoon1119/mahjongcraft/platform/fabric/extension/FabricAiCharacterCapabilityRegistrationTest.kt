@@ -5,11 +5,11 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCha
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterContext
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricAiCharacterCapabilityRegistrar
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterCapabilityRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricRoomParticipantRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatPlacementRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.AiCharacterCapabilityRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.RoomParticipantRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatPlacementRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatProviderRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.TablePropKindRegistryImpl
 import java.lang.reflect.Modifier
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -23,7 +23,7 @@ class FabricAiCharacterCapabilityRegistrationTest {
     /** 能力自帶完整身分，登記後供執行期查詢。 */
     @Test
     fun `capability registration is namespaced unique and frozen`() {
-        val registry = FabricAiCharacterCapabilityRegistry()
+        val registry = AiCharacterCapabilityRegistry()
         val definition = FabricAiCharacterCapabilityDefinition("example:actor", FabricAiCharacterProvider { null })
         registry.register(definition)
         assertSame(definition, registry.find(definition.id))
@@ -96,7 +96,7 @@ class FabricAiCharacterCapabilityRegistrationTest {
     /** 執行期缺少能力可降級為無世界角色。 */
     @Test
     fun `unknown capability has no guessed provider`() {
-        assertNull(FabricAiCharacterCapabilityRegistry().find("example:absent"))
+        assertNull(AiCharacterCapabilityRegistry().find("example:absent"))
     }
 
     /** 只讀請求不提供 Java 建構入口，內部工廠為 synthetic。 */
@@ -115,10 +115,10 @@ class FabricAiCharacterCapabilityRegistrationTest {
      * @return 本次測試獨立使用的 registry。
      */
     private fun registries(): FabricExtensionRegistries = FabricExtensionRegistries(
-        tablePropKindRegistry = FabricTablePropKindRegistryImpl(),
-        seatProviderRegistry = FabricSeatProviderRegistryImpl(),
-        characterCapabilityRegistry = FabricAiCharacterCapabilityRegistry(),
-        seatPlacementRegistry = FabricSeatPlacementRegistry(),
-        roomParticipantRegistry = FabricRoomParticipantRegistry(),
+        tablePropKindRegistry = TablePropKindRegistryImpl(),
+        seatProviderRegistry = SeatProviderRegistryImpl(),
+        characterCapabilityRegistry = AiCharacterCapabilityRegistry(),
+        seatPlacementRegistry = SeatPlacementRegistry(),
+        roomParticipantRegistry = RoomParticipantRegistry(),
     )
 }

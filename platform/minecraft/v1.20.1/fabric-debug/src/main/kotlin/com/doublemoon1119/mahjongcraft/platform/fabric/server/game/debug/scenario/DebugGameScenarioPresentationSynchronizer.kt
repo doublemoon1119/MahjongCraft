@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTablePresentationCleaner
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TablePresentationCleaner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.Registries
@@ -17,9 +17,9 @@ import net.minecraft.resources.ResourceLocation
  * @property presentationPublisher 發布新情境桌面的服務。
  */
 class DebugGameScenarioPresentationSynchronizer(
-    private val serverHolder: FabricServerHolder,
+    private val serverHolder: ServerHolder,
     private val tableLocationRegistry: TableLocationRegistry,
-    private val presentationCleaner: FabricTablePresentationCleaner,
+    private val presentationCleaner: TablePresentationCleaner,
     private val presentationPublisher: DebugGameScenarioPresentationPublisher,
 ) {
     /**

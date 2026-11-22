@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomP
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomParticipantDefinition
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomParticipantProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomVacancy
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricRoomParticipantRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.RoomParticipantRegistry
 import net.minecraft.world.entity.Entity
 import java.lang.reflect.Modifier
 import kotlin.test.Test
@@ -18,7 +18,7 @@ class FabricRoomParticipantRegistrationTest {
     /** 登記不辨識實體，極端優先權也保持穩定排序；凍結後拒絕寫入。 */
     @Test
     fun `participant providers register lazily with deterministic priority and freeze`() {
-        val registry = FabricRoomParticipantRegistry()
+        val registry = RoomParticipantRegistry()
         val provider = deferred()
         registry.register(FabricRoomParticipantDefinition("test:z", provider, Int.MAX_VALUE))
         registry.register(FabricRoomParticipantDefinition("test:a", provider, Int.MAX_VALUE))
@@ -33,7 +33,7 @@ class FabricRoomParticipantRegistrationTest {
     /** 容量在登記時拒絕，不能在執行時偷偷忽略後面的能力。 */
     @Test
     fun `participant provider capacity and duplicates fail registration`() {
-        val registry = FabricRoomParticipantRegistry()
+        val registry = RoomParticipantRegistry()
         val provider = deferred()
         repeat(64) { registry.register(FabricRoomParticipantDefinition("test:provider_$it", provider)) }
         assertFailsWith<IllegalArgumentException> { registry.register(FabricRoomParticipantDefinition("test:overflow", provider)) }

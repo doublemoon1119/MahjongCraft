@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.AnimatedMahjongEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ManagedTableNbt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import net.minecraft.nbt.CompoundTag
@@ -21,7 +22,7 @@ import kotlin.uuid.Uuid
  * 跟 [MahjongTileEntity] 一樣有真正的碰撞箱、可被右鍵互動（覆寫 [isPickable] 為預設可互動），不像
  * [MahjongRoundInfoEntity] 刻意設計成純視覺、不可互動。
  *
- * **一個確認面板由多個這個類別的 instance 拼湊而成**（見 `FabricMahjongTileSelectionConfirmPresenter`
+ * **一個確認面板由多個這個類別的 instance 拼湊而成**（見 `EntityMahjongTileSelectionConfirmPresenter`
  * 一次生成 `MahjongTileTableLayout.TILE_SELECTION_CONFIRM_SEGMENT_COUNT` 個、沿面板文字方向並排、
  * 位置固定不變）。原版碰撞箱系統的寬度值（[WIDTH]）同時套用在水平兩軸，無法只在文字方向寬、法線方向
  * 薄；用多個 [WIDTH] 很小的 instance 沿寬度方向拼起來，單一 instance 往碰撞箱法線方向多凸出的範圍

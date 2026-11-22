@@ -14,10 +14,10 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PlayerIdentitySender
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.network.AiCharacterSnapshotDelivery
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableStateDelivery
 import net.minecraft.server.level.ServerPlayer
 import kotlin.uuid.Uuid
 
@@ -35,9 +35,9 @@ import kotlin.uuid.Uuid
  */
 class RoomEventPublisherImpl(
     private val roomSnapshotRepository: RoomSnapshotRepository,
-    private val tableStateDelivery: FabricTableStateDelivery,
+    private val tableStateDelivery: TableStateDelivery,
     private val authoritativeStateStore: AuthoritativeStateStore,
-    private val serverHolder: FabricServerHolder,
+    private val serverHolder: ServerHolder,
     private val playerIdentities: PlayerIdentitySender,
     private val json: NetworkJson,
     private val characterSnapshots: AiCharacterSnapshotDelivery,

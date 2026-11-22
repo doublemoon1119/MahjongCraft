@@ -36,15 +36,16 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricSeatedParticipantService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateTicket
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.SeatedParticipantService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TableSpaceObstructionScanner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.LocatedMahjongTable
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.AuthoritativeStatePersistence
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.MahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.MinecraftRoomFeedbackResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.ReachableMahjongTableResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableStateDelivery
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableStateTicket
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomConfigSubmission
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RulePresentationRequirements
@@ -108,7 +109,7 @@ import kotlin.uuid.toKotlinUuid
  */
 class MahjongTableRoomService internal constructor(
     private val scope: AppCoroutineScope,
-    private val persistence: FabricAuthoritativeStatePersistence,
+    private val persistence: AuthoritativeStatePersistence,
     private val roomRepository: RoomRepository,
     private val roomSnapshotRepository: RoomSnapshotRepository,
     private val gameRepository: GameRepository,
@@ -130,16 +131,16 @@ class MahjongTableRoomService internal constructor(
     private val reachableTableResolver: ReachableMahjongTableResolver,
     private val memberCandidateResolver: RoomMemberCandidateResolver,
     private val advanceManager: AutomatedAdvanceManager,
-    private val serverHolder: FabricServerHolder,
-    private val tableStateDelivery: FabricTableStateDelivery,
+    private val serverHolder: ServerHolder,
+    private val tableStateDelivery: TableStateDelivery,
     private val authoritativeStateStore: AuthoritativeStateStore,
     private val dispatchers: CoroutineDispatchers,
     private val json: NetworkJson,
     private val networkRegistries: NetworkDtoRegistries,
-    private val dataStatus: FabricMahjongDataStatus,
+    private val dataStatus: MahjongDataStatus,
     private val presentations: GameConfigPresentationRegistry,
     private val moduleRegistry: MahjongModuleRegistry,
-    private val seatedParticipants: FabricSeatedParticipantService,
+    private val seatedParticipants: SeatedParticipantService,
     private val allowParticipant: AllowRoomParticipantUseCase,
 ) {
     /**
@@ -262,7 +263,7 @@ class MahjongTableRoomService internal constructor(
      * @param ticket 排程前捕捉的桌子與 session 來源。
      * @param player 原請求的玩家；連線已被取代時不送出回覆。
      */
-    private suspend fun sendCurrentOccupancy(ticket: FabricTableStateTicket, player: ServerPlayer) {
+    private suspend fun sendCurrentOccupancy(ticket: TableStateTicket, player: ServerPlayer) {
         val playerId = player.uuid.toKotlinUuid()
         tableStateDelivery.prepareAndSend(
             ticket = ticket,

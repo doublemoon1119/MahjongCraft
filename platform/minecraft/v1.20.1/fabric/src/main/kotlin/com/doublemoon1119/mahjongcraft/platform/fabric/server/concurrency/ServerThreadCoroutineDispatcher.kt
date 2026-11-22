@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.TickMonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency.MainThreadDrain
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency.MainThreadTaskQueue
 import kotlinx.coroutines.CancellableContinuation
@@ -33,8 +33,8 @@ import kotlin.time.Duration.Companion.milliseconds
  */
 @OptIn(InternalCoroutinesApi::class, ExperimentalCoroutinesApi::class)
 class ServerThreadCoroutineDispatcher(
-    private val serverHolder: FabricServerHolder,
-    private val tickClock: FabricTickMonotonicClock,
+    private val serverHolder: ServerHolder,
+    private val tickClock: TickMonotonicClock,
 ) : CoroutineDispatcher(),
     Delay,
     MainThreadDrain {

@@ -13,8 +13,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongStoolBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.ClientAiCharacterPreviews
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionReplayMarker
@@ -30,10 +28,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayW
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.ReplayTableNotes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.CardBackground
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOption
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOverlay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.FormScreenLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelIcon
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScrollbarLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
@@ -49,11 +49,15 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.His
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryPageFrame
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryPaging
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryReplayAnimation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryReplayFigureOpacity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryReplayHandRevealMotion
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryReplayLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryReplayPlayerEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryReplaySceneNotice
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryReplaySpeed
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryScreenText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.translationKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout

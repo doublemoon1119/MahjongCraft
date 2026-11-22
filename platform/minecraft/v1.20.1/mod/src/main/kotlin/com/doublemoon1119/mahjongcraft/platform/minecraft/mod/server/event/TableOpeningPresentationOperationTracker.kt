@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event
 import kotlin.uuid.Uuid
 
 /**
- * 追蹤 Fabric 同桌同一批開局 presentation 的世代與失敗狀態。
+ * 追蹤同桌同一批開局 presentation 的世代與失敗狀態。
  *
  * Flow 的 publisher 契約刻意不攜帶平台 operation token；[begin] 在收到具有開門動畫的牌牆請求時建立
  * 新世代，後續同步發布的方法以 [getRegisteringTicket] 取得同一張 [Ticket]，直到初次發牌完成註冊後由

@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongBotE
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongPlayerInfoEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileItemRenderer
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationEffectGeometry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.LatestDiscardHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongBotEntity
@@ -23,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneTileGlow
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneWinEffect
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SceneEntityTranslucency
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.WinCelebrationEffectGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
 import com.mojang.blaze3d.platform.Lighting

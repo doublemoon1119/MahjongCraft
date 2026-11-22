@@ -7,6 +7,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.Scrollb
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseReplayState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryCardStyle
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryFactPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryRoundEventPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryScreenLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryWinningHandSource
 import net.minecraft.client.gui.Font

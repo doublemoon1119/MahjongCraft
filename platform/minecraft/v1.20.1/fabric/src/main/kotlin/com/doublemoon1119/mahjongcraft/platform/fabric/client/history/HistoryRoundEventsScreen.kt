@@ -6,12 +6,12 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayIde
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.FormScreenLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelIcon
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseFailure
@@ -20,8 +20,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.His
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryCardStyle
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryPageFrame
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryPaging
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryRoundEventPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryRoundEventsLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryScreenText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryWinningHandSource
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.translationKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import net.minecraft.ChatFormatting

@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game
 import kotlin.uuid.Uuid
 
 /**
- * 決策計時排程每個 tick 的處理，與 Fabric 事件和具體服務分開，讓接線可以單獨測試。
+ * 決策計時排程每個 tick 的處理，與載入器的 tick 事件和具體服務分開，讓接線可以單獨測試。
  *
  * 每個 tick 先由 [advanceTick] 把輪到的對局標為待推進；[process] 則依序執行：
  * 1. 全域處理到期時，先對所有對局暫停 busy 桌並重新計時，再判定逾時並為受影響的對局請求推進；這些對局清除待推進標記。

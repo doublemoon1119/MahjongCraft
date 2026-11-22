@@ -1223,7 +1223,7 @@ class GameFlowCoordinatorTest {
 
     /**
      * 驗證同一局內連續兩次中途胡牌各自送出一次完整呈現請求，順序與贏家都正確——排隊播放本身由平台的
-     * 呈現時間軸負責（見 `FabricGamePresentationPublisher`），這裡驗證的是 flow 層確實逐次送出、
+     * 呈現時間軸負責（見 `ServerThreadGamePresentationPublisher`），這裡驗證的是 flow 層確實逐次送出、
      * 沒有把兩次合併或漏掉任何一次。
      */
     @Test

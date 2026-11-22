@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryOutboxWriter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -23,7 +23,7 @@ sealed interface StressHistorySink {
      * @property databasePath 壓力測試資料庫檔案。
      */
     class Database(
-        val writer: FabricHistoryOutboxWriter,
+        val writer: HistoryOutboxWriter,
         val databasePath: Path,
     ) : StressHistorySink {
         override suspend fun failed(): Boolean = writer.status().let { !it.databaseConnected || it.storagePaused || it.lastError != null }

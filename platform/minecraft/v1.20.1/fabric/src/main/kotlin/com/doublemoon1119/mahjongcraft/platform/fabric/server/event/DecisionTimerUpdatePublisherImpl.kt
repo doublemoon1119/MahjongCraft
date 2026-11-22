@@ -4,11 +4,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpd
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.PlayerDecisionPromptFactory
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTimerStatusDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTimerUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.toDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.PlayerDecisionPromptFactory
 import kotlin.uuid.Uuid
 
 /**
@@ -19,7 +19,7 @@ import kotlin.uuid.Uuid
  * @property json 編碼計時 payload。
  */
 class DecisionTimerUpdatePublisherImpl(
-    private val serverHolder: FabricServerHolder,
+    private val serverHolder: ServerHolder,
     private val promptFactory: PlayerDecisionPromptFactory,
     private val json: NetworkJson,
 ) : DecisionTimerUpdatePublisher {

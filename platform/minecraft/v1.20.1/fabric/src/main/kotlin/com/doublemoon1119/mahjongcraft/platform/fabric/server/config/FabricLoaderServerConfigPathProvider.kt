@@ -1,20 +1,22 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.config
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigLocation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigPathProvider
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.storage.LevelResource
 import java.nio.file.Path
 
 /** 由世界存檔或 Fabric Loader config directory 解析 server config 位置。 */
-class FabricLoaderServerConfigPathProvider : FabricServerConfigPathProvider {
+class FabricLoaderServerConfigPathProvider : ServerConfigPathProvider {
     /**
      * 單人世界使用存檔內設定；專用伺服器使用執行個體共用設定。
      *
      * @param server 目前 Minecraft server。
      * @return 設定檔的實際路徑與可供訊息使用的顯示路徑。
      */
-    override fun get(server: MinecraftServer): FabricServerConfigLocation = resolve(
+    override fun get(server: MinecraftServer): ServerConfigLocation = resolve(
         isDedicated = server.isDedicatedServer,
         worldSavePath = server.getWorldPath(LevelResource.ROOT),
         loaderConfigPath = FabricLoader.getInstance().configDir,
@@ -32,13 +34,13 @@ class FabricLoaderServerConfigPathProvider : FabricServerConfigPathProvider {
         isDedicated: Boolean,
         worldSavePath: Path,
         loaderConfigPath: Path,
-    ): FabricServerConfigLocation = if (isDedicated) {
-        FabricServerConfigLocation(
+    ): ServerConfigLocation = if (isDedicated) {
+        ServerConfigLocation(
             path = loaderConfigPath.resolve(MinecraftModMetadata.MOD_ID).resolve("server.toml"),
             displayPath = "<server directory>/config/${MinecraftModMetadata.MOD_ID}/server.toml",
         )
     } else {
-        FabricServerConfigLocation(
+        ServerConfigLocation(
             path = worldSavePath.resolve("serverconfig").resolve("${MinecraftModMetadata.MOD_ID}.toml"),
             displayPath = "<world save>/serverconfig/${MinecraftModMetadata.MOD_ID}.toml",
         )

@@ -7,17 +7,18 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableGameActionService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.EntityMahjongTileWallPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.TablePresentationBusyPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.AnimatedMahjongEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.GameManagedEntityNbt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MeldActionPopupTile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.NonBlockingPresentationLeaseCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TileActionPopupKind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TileActionPopupKindNbt
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.MahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
@@ -225,7 +226,7 @@ class MahjongTileEntity(
      * 只在 server 端建立可持久化的「動畫不阻塞全桌」lease；重複呼叫只允許延長。
      *
      * 呼叫端負責涵蓋整段中途胡牌演出（含收尾的蓋牌動畫），見
-     * `FabricGamePresentationPublisher.publishWinPresentation`。
+     * `ServerThreadGamePresentationPublisher.publishWinPresentation`。
      *
      * @param endGameTime 不阻塞整桌忙碌判定的 lease 到期時間。
      */
@@ -358,13 +359,13 @@ class MahjongTileEntity(
      * [managedTableId] 對應的對局是否還存在——查不到就自我 [discard]。
      *
      * 這是崩潰恢復的安全網，補足「某條清除路徑忘記清 3D entity」這類漏洞（已知一例：
-     * `FabricTableLocationValidationService.cleanupMissing`），不是取代既有的明確清除呼叫
+     * `TableLocationValidationService.cleanupMissing`），不是取代既有的明確清除呼叫
      * （`MahjongTileWallPresenter.clear()`／`MahjongPlayerAreaPresenter.clear()` 等）——那些呼叫仍是
      * 正常流程下的清除方式，這裡只在「不知道為什麼漏清了」的情況下才會真的觸發。
      *
      * 只查「這個 tableId 是否還有對局」，不逐一比對這張牌的 UUID 是否還在牌牆／手牌／牌河／副露的
      * 哪個位置——那需要把整個 `TableState` 攤開搜尋，對一個安全網來說成本太高；只要對局本身還在，
-     * 就交給既有的「每局重建時整批清空重新生成」機制（見 [FabricMahjongTileWallPresenter.present] KDoc）
+     * 就交給既有的「每局重建時整批清空重新生成」機制（見 [EntityMahjongTileWallPresenter.present] KDoc）
      * 保證舊局的牌會被正確換掉，不需要這裡重複驗證。
      *
      * 讀取 [AuthoritativeStateStore.state] 已發布的快照，不在 tick 這個主執行緒同步呼叫點等待權威狀態的鎖。
@@ -388,7 +389,7 @@ class MahjongTileEntity(
      */
     private fun validateStillManagedByActiveGame() {
         val tableId = managedTableId ?: return
-        if (!GlobalContext.get().get<FabricMahjongDataStatus>().isMahjongAvailable) return
+        if (!GlobalContext.get().get<MahjongDataStatus>().isMahjongAvailable) return
         val store = GlobalContext.get().get<AuthoritativeStateStore>()
         val gameStillActive = tableId in store.state.value.games
         if (!gameStillActive) discard()

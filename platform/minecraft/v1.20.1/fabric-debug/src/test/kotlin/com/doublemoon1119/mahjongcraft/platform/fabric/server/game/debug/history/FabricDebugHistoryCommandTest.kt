@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatch
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryRetentionCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
@@ -27,7 +27,7 @@ class FabricDebugHistoryCommandTest {
     @Test
     fun `history command exposes generation status and cancel`() {
         val store = AuthoritativeStateStore()
-        val writer = FabricHistoryOutboxWriter(
+        val writer = HistoryOutboxWriter(
             store = store,
             registries = bundledPersistenceRegistries(),
             dispatchers = TestDispatchers,

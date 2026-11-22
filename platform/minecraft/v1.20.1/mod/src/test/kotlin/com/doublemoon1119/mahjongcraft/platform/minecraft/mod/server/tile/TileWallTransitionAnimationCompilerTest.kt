@@ -14,7 +14,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
-/** 驗證牌牆路徑轉換成持久化 Fabric 動畫步驟時的同步邊界。 */
+/** 驗證牌牆路徑轉換成持久化的實體動畫步驟時的同步邊界。 */
 class TileWallTransitionAnimationCompilerTest {
     /** 同一 phase 共同開始，下一 phase 應等待前一 phase 的最長路徑。 */
     @Test

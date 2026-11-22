@@ -21,7 +21,7 @@ class FixedMahjongTileModelVariant(
     val coverTextureId: ResourceLocation,
 ) {
     /**
-     * 建立供 Fabric model resolver 解析的 JSON 未烘焙模型。
+     * 建立供模型載入流程解析的 JSON 未烘焙模型。
      *
      * @return 只覆寫材質槽、並保留模板 parent 的未烘焙模型。
      */

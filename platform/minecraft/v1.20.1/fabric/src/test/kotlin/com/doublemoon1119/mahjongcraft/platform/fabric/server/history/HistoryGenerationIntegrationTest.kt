@@ -90,7 +90,7 @@ class HistoryGenerationIntegrationTest {
      * @param matchId 已封存的對局。
      */
     private suspend fun assertEveryArchivedRoundReadable(
-        writer: FabricHistoryOutboxWriter,
+        writer: HistoryOutboxWriter,
         database: SqliteHistoryDatabase,
         session: Uuid,
         matchId: Uuid,
@@ -122,7 +122,7 @@ class HistoryGenerationIntegrationTest {
      */
     private suspend fun generate(
         runtime: HeadlessFlowHistoryRuntime,
-        writer: FabricHistoryOutboxWriter,
+        writer: HistoryOutboxWriter,
         liveStore: AuthoritativeStateStore,
         database: SqliteHistoryDatabase,
         session: Uuid,
@@ -334,7 +334,7 @@ class HistoryGenerationIntegrationTest {
     private fun writer(
         store: AuthoritativeStateStore,
         historyConfig: MinecraftHistoryConfig = MinecraftHistoryConfig(includeAiMatches = true),
-    ): FabricHistoryOutboxWriter = FabricHistoryOutboxWriter(
+    ): HistoryOutboxWriter = HistoryOutboxWriter(
         store = store,
         registries = bundledPersistenceRegistries(),
         dispatchers = TestDispatchers,
@@ -356,7 +356,7 @@ class HistoryGenerationIntegrationTest {
      * @return 可由來源 runtime 確認移除的事件識別碼。
      */
     private suspend fun transfer(
-        writer: FabricHistoryOutboxWriter,
+        writer: HistoryOutboxWriter,
         liveStore: AuthoritativeStateStore,
         connection: Connection,
         progress: HeadlessHistoryProgress,

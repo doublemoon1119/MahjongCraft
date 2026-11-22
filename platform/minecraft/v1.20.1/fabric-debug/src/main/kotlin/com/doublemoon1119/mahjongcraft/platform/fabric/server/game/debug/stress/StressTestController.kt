@@ -12,10 +12,10 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecision
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionOutcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionReporter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.FabricHistoryGenerationRuntimeFactory
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryDatabasePath
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.StressTestHistorySource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.GameAdvanceRotation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryDatabasePath
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -220,7 +220,7 @@ class StressTestController(
         historyMode: StressHistoryMode,
     ): StressTimeSeriesFile? {
         val timestamp = LocalDateTime.now().format(TIME_SERIES_TIMESTAMP)
-        val path = FabricHistoryDatabasePath.resolve(server).resolveSibling("stress-test-$timestamp-${historyMode.commandName}.csv").toAbsolutePath().normalize()
+        val path = HistoryDatabasePath.resolve(server).resolveSibling("stress-test-$timestamp-${historyMode.commandName}.csv").toAbsolutePath().normalize()
         return try {
             StressTimeSeriesFile.create(path, scenario.identifier, pace, historyMode)
         } catch (error: IOException) {

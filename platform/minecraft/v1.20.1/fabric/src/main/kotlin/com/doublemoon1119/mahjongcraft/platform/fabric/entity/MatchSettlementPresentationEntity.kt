@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationSte
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.HiddenDebugHitboxEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ManagedTableNbt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MatchSettlementPlayerSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.SimpleAnimatedMahjongEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TableOwnedPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementRevealOrder

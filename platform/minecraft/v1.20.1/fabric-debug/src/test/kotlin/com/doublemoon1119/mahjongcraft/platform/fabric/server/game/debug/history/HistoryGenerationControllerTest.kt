@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.Headl
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftHistoryConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
@@ -129,7 +129,7 @@ class HistoryGenerationControllerTest {
     private fun writer(
         store: AuthoritativeStateStore,
         configState: MinecraftServerConfigState,
-    ): FabricHistoryOutboxWriter = FabricHistoryOutboxWriter(
+    ): HistoryOutboxWriter = HistoryOutboxWriter(
         store = store,
         registries = bundledPersistenceRegistries(),
         dispatchers = TestDispatchers,

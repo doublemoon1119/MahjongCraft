@@ -10,12 +10,12 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PlayerIdentitySender
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateTicket
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.network.AiCharacterSnapshotDelivery
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableStateDelivery
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableStateTicket
 import net.minecraft.server.level.ServerPlayer
 import kotlin.uuid.Uuid
 
@@ -37,11 +37,11 @@ import kotlin.uuid.Uuid
  */
 class GameEventPublisherImpl(
     private val gameSnapshotRepository: GameSnapshotRepository,
-    private val tableStateDelivery: FabricTableStateDelivery,
+    private val tableStateDelivery: TableStateDelivery,
     private val authoritativeStateStore: AuthoritativeStateStore,
-    private val serverHolder: FabricServerHolder,
+    private val serverHolder: ServerHolder,
     private val playerIdentities: PlayerIdentitySender,
-    private val historyWriter: FabricHistoryOutboxWriter,
+    private val historyWriter: HistoryOutboxWriter,
     private val json: NetworkJson,
     private val characterSnapshots: AiCharacterSnapshotDelivery,
     private val networkRegistries: NetworkDtoRegistries,
@@ -71,7 +71,7 @@ class GameEventPublisherImpl(
 
     /** 使用呼叫端捕捉的同一張桌子來源票據發布對局事件。 */
     private suspend fun publish(
-        ticket: FabricTableStateTicket,
+        ticket: TableStateTicket,
         gameId: Uuid,
         targetPlayerId: Uuid,
         actorId: Uuid,

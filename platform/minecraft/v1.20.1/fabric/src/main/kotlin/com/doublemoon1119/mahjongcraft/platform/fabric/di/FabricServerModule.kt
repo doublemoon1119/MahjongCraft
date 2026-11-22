@@ -21,106 +21,84 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricRo
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatPlacementRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.FabricAchievementGrantGateway
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.FabricAchievementService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterBindings
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterCapabilityRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterManager
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterTracking
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricRoomParticipantRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricSeatedParticipantService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricWorldParticipantPresenceService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricCoroutineDispatchers
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricSessionBackgroundScope
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.AdvancementAchievementGrantGateway
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.AiCharacterBindings
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.AiCharacterCapabilityRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.AiCharacterManager
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.AiCharacterTracking
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.RoomParticipantRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.SeatedParticipantService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.WorldParticipantPresenceService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerLifecycleAppCoroutineScope
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerThreadCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricLoaderServerConfigPathProvider
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigPathProvider
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.FabricMahjongDiceRollPresenter
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.ServerConfigCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.EntityMahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.CommittedFactsDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.DecisionTimerUpdatePublisherImpl
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.FabricGameEventDeliveryReporter
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.FabricGameEventLocationSource
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.FabricGamePresentationBusyGate
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.FabricGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.GameEventPublisherImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.RoomEventPublisherImpl
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.ServerThreadGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.AutomaticControlUpdateService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricAiDecisionReporter
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricAutomatedAdvanceFailureReporter
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricAutomatedAdvanceFollowUp
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricExhaustiveDrawSettlementPresentationScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricGameAbortEffects
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricGameCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricMatchSettlementPresentationScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationShowcaseScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinSettlementPresentationScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.GameActionCandidateResolver
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TrackerGamePresentationBusyGate
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.AutoDrawAutomatedAdvanceFollowUp
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DecisionTimerScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.ExhaustiveDrawSettlementPresentationScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.InGameCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongAutoDrawService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableGameActionService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.PlayerDecisionPromptFactory
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.ReadinessAnalysisDtoMapper
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryQueryService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MatchSettlementPresentationScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.TablePresentationGameAbortEffects
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.WinCelebrationEffectScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.WinCelebrationShowcaseScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.WinSettlementPresentationScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryOutboxWriter
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryQueryService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.StressTestHistorySource
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AiCharacterSnapshotSender
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.FabricAutomaticControlSnapshotSender
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.FabricObserverSnapshotSender
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AutomaticControlSnapshotPacketSender
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.ObserverSnapshotPacketSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PlayerIdentitySender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PrivateHandOrderSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoundResultSender
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.notification.FabricGameConfigTextFormatter
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.notification.FabricPlayerFeedbackPublisher
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.observer.FabricObserverAudienceSource
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.observer.FabricObserverSnapshotBroadcastService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.notification.PlayerFeedbackPublisher
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.observer.ChunkTrackingObserverAudienceSource
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.observer.ObserverSnapshotBroadcastService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.TableLocationPersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.PlayerConnectionLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricMahjongLobbyInfoLifecycleService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricMahjongLobbyInfoPresenter
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricRoomCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongLobbyInfoLifecycleService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongLobbyInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.ReachableMahjongTableResolver
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.RoomCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.RoomMemberCandidateResolver
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricAiSeatPlacementService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricMahjongSeatingPresenter
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatPlacementRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatingSessionFactory
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.AiSeatPlacementService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.EntityMahjongSeatingPresenter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricMahjongPlayerInfoPresenter
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricMahjongRoundInfoPresenter
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricMahjongTileSelectionConfirmPresenter
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTablePresentationCleaner
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTablePropRefreshScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableRemovalNotifier
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableSpaceObstructionService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDeliveryEnvironment
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.OrphanedTableCleanupService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatPlacementRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatProviderRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatingSessionFactory
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.EntityMahjongPlayerInfoPresenter
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.EntityMahjongRoundInfoPresenter
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.EntityMahjongTileSelectionConfirmPresenter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TableRemovalNotifier
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TableStateDeliveryEnvironment
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropPresenter
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongPlayerAreaPresenter
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricWorldTickWaiter
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.ServerTableStateDeliveryEnvironment
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TableLifecycleService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TableLocationValidationService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TablePresentationCleaner
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TablePropRefreshScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TableSpaceObstructionService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.EntityTablePropPresenter
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.TablePropKindRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.TablePropKindRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.EntityMahjongPlayerAreaPresenter
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.EntityMahjongTileWallPresenter
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.TickMonotonicClock
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.WorldTickWaiter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.di.flowServerModule
 import com.doublemoon1119.mahjongcraft.platform.minecraft.di.minecraftServerModule
@@ -130,16 +108,38 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventLocatio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.development.TableEndListeners
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.development.WinCelebrationRequestAdjusters
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.achievement.AchievementGrantGateway
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.achievement.AchievementService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency.SessionBackgroundScope
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigManager
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigPathProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.entity.EntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.GameEventExclusions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.LoggingGameEventDeliveryReporter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.SnapshotGameEventLocationSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.TableOpeningPresentationOperationTracker
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.AutomaticControlUpdateService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.GameActionCandidateResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.LoggingAiDecisionReporter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.LoggingAutomatedAdvanceFailureReporter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.PlayerDecisionPromptFactory
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.ReadinessAnalysisDtoMapper
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.SpectatorObservationService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryRetentionCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.network.AiCharacterSnapshotDelivery
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.network.AutomaticControlSnapshotSender
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.notification.GameConfigTextFormatter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.AuthoritativeStatePersistence
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.MahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.player.ServerAiPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.BuiltInDefaultGameConfigProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.ReachableMahjongTableResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.BroadcastTableRemovalNotifier
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.OrphanedTableCleanupService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableCleanupQueue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TablePropRefreshQueue
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableRemovalNotifier
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableStateDelivery
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableStateDeliveryEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter
@@ -163,37 +163,37 @@ import org.koin.plugin.module.dsl.single
 val fabricServerModule = module {
     includes(flowServerModule, minecraftServerModule, fabricCommonModule)
 
-    single<FabricRoomParticipantRegistry>() bind FabricRoomParticipantRegistrar::class
-    single<FabricAiCharacterCapabilityRegistry>() bind FabricAiCharacterCapabilityRegistrar::class
-    single<FabricSeatPlacementRegistry>() bind FabricSeatPlacementRegistrar::class
-    single<FabricAiSeatPlacementService>()
+    single<RoomParticipantRegistry>() bind FabricRoomParticipantRegistrar::class
+    single<AiCharacterCapabilityRegistry>() bind FabricAiCharacterCapabilityRegistrar::class
+    single<SeatPlacementRegistry>() bind FabricSeatPlacementRegistrar::class
+    single<AiSeatPlacementService>()
     single<FabricExtensionRegistries>()
     single<CoreExtensionRegistries>()
 
-    single<FabricServerHolder>()
+    single<ServerHolder>()
 
-    single<FabricAchievementGrantGateway>() bind AchievementGrantGateway::class
-    single<FabricAchievementService>()
+    single<AdvancementAchievementGrantGateway>() bind AchievementGrantGateway::class
+    single<AchievementService>()
 
-    single<FabricAppCoroutineScope>() bind AppCoroutineScope::class
-    single<FabricCoroutineDispatchers>() bind CoroutineDispatchers::class
-    single<FabricSessionBackgroundScope>()
+    single<ServerLifecycleAppCoroutineScope>() bind AppCoroutineScope::class
+    single<ServerThreadCoroutineDispatchers>() bind CoroutineDispatchers::class
+    single<SessionBackgroundScope>()
 
-    single<FabricLoaderServerConfigPathProvider>() bind FabricServerConfigPathProvider::class
-    single<FabricServerConfigCommand>()
-    single<FabricServerConfigManager>()
+    single<FabricLoaderServerConfigPathProvider>() bind ServerConfigPathProvider::class
+    single<ServerConfigCommand>()
+    single<ServerConfigManager>()
 
-    single<FabricMahjongDiceRollPresenter>() bind MahjongDiceRollPresenter::class
+    single<EntityMahjongDiceRollPresenter>() bind MahjongDiceRollPresenter::class
 
-    single<FabricEntitySpawnGateway>()
+    single<EntitySpawnGateway>()
     single<MahjongTileCollisionService>()
 
     single<CommittedFactsDispatcher>()
     single<DecisionTimerUpdatePublisherImpl>() bind DecisionTimerUpdatePublisher::class
-    single<FabricGameEventDeliveryReporter>() bind GameEventDeliveryReporter::class
-    single<FabricGameEventLocationSource>() bind GameEventLocationSource::class
-    single<FabricGamePresentationBusyGate>() bind GamePresentationBusyGate::class
-    single<FabricGamePresentationPublisher>() bind GamePresentationPublisher::class
+    single<LoggingGameEventDeliveryReporter>() bind GameEventDeliveryReporter::class
+    single<SnapshotGameEventLocationSource>() bind GameEventLocationSource::class
+    single<TrackerGamePresentationBusyGate>() bind GamePresentationBusyGate::class
+    single<ServerThreadGamePresentationPublisher>() bind GamePresentationPublisher::class
     single<GameEventExclusions>()
     single<GameEventPublisherImpl>() bind GameEventPublisher::class
     single<RoomEventPublisherImpl>() bind RoomEventPublisher::class
@@ -201,24 +201,24 @@ val fabricServerModule = module {
     single<TablePresentationBusyTracker>()
 
     single<AutomaticControlUpdateService>()
-    single<FabricAiDecisionReporter>() bind AiDecisionReporter::class
-    single<FabricAutomatedAdvanceFailureReporter>() bind AutomatedAdvanceFailureReporter::class
-    single<FabricAutomatedAdvanceFollowUp>() bind AutomatedAdvanceFollowUp::class
-    single<FabricGameAbortEffects>() bind GameAbortEffects::class
-    single<FabricDecisionTimerScheduler>()
-    single<FabricExhaustiveDrawSettlementPresentationScheduler>()
-    single<FabricGameCommand>()
-    single<FabricMatchSettlementPresentationScheduler>()
-    single<FabricWinCelebrationEffectScheduler>()
-    single<FabricWinCelebrationShowcaseScheduler>()
-    single<FabricWinSettlementPresentationScheduler>()
+    single<LoggingAiDecisionReporter>() bind AiDecisionReporter::class
+    single<LoggingAutomatedAdvanceFailureReporter>() bind AutomatedAdvanceFailureReporter::class
+    single<AutoDrawAutomatedAdvanceFollowUp>() bind AutomatedAdvanceFollowUp::class
+    single<TablePresentationGameAbortEffects>() bind GameAbortEffects::class
+    single<DecisionTimerScheduler>()
+    single<ExhaustiveDrawSettlementPresentationScheduler>()
+    single<InGameCommand>()
+    single<MatchSettlementPresentationScheduler>()
+    single<WinCelebrationEffectScheduler>()
+    single<WinCelebrationShowcaseScheduler>()
+    single<WinSettlementPresentationScheduler>()
     single<GameActionCandidateResolver>()
     single<MahjongAutoDrawService>()
     single<MahjongTableGameActionService>()
     // 呼叫時才取角色快照，讓讀檔還原期間也能建立操作提示，而不形成保存服務的依賴循環。
     single {
         ServerAiPlayerDisplayNameResolver { matchId ->
-            get<FabricAuthoritativeStatePersistence>().characterSnapshot()?.characters?.matchPlayers(matchId).orEmpty()
+            get<AuthoritativeStatePersistence>().characterSnapshot()?.characters?.matchPlayers(matchId).orEmpty()
         }
     }
     single<PlayerDecisionPromptFactory>()
@@ -227,10 +227,10 @@ val fabricServerModule = module {
     single<TableEndListeners>()
     single<WinCelebrationRequestAdjusters>()
 
-    single<FabricHistoryCommand>()
+    single<HistoryCommand>()
     // 量測用 observer 只在壓力測試另建的實例傳入，正式組裝不提供。
     single {
-        FabricHistoryOutboxWriter(
+        HistoryOutboxWriter(
             store = get(),
             registries = get(),
             dispatchers = get(),
@@ -239,73 +239,73 @@ val fabricServerModule = module {
             presentationNotes = get(),
             configState = get(),
             retentionCoordinator = get(),
-            characterAppearance = { matchId, playerId -> get<FabricAuthoritativeStatePersistence>().characterSnapshot()?.characters?.matchPlayers(matchId)?.get(playerId) },
+            characterAppearance = { matchId, playerId -> get<AuthoritativeStatePersistence>().characterSnapshot()?.characters?.matchPlayers(matchId)?.get(playerId) },
         )
     }
-    single<FabricHistoryQueryService>()
+    single<HistoryQueryService>()
     single<HistoryRetentionCoordinator>()
     single<StressTestHistorySource>()
 
-    single<FabricAutomaticControlSnapshotSender>() bind AutomaticControlSnapshotSender::class
-    single<FabricObserverSnapshotSender>() bind ObserverSnapshotSender::class
+    single<AutomaticControlSnapshotPacketSender>() bind AutomaticControlSnapshotSender::class
+    single<ObserverSnapshotPacketSender>() bind ObserverSnapshotSender::class
     single<PlayerIdentitySender>()
     single<RoundResultSender>()
     single<PrivateHandOrderSender>()
 
-    single<FabricGameConfigTextFormatter>()
-    single<FabricPlayerFeedbackPublisher>() bind MinecraftPlayerFeedbackPublisher::class
+    single<GameConfigTextFormatter>()
+    single<PlayerFeedbackPublisher>() bind MinecraftPlayerFeedbackPublisher::class
 
-    single<FabricObserverAudienceSource>() bind ObserverAudienceSource::class
-    single<FabricObserverSnapshotBroadcastService>()
+    single<ChunkTrackingObserverAudienceSource>() bind ObserverAudienceSource::class
+    single<ObserverSnapshotBroadcastService>()
 
-    single<FabricAuthoritativeStatePersistence>()
-    single<FabricMahjongDataStatus>()
-    single<FabricTableLocationPersistence>()
+    single<AuthoritativeStatePersistence>()
+    single<MahjongDataStatus>()
+    single<TableLocationPersistence>()
 
     single<PlayerConnectionLifecycleService>()
     single<ServerPlayerIdentityStore>()
 
     single<BuiltInDefaultGameConfigProvider>() bind DefaultGameConfigProvider::class
-    single<FabricMahjongLobbyInfoLifecycleService>()
-    single<FabricMahjongLobbyInfoPresenter>()
-    single<FabricRoomCommand>()
+    single<MahjongLobbyInfoLifecycleService>()
+    single<MahjongLobbyInfoPresenter>()
+    single<RoomCommand>()
     single<MahjongTableRoomService>()
     single<ReachableMahjongTableResolver>()
     single<RoomMemberCandidateResolver>()
 
     single<AiCharacterSnapshotSender>() bind AiCharacterSnapshotDelivery::class
-    single<FabricAiCharacterTracking>()
-    single<FabricAiCharacterBindings>()
-    single<FabricSeatedParticipantService>()
-    single<FabricAiCharacterManager>()
-    single<FabricWorldParticipantPresenceService>()
-    single<FabricSeatingSessionFactory>()
-    single<FabricMahjongSeatingPresenter>() bind MahjongSeatingPresenter::class
-    single<FabricSeatProviderRegistryImpl>() bind FabricSeatProviderRegistrar::class
+    single<AiCharacterTracking>()
+    single<AiCharacterBindings>()
+    single<SeatedParticipantService>()
+    single<AiCharacterManager>()
+    single<WorldParticipantPresenceService>()
+    single<SeatingSessionFactory>()
+    single<EntityMahjongSeatingPresenter>() bind MahjongSeatingPresenter::class
+    single<SeatProviderRegistryImpl>() bind FabricSeatProviderRegistrar::class
     single<MahjongStoolSeatProvider>() bind SeatProvider::class
     single<MahjongStoolSeatService>()
 
-    single<FabricMahjongPlayerInfoPresenter>() bind MahjongPlayerInfoPresenter::class
-    single<FabricMahjongRoundInfoPresenter>() bind MahjongRoundInfoPresenter::class
-    single<FabricMahjongTileSelectionConfirmPresenter>() bind MahjongTileSelectionConfirmPresenter::class
-    single<FabricTableLifecycleService>()
-    single<FabricTableLocationValidationService>()
-    single<FabricTablePropRefreshScheduler>()
-    single<FabricTableSpaceObstructionService>()
-    single<FabricTablePresentationCleaner>()
-    single<FabricTableRemovalNotifier>() bind TableRemovalNotifier::class
-    single<FabricTableStateDelivery>()
-    single<FabricTableStateDeliveryEnvironment>() bind TableStateDeliveryEnvironment::class
+    single<EntityMahjongPlayerInfoPresenter>() bind MahjongPlayerInfoPresenter::class
+    single<EntityMahjongRoundInfoPresenter>() bind MahjongRoundInfoPresenter::class
+    single<EntityMahjongTileSelectionConfirmPresenter>() bind MahjongTileSelectionConfirmPresenter::class
+    single<TableLifecycleService>()
+    single<TableLocationValidationService>()
+    single<TablePropRefreshScheduler>()
+    single<TableSpaceObstructionService>()
+    single<TablePresentationCleaner>()
+    single<BroadcastTableRemovalNotifier>() bind TableRemovalNotifier::class
+    single<TableStateDelivery>()
+    single<ServerTableStateDeliveryEnvironment>() bind TableStateDeliveryEnvironment::class
     single<OrphanedTableCleanupService>()
     single<PersistentTableOverlayCoordinator>()
     single<TableCleanupQueue>()
     single<TablePropRefreshQueue>()
-    single<FabricTablePropKindRegistryImpl>() bind FabricTablePropKindRegistry::class
-    single<FabricTablePropPresenter>() bind TablePropPresenter::class
+    single<TablePropKindRegistryImpl>() bind TablePropKindRegistry::class
+    single<EntityTablePropPresenter>() bind TablePropPresenter::class
 
-    single<FabricMahjongPlayerAreaPresenter>() bind MahjongPlayerAreaPresenter::class
-    single<FabricMahjongTileWallPresenter>() bind MahjongTileWallPresenter::class
+    single<EntityMahjongPlayerAreaPresenter>() bind MahjongPlayerAreaPresenter::class
+    single<EntityMahjongTileWallPresenter>() bind MahjongTileWallPresenter::class
 
-    single<FabricTickMonotonicClock>() bind MonotonicClock::class
-    single<FabricWorldTickWaiter>()
+    single<TickMonotonicClock>() bind MonotonicClock::class
+    single<WorldTickWaiter>()
 }

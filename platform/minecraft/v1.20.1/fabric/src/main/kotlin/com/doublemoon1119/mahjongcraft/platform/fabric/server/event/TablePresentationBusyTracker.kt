@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.DiceRollPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableControllerState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
@@ -30,7 +30,7 @@ import kotlin.uuid.Uuid
  * @property tableLocationRegistry 將桌子識別碼對應到最後已知位置。
  */
 class TablePresentationBusyTracker(
-    private val serverHolder: FabricServerHolder,
+    private val serverHolder: ServerHolder,
     private val tableLocationRegistry: TableLocationRegistry,
 ) {
     /** 依牌桌保存尚未完成的唯一 lease ID。 */

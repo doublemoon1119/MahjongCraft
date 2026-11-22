@@ -56,7 +56,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
@@ -301,7 +301,7 @@ class MahjongAutoDrawServiceTest {
         val autoDrawService = MahjongAutoDrawService(
             gameRepository = gameRepo,
             gameFlowCoordinator = coordinator,
-            busyTracker = TablePresentationBusyTracker(FabricServerHolder(), TableLocationRegistry()),
+            busyTracker = TablePresentationBusyTracker(ServerHolder(), TableLocationRegistry()),
         )
 
         /**
@@ -425,7 +425,7 @@ class MahjongAutoDrawServiceTest {
      * 驗證玩家進入強制自動操作後，即使沒有任何逾時事件（沒有計時器可等），單純請求一次自動推進
      * 仍然能幫他完成當下卡住的那次捨牌，不會卡住。
      *
-     * 對應 `FabricDecisionTimerScheduler` 每秒巡邏所有進行中對局並請求推進的設計——這裡驗證的正是這個心跳背後依賴的
+     * 對應 `DecisionTimerScheduler` 每秒巡邏所有進行中對局並請求推進的設計——這裡驗證的正是這個心跳背後依賴的
      * 核心行為：強制自動操作的玩家不需要逾時事件也能被自動推進正確代打。
      *
      * 摸牌先透過 [MahjongAutoDrawService] 走一般玩家的機械摸牌路徑，比照真實流程——強制自動操作只會

@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.HistoryQueryLimits
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.encodedHistoryResponseUtf8Size
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.toDto
 
 /**
  * 一次映射後按完整交易縮頁，同步裁切截止位置的牌字典。

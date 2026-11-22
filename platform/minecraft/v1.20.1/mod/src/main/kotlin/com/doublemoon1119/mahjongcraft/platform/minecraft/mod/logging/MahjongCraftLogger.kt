@@ -6,9 +6,9 @@ import org.slf4j.LoggerFactory
 import kotlin.reflect.KClass
 
 /**
- * 建立以 `MahjongCraft/<類別名>` 命名的 logger，例如 `MahjongCraft/FabricHistoryOutboxWriter`。
+ * 建立以 `MahjongCraft/<類別名>` 命名的 logger，例如 `MahjongCraft/HistoryOutboxWriter`。
  *
- * 名稱不含 `.`，因此只印出 logger 名稱最後一段的 log 格式（例如 Fabric 開發環境的 `%logger{1}`）也會顯示完整名稱，
+ * 名稱不含 `.`，因此只印出 logger 名稱最後一段的 log 格式（例如開發環境常用的 `%logger{1}`）也會顯示完整名稱，
  * 可以看出記錄來自本 mod 的哪個類別。
  *
  * @param owner 使用這個 logger 的類別。

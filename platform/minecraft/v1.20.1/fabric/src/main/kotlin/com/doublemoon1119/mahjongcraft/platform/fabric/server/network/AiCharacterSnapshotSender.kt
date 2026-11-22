@@ -2,8 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.network
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterBindings
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.AiCharacterBindings
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSyncSnapshot
@@ -11,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.SeatedPartic
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.excludedAppearancesFor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.toPayload
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.network.AiCharacterSnapshotDelivery
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.AuthoritativeStatePersistence
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.server.level.ServerPlayer
@@ -27,10 +27,10 @@ import kotlin.uuid.toKotlinUuid
  * @property bindings 對局中已確認的角色本人。
  */
 class AiCharacterSnapshotSender internal constructor(
-    private val persistence: FabricAuthoritativeStatePersistence,
+    private val persistence: AuthoritativeStatePersistence,
     private val json: NetworkJson,
     private val characters: AiCharacterRegistry,
-    private val bindings: FabricAiCharacterBindings,
+    private val bindings: AiCharacterBindings,
 ) : AiCharacterSnapshotDelivery {
     /** 各連線與桌子最近實際送出的公開描述，避免每次摸打重送。 */
     private val sent = linkedMapOf<Pair<Any, Uuid>, Sent>()

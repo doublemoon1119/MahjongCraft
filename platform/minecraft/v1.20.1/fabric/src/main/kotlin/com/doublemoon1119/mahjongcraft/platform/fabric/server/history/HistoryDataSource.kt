@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
  * @property store 承載這個來源中進行中對局的權威來源；查詢結果須排除其中仍在進行的對局。
  */
 class HistoryDataSource(
-    val writer: FabricHistoryOutboxWriter,
+    val writer: HistoryOutboxWriter,
     val store: AuthoritativeStateStore,
 )
 

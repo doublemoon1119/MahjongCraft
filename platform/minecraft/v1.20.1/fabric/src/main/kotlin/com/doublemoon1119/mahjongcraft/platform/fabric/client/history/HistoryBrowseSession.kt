@@ -29,6 +29,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.His
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryHandSorting
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryQueryTransport
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryReplayPlayback
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryReplayVisibility
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryRoundEventPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry

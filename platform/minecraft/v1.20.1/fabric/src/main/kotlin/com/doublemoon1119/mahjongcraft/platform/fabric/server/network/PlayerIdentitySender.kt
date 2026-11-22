@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.network
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerIdentityEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerIdentityPayload
@@ -20,7 +20,7 @@ import kotlin.uuid.Uuid
  */
 class PlayerIdentitySender(
     private val names: ServerPlayerIdentityStore,
-    private val serverHolder: FabricServerHolder,
+    private val serverHolder: ServerHolder,
     private val dispatchers: CoroutineDispatchers,
     private val json: NetworkJson,
 ) {

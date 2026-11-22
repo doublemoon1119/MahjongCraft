@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTim
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.winningTileTicksFromBottom
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationShowcaseEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ClientTileAppearanceResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ShowcaseCardSlot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ShowcaseFormationLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ShowcaseFormationMetrics

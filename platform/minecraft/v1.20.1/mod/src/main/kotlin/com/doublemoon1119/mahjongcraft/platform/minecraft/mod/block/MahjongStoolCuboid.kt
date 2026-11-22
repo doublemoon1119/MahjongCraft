@@ -4,7 +4,7 @@ import net.minecraft.world.phys.shapes.Shapes
 import net.minecraft.world.phys.shapes.VoxelShape
 
 /**
- * 以模型像素表示的麻將凳長方體，供模型資源與 Fabric 碰撞測試對齊。
+ * 以模型像素表示的麻將凳長方體，供模型資源與碰撞測試對齊。
  *
  * @property minX X 軸最小座標。
  * @property minY Y 軸最小座標。

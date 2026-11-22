@@ -68,7 +68,7 @@ class FabricHistoryRoundQueryIntegrationTest {
                 }
             }
         }
-        val writer = FabricHistoryOutboxWriter(
+        val writer = HistoryOutboxWriter(
             store = AuthoritativeStateStore(),
             registries = registries,
             dispatchers = QueryTestDispatchers,

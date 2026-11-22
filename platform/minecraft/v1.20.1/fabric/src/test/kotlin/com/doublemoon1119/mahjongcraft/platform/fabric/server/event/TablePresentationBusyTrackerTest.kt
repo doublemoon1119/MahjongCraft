@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -108,5 +108,5 @@ class TablePresentationBusyTrackerTest {
      *
      * @return 僅依待完成工作判斷忙碌狀態的測試追蹤器。
      */
-    private fun tracker(): TablePresentationBusyTracker = TablePresentationBusyTracker(FabricServerHolder(), TableLocationRegistry())
+    private fun tracker(): TablePresentationBusyTracker = TablePresentationBusyTracker(ServerHolder(), TableLocationRegistry())
 }

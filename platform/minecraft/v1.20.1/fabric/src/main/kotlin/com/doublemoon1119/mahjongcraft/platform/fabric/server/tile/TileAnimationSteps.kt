@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.tile
 
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.AnimatedMahjongEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.MahjongAnimationSounds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.AnimatedMahjongEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.HandRevealSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
@@ -14,7 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PlannedTileMotion
 
 /**
  * 麻將牌各種既有動畫（開局發牌、摸牌、捨牌、鳴牌、胡牌慶祝演出的強制理牌重排／倒牌）的單張牌排程
- * 邏輯，由正式桌子的呈現（[FabricMahjongPlayerAreaPresenter] 與依步驟呈現的發布器）
+ * 邏輯，由正式桌子的呈現（[EntityMahjongPlayerAreaPresenter] 與依步驟呈現的發布器）
  * 與 debug 動畫指令共用；不帶任何實例狀態。這些函式只吃 `tile`／位置／絕對時刻這幾個純粹的參數，
  * 不涉及桌子座標系、`TableLocation` 或任何對局概念。
  *
@@ -297,12 +297,12 @@ object TileAnimationSteps {
         tile.enqueueAll(HandRevealSteps.conceal(tile.tilePose.toSharedPose(), startGameTime, playGroupSound).map { it.toEntityStep() })
     }
 
-    /** 開局發牌動畫起飛階段的相對高度，比照 `FabricMahjongTileWallPresenter.WALL_DROP_HEIGHT`。 */
+    /** 開局發牌動畫起飛階段的相對高度，比照 `EntityMahjongTileWallPresenter.WALL_DROP_HEIGHT`。 */
     private const val DEAL_LIFT_HEIGHT: Double = 0.4
 
     /**
      * 開局發牌動畫全部播完（含翻牌）後，額外掛在每張牌佇列尾端的觀看緩衝，讓桌子在玩家真正看清楚
-     * 手牌之前持續維持「還在忙」，理由見 `FabricMahjongPlayerAreaPresenter.presentInitialDeal` KDoc。
+     * 手牌之前持續維持「還在忙」，理由見 `EntityMahjongPlayerAreaPresenter.presentInitialDeal` KDoc。
      */
     private const val DEAL_VIEWING_BUFFER_TICKS: Int = 25
 

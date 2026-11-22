@@ -171,7 +171,7 @@ class HistoryManagementTest {
      * @param coordinator 共用政策 lease。
      * @return 尚未綁定 session 的 writer。
      */
-    private fun writer(dispatcher: CoroutineDispatcher, coordinator: HistoryRetentionCoordinator): FabricHistoryOutboxWriter = FabricHistoryOutboxWriter(
+    private fun writer(dispatcher: CoroutineDispatcher, coordinator: HistoryRetentionCoordinator): HistoryOutboxWriter = HistoryOutboxWriter(
         store = AuthoritativeStateStore(),
         registries = bundledPersistenceRegistries(),
         moduleRegistry = MahjongModuleRegistryImpl(),

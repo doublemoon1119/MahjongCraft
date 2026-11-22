@@ -4,11 +4,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentViewPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterCapabilityRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricRoomParticipantRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatPlacementRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.AiCharacterCapabilityRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.RoomParticipantRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatPlacementRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatProviderRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.TablePropKindRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
@@ -38,15 +38,15 @@ class FabricSeatProviderRegistrationTest {
      */
     private fun register(
         extensions: Iterable<FabricMahjongExtension>,
-        seatProviderRegistry: FabricSeatProviderRegistryImpl = FabricSeatProviderRegistryImpl(),
+        seatProviderRegistry: SeatProviderRegistryImpl = SeatProviderRegistryImpl(),
     ) = FabricMahjongExtensionBootstrap.registerAndFreeze(
         extensions = extensions,
         registries = FabricExtensionRegistries(
-            tablePropKindRegistry = FabricTablePropKindRegistryImpl(),
+            tablePropKindRegistry = TablePropKindRegistryImpl(),
             seatProviderRegistry = seatProviderRegistry,
-            characterCapabilityRegistry = FabricAiCharacterCapabilityRegistry(),
-            seatPlacementRegistry = FabricSeatPlacementRegistry(),
-            roomParticipantRegistry = FabricRoomParticipantRegistry(),
+            characterCapabilityRegistry = AiCharacterCapabilityRegistry(),
+            seatPlacementRegistry = SeatPlacementRegistry(),
+            roomParticipantRegistry = RoomParticipantRegistry(),
         ),
         builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl(), ComponentViewPersistenceRegistry()),
         failurePolicy = ExtensionFailurePolicy.Default,
@@ -70,7 +70,7 @@ class FabricSeatProviderRegistrationTest {
     /** 高優先順序 provider 會排在低優先順序 provider 前面，且 extension 來源會被記錄。 */
     @Test
     fun `providers are sorted by priority and reported by extension`() {
-        val registry = FabricSeatProviderRegistryImpl()
+        val registry = SeatProviderRegistryImpl()
         val provider = FakeProvider()
 
         val sources = register(
@@ -115,7 +115,7 @@ class FabricSeatProviderRegistrationTest {
     @Test
     fun `provider without namespace is rejected`() {
         assertFailsWith<IllegalArgumentException> {
-            FabricSeatProviderRegistryImpl().register(RegisteredSeatProvider("chair", FakeProvider()))
+            SeatProviderRegistryImpl().register(RegisteredSeatProvider("chair", FakeProvider()))
         }
     }
 
@@ -159,11 +159,11 @@ class FabricSeatProviderRegistrationTest {
             FabricMahjongExtensionBootstrap.registerAndFreeze(
                 extensions = emptyList(),
                 registries = FabricExtensionRegistries(
-                    tablePropKindRegistry = FabricTablePropKindRegistryImpl(),
-                    seatProviderRegistry = FabricSeatProviderRegistryImpl(),
-                    characterCapabilityRegistry = FabricAiCharacterCapabilityRegistry(),
-                    seatPlacementRegistry = FabricSeatPlacementRegistry(),
-                    roomParticipantRegistry = FabricRoomParticipantRegistry(),
+                    tablePropKindRegistry = TablePropKindRegistryImpl(),
+                    seatProviderRegistry = SeatProviderRegistryImpl(),
+                    characterCapabilityRegistry = AiCharacterCapabilityRegistry(),
+                    seatPlacementRegistry = SeatPlacementRegistry(),
+                    roomParticipantRegistry = RoomParticipantRegistry(),
                 ),
                 builtIn = invalidBuiltIn,
                 failurePolicy = ExtensionFailurePolicy.Default,
@@ -188,7 +188,7 @@ class FabricSeatProviderRegistrationTest {
     /** 沒有 extension 時也會凍結獨立 registry，避免 bootstrap 後仍可修改。 */
     @Test
     fun `empty registry is frozen after bootstrap`() {
-        val registry = FabricSeatProviderRegistryImpl()
+        val registry = SeatProviderRegistryImpl()
 
         register(emptyList(), registry)
 
@@ -199,8 +199,8 @@ class FabricSeatProviderRegistrationTest {
     /** 座位回呼失敗時兩個 registry 都不應凍結，且桌面物件回呼先於座位回呼。 */
     @Test
     fun `seat callback failure leaves both registries unfrozen and reports callback order`() {
-        val tablePropRegistry = FabricTablePropKindRegistryImpl()
-        val seatRegistry = FabricSeatProviderRegistryImpl()
+        val tablePropRegistry = TablePropKindRegistryImpl()
+        val seatRegistry = SeatProviderRegistryImpl()
         val callbacks = mutableListOf<String>()
         val extension = object : FabricMahjongExtension {
             override val id: String = "example:failing"
@@ -221,9 +221,9 @@ class FabricSeatProviderRegistrationTest {
                 registries = FabricExtensionRegistries(
                     tablePropKindRegistry = tablePropRegistry,
                     seatProviderRegistry = seatRegistry,
-                    characterCapabilityRegistry = FabricAiCharacterCapabilityRegistry(),
-                    seatPlacementRegistry = FabricSeatPlacementRegistry(),
-                    roomParticipantRegistry = FabricRoomParticipantRegistry(),
+                    characterCapabilityRegistry = AiCharacterCapabilityRegistry(),
+                    seatPlacementRegistry = SeatPlacementRegistry(),
+                    roomParticipantRegistry = RoomParticipantRegistry(),
                 ),
                 builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl(), ComponentViewPersistenceRegistry()),
                 failurePolicy = ExtensionFailurePolicy.Default,

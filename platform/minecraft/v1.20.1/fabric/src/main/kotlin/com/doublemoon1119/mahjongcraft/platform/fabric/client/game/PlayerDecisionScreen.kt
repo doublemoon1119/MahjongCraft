@@ -1,12 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionKindDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionBounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionCardLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionEntry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionEntryIntent
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.PASS_ACTION_ID
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.MarqueeState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.drawWrappedDescription
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.wrapDescription
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys

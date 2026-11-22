@@ -8,15 +8,15 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.HistoryTilePrese
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessStepTimer
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryDatabasePath
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HISTORY_WRITER_IDLE_POLL_INTERVAL
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HISTORY_WRITE_BATCH_SIZE
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.encodePendingRecord
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftHistoryConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryDatabasePath
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryRetentionCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryWriterStage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.retentionPolicy
@@ -60,7 +60,7 @@ class StressTestEnvironmentFactory(
      * @param server 用來解析存檔資料夾的伺服器。
      * @param historyMode 歷史處理方式。
      */
-    suspend fun open(server: MinecraftServer, historyMode: StressHistoryMode): StressTestEnvironment? = openAt(FabricHistoryDatabasePath.resolve(server).resolveSibling(DATABASE_FILE_NAME), historyMode)
+    suspend fun open(server: MinecraftServer, historyMode: StressHistoryMode): StressTestEnvironment? = openAt(HistoryDatabasePath.resolve(server).resolveSibling(DATABASE_FILE_NAME), historyMode)
 
     /**
      * 建立環境；[StressHistoryMode.WRITE] 時在 [path] 建立新的壓力測試資料庫，同名舊檔會先刪除。
@@ -100,7 +100,7 @@ class StressTestEnvironmentFactory(
         path: Path,
     ): StressHistorySink.Database? {
         val retention = HistoryRetentionCoordinator().apply { apply(STRESS_HISTORY_CONFIG.retentionPolicy()) }
-        val writer = FabricHistoryOutboxWriter(
+        val writer = HistoryOutboxWriter(
             store = store,
             registries = registries,
             dispatchers = dispatchers,

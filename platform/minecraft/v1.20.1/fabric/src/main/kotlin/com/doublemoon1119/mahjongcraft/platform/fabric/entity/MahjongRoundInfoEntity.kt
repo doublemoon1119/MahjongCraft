@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.AnimatedMahjongEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.HiddenDebugHitboxEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ManagedTableNbt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TableOverlayVisibilityNbt
@@ -24,12 +25,12 @@ import kotlin.uuid.toKotlinUuid
 /**
  * 桌面中央局況顯示用的純視覺 entity——只同步組成畫面內容需要的原始數值（[lines]，實際顯示什麼完全由
  * 規則模組決定），不同步已經翻譯好的文字——翻譯必須在 client 端依各自語系解析，不能在 server 端就
- * 烘焙成固定語言的字串，見 `FabricMahjongRoundInfoPresenter`／`MahjongRoundInfoEntityRenderer` 的
+ * 烘焙成固定語言的字串，見 `EntityMahjongRoundInfoPresenter`／`MahjongRoundInfoEntityRenderer` 的
  * 分工：server 只決定「數值」，client renderer 才決定「怎麼翻譯成文字」。
  *
  * 每張桌子固定只有一個，不像牌／點棒有多個 UUID 各自代表獨立的牌局物件，因此不需要
  * `managedByGame`／`managedTableId` 以外的識別欄位——找既有 entity 時直接依 [managedTableId] 搜尋
- * 即可，見 `FabricMahjongRoundInfoPresenter`。
+ * 即可，見 `EntityMahjongRoundInfoPresenter`。
  *
  * 除了顯示局況以外，這個 entity 還被借來當作「有沒有玩家正在看著這張桌」的信號來源：它跟牌牆
  * 同時出現、對局一結束就消失，剛好等於「這張桌子現在有沒有一場對局」，時機完全吻合，所以不需要
@@ -75,8 +76,8 @@ class MahjongRoundInfoEntity(
 
     /**
      * fallback 自動清除——**不是主要清除路徑**。正常生命週期是跟牌牆同時生成、換局時由
-     * `FabricMahjongRoundInfoPresenter.present()` 找到既有 entity 就地更新內容（不重新生成），或由
-     * `FabricGamePresentationPublisher.clearPlayerTiles()`（回房間等情境）顯式清除；這裡只是意外情境
+     * `EntityMahjongRoundInfoPresenter.present()` 找到既有 entity 就地更新內容（不重新生成），或由
+     * `ServerThreadGamePresentationPublisher.clearPlayerTiles()`（回房間等情境）顯式清除；這裡只是意外情境
      * （伺服器崩潰、對局非正常結束導致沒有機會走到正常清除流程）的保險，門檻抓得遠大於正常一局遊戲
      * 時長，理由同 [MahjongScoringStickEntity.tick] 的同款設計——這個 entity 沒有自由放置模式（一律
      * 由牌局管理），不需要像點棒那樣額外判斷 `managedByGame`。

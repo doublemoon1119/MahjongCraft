@@ -71,7 +71,7 @@ class MahjongTableLocationsSavedData private constructor(
          * 從 Minecraft NBT 還原完整位置 state。
          *
          * 這份索引可以自行修復：每張桌子的 BlockEntity 載入後都會重新登記目前位置（見
-         * `FabricTableLocationValidationService`），始終沒有出現的桌子則由缺失麻將桌清理流程依伺服器
+         * `TableLocationValidationService`），始終沒有出現的桌子則由缺失麻將桌清理流程依伺服器
          * 設定處理。因此無法解讀的資料一律略過並記錄，不讓世界載入失敗——擋下整個世界的代價遠高於
          * 暫時少幾筆索引。
          *

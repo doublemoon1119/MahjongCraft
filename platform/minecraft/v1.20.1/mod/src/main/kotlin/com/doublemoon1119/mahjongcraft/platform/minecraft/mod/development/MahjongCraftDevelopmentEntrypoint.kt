@@ -4,7 +4,7 @@ import org.koin.core.Koin
 import org.koin.core.module.Module
 
 /**
- * 開發專用模組的進入點，在 `fabric.mod.json` 以 [MahjongCraftDevelopmentTools.ENTRYPOINT] 宣告。
+ * 開發專用模組的進入點，載入器依 [MahjongCraftDevelopmentTools.ENTRYPOINT] 找到它。
  *
  * 只在開發環境呼叫。本體啟動 Koin 後先載入 [koinModules]，接著登記擴充，最後在登記本體指令時呼叫 [initialize]。
  */

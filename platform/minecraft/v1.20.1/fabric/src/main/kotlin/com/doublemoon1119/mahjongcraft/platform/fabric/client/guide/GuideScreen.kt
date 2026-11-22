@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.guide
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongHudPreviewRenderer
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.toNameText
@@ -12,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.fitClientTe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.CardBackground
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelIcon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelScrollState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.TabWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar

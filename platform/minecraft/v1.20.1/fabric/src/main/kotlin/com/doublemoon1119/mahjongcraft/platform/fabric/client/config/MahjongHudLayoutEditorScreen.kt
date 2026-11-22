@@ -1,17 +1,23 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.UnsavedChangesConfirmationScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.HudElement
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.HudPreviewScenario
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.HudPreviewVisibility
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongHudBounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongHudLayoutConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongHudLayoutEditorModel
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongHudToolbarLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.clientConfigDifferenceText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.trimPreviewText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ControlTooltip
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.CycleButtonInput
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOption
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOverlay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.SettingsFooterButtons
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.UnsavedChangesConfirmationScreen
 import net.minecraft.ChatFormatting
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button

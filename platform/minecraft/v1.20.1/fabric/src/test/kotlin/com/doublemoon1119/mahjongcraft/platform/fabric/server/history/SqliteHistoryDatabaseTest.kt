@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryDatabasePath
 import java.nio.file.Files
 import java.nio.file.Path
 import java.sql.DriverManager
@@ -50,8 +51,8 @@ class SqliteHistoryDatabaseTest {
         val firstSave = Path.of("first-save")
         val secondSave = Path.of("second-save")
 
-        assertEquals(firstSave.resolve("mahjongcraft/history.sqlite"), FabricHistoryDatabasePath.resolve(firstSave))
-        assertEquals(secondSave.resolve("mahjongcraft/history.sqlite"), FabricHistoryDatabasePath.resolve(secondSave))
+        assertEquals(firstSave.resolve("mahjongcraft/history.sqlite"), HistoryDatabasePath.resolve(firstSave))
+        assertEquals(secondSave.resolve("mahjongcraft/history.sqlite"), HistoryDatabasePath.resolve(secondSave))
     }
 
     /** 新檔建立 schema；重新開啟後仍可讀取且相同事件重送不增加筆數。 */

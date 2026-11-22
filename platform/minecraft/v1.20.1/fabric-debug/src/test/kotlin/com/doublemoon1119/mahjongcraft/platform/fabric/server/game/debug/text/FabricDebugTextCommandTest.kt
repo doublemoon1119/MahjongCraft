@@ -3,12 +3,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.text
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigLocation
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigPathProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigTomlCodec
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigLocation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigManager
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigPathProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryRetentionCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
@@ -28,7 +28,7 @@ import kotlin.uuid.Uuid
 class FabricDebugTextCommandTest {
     private val command = FabricDebugTextCommand(
         feedbackPublisher = RecordingFeedbackPublisher(),
-        serverConfigManager = FabricServerConfigManager(
+        serverConfigManager = ServerConfigManager(
             state = MinecraftServerConfigState(),
             codec = MinecraftServerConfigTomlCodec(),
             pathProvider = UnusedPathProvider,
@@ -100,9 +100,9 @@ class FabricDebugTextCommandTest {
     }
 
     /** 訊息排版測試不經由 Minecraft server 解析設定路徑。 */
-    private object UnusedPathProvider : FabricServerConfigPathProvider {
+    private object UnusedPathProvider : ServerConfigPathProvider {
         /** 若測試誤用 server attach，立即回報測試設定錯誤。 */
-        override fun get(server: MinecraftServer): FabricServerConfigLocation = error("Unexpected server path lookup")
+        override fun get(server: MinecraftServer): ServerConfigLocation = error("Unexpected server path lookup")
     }
 
     /** 測試用的協程調度器。 */

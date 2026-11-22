@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.Sql
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistoryQueryEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistorySortDirection
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.SqliteHistorySortField
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.toDto
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asCoroutineDispatcher

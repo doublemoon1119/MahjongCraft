@@ -6,6 +6,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionBounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionCard
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionCardLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionEntry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionTextResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.decisionEntriesFrom
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.CardBackground
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ClaimedTileMarker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.HorizontalScrollbar

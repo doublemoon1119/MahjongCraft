@@ -14,11 +14,11 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricSessionBackgroundScope
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.DisconnectedPlayerPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency.SessionBackgroundScope
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.network.AutomaticControlSnapshotSender
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
@@ -250,7 +250,7 @@ class PlayerConnectionLifecycleServiceTest {
         val automaticControlSnapshots = RecordingAutomaticControlSnapshotSender()
         val service = PlayerConnectionLifecycleService(
             scope = scope,
-            timeoutScope = FabricSessionBackgroundScope(dispatchers),
+            timeoutScope = SessionBackgroundScope(dispatchers),
             configState = configState,
             membershipRepository = memberships,
             roomRepository = roomRepository,
@@ -259,7 +259,7 @@ class PlayerConnectionLifecycleServiceTest {
             syncRoom = SyncRoomSnapshotUseCase(roomRepository, roomSnapshotRepository),
             syncGame = SyncGameSnapshotUseCase(GameSnapshotSynchronizer(gameRepository, gameSnapshotRepository, GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))),
             automaticControlSnapshotSender = automaticControlSnapshots,
-            playerIdentityStore = ServerPlayerIdentityStore(FabricServerHolder()),
+            playerIdentityStore = ServerPlayerIdentityStore(ServerHolder()),
         )
         return Fixture(
             service = service,

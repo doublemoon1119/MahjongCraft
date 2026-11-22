@@ -57,7 +57,7 @@ class HistoryDataSourceTest {
     private fun source(): HistoryDataSource {
         val store = AuthoritativeStateStore()
         return HistoryDataSource(
-            writer = FabricHistoryOutboxWriter(
+            writer = HistoryOutboxWriter(
                 store = store,
                 registries = bundledPersistenceRegistries(),
                 dispatchers = TestDispatchers,

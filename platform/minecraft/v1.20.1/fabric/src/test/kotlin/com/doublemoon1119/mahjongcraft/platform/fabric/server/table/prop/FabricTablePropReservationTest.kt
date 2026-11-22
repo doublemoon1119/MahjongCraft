@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.entity.EntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TablePropRefreshQueue
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -41,10 +41,10 @@ class FabricTablePropReservationTest {
      *
      * @return 測試用的原生桌面呈現器。
      */
-    private fun presenter(): FabricTablePropPresenter = FabricTablePropPresenter(
-        serverHolder = FabricServerHolder(),
-        spawnGateway = FabricEntitySpawnGateway(),
-        kindRegistry = FabricTablePropKindRegistryImpl(),
+    private fun presenter(): EntityTablePropPresenter = EntityTablePropPresenter(
+        serverHolder = ServerHolder(),
+        spawnGateway = EntitySpawnGateway(),
+        kindRegistry = TablePropKindRegistryImpl(),
         refreshQueue = TablePropRefreshQueue(),
     )
 }

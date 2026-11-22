@@ -5,13 +5,13 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryMatchSumm
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortDirectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortFieldDto
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ControlTooltip
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.CycleButtonInput
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOption
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOverlay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelIcon
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RowStripe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
@@ -21,7 +21,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.His
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryPageFrame
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryPaging
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryScreenText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.coversAllMatches
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.translationKey
 import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics

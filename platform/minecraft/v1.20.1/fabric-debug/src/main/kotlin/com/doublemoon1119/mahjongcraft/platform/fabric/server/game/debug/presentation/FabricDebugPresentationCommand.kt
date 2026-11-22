@@ -37,12 +37,11 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.flower.calculateTa
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricExhaustiveDrawSettlementPresentationScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricMatchSettlementPresentationScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationShowcaseScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinSettlementPresentationScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.ExhaustiveDrawSettlementPresentationScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MatchSettlementPresentationScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.WinCelebrationEffectScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.WinCelebrationShowcaseScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.WinSettlementPresentationScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPlayerTableScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewDefaults
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewEntityLifecycle
@@ -53,6 +52,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.showcaseWingC
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinCelebrationCinematicTimeline
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
@@ -87,7 +87,7 @@ import kotlin.uuid.toKotlinUuid
  * 取樣資料，因此呼叫者不需要真的坐在桌邊或身處進行中的對局。`continuing_win` 與
  * `win_showcase_override` 例外：它們改寫的是本桌下一次胡牌的判定與演出覆寫狀態，因此要求呼叫者已入座。
  *
- * 臨時 entity 的清除時機刻意不統一：`win` 把清除掛在 [FabricWinCelebrationEffectScheduler] 的
+ * 臨時 entity 的清除時機刻意不統一：`win` 把清除掛在 [WinCelebrationEffectScheduler] 的
  * `onComplete`，讓臨時牌與特效 entity 同刻消失並共用它的取消路徑；`showcase` 在 stage 同步保存完牌面與
  * 起始位置後立即 discard；只有結算預覽走 [DebugPreviewEntityLifecycle] 的到期佇列。
  *
@@ -108,12 +108,12 @@ import kotlin.uuid.toKotlinUuid
 class FabricDebugPresentationCommand(
     private val debugWinRoundContinuationState: DebugWinRoundContinuationState,
     private val debugWinShowcaseOverride: DebugWinShowcaseOverride,
-    private val effectScheduler: FabricWinCelebrationEffectScheduler,
-    private val showcaseScheduler: FabricWinCelebrationShowcaseScheduler,
+    private val effectScheduler: WinCelebrationEffectScheduler,
+    private val showcaseScheduler: WinCelebrationShowcaseScheduler,
     private val showcaseRegistry: WinCelebrationShowcaseRegistry,
-    private val exhaustiveDrawSettlementScheduler: FabricExhaustiveDrawSettlementPresentationScheduler,
-    private val winSettlementScheduler: FabricWinSettlementPresentationScheduler,
-    private val matchSettlementScheduler: FabricMatchSettlementPresentationScheduler,
+    private val exhaustiveDrawSettlementScheduler: ExhaustiveDrawSettlementPresentationScheduler,
+    private val winSettlementScheduler: WinSettlementPresentationScheduler,
+    private val matchSettlementScheduler: MatchSettlementPresentationScheduler,
     private val exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
     private val playerTableScope: DebugPlayerTableScope,
     private val tilePreviewSupport: DebugTilePreviewSupport,
@@ -582,10 +582,10 @@ class FabricDebugPresentationCommand(
             winningTileId = winningTile.uuid.toKotlinUuid(),
             winningTileAssetKey = winningAsset,
             wings = wingTiles.map { (seat, cue, tiles) ->
-                FabricWinCelebrationShowcaseScheduler.Wing(
+                WinCelebrationShowcaseScheduler.Wing(
                     seatIndex = seat,
                     cueIds = listOf(cue),
-                    cards = tiles.map { (tile, asset) -> FabricWinCelebrationShowcaseScheduler.Card(tileId = tile.uuid.toKotlinUuid(), assetKey = asset) },
+                    cards = tiles.map { (tile, asset) -> WinCelebrationShowcaseScheduler.Card(tileId = tile.uuid.toKotlinUuid(), assetKey = asset) },
                     standYaw = MahjongTileTableLayout.seatYaw(layout.tableFacing, layout.seatLayout, seat),
                 )
             },
@@ -662,7 +662,7 @@ class FabricDebugPresentationCommand(
                 }
                 tilePreviewSupport.spawnFreeTile(world, placement, pose, assets.getValue(id)).also(spawned::add).uuid.toKotlinUuid()
             }
-            FabricWinCelebrationShowcaseScheduler.Wing(
+            WinCelebrationShowcaseScheduler.Wing(
                 seatIndex = seat,
                 cueIds = listOf(cue),
                 cards = showcaseWingCards(

@@ -2,11 +2,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSnapshot
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSnapshotCategory
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterCapabilityRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricRoomParticipantRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatPlacementRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.AiCharacterCapabilityRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.RoomParticipantRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatPlacementRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatProviderRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.TablePropKindRegistry
 
 /**
  * 集中保存 Fabric extension bootstrap 使用的runtime registry。
@@ -18,11 +18,11 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricT
  * @property roomParticipantRegistry 既有實體參加能力。
  */
 internal class FabricExtensionRegistries(
-    val tablePropKindRegistry: FabricTablePropKindRegistry,
-    val seatProviderRegistry: FabricSeatProviderRegistryImpl,
-    val characterCapabilityRegistry: FabricAiCharacterCapabilityRegistry,
-    val seatPlacementRegistry: FabricSeatPlacementRegistry,
-    val roomParticipantRegistry: FabricRoomParticipantRegistry,
+    val tablePropKindRegistry: TablePropKindRegistry,
+    val seatProviderRegistry: SeatProviderRegistryImpl,
+    val characterCapabilityRegistry: AiCharacterCapabilityRegistry,
+    val seatPlacementRegistry: SeatPlacementRegistry,
+    val roomParticipantRegistry: RoomParticipantRegistry,
 ) {
     /**
      * 取得Fabric 登記類別的不可變診斷快照。

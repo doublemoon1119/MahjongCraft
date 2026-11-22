@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.character
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugMessageKeys
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatingSessionFactory
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatingSessionFactory
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.entity.EntitySpawnGateway
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.AuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatAssignmentResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableInteractionReach
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
@@ -21,9 +21,9 @@ import kotlin.uuid.toKotlinUuid
  * @property spawnGateway 正式實體生成入口。
  */
 internal class FabricDebugSeatedParticipantCommand(
-    private val persistence: FabricAuthoritativeStatePersistence,
-    private val sessions: FabricSeatingSessionFactory,
-    private val spawnGateway: FabricEntitySpawnGateway,
+    private val persistence: AuthoritativeStatePersistence,
+    private val sessions: SeatingSessionFactory,
+    private val spawnGateway: EntitySpawnGateway,
 ) {
     /** 建立掛在既有 development-only、op 限定根節點下的最小驗證指令。 */
     fun build(): LiteralArgumentBuilder<CommandSourceStack> = literal("seated_participant").executes { context ->

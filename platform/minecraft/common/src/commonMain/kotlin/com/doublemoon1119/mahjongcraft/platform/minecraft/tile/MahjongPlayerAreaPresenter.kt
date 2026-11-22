@@ -31,7 +31,7 @@ interface MahjongPlayerAreaPresenter {
 
     /**
      * 呈現胡牌慶祝演出第一階段的「強制理牌 → （自摸牌單獨倒下 →）等待 → 立牌一起倒下」序列——不含
-     * 降臨特效本身（那是獨立的粒子排程器職責，見 `FabricWinCelebrationEffectScheduler`），但回傳算好的
+     * 降臨特效本身（那是獨立的粒子排程器職責，見 `WinCelebrationEffectScheduler`），但回傳算好的
      * 「立牌全部倒下完成」絕對 game time，供呼叫端接續排定特效開始時機、並延長胡的那張牌的動畫佇列
      * （`TablePresentationBusyTracker` 忙碌窗口），理由見 [MahjongWinCelebrationResult] KDoc。
      *

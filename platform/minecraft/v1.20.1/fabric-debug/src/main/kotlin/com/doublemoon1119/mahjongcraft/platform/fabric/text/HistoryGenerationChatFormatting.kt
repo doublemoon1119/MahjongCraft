@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.HistoryGenerationProgress
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.HistoryDebugKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryDiskUsage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.prefixedConfigMessage
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent

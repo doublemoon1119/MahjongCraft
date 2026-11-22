@@ -3,11 +3,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.guide
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.previewAction
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.previewPrompt
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideScenes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.guide.MinecraftGuideScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.previewAction
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.previewPrompt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideAction
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideBlock
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideStep

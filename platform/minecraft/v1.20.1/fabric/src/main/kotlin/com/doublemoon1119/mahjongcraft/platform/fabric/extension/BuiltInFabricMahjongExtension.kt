@@ -9,13 +9,13 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSe
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatPlacementDefinition
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.TileMascotCharacterProvider
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.BuiltInFabricSeatProviderIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolPlacementProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FaceUpTileTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.ScoringStickTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.BuiltInSeatProviderIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.prop.TablePropTileFaceCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import net.minecraft.server.level.ServerLevel
@@ -43,7 +43,7 @@ internal class BuiltInFabricMahjongExtension(
     }
 
     /** 登記內建麻將凳座位 provider。 */
-    override fun registerSeatProviders(registry: FabricSeatProviderRegistrar) = registry.register(RegisteredSeatProvider(BuiltInFabricSeatProviderIds.MAHJONG_STOOL, seatProvider))
+    override fun registerSeatProviders(registry: FabricSeatProviderRegistrar) = registry.register(RegisteredSeatProvider(BuiltInSeatProviderIds.MAHJONG_STOOL, seatProvider))
 
     /** 內建牌體角色與第三方共用世界能力登記流程。 */
     override fun registerAiCharacterCapabilities(registry: FabricAiCharacterCapabilityRegistrar) {
@@ -52,6 +52,6 @@ internal class BuiltInFabricMahjongExtension(
 
     /** 內建凳子沿用物品放置能力，不直接寫入方塊。 */
     override fun registerSeatPlacements(registry: FabricSeatPlacementRegistrar) {
-        registry.register(FabricSeatPlacementDefinition(BuiltInFabricSeatProviderIds.MAHJONG_STOOL, MahjongStoolPlacementProvider))
+        registry.register(FabricSeatPlacementDefinition(BuiltInSeatProviderIds.MAHJONG_STOOL, MahjongStoolPlacementProvider))
     }
 }

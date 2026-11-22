@@ -9,14 +9,15 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.CommittedFactsListener
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.event.FabricGameEventContexts
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.FabricAchievementService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventDelivery
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventDeliveryReporter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventLocationSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventScheduler
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventSubscriptions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.achievement.AchievementService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.GameEventExclusions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.ServerThreadGameEventScheduler
 import net.minecraft.server.MinecraftServer
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -39,7 +40,7 @@ import kotlin.uuid.Uuid
 @OptIn(ExperimentalAtomicApi::class)
 class CommittedFactsDispatcher(
     private val store: AuthoritativeStateStore,
-    private val achievementService: FabricAchievementService,
+    private val achievementService: AchievementService,
     private val moduleRegistry: MahjongModuleRegistry,
     private val locations: GameEventLocationSource,
     private val reporter: GameEventDeliveryReporter,
@@ -60,7 +61,7 @@ class CommittedFactsDispatcher(
      */
     fun startSession(server: MinecraftServer) {
         startSession(
-            scheduler = FabricGameEventScheduler(server),
+            scheduler = ServerThreadGameEventScheduler(server),
             serverProvider = { server },
         )
     }

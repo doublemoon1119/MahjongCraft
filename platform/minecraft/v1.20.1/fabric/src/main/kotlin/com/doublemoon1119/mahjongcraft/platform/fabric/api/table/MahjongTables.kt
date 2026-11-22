@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.api.table
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.playSpaceCells
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
@@ -99,7 +99,7 @@ object MahjongTables {
      */
     internal fun install(
         roomService: MahjongTableRoomService,
-        tableLifecycleService: FabricTableLifecycleService,
+        tableLifecycleService: TableLifecycleService,
     ) {
         services = Services(roomService, tableLifecycleService)
     }
@@ -115,6 +115,6 @@ object MahjongTables {
      */
     private class Services(
         val roomService: MahjongTableRoomService,
-        val tableLifecycleService: FabricTableLifecycleService,
+        val tableLifecycleService: TableLifecycleService,
     )
 }

@@ -5,13 +5,13 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayPla
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ControlTooltip
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.CycleButtonInput
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.FormScreenLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelIcon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelIcons
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseFailure
@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.His
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryRoundEventsLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryTileGroupLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryTileGroupLayoutCalculator
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.translationKey
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.Tooltip

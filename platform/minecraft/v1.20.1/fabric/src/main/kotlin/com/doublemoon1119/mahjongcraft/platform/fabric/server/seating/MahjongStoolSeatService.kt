@@ -2,8 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.seating
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongStoolBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatGeometry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.entity.EntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatCollisionScope
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatSupportCleanup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatCollisionPolicy
@@ -22,7 +22,7 @@ import net.minecraft.world.phys.AABB
  * @property spawnGateway 正式生成座位 entity 的入口。
  */
 class MahjongStoolSeatService(
-    private val spawnGateway: FabricEntitySpawnGateway,
+    private val spawnGateway: EntitySpawnGateway,
 ) {
     /**
      * 讓 [entity] 坐上位於 [stoolPos] 的麻將凳，座位朝向設為 [entity] 目前的朝向。

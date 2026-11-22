@@ -5,11 +5,11 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSe
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatPlacementContext
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatPlacementDefinition
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatPlacementProvider
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterCapabilityRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricRoomParticipantRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatPlacementRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.AiCharacterCapabilityRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.RoomParticipantRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatPlacementRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatProviderRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.TablePropKindRegistryImpl
 import net.minecraft.world.item.ItemStack
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -28,7 +28,7 @@ class FabricSeatPlacementRegistrationTest {
     /** 同優先值依完整 ID 排序，極值不以相減比較。 */
     @Test
     fun `definitions are ordered by descending priority and stable id`() {
-        val registry = FabricSeatPlacementRegistry()
+        val registry = SeatPlacementRegistry()
         registry.register(
             definition = FabricSeatPlacementDefinition(
                 id = "example:z",
@@ -63,7 +63,7 @@ class FabricSeatPlacementRegistrationTest {
     /** 外部取得的 keys 不受後續登記改動，重複與凍結後登記都拒絕。 */
     @Test
     fun `registry snapshots are detached and late registrations are rejected`() {
-        val registry = FabricSeatPlacementRegistry()
+        val registry = SeatPlacementRegistry()
         registry.register(FabricSeatPlacementDefinition("example:first", provider))
         val keys = registry.registrationKeys
         registry.register(FabricSeatPlacementDefinition("example:second", provider))
@@ -79,11 +79,11 @@ class FabricSeatPlacementRegistrationTest {
     @Test
     fun `bootstrap records placement sources and freezes the registrar`() {
         val registries = FabricExtensionRegistries(
-            tablePropKindRegistry = FabricTablePropKindRegistryImpl(),
-            seatProviderRegistry = FabricSeatProviderRegistryImpl(),
-            characterCapabilityRegistry = FabricAiCharacterCapabilityRegistry(),
-            seatPlacementRegistry = FabricSeatPlacementRegistry(),
-            roomParticipantRegistry = FabricRoomParticipantRegistry(),
+            tablePropKindRegistry = TablePropKindRegistryImpl(),
+            seatProviderRegistry = SeatProviderRegistryImpl(),
+            characterCapabilityRegistry = AiCharacterCapabilityRegistry(),
+            seatPlacementRegistry = SeatPlacementRegistry(),
+            roomParticipantRegistry = RoomParticipantRegistry(),
         )
         val builtIn = object : FabricMahjongExtension {
             override val id: String = "example:builtin"

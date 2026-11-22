@@ -107,14 +107,14 @@ class HistoryGenerationRetentionStressTest {
         store: AuthoritativeStateStore,
         maxMatches: Int? = null,
         maxDiskMiB: Long? = null,
-    ): FabricHistoryOutboxWriter {
+    ): HistoryOutboxWriter {
         val history = MinecraftHistoryConfig(
             includeAiMatches = true,
             maxMatches = maxMatches ?: MinecraftHistoryConfig.DEFAULT_MAX_MATCHES,
             maxDiskMiB = maxDiskMiB ?: MinecraftHistoryConfig.DEFAULT_MAX_DISK_MIB,
         )
         val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
-        return FabricHistoryOutboxWriter(
+        return HistoryOutboxWriter(
             store = store,
             registries = bundledPersistenceRegistries(),
             dispatchers = TestDispatchers,

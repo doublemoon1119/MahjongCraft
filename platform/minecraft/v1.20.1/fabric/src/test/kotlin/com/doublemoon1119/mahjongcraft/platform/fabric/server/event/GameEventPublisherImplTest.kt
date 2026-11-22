@@ -10,15 +10,15 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PlayerIdentitySender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FakeTableStateDeliveryEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryRetentionCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.network.AiCharacterSnapshotDelivery
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.FakeTableStateDeliveryEnvironment
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableStateDelivery
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledNetworkJson
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
@@ -73,13 +73,13 @@ class GameEventPublisherImplTest {
      */
     private fun publisher(
         store: AuthoritativeStateStore,
-        historyWriter: FabricHistoryOutboxWriter,
+        historyWriter: HistoryOutboxWriter,
     ): GameEventPublisherImpl {
         val dispatchers = TestCoroutineDispatchers()
-        val serverHolder = FabricServerHolder()
+        val serverHolder = ServerHolder()
         return GameEventPublisherImpl(
             gameSnapshotRepository = GameSnapshotRepositoryImpl(),
-            tableStateDelivery = FabricTableStateDelivery(
+            tableStateDelivery = TableStateDelivery(
                 dispatchers = dispatchers,
                 environment = FakeTableStateDeliveryEnvironment(sessionId = null),
             ),
@@ -104,7 +104,7 @@ class GameEventPublisherImplTest {
      * @param store 權威歷史來源。
      * @return 受測 writer。
      */
-    private fun historyWriter(store: AuthoritativeStateStore): FabricHistoryOutboxWriter = FabricHistoryOutboxWriter(
+    private fun historyWriter(store: AuthoritativeStateStore): HistoryOutboxWriter = HistoryOutboxWriter(
         store = store,
         registries = bundledPersistenceRegistries(),
         moduleRegistry = MahjongModuleRegistryImpl(),

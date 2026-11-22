@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.AnimatedMahjongEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.GameManagedEntityNbt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongScoringStickDenominationNbt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TablePropIdentityNbt
@@ -98,7 +99,7 @@ class MahjongScoringStickEntity(
 
     /**
      * 管理中積棒的 fallback 自動清除——**不是主要清除路徑**。積棒的正常生命週期由
-     * `FabricTablePropPresenter` 依桌況差量同步，不再需要的積棒在新物件生成成功後才移除，或由對局結束的
+     * `EntityTablePropPresenter` 依桌況差量同步，不再需要的積棒在新物件生成成功後才移除，或由對局結束的
      * 顯式清除觸發；這裡只是意外情境（伺服器崩潰、對局非正常結束導致沒有機會走到正常清除
      * 流程）的保險，門檻抓得遠大於正常一局遊戲時長，不能像 `MahjongDiceEntity` 那樣抓短動畫時長——
      * 積棒沒有「動畫播完」的概念，太短的門檻會在正常對局進行中就把還在使用的積棒清掉。
@@ -167,7 +168,7 @@ class MahjongScoringStickEntity(
     /**
      * 排定落下動畫，供積棒／立直棒的 presenter 共用——呼叫前應已經 `moveTo` 到最終
      * 落點，真實座標全程不變，只有 render 端的視覺位移從 [DROP_HEIGHT] 內插回 `0`，手法比照
-     * `FabricMahjongTileWallPresenter.startWallDropAnimations` 牌牆掉落動畫（已在最終位置、`startOffsetY`
+     * `EntityMahjongTileWallPresenter.startWallDropAnimations` 牌牆掉落動畫（已在最終位置、`startOffsetY`
      * 為正值即可，不需要像寶牌揭示動畫那樣額外 `Teleport` 到半空起點——那是因為寶牌指示牌揭示前已經
      * 停在牌牆位置，需要先「真的」抬起來才能翻面；積棒是全新生成的 entity，從一開始就能直接以視覺
      * 位移表達「從上方落下」，不需要移動真實座標）。

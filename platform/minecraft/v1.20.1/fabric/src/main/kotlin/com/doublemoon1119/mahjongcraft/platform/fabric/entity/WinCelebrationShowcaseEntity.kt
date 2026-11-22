@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ShowcaseCar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ShowcaseSoundSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ShowcaseWingSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ShowcaseWinningTileSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.SimpleAnimatedMahjongEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TableOwnedPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinCelebrationCinematicTimeline
 import net.minecraft.core.registries.BuiltInRegistries

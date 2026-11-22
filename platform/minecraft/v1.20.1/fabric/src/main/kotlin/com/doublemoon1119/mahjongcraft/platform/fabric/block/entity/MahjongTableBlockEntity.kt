@@ -3,10 +3,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.block.entity
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.readNbt
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.writeNbt
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableController
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableControllerState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.dice.toMahjongTableFacing
 import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.world.level.block.entity.BlockEntity

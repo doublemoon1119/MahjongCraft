@@ -2,10 +2,13 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
 import com.akuleshov7.ktoml.Toml
 import com.akuleshov7.ktoml.TomlInputConfig
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.ServerConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigUpdateResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongPresentationVisibilityConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigManager
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import net.fabricmc.loader.api.FabricLoader
@@ -15,16 +18,16 @@ import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 
 /**
- * MahjongCraft client 設定的檔案存取，只存在單機／client 環境，跟 server 端設定（[FabricServerConfigManager]）完全
+ * MahjongCraft client 設定的檔案存取，只存在單機／client 環境，跟 server 端設定（[ServerConfigManager]）完全
  * 分開存放（不同檔案），互不影響；缺少檔案時的建立方式是同一套機制——原樣複製打包在 resources 裡、
  * 帶完整註解的 template（`client-config-default.toml`），不是用 codec 從程式預設值重新編碼，這樣
  * 使用者第一次打開檔案就能看到功能說明，不用回頭查文件或程式碼。
  *
- * `/mahjongcraft_client config reload|show`（見 [FabricClientConfigCommand]）跟
- * server 端 `/mahjongcraft config reload|show`（見 [FabricServerConfigCommand]）效果
+ * `/mahjongcraft_client config reload|show`（見 [ClientConfigCommand]）跟
+ * server 端 `/mahjongcraft config reload|show`（見 [ServerConfigCommand]）效果
  * 完全對稱：[load] 回傳跟 `MinecraftServerConfigUpdateResult` 結構相同的 [MahjongClientConfigUpdateResult]，
  * 失敗時 runtime 仍保留先前設定（不會被清成程式預設值），[formattedCurrentToml] 對應
- * `FabricServerConfigManager.formattedCurrentToml`，差別只在這裡沒有權限限制（玩家自己本機的設定，
+ * `ServerConfigManager.formattedCurrentToml`，差別只在這裡沒有權限限制（玩家自己本機的設定，
  * 任何人都能執行）。
  *
  * 跟 server 設定不同的是：client 設定可由指令與 GUI 更新。[save] 會在同目錄建立暫存檔並原子替換，
@@ -113,7 +116,7 @@ class MahjongClientConfigStore() {
     fun setTileLabelsEnabled(enabled: Boolean): MahjongClientConfigUpdateResult = save(current.copy(tileLabelsEnabled = enabled))
 
     /**
-     * 切換自動整理手牌開關並立即寫回磁碟，手法同 [setTileLabelsEnabled]；呼叫端（`FabricHandSortCommand`）
+     * 切換自動整理手牌開關並立即寫回磁碟，手法同 [setTileLabelsEnabled]；呼叫端（`HandSortCommand`）
      * 除了呼叫這個方法，還要另外把偏好同步給伺服器——這裡只負責 client 本機持久化。
      *
      * @param enabled 是否啟用自動整理手牌。

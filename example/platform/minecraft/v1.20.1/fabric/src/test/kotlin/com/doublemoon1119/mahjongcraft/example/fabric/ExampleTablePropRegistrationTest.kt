@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.example.fabric
 import com.doublemoon1119.mahjongcraft.example.fabric.table.ExampleHandRevealChipTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropPreviewRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.FabricTablePropPreviewDefinition
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.TablePropKindRegistryImpl
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
@@ -13,7 +13,7 @@ class ExampleTablePropRegistrationTest {
     /** 攤牌籌碼使用共用 presentation ID，且接受固定變體。 */
     @Test
     fun `extension registers hand reveal chip kind`() {
-        val registry = FabricTablePropKindRegistryImpl()
+        val registry = TablePropKindRegistryImpl()
 
         ExampleFabricMahjongExtension().registerTablePropKinds(registry)
 

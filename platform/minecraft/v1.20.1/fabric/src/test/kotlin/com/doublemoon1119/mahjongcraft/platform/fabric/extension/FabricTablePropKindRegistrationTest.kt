@@ -5,13 +5,13 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.Compone
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.FabricTablePropKind
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterCapabilityRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricRoomParticipantRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatPlacementRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.AiCharacterCapabilityRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.RoomParticipantRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatPlacementRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatProviderRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.ScoringStickTablePropKind
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.TablePropKindRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.TablePropKindRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
@@ -50,16 +50,16 @@ class FabricTablePropKindRegistrationTest {
      */
     private fun register(
         extensions: Iterable<FabricMahjongExtension>,
-        tablePropKindRegistry: FabricTablePropKindRegistry = FabricTablePropKindRegistryImpl(),
-        seatProviderRegistry: FabricSeatProviderRegistryImpl = FabricSeatProviderRegistryImpl(),
+        tablePropKindRegistry: TablePropKindRegistry = TablePropKindRegistryImpl(),
+        seatProviderRegistry: SeatProviderRegistryImpl = SeatProviderRegistryImpl(),
     ) = FabricMahjongExtensionBootstrap.registerAndFreeze(
         extensions = extensions,
         registries = FabricExtensionRegistries(
             tablePropKindRegistry = tablePropKindRegistry,
             seatProviderRegistry = seatProviderRegistry,
-            characterCapabilityRegistry = FabricAiCharacterCapabilityRegistry(),
-            seatPlacementRegistry = FabricSeatPlacementRegistry(),
-            roomParticipantRegistry = FabricRoomParticipantRegistry(),
+            characterCapabilityRegistry = AiCharacterCapabilityRegistry(),
+            seatPlacementRegistry = SeatPlacementRegistry(),
+            roomParticipantRegistry = RoomParticipantRegistry(),
         ),
         builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl(), ComponentViewPersistenceRegistry()),
         failurePolicy = ExtensionFailurePolicy.Default,
@@ -99,7 +99,7 @@ class FabricTablePropKindRegistrationTest {
     /** 內建點棒種類先登記，第三方種類接在後面，完成後凍結；回傳值依來源分組。 */
     @Test
     fun `built-in kind registers first and third-party kinds follow before freeze`() {
-        val registry = FabricTablePropKindRegistryImpl()
+        val registry = TablePropKindRegistryImpl()
         val custom = FakeKind("example:marker")
 
         val sources = register(listOf(KindExtension("example:kind", listOf(custom))), tablePropKindRegistry = registry)
@@ -121,8 +121,8 @@ class FabricTablePropKindRegistrationTest {
     /** 兩個類別同時登記時維持回呼順序、來源分組及全部完成後才凍結。 */
     @Test
     fun `combined registration preserves callback and report ordering`() {
-        val tablePropRegistry = FabricTablePropKindRegistryImpl()
-        val seatProviderRegistry = FabricSeatProviderRegistryImpl()
+        val tablePropRegistry = TablePropKindRegistryImpl()
+        val seatProviderRegistry = SeatProviderRegistryImpl()
         val callbacks = mutableListOf<String>()
         val builtInsVisible = mutableListOf<Boolean>()
 
@@ -170,9 +170,9 @@ class FabricTablePropKindRegistrationTest {
             registries = FabricExtensionRegistries(
                 tablePropKindRegistry = tablePropRegistry,
                 seatProviderRegistry = seatProviderRegistry,
-                characterCapabilityRegistry = FabricAiCharacterCapabilityRegistry(),
-                seatPlacementRegistry = FabricSeatPlacementRegistry(),
-                roomParticipantRegistry = FabricRoomParticipantRegistry(),
+                characterCapabilityRegistry = AiCharacterCapabilityRegistry(),
+                seatPlacementRegistry = SeatPlacementRegistry(),
+                roomParticipantRegistry = RoomParticipantRegistry(),
             ),
             builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl(), ComponentViewPersistenceRegistry()),
             failurePolicy = ExtensionFailurePolicy.Default,
@@ -216,7 +216,7 @@ class FabricTablePropKindRegistrationTest {
     /** 第三方重複登記內建種類時，錯誤會指出是哪個 extension。 */
     @Test
     fun `duplicate kind failure identifies the extension`() {
-        val registry = FabricTablePropKindRegistryImpl()
+        val registry = TablePropKindRegistryImpl()
 
         val failure = assertFailsWith<FabricMahjongExtensionRegistrationException> {
             register(
@@ -232,7 +232,7 @@ class FabricTablePropKindRegistrationTest {
     /** 同一個 extension 識別碼出現兩次時拒絕登記。 */
     @Test
     fun `duplicate extension id fails registration`() {
-        val registry = FabricTablePropKindRegistryImpl()
+        val registry = TablePropKindRegistryImpl()
 
         assertFailsWith<FabricMahjongExtensionRegistrationException> {
             register(
@@ -245,6 +245,6 @@ class FabricTablePropKindRegistrationTest {
     /** 種類識別碼必須帶命名空間。 */
     @Test
     fun `kind without namespace is rejected`() {
-        assertFailsWith<IllegalArgumentException> { FabricTablePropKindRegistryImpl().register(FakeKind("marker")) }
+        assertFailsWith<IllegalArgumentException> { TablePropKindRegistryImpl().register(FakeKind("marker")) }
     }
 }

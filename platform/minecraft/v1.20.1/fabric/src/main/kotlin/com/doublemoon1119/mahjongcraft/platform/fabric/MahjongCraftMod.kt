@@ -23,49 +23,41 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItemGroups
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterManager
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricSeatedParticipantService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricWorldParticipantPresenceService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricCoroutineDispatchers
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricServerStopRunner
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricServerStopRunner.StopStep
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricSessionBackgroundScope
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.AiCharacterManager
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.SeatedParticipantService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.WorldParticipantPresenceService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerLifecycleAppCoroutineScope
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerThreadCoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.ServerConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.CommittedFactsDispatcher
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.FabricGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.ServerThreadGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.AutomaticControlUpdateService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricGameCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DecisionTimerScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.InGameCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableGameActionService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryDatabasePath
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryQueryService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.WinCelebrationEffectScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryOutboxWriter
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryQueryService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AiCharacterSnapshotSender
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.observer.FabricObserverSnapshotBroadcastService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.observer.ObserverSnapshotBroadcastService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.TableLocationPersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.PlayerConnectionLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricMahjongLobbyInfoLifecycleService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricRoomCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongLobbyInfoLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricAiSeatPlacementService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.RoomCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.AiSeatPlacementService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTablePropRefreshScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableSpaceObstructionService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricWorldTickWaiter
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TableLifecycleService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TableLocationValidationService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TablePropRefreshScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TableSpaceObstructionService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.TickMonotonicClock
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.WorldTickWaiter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
@@ -73,11 +65,19 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPre
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModAchievements
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModSounds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency.ServerStopRunner
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency.ServerStopRunner.StopStep
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency.SessionBackgroundScope
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.historyRecordingPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.TableOpeningPresentationOperationTracker
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.AutomaticControlUpdateService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryDatabasePath
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.AuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.MahjongDataLoadCause
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.MahjongDataProblem
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.MahjongDataSource
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.MahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.attachPersistenceState
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
@@ -118,17 +118,17 @@ class MahjongCraftMod : ModInitializer {
         ModAchievements.register()
         val characterSnapshots = koin.get<AiCharacterSnapshotSender>()
         characterSnapshots.registerEvents()
-        val aiCharacters = koin.get<FabricAiCharacterManager>()
+        val aiCharacters = koin.get<AiCharacterManager>()
         aiCharacters.registerEvents()
-        val participantPresence = koin.get<FabricWorldParticipantPresenceService>()
+        val participantPresence = koin.get<WorldParticipantPresenceService>()
         participantPresence.registerEvents()
-        val seatedParticipants = koin.get<FabricSeatedParticipantService>()
+        val seatedParticipants = koin.get<SeatedParticipantService>()
         seatedParticipants.registerEvents()
-        koin.get<FabricAiSeatPlacementService>().registerEvents()
-        val tableLifecycleService = koin.get<FabricTableLifecycleService>()
-        val tableLocationValidation = koin.get<FabricTableLocationValidationService>()
-        val tablePropRefreshScheduler = koin.get<FabricTablePropRefreshScheduler>()
-        val tableSpaceObstruction = koin.get<FabricTableSpaceObstructionService>()
+        koin.get<AiSeatPlacementService>().registerEvents()
+        val tableLifecycleService = koin.get<TableLifecycleService>()
+        val tableLocationValidation = koin.get<TableLocationValidationService>()
+        val tablePropRefreshScheduler = koin.get<TablePropRefreshScheduler>()
+        val tableSpaceObstruction = koin.get<TableSpaceObstructionService>()
         MahjongTables.install(
             roomService = koin.get<MahjongTableRoomService>(),
             tableLifecycleService = tableLifecycleService,
@@ -139,35 +139,35 @@ class MahjongCraftMod : ModInitializer {
         tableLocationValidation.registerEvents()
         tablePropRefreshScheduler.registerEvents()
         tableSpaceObstruction.registerEvents()
-        val lobbyInfoLifecycle = koin.get<FabricMahjongLobbyInfoLifecycleService>()
+        val lobbyInfoLifecycle = koin.get<MahjongLobbyInfoLifecycleService>()
         lobbyInfoLifecycle.registerEvents()
-        koin.get<FabricDecisionTimerScheduler>().registerEvents()
-        koin.get<FabricTickMonotonicClock>().registerEvents()
-        koin.get<FabricWorldTickWaiter>().registerEvents()
-        koin.get<FabricWinCelebrationEffectScheduler>().registerEvents()
+        koin.get<DecisionTimerScheduler>().registerEvents()
+        koin.get<TickMonotonicClock>().registerEvents()
+        koin.get<WorldTickWaiter>().registerEvents()
+        koin.get<WinCelebrationEffectScheduler>().registerEvents()
         registerDecisionSelectionReceiver(koin)
 
-        val serverHolder = koin.get<FabricServerHolder>()
+        val serverHolder = koin.get<ServerHolder>()
         val playerIdentityStore = koin.get<ServerPlayerIdentityStore>()
-        val appScope = koin.get<FabricAppCoroutineScope>()
-        val backgroundScope = koin.get<FabricSessionBackgroundScope>()
-        val serverThread = koin.get<FabricCoroutineDispatchers>().main
-        val stopRunner = FabricServerStopRunner(mainDispatcher = serverThread, drain = serverThread)
+        val appScope = koin.get<ServerLifecycleAppCoroutineScope>()
+        val backgroundScope = koin.get<SessionBackgroundScope>()
+        val serverThread = koin.get<ServerThreadCoroutineDispatchers>().main
+        val stopRunner = ServerStopRunner(mainDispatcher = serverThread, drain = serverThread)
         val advanceManager = koin.get<AutomatedAdvanceManager>()
         val stateCleaner = koin.get<ServerSessionStateCleaner>()
-        val statePersistence = koin.get<FabricAuthoritativeStatePersistence>()
-        val historyWriter = koin.get<FabricHistoryOutboxWriter>()
-        val historyCommand = koin.get<FabricHistoryCommand>()
+        val statePersistence = koin.get<AuthoritativeStatePersistence>()
+        val historyWriter = koin.get<HistoryOutboxWriter>()
+        val historyCommand = koin.get<HistoryCommand>()
         val decisionTimerManager = koin.get<GameDecisionTimerManager>()
-        val tableLocationPersistence = koin.get<FabricTableLocationPersistence>()
-        val configManager = koin.get<FabricServerConfigManager>()
+        val tableLocationPersistence = koin.get<TableLocationPersistence>()
+        val configManager = koin.get<ServerConfigManager>()
         val mahjongTileCollisionService = koin.get<MahjongTileCollisionService>()
         val openingPresentationOperations = koin.get<TableOpeningPresentationOperationTracker>()
-        val gamePresentationPublisher = koin.get<FabricGamePresentationPublisher>()
+        val gamePresentationPublisher = koin.get<ServerThreadGamePresentationPublisher>()
         val presentationBusyTracker = koin.get<TablePresentationBusyTracker>()
-        val observerBroadcast = koin.get<FabricObserverSnapshotBroadcastService>()
+        val observerBroadcast = koin.get<ObserverSnapshotBroadcastService>()
         val committedFactsDispatcher = koin.get<CommittedFactsDispatcher>()
-        val dataStatus = koin.get<FabricMahjongDataStatus>()
+        val dataStatus = koin.get<MahjongDataStatus>()
         mahjongTileCollisionService.registerEvents()
         observerBroadcast.registerEvents()
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
@@ -186,7 +186,7 @@ class MahjongCraftMod : ModInitializer {
                                 dataStatus.report(
                                     problem = MahjongDataProblem(
                                         source = MahjongDataSource.HISTORY_DATABASE,
-                                        file = FabricHistoryDatabasePath.displayPath,
+                                        file = HistoryDatabasePath.displayPath,
                                         cause = MahjongDataLoadCause.Unreadable(historyWriter.lastError ?: "unknown"),
                                     ),
                                 )
@@ -265,11 +265,11 @@ class MahjongCraftMod : ModInitializer {
         registerSetAutoSortHandReceiver(koin)
         registerAutomaticControlUpdateReceiver(koin)
         registerPlayerConnectionEvents(koin)
-        koin.get<FabricServerConfigCommand>().register()
+        koin.get<ServerConfigCommand>().register()
         historyCommand.register()
-        koin.get<FabricHistoryQueryService>().register()
-        koin.get<FabricRoomCommand>().register()
-        koin.get<FabricGameCommand>().register()
+        koin.get<HistoryQueryService>().register()
+        koin.get<RoomCommand>().register()
+        koin.get<InGameCommand>().register()
         developmentTools.forEach { it.initialize(koin) }
 
         logger.info(koin.get<FabricRuntimeMetadata>().initializationMessage())
@@ -311,7 +311,7 @@ class MahjongCraftMod : ModInitializer {
      * @param server 目前 Minecraft server。
      */
     private fun initializeServerConfig(
-        configManager: FabricServerConfigManager,
+        configManager: ServerConfigManager,
         mahjongTileCollisionService: MahjongTileCollisionService,
         server: MinecraftServer,
     ) {
@@ -340,7 +340,7 @@ class MahjongCraftMod : ModInitializer {
      */
     private fun registerPlayerConnectionEvents(koin: Koin) {
         val lifecycleService = koin.get<PlayerConnectionLifecycleService>()
-        val dataStatus = koin.get<FabricMahjongDataStatus>()
+        val dataStatus = koin.get<MahjongDataStatus>()
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
             dataStatus.notifyOnJoin(handler.player)
             if (dataStatus.isMahjongAvailable) lifecycleService.onConnected(handler.player.uuid.toKotlinUuid())
@@ -373,7 +373,7 @@ class MahjongCraftMod : ModInitializer {
     private fun registerRequestSnapshotReceiver(koin: Koin) {
         val json = koin.get<NetworkJson>()
         val lifecycleService = koin.get<PlayerConnectionLifecycleService>()
-        val dataStatus = koin.get<FabricMahjongDataStatus>()
+        val dataStatus = koin.get<MahjongDataStatus>()
         // 客戶端進入世界時自動送出，麻將停用時直接略過、不提示玩家。
         MahjongChannels.requestSnapshot.registerServerReceiver(json) { _, player, _ ->
             if (!dataStatus.isMahjongAvailable) return@registerServerReceiver
@@ -390,7 +390,7 @@ class MahjongCraftMod : ModInitializer {
         val json = koin.get<NetworkJson>()
         val useCase = koin.get<SetHandSortPreferenceUseCase>()
         val scope = koin.get<AppCoroutineScope>()
-        val dataStatus = koin.get<FabricMahjongDataStatus>()
+        val dataStatus = koin.get<MahjongDataStatus>()
         // 排序偏好由客戶端自動同步，麻將停用時直接略過、不提示玩家。
         MahjongChannels.restoreAutoSortHand.registerServerReceiver(json) { _, player, enabled ->
             if (!dataStatus.isMahjongAvailable) return@registerServerReceiver
@@ -416,7 +416,7 @@ class MahjongCraftMod : ModInitializer {
         val service = koin.get<AutomaticControlUpdateService>()
         val scope = koin.get<AppCoroutineScope>()
         val lifecycleService = koin.get<PlayerConnectionLifecycleService>()
-        val dataStatus = koin.get<FabricMahjongDataStatus>()
+        val dataStatus = koin.get<MahjongDataStatus>()
         MahjongChannels.automaticControlUpdate.registerServerReceiver(json) { _, player, request ->
             scope.launch {
                 service(player.uuid.toKotlinUuid(), request)?.let { result ->

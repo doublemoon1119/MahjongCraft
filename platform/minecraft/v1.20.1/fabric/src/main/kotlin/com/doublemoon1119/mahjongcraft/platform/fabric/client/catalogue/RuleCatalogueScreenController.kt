@@ -7,8 +7,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowser
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.CloseRuleCatalogueToGame
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.ResourceCatalogueTileArt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.ReturnRuleCatalogueToScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.RuleCatalogueExit
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.RuleCataloguePresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.TextRendererCatalogueMetrics
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.currentLanguageTranslation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents

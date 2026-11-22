@@ -3,8 +3,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresentation
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPresentationEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.ClientPlayerDisplayNameResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ClientTileAppearanceResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SettlementRankingColumnId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SettlementRankingLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SettlementRankingSettledEffect

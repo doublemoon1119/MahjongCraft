@@ -27,7 +27,7 @@ sealed interface ClientAutomaticControlSubmitResult {
     data class Unsupported(val controlIds: Set<String>) : ClientAutomaticControlSubmitResult
 
     /**
-     * 封包未能交給 Fabric networking，pending 狀態已回復。
+     * 封包未能送出，pending 狀態已回復。
      *
      * @property cause 傳送時發生的錯誤。
      */
