@@ -2,6 +2,7 @@ import com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtension
 import com.doublemoon1119.mahjongcraft.buildlogic.StripModuleInfo
 import com.doublemoon1119.mahjongcraft.buildlogic.UnpackLibraryJars
 import com.doublemoon1119.mahjongcraft.buildlogic.VerifyNoSplitPackagesTask
+import net.neoforged.moddevgradle.tasks.JarJar
 
 plugins {
     alias(libs.plugins.mahjongcraft.minecraft.loader)
@@ -98,11 +99,11 @@ dependencies {
     implementation(libs.sqlite.jdbc)
 
     projectLibraries.forEach { jarJar(project(it)) { excludeKotlinProvidedByForge() } }
-    externalLibraries.forEach { jarJar(it) { excludeKotlinProvidedByForge() } }
 }
 
-// 附帶的 JAR 去掉 Java 模組設定：例如 kotlinx-datetime 的設定要求名為 kotlin.stdlib 的模組，Kotlin for Forge 並非以這個名稱
-// 提供 Kotlin，Forge 會拒絕啟動。Maven 座標不變，jar-in-jar 仍能與其他 mod 協調版本。
+// 附帶的外部函式庫去掉 Java 模組設定：例如 kotlinx-datetime 的設定要求名為 kotlin.stdlib 的模組，Kotlin for Forge 並非以這個
+// 名稱提供 Kotlin，Forge 會拒絕啟動。Maven 座標不變，jar-in-jar 仍能與其他 mod 協調版本。
+// 本專案的模組沒有模組設定，留在 jarJar 不經轉換：經過轉換的專案模組會失去對其 JAR 建置工作的依賴。
 val artifactType = Attribute.of("artifactType", String::class.java)
 dependencies {
     attributesSchema { attribute(StripModuleInfo.MODULE_INFO_STRIPPED) }
@@ -112,8 +113,18 @@ dependencies {
         to.attribute(StripModuleInfo.MODULE_INFO_STRIPPED, true).attribute(artifactType, "jar")
     }
 }
-configurations.named("jarJar") {
+val jarJarExternalLibraries = configurations.create("jarJarExternalLibraries") {
+    // 與 jarJar 相同：只附帶直接宣告的函式庫。
+    isTransitive = false
+    isCanBeConsumed = false
+    attributes.addAllLater(configurations.getByName("jarJar").attributes)
     attributes.attribute(StripModuleInfo.MODULE_INFO_STRIPPED, true)
+}
+dependencies {
+    externalLibraries.forEach { jarJarExternalLibraries(it) { excludeKotlinProvidedByForge() } }
+}
+tasks.named<JarJar>("jarJar") {
+    configuration(jarJarExternalLibraries)
 }
 
 tasks.jar {
