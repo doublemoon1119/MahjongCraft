@@ -29,6 +29,7 @@ private data class PlatformTargetCatalogDocument(
  * @property modules 應載入的 module paths。
  * @property exampleModules 啟用範例建置時額外載入的 module paths。
  * @property attributes 平台自行定義的附加欄位。
+ * @property providedVersions 執行環境提供的函式庫版本。
  */
 @Serializable
 private data class PlatformTargetDefinition(
@@ -42,6 +43,8 @@ private data class PlatformTargetDefinition(
     @SerialName("example-modules")
     val exampleModules: List<String> = emptyList(),
     val attributes: Map<String, String> = emptyMap(),
+    @SerialName("provided-versions")
+    val providedVersions: Map<String, String> = emptyMap(),
 )
 
 /** 解析並驗證受版控的平台 target TOML。 */
@@ -116,6 +119,7 @@ object PlatformTargetCatalog {
                 modules = definition.modules.map(::normalizeModulePath),
                 exampleModules = definition.exampleModules.map(::normalizeModulePath),
                 attributes = definition.attributes,
+                providedVersions = definition.providedVersions.mapKeys { it.key.trim() }.mapValues { it.value.trim() },
             )
         }
     }

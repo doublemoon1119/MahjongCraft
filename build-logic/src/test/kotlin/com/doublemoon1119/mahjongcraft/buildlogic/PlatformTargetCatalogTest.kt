@@ -133,6 +133,23 @@ class PlatformTargetCatalogTest {
         assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
     }
 
+    /** target 可以記錄執行環境提供的函式庫版本；沒有記錄時為空。 */
+    @Test
+    fun `loads provided versions`() = withFixture { root ->
+        createModule(root, "platform/one")
+        createModule(root, "platform/two")
+        val catalog = writeCatalog(
+            root,
+            target("minecraft-one", "platform/one") + "\n[targets.provided-versions]\nkotlin = \" 2.4.20 \"\n\n" +
+                target("minecraft-two", "platform/two"),
+        )
+
+        val targets = PlatformTargetCatalog.load(catalog, root)
+
+        assertEquals(mapOf("kotlin" to "2.4.20"), targets.first().providedVersions)
+        assertEquals(emptyMap(), targets.last().providedVersions)
+    }
+
     /** 非 Minecraft 平台不需要提供 Minecraft 專屬欄位。 */
     @Test
     fun `loads platform neutral target`() = withFixture { root ->

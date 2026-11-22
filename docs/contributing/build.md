@@ -51,6 +51,26 @@
   `[libraries]`. Keep runtime requirements written into package metadata apart from the compile versions,
   named `require-<loader>-<dependency>`.
 
+## Runtime-Provided Versions
+
+- Some platforms load libraries the build output does not bundle, for example a loader that ships the Kotlin
+  standard library. A target records those versions in `targets.toml` under `[targets.provided-versions]`,
+  keyed by `libs` version names. `kotlin` stands for the Kotlin standard library.
+- Only one copy of a provided library is loaded, so the project may not use a newer version than any target
+  provides:
+  - `kotlin-api-version` in `libs` caps the standard library API that Kotlin code may use, and is applied to
+    every Kotlin compilation. It must not exceed the oldest provided `kotlin`. The compiler, `kotlin`, may be
+    newer.
+  - Every other provided name must be a `libs` version no newer than the provided one.
+- `verifyProvidedVersions`, part of the root `check`, reads every target, whichever target is selected, and
+  fails when a version exceeds what a target provides, when a provided name is not a `libs` version, or when
+  two versions cannot be compared because one is not purely numeric.
+- To upgrade Kotlin or a provided library:
+  1. Wait until every target's runtime provides the new version, and update `provided-versions` and the
+     runtime requirement in that target's metadata.
+  2. Raise the version in `libs`, and `kotlin-api-version` for a new Kotlin minor version.
+  3. Run the full verification for every target.
+
 ## Example Builds
 
 - A target may declare `example-modules` in its `targets.toml` entry. They are loaded only when

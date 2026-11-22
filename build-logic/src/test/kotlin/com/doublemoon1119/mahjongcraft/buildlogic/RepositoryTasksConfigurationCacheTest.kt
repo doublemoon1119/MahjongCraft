@@ -150,6 +150,7 @@ class RepositoryTasksConfigurationCacheTest {
             extension-api-version = "1.0.0"
             bundled-extensions-version = "1.0.0"
             core-java-toolchain = "17"
+            kotlin-api-version = "2.4"
             """.trimIndent() + "\n",
         )
         root.resolve("settings.gradle.kts").writeText(

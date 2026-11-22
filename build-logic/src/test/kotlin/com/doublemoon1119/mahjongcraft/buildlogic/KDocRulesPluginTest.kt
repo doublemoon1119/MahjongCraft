@@ -141,6 +141,7 @@ class KDocRulesPluginTest {
             [versions]
             core-java-toolchain = "17"
             core-java-release = "17"
+            kotlin-api-version = "2.4"
             """.trimIndent() + "\n",
         )
         root.resolve("settings.gradle.kts").writeText(

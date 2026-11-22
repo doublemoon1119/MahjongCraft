@@ -17,6 +17,9 @@ core-java-release = "17"
 
 # Kotlin ecosystem
 kotlin = "2.4.20"
+# 程式可使用的 Kotlin 標準函式庫 API 版本上限，不得高於任何建置目標執行時提供的 Kotlin。
+# 各目標提供的版本記錄在 gradle/platform/<平台>/<版本>/targets.toml 的 provided-versions。
+kotlin-api-version = "2.4"
 kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.11.0"
 kotlinx-datetime = "0.7.1-0.6.x-compat"

@@ -14,6 +14,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 /**
@@ -56,7 +58,7 @@ internal fun Project.configureKotlinJvm(toolchain: Int, release: Int, overrideDe
 }
 
 /**
- * 設定 Java/Kotlin bytecode release 與測試 launcher。
+ * 設定 Java/Kotlin bytecode release、Kotlin API 版本上限與測試 launcher。
  *
  * @param toolchain 測試 launcher 使用的 JDK toolchain 版本。
  * @param release Java 與 Kotlin 編譯輸出的 JVM bytecode release。
@@ -74,6 +76,11 @@ private fun Project.configureCompilerTasks(toolchain: Int, release: Int, overrid
             jvmDefault.set(JvmDefaultMode.NO_COMPATIBILITY)
         }
     }
+    // 程式只能使用執行環境提供的 Kotlin 標準函式庫中已有的 API；編譯器本身可以較新。
+    val kotlinApiVersion = KotlinVersion.fromVersion(catalogVersion(KOTLIN_API_VERSION_ALIAS))
+    tasks.withType<KotlinCompilationTask<*>>().configureEach {
+        compilerOptions.apiVersion.set(kotlinApiVersion)
+    }
     val toolchains = extensions.getByType<JavaToolchainService>()
     tasks.withType<Test>().configureEach {
         javaLauncher.convention(
@@ -83,6 +90,9 @@ private fun Project.configureCompilerTasks(toolchain: Int, release: Int, overrid
         )
     }
 }
+
+/** `libs` version catalog 中 Kotlin API 版本上限的名稱。 */
+internal const val KOTLIN_API_VERSION_ALIAS: String = "kotlin-api-version"
 
 /** 讀取 Settings plugin 發布的 target Java toolchain。 */
 internal fun Project.targetJavaToolchain(): Int = gradleExtras().get(PlatformTargetsSettingsPlugin.TARGET_JAVA_TOOLCHAIN_EXTRA) as Int
