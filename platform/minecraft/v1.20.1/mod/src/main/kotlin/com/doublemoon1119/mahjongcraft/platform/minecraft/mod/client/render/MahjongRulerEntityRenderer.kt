@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.MahjongRulerTint
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongRulerEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerDimensions
 import com.mojang.blaze3d.vertex.PoseStack

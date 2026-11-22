@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTable
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.RegisteredEntry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.MahjongBlockEntityTypes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.MahjongStoolSeatService
 import net.minecraft.core.registries.Registries
 import net.minecraft.resources.ResourceLocation

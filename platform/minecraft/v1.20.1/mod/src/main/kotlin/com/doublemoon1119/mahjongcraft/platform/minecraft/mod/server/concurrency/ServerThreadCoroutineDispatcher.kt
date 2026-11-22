@@ -1,8 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.ServerHolder
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency.MainThreadDrain
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency.MainThreadTaskQueue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.time.TickMonotonicClock
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineDispatcher

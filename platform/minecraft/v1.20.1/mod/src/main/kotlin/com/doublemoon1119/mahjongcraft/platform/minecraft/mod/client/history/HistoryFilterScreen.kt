@@ -13,15 +13,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.FormScr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseFilterField
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseFilterInput
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseFilterResult
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseFilterValidation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryScreenText
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.coversAllMatches
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.inputDescriptionKey
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.inputExampleKey
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.translationKey
 import net.minecraft.ChatFormatting
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractWidget

@@ -2,8 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.LoaderPlatform
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigLocation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigPathProvider
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.storage.LevelResource
 import java.nio.file.Path

@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongBotArmAnimation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import net.minecraft.nbt.CompoundTag

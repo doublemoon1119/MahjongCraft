@@ -5,11 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatch
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryManagementResult
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryRetryResult
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryStorageSnapshot
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.cachedSnapshot
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.commandErrorKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.historyCleanupPreviewMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.historyCleanupReportMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.historyStatusMessage

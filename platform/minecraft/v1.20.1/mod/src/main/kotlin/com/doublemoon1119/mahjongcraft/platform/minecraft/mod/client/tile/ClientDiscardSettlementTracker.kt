@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.tile
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.tile.DiscardSettlementState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import net.minecraft.client.Minecraft

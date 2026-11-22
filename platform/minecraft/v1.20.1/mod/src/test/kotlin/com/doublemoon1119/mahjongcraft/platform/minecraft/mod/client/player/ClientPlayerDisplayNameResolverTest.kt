@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterClientStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSyncSnapshot
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlin.test.Test

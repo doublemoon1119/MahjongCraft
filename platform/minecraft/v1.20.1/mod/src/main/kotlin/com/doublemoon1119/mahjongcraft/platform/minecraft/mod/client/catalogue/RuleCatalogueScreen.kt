@@ -6,13 +6,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowser
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueConfigSource
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.CatalogueCard
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.CatalogueRect
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.RuleCatalogueExit
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.RuleCataloguePresenter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.RuleCatalogueScreenLayout
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.catalogueSourceKey
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.catalogueStatusKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOption
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOverlay

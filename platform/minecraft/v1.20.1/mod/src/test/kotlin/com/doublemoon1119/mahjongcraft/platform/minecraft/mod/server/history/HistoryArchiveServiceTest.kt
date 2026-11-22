@@ -22,7 +22,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshotCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryStoredMatchState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules

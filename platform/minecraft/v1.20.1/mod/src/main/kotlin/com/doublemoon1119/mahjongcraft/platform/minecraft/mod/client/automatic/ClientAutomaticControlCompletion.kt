@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlSnapshotDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutomaticControlResultKind
 
 /**
  * 一筆已配對請求的完成結果。

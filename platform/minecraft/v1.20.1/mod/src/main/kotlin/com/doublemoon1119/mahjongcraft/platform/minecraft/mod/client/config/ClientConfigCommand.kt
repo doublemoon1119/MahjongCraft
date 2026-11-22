@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.CLIENT_COMMAND_ROOT
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.command.ClientCommandFeedback
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.tile.TileLabelCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents

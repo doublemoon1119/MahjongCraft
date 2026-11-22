@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.prop
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.tableprop.TablePropKind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TablePropTileEntity
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.prop.TablePropTileFaceCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropDefinitions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropContent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropTarget

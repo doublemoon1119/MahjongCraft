@@ -1,7 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model.FixedMahjongTileModelPreparedData
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model.FixedMahjongTileModelVariant
 import net.minecraft.client.renderer.block.model.BlockModel
 import net.minecraft.resources.ResourceLocation
 import kotlin.test.Test

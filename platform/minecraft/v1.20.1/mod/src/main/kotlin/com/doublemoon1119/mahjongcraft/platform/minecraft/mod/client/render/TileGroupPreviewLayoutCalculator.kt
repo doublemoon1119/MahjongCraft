@@ -1,9 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.TileGroupPreviewEntry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.TileGroupPreviewLayout
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.TileGroupPreviewPlacement
-
 /** 計算鳴牌提示使用的橫向牌組排列：一列等距的直立牌，水平與垂直皆置中於原點。 */
 object TileGroupPreviewLayoutCalculator {
     /**

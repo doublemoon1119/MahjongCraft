@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatEntity
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatCollisionScope
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatCollisionPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatEnvironment
 import net.minecraft.core.BlockPos

@@ -1,18 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.HiddenDebugHitboxEntity
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ManagedTableNbt
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.SettlementPresentationSoundSpec
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.SimpleAnimatedMahjongEntity
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TableOwnedPresentationEntity
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementDetailSnapshot
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementMeldSnapshot
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementRankingCodec
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementRankingSnapshot
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementRevealTimingSnapshot
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementSoundCueSnapshot
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementWinnerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry

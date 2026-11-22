@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryArchiveStatusSender
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.MahjongChannels
 
 /**

@@ -4,9 +4,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationSte
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.MahjongAnimationSounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.AnimatedMahjongEntity
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.GameManagedEntityNbt
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongDicePoint
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModItems
 import net.minecraft.nbt.CompoundTag

@@ -5,13 +5,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.BuiltInRuleC
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowser
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.CloseRuleCatalogueToGame
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.ResourceCatalogueTileArt
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.ReturnRuleCatalogueToScreen
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.RuleCatalogueExit
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.RuleCataloguePresenter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.TextRendererCatalogueMetrics
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.currentLanguageTranslation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry

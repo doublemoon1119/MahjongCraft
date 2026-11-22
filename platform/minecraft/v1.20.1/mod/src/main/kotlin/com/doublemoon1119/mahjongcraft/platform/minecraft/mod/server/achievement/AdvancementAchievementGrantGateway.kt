@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.Achievemen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.PlayerAchievements
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModAchievements
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.ServerHolder
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.achievement.AchievementGrantGateway
 import net.minecraft.stats.Stats
 
 /**

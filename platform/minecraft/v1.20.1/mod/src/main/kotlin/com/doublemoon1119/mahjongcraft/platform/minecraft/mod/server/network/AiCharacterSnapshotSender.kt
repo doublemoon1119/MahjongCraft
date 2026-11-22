@@ -11,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.TrackingPlayers
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.character.AiCharacterBindings
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.network.AiCharacterSnapshotDelivery
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.AuthoritativeStatePersistence
 import net.minecraft.server.level.ServerPlayer
 import kotlin.uuid.Uuid

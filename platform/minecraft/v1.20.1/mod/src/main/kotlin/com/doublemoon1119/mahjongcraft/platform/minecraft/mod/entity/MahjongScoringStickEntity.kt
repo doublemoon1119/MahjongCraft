@@ -2,10 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.AnimatedMahjongEntity
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.GameManagedEntityNbt
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongScoringStickDenominationNbt
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TablePropIdentityNbt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.item.MahjongScoringStickItem
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModItems

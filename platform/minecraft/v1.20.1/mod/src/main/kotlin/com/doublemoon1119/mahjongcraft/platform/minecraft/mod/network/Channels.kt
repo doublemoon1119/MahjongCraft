@@ -4,8 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModPackets
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.C2SRateLimit
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.PlayerRequestRateLimiter
 import io.netty.buffer.Unpooled
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.KSerializer

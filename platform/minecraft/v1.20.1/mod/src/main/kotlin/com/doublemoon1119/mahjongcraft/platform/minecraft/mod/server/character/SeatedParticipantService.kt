@@ -29,7 +29,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.Room
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.TrackingPlayers
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.character.ParticipantRemovalPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.AuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.RoomStartSeating
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatingSessionFactory

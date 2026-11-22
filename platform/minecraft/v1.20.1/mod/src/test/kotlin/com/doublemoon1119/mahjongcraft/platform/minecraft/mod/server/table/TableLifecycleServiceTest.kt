@@ -23,10 +23,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.entity.Enti
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.WinCelebrationEffectScheduler
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.MahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.MahjongLobbyInfoPresenter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.OrphanedTableCleanupResult
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.OrphanedTableCleanupService
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.RecordingTableRemovalNotifier
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableCleanupQueue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter

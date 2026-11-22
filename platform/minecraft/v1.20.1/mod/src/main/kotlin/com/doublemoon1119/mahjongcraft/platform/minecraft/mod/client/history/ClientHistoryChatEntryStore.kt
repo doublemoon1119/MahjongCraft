@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.CLIENT_COMMAND_ROOT
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryQueryTransport
 import kotlin.uuid.Uuid
 
 /**

@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTable
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.entity.EntitySpawnGateway
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableOverlayEntitySearch
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter

@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.table
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.table.ClientTableSpaceObstructionStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.renderer.LevelRenderer

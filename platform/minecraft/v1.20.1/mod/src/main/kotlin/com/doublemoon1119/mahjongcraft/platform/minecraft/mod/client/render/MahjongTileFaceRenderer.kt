@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model.MahjongTileModelLoadingPlugin
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ExhaustiveDrawSettlementTileFaceRenderType
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry

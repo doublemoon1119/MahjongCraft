@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.ServerThreadGamePresentationPublisher
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TablePropRefreshQueue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.prop.TablePropSearchArea
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import net.minecraft.core.BlockPos

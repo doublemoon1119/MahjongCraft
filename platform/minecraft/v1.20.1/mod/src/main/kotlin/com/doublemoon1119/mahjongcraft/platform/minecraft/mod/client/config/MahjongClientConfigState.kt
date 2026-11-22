@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongHudLayoutConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigManager
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

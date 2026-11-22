@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.item
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTilePose
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.item.MahjongTileItemStackData
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModSounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.allTileAssetKeys

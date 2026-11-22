@@ -6,11 +6,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetail
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileSetAsideDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryCardStyle
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryOutcomePresentation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryRoundEventPresenter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryWinningHandSource
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.translationKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import net.minecraft.network.chat.Component
 

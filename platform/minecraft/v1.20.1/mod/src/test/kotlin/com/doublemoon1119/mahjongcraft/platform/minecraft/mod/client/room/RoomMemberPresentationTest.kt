@@ -4,9 +4,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.PublicPlayerIndicatorTextResolver
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.RoomMemberPresentation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.formatRoomInteger
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.roomMemberEntriesFrom
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys

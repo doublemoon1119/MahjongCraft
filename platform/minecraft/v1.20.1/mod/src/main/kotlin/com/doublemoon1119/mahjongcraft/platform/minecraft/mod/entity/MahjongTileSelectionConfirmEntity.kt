@@ -1,8 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.AnimatedMahjongEntity
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ManagedTableNbt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import net.minecraft.nbt.CompoundTag

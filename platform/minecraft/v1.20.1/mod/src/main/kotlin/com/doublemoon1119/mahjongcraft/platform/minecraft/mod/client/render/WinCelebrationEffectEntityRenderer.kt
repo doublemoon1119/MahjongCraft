@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.WinCelebrationEffectGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongVisualEffectKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinCelebrationEffectEntity
 import com.mojang.blaze3d.vertex.PoseStack

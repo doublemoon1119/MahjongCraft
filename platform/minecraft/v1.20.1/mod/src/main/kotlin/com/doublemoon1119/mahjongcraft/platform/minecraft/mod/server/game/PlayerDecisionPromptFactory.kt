@@ -19,7 +19,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionTileSelectionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.GameActionCandidate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.player.ServerAiPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey

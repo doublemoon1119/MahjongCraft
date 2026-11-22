@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterClientStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerKeys

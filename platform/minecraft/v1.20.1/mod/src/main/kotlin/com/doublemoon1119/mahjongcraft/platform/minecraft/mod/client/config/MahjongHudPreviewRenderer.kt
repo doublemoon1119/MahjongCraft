@@ -11,10 +11,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.A
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.AutomaticControlStatusHudText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.AutomaticControlStatusRow
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.automaticControlStatusHudLayout
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.HudElement
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.HudPreviewScenario
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongHudLayoutConfig
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongHudPreviewSize
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.CompactDecisionHudContent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionBounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionCardLayout

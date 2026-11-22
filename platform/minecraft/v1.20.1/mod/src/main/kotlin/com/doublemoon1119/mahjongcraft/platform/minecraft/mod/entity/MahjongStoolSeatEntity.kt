@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongStoolBlock
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModEntities
 import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag

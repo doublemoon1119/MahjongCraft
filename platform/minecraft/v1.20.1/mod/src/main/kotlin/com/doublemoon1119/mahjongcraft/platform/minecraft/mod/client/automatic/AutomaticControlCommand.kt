@@ -2,10 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.CLIENT_COMMAND_ROOT
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.AutomaticControlCommandMode
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.AutomaticControlDisplayResolver
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutomaticControlCommandResult
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutomaticControlResultKind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.command.ClientCommandFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents

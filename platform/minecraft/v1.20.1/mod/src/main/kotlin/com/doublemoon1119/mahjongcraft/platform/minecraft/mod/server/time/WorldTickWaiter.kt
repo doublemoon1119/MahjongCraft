@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.time
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.time.WorldTickWaitQueue
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import net.minecraft.server.MinecraftServer

@@ -13,8 +13,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPositionDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryRoundCache
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryRoundCacheKey
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

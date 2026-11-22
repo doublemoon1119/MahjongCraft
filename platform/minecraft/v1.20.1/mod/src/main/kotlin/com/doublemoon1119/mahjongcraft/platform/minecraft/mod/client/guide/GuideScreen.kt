@@ -13,14 +13,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenR
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.TabWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.measuringTimeNow
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideAction
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideBlock
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideContentLayout
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideElement
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideMeasurer
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideRecipeLayout
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideTextStyle
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideTooltipPlacement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneHover
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneRegion
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneRenderer

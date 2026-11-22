@@ -17,8 +17,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCh
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.ServerHolder
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.character.AiCharacterActivationDiagnostics
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.character.AiCharacterDiscardLook
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.entity.EntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.AuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatCollisionScope

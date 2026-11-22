@@ -43,8 +43,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.character.S
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.decisionPhaseFor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.AuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.MahjongDataStatus
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.MinecraftRoomFeedbackResolver
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.ReachableMahjongTableResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableSpaceObstructionScanner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableStateDelivery
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableStateTicket

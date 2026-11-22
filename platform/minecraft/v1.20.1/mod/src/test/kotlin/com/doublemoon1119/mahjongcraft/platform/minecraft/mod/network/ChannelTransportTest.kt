@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientPacketTransport
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModPackets
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.PacketTransport
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.C2SRateLimit
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledNetworkJson
 import kotlinx.serialization.builtins.serializer
 import net.minecraft.client.multiplayer.ClientPacketListener

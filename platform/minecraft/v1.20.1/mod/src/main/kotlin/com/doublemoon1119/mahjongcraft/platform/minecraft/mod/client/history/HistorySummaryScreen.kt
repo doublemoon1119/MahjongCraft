@@ -11,11 +11,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.Restart
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RowStripe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseStatus
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryPageFrame
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryScreenText
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistorySummaryLayout
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.translationKey
 import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics

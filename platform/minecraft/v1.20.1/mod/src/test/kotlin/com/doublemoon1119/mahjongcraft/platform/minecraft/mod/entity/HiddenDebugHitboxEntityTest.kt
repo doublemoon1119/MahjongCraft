@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.HiddenDebugHitboxEntity
 import kotlin.reflect.KClass
 import kotlin.test.Test
 import kotlin.test.assertFalse

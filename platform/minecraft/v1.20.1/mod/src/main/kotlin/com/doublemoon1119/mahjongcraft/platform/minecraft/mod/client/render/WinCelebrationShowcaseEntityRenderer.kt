@@ -1,9 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ClientTileAppearanceResolver
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ShowcaseCardSlot
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ShowcaseFormationLayout
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ShowcaseFormationMetrics
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ShowcaseTimelineCurves.BOB_HEIGHT
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ShowcaseTimelineCurves.BOB_SPEED
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ShowcaseTimelineCurves.ELYTRA_APPEAR_TICK
@@ -20,8 +16,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.Show
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ShowcaseTimelineCurves.tntFlashVisible
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ShowcaseTimelineCurves.winningTileBobOffset
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ShowcaseTimelineCurves.winningTileTicksFromBottom
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.TileRenderAppearanceContext
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.WinCelebrationTitleRenderType
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ShowcaseCardSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinCelebrationCinematicTimeline

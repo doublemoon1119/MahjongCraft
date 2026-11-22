@@ -1,14 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ManagedTableNbt
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ShowcaseCardSnapshot
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ShowcaseSoundSnapshot
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ShowcaseWingSnapshot
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ShowcaseWinningTileSnapshot
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.SimpleAnimatedMahjongEntity
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TableOwnedPresentationEntity
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinCelebrationCinematicTimeline
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModEntities
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.nbt.CompoundTag

@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.ServerHolder
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.RoomMemberCandidate
 import kotlin.uuid.Uuid
 
 /**

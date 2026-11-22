@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.AnimatedVisualEffectEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModEntities
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.level.Level

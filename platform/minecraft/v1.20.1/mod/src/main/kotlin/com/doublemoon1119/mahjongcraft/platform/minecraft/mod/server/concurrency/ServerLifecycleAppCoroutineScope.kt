@@ -3,8 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrenc
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency.SessionBackgroundScope
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency.SessionCoroutineContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.DecisionTimerScheduler
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.MahjongTableGameActionService
 import kotlinx.coroutines.CompletableJob

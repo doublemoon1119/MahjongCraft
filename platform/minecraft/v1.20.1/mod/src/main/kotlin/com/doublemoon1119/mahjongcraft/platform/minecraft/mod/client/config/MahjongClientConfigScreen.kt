@@ -10,11 +10,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.C
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutomaticControlResultKind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutomaticControlSubmitResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutomaticControlUpdateCoordinator
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigState
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongHudLayoutConfig
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongPresentationToggle
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongPresentationToggleSection
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.clientConfigDifferenceText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.FormScreenLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.MarqueeState

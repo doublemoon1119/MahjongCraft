@@ -11,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneView
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneWinEffect
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideScenes
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryReplayWinEffectFrame
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout

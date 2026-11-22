@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigTomlCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.historyRecordingPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryRetentionCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.retentionPolicy
 import kotlinx.coroutines.CancellationException

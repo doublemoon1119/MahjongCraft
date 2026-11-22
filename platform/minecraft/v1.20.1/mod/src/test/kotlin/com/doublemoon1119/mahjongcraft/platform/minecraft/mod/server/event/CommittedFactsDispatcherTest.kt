@@ -28,8 +28,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.event.GameEven
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.LinkageIsolatingExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.achievement.AchievementGrantGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.achievement.AchievementService
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.GameEventExclusions
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.SnapshotGameEventLocationSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules

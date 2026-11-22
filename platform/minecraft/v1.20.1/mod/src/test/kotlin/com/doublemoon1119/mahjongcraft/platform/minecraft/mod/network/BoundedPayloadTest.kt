@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScop
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.HistoryQueryLimits
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledNetworkJson
 import io.netty.buffer.Unpooled
 import kotlinx.coroutines.CancellationException

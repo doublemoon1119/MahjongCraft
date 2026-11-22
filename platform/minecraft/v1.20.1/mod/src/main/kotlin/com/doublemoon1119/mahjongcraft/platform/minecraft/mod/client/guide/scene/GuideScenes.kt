@@ -11,17 +11,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongStoolBlock
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableStructure
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideScene
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneBlock
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneBox
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneFigure
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideScenePlayerInfo
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneRegion
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneRoundInfo
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneTile
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneTileGlow
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneView
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideViewer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModBlocks

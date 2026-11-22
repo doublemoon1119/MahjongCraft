@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchiev
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.PlayerAchievements
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.achievement.AchievementGrantGateway
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 

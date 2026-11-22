@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongPresentationToggleSection
 
 /**
  * 設定畫面上可個別開關的顯示項目，明確對應名稱、說明翻譯鍵與 [MahjongPresentationVisibilityConfig] 欄位。

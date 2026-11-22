@@ -8,12 +8,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryFilt
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortDirectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortFieldDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseFilterError
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseFilterField
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseFilterInput
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseFilterResult
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseFilterValidation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseQuery
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlin.test.Test

@@ -11,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MinecraftMat
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.OrphanedTablePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.OrphanedTableCleanupResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlin.uuid.Uuid

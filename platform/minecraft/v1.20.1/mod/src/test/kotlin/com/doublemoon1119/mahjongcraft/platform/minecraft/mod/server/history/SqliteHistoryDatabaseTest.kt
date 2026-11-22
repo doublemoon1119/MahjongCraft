@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryDatabasePath
 import java.nio.file.Files
 import java.nio.file.Path
 import java.sql.DriverManager

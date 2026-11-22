@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.playerInfoDisplayName
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.PublicPlayerIndicatorTextResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout

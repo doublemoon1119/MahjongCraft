@@ -12,9 +12,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.TabStri
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.TabWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.applyTabScroll
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseStatus
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryScreenText
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.translationKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.gameConfigPresentationText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigFieldDefinition

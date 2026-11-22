@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.C2SRateLimits
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledNetworkDtos
 import kotlin.test.Test
 import kotlin.test.assertTrue

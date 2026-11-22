@@ -6,8 +6,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.Restart
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScrollState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.handbook.HandbookEntry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.handbook.HandbookScreenLayout
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component

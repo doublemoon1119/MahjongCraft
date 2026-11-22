@@ -55,8 +55,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.ServerHolde
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.character.AiCharacterManager
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency.SessionBackgroundScope
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.entity.EntitySpawnGateway
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.TableOpeningPresentationOperationTracker
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.TableOpeningPresentationState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.ExhaustiveDrawSettlementPresentationScheduler
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.MatchSettlementPresentationScheduler
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.WinCelebrationEffectScheduler

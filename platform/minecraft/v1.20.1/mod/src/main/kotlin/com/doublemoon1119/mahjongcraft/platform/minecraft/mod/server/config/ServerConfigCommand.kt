@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.entity.MahjongTileCollisionService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.configReloadFailureMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.prefixedConfigMessage

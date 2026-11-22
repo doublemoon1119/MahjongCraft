@@ -1,16 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideScene
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneEntity
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneFigure
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneHover
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideScenePlayerInfo
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneRegion
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneTile
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneTileDrawOrder
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneTileGlow
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneWinEffect
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.MahjongBotEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.MahjongPlayerInfoEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.MahjongTileEntityRenderer

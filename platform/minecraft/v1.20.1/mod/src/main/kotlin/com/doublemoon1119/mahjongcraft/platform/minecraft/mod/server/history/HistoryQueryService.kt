@@ -46,13 +46,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.ClientRequ
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.HistoryQueryLimits
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency.SessionBackgroundScope
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryManagementResult
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryQueryAdmission
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryQueryAdmissionLimits
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryQueryExecution
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryQuerySettingsPublisher
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.queryErrorCode
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.toDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.network.PlayerIdentitySender
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.player.ServerPlayerIdentityStore
 import kotlinx.coroutines.flow.distinctUntilChanged

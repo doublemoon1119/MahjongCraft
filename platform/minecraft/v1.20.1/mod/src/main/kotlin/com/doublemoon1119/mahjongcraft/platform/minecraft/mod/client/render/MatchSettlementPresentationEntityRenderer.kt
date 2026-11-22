@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.ClientPlayerDisplayNameResolver
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.WorldPanelRenderType
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MatchSettlementPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MatchSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger

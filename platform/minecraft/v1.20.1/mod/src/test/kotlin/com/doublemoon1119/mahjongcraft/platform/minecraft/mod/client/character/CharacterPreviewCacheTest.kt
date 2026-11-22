@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.CharacterPreviewCache
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

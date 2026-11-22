@@ -8,9 +8,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.FormScr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryReplayVisibility
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryReplayVisibilityOption
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.translationKey
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.screens.Screen

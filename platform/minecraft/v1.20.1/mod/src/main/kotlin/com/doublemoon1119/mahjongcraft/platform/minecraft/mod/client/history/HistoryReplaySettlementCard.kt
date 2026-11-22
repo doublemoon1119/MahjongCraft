@@ -5,12 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayFac
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScrollbarLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseReplayState
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryCardStyle
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryFactPresentation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryRoundEventPresenter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryScreenLayout
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryWinningHandSource
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.network.chat.Component

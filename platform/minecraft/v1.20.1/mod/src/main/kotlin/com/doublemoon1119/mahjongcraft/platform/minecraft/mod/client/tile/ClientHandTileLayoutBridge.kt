@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.tile
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.tile.findNearestHandTileTarget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTileEntity
 import net.minecraft.client.Minecraft
 import net.minecraft.world.phys.EntityHitResult

@@ -4,8 +4,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongStool
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.entity.EntitySpawnGateway
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatCollisionScope
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatSupportCleanup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatCollisionPolicy
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel

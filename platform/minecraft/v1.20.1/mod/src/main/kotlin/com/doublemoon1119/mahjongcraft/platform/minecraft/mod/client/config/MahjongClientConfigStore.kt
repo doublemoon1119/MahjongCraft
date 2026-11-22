@@ -3,9 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config
 import com.akuleshov7.ktoml.Toml
 import com.akuleshov7.ktoml.TomlInputConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigState
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigUpdateResult
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongPresentationVisibilityConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.LoaderPlatform
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigCommand

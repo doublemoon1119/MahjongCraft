@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.TrackingPlayers
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableStateDeliveryEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import net.minecraft.core.BlockPos

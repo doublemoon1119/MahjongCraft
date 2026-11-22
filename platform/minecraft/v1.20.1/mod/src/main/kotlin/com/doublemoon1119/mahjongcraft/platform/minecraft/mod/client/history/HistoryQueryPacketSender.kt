@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStat
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryQuerySender
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.MahjongChannels
 
 /**

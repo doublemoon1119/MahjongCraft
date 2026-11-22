@@ -7,10 +7,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActi
 import com.doublemoon1119.mahjongcraft.platform.minecraft.guide.MinecraftGuideScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.previewAction
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.previewPrompt
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideAction
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideBlock
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideStep
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideTileItem
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideScene
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideSceneTileGlow
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideScenes

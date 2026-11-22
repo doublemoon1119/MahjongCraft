@@ -1,8 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model.FixedMahjongTileModelLoadingPlugin
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model.FixedMahjongTileModelPreparedData
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModelLoading
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry

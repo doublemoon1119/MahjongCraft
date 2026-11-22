@@ -1,9 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigState
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigUpdateResult
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongHudLayoutConfig
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongPresentationVisibilityConfig
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Comparator

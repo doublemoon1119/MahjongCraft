@@ -12,8 +12,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.ReadinessAnalysisDtoMapper
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.network.AiCharacterSnapshotDelivery
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.network.AutomaticControlSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableStateDelivery
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableRemovedPayloadDto
 import net.minecraft.server.level.ServerPlayer

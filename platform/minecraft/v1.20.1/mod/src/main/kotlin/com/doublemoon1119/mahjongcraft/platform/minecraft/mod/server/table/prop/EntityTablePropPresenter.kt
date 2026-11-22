@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCra
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.entity.EntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TablePropRefreshQueue
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.prop.TablePropSearchArea
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropLayoutResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresentation

@@ -1,9 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongStoolDesign
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.scheduleWaterTickIfWaterlogged
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.waterloggedAt
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.waterloggedFluidState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.MahjongStoolSeatService
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction

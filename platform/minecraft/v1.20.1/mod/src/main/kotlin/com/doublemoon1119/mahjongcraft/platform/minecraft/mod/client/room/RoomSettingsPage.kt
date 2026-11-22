@@ -20,12 +20,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.TabStri
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.TabWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.UnsavedChangesConfirmationScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.CenteredIntegerEditBox
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.MultiChoiceScreen
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.RoomConfigIntegerControl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.RoomSettingsDraft
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.formatRoomInteger
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.gameConfigDifferenceText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigCategoryDefinition

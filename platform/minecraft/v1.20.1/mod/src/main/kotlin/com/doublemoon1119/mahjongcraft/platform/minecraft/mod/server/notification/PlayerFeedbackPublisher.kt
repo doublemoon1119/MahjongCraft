@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNa
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.RoomConfigScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.ServerHolder
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.notification.GameConfigTextFormatter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.player.ServerPlayerIdentityStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.resolveDisplayText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.bracketedInteractiveLabel

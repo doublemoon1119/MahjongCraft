@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatTarget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongStoolBlock
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatGeometry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatSupportCleanup
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.entity.Entity

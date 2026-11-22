@@ -8,10 +8,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClient
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionPlayerRelationDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongHudBounds
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongHudLayoutConfig
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.hudCoordinate
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.hudRatio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionCard
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionCardLayout
 import kotlin.math.abs

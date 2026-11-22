@@ -22,7 +22,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinCelebrat
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.RegisteredEntry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.MahjongEntityTypes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropDefinitions

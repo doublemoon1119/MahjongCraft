@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSeatRiders
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.character.AiCharacterBindings
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatCollisionScope
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity

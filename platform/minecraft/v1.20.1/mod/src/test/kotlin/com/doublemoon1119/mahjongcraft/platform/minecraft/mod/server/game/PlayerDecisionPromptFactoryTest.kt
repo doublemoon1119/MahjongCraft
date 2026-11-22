@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputS
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.GameActionCandidate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs

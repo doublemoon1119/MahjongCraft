@@ -5,9 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultKindDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutomaticControlRequestSender
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutomaticControlResultKind
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutomaticControlSubmitResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientAutomaticControlStateStore
 import kotlin.test.Test
 import kotlin.test.assertEquals

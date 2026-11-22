@@ -14,15 +14,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelIc
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseFailure
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseRoundState
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseStatus
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryPageFrame
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryPaging
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryRoundEventsLayout
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryTileGroupLayout
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryTileGroupLayoutCalculator
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.translationKey
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.Tooltip

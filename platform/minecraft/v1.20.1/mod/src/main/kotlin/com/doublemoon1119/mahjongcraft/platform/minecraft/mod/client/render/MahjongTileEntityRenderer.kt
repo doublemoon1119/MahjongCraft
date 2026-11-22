@@ -6,10 +6,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.Mahj
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.ClientDecisionPromptStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionCardLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ClaimedTileMarker
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ClientTileAppearanceResolver
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.TileGroupPreviewEntry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.TileGroupPreviewLayoutCalculator
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.TileRenderAppearanceContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.tile.ClientHandTileLayoutController
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTileEntity

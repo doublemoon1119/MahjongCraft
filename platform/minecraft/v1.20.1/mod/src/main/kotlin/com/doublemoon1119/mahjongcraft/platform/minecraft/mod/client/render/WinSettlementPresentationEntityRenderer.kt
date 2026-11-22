@@ -5,12 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresen
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.ClientPlayerDisplayNameResolver
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.ClientTileAppearanceResolver
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.PublicPlayerIndicatorTextResolver
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SettlementRankingColumnId
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SettlementRankingLayout
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SettlementRankingSettledEffect
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.WorldPanelRenderType
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementRankingSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementWinnerSnapshot

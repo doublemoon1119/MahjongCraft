@@ -13,7 +13,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.entity.EntitySpawnGateway
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.tile.TileWallTransitionAnimationCompiler
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallOpeningPresentation

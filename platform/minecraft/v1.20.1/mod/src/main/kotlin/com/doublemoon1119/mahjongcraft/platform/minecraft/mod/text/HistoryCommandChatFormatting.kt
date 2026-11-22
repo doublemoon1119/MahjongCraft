@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.His
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryRetentionPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryStorageSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryWriterStatus
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.ConfigPresentationEntry
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent

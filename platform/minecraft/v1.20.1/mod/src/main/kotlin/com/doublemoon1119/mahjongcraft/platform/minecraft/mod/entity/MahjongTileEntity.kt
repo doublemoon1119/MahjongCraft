@@ -5,13 +5,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.TablePresentationBusyPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.AnimatedMahjongEntity
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.GameManagedEntityNbt
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTilePose
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MeldActionPopupTile
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.NonBlockingPresentationLeaseCodec
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TileActionPopupKind
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TileActionPopupKindNbt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModItems

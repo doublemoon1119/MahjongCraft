@@ -18,17 +18,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.R
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.ClientAiCharacterPreviews
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.concurrency.ClientThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigStore
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.ClientHistoryRequestGate
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryArchiveStatusTransport
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryArchiveStatusView
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowsePage
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryBrowseStatus
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryFilterDraft
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryHandSorting
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryQueryTransport
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryReplayPlayback
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryReplayVisibility
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryRoundEventPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.tableprop.ClientTablePropPreviews

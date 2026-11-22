@@ -33,13 +33,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.play
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.OfflinePlayerPreviewEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.PlayerPortraitRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.PublicPlayerIndicatorTextResolver
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.RoomExcludedParticipantsButton
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.RoomExcludedParticipantsScreen
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.RoomMemberAppearanceResolver
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.RoomMemberGridLayout
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.RoomMemberPresentation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.RoomSettingsDraft
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.roomMemberEntriesFrom
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.table.ClientTableSpaceObstructionStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongPlayerInfoEntity

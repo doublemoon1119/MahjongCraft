@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model.FixedMahjongTileModelPreparedData
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model.MahjongTileModelLoadingPlugin
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.AlphaVertexConsumer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientModels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ItemStackRenderer

@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryCardStyle
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import net.minecraft.client.gui.Font

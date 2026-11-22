@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.AlphaVertexConsumer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongBotArmAnimation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongBotEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatGeometry

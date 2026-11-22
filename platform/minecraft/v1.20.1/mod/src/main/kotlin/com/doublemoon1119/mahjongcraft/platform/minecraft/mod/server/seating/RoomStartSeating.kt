@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatCollisionScope
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatAssignmentResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatCollisionPolicy
 import net.minecraft.server.level.ServerPlayer

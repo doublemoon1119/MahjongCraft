@@ -4,9 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterPreviewHandle
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.CharacterPreviewCache
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.CharacterPreviewImage
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.RoomFigureArea
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.LoaderPlatform
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger

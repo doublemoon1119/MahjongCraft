@@ -5,8 +5,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.handbook.MinecraftHand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.RuleCatalogueScreenController
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigScreenController
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideScreenController
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.handbook.HandbookEntry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.handbook.HandbookScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryScreenController
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModBlocks
