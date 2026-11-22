@@ -154,7 +154,7 @@ private fun Project.alignLoomRuntimeJava() {
 private const val LOOM_RUNTIME_JAVA_PROPERTY = "fabric.loom.runtimeJavaCompatibilityVersion"
 
 /**
- * 建立開發執行時可選載入模組的 `devMods` 擴充；開關選中卻沒有宣告的組合在專案設定完成後報錯。
+ * 建立開發執行時可選載入模組的 `devMods` 擴充；專案有宣告組合時，開關選中卻沒有宣告的組合在專案設定完成後報錯。
  *
  * Fabric Loom 模組預設把選中的組合加入只在開發執行時載入的 `modLocalRuntime`。
  */

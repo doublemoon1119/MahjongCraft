@@ -65,9 +65,10 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   ./gradlew :minecraft_v1.20.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftDevMods=iris,modmenu"
   ```
 
-- Without the switch, or with an empty value, no group is loaded and development runs stay unchanged. A
-  group a module does not declare fails the build and lists the groups it does declare. Like the example
-  switch, it is not saved in `local.dev.properties`.
+- Without the switch, or with an empty value, no group is loaded and development runs stay unchanged. The
+  switch applies to the whole build: a module that declares groups fails the build for a selected group it
+  does not declare and lists the groups it does declare, while a module that declares no groups, such as a
+  debug module, ignores the switch. Like the example switch, it is not saved in `local.dev.properties`.
 - Each loader module declares its groups in its build script through the `devMods` extension of the
   Minecraft loader convention, for example `group("iris", libs.sodium1201, libs.iris1201)`. Versions live in
   `gradle/libs.versions.toml`. Fabric Loom modules add selected groups to `modLocalRuntime`, so the mods
