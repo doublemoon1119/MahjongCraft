@@ -1,0 +1,30 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.character
+
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterHandle
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.phys.Vec3
+
+/**
+ * 已確認固定身分的原生角色及暫態呈現狀態。
+ *
+ * @property entity 此次接管的固定原生實體。
+ * @property handle 第三方或內建的角色能力。
+ * @property capabilityId 診斷使用的完整能力 ID。
+ */
+internal class AiCharacterActor(
+    val entity: Entity,
+    val handle: AiCharacterHandle,
+    val capabilityId: String,
+) {
+    /** 入座後的腳底位置，用於發現被外部移走的角色。 */
+    var expectedPosition: Vec3? = null
+
+    /** 本次接管最後安排的載具，不代表後來由其他系統接手的載具。 */
+    var assignedVehicle: Entity? = null
+
+    /** 目前已通知的公開注視目標。 */
+    var lookTarget: Vec3? = null
+
+    /** 本次接管中已停用的回饋種類，避免重複報錯。 */
+    val failedCallbacks: MutableSet<String> = mutableSetOf()
+}

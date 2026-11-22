@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessStepTimer
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryDataSource
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryDataSource
 import kotlin.uuid.Uuid
 
 /**

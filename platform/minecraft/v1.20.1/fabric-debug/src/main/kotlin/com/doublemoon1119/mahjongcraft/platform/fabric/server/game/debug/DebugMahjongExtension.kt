@@ -27,11 +27,6 @@ import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegis
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.AiCharacterCapabilityDefinition
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.RoomParticipantDefinition
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.AiCharacterCapabilityRegistrar
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.RoomParticipantRegistrar
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.NativeMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.character.DebugSeatedParticipantAdapter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugDecisionActionIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugNotenDeclarationRuleDecisionResolver
@@ -64,6 +59,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TablePropDescriberRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSettlementPresentationTemplateRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterCapabilityDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.RoomParticipantDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.AiCharacterCapabilityRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.RoomParticipantRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.NativeMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiFamilyMinecraftPresentation
 import org.koin.core.context.GlobalContext

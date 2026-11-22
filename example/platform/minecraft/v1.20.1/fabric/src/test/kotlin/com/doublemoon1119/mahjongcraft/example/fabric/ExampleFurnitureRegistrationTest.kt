@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.example.fabric
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureIds
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.SeatProviderRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.SeatProviderRegistrar
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.entity.Entity
 import kotlin.test.Test

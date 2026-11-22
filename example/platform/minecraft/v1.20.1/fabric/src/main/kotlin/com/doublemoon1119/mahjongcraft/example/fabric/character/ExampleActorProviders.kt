@@ -2,10 +2,10 @@ package com.doublemoon1119.mahjongcraft.example.fabric.character
 
 import com.doublemoon1119.mahjongcraft.example.ai.ExampleAiStrategyIds
 import com.doublemoon1119.mahjongcraft.example.minecraft.character.ExampleCharacters
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.AiCharacterProvider
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.RoomParticipant
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.RoomParticipantProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterOwnership
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.RoomParticipant
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.RoomParticipantProvider
 import net.minecraft.world.entity.Entity
 import kotlin.uuid.Uuid
 

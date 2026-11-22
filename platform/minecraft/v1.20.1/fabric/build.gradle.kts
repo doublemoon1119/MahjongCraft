@@ -5,20 +5,6 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.fabric.loom)
     alias(libs.plugins.koin.compiler)
-    alias(libs.plugins.mahjongcraft.public.api.abi)
-}
-
-publicApiAbi {
-    includedNames.addAll(
-        "com.doublemoon1119.mahjongcraft.platform.fabric.api.event.**",
-        "com.doublemoon1119.mahjongcraft.platform.fabric.api.character.**",
-        "com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.**",
-        "com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.**",
-        "com.doublemoon1119.mahjongcraft.platform.fabric.api.table.**",
-        "com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.**",
-        "com.doublemoon1119.mahjongcraft.platform.fabric.extension.NativeMahjongExtension",
-        "com.doublemoon1119.mahjongcraft.platform.fabric.extension.NativeMahjongClientExtension",
-    )
 }
 
 version = libs.versions.minecraft.mod.version.get()

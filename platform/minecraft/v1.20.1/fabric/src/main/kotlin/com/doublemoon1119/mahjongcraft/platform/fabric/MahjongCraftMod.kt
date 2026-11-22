@@ -2,21 +2,21 @@ package com.doublemoon1119.mahjongcraft.platform.fabric
 
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.platform.fabric.bootstrap.MahjongCraftBootstrap
 import com.doublemoon1119.mahjongcraft.platform.fabric.development.MahjongCraftDevelopmentTools
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricServerModule
-import com.doublemoon1119.mahjongcraft.platform.fabric.di.modClientModule
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.MahjongCraftExtensions
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.NativeExtensionRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricExtensionDiscovery
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricLoaderPlatform
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricModRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricPacketTransport
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricServerEvents
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.bootstrap.MahjongCraftBootstrap
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.di.modClientModule
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.MahjongCraftExtensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.NativeExtensionRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModPackets
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.MahjongStoolSeatProvider
 import net.fabricmc.api.ModInitializer
 import org.koin.core.Koin
 import org.koin.core.context.startKoin

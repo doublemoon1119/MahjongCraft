@@ -3,9 +3,9 @@ package com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurniture
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureIds
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.block.ExampleBenchPlacement
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.SeatPlacementContext
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.SeatPlacementDefinition
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.SeatPlacementProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.seating.SeatPlacementContext
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.seating.SeatPlacementDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.seating.SeatPlacementProvider
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.ItemStack

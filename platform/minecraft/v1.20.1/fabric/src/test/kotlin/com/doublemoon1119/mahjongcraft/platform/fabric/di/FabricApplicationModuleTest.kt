@@ -14,7 +14,6 @@ import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerStateStore
-import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpdatePublisher
@@ -51,28 +50,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientCoroutineScope
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.LinkageIsolatingExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.MahjongCraftExtensions
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.NativeExtensionRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.IrisShadowPassProbe
-import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.RuntimeMetadata
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerLifecycleAppCoroutineScope
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.ServerConfigCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DecisionTimerScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.TableLocationPersistence
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.PlayerConnectionLifecycleService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.AiSeatPlacementService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatProvider
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatProviderRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TableLifecycleService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TableLocationValidationService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.TablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameDefinition
@@ -92,17 +70,34 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMah
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileSetAsideDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.concurrency.ClientCoroutineScope
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.concurrency.ClientThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.BlockUseInterception
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.LoaderPlatform
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.di.modClientModule
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.LinkageIsolatingExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.MahjongCraftExtensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.NativeExtensionRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ShadowPassProbe
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.metadata.RuntimeMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.ServerHolder
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency.ServerLifecycleAppCoroutineScope
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigManager
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.entity.MahjongTileCollisionService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.DecisionTimerScheduler
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.GameActionCandidateResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.PlayerDecisionPromptFactory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.AuthoritativeStatePersistence
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.TableLocationPersistence
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.BuiltInDefaultGameConfigProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.BuiltInSeatProviderIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.MahjongStoolSeatProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatProviderRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.OrphanedTableCleanupService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableLifecycleService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableLocationValidationService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.prop.TablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
@@ -131,8 +126,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
-import org.koin.dsl.module
-import java.nio.file.Path
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -484,35 +477,6 @@ class FabricApplicationModuleTest {
         assertIs<TileDisplayNameRegistryImpl>(presentation.tileDisplayNameRegistry)
     }
 
-    /**
-     * 與載入器無關的 server 與 client 模組，只要再提供載入器資訊、擴充失敗判斷與方塊使用攔截就能組出完整服務，
-     * 且不含 Fabric 擴充登記使用的集合。
-     */
-    @Test
-    fun `loader neutral graphs only need loader bindings`() {
-        val loaderModule = module {
-            single<LoaderPlatform> { TestLoaderPlatform }
-            single<ExtensionFailurePolicy> { ExtensionFailurePolicy.Default }
-            single<BlockUseInterception> { BlockUseInterception { _, _, _, _ -> true } }
-        }
-        val koin = startKoin {
-            allowOverride(false)
-            modules(modServerModule, modClientModule, loaderModule)
-        }.koin
-
-        koin.get<GameFlowCoordinator>()
-        koin.get<MahjongTableRoomService>()
-        koin.get<PlayerConnectionLifecycleService>()
-        koin.get<AiSeatPlacementService>()
-        koin.get<CoreExtensionRegistries>()
-        koin.get<MinecraftPresentationRegistries>()
-        koin.get<RuntimeMetadata>()
-        koin.get<MinecraftEnvironment>()
-        koin.get<ClientMahjongStateStore>()
-        koin.get<MahjongClientConfigStore>()
-        assertNull(koin.getOrNull<NativeExtensionRegistries>())
-    }
-
     /** 只以介面取用的服務，在 client 依賴圖（含 integrated server）中解析到預期的實作，且與實作型別取得的是同一個 single。 */
     @Test
     fun `graphs bind services that consumers resolve by interface`() {
@@ -525,16 +489,5 @@ class FabricApplicationModuleTest {
         assertSame(koin.get<MahjongStoolSeatProvider>(), koin.get<SeatProvider<*, *>>())
         assertSame(koin.get<ClientCoroutineScope>(), koin.get<CoroutineScope>())
         assertSame(koin.get<ClientThreadCoroutineDispatcher>(), koin.get<CoroutineDispatcher>())
-    }
-
-    /** 測試用的載入器資訊，不依賴任何載入器。 */
-    private object TestLoaderPlatform : LoaderPlatform {
-        override val name: String = "test"
-        override val isClient: Boolean = true
-        override val isDevelopment: Boolean = false
-        override val configDirectory: Path = Path.of("config")
-        override val modVersion: String = "test"
-
-        override fun isModLoaded(modId: String): Boolean = false
     }
 }

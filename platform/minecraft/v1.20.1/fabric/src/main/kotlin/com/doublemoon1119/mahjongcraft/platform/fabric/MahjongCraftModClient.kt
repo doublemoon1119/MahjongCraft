@@ -2,16 +2,16 @@ package com.doublemoon1119.mahjongcraft.platform.fabric
 
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationReport
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationReportFormatter
-import com.doublemoon1119.mahjongcraft.platform.fabric.bootstrap.MahjongCraftClientBootstrap
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.ClientAiCharacterPreviewRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.tableprop.ClientTablePropPreviewRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.BuiltInNativeMahjongClientExtension
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.NativeMahjongClientExtensionBootstrap
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricBakedModelLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricClientEvents
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricClientPacketTransport
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricClientRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricExtensionDiscovery
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.bootstrap.MahjongCraftClientBootstrap
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.ClientAiCharacterPreviewRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.tableprop.ClientTablePropPreviewRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.BuiltInNativeMahjongClientExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.NativeMahjongClientExtensionBootstrap
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientModels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModPackets
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger

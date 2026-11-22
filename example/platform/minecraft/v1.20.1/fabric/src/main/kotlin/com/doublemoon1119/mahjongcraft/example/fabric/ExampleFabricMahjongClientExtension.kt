@@ -7,11 +7,11 @@ import com.doublemoon1119.mahjongcraft.example.fabric.table.ExampleHandRevealChi
 import com.doublemoon1119.mahjongcraft.example.fabric.table.ExampleHandRevealChipTablePropKind
 import com.doublemoon1119.mahjongcraft.example.minecraft.character.ExampleCharacterIds
 import com.doublemoon1119.mahjongcraft.example.minecraft.presentation.ExampleTablePropDefinitions
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.AiCharacterPreviewDefinition
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.AiCharacterPreviewRegistrar
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.TablePropPreviewRegistrar
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.TablePropPreviewDefinition
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.NativeMahjongClientExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterPreviewDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.AiCharacterPreviewRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.TablePropPreviewRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.tableprop.TablePropPreviewDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.NativeMahjongClientExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropContent
 
 /** 只由 client_extension 載入的模型工廠，不使專用伺服器掃描客戶端程式。 */

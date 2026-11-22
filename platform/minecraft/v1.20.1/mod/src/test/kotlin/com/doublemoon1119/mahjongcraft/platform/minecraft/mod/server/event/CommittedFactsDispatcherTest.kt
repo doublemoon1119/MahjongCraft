@@ -1,0 +1,451 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event
+
+import com.doublemoon1119.mahjongcraft.flow.api.event.CommittedMatchEventBatch
+import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEvent
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.BuiltInAchievementIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.PlayerAchievements
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.GameEventContext
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MatchEndedListener
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MatchStartedListener
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MinecraftMatchAbortReasonIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RoundSettledListener
+import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventDeliveryReporter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventScheduler
+import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventSubscriptions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.event.GameEventContexts
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.LinkageIsolatingExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.achievement.AchievementGrantGateway
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.achievement.AchievementService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.GameEventExclusions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.SnapshotGameEventLocationSource
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.createTestAppCoroutineScope
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import net.minecraft.server.MinecraftServer
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
+import java.util.concurrent.TimeUnit
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
+import kotlin.uuid.Uuid
+
+/** 驗證橋接將背景提交交給主執行緒佇列，並隔離舊 session。 */
+class CommittedFactsDispatcherTest {
+    /** 背景交易提交的三種事件都排入佇列，交付時可重新查詢權威狀態；舊 session 事件會被捨棄。 */
+    @Test
+    fun `background commits are queued and stale session events are discarded`() = verifyBridgeSession()
+
+    /** 同一 JVM 先後執行獨立橋接時，各自可註冊且不會收到另一份訂閱點的通知。 */
+    @Test
+    fun `independent bridges can register and deliver repeatedly in the same JVM`() {
+        repeat(2) { verifyBridgeSession() }
+    }
+
+    /** 建立獨立訂閱點並驗證完整橋接流程；離開時關閉 session 與背景執行器。 */
+    private fun verifyBridgeSession() = runBlocking {
+        val store = AuthoritativeStateStore()
+        val repository = componentValidatedGameRepository(store)
+        val scheduler = QueueScheduler()
+        val subscriptions = GameEventSubscriptions()
+        val activeGame = game()
+        val locations = TableLocationRegistry()
+        val activeLocation = TableLocation("minecraft:overworld", 4, 8, 12)
+        locations.put(activeGame.id, activeLocation)
+        val changedGame = activeGame.copy(tableState = activeGame.tableState.copy(currentPlayerIndex = 1))
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+        val exclusions = GameEventExclusions()
+        val reporter = RecordingReporter()
+        val serverProvider: () -> MinecraftServer = {
+            throw UnsupportedOperationException("The test does not construct a Minecraft server")
+        }
+        val gateway = RecordingGateway()
+        val dispatcher = CommittedFactsDispatcher(
+            store = store,
+            achievementService = achievementService(gateway),
+            moduleRegistry = moduleRegistry,
+            locations = SnapshotGameEventLocationSource(locations),
+            reporter = reporter,
+            exclusions = exclusions,
+            failurePolicy = LinkageIsolatingExtensionFailurePolicy(),
+            markerResolvers = GameEventPublicMarkerResolverRegistry(),
+        )
+        val received = mutableListOf<String>()
+        var observedGame: Game? = null
+        var observedContext: GameEventContext? = null
+        var callbackThread: Thread? = null
+        val ownerThread = Thread.currentThread()
+        var lastEndedContext: GameEventContext? = null
+        subscriptions.matchStarted.register(
+            listener = MatchStartedListener { _, context ->
+                received += "started"
+                callbackThread = Thread.currentThread()
+                observedContext = context
+                observedGame = runBlocking { withTimeout(5.seconds) { store.getGame(activeGame.id) } }
+            },
+        )
+        subscriptions.roundSettled.register(RoundSettledListener { _, _ -> received += "settled" })
+        subscriptions.matchEnded.register(
+            listener = MatchEndedListener { _, context ->
+                received += "ended"
+                lastEndedContext = context
+            },
+        )
+        val executor = Executors.newSingleThreadExecutor()
+        try {
+            val preSessionGame = game()
+            repository.updateGame(
+                gameId = preSessionGame.id,
+                history = { _, _, _ ->
+                    listOf(HistoryEventDraft(null, HistoryFact.MatchStarted(preSessionGame.tableState, preSessionGame.flowConfig, emptyMap())))
+                },
+            ) { preSessionGame to Unit }
+            repository.updateGame(
+                gameId = preSessionGame.id,
+                history = { _, _, _ ->
+                    listOf(HistoryEventDraft(null, HistoryFact.MatchAborted(MinecraftMatchAbortReasonIds.TABLE_MISSING)))
+                },
+            ) { null to Unit }
+            dispatcher.startSession(scheduler = scheduler, serverProvider = serverProvider, subscriptions = subscriptions)
+            val oldGame = game()
+            submit(executor) {
+                repository.updateGame(
+                    gameId = oldGame.id,
+                    history = { _, _, _ ->
+                        listOf(
+                            element = HistoryEventDraft(
+                                actorPlayerId = null,
+                                fact = HistoryFact.MatchStarted(oldGame.tableState, oldGame.flowConfig, oldGame.aiPlayerStrategyKeys),
+                            ),
+                        )
+                    },
+                ) { oldGame to Unit }
+            }.get(5, TimeUnit.SECONDS)
+            submit(executor) {
+                repository.updateGame(
+                    gameId = oldGame.id,
+                    history = { _, _, _ ->
+                        listOf(
+                            element = HistoryEventDraft(
+                                actorPlayerId = null,
+                                fact = HistoryFact.WinSettled(
+                                    outcomeId = BuiltInRoundOutcomeIds.TSUMO,
+                                    winDetails = listOf(HistoryWinDetails(oldGame.tableState.players.first().id, emptyList())),
+                                ),
+                            ),
+                        )
+                    },
+                ) { oldGame.copy(tableState = oldGame.tableState.copy(comboCount = 1)) to Unit }
+            }.get(5, TimeUnit.SECONDS)
+            assertTrue(gateway.granted.isEmpty())
+            dispatcher.stopSession()
+            dispatcher.startSession(scheduler = scheduler, serverProvider = serverProvider, subscriptions = subscriptions)
+            scheduler.runAll()
+            assertTrue(received.isEmpty())
+            assertTrue(gateway.granted.isEmpty())
+
+            runBlocking {
+                repository.updateGame(
+                    gameId = activeGame.id,
+                    history = { _, _, _ ->
+                        listOf(
+                            element = HistoryEventDraft(
+                                actorPlayerId = null,
+                                fact = HistoryFact.MatchStarted(activeGame.tableState, activeGame.flowConfig, activeGame.aiPlayerStrategyKeys),
+                            ),
+                        )
+                    },
+                ) { activeGame to Unit }
+            }
+            submit(executor) {
+                repository.updateGame(
+                    gameId = activeGame.id,
+                    history = { _, _, _ ->
+                        listOf(
+                            HistoryEventDraft(
+                                actorPlayerId = null,
+                                fact = HistoryFact.WinSettled(
+                                    outcomeId = BuiltInRoundOutcomeIds.TSUMO,
+                                    winDetails = listOf(HistoryWinDetails(activeGame.tableState.players.first().id, emptyList())),
+                                ),
+                            ),
+                            HistoryEventDraft(
+                                actorPlayerId = null,
+                                fact = HistoryFact.MatchCompleted("mahjongcraft:completed", emptyMap()),
+                            ),
+                        )
+                    },
+                ) { changedGame to Unit }
+            }.get(5, TimeUnit.SECONDS)
+
+            assertEquals(1, scheduler.size())
+            assertTrue(received.isEmpty())
+            assertTrue(gateway.granted.isEmpty())
+            exclusions.exclude(activeGame.matchId)
+            scheduler.runAll()
+            exclusions.clear()
+
+            assertEquals(listOf("started", "settled", "ended"), received)
+            assertEquals(changedGame, observedGame)
+            assertEquals(ownerThread, callbackThread)
+            val capturedContext = assertNotNull(observedContext)
+            assertEquals(listOf(oldGame.matchId, oldGame.matchId), reporter.missingLocations.map { it.first })
+            assertTrue(gateway.granted.isNotEmpty())
+            val winnerGrants = gateway.granted.filter { it.playerId == activeGame.tableState.players.first().id }
+            assertEquals(1, winnerGrants.size)
+            assertTrue(
+                actual = winnerGrants.single().achievementIds.containsAll(
+                    elements = setOf(
+                        BuiltInAchievementIds.WIN,
+                        BuiltInAchievementIds.SELF_DRAW_WIN,
+                        BuiltInAchievementIds.FIRST_PLACE,
+                    ),
+                ),
+            )
+            assertFailsWith<UnsupportedOperationException> { GameEventContexts.server(capturedContext) }
+
+            val abortedGame = changedGame.copy(matchId = Uuid.random())
+            val removalLocationEntry = locations.put(abortedGame.id, activeLocation)
+            repository.updateGame(
+                gameId = abortedGame.id,
+                history = { _, _, _ ->
+                    listOf(
+                        element = HistoryEventDraft(
+                            actorPlayerId = null,
+                            fact = HistoryFact.MatchStarted(abortedGame.tableState, abortedGame.flowConfig, emptyMap()),
+                        ),
+                    )
+                },
+            ) { abortedGame to Unit }
+            scheduler.runAll()
+            repository.updateGame(
+                gameId = abortedGame.id,
+                history = { _, _, _ ->
+                    listOf(HistoryEventDraft(null, HistoryFact.MatchAborted(MinecraftMatchAbortReasonIds.TABLE_MISSING)))
+                },
+            ) { null to Unit }
+            locations.remove(abortedGame.id, removalLocationEntry.revision)
+            scheduler.runAll()
+            val endedLocation = assertNotNull(lastEndedContext?.tableLocation)
+            assertEquals(activeLocation.dimensionId, endedLocation.dimensionId)
+            assertEquals(activeLocation.x, endedLocation.x)
+            assertEquals(activeLocation.y, endedLocation.y)
+            assertEquals(activeLocation.z, endedLocation.z)
+            val resumedGame = changedGame.copy(matchId = Uuid.random())
+            repository.updateGame(
+                gameId = resumedGame.id,
+                history = { _, _, _ ->
+                    listOf(HistoryEventDraft(null, HistoryFact.MatchStarted(resumedGame.tableState, resumedGame.flowConfig, emptyMap())))
+                },
+            ) { resumedGame to Unit }
+            scheduler.runAll()
+            val receivedBeforeExclusion = received.toList()
+            val grantsBeforeExclusion = gateway.granted.size
+            exclusions.exclude(resumedGame.matchId)
+            val excludedGame = resumedGame.copy(tableState = resumedGame.tableState.copy(comboCount = 1))
+            submit(executor) {
+                repository.updateGame(
+                    gameId = activeGame.id,
+                    history = { _, _, _ ->
+                        listOf(
+                            element = HistoryEventDraft(
+                                actorPlayerId = null,
+                                fact = HistoryFact.WinSettled(
+                                    outcomeId = BuiltInRoundOutcomeIds.TSUMO,
+                                    winDetails = listOf(HistoryWinDetails(activeGame.tableState.players.first().id, emptyList())),
+                                ),
+                            ),
+                        )
+                    },
+                ) { excludedGame to Unit }
+            }.get(5, TimeUnit.SECONDS)
+            assertEquals(0, scheduler.size())
+            scheduler.runAll()
+            assertEquals(receivedBeforeExclusion, received)
+            assertEquals(grantsBeforeExclusion, gateway.granted.size)
+            dispatcher.stopSession()
+            assertFalse(exclusions.contains(resumedGame.matchId))
+            assertFailsWith<IllegalStateException> { GameEventContexts.server(capturedContext) }
+            dispatcher.startSession(scheduler = scheduler, serverProvider = serverProvider, subscriptions = subscriptions)
+            assertFailsWith<IllegalStateException> { GameEventContexts.server(capturedContext) }
+            dispatcher.stopSession()
+            assertTrue(reporter.listenerFailures.isEmpty())
+            assertTrue(reporter.batchListenerFailures.isEmpty())
+            assertTrue(reporter.schedulingFailures.isEmpty())
+        } finally {
+            dispatcher.stopSession()
+            executor.shutdownNow()
+        }
+    }
+
+    /**
+     * 建立測試用成果服務；事件橋接測試只驗證事件交付，不驗證成果內容。
+     *
+     * @param gateway 接收成果授予的測試 gateway。
+     * @return 測試用成果服務。
+     */
+    private fun achievementService(
+        gateway: AchievementGrantGateway,
+    ): AchievementService {
+        val dispatchers = TestCoroutineDispatchers()
+        return AchievementService(
+            scope = createTestAppCoroutineScope(dispatchers),
+            dispatchers = dispatchers,
+            resolverRegistry = GameAchievementResolverRegistryImpl(),
+            gateway = gateway,
+            failurePolicy = LinkageIsolatingExtensionFailurePolicy(),
+        )
+    }
+
+    /**
+     * 建立測試用四人日麻對局。
+     *
+     * @return 場次識別碼獨立、使用預設立直規則的對局。
+     */
+    private fun game(): Game = Game(
+        tableState = FakeTableStateFactory.create(
+            players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map {
+                FakeMahjongPlayerFactory.create(initialSeat = it)
+            },
+            config = RiichiRuleConfig(),
+        ),
+        flowConfig = GameFlowConfig(),
+        matchId = Uuid.random(),
+    )
+
+    /** 可由測試手動執行的主執行緒排程器。 */
+    private class QueueScheduler : GameEventScheduler {
+        /** 尚未執行的主執行緒工作。 */
+        private val tasks = ConcurrentLinkedQueue<() -> Unit>()
+
+        /**
+         * 將工作加入待執行佇列。
+         *
+         * @param task 待排入主執行緒的工作。
+         */
+        override fun enqueue(task: () -> Unit) {
+            tasks += task
+        }
+
+        /**
+         * 取得尚未執行的工作數量。
+         *
+         * @return 目前佇列長度。
+         */
+        fun size(): Int = tasks.size
+
+        /** 依入列順序執行工作，直到佇列為空。 */
+        fun runAll() {
+            while (true) tasks.poll()?.invoke() ?: return
+        }
+    }
+
+    /** 記錄事件橋接測試中的診斷回報。 */
+    private class RecordingReporter : GameEventDeliveryReporter {
+        /** 找不到桌位的事件識別。 */
+        val missingLocations = mutableListOf<Pair<Uuid, Uuid>>()
+
+        /** 監聽者失敗診斷。 */
+        val listenerFailures = mutableListOf<Throwable>()
+
+        /** 批次監聽者失敗診斷。 */
+        val batchListenerFailures = mutableListOf<Throwable>()
+
+        /** 排程失敗診斷。 */
+        val schedulingFailures = mutableListOf<Throwable>()
+
+        /**
+         * 記錄缺少桌位位置的場次與場地識別碼。
+         *
+         * @param matchId 對局識別碼。
+         * @param venueId 場地識別碼。
+         */
+        override fun missingLocation(matchId: Uuid, venueId: Uuid) {
+            missingLocations += matchId to venueId
+        }
+
+        /**
+         * 記錄監聽者拋出的例外。
+         *
+         * @param event 發生失敗的事件。
+         * @param cause 監聽者拋出的原因。
+         */
+        override fun listenerFailed(
+            event: MatchEvent,
+            listener: Any,
+            cause: Throwable,
+        ) {
+            listenerFailures += cause
+        }
+
+        override fun batchListenerFailed(
+            batch: CommittedMatchEventBatch,
+            listener: Any,
+            cause: Throwable,
+        ) {
+            batchListenerFailures += cause
+        }
+
+        /**
+         * 記錄排程工作無法提交時的例外。
+         *
+         * @param cause 排程失敗的原因。
+         */
+        override fun schedulingFailed(cause: Throwable) {
+            schedulingFailures += cause
+        }
+    }
+
+    /** 記錄成果服務交付的玩家成果。 */
+    private class RecordingGateway : AchievementGrantGateway {
+        /** 已交付給測試 gateway 的成果批次。 */
+        val granted = mutableListOf<PlayerAchievements>()
+
+        /**
+         * 記錄交付的成果並回報成功。
+         *
+         * @param achievements 欲授予玩家的成果集合。
+         * @return 成功接收時回傳 true。
+         */
+        override fun grant(
+            achievements: PlayerAchievements,
+        ): Boolean {
+            granted += achievements
+            return true
+        }
+    }
+
+    /**
+     * 將 suspend 交易提交到背景執行緒。
+     *
+     * @param executor 接收背景工作的執行器。
+     * @param block 欲提交的權威交易。
+     * @return 可等待交易完成的 future。
+     */
+    private fun submit(executor: ExecutorService, block: suspend () -> Unit): Future<*> = executor.submit { runBlocking { block() } }
+}

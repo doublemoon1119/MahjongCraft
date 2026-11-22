@@ -1,0 +1,377 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config
+
+import com.akuleshov7.ktoml.Toml
+import com.akuleshov7.ktoml.TomlInputConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigUpdateResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongPresentationVisibilityConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.LoaderPlatform
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigCommand
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigManager
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardCopyOption
+
+/**
+ * MahjongCraft client 設定的檔案存取，只存在單機／client 環境，跟 server 端設定（[ServerConfigManager]）完全
+ * 分開存放（不同檔案），互不影響；缺少檔案時的建立方式是同一套機制——原樣複製打包在 resources 裡、
+ * 帶完整註解的 template（`client-config-default.toml`），不是用 codec 從程式預設值重新編碼，這樣
+ * 使用者第一次打開檔案就能看到功能說明，不用回頭查文件或程式碼。
+ *
+ * `/mahjongcraft_client config reload|show`（見 [ClientConfigCommand]）跟
+ * server 端 `/mahjongcraft config reload|show`（見 [ServerConfigCommand]）效果
+ * 完全對稱：[load] 回傳跟 `MinecraftServerConfigUpdateResult` 結構相同的 [MahjongClientConfigUpdateResult]，
+ * 失敗時 runtime 仍保留先前設定（不會被清成程式預設值），[formattedCurrentToml] 對應
+ * `ServerConfigManager.formattedCurrentToml`，差別只在這裡沒有權限限制（玩家自己本機的設定，
+ * 任何人都能執行）。
+ *
+ * 跟 server 設定不同的是：client 設定可由指令與 GUI 更新。[save] 會在同目錄建立暫存檔並原子替換，
+ * 同時只更新受控欄位的值，保留模板註解與人工排版。
+ *
+ * @property resolvePath 取得設定檔位置；正式環境由載入器的設定檔資料夾決定，測試使用隔離路徑。
+ */
+class MahjongClientConfigStore private constructor(private val resolvePath: () -> Path) {
+    /**
+     * 建立使用載入器設定檔資料夾的儲存區。
+     *
+     * @param platform 提供設定檔資料夾的載入器資訊。
+     */
+    constructor(platform: LoaderPlatform) : this({ defaultConfigPath(platform.configDirectory) })
+
+    /** [path] 供檔案 I/O 使用。 */
+    val path: Path
+        get() = resolvePath()
+
+    /** 記錄設定檔保存失敗的診斷來源。 */
+    private val logger = mahjongCraftLogger(MahjongClientConfigStore::class)
+
+    /** 拒絕未知欄位、空值與空文件的 TOML codec，理由同 server 設定的 `MinecraftServerConfigTomlCodec`。 */
+    private val toml = Toml(
+        inputConfig = TomlInputConfig(
+            ignoreUnknownNames = false,
+            allowEmptyValues = false,
+            allowNullValues = false,
+            allowEmptyToml = false,
+        ),
+    )
+
+    /** [path] 不含主機目錄資訊、可供指令輸出的邏輯路徑，理由同 server 設定的 `displayPath`。 */
+    val displayPath: String = "<Minecraft instance>/config/${MinecraftModMetadata.MOD_ID}/client.toml"
+
+    /** 目前有效設定；首次載入前為預設值，載入或保存失敗時保留前一份有效設定。 */
+    var current: MahjongClientConfigState = MahjongClientConfigState()
+        private set
+
+    /** 每次成功載入或保存後遞增，供設定畫面偵測外部權威設定變更。 */
+    var revision: Long = 0L
+        private set
+
+    /**
+     * 從磁碟載入設定；檔案不存在時先原樣複製帶註解的 template，再讀取剛建立的檔案。複製、讀取或解析
+     * 失敗時保留（不覆寫）記憶體內目前的有效設定，也不覆寫已存在但格式錯誤的檔案，理由同 server 設定
+     * 的 `MinecraftServerConfigManager.load`。
+     *
+     * @return 已套用的有效設定，或保留原設定的失敗結果。
+     */
+    fun load(): MahjongClientConfigUpdateResult {
+        val createdDefaultFile = try {
+            createDefaultFileIfMissing()
+        } catch (exception: Exception) {
+            return MahjongClientConfigUpdateResult.Failure(
+                message = "Unable to create client config at $displayPath: ${exception.message}",
+                cause = exception,
+            )
+        }
+        return try {
+            val config = toml.decodeFromString<MahjongClientConfigState>(Files.readString(path, StandardCharsets.UTF_8))
+            current = config
+            revision += 1
+            MahjongClientConfigUpdateResult.Success(config, createdDefaultFile)
+        } catch (exception: Exception) {
+            MahjongClientConfigUpdateResult.Failure(
+                message = "Unable to load client config at $displayPath: ${exception.message}",
+                cause = exception,
+            )
+        }
+    }
+
+    /** 將目前記憶體內的有效設定輸出成不含註解的標準 TOML，對應 server 設定的同名方法。 */
+    fun formattedCurrentToml(): String = toml.encodeToString(current)
+
+    /**
+     * 切換牌面角落輔助標籤開關並立即寫回磁碟；只替換檔案裡 `tile-labels-enabled` 那一行的值，其餘
+     * 內容（含註解）原樣保留。寫入失敗時磁碟與記憶體內的有效設定都維持原值。
+     *
+     * @param enabled 是否啟用牌面輔助標籤。
+     * @return 設定保存結果。
+     */
+    fun setTileLabelsEnabled(enabled: Boolean): MahjongClientConfigUpdateResult = save(current.copy(tileLabelsEnabled = enabled))
+
+    /**
+     * 切換自動整理手牌開關並立即寫回磁碟，手法同 [setTileLabelsEnabled]；呼叫端（`HandSortCommand`）
+     * 除了呼叫這個方法，還要另外把偏好同步給伺服器——這裡只負責 client 本機持久化。
+     *
+     * @param enabled 是否啟用自動整理手牌。
+     * @return 本機設定保存結果，不代表偏好已同步至伺服器。
+     */
+    fun setAutoSortHandEnabled(enabled: Boolean): MahjongClientConfigUpdateResult = save(current.copy(autoSortHandEnabled = enabled))
+
+    /**
+     * 原子保存完整受控草稿；成功替換磁碟檔案後才更新 runtime 設定與 [revision]。
+     * 已知欄位只替換等號右側，因此保留模板註解、空行及欄位順序。
+     *
+     * @param config 要保存的完整設定草稿。
+     * @return 成功套用的設定，或保留原有效設定的失敗結果。
+     */
+    fun save(config: MahjongClientConfigState): MahjongClientConfigUpdateResult {
+        var temporaryPath: Path? = null
+        return try {
+            createDefaultFileIfMissing()
+            val updated = Files.readString(path, StandardCharsets.UTF_8)
+                .let { updateBoolean(it, TILE_LABELS_ENABLED_KEY, TILE_LABELS_ENABLED_LINE, config.tileLabelsEnabled) }
+                .let { updateBoolean(it, AUTO_SORT_HAND_ENABLED_KEY, AUTO_SORT_HAND_ENABLED_LINE, config.autoSortHandEnabled) }
+                .let { updateDouble(it, DECISION_PANEL_Y_KEY, DECISION_PANEL_Y_LINE, config.hudLayout.decisionPanelY) }
+                .let { updateDouble(it, COMPACT_PROMPT_X_KEY, COMPACT_PROMPT_X_LINE, config.hudLayout.compactPromptX) }
+                .let { updateDouble(it, COMPACT_PROMPT_Y_KEY, COMPACT_PROMPT_Y_LINE, config.hudLayout.compactPromptY) }
+                .let { updateDouble(it, DISCARD_ANALYSIS_Y_KEY, DISCARD_ANALYSIS_Y_LINE, config.hudLayout.discardAnalysisY) }
+                .let {
+                    updateDouble(
+                        content = it,
+                        key = AUTOMATIC_CONTROL_STATUS_X_KEY,
+                        lineRegex = AUTOMATIC_CONTROL_STATUS_X_LINE,
+                        number = config.hudLayout.automaticControlStatusX,
+                    )
+                }
+                .let {
+                    updateDouble(
+                        content = it,
+                        key = AUTOMATIC_CONTROL_STATUS_Y_KEY,
+                        lineRegex = AUTOMATIC_CONTROL_STATUS_Y_LINE,
+                        number = config.hudLayout.automaticControlStatusY,
+                    )
+                }
+                .let { content ->
+                    VISIBILITY_FIELDS.fold(content) { result, field ->
+                        updateBoolean(result, field.key, field.line, field.read(config.presentationVisibility))
+                    }
+                }
+            check(toml.decodeFromString<MahjongClientConfigState>(updated) == config) {
+                "Updated client config did not decode to the requested state"
+            }
+            temporaryPath = Files.createTempFile(path.parent, "client-", ".toml.tmp")
+            Files.writeString(temporaryPath, updated, StandardCharsets.UTF_8)
+            Files.move(temporaryPath, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            temporaryPath = null
+            current = config
+            revision += 1
+            MahjongClientConfigUpdateResult.Success(config)
+        } catch (exception: Exception) {
+            logger.warn("Unable to save client config at {}: {}", path, exception.message)
+            MahjongClientConfigUpdateResult.Failure(
+                message = "Unable to save client config at $displayPath: ${exception.message}",
+                cause = exception,
+            )
+        } finally {
+            temporaryPath?.let { runCatching { Files.deleteIfExists(it) } }
+        }
+    }
+
+    /**
+     * 替換受控 Boolean 欄位，保留行尾空白及註解。
+     *
+     * @param content 原始 TOML 文字。
+     * @param key 診斷訊息使用的欄位鍵。
+     * @param lineRegex 擷取等號前段與行尾內容的比對式。
+     * @param enabled 要寫入的值。
+     * @return 替換後的 TOML 文字。
+     * @throws IllegalStateException 找不到指定欄位時。
+     */
+    private fun updateBoolean(content: String, key: String, lineRegex: Regex, enabled: Boolean): String {
+        check(lineRegex.containsMatchIn(content)) { "Missing controlled client config field '$key'" }
+        return lineRegex.replace(content) { match ->
+            match.groupValues[1] + enabled + match.groupValues[2]
+        }
+    }
+
+    /**
+     * 替換受控 Double 欄位，保留行尾空白及註解。
+     *
+     * @param content 原始 TOML 文字。
+     * @param key 診斷訊息使用的欄位鍵。
+     * @param lineRegex 擷取等號前段與行尾內容的比對式。
+     * @param number 要寫入的值。
+     * @return 替換後的 TOML 文字。
+     * @throws IllegalStateException 找不到指定欄位時。
+     */
+    private fun updateDouble(content: String, key: String, lineRegex: Regex, number: Double): String {
+        check(lineRegex.containsMatchIn(content)) { "Missing controlled client config field '$key'" }
+        return lineRegex.replace(content) { match -> match.groupValues[1] + number + match.groupValues[2] }
+    }
+
+    /**
+     * 在設定檔缺少時原樣複製打包的帶註解範本。
+     *
+     * @return 本次建立檔案時為 true；檔案原已存在時為 false。
+     * @throws IllegalStateException 找不到打包的範本資源時。
+     * @throws java.io.IOException 建立目錄或複製檔案失敗時。
+     */
+    private fun createDefaultFileIfMissing(): Boolean {
+        if (Files.exists(path)) return false
+        Files.createDirectories(path.parent)
+        val template = checkNotNull(javaClass.getResourceAsStream(DEFAULT_TEMPLATE_RESOURCE)) {
+            "Missing bundled client config template $DEFAULT_TEMPLATE_RESOURCE"
+        }
+        template.use { input -> Files.copy(input, path) }
+        return true
+    }
+
+    internal companion object {
+        /**
+         * 正式 client config 的預設路徑。
+         *
+         * @param configDirectory 載入器的設定檔資料夾。
+         * @return 設定檔資料夾內的 MahjongCraft client config 位置。
+         */
+        fun defaultConfigPath(configDirectory: Path): Path = configDirectory
+            .resolve(MinecraftModMetadata.MOD_ID)
+            .resolve("client.toml")
+
+        /**
+         * 建立使用指定路徑的測試儲存區，不立即讀寫檔案。
+         *
+         * @param path 測試隔離的設定檔位置。
+         * @return 使用指定位置的新儲存區。
+         */
+        fun createForTesting(path: Path): MahjongClientConfigStore = MahjongClientConfigStore { path }
+
+        /** 打包於 Minecraft common resources 的帶註解預設 template。 */
+        const val DEFAULT_TEMPLATE_RESOURCE: String = "/mahjongcraft/client-config-default.toml"
+
+        /** [MahjongClientConfigState.tileLabelsEnabled] 對應的 TOML 欄位鍵，跟其 `@SerialName` 保持一致。 */
+        const val TILE_LABELS_ENABLED_KEY: String = "tile-labels-enabled"
+
+        /** 比對檔案中 [TILE_LABELS_ENABLED_KEY] 那一行，用於 [setTileLabelsEnabled] 的原地替換。 */
+        val TILE_LABELS_ENABLED_LINE = Regex(
+            pattern = """(?m)^(\s*$TILE_LABELS_ENABLED_KEY\s*=\s*)\S+(\s*(?:#.*)?)$""",
+        )
+
+        /** [MahjongClientConfigState.autoSortHandEnabled] 對應的 TOML 欄位鍵，跟其 `@SerialName` 保持一致。 */
+        const val AUTO_SORT_HAND_ENABLED_KEY: String = "auto-sort-hand-enabled"
+
+        /** 比對檔案中 [AUTO_SORT_HAND_ENABLED_KEY] 那一行，用於 [setAutoSortHandEnabled] 的原地替換。 */
+        val AUTO_SORT_HAND_ENABLED_LINE = Regex(
+            pattern = """(?m)^(\s*$AUTO_SORT_HAND_ENABLED_KEY\s*=\s*)\S+(\s*(?:#.*)?)$""",
+        )
+
+        /** 自動操作狀態 HUD 開關的 TOML 欄位鍵。 */
+        const val AUTOMATIC_CONTROL_STATUS_ENABLED_KEY: String = "automatic-control-status-enabled"
+
+        /** 操作面板垂直比例的 TOML 欄位鍵。 */
+        const val DECISION_PANEL_Y_KEY: String = "decision-panel-y"
+
+        /** 一般倒數水平比例的 TOML 欄位鍵。 */
+        const val COMPACT_PROMPT_X_KEY: String = "compact-prompt-x"
+
+        /** 一般倒數垂直比例的 TOML 欄位鍵。 */
+        const val COMPACT_PROMPT_Y_KEY: String = "compact-prompt-y"
+
+        /** 手牌分析垂直比例的 TOML 欄位鍵。 */
+        const val DISCARD_ANALYSIS_Y_KEY: String = "discard-analysis-y"
+
+        /** 自動操作狀態 HUD 水平比例的 TOML 欄位鍵。 */
+        const val AUTOMATIC_CONTROL_STATUS_X_KEY: String = "automatic-control-status-x"
+
+        /** 自動操作狀態 HUD 垂直比例的 TOML 欄位鍵。 */
+        const val AUTOMATIC_CONTROL_STATUS_Y_KEY: String = "automatic-control-status-y"
+
+        /** 比對操作面板垂直比例欄位。 */
+        val DECISION_PANEL_Y_LINE = doubleLine(DECISION_PANEL_Y_KEY)
+
+        /** 比對一般倒數水平比例欄位。 */
+        val COMPACT_PROMPT_X_LINE = doubleLine(COMPACT_PROMPT_X_KEY)
+
+        /** 比對一般倒數垂直比例欄位。 */
+        val COMPACT_PROMPT_Y_LINE = doubleLine(COMPACT_PROMPT_Y_KEY)
+
+        /** 比對手牌分析垂直比例欄位。 */
+        val DISCARD_ANALYSIS_Y_LINE = doubleLine(DISCARD_ANALYSIS_Y_KEY)
+
+        /** 比對自動操作狀態 HUD 水平欄位。 */
+        val AUTOMATIC_CONTROL_STATUS_X_LINE = doubleLine(AUTOMATIC_CONTROL_STATUS_X_KEY)
+
+        /** 比對自動操作狀態 HUD 垂直欄位。 */
+        val AUTOMATIC_CONTROL_STATUS_Y_LINE = doubleLine(AUTOMATIC_CONTROL_STATUS_Y_KEY)
+
+        /**
+         * 一個可選呈現欄位的保存描述。
+         *
+         * @property key TOML 欄位鍵。
+         * @property line 欄位所在行的比對式。
+         * @property read 從完整呈現設定讀取欄位值的函式。
+         */
+        private data class VisibilityField(
+            val key: String,
+            val line: Regex,
+            val read: (MahjongPresentationVisibilityConfig) -> Boolean,
+        )
+
+        /** 所有可選呈現欄位。 */
+        private val VISIBILITY_FIELDS: List<VisibilityField> = listOf(
+            visibilityField("round-info-enabled", MahjongPresentationVisibilityConfig::roundInfoEnabled),
+            visibilityField("player-info-enabled", MahjongPresentationVisibilityConfig::playerInfoEnabled),
+            visibilityField("lobby-info-enabled", MahjongPresentationVisibilityConfig::lobbyInfoEnabled),
+            visibilityField("dice-result-enabled", MahjongPresentationVisibilityConfig::diceResultEnabled),
+            visibilityField("compact-prompt-enabled", MahjongPresentationVisibilityConfig::compactPromptEnabled),
+            visibilityField("discard-analysis-enabled", MahjongPresentationVisibilityConfig::discardAnalysisEnabled),
+            visibilityField("win-settlement-enabled", MahjongPresentationVisibilityConfig::winSettlementEnabled),
+            visibilityField("draw-settlement-enabled", MahjongPresentationVisibilityConfig::drawSettlementEnabled),
+            visibilityField("match-settlement-enabled", MahjongPresentationVisibilityConfig::matchSettlementEnabled),
+            visibilityField("matching-tile-highlight-enabled", MahjongPresentationVisibilityConfig::matchingTileHighlightEnabled),
+            visibilityField("latest-discard-highlight-enabled", MahjongPresentationVisibilityConfig::latestDiscardHighlightEnabled),
+            visibilityField("discard-source-enabled", MahjongPresentationVisibilityConfig::discardSourceEnabled),
+            visibilityField("discard-popup-enabled", MahjongPresentationVisibilityConfig::discardPopupEnabled),
+            visibilityField("meld-popup-enabled", MahjongPresentationVisibilityConfig::meldPopupEnabled),
+            visibilityField(
+                key = AUTOMATIC_CONTROL_STATUS_ENABLED_KEY,
+                read = MahjongPresentationVisibilityConfig::automaticControlStatusEnabled,
+            ),
+        )
+
+        /**
+         * 建立 Boolean 呈現欄位的保存描述。
+         *
+         * @param key TOML 欄位鍵。
+         * @param read 從完整呈現設定讀取欄位值的函式。
+         * @return 包含欄位比對式及取值函式的描述。
+         */
+        private fun visibilityField(
+            key: String,
+            read: (MahjongPresentationVisibilityConfig) -> Boolean,
+        ): VisibilityField = VisibilityField(key, booleanLine(key), read)
+
+        /**
+         * 建立保留行尾註解與空白的 Boolean 欄位比對式。
+         *
+         * @param key TOML 欄位鍵。
+         * @return 擷取欄位前段與行尾內容的比對式。
+         */
+        private fun booleanLine(key: String): Regex = Regex(
+            pattern = """(?m)^(\s*$key\s*=\s*)\S+(\s*(?:#.*)?)$""",
+        )
+
+        /**
+         * 建立保留行尾註解與空白的 Double 欄位比對式。
+         *
+         * @param key TOML 欄位鍵。
+         * @return 擷取十進位數值前段與行尾內容的比對式。
+         */
+        private fun doubleLine(key: String): Regex = Regex(
+            pattern = """(?m)^(\s*$key\s*=\s*)[-+]?\d+(?:\.\d+)?(\s*(?:#.*)?)$""",
+        )
+    }
+}

@@ -1,0 +1,207 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table
+
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.TableBreakPolicy
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.allowsTableBreak
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.table.MahjongTableStructureBlock
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.LocatedMahjongTable
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableLookup
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.development.TableEndListeners
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.MahjongDataStatus
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.MahjongLobbyInfoPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.OrphanedTableCleanupResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.OrphanedTableCleanupService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableCleanupQueue
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.toTableLocation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEntry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
+import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.level.LevelAccessor
+import net.minecraft.world.level.block.state.BlockState
+import kotlin.uuid.Uuid
+
+/**
+ * 套用玩家破壞政策，並在成功破壞後清理桌子狀態。
+ *
+ * 破壞與替換事件在伺服器主執行緒同步觸發：世界中的呈現當場清除，權威清理排入 [cleanupQueue] 後立即返回，
+ * 不在主執行緒等待權威狀態的鎖。
+ *
+ * @property store 讀取已發布的權威房間與對局狀態。
+ * @property locations 查詢桌子位置索引。
+ * @property tableEndListeners 牌桌移除後通知，清掉只屬於這桌的暫存設定。
+ * @property cleanupService 執行缺失桌子的權威資料清理。
+ * @property cleanupQueue 依序執行權威清理，不讓主執行緒等待。
+ * @property configState 讀取目前破壞政策。
+ * @property diceRollPresenter 清理桌子的骰子呈現。
+ * @property tileWallPresenter 清理桌子的牌牆。
+ * @property playerAreaPresenter 清理桌子所有正式管理中的牌，包含手牌、副露與牌河。
+ * @property tablePropPresenter 清理桌面規則物件。
+ * @property roundInfoPresenter 清理局況 overlay。
+ * @property playerInfoPresenter 清理玩家資訊 overlay。
+ * @property lobbyInfoPresenter 清理等待室提示。
+ * @property tileSelectionConfirmPresenter 清理選牌確認面板。
+ * @property presentationCleaner 清理臨時呈現與演出。
+ * @property dataStatus 麻將資料無法讀取時拒絕玩家破壞桌子，並略過替換後的清理。
+ */
+class TableLifecycleService(
+    private val store: AuthoritativeStateStore,
+    private val locations: TableLocationRegistry,
+    private val tableEndListeners: TableEndListeners,
+    private val cleanupService: OrphanedTableCleanupService,
+    private val cleanupQueue: TableCleanupQueue,
+    private val configState: MinecraftServerConfigState,
+    private val diceRollPresenter: MahjongDiceRollPresenter,
+    private val tileWallPresenter: MahjongTileWallPresenter,
+    private val playerAreaPresenter: MahjongPlayerAreaPresenter,
+    private val tablePropPresenter: TablePropPresenter,
+    private val roundInfoPresenter: MahjongRoundInfoPresenter,
+    private val playerInfoPresenter: MahjongPlayerInfoPresenter,
+    private val lobbyInfoPresenter: MahjongLobbyInfoPresenter,
+    private val tileSelectionConfirmPresenter: MahjongTileSelectionConfirmPresenter,
+    private val presentationCleaner: TablePresentationCleaner,
+    private val dataStatus: MahjongDataStatus,
+) {
+    /** 記錄麻將桌破壞政策判斷與清理入口。 */
+    private val logger = mahjongCraftLogger(TableLifecycleService::class)
+
+    /**
+     * 註冊玩家破壞方塊前後的事件。
+     *
+     * @param events 登記事件用的伺服器事件來源。
+     */
+    fun registerEvents(events: ServerEvents) {
+        events.onBeforePlayerBreakBlock { world, player, pos, state ->
+            if (state.block is MahjongTableStructureBlock && dataStatus.rejectIfUnavailable(player)) {
+                return@onBeforePlayerBreakBlock false
+            }
+            canBreak(world, pos, state)
+        }
+        events.onAfterPlayerBreakBlock { _, _, _, _, blockEntity ->
+            val table = blockEntity?.let(MahjongTableLookup::of) ?: return@onAfterPlayerBreakBlock
+            onPlayerBroken(table.tableId)
+        }
+    }
+
+    /**
+     * 玩家成功破壞後，當場記下目前的位置索引項目，再排入不受 orphan policy 保留選項影響的權威清理。
+     *
+     * 清理只針對破壞當下的那個位置項目；排隊期間同一 UUID 的桌子重新登記時，清理會視為過期而不動新來源。
+     *
+     * @param tableId 玩家破壞的桌子 UUID。
+     */
+    internal fun onPlayerBroken(tableId: Uuid) {
+        val entry = locations.get(tableId)
+        if (entry == null) {
+            logger.debug(
+                "Skipped player-broken cleanup for Mahjong table {} because block replacement already removed its location",
+                tableId,
+            )
+            return
+        }
+        cleanupQueue.submit(description = "player-broken table $tableId") { cleanupPlayerBroken(entry) }
+    }
+
+    /**
+     * 非玩家來源替換麻將桌方塊時，當場清除世界中的呈現，並排入依 orphan policy 進行的權威清理。
+     *
+     * 麻將資料無法讀取時不清理也不登記位置：已保存的房間或對局留待下一次 session，由位置驗證發現桌子已不存在後處理。
+     *
+     * @param world 被替換方塊所在世界。
+     * @param table 被替換的桌子控制點。
+     */
+    internal fun onBlockReplaced(world: ServerLevel, table: LocatedMahjongTable) {
+        val tableId = table.tableId
+        if (!dataStatus.isMahjongAvailable) {
+            logger.warn("Mahjong table {} was removed while mahjong data is unavailable; its saved state is left for the next session", tableId)
+            return
+        }
+        val tableLocation = world.toTableLocation(table.pos)
+        val removedDiceCount = diceRollPresenter.clear(tableId, tableLocation)
+        val removedWallTileCount = tileWallPresenter.clear(tableId, tableLocation)
+        val removedPlayerAreaTileCount = playerAreaPresenter.clear(tableId, tableLocation)
+        val removedTablePropCount = tablePropPresenter.clear(tableId, tableLocation)
+        val removedRoundInfoCount = roundInfoPresenter.clear(tableId, tableLocation)
+        val removedPlayerInfoCount = playerInfoPresenter.clear(tableId, tableLocation)
+        val removedLobbyInfoCount = lobbyInfoPresenter.clear(tableId)
+        val removedTileSelectionConfirmCount = tileSelectionConfirmPresenter.clear(tableId, tableLocation)
+        val removedTransientPresentationCount = presentationCleaner.clear(world, tableId, table.pos)
+        val entry = locations.put(tableId, tableLocation)
+        cleanupQueue.submit(description = "replaced table $tableId") {
+            val result = cleanupService.cleanupMissing(entry)
+            logger.debug("Handled replaced Mahjong table {} with cleanup result {}", tableId, result)
+        }
+        logger.debug(
+            "Cleared replaced Mahjong table {} presentation: removed {} managed dice, {} managed wall tiles, {} managed player area tiles, {} managed table props, {} managed round info displays, {} managed player info displays, {} managed lobby info displays, {} managed tile selection confirm panels and {} transient presentations",
+            tableId,
+            removedDiceCount,
+            removedWallTileCount,
+            removedPlayerAreaTileCount,
+            removedTablePropCount,
+            removedRoundInfoCount,
+            removedPlayerInfoCount,
+            removedLobbyInfoCount,
+            removedTileSelectionConfirmCount,
+            removedTransientPresentationCount,
+        )
+    }
+
+    /**
+     * 由組成麻將桌的任一方塊判斷玩家破壞是否可依目前政策執行。
+     *
+     * @param world 方塊所在世界。
+     * @param pos 正在破壞的方塊座標。
+     * @param state 該位置的方塊狀態。
+     * @return 目前破壞政策允許時為 true。
+     */
+    internal fun canBreak(world: LevelAccessor, pos: BlockPos, state: BlockState): Boolean {
+        val block = state.block as? MahjongTableStructureBlock ?: return true
+        val table = block.mahjongTableControllerPos(world, pos, state)?.let { MahjongTableLookup.find(world, it) }
+        if (table == null) {
+            logger.warn("Allowed removal of incomplete Mahjong table part at {} because its controller is missing", pos)
+            return true
+        }
+        return isBreakAllowed(table.tableId)
+    }
+
+    /**
+     * 依已發布的 Room／Game 與最新 [TableBreakPolicy] 判斷玩家能否破壞桌子，不等待權威狀態的鎖。
+     *
+     * @param tableId 要判斷的桌子 UUID。
+     * @return 依狀態與政策決定是否允許破壞。
+     */
+    internal fun isBreakAllowed(tableId: Uuid): Boolean {
+        val state = store.state.value
+        val hasRoom = state.rooms.containsKey(tableId)
+        val hasGame = state.games.containsKey(tableId)
+        val policy = configState.current.tableBreakPolicy
+        val allowed = policy.allowsTableBreak(hasRoom, hasGame)
+        logger.debug("Mahjong table {} break allowed={} by policy {}", tableId, allowed, policy)
+        return allowed
+    }
+
+    /**
+     * 對玩家破壞當下的位置索引項目執行清理；清理未過期時通知 [tableEndListeners]。
+     *
+     * @param entry 玩家破壞當下觀察到的位置索引項目。
+     * @return 清理結果；位置索引已不再是同一個項目時為 [OrphanedTableCleanupResult.STALE_REQUEST]。
+     */
+    internal suspend fun cleanupPlayerBroken(entry: TableLocationEntry): OrphanedTableCleanupResult {
+        val result = cleanupService.cleanupPlayerBroken(entry)
+        if (result != OrphanedTableCleanupResult.STALE_REQUEST) {
+            tableEndListeners.notifyTableEnded(entry.tableId)
+        }
+        logger.debug("Handled player-broken Mahjong table {} with cleanup result {}", entry.tableId, result)
+        return result
+    }
+}

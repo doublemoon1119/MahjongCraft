@@ -3,9 +3,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.histor
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryScenario
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.historyGenerationProgressMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.HistoryDebugKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.prefixedConfigMessage
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder

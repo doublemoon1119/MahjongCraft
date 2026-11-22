@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.character
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugMessageKeys
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatingSessionFactory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.entity.EntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.AuthoritativeStatePersistence
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatingSessionFactory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatAssignmentResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableInteractionReach
 import com.mojang.brigadier.builder.LiteralArgumentBuilder

@@ -1,0 +1,250 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game
+
+import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultKindDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.AcknowledgementEffect
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionSubmissionTracker
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.TimeoutEffect
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.time.PauseAwareClientMonotonicClock
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+
+/** 最終決策提交鎖、亂序 ACK 與等不到 ACK 時的單元測試。 */
+class DecisionSubmissionTrackerTest {
+    /** 測試控制的客戶端時間，單位為毫秒。 */
+    private var now = Duration.ZERO
+
+    /** 測試用的權威決策更新序號。 */
+    private var updateSequence = 0L
+
+    /** 回傳 [now] 的測試時鐘。 */
+    private val clock = object : MonotonicClock {
+        override fun now(): Duration = now
+    }
+
+    /** 受測的提交追蹤器。 */
+    private val tracker = DecisionSubmissionTracker(clock)
+
+    /** 接受與 stale 都維持鎖定，直到權威 prompt 消失。 */
+    @Test
+    fun `test accepted and stale acknowledgements wait for authoritative update`() {
+        PlayerDecisionSubmissionResultKindDto.entries
+            .filter { it != PlayerDecisionSubmissionResultKindDto.REJECTED }
+            .forEach { result ->
+                val tracker = DecisionSubmissionTracker(clock)
+                tracker.begin("game", "decision", "submission")
+
+                assertEquals(AcknowledgementEffect.KEPT_LOCKED, tracker.acknowledge(ack(result)))
+                assertTrue(tracker.isPending("decision"))
+
+                tracker.applyAuthoritativeDecision(null, updateSequence)
+                assertFalse(tracker.isPending())
+            }
+    }
+
+    /** 拒絕會解除同一 decision 的提交鎖並允許重試。 */
+    @Test
+    fun `test rejected acknowledgement unlocks current decision`() {
+        assertTrue(tracker.begin("game", "decision", "submission"))
+
+        assertEquals(
+            expected = AcknowledgementEffect.UNLOCKED,
+            actual = tracker.acknowledge(ack(PlayerDecisionSubmissionResultKindDto.REJECTED)),
+        )
+        assertTrue(tracker.begin("game", "decision", "retry"))
+    }
+
+    /** 晚到 ACK 不得解除新提交，重複 begin 也不得覆蓋目前識別。 */
+    @Test
+    fun `test late acknowledgement and duplicate submission are ignored`() {
+        assertTrue(tracker.begin("game", "new-decision", "new-submission"))
+        assertFalse(tracker.begin("game", "other", "other-submission"))
+
+        val late = PlayerDecisionSubmissionResultDto(
+            gameId = "game",
+            decisionKey = "old-decision",
+            submissionId = "old-submission",
+            result = PlayerDecisionSubmissionResultKindDto.REJECTED,
+        )
+        assertEquals(AcknowledgementEffect.IGNORED, tracker.acknowledge(late))
+        assertTrue(tracker.isPending("new-decision"))
+    }
+
+    /** 同 key 的 timer refresh 不解鎖，換 key 與斷線清除則必須解鎖。 */
+    @Test
+    fun `test authoritative decision lifecycle clears only obsolete submission`() {
+        tracker.begin("game", "decision", "submission")
+
+        tracker.applyAuthoritativeDecision("decision", updateSequence)
+        assertTrue(tracker.isPending())
+
+        tracker.applyAuthoritativeDecision("next-decision", updateSequence)
+        assertFalse(tracker.isPending())
+
+        tracker.begin("game", "next-decision", "next-submission")
+        tracker.clear()
+        assertFalse(tracker.isPending())
+    }
+
+    /** 提交被丟棄、伺服器仍每秒重送同一決策時，等滿逾時就解除鎖定讓玩家重新選擇。 */
+    @Test
+    fun `test dropped submission unlocks after the timeout while the decision is still offered`() {
+        tracker.begin("game", "decision", "submission")
+
+        runHeartbeats(until = DecisionSubmissionTracker.CONFIRMATION_TIMEOUT - 1.milliseconds)
+        assertEquals(TimeoutEffect.NONE, tracker.checkTimeout())
+        runHeartbeats(until = DecisionSubmissionTracker.CONFIRMATION_TIMEOUT)
+
+        assertEquals(TimeoutEffect.UNLOCKED, tracker.checkTimeout())
+        assertFalse(tracker.isPending())
+        assertTrue(tracker.begin("game", "decision", "retry"))
+    }
+
+    /** 已收到接受的 ACK、只是決策結束的更新還沒到時，不會因逾時解除鎖定。 */
+    @Test
+    fun `test acknowledged submission never times out`() {
+        tracker.begin("game", "decision", "submission")
+        tracker.acknowledge(ack(PlayerDecisionSubmissionResultKindDto.ACCEPTED))
+
+        runHeartbeats(until = LONG_WAIT)
+
+        assertEquals(TimeoutEffect.NONE, tracker.checkTimeout())
+        assertTrue(tracker.isPending("decision"))
+        tracker.applyAuthoritativeDecision(null, updateSequence)
+        assertFalse(tracker.isPending())
+    }
+
+    /** 接受後若合法動作集合改變，新的權威決策鍵仍能解除舊提交；晚到的舊確認不影響新提交。 */
+    @Test
+    fun `test accepted submission unlocks when authoritative candidate set changes`() {
+        tracker.begin("game", "old-candidates", "submission")
+        assertEquals(
+            expected = AcknowledgementEffect.KEPT_LOCKED,
+            actual = tracker.acknowledge(ack(PlayerDecisionSubmissionResultKindDto.ACCEPTED, "old-candidates", "submission")),
+        )
+
+        tracker.applyAuthoritativeDecision("new-candidates", updateSequence)
+        assertFalse(tracker.isPending())
+
+        assertTrue(tracker.begin("game", "new-candidates", "new-submission"))
+        assertEquals(
+            expected = AcknowledgementEffect.IGNORED,
+            actual = tracker.acknowledge(ack(PlayerDecisionSubmissionResultKindDto.REJECTED, "old-candidates", "submission")),
+        )
+        assertTrue(tracker.isPending("new-candidates"))
+    }
+
+    /** 送出後完全收不到權威更新時，先回報一次正在重新同步，再等重新同步期限後解除鎖定。 */
+    @Test
+    fun `test silent server reports resyncing once and then unlocks within the limit`() {
+        tracker.begin("game", "decision", "submission")
+
+        now = DecisionSubmissionTracker.CONFIRMATION_TIMEOUT
+        assertEquals(TimeoutEffect.RESYNCING, tracker.checkTimeout())
+        assertEquals(TimeoutEffect.NONE, tracker.checkTimeout())
+        now += DecisionSubmissionTracker.RESYNC_LIMIT - 1.milliseconds
+        assertEquals(TimeoutEffect.NONE, tracker.checkTimeout())
+        now += 1.milliseconds
+
+        assertEquals(TimeoutEffect.UNLOCKED, tracker.checkTimeout())
+        assertFalse(tracker.isPending())
+    }
+
+    /** 只在送出後不久收到過更新、之後就沒有更新時，不視為伺服器仍在等待。 */
+    @Test
+    fun `test only a recent update proves the server is still waiting`() {
+        tracker.begin("game", "decision", "submission")
+        tracker.applyAuthoritativeDecision("decision", updateSequence)
+        now = HEARTBEAT
+        updateSequence += 1
+        tracker.applyAuthoritativeDecision("decision", updateSequence)
+
+        now = DecisionSubmissionTracker.CONFIRMATION_TIMEOUT
+
+        assertEquals(TimeoutEffect.RESYNCING, tracker.checkTimeout())
+        assertTrue(tracker.isPending())
+    }
+
+    /** 逾時解除後重新送出，舊提交晚到的 ACK 不影響新提交，新提交的逾時從它自己送出時開始計算。 */
+    @Test
+    fun `test late acknowledgement of a timed out submission does not affect the retry`() {
+        tracker.begin("game", "decision", "submission")
+        runHeartbeats(until = DecisionSubmissionTracker.CONFIRMATION_TIMEOUT)
+        assertEquals(TimeoutEffect.UNLOCKED, tracker.checkTimeout())
+        tracker.begin("game", "decision", "retry")
+        val retryStartedAt = now
+
+        assertEquals(AcknowledgementEffect.IGNORED, tracker.acknowledge(ack(PlayerDecisionSubmissionResultKindDto.REJECTED)))
+        runHeartbeats(until = retryStartedAt + DecisionSubmissionTracker.CONFIRMATION_TIMEOUT - 1.milliseconds)
+
+        assertEquals(TimeoutEffect.NONE, tracker.checkTimeout())
+        assertTrue(tracker.isPending("decision"))
+    }
+
+    /** 單人遊戲暫停期間時鐘不前進，等再久也不會因逾時解除鎖定或提示重新同步。 */
+    @Test
+    fun `test pausing the game never times out a submission`() {
+        val clock = PauseAwareClientMonotonicClock()
+        val pausedTracker = DecisionSubmissionTracker(clock)
+        clock.onTick(paused = false, now = Duration.ZERO)
+        pausedTracker.begin("game", "decision", "submission")
+
+        var tickTime = Duration.ZERO
+        repeat((LONG_WAIT / TICK).toInt()) {
+            tickTime += TICK
+            clock.onTick(paused = true, now = tickTime)
+            assertEquals(TimeoutEffect.NONE, pausedTracker.checkTimeout())
+        }
+
+        assertTrue(pausedTracker.isPending("decision"))
+    }
+
+    /**
+     * 模擬伺服器每秒重送同一決策，客戶端每個 tick 核對一次，直到指定時間。
+     *
+     * @param until 模擬結束的客戶端時間。
+     */
+    private fun runHeartbeats(until: Duration) {
+        while (now < until) {
+            now = minOf(now + TICK, until)
+            if ((now / HEARTBEAT) % 1.0 == 0.0) updateSequence += 1
+            tracker.applyAuthoritativeDecision("decision", updateSequence)
+        }
+    }
+
+    /**
+     * 建立目前提交的 ACK。
+     *
+     * @param result 權威回覆結果。
+     * @param decisionKey 回覆所屬的決策識別碼。
+     * @param submissionId 回覆所屬的提交識別碼。
+     * @return 使用測試對局、決策與提交識別的 ACK。
+     */
+    private fun ack(
+        result: PlayerDecisionSubmissionResultKindDto,
+        decisionKey: String = "decision",
+        submissionId: String = "submission",
+    ) = PlayerDecisionSubmissionResultDto(
+        gameId = "game",
+        decisionKey = decisionKey,
+        submissionId = submissionId,
+        result = result,
+    )
+
+    private companion object {
+        /** 客戶端 tick 間隔。 */
+        val TICK: Duration = 50.milliseconds
+
+        /** 伺服器重送決策的間隔。 */
+        val HEARTBEAT: Duration = 1.seconds
+
+        /** 遠超過逾時與重新同步期限的等待時間。 */
+        val LONG_WAIT: Duration = 60.seconds
+    }
+}

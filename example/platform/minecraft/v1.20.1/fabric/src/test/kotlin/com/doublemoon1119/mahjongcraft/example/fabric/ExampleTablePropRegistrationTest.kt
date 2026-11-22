@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.example.fabric
 
 import com.doublemoon1119.mahjongcraft.example.fabric.table.ExampleHandRevealChipTablePropKind
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.TablePropPreviewRegistrar
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.TablePropPreviewDefinition
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.TablePropKindRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.TablePropPreviewRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.tableprop.TablePropPreviewDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.prop.TablePropKindRegistryImpl
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertSame

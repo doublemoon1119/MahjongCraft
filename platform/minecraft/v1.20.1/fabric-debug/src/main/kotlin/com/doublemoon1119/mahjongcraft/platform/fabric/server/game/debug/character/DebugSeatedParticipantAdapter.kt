@@ -1,14 +1,14 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.character
 
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.AiCharacterHandle
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.AiCharacterProvider
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.RoomParticipant
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.RoomParticipantProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterOwnership
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterPreview
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterHandle
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.RoomParticipant
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.RoomParticipantProvider
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.decoration.ArmorStand
 import kotlin.uuid.Uuid

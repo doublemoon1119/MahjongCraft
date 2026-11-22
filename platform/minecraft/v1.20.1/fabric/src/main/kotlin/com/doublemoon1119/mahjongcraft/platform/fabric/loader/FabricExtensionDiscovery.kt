@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.loader
 
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.NativeMahjongClientExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.NativeMahjongClientExtension
 import net.fabricmc.loader.api.FabricLoader
 
 /** 以 Fabric Loader 的 entrypoint 找出第三方擴充。 */

@@ -12,11 +12,11 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecision
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionOutcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionReporter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.FabricHistoryGenerationRuntimeFactory
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.StressTestHistorySource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.GameAdvanceRotation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryDatabasePath
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.StressTestHistorySource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope

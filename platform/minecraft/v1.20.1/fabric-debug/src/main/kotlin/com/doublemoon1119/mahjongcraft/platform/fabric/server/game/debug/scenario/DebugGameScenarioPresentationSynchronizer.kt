@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TablePresentationCleaner
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.ServerHolder
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TablePresentationCleaner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.Registries

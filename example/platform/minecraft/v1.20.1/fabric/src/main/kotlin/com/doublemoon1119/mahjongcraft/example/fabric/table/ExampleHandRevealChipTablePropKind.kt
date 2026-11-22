@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.example.fabric.table
 
 import com.doublemoon1119.mahjongcraft.example.minecraft.presentation.ExampleMinecraftPresentationIds
 import com.doublemoon1119.mahjongcraft.example.minecraft.presentation.ExampleTablePropDefinitions
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.TablePropKind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.tableprop.TablePropKind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropContent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropTarget
 import net.minecraft.server.level.ServerLevel

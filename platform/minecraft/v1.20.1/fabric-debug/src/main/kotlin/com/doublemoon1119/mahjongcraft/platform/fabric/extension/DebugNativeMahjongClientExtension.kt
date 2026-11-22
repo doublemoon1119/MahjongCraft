@@ -1,10 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.AiCharacterPreviewDefinition
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.AiCharacterPreviewHandle
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.AiCharacterPreviewRegion
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.AiCharacterPreviewRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.character.DebugSeatedParticipantAdapter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterPreviewDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterPreviewHandle
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterPreviewRegion
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.AiCharacterPreviewRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.NativeMahjongClientExtension
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.decoration.ArmorStand
 

@@ -8,13 +8,13 @@ import com.doublemoon1119.mahjongcraft.flow.api.event.MatchStanding
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchStartedEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundScoreChange
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettledEvent
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.event.GameEventContexts
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.GameEventContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MahjongCraftEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MatchEndedListener
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MatchStartedListener
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RoundSettledListener
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.TableLocation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.event.GameEventContexts
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent

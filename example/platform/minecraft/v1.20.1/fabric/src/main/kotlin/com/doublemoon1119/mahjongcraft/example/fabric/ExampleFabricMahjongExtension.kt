@@ -6,14 +6,14 @@ import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleS
 import com.doublemoon1119.mahjongcraft.example.fabric.table.ExampleHandRevealChipTablePropKind
 import com.doublemoon1119.mahjongcraft.example.minecraft.ExampleMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.example.minecraft.character.ExampleCharacterIds
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.AiCharacterCapabilityDefinition
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.RoomParticipantDefinition
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.AiCharacterCapabilityRegistrar
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.RoomParticipantRegistrar
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.SeatPlacementRegistrar
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.SeatProviderRegistrar
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.TablePropKindRegistrar
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.NativeMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterCapabilityDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.RoomParticipantDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.AiCharacterCapabilityRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.RoomParticipantRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.SeatPlacementRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.SeatProviderRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.TablePropKindRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.NativeMahjongExtension
 
 /** 由 Fabric entrypoint 發現，將同一個範例交給核心、Minecraft 與原生擴充登記流程。 */
 class ExampleFabricMahjongExtension :

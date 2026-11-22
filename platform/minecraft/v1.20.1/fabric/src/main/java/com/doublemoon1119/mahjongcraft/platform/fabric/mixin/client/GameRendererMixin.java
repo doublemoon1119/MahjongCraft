@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.mixin.client;
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientHandTileLayoutBridge;
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.tile.ClientHandTileLayoutBridge;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.world.phys.EntityHitResult;
