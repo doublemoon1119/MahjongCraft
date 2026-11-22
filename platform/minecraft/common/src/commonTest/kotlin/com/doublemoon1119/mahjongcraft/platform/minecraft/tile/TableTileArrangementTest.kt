@@ -99,9 +99,10 @@ class TableTileArrangementTest {
      */
     @Test
     fun `replacement tiles wait at the right end of the hand until it is sorted`() {
-        val standing = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, it + 1)) }
-        val drawn = FakeIdentifiedTileFactory.create(Tile.Honor.East)
-        val replacements = List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.North) }
+        // 看不到牌面的立牌依識別碼排列；固定識別碼，讓摸到與補進的牌理牌後排在其他牌前面，必定越過它們。
+        val standing = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, it + 1), id = Uuid.fromLongs(0L, 10L + it)) }
+        val drawn = FakeIdentifiedTileFactory.create(Tile.Honor.East, id = Uuid.fromLongs(0L, 1L))
+        val replacements = List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.North, id = Uuid.fromLongs(0L, 2L + it)) }
         val player = FakeMahjongPlayerFactory.create(Wind.EAST, hand = Hand(tiles = standing, lastDrawn = drawn))
         val before = FakeTableStateFactory.create(players = listOf(player, FakeMahjongPlayerFactory.create(Wind.SOUTH)), turnPhase = TurnPhase.AwaitingAction)
         // 補牌之後，原本摸牌位的牌與第一張補牌併入立牌，第二張補牌在摸牌位。
