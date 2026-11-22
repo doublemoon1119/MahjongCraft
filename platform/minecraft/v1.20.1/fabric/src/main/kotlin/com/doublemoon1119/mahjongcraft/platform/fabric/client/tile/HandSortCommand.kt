@@ -5,10 +5,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAu
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.notification.PlayerFeedbackPublisher
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutoSortHandPreferenceUpdateResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientCommand
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.configSaveFailureMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
+import com.mojang.brigadier.builder.LiteralArgumentBuilder
+import com.mojang.brigadier.builder.LiteralArgumentBuilder.literal
 import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
@@ -24,19 +26,21 @@ import net.minecraft.network.chat.MutableComponent
  */
 class HandSortCommand(
     private val preferenceService: ClientAutoSortHandPreferenceService,
-) {
-    /** 註冊指令；只能在 client entrypoint 呼叫。 */
-    fun register() {
-        ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
-            dispatcher.register(
-                ClientCommandManager.literal(CLIENT_COMMAND_ROOT).then(
-                    ClientCommandManager.literal(HAND_SORT_SUBCOMMAND).then(
-                        ClientCommandManager.literal(TOGGLE_SUBCOMMAND).executes { toggle() },
-                    ),
-                ),
-            )
-        }
+) : ClientCommand {
+    /**
+     * 註冊指令；只能在 client entrypoint 呼叫。
+     *
+     * @param events 登記用戶端指令的事件來源。
+     */
+    fun register(events: ClientEvents) {
+        events.onRegisterClientCommand(this)
     }
+
+    override fun <S : Any> build(): LiteralArgumentBuilder<S> = literal<S>(CLIENT_COMMAND_ROOT).then(
+        literal<S>(HAND_SORT_SUBCOMMAND).then(
+            literal<S>(TOGGLE_SUBCOMMAND).executes { toggle() },
+        ),
+    )
 
     /** 切換開關、立即持久化並同步給伺服器，並在本地聊天欄回饋「切換前狀態 → 切換後狀態」。 */
     private fun toggle(): Int = when (val result = preferenceService.toggle()) {

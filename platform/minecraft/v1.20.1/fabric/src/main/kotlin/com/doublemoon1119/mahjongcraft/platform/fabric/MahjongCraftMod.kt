@@ -271,12 +271,12 @@ class MahjongCraftMod : ModInitializer {
         registerSetAutoSortHandReceiver(koin)
         registerAutomaticControlUpdateReceiver(koin)
         registerPlayerConnectionEvents(koin)
-        koin.get<ServerConfigCommand>().register()
-        historyCommand.register()
+        koin.get<ServerConfigCommand>().register(FabricServerEvents)
+        historyCommand.register(FabricServerEvents)
         koin.get<HistoryQueryService>().register(FabricServerEvents)
-        koin.get<RoomCommand>().register()
-        koin.get<InGameCommand>().register()
-        developmentTools.forEach { it.initialize(koin) }
+        koin.get<RoomCommand>().register(FabricServerEvents)
+        koin.get<InGameCommand>().register(FabricServerEvents)
+        developmentTools.forEach { it.initialize(koin, FabricServerEvents) }
 
         logger.info(koin.get<FabricRuntimeMetadata>().initializationMessage())
     }

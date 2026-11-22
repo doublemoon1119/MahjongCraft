@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.loader
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
+import com.mojang.brigadier.CommandDispatcher
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents
@@ -10,6 +12,7 @@ import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.fabricmc.fabric.api.event.player.UseEntityCallback
 import net.fabricmc.fabric.api.networking.v1.EntityTrackingEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
+import net.minecraft.commands.CommandSourceStack
 import net.minecraft.core.BlockPos
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
@@ -85,6 +88,10 @@ object FabricServerEvents : ServerEvents {
         PlayerBlockBreakEvents.AFTER.register { world, player, pos, state, blockEntity ->
             if (world is ServerLevel && player is ServerPlayer) listener(world, player, pos, state, blockEntity)
         }
+    }
+
+    override fun onRegisterCommands(listener: (CommandDispatcher<CommandSourceStack>) -> Unit) {
+        CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> listener(dispatcher) }
     }
 
     override fun onPlayerUseEntity(listener: (ServerPlayer, ServerLevel, InteractionHand, Entity) -> InteractionResult) {

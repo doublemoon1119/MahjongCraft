@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.development
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import org.koin.core.Koin
 import org.koin.core.module.Module
 
@@ -20,6 +21,7 @@ interface MahjongCraftDevelopmentEntrypoint {
      * 登記指令與本體提供的開發用接口。
      *
      * @param koin 已載入 [koinModules] 的本體 Koin。
+     * @param events 登記事件與指令用的伺服器事件來源。
      */
-    fun initialize(koin: Koin)
+    fun initialize(koin: Koin, events: ServerEvents)
 }

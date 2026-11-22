@@ -6,14 +6,17 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.A
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.AutomaticControlDisplayResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutomaticControlCommandResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutomaticControlResultKind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.command.ClientCommandFeedback
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientCommand
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.configSaveFailureMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
+import com.mojang.brigadier.builder.LiteralArgumentBuilder
+import com.mojang.brigadier.builder.LiteralArgumentBuilder.literal
+import com.mojang.brigadier.builder.RequiredArgumentBuilder.argument
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
-import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
@@ -32,27 +35,29 @@ import java.util.concurrent.CompletableFuture
 class AutomaticControlCommand(
     private val commandService: ClientAutomaticControlCommandService,
     private val displayResolver: AutomaticControlDisplayResolver,
-) {
+) : ClientCommand {
     /** 指令已送出且尚待回覆的聊天回饋資料。 */
     private var pendingFeedback: PendingFeedback? = null
 
-    /** 註冊 command tree 與 ACK 輪詢；只能在 client entrypoint 呼叫一次。 */
-    fun register() {
-        ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
-            dispatcher.register(
-                ClientCommandManager.literal(CLIENT_COMMAND_ROOT).then(
-                    ClientCommandManager.literal(AUTOMATIC_CONTROL_SUBCOMMAND).then(
-                        ClientCommandManager.argument(CONTROL_ID_ARGUMENT, ResourceLocationArgument.id())
-                            .suggests(::suggestControlIds)
-                            .then(modeLiteral(ON_LITERAL, AutomaticControlCommandMode.ON))
-                            .then(modeLiteral(OFF_LITERAL, AutomaticControlCommandMode.OFF))
-                            .then(modeLiteral(TOGGLE_LITERAL, AutomaticControlCommandMode.TOGGLE)),
-                    ),
-                ),
-            )
-        }
+    /**
+     * 註冊 command tree 與 ACK 輪詢；只能在 client entrypoint 呼叫一次。
+     *
+     * @param events 登記用戶端指令的事件來源。
+     */
+    fun register(events: ClientEvents) {
+        events.onRegisterClientCommand(this)
         ClientTickEvents.END_CLIENT_TICK.register(::pollCompletion)
     }
+
+    override fun <S : Any> build(): LiteralArgumentBuilder<S> = literal<S>(CLIENT_COMMAND_ROOT).then(
+        literal<S>(AUTOMATIC_CONTROL_SUBCOMMAND).then(
+            argument<S, ResourceLocation>(CONTROL_ID_ARGUMENT, ResourceLocationArgument.id())
+                .suggests(::suggestControlIds)
+                .then(modeLiteral(ON_LITERAL, AutomaticControlCommandMode.ON))
+                .then(modeLiteral(OFF_LITERAL, AutomaticControlCommandMode.OFF))
+                .then(modeLiteral(TOGGLE_LITERAL, AutomaticControlCommandMode.TOGGLE)),
+        ),
+    )
 
     /**
      * 建立指定模式的指令節點。
@@ -61,29 +66,29 @@ class AutomaticControlCommand(
      * @param mode 節點執行時使用的開關模式。
      * @return 綁定執行回呼的指令節點建構器。
      */
-    private fun modeLiteral(name: String, mode: AutomaticControlCommandMode) = ClientCommandManager.literal(name).executes { context ->
+    private fun <S : Any> modeLiteral(name: String, mode: AutomaticControlCommandMode): LiteralArgumentBuilder<S> = literal<S>(name).executes { context ->
         execute(context, mode)
     }
 
     /**
      * 執行指定模式，並立即回饋本機結果或保存待回覆資料。
      *
-     * @param context 含控制項識別碼與回覆來源的指令情境。
+     * @param context 含控制項識別碼的指令情境。
      * @param mode 要套用的開關模式。
      * @return Brigadier 成功或失敗值。
      */
     private fun execute(
-        context: CommandContext<FabricClientCommandSource>,
+        context: CommandContext<*>,
         mode: AutomaticControlCommandMode,
     ): Int {
         val controlId = context.getArgument(CONTROL_ID_ARGUMENT, ResourceLocation::class.java).toString()
         return when (val result = commandService.execute(controlId, mode)) {
             is ClientAutomaticControlCommandResult.Updated -> {
-                context.source.sendFeedback(updatedMessage(result.controlId, result.previousEnabled, result.enabled))
+                ClientCommandFeedback.send(updatedMessage(result.controlId, result.previousEnabled, result.enabled))
                 COMMAND_SUCCESS
             }
             is ClientAutomaticControlCommandResult.Unchanged -> {
-                context.source.sendFeedback(unchangedMessage(result.controlId, result.enabled))
+                ClientCommandFeedback.send(unchangedMessage(result.controlId, result.enabled))
                 COMMAND_SUCCESS
             }
             is ClientAutomaticControlCommandResult.Submitted -> {
@@ -94,8 +99,8 @@ class AutomaticControlCommand(
                     requestedEnabled = result.enabled,
                     resyncReported = false,
                 )
-                context.source.sendFeedback(
-                    Component.translatable(
+                ClientCommandFeedback.send(
+                    message = Component.translatable(
                         MinecraftMessageKeys.AUTOMATIC_CONTROL_WAITING,
                         displayResolver.resolve(commandService.ruleModuleId(), result.controlId).label,
                         stateText(result.previousEnabled),
@@ -105,33 +110,27 @@ class AutomaticControlCommand(
                 COMMAND_SUCCESS
             }
             ClientAutomaticControlCommandResult.Pending -> failure(
-                source = context.source,
                 message = Component.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_PENDING),
             )
             ClientAutomaticControlCommandResult.Unavailable -> failure(
-                source = context.source,
                 message = Component.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_UNAVAILABLE),
             )
             is ClientAutomaticControlCommandResult.Unsupported -> failure(
-                source = context.source,
                 message = Component.translatable(
                     MinecraftMessageKeys.AUTOMATIC_CONTROL_UNSUPPORTED,
                     displayResolver.resolve(commandService.ruleModuleId(), result.controlId).label,
                 ),
             )
             is ClientAutomaticControlCommandResult.SaveFailed -> failure(
-                source = context.source,
                 message = configSaveFailureMessage(
                     settingName = Component.translatable(MinecraftClientConfigScreenKeys.AUTO_SORT_HAND),
                     details = result.failure.message,
                 ),
             )
             is ClientAutomaticControlCommandResult.PreferenceSyncFailed -> failure(
-                source = context.source,
                 message = Component.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_PREFERENCE_SYNC_FAILED),
             )
             ClientAutomaticControlCommandResult.RoundControlSendFailed -> failure(
-                source = context.source,
                 message = Component.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_SEND_FAILED),
             )
         }
@@ -145,7 +144,7 @@ class AutomaticControlCommand(
      * @return 已加入控制項名稱提示的補全結果。
      */
     private fun suggestControlIds(
-        context: CommandContext<FabricClientCommandSource>,
+        context: CommandContext<*>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> {
         displayResolver.resolveAll(commandService.ruleModuleId(), commandService.availableControlIds()).forEach { display ->
@@ -190,12 +189,11 @@ class AutomaticControlCommand(
     /**
      * 傳送客戶端指令錯誤並回傳 Brigadier 失敗值。
      *
-     * @param source 接收錯誤訊息的指令來源。
      * @param message 要顯示的錯誤文字。
      * @return Brigadier 失敗值。
      */
-    private fun failure(source: FabricClientCommandSource, message: Component): Int {
-        source.sendError(message)
+    private fun failure(message: Component): Int {
+        ClientCommandFeedback.error(message)
         return COMMAND_FAILURE
     }
 

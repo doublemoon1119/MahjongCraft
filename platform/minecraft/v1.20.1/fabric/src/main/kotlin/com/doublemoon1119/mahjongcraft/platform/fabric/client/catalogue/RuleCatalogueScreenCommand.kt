@@ -1,30 +1,34 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.CLIENT_COMMAND_ROOT
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientCommand
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
+import com.mojang.brigadier.builder.LiteralArgumentBuilder
+import com.mojang.brigadier.builder.LiteralArgumentBuilder.literal
 
 /**
  * 不需要加入房間的客戶端規則一覽指令。
  *
  * @property screens 延後開啟畫面的入口。
  */
-internal class RuleCatalogueScreenCommand(private val screens: RuleCatalogueScreenController) {
-    /** 註冊 `/mahjongcraft_client catalogue screen`。 */
-    fun register() {
-        ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
-            dispatcher.register(
-                literal(CLIENT_COMMAND_ROOT).then(
-                    literal(RULE_CATALOGUE).then(
-                        literal(SCREEN).executes {
-                            screens.openGeneral()
-                            1
-                        },
-                    ),
-                ),
-            )
-        }
+internal class RuleCatalogueScreenCommand(private val screens: RuleCatalogueScreenController) : ClientCommand {
+    /**
+     * 註冊 `/mahjongcraft_client catalogue screen`。
+     *
+     * @param events 登記用戶端指令的事件來源。
+     */
+    fun register(events: ClientEvents) {
+        events.onRegisterClientCommand(this)
     }
+
+    override fun <S : Any> build(): LiteralArgumentBuilder<S> = literal<S>(CLIENT_COMMAND_ROOT).then(
+        literal<S>(RULE_CATALOGUE).then(
+            literal<S>(SCREEN).executes {
+                screens.openGeneral()
+                1
+            },
+        ),
+    )
 
     /** 指令節點名稱。 */
     private companion object {

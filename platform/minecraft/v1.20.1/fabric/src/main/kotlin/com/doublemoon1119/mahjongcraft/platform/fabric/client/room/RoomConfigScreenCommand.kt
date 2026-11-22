@@ -16,13 +16,15 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.Clie
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.PublicPlayerIndicatorTextResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.table.ClientTableSpaceObstructionStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientCommand
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
+import com.mojang.brigadier.builder.LiteralArgumentBuilder
+import com.mojang.brigadier.builder.LiteralArgumentBuilder.literal
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
@@ -84,24 +86,17 @@ class RoomConfigScreenCommand(
     private val clock: PauseAwareClientMonotonicClock,
     private val ruleCatalogue: RuleCatalogueScreenController,
     private val tableSpaceObstructions: ClientTableSpaceObstructionStore,
-) {
+) : ClientCommand {
     /** 已收到開啟指令，等待下一次客戶端週期處理。 */
     private var pendingOpen = false
 
-    /** 註冊指令；只能在 client entrypoint 呼叫。 */
-    fun register() {
-        ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
-            dispatcher.register(
-                ClientCommandManager.literal(CLIENT_COMMAND_ROOT).then(
-                    ClientCommandManager.literal(ROOM_CONFIG_SUBCOMMAND).then(
-                        ClientCommandManager.literal(SCREEN_SUBCOMMAND).executes {
-                            pendingOpen = true
-                            COMMAND_SUCCESS
-                        },
-                    ),
-                ),
-            )
-        }
+    /**
+     * 註冊指令；只能在 client entrypoint 呼叫。
+     *
+     * @param events 登記用戶端指令的事件來源。
+     */
+    fun register(events: ClientEvents) {
+        events.onRegisterClientCommand(this)
         ClientTickEvents.END_CLIENT_TICK.register {
             if (pendingOpen) {
                 pendingOpen = false
@@ -109,6 +104,15 @@ class RoomConfigScreenCommand(
             }
         }
     }
+
+    override fun <S : Any> build(): LiteralArgumentBuilder<S> = literal<S>(CLIENT_COMMAND_ROOT).then(
+        literal<S>(ROOM_CONFIG_SUBCOMMAND).then(
+            literal<S>(SCREEN_SUBCOMMAND).executes {
+                pendingOpen = true
+                COMMAND_SUCCESS
+            },
+        ),
+    )
 
     /** 資格檢查通過才開畫面，否則在本地顯示原因（純本機顯示，不送到伺服器）。 */
     private fun openScreen() {

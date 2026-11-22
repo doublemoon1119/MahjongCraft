@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.present
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.development.MahjongCraftDevelopmentEntrypoint
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.development.TableEndListeners
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.development.WinCelebrationRequestAdjusters
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import org.koin.core.Koin
 import org.koin.core.module.Module
 
@@ -12,7 +13,7 @@ import org.koin.core.module.Module
 class DebugDevelopmentEntrypoint : MahjongCraftDevelopmentEntrypoint {
     override fun koinModules(): List<Module> = listOf(debugServerModule)
 
-    override fun initialize(koin: Koin) {
+    override fun initialize(koin: Koin, events: ServerEvents) {
         val showcaseOverride = koin.get<DebugWinShowcaseOverride>()
         val continuationState = koin.get<DebugWinRoundContinuationState>()
         koin.get<WinCelebrationRequestAdjusters>().register(showcaseOverride::applyTo)
@@ -20,6 +21,6 @@ class DebugDevelopmentEntrypoint : MahjongCraftDevelopmentEntrypoint {
             continuationState.clear(tableId)
             showcaseOverride.clear(tableId)
         }
-        koin.get<FabricDebugCommand>().register()
+        koin.get<FabricDebugCommand>().register(events)
     }
 }

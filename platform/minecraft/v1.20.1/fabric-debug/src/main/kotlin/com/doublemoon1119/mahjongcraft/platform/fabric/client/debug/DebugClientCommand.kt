@@ -3,11 +3,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.debug
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.CLIENT_COMMAND_ROOT
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.command.ClientCommandFeedback
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.clientConfigEntries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.configShowMessage
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
-import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
+import com.mojang.brigadier.builder.LiteralArgumentBuilder.literal
 import net.minecraft.network.chat.Component
 
 /**
@@ -16,16 +17,16 @@ import net.minecraft.network.chat.Component
  *
  * @property configStore 取得本機設定的來源；執行時才取，客戶端初始化順序不影響登記。
  */
-class DebugClientCommand(private val configStore: () -> MahjongClientConfigStore) {
+class DebugClientCommand(private val configStore: () -> MahjongClientConfigStore) : ClientCommand {
     /**
      * 建立指令樹；與本體的客戶端指令共用同一個根節點，由指令系統合併。
      *
      * @return 指令樹的根節點。
      */
-    fun build(): LiteralArgumentBuilder<FabricClientCommandSource> = ClientCommandManager.literal(CLIENT_COMMAND_ROOT).then(
-        ClientCommandManager.literal(DEBUG_SUBCOMMAND).then(
-            ClientCommandManager.literal(HOVERED_TEXT_SUBCOMMAND).then(
-                ClientCommandManager.literal(CLIENT_CONFIG_ARGUMENT).executes { context -> previewClientConfig(context.source) },
+    override fun <S : Any> build(): LiteralArgumentBuilder<S> = literal<S>(CLIENT_COMMAND_ROOT).then(
+        literal<S>(DEBUG_SUBCOMMAND).then(
+            literal<S>(HOVERED_TEXT_SUBCOMMAND).then(
+                literal<S>(CLIENT_CONFIG_ARGUMENT).executes { previewClientConfig() },
             ),
         ),
     )
@@ -33,13 +34,12 @@ class DebugClientCommand(private val configStore: () -> MahjongClientConfigStore
     /**
      * 以正式設定訊息建構器發送客戶端設定懸停預覽。
      *
-     * @param source 接收預覽的指令來源。
      * @return Brigadier 成功值。
      */
-    private fun previewClientConfig(source: FabricClientCommandSource): Int {
+    private fun previewClientConfig(): Int {
         val store = configStore()
-        source.sendFeedback(
-            configShowMessage(
+        ClientCommandFeedback.send(
+            message = configShowMessage(
                 configName = Component.translatable(MinecraftConfigCommandKeys.CLIENT_CONFIG),
                 displayPath = store.displayPath,
                 entries = clientConfigEntries(store.current),

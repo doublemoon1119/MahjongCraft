@@ -38,12 +38,14 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMah
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.development.TableEndListeners
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.development.WinCelebrationRequestAdjusters
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import org.koin.core.Koin
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
+import java.lang.reflect.Proxy
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -205,12 +207,12 @@ class DebugDevelopmentAssemblyTest {
     @Test
     fun `development entrypoint connects showcase override and table end cleanup`() {
         val koin = startKoin(debugKoinApplication()).koin
-        // 測試沒有 Fabric 啟動器，指令登記改以非開發環境略過；這個案例只驗證接口。
+        // 測試沒有 Fabric 啟動器，指令登記改以非開發環境略過，不會用到伺服器事件；這個案例只驗證接口。
         val environment = object : MinecraftEnvironment {
             override val isDevelopment: Boolean = false
         }
         koin.loadModules(listOf(module { single<MinecraftEnvironment> { environment } }), allowOverride = true)
-        DebugDevelopmentEntrypoint().initialize(koin)
+        DebugDevelopmentEntrypoint().initialize(koin, unusedServerEvents())
         val tableId = Uuid.random()
         val showcaseOverride = koin.get<DebugWinShowcaseOverride>()
         val continuationState = koin.get<DebugWinRoundContinuationState>()
@@ -250,4 +252,14 @@ class DebugDevelopmentAssemblyTest {
         )
         return sources
     }
+
+    /**
+     * 建立不應被使用的伺服器事件來源；任何登記都會丟出例外。
+     *
+     * @return 呼叫任何方法都丟出例外的 [ServerEvents]。
+     */
+    private fun unusedServerEvents(): ServerEvents = Proxy.newProxyInstance(
+        ServerEvents::class.java.classLoader,
+        arrayOf(ServerEvents::class.java),
+    ) { _, method, _ -> error("Unexpected server event registration: ${method.name}") } as ServerEvents
 }

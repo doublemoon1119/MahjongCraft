@@ -1,30 +1,34 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.handbook
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.CLIENT_COMMAND_ROOT
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientCommand
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
+import com.mojang.brigadier.builder.LiteralArgumentBuilder
+import com.mojang.brigadier.builder.LiteralArgumentBuilder.literal
 
 /**
  * 開啟麻將手冊快捷畫面的客戶端指令。
  *
  * @property screens 開啟快捷畫面的入口。
  */
-internal class HandbookScreenCommand(private val screens: MahjongHandbookScreenController) {
-    /** 註冊 `/mahjongcraft_client handbook screen`。 */
-    fun register() {
-        ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
-            dispatcher.register(
-                literal(CLIENT_COMMAND_ROOT).then(
-                    literal(HANDBOOK).then(
-                        literal(SCREEN).executes {
-                            screens.openFromCommand()
-                            1
-                        },
-                    ),
-                ),
-            )
-        }
+internal class HandbookScreenCommand(private val screens: MahjongHandbookScreenController) : ClientCommand {
+    /**
+     * 註冊 `/mahjongcraft_client handbook screen`。
+     *
+     * @param events 登記用戶端指令的事件來源。
+     */
+    fun register(events: ClientEvents) {
+        events.onRegisterClientCommand(this)
     }
+
+    override fun <S : Any> build(): LiteralArgumentBuilder<S> = literal<S>(CLIENT_COMMAND_ROOT).then(
+        literal<S>(HANDBOOK).then(
+            literal<S>(SCREEN).executes {
+                screens.openFromCommand()
+                1
+            },
+        ),
+    )
 
     /** 指令節點名稱。 */
     private companion object {

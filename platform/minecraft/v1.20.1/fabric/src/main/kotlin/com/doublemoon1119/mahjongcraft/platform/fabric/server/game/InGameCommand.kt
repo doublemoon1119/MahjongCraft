@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.GameActionCandidateResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.HandTileCandidate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
@@ -17,7 +18,6 @@ import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import kotlinx.coroutines.launch
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands.argument
 import net.minecraft.commands.Commands.literal
@@ -60,9 +60,13 @@ class InGameCommand(
     private val tileEmojiRegistry: TileEmojiRegistry,
     private val scope: AppCoroutineScope,
 ) {
-    /** 將 `/mahjongcraft game hand|discard|action` 加入 Fabric command dispatcher。 */
-    fun register() {
-        CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
+    /**
+     * 將 `/mahjongcraft game hand|discard|action` 加入指令分派器。
+     *
+     * @param events 提供指令登記時機的伺服器事件來源。
+     */
+    fun register(events: ServerEvents) {
+        events.onRegisterCommands { dispatcher ->
             dispatcher.register(
                 literal(MinecraftModMetadata.MOD_ID)
                     .then(

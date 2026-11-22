@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.RoomConfigScr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.LocatedMahjongTable
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.ReachableMahjongTableResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.RoomMemberCandidate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.TableCoordinateArgument
@@ -18,7 +19,6 @@ import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import kotlinx.coroutines.launch
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands.argument
 import net.minecraft.commands.Commands.literal
@@ -73,9 +73,13 @@ class RoomCommand(
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
     private val scope: AppCoroutineScope,
 ) {
-    /** 將 `/mahjongcraft room join|leave|ready|start|ai|kick` 加入 Fabric command dispatcher。 */
-    fun register() {
-        CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
+    /**
+     * 將 `/mahjongcraft room join|leave|ready|start|ai|kick` 加入指令分派器。
+     *
+     * @param events 提供指令登記時機的伺服器事件來源。
+     */
+    fun register(events: ServerEvents) {
+        events.onRegisterCommands { dispatcher ->
             dispatcher.register(
                 literal(MinecraftModMetadata.MOD_ID)
                     .then(

@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.configReloadFailureMessage
@@ -13,7 +14,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.prefixedConfi
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.serverConfigShowMessage
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.ChatFormatting
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands.literal
@@ -37,14 +37,16 @@ class ServerConfigCommand(
     private val logger = mahjongCraftLogger(ServerConfigCommand::class)
 
     /**
-     * 將 `/mahjongcraft config reload|show` 加入 Fabric command dispatcher。
+     * 將 `/mahjongcraft config reload|show` 加入指令分派器。
      *
      * 權限限制掛在 `config` 子節點而非 `mahjongcraft` 根節點，讓其他不需要管理員權限的
      * `/mahjongcraft` 子指令（例如房間階段的玩家指令）可以共用同一個根節點註冊，不受這裡的權限
      * 要求影響。
+     *
+     * @param events 提供指令登記時機的伺服器事件來源。
      */
-    fun register() {
-        CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
+    fun register(events: ServerEvents) {
+        events.onRegisterCommands { dispatcher ->
             dispatcher.register(
                 literal(MinecraftModMetadata.MOD_ID)
                     .then(

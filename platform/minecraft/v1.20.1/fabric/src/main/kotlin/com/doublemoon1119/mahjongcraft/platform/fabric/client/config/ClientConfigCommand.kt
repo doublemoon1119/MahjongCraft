@@ -4,15 +4,17 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.CLIENT_COMMAND_ROO
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.TileLabelCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.ServerConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.command.ClientCommandFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigUpdateResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientCommand
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.clientConfigEntries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.configReloadFailureMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.configShowMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.prefixedConfigMessage
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
-import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
+import com.mojang.brigadier.builder.LiteralArgumentBuilder
+import com.mojang.brigadier.builder.LiteralArgumentBuilder.literal
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
 
@@ -33,43 +35,44 @@ import net.minecraft.network.chat.Component
 class ClientConfigCommand(
     private val configStore: MahjongClientConfigStore,
     private val screenController: MahjongClientConfigScreenController,
-) {
+) : ClientCommand {
     /** 記錄 config 指令執行結果，對稱 server 端 `ServerConfigCommand` 的 logger。 */
     private val logger = mahjongCraftLogger(ClientConfigCommand::class)
 
-    /** 註冊指令；只能在 client entrypoint 呼叫。 */
-    fun register() {
-        ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
-            val root = ClientCommandManager.literal(CLIENT_COMMAND_ROOT).then(
-                ClientCommandManager.literal(CONFIG_SUBCOMMAND)
-                    .then(
-                        ClientCommandManager.literal(RELOAD_SUBCOMMAND)
-                            .executes { context -> reload(context.source) },
-                    )
-                    .then(
-                        ClientCommandManager.literal(SHOW_SUBCOMMAND).executes { context -> show(context.source) },
-                    ).then(
-                        ClientCommandManager.literal(SCREEN_SUBCOMMAND).executes {
-                            screenController.openFromCommand()
-                            COMMAND_SUCCESS
-                        },
-                    ),
-            )
-            dispatcher.register(root)
-        }
+    /**
+     * 註冊指令；只能在 client entrypoint 呼叫。
+     *
+     * @param events 登記用戶端指令的事件來源。
+     */
+    fun register(events: ClientEvents) {
+        events.onRegisterClientCommand(this)
     }
+
+    override fun <S : Any> build(): LiteralArgumentBuilder<S> = literal<S>(CLIENT_COMMAND_ROOT).then(
+        literal<S>(CONFIG_SUBCOMMAND)
+            .then(
+                literal<S>(RELOAD_SUBCOMMAND).executes { reload() },
+            )
+            .then(
+                literal<S>(SHOW_SUBCOMMAND).executes { show() },
+            ).then(
+                literal<S>(SCREEN_SUBCOMMAND).executes {
+                    screenController.openFromCommand()
+                    COMMAND_SUCCESS
+                },
+            ),
+    )
 
     /**
      * 重新載入設定並向執行者回報結果。
      *
-     * @param source 接收結果的指令來源。
      * @return 載入成功時為成功值，失敗時為失敗值。
      */
-    private fun reload(source: FabricClientCommandSource): Int = when (val result = configStore.load()) {
+    private fun reload(): Int = when (val result = configStore.load()) {
         is MahjongClientConfigUpdateResult.Success -> {
             logger.info("Client config reloaded")
-            source.sendFeedback(
-                prefixedConfigMessage(
+            ClientCommandFeedback.send(
+                message = prefixedConfigMessage(
                     message = Component.translatable(
                         MinecraftConfigCommandKeys.RELOADED,
                         Component.translatable(MinecraftConfigCommandKeys.CLIENT_CONFIG),
@@ -82,8 +85,8 @@ class ClientConfigCommand(
 
         is MahjongClientConfigUpdateResult.Failure -> {
             logger.warn("Client config reload failed: {}", result.message)
-            source.sendError(
-                configReloadFailureMessage(Component.translatable(MinecraftConfigCommandKeys.CLIENT_CONFIG), result.message),
+            ClientCommandFeedback.error(
+                message = configReloadFailureMessage(Component.translatable(MinecraftConfigCommandKeys.CLIENT_CONFIG), result.message),
             )
             COMMAND_FAILURE
         }
@@ -92,17 +95,16 @@ class ClientConfigCommand(
     /**
      * 顯示目前記憶體內實際生效的本地化設定欄位；完整內容收進單行可 hover 的詳情標籤。
      *
-     * @param source 接收設定訊息的指令來源。
      * @return Brigadier 成功值。
      */
-    private fun show(source: FabricClientCommandSource): Int {
+    private fun show(): Int {
         logger.debug(
             "Effective client config hover path={} config={}",
             configStore.displayPath,
             configStore.formattedCurrentToml(),
         )
-        source.sendFeedback(
-            clientConfigShowMessage(),
+        ClientCommandFeedback.send(
+            message = clientConfigShowMessage(),
         )
         return COMMAND_SUCCESS
     }

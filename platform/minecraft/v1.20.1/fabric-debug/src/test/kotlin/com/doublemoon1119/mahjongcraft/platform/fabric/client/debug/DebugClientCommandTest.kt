@@ -10,7 +10,7 @@ class DebugClientCommandTest {
     /** 指令路徑為 `debug hovered_text client_config`，且只有這一條。 */
     @Test
     fun `hovered text preview is mounted under the client debug node`() {
-        val root = DebugClientCommand(configStore = { error("The command tree does not read the config") }).build().build()
+        val root = DebugClientCommand(configStore = { error("The command tree does not read the config") }).build<Any>().build()
 
         assertEquals(CLIENT_COMMAND_ROOT, root.name)
         val debug = assertNotNull(root.getChild(DebugClientCommand.DEBUG_SUBCOMMAND))

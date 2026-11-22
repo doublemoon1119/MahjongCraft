@@ -70,6 +70,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.extension.BuiltInFabricMa
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongClientExtension
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongClientExtensionBootstrap
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongScoringStickItem
+import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricClientEvents
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricClientPacketTransport
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
@@ -181,21 +182,21 @@ class MahjongCraftModClient : ClientModInitializer {
             ColorProviderRegistry.ITEM.register({ _, _ -> MahjongRulerTint.rgb(color) }, item)
         }
         val clientConfigStore = koin.get<MahjongClientConfigStore>()
-        koin.get<RoomConfigScreenCommand>().register()
+        koin.get<RoomConfigScreenCommand>().register(FabricClientEvents)
         initializeClientConfig(clientConfigStore)
         koin.get<MahjongClientConfigScreenController>().register()
-        koin.get<TileLabelCommand>().register()
-        koin.get<HandSortCommand>().register()
-        koin.get<AutomaticControlCommand>().register()
-        koin.get<ClientConfigCommand>().register()
+        koin.get<TileLabelCommand>().register(FabricClientEvents)
+        koin.get<HandSortCommand>().register(FabricClientEvents)
+        koin.get<AutomaticControlCommand>().register(FabricClientEvents)
+        koin.get<ClientConfigCommand>().register(FabricClientEvents)
         koin.get<HistoryScreenController>().register()
-        koin.get<HistoryScreenCommand>().register()
+        koin.get<HistoryScreenCommand>().register(FabricClientEvents)
         val ruleCatalogueController = koin.get<RuleCatalogueScreenController>().also { it.register() }
-        koin.get<RuleCatalogueScreenCommand>().register()
+        koin.get<RuleCatalogueScreenCommand>().register(FabricClientEvents)
         koin.get<MahjongHandbookScreenController>().register()
-        koin.get<HandbookScreenCommand>().register()
+        koin.get<HandbookScreenCommand>().register(FabricClientEvents)
         koin.get<GuideScreenController>().register()
-        koin.get<GuideScreenCommand>().register()
+        koin.get<GuideScreenCommand>().register(FabricClientEvents)
         val decisionHudController = koin.get<PlayerDecisionHudController>()
         decisionHudController.registerEvents()
         koin.get<MatchingTileHighlightController>().register()

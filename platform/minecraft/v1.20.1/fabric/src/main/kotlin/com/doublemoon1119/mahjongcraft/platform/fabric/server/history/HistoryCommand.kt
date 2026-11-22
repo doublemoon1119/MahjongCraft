@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryManagementResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryRetryResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryStorageSnapshot
@@ -16,7 +17,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.historyStorag
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.prefixedConfigMessage
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.ChatFormatting
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands.literal
@@ -35,9 +35,13 @@ class HistoryCommand(
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
 ) {
-    /** 將 `/mahjongcraft history` 管理指令樹加入 Fabric 指令分派器。 */
-    fun register() {
-        CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
+    /**
+     * 將 `/mahjongcraft history` 管理指令樹加入指令分派器。
+     *
+     * @param events 提供指令登記時機的伺服器事件來源。
+     */
+    fun register(events: ServerEvents) {
+        events.onRegisterCommands { dispatcher ->
             dispatcher.register(
                 literal(MinecraftModMetadata.MOD_ID)
                     .then(

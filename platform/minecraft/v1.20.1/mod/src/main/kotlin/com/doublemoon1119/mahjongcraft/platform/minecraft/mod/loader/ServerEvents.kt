@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader
 
+import com.mojang.brigadier.CommandDispatcher
+import net.minecraft.commands.CommandSourceStack
 import net.minecraft.core.BlockPos
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
@@ -122,6 +124,13 @@ interface ServerEvents {
      * @param listener 收到世界、玩家、位置、破壞前的方塊狀態，以及破壞前的方塊實體（沒有時為 `null`）。
      */
     fun onAfterPlayerBreakBlock(listener: (ServerLevel, ServerPlayer, BlockPos, BlockState, BlockEntity?) -> Unit)
+
+    /**
+     * 伺服器建立指令表時；每次重新載入資料包等需要重建指令表時都會再呼叫。
+     *
+     * @param listener 收到要登記指令的指令分派器。
+     */
+    fun onRegisterCommands(listener: (CommandDispatcher<CommandSourceStack>) -> Unit)
 
     /**
      * 玩家對實體按下使用鍵時；回傳 [InteractionResult.PASS] 交給其他處理，其他結果代表已處理並結束這次互動。

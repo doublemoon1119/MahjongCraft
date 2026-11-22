@@ -14,8 +14,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.text.FabricDebugTextCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands.literal
 
@@ -71,12 +71,16 @@ class FabricDebugCommand internal constructor(
     private val entityLifecycle: DebugPreviewEntityLifecycle,
     private val seatedParticipantCommand: FabricDebugSeatedParticipantCommand,
 ) {
-    /** 註冊整組 debug 指令樹；只有開發環境才真的呼叫 `dispatcher.register`，見類別 KDoc。 */
-    fun register() {
+    /**
+     * 註冊整組 debug 指令樹；只有開發環境才真的呼叫 `dispatcher.register`，見類別 KDoc。
+     *
+     * @param events 提供指令登記時機的伺服器事件來源。
+     */
+    fun register(events: ServerEvents) {
         if (!minecraftEnvironment.isDevelopment) return
         entityLifecycle.registerTicking()
         stressController.registerTicking()
-        CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
+        events.onRegisterCommands { dispatcher ->
             dispatcher.register(build())
         }
     }
