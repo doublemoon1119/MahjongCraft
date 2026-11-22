@@ -28,6 +28,7 @@ import net.minecraft.world.InteractionResult
 import net.minecraft.world.InteractionResultHolder
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.item.ItemStack
+import java.util.concurrent.CopyOnWriteArrayList
 
 /** 以 Fabric API 的用戶端事件實作 [ClientEvents]。 */
 object FabricClientEvents : ClientEvents {
@@ -71,12 +72,17 @@ object FabricClientEvents : ClientEvents {
         WorldRenderEvents.START.register { listener() }
     }
 
-    override fun onWorldRenderLast(listener: () -> Unit) {
-        WorldRenderEvents.LAST.register { listener() }
+    /** 世界畫完時的處理；Fabric API 沒有這個時間點的事件，由 `GameRendererMixin` 呼叫 [fireWorldRenderFinished]。 */
+    private val worldRenderFinishedListeners = CopyOnWriteArrayList<() -> Unit>()
+
+    override fun onWorldRenderFinished(listener: () -> Unit) {
+        worldRenderFinishedListeners += listener
     }
 
-    override fun onWorldRenderEnd(listener: () -> Unit) {
-        WorldRenderEvents.END.register { listener() }
+    /** 通知世界已畫完；只由 `GameRendererMixin` 在原版畫完整個世界、畫手上物品之前呼叫。 */
+    @JvmStatic
+    fun fireWorldRenderFinished() {
+        worldRenderFinishedListeners.forEach { it() }
     }
 
     override fun onWorldRenderBeforeDebug(listener: (PoseStack, MultiBufferSource, Camera) -> Unit) {

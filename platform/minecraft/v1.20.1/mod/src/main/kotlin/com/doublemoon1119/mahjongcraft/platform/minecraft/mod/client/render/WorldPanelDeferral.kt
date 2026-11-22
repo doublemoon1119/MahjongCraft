@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.WorldPanelQueue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.mojang.blaze3d.systems.RenderSystem
 import com.mojang.blaze3d.vertex.PoseStack
@@ -10,25 +9,25 @@ import org.joml.Matrix3f
 import org.joml.Matrix4f
 
 /**
- * 世界中的面板等整個世界畫完（包括雲與天氣）才畫，依離鏡頭的距離由遠到近繪製。
+ * 世界中的面板等整個世界畫完才畫（[ClientEvents.onWorldRenderFinished]），依離鏡頭的距離由遠到近繪製。
  *
  * 面板與牌、玩家同在實體階段畫時，原版不依遠近排序實體，面板後方較晚畫的實體會被面板擋住；延到最後畫，面板的半透明
- * 底色就能透出後方的一切。光影的陰影那一輪不畫面板，面板不在桌面投下影子。不在世界繪製期間時（例如牌譜回放的畫面
- * 場景）照常立刻畫。
+ * 底色就能透出後方的一切。開了光影時，光影模組畫完世界後才補上陰影與後製；面板等這些都完成才畫，就不會被玩家或方塊的
+ * 影子蓋到，外觀與沒開光影時相同。光影的陰影那一輪也不畫面板，面板不在桌面投下影子。不在世界繪製期間時（例如牌譜回放
+ * 的畫面場景）照常立刻畫。
  */
 internal object WorldPanelDeferral {
     /** 這一幀收集的面板。 */
     private val queue = WorldPanelQueue()
 
     /**
-     * 登記世界繪製的開始、畫完與結束；沒有收到畫完的那一幀在結束時補畫。
+     * 登記世界繪製的開始與畫完。
      *
      * @param events 登記用戶端事件用的事件來源。
      */
     fun register(events: ClientEvents) {
         events.onWorldRenderStart { queue.beginFrame() }
-        events.onWorldRenderLast { drawPending() }
-        events.onWorldRenderEnd { drawPending() }
+        events.onWorldRenderFinished { drawPending() }
     }
 
     /**

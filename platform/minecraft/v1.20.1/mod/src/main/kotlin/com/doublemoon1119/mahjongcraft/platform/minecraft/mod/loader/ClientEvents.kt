@@ -78,18 +78,13 @@ interface ClientEvents {
     fun onWorldRenderStart(listener: () -> Unit)
 
     /**
-     * 每一幀世界的最後一個繪製階段，在半透明物件與天氣之後。
+     * 每一幀整個世界畫完、手上物品與介面還沒畫時；光影模組的陰影與後製也已完成，之後畫的東西不會再被加上光影。
      *
-     * @param listener 最後階段的處理。
-     */
-    fun onWorldRenderLast(listener: () -> Unit)
-
-    /**
-     * 每一幀世界繪製結束時。
+     * 原版沒有這個時間點的事件，由載入器以 mixin 提供。
      *
-     * @param listener 繪製結束時的處理。
+     * @param listener 畫完時的處理。
      */
-    fun onWorldRenderEnd(listener: () -> Unit)
+    fun onWorldRenderFinished(listener: () -> Unit)
 
     /**
      * 每一幀繪製除錯用線條之前，可以把線框畫進世界。
