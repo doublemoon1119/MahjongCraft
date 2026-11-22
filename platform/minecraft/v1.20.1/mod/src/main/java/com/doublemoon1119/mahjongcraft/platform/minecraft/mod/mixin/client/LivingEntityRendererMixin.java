@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.fabric.mixin.client;
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.mixin.client;
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SceneEntityTranslucency;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;

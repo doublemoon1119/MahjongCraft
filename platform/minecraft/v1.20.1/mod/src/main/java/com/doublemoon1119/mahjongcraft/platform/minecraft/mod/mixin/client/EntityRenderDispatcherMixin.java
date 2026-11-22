@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.fabric.mixin.client;
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.mixin.client;
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.HiddenDebugHitboxEntity;
 import com.llamalad7.mixinextras.injector.WrapWithCondition;

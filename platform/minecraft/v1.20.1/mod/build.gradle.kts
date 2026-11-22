@@ -65,6 +65,9 @@ dependencies {
     implementation(libs.exposed.core)
     implementation(libs.exposed.jdbc)
     implementation(libs.sqlite.jdbc)
+    // 共用的 mixin 只對註解編譯；各載入器在執行時提供 Mixin 與 MixinExtras。
+    compileOnly(mc1201.mixin)
+    compileOnly(mc1201.mixinextras.common)
 
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)

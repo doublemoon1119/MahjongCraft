@@ -12,6 +12,10 @@ Its Gradle project path is `:minecraft_v1.20.1_mod`, and its code uses the
 
 - Hold loader-independent Minecraft 1.20.1 code, such as entity save data.
 - Store version-specific data formats, currently including Minecraft 1.20.1 recipe JSON.
+- Hold the client mixins every loader applies, in the `mixin.client` package. Each loader lists them in its
+  own mixin configuration; this module compiles them against the Mixin and MixinExtras annotations only.
+  A point in the frame that no loader exposes, such as the end of world rendering, is published through
+  a loader-neutral hook in the `loader` package.
 
 ## Boundaries
 

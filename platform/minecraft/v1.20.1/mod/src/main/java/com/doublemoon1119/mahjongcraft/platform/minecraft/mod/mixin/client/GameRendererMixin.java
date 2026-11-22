@@ -1,6 +1,6 @@
-package com.doublemoon1119.mahjongcraft.platform.fabric.mixin.client;
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.mixin.client;
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricClientEvents;
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.WorldRenderFinishedHook;
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.tile.ClientHandTileLayoutBridge;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
@@ -36,7 +36,7 @@ public abstract class GameRendererMixin {
         )
     )
     private void mahjongcraft$afterLevelRender(float tickDelta, long limitTime, PoseStack matrices, CallbackInfo callbackInfo) {
-        FabricClientEvents.fireWorldRenderFinished();
+        WorldRenderFinishedHook.fire();
     }
 
     /** 原版完成選取後，以本人實際看到的牌張位置修正命中。 */

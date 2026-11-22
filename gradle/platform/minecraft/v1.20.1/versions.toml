@@ -25,6 +25,9 @@ mixin = "0.8.5"
 # Forge 上的光影模組，只對它的 API 編譯、不打包。
 oculus = "1.20.1-1.8.0"
 
+# 共用 mixin 使用的 MixinExtras；與 Fabric Loader 附帶的版本一致，Forge 1.20.1 沒有附帶，由 mod 以 jar-in-jar 附帶。
+mixinextras = "0.5.4"
+
 # Forge：執行相容範圍（mods.toml 的 Maven 版本範圍寫法）
 require-forge-minecraft = "[1.20.1,1.20.2)"
 require-forge-loader = "[47,)"
@@ -57,6 +60,8 @@ kotlinforforge = { group = "thedarkcolour", name = "kotlinforforge", version.ref
 kotlinforforge-lib = { group = "thedarkcolour", name = "kfflib", version.ref = "kotlinforforge" }
 mixin = { group = "org.spongepowered", name = "mixin", version.ref = "mixin" }
 oculus = { group = "maven.modrinth", name = "oculus", version.ref = "oculus" }
+mixinextras-common = { group = "io.github.llamalad7", name = "mixinextras-common", version.ref = "mixinextras" }
+mixinextras-forge = { group = "io.github.llamalad7", name = "mixinextras-forge", version.ref = "mixinextras" }
 
 # 開發執行時可選載入的相容測試模組
 mod-menu = { group = "maven.modrinth", name = "modmenu", version.ref = "mod-menu" }

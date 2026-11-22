@@ -80,7 +80,7 @@ interface ClientEvents {
     /**
      * 每一幀整個世界畫完、手上物品與介面還沒畫時；光影模組的陰影與後製也已完成，之後畫的東西不會再被加上光影。
      *
-     * 原版沒有這個時間點的事件，由載入器以 mixin 提供。
+     * 原版沒有這個時間點的事件，由共用的 mixin 經 [WorldRenderFinishedHook] 提供。
      *
      * @param listener 畫完時的處理。
      */

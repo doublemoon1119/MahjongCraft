@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.fabric.mixin.client;
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.mixin.client;
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.PlayerDecisionHudController;
 import net.minecraft.client.gui.Gui;
@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * 補足 Minecraft 1.20.1 Fabric 缺少可排序 HUD layer API 的限制。
+ * 在原版聊天欄之前繪製本 mod 的被動 HUD；原版沒有讓 mod 把畫面元素排在聊天欄之前的方式。
  *
  * <p>只在原版聊天欄繪製前轉交既有被動 HUD renderer，不修改或取消任何原版聊天行為。</p>
  */
