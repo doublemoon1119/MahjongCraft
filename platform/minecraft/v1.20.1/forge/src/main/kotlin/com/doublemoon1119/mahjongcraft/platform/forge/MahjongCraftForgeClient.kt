@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.forge.loader.ForgeClientRegistra
 import com.doublemoon1119.mahjongcraft.platform.forge.loader.ForgeExtensionDiscovery
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.bootstrap.MahjongCraftClientBootstrap
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.ClientAiCharacterPreviewRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigScreenController
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.tableprop.ClientTablePropPreviewRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.BuiltInNativeMahjongClientExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.NativeMahjongClientExtensionBootstrap
@@ -16,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientModel
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModPackets
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import net.minecraftforge.client.ConfigScreenHandler
 import net.minecraftforge.client.event.EntityRenderersEvent
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent
 import net.minecraftforge.client.event.RegisterColorHandlersEvent
@@ -23,6 +25,7 @@ import net.minecraftforge.client.event.RegisterKeyMappingsEvent
 import net.minecraftforge.eventbus.api.Event
 import net.minecraftforge.eventbus.api.EventPriority
 import net.minecraftforge.eventbus.api.IEventBus
+import net.minecraftforge.fml.ModLoadingContext
 import org.koin.core.context.GlobalContext
 
 /**
@@ -48,6 +51,7 @@ internal object MahjongCraftForgeClient {
         ClientModels.install(ForgeBakedModelLookup)
         val registrar = ForgeClientRegistrar().also { it.attach(modBus) }
         ForgeClientEvents.attach(modBus)
+        registerConfigScreen()
         // 以最高優先序接收，啟動流程交出的登記才能在同一個事件中套用。
         listOf(
             RegisterColorHandlersEvent.Item::class.java,
@@ -55,6 +59,13 @@ internal object MahjongCraftForgeClient {
             EntityRenderersEvent.RegisterRenderers::class.java,
             RegisterKeyMappingsEvent::class.java,
         ).forEach { eventType -> startOn(modBus, eventType, registrar) }
+    }
+
+    /** 模組清單中本 mod 的「設定」按鈕開啟客戶端設定，返回時回到模組清單；設定畫面在按下時才取得。 */
+    private fun registerConfigScreen() {
+        ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory::class.java) {
+            ConfigScreenHandler.ConfigScreenFactory { _, parent -> GlobalContext.get().get<MahjongClientConfigScreenController>().screen(parent) }
+        }
     }
 
     /**
