@@ -95,10 +95,6 @@ val externalLibraries = listOf(
     "${libs.exposed.core.get()}",
     "${libs.exposed.jdbc.get()}",
     "${libs.sqlite.jdbc.get()}",
-    // Koin 執行時使用的函式庫；jar-in-jar 只附帶直接宣告的函式庫，因此另外列出。
-    "co.touchlab:stately-concurrency-jvm:${libs.versions.stately.get()}",
-    "co.touchlab:stately-concurrent-collections-jvm:${libs.versions.stately.get()}",
-    "co.touchlab:stately-strict-jvm:${libs.versions.stately.get()}",
 )
 
 dependencies {
@@ -183,6 +179,8 @@ tasks.check {
 // 因此把函式庫解開放進只供開發執行的 source set，與本體同屬一個 mod。正式 JAR 不含這些檔案。
 val devLibraries = configurations.create("devLibraries") {
     isCanBeConsumed = false
+    // Koin 的多平台依賴資料列出 stately，但 Koin 的 JVM 類別沒有使用它，執行時不需要。
+    exclude(group = "co.touchlab")
 }
 dependencies {
     projectLibraries.forEach { devLibraries(project(it)) { excludeKotlinProvidedByForge() } }

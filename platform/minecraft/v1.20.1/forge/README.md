@@ -26,9 +26,10 @@ and the shader shadow check. The client side is not implemented yet, so the adap
 - Forge refuses two JARs that contain the same package. `verifyNoSplitPackages`, part of `check`, fails the
   build when the mod JAR and an embedded JAR share one; the compile-time Koin hints are left out of the mod
   JAR for this reason.
-- jar-in-jar embeds only the libraries declared directly, so libraries those need, such as Koin's
-  `stately` libraries, are declared as well. `verifyEmbeddedLibraries`, part of `check`, fails the build
-  when the mod JAR does not embed, at the same version, every external library a development run resolves.
+- jar-in-jar embeds only the libraries declared directly, so a library those need at run time must be declared
+  as well. `verifyEmbeddedLibraries`, part of `check`, fails the build when the mod JAR does not embed, at the
+  same version, every external library a development run resolves. Development runs leave out Koin's
+  `stately` libraries: Koin's multiplatform metadata lists them, but its JVM classes do not use them.
 - Development runs load the libraries from an unpacked copy in the `devLibraries` source set, which belongs
   to the same mod: libraries on the launcher class path cannot see the Kotlin provided by Kotlin for Forge.
 - ModDevGradle does not add the dependencies of mod dependencies, so the Kotlin for Forge API used by the
