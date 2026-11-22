@@ -128,6 +128,9 @@ dependencies {
     modCompileOnly(libs.modMenu1201)
     // 光影的陰影判斷只對 Iris 的 API 編譯；沒有安裝 Iris 時不會載入 Iris 的類別。
     modCompileOnly(libs.iris1201)
+    // 程式不使用 Sodium。Iris 有改動 Sodium 類別的 mixin，Loom 重新映射 Iris 時要看得到 Sodium 才能改寫它們的目標；
+    // 重新映射的結果在編譯與開發執行之間共用，編譯設定少了 Sodium 會讓開發執行時的 Iris 找不到目標而啟動失敗。
+    modCompileOnly(libs.sodium1201)
     // 開發專用的 debug 模組只在開發執行時載入；不進入測試、不打包。它自己依賴本體，所以不帶入它的依賴。
     localRuntime(project(path = ":minecraft_v1.20.1_fabric-debug", configuration = "namedElements")) {
         isTransitive = false
