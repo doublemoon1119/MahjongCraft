@@ -3,10 +3,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationEffectEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongVisualEffectKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.entity.EntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.WinCelebrationEffectSteps
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.server.level.ServerLevel
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
@@ -14,8 +14,8 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
 /**
- * 胡牌慶祝視覺 entity 的 Fabric 排程器，結構比照 [DecisionTimerScheduler]：用
- * [ServerTickEvents.END_SERVER_TICK] 驅動程序內收尾任務；[schedule] 當下就在胡牌張位置生成
+ * 胡牌慶祝視覺 entity 的排程器，結構比照 [DecisionTimerScheduler]：用
+ * 伺服器 tick 結束事件驅動程序內收尾任務；[schedule] 當下就在胡牌張位置生成
  * [WinCelebrationEffectEntity]，由 entity 自己依絕對時間等待開始、跟隨目標與到期，不再持續生成無法
  * 精確控制尺寸的原版粒子。
  *
@@ -104,10 +104,14 @@ class WinCelebrationEffectScheduler(private val spawnGateway: EntitySpawnGateway
         }
     }
 
-    /** 向 Fabric 登記每 tick 一次的效果排程驅動；只能呼叫一次。 */
-    fun registerEvents() {
-        ServerTickEvents.END_SERVER_TICK.register {
-            if (tasksByTargetTileId.isEmpty()) return@register
+    /**
+     * 登記每 tick 一次的效果排程驅動；只能呼叫一次。
+     *
+     * @param events 登記事件用的伺服器事件來源。
+     */
+    fun registerEvents(events: ServerEvents) {
+        events.onServerTickEnd {
+            if (tasksByTargetTileId.isEmpty()) return@onServerTickEnd
             val iterator = tasksByTargetTileId.values.iterator()
             while (iterator.hasNext()) {
                 val task = iterator.next()

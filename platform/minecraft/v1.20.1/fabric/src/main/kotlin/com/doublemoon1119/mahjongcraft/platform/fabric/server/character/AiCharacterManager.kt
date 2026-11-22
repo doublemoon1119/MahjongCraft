@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSeatRiders
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.SeatedParticipantSources
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.character.AiCharacterActivationDiagnostics
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.character.AiCharacterDiscardLook
@@ -30,9 +31,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationReg
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatAnchor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatOffset
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
-import net.fabricmc.fabric.api.networking.v1.EntityTrackingEvents
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
@@ -86,19 +84,23 @@ class AiCharacterManager internal constructor(
     /** 剛成立的公開棄牌目標及失效 tick。 */
     private val recentDiscards = mutableMapOf<Uuid, AiCharacterDiscardLook>()
 
-    /** 登記 tick 及卸載回呼；只執行目前 session 的工作。 */
-    fun registerEvents() {
-        EntityTrackingEvents.START_TRACKING.register { entity, player ->
+    /**
+     * 登記 tick 及卸載回呼；只執行目前 session 的工作。
+     *
+     * @param events 登記事件用的伺服器事件來源。
+     */
+    fun registerEvents(events: ServerEvents) {
+        events.onStartTracking { entity, player ->
             if (bindings.findEntity(entity) != null) tracking.send(entity, player, true)
         }
-        ServerTickEvents.END_SERVER_TICK.register { server ->
+        events.onServerTickEnd { server ->
             if (activeServer === server) {
                 ticks++
                 if (ticks % RECONCILE_INTERVAL == 0L) reconcile()
             }
         }
-        ServerChunkEvents.CHUNK_UNLOAD.register { world, chunk ->
-            if (activeServer !== world.server) return@register
+        events.onChunkUnload { world, chunk ->
+            if (activeServer !== world.server) return@onChunkUnload
             bindings.coordinator.keys().forEach { key ->
                 val actor = bindings.coordinator.find(key) ?: return@forEach
                 val location = tableLocations.get(key.tableId)?.location

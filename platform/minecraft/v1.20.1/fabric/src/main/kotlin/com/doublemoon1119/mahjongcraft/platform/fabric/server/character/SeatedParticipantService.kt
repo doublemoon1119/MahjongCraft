@@ -29,7 +29,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.RoomDiscover
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.SeatedParticipantObservation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.SeatedParticipantSources
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.SeatedParticipantStartPreflight
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.TrackingPlayers
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.character.ParticipantRemovalPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.AuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.SeatedParticipantPresence
@@ -41,10 +43,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
-import net.fabricmc.fabric.api.networking.v1.EntityTrackingEvents
-import net.fabricmc.fabric.api.networking.v1.PlayerLookup
 import net.minecraft.network.chat.contents.TranslatableContents
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
@@ -138,29 +136,33 @@ internal class SeatedParticipantService(
         broadcaster.requestRefresh(tableId)
     }
 
-    /** 登記固定頻率的有界收斂，不等待所有房間。 */
-    fun registerEvents() {
-        EntityTrackingEvents.START_TRACKING.register { entity, _ -> refreshTrackedPreview(entity) }
-        EntityTrackingEvents.STOP_TRACKING.register { entity, _ -> refreshTrackedPreview(entity) }
-        ServerEntityEvents.ENTITY_UNLOAD.register { entity, world ->
-            if (server !== world.server || !ParticipantRemovalPolicy.isConfirmedDeparture(entity.removalReason)) return@register
-            val state = persistence.characterSnapshot() ?: return@register
+    /**
+     * 登記固定頻率的有界收斂，不等待所有房間。
+     *
+     * @param events 登記事件用的伺服器事件來源。
+     */
+    fun registerEvents(events: ServerEvents) {
+        events.onStartTracking { entity, _ -> refreshTrackedPreview(entity) }
+        events.onStopTracking { entity, _ -> refreshTrackedPreview(entity) }
+        events.onEntityUnload { entity, world ->
+            if (server !== world.server || !ParticipantRemovalPolicy.isConfirmedDeparture(entity.removalReason)) return@onEntityUnload
+            val state = persistence.characterSnapshot() ?: return@onEntityUnload
             val identity = RoomParticipantIdentity(SeatedParticipantSources.WORLD_ENTITY, entity.uuid.toKotlinUuid())
-            val tableId = state.claimedParticipants[identity] ?: return@register
-            val waiting = state.authoritative.rooms[tableId] ?: return@register
+            val tableId = state.claimedParticipants[identity] ?: return@onEntityUnload
+            val waiting = state.authoritative.rooms[tableId] ?: return@onEntityUnload
             departures[identity] = waiting.admission.instanceId
         }
-        ServerTickEvents.END_SERVER_TICK.register { current ->
-            if (server !== current || activeScan.load() != null || current.tickCount % SCAN_INTERVAL != 0) return@register
-            val state = persistence.characterSnapshot() ?: return@register
+        events.onServerTickEnd { current ->
+            if (server !== current || activeScan.load() != null || current.tickCount % SCAN_INTERVAL != 0) return@onServerTickEnd
+            val state = persistence.characterSnapshot() ?: return@onServerTickEnd
             departures.entries.removeAll { (identity, instance) ->
                 val tableId = state.claimedParticipants[identity]
                 state.authoritative.rooms[tableId]?.admission?.instanceId != instance
             }
             val rooms = state.authoritative.rooms.values.toList()
-            if (rooms.isEmpty()) return@register
+            if (rooms.isEmpty()) return@onServerTickEnd
             val scan = Any()
-            if (!activeScan.compareAndSet(null, scan)) return@register
+            if (!activeScan.compareAndSet(null, scan)) return@onServerTickEnd
             val batch = List(min(ROOMS_PER_SCAN, rooms.size)) { rooms[(cursor + it) % rooms.size] }
             if (rooms.isNotEmpty()) cursor = (cursor + batch.size) % rooms.size
             val job = scope.launch(dispatchers.main, start = CoroutineStart.LAZY) {
@@ -269,7 +271,7 @@ internal class SeatedParticipantService(
         for ((identity, member) in room.admission.excludedParticipants) {
             if (server !== current || identity.sourceId != SeatedParticipantSources.WORLD_ENTITY) continue
             val entity = host.serverLevel().getEntity(identity.subjectId.toJavaUuid()) ?: continue
-            if (!entity.isAlive || host !in PlayerLookup.tracking(entity)) continue
+            if (!entity.isAlive || host !in TrackingPlayers.of(entity)) continue
             val eligible = describe(entity, room.hostId) as? ParticipantCheck.Eligible ?: continue
             val envelope = persistence.characterSnapshot() ?: return
             val previous = envelope.characters?.participant(member) ?: continue

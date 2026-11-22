@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.observer
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.server.observer.ObserverSnapshotBroadcaster
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency.SessionBackgroundScope
 import kotlinx.coroutines.launch
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 
 /**
  * 驅動 [ObserverSnapshotBroadcaster]：server session 期間訂閱權威狀態，並在每次 tick 結束時檢查觀察者
@@ -27,10 +27,14 @@ class ObserverSnapshotBroadcastService(
     /** 是否已有一次 tick 觸發的推送尚未結束。 */
     private var broadcastInProgress = false
 
-    /** 註冊每次 tick 結束時的觀察者檢查。 */
-    fun registerEvents() {
-        ServerTickEvents.END_SERVER_TICK.register {
-            if (broadcastInProgress) return@register
+    /**
+     * 註冊每次 tick 結束時的觀察者檢查。
+     *
+     * @param events 登記事件用的伺服器事件來源。
+     */
+    fun registerEvents(events: ServerEvents) {
+        events.onServerTickEnd {
+            if (broadcastInProgress) return@onServerTickEnd
             broadcastInProgress = true
             scope.launch(dispatchers.main) {
                 try {

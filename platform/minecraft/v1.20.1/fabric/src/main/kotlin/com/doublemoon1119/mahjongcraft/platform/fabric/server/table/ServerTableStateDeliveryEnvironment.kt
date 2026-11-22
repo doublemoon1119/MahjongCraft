@@ -2,10 +2,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.TrackingPlayers
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableStateDeliveryEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
-import net.fabricmc.fabric.api.networking.v1.PlayerLookup
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.Registries
 import net.minecraft.resources.ResourceKey
@@ -39,7 +39,7 @@ internal class ServerTableStateDeliveryEnvironment(
         check(server.isSameThread) { "Table observer capture must run on the server thread" }
         val dimension = ResourceLocation.tryParse(entry.location.dimensionId) ?: return emptySet()
         val world = server.getLevel(ResourceKey.create(Registries.DIMENSION, dimension)) ?: return emptySet()
-        return PlayerLookup.tracking(world, BlockPos(entry.location.x, entry.location.y, entry.location.z))
+        return TrackingPlayers.of(world, BlockPos(entry.location.x, entry.location.y, entry.location.z))
             .mapTo(mutableSetOf()) { it.uuid.toKotlinUuid() }
     }
 }

@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.LocatedMahjongTable
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.development.TableEndListeners
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.MahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.OrphanedTableCleanupResult
@@ -24,10 +25,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationReg
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
-import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
-import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.level.LevelAccessor
 import net.minecraft.world.level.block.state.BlockState
 import kotlin.uuid.Uuid
@@ -76,17 +75,20 @@ class TableLifecycleService(
     /** 記錄麻將桌破壞政策判斷與清理入口。 */
     private val logger = mahjongCraftLogger(TableLifecycleService::class)
 
-    /** 註冊 Fabric 玩家破壞前後事件。 */
-    fun registerEvents() {
-        PlayerBlockBreakEvents.BEFORE.register { world, player, pos, state, _ ->
-            val serverPlayer = player as? ServerPlayer
-            if (state.block is MahjongTableStructureBlock && serverPlayer != null && dataStatus.rejectIfUnavailable(serverPlayer)) {
-                return@register false
+    /**
+     * 註冊玩家破壞方塊前後的事件。
+     *
+     * @param events 登記事件用的伺服器事件來源。
+     */
+    fun registerEvents(events: ServerEvents) {
+        events.onBeforePlayerBreakBlock { world, player, pos, state ->
+            if (state.block is MahjongTableStructureBlock && dataStatus.rejectIfUnavailable(player)) {
+                return@onBeforePlayerBreakBlock false
             }
             canBreak(world, pos, state)
         }
-        PlayerBlockBreakEvents.AFTER.register { _, _, _, _, blockEntity ->
-            val table = blockEntity?.let(MahjongTableLookup::of) ?: return@register
+        events.onAfterPlayerBreakBlock { _, _, _, _, blockEntity ->
+            val table = blockEntity?.let(MahjongTableLookup::of) ?: return@onAfterPlayerBreakBlock
             onPlayerBroken(table.tableId)
         }
     }

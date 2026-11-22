@@ -9,15 +9,15 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimeoutService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.DecisionTickProcessor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.GameAdvanceRotation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 
 /**
- * 以 Minecraft server tick 驅動權威決策逾時、自動操作心跳與時間同步的 Fabric adapter。
+ * 以 Minecraft server tick 驅動權威決策逾時、自動操作心跳與時間同步的 adapter。
  *
  * 各對局的自動推進經由 [GameAdvanceRotation] 分散到一秒內的各個 tick：每局每秒請求推進一次，但不同對局在不同 tick 請求，
  * 避免所有對局擠在同一個 tick。推進本身由 [AutomatedAdvanceManager] 在各局自己的協程中進行，這裡只請求、不等待，因此
@@ -65,11 +65,15 @@ class DecisionTimerScheduler(
     /** 避免上一輪尚未完成時重複啟動處理；處理中的 tick 只標記待推進。 */
     private var isProcessing = false
 
-    /** 向 Fabric 登記每 tick 的推進與每秒一次的決策計時處理。 */
-    fun registerEvents() {
-        ServerTickEvents.END_SERVER_TICK.register {
+    /**
+     * 登記每 tick 的推進與每秒一次的決策計時處理。
+     *
+     * @param events 登記事件用的伺服器事件來源。
+     */
+    fun registerEvents(events: ServerEvents) {
+        events.onServerTickEnd {
             processor.advanceTick()
-            if (isProcessing) return@register
+            if (isProcessing) return@onServerTickEnd
             isProcessing = true
             appScope.launch(dispatchers.main) {
                 try {

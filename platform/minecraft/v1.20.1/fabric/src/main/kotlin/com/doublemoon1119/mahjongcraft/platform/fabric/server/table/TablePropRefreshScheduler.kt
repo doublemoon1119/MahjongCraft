@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.ServerThreadGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TablePropRefreshQueue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.prop.TablePropSearchArea
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.Registries
 import net.minecraft.resources.ResourceKey
@@ -29,9 +29,13 @@ class TablePropRefreshScheduler(
     /** 目前接收刷新的伺服器 session。 */
     private var activeServer: MinecraftServer? = null
 
-    /** 註冊伺服器 tick 與 session 生命週期。 */
-    fun registerEvents() {
-        ServerTickEvents.END_SERVER_TICK.register { server ->
+    /**
+     * 註冊伺服器 tick 與 session 生命週期。
+     *
+     * @param events 登記事件用的伺服器事件來源。
+     */
+    fun registerEvents(events: ServerEvents) {
+        events.onServerTickEnd { server ->
             if (activeServer === server) drain(server)
         }
     }

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableLookup
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.OrphanedTableCleanupService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableCleanupQueue
@@ -16,9 +17,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationReg
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.core.BlockPos
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
@@ -59,15 +57,19 @@ class TableLocationValidationService(
     /** 本次 tick 邊界要處理的 BlockEntity 載入工作。 */
     private var readyTableLoads = mutableListOf<PendingTableLoad>()
 
-    /** 註冊 Fabric BlockEntity、chunk 與 server tick 事件。 */
-    fun registerEvents() {
-        ServerBlockEntityEvents.BLOCK_ENTITY_LOAD.register { blockEntity, world ->
+    /**
+     * 註冊 BlockEntity 載入、chunk 載入與 server tick 事件。
+     *
+     * @param events 登記事件用的伺服器事件來源。
+     */
+    fun registerEvents(events: ServerEvents) {
+        events.onBlockEntityLoad { blockEntity, world ->
             if (MahjongTableLookup.of(blockEntity) != null) nextTableLoads.add(PendingTableLoad(world, blockEntity.blockPos))
         }
-        ServerChunkEvents.CHUNK_LOAD.register { world, chunk ->
+        events.onChunkLoad { world, chunk ->
             validationQueue.enqueueChunk(world, chunk.pos.x, chunk.pos.z)
         }
-        ServerTickEvents.END_SERVER_TICK.register(::onEndServerTick)
+        events.onServerTickEnd(::onEndServerTick)
     }
 
     /**

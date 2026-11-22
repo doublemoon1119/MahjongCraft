@@ -2,17 +2,17 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.time
 
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerThreadCoroutineDispatcher
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import kotlinx.coroutines.DisposableHandle
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import java.util.*
 import kotlin.math.ceil
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * [MonotonicClock] 的 Fabric 實作，以 server tick 計數換算經過時間，而不是真實系統時間。
+ * 以 server tick 計數換算經過時間的 [MonotonicClock]，而不是真實系統時間。
  *
- * Minecraft 單機版按 ESC 開啟暫停選單時，`ServerTickEvents.END_SERVER_TICK` 不會觸發，這裡的計數
+ * Minecraft 單機版按 ESC 開啟暫停選單時，伺服器 tick 不會前進，這裡的計數
  * 因此自然停止前進——這正是玩家決策計時器需要的語意：暫停期間不該算進思考時間。專用伺服器沒有
  * 這種暫停機制，tick 本來就會持續以正常速度前進，行為跟真實時間等價，不受影響。
  *
@@ -27,12 +27,18 @@ class TickMonotonicClock : MonotonicClock {
 
     /**
      * 註冊 tick 事件；只增不減，跨對局／跨桌共用同一個遞增計數，符合 [MonotonicClock] 只能同一
-     * session 內比較的約定。每個 tick 順便觸發到期的 [scheduleAfter] 工作。 */
-    fun registerEvents() {
-        ServerTickEvents.END_SERVER_TICK.register {
-            elapsedTicks++
-            runDueTasks()
-        }
+     * session 內比較的約定。每個 tick 順便觸發到期的 [scheduleAfter] 工作。
+     *
+     * @param events 登記事件用的伺服器事件來源。
+     */
+    fun registerEvents(events: ServerEvents) {
+        events.onServerTickEnd { advanceTick() }
+    }
+
+    /** 前進一個 tick，並執行此時到期的 [scheduleAfter] 工作。 */
+    internal fun advanceTick() {
+        elapsedTicks++
+        runDueTasks()
     }
 
     override fun now(): Duration = TICK_DURATION * elapsedTicks.toDouble()

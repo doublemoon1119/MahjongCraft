@@ -3,11 +3,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.room
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency.SessionBackgroundScope
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.DimensionChunkKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlinx.coroutines.launch
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents
 import kotlin.uuid.Uuid
 
 /**
@@ -32,16 +32,20 @@ class MahjongLobbyInfoLifecycleService(
     /** 上一次處理過的房間，用來只更新內容真的有變的桌子。 */
     private var lastRoomsById: Map<Uuid, Room> = emptyMap()
 
-    /** 註冊區塊載入時的補畫。 */
-    fun registerEvents() {
-        ServerChunkEvents.CHUNK_LOAD.register { world, chunk ->
+    /**
+     * 註冊區塊載入時的補畫。
+     *
+     * @param events 登記事件用的伺服器事件來源。
+     */
+    fun registerEvents(events: ServerEvents) {
+        events.onChunkLoad { world, chunk ->
             val key = DimensionChunkKey(
                 dimensionId = world.dimension().location().toString(),
                 chunkX = chunk.pos.x,
                 chunkZ = chunk.pos.z,
             )
             val tableIds = locations.getByChunk(key).map { it.tableId }
-            if (tableIds.isEmpty()) return@register
+            if (tableIds.isEmpty()) return@onChunkLoad
             scope.launch(dispatchers.main) {
                 val rooms = store.state.value.rooms
                 tableIds.forEach { tableId -> refresh(tableId, rooms[tableId]) }

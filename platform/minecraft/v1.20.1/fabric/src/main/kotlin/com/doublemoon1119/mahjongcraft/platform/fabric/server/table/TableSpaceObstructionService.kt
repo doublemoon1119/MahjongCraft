@@ -3,13 +3,13 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSpaceCellDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSpaceObstructionDelivery
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSpaceObstructionPayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSpaceObstructionSync
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.Registries
 import net.minecraft.resources.ResourceKey
@@ -41,10 +41,14 @@ class TableSpaceObstructionService(
     /** 已送出的標示與收件玩家。 */
     private val sync = TableSpaceObstructionSync()
 
-    /** 註冊伺服器 tick 事件。 */
-    fun registerEvents() {
-        ServerTickEvents.END_SERVER_TICK.register { server ->
-            if (activeServer !== server) return@register
+    /**
+     * 註冊伺服器 tick 事件。
+     *
+     * @param events 登記事件用的伺服器事件來源。
+     */
+    fun registerEvents(events: ServerEvents) {
+        events.onServerTickEnd { server ->
+            if (activeServer !== server) return@onServerTickEnd
             elapsedTicks += 1
             if (elapsedTicks % CHECK_INTERVAL_TICKS == 0L) refresh(server)
         }

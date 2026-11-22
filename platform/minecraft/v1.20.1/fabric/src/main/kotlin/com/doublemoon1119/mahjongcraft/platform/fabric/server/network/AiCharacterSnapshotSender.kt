@@ -9,10 +9,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.SeatedParticipantSources
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.excludedAppearancesFor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.toPayload
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.TrackingPlayers
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.network.AiCharacterSnapshotDelivery
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.AuthoritativeStatePersistence
-import net.fabricmc.fabric.api.networking.v1.PlayerLookup
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.server.level.ServerPlayer
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -38,9 +38,13 @@ class AiCharacterSnapshotSender internal constructor(
     /** 補充追蹤狀態可在相同權威版本下改變，交付版本因此獨立單調增加。 */
     private var deliveryRevision = 0L
 
-    /** 登記斷線時的連線快取清理。 */
-    fun registerEvents() {
-        ServerPlayConnectionEvents.DISCONNECT.register { handler, _ -> sent.keys.removeAll { it.first === handler } }
+    /**
+     * 登記斷線時的連線快取清理。
+     *
+     * @param events 登記事件用的伺服器事件來源。
+     */
+    fun registerEvents(events: ServerEvents) {
+        events.onPlayerDisconnect { player -> sent.keys.removeAll { it.first === player.connection } }
     }
 
     /** 伺服器停止時清除前一世界快取。 */
@@ -81,7 +85,7 @@ class AiCharacterSnapshotSender internal constructor(
             val actor = bindings.find(tableId, member)?.entity ?: identities[member]
                 ?.takeIf { it.sourceId == SeatedParticipantSources.WORLD_ENTITY }
                 ?.let { player.serverLevel().getEntity(it.subjectId.toJavaUuid()) }
-            actor?.takeIf { !it.isRemoved && it.level() === player.level() && player in PlayerLookup.tracking(it) }
+            actor?.takeIf { !it.isRemoved && it.level() === player.level() && player in TrackingPlayers.of(it) }
                 ?.let { member to it.uuid.toKotlinUuid() }
         }.toMap()
         val content = Sent(state.sessionId, game?.matchId, metadata != null, players, excluded, references)

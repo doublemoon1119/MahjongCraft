@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricClientModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricServerModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
+import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricServerEvents
 import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.FabricRuntimeMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.C2SChannel
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
@@ -117,14 +118,14 @@ class MahjongCraftMod : ModInitializer {
         ModEntities.register()
         ModAchievements.register()
         val characterSnapshots = koin.get<AiCharacterSnapshotSender>()
-        characterSnapshots.registerEvents()
+        characterSnapshots.registerEvents(FabricServerEvents)
         val aiCharacters = koin.get<AiCharacterManager>()
-        aiCharacters.registerEvents()
+        aiCharacters.registerEvents(FabricServerEvents)
         val participantPresence = koin.get<WorldParticipantPresenceService>()
-        participantPresence.registerEvents()
+        participantPresence.registerEvents(FabricServerEvents)
         val seatedParticipants = koin.get<SeatedParticipantService>()
-        seatedParticipants.registerEvents()
-        koin.get<AiSeatPlacementService>().registerEvents()
+        seatedParticipants.registerEvents(FabricServerEvents)
+        koin.get<AiSeatPlacementService>().registerEvents(FabricServerEvents)
         val tableLifecycleService = koin.get<TableLifecycleService>()
         val tableLocationValidation = koin.get<TableLocationValidationService>()
         val tablePropRefreshScheduler = koin.get<TablePropRefreshScheduler>()
@@ -135,16 +136,16 @@ class MahjongCraftMod : ModInitializer {
         )
         ModBlocks.register(seatService = koin.get<MahjongStoolSeatService>())
         ModItemGroups.register()
-        tableLifecycleService.registerEvents()
-        tableLocationValidation.registerEvents()
-        tablePropRefreshScheduler.registerEvents()
-        tableSpaceObstruction.registerEvents()
+        tableLifecycleService.registerEvents(FabricServerEvents)
+        tableLocationValidation.registerEvents(FabricServerEvents)
+        tablePropRefreshScheduler.registerEvents(FabricServerEvents)
+        tableSpaceObstruction.registerEvents(FabricServerEvents)
         val lobbyInfoLifecycle = koin.get<MahjongLobbyInfoLifecycleService>()
-        lobbyInfoLifecycle.registerEvents()
-        koin.get<DecisionTimerScheduler>().registerEvents()
-        koin.get<TickMonotonicClock>().registerEvents()
-        koin.get<WorldTickWaiter>().registerEvents()
-        koin.get<WinCelebrationEffectScheduler>().registerEvents()
+        lobbyInfoLifecycle.registerEvents(FabricServerEvents)
+        koin.get<DecisionTimerScheduler>().registerEvents(FabricServerEvents)
+        koin.get<TickMonotonicClock>().registerEvents(FabricServerEvents)
+        koin.get<WorldTickWaiter>().registerEvents(FabricServerEvents)
+        koin.get<WinCelebrationEffectScheduler>().registerEvents(FabricServerEvents)
         registerDecisionSelectionReceiver(koin)
 
         val serverHolder = koin.get<ServerHolder>()
@@ -168,8 +169,8 @@ class MahjongCraftMod : ModInitializer {
         val observerBroadcast = koin.get<ObserverSnapshotBroadcastService>()
         val committedFactsDispatcher = koin.get<CommittedFactsDispatcher>()
         val dataStatus = koin.get<MahjongDataStatus>()
-        mahjongTileCollisionService.registerEvents()
-        observerBroadcast.registerEvents()
+        mahjongTileCollisionService.registerEvents(FabricServerEvents)
+        observerBroadcast.registerEvents(FabricServerEvents)
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             dataStatus.clear()
             initializeServerConfig(configManager, mahjongTileCollisionService, server)
@@ -267,7 +268,7 @@ class MahjongCraftMod : ModInitializer {
         registerPlayerConnectionEvents(koin)
         koin.get<ServerConfigCommand>().register()
         historyCommand.register()
-        koin.get<HistoryQueryService>().register()
+        koin.get<HistoryQueryService>().register(FabricServerEvents)
         koin.get<RoomCommand>().register()
         koin.get<InGameCommand>().register()
         developmentTools.forEach { it.initialize(koin) }

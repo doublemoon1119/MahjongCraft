@@ -3,9 +3,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.observer
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.observer.service.ObserverAudienceSource
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.TrackingPlayers
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlinx.coroutines.withContext
-import net.fabricmc.fabric.api.networking.v1.PlayerLookup
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.Registries
 import net.minecraft.resources.ResourceKey
@@ -37,7 +37,7 @@ class ChunkTrackingObserverAudienceSource(
                 val dimension = ResourceLocation.tryParse(entry.location.dimensionId) ?: return@forEach
                 val world = server.getLevel(ResourceKey.create(Registries.DIMENSION, dimension)) ?: return@forEach
                 val position = BlockPos(entry.location.x, entry.location.y, entry.location.z)
-                val observerIds = PlayerLookup.tracking(world, position)
+                val observerIds = TrackingPlayers.of(world, position)
                     .mapTo(mutableSetOf()) { player -> player.uuid.toKotlinUuid() }
                 if (observerIds.isNotEmpty()) put(id, observerIds)
             }

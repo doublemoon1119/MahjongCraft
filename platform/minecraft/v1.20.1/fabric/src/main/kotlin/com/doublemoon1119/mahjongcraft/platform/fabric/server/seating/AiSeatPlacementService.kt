@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatPla
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.AiCharacterBindings
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.AiCharacterManager
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterBindingKey
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.C2SRateLimits
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.PlayerRequestRateLimiter
@@ -12,8 +13,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatItemPlacementCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatItemPlacementResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftSeatPlacementKeys
-import net.fabricmc.fabric.api.event.player.UseEntityCallback
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
@@ -52,12 +51,14 @@ internal class AiSeatPlacementService(
     /** 記錄提供者與接管，不輸出牌局私有資料。 */
     private val logger = mahjongCraftLogger(AiSeatPlacementService::class)
 
-    /** 在伺服器端處理原生實體互動；客戶端只負責輸入路由。 */
-    fun registerEvents() {
-        ServerPlayConnectionEvents.DISCONNECT.register { handler, _ -> limiter.forget(handler.player.uuid.toKotlinUuid()) }
-        UseEntityCallback.EVENT.register { player, world, hand, entity, _ ->
-            if (world !is ServerLevel || player !is ServerPlayer) InteractionResult.PASS else interact(player, world, hand, entity)
-        }
+    /**
+     * 在伺服器端處理原生實體互動；客戶端只負責輸入路由。
+     *
+     * @param events 登記事件用的伺服器事件來源。
+     */
+    fun registerEvents(events: ServerEvents) {
+        events.onPlayerDisconnect { player -> limiter.forget(player.uuid.toKotlinUuid()) }
+        events.onPlayerUseEntity(::interact)
     }
 
     /**

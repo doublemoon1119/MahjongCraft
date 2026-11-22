@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.entity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import net.minecraft.server.MinecraftServer
 
 /**
@@ -14,9 +14,13 @@ import net.minecraft.server.MinecraftServer
 class MahjongTileCollisionService(
     private val configState: MinecraftServerConfigState,
 ) {
-    /** 註冊 entity load callback，讓 chunk 載入與新放置牌張採用目前有效設定。 */
-    fun registerEvents() {
-        ServerEntityEvents.ENTITY_LOAD.register { entity, _ ->
+    /**
+     * 註冊 entity load callback，讓 chunk 載入與新放置牌張採用目前有效設定。
+     *
+     * @param events 登記事件用的伺服器事件來源。
+     */
+    fun registerEvents(events: ServerEvents) {
+        events.onEntityLoad { entity, _ ->
             if (entity is MahjongTileEntity) apply(entity, configState.current)
         }
     }

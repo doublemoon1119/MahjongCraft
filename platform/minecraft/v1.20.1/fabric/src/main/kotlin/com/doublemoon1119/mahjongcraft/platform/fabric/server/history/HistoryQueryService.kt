@@ -43,6 +43,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.toNetworkDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryQuerySettingsPayload
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.ClientRequestIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.HistoryQueryLimits
@@ -57,8 +58,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.toD
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import kotlin.uuid.Uuid
@@ -113,9 +112,13 @@ class HistoryQueryService(
         updates = configState.updates.map { it.history.queryMinimumInterval }.distinctUntilChanged(),
     )
 
-    /** 註冊有界要求與斷線清理，不提供歷史寫入操作。 */
-    fun register() {
-        ServerLifecycleEvents.SERVER_STARTED.register { server ->
+    /**
+     * 註冊有界要求與斷線清理，不提供歷史寫入操作。
+     *
+     * @param events 登記事件用的伺服器事件來源。
+     */
+    fun register(events: ServerEvents) {
+        events.onServerStarted { server ->
             settingsServer = server
             settingsPublisher.start { interval ->
                 if (settingsServer === server) {
@@ -125,20 +128,20 @@ class HistoryQueryService(
                 }
             }
         }
-        ServerLifecycleEvents.SERVER_STOPPED.register { server ->
+        events.onServerStopped { server ->
             if (settingsServer === server) {
                 settingsServer = null
                 settingsPublisher.stop()
             }
         }
-        ServerPlayConnectionEvents.JOIN.register { handler, _, _ -> sendQuerySettings(handler.player) }
+        events.onPlayerJoin { player -> sendQuerySettings(player) }
         MahjongChannels.historyListRequest.registerServerReceiver(json, ::receiveList)
         MahjongChannels.historySummaryRequest.registerServerReceiver(json, ::receiveSummary)
         MahjongChannels.historyRuleSettingsRequest.registerServerReceiver(json, ::receiveRuleSettings)
         MahjongChannels.historyArchiveStatusRequest.registerServerReceiver(json, ::receiveArchiveStatus)
         MahjongChannels.historyRoundEventsRequest.registerServerReceiver(json, ::receiveRoundEvents)
         MahjongChannels.historyRoundStateRequest.registerServerReceiver(json, ::receiveRoundState)
-        ServerPlayConnectionEvents.DISCONNECT.register { handler, _ -> admission.remove(handler.player.uuid.toKotlinUuid()) }
+        events.onPlayerDisconnect { player -> admission.remove(player.uuid.toKotlinUuid()) }
     }
 
     /**

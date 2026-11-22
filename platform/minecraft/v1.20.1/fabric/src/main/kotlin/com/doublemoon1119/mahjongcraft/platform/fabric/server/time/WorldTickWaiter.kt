@@ -1,10 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.time
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.time.WorldTickWaitQueue
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
 import kotlin.coroutines.resume
@@ -25,14 +24,18 @@ class WorldTickWaiter {
     /** 是否已登記 tick 與停止回呼。 */
     private var registered = false
 
-    /** 註冊世界 tick 與伺服器停止事件；同一個實例只註冊一次。 */
-    fun registerEvents() {
+    /**
+     * 註冊世界 tick 與伺服器停止事件；同一個實例只註冊一次。
+     *
+     * @param events 登記事件用的伺服器事件來源。
+     */
+    fun registerEvents(events: ServerEvents) {
         synchronized(lock) {
             if (registered) return
             registered = true
         }
-        ServerTickEvents.END_SERVER_TICK.register(::onEndServerTick)
-        ServerLifecycleEvents.SERVER_STOPPING.register(::onServerStopping)
+        events.onServerTickEnd(::onEndServerTick)
+        events.onServerStopping(::onServerStopping)
     }
 
     /**

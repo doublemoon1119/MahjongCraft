@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.character
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterTargetPayload
-import net.fabricmc.fabric.api.networking.v1.PlayerLookup
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.TrackingPlayers
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
@@ -25,7 +25,7 @@ internal class AiCharacterTracking(
     fun broadcast(entity: Entity, bound: Boolean) {
         val world = entity.level() as? ServerLevel ?: return
         if (world.getEntity(entity.uuid) !== entity) return
-        PlayerLookup.tracking(entity).forEach { player -> send(entity, player, bound) }
+        TrackingPlayers.of(entity).forEach { player -> send(entity, player, bound) }
     }
 
     /**

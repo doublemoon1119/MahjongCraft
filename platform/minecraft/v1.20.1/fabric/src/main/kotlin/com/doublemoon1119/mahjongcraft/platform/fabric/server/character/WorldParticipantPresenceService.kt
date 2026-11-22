@@ -8,13 +8,13 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortHandler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatingSessionFactory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.WorldParticipantPresenceMonitor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.AuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableInteractionReach
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.server.MinecraftServer
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -51,12 +51,16 @@ internal class WorldParticipantPresenceService(
     /** 目前的檢查工作，伺服器停止時會取消。 */
     private var job: Job? = null
 
-    /** 登記每秒一次的檢查，同時間只執行一份工作。 */
-    fun registerEvents() {
-        ServerTickEvents.END_SERVER_TICK.register { current ->
-            if (server !== current || current.tickCount % CHECK_INTERVAL != 0) return@register
+    /**
+     * 登記每秒一次的檢查，同時間只執行一份工作。
+     *
+     * @param events 登記事件用的伺服器事件來源。
+     */
+    fun registerEvents(events: ServerEvents) {
+        events.onServerTickEnd { current ->
+            if (server !== current || current.tickCount % CHECK_INTERVAL != 0) return@onServerTickEnd
             val token = Any()
-            if (!pending.compareAndSet(null, token)) return@register
+            if (!pending.compareAndSet(null, token)) return@onServerTickEnd
             val task = scope.launch(dispatchers.main, start = CoroutineStart.LAZY) {
                 try {
                     val monitor = WorldParticipantPresenceMonitor(
