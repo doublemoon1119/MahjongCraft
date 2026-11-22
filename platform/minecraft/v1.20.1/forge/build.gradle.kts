@@ -48,6 +48,12 @@ repositories {
 includeResourcesOf(":minecraft_common", "src/jvmMain")
 includeSourcesOf(":minecraft_v1.20.1_mod")
 
+// Forge 把部分原版寫法標成過時，要 mod 改用 Forge 的寫法；與 Fabric 共用的程式只能用原版寫法，用原版編譯時沒有過時警告。
+// 因此本模組的編譯不顯示過時警告，共用程式真正的過時寫法仍由 :minecraft_v1.20.1_mod 與 Fabric 的編譯提醒。
+kotlin.compilerOptions {
+    freeCompilerArgs.addAll("-Xwarning-level=DEPRECATION:disabled", "-Xwarning-level=OVERRIDE_DEPRECATION:disabled")
+}
+
 legacyForge {
     version = mc1201.versions.forge.get()
     // 與 :minecraft_v1.20.1_mod 共用同一份 access transformer；它也隨 mod 模組的資源一起打包，Forge 執行時讀同一份。

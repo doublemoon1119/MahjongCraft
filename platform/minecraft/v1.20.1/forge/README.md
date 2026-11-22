@@ -63,6 +63,18 @@ mixins:
 The shared mixins use MixinExtras, which Forge 1.20.1 does not ship; the mod embeds it with jar-in-jar. ModDevGradle does not add `MixinConfigs` to the JAR manifest,
 so the `jar` task adds it; production Forge ignores mixin configurations missing from the manifest.
 
+## Deprecation Warnings
+
+Forge marks several vanilla APIs as deprecated to steer mods toward Forge's own, such as the
+`ResourceLocation` constructors and the `BuiltInRegistries` fields. The code shared with Fabric must use
+the vanilla APIs, and compiling it against vanilla Minecraft reports no deprecation. This module's Kotlin
+compilation therefore disables the deprecation warnings; real deprecations in the shared code are still
+reported by the [Minecraft 1.20.1 mod](../mod/README.md) and Fabric builds.
+
+The setting also hides deprecated Forge APIs used by this module's own code. When changing that code,
+compile once without the `-Xwarning-level` arguments in `build.gradle.kts` and check the warnings for files
+under this module.
+
 ## Running
 
 ```shell
