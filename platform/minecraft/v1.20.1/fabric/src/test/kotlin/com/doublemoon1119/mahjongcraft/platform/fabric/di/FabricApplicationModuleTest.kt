@@ -57,6 +57,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClie
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.LinkageIsolatingExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.MahjongCraftExtensions
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.NativeExtensionRegistries
+import com.doublemoon1119.mahjongcraft.platform.fabric.loader.IrisShadowPassProbe
 import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.RuntimeMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerLifecycleAppCoroutineScope
@@ -94,6 +95,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileSet
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.BlockUseInterception
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.LoaderPlatform
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ShadowPassProbe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.GameActionCandidateResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.PlayerDecisionPromptFactory
@@ -469,6 +471,7 @@ class FabricApplicationModuleTest {
         koin.get<GameFlowCoordinator>()
         koin.get<ClientMahjongStateStore>()
         koin.get<ClientDecisionTimerStateStore>()
+        assertIs<IrisShadowPassProbe>(koin.get<ShadowPassProbe>())
         assertSame(koin.get<ClientDecisionTimerStateStore>(), koin.get<ClientDecisionTimerStateStore>())
         assertSame(koin.get<RuntimeMetadata>(), koin.get<RuntimeMetadata>())
         assertSame(koin.get<MinecraftEnvironment>(), koin.get<MinecraftEnvironment>())
