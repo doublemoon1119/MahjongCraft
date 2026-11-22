@@ -36,6 +36,13 @@ interface ClientEvents {
     fun onClientTickEnd(listener: (Minecraft) -> Unit)
 
     /**
+     * 用戶端連上伺服器、可以收送封包之後。
+     *
+     * @param listener 連線時的處理。
+     */
+    fun onClientJoin(listener: () -> Unit)
+
+    /**
      * 用戶端與伺服器的連線結束時。
      *
      * @param listener 斷線時的處理。

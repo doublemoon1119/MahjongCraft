@@ -10,8 +10,7 @@ import kotlin.uuid.toJavaUuid
 /**
  * 持有目前運行中的 [MinecraftServer]，供 Koin 綁定的 `GameEventPublisher`/`RoomEventPublisher` 用
  * [Uuid] 查找對應的 [ServerPlayer] 送封包，也供 [ServerThreadCoroutineDispatcher]
- * 把協程排程丟回伺服器主執行緒。set/clear 時機由 [MahjongCraftMod] 掛在
- * `ServerLifecycleEvents.SERVER_STARTED`/`SERVER_STOPPING`。
+ * 把協程排程丟回伺服器主執行緒。set/clear 時機由 [MahjongCraftMod] 掛在伺服器啟動完成與準備關閉的事件上。
  */
 class ServerHolder {
     /** 一次發布伺服器與啟動身分，避免讀取到兩次啟動混合的資料。 */

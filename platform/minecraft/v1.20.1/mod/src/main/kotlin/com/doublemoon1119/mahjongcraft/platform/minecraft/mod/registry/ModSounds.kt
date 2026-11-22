@@ -11,9 +11,16 @@ import net.minecraft.sounds.SoundEvent
 
 /** MahjongCraft 內建聲音事件的集中登記點；可直接播放的實例在 [register] 登記完成後才能讀取。 */
 object ModSounds {
+    /** 登記完成後可讀取 [tileDiscardLand] 的項目。 */
     private lateinit var tileDiscardLandEntry: RegisteredEntry<SoundEvent>
+
+    /** 登記完成後可讀取 [diceLand] 的項目。 */
     private lateinit var diceLandEntry: RegisteredEntry<SoundEvent>
+
+    /** 登記完成後可讀取 [scoringStickPlace] 的項目。 */
     private lateinit var scoringStickPlaceEntry: RegisteredEntry<SoundEvent>
+
+    /** 登記完成後可讀取 [rulerPlace] 的項目。 */
     private lateinit var rulerPlaceEntry: RegisteredEntry<SoundEvent>
 
     /** 自由放置麻將牌時播放的落桌聲音。 */

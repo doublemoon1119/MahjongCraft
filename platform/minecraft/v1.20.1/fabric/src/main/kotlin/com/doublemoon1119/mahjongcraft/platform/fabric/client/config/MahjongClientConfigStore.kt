@@ -7,11 +7,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongPresentationVisibilityConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.LoaderPlatform
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigManager
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
-import net.fabricmc.loader.api.FabricLoader
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -32,23 +32,20 @@ import java.nio.file.StandardCopyOption
  *
  * 跟 server 設定不同的是：client 設定可由指令與 GUI 更新。[save] 會在同目錄建立暫存檔並原子替換，
  * 同時只更新受控欄位的值，保留模板註解與人工排版。
+ *
+ * @property resolvePath 取得設定檔位置；正式環境由載入器的設定檔資料夾決定，測試使用隔離路徑。
  */
-class MahjongClientConfigStore() {
-    /** 測試時覆寫的隔離設定路徑；正式執行環境維持 `null`。 */
-    private var pathOverride: Path? = null
+class MahjongClientConfigStore private constructor(private val resolvePath: () -> Path) {
+    /**
+     * 建立使用載入器設定檔資料夾的儲存區。
+     *
+     * @param platform 提供設定檔資料夾的載入器資訊。
+     */
+    constructor(platform: LoaderPlatform) : this({ defaultConfigPath(platform.configDirectory) })
 
     /** [path] 供檔案 I/O 使用。 */
     val path: Path
-        get() = pathOverride ?: defaultConfigPath()
-
-    /**
-     * 建立使用指定路徑的測試儲存區，不讀取 Fabric 執行環境。
-     *
-     * @param path 測試隔離的設定檔位置。
-     */
-    private constructor(path: Path) : this() {
-        pathOverride = path
-    }
+        get() = resolvePath()
 
     /** 記錄設定檔保存失敗的診斷來源。 */
     private val logger = mahjongCraftLogger(MahjongClientConfigStore::class)
@@ -234,8 +231,13 @@ class MahjongClientConfigStore() {
     }
 
     internal companion object {
-        /** 正式 client config 的預設路徑。 */
-        fun defaultConfigPath(): Path = FabricLoader.getInstance().configDir
+        /**
+         * 正式 client config 的預設路徑。
+         *
+         * @param configDirectory 載入器的設定檔資料夾。
+         * @return 設定檔資料夾內的 MahjongCraft client config 位置。
+         */
+        fun defaultConfigPath(configDirectory: Path): Path = configDirectory
             .resolve(MinecraftModMetadata.MOD_ID)
             .resolve("client.toml")
 
@@ -245,7 +247,7 @@ class MahjongClientConfigStore() {
          * @param path 測試隔離的設定檔位置。
          * @return 使用指定位置的新儲存區。
          */
-        fun createForTesting(path: Path): MahjongClientConfigStore = MahjongClientConfigStore(path)
+        fun createForTesting(path: Path): MahjongClientConfigStore = MahjongClientConfigStore { path }
 
         /** 打包於 Minecraft common resources 的帶註解預設 template。 */
         const val DEFAULT_TEMPLATE_RESOURCE: String = "/mahjongcraft/client-config-default.toml"

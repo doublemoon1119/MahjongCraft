@@ -38,6 +38,10 @@ object FabricServerEvents : ServerEvents {
         ServerLifecycleEvents.SERVER_STOPPED.register(listener)
     }
 
+    override fun onServerTickStart(listener: (MinecraftServer) -> Unit) {
+        ServerTickEvents.START_SERVER_TICK.register(listener)
+    }
+
     override fun onServerTickEnd(listener: (MinecraftServer) -> Unit) {
         ServerTickEvents.END_SERVER_TICK.register(listener)
     }

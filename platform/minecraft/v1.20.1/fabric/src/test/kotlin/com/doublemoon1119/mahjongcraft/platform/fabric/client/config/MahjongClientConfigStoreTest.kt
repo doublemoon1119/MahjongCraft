@@ -14,6 +14,17 @@ import kotlin.test.assertTrue
 
 /** 驗證 client config 的註解保留、原子套用與失敗保護。 */
 class MahjongClientConfigStoreTest {
+    /** 正式設定檔放在載入器設定檔資料夾內的 MahjongCraft 子資料夾。 */
+    @Test
+    fun `default path is inside the loader config directory`() {
+        val configDirectory = Path.of("game", "config")
+
+        assertEquals(
+            expected = configDirectory.resolve("mahjongcraft").resolve("client.toml"),
+            actual = MahjongClientConfigStore.defaultConfigPath(configDirectory),
+        )
+    }
+
     /** 缺少檔案時應建立正式模板並載入預設值。 */
     @Test
     fun `load creates the annotated default template`() = withTemporaryConfig { store, path ->

@@ -120,15 +120,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import net.fabricmc.api.ClientModInitializer
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper
-import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Minecraft
 import net.minecraft.resources.ResourceLocation
-import net.minecraft.server.packs.PackType
-import net.minecraft.server.packs.resources.ResourceManager
 import org.koin.core.context.GlobalContext
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
@@ -158,13 +152,9 @@ class MahjongCraftModClient : ClientModInitializer {
         characterPreviews.initialize(FabricClientEvents)
         koin.get<ClientTablePropPreviews>().initialize(FabricClientEvents)
         val portraits = koin.get<PlayerPortraitRenderer>()
-        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(object : SimpleSynchronousResourceReloadListener {
-            override fun getFabricId(): ResourceLocation = ResourceLocation("mahjongcraft", "character_portrait_resources")
-
-            override fun onResourceManagerReload(manager: ResourceManager) {
-                Minecraft.getInstance().execute { portraits.clearResources() }
-            }
-        })
+        FabricClientEvents.onClientResourceReload(ResourceLocation("mahjongcraft", "character_portrait_resources")) {
+            Minecraft.getInstance().execute { portraits.clearResources() }
+        }
         ClientAiSeatInteraction.register(
             registry = koin.get(),
             failures = koin.get(),
@@ -400,7 +390,7 @@ class MahjongCraftModClient : ClientModInitializer {
             handler = automaticControlUpdateCoordinator::applyResult,
         )
         koin.get<PauseAwareClientMonotonicClock>().registerEvents(FabricClientEvents)
-        ClientTickEvents.END_CLIENT_TICK.register { automaticControlUpdateCoordinator.checkTimeout() }
+        FabricClientEvents.onClientTickEnd { automaticControlUpdateCoordinator.checkTimeout() }
         FabricClientRegistrar.registerEntityRenderer(ModEntities.mahjongBot, ::MahjongBotEntityRenderer)
         FabricClientRegistrar.registerEntityRenderer(ModEntities.mahjongDice, ::MahjongDiceEntityRenderer)
         FabricClientRegistrar.registerEntityRenderer(ModEntities.mahjongSoundTimeline, ::MahjongSoundTimelineEntityRenderer)
@@ -471,14 +461,14 @@ class MahjongCraftModClient : ClientModInitializer {
             }
         }
         MahjongChannels.decisionSubmissionResult.registerClientReceiver(json, decisionHudController::handleSubmissionResult)
-        ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
+        FabricClientEvents.onClientJoin {
             sessionLifecycle.beginSession()
             MahjongChannels.requestSnapshot.sendToServer(json, Unit)
             // 伺服器端的自動整理手牌偏好純記憶體、不撐過伺服器重啟（見 HandSortPreferenceStore KDoc），
             // 每次加入世界都重送一次 client 本地記得的偏好，確保重啟後不需要玩家手動再切一次。
             autoSortHandPreferenceService.restoreToServer()
         }
-        ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
+        FabricClientEvents.onClientDisconnect {
             sessionLifecycle.endSession()
         }
     }

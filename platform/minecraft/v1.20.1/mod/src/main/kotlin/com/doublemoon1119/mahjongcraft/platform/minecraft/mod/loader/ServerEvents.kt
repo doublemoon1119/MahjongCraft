@@ -42,6 +42,13 @@ interface ServerEvents {
     fun onServerStopped(listener: (MinecraftServer) -> Unit)
 
     /**
+     * 每個伺服器 tick 開始、處理任何世界之前。
+     *
+     * @param listener 收到即將跑一個 tick 的伺服器。
+     */
+    fun onServerTickStart(listener: (MinecraftServer) -> Unit)
+
+    /**
      * 每個伺服器 tick 處理完所有世界之後。
      *
      * @param listener 收到剛跑完一個 tick 的伺服器。

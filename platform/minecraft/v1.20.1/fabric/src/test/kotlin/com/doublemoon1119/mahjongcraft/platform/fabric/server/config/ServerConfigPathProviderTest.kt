@@ -1,15 +1,16 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.config
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricLoaderPlatform
 import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** [FabricLoaderServerConfigPathProvider] 的環境分流與安全顯示路徑測試。 */
+/** [LoaderServerConfigPathProvider] 的環境分流與安全顯示路徑測試。 */
 class ServerConfigPathProviderTest {
     /** 單人整合伺服器應將設定放入目前世界存檔。 */
     @Test
     fun `test integrated server uses world config location`() {
-        val location = FabricLoaderServerConfigPathProvider().resolve(
+        val location = LoaderServerConfigPathProvider(FabricLoaderPlatform).resolve(
             isDedicated = false,
             worldSavePath = Path.of("world-save"),
             loaderConfigPath = Path.of("loader-config"),
@@ -22,7 +23,7 @@ class ServerConfigPathProviderTest {
     /** 專用伺服器應將設定放入 Fabric Loader 的共用設定目錄。 */
     @Test
     fun `test dedicated server uses loader config location`() {
-        val location = FabricLoaderServerConfigPathProvider().resolve(
+        val location = LoaderServerConfigPathProvider(FabricLoaderPlatform).resolve(
             isDedicated = true,
             worldSavePath = Path.of("world-save"),
             loaderConfigPath = Path.of("loader-config"),

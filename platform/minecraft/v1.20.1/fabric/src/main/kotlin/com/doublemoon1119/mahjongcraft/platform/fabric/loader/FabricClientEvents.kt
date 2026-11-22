@@ -41,6 +41,10 @@ object FabricClientEvents : ClientEvents {
         ClientTickEvents.END_CLIENT_TICK.register(listener)
     }
 
+    override fun onClientJoin(listener: () -> Unit) {
+        ClientPlayConnectionEvents.JOIN.register { _, _, _ -> listener() }
+    }
+
     override fun onClientDisconnect(listener: () -> Unit) {
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> listener() }
     }

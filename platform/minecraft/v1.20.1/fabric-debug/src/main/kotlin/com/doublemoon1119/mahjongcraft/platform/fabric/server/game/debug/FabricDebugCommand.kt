@@ -78,8 +78,8 @@ class FabricDebugCommand internal constructor(
      */
     fun register(events: ServerEvents) {
         if (!minecraftEnvironment.isDevelopment) return
-        entityLifecycle.registerTicking()
-        stressController.registerTicking()
+        entityLifecycle.registerTicking(events)
+        stressController.registerTicking(events)
         events.onRegisterCommands { dispatcher ->
             dispatcher.register(build())
         }

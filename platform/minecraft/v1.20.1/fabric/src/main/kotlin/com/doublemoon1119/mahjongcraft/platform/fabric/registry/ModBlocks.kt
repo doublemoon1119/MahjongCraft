@@ -24,10 +24,19 @@ import net.minecraft.world.level.material.PushReaction
 
 /** MahjongCraft 方塊與方塊實體的集中登記點；各項目在 [register] 登記完成後才能讀取。 */
 object ModBlocks {
+    /** 登記完成後可讀取 [woodenMahjongTable] 的項目。 */
     private lateinit var woodenMahjongTableEntry: RegisteredEntry<Block>
+
+    /** 登記完成後可讀取 [concreteMahjongTable] 的項目。 */
     private lateinit var concreteMahjongTableEntry: RegisteredEntry<Block>
+
+    /** 登記完成後可讀取 [woodenMahjongStool] 的項目。 */
     private lateinit var woodenMahjongStoolEntry: RegisteredEntry<Block>
+
+    /** 登記完成後可讀取 [plasticMahjongStool] 的項目。 */
     private lateinit var plasticMahjongStoolEntry: RegisteredEntry<Block>
+
+    /** 登記完成後可讀取 [mahjongTableBlockEntity] 的項目。 */
     private lateinit var mahjongTableBlockEntityEntry: RegisteredEntry<BlockEntityType<MahjongTableBlockEntity>>
 
     /** 統一木製外觀、深綠桌面與四腳碰撞 profile 的麻將桌。 */

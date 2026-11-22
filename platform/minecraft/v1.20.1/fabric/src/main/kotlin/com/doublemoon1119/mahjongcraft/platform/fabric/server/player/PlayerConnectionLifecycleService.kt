@@ -87,7 +87,7 @@ class PlayerConnectionLifecycleService(
      *
      * 客戶端重新登入後沒有任何既有快照——牌局管理的麻將牌 entity 在收到快照前恆定顯示
      * [UNKNOWN_TILE_ASSET_KEY] 占位貼圖（見 `MahjongTileEntity` KDoc）。由客戶端在「剛加入、還沒收到
-     * 任何快照」時主動送出請求，伺服器依當下查得到的狀態重建；不在 `ServerPlayConnectionEvents.JOIN`
+     * 任何快照」時主動送出請求，伺服器依當下查得到的狀態重建；不在玩家加入事件
      * 當下猜測時機，因為那一刻 membership／對局查詢可能還沒就緒，手牌會一直停在 unknown，直到下一次
      * 遊戲事件（例如右鍵桌子觸發 [MahjongTableRoomService.interact]）才補上。畫面資料本身由觀察者推送
      * 送達，這裡只確保倉庫內容是最新的。

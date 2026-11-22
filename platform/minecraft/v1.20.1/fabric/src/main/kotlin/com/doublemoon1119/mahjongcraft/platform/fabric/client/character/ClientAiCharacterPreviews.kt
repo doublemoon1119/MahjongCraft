@@ -8,10 +8,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.C
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.CharacterPreviewImage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.RoomFigureArea
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.LoaderPlatform
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSource
-import net.fabricmc.api.EnvType
-import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.ReportedException
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
@@ -28,11 +27,13 @@ import kotlin.uuid.toJavaUuid
  * @property registry 客戶端自己的能力登記。
  * @property renderer 獨立模型建立與頭像擷取。
  * @property failures 擴充錯誤的隔離規則。
+ * @property platform 確認只在用戶端初始化的載入器資訊。
  */
 internal class ClientAiCharacterPreviews(
     private val registry: ClientAiCharacterPreviewRegistry,
     private val renderer: NativeCharacterPreviewRenderer,
     private val failures: ExtensionFailurePolicy,
+    private val platform: LoaderPlatform,
 ) {
     /** 擴充失敗診斷，不含牌局資訊。 */
     private val logger = mahjongCraftLogger(ClientAiCharacterPreviews::class)
@@ -67,7 +68,7 @@ internal class ClientAiCharacterPreviews(
      * @param events 登記用戶端事件用的事件來源。
      */
     fun initialize(events: ClientEvents) {
-        check(FabricLoader.getInstance().environmentType == EnvType.CLIENT)
+        check(platform.isClient)
         events.onClientTickEnd { client ->
             if (world !== client.level) clear()
             world = client.level

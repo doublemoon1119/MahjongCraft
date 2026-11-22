@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support
 
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.entity.Entity
 
@@ -19,12 +19,14 @@ class DebugPreviewEntityLifecycle {
     private val cleanupQueue = DebugPreviewCleanupQueue()
 
     /**
-     * 向 Fabric 登記每 tick 一次的清除驅動。
+     * 登記每 tick 一次的清除驅動。
      *
      * 只由 debug root 在註冊指令樹時呼叫一次；各 command family 不自行重複登記 server tick callback。
+     *
+     * @param events 登記事件用的伺服器事件來源。
      */
-    fun registerTicking() {
-        ServerTickEvents.END_SERVER_TICK.register { cleanupQueue.discardExpired() }
+    fun registerTicking(events: ServerEvents) {
+        events.onServerTickEnd { cleanupQueue.discardExpired() }
     }
 
     /**

@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecision
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionReporter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.FabricHistoryGenerationRuntimeFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.StressTestHistorySource
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.GameAdvanceRotation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryDatabasePath
@@ -26,8 +27,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.server.MinecraftServer
 import java.io.IOException
 import java.time.LocalDateTime
@@ -121,16 +120,20 @@ class StressTestController(
     /** 是否已經過至少一個 tick 的開始。 */
     private var started = false
 
-    /** 註冊 tick 量測、逐 tick 推進與伺服器關閉時的清理。 */
-    fun registerTicking() {
-        ServerTickEvents.START_SERVER_TICK.register {
+    /**
+     * 註冊 tick 量測、逐 tick 推進與伺服器關閉時的清理。
+     *
+     * @param events 登記事件用的伺服器事件來源。
+     */
+    fun registerTicking(events: ServerEvents) {
+        events.onServerTickStart {
             val now = TimeSource.Monotonic.markNow()
             tickInterval = tickStart.elapsedNow().takeIf { started }
             tickStart = now
             started = true
         }
-        ServerTickEvents.END_SERVER_TICK.register(::onTickEnd)
-        ServerLifecycleEvents.SERVER_STOPPING.register {
+        events.onServerTickEnd(::onTickEnd)
+        events.onServerStopping {
             runBlocking {
                 stopRun(StressStopReason.SERVER_STOPPING)
                 environment?.closeAndDelete()

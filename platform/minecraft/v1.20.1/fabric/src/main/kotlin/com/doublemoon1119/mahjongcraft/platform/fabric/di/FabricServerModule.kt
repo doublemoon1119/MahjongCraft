@@ -32,7 +32,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.SeatedPa
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.WorldParticipantPresenceService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerLifecycleAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerThreadCoroutineDispatchers
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricLoaderServerConfigPathProvider
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.LoaderServerConfigPathProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.ServerConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.EntityMahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
@@ -179,7 +179,7 @@ val fabricServerModule = module {
     single<ServerThreadCoroutineDispatchers>() bind CoroutineDispatchers::class
     single<SessionBackgroundScope>()
 
-    single<FabricLoaderServerConfigPathProvider>() bind ServerConfigPathProvider::class
+    single<LoaderServerConfigPathProvider>() bind ServerConfigPathProvider::class
     single<ServerConfigCommand>()
     single<ServerConfigManager>()
 

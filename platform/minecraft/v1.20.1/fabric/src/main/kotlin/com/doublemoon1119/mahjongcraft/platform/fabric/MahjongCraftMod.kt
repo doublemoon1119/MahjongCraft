@@ -16,10 +16,11 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricClientModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricServerModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
+import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricLoaderPlatform
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricModRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricPacketTransport
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricServerEvents
-import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.FabricRuntimeMetadata
+import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.RuntimeMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.C2SChannel
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
@@ -87,11 +88,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import net.fabricmc.api.EnvType
 import net.fabricmc.api.ModInitializer
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
-import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.server.MinecraftServer
 import org.koin.core.Koin
 import org.koin.core.context.startKoin
@@ -176,7 +173,7 @@ class MahjongCraftMod : ModInitializer {
         val dataStatus = koin.get<MahjongDataStatus>()
         mahjongTileCollisionService.registerEvents(FabricServerEvents)
         observerBroadcast.registerEvents(FabricServerEvents)
-        ServerLifecycleEvents.SERVER_STARTED.register { server ->
+        FabricServerEvents.onServerStarted { server ->
             dataStatus.clear()
             initializeServerConfig(configManager, mahjongTileCollisionService, server)
             // 房間與對局無法讀取時不中斷啟動：世界照常進入，權威狀態拒絕寫入，依賴它的服務本次不啟動。
@@ -228,7 +225,7 @@ class MahjongCraftMod : ModInitializer {
                 seatedParticipants.startSession(server)
             }
         }
-        ServerLifecycleEvents.SERVER_STOPPING.register {
+        FabricServerEvents.onServerStopping {
             characterSnapshots.clear()
             seatedParticipants.stopSession()
             participantPresence.stopSession()
@@ -278,7 +275,7 @@ class MahjongCraftMod : ModInitializer {
         koin.get<InGameCommand>().register(FabricServerEvents)
         developmentTools.forEach { it.initialize(koin, FabricServerEvents) }
 
-        logger.info(koin.get<FabricRuntimeMetadata>().initializationMessage())
+        logger.info(koin.get<RuntimeMetadata>().initializationMessage())
     }
 
     /**
@@ -303,7 +300,7 @@ class MahjongCraftMod : ModInitializer {
      *
      * @return 對應執行環境的 Koin 依賴容器。
      */
-    private fun startDependencyInjection(): Koin = if (FabricLoader.getInstance().environmentType == EnvType.CLIENT) {
+    private fun startDependencyInjection(): Koin = if (FabricLoaderPlatform.isClient) {
         startKoin { modules(fabricServerModule, fabricClientModule) }.koin
     } else {
         startKoin { modules(fabricServerModule) }.koin
@@ -347,12 +344,12 @@ class MahjongCraftMod : ModInitializer {
     private fun registerPlayerConnectionEvents(koin: Koin) {
         val lifecycleService = koin.get<PlayerConnectionLifecycleService>()
         val dataStatus = koin.get<MahjongDataStatus>()
-        ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
-            dataStatus.notifyOnJoin(handler.player)
-            if (dataStatus.isMahjongAvailable) lifecycleService.onConnected(handler.player.uuid.toKotlinUuid())
+        FabricServerEvents.onPlayerJoin { player ->
+            dataStatus.notifyOnJoin(player)
+            if (dataStatus.isMahjongAvailable) lifecycleService.onConnected(player.uuid.toKotlinUuid())
         }
-        ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
-            val playerId = handler.player.uuid.toKotlinUuid()
+        FabricServerEvents.onPlayerDisconnect { player ->
+            val playerId = player.uuid.toKotlinUuid()
             C2SChannel.forgetPlayer(playerId)
             if (dataStatus.isMahjongAvailable) lifecycleService.onDisconnected(playerId)
         }

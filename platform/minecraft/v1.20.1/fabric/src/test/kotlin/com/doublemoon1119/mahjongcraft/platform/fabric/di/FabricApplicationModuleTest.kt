@@ -55,7 +55,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.Client
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
-import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.FabricRuntimeMetadata
+import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.RuntimeMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerLifecycleAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.ServerConfigCommand
@@ -437,7 +437,7 @@ class FabricApplicationModuleTest {
         assertSame(koin.get<AuthoritativeStateStore>(), koin.get<AuthoritativeStateStore>())
         assertSame(koin.get<GameRepository>(), koin.get<GameRepository>())
         assertSame(koin.get<ServerLifecycleAppCoroutineScope>(), koin.get<ServerLifecycleAppCoroutineScope>())
-        assertSame(koin.get<FabricRuntimeMetadata>(), koin.get<FabricRuntimeMetadata>())
+        assertSame(koin.get<RuntimeMetadata>(), koin.get<RuntimeMetadata>())
         assertSame(koin.get<MinecraftEnvironment>(), koin.get<MinecraftEnvironment>())
         assertSame(koin.get<TableLocationRegistry>(), koin.get<TableLocationRegistry>())
         assertSame(koin.get<MinecraftServerConfigState>(), koin.get<MinecraftServerConfigState>())
@@ -462,7 +462,7 @@ class FabricApplicationModuleTest {
         koin.get<ClientMahjongStateStore>()
         koin.get<ClientDecisionTimerStateStore>()
         assertSame(koin.get<ClientDecisionTimerStateStore>(), koin.get<ClientDecisionTimerStateStore>())
-        assertSame(koin.get<FabricRuntimeMetadata>(), koin.get<FabricRuntimeMetadata>())
+        assertSame(koin.get<RuntimeMetadata>(), koin.get<RuntimeMetadata>())
         assertSame(koin.get<MinecraftEnvironment>(), koin.get<MinecraftEnvironment>())
         val presentation = koin.get<MinecraftPresentationRegistries>()
         assertSame(koin.get<AiStrategyDisplayNameRegistry>(), presentation.aiStrategyDisplayNameRegistry)

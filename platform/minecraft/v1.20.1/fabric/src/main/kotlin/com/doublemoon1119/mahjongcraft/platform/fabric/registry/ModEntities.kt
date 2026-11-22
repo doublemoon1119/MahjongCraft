@@ -32,108 +32,126 @@ import net.minecraft.world.entity.EntityType
 
 /** MahjongCraft 實體型別的集中登記點；各型別在 [register] 登記完成後才能讀取。 */
 object ModEntities {
+    /** 登記完成後可讀取 [mahjongSoundTimeline] 的項目。 */
     private lateinit var mahjongSoundTimelineEntry: RegisteredEntry<EntityType<MahjongSoundTimelineEntity>>
 
     /** 無形且可持久化的單次聲音時間線 entity type。 */
     val mahjongSoundTimeline: EntityType<MahjongSoundTimelineEntity>
         get() = mahjongSoundTimelineEntry.get()
 
+    /** 登記完成後可讀取 [mahjongDice] 的項目。 */
     private lateinit var mahjongDiceEntry: RegisteredEntry<EntityType<MahjongDiceEntity>>
 
     /** 麻將骰子 entity type。 */
     val mahjongDice: EntityType<MahjongDiceEntity>
         get() = mahjongDiceEntry.get()
 
+    /** 登記完成後可讀取 [diceRollPresentation] 的項目。 */
     private lateinit var diceRollPresentationEntry: RegisteredEntry<EntityType<DiceRollPresentationEntity>>
 
     /** 擲骰聚合結果面板 entity type。 */
     val diceRollPresentation: EntityType<DiceRollPresentationEntity>
         get() = diceRollPresentationEntry.get()
 
+    /** 登記完成後可讀取 [mahjongTile] 的項目。 */
     private lateinit var mahjongTileEntry: RegisteredEntry<EntityType<MahjongTileEntity>>
 
     /** 麻將牌 entity type。 */
     val mahjongTile: EntityType<MahjongTileEntity>
         get() = mahjongTileEntry.get()
 
+    /** 登記完成後可讀取 [tablePropTile] 的項目。 */
     private lateinit var tablePropTileEntry: RegisteredEntry<EntityType<TablePropTileEntity>>
 
     /** 公開桌面展示牌的獨立實體類型。 */
     val tablePropTile: EntityType<TablePropTileEntity>
         get() = tablePropTileEntry.get()
 
+    /** 登記完成後可讀取 [mahjongTileSelectionConfirm] 的項目。 */
     private lateinit var mahjongTileSelectionConfirmEntry: RegisteredEntry<EntityType<MahjongTileSelectionConfirmEntity>>
 
     /** 多選選牌確認面板 entity type。 */
     val mahjongTileSelectionConfirm: EntityType<MahjongTileSelectionConfirmEntity>
         get() = mahjongTileSelectionConfirmEntry.get()
 
+    /** 登記完成後可讀取 [mahjongScoringStick] 的項目。 */
     private lateinit var mahjongScoringStickEntry: RegisteredEntry<EntityType<MahjongScoringStickEntity>>
 
     /** 麻將點棒 entity type。 */
     val mahjongScoringStick: EntityType<MahjongScoringStickEntity>
         get() = mahjongScoringStickEntry.get()
 
+    /** 登記完成後可讀取 [mahjongRuler] 的項目。 */
     private lateinit var mahjongRulerEntry: RegisteredEntry<EntityType<MahjongRulerEntity>>
 
     /** 放在方塊上的牌尺 entity type。 */
     val mahjongRuler: EntityType<MahjongRulerEntity>
         get() = mahjongRulerEntry.get()
 
+    /** 登記完成後可讀取 [mahjongRoundInfo] 的項目。 */
     private lateinit var mahjongRoundInfoEntry: RegisteredEntry<EntityType<MahjongRoundInfoEntity>>
 
     /** 桌面中央局況顯示 entity type。 */
     val mahjongRoundInfo: EntityType<MahjongRoundInfoEntity>
         get() = mahjongRoundInfoEntry.get()
 
+    /** 登記完成後可讀取 [mahjongPlayerInfo] 的項目。 */
     private lateinit var mahjongPlayerInfoEntry: RegisteredEntry<EntityType<MahjongPlayerInfoEntity>>
 
     /** 桌級玩家公開資訊 entity type。 */
     val mahjongPlayerInfo: EntityType<MahjongPlayerInfoEntity>
         get() = mahjongPlayerInfoEntry.get()
 
+    /** 登記完成後可讀取 [mahjongLobbyInfo] 的項目。 */
     private lateinit var mahjongLobbyInfoEntry: RegisteredEntry<EntityType<MahjongLobbyInfoEntity>>
 
     /** 等待中遊戲提示 entity type。 */
     val mahjongLobbyInfo: EntityType<MahjongLobbyInfoEntity>
         get() = mahjongLobbyInfoEntry.get()
 
+    /** 登記完成後可讀取 [winCelebrationEffect] 的項目。 */
     private lateinit var winCelebrationEffectEntry: RegisteredEntry<EntityType<WinCelebrationEffectEntity>>
 
     /** 胡牌慶祝視覺效果 entity type。 */
     val winCelebrationEffect: EntityType<WinCelebrationEffectEntity>
         get() = winCelebrationEffectEntry.get()
 
+    /** 登記完成後可讀取 [winCelebrationShowcase] 的項目。 */
     private lateinit var winCelebrationShowcaseEntry: RegisteredEntry<EntityType<WinCelebrationShowcaseEntity>>
 
     /** 役種加碼共享舞台 entity type。 */
     val winCelebrationShowcase: EntityType<WinCelebrationShowcaseEntity>
         get() = winCelebrationShowcaseEntry.get()
 
+    /** 登記完成後可讀取 [exhaustiveDrawSettlementPresentation] 的項目。 */
     private lateinit var exhaustiveDrawSettlementPresentationEntry: RegisteredEntry<EntityType<ExhaustiveDrawSettlementPresentationEntity>>
 
     /** 統一流局結算排行舞台 entity type。 */
     val exhaustiveDrawSettlementPresentation: EntityType<ExhaustiveDrawSettlementPresentationEntity>
         get() = exhaustiveDrawSettlementPresentationEntry.get()
 
+    /** 登記完成後可讀取 [winSettlementPresentation] 的項目。 */
     private lateinit var winSettlementPresentationEntry: RegisteredEntry<EntityType<WinSettlementPresentationEntity>>
 
     /** 胡牌詳情與最終排行舞台 entity type。 */
     val winSettlementPresentation: EntityType<WinSettlementPresentationEntity>
         get() = winSettlementPresentationEntry.get()
 
+    /** 登記完成後可讀取 [matchSettlementPresentation] 的項目。 */
     private lateinit var matchSettlementPresentationEntry: RegisteredEntry<EntityType<MatchSettlementPresentationEntity>>
 
     /** 終局最終排行舞台 entity type。 */
     val matchSettlementPresentation: EntityType<MatchSettlementPresentationEntity>
         get() = matchSettlementPresentationEntry.get()
 
+    /** 登記完成後可讀取 [mahjongStoolSeat] 的項目。 */
     private lateinit var mahjongStoolSeatEntry: RegisteredEntry<EntityType<MahjongStoolSeatEntity>>
 
     /** 麻將凳的隱形座位 entity type。 */
     val mahjongStoolSeat: EntityType<MahjongStoolSeatEntity>
         get() = mahjongStoolSeatEntry.get()
 
+    /** 登記完成後可讀取 [mahjongBot] 的項目。 */
     private lateinit var mahjongBotEntry: RegisteredEntry<EntityType<MahjongBotEntity>>
 
     /** 不寫入區塊存檔的麻將機器人；由角色生命週期恢復。 */

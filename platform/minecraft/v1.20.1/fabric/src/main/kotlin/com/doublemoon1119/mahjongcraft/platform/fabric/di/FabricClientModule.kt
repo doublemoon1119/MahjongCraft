@@ -65,6 +65,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.Publ
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientAutomaticControlStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.table.ClientTableSpaceObstructionStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.LoaderPlatform
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import org.koin.dsl.bind
@@ -106,7 +107,7 @@ val fabricClientModule = module {
     single<MahjongHandbookScreenController>()
     single<GuideScreenCommand>()
     single<GuideScreenController>()
-    single<MahjongClientConfigStore>()
+    single { MahjongClientConfigStore(get<LoaderPlatform>()) }
     single<MahjongHudPreviewRenderer>()
 
     single<ClientDecisionPromptStore>()

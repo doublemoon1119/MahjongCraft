@@ -3,11 +3,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.tableprop
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.CharacterPreviewCache
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.LoaderPlatform
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropKindDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropTarget
-import net.fabricmc.api.EnvType
-import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.ReportedException
 import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.world.entity.Entity
@@ -18,10 +17,12 @@ import kotlin.coroutines.cancellation.CancellationException
  *
  * @property registry 客戶端自己的桌上物件預覽登記。
  * @property failures 擴充錯誤的隔離規則。
+ * @property platform 確認只在用戶端初始化的載入器資訊。
  */
 internal class ClientTablePropPreviews(
     private val registry: ClientTablePropPreviewRegistry,
     private val failures: ExtensionFailurePolicy,
+    private val platform: LoaderPlatform,
 ) {
     /** 擴充失敗診斷，不含牌局資訊。 */
     private val logger = mahjongCraftLogger(ClientTablePropPreviews::class)
@@ -50,7 +51,7 @@ internal class ClientTablePropPreviews(
      * @param events 登記用戶端事件用的事件來源。
      */
     fun initialize(events: ClientEvents) {
-        check(FabricLoader.getInstance().environmentType == EnvType.CLIENT)
+        check(platform.isClient)
         events.onClientTickEnd { client ->
             if (world !== client.level) clear()
             world = client.level
