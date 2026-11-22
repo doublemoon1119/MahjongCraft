@@ -19,9 +19,8 @@ and the shader shadow check. The client side is not implemented yet, so the adap
 
 - Kotlin for Forge provides the Kotlin standard library, kotlin-reflect, kotlinx-coroutines and
   kotlinx-serialization at run time, so the mod does not bundle them.
-- The other libraries, including the core modules, are embedded with jar-in-jar. Kotlin multiplatform
-  libraries are declared with their `-jvm` coordinates, because ModDevGradle cannot identify the
-  redirected variant. Embedded JARs lose their Java module descriptors, so a library such as
+- The other libraries in the shared bundled library list, including the core modules, are embedded with
+  jar-in-jar. Embedded external libraries lose their Java module descriptors, so a library such as
   kotlinx-datetime does not require a `kotlin.stdlib` module that Kotlin for Forge does not name.
 - Forge refuses two JARs that contain the same package. `verifyNoSplitPackages`, part of `check`, fails the
   build when the mod JAR and an embedded JAR share one; the compile-time Koin hints are left out of the mod

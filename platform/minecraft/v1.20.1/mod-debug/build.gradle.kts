@@ -31,12 +31,6 @@ tasks.withType<net.neoforged.nfrtgradle.NeoFormRuntimeTask>().configureEach {
 }
 
 tasks.withType<Test>().configureEach {
-    // 將測試期間由 Minecraft logging 建立的相對檔案限制在可由 clean 移除的 build 目錄。
-    val testRunDirectory = layout.buildDirectory.dir("test-runs/$name")
-    workingDir(testRunDirectory)
-    doFirst {
-        testRunDirectory.get().asFile.mkdirs()
-    }
     // 本體的語系檔在 classpath 上與 debug 語系檔的路徑相同，語系檔測試改以來源目錄讀取 debug 自己的檔案。
     val langDirectory = project(":minecraft_common-debug").layout.projectDirectory.dir("src/jvmMain/resources/assets/mahjongcraft/lang")
     inputs.dir(langDirectory).withPropertyName("debugLangDirectory")

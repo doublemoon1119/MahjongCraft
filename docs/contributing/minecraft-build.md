@@ -27,6 +27,9 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
 - Loader modules compile the mod module's sources and package its resources together with their own, instead of
   depending on its JAR. That JAR uses Mojang names, while each loader remaps the combined output to its own runtime
   names. The mod module's JAR is never distributed.
+- Loader modules call `includeSourcesOf` from build-logic to compile another project's sources and resources with
+  their own, and `includeResourcesOf` to package only its resources, such as the textures and translations in
+  `:minecraft_common`.
 - Logic that does not need Minecraft classes belongs in the cross-version common layer instead, so the code each
   new Minecraft version copies stays small.
 
@@ -35,6 +38,20 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
 - Each Minecraft version's `gradle/platform/minecraft/<version>/versions.toml` is registered by the root
   settings as a catalog named `mc` plus the version digits, for example `mc1201` for `v1.20.1`. Gradle plugins
   that build several Minecraft versions, such as Fabric Loom and ModDevGradle, stay in `libs`.
+
+## Bundled Libraries
+
+- The libraries a mod JAR carries are listed once, in the `minecraftModLibraries` extension of the loader
+  convention: the core modules and external libraries such as Koin, ktoml, Exposed and SQLite. Each loader
+  module adds the list to `implementation` and to its own packaging, for example Loom's `include` or Forge's
+  jar-in-jar, through `minecraftModLibraries.addTo`.
+- Packaging configurations pass `excludeRuntimeProvided = true`. It leaves out the libraries the selected
+  target lists in `provided-versions`, such as the Kotlin standard library a Kotlin loader ships, and the SLF4J
+  that Minecraft ships. A provided name without known modules fails the build, so a new provided library
+  also needs its modules in build-logic.
+- External Kotlin multiplatform libraries use their `jvm-` entries in `libs`, for example `jvm-koin-core`,
+  because some packaging cannot identify the JVM variant that a common coordinate redirects to. Other modules
+  keep the common coordinates.
 
 ## Mod Dependency Requirements
 

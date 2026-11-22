@@ -97,6 +97,28 @@ internal const val KOTLIN_API_VERSION_ALIAS: String = "kotlin-api-version"
 /** 讀取 Settings plugin 發布的 target Java toolchain。 */
 internal fun Project.targetJavaToolchain(): Int = gradleExtras().get(PlatformTargetsSettingsPlugin.TARGET_JAVA_TOOLCHAIN_EXTRA) as Int
 
+/**
+ * 讀取 Settings plugin 發布的 target 執行環境提供的函式庫版本；core target 沒有。
+ *
+ * @return 以 `libs` version catalog 版本名稱為 key 的版本。
+ */
+@Suppress("UNCHECKED_CAST")
+internal fun Project.targetProvidedVersions(): Map<String, String> =
+    gradleExtras().get(PlatformTargetsSettingsPlugin.TARGET_PROVIDED_VERSIONS_EXTRA) as Map<String, String>
+
+/**
+ * 把測試的工作目錄放在 build 目錄中；測試期間 Minecraft 的記錄檔等以相對路徑建立的檔案可由 clean 移除。
+ */
+internal fun Project.isolateTestRunDirectory() {
+    tasks.withType<Test>().configureEach {
+        val testRunDirectory = layout.buildDirectory.dir("test-runs/$name")
+        workingDir(testRunDirectory)
+        doFirst {
+            testRunDirectory.get().asFile.mkdirs()
+        }
+    }
+}
+
 /** 讀取 Settings plugin 發布的 target Java release。 */
 internal fun Project.targetJavaRelease(): Int = gradleExtras().get(PlatformTargetsSettingsPlugin.TARGET_JAVA_RELEASE_EXTRA) as Int
 

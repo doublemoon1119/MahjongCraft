@@ -1,6 +1,8 @@
 import com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtension
 import com.doublemoon1119.mahjongcraft.buildlogic.ModPackagingTestArguments
 import com.doublemoon1119.mahjongcraft.buildlogic.UnpackLibraryJars
+import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
+import com.doublemoon1119.mahjongcraft.buildlogic.modrinth
 import net.fabricmc.loom.task.RemapJarTask
 
 plugins {
@@ -36,11 +38,8 @@ val mainModArtifact = configurations.create("mainModArtifact") {
 }
 
 repositories {
-    // 相容測試模組只發布在 Modrinth 的 Maven 倉庫；這個倉庫只提供 Modrinth 的套件。
-    exclusiveContent {
-        forRepository { maven("https://api.modrinth.com/maven") { name = "Modrinth" } }
-        filter { includeGroup("maven.modrinth") }
-    }
+    // 相容測試模組只發布在 Modrinth 的 Maven 倉庫。
+    modrinth()
 }
 
 // 與本體相同的相容測試組合，讓範例的開發執行也能在同樣的環境中測試；本體的組合不會傳到這裡。
@@ -105,12 +104,6 @@ val packagingTestArguments = objects.newInstance<ModPackagingTestArguments>().ap
     exampleJar.from(exampleModJar.flatMap { it.archiveFile })
 }
 tasks.test {
-    // 模型測試會啟用 Minecraft logging，相對輸出與正式模組一樣限制在 build 目錄。
-    val testRunDirectory = layout.buildDirectory.dir("test-runs/$name")
-    workingDir(testRunDirectory)
-    doFirst {
-        testRunDirectory.get().asFile.mkdirs()
-    }
     // 對實際 remap 後的產物驗證，不以普通 JVM fixture 代替真正的 mod 打包。
     dependsOn(exampleModJar, mainModArtifact)
     jvmArgumentProviders.add(packagingTestArguments)
@@ -118,9 +111,7 @@ tasks.test {
 
 // 範例中呼叫 Minecraft 1.20.1 但不用載入器的程式在 :example-minecraft_v1.20.1_mod；比照本體，把原始碼納入本模組，
 // 由 Loom 一起重新映射並打包。
-kotlin.sourceSets.main {
-    kotlin.srcDir(project(":example-minecraft_v1.20.1_mod").projectDir.resolve("src/main/kotlin"))
-}
+includeSourcesOf(":example-minecraft_v1.20.1_mod")
 
 val unpackLibraryJars = objects.newInstance<UnpackLibraryJars>()
 tasks.jar {

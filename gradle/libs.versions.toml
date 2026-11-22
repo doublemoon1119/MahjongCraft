@@ -63,6 +63,13 @@ sqlite-jdbc = { group = "org.xerial", name = "sqlite-jdbc", version.ref = "sqlit
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
 koin-core = { module = "io.insert-koin:koin-core" }
 
+# JVM artifacts of Kotlin multiplatform libraries
+# 只給無法處理多平台轉址的打包方式使用（例如 ModDevGradle 的 jar-in-jar）；一般模組使用上面的通用座標。
+# 版本與通用座標相同，Koin 的版本即 BOM 的版本。
+jvm-koin-core = { group = "io.insert-koin", name = "koin-core-jvm", version.ref = "koin-bom" }
+jvm-ktoml-core = { group = "com.akuleshov7", name = "ktoml-core-jvm", version.ref = "ktoml" }
+jvm-kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime-jvm", version.ref = "kotlinx-datetime" }
+
 [plugins]
 
 # MahjongCraft convention plugins

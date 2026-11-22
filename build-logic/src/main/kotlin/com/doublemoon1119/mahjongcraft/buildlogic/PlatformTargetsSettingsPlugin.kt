@@ -38,6 +38,7 @@ class PlatformTargetsSettingsPlugin : Plugin<Settings> {
         extras[SELECTED_TARGET_ID_EXTRA] = selectedId
         extras[TARGET_JAVA_TOOLCHAIN_EXTRA] = selectedTarget?.javaToolchain ?: 0
         extras[TARGET_JAVA_RELEASE_EXTRA] = selectedTarget?.javaRelease ?: 0
+        extras[TARGET_PROVIDED_VERSIONS_EXTRA] = selectedTarget?.providedVersions.orEmpty()
         val modules = selectedTarget?.let { target ->
             target.modules + if (examplesEnabled) target.exampleModules else emptyList()
         }.orEmpty()
@@ -92,5 +93,8 @@ class PlatformTargetsSettingsPlugin : Plugin<Settings> {
 
         /** Gradle extra 中的 target release key。 */
         const val TARGET_JAVA_RELEASE_EXTRA: String = "mahjongcraft.targetJavaRelease"
+
+        /** Gradle extra 中 target 執行環境提供的函式庫版本 key。 */
+        const val TARGET_PROVIDED_VERSIONS_EXTRA: String = "mahjongcraft.targetProvidedVersions"
     }
 }

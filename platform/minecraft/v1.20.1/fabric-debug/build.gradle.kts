@@ -1,3 +1,5 @@
+import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
+
 plugins {
     alias(libs.plugins.mahjongcraft.minecraft.loader)
     // debug 情境與規則的資料類型以 kotlinx.serialization 編碼。
@@ -21,29 +23,11 @@ configure<com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtens
     dependencyRequirements.put("fabricLanguageKotlin", mc1201.versions.require.fabric.language.kotlin)
 }
 
-tasks.withType<Test>().configureEach {
-    // 將測試期間由 Minecraft logging 建立的相對檔案限制在可由 clean 移除的 build 目錄。
-    val testRunDirectory = layout.buildDirectory.dir("test-runs/$name")
-    workingDir(testRunDirectory)
-    doFirst {
-        testRunDirectory.get().asFile.mkdirs()
-    }
-}
-
 // debug 中呼叫 Minecraft 1.20.1 但不用載入器的程式在 :minecraft_v1.20.1_mod-debug，不需要 Minecraft 的程式、翻譯與材質在
 // :minecraft_common-debug。本體開發執行只載入這個模組、不帶它的依賴，因此兩者的原始碼與資源都納入本模組，由 Loom 一起
 // 重新映射並打包。
-val commonDebugDirectory = project(":minecraft_common-debug").projectDir
-val modDebugDirectory = project(":minecraft_v1.20.1_mod-debug").projectDir
-sourceSets {
-    main {
-        resources.srcDir(commonDebugDirectory.resolve("src/jvmMain/resources"))
-    }
-}
-kotlin.sourceSets.main {
-    kotlin.srcDir(commonDebugDirectory.resolve("src/jvmMain/kotlin"))
-    kotlin.srcDir(modDebugDirectory.resolve("src/main/kotlin"))
-}
+includeSourcesOf(":minecraft_common-debug", "src/jvmMain")
+includeSourcesOf(":minecraft_v1.20.1_mod-debug")
 
 dependencies {
     minecraft(mc1201.minecraft)

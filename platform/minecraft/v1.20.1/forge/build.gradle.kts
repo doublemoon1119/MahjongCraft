@@ -1,8 +1,12 @@
+import com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModLibraryKind
 import com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtension
 import com.doublemoon1119.mahjongcraft.buildlogic.StripModuleInfo
 import com.doublemoon1119.mahjongcraft.buildlogic.UnpackLibraryJars
 import com.doublemoon1119.mahjongcraft.buildlogic.VerifyEmbeddedLibrariesTask
 import com.doublemoon1119.mahjongcraft.buildlogic.VerifyNoSplitPackagesTask
+import com.doublemoon1119.mahjongcraft.buildlogic.includeResourcesOf
+import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
+import com.doublemoon1119.mahjongcraft.buildlogic.modrinth
 import net.neoforged.moddevgradle.tasks.JarJar
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 
@@ -32,32 +36,19 @@ repositories {
         forRepository { maven("https://thedarkcolour.github.io/KotlinForForge/") { name = "KotlinForForge" } }
         filter { includeGroup("thedarkcolour") }
     }
-    // Oculus 只發布在 Modrinth 的 Maven 倉庫；這個倉庫只提供 Modrinth 的套件。
-    exclusiveContent {
-        forRepository { maven("https://api.modrinth.com/maven") { name = "Modrinth" } }
-        filter { includeGroup("maven.modrinth") }
-    }
+    // Oculus 只發布在 Modrinth 的 Maven 倉庫。
+    modrinth()
 }
 
+// 材質、模型與翻譯放在跨版本、跨載入器共用的 :minecraft_common，與本模組的資源一起打包。
 // :minecraft_v1.20.1_mod 的程式與資源由本模組一起編譯與打包（同 Fabric），由 ModDevGradle 一起轉成 Forge 執行時的名稱。
-val minecraftModDirectory = project(":minecraft_v1.20.1_mod").projectDir
-sourceSets {
-    main {
-        java.srcDir(minecraftModDirectory.resolve("src/main/java"))
-        resources {
-            srcDir(project(":minecraft_common").projectDir.resolve("src/jvmMain/resources"))
-            srcDir(minecraftModDirectory.resolve("src/main/resources"))
-        }
-    }
-}
-kotlin.sourceSets.main {
-    kotlin.srcDir(minecraftModDirectory.resolve("src/main/kotlin"))
-}
+includeResourcesOf(":minecraft_common", "src/jvmMain")
+includeSourcesOf(":minecraft_v1.20.1_mod")
 
 legacyForge {
     version = mc1201.versions.forge.get()
     // 與 :minecraft_v1.20.1_mod 共用同一份 access transformer；它也隨 mod 模組的資源一起打包，Forge 執行時讀同一份。
-    accessTransformers.from(minecraftModDirectory.resolve("src/main/resources/META-INF/accesstransformer.cfg"))
+    accessTransformers.from(project(":minecraft_v1.20.1_mod").file("src/main/resources/META-INF/accesstransformer.cfg"))
     validateAccessTransformers = true
     runs {
         create("client") {
@@ -72,31 +63,6 @@ legacyForge {
     }
 }
 
-// 本專案的模組與函式庫：編譯時直接依賴，正式 JAR 以 jar-in-jar 附帶，開發執行時解開放進 mod。
-val projectLibraries = listOf(
-    ":minecraft_common",
-    ":mahjong-logic",
-    ":mahjong-ai",
-    ":mahjong-flow:mahjong-flow-common",
-    ":mahjong-flow:mahjong-flow-client",
-    ":mahjong-flow:mahjong-flow-server",
-    ":mahjong-flow:mahjong-flow-network-dto",
-    ":mahjong-flow:mahjong-flow-persistence-format",
-    ":mahjong-extension-api",
-    ":mahjong-bundled-extensions",
-)
-
-// Kotlin multiplatform 函式庫寫出 -jvm 座標：以通用座標宣告時，jar-in-jar 解析到的 -jvm 變體會失去 Maven 座標。
-// jar-in-jar 不套用 BOM，Koin 直接寫出 BOM 的版本。
-val externalLibraries = listOf(
-    "io.insert-koin:koin-core-jvm:${libs.versions.koin.bom.get()}",
-    "com.akuleshov7:ktoml-core-jvm:${libs.versions.ktoml.get()}",
-    "org.jetbrains.kotlinx:kotlinx-datetime-jvm:${libs.versions.kotlinx.datetime.get()}",
-    "${libs.exposed.core.get()}",
-    "${libs.exposed.jdbc.get()}",
-    "${libs.sqlite.jdbc.get()}",
-)
-
 dependencies {
     modImplementation(mc1201.kotlinforforge)
     // ModDevGradle 不帶入 mod 依賴自己的依賴；Kotlin for Forge 給 mod 用的 API（例如本 mod 的事件匯流排）在 kfflib 中，
@@ -104,19 +70,16 @@ dependencies {
     modCompileOnly(mc1201.kotlinforforge.lib)
     testImplementation(kotlin("test"))
 
-    projectLibraries.forEach { implementation(project(it)) }
-    implementation(project.dependencies.platform(libs.koin.bom))
-    implementation(libs.koin.core)
-    implementation(libs.ktoml.core)
-    implementation(libs.exposed.core)
-    implementation(libs.exposed.jdbc)
-    implementation(libs.sqlite.jdbc)
+    minecraftModLibraries.addTo("implementation")
     // 光影的陰影判斷只對 Oculus 的 API 編譯；API 不含 Minecraft 的類別，不需要轉換名稱。
     compileOnly(mc1201.oculus)
     // 產生 Forge 執行時名稱用的 mixin refmap。
     annotationProcessor(variantOf(mc1201.mixin) { classifier("processor") })
+}
 
-    projectLibraries.forEach { jarJar(project(it)) { excludeKotlinProvidedByForge() } }
+// 正式 JAR 以 jar-in-jar 附帶函式庫；Kotlin for Forge 已提供的函式庫不附帶。
+dependencies {
+    minecraftModLibraries.addTo("jarJar", kinds = setOf(MinecraftModLibraryKind.PROJECTS), excludeRuntimeProvided = true)
 }
 
 // 附帶的外部函式庫去掉 Java 模組設定：例如 kotlinx-datetime 的設定要求名為 kotlin.stdlib 的模組，Kotlin for Forge 並非以這個
@@ -139,7 +102,7 @@ val jarJarExternalLibraries = configurations.create("jarJarExternalLibraries") {
     attributes.attribute(StripModuleInfo.MODULE_INFO_STRIPPED, true)
 }
 dependencies {
-    externalLibraries.forEach { jarJarExternalLibraries(it) { excludeKotlinProvidedByForge() } }
+    minecraftModLibraries.addTo(jarJarExternalLibraries.name, kinds = setOf(MinecraftModLibraryKind.EXTERNAL), excludeRuntimeProvided = true)
 }
 tasks.named<JarJar>("jarJar") {
     configuration(jarJarExternalLibraries)
@@ -155,15 +118,6 @@ tasks.jar {
     exclude("org/koin/plugin/hints/**")
     // ModDevGradle 不會寫入這個屬性；正式環境的 Forge 只從這裡找到 mixin 設定。
     manifest.attributes("MixinConfigs" to forgeMixinConfig)
-}
-
-tasks.withType<Test>().configureEach {
-    // 將測試期間由 Minecraft logging 建立的相對檔案限制在可由 clean 移除的 build 目錄。
-    val testRunDirectory = layout.buildDirectory.dir("test-runs/$name")
-    workingDir(testRunDirectory)
-    doFirst {
-        testRunDirectory.get().asFile.mkdirs()
-    }
 }
 
 val verifyNoSplitPackages = tasks.register<VerifyNoSplitPackagesTask>("verifyNoSplitPackages") {
@@ -183,8 +137,7 @@ val devLibraries = configurations.create("devLibraries") {
     exclude(group = "co.touchlab")
 }
 dependencies {
-    projectLibraries.forEach { devLibraries(project(it)) { excludeKotlinProvidedByForge() } }
-    externalLibraries.forEach { devLibraries(it) { excludeKotlinProvidedByForge() } }
+    minecraftModLibraries.addTo(devLibraries.name, excludeRuntimeProvided = true)
 }
 val unpackLibraryJars = objects.newInstance<UnpackLibraryJars>()
 val unpackDevLibraries = tasks.register<Sync>("unpackDevLibraries") {
@@ -221,16 +174,4 @@ val verifyEmbeddedLibraries = tasks.register<VerifyEmbeddedLibrariesTask>("verif
 }
 tasks.check {
     dependsOn(verifyEmbeddedLibraries)
-}
-
-/** 排除 Kotlin for Forge 已附帶的 Kotlin 標準函式庫、kotlinx 協程與序列化，以及 Minecraft 已附帶的 SLF4J。 */
-fun ModuleDependency.excludeKotlinProvidedByForge() {
-    exclude(group = "org.slf4j")
-    exclude(group = "org.jetbrains.kotlin")
-    exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
-    exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core-jvm")
-    exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-serialization-core")
-    exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-serialization-core-jvm")
-    exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-serialization-json")
-    exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-serialization-json-jvm")
 }

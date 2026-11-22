@@ -24,15 +24,6 @@ tasks.withType<net.neoforged.nfrtgradle.NeoFormRuntimeTask>().configureEach {
     )
 }
 
-tasks.withType<Test>().configureEach {
-    // 將測試期間由 Minecraft logging 建立的相對檔案限制在可由 clean 移除的 build 目錄。
-    val testRunDirectory = layout.buildDirectory.dir("test-runs/$name")
-    workingDir(testRunDirectory)
-    doFirst {
-        testRunDirectory.get().asFile.mkdirs()
-    }
-}
-
 // 與載入器的範例模組使用相同的專案模組；載入器的範例模組編譯這裡的原始碼時自行宣告同樣的依賴。
 dependencies {
     implementation(project(":minecraft_v1.20.1_mod"))

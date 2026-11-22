@@ -15,7 +15,7 @@ import java.util.concurrent.Callable
 
 /**
  * 套用 Minecraft loader module 的 target Java、archive 與 metadata 政策，讓整個建置的重新映射任務排隊執行，並提供
- * 開發執行時可選載入的模組組合。
+ * 開發執行時可選載入的模組組合與 mod 要附帶的函式庫清單；測試的工作目錄放在 build 目錄中。
  */
 class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
     /** 套用 JVM convention 並設定 loader-specific build 行為。 */
@@ -30,6 +30,8 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
         packaging.description.convention("Bring Mahjong to Minecraft and play with your friends.")
         packaging.icon.convention(rootProject.layout.projectDirectory.file("docs/assets/branding/logo.png"))
         packaging.distributable.convention(true)
+        extensions.create("minecraftModLibraries", MinecraftModLibrariesExtension::class.java, this)
+        isolateTestRunDirectory()
         packaging.archiveBaseName.convention("$rootProjectId-${platformLoader()}-${platformMinecraftVersion()}")
         extensions.configure<BasePluginExtension> {
             archivesName.set(packaging.archiveBaseName)
