@@ -30,6 +30,8 @@ sqlite-jdbc = "3.53.4.0"
 # Dependency injection and build tooling
 koin-bom = "4.2.2"
 koin-plugin = "1.2.1"
+# Koin 執行時使用的函式庫；不附帶 Koin 依賴的平台（例如 Forge）要以同一個版本另外附帶。
+stately = "2.1.0"
 ktlint-gradle = "14.2.0"
 detekt = "2.0.0-alpha.6"
 

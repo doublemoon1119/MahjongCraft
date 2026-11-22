@@ -20,6 +20,10 @@ require-fabric-language-kotlin = ">=1.13.14"
 # Forge：編譯依賴
 forge = "1.20.1-47.4.29"
 kotlinforforge = "4.13.0"
+# Forge 1.20.1 附帶的 Mixin 版本；它的 annotation processor 產生 Forge 名稱用的 refmap。
+mixin = "0.8.5"
+# Forge 上的光影模組，只對它的 API 編譯、不打包。
+oculus = "1.20.1-1.8.0"
 
 # Forge：執行相容範圍（mods.toml 的 Maven 版本範圍寫法）
 require-forge-minecraft = "[1.20.1,1.20.2)"
@@ -50,6 +54,9 @@ fabric-language-kotlin = { group = "net.fabricmc", name = "fabric-language-kotli
 
 # Forge
 kotlinforforge = { group = "thedarkcolour", name = "kotlinforforge", version.ref = "kotlinforforge" }
+kotlinforforge-lib = { group = "thedarkcolour", name = "kfflib", version.ref = "kotlinforforge" }
+mixin = { group = "org.spongepowered", name = "mixin", version.ref = "mixin" }
+oculus = { group = "maven.modrinth", name = "oculus", version.ref = "oculus" }
 
 # 開發執行時可選載入的相容測試模組
 mod-menu = { group = "maven.modrinth", name = "modmenu", version.ref = "mod-menu" }

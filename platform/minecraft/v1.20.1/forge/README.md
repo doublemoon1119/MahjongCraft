@@ -12,8 +12,8 @@ Its Gradle project path is `:minecraft_v1.20.1_forge`, its code uses the
 
 ## Status
 
-The adapter is a skeleton: Forge loads the mod and a development run reaches a world, but the loader
-interfaces are not implemented yet, so no MahjongCraft content is registered. It is not distributed.
+The server side is implemented: content registration, server events, networking, extension discovery
+and the shader shadow check. The client side is not implemented yet, so the adapter is not distributed.
 
 ## Dependencies
 
@@ -26,13 +26,31 @@ interfaces are not implemented yet, so no MahjongCraft content is registered. It
 - Forge refuses two JARs that contain the same package. `verifyNoSplitPackages`, part of `check`, fails the
   build when the mod JAR and an embedded JAR share one; the compile-time Koin hints are left out of the mod
   JAR for this reason.
+- jar-in-jar embeds only the libraries declared directly, so libraries those need, such as Koin's
+  `stately` libraries, are declared as well. `verifyEmbeddedLibraries`, part of `check`, fails the build
+  when the mod JAR does not embed, at the same version, every external library a development run resolves.
 - Development runs load the libraries from an unpacked copy in the `devLibraries` source set, which belongs
   to the same mod: libraries on the launcher class path cannot see the Kotlin provided by Kotlin for Forge.
+- ModDevGradle does not add the dependencies of mod dependencies, so the Kotlin for Forge API used by the
+  mod, `kfflib`, is a compile-only dependency; Kotlin for Forge itself provides it at run time.
+
+## Extensions
+
+Other mods declare extensions in their `mods.toml`, under `modproperties`, with the same names as the Fabric
+entrypoints. The value is a class name or a list of class names; a Kotlin `object` supplies its instance,
+other classes are created with a no-argument constructor.
+
+```toml
+[modproperties.examplemod]
+"mahjongcraft:extension" = "com.example.ExampleExtension"
+```
 
 ## Mixins
 
-ModDevGradle does not add `MixinConfigs` to the JAR manifest. When the adapter gains mixins, the `jar` task
-must add that attribute, or production Forge ignores the mixin configuration.
+`mahjongcraft.forge.mixins.json` lists the Forge-only mixins. They provide the server events Forge does
+not have, at the same points where Fabric API fires them: an entity added to a world, a block entity loaded
+into a chunk, and a block a player has broken. ModDevGradle does not add `MixinConfigs` to the JAR manifest,
+so the `jar` task adds it; production Forge ignores mixin configurations missing from the manifest.
 
 ## Running
 

@@ -1,8 +1,10 @@
 import com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtension
 import com.doublemoon1119.mahjongcraft.buildlogic.StripModuleInfo
 import com.doublemoon1119.mahjongcraft.buildlogic.UnpackLibraryJars
+import com.doublemoon1119.mahjongcraft.buildlogic.VerifyEmbeddedLibrariesTask
 import com.doublemoon1119.mahjongcraft.buildlogic.VerifyNoSplitPackagesTask
 import net.neoforged.moddevgradle.tasks.JarJar
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 
 plugins {
     alias(libs.plugins.mahjongcraft.minecraft.loader)
@@ -12,6 +14,9 @@ plugins {
 }
 
 version = libs.versions.minecraft.mod.version.get()
+
+/** Forge 專用 mixin 的設定檔名稱。 */
+val forgeMixinConfig = "mahjongcraft.forge.mixins.json"
 
 configure<MinecraftModPackagingExtension> {
     // 載入器接點尚未全部實作，不交付給玩家。
@@ -26,6 +31,11 @@ repositories {
     exclusiveContent {
         forRepository { maven("https://thedarkcolour.github.io/KotlinForForge/") { name = "KotlinForForge" } }
         filter { includeGroup("thedarkcolour") }
+    }
+    // Oculus 只發布在 Modrinth 的 Maven 倉庫；這個倉庫只提供 Modrinth 的套件。
+    exclusiveContent {
+        forRepository { maven("https://api.modrinth.com/maven") { name = "Modrinth" } }
+        filter { includeGroup("maven.modrinth") }
     }
 }
 
@@ -85,10 +95,18 @@ val externalLibraries = listOf(
     "${libs.exposed.core.get()}",
     "${libs.exposed.jdbc.get()}",
     "${libs.sqlite.jdbc.get()}",
+    // Koin 執行時使用的函式庫；jar-in-jar 只附帶直接宣告的函式庫，因此另外列出。
+    "co.touchlab:stately-concurrency-jvm:${libs.versions.stately.get()}",
+    "co.touchlab:stately-concurrent-collections-jvm:${libs.versions.stately.get()}",
+    "co.touchlab:stately-strict-jvm:${libs.versions.stately.get()}",
 )
 
 dependencies {
     modImplementation(mc1201.kotlinforforge)
+    // ModDevGradle 不帶入 mod 依賴自己的依賴；Kotlin for Forge 給 mod 用的 API（例如本 mod 的事件匯流排）在 kfflib 中，
+    // 執行時由上面的 Kotlin for Forge 本體提供。
+    modCompileOnly(mc1201.kotlinforforge.lib)
+    testImplementation(kotlin("test"))
 
     projectLibraries.forEach { implementation(project(it)) }
     implementation(project.dependencies.platform(libs.koin.bom))
@@ -97,6 +115,10 @@ dependencies {
     implementation(libs.exposed.core)
     implementation(libs.exposed.jdbc)
     implementation(libs.sqlite.jdbc)
+    // 光影的陰影判斷只對 Oculus 的 API 編譯；API 不含 Minecraft 的類別，不需要轉換名稱。
+    compileOnly(mc1201.oculus)
+    // 產生 Forge 執行時名稱用的 mixin refmap。
+    annotationProcessor(variantOf(mc1201.mixin) { classifier("processor") })
 
     projectLibraries.forEach { jarJar(project(it)) { excludeKotlinProvidedByForge() } }
 }
@@ -127,9 +149,25 @@ tasks.named<JarJar>("jarJar") {
     configuration(jarJarExternalLibraries)
 }
 
+mixin {
+    add(sourceSets.main.get(), "mahjongcraft.refmap.json")
+    config(forgeMixinConfig)
+}
+
 tasks.jar {
     // Koin 編譯外掛產生的 hints 只在編譯期使用；minecraft_common 的 JAR 也有這個套件，Forge 不允許兩個 JAR 有同名套件。
     exclude("org/koin/plugin/hints/**")
+    // ModDevGradle 不會寫入這個屬性；正式環境的 Forge 只從這裡找到 mixin 設定。
+    manifest.attributes("MixinConfigs" to forgeMixinConfig)
+}
+
+tasks.withType<Test>().configureEach {
+    // 將測試期間由 Minecraft logging 建立的相對檔案限制在可由 clean 移除的 build 目錄。
+    val testRunDirectory = layout.buildDirectory.dir("test-runs/$name")
+    workingDir(testRunDirectory)
+    doFirst {
+        testRunDirectory.get().asFile.mkdirs()
+    }
 }
 
 val verifyNoSplitPackages = tasks.register<VerifyNoSplitPackagesTask>("verifyNoSplitPackages") {
@@ -168,6 +206,23 @@ legacyForge {
             sourceSet(devLibrariesSourceSet)
         }
     }
+    // 單元測試只測不需要啟動遊戲的程式；測試也要對 Minecraft 與 Forge 的類別編譯。
+    addModdingDependenciesTo(sourceSets.test.get())
+}
+
+// 開發執行解析出的函式庫就是執行時需要的全部函式庫；正式 JAR 必須以相同版本附帶每一個。
+val verifyEmbeddedLibraries = tasks.register<VerifyEmbeddedLibrariesTask>("verifyEmbeddedLibraries") {
+    group = "verification"
+    description = "Verifies that the mod JAR embeds every external library it needs at run time."
+    modJar.fileProvider(tasks.named("reobfJar").map { it.outputs.files.singleFile })
+    requiredLibraries.set(
+        devLibraries.incoming.artifacts.resolvedArtifacts.map { artifacts ->
+            artifacts.mapNotNull { (it.id.componentIdentifier as? ModuleComponentIdentifier)?.let { id -> "${id.group}:${id.module}:${id.version}" } }.toSet()
+        },
+    )
+}
+tasks.check {
+    dependsOn(verifyEmbeddedLibraries)
 }
 
 /** 排除 Kotlin for Forge 已附帶的 Kotlin 標準函式庫、kotlinx 協程與序列化，以及 Minecraft 已附帶的 SLF4J。 */

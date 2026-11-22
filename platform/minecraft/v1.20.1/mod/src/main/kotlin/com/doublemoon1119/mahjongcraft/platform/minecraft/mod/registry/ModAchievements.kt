@@ -11,7 +11,7 @@ import net.minecraft.stats.Stats
 
 /** 麻將進度條件與通用統計的註冊入口。 */
 object ModAchievements {
-    /** 「麻將成果」進度條件；由 [register] 初始化。 */
+    /** 「麻將成果」進度條件；[register] 交出的登記完成後初始化。 */
     lateinit var mahjongAchievementCriterion: MahjongAchievementCriterion
         private set
 
@@ -25,18 +25,19 @@ object ModAchievements {
     /**
      * 登記進度條件與全部通用統計。
      *
-     * 統計項目在統計 ID 寫入登記表之後才建立，統計畫面因此會列出玩家還沒獲得過的統計。
+     * 統計項目在統計 ID 寫入登記表之後才建立，統計畫面因此會列出玩家還沒獲得過的統計。進度條件寫入原版共用的條件表，
+     * 與統計項目一起在登記完成後由載入器安排的時機加入，不與其他 mod 的初始化同時寫入。
      *
      * @param registrar 寫入登記表的方式。
      */
     fun register(registrar: ModRegistrar) {
-        mahjongAchievementCriterion = CriteriaTriggers.register(MahjongAchievementCriterion())
         AchievementStatisticIds.ALL.forEach { statisticId ->
             val id = ResourceLocation(statisticId)
             registrar.register(registry = Registries.CUSTOM_STAT, id = id) { id }
             statistics[statisticId] = id
         }
         registrar.afterRegistration {
+            mahjongAchievementCriterion = CriteriaTriggers.register(MahjongAchievementCriterion())
             statistics.values.forEach { id -> Stats.CUSTOM.get(id, StatFormatter.DEFAULT) }
         }
     }
