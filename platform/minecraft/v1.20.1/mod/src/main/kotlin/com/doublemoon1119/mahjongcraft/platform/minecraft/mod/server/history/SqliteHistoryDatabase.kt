@@ -28,11 +28,12 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
+import org.sqlite.SQLiteDataSource
 import java.nio.file.Files
 import java.nio.file.Path
-import java.sql.DriverManager
 import java.sql.ResultSet
 import java.sql.SQLException
+import javax.sql.DataSource
 import kotlin.uuid.Uuid
 
 /**
@@ -172,14 +173,17 @@ internal data class HistoryTerminalRecord(
  * 單一伺服器存檔的 SQLite 歷史資料庫邊界。
  *
  * 此 adapter 的操作會同步進行 JDBC I/O；呼叫端必須在專用 I/O dispatcher 執行。
- * 每筆操作自行取得並關閉連線，資料庫物件不持有長期連線或檔案鎖。
+ * 每筆操作自行取得並關閉連線，資料庫物件不持有長期連線或檔案鎖。連線一律由 SQLite 自己的 [DataSource] 建立，
+ * 不經 JDBC 的 driver 查找：有的載入器把 mod 的函式庫放在 JDBC 查找不到的位置。
  *
  * @property path 資料庫檔案的固定位置。
  * @property database 執行交易的 Exposed 連線設定。
+ * @property dataSource 建立資料庫連線的來源。
  */
 internal class SqliteHistoryDatabase private constructor(
     val path: Path,
     private val database: Database,
+    private val dataSource: DataSource,
 ) {
     /** 記錄無法還原的 Replay 等讀取診斷的 logger。 */
     private val logger = mahjongCraftLogger(SqliteHistoryDatabase::class)
@@ -1237,7 +1241,7 @@ internal class SqliteHistoryDatabase private constructor(
     fun recoverDiskSpace(): HistoryDiskRecovery {
         var busy = false
         var supported = false
-        DriverManager.getConnection("jdbc:sqlite:$path").use { connection ->
+        dataSource.connection.use { connection ->
             try {
                 connection.createStatement().use { statement ->
                     statement.executeQuery("PRAGMA auto_vacuum").use { result ->
@@ -1318,8 +1322,8 @@ internal class SqliteHistoryDatabase private constructor(
             val normalized = path.toAbsolutePath().normalize()
             val existed = Files.exists(normalized)
             if (!existed) Files.createDirectories(normalized.parent)
-            val url = "jdbc:sqlite:$normalized"
-            DriverManager.getConnection(url).use { connection ->
+            val dataSource = SQLiteDataSource().apply { url = "jdbc:sqlite:$normalized" }
+            dataSource.connection.use { connection ->
                 connection.createStatement().use { statement ->
                     statement.executeQuery("PRAGMA integrity_check").use { result ->
                         check(result.next() && result.getString(1) == "ok") { "History database integrity check failed" }
@@ -1357,7 +1361,7 @@ internal class SqliteHistoryDatabase private constructor(
                     }
                 }
             }
-            val database = Database.connect(url = url, driver = "org.sqlite.JDBC")
+            val database = Database.connect(datasource = dataSource)
             transaction(database) {
                 if (!existed) {
                     SchemaUtils.create(*historySchemaV1Tables)
@@ -1375,7 +1379,7 @@ internal class SqliteHistoryDatabase private constructor(
                     }
                 }
             }
-            return SqliteHistoryDatabase(normalized, database)
+            return SqliteHistoryDatabase(path = normalized, database = database, dataSource = dataSource)
         }
     }
 }
