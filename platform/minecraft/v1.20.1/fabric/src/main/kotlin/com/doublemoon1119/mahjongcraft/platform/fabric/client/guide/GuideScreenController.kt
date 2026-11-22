@@ -9,11 +9,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.BuiltInRuleC
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.guide.MinecraftGuideScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideAction
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.mojang.blaze3d.platform.InputConstants
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.Screen
@@ -52,19 +51,23 @@ class GuideScreenController internal constructor(
     /** 上次看的頁籤。 */
     private var lastTab = GuideTab.SETUP
 
-    /** 註冊按鍵與 client tick；只能在 client entrypoint 呼叫一次。 */
-    fun register() {
+    /**
+     * 註冊按鍵與 client tick；只能在 client entrypoint 呼叫一次。
+     *
+     * @param events 登記用戶端事件用的事件來源。
+     */
+    fun register(events: ClientEvents) {
         if (registered) return
         registered = true
-        openKeyBinding = KeyBindingHelper.registerKeyBinding(
-            KeyMapping(
+        openKeyBinding = events.registerKeyMapping(
+            mapping = KeyMapping(
                 MinecraftGuideScreenKeys.OPEN_KEY,
                 InputConstants.Type.KEYSYM,
                 InputConstants.UNKNOWN.value,
                 MinecraftClientConfigScreenKeys.KEY_CATEGORY,
             ),
         )
-        ClientTickEvents.END_CLIENT_TICK.register(::tick)
+        events.onClientTickEnd(::tick)
     }
 
     /** 從指令開啟畫面；延到下一個 client tick，避免指令執行後關閉聊天畫面時一併關掉此畫面。 */

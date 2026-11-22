@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.world.phys.EntityHitResult
 import kotlin.math.sin
@@ -16,9 +16,13 @@ class MatchingTileHighlightController(
     private val moduleRegistry: MahjongModuleRegistry,
     private val configStore: MahjongClientConfigStore,
 ) {
-    /** 註冊 client tick 更新。 */
-    fun register() {
-        ClientTickEvents.END_CLIENT_TICK.register(::tick)
+    /**
+     * 註冊 client tick 更新。
+     *
+     * @param events 登記用戶端事件用的事件來源。
+     */
+    fun register(events: ClientEvents) {
+        events.onClientTickEnd(::tick)
     }
 
     /**

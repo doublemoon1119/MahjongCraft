@@ -6,9 +6,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.HistoryScr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.AutomaticControlDisplayResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutomaticControlUpdateCoordinator
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.mojang.blaze3d.platform.InputConstants
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.Screen
@@ -48,35 +47,39 @@ class MahjongClientConfigScreenController(
     /** 指令要求開啟、等待下一個 client tick 開啟。 */
     private var openRequested = false
 
-    /** 註冊按鍵綁定與 client tick listener；只能在 client entrypoint 呼叫一次。 */
-    fun register() {
+    /**
+     * 註冊按鍵綁定與 client tick listener；只能在 client entrypoint 呼叫一次。
+     *
+     * @param events 登記用戶端事件用的事件來源。
+     */
+    fun register(events: ClientEvents) {
         if (registered) return
         registered = true
-        openKeyBinding = KeyBindingHelper.registerKeyBinding(
-            KeyMapping(
+        openKeyBinding = events.registerKeyMapping(
+            mapping = KeyMapping(
                 MinecraftClientConfigScreenKeys.OPEN_KEY,
                 InputConstants.Type.KEYSYM,
                 InputConstants.UNKNOWN.value,
                 MinecraftClientConfigScreenKeys.KEY_CATEGORY,
             ),
         )
-        historyKeyBinding = KeyBindingHelper.registerKeyBinding(
-            KeyMapping(
+        historyKeyBinding = events.registerKeyMapping(
+            mapping = KeyMapping(
                 MinecraftClientConfigScreenKeys.OPEN_HISTORY_KEY,
                 InputConstants.Type.KEYSYM,
                 InputConstants.UNKNOWN.value,
                 MinecraftClientConfigScreenKeys.KEY_CATEGORY,
             ),
         )
-        ruleCatalogueKeyBinding = KeyBindingHelper.registerKeyBinding(
-            KeyMapping(
+        ruleCatalogueKeyBinding = events.registerKeyMapping(
+            mapping = KeyMapping(
                 MinecraftClientConfigScreenKeys.OPEN_RULE_CATALOGUE_KEY,
                 InputConstants.Type.KEYSYM,
                 InputConstants.UNKNOWN.value,
                 MinecraftClientConfigScreenKeys.KEY_CATEGORY,
             ),
         )
-        ClientTickEvents.END_CLIENT_TICK.register(::tick)
+        events.onClientTickEnd(::tick)
     }
 
     /**

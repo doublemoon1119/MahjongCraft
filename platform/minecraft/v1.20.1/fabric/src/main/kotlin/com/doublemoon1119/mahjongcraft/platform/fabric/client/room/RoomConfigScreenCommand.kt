@@ -25,7 +25,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.builder.LiteralArgumentBuilder.literal
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import kotlin.uuid.toKotlinUuid
@@ -33,13 +32,13 @@ import kotlin.uuid.toKotlinUuid
 /**
  * 純 client-only 指令 `/mahjongcraft_client room_config screen`：開啟玩家目前所在房間的
  * [RoomScreen] 設定頁；由 [PlayerFeedbackPublisher] 印出的「所在麻將遊戲的規則」訊息點擊觸發，
- * 玩家也可以自己手動輸入（Fabric client command 在到達網路層之前就被攔截處理，不會送到伺服器）。
+ * 玩家也可以自己手動輸入（用戶端指令在到達網路層之前就被攔截處理，不會送到伺服器）。
  *
  * 只會開啟玩家自己實際身處（[ClientMahjongStateStore.findTableWhereSeated]）的那間房間，不接受指定
  * 其他桌子——不管是點聊天訊息還是手動輸入都一樣。一般成員會開啟唯讀設定，只有房主能編輯；伺服器端
  * `UpdateConfigUseCase` 的房主驗證仍是唯一權威判斷。
  *
- * 指令本身只設定 [pendingOpen]，真正的 [openScreen] 呼叫延後到下一次 [ClientTickEvents.END_CLIENT_TICK]
+ * 指令本身只設定 [pendingOpen]，真正的 [openScreen] 呼叫延後到下一次用戶端 tick 結束
  * 才執行：在聊天室手動輸入指令按下 Enter 時，vanilla `ChatScreen.keyPressed()` 會在指令執行完「之後」
  * 、在同一次呼叫內無條件再呼叫一次 `client.setScreen(null)` 關閉聊天視窗，如果 `setScreen(RoomScreen)`
  * 跟指令本身同步發生在那一次呼叫裡，會被這個收尾動作立刻蓋掉（已在遊戲內實測確認）。`Minecraft`
@@ -97,7 +96,7 @@ class RoomConfigScreenCommand(
      */
     fun register(events: ClientEvents) {
         events.onRegisterClientCommand(this)
-        ClientTickEvents.END_CLIENT_TICK.register {
+        events.onClientTickEnd {
             if (pendingOpen) {
                 pendingOpen = false
                 openScreen()

@@ -2,11 +2,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.tableprop
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.CharacterPreviewCache
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropKindDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropTarget
 import net.fabricmc.api.EnvType
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.ReportedException
 import net.minecraft.client.multiplayer.ClientLevel
@@ -44,14 +44,18 @@ internal class ClientTablePropPreviews(
     /** 客戶端認得的物件種類，供擺放計算使用。 */
     val definitions: Map<String, TablePropKindDefinition> get() = registry.definitions
 
-    /** 登記有界的實體建立工作與世界切換時的清理。 */
-    fun initialize() {
+    /**
+     * 登記有界的實體建立工作與世界切換時的清理。
+     *
+     * @param events 登記用戶端事件用的事件來源。
+     */
+    fun initialize(events: ClientEvents) {
         check(FabricLoader.getInstance().environmentType == EnvType.CLIENT)
-        ClientTickEvents.END_CLIENT_TICK.register { client ->
+        events.onClientTickEnd { client ->
             if (world !== client.level) clear()
             world = client.level
             ticks++
-            val current = world ?: return@register
+            val current = world ?: return@onClientTickEnd
             models.processOne { key ->
                 if (ticks < retryAt.getOrElse(key) { 0L }) return@processOne null
                 attempt(key) { registry.find(key.kind)?.provider?.create(current, key)?.let(::PropModel) }.also { model ->

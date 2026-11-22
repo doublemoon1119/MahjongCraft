@@ -156,8 +156,8 @@ class MahjongCraftModClient : ClientModInitializer {
         logger.info(ExtensionRegistrationReportFormatter.formatSummary(previewReport))
         if (logger.isDebugEnabled) logger.debug(ExtensionRegistrationReportFormatter.formatDetails(previewReport))
         val characterPreviews = koin.get<ClientAiCharacterPreviews>()
-        characterPreviews.initialize()
-        koin.get<ClientTablePropPreviews>().initialize()
+        characterPreviews.initialize(FabricClientEvents)
+        koin.get<ClientTablePropPreviews>().initialize(FabricClientEvents)
         val portraits = koin.get<PlayerPortraitRenderer>()
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(object : SimpleSynchronousResourceReloadListener {
             override fun getFabricId(): ResourceLocation = ResourceLocation("mahjongcraft", "character_portrait_resources")
@@ -170,6 +170,7 @@ class MahjongCraftModClient : ClientModInitializer {
             registry = koin.get(),
             failures = koin.get(),
             json = koin.get(),
+            events = FabricClientEvents,
         )
 
         PreparableModelLoadingPlugin.register(MahjongTileModelLoadingPlugin.DATA_LOADER, MahjongTileModelLoadingPlugin)
@@ -184,24 +185,24 @@ class MahjongCraftModClient : ClientModInitializer {
         val clientConfigStore = koin.get<MahjongClientConfigStore>()
         koin.get<RoomConfigScreenCommand>().register(FabricClientEvents)
         initializeClientConfig(clientConfigStore)
-        koin.get<MahjongClientConfigScreenController>().register()
+        koin.get<MahjongClientConfigScreenController>().register(FabricClientEvents)
         koin.get<TileLabelCommand>().register(FabricClientEvents)
         koin.get<HandSortCommand>().register(FabricClientEvents)
         koin.get<AutomaticControlCommand>().register(FabricClientEvents)
         koin.get<ClientConfigCommand>().register(FabricClientEvents)
-        koin.get<HistoryScreenController>().register()
+        koin.get<HistoryScreenController>().register(FabricClientEvents)
         koin.get<HistoryScreenCommand>().register(FabricClientEvents)
-        val ruleCatalogueController = koin.get<RuleCatalogueScreenController>().also { it.register() }
+        val ruleCatalogueController = koin.get<RuleCatalogueScreenController>().also { it.register(FabricClientEvents) }
         koin.get<RuleCatalogueScreenCommand>().register(FabricClientEvents)
-        koin.get<MahjongHandbookScreenController>().register()
+        koin.get<MahjongHandbookScreenController>().register(FabricClientEvents)
         koin.get<HandbookScreenCommand>().register(FabricClientEvents)
-        koin.get<GuideScreenController>().register()
+        koin.get<GuideScreenController>().register(FabricClientEvents)
         koin.get<GuideScreenCommand>().register(FabricClientEvents)
         val decisionHudController = koin.get<PlayerDecisionHudController>()
-        decisionHudController.registerEvents()
-        koin.get<MatchingTileHighlightController>().register()
-        koin.get<ClientDiscardSettlementTracker>().register()
-        koin.get<LatestDiscardHighlightController>().register()
+        decisionHudController.registerEvents(FabricClientEvents)
+        koin.get<MatchingTileHighlightController>().register(FabricClientEvents)
+        koin.get<ClientDiscardSettlementTracker>().register(FabricClientEvents)
+        koin.get<LatestDiscardHighlightController>().register(FabricClientEvents)
 
         val json = koin.get<NetworkJson>()
         val historyQueries = koin.get<ClientHistoryQueryCoordinator>()
@@ -229,8 +230,8 @@ class MahjongCraftModClient : ClientModInitializer {
         val stateStore = koin.get<ClientMahjongStateStore>()
         val characterState = koin.get<AiCharacterClientStateStore>()
         val tableSpaceObstructions = koin.get<ClientTableSpaceObstructionStore>()
-        koin.get<TableSpaceObstructionRenderer>().registerEvents()
-        WorldPanelDeferral.register()
+        koin.get<TableSpaceObstructionRenderer>().registerEvents(FabricClientEvents)
+        WorldPanelDeferral.register(FabricClientEvents)
         val handTileLayoutController = koin.get<ClientHandTileLayoutController>()
         ClientHandTileLayoutBridge.activate(handTileLayoutController)
         val automaticControlUpdateCoordinator = koin.get<ClientAutomaticControlUpdateCoordinator>()
@@ -399,7 +400,7 @@ class MahjongCraftModClient : ClientModInitializer {
             json = json,
             handler = automaticControlUpdateCoordinator::applyResult,
         )
-        koin.get<PauseAwareClientMonotonicClock>().registerEvents()
+        koin.get<PauseAwareClientMonotonicClock>().registerEvents(FabricClientEvents)
         ClientTickEvents.END_CLIENT_TICK.register { automaticControlUpdateCoordinator.checkTimeout() }
         EntityRendererRegistry.register(ModEntities.mahjongBot, ::MahjongBotEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongDice, ::MahjongDiceEntityRenderer)

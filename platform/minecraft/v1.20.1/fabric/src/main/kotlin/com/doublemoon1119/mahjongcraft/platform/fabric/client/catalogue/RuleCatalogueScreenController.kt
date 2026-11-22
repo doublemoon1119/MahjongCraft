@@ -13,9 +13,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.R
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.RuleCataloguePresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.TextRendererCatalogueMetrics
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.currentLanguageTranslation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.Screen
 
@@ -41,11 +41,15 @@ class RuleCatalogueScreenController internal constructor(
     /** 避免重複註冊客戶端 tick 事件。 */
     private var registered = false
 
-    /** 註冊延後開啟事件；只能由 Fabric client entrypoint 呼叫一次。 */
-    fun register() {
+    /**
+     * 註冊延後開啟事件；只能由 client entrypoint 呼叫一次。
+     *
+     * @param events 登記用戶端事件用的事件來源。
+     */
+    fun register(events: ClientEvents) {
         if (registered) return
         registered = true
-        ClientTickEvents.END_CLIENT_TICK.register(::tick)
+        events.onClientTickEnd(::tick)
     }
 
     /** 在下一個 client tick 開啟一般說明的規則一覽，供指令與快捷鍵使用。 */

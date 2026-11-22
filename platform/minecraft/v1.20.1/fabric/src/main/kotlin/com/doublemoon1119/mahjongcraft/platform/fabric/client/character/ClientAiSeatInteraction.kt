@@ -4,10 +4,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatPlacementRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
-import net.fabricmc.fabric.api.event.player.UseEntityCallback
 import net.minecraft.world.InteractionResult
 import java.util.UUID
 
@@ -25,29 +23,31 @@ internal object ClientAiSeatInteraction {
      * @param registry 已凍結的放置能力。
      * @param failures 第三方失敗的隔離政策。
      * @param json 共用線路格式。
+     * @param events 登記用戶端事件用的事件來源。
      */
     fun register(
         registry: SeatPlacementRegistry,
         failures: ExtensionFailurePolicy,
         json: NetworkJson,
+        events: ClientEvents,
     ) {
         MahjongChannels.aiCharacterTarget.registerClientReceiver(json) { payload ->
             val id = runCatching { UUID.fromString(payload.entityId) }.getOrNull() ?: return@registerClientReceiver
             if (payload.bound) targets += id else targets -= id
         }
-        ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> targets.clear() }
-        ClientEntityEvents.ENTITY_UNLOAD.register { entity, _ -> targets -= entity.uuid }
-        UseEntityCallback.EVENT.register { player, world, hand, entity, _ ->
-            if (!world.isClientSide || entity.uuid !in targets || player.isShiftKeyDown) return@register InteractionResult.PASS
+        events.onClientDisconnect { targets.clear() }
+        events.onClientEntityUnload { entity, _ -> targets -= entity.uuid }
+        events.onClientUseEntity { player, _, hand, entity ->
+            if (entity.uuid !in targets || player.isShiftKeyDown) return@onClientUseEntity InteractionResult.PASS
             val stack = player.getItemInHand(hand)
-            if (stack.isEmpty) return@register InteractionResult.PASS
+            if (stack.isEmpty) return@onClientUseEntity InteractionResult.PASS
             for (definition in registry.entries()) {
                 try {
-                    if (definition.provider.supports(stack.copy())) return@register InteractionResult.SUCCESS
+                    if (definition.provider.supports(stack.copy())) return@onClientUseEntity InteractionResult.SUCCESS
                 } catch (cause: Throwable) {
                     if (!failures.isIsolatable(cause)) throw cause
                     logger.warn("Seat item matching failed providerId={}", definition.id, cause)
-                    return@register InteractionResult.FAIL
+                    return@onClientUseEntity InteractionResult.FAIL
                 }
             }
             InteractionResult.PASS

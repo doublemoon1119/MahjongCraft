@@ -17,7 +17,6 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder.argument
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.commands.arguments.ResourceLocationArgument
@@ -46,7 +45,7 @@ class AutomaticControlCommand(
      */
     fun register(events: ClientEvents) {
         events.onRegisterClientCommand(this)
-        ClientTickEvents.END_CLIENT_TICK.register(::pollCompletion)
+        events.onClientTickEnd(::pollCompletion)
     }
 
     override fun <S : Any> build(): LiteralArgumentBuilder<S> = literal<S>(CLIENT_COMMAND_ROOT).then(

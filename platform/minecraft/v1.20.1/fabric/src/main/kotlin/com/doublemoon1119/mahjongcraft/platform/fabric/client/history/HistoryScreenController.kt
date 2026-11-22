@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.His
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryQueryTransport
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history.HistoryRoundEventPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.ClientPlayerProfileResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
@@ -26,7 +27,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegist
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfileRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.Screen
 import kotlin.time.Duration.Companion.nanoseconds
@@ -115,11 +115,15 @@ class HistoryScreenController internal constructor(
     /** 避免重複註冊事件。 */
     private var registered = false
 
-    /** 在客戶端初始化時註冊一次延後開啟與失效檢查。 */
-    fun register() {
+    /**
+     * 在客戶端初始化時註冊一次延後開啟與失效檢查。
+     *
+     * @param events 登記用戶端事件用的事件來源。
+     */
+    fun register(events: ClientEvents) {
         if (registered) return
         registered = true
-        ClientTickEvents.END_CLIENT_TICK.register(::tick)
+        events.onClientTickEnd(::tick)
     }
 
     /** 指令或快捷鍵入口不保留聊天畫面。 */

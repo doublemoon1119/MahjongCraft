@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.WorldPanelQueue
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.mojang.blaze3d.systems.RenderSystem
 import com.mojang.blaze3d.vertex.PoseStack
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.renderer.MultiBufferSource
 import org.joml.Matrix3f
@@ -20,11 +20,15 @@ internal object WorldPanelDeferral {
     /** 這一幀收集的面板。 */
     private val queue = WorldPanelQueue()
 
-    /** 登記世界繪製的開始、畫完與結束；沒有收到畫完的那一幀在結束時補畫。 */
-    fun register() {
-        WorldRenderEvents.START.register { queue.beginFrame() }
-        WorldRenderEvents.LAST.register { drawPending() }
-        WorldRenderEvents.END.register { drawPending() }
+    /**
+     * 登記世界繪製的開始、畫完與結束；沒有收到畫完的那一幀在結束時補畫。
+     *
+     * @param events 登記用戶端事件用的事件來源。
+     */
+    fun register(events: ClientEvents) {
+        events.onWorldRenderStart { queue.beginFrame() }
+        events.onWorldRenderLast { drawPending() }
+        events.onWorldRenderEnd { drawPending() }
     }
 
     /**

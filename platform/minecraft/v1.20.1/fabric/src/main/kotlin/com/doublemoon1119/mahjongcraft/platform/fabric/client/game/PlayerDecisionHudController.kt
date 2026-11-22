@@ -40,12 +40,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.isInte
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.tileSelectionDetailText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.fabricmc.fabric.api.event.player.UseEntityCallback
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.network.chat.Component
@@ -107,12 +106,16 @@ class PlayerDecisionHudController(
     /** 尚待伺服器 ACK 或後續權威 timer 更新確認的最終提交。 */
     private val submissionTracker = DecisionSubmissionTracker(clock)
 
-    /** 註冊 client tick、實體互動及聊天層前方的 HUD renderer bridge。 */
-    fun registerEvents() {
+    /**
+     * 註冊 client tick、實體互動及聊天層前方的 HUD renderer bridge。
+     *
+     * @param events 登記用戶端事件用的事件來源。
+     */
+    fun registerEvents(events: ClientEvents) {
         activeController = this
-        ClientTickEvents.END_CLIENT_TICK.register(::tick)
-        UseEntityCallback.EVENT.register { _, world, _, entity, _ ->
-            if (world.isClientSide && entity is MahjongTileEntity && entity.managedByGame) {
+        events.onClientTickEnd(::tick)
+        events.onClientUseEntity { _, _, _, entity ->
+            if (entity is MahjongTileEntity && entity.managedByGame) {
                 if (submissionTracker.isPending()) {
                     InteractionResult.SUCCESS
                 } else if (toggleTile(entity)) {
@@ -125,7 +128,7 @@ class PlayerDecisionHudController(
                 } else {
                     InteractionResult.PASS
                 }
-            } else if (world.isClientSide && entity is MahjongTileSelectionConfirmEntity) {
+            } else if (entity is MahjongTileSelectionConfirmEntity) {
                 if (confirmTileSelection(entity)) InteractionResult.SUCCESS else InteractionResult.PASS
             } else {
                 InteractionResult.PASS

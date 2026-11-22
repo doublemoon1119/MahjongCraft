@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.time
 
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.nanoseconds
 
@@ -19,9 +19,13 @@ class PauseAwareClientMonotonicClock : MonotonicClock {
     /** 上一個 tick 的系統單調時間；尚未經過任何 tick 時為 null。 */
     private var lastTick: Duration? = null
 
-    /** 註冊客戶端 tick 事件。 */
-    fun registerEvents() {
-        ClientTickEvents.END_CLIENT_TICK.register { client -> onTick(paused = client.isPaused, now = System.nanoTime().nanoseconds) }
+    /**
+     * 註冊客戶端 tick 事件。
+     *
+     * @param events 登記用戶端事件用的事件來源。
+     */
+    fun registerEvents(events: ClientEvents) {
+        events.onClientTickEnd { client -> onTick(paused = client.isPaused, now = System.nanoTime().nanoseconds) }
     }
 
     /**

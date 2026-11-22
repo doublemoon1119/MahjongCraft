@@ -10,11 +10,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClient
 import com.doublemoon1119.mahjongcraft.platform.minecraft.handbook.MinecraftHandbookScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.handbook.HandbookEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.handbook.HandbookScreen
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerColor
 import com.mojang.blaze3d.platform.InputConstants
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
-import net.fabricmc.fabric.api.event.player.UseItemCallback
 import net.minecraft.ChatFormatting
 import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
@@ -49,22 +47,26 @@ class MahjongHandbookScreenController(
     /** 指令要求開啟、等待下一個 client tick 開啟。 */
     private var openRequested = false
 
-    /** 註冊按鍵、client tick 與使用物品事件；只能在 client entrypoint 呼叫一次。 */
-    fun register() {
+    /**
+     * 註冊按鍵、client tick 與使用物品事件；只能在 client entrypoint 呼叫一次。
+     *
+     * @param events 登記用戶端事件用的事件來源。
+     */
+    fun register(events: ClientEvents) {
         if (registered) return
         registered = true
-        openKeyBinding = KeyBindingHelper.registerKeyBinding(
-            KeyMapping(
+        openKeyBinding = events.registerKeyMapping(
+            mapping = KeyMapping(
                 MinecraftHandbookScreenKeys.OPEN_KEY,
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_SEMICOLON,
                 MinecraftClientConfigScreenKeys.KEY_CATEGORY,
             ),
         )
-        ClientTickEvents.END_CLIENT_TICK.register(::tick)
-        UseItemCallback.EVENT.register { player, world, hand ->
+        events.onClientTickEnd(::tick)
+        events.onClientUseItem { player, _, hand ->
             val stack = player.getItemInHand(hand)
-            if (world.isClientSide && stack.`is`(ModItems.MAHJONG_HANDBOOK)) {
+            if (stack.`is`(ModItems.MAHJONG_HANDBOOK)) {
                 open(Minecraft.getInstance())
                 InteractionResultHolder.success(stack)
             } else {

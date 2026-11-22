@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.tile
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.tile.DiscardSettlementState
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.world.phys.Vec3
 import kotlin.uuid.Uuid
@@ -20,9 +20,13 @@ class ClientDiscardSettlementTracker(
     /** 各桌捨牌的落定狀態。 */
     private val state = DiscardSettlementState<Vec3>()
 
-    /** 註冊 client tick 更新；要在讀取落定狀態的功能之前註冊。 */
-    fun register() {
-        ClientTickEvents.END_CLIENT_TICK.register(::tick)
+    /**
+     * 註冊 client tick 更新；要在讀取落定狀態的功能之前註冊。
+     *
+     * @param events 登記用戶端事件用的事件來源。
+     */
+    fun register(events: ClientEvents) {
+        events.onClientTickEnd(::tick)
     }
 
     /**

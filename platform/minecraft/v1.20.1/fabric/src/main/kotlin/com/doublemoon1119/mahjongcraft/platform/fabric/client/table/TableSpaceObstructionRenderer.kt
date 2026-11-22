@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.table
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.table.ClientTableSpaceObstructionStore
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.renderer.LevelRenderer
 import net.minecraft.client.renderer.RenderType
@@ -15,14 +15,17 @@ import net.minecraft.world.phys.AABB
 class TableSpaceObstructionRenderer(
     private val store: ClientTableSpaceObstructionStore,
 ) {
-    /** 註冊世界繪製事件。 */
-    fun registerEvents() {
-        WorldRenderEvents.BEFORE_DEBUG_RENDER.register { context ->
-            val world = Minecraft.getInstance().level ?: return@register
+    /**
+     * 註冊世界繪製事件。
+     *
+     * @param events 登記用戶端事件用的事件來源。
+     */
+    fun registerEvents(events: ClientEvents) {
+        events.onWorldRenderBeforeDebug { matrices, consumers, cameraState ->
+            val world = Minecraft.getInstance().level ?: return@onWorldRenderBeforeDebug
             val cells = store.cellsIn(world.dimension().location().toString())
-            if (cells.isEmpty()) return@register
-            val consumers = context.consumers() ?: return@register
-            val camera = context.camera().position
+            if (cells.isEmpty()) return@onWorldRenderBeforeDebug
+            val camera = cameraState.position
             val lines = consumers.getBuffer(RenderType.lines())
             cells.forEach { cell ->
                 val box = AABB(
@@ -33,7 +36,7 @@ class TableSpaceObstructionRenderer(
                     cell.y + 1.0,
                     cell.z + 1.0,
                 ).inflate(OUTLINE_INFLATION).move(-camera.x, -camera.y, -camera.z)
-                LevelRenderer.renderLineBox(context.matrixStack(), lines, box, RED, GREEN, BLUE, ALPHA)
+                LevelRenderer.renderLineBox(matrices, lines, box, RED, GREEN, BLUE, ALPHA)
             }
         }
     }

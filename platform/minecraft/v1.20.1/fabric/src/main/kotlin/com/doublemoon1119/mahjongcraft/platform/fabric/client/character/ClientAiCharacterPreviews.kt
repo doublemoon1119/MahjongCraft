@@ -7,20 +7,16 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.CharacterPreviewCache
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.CharacterPreviewImage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.RoomFigureArea
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSource
 import net.fabricmc.api.EnvType
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper
-import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.ReportedException
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.resources.ResourceLocation
-import net.minecraft.server.packs.PackType
-import net.minecraft.server.packs.resources.ResourceManager
 import net.minecraft.world.entity.Entity
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.Uuid
@@ -65,14 +61,18 @@ internal class ClientAiCharacterPreviews(
     /** 本機重試時鐘，不依賴世界遊戲時間。 */
     private var ticks = 0L
 
-    /** 登記有界的模型／頭像建立工作與資源清理。 */
-    fun initialize() {
+    /**
+     * 登記有界的模型／頭像建立工作與資源清理。
+     *
+     * @param events 登記用戶端事件用的事件來源。
+     */
+    fun initialize(events: ClientEvents) {
         check(FabricLoader.getInstance().environmentType == EnvType.CLIENT)
-        ClientTickEvents.END_CLIENT_TICK.register { client ->
+        events.onClientTickEnd { client ->
             if (world !== client.level) clear()
             world = client.level
             ticks++
-            val current = world ?: return@register
+            val current = world ?: return@onClientTickEnd
             models.processOne { character ->
                 if (ticks < modelRetryAt.getOrElse(character) { 0L }) return@processOne null
                 attempt(character) { renderer.create(current, character)?.let { PreviewModel(it) } }.also { model ->
@@ -96,13 +96,9 @@ internal class ClientAiCharacterPreviews(
                 }
             }
         }
-        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(object : SimpleSynchronousResourceReloadListener {
-            override fun getFabricId(): ResourceLocation = ResourceLocation("mahjongcraft", "character_previews")
-
-            override fun onResourceManagerReload(manager: ResourceManager) {
-                Minecraft.getInstance().execute { clear() }
-            }
-        })
+        events.onClientResourceReload(ResourceLocation("mahjongcraft", "character_previews")) {
+            Minecraft.getInstance().execute { clear() }
+        }
     }
 
     /**
