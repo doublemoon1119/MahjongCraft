@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricServerModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricModRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricPacketTransport
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricServerEvents
 import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.FabricRuntimeMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.C2SChannel
@@ -64,6 +65,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModPackets
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModAchievements
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModSounds
@@ -102,6 +104,8 @@ class MahjongCraftMod : ModInitializer {
     private val logger = mahjongCraftLogger(MahjongCraftMod::class)
 
     override fun onInitialize() {
+        // 頻道在建立時就會用到收送方式，必須在任何頻道建立前安裝。
+        ModPackets.install(FabricPacketTransport)
         val koin = startDependencyInjection()
         // 開發工具的服務要在擴充登記之前載入，開發工具登記的擴充才能取用。
         val developmentTools = MahjongCraftDevelopmentTools.discover(koin.get<MinecraftEnvironment>())

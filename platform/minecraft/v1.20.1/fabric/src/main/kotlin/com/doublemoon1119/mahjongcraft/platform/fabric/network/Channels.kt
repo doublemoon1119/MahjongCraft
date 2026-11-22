@@ -2,14 +2,14 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.network
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModPackets
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.C2SRateLimit
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.PlayerRequestRateLimiter
+import io.netty.buffer.Unpooled
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.KSerializer
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
+import net.minecraft.client.Minecraft
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
@@ -112,8 +112,8 @@ internal fun <T> decodeBoundedPayload(
  * @property maxPayloadBytes JSON UTF-8 位元組上限；null 保持既有頻道行為。
  */
 class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private val maxPayloadBytes: Int? = null) {
-    /** Fabric 網路使用的頻道識別碼。 */
-    val channelId: ResourceLocation = ResourceLocation(MinecraftModMetadata.MOD_ID, id)
+    /** 收送封包使用的頻道識別碼。 */
+    val channelId: ResourceLocation = ResourceLocation(MinecraftModMetadata.MOD_ID, id).also(ModPackets.transport::declareChannel)
 
     /** 記錄丟棄過大回應的 logger。 */
     private val logger = mahjongCraftLogger(S2CChannel::class)
@@ -129,11 +129,11 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private 
      * @param value 要傳送的線路資料。
      */
     fun sendTo(player: ServerPlayer, json: NetworkJson, value: T) {
-        val buf = PacketByteBufs.create()
+        val buf = FriendlyByteBuf(Unpooled.buffer())
         val encoded = json.encodeToString(serializer, value)
         require(maxPayloadBytes == null || encoded.toByteArray(Charsets.UTF_8).size <= maxPayloadBytes) { "Channel response exceeds its payload limit" }
         buf.writeUtf(encoded, MAX_PAYLOAD_LENGTH)
-        ServerPlayNetworking.send(player, channelId, buf)
+        ModPackets.transport.sendToPlayer(player, channelId, buf)
     }
 
     /**
@@ -143,19 +143,20 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private 
      * @param handler 主執行緒上的接收處理。
      */
     fun registerClientReceiver(json: NetworkJson, handler: (T) -> Unit) {
-        ClientPlayNetworking.registerGlobalReceiver(channelId) { client, connection, buf, _ ->
+        ModPackets.clientTransport.registerClientReceiver(channelId) { connection, buf ->
             if (maxPayloadBytes != null && buf.readableBytes() > maxPayloadBytes + MAX_STRING_PREFIX_BYTES) {
                 reportOversized(buf.readableBytes(), maxPayloadBytes)
-                return@registerGlobalReceiver
+                return@registerClientReceiver
             }
             val raw = buf.readUtf(MAX_PAYLOAD_LENGTH)
             if (maxPayloadBytes != null) {
                 val rawBytes = raw.toByteArray(Charsets.UTF_8).size
                 if (rawBytes > maxPayloadBytes) {
                     reportOversized(rawBytes, maxPayloadBytes)
-                    return@registerGlobalReceiver
+                    return@registerClientReceiver
                 }
             }
+            val client = Minecraft.getInstance()
             client.execute {
                 if (client.connection === connection) handler(json.decodeFromString(serializer, raw))
             }
@@ -199,8 +200,8 @@ class C2SChannel<T>(
     /** 各頻道拒絕無法解碼的要求時使用的 debug 診斷，不在一般日誌中逐筆警告。 */
     private val logger = mahjongCraftLogger(C2SChannel::class)
 
-    /** Fabric 網路使用的頻道識別碼。 */
-    val channelId: ResourceLocation = ResourceLocation(MinecraftModMetadata.MOD_ID, id)
+    /** 收送封包使用的頻道識別碼。 */
+    val channelId: ResourceLocation = ResourceLocation(MinecraftModMetadata.MOD_ID, id).also(ModPackets.transport::declareChannel)
 
     /** 依 `rateLimit` 判斷要求是否接受；由接收端自行准入時為 null。 */
     private val limiter: PlayerRequestRateLimiter? = (rateLimit as? C2SRateLimit.PerPlayer)
@@ -214,11 +215,11 @@ class C2SChannel<T>(
      * @param value 要傳送的線路資料。
      */
     fun sendToServer(json: NetworkJson, value: T) {
-        val buf = PacketByteBufs.create()
+        val buf = FriendlyByteBuf(Unpooled.buffer())
         val encoded = json.encodeToString(serializer, value)
         require(maxPayloadBytes == null || encoded.toByteArray(Charsets.UTF_8).size <= maxPayloadBytes) { "Channel request exceeds its payload limit" }
         buf.writeUtf(encoded, MAX_PAYLOAD_LENGTH)
-        ClientPlayNetworking.send(channelId, buf)
+        ModPackets.clientTransport.sendToServer(channelId, buf)
     }
 
     /**
@@ -229,11 +230,11 @@ class C2SChannel<T>(
      * @param handler 伺服器主執行緒上的接收處理。
      */
     fun registerServerReceiver(json: NetworkJson, handler: (MinecraftServer, ServerPlayer, T) -> Unit) {
-        ServerPlayNetworking.registerGlobalReceiver(channelId) { server, player, _, buf, _ ->
+        ModPackets.transport.registerServerReceiver(channelId) { server, player, buf ->
             val admission = limiter?.tryAcquire(player.uuid.toKotlinUuid())
             if (admission is PlayerRequestRateLimiter.Result.Dropped) {
                 if (admission.shouldLog) logger.debug("Dropped requests over the rate limit on {} from {}", channelId, player.uuid)
-                return@registerGlobalReceiver
+                return@registerServerReceiver
             }
             val accepted = decodeAndDispatchC2S(buf, json, serializer, maxPayloadBytes) { decoded ->
                 server.execute { handler(server, player, decoded) }

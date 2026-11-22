@@ -70,6 +70,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.extension.BuiltInFabricMa
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongClientExtension
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongClientExtensionBootstrap
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongScoringStickItem
+import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricClientPacketTransport
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
@@ -98,6 +99,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.Publ
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.table.ClientTableSpaceObstructionStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.item.toModelPredicateValue
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModPackets
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerIdentityPayload
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
@@ -138,6 +140,7 @@ class MahjongCraftModClient : ClientModInitializer {
     private val logger = mahjongCraftLogger(MahjongCraftModClient::class)
 
     override fun onInitializeClient() {
+        ModPackets.installClient(FabricClientPacketTransport)
         val koin = GlobalContext.get()
         val previewExtensions = FabricLoader.getInstance()
             .getEntrypoints(FabricMahjongClientExtensionBootstrap.ENTRYPOINT, FabricMahjongClientExtension::class.java)
