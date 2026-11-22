@@ -15,15 +15,15 @@
       "com.doublemoon1119.mahjongcraft.platform.fabric.client.debug.DebugClientEntrypoint"
     ],
     "mahjongcraft:development": [
-      "com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugDevelopmentEntrypoint"
+      "com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.DebugDevelopmentEntrypoint"
     ],
     "mahjongcraft:extension": [
-      "com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugMahjongExtension"
+      "com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.DebugMahjongExtension"
     ],
     "mahjongcraft:client_extension": [
       {
         "adapter": "kotlin",
-        "value": "com.doublemoon1119.mahjongcraft.platform.fabric.extension.DebugNativeMahjongClientExtension"
+        "value": "com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.DebugNativeMahjongClientExtension"
       }
     ]
   },

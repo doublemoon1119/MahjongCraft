@@ -18,7 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PlannedTileMotion
  * 與 debug 動畫指令共用；不帶任何實例狀態。這些函式只吃 `tile`／位置／絕對時刻這幾個純粹的參數，
  * 不涉及桌子座標系、`TableLocation` 或任何對局概念。
  *
- * `FabricDebugCommand` 的動畫測試指令群組在不掛任何桌子／對局的臨時牌 entity 上重播同樣的動畫，
+ * `DebugCommand` 的動畫測試指令群組在不掛任何桌子／對局的臨時牌 entity 上重播同樣的動畫，
  * 讓開發者不必建房、加入、開局就能預覽演出效果；兩邊共用同一份實作，動畫調整時不會不同步。
  * `internal`：只給同模組內的呼叫端使用，不對外公開成正式 API。
  */

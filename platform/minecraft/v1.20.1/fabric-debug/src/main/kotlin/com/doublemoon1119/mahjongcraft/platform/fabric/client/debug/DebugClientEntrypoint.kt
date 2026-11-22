@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.debug
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricClientEvents
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.DebugClientCommand
 import net.fabricmc.api.ClientModInitializer
 import org.koin.core.context.GlobalContext
 

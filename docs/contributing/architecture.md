@@ -177,4 +177,6 @@ All modules must strictly follow the rules below to form a one-way dependency ch
     [Minecraft Build](minecraft-build.md#version-mod-modules).
   - Development-only tools depend on the module they serve, never the reverse: `:minecraft_v1.20.1_fabric-debug`
     -> `:minecraft_v1.20.1_fabric`. The adapter loads them only into development runs through entrypoints.
+  - The debug tools follow the same layers: `:minecraft_v1.20.1_fabric-debug` compiles the sources of
+    `:minecraft_v1.20.1_mod-debug` and `:minecraft_common-debug`.
   - These are Gradle project paths, not source directory paths; see the platform table above for the mapping.

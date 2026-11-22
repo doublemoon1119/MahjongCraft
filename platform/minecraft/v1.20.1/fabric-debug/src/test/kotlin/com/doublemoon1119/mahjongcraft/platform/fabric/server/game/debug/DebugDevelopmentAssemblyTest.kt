@@ -12,24 +12,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.animation.FabricDebugAnimationCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugDecisionActionIds
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.FabricDebugDecisionCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.FabricHistoryGenerationRuntimeFactory
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.HistoryGenerationRuntimeFactory
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationMode
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinShowcaseOverride
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.FabricDebugPresentationCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.progression.FabricDebugProgressionCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.progression.FabricDebugRoundCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.DebugScriptedAiStrategy
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.FabricDebugScenarioCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPlayerTableScope
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewEntityLifecycle
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugTilePreviewSupport
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugVirtualTableLayoutFactory
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.text.FabricDebugTextCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
@@ -39,6 +21,27 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.development.TableE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.development.WinCelebrationRequestAdjusters
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.LinkageIsolatingExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.DebugCommand
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.DebugDevelopmentEntrypoint
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.DebugMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.animation.DebugAnimationCommand
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.decision.DebugDecisionCommand
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.presentation.DebugPresentationCommand
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.progression.DebugProgressionCommand
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.progression.DebugRoundCommand
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.scenario.DebugScenarioCommand
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.support.DebugPlayerTableScope
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.support.DebugPreviewEntityLifecycle
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.support.DebugTilePreviewSupport
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.text.DebugTextCommand
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.decision.DebugDecisionActionIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history.HistoryGenerationRuntimeFactory
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history.RegisteredHistoryGenerationRuntimeFactory
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.presentation.DebugWinRoundContinuationMode
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.presentation.DebugWinRoundContinuationState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.presentation.DebugWinShowcaseOverride
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.scenario.DebugScriptedAiStrategy
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.support.DebugVirtualTableLayoutFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import org.koin.core.Koin
@@ -97,8 +100,8 @@ class DebugDevelopmentAssemblyTest {
     @Test
     fun `debug command tree mounts every family under the debug root`() {
         val koin = startKoin(debugKoinApplication()).koin
-        assertSame(koin.get<FabricHistoryGenerationRuntimeFactory>(), koin.get<HistoryGenerationRuntimeFactory>())
-        val debugRoot = koin.get<FabricDebugCommand>().build().build()
+        assertSame(koin.get<RegisteredHistoryGenerationRuntimeFactory>(), koin.get<HistoryGenerationRuntimeFactory>())
+        val debugRoot = koin.get<DebugCommand>().build().build()
         assertEquals("mahjongcraft", debugRoot.name)
         assertEquals(setOf("debug"), debugRoot.children.map { it.name }.toSet())
         val debugNode = debugRoot.children.single()
@@ -131,13 +134,13 @@ class DebugDevelopmentAssemblyTest {
         )
         assertEquals(
             expected = setOf("list", "load", "stress"),
-            actual = koin.get<FabricDebugScenarioCommand>().build().build().children.map { it.name }.toSet(),
+            actual = koin.get<DebugScenarioCommand>().build().build().children.map { it.name }.toSet(),
         )
         assertEquals(
             expected = setOf("next", "combo"),
-            actual = koin.get<FabricDebugRoundCommand>().buildRoundCommand().build().children.map { it.name }.toSet(),
+            actual = koin.get<DebugRoundCommand>().buildRoundCommand().build().children.map { it.name }.toSet(),
         )
-        val presentationCommand = koin.get<FabricDebugPresentationCommand>()
+        val presentationCommand = koin.get<DebugPresentationCommand>()
         assertEquals(
             expected = setOf("melds", "tsumo", "ron", "multi_ron", "phase"),
             actual = presentationCommand.buildShowcaseCommand().build().children.map { it.name }.toSet(),
@@ -167,8 +170,8 @@ class DebugDevelopmentAssemblyTest {
             expected = setOf("clear", "cue"),
             actual = presentationCommand.buildWinShowcaseOverrideCommand().build().children.map { it.name }.toSet(),
         )
-        koin.get<FabricDebugTextCommand>()
-        val decisionCommand = koin.get<FabricDebugDecisionCommand>()
+        koin.get<DebugTextCommand>()
+        val decisionCommand = koin.get<DebugDecisionCommand>()
         val decisionHudNode = decisionCommand.buildDecisionHudCommand().build()
         assertEquals(
             expected = setOf("clear", "riichi", "riichi_three_player", "taiwan"),
@@ -195,8 +198,8 @@ class DebugDevelopmentAssemblyTest {
             expected = setOf("start", "submit", "timeout", "cancel"),
             actual = decisionCommand.buildRuleDecisionCommand().build().children.map { it.name }.toSet(),
         )
-        koin.get<FabricDebugProgressionCommand>()
-        koin.get<FabricDebugAnimationCommand>()
+        koin.get<DebugProgressionCommand>()
+        koin.get<DebugAnimationCommand>()
         koin.get<DebugTilePreviewSupport>()
         koin.get<DebugVirtualTableLayoutFactory>()
         koin.get<DebugPreviewEntityLifecycle>()

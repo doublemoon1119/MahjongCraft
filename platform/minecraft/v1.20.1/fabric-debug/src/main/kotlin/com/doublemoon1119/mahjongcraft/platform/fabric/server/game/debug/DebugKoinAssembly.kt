@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricServerModule
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.di.modClientModule
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.debugServerModule
 import org.koin.core.KoinApplication
 import org.koin.dsl.koinApplication
 

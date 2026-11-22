@@ -11,7 +11,9 @@ The Minecraft adapter turns MahjongCraft flow and domain state into a playable m
 | [Cross-version common](common/README.md) | Minecraft-facing contracts, assets, configuration, layout, and presentation models shared across supported versions. |
 | [Minecraft 1.20.1 mod](v1.20.1/mod/README.md) | Code and resources for Minecraft 1.20.1 shared by its loaders, compiled against vanilla Minecraft. |
 | [Minecraft 1.20.1 Fabric](v1.20.1/fabric/README.md) | Fabric runtime integration, rendering, commands, persistence, and final mod packaging. |
-| [Minecraft 1.20.1 Fabric debug tools](v1.20.1/fabric-debug/README.md) | Development-only debug commands, scenarios and stress tests, loaded into development runs and never packaged. |
+| [Cross-version common debug tools](common-debug/README.md) | Development-only debug code and resources that do not call Minecraft, such as debug rules, scenario data and stress test statistics. |
+| [Minecraft 1.20.1 mod debug tools](v1.20.1/mod-debug/README.md) | Development-only debug commands, scenarios and stress tests for Minecraft 1.20.1, compiled against vanilla Minecraft. |
+| [Minecraft 1.20.1 Fabric debug tools](v1.20.1/fabric-debug/README.md) | Fabric entrypoints for the debug tools, loaded into development runs and never packaged. |
 
 ## Target
 
