@@ -5,10 +5,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCha
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.AlphaVertexConsumer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongBotArmAnimation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatGeometry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientModels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.math.Axis
-import net.fabricmc.fabric.api.client.model.loading.v1.FabricBakedModelManager
 import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.client.renderer.RenderType
 import net.minecraft.client.renderer.entity.EntityRenderer
@@ -201,7 +201,7 @@ class MahjongBotEntityRenderer(
         matrices.mulPose(Axis.XP.rotationDegrees(angle))
         matrices.scale(dimensions.width, dimensions.length, dimensions.depth)
         matrices.translate(-0.5, -1.0, -0.5)
-        val model = (modelManager as FabricBakedModelManager).getModel(LIMB_MODEL_ID) ?: modelManager.missingModel
+        val model = ClientModels.find(LIMB_MODEL_ID) ?: modelManager.missingModel
         blockModelRenderer.renderModel(
             matrices.last(),
             if (alpha < 1f) {

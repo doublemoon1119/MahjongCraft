@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model.FixedMahjongTileModelPreparedData
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.AlphaVertexConsumer
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientModels
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ItemStackRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
@@ -14,8 +16,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureAssetP
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureResourceId
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
-import net.fabricmc.fabric.api.client.model.loading.v1.FabricBakedModelManager
-import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry
 import net.minecraft.client.Minecraft
 import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.client.renderer.RenderType
@@ -37,7 +37,7 @@ import org.koin.core.context.GlobalContext
  * 已烘焙模型的 asset key，改為手繪與內建模型相同的立方體幾何，正面材質直接綁定 runtime 解析的
  * [ResourceLocation]，不經過 atlas；缺少材質時退回內建 unknown 牌面，不靜默顯示錯誤畫面。
  */
-object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer {
+object MahjongTileItemRenderer : ItemStackRenderer {
     private val logger = mahjongCraftLogger(MahjongTileItemRenderer::class)
 
     /** 已回報缺少材質警告的 asset key，避免同一個 key 每幀重複記錄。 */
@@ -341,9 +341,8 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
      * @return 找到的有效烘焙模型；缺少或為 missing model 時回傳 `null`。
      */
     private fun findBakedModel(modelId: ResourceLocation): BakedModel? {
-        val manager = Minecraft.getInstance().modelManager
-        val model = (manager as FabricBakedModelManager).getModel(modelId) ?: return null
-        return if (model === manager.missingModel) null else model
+        val model = ClientModels.find(modelId) ?: return null
+        return if (model === Minecraft.getInstance().modelManager.missingModel) null else model
     }
 
     /**

@@ -2,10 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.model
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model.FixedMahjongTileModelPreparedData
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model.FixedMahjongTileModelVariant
-import net.fabricmc.fabric.api.client.model.loading.v1.ModelResolver
 import net.minecraft.client.renderer.block.model.BlockModel
-import net.minecraft.client.resources.model.ModelBakery
-import net.minecraft.client.resources.model.UnbakedModel
 import net.minecraft.resources.ResourceLocation
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -13,7 +10,7 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
-/** 驗證固定牌模型的材質變體能保留模板並接入 Fabric 的 synthetic model resolver。 */
+/** 驗證固定牌模型的材質變體能保留模板，並由模型載入以 synthetic ID 提供。 */
 class FixedMahjongTileModelVariantTest {
     /** 變體覆寫正面、牌體與粒子材質，但仍以模板提供 parent 與 display。 */
     @Test
@@ -47,15 +44,14 @@ class FixedMahjongTileModelVariantTest {
         assertEquals(template.transforms.gui, model.transforms.gui)
     }
 
-    /** resolver 只接管已登記的 synthetic ID，其他模型交回 vanilla 載入流程。 */
+    /** 模型載入只接管本次準備的 synthetic ID，其他模型交回原本的載入流程。 */
     @Test
-    fun `resolver selects registered synthetic model before baking`() {
+    fun `model loading resolves only prepared synthetic ids`() {
         val variant = variant()
-        val resolver = FixedMahjongTileModelVariantResolver(listOf(variant))
-        val context = TestResolverContext(variant.modelId)
+        val data = FixedMahjongTileModelPreparedData(variants = listOf(variant), effectiveAppearances = emptyMap())
 
-        assertNotNull(resolver.resolveModel(context))
-        assertNull(resolver.resolveModel(context.copy(requestedId = ResourceLocation("example", "item/other"))))
+        assertNotNull(MahjongTileModelLoadingPlugin.resolveModel(data, variant.modelId))
+        assertNull(MahjongTileModelLoadingPlugin.resolveModel(data, ResourceLocation("example", "item/other")))
     }
 
     /** 可見與未知牌 synthetic ID 不會因為 asset key 剛好叫 unknown 而互相覆蓋。 */
@@ -76,19 +72,4 @@ class FixedMahjongTileModelVariantTest {
         frontTextureId = ResourceLocation("example", "textures/item/mahjong_tile/inverted_five_pin.png"),
         coverTextureId = ResourceLocation("example", "textures/item/mahjong_tile/example_cover.png"),
     )
-
-    /**
-     * 提供 resolver 測試所需的最小模型載入上下文。
-     *
-     * @property requestedId 本次 resolver 查詢的 synthetic model ID。
-     */
-    private data class TestResolverContext(
-        private val requestedId: ResourceLocation,
-    ) : ModelResolver.Context {
-        override fun id(): ResourceLocation = requestedId
-
-        override fun getOrLoadModel(id: ResourceLocation): UnbakedModel = BlockModel.fromString("{}")
-
-        override fun loader(): ModelBakery = error("Not needed by this test")
-    }
 }

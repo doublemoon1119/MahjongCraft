@@ -70,8 +70,10 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.extension.BuiltInFabricMa
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongClientExtension
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongClientExtensionBootstrap
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongScoringStickItem
+import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricBakedModelLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricClientEvents
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricClientPacketTransport
+import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricClientRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
@@ -100,6 +102,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.Publ
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.table.ClientTableSpaceObstructionStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.item.toModelPredicateValue
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientModels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModPackets
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerIdentityPayload
@@ -118,16 +121,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.fabricmc.fabric.api.client.model.loading.v1.PreparableModelLoadingPlugin
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
-import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry
-import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry
-import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Minecraft
-import net.minecraft.client.renderer.item.ItemProperties
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.packs.PackType
 import net.minecraft.server.packs.resources.ResourceManager
@@ -142,6 +140,7 @@ class MahjongCraftModClient : ClientModInitializer {
 
     override fun onInitializeClient() {
         ModPackets.installClient(FabricClientPacketTransport)
+        ClientModels.install(FabricBakedModelLookup)
         val koin = GlobalContext.get()
         val previewExtensions = FabricLoader.getInstance()
             .getEntrypoints(FabricMahjongClientExtensionBootstrap.ENTRYPOINT, FabricMahjongClientExtension::class.java)
@@ -173,14 +172,14 @@ class MahjongCraftModClient : ClientModInitializer {
             events = FabricClientEvents,
         )
 
-        PreparableModelLoadingPlugin.register(MahjongTileModelLoadingPlugin.DATA_LOADER, MahjongTileModelLoadingPlugin)
-        BuiltinItemRendererRegistry.INSTANCE.register(ModItems.MAHJONG_TILE, MahjongTileItemRenderer)
-        ItemProperties.register(
-            ModItems.MAHJONG_SCORING_STICK,
-            ResourceLocation(MinecraftModMetadata.MOD_ID, "denomination"),
+        FabricClientRegistrar.registerModelLoading(MahjongTileModelLoadingPlugin)
+        FabricClientRegistrar.registerItemRenderer(ModItems.MAHJONG_TILE, MahjongTileItemRenderer)
+        FabricClientRegistrar.registerItemProperty(
+            item = ModItems.MAHJONG_SCORING_STICK,
+            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "denomination"),
         ) { stack, _, _, _ -> MahjongScoringStickItem.readDenomination(stack).toModelPredicateValue() }
         ModItems.MAHJONG_RULERS.forEach { (color, item) ->
-            ColorProviderRegistry.ITEM.register({ _, _ -> MahjongRulerTint.rgb(color) }, item)
+            FabricClientRegistrar.registerItemColor(color = { _, _ -> MahjongRulerTint.rgb(color) }, items = listOf(item))
         }
         val clientConfigStore = koin.get<MahjongClientConfigStore>()
         koin.get<RoomConfigScreenCommand>().register(FabricClientEvents)
@@ -402,15 +401,15 @@ class MahjongCraftModClient : ClientModInitializer {
         )
         koin.get<PauseAwareClientMonotonicClock>().registerEvents(FabricClientEvents)
         ClientTickEvents.END_CLIENT_TICK.register { automaticControlUpdateCoordinator.checkTimeout() }
-        EntityRendererRegistry.register(ModEntities.mahjongBot, ::MahjongBotEntityRenderer)
-        EntityRendererRegistry.register(ModEntities.mahjongDice, ::MahjongDiceEntityRenderer)
-        EntityRendererRegistry.register(ModEntities.mahjongSoundTimeline, ::MahjongSoundTimelineEntityRenderer)
-        EntityRendererRegistry.register(ModEntities.mahjongStoolSeat, ::MahjongStoolSeatEntityRenderer)
-        EntityRendererRegistry.register(ModEntities.diceRollPresentation) { context -> DiceRollPresentationEntityRenderer(context, clientConfigStore) }
-        EntityRendererRegistry.register(ModEntities.mahjongScoringStick, ::MahjongScoringStickEntityRenderer)
-        EntityRendererRegistry.register(ModEntities.mahjongRuler, ::MahjongRulerEntityRenderer)
-        EntityRendererRegistry.register(ModEntities.mahjongTileSelectionConfirm, ::MahjongTileSelectionConfirmEntityRenderer)
-        EntityRendererRegistry.register(ModEntities.mahjongRoundInfo) { context ->
+        FabricClientRegistrar.registerEntityRenderer(ModEntities.mahjongBot, ::MahjongBotEntityRenderer)
+        FabricClientRegistrar.registerEntityRenderer(ModEntities.mahjongDice, ::MahjongDiceEntityRenderer)
+        FabricClientRegistrar.registerEntityRenderer(ModEntities.mahjongSoundTimeline, ::MahjongSoundTimelineEntityRenderer)
+        FabricClientRegistrar.registerEntityRenderer(ModEntities.mahjongStoolSeat, ::MahjongStoolSeatEntityRenderer)
+        FabricClientRegistrar.registerEntityRenderer(ModEntities.diceRollPresentation) { context -> DiceRollPresentationEntityRenderer(context, clientConfigStore) }
+        FabricClientRegistrar.registerEntityRenderer(ModEntities.mahjongScoringStick, ::MahjongScoringStickEntityRenderer)
+        FabricClientRegistrar.registerEntityRenderer(ModEntities.mahjongRuler, ::MahjongRulerEntityRenderer)
+        FabricClientRegistrar.registerEntityRenderer(ModEntities.mahjongTileSelectionConfirm, ::MahjongTileSelectionConfirmEntityRenderer)
+        FabricClientRegistrar.registerEntityRenderer(ModEntities.mahjongRoundInfo) { context ->
             MahjongRoundInfoEntityRenderer(
                 context = context,
                 configStore = clientConfigStore,
@@ -420,29 +419,29 @@ class MahjongCraftModClient : ClientModInitializer {
                 tileEmojiRegistry = tileEmojiRegistry,
             )
         }
-        EntityRendererRegistry.register(ModEntities.mahjongPlayerInfo) { context ->
+        FabricClientRegistrar.registerEntityRenderer(ModEntities.mahjongPlayerInfo) { context ->
             MahjongPlayerInfoEntityRenderer(context, portraitRenderer, indicatorTextResolver, clientConfigStore, playerNames)
         }
-        EntityRendererRegistry.register(ModEntities.mahjongLobbyInfo) { context ->
+        FabricClientRegistrar.registerEntityRenderer(ModEntities.mahjongLobbyInfo) { context ->
             MahjongLobbyInfoEntityRenderer(context, ruleNames, clientConfigStore)
         }
-        EntityRendererRegistry.register(ModEntities.winCelebrationEffect, ::WinCelebrationEffectEntityRenderer)
-        EntityRendererRegistry.register(ModEntities.winCelebrationShowcase) { context ->
+        FabricClientRegistrar.registerEntityRenderer(ModEntities.winCelebrationEffect, ::WinCelebrationEffectEntityRenderer)
+        FabricClientRegistrar.registerEntityRenderer(ModEntities.winCelebrationShowcase) { context ->
             WinCelebrationShowcaseEntityRenderer(context, showcaseRegistry, tileFaceRenderer, tileAppearanceResolver)
         }
-        EntityRendererRegistry.register(ModEntities.exhaustiveDrawSettlementPresentation) { context ->
+        FabricClientRegistrar.registerEntityRenderer(ModEntities.exhaustiveDrawSettlementPresentation) { context ->
             ExhaustiveDrawSettlementPresentationEntityRenderer(context, exhaustiveDrawReasonDisplayNames, portraitRenderer, tileFaceRenderer, playerNames, clientConfigStore, tileAppearanceResolver)
         }
-        EntityRendererRegistry.register(ModEntities.winSettlementPresentation) { context ->
+        FabricClientRegistrar.registerEntityRenderer(ModEntities.winSettlementPresentation) { context ->
             WinSettlementPresentationEntityRenderer(context, winSettlementTemplates, portraitRenderer, tileFaceRenderer, playerNames, clientConfigStore, indicatorTextResolver, tileAppearanceResolver, tileAssetRegistry)
         }
-        EntityRendererRegistry.register(ModEntities.matchSettlementPresentation) { context ->
+        FabricClientRegistrar.registerEntityRenderer(ModEntities.matchSettlementPresentation) { context ->
             MatchSettlementPresentationEntityRenderer(context, matchSettlementTemplates, portraitRenderer, playerNames, clientConfigStore)
         }
-        EntityRendererRegistry.register(ModEntities.tablePropTile) { context ->
+        FabricClientRegistrar.registerEntityRenderer(ModEntities.tablePropTile) { context ->
             TablePropTileEntityRenderer(context, tileFaceRenderer)
         }
-        EntityRendererRegistry.register(ModEntities.mahjongTile) { context ->
+        FabricClientRegistrar.registerEntityRenderer(ModEntities.mahjongTile) { context ->
             MahjongTileEntityRenderer(
                 context = context,
                 stateStore = stateStore,

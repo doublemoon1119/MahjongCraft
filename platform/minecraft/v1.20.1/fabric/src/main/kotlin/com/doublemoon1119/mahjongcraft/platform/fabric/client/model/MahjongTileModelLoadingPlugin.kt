@@ -3,13 +3,13 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.model
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model.FixedMahjongTileModelLoadingPlugin
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model.FixedMahjongTileModelPreparedData
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModelLoading
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.allTileAssetKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileModelResourceId
-import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin
-import net.fabricmc.fabric.api.client.model.loading.v1.PreparableModelLoadingPlugin
+import net.minecraft.client.resources.model.UnbakedModel
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.packs.resources.ResourceManager
 import org.koin.core.context.GlobalContext
@@ -19,36 +19,32 @@ import java.util.concurrent.Executor
 /**
  * 載入麻將牌與內建角色模型，並準備牌組外觀變體。
  *
- * 所有變體都經由同一個 Fabric preparable plugin 登記；資源重載會重新建立快照，
- * 不會與上一輪烘焙結果共用衍生資料。
+ * 每次資源重載重新準備變體快照，不與上一輪烘焙結果共用衍生資料；沒有模型檔的變體由 [resolveModel] 以 synthetic ID 提供。
  */
-object MahjongTileModelLoadingPlugin : PreparableModelLoadingPlugin<FixedMahjongTileModelPreparedData> {
+object MahjongTileModelLoadingPlugin : ModelLoading<FixedMahjongTileModelPreparedData> {
+    /** 最近一次模型載入使用的變體快照。 */
     @Volatile
     private var preparedData: FixedMahjongTileModelPreparedData? = null
 
-    /** Fabric 在資源重載前用來準備模型與材質驗證資料的 loader。 */
-    val DATA_LOADER: PreparableModelLoadingPlugin.DataLoader<FixedMahjongTileModelPreparedData> =
-        PreparableModelLoadingPlugin.DataLoader { resourceManager, executor ->
-            load(resourceManager, executor)
-        }
+    override fun prepare(
+        resourceManager: ResourceManager,
+        executor: Executor,
+    ): CompletableFuture<FixedMahjongTileModelPreparedData> = FixedMahjongTileModelLoadingPlugin.load(resourceManager, executor)
 
-    override fun onInitializeModelLoader(
-        data: FixedMahjongTileModelPreparedData,
-        pluginContext: ModelLoadingPlugin.Context,
-    ) {
+    override fun additionalModels(data: FixedMahjongTileModelPreparedData): Collection<ResourceLocation> {
         preparedData = data
         val registry = GlobalContext.get().get<MinecraftTileAssetRegistry>()
-        pluginContext.addModels(
-            buildList {
-                registry.allTileAssetKeys().mapTo(this) { assetKey ->
-                    ResourceLocation(tileModelResourceId(assetKey, registry))
-                }
-                data.variants.mapTo(this) { it.modelId }
-                add(ResourceLocation(BuiltInAiCharacters.TILE_MASCOT_LIMB_MODEL_ID))
-            },
-        )
-        pluginContext.resolveModel().register(FixedMahjongTileModelVariantResolver(data.variants))
+        return buildList {
+            registry.allTileAssetKeys().mapTo(this) { assetKey ->
+                ResourceLocation(tileModelResourceId(assetKey, registry))
+            }
+            data.variants.mapTo(this) { it.modelId }
+            add(ResourceLocation(BuiltInAiCharacters.TILE_MASCOT_LIMB_MODEL_ID))
+        }
     }
+
+    /** 只接管本次準備的 synthetic ID；其他模型交回原本的載入流程。 */
+    override fun resolveModel(data: FixedMahjongTileModelPreparedData, id: ResourceLocation): UnbakedModel? = data.variant(id)?.toUnbakedModel()
 
     /**
      * 取得本次資源重載真正可用的牌組外觀；完整外觀缺少必要資源時回退到內建預設。
@@ -57,16 +53,4 @@ object MahjongTileModelLoadingPlugin : PreparableModelLoadingPlugin<FixedMahjong
      * @return 已通過本次資源重載驗證的外觀，或內建預設外觀。
      */
     fun effectiveAppearance(requested: MinecraftTileSetAppearanceDefinition): MinecraftTileSetAppearanceDefinition = preparedData?.effectiveAppearance(requested) ?: BuiltInMinecraftTileAppearances.DEFAULT
-
-    /**
-     * 準備本次資源重載的固定牌模型變體。
-     *
-     * @param resourceManager 本次資源重載使用的資源管理器。
-     * @param executor Fabric 提供的非同步準備執行器。
-     * @return 已完成資源檢查的模型變體快照。
-     */
-    private fun load(
-        resourceManager: ResourceManager,
-        executor: Executor,
-    ): CompletableFuture<FixedMahjongTileModelPreparedData> = FixedMahjongTileModelLoadingPlugin.load(resourceManager, executor)
 }

@@ -25,6 +25,17 @@ data class FixedMahjongTileModelPreparedData(
     val variants: List<FixedMahjongTileModelVariant>,
     private val effectiveAppearances: Map<String, MinecraftTileSetAppearanceDefinition>,
 ) {
+    /** 依 synthetic model ID 查詢的變體。 */
+    private val variantsById: Map<ResourceLocation, FixedMahjongTileModelVariant> = variants.associateBy { it.modelId }
+
+    /**
+     * 依 synthetic model ID 取得變體。
+     *
+     * @param modelId 要載入的模型 ID。
+     * @return 對應的變體；這個 ID 不是本次準備的變體時為 null。
+     */
+    fun variant(modelId: ResourceLocation): FixedMahjongTileModelVariant? = variantsById[modelId]
+
     /**
      * 依本次資源重載結果取得有效外觀，完整外觀無法使用時回退內建預設。
      *
