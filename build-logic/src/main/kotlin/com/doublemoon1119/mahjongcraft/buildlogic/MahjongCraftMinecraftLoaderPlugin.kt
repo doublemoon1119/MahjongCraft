@@ -60,7 +60,7 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
                 rename { "icon.png" }
             }
             inputs.property("modMetadata", metadata)
-            filesMatching(listOf("fabric.mod.json", "META-INF/neoforge.mods.toml")) {
+            filesMatching(listOf("fabric.mod.json", "META-INF/mods.toml", "META-INF/neoforge.mods.toml")) {
                 expand(metadata.get())
             }
         }

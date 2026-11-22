@@ -56,6 +56,16 @@ irisJcpp1201 = "1.4.14"
 irisGlslTransformer1201 = "2.0.1"
 irisAntlrRuntime1201 = "4.13.1"
 
+# Minecraft v1.20.1 + Forge target dependencies
+forge1201 = "1.20.1-47.4.29"
+kotlinforforge = "4.13.0"
+
+# Forge 1.20.1 的執行相容範圍（Maven 版本範圍），與上方編譯依賴版本分開維護。
+minecraftRequirement1201 = "[1.20.1,1.20.2)"
+forgeRequirement1201 = "[47,)"
+# Kotlin for Forge 4.13 內附 Kotlin 2.4.21，不低於本專案編譯使用的 Kotlin 版本。
+kotlinForForgeRequirement1201 = "[4.13,)"
+
 [libraries]
 
 # Build-logic implementation dependencies
@@ -92,6 +102,9 @@ sodium1201 = { group = "maven.modrinth", name = "sodium", version.ref = "sodium1
 irisJcpp1201 = { group = "org.anarres", name = "jcpp", version.ref = "irisJcpp1201" }
 irisGlslTransformer1201 = { group = "io.github.douira", name = "glsl-transformer", version.ref = "irisGlslTransformer1201" }
 irisAntlrRuntime1201 = { group = "org.antlr", name = "antlr4-runtime", version.ref = "irisAntlrRuntime1201" }
+
+# Minecraft v1.20.1 + Forge target libraries
+kotlinforforge = { group = "thedarkcolour", name = "kotlinforforge", version.ref = "kotlinforforge" }
 
 [plugins]
 

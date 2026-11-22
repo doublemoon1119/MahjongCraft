@@ -23,3 +23,18 @@ example-modules = [
 [targets.attributes]
 minecraft-version = "v1.20.1"
 loader = "fabric"
+
+[[targets]]
+id = "minecraft-v1.20.1-forge"
+platform = "minecraft"
+java-toolchain = 17
+java-release = 17
+modules = [
+    "platform/minecraft/common",
+    "platform/minecraft/v1.20.1/mod",
+    "platform/minecraft/v1.20.1/forge",
+]
+
+[targets.attributes]
+minecraft-version = "v1.20.1"
+loader = "forge"
