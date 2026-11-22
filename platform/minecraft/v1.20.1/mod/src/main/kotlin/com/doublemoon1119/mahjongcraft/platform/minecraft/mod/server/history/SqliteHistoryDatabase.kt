@@ -407,7 +407,7 @@ internal class SqliteHistoryDatabase private constructor(
      * @return 已有 Replay 的對局 ID 集合。
      */
     fun readReplayIds(): Set<String> = transaction(database) {
-        HistoryReplayTable.selectAll().mapTo(mutableSetOf()) { it[HistoryReplayTable.matchId] }
+        HistoryReplayTable.select(HistoryReplayTable.matchId).mapTo(mutableSetOf()) { it[HistoryReplayTable.matchId] }
     }
 
     /**
@@ -453,9 +453,9 @@ internal class SqliteHistoryDatabase private constructor(
      * @return 單一交易內取得的保存證據。
      */
     fun readArchiveStatusEvidence(matchId: String): HistoryArchiveStatusEvidence = transaction(database) {
-        val replay = HistoryReplayTable.selectAll().where { HistoryReplayTable.matchId eq matchId }.any()
+        val replay = HistoryReplayTable.select(HistoryReplayTable.matchId).where { HistoryReplayTable.matchId eq matchId }.any()
         val tombstone = HistoryTombstoneTable.selectAll().where { HistoryTombstoneTable.matchId eq matchId }.any()
-        val pending = HistoryPendingEventTable.selectAll().where { HistoryPendingEventTable.matchId eq matchId }.any()
+        val pending = HistoryPendingEventTable.select(HistoryPendingEventTable.matchId).where { HistoryPendingEventTable.matchId eq matchId }.any()
         val failed = HistoryGapTable.selectAll().where { HistoryGapTable.matchId eq matchId }.any() ||
             HistoryRecordingStopTable.selectAll().where { HistoryRecordingStopTable.matchId eq matchId }.any() ||
             HistoryTerminalTable.selectAll().where {
@@ -1115,7 +1115,7 @@ internal class SqliteHistoryDatabase private constructor(
             val matchId = summary[HistoryMatchTable.matchId]
             val ended = summary[HistoryMatchTable.endedAtEpochMillis] ?: return@mapNotNull null
             if (summary[HistoryMatchTable.status] != "COMPLETED" ||
-                HistoryReplayTable.selectAll().where { HistoryReplayTable.matchId eq matchId }.empty()
+                HistoryReplayTable.select(HistoryReplayTable.matchId).where { HistoryReplayTable.matchId eq matchId }.empty()
             ) {
                 return@mapNotNull null
             }
@@ -1124,7 +1124,7 @@ internal class SqliteHistoryDatabase private constructor(
         }
         val partial = HistoryTerminalTable.selectAll().mapNotNull { terminal ->
             val matchId = terminal[HistoryTerminalTable.matchId]
-            if (HistoryReplayTable.selectAll().where { HistoryReplayTable.matchId eq matchId }.any()) return@mapNotNull null
+            if (HistoryReplayTable.select(HistoryReplayTable.matchId).where { HistoryReplayTable.matchId eq matchId }.any()) return@mapNotNull null
             val interrupted = !terminal[HistoryTerminalTable.completed] ||
                 HistoryGapTable.selectAll().where { HistoryGapTable.matchId eq matchId }.any() ||
                 HistoryRecordingStopTable.selectAll().where { HistoryRecordingStopTable.matchId eq matchId }.any()

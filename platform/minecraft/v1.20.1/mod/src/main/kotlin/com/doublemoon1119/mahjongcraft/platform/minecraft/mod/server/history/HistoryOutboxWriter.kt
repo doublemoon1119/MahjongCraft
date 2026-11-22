@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatch
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingPolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTransferResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryListRequest
@@ -148,6 +149,13 @@ class HistoryOutboxWriter(
 
     /** 此連線已成功同步的設定停止診斷，避免輪詢時重複寫入相同資料。 */
     private var synchronizedStops: Map<String, String> = emptyMap()
+
+    /**
+     * 上次與資料庫同步紀錄決定後的權威紀錄狀態；為 null 時下一次寫入前必須重新同步。
+     *
+     * 同步的結果只取決於權威紀錄狀態與資料庫內容，資料庫只由本 writer 寫入，因此兩者都沒變時不必再查詢資料庫。
+     */
+    @Volatile private var synchronizedRecording: HistoryRecordingState? = null
 
     /** 目前 session 的資料庫邊界。 */
     private var database: SqliteHistoryDatabase? = null
@@ -307,6 +315,7 @@ class HistoryOutboxWriter(
             logDiskLimitTransition(result, policy)
             knownGaps = activeDatabase.readGaps()
             synchronizedStops = activeDatabase.readRecordingStops()
+            synchronizedRecording = null
             refreshStorageSafely(activeDatabase, policy)
             val report = HistoryCleanupReport(
                 removedMatches = committed,
@@ -694,6 +703,7 @@ class HistoryOutboxWriter(
         lastError = null
         knownGaps = emptyMap()
         synchronizedStops = emptyMap()
+        synchronizedRecording = null
         archiveService.resetSession()
         store.applyHistoryStorageAvailability(true)
         retentionCoordinator.apply(configState.current.history.retentionPolicy())
@@ -776,6 +786,7 @@ class HistoryOutboxWriter(
                                 measured(HistoryWriterStage.ARCHIVE) {
                                     knownGaps = archiveService.reconcile(opened, snapshot.historyRecordingState)
                                     if (archiveService.archiveReady(opened, snapshot, scanAllPending = false) > 0) maintain(opened, policy)
+                                    synchronizedRecording = null
                                 }
                             }
                         }
@@ -868,6 +879,7 @@ class HistoryOutboxWriter(
         logDiskLimitTransition(result, policy)
         knownGaps = activeDatabase.readGaps()
         synchronizedStops = activeDatabase.readRecordingStops()
+        synchronizedRecording = null
     }
 
     /**
@@ -940,15 +952,20 @@ class HistoryOutboxWriter(
     /**
      * 對一份不可變快照提交最多一批，確認時只移除該批的穩定鍵。
      *
+     * 權威紀錄狀態與資料庫自上次同步後都沒變時不再同步；沒有待寫事件時不讀取資料庫，閒置時因此不執行任何查詢。
+     *
      * @param activeDatabase 目前 session 的固定資料庫。
      * @return 是否成功提交至少一筆事件。
      */
     private suspend fun flushOneBatch(activeDatabase: SqliteHistoryDatabase): Boolean {
-        measured(HistoryWriterStage.DECISION_SYNC) { synchronizeRecordingDecisions(activeDatabase) }
+        if (store.snapshot().historyRecordingState != synchronizedRecording) {
+            measured(HistoryWriterStage.DECISION_SYNC) { synchronizeRecordingDecisions(activeDatabase) }
+        }
+        val candidates = store.snapshot().historyRecordingState.pendingEvents
+            .filterNot { it.matchId.toString() in archiveService.blockedMatchIds }
+        if (candidates.isEmpty()) return false
         val pruned = measured(HistoryWriterStage.TOMBSTONES) { activeDatabase.readTombstones() }
-        val batch = store.snapshot().historyRecordingState.pendingEvents
-            .filterNot { it.matchId.toString() in archiveService.blockedMatchIds || it.matchId.toString() in pruned }
-            .take(HISTORY_WRITE_BATCH_SIZE)
+        val batch = candidates.filterNot { it.matchId.toString() in pruned }.take(HISTORY_WRITE_BATCH_SIZE)
         if (batch.isEmpty()) return false
         val records = measured(HistoryWriterStage.ENCODE) { batch.map { event -> mapper.encodePendingRecord(event) } }
         measured(HistoryWriterStage.BATCH_WRITE) { activeDatabase.appendPendingBatch(records) }
@@ -1019,6 +1036,7 @@ class HistoryOutboxWriter(
         val partial = recording.terminalByMatchId.keys.filterTo(mutableSetOf()) { it.toString() in persistedPartial }
         store.acknowledgeHistoryDecisions(completed + stopped.keys)
         store.acknowledgeHistoryMetadata(completed + partial)
+        synchronizedRecording = store.snapshot().historyRecordingState
     }
 
     private companion object {

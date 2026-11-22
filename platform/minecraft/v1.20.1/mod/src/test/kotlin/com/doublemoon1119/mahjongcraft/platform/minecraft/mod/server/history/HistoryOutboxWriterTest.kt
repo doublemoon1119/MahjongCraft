@@ -27,6 +27,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import java.nio.file.Path
 import java.sql.DriverManager
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -406,6 +407,64 @@ class HistoryOutboxWriterTest {
         }
     }
 
+    /** 沒有待寫事件、紀錄狀態也沒有變化時，背景 writer 不再同步也不讀取墓碑。 */
+    @Test
+    fun `idle writer does not query the database`() = runBlocking {
+        val store = AuthoritativeStateStore()
+        val stages = CopyOnWriteArrayList<HistoryWriterStage>()
+        val writer = writer(store, observer = stageRecorder(stages))
+        val path = createTempDirectory("mahjongcraft-history-writer-").resolve("history.sqlite")
+
+        writer.attach(path)
+        delay(HISTORY_WRITER_IDLE_POLL_INTERVAL * 6)
+        writer.detach()
+
+        assertTrue(stages.count { it == HistoryWriterStage.DECISION_SYNC } <= 1, "Idle polls must not synchronize again: $stages")
+        assertFalse(HistoryWriterStage.TOMBSTONES in stages, "Idle polls must not read tombstones: $stages")
+    }
+
+    /** 閒置一段時間後才產生的事件，仍由背景 writer 寫入資料庫。 */
+    @Test
+    fun `events created after an idle period are written`() = runBlocking {
+        val store = AuthoritativeStateStore()
+        val writer = writer(store)
+        val path = createTempDirectory("mahjongcraft-history-writer-").resolve("history.sqlite")
+
+        writer.attach(path)
+        delay(HISTORY_WRITER_IDLE_POLL_INTERVAL * 3)
+        val event = event()
+        store.load(
+            state = AuthoritativeStateSnapshot(
+                historyRecordingState = HistoryRecordingState(
+                    nextSequenceByMatchId = mapOf(event.matchId to 2L),
+                    pendingEvents = listOf(event),
+                ),
+            ),
+        )
+        val matchId = event.matchId.toString()
+        try {
+            withTimeout(5.seconds) {
+                while (SqliteHistoryDatabase.open(path).readPending(matchId).isEmpty()) delay(50.milliseconds)
+            }
+        } finally {
+            writer.detach()
+        }
+    }
+
+    /**
+     * 記錄背景 writer 完成的環節。
+     *
+     * @param stages 依完成順序加入的環節。
+     * @return 只記錄環節、不處理寫入事件數的 observer。
+     */
+    private fun stageRecorder(stages: MutableList<HistoryWriterStage>): HistoryWriterObserver = object : HistoryWriterObserver {
+        override fun onStage(stage: HistoryWriterStage, duration: Duration) {
+            stages += stage
+        }
+
+        override fun onEventsWritten(count: Int) = Unit
+    }
+
     /**
      * 透過正式 repository 開始一場會產生歷史事件的新對局。
      *
@@ -425,9 +484,14 @@ class HistoryOutboxWriterTest {
      *
      * @param store 受測的權威歷史來源。
      * @param configState 此 session 的有效設定。
+     * @param observer 接收背景工作各環節的 observer；null 時不量測。
      * @return 未附加資料庫的 writer。
      */
-    private fun writer(store: AuthoritativeStateStore, configState: MinecraftServerConfigState = MinecraftServerConfigState()): HistoryOutboxWriter = HistoryOutboxWriter(
+    private fun writer(
+        store: AuthoritativeStateStore,
+        configState: MinecraftServerConfigState = MinecraftServerConfigState(),
+        observer: HistoryWriterObserver? = null,
+    ): HistoryOutboxWriter = HistoryOutboxWriter(
         store = store,
         registries = bundledPersistenceRegistries(),
         moduleRegistry = MahjongModuleRegistryImpl(),
@@ -442,6 +506,7 @@ class HistoryOutboxWriterTest {
             override val aiDecision: CoroutineDispatcher = Dispatchers.Default
             override val aiDecisionParallelism: Int = 1
         },
+        observer = observer,
     )
 
     /** 不依賴桌況快照的最小可序列化事件。 */
