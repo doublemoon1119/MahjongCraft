@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider
 import net.minecraft.client.renderer.texture.OverlayTexture
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.inventory.InventoryMenu
 import net.minecraft.world.item.ItemDisplayContext
 import net.minecraft.world.item.ItemStack
 import kotlin.math.PI
@@ -205,8 +206,8 @@ class DiceRollPresentationEntityRenderer(
      */
     private fun panelWidth(diceCount: Int): Float = HORIZONTAL_PADDING * 2f + DICE_PIXEL_SIZE + (diceCount - 1) * DICE_CENTER_GAP
 
-    /** ItemRenderer 自行解析材質，因此 entity renderer 不提供單一 texture。 */
-    override fun getTextureLocation(entity: DiceRollPresentationEntity): ResourceLocation? = null
+    /** ItemRenderer 自行解析材質，因此 entity renderer 不提供單一 texture；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    override fun getTextureLocation(entity: DiceRollPresentationEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     companion object {
         /** 支援的骰子數量。 */

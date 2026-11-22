@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.entity.EntityRenderer
 import net.minecraft.client.renderer.entity.EntityRendererProvider
 import net.minecraft.client.renderer.texture.OverlayTexture
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.inventory.InventoryMenu
 import net.minecraft.world.item.ItemDisplayContext
 import net.minecraft.world.item.ItemStack
 
@@ -69,8 +70,8 @@ class MahjongScoringStickEntityRenderer(
         matrices.popPose()
     }
 
-    /** ItemRenderer 依 model predicate 自行解析材質，因此 entity renderer 不提供單一 texture。 */
-    override fun getTextureLocation(entity: MahjongScoringStickEntity): ResourceLocation? = null
+    /** ItemRenderer 依 model predicate 自行解析材質，因此 entity renderer 不提供單一 texture；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    override fun getTextureLocation(entity: MahjongScoringStickEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     companion object {
         /**

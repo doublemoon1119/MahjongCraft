@@ -34,6 +34,7 @@ import net.minecraft.client.renderer.entity.ItemRenderer
 import net.minecraft.client.renderer.texture.OverlayTexture
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.util.Mth
+import net.minecraft.world.inventory.InventoryMenu
 import net.minecraft.world.item.ItemDisplayContext
 import org.joml.Quaternionf
 import kotlin.uuid.toJavaUuid
@@ -440,9 +441,9 @@ class MahjongTileEntityRenderer(
      * ItemRenderer 自行解析材質，因此 entity renderer 不提供單一 texture。
      *
      * @param entity 正在繪製的牌張 entity。
-     * @return `null`，表示材質由 item model renderer 動態解析。
+     * @return 方塊材質圖集（原版規定回傳值不可為空）；實際材質由 item model renderer 解析。
      */
-    override fun getTextureLocation(entity: MahjongTileEntity): ResourceLocation? = null
+    override fun getTextureLocation(entity: MahjongTileEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     /**
      * 自由放置牌沿用 entity 自身 tracked data；牌局管理中的牌改查 [stateStore]——查不到（不在目前

@@ -43,6 +43,7 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider
 import net.minecraft.client.renderer.texture.OverlayTexture
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.inventory.InventoryMenu
 import net.minecraft.world.item.ItemDisplayContext
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
@@ -1279,7 +1280,8 @@ class WinCelebrationShowcaseEntityRenderer(
         }
     }
 
-    override fun getTextureLocation(entity: WinCelebrationShowcaseEntity): ResourceLocation? = null
+    /** 繪製不使用單一材質；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    override fun getTextureLocation(entity: WinCelebrationShowcaseEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     /**
      * 胡牌張每次接近晃動最低點時，在固定的空中水面生成兩圈短促波紋。

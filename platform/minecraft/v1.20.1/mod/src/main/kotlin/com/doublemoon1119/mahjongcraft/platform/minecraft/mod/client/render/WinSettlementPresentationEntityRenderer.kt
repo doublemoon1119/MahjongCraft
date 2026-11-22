@@ -51,6 +51,7 @@ import net.minecraft.client.renderer.entity.EntityRenderer
 import net.minecraft.client.renderer.entity.EntityRendererProvider
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.inventory.InventoryMenu
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
@@ -953,7 +954,9 @@ class WinSettlementPresentationEntityRenderer(
      * @return 合成後的 ARGB 顏色。
      */
     private fun color(rgb: Int, alpha: Float) = WorldPanelRenderer.withAlpha(rgb, alpha)
-    override fun getTextureLocation(entity: WinSettlementPresentationEntity): ResourceLocation? = null
+
+    /** 繪製不使用單一材質；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    override fun getTextureLocation(entity: WinSettlementPresentationEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     /** 文字相對水平錨點的對齊方式。 */
     private enum class Align {

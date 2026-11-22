@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.entity.EntityRenderer
 import net.minecraft.client.renderer.entity.EntityRendererProvider
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.inventory.InventoryMenu
 import net.minecraft.world.phys.EntityHitResult
 import kotlin.math.abs
 import kotlin.uuid.toKotlinUuid
@@ -155,8 +156,8 @@ class MahjongTileSelectionConfirmEntityRenderer(
         )
     }
 
-    /** 純文字顯示，不提供單一 texture。 */
-    override fun getTextureLocation(entity: MahjongTileSelectionConfirmEntity): ResourceLocation? = null
+    /** 純文字顯示，不提供單一 texture；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    override fun getTextureLocation(entity: MahjongTileSelectionConfirmEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     private companion object {
         /** 文字縮放。 */

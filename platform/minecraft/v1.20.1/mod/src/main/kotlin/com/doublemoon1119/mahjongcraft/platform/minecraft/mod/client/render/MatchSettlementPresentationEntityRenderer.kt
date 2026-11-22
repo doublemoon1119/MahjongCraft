@@ -19,6 +19,7 @@ import net.minecraft.client.renderer.entity.EntityRenderer
 import net.minecraft.client.renderer.entity.EntityRendererProvider
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.inventory.InventoryMenu
 import org.joml.Matrix4f
 import kotlin.math.roundToInt
 import kotlin.math.sin
@@ -438,7 +439,8 @@ class MatchSettlementPresentationEntityRenderer(
      */
     private fun withAlpha(rgb: Int, alpha: Float): Int = WorldPanelRenderer.withAlpha(rgb, alpha)
 
-    override fun getTextureLocation(entity: MatchSettlementPresentationEntity): ResourceLocation? = null
+    /** 繪製不使用單一材質；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    override fun getTextureLocation(entity: MatchSettlementPresentationEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     private enum class Alignment { LEFT, CENTER, RIGHT }
 

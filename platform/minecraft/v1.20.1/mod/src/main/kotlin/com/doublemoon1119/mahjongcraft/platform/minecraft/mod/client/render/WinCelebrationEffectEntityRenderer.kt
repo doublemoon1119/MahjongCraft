@@ -10,6 +10,7 @@ import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.client.renderer.entity.EntityRenderer
 import net.minecraft.client.renderer.entity.EntityRendererProvider
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.inventory.InventoryMenu
 
 /**
  * 對局中胡牌特效實體的畫法：依同步的絕對時間換算經過的 tick，交給 [WinCelebrationEffectGeometry] 畫出。
@@ -42,6 +43,6 @@ class WinCelebrationEffectEntityRenderer(
         )
     }
 
-    /** 純色線段不使用材質。 */
-    override fun getTextureLocation(entity: WinCelebrationEffectEntity): ResourceLocation? = null
+    /** 純色線段不使用材質；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    override fun getTextureLocation(entity: WinCelebrationEffectEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 }

@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.client.renderer.entity.EntityRenderer
 import net.minecraft.client.renderer.entity.EntityRendererProvider
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.inventory.InventoryMenu
 
 /**
  * 將桌面中央的局況資訊畫成面向攝影機的文字面板。
@@ -103,8 +104,8 @@ class MahjongRoundInfoEntityRenderer(
         }
     }
 
-    /** 純文字顯示，不提供單一 texture。 */
-    override fun getTextureLocation(entity: MahjongRoundInfoEntity): ResourceLocation? = null
+    /** 純文字顯示，不提供單一 texture；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    override fun getTextureLocation(entity: MahjongRoundInfoEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     companion object {
         /** 文字縮放。 */

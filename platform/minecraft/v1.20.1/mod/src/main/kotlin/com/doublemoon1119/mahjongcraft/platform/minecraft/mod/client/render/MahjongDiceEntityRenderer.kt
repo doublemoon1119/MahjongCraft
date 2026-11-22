@@ -10,6 +10,7 @@ import net.minecraft.client.renderer.entity.EntityRenderer
 import net.minecraft.client.renderer.entity.EntityRendererProvider
 import net.minecraft.client.renderer.texture.OverlayTexture
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.inventory.InventoryMenu
 import net.minecraft.world.item.ItemDisplayContext
 import net.minecraft.world.item.ItemStack
 import org.joml.Quaternionf
@@ -78,8 +79,8 @@ class MahjongDiceEntityRenderer(
         matrices.popPose()
     }
 
-    /** ItemRenderer 自行解析材質，因此 entity renderer 不提供單一 texture。 */
-    override fun getTextureLocation(entity: MahjongDiceEntity): ResourceLocation? = null
+    /** ItemRenderer 自行解析材質，因此 entity renderer 不提供單一 texture；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    override fun getTextureLocation(entity: MahjongDiceEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     companion object {
         /** 舊模型由 `10/16 block` 縮放成 `0.125 block` 所需比例。 */
