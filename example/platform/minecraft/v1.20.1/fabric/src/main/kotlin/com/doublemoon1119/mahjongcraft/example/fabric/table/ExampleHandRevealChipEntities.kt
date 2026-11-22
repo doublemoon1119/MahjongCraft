@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.table
 
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.table.ExampleHandRevealChipEntity
 import com.doublemoon1119.mahjongcraft.example.minecraft.presentation.ExampleMinecraftPresentationIds
 import com.doublemoon1119.mahjongcraft.example.minecraft.presentation.ExampleTablePropDefinitions
 import net.fabricmc.fabric.api.`object`.builder.v1.entity.FabricEntityTypeBuilder

@@ -15,7 +15,7 @@ class ExampleTablePropRegistrationTest {
     fun `extension registers hand reveal chip kind`() {
         val registry = TablePropKindRegistryImpl()
 
-        ExampleFabricMahjongExtension().registerTablePropKinds(registry)
+        ExampleNativeMahjongExtension().registerTablePropKinds(registry)
 
         assertEquals(listOf(ExampleHandRevealChipTablePropKind.id), registry.registrationKeys.toList())
         assertSame(ExampleHandRevealChipTablePropKind, registry.find(ExampleHandRevealChipTablePropKind.id))
@@ -25,7 +25,7 @@ class ExampleTablePropRegistrationTest {
     @Test
     fun `client extension registers hand reveal chip preview`() {
         val registered = mutableListOf<TablePropPreviewDefinition>()
-        ExampleFabricMahjongClientExtension().registerTablePropPreviews(
+        ExampleNativeMahjongClientExtension().registerTablePropPreviews(
             registry = object : TablePropPreviewRegistrar {
                 override val registrationKeys: Set<String> get() = registered.map { it.id }.toSet()
 

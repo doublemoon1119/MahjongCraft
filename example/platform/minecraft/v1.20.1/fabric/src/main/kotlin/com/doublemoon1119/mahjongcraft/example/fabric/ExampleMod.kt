@@ -2,10 +2,10 @@ package com.doublemoon1119.mahjongcraft.example.fabric
 
 import com.doublemoon1119.mahjongcraft.example.ExampleExtensionIds
 import com.doublemoon1119.mahjongcraft.example.fabric.character.ExampleActors
-import com.doublemoon1119.mahjongcraft.example.fabric.event.ExampleGameEventChat
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurniture
 import com.doublemoon1119.mahjongcraft.example.fabric.registry.ExampleItemGroups
 import com.doublemoon1119.mahjongcraft.example.fabric.table.ExampleHandRevealChipEntities
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.event.ExampleGameEventChat
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import net.fabricmc.api.ModInitializer
 

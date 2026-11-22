@@ -34,10 +34,10 @@ class ExampleModPackagingTest {
             listOf(
                 "com/doublemoon1119/mahjongcraft/example/ExampleMahjongExtension.class",
                 "com/doublemoon1119/mahjongcraft/example/minecraft/ExampleMinecraftMahjongExtension.class",
-                "com/doublemoon1119/mahjongcraft/example/fabric/ExampleFabricMahjongExtension.class",
+                "com/doublemoon1119/mahjongcraft/example/fabric/ExampleNativeMahjongExtension.class",
                 "com/doublemoon1119/mahjongcraft/example/fabric/ExampleMod.class",
                 "com/doublemoon1119/mahjongcraft/example/fabric/ExampleModClient.class",
-                "com/doublemoon1119/mahjongcraft/example/fabric/ExampleFabricMahjongClientExtension.class",
+                "com/doublemoon1119/mahjongcraft/example/fabric/ExampleNativeMahjongClientExtension.class",
                 "com/doublemoon1119/mahjongcraft/example/fabric/character/ExampleActorEntity.class",
                 "com/doublemoon1119/mahjongcraft/example/fabric/furniture/block/ExampleBenchBlock.class",
                 "fabric.mod.json",
@@ -143,7 +143,7 @@ class ExampleModPackagingTest {
         ZipFile(System.getProperty("mahjongcraft.exampleJar")).use { jar ->
             val metadata = Json.parseToJsonElement(jar.getInputStream(jar.getEntry("fabric.mod.json")).bufferedReader().readText()).jsonObject
             val entries = metadata.getValue("entrypoints").jsonObject
-            val clientClass = "com.doublemoon1119.mahjongcraft.example.fabric.ExampleFabricMahjongClientExtension"
+            val clientClass = "com.doublemoon1119.mahjongcraft.example.fabric.ExampleNativeMahjongClientExtension"
             assertEquals(listOf(clientClass), entries.getValue("mahjongcraft:client_extension").jsonArray.map { it.jsonPrimitive.content })
             listOf("main", "mahjongcraft:extension").forEach { key ->
                 assertFalse(entries.getValue(key).jsonArray.any { it.jsonPrimitive.content == clientClass })

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.table
 
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.table.ExampleHandRevealChipRenderer
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
 
 /** 範例攤牌籌碼的 client renderer 註冊入口。 */

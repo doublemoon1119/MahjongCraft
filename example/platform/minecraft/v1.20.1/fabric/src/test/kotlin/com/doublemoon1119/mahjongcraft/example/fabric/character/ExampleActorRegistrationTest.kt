@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.character
 
 import com.doublemoon1119.mahjongcraft.example.ExampleExtensionIds
-import com.doublemoon1119.mahjongcraft.example.fabric.ExampleFabricMahjongClientExtension
-import com.doublemoon1119.mahjongcraft.example.fabric.ExampleFabricMahjongExtension
+import com.doublemoon1119.mahjongcraft.example.fabric.ExampleNativeMahjongClientExtension
+import com.doublemoon1119.mahjongcraft.example.fabric.ExampleNativeMahjongExtension
 import com.doublemoon1119.mahjongcraft.example.minecraft.character.ExampleCharacterIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterCapabilityDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterPreviewDefinition
@@ -20,8 +20,8 @@ class ExampleActorRegistrationTest {
     @Test
     fun `public extension callbacks register borrowed owned and client capabilities without creating entities`() {
         val capture = Capture()
-        val extension = ExampleFabricMahjongExtension()
-        val client = ExampleFabricMahjongClientExtension()
+        val extension = ExampleNativeMahjongExtension()
+        val client = ExampleNativeMahjongClientExtension()
         extension.registerRoomParticipants(capture)
         extension.registerAiCharacterCapabilities(capture)
         client.registerCharacterPreviews(capture)

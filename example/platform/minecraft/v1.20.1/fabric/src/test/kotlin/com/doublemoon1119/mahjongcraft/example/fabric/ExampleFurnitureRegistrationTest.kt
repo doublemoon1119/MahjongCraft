@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.example.fabric
 
-import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureIds
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.ExampleFurnitureIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.SeatProviderRegistrar
 import net.minecraft.server.level.ServerLevel
@@ -16,8 +16,8 @@ class ExampleFurnitureRegistrationTest {
     fun `seat providers can be created before native registration`() {
         val firstRegistry = CapturingRegistry()
         val secondRegistry = CapturingRegistry()
-        ExampleFabricMahjongExtension().registerSeatProviders(firstRegistry)
-        ExampleFabricMahjongExtension().registerSeatProviders(secondRegistry)
+        ExampleNativeMahjongExtension().registerSeatProviders(firstRegistry)
+        ExampleNativeMahjongExtension().registerSeatProviders(secondRegistry)
         val first = firstRegistry.definitions
         val second = secondRegistry.definitions
 

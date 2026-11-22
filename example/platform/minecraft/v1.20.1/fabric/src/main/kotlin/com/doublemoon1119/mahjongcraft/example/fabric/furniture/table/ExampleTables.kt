@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.furniture.table
 
-import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureIds
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.ExampleFurnitureIds
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.table.ExampleFlatTableDesign
 import net.fabricmc.fabric.api.`object`.builder.v1.block.entity.FabricBlockEntityTypeBuilder
 import net.minecraft.core.Registry
 import net.minecraft.core.registries.BuiltInRegistries

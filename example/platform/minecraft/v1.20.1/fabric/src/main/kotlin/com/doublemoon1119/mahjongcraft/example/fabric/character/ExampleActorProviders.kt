@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.character
 
 import com.doublemoon1119.mahjongcraft.example.ai.ExampleAiStrategyIds
+import com.doublemoon1119.mahjongcraft.example.minecraft.character.ExampleActorAuthorization
 import com.doublemoon1119.mahjongcraft.example.minecraft.character.ExampleCharacters
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterOwnership
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterProvider
