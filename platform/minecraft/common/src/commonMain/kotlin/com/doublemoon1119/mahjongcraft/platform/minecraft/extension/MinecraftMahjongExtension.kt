@@ -42,9 +42,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
  * 概念屬於 Minecraft adapter，不應該出現在平台無關的 extension API 裡，才能讓規則邏輯保持可攜。
  *
  * 第三方類別若想同時登記規則層與 Minecraft 專屬整合，可以讓同一個類別同時實作兩個介面，不需要另外
- * 宣告第二個 Fabric entrypoint——loader adapter 只用 `MahjongExtension` 型別掃描 entrypoint，再從
- * 掃描結果中篩選出有實作此介面的部分；換句話說，只實作這個介面、沒有同時實作 `MahjongExtension`
- * 的類別不會被發現。
+ * 向載入器宣告第二種擴充——載入器只找出 `MahjongExtension`，再從中篩選出有實作此介面的部分；
+ * 換句話說，只實作這個介面、沒有同時實作 `MahjongExtension` 的類別不會被發現。
  */
 interface MinecraftMahjongExtension {
     /** 第三方 extension 的穩定識別字串，用於診斷註冊錯誤。 */
