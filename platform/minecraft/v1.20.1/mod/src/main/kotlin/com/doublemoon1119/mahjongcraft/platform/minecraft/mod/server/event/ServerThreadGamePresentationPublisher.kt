@@ -379,7 +379,7 @@ class ServerThreadGamePresentationPublisher(
                 handShiftsBySeat = stageInputs.handShiftsBySeat,
             )
             if (endGameTime == null) {
-                logger.warn("publishExhaustiveDrawSettlement gameId={} skipped: stage spawn failed", gameId)
+                logger.warn("Skipped the exhaustive draw settlement display for game {} because the display could not be placed", gameId)
             } else {
                 resolved.tableState.extendPresentationUntil(endGameTime)
                 logger.debug("Exhaustive draw settlement presentation created gameId={} endGameTime={}", gameId, endGameTime)
@@ -442,7 +442,7 @@ class ServerThreadGamePresentationPublisher(
             return
         }
         if (serverHolder.current() == null) {
-            logger.warn("publishOpeningRolls gameId={} skipped: no active server", gameId)
+            logger.debug("Skipped a table presentation for game {} because the server is not running (step: publishOpeningRolls)", gameId)
             openingOperation?.let { ticket ->
                 scope.launch(dispatchers.main) { tablePropPresenter.releaseCenter(gameId, ticket.generation) }
             }
@@ -520,7 +520,7 @@ class ServerThreadGamePresentationPublisher(
         revealedTileIds: Set<Uuid>,
     ) {
         if (serverHolder.current() == null) {
-            logger.warn("publishWallStructure gameId={} skipped: no active server", gameId)
+            logger.debug("Skipped a table presentation for game {} because the server is not running (step: publishWallStructure)", gameId)
             return
         }
         if (assemblyStructure.isEmpty() && layout.placements.isEmpty()) {
@@ -637,7 +637,7 @@ class ServerThreadGamePresentationPublisher(
     override fun publishTableSteps(gameId: Uuid, steps: List<TableStep>) {
         if (steps.isEmpty()) return
         if (serverHolder.current() == null) {
-            logger.warn("publishTableSteps gameId={} skipped: no active server", gameId)
+            logger.debug("Skipped a table presentation for game {} because the server is not running (step: publishTableSteps)", gameId)
             return
         }
         val pendingDeal = initialDealJobs[gameId]
@@ -879,7 +879,7 @@ class ServerThreadGamePresentationPublisher(
      */
     override fun publishTileSelectionStarted(gameId: Uuid, playerId: Uuid) {
         if (serverHolder.current() == null) {
-            logger.warn("publishTileSelectionStarted gameId={} skipped: no active server", gameId)
+            logger.debug("Skipped a table presentation for game {} because the server is not running (step: publishTileSelectionStarted)", gameId)
             return
         }
         scope.launch(dispatchers.main) {
@@ -943,7 +943,7 @@ class ServerThreadGamePresentationPublisher(
         openingDiceCounts: List<Int>,
     ) {
         if (serverHolder.current() == null) {
-            logger.warn("publishInitialDeal gameId={} skipped: no active server", gameId)
+            logger.debug("Skipped a table presentation for game {} because the server is not running (step: publishInitialDeal)", gameId)
             return
         }
         presentedTables[gameId] = PresentedTable(tableState, arrangement = null)
@@ -1048,13 +1048,13 @@ class ServerThreadGamePresentationPublisher(
      */
     override fun clearPlayerTiles(gameId: Uuid) {
         if (serverHolder.current() == null) {
-            logger.warn("clearPlayerTiles gameId={} skipped: no active server", gameId)
+            logger.debug("Skipped a table presentation for game {} because the server is not running (step: clearPlayerTiles)", gameId)
             return
         }
         scope.launch(dispatchers.main) {
             val location = tableLocationRegistry.get(gameId)?.location
             if (location == null) {
-                logger.warn("clearPlayerTiles gameId={} skipped: no known table location", gameId)
+                logger.warn("Skipped clearing player tiles for game {} because the table location is not recorded", gameId)
                 return@launch
             }
             playerAreaPresenter.clear(gameId, location)
@@ -1167,7 +1167,7 @@ class ServerThreadGamePresentationPublisher(
         block: (ResolvedTableContext, TableState, Long) -> Long?,
     ) {
         if (serverHolder.current() == null) {
-            logger.warn("{} gameId={} skipped: no active server", operation, gameId)
+            logger.debug("Skipped a table presentation for game {} because the server is not running (step: {})", gameId, operation)
             return
         }
         launchPresentation(
@@ -1187,7 +1187,7 @@ class ServerThreadGamePresentationPublisher(
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (cause: Exception) {
-                    logger.warn("Failed to run {} for gameId={}", operation, gameId, cause)
+                    logger.warn("A table presentation for game {} failed (step: {})", gameId, operation, cause)
                 }
             },
         )
@@ -1316,7 +1316,7 @@ class ServerThreadGamePresentationPublisher(
         earliestStartGameTime: Long,
     ): CelebrationSegment? {
         if (request.winners.any { state.players.getOrNull(it.seatIndex) == null }) {
-            logger.warn("runCelebration gameId={} skipped: winner seat not found", gameId)
+            logger.warn("Skipped the win celebration for game {} because a winner's seat was not found", gameId)
             return null
         }
         val module = moduleRegistry.getModule(state.config)
@@ -1659,18 +1659,18 @@ class ServerThreadGamePresentationPublisher(
     private fun resolveTableContext(gameId: Uuid, methodName: String): ResolvedTableContext? {
         val location = tableLocationRegistry.get(gameId)?.location
         if (location == null) {
-            logger.warn("$methodName gameId={} skipped: no known table location", gameId)
+            logger.warn("Skipped a table presentation for game {} because the table location is not recorded (step: {})", gameId, methodName)
             return null
         }
         val world = resolveWorld(location)
         if (world == null) {
-            logger.warn("$methodName gameId={} skipped: could not resolve world for location={}", gameId, location)
+            logger.warn("Skipped a table presentation for game {} because the world of the table at {} is unavailable (step: {})", gameId, location, methodName)
             return null
         }
         val controllerPos = BlockPos(location.x, location.y, location.z)
         val table = MahjongTableLookup.find(world, controllerPos, gameId)
         if (table == null) {
-            logger.warn("$methodName gameId={} skipped: controller at {} is missing or belongs to another table", gameId, controllerPos)
+            logger.warn("Skipped a table presentation for game {} because the table at {} is missing or belongs to another game (step: {})", gameId, controllerPos, methodName)
             return null
         }
         return ResolvedTableContext(world, location, table.facing, table.state)

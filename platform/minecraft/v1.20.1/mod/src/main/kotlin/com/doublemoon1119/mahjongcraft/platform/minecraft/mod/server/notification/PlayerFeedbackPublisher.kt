@@ -84,7 +84,7 @@ class PlayerFeedbackPublisher(
                     player.displayClientMessage(Component.translatable(MinecraftMessageKeys.GAME_ALREADY_STARTED), true)
                 is MinecraftPlayerFeedback.GameCreated -> {
                     feedback.location?.let { location ->
-                        logger.debug(
+                        logger.trace(
                             "Game-created hover playerId={} dimension={} position=({}, {}, {})",
                             playerId,
                             location.dimensionId,
@@ -165,7 +165,7 @@ class PlayerFeedbackPublisher(
                 MinecraftPlayerFeedback.ChangeAiStrategyFailed ->
                     player.displayClientMessage(Component.translatable(MinecraftMessageKeys.CHANGE_AI_STRATEGY_FAILED), true)
                 is MinecraftPlayerFeedback.GameConfigChanged -> {
-                    logger.debug(
+                    logger.trace(
                         "Game-config-changed hover playerId={} oldConfig={} newConfig={}",
                         playerId,
                         feedback.oldConfigJson,
@@ -174,13 +174,13 @@ class PlayerFeedbackPublisher(
                     player.sendSystemMessage(gameConfigChangedMessage(feedback))
                 }
                 is MinecraftPlayerFeedback.GameConfigUnchanged -> {
-                    logger.debug("Game-config-unchanged hover playerId={} config={}", playerId, feedback.configJson)
+                    logger.trace("Game-config-unchanged hover playerId={} config={}", playerId, feedback.configJson)
                     player.sendSystemMessage(gameConfigUnchangedMessage(feedback))
                 }
                 MinecraftPlayerFeedback.ChangeGameConfigFailed ->
                     player.displayClientMessage(Component.translatable(MinecraftMessageKeys.CHANGE_GAME_CONFIG_FAILED), true)
                 is MinecraftPlayerFeedback.ShowGameConfig -> {
-                    logger.debug("Game-config-show hover playerId={} config={}", playerId, feedback.configJson)
+                    logger.trace("Game-config-show hover playerId={} config={}", playerId, feedback.configJson)
                     player.sendSystemMessage(showGameConfigMessage(feedback))
                 }
                 MinecraftPlayerFeedback.NotYourTurn ->

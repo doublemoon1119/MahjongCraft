@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.table
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSpace
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSpaceCellDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSpaceObstructionPayloadDto
@@ -14,14 +15,26 @@ class ClientTableSpaceObstructionStore {
     /** 每張桌子目前被擋住的格子與所在維度。 */
     private val byTable = mutableMapOf<Uuid, Obstruction>()
 
+    /** 記錄忽略的標示。 */
+    private val logger = mahjongCraftLogger(ClientTableSpaceObstructionStore::class)
+
+    /** 是否已記錄過忽略的標示；之後同樣的情況不再記錄。 */
+    private var reportedIgnoredPayload = false
+
     /**
      * 套用伺服器送來的標示；格子為空時清除該桌，格子數超過擺牌層或桌子 ID 無效時忽略。
      *
      * @param payload 伺服器送來的標示。
      */
     fun apply(payload: TableSpaceObstructionPayloadDto) {
-        val tableId = runCatching { Uuid.parse(payload.tableId) }.getOrNull() ?: return
-        if (payload.cells.size > MahjongTableSpace.playSpaceHorizontalOffsets.size) return
+        val tableId = runCatching { Uuid.parse(payload.tableId) }.getOrNull()
+        if (tableId == null || payload.cells.size > MahjongTableSpace.playSpaceHorizontalOffsets.size) {
+            if (!reportedIgnoredPayload) {
+                logger.debug("Ignored a table space marker from the server for table {} with {} cell(s)", payload.tableId, payload.cells.size)
+            }
+            reportedIgnoredPayload = true
+            return
+        }
         if (payload.cells.isEmpty()) {
             byTable.remove(tableId)
         } else {

@@ -93,3 +93,16 @@
 - Declare the logger as `private val logger`. Do not use other names such as `LOGGER`.
 - Declare it as an instance member by default. Put it in the companion object only when the class creates many
   instances (for example, one entity per tile) or when functions in the companion object also log.
+- Choose the level by who needs the message:
+  - `error`: a feature stopped working and someone has to act, for example data that cannot be saved.
+  - `warn`: something unexpected that the code handled, such as skipped corrupt data or a failed extension.
+  - `info`: the few events an operator needs to know about, such as a created config file or a cleanup that
+    removed data. Routine startup and normal player actions are not `info`.
+  - `debug`: occasional events that help trace a problem, such as session start and stop or a resynced player.
+  - `trace`: details produced for every action, request or database statement, such as full config dumps.
+- Whether `debug` output is written to a log file depends on how the game or server is launched, so code
+  must not rely on `debug` being off. Anything produced for every action or request uses `trace`.
+- Write messages as plain sentences that say what happened and what follows from it. Do not start them with
+  function names; add internal identifiers, such as a presentation step, at the end in parentheses.
+- Log a failure that can repeat, such as the same malformed message or a missing resource, only the first
+  time, or log later occurrences at a lower level.

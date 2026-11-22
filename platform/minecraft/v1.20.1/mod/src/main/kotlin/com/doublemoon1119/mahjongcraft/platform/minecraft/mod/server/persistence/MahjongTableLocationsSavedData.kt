@@ -131,7 +131,7 @@ class MahjongTableLocationsSavedData private constructor(
                     if (seenTableIds.add(entry.tableId)) {
                         add(entry)
                     } else {
-                        logger.error("Skipped duplicate Mahjong table location entry for {} at index {}", entry.tableId, index)
+                        logger.warn("Skipped duplicate Mahjong table location entry for {} at index {}", entry.tableId, index)
                     }
                 }
             }

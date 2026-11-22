@@ -919,7 +919,14 @@ class HistoryOutboxWriter(
         attemptedStoragePolicy = policy
         storageRefreshMark = TimeSource.Monotonic.markNow()
         if (!startupStorageLogged) {
-            logger.info(
+            if (snapshot.unknownMatchCount > 0) {
+                logger.info(
+                    "The history database keeps {} match(es) whose recording cannot be confirmed as complete or ended; " +
+                        "/mahjongcraft history storage shows the details",
+                    snapshot.unknownMatchCount,
+                )
+            }
+            logger.debug(
                 "History storage initialized: completedMatches={}, activeMatches={}, partialMatches={}, unknownMatches={}, pendingSqlEvents={}, pendingOutboxEvents={}, dbBytes={}, walBytes={}, shmBytes={}, maxDiskBytes={}, maxMatches={}, retentionDuration={}, includeInterrupted={}",
                 snapshot.completedMatchCount, snapshot.activeMatchCount, snapshot.partialMatchCount, snapshot.unknownMatchCount,
                 snapshot.pendingSqlEventCount, snapshot.pendingOutboxEventCount, snapshot.disk.dbBytes, snapshot.disk.walBytes,

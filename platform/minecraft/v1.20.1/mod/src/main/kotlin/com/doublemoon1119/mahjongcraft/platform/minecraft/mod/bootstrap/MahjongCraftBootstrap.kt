@@ -297,7 +297,7 @@ class MahjongCraftBootstrap(
                 if (result.createdDefaultFile) {
                     logger.info("Created and loaded default server config at {}", configManager.path)
                 } else {
-                    logger.info("Loaded server config from {}", configManager.path)
+                    logger.debug("Loaded server config from {}", configManager.path)
                 }
             }
 

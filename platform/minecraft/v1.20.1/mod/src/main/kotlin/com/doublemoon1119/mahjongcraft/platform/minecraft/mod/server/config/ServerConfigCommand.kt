@@ -113,7 +113,7 @@ class ServerConfigCommand(
      * @return 訊息送出後的成功結果碼。
      */
     private fun show(source: CommandSourceStack): Int {
-        logger.debug(
+        logger.trace(
             "Effective server config hover displayedTo={} path={} config={}",
             source.textName,
             configManager.displayPath,

@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryPruningCo
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshotCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import org.jetbrains.exposed.v1.core.ColumnType
+import org.jetbrains.exposed.v1.core.DatabaseConfig
 import org.jetbrains.exposed.v1.core.IntegerColumnType
 import org.jetbrains.exposed.v1.core.LongColumnType
 import org.jetbrains.exposed.v1.core.ResultRow
@@ -1361,7 +1362,7 @@ internal class SqliteHistoryDatabase private constructor(
                     }
                 }
             }
-            val database = Database.connect(datasource = dataSource)
+            val database = Database.connect(datasource = dataSource, databaseConfig = DatabaseConfig { sqlLogger = HistorySqlLogger })
             transaction(database) {
                 if (!existed) {
                     SchemaUtils.create(*historySchemaV1Tables)

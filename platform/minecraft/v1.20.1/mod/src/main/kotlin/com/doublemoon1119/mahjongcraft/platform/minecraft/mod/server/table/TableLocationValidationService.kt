@@ -120,7 +120,7 @@ class TableLocationValidationService(
         val previous = locations.get(table.tableId)
         val current = locations.put(table.tableId, location)
         if (previous != null && previous.location != current.location) {
-            logger.warn(
+            logger.info(
                 "Updated Mahjong table {} location from {} to {}",
                 table.tableId,
                 previous.location,

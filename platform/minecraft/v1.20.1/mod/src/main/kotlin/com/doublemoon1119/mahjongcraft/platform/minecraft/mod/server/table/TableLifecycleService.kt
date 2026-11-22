@@ -164,7 +164,7 @@ class TableLifecycleService(
         val block = state.block as? MahjongTableStructureBlock ?: return true
         val table = block.mahjongTableControllerPos(world, pos, state)?.let { MahjongTableLookup.find(world, it) }
         if (table == null) {
-            logger.warn("Allowed removal of incomplete Mahjong table part at {} because its controller is missing", pos)
+            logger.debug("Allowed removal of incomplete Mahjong table part at {} because its controller is missing", pos)
             return true
         }
         return isBreakAllowed(table.tableId)

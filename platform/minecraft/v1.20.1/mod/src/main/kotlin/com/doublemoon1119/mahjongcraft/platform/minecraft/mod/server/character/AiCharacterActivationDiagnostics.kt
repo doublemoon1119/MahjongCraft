@@ -13,7 +13,7 @@ import kotlin.coroutines.cancellation.CancellationException
 
 /** 在生成前預檢失敗時記錄附近空間，只讀原生狀態，不再次呼叫座位提供者。 */
 internal object AiCharacterActivationDiagnostics {
-    /** 診斷只寫入 DEBUG 日誌，不送給玩家。 */
+    /** 診斷只寫入 TRACE 日誌，不送給玩家。 */
     private val logger = mahjongCraftLogger(AiCharacterActivationDiagnostics::class)
 
     /**
@@ -30,7 +30,7 @@ internal object AiCharacterActivationDiagnostics {
         request: SeatRequest,
         seatIndex: Int,
     ) {
-        if (!logger.isDebugEnabled) return
+        if (!logger.isTraceEnabled) return
         try {
             val seat = request.seat
             val dimensionsValid = rider.bbWidth.isFinite() && rider.bbHeight.isFinite() && rider.bbWidth > 0f && rider.bbHeight > 0f
@@ -57,7 +57,7 @@ internal object AiCharacterActivationDiagnostics {
                 ((minimum.x shr 4)..(maximum.x shr 4)).all { x ->
                     ((minimum.z shr 4)..(maximum.z shr 4)).all { z -> world.chunkSource.hasChunk(x, z) }
                 }
-            logger.debug(
+            logger.trace(
                 "AI character activation position tableId={} seatIndex={} entityId={} dimension={} target={} dimensions={}x{} dimensionsValid={} probe={} probeLoaded={}",
                 request.tableId,
                 seatIndex,
@@ -110,7 +110,7 @@ internal object AiCharacterActivationDiagnostics {
                 }.take(MAX_SAMPLES).toList()
             val collisions = world.getBlockCollisions(rider, body).asSequence().take(MAX_SAMPLES).map { it.bounds() }.toList()
             val supported = world.getBlockCollisions(rider, support).iterator().hasNext()
-            logger.debug(
+            logger.trace(
                 "AI character activation observations tableId={} seatIndex={} bodyProbe={} bodyProbeClipped={} insideBorder={} blockCollisions={} support={} targetBlock={} fluid={} nearbyEntityCount={} entitySamples={} blockSamples={}",
                 request.tableId,
                 seatIndex,
@@ -144,9 +144,9 @@ internal object AiCharacterActivationDiagnostics {
         } catch (cause: CancellationException) {
             throw cause
         } catch (cause: Exception) {
-            logger.debug("AI character activation diagnostics failed tableId=${request.tableId} seatIndex=$seatIndex", cause)
+            logger.trace("AI character activation diagnostics failed tableId=${request.tableId} seatIndex=$seatIndex", cause)
         } catch (cause: LinkageError) {
-            logger.debug("AI character activation diagnostics failed tableId=${request.tableId} seatIndex=$seatIndex", cause)
+            logger.trace("AI character activation diagnostics failed tableId=${request.tableId} seatIndex=$seatIndex", cause)
         }
     }
 

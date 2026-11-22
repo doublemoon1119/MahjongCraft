@@ -97,7 +97,7 @@ class ClientConfigCommand(
      * @return Brigadier 成功值。
      */
     private fun show(): Int {
-        logger.debug(
+        logger.trace(
             "Effective client config hover path={} config={}",
             configStore.displayPath,
             configStore.formattedCurrentToml(),
