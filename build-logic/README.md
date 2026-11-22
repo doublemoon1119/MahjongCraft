@@ -41,7 +41,8 @@ it does not validate their prose, links, or commands.
 ## Boundaries
 
 Build logic configures projects but does not contain runtime MahjongCraft code.
-Formal targets are declared in [`gradle/platform-targets.toml`](../gradle/platform-targets.toml),
+Formal targets are declared in `gradle/platform/<platform>/<version>/targets.toml` files
+(see [`gradle/`](../gradle/README.md)),
 not inferred by scanning directories.
 
 ## Dependencies

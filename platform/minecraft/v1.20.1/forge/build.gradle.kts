@@ -16,9 +16,9 @@ version = libs.versions.minecraft.mod.version.get()
 configure<MinecraftModPackagingExtension> {
     // 載入器接點尚未全部實作，不交付給玩家。
     distributable.set(false)
-    dependencyRequirements.put("minecraft", libs.versions.minecraftRequirement1201)
-    dependencyRequirements.put("forge", libs.versions.forgeRequirement1201)
-    dependencyRequirements.put("kotlinForForge", libs.versions.kotlinForForgeRequirement1201)
+    dependencyRequirements.put("minecraft", mc1201.versions.require.forge.minecraft)
+    dependencyRequirements.put("forge", mc1201.versions.require.forge.loader)
+    dependencyRequirements.put("kotlinForForge", mc1201.versions.require.forge.kotlinforforge)
 }
 
 repositories {
@@ -45,7 +45,7 @@ kotlin.sourceSets.main {
 }
 
 legacyForge {
-    version = libs.versions.forge1201.get()
+    version = mc1201.versions.forge.get()
     // 與 :minecraft_v1.20.1_mod 共用同一份 access transformer；它也隨 mod 模組的資源一起打包，Forge 執行時讀同一份。
     accessTransformers.from(minecraftModDirectory.resolve("src/main/resources/META-INF/accesstransformer.cfg"))
     validateAccessTransformers = true
@@ -88,7 +88,7 @@ val externalLibraries = listOf(
 )
 
 dependencies {
-    modImplementation(libs.kotlinforforge)
+    modImplementation(mc1201.kotlinforforge)
 
     projectLibraries.forEach { implementation(project(it)) }
     implementation(project.dependencies.platform(libs.koin.bom))

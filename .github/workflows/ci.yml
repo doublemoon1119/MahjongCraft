@@ -1,5 +1,5 @@
 # Runs the same full verification as a local pre-commit check, once per build target.
-# The targets come from gradle/platform-targets.toml through the writeCiTargetMatrix task,
+# The targets come from gradle/platform/<platform>/<version>/targets.toml through the writeCiTargetMatrix task,
 # so a new platform target is verified without editing this file.
 name: CI
 

@@ -78,7 +78,7 @@ class PlatformTargetsSettingsPluginTest {
     @Test
     fun `rejects enabled examples when target has none`() = withFixture { root ->
         prepareBuild(root)
-        val catalog = root.resolve("gradle/platform-targets.toml")
+        val catalog = root.resolve("gradle/platform/minecraft/v1.20.1/targets.toml")
         catalog.writeText(catalog.readText().replace(Regex("example-modules = \\[.*?]", RegexOption.DOT_MATCHES_ALL), ""))
 
         val result = runner(root).withArguments(
@@ -146,8 +146,8 @@ class PlatformTargetsSettingsPluginTest {
         prepareBuild(root)
         root.toPath().resolve("platform/minecraft/common").createDirectories()
         root.resolve("platform/minecraft/common/build.gradle.kts").writeText("")
-        root.resolve("gradle/platform-targets.toml").writeText(
-            root.resolve("gradle/platform-targets.toml").readText()
+        root.resolve("gradle/platform/minecraft/v1.20.1/targets.toml").apply { parentFile.mkdirs() }.writeText(
+            root.resolve("gradle/platform/minecraft/v1.20.1/targets.toml").readText()
                 .replace("modules = [\"platform/test\"]", "modules = [\"platform/test\", \"platform/minecraft/common\"]"),
         )
 
@@ -172,7 +172,7 @@ class PlatformTargetsSettingsPluginTest {
         root.toPath().resolve("example/mahjong-extension").createDirectories()
         root.toPath().resolve("example/platform/minecraft/common").createDirectories()
         root.toPath().resolve("example/platform/minecraft/v1.20.1/fabric").createDirectories()
-        root.resolve("gradle/platform-targets.toml").writeText(
+        root.resolve("gradle/platform/minecraft/v1.20.1/targets.toml").apply { parentFile.mkdirs() }.writeText(
             """
             schema-version = 1
 

@@ -21,7 +21,7 @@ They may map immutable domain data to platform presentation, but do not own rule
 or bypass authoritative validation.
 
 Formal build targets and their module paths are declared in
-[`gradle/platform-targets.toml`](../gradle/platform-targets.toml).
+the `targets.toml` file of each platform version under [`gradle/platform`](../gradle/README.md).
 Development and verification instructions are in [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 Platform modules are not loaded by the `core` target.

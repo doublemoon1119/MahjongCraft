@@ -9,10 +9,7 @@ import org.gradle.api.plugins.ExtensionAware
 class PlatformTargetsSettingsPlugin : Plugin<Settings> {
     /** 解析 target 來源並載入對應平台模組。 */
     override fun apply(settings: Settings) {
-        val targets = PlatformTargetCatalog.load(
-            settings.rootDir.resolve("gradle/platform-targets.toml"),
-            settings.rootDir,
-        )
+        val targets = PlatformTargetCatalog.loadAll(settings.rootDir)
         val selectedId = PlatformTargetCatalog.resolveSelectedTargetId(
             gradleProperty = settings.providers.gradleProperty(PlatformTargetCatalog.TARGET_PROPERTY_NAME).orNull,
             environmentVariable = settings.providers.environmentVariable(

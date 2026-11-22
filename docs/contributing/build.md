@@ -15,7 +15,8 @@
   pass the data they need as task properties at configuration time. A new platform target must build and run
   its `run` tasks with the configuration cache, or document why its builds pass `--no-configuration-cache`.
 - The built-in `core` target loads only logic, flow, AI, extension API, and testing modules. Formal
-  platform targets are declared in `gradle/platform-targets.toml`; directory presence alone does not
+  platform targets are declared in `gradle/platform/<platform>/<version>/targets.toml`; directory presence
+  alone does not
   make a platform releasable.
 - Target selection precedence is `-PmahjongcraftTarget`,
   `ORG_GRADLE_PROJECT_mahjongcraftTarget`, `MAHJONGCRAFT_TARGET`, `local.dev.properties`, then
@@ -34,9 +35,25 @@
   API each read their own version from `gradle/libs.versions.toml`. The root and testing projects remain
   `0.0.0-dev` because they are not published.
 
+## Version Catalogs and Targets
+
+- `gradle/libs.versions.toml` (`libs`) holds the versions shared by every platform version: Kotlin, the
+  core libraries and build tooling.
+- Each platform version has its own folder, `gradle/platform/<platform>/<version>/`:
+  - `targets.toml` declares that version's platform targets. The build reads every such file and fails
+    when two files declare the same target ID.
+  - `versions.toml`, when present, holds that version's dependencies and runtime requirements as a separate
+    catalog. Each platform's build guide names its catalogs.
+- Catalog names use lowercase words joined by `-`, never camelCase, so Gradle accessors stay predictable,
+  and no segment may be a Kotlin keyword such as `for`. A name must not also be the prefix of another
+  name, for example `foo` next to `foo-bar`; choose a distinct name instead.
+- Group entries into sections with a `#` comment heading, in the same order in `[versions]` and
+  `[libraries]`. Keep runtime requirements written into package metadata apart from the compile versions,
+  named `require-<loader>-<dependency>`.
+
 ## Example Builds
 
-- A target may declare `example-modules` in the existing platform catalog. They are loaded only when
+- A target may declare `example-modules` in its `targets.toml` entry. They are loaded only when
   `-PmahjongcraftExample=true` is passed. Missing or `false` keeps them out of the project graph;
   other values are rejected. The switch is not saved in `local.dev.properties`.
 - Example modules use the existing conventions and read their versions from the version catalog.
@@ -70,7 +87,7 @@
   manually. Branches that predate the workflow do not contain it, so pushing them does not run CI. A newer
   push to the same branch or pull request cancels the run in progress.
 - The first job runs `./gradlew writeCiTargetMatrix`, which writes `build/ci/target-matrix.json`: the
-  built-in `core` target and every target in `gradle/platform-targets.toml`, each with its Java toolchain
+  built-in `core` target and every target in the `targets.toml` files, each with its Java toolchain
   and whether it has example modules. A new target is verified without editing the workflow.
 - Each target then runs the same full verification as a local check, in its own job:
 

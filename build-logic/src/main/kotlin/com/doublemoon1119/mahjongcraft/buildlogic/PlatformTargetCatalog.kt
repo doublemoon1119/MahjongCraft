@@ -50,18 +50,56 @@ object PlatformTargetCatalog {
     const val SUPPORTED_SCHEMA_VERSION: Int = 1
 
     /**
-     * 解析 [file] 並驗證所有 target。
+     * 找出 repository 中所有平台 target 檔案：`gradle/platform/<平台>/<版本>/targets.toml`。
      *
-     * @param file 要解析的 TOML catalog 檔案。
+     * @param rootDirectory repository 根目錄。
+     * @return 依相對路徑排序的檔案；沒有時為空。
+     */
+    fun targetFiles(rootDirectory: File): List<File> = rootDirectory.resolve(TARGET_FILE_DIRECTORY)
+        .listFiles().orEmpty()
+        .filter(File::isDirectory)
+        .flatMap { platform -> platform.listFiles().orEmpty().filter(File::isDirectory) }
+        .map { version -> version.resolve(TARGET_FILE_NAME) }
+        .filter(File::isFile)
+        .sortedBy { it.relativeTo(rootDirectory).invariantSeparatorsPath }
+
+    /**
+     * 載入並驗證 repository 中所有平台 target 檔案的 target。
+     *
+     * @param rootDirectory 用於找出 target 檔案與驗證 module 路徑的 repository 根目錄。
+     * @return 依檔案路徑與檔案內順序排列的已驗證 target；沒有 target 檔案時為空。
+     */
+    fun loadAll(rootDirectory: File): List<PlatformTarget> {
+        val targets = targetFiles(rootDirectory).flatMap(::parse)
+        validateTargets(targets, rootDirectory)
+        return targets
+    }
+
+    /**
+     * 解析單一 target 檔案並驗證其中的 target。
+     *
+     * @param file 要解析的 TOML target 檔案。
      * @param rootDirectory 用於解析及驗證 target module 路徑的 repository 根目錄。
-     * @return 依 catalog 順序排列的已驗證 target。
+     * @return 依檔案順序排列的已驗證 target。
      */
     fun load(file: File, rootDirectory: File): List<PlatformTarget> {
+        val targets = parse(file)
+        validateTargets(targets, rootDirectory)
+        return targets
+    }
+
+    /**
+     * 解析單一 target 檔案，不驗證 target 內容。
+     *
+     * @param file 要解析的 TOML target 檔案。
+     * @return 依檔案順序排列的 target。
+     */
+    private fun parse(file: File): List<PlatformTarget> {
         if (!file.isFile) throw GradleException("Platform target catalog does not exist: $file")
         val document = try {
             Toml.decodeFromString(PlatformTargetCatalogDocument.serializer(), file.readText())
         } catch (error: Exception) {
-            throw GradleException("Invalid platform target catalog: ${error.message}", error)
+            throw GradleException("Invalid platform target catalog $file: ${error.message}", error)
         }
         if (document.schemaVersion != SUPPORTED_SCHEMA_VERSION) {
             throw GradleException(
@@ -69,7 +107,7 @@ object PlatformTargetCatalog {
                     "expected $SUPPORTED_SCHEMA_VERSION",
             )
         }
-        val targets = document.targets.map { definition ->
+        return document.targets.map { definition ->
             PlatformTarget(
                 id = definition.id.trim(),
                 platform = definition.platform.trim(),
@@ -80,8 +118,6 @@ object PlatformTargetCatalog {
                 attributes = definition.attributes,
             )
         }
-        validateTargets(targets, rootDirectory)
-        return targets
     }
 
     /**
@@ -208,6 +244,12 @@ object PlatformTargetCatalog {
     /** 判斷路徑是否屬於範例區域，避免正式模組誤載入範例。 */
     private fun isExampleModulePath(path: String): Boolean =
         path.startsWith("example/") || path.contains("/example/")
+
+    /** 平台 target 檔案所在的資料夾，相對於 repository 根目錄。 */
+    const val TARGET_FILE_DIRECTORY: String = "gradle/platform"
+
+    /** 每個平台版本資料夾中的 target 檔名。 */
+    const val TARGET_FILE_NAME: String = "targets.toml"
 
     /** Core-only 的保留 target ID。 */
     const val CORE_TARGET_ID: String = "core"

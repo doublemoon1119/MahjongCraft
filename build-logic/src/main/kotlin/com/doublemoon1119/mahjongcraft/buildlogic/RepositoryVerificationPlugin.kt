@@ -204,21 +204,13 @@ private fun String.withLfLineEndings(): String = replace("\r\n", "\n")
  */
 internal fun expectedModuleReadmes(project: Project): Set<File> {
     val root = project.rootDir
-    val catalog = root.resolve("gradle/platform-targets.toml")
-    val catalogModules = if (catalog.isFile) {
-        PlatformTargetCatalog.load(catalog, root).flatMap(PlatformTarget::modules)
-    } else {
-        emptyList()
-    }
+    val targets = PlatformTargetCatalog.loadAll(root)
+    val catalogModules = targets.flatMap(PlatformTarget::modules)
     val directories = buildSet {
         add(root)
         project.rootProject.allprojects.mapTo(this) { it.projectDir }
         catalogModules.mapTo(this) { root.resolve(it) }
-        if (catalog.isFile) {
-            PlatformTargetCatalog.load(catalog, root)
-                .flatMap(PlatformTarget::exampleModules)
-                .mapTo(this) { root.resolve(it) }
-        }
+        targets.flatMap(PlatformTarget::exampleModules).mapTo(this) { root.resolve(it) }
         add(root.resolve("build-logic"))
         add(root.resolve("platform"))
         add(root.resolve("platform/minecraft"))

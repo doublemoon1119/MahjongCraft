@@ -156,10 +156,7 @@ abstract class SwitchTargetTask : DefaultTask() {
  * @param root repository 根目錄。
  * @return 已驗證且依 catalog 順序排列的 target。
  */
-private fun loadTargets(root: File): List<PlatformTarget> = PlatformTargetCatalog.load(
-    root.resolve("gradle/platform-targets.toml"),
-    root,
-)
+private fun loadTargets(root: File): List<PlatformTarget> = PlatformTargetCatalog.loadAll(root)
 
 /**
  * 只替換 target property，保留 local file 中其餘內容。

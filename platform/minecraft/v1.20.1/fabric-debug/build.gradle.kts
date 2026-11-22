@@ -15,10 +15,10 @@ configure<com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtens
     distributable.set(false)
     displayName.set("MahjongCraft Debug Tools")
     description.set("Development-only debug commands and tools for MahjongCraft.")
-    dependencyRequirements.put("minecraft", libs.versions.minecraft1201)
-    dependencyRequirements.put("fabricLoader", libs.versions.fabricLoaderRequirement1201)
-    dependencyRequirements.put("fabricApi", libs.versions.fabricApiRequirement1201)
-    dependencyRequirements.put("fabricLanguageKotlin", libs.versions.fabricLanguageKotlinRequirement1201)
+    dependencyRequirements.put("minecraft", mc1201.versions.require.fabric.minecraft)
+    dependencyRequirements.put("fabricLoader", mc1201.versions.require.fabric.loader)
+    dependencyRequirements.put("fabricApi", mc1201.versions.require.fabric.api)
+    dependencyRequirements.put("fabricLanguageKotlin", mc1201.versions.require.fabric.language.kotlin)
 }
 
 tasks.withType<Test>().configureEach {
@@ -46,11 +46,11 @@ kotlin.sourceSets.main {
 }
 
 dependencies {
-    minecraft(libs.minecraft1201)
+    minecraft(mc1201.minecraft)
     mappings(loom.officialMojangMappings())
-    modImplementation(libs.fabric.loader)
-    modImplementation(libs.fabricApi1201)
-    modImplementation(libs.fabric.language.kotlin)
+    modImplementation(mc1201.fabric.loader)
+    modImplementation(mc1201.fabric.api)
+    modImplementation(mc1201.fabric.language.kotlin)
 
     // Loom 子專案使用未重新映射的 namedElements，避免在開發環境讀取 intermediary 名稱。
     implementation(project(path = ":minecraft_v1.20.1_fabric", configuration = "namedElements"))

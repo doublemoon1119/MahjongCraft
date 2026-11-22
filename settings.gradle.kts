@@ -28,6 +28,19 @@ dependencyResolutionManagement {
     // PREFER_PROJECT——其他模組仍然只用這裡宣告的 repo，只有 Loom 這種会自行注入必要 repo 的外掛
     // 才會用到專案層級的 repo。
     repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
+    // 每個 Minecraft 版本的依賴放在 gradle/platform/minecraft/<版本>/versions.toml，以資料夾名稱登記成
+    // mc<去掉點的版本號> 的 version catalog，例如 v1.20.1 是 mc1201。
+    versionCatalogs {
+        rootDir.resolve("gradle/platform/minecraft").listFiles()
+            .orEmpty()
+            .filter { it.resolve("versions.toml").isFile }
+            .sortedBy { it.name }
+            .forEach { versionDirectory ->
+                create("mc" + versionDirectory.name.removePrefix("v").replace(".", "")) {
+                    from(files(versionDirectory.resolve("versions.toml")))
+                }
+            }
+    }
     repositories {
         mavenCentral()
         gradlePluginPortal()

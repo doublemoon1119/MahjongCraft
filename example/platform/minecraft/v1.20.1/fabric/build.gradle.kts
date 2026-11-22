@@ -17,10 +17,10 @@ configure<MinecraftModPackagingExtension> {
     archiveBaseName.set("mahjongcraft-example-fabric-1.20.1")
     // 範例模組不是交付給玩家的成品，CI 不收集它的 JAR。
     distributable.set(false)
-    dependencyRequirements.put("minecraft", libs.versions.minecraft1201)
-    dependencyRequirements.put("fabricLoader", libs.versions.fabricLoaderRequirement1201)
-    dependencyRequirements.put("fabricApi", libs.versions.fabricApiRequirement1201)
-    dependencyRequirements.put("fabricLanguageKotlin", libs.versions.fabricLanguageKotlinRequirement1201)
+    dependencyRequirements.put("minecraft", mc1201.versions.require.fabric.minecraft)
+    dependencyRequirements.put("fabricLoader", mc1201.versions.require.fabric.loader)
+    dependencyRequirements.put("fabricApi", mc1201.versions.require.fabric.api)
+    dependencyRequirements.put("fabricLanguageKotlin", mc1201.versions.require.fabric.language.kotlin)
 }
 
 // 只收集兩份範例程式庫，不將它們依賴的本體與 Kotlin 套件再打包一次。
@@ -47,13 +47,13 @@ repositories {
 devMods {
     group(
         "iris",
-        libs.sodium1201,
-        libs.iris1201,
-        libs.irisJcpp1201,
-        libs.irisGlslTransformer1201,
-        libs.irisAntlrRuntime1201,
+        mc1201.sodium,
+        mc1201.iris,
+        mc1201.jcpp,
+        mc1201.glsl.transformer,
+        mc1201.antlr.runtime,
     )
-    group("modmenu", libs.modMenu1201)
+    group("modmenu", mc1201.mod.menu)
 }
 
 loom {
@@ -77,11 +77,11 @@ loom {
 }
 
 dependencies {
-    minecraft(libs.minecraft1201)
+    minecraft(mc1201.minecraft)
     mappings(loom.officialMojangMappings())
-    modImplementation(libs.fabric.loader)
-    modImplementation(libs.fabricApi1201)
-    modImplementation(libs.fabric.language.kotlin)
+    modImplementation(mc1201.fabric.loader)
+    modImplementation(mc1201.fabric.api)
+    modImplementation(mc1201.fabric.language.kotlin)
 
     // Loom 子專案使用未重新映射的 namedElements，避免在開發環境讀取 intermediary 名稱。
     implementation(project(path = ":minecraft_v1.20.1_fabric", configuration = "namedElements"))

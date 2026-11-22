@@ -107,7 +107,8 @@ Platform adaptation and presentation layer.
   - `platform/{platform}/{version}/common`: Version-specific code (e.g., networking, world save format).
   - `platform/{platform}/{version}/{loader}`: Loader-specific entry points (e.g., Fabric mod initializer).
 - **Platform target registration**:
-  - Formal platform targets are declared in `gradle/platform-targets.toml`; directory presence alone does not
+  - Formal platform targets are declared in `gradle/platform/<platform>/<version>/targets.toml`; directory
+    presence alone does not
     register a build target.
   - The settings plugin derives each Gradle project path by removing the `platform/` prefix and replacing
     directory separators with underscores. Dots in version directory names remain dots.

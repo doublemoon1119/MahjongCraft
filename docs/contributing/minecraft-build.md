@@ -6,7 +6,7 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
 ## Java and Remapping
 
 - Minecraft version mod and loader modules use the Java policy declared by their selected platform target
-  in `gradle/platform-targets.toml`, not the core Java policy.
+  in `gradle/platform/minecraft/<version>/targets.toml`, not the core Java policy.
 - Minecraft code uses Mojang's official names, which Fabric Loom modules select with
   `loom.officialMojangMappings()`. Code, comments and documentation name Minecraft classes and members
   by those names, for example `PoseStack` and `GuiGraphics`.
@@ -30,9 +30,16 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
 - Logic that does not need Minecraft classes belongs in the cross-version common layer instead, so the code each
   new Minecraft version copies stays small.
 
+## Version Catalogs
+
+- Each Minecraft version's `gradle/platform/minecraft/<version>/versions.toml` is registered by the root
+  settings as a catalog named `mc` plus the version digits, for example `mc1201` for `v1.20.1`. Gradle plugins
+  that build several Minecraft versions, such as Fabric Loom and ModDevGradle, stay in `libs`.
+
 ## Mod Dependency Requirements
 
-- Keep dependency versions and runtime requirements in `gradle/libs.versions.toml`. A version used to
+- Keep dependency versions and runtime requirements in the Minecraft version's catalog,
+  `gradle/platform/minecraft/<version>/versions.toml`, named `require-<loader>-<dependency>`. A version used to
   compile the mod is not automatically its minimum supported version. Keep a separate requirement when
   metadata accepts older versions or a version range; do not derive it by trimming the build version.
 - Each version/loader module selects the requirements its metadata needs through
@@ -70,8 +77,8 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   does not declare and lists the groups it does declare, while a module that declares no groups, such as a
   debug module, ignores the switch. Like the example switch, it is not saved in `local.dev.properties`.
 - Each loader module declares its groups in its build script through the `devMods` extension of the
-  Minecraft loader convention, for example `group("iris", libs.sodium1201, libs.iris1201)`. Versions live in
-  `gradle/libs.versions.toml`. Fabric Loom modules add selected groups to `modLocalRuntime`, so the mods
+  Minecraft loader convention, for example `group("iris", mc1201.sodium, mc1201.iris)`. Versions live in
+  the Minecraft version's catalog. Fabric Loom modules add selected groups to `modLocalRuntime`, so the mods
   are neither bundled nor published as dependencies; other loaders set `configurationName` to their
   equivalent.
 - Groups hold runtime mods only. Product code must not depend on them. An integration that compiles

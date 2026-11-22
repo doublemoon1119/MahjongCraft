@@ -37,10 +37,7 @@ abstract class WriteCiTargetMatrixTask : DefaultTask() {
     /** 讀取目標目錄並寫出矩陣。 */
     @TaskAction
     fun write() {
-        val targets = PlatformTargetCatalog.load(
-            rootDirectory.get().asFile.resolve("gradle/platform-targets.toml"),
-            rootDirectory.get().asFile,
-        )
+        val targets = PlatformTargetCatalog.loadAll(rootDirectory.get().asFile)
         val file = outputFile.get().asFile
         file.parentFile.mkdirs()
         file.writeText(ciTargetMatrix(coreJavaToolchain.get(), targets))

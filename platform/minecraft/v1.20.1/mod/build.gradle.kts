@@ -30,7 +30,7 @@ version = libs.versions.minecraft.mod.version.get()
 
 legacyForge {
     // 原版模式：只提供套用 Mojang 名稱的原版 Minecraft，不含任何載入器。
-    mcpVersion = libs.versions.minecraft1201.get()
+    mcpVersion = mc1201.versions.minecraft.get()
     // 預設讀取 src/main/resources/META-INF/accesstransformer.cfg；開放的對象與 Fabric 的 access widener 相同，Forge 執行時讀同一份。
     validateAccessTransformers = true
     // 測試同樣以原版 Minecraft 編譯與執行。

@@ -1,0 +1,60 @@
+# Minecraft 1.20.1 的依賴與執行相容範圍；build 腳本中以 mc1201 取用，例如 mc1201.fabric.api。
+# 執行相容範圍寫進 mod 的 metadata，與編譯依賴的版本分開維護，一律以 require-<載入器>-<對象> 命名。
+
+[versions]
+
+# Minecraft
+minecraft = "1.20.1"
+
+# Fabric：編譯依賴
+fabric-loader = "0.19.3"
+fabric-api = "0.92.11+1.20.1"
+fabric-language-kotlin = "1.13.14+kotlin.2.4.20"
+
+# Fabric：執行相容範圍（fabric.mod.json 的寫法）
+require-fabric-minecraft = "1.20.1"
+require-fabric-loader = ">=0.19.0"
+require-fabric-api = "*"
+require-fabric-language-kotlin = ">=1.13.14"
+
+# Forge：編譯依賴
+forge = "1.20.1-47.4.29"
+kotlinforforge = "4.13.0"
+
+# Forge：執行相容範圍（mods.toml 的 Maven 版本範圍寫法）
+require-forge-minecraft = "[1.20.1,1.20.2)"
+require-forge-loader = "[47,)"
+# Kotlin for Forge 4.13 內附 Kotlin 2.4.21，不低於本專案編譯使用的 Kotlin 版本。
+require-forge-kotlinforforge = "[4.13,)"
+
+# 開發執行時可選載入的相容測試模組（-PmahjongcraftDevMods），從 Modrinth 的 Maven 倉庫取得；
+# ModMenu 同時是 ModMenu 整合的編譯依賴，但不打包。
+mod-menu = "7.2.2"
+iris = "1.7.6+1.20.1"
+sodium = "mc1.20.1-0.5.13-fabric"
+# Iris 打包在自己 JAR 中的程式庫。Loom 為開發環境轉換模組時會拿掉內嵌的程式庫，改由 Maven 依賴提供，
+# 但 Modrinth 的 Iris 沒有宣告這些依賴，所以 iris 組合另外列出；版本與 Iris 內嵌的一致。
+jcpp = "1.4.14"
+glsl-transformer = "2.0.1"
+antlr-runtime = "4.13.1"
+
+[libraries]
+
+# Minecraft
+minecraft = { group = "com.mojang", name = "minecraft", version.ref = "minecraft" }
+
+# Fabric
+fabric-loader = { group = "net.fabricmc", name = "fabric-loader", version.ref = "fabric-loader" }
+fabric-api = { group = "net.fabricmc.fabric-api", name = "fabric-api", version.ref = "fabric-api" }
+fabric-language-kotlin = { group = "net.fabricmc", name = "fabric-language-kotlin", version.ref = "fabric-language-kotlin" }
+
+# Forge
+kotlinforforge = { group = "thedarkcolour", name = "kotlinforforge", version.ref = "kotlinforforge" }
+
+# 開發執行時可選載入的相容測試模組
+mod-menu = { group = "maven.modrinth", name = "modmenu", version.ref = "mod-menu" }
+iris = { group = "maven.modrinth", name = "iris", version.ref = "iris" }
+sodium = { group = "maven.modrinth", name = "sodium", version.ref = "sodium" }
+jcpp = { group = "org.anarres", name = "jcpp", version.ref = "jcpp" }
+glsl-transformer = { group = "io.github.douira", name = "glsl-transformer", version.ref = "glsl-transformer" }
+antlr-runtime = { group = "org.antlr", name = "antlr4-runtime", version.ref = "antlr-runtime" }
