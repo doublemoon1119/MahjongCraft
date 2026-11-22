@@ -8,6 +8,8 @@ It uses the same compiler, Java and Minecraft version policies as the main proje
 - [Platform-independent extension](../../mahjong-extension/README.md): common Kotlin code.
 - [Minecraft common](common/README.md): shared presentation and resources, with a
   [registration map](common/README.md#registration-map) for extension authors.
+- [Minecraft 1.20.1 mod](v1.20.1/mod/README.md): loader-independent 1.20.1 code, such as the
+  game-event chat and furniture behavior that does not depend on how the content is registered.
 - Version/loader adapters: for example, the currently available
   [Fabric 1.20.1 adapter](v1.20.1/fabric/README.md) supplies native entrypoints and furniture.
 
@@ -69,9 +71,10 @@ under the example's own resource namespace.
 No example module starts Koin. Extension registration goes through MahjongCraft's public entrypoint.
 Successful compilation alone is not evidence that a rule or another extension capability works.
 
-For the current Fabric 1.20.1 adapter, the loader-specific entry and observer test are
-[`ExampleMod.kt`](v1.20.1/fabric/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleMod.kt)
-and [`ExampleGameEventChatTest.kt`](v1.20.1/fabric/src/test/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/event/ExampleGameEventChatTest.kt).
+For the current Fabric 1.20.1 adapter, the loader-specific entry is
+[`ExampleMod.kt`](v1.20.1/fabric/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleMod.kt),
+and the observer test shared by the 1.20.1 loaders is
+[`ExampleGameEventChatTest.kt`](v1.20.1/mod/src/test/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/mod/event/ExampleGameEventChatTest.kt).
 The shared Minecraft registration and its test are
 [`ExampleMinecraftMahjongExtension.kt`](common/src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/ExampleMinecraftMahjongExtension.kt)
 and [`ExampleMinecraftRegistrationTest.kt`](common/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/ExampleMinecraftRegistrationTest.kt).
@@ -138,7 +141,7 @@ bot's assigned seat, then the bot sits down. The built-in stools use the same me
 - If the seat was placed but the bot could not sit, the seat remains and a message explains the result.
 - Other entities and unrelated items retain their normal interaction. Sneaking skips this shortcut.
 
-`ExampleSeatPlacements` demonstrates `FabricSeatPlacementProvider` for block furniture and an entity
+`ExampleSeatPlacements` demonstrates `SeatPlacementProvider` for block furniture and an entity
 item. The cushion shares its normal placement function with this shortcut. Its existing-seat provider
 is registered separately and remains responsible for validating the actual sitting position.
 
@@ -226,7 +229,7 @@ reads the saved selection. It also requests one custom gold hand-reveal token pe
 Both kinds use the same central layout. The public tile kind comes from MahjongCraft; the token's
 native kind, entity and renderer belong entirely to the example adapter. For instance, the current
 Fabric adapter registers them in
-[`ExampleFabricMahjongExtension`](v1.20.1/fabric/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleFabricMahjongExtension.kt).
+[`ExampleNativeMahjongExtension`](v1.20.1/fabric/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleNativeMahjongExtension.kt).
 
 After building, check the following in a disposable example world:
 

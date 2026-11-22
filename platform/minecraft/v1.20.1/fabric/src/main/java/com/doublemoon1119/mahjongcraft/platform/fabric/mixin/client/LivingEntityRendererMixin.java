@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.mixin.client;
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.SceneEntityTranslucency;
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SceneEntityTranslucency;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import org.spongepowered.asm.mixin.Mixin;

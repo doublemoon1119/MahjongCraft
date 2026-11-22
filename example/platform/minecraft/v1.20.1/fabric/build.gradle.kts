@@ -116,6 +116,12 @@ tasks.test {
     jvmArgumentProviders.add(packagingTestArguments)
 }
 
+// 範例中呼叫 Minecraft 1.20.1 但不用載入器的程式在 :example-minecraft_v1.20.1_mod；比照本體，把原始碼納入本模組，
+// 由 Loom 一起重新映射並打包。
+kotlin.sourceSets.main {
+    kotlin.srcDir(project(":example-minecraft_v1.20.1_mod").projectDir.resolve("src/main/kotlin"))
+}
+
 val unpackLibraryJars = objects.newInstance<UnpackLibraryJars>()
 tasks.jar {
     dependsOn(exampleLibraries)

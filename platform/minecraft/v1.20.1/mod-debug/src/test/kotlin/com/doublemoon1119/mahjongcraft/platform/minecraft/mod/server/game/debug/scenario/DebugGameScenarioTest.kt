@@ -1,0 +1,615 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.scenario
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiSupplementalDrawPolicy
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
+import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawContext
+import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawDecision
+import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionContext
+import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionDecision
+import com.doublemoon1119.mahjongcraft.logic.table.layout.resolveTransitionValidated
+import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.scenario.DebugGameScenarioContext
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.scenario.DebugGameScenarioPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.scenario.DebugGameScenarioPresentationPublisher
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.scenario.DebugGameScenarioResult
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
+import kotlin.random.Random
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
+
+/** 驗證開發用對局情境的登錄、建構與權威狀態約束。 */
+class DebugGameScenarioTest {
+    /** Registry 應以穩定順序列出並解析所有內建情境。 */
+    @Test
+    fun `test registry lists and resolves built in scenarios`() {
+        val registry = DebugGameScenarioRegistry()
+
+        assertEquals(EXPECTED_IDS, registry.getAll().map { it.id })
+        EXPECTED_IDS.forEach { id -> assertNotNull(registry.get(id)) }
+        assertEquals(null, registry.get("mahjongcraft:unknown"))
+    }
+
+    /** 只有開局情境攜帶完整初局呈現，其餘可操作牌局維持靜態同步。 */
+    @Test
+    fun `test only opening scenarios provide initial round presentation`() {
+        val registry = DebugGameScenarioRegistry()
+
+        INITIAL_ROUND_IDS.forEach { id ->
+            assertIs<DebugGameScenarioPresentation.InitialRound>(registry.get(id)!!.build(contextFor(id)).presentation, id)
+        }
+        EXPECTED_IDS.filterNot { it in INITIAL_ROUND_IDS }.forEach { id ->
+            assertEquals(
+                expected = DebugGameScenarioPresentation.StaticWall,
+                actual = registry.get(id)!!.build(contextFor(id)).presentation,
+                message = id,
+            )
+        }
+    }
+
+    /** 開局情境保留這一桌的座位順序與莊家（莊家補花情境改由呼叫者當莊家），分數為規則初始分數，規則組件已初始化。 */
+    @Test
+    fun `test opening scenarios keep seats and dealer and initialize the round`() {
+        val registry = DebugGameScenarioRegistry()
+
+        INITIAL_ROUND_IDS.forEach { id ->
+            val context = contextFor(id)
+            val before = context.currentGame.tableState
+            val state = registry.get(id)!!.build(context).game.tableState
+
+            assertEquals(before.players.map { it.id }, state.players.map { it.id }, id)
+            val expectedDealer = if (id == "mahjongcraft:taiwan/debug/dealer_flower") context.invokingPlayerId else before.dealerPlayerId
+            assertEquals(expectedDealer, state.dealerPlayerId, id)
+            assertTrue(state.players.all { it.score == state.config.scoreConfig.initialScore }, id)
+        }
+        val riichi = registry.get("mahjongcraft:riichi/debug/wall_opening")!!.build(createFixture().context).game.tableState
+        assertEquals(0, riichi.riichiPotPoints())
+    }
+
+    /** 所有內建情境都應沿用目前場次，讓場次層級的進度排除與歷史停止作用在同一場。 */
+    @Test
+    fun `test built in scenarios preserve the current match id`() {
+        val registry = DebugGameScenarioRegistry()
+
+        EXPECTED_IDS.forEach { id ->
+            val context = contextFor(id)
+            assertEquals(context.currentGame.matchId, registry.get(id)!!.build(context).game.matchId, id)
+        }
+    }
+
+    /** Validator 應拒絕換掉場次身分的情境結果。 */
+    @Test
+    fun `test validator rejects a changed match id`() {
+        val fixture = createFixture()
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi/debug/before_pao_pon")!!.build(fixture.context)
+        val changed = result.copy(game = result.game.copy(matchId = Uuid.random()))
+
+        val error = assertFailsWith<IllegalArgumentException> { fixture.validator.validate(fixture.context, changed) }
+        assertEquals("Debug scenario must preserve the match ID", error.message)
+    }
+
+    /** 開門情境的牌牆、骰子與發牌資料應全部來自同一份正式初始化結果。 */
+    @Test
+    fun `test wall opening scenario contains a consistent formal initialization`() {
+        val fixture = createFixture()
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi/debug/wall_opening")!!.build(fixture.context)
+
+        fixture.validator.validate(fixture.context, result)
+        val state = result.game.tableState
+        val presentation = assertIs<DebugGameScenarioPresentation.InitialRound>(result.presentation)
+        val allTileIds = allTileIds(result)
+
+        assertEquals(2, assertNotNull(presentation.diceRoll).values.size)
+        assertEquals(allTileIds, result.wallStructure.keys)
+        assertEquals(allTileIds, assertNotNull(result.wallLayout).placements.keys)
+        assertEquals(
+            expected = (state.tileWall.getAllTiles() + state.reservedWallTiles).mapTo(mutableSetOf()) { tile -> tile.id },
+            actual = assertNotNull(state.physicalWallLayout).placements.keys,
+        )
+        state.players.forEachIndexed { seatIndex, player ->
+            val dealOrderIds = presentation.dealOrderHandTileIdsBySeatIndex.getValue(seatIndex)
+            val postFlipIds = presentation.postFlipHandTileIdsBySeatIndex.getValue(seatIndex)
+            assertEquals(player.hand.tiles.map { tile -> tile.id }, postFlipIds)
+            assertEquals(player.hand.tiles.mapTo(mutableSetOf()) { tile -> tile.id }, dealOrderIds.toSet())
+        }
+    }
+
+    /** 完整開局呈現應發布真實骰子與發牌動畫，不得提前靜態生成玩家區。 */
+    @Test
+    fun `test wall opening presentation publishes the formal initial timeline`() {
+        val fixture = createFixture()
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi/debug/wall_opening")!!.build(fixture.context)
+        val presentation = assertIs<DebugGameScenarioPresentation.InitialRound>(result.presentation)
+        val publisher = FakeGamePresentationPublisher()
+
+        DebugGameScenarioPresentationPublisher(publisher, fixture.moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry).publish(result)
+
+        val gameId = result.game.id
+        val wallContext = assertNotNull(publisher.getPublishedWallStructureContext(gameId))
+        val initialDeal = assertNotNull(publisher.getPublishedInitialDeal(gameId))
+        assertTrue(publisher.werePlayerTilesCleared(gameId))
+        assertTrue(wallContext.isNewOpening)
+        assertEquals(listOf(assertNotNull(presentation.diceRoll).values.size), wallContext.openingDiceCounts)
+        assertEquals(presentation.diceRoll, publisher.getPublishedOpeningRolls(gameId).single().dice)
+        assertEquals(presentation.dealOrderHandTileIdsBySeatIndex, initialDeal.handTileIdsBySeatIndex)
+        assertEquals(presentation.postFlipHandTileIdsBySeatIndex, initialDeal.postFlipHandTileIdsBySeatIndex)
+        assertTrue(publisher.getPublishedTableStepBatches(gameId).isEmpty(), "The opening is presented by the initial deal.")
+    }
+
+    /** 可操作情境應維持靜態牌牆與玩家區同步，不得重播骰子或初次發牌。 */
+    @Test
+    fun `test playable scenario keeps static presentation`() {
+        val fixture = createFixture()
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi/debug/before_ankan_1")!!.build(fixture.context)
+        val publisher = FakeGamePresentationPublisher()
+
+        DebugGameScenarioPresentationPublisher(publisher, fixture.moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry).publish(result)
+
+        val gameId = result.game.id
+        val wallContext = assertNotNull(publisher.getPublishedWallStructureContext(gameId))
+        assertFalse(wallContext.isNewOpening)
+        assertEquals(emptyList(), wallContext.openingDiceCounts)
+        assertEquals(result.game.tableState, publisher.getPublishedTableStepBatches(gameId).single().single().tableState)
+        assertTrue(publisher.getPublishedOpeningRolls(gameId).isEmpty())
+        assertNull(publisher.getPublishedInitialDeal(gameId))
+    }
+
+    /** 重複建立同一情境時應保留語意並換用全新的牌 UUID。 */
+    @Test
+    fun `test repeated scenario builds preserve semantics with fresh tile ids`() {
+        val fixture = createFixture()
+        val scenario = DebugGameScenarioRegistry().get("mahjongcraft:riichi/debug/before_ankan_4") ?: error("Missing scenario")
+
+        val first = scenario.build(fixture.context)
+        val second = scenario.build(fixture.context)
+
+        fixture.validator.validate(fixture.context, first)
+        fixture.validator.validate(fixture.context, second)
+        assertEquals(first.game.tableState.players.map { it.id }, second.game.tableState.players.map { it.id })
+        assertEquals(3, first.game.tableState.riichiWallProgress().completedSupplementalDrawCount)
+        assertEquals(
+            expected = 3,
+            actual = first.game.tableState.players.sumOf { player ->
+                player.hand.melds.count { it.type == MeldType.ClosedKan }
+            },
+        )
+        assertNotEquals(allTileIds(first), allTileIds(second))
+    }
+
+    /** 四個槓牌情境都應停在呼叫者恰好只能宣告一次預定暗槓、且不能意外自摸的位置。 */
+    @Test
+    fun `test ankan scenarios expose the intended legal closed kan`() {
+        val fixture = createFixture()
+        val registry = DebugGameScenarioRegistry()
+
+        ANKAN_SCENARIO_IDS.forEachIndexed { index, id ->
+            val number = index + 1
+            val result = registry.get(id)!!.build(fixture.context)
+            fixture.validator.validate(fixture.context, result)
+            val state = result.game.tableState
+            val module = fixture.moduleRegistry.getModule(state.config)
+            val legalActions = module.createLegalActionValidator()
+                .getLegalActions(LegalActionContext.ownTurn(state, state.currentPlayer.id))
+
+            val closedKans = legalActions.filterIsInstance<GameAction.Kan>().filter {
+                it.type == GameAction.KanType.CLOSED_KAN
+            }
+            assertEquals(number - 1, state.riichiWallProgress().completedSupplementalDrawCount)
+            assertEquals(1, closedKans.size, "Scenario $number must expose exactly one closed kan")
+            assertFalse(GameAction.Tsumo in legalActions, "Scenario $number must not expose an accidental tsumo")
+            assertEquals(71 - number * 2, state.tileWall.remainingCount)
+            assertEquals(14, state.reservedWallTiles.size)
+            assertEquals((number - 1) * 2, state.players.sumOf { it.discardPile.entries.size })
+        }
+    }
+
+    /** Debug 情境中的對手不應因填充手牌意外取得明槓選項。 */
+    @Test
+    fun `test ankan scenarios do not give opponents accidental open kans`() {
+        val fixture = createFixture()
+        val registry = DebugGameScenarioRegistry()
+
+        ANKAN_SCENARIO_IDS.forEachIndexed { index, id ->
+            val number = index + 1
+            val state = registry.get(id)!!.build(fixture.context).game.tableState
+            val module = fixture.moduleRegistry.getModule(state.config)
+            val validator = module.createLegalActionValidator()
+            val actor = state.currentPlayer
+            val discardCandidates = actor.hand.standingTiles + listOfNotNull(actor.hand.lastDrawn)
+
+            state.players.filterNot { it.id == actor.id }.forEach { opponent ->
+                discardCandidates.forEach { discardedTile ->
+                    val contextState = state.copy(
+                        players = state.players.map {
+                            if (it.id == opponent.id) it.copy(hand = opponent.hand.copy(lastDrawn = null)) else it
+                        },
+                    )
+                    val reactions = validator.getLegalActions(
+                        context = LegalActionContext.discardReaction(contextState, opponent.id, actor.id, discardedTile),
+                    )
+                    assertFalse(
+                        actual = reactions.any { it is GameAction.Kan && it.type == GameAction.KanType.OPEN_KAN },
+                        message = "Scenario $number gave an opponent an accidental open kan for ${discardedTile.tile}",
+                    )
+                }
+            }
+        }
+    }
+
+    /** 情境的剩餘活牌格位應是正式發牌前綴與既有補牌尾端消耗後的連續區段。 */
+    @Test
+    fun `test ankan scenarios preserve physical live wall history`() {
+        val fixture = createFixture()
+        val registry = DebugGameScenarioRegistry()
+        val templateModule = RiichiRuleModule("mahjongcraft:riichi", RiichiRuleConfig())
+        val templateTiles = templateModule.createWallFactory(templateModule.config.maxPlayers).create(Random(0)).getAllTiles()
+        val template = templateModule.createWallLayout(templateModule.config.maxPlayers).resolve(templateTiles, WallOpening(0, 8))
+        val templateLivePositions = template.drawOrder.map { template.structure.getValue(it.id) }
+        val templateReservedPositions = template.reservedWallTiles.map { template.structure.getValue(it.id) }
+
+        ANKAN_SCENARIO_IDS.forEachIndexed { index, id ->
+            val number = index + 1
+            val result = registry.get(id)!!.build(fixture.context)
+            val state = result.game.tableState
+            val completedKanCount = number - 1
+            val consumedFrontCount = INITIAL_DEAL_TILE_COUNT + completedKanCount + CURRENT_DRAW_TILE_COUNT
+            val expectedLivePositions = templateLivePositions
+                .drop(consumedFrontCount)
+                .dropLast(completedKanCount)
+            val actualLivePositions = state.tileWall.getAllTiles().map { result.wallStructure.getValue(it.id) }
+            val actualReservedPositions = state.reservedWallTiles.map { result.wallStructure.getValue(it.id) }
+
+            assertEquals(expectedLivePositions, actualLivePositions, "Scenario $number has non-contiguous live wall slots")
+            val expectedReservedPositions = templateReservedPositions.drop(completedKanCount) +
+                (0 until completedKanCount).map { offset ->
+                    templateLivePositions[templateLivePositions.lastIndex - offset]
+                }
+            assertEquals(expectedReservedPositions, actualReservedPositions, "Scenario $number has incorrect dead wall slots")
+        }
+    }
+
+    /** 下一次補牌應取出情境編號對應的正式嶺上槽位，並只推進一次補牌計數。 */
+    @Test
+    fun `test ankan scenarios draw from the intended supplemental slot`() {
+        val fixture = createFixture()
+        val registry = DebugGameScenarioRegistry()
+
+        ANKAN_SCENARIO_IDS.forEachIndexed { index, id ->
+            val number = index + 1
+            val result = registry.get(id)!!.build(fixture.context)
+            val state = result.game.tableState
+            val kanAction = fixture.moduleRegistry.getModule(state.config)
+                .createLegalActionValidator()
+                .getLegalActions(LegalActionContext.ownTurn(state, state.currentPlayer.id))
+                .filterIsInstance<GameAction.Kan>()
+                .single { it.type == GameAction.KanType.CLOSED_KAN }
+            val decision = RiichiSupplementalDrawPolicy.resolve(
+                context = SupplementalDrawContext(state, state, state.currentPlayer.id, kanAction),
+            ) as SupplementalDrawDecision.Completed
+            val currentLayout = assertNotNull(state.physicalWallLayout)
+            val afterState = state.copy(
+                tileWall = decision.tileWall,
+                reservedWallTiles = decision.reservedWallTiles,
+                components = decision.tableComponents.applyTo(state.components, BuiltInComponentOwners.TABLE),
+                physicalWallLayout = null,
+            )
+            val transition = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
+                value = assertNotNull(fixture.moduleRegistry.getModule(state.config).createPhysicalWallLayoutPolicy())
+                    .resolveTransitionValidated(
+                        context = PhysicalWallLayoutTransitionContext(
+                            tableStateBeforeAction = state,
+                            tableStateAfterAction = afterState,
+                            currentLayout = currentLayout,
+                            actorPlayerId = state.currentPlayer.id,
+                            action = kanAction,
+                        ),
+                    ),
+            )
+
+            assertEquals(state.reservedWallTiles.first().id, decision.drawnTiles.single().id)
+            assertEquals(number, (requireNotNull(decision.tableComponents.values[RiichiTableComponents.WALL_PROGRESS])).completedSupplementalDrawCount)
+            assertEquals(state.tileWall.remainingCount - 1, decision.tileWall.remainingCount)
+            transition.phases.flatMap { it.moves }.forEach { move ->
+                assertEquals(currentLayout.placements.getValue(move.tileId), move.source)
+            }
+            assertEquals(
+                expected = (decision.tileWall.getAllTiles() + decision.reservedWallTiles).mapTo(mutableSetOf()) { it.id },
+                actual = transition.layout.placements.keys,
+            )
+        }
+    }
+
+    /** 大明槓情境應只讓呼叫者對指定捨牌取得一次預定的大明槓。 */
+    @Test
+    fun `test minkan scenario exposes the intended open kan reaction`() {
+        val fixture = createFixture()
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi/debug/before_minkan_1")!!.build(fixture.context)
+
+        fixture.validator.validate(fixture.context, result)
+        val state = result.game.tableState
+        val pending = assertNotNull(state.pendingReaction)
+        val claimant = state.players.single { it.id == fixture.context.invokingPlayerId }
+        val discarder = state.players.single { it.id == pending.discarderId }
+        val discardedTile = discarder.discardPile.entries.single { it.tile.id == pending.tileId }.tile
+        val contextState = state.copy(
+            players = state.players.map {
+                if (it.id == claimant.id) it.copy(hand = it.hand.copy(lastDrawn = null)) else it
+            },
+        )
+        val legalActions = fixture.moduleRegistry.getModule(state.config).createLegalActionValidator().getLegalActions(
+            context = LegalActionContext.discardReaction(contextState, claimant.id, discarder.id, discardedTile),
+        )
+        val openKans = legalActions.filterIsInstance<GameAction.Kan>().filter {
+            it.type == GameAction.KanType.OPEN_KAN
+        }
+
+        assertEquals(setOf(claimant.id), pending.eligiblePlayerIds)
+        assertEquals(1, openKans.size)
+        assertEquals(discardedTile.id, openKans.single().tileId)
+        assertTrue(openKans.single().withTiles.all { tileId -> claimant.hand.allTiles.any { it.id == tileId } })
+        assertFalse(legalActions.any { it is GameAction.Kan && it.type == GameAction.KanType.CLOSED_KAN })
+        assertEquals(69, state.tileWall.remainingCount)
+        assertEquals(14, state.reservedWallTiles.size)
+    }
+
+    /** 四家立直情境應讓前三家已立直，並只讓呼叫者完成最後一次合法立直宣告。 */
+    @Test
+    fun `test suucha riichi scenario exposes the fourth legal declaration`() {
+        val fixture = createFixture()
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi/debug/before_suucha_riichi")!!.build(fixture.context)
+
+        fixture.validator.validate(fixture.context, result)
+        val state = result.game.tableState
+        val actor = state.currentPlayer
+        val module = fixture.moduleRegistry.getModule(state.config)
+        val validator = module.createLegalActionValidator()
+        val legalActions = validator.getLegalActions(LegalActionContext.ownTurn(state, actor.id))
+
+        assertEquals(fixture.context.invokingPlayerId, actor.id)
+        assertTrue(RIICHI_GAME_ACTION in legalActions)
+        assertFalse(GameAction.Tsumo in legalActions)
+        assertNull(actor.riichiDeclaration)
+        assertEquals(3, state.players.count { player -> player.riichiDeclaration != null })
+        assertEquals(3, (state.riichiPotPoints() / RIICHI_STICK_POINTS))
+        assertEquals(66, state.tileWall.remainingCount)
+        assertEquals(14, state.reservedWallTiles.size)
+        val declarationTile = assertNotNull(actor.hand.lastDrawn)
+        assertTrue(declarationTile.id in assertNotNull(validator.tileSelectionRequirement(state, actor, RIICHI_GAME_ACTION)).eligibleTileIds)
+        state.players.filterNot { player -> player.id == actor.id }.forEach { opponent ->
+            val contextState = state.copy(
+                players = state.players.map {
+                    if (it.id == opponent.id) it.copy(hand = it.hand.copy(lastDrawn = null)) else it
+                },
+            )
+            val reactions = validator.getLegalActions(
+                context = LegalActionContext.discardReaction(contextState, opponent.id, actor.id, declarationTile),
+            )
+            assertFalse(
+                actual = reactions.any { action -> action is GameAction.Ron },
+                message = "Scenario must not let an opponent ron the fourth declaration tile",
+            )
+        }
+    }
+
+    /**
+     * 建立測試所需的正式日麻遊戲、module registry 與 validator。
+     *
+     * @param config 情境使用的日麻規則設定。
+     * @return 同時持有遊戲輸入、模組 registry 與驗證器的 fixture。
+     */
+    @Test
+    fun `washizu opening and kan scenarios have no wall layout`() {
+        val fixture = createFixture(RiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0))
+        val registry = DebugGameScenarioRegistry()
+        val opening = requireNotNull(registry.get("mahjongcraft:riichi/debug/washizu_opening")).build(fixture.context)
+        val kan = requireNotNull(registry.get("mahjongcraft:riichi/debug/before_ankan_1")).build(fixture.context)
+
+        for (result in listOf(opening, kan)) {
+            assertEquals(null, result.wallLayout)
+            assertTrue(result.wallStructure.isEmpty())
+            assertEquals(null, result.game.tableState.physicalWallLayout)
+        }
+        assertEquals(null, assertIs<DebugGameScenarioPresentation.InitialRound>(opening.presentation).diceRoll)
+        assertEquals(DebugGameScenarioPresentation.StaticWall, kan.presentation)
+    }
+
+    private fun createFixture(config: RiichiRuleConfig = RiichiRuleConfig()): Fixture {
+        val playerIds = List(4) { Uuid.random() }
+        val module = RiichiRuleModule("mahjongcraft:riichi", config)
+        val initialized = GameInitializer.initialize(
+            id = Uuid.random(),
+            playerIds = playerIds,
+            module = module,
+            randomness = testRoundRandomness(),
+        )
+        val game = Game(
+            tableState = initialized.tableState,
+            flowConfig = GameFlowConfig(),
+            hostId = playerIds.first(),
+            roomPlayerIds = playerIds,
+            aiPlayerStrategyKeys = playerIds.drop(1).associateWith { "mahjongcraft:random" },
+        )
+        val moduleRegistry = MahjongModuleRegistryImpl().apply {
+            registerBundledRuleModules()
+            freeze()
+        }
+        val context = DebugGameScenarioContext(game, playerIds.first(), bundledCoreExtensionRegistries().componentRegistry)
+        return Fixture(context, moduleRegistry, DebugGameScenarioValidator(moduleRegistry))
+    }
+
+    /**
+     * 依情境適用的人數與規則建立四人或三人日麻的情境輸入；鷲巢麻將情境使用透明牌的桌子。
+     *
+     * @param id 情境完整識別碼。
+     * @return 符合該情境人數與規則的輸入。
+     */
+    private fun contextFor(id: String): DebugGameScenarioContext = when (id) {
+        in THREE_PLAYER_IDS -> createThreePlayerRiichiScenarioContext()
+        WASHIZU_TILES_ID, "mahjongcraft:riichi/debug/washizu_opening" -> createFixture(RiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0)).context
+        else -> createFixture().context
+    }
+
+    /**
+     * 收集結果內所有權威牌 UUID。
+     *
+     * @param result 要檢視的情境結果。
+     * @return 玩家手牌、牌河與牌牆中的牌識別碼集合。
+     */
+    private fun allTileIds(result: DebugGameScenarioResult): Set<Uuid> = result.game.tableState.let { state ->
+        (
+            state.players.flatMap { it.hand.allTiles + it.discardPile.entries.map { entry -> entry.tile } } +
+                state.tileWall.getAllTiles() + state.reservedWallTiles
+            ).mapTo(mutableSetOf()) { it.id }
+    }
+
+    /** 包牌碰牌情境的牌張分布、牌牆結構與實體配置應通過權威情境驗證。 */
+    @Test
+    fun `test pao pon scenario passes the authoritative validation`() {
+        val fixture = createFixture()
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi/debug/before_pao_pon")!!.build(fixture.context)
+
+        fixture.validator.validate(fixture.context, result)
+    }
+
+    /**
+     * 測試共用的情境輸入與規則依賴。
+     *
+     * @property context 情境建構輸入。
+     * @property moduleRegistry 已註冊內建規則的模組登錄表。
+     * @property validator 檢查情境結果是否符合對局約束的驗證器。
+     */
+    private data class Fixture(
+        val context: DebugGameScenarioContext,
+        val moduleRegistry: MahjongModuleRegistryImpl,
+        val validator: DebugGameScenarioValidator,
+    )
+
+    /**
+     * 驗證情境整份沿用目前這一桌的規則設定，不用預設值覆蓋任何一項。
+     *
+     * 情境是要重現這一桌的狀況，不是換一套規則；設定被覆蓋時，對局長度、紅寶牌與供託規則都會跟著變成
+     * 預設值，情境呈現的就不再是這一桌。
+     */
+    @Test
+    fun `scenario keeps the rule config of the current table`() {
+        val config = RiichiRuleConfig(gameLength = RiichiGameLength.TwoWinds)
+        val fixture = createFixture(config)
+
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi/debug/before_ankan_1")!!.build(fixture.context)
+
+        assertEquals(config, result.game.tableState.config)
+    }
+
+    /** 情境排序與牌牆消耗斷言使用的共用資料。 */
+    private companion object {
+        /** 四人日麻完成開局發牌後離開牌牆的牌張數。 */
+        const val INITIAL_DEAL_TILE_COUNT: Int = 52
+
+        /** 情境停點前，當前玩家已完成的一次一般摸牌。 */
+        const val CURRENT_DRAW_TILE_COUNT: Int = 1
+
+        /** 所有內建情境應採用的固定排序。 */
+        val EXPECTED_IDS: List<String> = listOf(
+            "mahjongcraft:riichi/debug/automatic_auto_win_ron",
+            "mahjongcraft:riichi/debug/automatic_auto_win_tsumo",
+            "mahjongcraft:riichi/debug/automatic_decline_calls_keeps_win",
+            "mahjongcraft:riichi/debug/automatic_tsumogiri_plain_draw",
+            "mahjongcraft:riichi/debug/before_ankan_1",
+            "mahjongcraft:riichi/debug/before_ankan_2",
+            "mahjongcraft:riichi/debug/before_ankan_3",
+            "mahjongcraft:riichi/debug/before_ankan_4",
+            "mahjongcraft:riichi/debug/before_ankan_at_break_1",
+            "mahjongcraft:riichi/debug/before_ankan_at_break_2",
+            "mahjongcraft:riichi/debug/before_ankan_at_break_3",
+            "mahjongcraft:riichi/debug/before_ankan_at_break_4",
+            "mahjongcraft:riichi/debug/before_minkan_1",
+            "mahjongcraft:riichi/debug/before_minkan_at_break_1",
+            "mahjongcraft:riichi/debug/before_pao_pon",
+            "mahjongcraft:riichi/debug/before_suucha_riichi",
+            "mahjongcraft:riichi/debug/furiten_cleared_by_call",
+            "mahjongcraft:riichi/debug/furiten_closed_kan_not_offered",
+            "mahjongcraft:riichi/debug/furiten_declined_chankan",
+            "mahjongcraft:riichi/debug/furiten_declined_ron",
+            "mahjongcraft:riichi/debug/furiten_discarded_wait",
+            "mahjongcraft:riichi/debug/furiten_head_bump_chankan",
+            "mahjongcraft:riichi/debug/furiten_unoffered_wait",
+            "mahjongcraft:riichi/debug/ippatsu_ron",
+            "mahjongcraft:riichi/debug/ippatsu_tsumo",
+            "mahjongcraft:riichi/debug/meld_showcase",
+            "mahjongcraft:riichi/debug/noten_declaration_exhaustive_draw",
+            "mahjongcraft:riichi/debug/wall_opening",
+            "mahjongcraft:riichi/debug/washizu_opening",
+            "mahjongcraft:riichi/debug/washizu_tiles",
+            "mahjongcraft:riichi/debug/winner_dealer_seat_rotation",
+            "mahjongcraft:riichi_three_player/debug/auto_north_riichi_chain",
+            "mahjongcraft:riichi_three_player/debug/auto_north_riichi_kan_payments",
+            "mahjongcraft:riichi_three_player/debug/auto_north_riichi_last_tile",
+            "mahjongcraft:riichi_three_player/debug/auto_north_riichi_rob",
+            "mahjongcraft:riichi_three_player/debug/kan_and_pull_north",
+            "mahjongcraft:riichi_three_player/debug/public_faces",
+            "mahjongcraft:riichi_three_player/debug/pull_north",
+            "mahjongcraft:riichi_three_player/debug/pull_north_in_riichi",
+            "mahjongcraft:riichi_three_player/debug/pull_north_with_melds",
+            "mahjongcraft:riichi_three_player/debug/rob_north",
+            "mahjongcraft:taiwan/debug/before_pao_pon",
+            "mahjongcraft:taiwan/debug/crowded_melds",
+            "mahjongcraft:taiwan/debug/dealer_flower",
+            "mahjongcraft:taiwan/debug/eight_flowers",
+            "mahjongcraft:taiwan/debug/flower_replacement",
+            "mahjongcraft:taiwan/debug/last_tile_flower",
+            "mahjongcraft:taiwan/debug/ready_declaration",
+            "mahjongcraft:taiwan/debug/seven_flowers",
+        )
+
+        /** 以正式開局呈現的情境。 */
+        val INITIAL_ROUND_IDS: Set<String> = setOf(
+            "mahjongcraft:riichi/debug/wall_opening",
+            "mahjongcraft:riichi/debug/washizu_opening",
+            "mahjongcraft:taiwan/debug/dealer_flower",
+            "mahjongcraft:taiwan/debug/eight_flowers",
+            "mahjongcraft:taiwan/debug/flower_replacement",
+            "mahjongcraft:taiwan/debug/ready_declaration",
+            "mahjongcraft:taiwan/debug/seven_flowers",
+        )
+
+        /** 只能在三人日麻的桌子載入的情境。 */
+        val THREE_PLAYER_IDS: Set<String> = ThreePlayerRiichiDebugGameScenarios.all.mapTo(mutableSetOf()) { it.id }
+
+        /** 只能在鷲巢麻將桌子載入的情境。 */
+        const val WASHIZU_TILES_ID: String = "mahjongcraft:riichi/debug/washizu_tiles"
+    }
+}
+
+/** 四個暗槓前立直情境的完整識別碼，依槓牌位置排列。 */
+private val ANKAN_SCENARIO_IDS = listOf(
+    "mahjongcraft:riichi/debug/before_ankan_1",
+    "mahjongcraft:riichi/debug/before_ankan_2",
+    "mahjongcraft:riichi/debug/before_ankan_3",
+    "mahjongcraft:riichi/debug/before_ankan_4",
+)

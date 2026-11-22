@@ -23,7 +23,7 @@ conventions that depend on `detekt-rules` itself.
 - Apply ktlint and detekt to every Kotlin project, with detekt reading the shared rule file
   [`config/detekt/detekt.yml`](../config/detekt/detekt.yml) and a manual `detektAll` task that runs
   its type-resolved analysis outside `check`.
-- Configure Minecraft version-common and loader projects.
+- Configure Minecraft version mod and loader projects.
 - Provide the opt-in `mahjongcraft.public-api-abi` convention for Kotlin's built-in public API signature checks.
   Each module lists the exact packages or types it promises to keep stable; the convention does not make every
   public class in the repository a compatibility guarantee.

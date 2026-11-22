@@ -83,12 +83,15 @@ internal object MinecraftDevMods {
     /**
      * 確認選擇的組合都已宣告。
      *
+     * 開關對整個建置有效；沒有宣告任何組合的專案沒有可選的開發用模組，直接略過開關。
+     *
      * @param projectPath 專案路徑，寫進錯誤訊息。
      * @param selected 開關選擇的組合名稱。
      * @param declared 專案宣告的組合名稱。
-     * @throws GradleException 有選擇卻沒有宣告的組合時拋出，並列出可用的組合。
+     * @throws GradleException 專案有宣告組合、而選擇了其中沒有的組合時拋出，並列出可用的組合。
      */
     fun requireDeclared(projectPath: String, selected: Set<String>, declared: Set<String>) {
+        if (declared.isEmpty()) return
         val unknown = selected - declared
         if (unknown.isEmpty()) return
         val available = declared.joinToString().ifEmpty { "none" }

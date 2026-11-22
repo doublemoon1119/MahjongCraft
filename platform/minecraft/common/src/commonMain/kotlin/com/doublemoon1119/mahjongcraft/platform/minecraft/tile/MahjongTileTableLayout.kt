@@ -302,7 +302,7 @@ object MahjongTileTableLayout {
 
     /**
      * 依 [TileWallPosition.stack] 算出牌牆生成掉落動畫該延遲多久才開始，供
-     * `FabricMahjongTileWallPresenter` 排定每墩延遲使用；跟 [wallDropAnimationTicks] 共用同一個
+     * `EntityMahjongTileWallPresenter` 排定每墩延遲使用；跟 [wallDropAnimationTicks] 共用同一個
      * [WAVE_STEP_TICKS]，避免呼叫端各自寫一份相同的乘法。
      *
      * @param stack 牌牆面上的零基底墩位。
@@ -357,7 +357,7 @@ object MahjongTileTableLayout {
 
     /**
      * 依全域抓取次序（`0` 起算，涵蓋所有座位、所有輪次攤平成一個序列——莊家抓第一批、換下一家抓、
-     * 輪完一圈才回到莊家抓下一批，見 `FabricMahjongPlayerAreaPresenter.presentInitialDeal` KDoc）算出
+     * 輪完一圈才回到莊家抓下一批，見 `EntityMahjongPlayerAreaPresenter.presentInitialDeal` KDoc）算出
      * 開局發牌動畫這一次該延遲多久才開始——不像 [wallDropStartDelayTicks] 那樣所有墩其實還是各自
      * 獨立落下，這裡是刻意讓連續抓取大幅重疊：[DEAL_TURN_STAGGER_TICKS] 小於
      * [DEAL_LIFT_DURATION_TICKS]，下一次抓取甚至會在上一次的起飛動畫播到一半時就先開始，不需要等

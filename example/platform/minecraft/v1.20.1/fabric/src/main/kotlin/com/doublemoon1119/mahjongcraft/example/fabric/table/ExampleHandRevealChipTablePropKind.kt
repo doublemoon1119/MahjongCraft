@@ -1,8 +1,9 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.table
 
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.table.ExampleHandRevealChipEntity
 import com.doublemoon1119.mahjongcraft.example.minecraft.presentation.ExampleMinecraftPresentationIds
 import com.doublemoon1119.mahjongcraft.example.minecraft.presentation.ExampleTablePropDefinitions
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.FabricTablePropKind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.tableprop.TablePropKind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropContent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropTarget
 import net.minecraft.server.level.ServerLevel
@@ -11,7 +12,7 @@ import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 
 /** 範例攤牌籌碼的 Fabric 桌面物件種類。 */
-object ExampleHandRevealChipTablePropKind : FabricTablePropKind {
+object ExampleHandRevealChipTablePropKind : TablePropKind {
     /** 晶片種類與唯一接受的變體。 */
     const val KIND_ID = ExampleMinecraftPresentationIds.HAND_REVEAL_CHIP_KIND
 

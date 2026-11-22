@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 /**
  * 麻將牌世界呈現共用尺寸常數。
  *
- * 牌的模型是 12×16×8 模型單位、runtime 縮放 `0.15`。Fabric 的 `MahjongTileEntity` 與 common 的座標計算
+ * 牌的模型是 12×16×8 模型單位、runtime 縮放 `0.15`。Minecraft 版本模組的 `MahjongTileEntity` 與 common 的座標計算
  * （[MahjongTileTableLayout]）共用同一組數值，避免兩處各自定義而不一致。
  */
 object MahjongTileDimensions {

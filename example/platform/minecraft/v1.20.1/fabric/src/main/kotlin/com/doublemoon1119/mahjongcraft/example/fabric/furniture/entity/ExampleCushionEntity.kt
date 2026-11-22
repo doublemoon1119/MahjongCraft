@@ -3,7 +3,8 @@ package com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureItems
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleCushionPlacement
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleCushionSeatService
-import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleFurnitureSeatRules
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.entity.ExampleSeatGeometry
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.seating.ExampleFurnitureSeatRules
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.InteractionHand

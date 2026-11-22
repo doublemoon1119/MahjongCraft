@@ -1,0 +1,112 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game
+
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.vocabularyActionId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlin.test.Test
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
+
+/**
+ * 驗證登記的用語與狀態名稱，最終的翻譯鍵在四種語言都存在。
+ *
+ * 登記與語系檔各自獨立維護，靜態掃描與既有語系檔測試都無法驗證兩者組合後的結果。
+ */
+class DecisionHudActionTranslationKeyTest {
+    /** 支援的 Minecraft 語系代碼。 */
+    private val locales = listOf("en_us", "ja_jp", "zh_cn", "zh_tw")
+
+    /** 包含內建與日麻動作詞彙的測試 registry。 */
+    private val vocabulary = GameActionVocabularyRegistryImpl().apply {
+        BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this)
+        BundledRiichiMinecraftExtension.registerGameActionVocabulary(this)
+    }
+
+    /** 包含內建與日麻狀態顯示名稱的測試 registry。 */
+    private val statusDisplayNames = DecisionStatusDisplayNameRegistryImpl().apply {
+        BuiltInMinecraftMahjongExtension.registerDecisionStatusDisplayNames(this)
+        BundledRiichiMinecraftExtension.registerDecisionStatusDisplayNames(this)
+    }
+
+    /** 每一個內建與日麻動作的短名稱、訊息文字與說明都必須在所有語系檔中有對應翻譯。 */
+    @Test
+    fun `every registered action resolves translated labels in every language`() {
+        val translationsByLocale = locales.associateWith(::loadTranslations)
+
+        builtInActions().forEach { action ->
+            val actionId = action.vocabularyActionId()
+            val entry = assertNotNull(vocabulary.find(BuiltInRuleModuleIds.RIICHI, actionId), "no vocabulary registered for $action")
+            listOfNotNull(entry.labelKey, entry.messageKey, entry.descriptionKey).forEach { key ->
+                translationsByLocale.forEach { (locale, translations) ->
+                    assertTrue(key in translations, "$locale is missing $key for $action (actionId=$actionId)")
+                }
+            }
+        }
+    }
+
+    /** 每一個內建與日麻的捨牌分析狀態名稱都必須在所有語系檔中有對應翻譯。 */
+    @Test
+    fun `every registered decision status resolves a translated name in every language`() {
+        val translationsByLocale = locales.associateWith(::loadTranslations)
+        val statusIds = listOf(
+            WaitingTileAvailabilityIds.WIN_AVAILABLE,
+            RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN,
+            RiichiDiscardReadinessAnalyzer.StatusIds.TEMPORARY_FURITEN,
+            RiichiDiscardReadinessAnalyzer.StatusIds.PERMANENT_FURITEN,
+            RiichiDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY,
+            RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU,
+            RiichiDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM,
+        )
+
+        statusIds.forEach { statusId ->
+            val key = assertNotNull(statusDisplayNames.find(BuiltInRuleModuleIds.RIICHI, statusId), "no display name registered for $statusId")
+            translationsByLocale.forEach { (locale, translations) ->
+                assertTrue(key in translations, "$locale is missing $key for $statusId")
+            }
+        }
+    }
+
+    /**
+     * 列出決策介面可能呈現的內建動作。
+     *
+     * @return 涵蓋核心與日麻動作的測試清單。
+     */
+    private fun builtInActions(): List<GameAction> = listOf(
+        GameAction.Chi(Uuid.random(), emptyList()),
+        GameAction.Pon(Uuid.random(), emptyList()),
+        GameAction.Kan(type = GameAction.KanType.OPEN_KAN, tileId = Uuid.random(), withTiles = emptyList()),
+        GameAction.Kan(type = GameAction.KanType.CLOSED_KAN, tileId = Uuid.random(), withTiles = emptyList()),
+        GameAction.Kan(type = GameAction.KanType.ADDED_KAN, tileId = Uuid.random(), withTiles = emptyList()),
+        GameAction.Ron(Uuid.random()),
+        GameAction.Tsumo,
+        GameAction.Pass,
+        GameAction.Discard(Uuid.random()),
+        GameAction.Extension(RiichiGameAction.Riichi),
+        GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai),
+    )
+
+    /**
+     * 讀取指定語系檔的全部 translation key。
+     *
+     * @param locale 語系代碼。
+     * @return 語系檔中宣告的 translation key 集合。
+     */
+    private fun loadTranslations(locale: String): Set<String> {
+        val resource = checkNotNull(javaClass.classLoader.getResourceAsStream("assets/mahjongcraft/lang/$locale.json")) {
+            "missing language file: $locale"
+        }
+        val content = resource.bufferedReader().use { it.readText() }
+        return (Json.parseToJsonElement(content) as JsonObject).keys
+    }
+}

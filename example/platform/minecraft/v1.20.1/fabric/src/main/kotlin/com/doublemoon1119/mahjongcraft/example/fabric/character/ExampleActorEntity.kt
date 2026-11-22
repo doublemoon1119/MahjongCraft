@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.character
 
+import com.doublemoon1119.mahjongcraft.example.minecraft.character.ExampleActorControl
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.character.ExampleActorPose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
 import net.minecraft.core.Rotations
 import net.minecraft.nbt.CompoundTag

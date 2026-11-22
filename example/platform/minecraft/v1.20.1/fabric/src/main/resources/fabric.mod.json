@@ -18,10 +18,10 @@
       "com.doublemoon1119.mahjongcraft.example.fabric.ExampleModClient"
     ],
     "mahjongcraft:extension": [
-      "com.doublemoon1119.mahjongcraft.example.fabric.ExampleFabricMahjongExtension"
+      "com.doublemoon1119.mahjongcraft.example.fabric.ExampleNativeMahjongExtension"
     ],
     "mahjongcraft:client_extension": [
-      "com.doublemoon1119.mahjongcraft.example.fabric.ExampleFabricMahjongClientExtension"
+      "com.doublemoon1119.mahjongcraft.example.fabric.ExampleNativeMahjongClientExtension"
     ]
   },
   "depends": {

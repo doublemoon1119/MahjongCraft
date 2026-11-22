@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.example.fabric
 
-import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureIds
 import com.doublemoon1119.mahjongcraft.example.fabric.registry.ExampleItemGroups
 import com.doublemoon1119.mahjongcraft.example.minecraft.character.ExampleCharacterIds
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.ExampleFurnitureIds
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

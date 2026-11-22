@@ -34,6 +34,7 @@ detekt = "2.0.0-alpha.6"
 # 版本號帶數字結尾的 key 刻意不用 dash 分段（例如 minecraft1201 而非 minecraft-v1-20-1），
 # 避免 Gradle version catalog 的巢狀 accessor 在數字開頭區段產生不穩定的名稱。
 fabric-loom = "1.17.19"
+moddev = "2.0.148"
 minecraft1201 = "1.20.1"
 fabric-loader = "0.19.3"
 fabricApi1201 = "0.92.11+1.20.1"
@@ -99,7 +100,7 @@ irisAntlrRuntime1201 = { group = "org.antlr", name = "antlr4-runtime", version.r
 mahjongcraft-base = { id = "mahjongcraft.base" }
 mahjongcraft-public-api-abi = { id = "mahjongcraft.public-api-abi" }
 mahjongcraft-kotlin-multiplatform = { id = "mahjongcraft.kotlin-multiplatform" }
-mahjongcraft-minecraft-version-common = { id = "mahjongcraft.minecraft-version-common" }
+mahjongcraft-minecraft-mod = { id = "mahjongcraft.minecraft-mod" }
 mahjongcraft-minecraft-loader = { id = "mahjongcraft.minecraft-loader" }
 mahjongcraft-target-management = { id = "mahjongcraft.target-management" }
 mahjongcraft-repository-verification = { id = "mahjongcraft.repository-verification" }
@@ -113,3 +114,4 @@ ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }
 
 # Minecraft loader plugins
 fabric-loom = { id = "fabric-loom", version.ref = "fabric-loom" }
+moddev-legacyforge = { id = "net.neoforged.moddev.legacyforge", version.ref = "moddev" }

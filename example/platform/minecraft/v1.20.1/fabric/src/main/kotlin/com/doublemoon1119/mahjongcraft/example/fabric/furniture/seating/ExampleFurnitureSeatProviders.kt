@@ -2,10 +2,12 @@ package com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureBlocks
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureEntities
-import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureIds
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity.ExampleChairSeatEntity
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity.ExampleCushionEntity
-import com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity.ExampleSeatGeometry
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.ExampleFurnitureIds
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.entity.ExampleSeatGeometry
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.seating.ExampleFurnitureSeatRules
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.seating.ExampleSeatSupportCleanup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatIdentity

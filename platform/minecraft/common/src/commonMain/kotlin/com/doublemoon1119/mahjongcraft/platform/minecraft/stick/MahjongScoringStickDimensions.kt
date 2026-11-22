@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.stick
 /**
  * 麻將點棒世界呈現共用尺寸常數。
  *
- * 點棒的模型是 16×0.5×2.5 模型單位、runtime 縮放 `0.4`。Fabric 的 `MahjongScoringStickEntity` 與 common 的
+ * 點棒的模型是 16×0.5×2.5 模型單位、runtime 縮放 `0.4`。Minecraft 版本模組的 `MahjongScoringStickEntity` 與 common 的
  * 座標計算共用同一組數值，避免兩處各自定義而不一致。
  */
 object MahjongScoringStickDimensions {

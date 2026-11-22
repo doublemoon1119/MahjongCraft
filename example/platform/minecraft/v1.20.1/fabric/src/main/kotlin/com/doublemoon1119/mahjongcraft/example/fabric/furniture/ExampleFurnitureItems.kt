@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.furniture
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.item.ExampleCushionItem
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.ExampleFurnitureIds
 import net.minecraft.core.Registry
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.ResourceLocation

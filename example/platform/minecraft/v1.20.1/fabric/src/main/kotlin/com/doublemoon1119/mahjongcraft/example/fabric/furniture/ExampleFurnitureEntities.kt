@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.example.fabric.furniture
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity.ExampleChairSeatEntity
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity.ExampleCushionEntity
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.ExampleFurnitureIds
 import net.fabricmc.fabric.api.`object`.builder.v1.entity.FabricEntityTypeBuilder
 import net.minecraft.core.Registry
 import net.minecraft.core.registries.BuiltInRegistries

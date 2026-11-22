@@ -50,32 +50,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientCoroutineScope
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
-import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.FabricRuntimeMetadata
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.GameActionCandidateResolver
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.PlayerDecisionPromptFactory
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.BuiltInDefaultGameConfigProvider
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.BuiltInFabricSeatProviderIds
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatProvider
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.OrphanedTableCleanupService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.loader.IrisShadowPassProbe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameDefinition
@@ -95,6 +70,34 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMah
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileSetAsideDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.concurrency.ClientCoroutineScope
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.concurrency.ClientThreadCoroutineDispatcher
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.di.modClientModule
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.LinkageIsolatingExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.MahjongCraftExtensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.NativeExtensionRegistries
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ShadowPassProbe
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.metadata.RuntimeMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.ServerHolder
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency.ServerLifecycleAppCoroutineScope
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigCommand
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigManager
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.entity.MahjongTileCollisionService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.DecisionTimerScheduler
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.GameActionCandidateResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.PlayerDecisionPromptFactory
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.AuthoritativeStatePersistence
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.TableLocationPersistence
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.BuiltInDefaultGameConfigProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.MahjongTableRoomService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.BuiltInSeatProviderIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.MahjongStoolSeatProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatProviderRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.OrphanedTableCleanupService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableLifecycleService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableLocationValidationService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.prop.TablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
@@ -198,12 +201,12 @@ class FabricApplicationModuleTest {
             }
         }
 
-        val result = FabricMahjongExtensions.initialize(
+        val result = MahjongCraftExtensions.initialize(
             coreRegistries = koin.get<CoreExtensionRegistries>(),
             presentationRegistries = koin.get<MinecraftPresentationRegistries>(),
-            fabricRegistries = koin.get<FabricExtensionRegistries>(),
+            nativeRegistries = koin.get<NativeExtensionRegistries>(),
             mahjongStoolSeatProvider = koin.get<MahjongStoolSeatProvider>(),
-            failurePolicy = FabricExtensionFailurePolicy(),
+            failurePolicy = LinkageIsolatingExtensionFailurePolicy(),
             extensions = listOf(extension),
         )
 
@@ -256,24 +259,24 @@ class FabricApplicationModuleTest {
         assertFalse(gameActionAiRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertFalse(gameActionCommandFactoryRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertFalse(gameCommandRegistry.isRegistered(RiichiGameCommand::class))
-        val result = FabricMahjongExtensions.initialize(
+        val result = MahjongCraftExtensions.initialize(
             coreRegistries = coreRegistries,
             presentationRegistries = presentationRegistries,
-            fabricRegistries = koin.get<FabricExtensionRegistries>(),
+            nativeRegistries = koin.get<NativeExtensionRegistries>(),
             mahjongStoolSeatProvider = koin.get<MahjongStoolSeatProvider>(),
-            failurePolicy = FabricExtensionFailurePolicy(),
+            failurePolicy = LinkageIsolatingExtensionFailurePolicy(),
             extensions = emptyList(),
         )
 
-        val seatProviders = koin.get<FabricSeatProviderRegistryImpl>()
-        val fabricRegistries = koin.get<FabricExtensionRegistries>()
-        assertSame(koin.get<FabricTablePropKindRegistry>(), fabricRegistries.tablePropKindRegistry)
-        assertSame(seatProviders, fabricRegistries.seatProviderRegistry)
-        assertSame(fabricRegistries, koin.get<FabricExtensionRegistries>())
+        val seatProviders = koin.get<SeatProviderRegistryImpl>()
+        val nativeRegistries = koin.get<NativeExtensionRegistries>()
+        assertSame(koin.get<TablePropKindRegistry>(), nativeRegistries.tablePropKindRegistry)
+        assertSame(seatProviders, nativeRegistries.seatProviderRegistry)
+        assertSame(nativeRegistries, koin.get<NativeExtensionRegistries>())
         assertTrue(seatProviders.isFrozen)
         assertSame(
             expected = koin.get<MahjongStoolSeatProvider>(),
-            actual = seatProviders.entries().single { it.id == BuiltInFabricSeatProviderIds.MAHJONG_STOOL }.provider,
+            actual = seatProviders.entries().single { it.id == BuiltInSeatProviderIds.MAHJONG_STOOL }.provider,
         )
         assertFailsWith<IllegalStateException> {
             seatProviders.register(RegisteredSeatProvider("example:late", koin.get<MahjongStoolSeatProvider>()))
@@ -345,7 +348,7 @@ class FabricApplicationModuleTest {
         assertTrue(decisionStatusDisplayNameRegistry.isFrozen)
         assertTrue(presentationRegistries.tablePropDescriberRegistry.find(BuiltInRuleModuleIds.RIICHI) != null)
         assertTrue(presentationRegistries.tablePropDescriberRegistry.isFrozen)
-        val tablePropKindRegistry = koin.get<FabricTablePropKindRegistry>()
+        val tablePropKindRegistry = koin.get<TablePropKindRegistry>()
         assertTrue(tablePropKindRegistry.find(BuiltInTablePropKinds.SCORING_STICK) != null)
         assertTrue(tablePropKindRegistry.isFrozen)
         koin.get<TablePropPresenter>()
@@ -358,22 +361,22 @@ class FabricApplicationModuleTest {
         koin.get<ServerSessionStateCleaner>()
         koin.get<ServerSessionStateRestorer>()
         koin.get<AuthoritativeStatePersistenceCodec>()
-        koin.get<FabricAuthoritativeStatePersistence>()
+        koin.get<AuthoritativeStatePersistence>()
         koin.get<TableLocationRegistry>()
-        koin.get<FabricTableLocationPersistence>()
+        koin.get<TableLocationPersistence>()
         koin.get<OrphanedTableCleanupService>()
-        koin.get<FabricTableLifecycleService>()
-        koin.get<FabricTableLocationValidationService>()
-        koin.get<FabricAppCoroutineScope>()
-        koin.get<FabricDecisionTimerScheduler>()
+        koin.get<TableLifecycleService>()
+        koin.get<TableLocationValidationService>()
+        koin.get<ServerLifecycleAppCoroutineScope>()
+        koin.get<DecisionTimerScheduler>()
         koin.get<GetPlayerDecisionOptionsUseCase>()
         koin.get<GameActionCandidateResolver>()
         koin.get<PlayerDecisionPromptFactory>()
         koin.get<MahjongTileCollisionService>()
         koin.get<MahjongDiceRollPresenter>()
         koin.get<MinecraftServerConfigState>()
-        koin.get<FabricServerConfigManager>()
-        koin.get<FabricServerConfigCommand>()
+        koin.get<ServerConfigManager>()
+        koin.get<ServerConfigCommand>()
         assertNull(koin.getOrNull<ClientMahjongStateStore>())
         assertNull(koin.getOrNull<ClientDecisionTimerStateStore>())
     }
@@ -436,13 +439,13 @@ class FabricApplicationModuleTest {
         assertSame(koin.get<AutomatedAdvanceManager>(), koin.get<AutomatedAdvanceManager>())
         assertSame(koin.get<AuthoritativeStateStore>(), koin.get<AuthoritativeStateStore>())
         assertSame(koin.get<GameRepository>(), koin.get<GameRepository>())
-        assertSame(koin.get<FabricAppCoroutineScope>(), koin.get<FabricAppCoroutineScope>())
-        assertSame(koin.get<FabricRuntimeMetadata>(), koin.get<FabricRuntimeMetadata>())
+        assertSame(koin.get<ServerLifecycleAppCoroutineScope>(), koin.get<ServerLifecycleAppCoroutineScope>())
+        assertSame(koin.get<RuntimeMetadata>(), koin.get<RuntimeMetadata>())
         assertSame(koin.get<MinecraftEnvironment>(), koin.get<MinecraftEnvironment>())
         assertSame(koin.get<TableLocationRegistry>(), koin.get<TableLocationRegistry>())
         assertSame(koin.get<MinecraftServerConfigState>(), koin.get<MinecraftServerConfigState>())
         assertSame(koin.get<GameConfigPresentationResolver>(), koin.get<GameConfigPresentationResolver>())
-        assertSame(koin.get<FabricServerHolder>(), koin.get<FabricServerHolder>())
+        assertSame(koin.get<ServerHolder>(), koin.get<ServerHolder>())
         assertIs<AiStrategyDisplayNameRegistryImpl>(koin.get<AiStrategyDisplayNameRegistry>())
         assertIs<RuleModuleDisplayNameRegistryImpl>(koin.get<RuleModuleDisplayNameRegistry>())
         assertIs<TileDisplayNameRegistryImpl>(koin.get<TileDisplayNameRegistry>())
@@ -455,14 +458,15 @@ class FabricApplicationModuleTest {
     fun `client graph resolves integrated server services and client stores`() {
         val koin = startKoin {
             allowOverride(false)
-            modules(fabricServerModule, fabricClientModule)
+            modules(fabricServerModule, modClientModule)
         }.koin
 
         koin.get<GameFlowCoordinator>()
         koin.get<ClientMahjongStateStore>()
         koin.get<ClientDecisionTimerStateStore>()
+        assertIs<IrisShadowPassProbe>(koin.get<ShadowPassProbe>())
         assertSame(koin.get<ClientDecisionTimerStateStore>(), koin.get<ClientDecisionTimerStateStore>())
-        assertSame(koin.get<FabricRuntimeMetadata>(), koin.get<FabricRuntimeMetadata>())
+        assertSame(koin.get<RuntimeMetadata>(), koin.get<RuntimeMetadata>())
         assertSame(koin.get<MinecraftEnvironment>(), koin.get<MinecraftEnvironment>())
         val presentation = koin.get<MinecraftPresentationRegistries>()
         assertSame(koin.get<AiStrategyDisplayNameRegistry>(), presentation.aiStrategyDisplayNameRegistry)
@@ -478,7 +482,7 @@ class FabricApplicationModuleTest {
     fun `graphs bind services that consumers resolve by interface`() {
         val koin = startKoin {
             allowOverride(false)
-            modules(fabricServerModule, fabricClientModule)
+            modules(fabricServerModule, modClientModule)
         }.koin
 
         assertSame(koin.get<BuiltInDefaultGameConfigProvider>(), koin.get<DefaultGameConfigProvider>())

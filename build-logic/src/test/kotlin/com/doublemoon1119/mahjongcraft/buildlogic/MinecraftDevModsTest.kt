@@ -37,6 +37,12 @@ class MinecraftDevModsTest {
         MinecraftDevMods.requireDeclared(":fabric", setOf("iris"), setOf("iris", "modmenu"))
     }
 
+    /** 沒有宣告任何組合的專案略過開關，不報錯。 */
+    @Test
+    fun `projects without groups ignore the switch`() {
+        MinecraftDevMods.requireDeclared(":debug", setOf("iris", "missing"), emptySet())
+    }
+
     /** 沒給開關時不加入任何模組。 */
     @Test
     fun `no switch adds nothing`() = withFixture { root ->
@@ -61,6 +67,14 @@ class MinecraftDevModsTest {
         assertTrue(result.output.contains("dev runtime: [example:sodium:1, example:iris:1, example:modmenu:1]"), result.output)
     }
 
+    /** 同一個建置裡沒有宣告組合的載入器模組不會因為開關而設定失敗。 */
+    @Test
+    fun `loader modules without groups configure with the switch`() = withFixture { root ->
+        val result = runner(root, "printDevRuntime", "-P${MinecraftDevMods.PROPERTY_NAME}=iris").build()
+
+        assertTrue(result.output.contains("dev runtime: [example:sodium:1, example:iris:1]"), result.output)
+    }
+
     /** 選了沒有宣告的組合時建置失敗，訊息列出可用的組合。 */
     @Test
     fun `unknown group fails the build`() = withFixture { root ->
@@ -69,7 +83,9 @@ class MinecraftDevModsTest {
         assertTrue(result.output.contains("Unknown development mod groups for :loader: missing. Available: iris, modmenu"), result.output)
     }
 
-    /** 建立含一個載入器模組的 fixture；模組以自訂設定代替 Fabric Loom 的開發執行設定。 */
+    /**
+     * 建立含兩個載入器模組的 fixture：一個宣告組合並以自訂設定代替 Fabric Loom 的開發執行設定，另一個沒有宣告任何組合。
+     */
     private fun prepareFixture(root: File) {
         root.resolve("gradle/libs.versions.toml").apply {
             parentFile.mkdirs()
@@ -103,6 +119,8 @@ class MinecraftDevModsTest {
             rootProject.name = "dev-mods-fixture"
             include(":loader")
             project(":loader").projectDir = file("platform/v1.20.1/fabric")
+            include(":debug")
+            project(":debug").projectDir = file("platform/v1.20.1/fabric-debug")
             gradle.ext.set("mahjongcraft.targetJavaToolchain", 17)
             gradle.ext.set("mahjongcraft.targetJavaRelease", 17)
             """.trimIndent() + "\n",
@@ -139,6 +157,16 @@ class MinecraftDevModsTest {
                     doLast {
                         println("dev runtime: " + listed.get())
                     }
+                }
+                """.trimIndent() + "\n",
+            )
+        }
+        root.resolve("platform/v1.20.1/fabric-debug/build.gradle").apply {
+            parentFile.mkdirs()
+            writeText(
+                """
+                plugins {
+                    id("mahjongcraft.minecraft-loader")
                 }
                 """.trimIndent() + "\n",
             )

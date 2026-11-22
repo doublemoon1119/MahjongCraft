@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.registry
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurniture
-import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureIds
 import com.doublemoon1119.mahjongcraft.example.minecraft.character.ExampleCharacterIds
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.ExampleFurnitureIds
 import com.doublemoon1119.mahjongcraft.example.minecraft.text.ExampleFurnitureMessageKeys
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup
 import net.minecraft.core.Registry

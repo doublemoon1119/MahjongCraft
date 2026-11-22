@@ -25,6 +25,8 @@
   .\gradlew.bat build "-PmahjongcraftTarget=minecraft-v1.20.1-fabric"
   ```
 
+- Properties that only apply to Minecraft builds, such as extra mods for development runs and build
+  metadata, are described in [Minecraft Build](minecraft-build.md).
 - Core modules use `core-java-toolchain` and `core-java-release` from `gradle/libs.versions.toml`.
   Platform modules use the Java policy declared by their selected platform target; see
   [Minecraft Build](minecraft-build.md) for the Minecraft modules.

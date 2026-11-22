@@ -249,7 +249,7 @@ Run from the repository root with a Minecraft target selected:
 ```
 
 The module is currently configured with a JVM target.
-Its JVM tests also load recipe resources from the version-common module.
+Its JVM tests also load recipe resources from the Minecraft 1.20.1 mod module.
 Use the [complete Minecraft target build](../README.md) to verify packaging and the loader integration;
 this focused check does not replace it.
 

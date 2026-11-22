@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.modmenu
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigScreenController
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigScreenController
 import com.terraformersmc.modmenu.api.ConfigScreenFactory
 import com.terraformersmc.modmenu.api.ModMenuApi
 import org.koin.core.context.GlobalContext

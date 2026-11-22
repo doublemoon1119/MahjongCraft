@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.furniture.table
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.readNbt
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.writeNbt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableController
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableControllerState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.table.readNbt
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.table.writeNbt
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.nbt.CompoundTag

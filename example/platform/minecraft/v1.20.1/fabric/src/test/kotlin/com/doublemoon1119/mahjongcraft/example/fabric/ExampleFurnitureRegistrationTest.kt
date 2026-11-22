@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.example.fabric
 
-import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureIds
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.ExampleFurnitureIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.SeatProviderRegistrar
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.entity.Entity
 import kotlin.test.Test
@@ -16,8 +16,8 @@ class ExampleFurnitureRegistrationTest {
     fun `seat providers can be created before native registration`() {
         val firstRegistry = CapturingRegistry()
         val secondRegistry = CapturingRegistry()
-        ExampleFabricMahjongExtension().registerSeatProviders(firstRegistry)
-        ExampleFabricMahjongExtension().registerSeatProviders(secondRegistry)
+        ExampleNativeMahjongExtension().registerSeatProviders(firstRegistry)
+        ExampleNativeMahjongExtension().registerSeatProviders(secondRegistry)
         val first = firstRegistry.definitions
         val second = secondRegistry.definitions
 
@@ -31,7 +31,7 @@ class ExampleFurnitureRegistrationTest {
     }
 
     /** 只收集正式 extension 回呼的登記結果，不執行原生家具初始化。 */
-    private class CapturingRegistry : FabricSeatProviderRegistrar {
+    private class CapturingRegistry : SeatProviderRegistrar {
         /** 本次回呼登記的完整 provider 描述。 */
         val definitions = mutableListOf<RegisteredSeatProvider<ServerLevel, Entity>>()
 

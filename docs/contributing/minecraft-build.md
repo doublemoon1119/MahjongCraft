@@ -1,11 +1,11 @@
 # Minecraft Build
 
-Build rules for the Minecraft modules: the cross-version common layer, version-common modules and loader
+Build rules for the Minecraft modules: the cross-version common layer, version mod modules and loader
 modules. General Gradle configuration, targets, examples and CI are in [Build](build.md).
 
 ## Java and Remapping
 
-- Minecraft version-common and loader modules use the Java policy declared by their selected platform target
+- Minecraft version mod and loader modules use the Java policy declared by their selected platform target
   in `gradle/platform-targets.toml`, not the core Java policy.
 - Minecraft code uses Mojang's official names, which Fabric Loom modules select with
   `loom.officialMojangMappings()`. Code, comments and documentation name Minecraft classes and members
@@ -18,6 +18,17 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   without applying them, so every module loads the same plugin classes. Modules that apply different plugin
   sets would otherwise load Loom in separate class loaders, and Loom fails when it reaches another project, for
   example while an IDE sync creates `genSources` tasks. Declare a new loader's plugins there as well.
+
+## Version Mod Modules
+
+- Each Minecraft version has one mod module, such as `platform/minecraft/v1.20.1/mod`, for the code and resources
+  that call that Minecraft version but no loader API. Its build applies the ModDevGradle legacy plugin in vanilla
+  mode, so it compiles and tests against vanilla Minecraft with Mojang names and fails when code uses a loader API.
+- Loader modules compile the mod module's sources and package its resources together with their own, instead of
+  depending on its JAR. That JAR uses Mojang names, while each loader remaps the combined output to its own runtime
+  names. The mod module's JAR is never distributed.
+- Logic that does not need Minecraft classes belongs in the cross-version common layer instead, so the code each
+  new Minecraft version copies stays small.
 
 ## Mod Dependency Requirements
 
@@ -54,9 +65,10 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   ./gradlew :minecraft_v1.20.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftDevMods=iris,modmenu"
   ```
 
-- Without the switch, or with an empty value, no group is loaded and development runs stay unchanged. A
-  group a module does not declare fails the build and lists the groups it does declare. Like the example
-  switch, it is not saved in `local.dev.properties`.
+- Without the switch, or with an empty value, no group is loaded and development runs stay unchanged. The
+  switch applies to the whole build: a module that declares groups fails the build for a selected group it
+  does not declare and lists the groups it does declare, while a module that declares no groups, such as a
+  debug module, ignores the switch. Like the example switch, it is not saved in `local.dev.properties`.
 - Each loader module declares its groups in its build script through the `devMods` extension of the
   Minecraft loader convention, for example `group("iris", libs.sodium1201, libs.iris1201)`. Versions live in
   `gradle/libs.versions.toml`. Fabric Loom modules add selected groups to `modLocalRuntime`, so the mods

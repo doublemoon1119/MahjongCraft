@@ -1,0 +1,289 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
+
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.ClientPlayerDisplayNameResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.playerInfoDisplayName
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongPlayerInfoEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.shownDeltaFor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.math.Axis
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.entity.EntityRenderer
+import net.minecraft.client.renderer.entity.EntityRendererProvider
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.inventory.InventoryMenu
+import kotlin.math.max
+import kotlin.uuid.Uuid
+
+/**
+ * 從單一桌級 entity 在各固定座位頭頂後方繪製雙面公開資訊。
+ *
+ * @param context Minecraft renderer factory 提供的 client context。
+ * @property portraits 繪製各玩家頭像的共用 renderer。
+ * @property indicatorTextResolver 將公開指示器轉成文字與顏色。
+ * @property configStore 提供玩家資訊面板可見性設定。
+ * @property displayNames 依已授權描述解析需本地翻譯的角色名稱。
+ */
+class MahjongPlayerInfoEntityRenderer(
+    context: EntityRendererProvider.Context,
+    private val portraits: PlayerPortraitRenderer,
+    private val indicatorTextResolver: PublicPlayerIndicatorTextResolver,
+    private val configStore: MahjongClientConfigStore,
+    private val displayNames: ClientPlayerDisplayNameResolver,
+) : EntityRenderer<MahjongPlayerInfoEntity>(context) {
+    private val textRenderer = context.font
+
+    override fun render(
+        entity: MahjongPlayerInfoEntity,
+        yaw: Float,
+        tickDelta: Float,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
+        light: Int,
+    ) {
+        if (!configStore.current.presentationVisibility.playerInfoEnabled) return
+        if (entity.isInvisible) return
+        super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
+        WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
+            renderPanels(entity, panelMatrices, panelConsumers, light) { true }
+        }
+    }
+
+    /**
+     * 繪製指定座位的資訊面板；例如教學畫面的示意場景不畫鏡頭所在座位、會擋住視線的那一面。
+     *
+     * @param entity 提供公開玩家資訊的實體。
+     * @param matrices 目前模型矩陣，原點在桌子中心。
+     * @param vertexConsumers 頂點緩衝。
+     * @param light 光照。
+     * @param shownSeat 依座位 index 判斷是否繪製該座位的面板。
+     */
+    fun renderPanels(
+        entity: MahjongPlayerInfoEntity,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
+        light: Int,
+        shownSeat: (Int) -> Boolean,
+    ) {
+        if (!configStore.current.presentationVisibility.playerInfoEnabled) return
+        val players = entity.players.sortedBy { it.seatIndex }
+        if (players.isEmpty()) return
+        val seatLayout = MahjongTableSeatLayout.forPlayerCount(players.size)
+        val names = players.associate { player ->
+            player.playerId to playerInfoDisplayName(player) { id ->
+                displayNames.resolve(
+                    tableId = entity.managedTableId,
+                    playerId = id.toString(),
+                    isAiHint = true,
+                )
+            }
+        }
+        val width = measureSharedWidth(
+            players = players,
+            dealerPlayerId = entity.dealerPlayerId,
+            names = names,
+        )
+        val scoreChanges = entity.scoreChanges
+        val gameTime = entity.level().gameTime
+        players.filter { shownSeat(it.seatIndex) }.forEach { player ->
+            val shownDelta = scoreChanges.shownDeltaFor(player.seatIndex, gameTime)
+            val side = rotateSide(seatLayout.sideOf(player.seatIndex), entity.tableFacing.ordinal)
+            matrices.pushPose()
+            val offset = sideOffset(side)
+            matrices.translate(offset.first, PANEL_HEIGHT, offset.second)
+            matrices.mulPose(Axis.YP.rotationDegrees(sideYaw(side)))
+            matrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
+            // 兩面背對背，只畫觀看者那一側的一面，兩面不會互相透出或閃爍。
+            if (!WorldPanelRenderer.facesViewer(matrices)) matrices.mulPose(Axis.YP.rotationDegrees(180f))
+            renderFace(
+                player = player,
+                isDealer = entity.dealerPlayerId == player.playerId,
+                shownDelta = shownDelta,
+                width = width,
+                light = light,
+                matrices = matrices,
+                consumers = vertexConsumers,
+                names = names,
+            )
+            matrices.popPose()
+        }
+    }
+
+    /**
+     * 繪製單一玩家的正面資訊列與其餘公開指示器。
+     *
+     * @param player 要顯示的座位資訊。
+     * @param isDealer 該玩家是否為莊家。
+     * @param shownDelta 正在顯示的分數增減；沒有時為 null。
+     * @param width 所有玩家共用的面板寬度。
+     * @param light 世界光照值。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供面板與文字頂點緩衝。
+     * @param names 同一次繪製已解析的本地名稱。
+     */
+    private fun renderFace(
+        player: MahjongPlayerInfoEntry,
+        isDealer: Boolean,
+        shownDelta: Int?,
+        width: Float,
+        light: Int,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
+        names: Map<Uuid, String>,
+    ) {
+        val indicators = player.indicators.map(indicatorTextResolver::resolve)
+        val height = PANEL_PADDING * 2 + FIRST_ROW_HEIGHT + SCORE_ROW_HEIGHT + indicators.size * INDICATOR_ROW_HEIGHT
+        val left = -width / 2f
+        WorldPanelRenderer.drawBackground(left, -height / 2f, left + width, height / 2f, BACKGROUND, 0f, matrices, consumers)
+        val top = -height / 2f + PANEL_PADDING
+        portraits.render(player.playerId, player.isAi, left + PANEL_PADDING, top, PORTRAIT_SIZE, 1f, TEXT_Z, matrices, consumers)
+        val nameX = left + PANEL_PADDING + PORTRAIT_SIZE + PORTRAIT_GAP
+        val suffixWidth = textRenderer.width(windText(player.seatWind)).toFloat() +
+            if (isDealer) textRenderer.width(DEALER_MARK) + COLUMN_GAP else 0f
+        val displayName = names.getValue(player.playerId)
+        val fitted = WorldPanelRenderer.fitText(textRenderer, displayName, (left + width - PANEL_PADDING - nameX - suffixWidth).toInt())
+        WorldPanelRenderer.drawText(textRenderer, Component.literal(fitted), nameX, top + 1f, NAME_COLOR, TEXT_Z, light, matrices, consumers)
+        var right = left + width - PANEL_PADDING
+        if (isDealer) {
+            WorldPanelRenderer.drawText(textRenderer, Component.literal(DEALER_MARK), right - textRenderer.width(DEALER_MARK), top + 1f, DEALER_COLOR, TEXT_Z, light, matrices, consumers)
+            right -= textRenderer.width(DEALER_MARK) + COLUMN_GAP
+        }
+        val wind = windText(player.seatWind)
+        WorldPanelRenderer.drawText(textRenderer, wind, right - textRenderer.width(wind), top + 1f, WIND_COLOR, TEXT_Z, light, matrices, consumers)
+        val scoreY = top + FIRST_ROW_HEIGHT
+        val score = Component.literal(player.score.toString())
+        val delta = shownDelta?.let { change ->
+            Component.literal(if (change > 0) "+$change" else "−${-change.toLong()}") to if (change > 0) SCORE_GAIN_COLOR else SCORE_LOSS_COLOR
+        }
+        val deltaWidth = delta?.let { (text, _) -> textRenderer.width(text) + COLUMN_GAP } ?: 0f
+        val scoreX = left + (width - textRenderer.width(score) - deltaWidth) / 2f
+        WorldPanelRenderer.drawText(textRenderer, score, scoreX, scoreY, SCORE_COLOR, TEXT_Z, light, matrices, consumers)
+        delta?.let { (text, color) ->
+            WorldPanelRenderer.drawText(
+                renderer = textRenderer, text = text, x = scoreX + textRenderer.width(score) + COLUMN_GAP,
+                y = scoreY, color = color, z = TEXT_Z, light = light, matrices = matrices, consumers = consumers,
+            )
+        }
+        indicators.forEachIndexed { index, (text, color) ->
+            WorldPanelRenderer.drawText(
+                renderer = textRenderer, text = text, x = left + (width - textRenderer.width(text)) / 2f,
+                y = scoreY + SCORE_ROW_HEIGHT + index * INDICATOR_ROW_HEIGHT, color = color, z = TEXT_Z, light = light, matrices = matrices, consumers = consumers,
+            )
+        }
+    }
+
+    /**
+     * 依名稱、分數與指示器文字量測所有玩家共用的面板寬度。
+     *
+     * @param players 本桌公開的玩家資訊。
+     * @param dealerPlayerId 莊家玩家 ID；若與某位玩家相符，量測時預留莊家標記空間。
+     * @param names 同一次繪製已解析的本地名稱。
+     * @return 介於最小與最大寬度之間的共用面板寬度。
+     */
+    private fun measureSharedWidth(
+        players: List<MahjongPlayerInfoEntry>,
+        dealerPlayerId: Uuid?,
+        names: Map<Uuid, String>,
+    ): Float {
+        var width = MIN_PANEL_WIDTH
+        players.forEach { player ->
+            val displayName = names.getValue(player.playerId)
+            val header = PANEL_PADDING * 2 + PORTRAIT_SIZE + PORTRAIT_GAP +
+                textRenderer.width(displayName.take(MAX_NAME_CHARACTERS)) + COLUMN_GAP + textRenderer.width(windText(player.seatWind)) +
+                if (player.playerId == dealerPlayerId) textRenderer.width(DEALER_MARK) + COLUMN_GAP else 0f
+            val score = PANEL_PADDING * 2 + textRenderer.width(player.score.toString())
+            val indicator = player.indicators.maxOfOrNull {
+                PANEL_PADDING * 2 + textRenderer.width(indicatorTextResolver.resolve(it).first)
+            } ?: 0f
+            width = max(width, max(header, max(score, indicator)))
+        }
+        return width.coerceAtMost(MAX_PANEL_WIDTH)
+    }
+
+    /**
+     * 將座風轉成對應的本地化文字。
+     *
+     * @param wind 要顯示的座風。
+     * @return 對應風牌翻譯 key 的文字。
+     */
+    private fun windText(wind: Wind): Component = Component.translatable(
+        when (wind) {
+            Wind.EAST -> MinecraftMessageKeys.TILE_HONOR_EAST
+            Wind.SOUTH -> MinecraftMessageKeys.TILE_HONOR_SOUTH
+            Wind.WEST -> MinecraftMessageKeys.TILE_HONOR_WEST
+            Wind.NORTH -> MinecraftMessageKeys.TILE_HONOR_NORTH
+        },
+    )
+
+    /**
+     * 依桌面朝向將座位側別旋轉指定的四方位步數。
+     *
+     * @param side 未旋轉的桌面側別。
+     * @param steps 順時針索引位移；會依四個方位取餘數。
+     * @return 旋轉後的桌面側別。
+     */
+    private fun rotateSide(side: MahjongTableSide, steps: Int): MahjongTableSide {
+        val order = listOf(MahjongTableSide.NORTH, MahjongTableSide.EAST, MahjongTableSide.SOUTH, MahjongTableSide.WEST)
+        return order[(order.indexOf(side) + steps).mod(order.size)]
+    }
+
+    /**
+     * 取得指定側別面板相對桌面中心的水平偏移。
+     *
+     * @param side 面板所屬桌面側別。
+     * @return X、Z 軸偏移量。
+     */
+    private fun sideOffset(side: MahjongTableSide): Pair<Double, Double> = when (side) {
+        MahjongTableSide.NORTH -> 0.0 to -PANEL_DISTANCE
+        MahjongTableSide.EAST -> PANEL_DISTANCE to 0.0
+        MahjongTableSide.SOUTH -> 0.0 to PANEL_DISTANCE
+        MahjongTableSide.WEST -> -PANEL_DISTANCE to 0.0
+    }
+
+    /**
+     * 取得指定側別面板朝向觀看者的 yaw 角度。
+     *
+     * @param side 面板所屬桌面側別。
+     * @return 面板旋轉角度（度）。
+     */
+    private fun sideYaw(side: MahjongTableSide): Float = when (side) {
+        MahjongTableSide.NORTH -> 180f
+        MahjongTableSide.EAST -> -90f
+        MahjongTableSide.SOUTH -> 0f
+        MahjongTableSide.WEST -> 90f
+    }
+
+    /** 繪製不使用單一材質；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    override fun getTextureLocation(entity: MahjongPlayerInfoEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
+
+    private companion object {
+        const val TEXT_SCALE = 0.014f
+        const val PANEL_HEIGHT = 2.7
+        const val PANEL_DISTANCE = 3.1
+        const val TEXT_Z = -0.02f
+        const val PANEL_PADDING = 7f
+        const val PORTRAIT_SIZE = 12f
+        const val PORTRAIT_GAP = 5f
+        const val COLUMN_GAP = 5f
+        const val FIRST_ROW_HEIGHT = 15f
+        const val SCORE_ROW_HEIGHT = 12f
+        const val INDICATOR_ROW_HEIGHT = 11f
+        const val MIN_PANEL_WIDTH = 104f
+        const val MAX_PANEL_WIDTH = 176f
+        const val MAX_NAME_CHARACTERS = 16
+        const val BACKGROUND = 0xB01A2232.toInt()
+        const val NAME_COLOR = 0xFFFFFFFF.toInt()
+        const val WIND_COLOR = 0xFFFFD45A.toInt()
+        const val DEALER_COLOR = 0xFFFF9D45.toInt()
+        const val SCORE_COLOR = 0xFFF3F3F3.toInt()
+        const val SCORE_GAIN_COLOR = 0xFF7DDA8B.toInt()
+        const val SCORE_LOSS_COLOR = 0xFFF07A7A.toInt()
+        const val DEALER_MARK = "●"
+    }
+}

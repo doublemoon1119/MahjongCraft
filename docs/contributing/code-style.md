@@ -85,8 +85,8 @@
 
 ### Logging Conventions
 
-- Use the owning platform adapter's logger helper. For example, Fabric code creates loggers with
-  `mahjongCraftLogger(Owner::class)` from the `platform.fabric.logging`
+- Use the owning platform adapter's logger helper. For example, Minecraft code creates loggers with
+  `mahjongCraftLogger(Owner::class)` from the `platform.minecraft.mod.logging`
   package instead of calling `LoggerFactory.getLogger` directly. The logger is named
   `MahjongCraft/<OwnerClass>`, without dots, so logs that print only the last segment of a logger name still
   show the mod and the class.

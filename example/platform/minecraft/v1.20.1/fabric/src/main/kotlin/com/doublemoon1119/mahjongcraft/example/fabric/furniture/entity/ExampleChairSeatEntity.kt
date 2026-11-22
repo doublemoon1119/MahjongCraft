@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureBlocks
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.entity.ExampleSeatGeometry
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.nbt.CompoundTag

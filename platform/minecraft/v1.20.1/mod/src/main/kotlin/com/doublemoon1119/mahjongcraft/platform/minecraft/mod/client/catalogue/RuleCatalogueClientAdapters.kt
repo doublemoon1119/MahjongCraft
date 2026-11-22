@@ -1,0 +1,65 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue
+
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureResourceId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
+import net.minecraft.client.gui.Font
+import net.minecraft.locale.Language
+import net.minecraft.network.chat.Style
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.packs.resources.ResourceManager
+
+/**
+ * 以 Minecraft 字型測量目錄文字。
+ *
+ * @property font 目前的字型。
+ */
+internal class TextRendererCatalogueMetrics(private val font: Font) : RuleCatalogueTextMetrics {
+    override fun width(text: String): Int = font.width(text)
+
+    override fun wrap(text: String, maxWidth: Int): List<String> = font.splitter
+        .splitLines(text, maxWidth.coerceAtLeast(1), Style.EMPTY)
+        .map { it.string }
+        .ifEmpty { listOf("") }
+
+    override fun trim(text: String, maxWidth: Int): String = font.plainSubstrByWidth(text, maxWidth.coerceAtLeast(0))
+}
+
+/**
+ * 從已載入的資源包找出範例牌面圖案；同一牌面與外觀在 [clearCache] 之前只查一次。
+ *
+ * @property assets 牌種與素材鍵的對應。
+ * @property resources 目前的資源管理器。
+ */
+internal class ResourceCatalogueTileArt(
+    private val assets: MinecraftTileAssetRegistry,
+    private val resources: ResourceManager,
+) : RuleCatalogueTileArt {
+    /** 已解析的牌面圖案。 */
+    private val resolved = mutableMapOf<TileFaceView, CatalogueTileArt>()
+
+    override fun resolve(tile: TileFaceView): CatalogueTileArt = resolved.getOrPut(tile) {
+        val assetKey = tile.toAssetKey(assets)
+        val face = tile.tile
+        val name = if (face is Tile.Extension) "${face.typeId.namespace}:${face.typeId.path}" else assetKey
+        val texture = ResourceLocation(tileTextureResourceId(assetKey, assets))
+        if (assetKey == UNKNOWN_TILE_ASSET_KEY || resources.getResource(texture).isEmpty) {
+            CatalogueTileArt(assetKey = UNKNOWN_TILE_ASSET_KEY, missingName = name)
+        } else {
+            CatalogueTileArt(assetKey = assetKey)
+        }
+    }
+
+    override fun clearCache() = resolved.clear()
+}
+
+/**
+ * 取得目前語言的翻譯。
+ *
+ * @param key 翻譯鍵。
+ * @return 翻譯文字；目前語言沒有這個鍵時為 null。
+ */
+internal fun currentLanguageTranslation(key: String): String? = Language.getInstance().takeIf { it.has(key) }?.getOrDefault(key)

@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.mixin.client;
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.PlayerDecisionHudController;
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.PlayerDecisionHudController;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
 import org.spongepowered.asm.mixin.Mixin;

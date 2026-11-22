@@ -1,0 +1,57 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic
+
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import net.minecraft.network.chat.Component
+
+/**
+ * 將自動操作 ID 解析為本地化顯示資料，並安全保留未登記的第三方 ID。
+ *
+ * @property registry 已登記的顯示資料來源。
+ */
+class AutomaticControlDisplayResolver(
+    private val registry: AutomaticControlDisplayRegistry,
+) {
+    /** 記錄本 session 已警告過的未知識別碼，避免重複輸出相同訊息。 */
+    private val logger = mahjongCraftLogger(AutomaticControlDisplayResolver::class)
+
+    /** 已輸出過警告的未知控制項 ID。 */
+    internal val warnedUnknownControlIds = mutableSetOf<String>()
+
+    /**
+     * 解析並依顯示順序、control ID 穩定排列指定項目。
+     *
+     * @param ruleModuleId 目前對局的規則模組 ID；不在對局中時為 null，使用預設顯示。
+     * @param controlIds 要顯示的自動操作 ID。
+     * @return 去重後的顯示資料清單。
+     */
+    fun resolveAll(ruleModuleId: String?, controlIds: Iterable<String>): List<ResolvedAutomaticControlDisplay> = controlIds
+        .distinct()
+        .map { controlId -> resolve(ruleModuleId, controlId) }
+        .sortedWith(compareBy(ResolvedAutomaticControlDisplay::displayOrder, ResolvedAutomaticControlDisplay::controlId))
+
+    /**
+     * 解析單一項目；未知 ID 以原始 ID 顯示、沒有說明並排列於已登記項目之後。
+     *
+     * @param ruleModuleId 目前對局的規則模組 ID；不在對局中時為 null，使用預設顯示。
+     * @param controlId 自動操作 ID。
+     * @return 對應的本地化顯示資料或未知 ID 的回退顯示。
+     */
+    fun resolve(ruleModuleId: String?, controlId: String): ResolvedAutomaticControlDisplay {
+        val display = registry.find(ruleModuleId, controlId)
+        if (display == null && warnedUnknownControlIds.add(controlId)) {
+            logger.warn("Unknown automatic control display: {}", controlId)
+        }
+        return ResolvedAutomaticControlDisplay(
+            controlId = controlId,
+            label = display?.let { Component.translatable(it.labelTranslationKey) } ?: Component.literal(controlId),
+            description = display?.let { Component.translatable(it.descriptionTranslationKey) },
+            displayOrder = display?.displayOrder ?: UNKNOWN_DISPLAY_ORDER,
+        )
+    }
+
+    private companion object {
+        /** 未登記項目使用的最後顯示順序。 */
+        const val UNKNOWN_DISPLAY_ORDER: Int = Int.MAX_VALUE
+    }
+}

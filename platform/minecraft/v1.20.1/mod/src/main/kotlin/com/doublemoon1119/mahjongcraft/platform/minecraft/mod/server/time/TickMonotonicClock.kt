@@ -1,0 +1,86 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.time
+
+import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.concurrency.ServerThreadCoroutineDispatcher
+import kotlinx.coroutines.DisposableHandle
+import java.util.*
+import kotlin.math.ceil
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+
+/**
+ * 以 server tick 計數換算經過時間的 [MonotonicClock]，而不是真實系統時間。
+ *
+ * Minecraft 單機版按 ESC 開啟暫停選單時，伺服器 tick 不會前進，這裡的計數
+ * 因此自然停止前進——這正是玩家決策計時器需要的語意：暫停期間不該算進思考時間。專用伺服器沒有
+ * 這種暫停機制，tick 本來就會持續以正常速度前進，行為跟真實時間等價，不受影響。
+ *
+ * 額外提供 [scheduleAfter]：以同一份 tick 計數排定延遲工作，供 [ServerThreadCoroutineDispatcher]
+ * 實作協程 `delay()` 使用，讓伺服器主執行緒上的延遲也一併具備暫停感知能力，不需要另外開一條跑真實
+ * 時間的背景執行緒。
+ */
+class TickMonotonicClock : MonotonicClock {
+    private var elapsedTicks: Long = 0
+    private val pendingTasks = PriorityQueue<ScheduledTask>(compareBy { it.dueAtTick })
+    private val pendingTasksLock = Any()
+
+    /**
+     * 註冊 tick 事件；只增不減，跨對局／跨桌共用同一個遞增計數，符合 [MonotonicClock] 只能同一
+     * session 內比較的約定。每個 tick 順便觸發到期的 [scheduleAfter] 工作。
+     *
+     * @param events 登記事件用的伺服器事件來源。
+     */
+    fun registerEvents(events: ServerEvents) {
+        events.onServerTickEnd { advanceTick() }
+    }
+
+    /** 前進一個 tick，並執行此時到期的 [scheduleAfter] 工作。 */
+    internal fun advanceTick() {
+        elapsedTicks++
+        runDueTasks()
+    }
+
+    override fun now(): Duration = TICK_DURATION * elapsedTicks.toDouble()
+
+    /**
+     * 排定 [block] 在 [delay] 之後（依 tick 無條件進位）於下個到期 tick 執行；回傳可取消的 handle。
+     *
+     * @param delay 延遲時間；換算成 tick 時向上取整，不足一個 tick 的正值等到下一個 tick。
+     * @param block 到期時於 server tick 回呼的工作。
+     * @return 可移除尚未執行工作的取消 handle。
+     */
+    fun scheduleAfter(delay: Duration, block: Runnable): DisposableHandle {
+        val delayTicks = ceil(delay.coerceAtLeast(Duration.ZERO) / TICK_DURATION).toLong()
+        val task = ScheduledTask(elapsedTicks + delayTicks, block)
+        synchronized(pendingTasksLock) { pendingTasks.add(task) }
+        return DisposableHandle { synchronized(pendingTasksLock) { pendingTasks.remove(task) } }
+    }
+
+    /** 取出所有到期工作後才執行，避免持鎖期間執行任意程式碼。 */
+    private fun runDueTasks() {
+        val dueTasks = mutableListOf<ScheduledTask>()
+        synchronized(pendingTasksLock) {
+            while (pendingTasks.isNotEmpty() && pendingTasks.peek().dueAtTick <= elapsedTicks) {
+                dueTasks += pendingTasks.poll()
+            }
+        }
+        dueTasks.forEach { it.block.run() }
+    }
+
+    /**
+     * 等待到指定 tick 執行的工作。
+     *
+     * @property dueAtTick 工作可執行的絕對 tick，也是佇列排序依據。
+     * @property block 到期時要執行的回呼。
+     */
+    private class ScheduledTask(
+        val dueAtTick: Long,
+        val block: Runnable,
+    )
+
+    private companion object {
+        /** Minecraft 正常運行時一個 tick 對應的時間（20 TPS）。 */
+        val TICK_DURATION: Duration = 50.milliseconds
+    }
+}

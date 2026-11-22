@@ -1,0 +1,124 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension
+
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterCapabilityDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterContext
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.AiCharacterCapabilityRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.character.AiCharacterCapabilityRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.character.RoomParticipantRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatPlacementRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatProviderRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.prop.TablePropKindRegistryImpl
+import java.lang.reflect.Modifier
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
+import kotlin.test.assertSame
+import kotlin.test.assertTrue
+
+/** 驗證角色能力與其他 registry 共用的登記契約，以及公開請求的 Java 可見性。 */
+class AiCharacterCapabilityRegistrationTest {
+    /** 能力自帶完整身分，登記後供執行期查詢。 */
+    @Test
+    fun `capability registration is namespaced unique and frozen`() {
+        val registry = AiCharacterCapabilityRegistry()
+        val definition = AiCharacterCapabilityDefinition("example:actor", AiCharacterProvider { null })
+        registry.register(definition)
+        assertSame(definition, registry.find(definition.id))
+        assertEquals(setOf("example:actor"), registry.registrationKeys)
+        assertFailsWith<IllegalArgumentException> { registry.register(definition) }
+        registry.freeze()
+        assertFailsWith<IllegalStateException> { registry.register(AiCharacterCapabilityDefinition("example:late", AiCharacterProvider { null })) }
+        assertFailsWith<IllegalArgumentException> { AiCharacterCapabilityDefinition("invalid", AiCharacterProvider { null }) }
+    }
+
+    /** 第三方回呼可看到內建能力，同一條 bootstrap 記錄來源並凍結登記。 */
+    @Test
+    fun `bootstrap reports third party character capabilities and freezes the registrar`() {
+        val registries = registries()
+        val builtIn = object : NativeMahjongExtension {
+            override val id: String = "example:builtin"
+
+            override fun registerAiCharacterCapabilities(registry: AiCharacterCapabilityRegistrar) {
+                registry.register(AiCharacterCapabilityDefinition("example:builtin-actor", AiCharacterProvider { null }))
+            }
+        }
+        val extension = object : NativeMahjongExtension {
+            override val id: String = "example:extension"
+
+            override fun registerAiCharacterCapabilities(registry: AiCharacterCapabilityRegistrar) {
+                assertTrue("example:builtin-actor" in registry.registrationKeys)
+                registry.register(AiCharacterCapabilityDefinition("example:third-party-actor", AiCharacterProvider { null }))
+            }
+        }
+        val sources = NativeMahjongExtensionBootstrap.registerAndFreeze(
+            extensions = listOf(extension),
+            registries = registries,
+            builtIn = builtIn,
+            failurePolicy = ExtensionFailurePolicy.Default,
+        )
+        assertEquals(listOf(null, "example:extension"), sources.map { it.extensionId })
+        assertEquals(listOf("example:third-party-actor"), sources.last().categories.single().registrationIds)
+        assertTrue(registries.characterCapabilityRegistry.isFrozen)
+    }
+
+    /** 重複能力的錯誤須標示實際提供者，不能只留下原始重複 ID。 */
+    @Test
+    fun `duplicate character capability reports its extension source`() {
+        val first = object : NativeMahjongExtension {
+            override val id: String = "example:first"
+
+            override fun registerAiCharacterCapabilities(registry: AiCharacterCapabilityRegistrar) {
+                registry.register(AiCharacterCapabilityDefinition("example:duplicate", AiCharacterProvider { null }))
+            }
+        }
+        val second = object : NativeMahjongExtension {
+            override val id: String = "example:second"
+
+            override fun registerAiCharacterCapabilities(registry: AiCharacterCapabilityRegistrar) {
+                registry.register(AiCharacterCapabilityDefinition("example:duplicate", AiCharacterProvider { null }))
+            }
+        }
+        val failure = assertFailsWith<NativeMahjongExtensionRegistrationException> {
+            NativeMahjongExtensionBootstrap.registerAndFreeze(
+                extensions = listOf(second),
+                registries = registries(),
+                builtIn = first,
+                failurePolicy = ExtensionFailurePolicy.Default,
+            )
+        }
+        assertTrue(failure.message.orEmpty().contains("example:second"))
+        assertTrue(failure.cause is IllegalArgumentException)
+    }
+
+    /** 執行期缺少能力可降級為無世界角色。 */
+    @Test
+    fun `unknown capability has no guessed provider`() {
+        assertNull(AiCharacterCapabilityRegistry().find("example:absent"))
+    }
+
+    /** 只讀請求不提供 Java 建構入口，內部工廠為 synthetic。 */
+    @Test
+    fun `character context has no Java callable construction entry point`() {
+        val type = AiCharacterContext::class.java
+        assertTrue(type.constructors.all { it.isSynthetic || !Modifier.isPublic(it.modifiers) })
+        val factories = AiCharacterContext.Companion::class.java.declaredMethods.filter { it.name.startsWith("create") }
+        assertTrue(factories.isNotEmpty())
+        assertTrue(factories.all { it.isSynthetic })
+    }
+
+    /**
+     * 建立不共享全域狀態的原生登記集合。
+     *
+     * @return 本次測試獨立使用的 registry。
+     */
+    private fun registries(): NativeExtensionRegistries = NativeExtensionRegistries(
+        tablePropKindRegistry = TablePropKindRegistryImpl(),
+        seatProviderRegistry = SeatProviderRegistryImpl(),
+        characterCapabilityRegistry = AiCharacterCapabilityRegistry(),
+        seatPlacementRegistry = SeatPlacementRegistry(),
+        roomParticipantRegistry = RoomParticipantRegistry(),
+    )
+}

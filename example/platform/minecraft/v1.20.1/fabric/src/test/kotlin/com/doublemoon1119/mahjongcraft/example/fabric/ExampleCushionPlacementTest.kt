@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example.fabric
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleCushionPlacement
-import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleFurnitureSeatRules
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.seating.ExampleFurnitureSeatRules
 import net.minecraft.core.BlockPos
 import net.minecraft.world.phys.AABB
 import kotlin.test.Test

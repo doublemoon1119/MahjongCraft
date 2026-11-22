@@ -7,6 +7,7 @@ plugins {
     // reaches another project's extension, for example while an IDE sync creates genSources tasks.
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.fabric.loom) apply false
+    alias(libs.plugins.moddev.legacyforge) apply false
     alias(libs.plugins.koin.compiler) apply false
 }
 

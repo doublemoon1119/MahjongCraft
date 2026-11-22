@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.mixin.client;
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientHandTileLayoutBridge;
+import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricClientEvents;
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.tile.ClientHandTileLayoutBridge;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.world.phys.EntityHitResult;
@@ -22,6 +24,19 @@ public abstract class GameRendererMixin {
     @Inject(method = "render", at = @At("HEAD"))
     private void mahjongcraft$beginHandDisplayFrame(float tickDelta, long startTime, boolean tick, CallbackInfo callbackInfo) {
         ClientHandTileLayoutBridge.beginFrame(minecraft, tickDelta);
+    }
+
+    /** 原版畫完整個世界後（光影模組的後製也已完成）、畫手上物品之前，通知世界繪製完成。 */
+    @Inject(
+        method = "renderLevel",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/LevelRenderer;renderLevel(Lcom/mojang/blaze3d/vertex/PoseStack;FJZLnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lorg/joml/Matrix4f;)V",
+            shift = At.Shift.AFTER
+        )
+    )
+    private void mahjongcraft$afterLevelRender(float tickDelta, long limitTime, PoseStack matrices, CallbackInfo callbackInfo) {
+        FabricClientEvents.fireWorldRenderFinished();
     }
 
     /** 原版完成選取後，以本人實際看到的牌張位置修正命中。 */

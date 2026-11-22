@@ -1,15 +1,15 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.character
 
 import com.doublemoon1119.mahjongcraft.example.ExampleExtensionIds
-import com.doublemoon1119.mahjongcraft.example.fabric.ExampleFabricMahjongClientExtension
-import com.doublemoon1119.mahjongcraft.example.fabric.ExampleFabricMahjongExtension
+import com.doublemoon1119.mahjongcraft.example.fabric.ExampleNativeMahjongClientExtension
+import com.doublemoon1119.mahjongcraft.example.fabric.ExampleNativeMahjongExtension
 import com.doublemoon1119.mahjongcraft.example.minecraft.character.ExampleCharacterIds
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterCapabilityDefinition
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterPreviewDefinition
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomParticipantDefinition
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricAiCharacterCapabilityRegistrar
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricAiCharacterPreviewRegistrar
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricRoomParticipantRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterCapabilityDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterPreviewDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.RoomParticipantDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.AiCharacterCapabilityRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.AiCharacterPreviewRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.RoomParticipantRegistrar
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
@@ -20,8 +20,8 @@ class ExampleActorRegistrationTest {
     @Test
     fun `public extension callbacks register borrowed owned and client capabilities without creating entities`() {
         val capture = Capture()
-        val extension = ExampleFabricMahjongExtension()
-        val client = ExampleFabricMahjongClientExtension()
+        val extension = ExampleNativeMahjongExtension()
+        val client = ExampleNativeMahjongClientExtension()
         extension.registerRoomParticipants(capture)
         extension.registerAiCharacterCapabilities(capture)
         client.registerCharacterPreviews(capture)
@@ -36,31 +36,31 @@ class ExampleActorRegistrationTest {
 
     /** 分開收集三種公開回呼，只觀察登記結果，不執行工廠。 */
     private class Capture :
-        FabricRoomParticipantRegistrar,
-        FabricAiCharacterCapabilityRegistrar,
-        FabricAiCharacterPreviewRegistrar {
+        RoomParticipantRegistrar,
+        AiCharacterCapabilityRegistrar,
+        AiCharacterPreviewRegistrar {
         /** 已收集的既有實體資格。 */
-        val participants = mutableListOf<FabricRoomParticipantDefinition>()
+        val participants = mutableListOf<RoomParticipantDefinition>()
 
         /** 已收集的原生世界能力。 */
-        val world = mutableListOf<FabricAiCharacterCapabilityDefinition>()
+        val world = mutableListOf<AiCharacterCapabilityDefinition>()
 
         /** 已收集的獨立預覽能力。 */
-        val previews = mutableListOf<FabricAiCharacterPreviewDefinition>()
+        val previews = mutableListOf<AiCharacterPreviewDefinition>()
 
         override val registrationKeys: Set<String> get() = (participants.map { it.id } + world.map { it.id } + previews.map { it.id }).toSet()
 
         override val isFrozen: Boolean = false
 
-        override fun register(definition: FabricRoomParticipantDefinition) {
+        override fun register(definition: RoomParticipantDefinition) {
             participants += definition
         }
 
-        override fun register(definition: FabricAiCharacterCapabilityDefinition) {
+        override fun register(definition: AiCharacterCapabilityDefinition) {
             world += definition
         }
 
-        override fun register(definition: FabricAiCharacterPreviewDefinition) {
+        override fun register(definition: AiCharacterPreviewDefinition) {
             previews += definition
         }
     }

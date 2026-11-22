@@ -97,7 +97,7 @@ class RepositoryVerificationPlugin : Plugin<Project> {
 private const val MINECRAFT_LANG_DIRECTORY: String = "platform/minecraft/common/src/jvmMain/resources/assets/mahjongcraft/lang"
 
 /** 開發專用 debug 模組的語系檔目錄，相對於 root project。 */
-private const val DEBUG_MINECRAFT_LANG_DIRECTORY: String = "platform/minecraft/v1.20.1/fabric-debug/src/main/resources/assets/mahjongcraft/lang"
+private const val DEBUG_MINECRAFT_LANG_DIRECTORY: String = "platform/minecraft/common-debug/src/jvmMain/resources/assets/mahjongcraft/lang"
 
 /** 依 key 排序的語系檔目錄：MahjongCraft 本體與開發專用 debug 模組，相對於 root project。 */
 private val SORTED_MINECRAFT_LANG_DIRECTORIES: List<String> = listOf(MINECRAFT_LANG_DIRECTORY, DEBUG_MINECRAFT_LANG_DIRECTORY)

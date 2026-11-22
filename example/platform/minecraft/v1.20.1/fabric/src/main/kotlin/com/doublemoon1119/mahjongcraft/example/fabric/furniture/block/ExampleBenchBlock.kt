@@ -3,6 +3,9 @@ package com.doublemoon1119.mahjongcraft.example.fabric.furniture.block
 import com.doublemoon1119.mahjongcraft.example.fabric.character.ExampleActors
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity.ExampleChairSeatEntity
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleChairSeatService
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.block.ExampleBenchConnections
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.block.ExampleBenchGeometry
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.block.ExampleBenchPlacement
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel

@@ -1,0 +1,529 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config
+
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+/**
+ * 驗證 HUD 位置編輯器的拖曳夾限、可調整軸、預覽情境換算與草稿狀態語意。
+ *
+ * 全部斷言都針對狀態轉換與 bounds 結果，不比對畫面像素，因此不會因為配色或字級調整而失效。
+ */
+class MahjongHudLayoutEditorModelTest {
+    /** 拖曳到畫面外的任何位置後，HUD 四邊都必須仍留在畫面內。 */
+    @Test
+    fun `dragging beyond any screen edge keeps the hud fully on screen`() {
+        HudElement.entries.forEach { element ->
+            val dragged = model()
+                .selectElement(element)
+                .beginDrag(
+                    element = element,
+                    mouseX = 0.0,
+                    mouseY = 0.0,
+                    screenWidth = SCREEN_WIDTH,
+                    screenHeight = SCREEN_HEIGHT,
+                )
+
+            listOf(
+                -10_000.0 to -10_000.0,
+                10_000.0 to -10_000.0,
+                -10_000.0 to 10_000.0,
+                10_000.0 to 10_000.0,
+            ).forEach { (mouseX, mouseY) ->
+                val bounds = dragged
+                    .dragTo(
+                        mouseX = mouseX,
+                        mouseY = mouseY,
+                        screenWidth = SCREEN_WIDTH,
+                        screenHeight = SCREEN_HEIGHT,
+                    )
+                    .bounds(
+                        element = element,
+                        screenWidth = SCREEN_WIDTH,
+                        screenHeight = SCREEN_HEIGHT,
+                    )
+
+                assertTrue(bounds.left >= 0, "$element left ${bounds.left} escaped the screen")
+                assertTrue(bounds.top >= 0, "$element top ${bounds.top} escaped the screen")
+                assertTrue(bounds.right <= SCREEN_WIDTH, "$element right ${bounds.right} escaped the screen")
+                assertTrue(bounds.bottom <= SCREEN_HEIGHT, "$element bottom ${bounds.bottom} escaped the screen")
+            }
+        }
+    }
+
+    /** 一般倒數與等待提醒兩軸都可調整。 */
+    @Test
+    fun `compact prompt accepts both horizontal and vertical adjustment`() {
+        val initial = model()
+        val dragged = initial
+            .selectElement(HudElement.COMPACT)
+            .beginDrag(
+                element = HudElement.COMPACT,
+                mouseX = 0.0,
+                mouseY = 0.0,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
+            .dragTo(
+                mouseX = 40.0,
+                mouseY = 40.0,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
+
+        assertNotEquals(initial.draft.compactPromptX, dragged.draft.compactPromptX)
+        assertNotEquals(initial.draft.compactPromptY, dragged.draft.compactPromptY)
+    }
+
+    /** 固定水平置中的 HUD 只接受垂直調整，且拖曳後仍維持置中。 */
+    @Test
+    fun `centered huds ignore horizontal dragging and stay centered`() {
+        listOf(HudElement.DECISION, HudElement.ANALYSIS).forEach { element ->
+            val initial = model().selectElement(element)
+            val centeredLeft = initial.bounds(
+                element = element,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            ).left
+
+            val dragged = initial
+                .beginDrag(
+                    element = element,
+                    mouseX = 0.0,
+                    mouseY = 0.0,
+                    screenWidth = SCREEN_WIDTH,
+                    screenHeight = SCREEN_HEIGHT,
+                )
+                .dragTo(
+                    mouseX = 600.0,
+                    mouseY = 40.0,
+                    screenWidth = SCREEN_WIDTH,
+                    screenHeight = SCREEN_HEIGHT,
+                )
+
+            assertFalse(element.adjustsHorizontally, "$element must not be horizontally adjustable")
+            assertEquals(initial.draft.compactPromptX, dragged.draft.compactPromptX)
+            assertEquals(
+                expected = centeredLeft,
+                actual = dragged.bounds(
+                    element = element,
+                    screenWidth = SCREEN_WIDTH,
+                    screenHeight = SCREEN_HEIGHT,
+                ).left,
+                message = "$element left edge moved despite being centered",
+            )
+        }
+    }
+
+    /** 拖曳操作面板不得寫入其他 HUD 的位置欄位。 */
+    @Test
+    fun `dragging one hud leaves the other huds untouched`() {
+        val initial = model()
+        val dragged = initial
+            .beginDrag(
+                element = HudElement.DECISION,
+                mouseX = 0.0,
+                mouseY = 0.0,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
+            .dragTo(
+                mouseX = 100.0,
+                mouseY = 100.0,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
+
+        assertNotEquals(initial.draft.decisionPanelY, dragged.draft.decisionPanelY)
+        assertEquals(initial.draft.compactPromptX, dragged.draft.compactPromptX)
+        assertEquals(initial.draft.compactPromptY, dragged.draft.compactPromptY)
+        assertEquals(initial.draft.discardAnalysisY, dragged.draft.discardAnalysisY)
+        assertEquals(initial.draft.automaticControlStatusX, dragged.draft.automaticControlStatusX)
+        assertEquals(initial.draft.automaticControlStatusY, dragged.draft.automaticControlStatusY)
+    }
+
+    /** 自動操作狀態整組共用一個位置，兩軸都可調整。 */
+    @Test
+    fun `automatic control status accepts both horizontal and vertical adjustment`() {
+        val initial = model()
+        val dragged = initial
+            .selectElement(HudElement.AUTOMATIC_CONTROL)
+            .beginDrag(
+                element = HudElement.AUTOMATIC_CONTROL,
+                mouseX = 0.0,
+                mouseY = 0.0,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
+            .dragTo(
+                mouseX = 120.0,
+                mouseY = 120.0,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
+
+        assertNotEquals(initial.draft.automaticControlStatusX, dragged.draft.automaticControlStatusX)
+        assertNotEquals(initial.draft.automaticControlStatusY, dragged.draft.automaticControlStatusY)
+    }
+
+    /** 尚未收到量測結果前，自動操作狀態沿用內建預設尺寸。 */
+    @Test
+    fun `automatic control status uses the built-in size before it is measured`() {
+        val size = model().previewSize(
+            element = HudElement.AUTOMATIC_CONTROL,
+            screenWidth = SCREEN_WIDTH,
+            screenHeight = SCREEN_HEIGHT,
+        )
+
+        assertEquals(MahjongHudLayoutEditorModel.AUTOMATIC_CONTROL_PREVIEW_WIDTH, size.width)
+        assertEquals(MahjongHudLayoutEditorModel.AUTOMATIC_CONTROL_PREVIEW_HEIGHT, size.height)
+    }
+
+    /** 收到實際量測結果後，每種 HUD 的預覽框都改用量到的尺寸，位置也跟著重新計算。 */
+    @Test
+    fun `every element follows the reported measurement`() {
+        val measured = MahjongHudPreviewSize(width = 168, height = 58)
+        HudElement.entries.forEach { element ->
+            val bounds = model().withMeasuredSize(element, measured).bounds(
+                element = element,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
+
+            assertEquals(measured.width, bounds.width, "$element width")
+            assertEquals(measured.height, bounds.height, "$element height")
+        }
+    }
+
+    /** 每個預覽情境的動作卡都對得上情境規則已登記的動作用語，預覽卡片因此有正式的標籤。 */
+    @Test
+    fun `every preview scenario action is registered for its rule`() {
+        val vocabulary = GameActionVocabularyRegistryImpl().apply {
+            BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this)
+            BundledRiichiMinecraftExtension.registerGameActionVocabulary(this)
+        }
+
+        HudPreviewScenario.entries.forEach { scenario ->
+            scenario.prompt.actions.forEach { action ->
+                assertNotNull(vocabulary.find(scenario.prompt.ruleModuleId, action.actionId), "$scenario uses an unregistered action ${action.actionId}")
+            }
+        }
+    }
+
+    /** 切換操作面板情境後，舊情境量到的操作面板尺寸失效，其他 HUD 的量測保留。 */
+    @Test
+    fun `switching the scenario drops only the decision measurement`() {
+        val measured = MahjongHudPreviewSize(width = 168, height = 58)
+        val model = model()
+            .withMeasuredSize(HudElement.DECISION, measured)
+            .withMeasuredSize(HudElement.COMPACT, measured)
+            .selectScenario(HudPreviewScenario.RIICHI)
+
+        assertEquals(mapOf(HudElement.COMPACT to measured), model.measuredSizes)
+    }
+
+    /** 量到的尺寸超過畫面時仍被限制在畫面內。 */
+    @Test
+    fun `an oversized measurement is clamped to the screen`() {
+        val model = model().withMeasuredSize(HudElement.AUTOMATIC_CONTROL, MahjongHudPreviewSize(width = 10_000, height = 10_000))
+
+        val bounds = model.bounds(
+            element = HudElement.AUTOMATIC_CONTROL,
+            screenWidth = SCREEN_WIDTH,
+            screenHeight = SCREEN_HEIGHT,
+        )
+
+        assertTrue(bounds.left >= 0)
+        assertTrue(bounds.top >= 0)
+        assertTrue(bounds.right <= SCREEN_WIDTH)
+        assertTrue(bounds.bottom <= SCREEN_HEIGHT)
+    }
+
+    /** 換成更大的預覽情境後，原本合法的位置仍必須被重新限制在畫面內。 */
+    @Test
+    fun `switching to a larger scenario re-clamps the panel inside the screen`() {
+        val callLayout = HudPreviewScenario.CALL.layout(SCREEN_WIDTH, SCREEN_HEIGHT)
+        val narrowScreenWidth = callLayout.panelWidth + 40
+        val narrowScreenHeight = callLayout.groupHeight + 40
+        val atBottom = model()
+            .beginDrag(
+                element = HudElement.DECISION,
+                mouseX = 0.0,
+                mouseY = 0.0,
+                screenWidth = narrowScreenWidth,
+                screenHeight = narrowScreenHeight,
+            )
+            .dragTo(
+                mouseX = 10_000.0,
+                mouseY = 10_000.0,
+                screenWidth = narrowScreenWidth,
+                screenHeight = narrowScreenHeight,
+            )
+
+        HudPreviewScenario.entries.forEach { scenario ->
+            val bounds = atBottom.selectScenario(scenario).bounds(
+                element = HudElement.DECISION,
+                screenWidth = narrowScreenWidth,
+                screenHeight = narrowScreenHeight,
+            )
+
+            assertTrue(bounds.left >= 0, "$scenario left ${bounds.left} escaped the screen")
+            assertTrue(bounds.top >= 0, "$scenario top ${bounds.top} escaped the screen")
+            assertTrue(bounds.right <= narrowScreenWidth, "$scenario right ${bounds.right} escaped the screen")
+            assertTrue(bounds.bottom <= narrowScreenHeight, "$scenario bottom ${bounds.bottom} escaped the screen")
+        }
+    }
+
+    /** 操作面板的預覽框與實際操作面板在同一畫面上的寬度與群組高度一致。 */
+    @Test
+    fun `decision preview matches the real panel size`() {
+        HudPreviewScenario.entries.forEach { scenario ->
+            val size = model().selectScenario(scenario).previewSize(
+                element = HudElement.DECISION,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
+            val layout = scenario.layout(SCREEN_WIDTH, SCREEN_HEIGHT)
+
+            assertEquals(layout.panelWidth, size.width, "$scenario width")
+            assertEquals(layout.groupHeight, size.height, "$scenario height")
+        }
+    }
+
+    /** 預覽框在極小畫面下仍保留至少一像素，且不超過畫面尺寸。 */
+    @Test
+    fun `preview size stays positive and bounded on tiny screens`() {
+        val size = model().previewSize(
+            element = HudElement.DECISION,
+            screenWidth = 8,
+            screenHeight = 8,
+        )
+
+        assertTrue(size.width >= 1)
+        assertTrue(size.height >= 1)
+        assertTrue(size.width <= 8)
+        assertTrue(size.height <= 8)
+    }
+
+    /** 其他 HUD 預設隱藏，隱藏時不得攔截拖曳點擊；切成外框後才可被選取。 */
+    @Test
+    fun `hidden huds cannot be picked up until outline preview is enabled`() {
+        assertEquals(HudPreviewVisibility.HIDDEN, model().otherHudVisibility)
+
+        // 先把目前選取的操作面板拖到畫面頂端，避免它的預覽框蓋住待測的一般倒數預覽框。
+        val initial = model()
+            .beginDrag(
+                element = HudElement.DECISION,
+                mouseX = 0.0,
+                mouseY = 0.0,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
+            .dragTo(
+                mouseX = 0.0,
+                mouseY = -10_000.0,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
+            .endDrag()
+
+        val compactBounds = initial.bounds(
+            element = HudElement.COMPACT,
+            screenWidth = SCREEN_WIDTH,
+            screenHeight = SCREEN_HEIGHT,
+        )
+        val insideCompactX = compactBounds.left + 1.0
+        val insideCompactY = compactBounds.top + 1.0
+        assertFalse(
+            actual = initial.bounds(
+                element = HudElement.DECISION,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            ).contains(insideCompactX, insideCompactY),
+            message = "the probe point must lie outside the selected hud for this test to mean anything",
+        )
+
+        assertNull(
+            actual = initial.hitTest(
+                mouseX = insideCompactX,
+                mouseY = insideCompactY,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            ),
+        )
+        assertEquals(
+            expected = HudElement.COMPACT,
+            actual = initial.selectVisibility(HudPreviewVisibility.OUTLINE).hitTest(
+                mouseX = insideCompactX,
+                mouseY = insideCompactY,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            ),
+        )
+    }
+
+    /** 重疊時目前選取的 HUD 優先取得拖曳焦點。 */
+    @Test
+    fun `the selected hud wins the hit test when previews overlap`() {
+        val overlapping = model()
+            .selectVisibility(HudPreviewVisibility.OUTLINE)
+            .selectElement(HudElement.ANALYSIS)
+        val analysisBounds = overlapping.bounds(
+            element = HudElement.ANALYSIS,
+            screenWidth = SCREEN_WIDTH,
+            screenHeight = SCREEN_HEIGHT,
+        )
+
+        assertEquals(
+            expected = HudElement.ANALYSIS,
+            actual = overlapping.hitTest(
+                mouseX = analysisBounds.left + 1.0,
+                mouseY = analysisBounds.top + 1.0,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            ),
+        )
+    }
+
+    /** 手動隱藏控制項後仍可還原，拖曳期間也會自動收起控制項。 */
+    @Test
+    fun `controls can always be restored after being hidden`() {
+        val visible = model()
+        assertTrue(visible.controlsVisible)
+
+        val hidden = visible.withControlsHidden(true)
+        assertFalse(hidden.controlsVisible)
+        assertTrue(hidden.withControlsHidden(false).controlsVisible)
+
+        val dragging = visible.beginDrag(
+            element = HudElement.DECISION,
+            mouseX = 0.0,
+            mouseY = 0.0,
+            screenWidth = SCREEN_WIDTH,
+            screenHeight = SCREEN_HEIGHT,
+        )
+        assertFalse(dragging.controlsVisible)
+        assertTrue(dragging.endDrag().controlsVisible)
+    }
+
+    /** 未變更時套用與復原不可用；拖曳後兩者才啟用，套用後回到未變更狀態。 */
+    @Test
+    fun `apply and undo track unsaved changes across a full edit cycle`() {
+        val initial = model()
+        assertFalse(initial.hasUnsavedChanges)
+
+        val dragged = initial
+            .beginDrag(
+                element = HudElement.DECISION,
+                mouseX = 0.0,
+                mouseY = 0.0,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
+            .dragTo(
+                mouseX = 100.0,
+                mouseY = 100.0,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
+        assertTrue(dragged.hasUnsavedChanges)
+
+        val applied = dragged.markApplied()
+        assertFalse(applied.hasUnsavedChanges)
+        assertEquals(dragged.draft, applied.baseline)
+    }
+
+    /** 復原把草稿還原成最近一次套用的配置，而不是預設配置。 */
+    @Test
+    fun `undo restores the last applied layout rather than the defaults`() {
+        val applied = model()
+            .beginDrag(
+                element = HudElement.DECISION,
+                mouseX = 0.0,
+                mouseY = 0.0,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
+            .dragTo(
+                mouseX = 100.0,
+                mouseY = 100.0,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
+            .markApplied()
+
+        val undone = applied
+            .dragTo(
+                mouseX = 300.0,
+                mouseY = 300.0,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
+            .undo()
+
+        assertEquals(applied.baseline, undone.draft)
+        assertFalse(undone.hasUnsavedChanges)
+        assertNotEquals(MahjongHudLayoutConfig(), undone.draft)
+    }
+
+    /** 重設把草稿還原成預設配置，且在已是預設配置時被視為不可用。 */
+    @Test
+    fun `reset returns the draft to the packaged defaults`() {
+        val initial = model()
+        assertTrue(initial.isDefault)
+
+        val dragged = initial
+            .beginDrag(
+                element = HudElement.DECISION,
+                mouseX = 0.0,
+                mouseY = 0.0,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
+            .dragTo(
+                mouseX = 100.0,
+                mouseY = 100.0,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
+        assertFalse(dragged.isDefault)
+
+        val reset = dragged.reset()
+        assertTrue(reset.isDefault)
+        assertEquals(MahjongHudLayoutConfig(), reset.draft)
+    }
+
+    /** 靠近畫面中線時吸附至正中央，超出吸附範圍則保留原值。 */
+    @Test
+    fun `snapping pulls near-center ratios to the exact center`() {
+        assertEquals(0.5, snap(0.5 + MahjongHudLayoutEditorModel.SNAP_THRESHOLD / 2))
+        assertEquals(0.5, snap(0.5 - MahjongHudLayoutEditorModel.SNAP_THRESHOLD / 2))
+        assertEquals(0.5, snap(0.5))
+
+        val outside = 0.5 + MahjongHudLayoutEditorModel.SNAP_THRESHOLD * 2
+        assertEquals(outside, snap(outside))
+    }
+
+    /**
+     * 建立以預設配置為基準的編輯器狀態。
+     *
+     * @return 初始編輯器模型。
+     */
+    private fun model(): MahjongHudLayoutEditorModel = MahjongHudLayoutEditorModel(baseline = MahjongHudLayoutConfig())
+
+    /** 測試畫面尺寸。 */
+    private companion object {
+        /** 測試使用的最小支援畫面寬度。 */
+        const val SCREEN_WIDTH = 854
+
+        /** 測試使用的最小支援畫面高度。 */
+        const val SCREEN_HEIGHT = 480
+    }
+}

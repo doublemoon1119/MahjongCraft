@@ -45,14 +45,14 @@ The loader entry points are [`ExampleMod.kt`](src/main/kotlin/com/doublemoon1119
 and [`ExampleModClient.kt`](src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleModClient.kt).
 Furniture and seating behavior is covered by focused tests such as
 [`ExampleCushionPlacementTest.kt`](src/test/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleCushionPlacementTest.kt),
-[`ExampleFurnitureSeatRulesTest.kt`](src/test/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleFurnitureSeatRulesTest.kt),
-and [`ExampleGameEventChatTest.kt`](src/test/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/event/ExampleGameEventChatTest.kt).
+[`ExampleFurnitureSeatRulesTest.kt`](../../common/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/ExampleFurnitureSeatRulesTest.kt),
+and [`ExampleGameEventChatTest.kt`](../mod/src/test/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/mod/event/ExampleGameEventChatTest.kt).
 These tests exercise decision and geometry seams. Native world rendering still needs the manual checks
 in the parent guide; packaged dedicated-server startup has already passed its smoke check.
 
 ## World actors and seat integration
 
-[`ExampleFabricMahjongExtension.kt`](src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleFabricMahjongExtension.kt)
+[`ExampleNativeMahjongExtension.kt`](src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleNativeMahjongExtension.kt)
 registers participant eligibility and borrowed/owned factories through the public registrars.
 The provider recognizes only `ExampleActorEntity`; `canJoin` checks the placer against the room host.
 Acquiring a borrowed handle uses exactly `context.participant`, without spawning or replacing it.
@@ -64,7 +64,7 @@ teleports to the assigned position and stands only when the space is clear and t
 It waits when blocked or when an existing seat cannot be used. The framework does not pull borrowed
 actors back; other integrations decide how to move their own actors.
 
-[`ExampleFabricMahjongClientExtension.kt`](src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleFabricMahjongClientExtension.kt)
+[`ExampleNativeMahjongClientExtension.kt`](src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleNativeMahjongClientExtension.kt)
 is declared under `mahjongcraft:client_extension`. Its factory creates an independent entity without
 adding it to the world. Preview disposal discards only that independent object. The public appearance
 descriptor stores capability IDs, not native objects or arbitrary NBT. The same client extension

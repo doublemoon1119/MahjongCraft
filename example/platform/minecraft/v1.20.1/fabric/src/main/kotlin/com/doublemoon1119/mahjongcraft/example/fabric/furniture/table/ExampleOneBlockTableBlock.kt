@@ -1,7 +1,10 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.furniture.table
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.MahjongTableStructureBlock
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.MahjongTables
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.table.scheduleWaterTickIfWaterlogged
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.table.waterloggedAt
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.table.waterloggedFluidState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.table.MahjongTableStructureBlock
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.table.MahjongTables
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.world.InteractionHand

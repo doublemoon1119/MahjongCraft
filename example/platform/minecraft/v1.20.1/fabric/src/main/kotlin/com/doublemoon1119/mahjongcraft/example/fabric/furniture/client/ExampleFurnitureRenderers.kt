@@ -11,6 +11,7 @@ import net.minecraft.client.renderer.entity.EntityRenderer
 import net.minecraft.client.renderer.entity.EntityRendererProvider
 import net.minecraft.client.renderer.texture.OverlayTexture
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.inventory.InventoryMenu
 import net.minecraft.world.item.ItemDisplayContext
 import net.minecraft.world.item.ItemStack
 
@@ -31,8 +32,8 @@ object ExampleFurnitureRenderers {
 private class ExampleChairSeatRenderer(
     context: EntityRendererProvider.Context,
 ) : EntityRenderer<ExampleChairSeatEntity>(context) {
-    /** 隱形 entity 沒有實際貼圖。 */
-    override fun getTextureLocation(entity: ExampleChairSeatEntity): ResourceLocation? = null
+    /** 隱形 entity 沒有實際貼圖；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    override fun getTextureLocation(entity: ExampleChairSeatEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 }
 
 /**
@@ -71,6 +72,6 @@ private class ExampleCushionRenderer(
         matrices.popPose()
     }
 
-    /** Item renderer 依 model 資源提供外觀。 */
-    override fun getTextureLocation(entity: ExampleCushionEntity): ResourceLocation? = null
+    /** Item renderer 依 model 資源提供外觀；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    override fun getTextureLocation(entity: ExampleCushionEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 }

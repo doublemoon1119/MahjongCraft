@@ -25,9 +25,9 @@ gradlePlugin {
             id = "mahjongcraft.kotlin-jvm"
             implementationClass = "com.doublemoon1119.mahjongcraft.buildlogic.MahjongCraftKotlinJvmPlugin"
         }
-        register("minecraftVersionCommonConvention") {
-            id = "mahjongcraft.minecraft-version-common"
-            implementationClass = "com.doublemoon1119.mahjongcraft.buildlogic.MahjongCraftMinecraftVersionCommonPlugin"
+        register("minecraftModConvention") {
+            id = "mahjongcraft.minecraft-mod"
+            implementationClass = "com.doublemoon1119.mahjongcraft.buildlogic.MahjongCraftMinecraftModPlugin"
         }
         register("minecraftLoaderConvention") {
             id = "mahjongcraft.minecraft-loader"

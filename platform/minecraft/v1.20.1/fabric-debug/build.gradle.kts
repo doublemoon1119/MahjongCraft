@@ -28,10 +28,21 @@ tasks.withType<Test>().configureEach {
     doFirst {
         testRunDirectory.get().asFile.mkdirs()
     }
-    // 本體的語系檔在 classpath 上與這個模組的路徑相同，語系檔測試改以來源目錄讀取這個模組自己的檔案。
-    val langDirectory = layout.projectDirectory.dir("src/main/resources/assets/mahjongcraft/lang")
-    inputs.dir(langDirectory).withPropertyName("debugLangDirectory")
-    systemProperty("mahjongcraft.debug.langDirectory", langDirectory.asFile.absolutePath)
+}
+
+// debug 中呼叫 Minecraft 1.20.1 但不用載入器的程式在 :minecraft_v1.20.1_mod-debug，不需要 Minecraft 的程式、翻譯與材質在
+// :minecraft_common-debug。本體開發執行只載入這個模組、不帶它的依賴，因此兩者的原始碼與資源都納入本模組，由 Loom 一起
+// 重新映射並打包。
+val commonDebugDirectory = project(":minecraft_common-debug").projectDir
+val modDebugDirectory = project(":minecraft_v1.20.1_mod-debug").projectDir
+sourceSets {
+    main {
+        resources.srcDir(commonDebugDirectory.resolve("src/jvmMain/resources"))
+    }
+}
+kotlin.sourceSets.main {
+    kotlin.srcDir(commonDebugDirectory.resolve("src/jvmMain/kotlin"))
+    kotlin.srcDir(modDebugDirectory.resolve("src/main/kotlin"))
 }
 
 dependencies {
@@ -46,7 +57,6 @@ dependencies {
     // 執行與測試時沿用本體完整的依賴清單。
     runtimeOnly(project(path = ":minecraft_v1.20.1_fabric", configuration = "namedRuntimeElements"))
     implementation(project(":minecraft_common"))
-    implementation(project(":minecraft_v1.20.1_common"))
     implementation(project(":mahjong-logic"))
     implementation(project(":mahjong-ai"))
     implementation(project(":mahjong-flow:mahjong-flow-common"))
@@ -58,6 +68,8 @@ dependencies {
     implementation(project(":mahjong-bundled-extensions"))
     implementation(project.dependencies.platform(libs.koin.bom))
     implementation(libs.koin.core)
+    implementation(libs.kotlinx.coroutines)
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.exposed.core)
     implementation(libs.exposed.jdbc)
 
