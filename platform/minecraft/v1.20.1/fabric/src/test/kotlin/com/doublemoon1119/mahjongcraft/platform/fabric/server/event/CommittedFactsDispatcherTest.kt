@@ -13,8 +13,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.event.FabricGameEventContexts
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.event.GameEventContexts
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.LinkageIsolatingExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.BuiltInAchievementIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.PlayerAchievements
@@ -92,7 +92,7 @@ class CommittedFactsDispatcherTest {
             locations = SnapshotGameEventLocationSource(locations),
             reporter = reporter,
             exclusions = exclusions,
-            failurePolicy = FabricExtensionFailurePolicy(),
+            failurePolicy = LinkageIsolatingExtensionFailurePolicy(),
             markerResolvers = GameEventPublicMarkerResolverRegistry(),
         )
         val received = mutableListOf<String>()
@@ -227,7 +227,7 @@ class CommittedFactsDispatcherTest {
                     ),
                 ),
             )
-            assertFailsWith<UnsupportedOperationException> { FabricGameEventContexts.server(capturedContext) }
+            assertFailsWith<UnsupportedOperationException> { GameEventContexts.server(capturedContext) }
 
             val abortedGame = changedGame.copy(matchId = Uuid.random())
             val removalLocationEntry = locations.put(abortedGame.id, activeLocation)
@@ -290,9 +290,9 @@ class CommittedFactsDispatcherTest {
             assertEquals(grantsBeforeExclusion, gateway.granted.size)
             dispatcher.stopSession()
             assertFalse(exclusions.contains(resumedGame.matchId))
-            assertFailsWith<IllegalStateException> { FabricGameEventContexts.server(capturedContext) }
+            assertFailsWith<IllegalStateException> { GameEventContexts.server(capturedContext) }
             dispatcher.startSession(scheduler = scheduler, serverProvider = serverProvider, subscriptions = subscriptions)
-            assertFailsWith<IllegalStateException> { FabricGameEventContexts.server(capturedContext) }
+            assertFailsWith<IllegalStateException> { GameEventContexts.server(capturedContext) }
             dispatcher.stopSession()
             assertTrue(reporter.listenerFailures.isEmpty())
             assertTrue(reporter.batchListenerFailures.isEmpty())
@@ -318,7 +318,7 @@ class CommittedFactsDispatcherTest {
             dispatchers = dispatchers,
             resolverRegistry = GameAchievementResolverRegistryImpl(),
             gateway = gateway,
-            failurePolicy = FabricExtensionFailurePolicy(),
+            failurePolicy = LinkageIsolatingExtensionFailurePolicy(),
         )
     }
 

@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.di
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.LinkageIsolatingExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricLoaderPlatform
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.LoaderPlatform
 import org.koin.dsl.module
@@ -15,5 +15,5 @@ val fabricCommonModule = module {
     includes(modCommonModule)
 
     single<LoaderPlatform> { FabricLoaderPlatform }
-    single<ExtensionFailurePolicy> { FabricExtensionFailurePolicy() }
+    single<ExtensionFailurePolicy> { LinkageIsolatingExtensionFailurePolicy() }
 }

@@ -7,27 +7,27 @@ import com.doublemoon1119.mahjongcraft.example.fabric.table.ExampleHandRevealChi
 import com.doublemoon1119.mahjongcraft.example.fabric.table.ExampleHandRevealChipTablePropKind
 import com.doublemoon1119.mahjongcraft.example.minecraft.character.ExampleCharacterIds
 import com.doublemoon1119.mahjongcraft.example.minecraft.presentation.ExampleTablePropDefinitions
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterPreviewDefinition
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricAiCharacterPreviewRegistrar
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropPreviewRegistrar
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.FabricTablePropPreviewDefinition
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongClientExtension
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.AiCharacterPreviewDefinition
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.AiCharacterPreviewRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.TablePropPreviewRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.TablePropPreviewDefinition
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.NativeMahjongClientExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropContent
 
 /** 只由 client_extension 載入的模型工廠，不使專用伺服器掃描客戶端程式。 */
-class ExampleFabricMahjongClientExtension : FabricMahjongClientExtension {
+class ExampleFabricMahjongClientExtension : NativeMahjongClientExtension {
     /** 與共用及伺服器擴充相同的來源 ID。 */
     override val id: String = ExampleExtensionIds.EXTENSION
 
     /** 登記工廠，不在初始化時建立模型或查詢原生實體類型。 */
-    override fun registerCharacterPreviews(registry: FabricAiCharacterPreviewRegistrar) {
-        registry.register(FabricAiCharacterPreviewDefinition(ExampleCharacterIds.ACTOR, ExampleActorPreviews.PROVIDER))
+    override fun registerCharacterPreviews(registry: AiCharacterPreviewRegistrar) {
+        registry.register(AiCharacterPreviewDefinition(ExampleCharacterIds.ACTOR, ExampleActorPreviews.PROVIDER))
     }
 
     /** 登記攤牌籌碼的預覽，讓牌譜回放等客戶端場景也畫得出伺服器生成的同一種物件。 */
-    override fun registerTablePropPreviews(registry: FabricTablePropPreviewRegistrar) {
+    override fun registerTablePropPreviews(registry: TablePropPreviewRegistrar) {
         registry.register(
-            definition = FabricTablePropPreviewDefinition(ExampleTablePropDefinitions.HAND_REVEAL_CHIP) { world, target ->
+            definition = TablePropPreviewDefinition(ExampleTablePropDefinitions.HAND_REVEAL_CHIP) { world, target ->
                 if (target.content != TablePropContent.CustomVariant(ExampleHandRevealChipTablePropKind.HAND_REVEALED_VARIANT)) {
                     null
                 } else {

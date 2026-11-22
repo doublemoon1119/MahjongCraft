@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.character
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterContext
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.AiCharacterContext
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatingSession
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatingSessionFactory
@@ -238,7 +238,7 @@ class AiCharacterManager internal constructor(
         } else {
             null
         }
-        val context = FabricAiCharacterContext.create(
+        val context = AiCharacterContext.create(
             world = seating.world,
             tableId = key.tableId,
             matchId = key.matchId,

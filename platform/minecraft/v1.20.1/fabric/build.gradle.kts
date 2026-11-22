@@ -16,8 +16,8 @@ publicApiAbi {
         "com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.**",
         "com.doublemoon1119.mahjongcraft.platform.fabric.api.table.**",
         "com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.**",
-        "com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtension",
-        "com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongClientExtension",
+        "com.doublemoon1119.mahjongcraft.platform.fabric.extension.NativeMahjongExtension",
+        "com.doublemoon1119.mahjongcraft.platform.fabric.extension.NativeMahjongClientExtension",
     )
 }
 

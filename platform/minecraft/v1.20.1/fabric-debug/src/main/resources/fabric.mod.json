@@ -23,7 +23,7 @@
     "mahjongcraft:client_extension": [
       {
         "adapter": "kotlin",
-        "value": "com.doublemoon1119.mahjongcraft.platform.fabric.extension.DebugFabricMahjongClientExtension"
+        "value": "com.doublemoon1119.mahjongcraft.platform.fabric.extension.DebugNativeMahjongClientExtension"
       }
     ]
   },

@@ -14,9 +14,9 @@ import com.doublemoon1119.mahjongcraft.flow.server.observer.ObserverSnapshotBroa
 import com.doublemoon1119.mahjongcraft.flow.server.room.RoomRosterChangePolicy
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.JoinExternalRoomParticipantUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.LeaveRoomUseCase
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricMahjongRooms
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomParticipant
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomVacancy
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.MahjongRooms
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.RoomParticipant
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.RoomVacancy
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.RoomStartSeating
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatingSessionFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.VehicleSeatEnvironment
@@ -192,12 +192,12 @@ internal class SeatedParticipantService(
     fun startSession(current: MinecraftServer) {
         stopSession()
         server = current
-        FabricMahjongRooms.install(::findVacancies)
+        MahjongRooms.install(::findVacancies)
     }
 
     /** 停止接收工作並清除前一世界的查詢與診斷，不移動實體。 */
     fun stopSession() {
-        FabricMahjongRooms.install(null)
+        MahjongRooms.install(null)
         server = null
         scanJob?.cancel()
         scanJob = null
@@ -216,7 +216,7 @@ internal class SeatedParticipantService(
      * @param requestedDistance 呼叫端希望採用的更小距離。
      * @return 有界的當下提示，不是預約。
      */
-    private fun findVacancies(entity: Entity, requestedDistance: Double): List<FabricRoomVacancy> {
+    private fun findVacancies(entity: Entity, requestedDistance: Double): List<RoomVacancy> {
         val current = server ?: return emptyList()
         check(current.isSameThread) { "Room discovery requires the server thread" }
         val world = entity.level() as? ServerLevel ?: return emptyList()
@@ -250,7 +250,7 @@ internal class SeatedParticipantService(
                 val seating = sessions.prepareTable(room.id) ?: return@flatMap emptySequence()
                 seating.requests.asSequence().mapIndexedNotNull { index, request ->
                     val geometry = seating.coordinator.previewSeat(world, entity, request) ?: return@mapIndexedNotNull null
-                    FabricRoomVacancy.create(room.id, room.admission.instanceId, index, geometry, true)
+                    RoomVacancy.create(room.id, room.admission.instanceId, index, geometry, true)
                 }
             }.take(RESULTS_PER_QUERY).toList()
         } finally {
@@ -562,7 +562,7 @@ internal class SeatedParticipantService(
          *
          * @property participant 經驗證描述。
          */
-        data class Eligible(val participant: FabricRoomParticipant) : ParticipantCheck
+        data class Eligible(val participant: RoomParticipant) : ParticipantCheck
 
         /** 明確不支援或未獲授權。 */
         data object Ineligible : ParticipantCheck

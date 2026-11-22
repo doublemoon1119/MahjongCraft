@@ -13,7 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.LinkageIsolatingExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.AchievementCondition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.AchievementGrantExecutor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.AchievementStatisticIds
@@ -274,7 +274,7 @@ class AchievementServiceTest {
         dispatchers = dispatchers,
         resolverRegistry = registry,
         gateway = gateway,
-        failurePolicy = FabricExtensionFailurePolicy(),
+        failurePolicy = LinkageIsolatingExtensionFailurePolicy(),
     )
 
     /**

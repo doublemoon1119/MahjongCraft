@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.character
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterHandle
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.AiCharacterHandle
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.phys.Vec3
 
@@ -13,7 +13,7 @@ import net.minecraft.world.phys.Vec3
  */
 internal class AiCharacterActor(
     val entity: Entity,
-    val handle: FabricAiCharacterHandle,
+    val handle: AiCharacterHandle,
     val capabilityId: String,
 ) {
     /** 入座後的腳底位置，用於發現被外部移走的角色。 */

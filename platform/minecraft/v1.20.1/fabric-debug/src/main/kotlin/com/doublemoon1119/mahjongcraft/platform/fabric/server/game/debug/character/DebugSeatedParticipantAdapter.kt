@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.character
 
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterHandle
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterProvider
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomParticipant
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomParticipantProvider
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.AiCharacterHandle
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.AiCharacterProvider
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.RoomParticipant
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.RoomParticipantProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterOwnership
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterPreview
@@ -28,16 +28,16 @@ internal object DebugSeatedParticipantAdapter {
     val CHARACTER: AiCharacterDefinition = AiCharacterDefinition(ID, BuiltInAiCharacters.TILE_MASCOT_NAME_KEY, null, ID, AiCharacterPreview(ID, emptyMap()))
 
     /** 只描述與驗證，不在辨識時接管或改動世界。 */
-    val PARTICIPANT: FabricRoomParticipantProvider = object : FabricRoomParticipantProvider {
-        override fun describe(entity: Entity): FabricRoomParticipant? = if (entity is ArmorStand && TAG in entity.tags) FabricRoomParticipant(CHARACTER, RandomAiStrategy.KEY) else null
+    val PARTICIPANT: RoomParticipantProvider = object : RoomParticipantProvider {
+        override fun describe(entity: Entity): RoomParticipant? = if (entity is ArmorStand && TAG in entity.tags) RoomParticipant(CHARACTER, RandomAiStrategy.KEY) else null
 
         override fun canJoin(entity: Entity, hostId: Uuid): Boolean = authorized(entity.tags, hostId)
     }
 
     /** 護甲座沒有尋路 AI，借用期間無須改動原生行為或保存旗標。 */
-    val WORLD: FabricAiCharacterProvider = FabricAiCharacterProvider { context ->
-        val actor = context.participant as? ArmorStand ?: return@FabricAiCharacterProvider null
-        object : FabricAiCharacterHandle {
+    val WORLD: AiCharacterProvider = AiCharacterProvider { context ->
+        val actor = context.participant as? ArmorStand ?: return@AiCharacterProvider null
+        object : AiCharacterHandle {
             override val entity: Entity = actor
 
             override val ownership: AiCharacterOwnership = AiCharacterOwnership.BORROWED

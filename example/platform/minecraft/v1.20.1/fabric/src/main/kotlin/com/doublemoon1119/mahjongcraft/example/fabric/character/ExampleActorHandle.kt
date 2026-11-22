@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.example.fabric.character
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity.ExampleChairSeatEntity
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity.ExampleCushionEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterHandle
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.AiCharacterHandle
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterOwnership
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
@@ -22,7 +22,7 @@ import kotlin.math.sqrt
 internal class ExampleActorHandle(
     private val actor: ExampleActorEntity,
     override val ownership: AiCharacterOwnership,
-) : FabricAiCharacterHandle {
+) : AiCharacterHandle {
     /** 本次 handle 的獨立認領身分。 */
     private val token = Any()
 

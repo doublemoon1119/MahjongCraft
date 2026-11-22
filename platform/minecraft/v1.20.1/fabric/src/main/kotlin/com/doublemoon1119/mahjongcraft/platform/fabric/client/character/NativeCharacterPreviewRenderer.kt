@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.character
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterPreviewHandle
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.AiCharacterPreviewHandle
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.CharacterPreviewImage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSource
@@ -32,7 +32,7 @@ internal class NativeCharacterPreviewRenderer(private val registry: ClientAiChar
      * @param character 提供者自行解讀的公開外觀描述。
      * @return 經檢查的預覽 handle，能力不可用時為 null。
      */
-    fun create(world: ClientLevel, character: AiCharacterDefinition): FabricAiCharacterPreviewHandle? {
+    fun create(world: ClientLevel, character: AiCharacterDefinition): AiCharacterPreviewHandle? {
         val capability = character.preview?.capabilityId ?: return null
         val provider = registry.find(capability)?.provider ?: return null
         val handle = provider.create(world, character) ?: return null

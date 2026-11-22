@@ -6,8 +6,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.bootstrap.MahjongCraftBoo
 import com.doublemoon1119.mahjongcraft.platform.fabric.development.MahjongCraftDevelopmentTools
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricServerModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.modClientModule
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.MahjongCraftExtensions
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.NativeExtensionRegistries
+import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricExtensionDiscovery
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricLoaderPlatform
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricModRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricPacketTransport
@@ -30,12 +31,13 @@ class MahjongCraftMod : ModInitializer {
         val developmentTools = MahjongCraftDevelopmentTools.discover(koin.get<MinecraftEnvironment>())
         koin.loadModules(developmentTools.flatMap { it.koinModules() })
         // Koin single 建立後，必須先於 NetworkJson 與遊戲流程服務第一次被解析前完成。
-        FabricMahjongExtensions.initialize(
+        MahjongCraftExtensions.initializeAndReport(
             coreRegistries = koin.get<CoreExtensionRegistries>(),
             presentationRegistries = koin.get<MinecraftPresentationRegistries>(),
-            fabricRegistries = koin.get<FabricExtensionRegistries>(),
+            nativeRegistries = koin.get<NativeExtensionRegistries>(),
             mahjongStoolSeatProvider = koin.get<MahjongStoolSeatProvider>(),
             failurePolicy = koin.get<ExtensionFailurePolicy>(),
+            extensions = FabricExtensionDiscovery.discover(),
         )
         MahjongCraftBootstrap(koin = koin, events = FabricServerEvents, registrar = FabricModRegistrar).initialize(developmentTools)
     }

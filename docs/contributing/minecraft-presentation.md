@@ -238,8 +238,8 @@ rules come from collisions that only showed up in game, so check them even when 
 - Client scenes that are not part of the world, such as round replays, draw props from the same
   description. A client cannot use the server kind, so register a client preview with the same
   `TablePropKindDefinition` and a factory that builds a detached entity from the public content. For
-  example, the Fabric client extension registers `FabricTablePropPreviewDefinition` values through
-  `FabricTablePropPreviewRegistrar`. The framework owns and discards the entity and sets its position.
+  example, the Fabric client extension registers `TablePropPreviewDefinition` values through
+  `TablePropPreviewRegistrar`. The framework owns and discards the entity and sets its position.
   A kind without a client preview is not drawn there and takes no space.
 - The layout checks rotated bounds in all three dimensions, including collisions between seat and
   central props. Touching layers are allowed. Central allocation is deterministic and bounded, not an
@@ -270,14 +270,14 @@ actual wall tile or reroll it when creating a world entity.
 ### Joining with an existing seated actor
 
 An integration can let an entity that already lives in the world join a waiting room. For example,
-a Fabric adapter implements `FabricMahjongExtension.registerRoomParticipants` and registers a
-`FabricRoomParticipantDefinition` through the supplied registrar.
+a Fabric adapter implements `NativeMahjongExtension.registerRoomParticipants` and registers a
+`RoomParticipantDefinition` through the supplied registrar.
 
 | Step | Integration responsibility | MahjongCraft responsibility |
 | --- | --- | --- |
 | Recognize | `describe` identifies a supported actor and supplies its current character description and default strategy | Validate the registered character, world capability and strategy |
 | Authorize | `canJoin` checks the actor owner's permission and whether its current work allows mahjong | Check room admission, exclusions, capacity, its actual seat and unique room/game ownership |
-| Start | The world provider borrows exactly `FabricAiCharacterContext.participant` | Recheck the seat and freeze the match description |
+| Start | The world provider borrows exactly `AiCharacterContext.participant` | Recheck the seat and freeze the match description |
 | Release | Restore any temporarily changed native behavior | Release the binding; never delete, replace or forcibly dismount a borrowed participant |
 
 Waiting positions and match seats are separate. An eligible actor can join while seated at any of
@@ -338,7 +338,7 @@ exclusions. Removing a generated, unbound AI does not create a meaningless rejoi
 
 ### Finding a vacant seat
 
-For example, server-side Fabric integration code can call `FabricMahjongRooms.findVacancies` with
+For example, server-side Fabric integration code can call `MahjongRooms.findVacancies` with
 its actual loaded entity. The entity's position and authorization are verified by the server.
 There is no client request for arbitrary coordinates, entity UUIDs or a global room directory.
 
@@ -349,7 +349,7 @@ There is no client request for arbitrary coordinates, entity UUIDs or a global r
   to reveal its location. Rejected rooms do not return a more detailed reason.
 - Work and output are bounded: currently one query per actor per 20 ticks, 16 queries per server tick,
   32 table candidates and eight results per query. These are runtime limits, not reserved capacity.
-- A `FabricRoomVacancy` is a hint, not a reservation. Results describe verified furniture at waiting sides, not final member indices. Moving, sitting down
+- A `RoomVacancy` is a hint, not a reservation. Results describe verified furniture at waiting sides, not final member indices. Moving, sitting down
   and starting must still pass the current checks. Do not forward discovery results to a client
   without a separate reason that client may see them.
 
@@ -375,9 +375,9 @@ model previews. Only the host receives excluded actors' names and faces; ordinar
 neither. The list is bounded, and reaching its limit rejects a new exclusion instead of dropping an
 old one. Allow-all is one host-authorized transaction and does not join or move anyone.
 
-For example, a Fabric integration supplies a separate `FabricMahjongClientExtension` through the
-`mahjongcraft:client_extension` entrypoint. It registers `FabricAiCharacterPreviewDefinition` values
-through `FabricAiCharacterPreviewRegistrar`. Keep this entrypoint and all native client types out of
+For example, a Fabric integration supplies a separate `NativeMahjongClientExtension` through the
+`mahjongcraft:client_extension` entrypoint. It registers `AiCharacterPreviewDefinition` values
+through `AiCharacterPreviewRegistrar`. Keep this entrypoint and all native client types out of
 the server extension. Third-party integrations do not need MahjongCraft's dependency injection.
 
 Room model cards draw entities directly. Human players and other characters use the same whole-model
@@ -434,8 +434,8 @@ replacement for testing another mod's ownership, behavior restoration and furnit
 
 ### Providing a world character
 
-For example, a Fabric adapter registers a `FabricAiCharacterCapabilityDefinition` through
-`FabricMahjongExtension.registerAiCharacterCapabilities`. Its ID matches the character definition's
+For example, a Fabric adapter registers an `AiCharacterCapabilityDefinition` through
+`NativeMahjongExtension.registerAiCharacterCapabilities`. Its ID matches the character definition's
 `worldCapabilityId`. The built-in Mahjong Bot uses the same registration and seating path.
 Third-party integrations do not need access to MahjongCraft's dependency injection.
 
@@ -500,7 +500,7 @@ A seat provider finds a seat that already exists. A seat placement provider expl
 creates one. Register the two capabilities separately; do not infer block or entity placement from
 an existing-seat provider.
 
-For example, a Fabric extension registers a `FabricSeatPlacementDefinition` through
+For example, a Fabric extension registers a `SeatPlacementDefinition` through
 `registerSeatPlacements`. Its provider matches the held item on either side without changing it,
 then places it only on the server thread. Higher priority wins; ties use the complete ID. A failed
 attempt does not fall through to another provider.
@@ -508,7 +508,7 @@ attempt does not fall through to another provider.
 - The target is the clicked character's current match and assigned seat. Never accept a client-supplied
   table, participant or placement position. Reject stale bindings, occupied riders, excessive distance,
   missing chunks, blocked space and missing modification permissions.
-- Use the actual player and interaction hand. `FabricSeatPlacementContext.placeBlockItem` preserves
+- Use the actual player and interaction hand. `SeatPlacementContext.placeBlockItem` preserves
   the BlockItem placement callbacks, block-use veto and normal creative/survival consumption. Its yaw
   parameter is the placement view, not necessarily the resulting block facing; the provider owns that
   conversion. Entity seats implement their own normal placement path and check their full footprint.
@@ -648,7 +648,7 @@ check and maintain public APIs. This section lists the Minecraft contracts; each
   `MahjongCraftInternalApi` annotation.
 - Loader adapters protect their declared event, character, seating, table, table-prop and registration contracts. For
   example, the Fabric 1.20.1 adapter protects `api.event`, `api.character`, `api.seating`, `api.table`, `api.tableprop` and
-  `api.registration`, plus the exact `FabricMahjongExtension` and `FabricMahjongClientExtension` entrypoints.
+  `api.registration`, plus the exact `NativeMahjongExtension` and `NativeMahjongClientExtension` entrypoints.
 - A new loader or version adapter declares its own protected scope and baseline. An existing adapter's
   baseline does not establish binary compatibility with another Minecraft version or loader.
 

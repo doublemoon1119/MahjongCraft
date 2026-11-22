@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.LinkageIsolatingExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.animation.FabricDebugAnimationCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugDecisionActionIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.FabricDebugDecisionCommand
@@ -243,12 +243,12 @@ class DebugDevelopmentAssemblyTest {
                 extensionActionRegistry = core.gameActionAiRegistry,
                 opponentModelRegistry = core.opponentModelRegistry,
             ),
-            failurePolicy = FabricExtensionFailurePolicy(),
+            failurePolicy = LinkageIsolatingExtensionFailurePolicy(),
         )
         MinecraftMahjongExtensionBootstrap.registerAndFreeze(
             extensions = BundledMinecraftMahjongExtensions.all + extension,
             registries = koin.get<MinecraftPresentationRegistries>(),
-            failurePolicy = FabricExtensionFailurePolicy(),
+            failurePolicy = LinkageIsolatingExtensionFailurePolicy(),
         )
         return sources
     }

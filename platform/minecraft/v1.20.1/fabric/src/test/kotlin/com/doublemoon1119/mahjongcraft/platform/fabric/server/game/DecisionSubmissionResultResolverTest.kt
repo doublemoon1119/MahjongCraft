@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.LinkageIsolatingExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultKindDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.resolveFinalDecisionSubmission
 import kotlinx.coroutines.CancellationException
@@ -43,7 +43,7 @@ class DecisionSubmissionResultResolverTest {
     /** 類別連結錯誤由 Fabric 判斷規則隔離成 REJECTED；記憶體不足等嚴重錯誤原樣往外傳。 */
     @Test
     fun `test linkage errors are rejected and fatal errors are rethrown`() = runTest {
-        val policy = FabricExtensionFailurePolicy()
+        val policy = LinkageIsolatingExtensionFailurePolicy()
 
         val result = resolveFinalDecisionSubmission(failurePolicy = policy) { throw NoClassDefFoundError("com/example/Missing") }
 

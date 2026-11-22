@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.character
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterHandle
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.AiCharacterHandle
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongBotEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterOwnership
@@ -13,7 +13,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatReques
  */
 internal class TileMascotCharacterHandle(
     override val entity: MahjongBotEntity,
-) : FabricAiCharacterHandle {
+) : AiCharacterHandle {
     override val ownership: AiCharacterOwnership = AiCharacterOwnership.OWNED
 
     override fun prepare(): Boolean = !entity.isRemoved

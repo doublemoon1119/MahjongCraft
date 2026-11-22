@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.FabricTablePropKind
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.TablePropKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.TablePropTileEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.prop.TablePropTileFaceCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropDefinitions
@@ -24,7 +24,7 @@ import kotlin.uuid.Uuid
 internal class FaceUpTileTablePropKind(
     private val tileAssets: MinecraftTileAssetRegistry,
     private val faceCodec: TablePropTileFaceCodec,
-) : FabricTablePropKind {
+) : TablePropKind {
     override val definition = BuiltInTablePropDefinitions.FACE_UP_TILE
 
     override fun ruleModuleIdOf(entity: Entity): String? = (entity as? TablePropTileEntity)?.tablePropRuleModuleId?.takeIf(String::isNotBlank)

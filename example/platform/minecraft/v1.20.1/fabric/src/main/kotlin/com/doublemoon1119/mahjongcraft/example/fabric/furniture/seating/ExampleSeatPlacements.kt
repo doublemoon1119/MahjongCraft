@@ -3,9 +3,9 @@ package com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurniture
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureIds
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.block.ExampleBenchPlacement
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatPlacementContext
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatPlacementDefinition
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatPlacementProvider
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.SeatPlacementContext
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.SeatPlacementDefinition
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.SeatPlacementProvider
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.ItemStack
@@ -18,31 +18,31 @@ internal object ExampleSeatPlacements {
      *
      * @return 三種座位物品的放置能力。
      */
-    fun definitions(): List<FabricSeatPlacementDefinition> = listOf(
-        FabricSeatPlacementDefinition(ExampleFurnitureIds.CHAIR, Chair),
-        FabricSeatPlacementDefinition(ExampleFurnitureIds.CUSHION, Cushion),
-        FabricSeatPlacementDefinition(ExampleFurnitureIds.BENCH, Bench),
+    fun definitions(): List<SeatPlacementDefinition> = listOf(
+        SeatPlacementDefinition(ExampleFurnitureIds.CHAIR, Chair),
+        SeatPlacementDefinition(ExampleFurnitureIds.CUSHION, Cushion),
+        SeatPlacementDefinition(ExampleFurnitureIds.BENCH, Bench),
     )
 
     /** 方塊椅子沿用 BlockItem 的放置與扣物品流程。 */
-    private object Chair : FabricSeatPlacementProvider {
+    private object Chair : SeatPlacementProvider {
         override fun supports(stack: ItemStack): Boolean = stack.`is`(ExampleFurniture.chairItem)
 
-        override fun place(context: FabricSeatPlacementContext): Boolean = context.placeBlockItem(context.request.seat.yaw)
+        override fun place(context: SeatPlacementContext): Boolean = context.placeBlockItem(context.request.seat.yaw)
     }
 
     /** 放置視角與開口相反，讓成功放置的長凳朝向指定席位。 */
-    private object Bench : FabricSeatPlacementProvider {
+    private object Bench : SeatPlacementProvider {
         override fun supports(stack: ItemStack): Boolean = stack.`is`(BuiltInRegistries.ITEM.get(ResourceLocation(ExampleFurnitureIds.BENCH)))
 
-        override fun place(context: FabricSeatPlacementContext): Boolean = context.placeBlockItem(ExampleBenchPlacement.playerYaw(context.request.seat.yaw))
+        override fun place(context: SeatPlacementContext): Boolean = context.placeBlockItem(ExampleBenchPlacement.playerYaw(context.request.seat.yaw))
     }
 
     /** 坐墊使用一般放置時相同的支撐、空間與耗材邏輯。 */
-    private object Cushion : FabricSeatPlacementProvider {
+    private object Cushion : SeatPlacementProvider {
         override fun supports(stack: ItemStack): Boolean = stack.`is`(ExampleFurniture.cushionItem)
 
-        override fun place(context: FabricSeatPlacementContext): Boolean {
+        override fun place(context: SeatPlacementContext): Boolean {
             if (!context.allowsBlockUse()) return false
             val seat = context.request.seat
             return ExampleCushionPlacement.place(

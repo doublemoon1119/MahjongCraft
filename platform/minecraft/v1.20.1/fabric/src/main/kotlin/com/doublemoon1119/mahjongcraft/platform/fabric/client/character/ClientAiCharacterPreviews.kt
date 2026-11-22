@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.character
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterPreviewHandle
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.AiCharacterPreviewHandle
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.CharacterPreviewCache
@@ -220,7 +220,7 @@ internal class ClientAiCharacterPreviews(
      *
      * @property handle 已驗證的獨立預覽資源。
      */
-    private inner class PreviewModel(val handle: FabricAiCharacterPreviewHandle) : AutoCloseable {
+    private inner class PreviewModel(val handle: AiCharacterPreviewHandle) : AutoCloseable {
         /** 隔離提供者清理失敗，其他快取項目仍能釋放。 */
         override fun close() {
             attempt(null) { handle.close() }

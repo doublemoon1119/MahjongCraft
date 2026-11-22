@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.seating
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatPlacementContext
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.SeatPlacementContext
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.AiCharacterBindings
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.AiCharacterManager
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterBindingKey
@@ -98,7 +98,7 @@ internal class AiSeatPlacementService(
             val index = roster.indexOf(key.playerId)
             if (index < 0) return InteractionResult.FAIL
             val seating = sessions.prepare(key.tableId, roster) ?: return InteractionResult.FAIL
-            val context = FabricSeatPlacementContext.create(
+            val context = SeatPlacementContext.create(
                 world = world,
                 player = player,
                 hand = hand,

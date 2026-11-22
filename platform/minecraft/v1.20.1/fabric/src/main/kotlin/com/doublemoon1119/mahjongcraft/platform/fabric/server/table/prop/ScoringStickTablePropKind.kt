@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.FabricTablePropKind
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.TablePropKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDenomination
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropDefinitions
@@ -16,7 +16,7 @@ import kotlin.uuid.Uuid
  *
  * 變體是面額的點數字串（例如 `"1000"`），對應 [MahjongScoringStickDenomination.points]。
  */
-object ScoringStickTablePropKind : FabricTablePropKind {
+object ScoringStickTablePropKind : TablePropKind {
     override val definition = BuiltInTablePropDefinitions.SCORING_STICK
 
     override fun placementIdOf(entity: Entity): String? = (entity as? MahjongScoringStickEntity)?.tablePropPlacementId?.takeIf { it.isNotBlank() }

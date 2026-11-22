@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFac
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.CommittedFactsListener
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.event.FabricGameEventContexts
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.event.GameEventContexts
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventDelivery
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventDeliveryReporter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventLocationSource
@@ -141,7 +141,7 @@ class CommittedFactsDispatcher(
         session = Session(sessionId, delivery)
         activeSession.store(session)
         serverProvider?.let { provider ->
-            FabricGameEventContexts.install(provider) { context ->
+            GameEventContexts.install(provider) { context ->
                 activeSession.load() === session && delivery.belongsToSession(context, sessionId)
             }
         }
@@ -156,7 +156,7 @@ class CommittedFactsDispatcher(
         val session = activeSession.exchange(null) ?: return
         store.setCommittedFactsListener(CommittedFactsListener.NONE)
         session.delivery.stopSession(session.sessionId)
-        FabricGameEventContexts.clear()
+        GameEventContexts.clear()
         exclusions.clear()
     }
 

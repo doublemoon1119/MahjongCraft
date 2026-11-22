@@ -1,12 +1,12 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.character
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterCapabilityDefinition
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricAiCharacterCapabilityRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.AiCharacterCapabilityDefinition
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.AiCharacterCapabilityRegistrar
 
 /** 保存初始化期間登記的角色能力，執行期只提供查詢。 */
-internal class AiCharacterCapabilityRegistry : FabricAiCharacterCapabilityRegistrar {
+internal class AiCharacterCapabilityRegistry : AiCharacterCapabilityRegistrar {
     /** 依完整識別碼保存能力。 */
-    private val definitions = linkedMapOf<String, FabricAiCharacterCapabilityDefinition>()
+    private val definitions = linkedMapOf<String, AiCharacterCapabilityDefinition>()
 
     override val registrationKeys: Set<String>
         get() = definitions.keys.toSet()
@@ -14,7 +14,7 @@ internal class AiCharacterCapabilityRegistry : FabricAiCharacterCapabilityRegist
     override var isFrozen: Boolean = false
         private set
 
-    override fun register(definition: FabricAiCharacterCapabilityDefinition) {
+    override fun register(definition: AiCharacterCapabilityDefinition) {
         check(!isFrozen) { "Character capability registry is frozen" }
         require(definitions.putIfAbsent(definition.id, definition) == null) { "Duplicate character capability: ${definition.id}" }
     }
@@ -25,7 +25,7 @@ internal class AiCharacterCapabilityRegistry : FabricAiCharacterCapabilityRegist
      * @param id 完整能力識別碼。
      * @return 登記的能力，否則為 null。
      */
-    fun find(id: String): FabricAiCharacterCapabilityDefinition? = definitions[id]
+    fun find(id: String): AiCharacterCapabilityDefinition? = definitions[id]
 
     /** 初始化完成後停止登記。 */
     fun freeze() {

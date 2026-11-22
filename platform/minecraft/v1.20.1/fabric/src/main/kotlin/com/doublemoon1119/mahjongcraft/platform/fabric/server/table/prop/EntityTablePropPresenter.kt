@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.FabricTablePropKind
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.TablePropKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
@@ -99,7 +99,7 @@ class EntityTablePropPresenter(
         }
         var existing = emptyList<ManagedProp>()
         val spawned = mutableListOf<Entity>()
-        val preparedKinds = mutableMapOf<Entity, FabricTablePropKind>()
+        val preparedKinds = mutableMapOf<Entity, TablePropKind>()
         try {
             existing = findManagedProps(world, presentation.tableId, controllerPos)
             scenes[presentation.tableId] = presentation
@@ -235,7 +235,7 @@ class EntityTablePropPresenter(
      * @property entity 桌上已存在的 Minecraft entity。
      */
     private class ManagedProp(
-        val kind: FabricTablePropKind,
+        val kind: TablePropKind,
         val entity: Entity,
     ) {
         /**

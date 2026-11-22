@@ -27,11 +27,11 @@ import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegis
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterCapabilityDefinition
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomParticipantDefinition
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricAiCharacterCapabilityRegistrar
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricRoomParticipantRegistrar
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.AiCharacterCapabilityDefinition
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.RoomParticipantDefinition
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.AiCharacterCapabilityRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.RoomParticipantRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.NativeMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.character.DebugSeatedParticipantAdapter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugDecisionActionIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugNotenDeclarationRuleDecisionResolver
@@ -86,19 +86,19 @@ internal class DebugMahjongExtension(
     private val winRoundContinuationState: DebugWinRoundContinuationState = GlobalContext.get().get(),
 ) : MahjongExtension,
     MinecraftMahjongExtension,
-    FabricMahjongExtension {
+    NativeMahjongExtension {
     override val id: String = MahjongCraftMetadata.id("debug")
 
     override fun registerAiCharacters(registry: AiCharacterRegistrar) {
         registry.register(DebugSeatedParticipantAdapter.CHARACTER)
     }
 
-    override fun registerAiCharacterCapabilities(registry: FabricAiCharacterCapabilityRegistrar) {
-        registry.register(FabricAiCharacterCapabilityDefinition(DebugSeatedParticipantAdapter.ID, DebugSeatedParticipantAdapter.WORLD))
+    override fun registerAiCharacterCapabilities(registry: AiCharacterCapabilityRegistrar) {
+        registry.register(AiCharacterCapabilityDefinition(DebugSeatedParticipantAdapter.ID, DebugSeatedParticipantAdapter.WORLD))
     }
 
-    override fun registerRoomParticipants(registry: FabricRoomParticipantRegistrar) {
-        registry.register(FabricRoomParticipantDefinition(DebugSeatedParticipantAdapter.ID, DebugSeatedParticipantAdapter.PARTICIPANT))
+    override fun registerRoomParticipants(registry: RoomParticipantRegistrar) {
+        registry.register(RoomParticipantDefinition(DebugSeatedParticipantAdapter.ID, DebugSeatedParticipantAdapter.PARTICIPANT))
     }
 
     override fun registerRuleModules(registry: MahjongModuleRegistrar) {

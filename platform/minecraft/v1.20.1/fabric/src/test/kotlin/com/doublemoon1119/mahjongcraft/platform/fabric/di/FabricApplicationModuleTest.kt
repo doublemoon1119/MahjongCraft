@@ -54,9 +54,9 @@ import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.LinkageIsolatingExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.MahjongCraftExtensions
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.NativeExtensionRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.RuntimeMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.ServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerLifecycleAppCoroutineScope
@@ -206,12 +206,12 @@ class FabricApplicationModuleTest {
             }
         }
 
-        val result = FabricMahjongExtensions.initialize(
+        val result = MahjongCraftExtensions.initialize(
             coreRegistries = koin.get<CoreExtensionRegistries>(),
             presentationRegistries = koin.get<MinecraftPresentationRegistries>(),
-            fabricRegistries = koin.get<FabricExtensionRegistries>(),
+            nativeRegistries = koin.get<NativeExtensionRegistries>(),
             mahjongStoolSeatProvider = koin.get<MahjongStoolSeatProvider>(),
-            failurePolicy = FabricExtensionFailurePolicy(),
+            failurePolicy = LinkageIsolatingExtensionFailurePolicy(),
             extensions = listOf(extension),
         )
 
@@ -264,20 +264,20 @@ class FabricApplicationModuleTest {
         assertFalse(gameActionAiRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertFalse(gameActionCommandFactoryRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertFalse(gameCommandRegistry.isRegistered(RiichiGameCommand::class))
-        val result = FabricMahjongExtensions.initialize(
+        val result = MahjongCraftExtensions.initialize(
             coreRegistries = coreRegistries,
             presentationRegistries = presentationRegistries,
-            fabricRegistries = koin.get<FabricExtensionRegistries>(),
+            nativeRegistries = koin.get<NativeExtensionRegistries>(),
             mahjongStoolSeatProvider = koin.get<MahjongStoolSeatProvider>(),
-            failurePolicy = FabricExtensionFailurePolicy(),
+            failurePolicy = LinkageIsolatingExtensionFailurePolicy(),
             extensions = emptyList(),
         )
 
         val seatProviders = koin.get<SeatProviderRegistryImpl>()
-        val fabricRegistries = koin.get<FabricExtensionRegistries>()
-        assertSame(koin.get<TablePropKindRegistry>(), fabricRegistries.tablePropKindRegistry)
-        assertSame(seatProviders, fabricRegistries.seatProviderRegistry)
-        assertSame(fabricRegistries, koin.get<FabricExtensionRegistries>())
+        val nativeRegistries = koin.get<NativeExtensionRegistries>()
+        assertSame(koin.get<TablePropKindRegistry>(), nativeRegistries.tablePropKindRegistry)
+        assertSame(seatProviders, nativeRegistries.seatProviderRegistry)
+        assertSame(nativeRegistries, koin.get<NativeExtensionRegistries>())
         assertTrue(seatProviders.isFrozen)
         assertSame(
             expected = koin.get<MahjongStoolSeatProvider>(),
@@ -507,7 +507,7 @@ class FabricApplicationModuleTest {
         koin.get<MinecraftEnvironment>()
         koin.get<ClientMahjongStateStore>()
         koin.get<MahjongClientConfigStore>()
-        assertNull(koin.getOrNull<FabricExtensionRegistries>())
+        assertNull(koin.getOrNull<NativeExtensionRegistries>())
     }
 
     /** 只以介面取用的服務，在 client 依賴圖（含 integrated server）中解析到預期的實作，且與實作型別取得的是同一個 single。 */

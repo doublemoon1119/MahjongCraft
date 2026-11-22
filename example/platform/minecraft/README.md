@@ -138,7 +138,7 @@ bot's assigned seat, then the bot sits down. The built-in stools use the same me
 - If the seat was placed but the bot could not sit, the seat remains and a message explains the result.
 - Other entities and unrelated items retain their normal interaction. Sneaking skips this shortcut.
 
-`ExampleSeatPlacements` demonstrates `FabricSeatPlacementProvider` for block furniture and an entity
+`ExampleSeatPlacements` demonstrates `SeatPlacementProvider` for block furniture and an entity
 item. The cushion shares its normal placement function with this shortcut. Its existing-seat provider
 is registered separately and remains responsible for validating the actual sitting position.
 

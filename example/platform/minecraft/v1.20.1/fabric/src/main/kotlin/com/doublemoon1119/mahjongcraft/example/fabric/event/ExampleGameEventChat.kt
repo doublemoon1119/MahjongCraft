@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.api.event.MatchStanding
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchStartedEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundScoreChange
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettledEvent
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.event.FabricGameEventContexts
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.event.GameEventContexts
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.GameEventContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MahjongCraftEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MatchEndedListener
@@ -63,7 +63,7 @@ object ExampleGameEventChat {
     /** 將訊息送給目前有管理權限的在線玩家。 */
     private fun deliver(context: GameEventContext, message: (MinecraftServer) -> MutableComponent) {
         val server = try {
-            FabricGameEventContexts.server(context)
+            GameEventContexts.server(context)
         } catch (_: IllegalStateException) {
             return
         }
