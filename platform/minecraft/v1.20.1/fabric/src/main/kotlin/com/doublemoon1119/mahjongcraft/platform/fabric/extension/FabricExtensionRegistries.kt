@@ -31,24 +31,24 @@ internal class FabricExtensionRegistries(
      */
     fun registrationSnapshot(): ExtensionRegistrationSnapshot = ExtensionRegistrationSnapshot(
         categories = listOf(
-            ExtensionRegistrationSnapshotCategory(FabricExtensionRegistrationCategoryIds.ROOM_PARTICIPANT, "Room Participant", roomParticipantRegistry.registrationKeys),
+            ExtensionRegistrationSnapshotCategory(ExtensionRegistrationCategoryIds.ROOM_PARTICIPANT, "Room Participant", roomParticipantRegistry.registrationKeys),
             ExtensionRegistrationSnapshotCategory(
-                id = FabricExtensionRegistrationCategoryIds.TABLE_PROP_KIND,
+                id = ExtensionRegistrationCategoryIds.TABLE_PROP_KIND,
                 displayName = "Table Prop Kind",
                 registrationKeys = tablePropKindRegistry.registrationKeys,
             ),
             ExtensionRegistrationSnapshotCategory(
-                id = FabricExtensionRegistrationCategoryIds.SEAT_PROVIDER,
+                id = ExtensionRegistrationCategoryIds.SEAT_PROVIDER,
                 displayName = "Seat Provider",
                 registrationKeys = seatProviderRegistry.registrationKeys,
             ),
             ExtensionRegistrationSnapshotCategory(
-                id = FabricExtensionRegistrationCategoryIds.AI_CHARACTER_CAPABILITY,
+                id = ExtensionRegistrationCategoryIds.AI_CHARACTER_CAPABILITY,
                 displayName = "AI Character Capability",
                 registrationKeys = characterCapabilityRegistry.registrationKeys,
             ),
             ExtensionRegistrationSnapshotCategory(
-                id = FabricExtensionRegistrationCategoryIds.SEAT_PLACEMENT,
+                id = ExtensionRegistrationCategoryIds.SEAT_PLACEMENT,
                 displayName = "Seat Placement",
                 registrationKeys = seatPlacementRegistry.registrationKeys,
             ),

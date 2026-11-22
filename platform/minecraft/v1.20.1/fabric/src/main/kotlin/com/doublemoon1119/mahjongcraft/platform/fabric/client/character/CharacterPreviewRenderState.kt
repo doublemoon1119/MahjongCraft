@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.character
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.mixin.client.EntityRenderDispatcherAccessor
 import com.mojang.blaze3d.platform.GlStateManager
 import com.mojang.blaze3d.systems.RenderSystem
 import com.mojang.blaze3d.vertex.PoseStack
@@ -21,10 +20,10 @@ internal class CharacterPreviewRenderState : AutoCloseable {
     private val rotation = Quaternionf(dispatcher.cameraOrientation())
 
     /** 原本的陰影開關。 */
-    private val shadows = (dispatcher as EntityRenderDispatcherAccessor).`mahjongcraft$getShouldRenderShadow`()
+    private val shadows = dispatcher.shouldRenderShadow
 
     /** 原本的除錯框開關。 */
-    private val hitboxes = (dispatcher as EntityRenderDispatcherAccessor).`mahjongcraft$getRenderHitBoxes`()
+    private val hitboxes = dispatcher.shouldRenderHitBoxes()
 
     /** 原本的投影，不占用 RenderSystem 的單一備份欄位。 */
     private val projection = Matrix4f(RenderSystem.getProjectionMatrix())

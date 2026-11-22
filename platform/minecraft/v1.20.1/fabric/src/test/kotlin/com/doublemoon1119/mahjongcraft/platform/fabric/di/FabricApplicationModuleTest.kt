@@ -66,6 +66,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DecisionTimer
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.TableLocationPersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.PlayerConnectionLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.AiSeatPlacementService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatProviderRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TableLifecycleService
@@ -91,6 +92,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPre
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileSetAsideDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.BlockUseInterception
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.LoaderPlatform
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.config.ServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.GameActionCandidateResolver
@@ -480,7 +482,7 @@ class FabricApplicationModuleTest {
     }
 
     /**
-     * 與載入器無關的 server 與 client 模組，只要再提供載入器資訊與擴充失敗判斷就能組出完整服務，
+     * 與載入器無關的 server 與 client 模組，只要再提供載入器資訊、擴充失敗判斷與方塊使用攔截就能組出完整服務，
      * 且不含 Fabric 擴充登記使用的集合。
      */
     @Test
@@ -488,6 +490,7 @@ class FabricApplicationModuleTest {
         val loaderModule = module {
             single<LoaderPlatform> { TestLoaderPlatform }
             single<ExtensionFailurePolicy> { ExtensionFailurePolicy.Default }
+            single<BlockUseInterception> { BlockUseInterception { _, _, _, _ -> true } }
         }
         val koin = startKoin {
             allowOverride(false)
@@ -497,6 +500,7 @@ class FabricApplicationModuleTest {
         koin.get<GameFlowCoordinator>()
         koin.get<MahjongTableRoomService>()
         koin.get<PlayerConnectionLifecycleService>()
+        koin.get<AiSeatPlacementService>()
         koin.get<CoreExtensionRegistries>()
         koin.get<MinecraftPresentationRegistries>()
         koin.get<RuntimeMetadata>()

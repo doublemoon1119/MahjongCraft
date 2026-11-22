@@ -1,14 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.api.seating
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.BlockUseInterception
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatCollisionPolicy
-import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.InteractionHand
-import net.minecraft.world.InteractionResult
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.item.BlockItem
@@ -26,6 +25,7 @@ import net.minecraft.world.phys.Vec3
  * @property hand 觸發互動的手；耗材只來自這隻手。
  * @property rider 即將入座的角色，不得改變其身分或移往其他位置。
  * @property request MahjongCraft 決定的固定席位。
+ * @property blockUse 載入器的方塊使用攔截，讓其他模組有機會拒絕放置。
  */
 class FabricSeatPlacementContext private constructor(
     val world: ServerLevel,
@@ -33,6 +33,7 @@ class FabricSeatPlacementContext private constructor(
     val hand: InteractionHand,
     val rider: Entity,
     val request: SeatRequest,
+    private val blockUse: BlockUseInterception,
 ) {
     /** 固定席位腳底所在的方塊位置。 */
     val blockPos: BlockPos
@@ -87,13 +88,7 @@ class FabricSeatPlacementContext private constructor(
     fun allowsBlockUse(): Boolean {
         val stack = player.getItemInHand(hand)
         val before = stack.copy()
-        val result = UseBlockCallback.EVENT.invoker().interact(
-            player,
-            world,
-            hand,
-            supportHit(),
-        )
-        return result == InteractionResult.PASS &&
+        return blockUse.allows(player = player, world = world, hand = hand, hit = supportHit()) &&
             rider.isAlive &&
             rider.level() === world &&
             canModify(AABB(blockPos)) &&
@@ -152,6 +147,7 @@ class FabricSeatPlacementContext private constructor(
          * @param hand 互動手。
          * @param rider 即將入座的角色。
          * @param request 固定席位。
+         * @param blockUse 載入器的方塊使用攔截。
          * @return 本次回呼資料。
          */
         @JvmSynthetic
@@ -161,12 +157,14 @@ class FabricSeatPlacementContext private constructor(
             hand: InteractionHand,
             rider: Entity,
             request: SeatRequest,
+            blockUse: BlockUseInterception,
         ): FabricSeatPlacementContext = FabricSeatPlacementContext(
             world = world,
             player = player,
             hand = hand,
             rider = rider,
             request = request,
+            blockUse = blockUse,
         )
     }
 }

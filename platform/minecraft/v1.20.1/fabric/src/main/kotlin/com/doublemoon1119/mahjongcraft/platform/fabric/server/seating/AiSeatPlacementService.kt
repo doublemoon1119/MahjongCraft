@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatPla
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.AiCharacterBindings
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.AiCharacterManager
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterBindingKey
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.BlockUseInterception
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.C2SRateLimits
@@ -33,6 +34,7 @@ import kotlin.uuid.toKotlinUuid
  * @property characters 入座與角色回饋。
  * @property registry 已凍結的物品放置能力。
  * @property failurePolicy 第三方失敗的隔離政策。
+ * @property blockUse 載入器的方塊使用攔截，交給放置情境使用。
  */
 internal class AiSeatPlacementService(
     private val bindings: AiCharacterBindings,
@@ -41,6 +43,7 @@ internal class AiSeatPlacementService(
     private val characters: AiCharacterManager,
     private val registry: SeatPlacementRegistry,
     private val failurePolicy: ExtensionFailurePolicy,
+    private val blockUse: BlockUseInterception,
 ) {
     /** 依既有請求保護限制每位玩家的互動頻率。 */
     private val limiter = PlayerRequestRateLimiter(C2SRateLimits.seatPlacement)
@@ -101,6 +104,7 @@ internal class AiSeatPlacementService(
                 hand = hand,
                 rider = entity,
                 request = seating.requests[index],
+                blockUse = blockUse,
             )
             val result = coordinator.attempt(
                 key = key,

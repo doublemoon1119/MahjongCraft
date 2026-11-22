@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSnapshot
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSnapshotCategory
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropPreviewRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.FabricTablePropPreviewDefinition
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistrationCategoryIds
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.ExtensionRegistrationCategoryIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropKindDefinition
 
 /** 客戶端自己的桌上物件預覽登記表，凍結前不執行任何工廠。 */
@@ -40,7 +40,7 @@ internal class ClientTablePropPreviewRegistry : FabricTablePropPreviewRegistrar 
      * @return 可比較來源增量的登記快照。
      */
     fun registrationSnapshot(): ExtensionRegistrationSnapshot = ExtensionRegistrationSnapshot(
-        categories = listOf(ExtensionRegistrationSnapshotCategory(FabricExtensionRegistrationCategoryIds.TABLE_PROP_PREVIEW, "Table Prop Preview", registrationKeys)),
+        categories = listOf(ExtensionRegistrationSnapshotCategory(ExtensionRegistrationCategoryIds.TABLE_PROP_PREVIEW, "Table Prop Preview", registrationKeys)),
     )
 
     /** 全部回呼成功後結束登記。 */

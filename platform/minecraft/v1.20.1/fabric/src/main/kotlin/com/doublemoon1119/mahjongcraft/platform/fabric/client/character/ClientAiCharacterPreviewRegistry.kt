@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSnapshot
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSnapshotCategory
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterPreviewDefinition
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricAiCharacterPreviewRegistrar
-import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistrationCategoryIds
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.ExtensionRegistrationCategoryIds
 
 /** 客戶端自己的預覽登記表，凍結前不執行任何工廠。 */
 internal class ClientAiCharacterPreviewRegistry : FabricAiCharacterPreviewRegistrar {
@@ -36,7 +36,7 @@ internal class ClientAiCharacterPreviewRegistry : FabricAiCharacterPreviewRegist
      * @return 可比較來源增量的登記快照。
      */
     fun registrationSnapshot(): ExtensionRegistrationSnapshot = ExtensionRegistrationSnapshot(
-        categories = listOf(ExtensionRegistrationSnapshotCategory(FabricExtensionRegistrationCategoryIds.AI_CHARACTER_PREVIEW, "AI Character Preview", registrationKeys)),
+        categories = listOf(ExtensionRegistrationSnapshotCategory(ExtensionRegistrationCategoryIds.AI_CHARACTER_PREVIEW, "AI Character Preview", registrationKeys)),
     )
 
     /** 全部回呼成功後結束登記。 */

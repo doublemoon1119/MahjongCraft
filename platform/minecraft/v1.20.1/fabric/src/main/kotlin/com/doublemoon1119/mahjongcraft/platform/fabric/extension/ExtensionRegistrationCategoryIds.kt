@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
-/** Fabric extension 登記報告使用的分類識別碼。 */
-internal object FabricExtensionRegistrationCategoryIds {
+/** 擴充登記報告使用的分類識別碼。 */
+internal object ExtensionRegistrationCategoryIds {
     /** 客戶端獨立角色預覽分類。 */
     const val AI_CHARACTER_PREVIEW: String = "mahjongcraft:ai_character_preview"
 

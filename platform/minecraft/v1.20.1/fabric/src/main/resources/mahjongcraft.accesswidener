@@ -21,3 +21,4 @@ accessible field net/minecraft/client/renderer/RenderStateShard COLOR_DEPTH_WRIT
 accessible class net/minecraft/server/level/ChunkMap$TrackedEntity
 accessible field net/minecraft/server/level/ChunkMap entityMap Lit/unimi/dsi/fastutil/ints/Int2ObjectMap;
 accessible field net/minecraft/server/level/ChunkMap$TrackedEntity seenBy Ljava/util/Set;
+accessible field net/minecraft/client/renderer/entity/EntityRenderDispatcher shouldRenderShadow Z
