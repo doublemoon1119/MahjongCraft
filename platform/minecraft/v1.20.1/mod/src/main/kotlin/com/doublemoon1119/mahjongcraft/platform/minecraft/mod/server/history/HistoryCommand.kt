@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.historyCleanu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.historyStatusMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.historyStorageMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.prefixedConfigMessage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.readableBy
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.minecraft.ChatFormatting
@@ -66,7 +67,7 @@ class HistoryCommand(
     private fun status(source: CommandSourceStack): Int {
         val session = writer.currentSessionId
         launchSessionBound(session, { writer.status() }) { status ->
-            source.sendSuccess({ historyStatusMessage(status) }, false)
+            source.sendSuccess({ historyStatusMessage(status).readableBy(source) }, false)
         }
         return COMMAND_SUCCESS
     }
@@ -111,7 +112,7 @@ class HistoryCommand(
         source.sendSuccess({ Component.translatable(MinecraftConfigCommandKeys.HISTORY_STORAGE_STARTED) }, false)
         launchSessionBound(session, { writer.storage(session) }) { result ->
             when (result) {
-                is HistoryManagementResult.Success -> source.sendSuccess({ historyStorageMessage(result.value) }, false)
+                is HistoryManagementResult.Success -> source.sendSuccess({ historyStorageMessage(result.value).readableBy(source) }, false)
                 is HistoryManagementResult.Busy,
                 is HistoryManagementResult.Disconnected,
                 is HistoryManagementResult.Failed,
@@ -133,7 +134,7 @@ class HistoryCommand(
         source.sendSuccess({ Component.translatable(MinecraftConfigCommandKeys.HISTORY_PREVIEW_STARTED) }, false)
         launchSessionBound(session, { writer.previewCleanup(session) }) { result ->
             when (result) {
-                is HistoryManagementResult.Success -> source.sendSuccess({ historyCleanupPreviewMessage(result.value) }, false)
+                is HistoryManagementResult.Success -> source.sendSuccess({ historyCleanupPreviewMessage(result.value).readableBy(source) }, false)
                 is HistoryManagementResult.Busy,
                 is HistoryManagementResult.Disconnected,
                 is HistoryManagementResult.Failed,
@@ -155,11 +156,11 @@ class HistoryCommand(
         source.sendSuccess({ Component.translatable(MinecraftConfigCommandKeys.HISTORY_CLEANUP_STARTED) }, false)
         launchSessionBound(session, { writer.runCleanup(session) }) { result ->
             when (result) {
-                is HistoryManagementResult.Success -> source.sendSuccess({ historyCleanupReportMessage(result.value) }, false)
+                is HistoryManagementResult.Success -> source.sendSuccess({ historyCleanupReportMessage(result.value).readableBy(source) }, false)
                 is HistoryManagementResult.Busy,
                 is HistoryManagementResult.Disconnected,
                 -> source.sendFailure(Component.translatable(result.commandErrorKey() ?: MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_FAILED))
-                is HistoryManagementResult.Failed -> result.cleanup?.let { source.sendSuccess({ historyCleanupReportMessage(it) }, false) }
+                is HistoryManagementResult.Failed -> result.cleanup?.let { source.sendSuccess({ historyCleanupReportMessage(it).readableBy(source) }, false) }
                     ?: source.sendFailure(Component.translatable(result.commandErrorKey() ?: MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_FAILED))
                 HistoryManagementResult.SessionChanged -> Unit
             }
@@ -178,7 +179,7 @@ class HistoryCommand(
         if (cached == null) {
             source.sendFailure(prefixedConfigMessage(Component.translatable(key), ChatFormatting.RED))
         } else {
-            source.sendSuccess({ historyStorageMessage(cached, stale = true).append("\n  ").append(Component.translatable(key).withStyle(ChatFormatting.YELLOW)) }, false)
+            source.sendSuccess({ historyStorageMessage(cached, stale = true).append("\n  ").append(Component.translatable(key).withStyle(ChatFormatting.YELLOW)).readableBy(source) }, false)
         }
     }
 
