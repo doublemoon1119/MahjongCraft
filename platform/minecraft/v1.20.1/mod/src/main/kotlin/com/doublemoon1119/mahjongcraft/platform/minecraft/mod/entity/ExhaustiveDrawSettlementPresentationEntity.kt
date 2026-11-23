@@ -160,12 +160,12 @@ class ExhaustiveDrawSettlementPresentationEntity(
         player.waitingTileAssetKeys.isNotEmpty()
     }
 
-    override fun defineSynchedData() {
-        entityData.define(TABLE_ID, "")
-        entityData.define(START_GAME_TIME, 0L)
-        entityData.define(END_GAME_TIME, 0L)
-        entityData.define(REASON_ID, "")
-        entityData.define(PLAYERS, "")
+    override fun defineSyncedData(data: SyncedDataDefiner) {
+        data.define(TABLE_ID, "")
+        data.define(START_GAME_TIME, 0L)
+        data.define(END_GAME_TIME, 0L)
+        data.define(REASON_ID, "")
+        data.define(PLAYERS, "")
     }
 
     override fun readAdditionalSaveData(nbt: CompoundTag) {

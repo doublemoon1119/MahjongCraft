@@ -26,7 +26,7 @@ import net.minecraft.world.phys.Vec3
 class MahjongStoolSeatEntity(
     type: EntityType<out MahjongStoolSeatEntity> = ModEntities.mahjongStoolSeat,
     world: Level,
-) : Entity(type, world) {
+) : MahjongEntity(type, world) {
     /** 是否還需要確認同一張凳子沒有其他座位；坐下入口新建的座位在生成前已確認。 */
     private var needsOccupancyCheck = true
 
@@ -83,7 +83,7 @@ class MahjongStoolSeatEntity(
      */
     override fun hurt(source: DamageSource, amount: Float): Boolean = false
 
-    override fun defineSynchedData() = Unit
+    override fun defineSyncedData(data: SyncedDataDefiner) = Unit
 
     /**
      * 座位不保存額外資料。

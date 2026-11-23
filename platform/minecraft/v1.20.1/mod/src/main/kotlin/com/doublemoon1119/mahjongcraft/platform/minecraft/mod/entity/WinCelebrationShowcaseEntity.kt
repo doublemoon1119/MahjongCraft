@@ -160,15 +160,15 @@ class WinCelebrationShowcaseEntity(
         return AnimationStep.PlaySound(soundId, volume, pitch, playAtGameTime, playAtGameTime + SOUND_GRACE_TICKS)
     }
 
-    override fun defineSynchedData() {
-        entityData.define(TABLE_ID, "")
-        entityData.define(START_GAME_TIME, 0L)
-        entityData.define(END_GAME_TIME, 0L)
-        entityData.define(ANIMATION_SEED, 0L)
-        entityData.define(WINNING_TILE_ASSET_KEY, "")
-        entityData.define(WINNING_TILE_SNAPSHOT, "")
-        entityData.define(WINGS, "")
-        entityData.define(EXTRA_SOUNDS, "")
+    override fun defineSyncedData(data: SyncedDataDefiner) {
+        data.define(TABLE_ID, "")
+        data.define(START_GAME_TIME, 0L)
+        data.define(END_GAME_TIME, 0L)
+        data.define(ANIMATION_SEED, 0L)
+        data.define(WINNING_TILE_ASSET_KEY, "")
+        data.define(WINNING_TILE_SNAPSHOT, "")
+        data.define(WINGS, "")
+        data.define(EXTRA_SOUNDS, "")
     }
 
     /**

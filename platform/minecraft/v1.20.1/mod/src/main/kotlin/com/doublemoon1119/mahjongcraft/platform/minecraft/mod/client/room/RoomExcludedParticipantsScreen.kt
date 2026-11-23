@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.fitClientText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.FormScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.MahjongScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelIcon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
@@ -42,7 +43,7 @@ internal class RoomExcludedParticipantsScreen(
     private val allow: (Uuid) -> Unit,
     private val allowAll: () -> Unit,
     private val clock: MonotonicClock,
-) : Screen(Component.translatable(MinecraftRoomScreenKeys.EXCLUDED_PARTICIPANTS)) {
+) : MahjongScreen(Component.translatable(MinecraftRoomScreenKeys.EXCLUDED_PARTICIPANTS)) {
     /** 既有清單捲動與滑塊拖曳行為。 */
     private val scroll = ScrollState()
 
@@ -191,7 +192,7 @@ internal class RoomExcludedParticipantsScreen(
         }
         // 網路快照可能在兩次 tick 之間更新，繪製前先移除已不在名單上的卡片。
         if (room.excludedPlayerIds != entries) refreshRows()
-        renderBackground(context)
+        renderScreenBackground(context, mouseX, mouseY, delta)
         ScreenRendering.title(context, font, title, width)
         filtered.drop(scroll.index).take(rows).forEachIndexed { index, id ->
             val y = top + index * ROW_HEIGHT
@@ -218,7 +219,7 @@ internal class RoomExcludedParticipantsScreen(
         if (bar.maximumScroll > 0 && rows > 0) {
             VerticalScrollbar.render(context, frame.scrollbarLeft, bar)
         }
-        super.render(context, mouseX, mouseY, delta)
+        renderWidgets(context, mouseX, mouseY, delta)
         filtered.drop(scroll.index).take(rows).forEachIndexed { index, id ->
             val y = top + index * ROW_HEIGHT
             if (mouseX in (left + 36) until (left + listWidth - 28) && mouseY in (y + 17) until (y + 31)) {
@@ -234,12 +235,12 @@ internal class RoomExcludedParticipantsScreen(
         }
     }
 
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
+    override fun mouseWheelScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         if (mouseY >= top && mouseY < bottom && scroll.scrollBy(amount, scrollbar.maximumScroll)) {
             refreshRows()
             return true
         }
-        return super.mouseScrolled(mouseX, mouseY, amount)
+        return super.mouseWheelScrolled(mouseX, mouseY, amount)
     }
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {

@@ -30,6 +30,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.Control
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOption
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOverlay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.FormScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.MahjongScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelIcon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
@@ -52,7 +53,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ArrangedTile
 import com.mojang.authlib.GameProfile
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Tooltip
-import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.client.resources.sounds.SimpleSoundInstance
 import net.minecraft.core.registries.BuiltInRegistries
@@ -80,7 +80,7 @@ import kotlin.uuid.toJavaUuid
  */
 internal class HistoryReplayScreen(
     private val session: HistoryBrowseSession,
-) : Screen(Component.translatable(MinecraftHistoryScreenKeys.REPLAY_TITLE)) {
+) : MahjongScreen(Component.translatable(MinecraftHistoryScreenKeys.REPLAY_TITLE)) {
     /** 記錄擺不出牌桌的原因。 */
     private val logger = mahjongCraftLogger(HistoryReplayScreen::class)
 
@@ -343,7 +343,7 @@ internal class HistoryReplayScreen(
      * @param delta 幀內插值。
      */
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
-        renderBackground(context)
+        renderScreenBackground(context, mouseX, mouseY, delta)
         advancePlayback()
         val now = measuringTimeNow()
         if (lastPointer != mouseX to mouseY) {
@@ -376,7 +376,7 @@ internal class HistoryReplayScreen(
             renderProgress(context, replay, rows, pointerX, pointerY)?.let { tooltip = it }
             renderCounter(context, replay)
         }
-        super.render(context, pointerX, pointerY, delta)
+        renderWidgets(context, pointerX, pointerY, delta)
         dropdown.render(context, font, height, mouseX, mouseY)
         if (!dropdown.isOpen && !draggingProgress && !draggingListBar) tooltip?.let { context.renderComponentTooltip(font, it, mouseX, mouseY) }
     }
@@ -1567,7 +1567,7 @@ internal class HistoryReplayScreen(
      * @param amount 捲動量。
      * @return 是否處理。
      */
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
+    override fun mouseWheelScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         if (dropdown.mouseScrolled(font, height, amount)) return true
         val list = layout.list
         if (!layout.fullscreen && (layout.wide || listOpen) && mouseX >= list.x && mouseX < layout.listScrollbarX + VerticalScrollbar.WIDTH && mouseY >= list.y && mouseY < list.bottom) {
@@ -1580,7 +1580,7 @@ internal class HistoryReplayScreen(
             setZoom(zoom * ZOOM_STEP.pow(amount.toFloat()))
             return true
         }
-        return super.mouseScrolled(mouseX, mouseY, amount)
+        return super.mouseWheelScrolled(mouseX, mouseY, amount)
     }
 
     /**

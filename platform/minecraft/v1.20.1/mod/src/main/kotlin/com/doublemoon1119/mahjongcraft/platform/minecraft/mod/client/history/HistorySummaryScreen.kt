@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryMatchDeta
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ControlTooltip
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.MahjongScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelIcon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelIcons
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
@@ -16,7 +17,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.Tooltip
-import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.resources.sounds.SimpleSoundInstance
 import net.minecraft.network.chat.Component
 import net.minecraft.sounds.SoundEvents
@@ -35,7 +35,7 @@ import kotlin.time.TimeSource
  */
 internal class HistorySummaryScreen(
     private val session: HistoryBrowseSession,
-) : Screen(Component.translatable(MinecraftHistoryScreenKeys.SUMMARY_TITLE)) {
+) : MahjongScreen(Component.translatable(MinecraftHistoryScreenKeys.SUMMARY_TITLE)) {
     /** 目前摘要幾何。 */
     private var layout = HistorySummaryLayout.measure(0, 0)
 
@@ -130,8 +130,8 @@ internal class HistorySummaryScreen(
      * @param amount 滾輪增量。
      * @return 是否處理此輸入。
      */
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
-        if (mouseY < layout.contentTop || mouseY >= layout.contentBottom) return super.mouseScrolled(mouseX, mouseY, amount)
+    override fun mouseWheelScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
+        if (mouseY < layout.contentTop || mouseY >= layout.contentBottom) return super.mouseWheelScrolled(mouseX, mouseY, amount)
         scroll = layout.clampScroll(scroll - amount * SCROLL_STEP, contentHeight(detail()))
         session.controller.rememberSummaryPosition(scroll)
         return true
@@ -217,7 +217,7 @@ internal class HistorySummaryScreen(
 
     /** 繪製摘要畫面。 */
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
-        renderBackground(context)
+        renderScreenBackground(context, mouseX, mouseY, delta)
         ScreenRendering.title(context, font, title, width)
         val summary = session.controller.state.value.summary
         val status = summary?.status ?: HistoryBrowseStatus.Loading
@@ -236,7 +236,7 @@ internal class HistorySummaryScreen(
         }
         context.disableScissor()
         renderScrollbar(context, contentHeight(detail()))
-        super.render(context, mouseX, mouseY, delta)
+        renderWidgets(context, mouseX, mouseY, delta)
         hoveredTooltip?.let { context.renderComponentTooltip(font, it, mouseX, mouseY) }
     }
 

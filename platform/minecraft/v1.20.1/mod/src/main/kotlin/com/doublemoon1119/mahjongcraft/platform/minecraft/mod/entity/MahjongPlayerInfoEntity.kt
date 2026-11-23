@@ -144,12 +144,12 @@ class MahjongPlayerInfoEntity(
     override fun serializeCustomStep(step: Nothing, nbt: CompoundTag) = error("Player info has no custom animation step")
     override fun deserializeCustomStep(nbt: CompoundTag): Nothing = error("Player info has no custom animation step")
 
-    override fun defineSynchedData() {
-        entityData.define(PLAYERS, "[]")
-        entityData.define(DEALER_PLAYER_ID, "")
-        entityData.define(TABLE_FACING, MahjongTableFacing.NORTH.name)
-        entityData.define(MANAGED_TABLE_ID, "")
-        entityData.define(SCORE_CHANGES, "[]")
+    override fun defineSyncedData(data: SyncedDataDefiner) {
+        data.define(PLAYERS, "[]")
+        data.define(DEALER_PLAYER_ID, "")
+        data.define(TABLE_FACING, MahjongTableFacing.NORTH.name)
+        data.define(MANAGED_TABLE_ID, "")
+        data.define(SCORE_CHANGES, "[]")
     }
 
     override fun readAdditionalSaveData(nbt: CompoundTag) {

@@ -85,11 +85,11 @@ class MahjongLobbyInfoEntity(
     override fun serializeCustomStep(step: Nothing, nbt: CompoundTag) = error("Lobby info has no custom animation step")
     override fun deserializeCustomStep(nbt: CompoundTag): Nothing = error("Lobby info has no custom animation step")
 
-    override fun defineSynchedData() {
-        entityData.define(RULE_MODULE_ID, "")
-        entityData.define(PLAYER_COUNT, 0)
-        entityData.define(MAXIMUM_PLAYER_COUNT, 0)
-        entityData.define(MANAGED_TABLE_ID, "")
+    override fun defineSyncedData(data: SyncedDataDefiner) {
+        data.define(RULE_MODULE_ID, "")
+        data.define(PLAYER_COUNT, 0)
+        data.define(MAXIMUM_PLAYER_COUNT, 0)
+        data.define(MANAGED_TABLE_ID, "")
     }
 
     override fun readAdditionalSaveData(nbt: CompoundTag) {

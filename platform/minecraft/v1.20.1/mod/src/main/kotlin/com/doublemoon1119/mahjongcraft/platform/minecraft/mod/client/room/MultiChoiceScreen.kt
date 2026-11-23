@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.fitClientText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.MahjongScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelIcon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
@@ -38,7 +39,7 @@ internal class MultiChoiceScreen(
     private val editor: GameConfigEditorSpec.MultiChoice,
     initialSelection: Set<String>,
     private val onApply: (Set<String>) -> Unit,
-) : Screen(Component.translatable(fieldName)) {
+) : MahjongScreen(Component.translatable(fieldName)) {
     /** 只在子畫面內修改的選取草稿。 */
     private val selected = initialSelection.toMutableSet()
 
@@ -144,13 +145,13 @@ internal class MultiChoiceScreen(
         selectAllButton?.tooltip = if (canSelectAll) null else Tooltip.create(Component.translatable(MinecraftRoomScreenKeys.SELECT_ALL_UNAVAILABLE, editor.maximumCount).withStyle(ChatFormatting.RED))
     }
 
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
+    override fun mouseWheelScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         val layout = layout()
         if ((layout.optionAt(mouseX, mouseY) != null || layout.isOverScrollbar(mouseX, mouseY)) && scroll.scrollBy(amount, layout.maximumScroll)) {
             init()
             return true
         }
-        return super.mouseScrolled(mouseX, mouseY, amount)
+        return super.mouseWheelScrolled(mouseX, mouseY, amount)
     }
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
@@ -195,7 +196,7 @@ internal class MultiChoiceScreen(
     override fun isPauseScreen(): Boolean = false
 
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
-        renderBackground(context)
+        renderScreenBackground(context, mouseX, mouseY, delta)
         val layout = layout()
         ScreenRendering.title(context, font, fitClientText(font, title, layout.contentWidth), width)
         context.drawCenteredString(
@@ -227,7 +228,7 @@ internal class MultiChoiceScreen(
         }
         val bar = layout.scrollbar
         if (bar.maximumScroll > 0) VerticalScrollbar.render(context, layout.scrollbarX, bar)
-        super.render(context, mouseX, mouseY, delta)
+        renderWidgets(context, mouseX, mouseY, delta)
         if (hoveredIndex != null) {
             optionTooltip(editor.optionIds[hoveredIndex], layout)?.let { context.renderTooltip(font, it, mouseX, mouseY) }
         } else if (mouseX in layout.contentLeft until layout.contentRight && mouseY in TITLE_HOVER_TOP until layout.rowsTop - 2) {

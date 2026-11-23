@@ -211,9 +211,9 @@ class MahjongRoundInfoEntity(
      */
     override fun deserializeCustomStep(nbt: CompoundTag): Nothing = error("Round info display has no custom animation step")
 
-    override fun defineSynchedData() {
-        entityData.define(LINES, "")
-        entityData.define(MANAGED_TABLE_ID, "")
+    override fun defineSyncedData(data: SyncedDataDefiner) {
+        data.define(LINES, "")
+        data.define(MANAGED_TABLE_ID, "")
     }
 
     /**

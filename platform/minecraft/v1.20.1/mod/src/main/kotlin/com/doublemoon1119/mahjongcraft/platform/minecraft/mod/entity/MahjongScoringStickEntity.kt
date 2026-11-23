@@ -236,17 +236,17 @@ class MahjongScoringStickEntity(
     override fun getPickResult(): ItemStack? = if (managedByGame) null else asItemStack()
 
     /** 初始化 client/server 同步的面額、管理狀態與動畫欄位。 */
-    override fun defineSynchedData() {
-        entityData.define(DENOMINATION, MahjongScoringStickDenomination.P100.name)
-        entityData.define(MANAGED_BY_GAME, false)
-        entityData.define(MANAGED_TABLE_ID, "")
-        entityData.define(ANIMATING, false)
-        entityData.define(ANIMATION_START_GAME_TIME, 0L)
-        entityData.define(ANIMATION_DURATION_TICKS, 1)
-        entityData.define(ANIMATION_ARC_HEIGHT, 0.0f)
-        entityData.define(ANIMATION_START_OFFSET_X, 0.0f)
-        entityData.define(ANIMATION_START_OFFSET_Y, 0.0f)
-        entityData.define(ANIMATION_START_OFFSET_Z, 0.0f)
+    override fun defineSyncedData(data: SyncedDataDefiner) {
+        data.define(DENOMINATION, MahjongScoringStickDenomination.P100.name)
+        data.define(MANAGED_BY_GAME, false)
+        data.define(MANAGED_TABLE_ID, "")
+        data.define(ANIMATING, false)
+        data.define(ANIMATION_START_GAME_TIME, 0L)
+        data.define(ANIMATION_DURATION_TICKS, 1)
+        data.define(ANIMATION_ARC_HEIGHT, 0.0f)
+        data.define(ANIMATION_START_OFFSET_X, 0.0f)
+        data.define(ANIMATION_START_OFFSET_Y, 0.0f)
+        data.define(ANIMATION_START_OFFSET_Z, 0.0f)
     }
 
     /**

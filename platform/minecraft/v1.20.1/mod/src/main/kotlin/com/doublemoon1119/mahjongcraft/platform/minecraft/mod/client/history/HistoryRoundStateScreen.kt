@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHisto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.CycleButtonInput
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.FormScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.MahjongScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelIcon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelIcons
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
@@ -17,7 +18,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.Vertica
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.Tooltip
-import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 import net.minecraft.util.FormattedCharSequence
 import kotlin.math.ceil
@@ -29,7 +29,7 @@ import kotlin.math.ceil
  */
 internal class HistoryRoundStateScreen(
     private val session: HistoryBrowseSession,
-) : Screen(Component.translatable(MinecraftHistoryScreenKeys.STATE_TITLE)) {
+) : MahjongScreen(Component.translatable(MinecraftHistoryScreenKeys.STATE_TITLE)) {
     /** 固定區、內容及捲軸幾何。 */
     private var layout = HistoryRoundEventsLayout.measure(width = 0, height = 0, contentTop = 0)
 
@@ -151,7 +151,7 @@ internal class HistoryRoundStateScreen(
      * @param delta 幀內插值。
      */
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
-        renderBackground(context)
+        renderScreenBackground(context, mouseX, mouseY, delta)
         val round = currentRound()
         val status = round?.stateStatus ?: HistoryBrowseStatus.Failed(HistoryBrowseFailure.NOT_AVAILABLE)
         val state = round?.state?.takeIf { status == HistoryBrowseStatus.Ready && it.position == round.confirmedPosition }
@@ -327,7 +327,7 @@ internal class HistoryRoundStateScreen(
             primary = positionText,
             secondary = HistoryPaging.totalText(round?.transactionCount),
         )
-        super.render(context, mouseX, mouseY, delta)
+        renderWidgets(context, mouseX, mouseY, delta)
         if (!dragging) tooltip?.let { context.renderComponentTooltip(font, it, mouseX, mouseY) }
     }
 
@@ -516,8 +516,8 @@ internal class HistoryRoundStateScreen(
      * @param amount 捲動量。
      * @return 是否處理。
      */
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
-        if (mouseY < layout.contentTop || mouseY >= layout.contentBottom) return super.mouseScrolled(mouseX, mouseY, amount)
+    override fun mouseWheelScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
+        if (mouseY < layout.contentTop || mouseY >= layout.contentBottom) return super.mouseWheelScrolled(mouseX, mouseY, amount)
         scroll = layout.clampScroll(scroll - amount * SCROLL_STEP, readyHeight())
         session.controller.rememberRoundPosition(scroll)
         return true

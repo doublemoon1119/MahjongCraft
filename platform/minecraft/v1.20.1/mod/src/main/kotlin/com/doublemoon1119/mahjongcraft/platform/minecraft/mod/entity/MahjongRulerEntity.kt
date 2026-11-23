@@ -31,7 +31,7 @@ import net.minecraft.world.phys.AABB
 class MahjongRulerEntity(
     type: EntityType<out MahjongRulerEntity> = ModEntities.mahjongRuler,
     world: Level,
-) : Entity(type, world) {
+) : MahjongEntity(type, world) {
     /** 牌尺的顏色。 */
     var color: MahjongRulerColor
         get() = MahjongRulerColor.fromNameOrDefault(entityData[COLOR])
@@ -128,9 +128,9 @@ class MahjongRulerEntity(
     private fun asItemStack(): ItemStack = ItemStack(ModItems.MAHJONG_RULERS.getValue(color))
 
     /** 初始化 client/server 同步的顏色與擺法。 */
-    override fun defineSynchedData() {
-        entityData.define(COLOR, MahjongRulerColor.CLEAR.name)
-        entityData.define(POSTURE, MahjongRulerPosture.FLAT.name)
+    override fun defineSyncedData(data: SyncedDataDefiner) {
+        data.define(COLOR, MahjongRulerColor.CLEAR.name)
+        data.define(POSTURE, MahjongRulerPosture.FLAT.name)
     }
 
     /**

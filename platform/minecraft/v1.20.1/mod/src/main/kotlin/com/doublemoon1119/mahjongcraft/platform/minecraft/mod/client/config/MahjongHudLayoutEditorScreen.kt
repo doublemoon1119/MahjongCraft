@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.Control
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.CycleButtonInput
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOption
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOverlay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.MahjongScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.SettingsFooterButtons
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.UnsavedChangesConfirmationScreen
@@ -12,7 +13,6 @@ import net.minecraft.ChatFormatting
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.Tooltip
-import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 import kotlin.math.roundToInt
 
@@ -37,7 +37,7 @@ class MahjongHudLayoutEditorScreen(
     initialLayout: MahjongHudLayoutConfig,
     private val automaticControlLabels: List<Component>,
     private val previewRenderer: MahjongHudPreviewRenderer,
-) : Screen(Component.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_TITLE)) {
+) : MahjongScreen(Component.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_TITLE)) {
     /** 編輯器的全部可測試狀態；拖曳、選取、草稿與控制項顯示都由它決定。 */
     private var model = MahjongHudLayoutEditorModel(baseline = initialLayout)
 
@@ -349,9 +349,9 @@ class MahjongHudLayoutEditorScreen(
     }
 
     /** HUD 清單展開時在清單內捲動。 */
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
+    override fun mouseWheelScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         if (dropdown.mouseScrolled(font, height, amount)) return true
-        return super.mouseScrolled(mouseX, mouseY, amount)
+        return super.mouseWheelScrolled(mouseX, mouseY, amount)
     }
 
     /** HUD 清單展開時由清單處理按鍵，Esc 只收合清單。 */
@@ -448,7 +448,7 @@ class MahjongHudLayoutEditorScreen(
         children().filterIsInstance<Button>().filter { it.visible }.forEach { button ->
             context.fill(button.x, button.y, button.x + button.width, button.y + button.height, EDITOR_BUTTON_BACKING_COLOR)
         }
-        super.render(context, dropdown.pointer(mouseX), dropdown.pointer(mouseY), delta)
+        renderWidgets(context, dropdown.pointer(mouseX), dropdown.pointer(mouseY), delta)
         if (!dropdown.isOpen) {
             toolbarTooltips.entries.firstOrNull { (button, _) -> button.visible && button.isHovered(mouseX, mouseY) }
                 ?.let { (_, tooltip) -> context.renderComponentTooltip(font, tooltip, mouseX, mouseY) }

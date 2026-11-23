@@ -219,16 +219,16 @@ class MahjongDiceEntity(
     }
 
     /** 初始化 client/server 同步的點數與管理狀態。 */
-    override fun defineSynchedData() {
-        entityData.define(POINT, MahjongDicePoint.ONE.value)
-        entityData.define(MANAGED_BY_GAME, false)
-        entityData.define(MANAGED_TABLE_ID, "")
-        entityData.define(ROLLING, false)
-        entityData.define(ANIMATION_SEED, 0L)
-        entityData.define(ANIMATION_START_GAME_TIME, 0L)
-        entityData.define(ANIMATION_START_OFFSET_X, 0.0f)
-        entityData.define(ANIMATION_START_OFFSET_Y, 0.0f)
-        entityData.define(ANIMATION_START_OFFSET_Z, 0.0f)
+    override fun defineSyncedData(data: SyncedDataDefiner) {
+        data.define(POINT, MahjongDicePoint.ONE.value)
+        data.define(MANAGED_BY_GAME, false)
+        data.define(MANAGED_TABLE_ID, "")
+        data.define(ROLLING, false)
+        data.define(ANIMATION_SEED, 0L)
+        data.define(ANIMATION_START_GAME_TIME, 0L)
+        data.define(ANIMATION_START_OFFSET_X, 0.0f)
+        data.define(ANIMATION_START_OFFSET_Y, 0.0f)
+        data.define(ANIMATION_START_OFFSET_Z, 0.0f)
     }
 
     /**

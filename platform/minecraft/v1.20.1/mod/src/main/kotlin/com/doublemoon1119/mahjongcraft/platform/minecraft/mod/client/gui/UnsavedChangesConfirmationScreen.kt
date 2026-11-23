@@ -20,7 +20,7 @@ internal class UnsavedChangesConfirmationScreen(
     private val onApply: () -> Unit,
     private val onDiscard: () -> Unit,
     private val changesPreview: Component? = null,
-) : Screen(Component.translatable(MinecraftClientConfigScreenKeys.UNSAVED_CHANGES_TITLE)) {
+) : MahjongScreen(Component.translatable(MinecraftClientConfigScreenKeys.UNSAVED_CHANGES_TITLE)) {
     /** 建立套用、放棄與繼續編輯三個按鈕；套用按鈕附上呼叫端提供的變更預覽。 */
     override fun init() {
         val buttonWidth = minOf(160, width - 24)
@@ -51,7 +51,7 @@ internal class UnsavedChangesConfirmationScreen(
 
     /** 繪製確認標題與說明。 */
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
-        renderBackground(context)
+        renderScreenBackground(context, mouseX, mouseY, delta)
         context.drawCenteredString(font, title, width / 2, height / 2 - 42, FormScreenLayout.TITLE_COLOR)
         context.drawCenteredString(
             font,
@@ -60,6 +60,6 @@ internal class UnsavedChangesConfirmationScreen(
             height / 2 - 26,
             0xFFFFFF,
         )
-        super.render(context, mouseX, mouseY, delta)
+        renderWidgets(context, mouseX, mouseY, delta)
     }
 }

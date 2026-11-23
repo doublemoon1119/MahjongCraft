@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionKindDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.MahjongScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.MarqueeState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.drawWrappedDescription
@@ -10,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.wrapDes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
-import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.inventory.tooltip.TooltipRenderUtil
 import net.minecraft.network.chat.Component
 
@@ -28,7 +28,7 @@ internal class PlayerDecisionScreen(
     private val prompt: PlayerDecisionPromptDto,
     private val isReaction: Boolean,
     private val controller: PlayerDecisionHudController,
-) : Screen(Component.translatable(MinecraftHudKeys.ACTION_TITLE)) {
+) : MahjongScreen(Component.translatable(MinecraftHudKeys.ACTION_TITLE)) {
     /** 畫面所呈現 prompt 的穩定 key，供生命週期協調器關閉過期畫面。 */
     val decisionKey: String
         get() = prompt.decisionKey
@@ -148,7 +148,7 @@ internal class PlayerDecisionScreen(
     }
 
     /** 操作區內的滾輪一律轉為水平捲動。 */
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
+    override fun mouseWheelScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         val layout = layout()
         if (
             layout.hasOverflow &&
@@ -158,7 +158,7 @@ internal class PlayerDecisionScreen(
             horizontalScroll = layout.scrollFromWheel(horizontalScroll, amount)
             return true
         }
-        return super.mouseScrolled(mouseX, mouseY, amount)
+        return super.mouseWheelScrolled(mouseX, mouseY, amount)
     }
 
     /** Scrollbar thumb 可直接點擊或開始拖曳；卡片按鈕只在裁切 viewport 內接收輸入。 */

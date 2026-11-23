@@ -7,7 +7,6 @@ import net.minecraft.network.syncher.EntityDataAccessor
 import net.minecraft.network.syncher.EntityDataSerializers
 import net.minecraft.network.syncher.SynchedEntityData
 import net.minecraft.world.damagesource.DamageSource
-import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.level.Level
 import net.minecraft.world.phys.Vec3
@@ -23,7 +22,7 @@ import net.minecraft.world.phys.Vec3
 class MahjongBotEntity(
     type: EntityType<out MahjongBotEntity> = ModEntities.mahjongBot,
     world: Level,
-) : Entity(type, world) {
+) : MahjongEntity(type, world) {
     /** 公開角色牌面；不是任何正式牌張的牌面。 */
     var faceAssetKey: String
         get() = entityData.get(FACE_ASSET)
@@ -40,9 +39,9 @@ class MahjongBotEntity(
     }
 
     /** 同步公開外觀及揮手序號，不同步能力來源或私有決策。 */
-    override fun defineSynchedData() {
-        entityData.define(FACE_ASSET, UNKNOWN_TILE_ASSET_KEY)
-        entityData.define(SWING_SEQUENCE, 0)
+    override fun defineSyncedData(data: SyncedDataDefiner) {
+        data.define(FACE_ASSET, UNKNOWN_TILE_ASSET_KEY)
+        data.define(SWING_SEQUENCE, 0)
     }
 
     /**

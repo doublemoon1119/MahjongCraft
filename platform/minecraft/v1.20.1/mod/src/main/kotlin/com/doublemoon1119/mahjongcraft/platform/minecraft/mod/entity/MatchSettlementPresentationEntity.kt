@@ -129,15 +129,15 @@ class MatchSettlementPresentationEntity(
         if (endGameTime > startGameTime && level().gameTime >= endGameTime) discard()
     }
 
-    override fun defineSynchedData() {
-        entityData.define(TABLE_ID, "")
-        entityData.define(START_GAME_TIME, 0L)
-        entityData.define(END_GAME_TIME, 0L)
-        entityData.define(TEMPLATE_KEY, "")
-        entityData.define(PLAYERS, "")
-        entityData.define(REVEAL_ORDER, MatchSettlementRevealOrder.LAST_TO_FIRST.name)
-        entityData.define(ROW_REVEAL_INTERVAL, 12)
-        entityData.define(READING_TICKS, 100)
+    override fun defineSyncedData(data: SyncedDataDefiner) {
+        data.define(TABLE_ID, "")
+        data.define(START_GAME_TIME, 0L)
+        data.define(END_GAME_TIME, 0L)
+        data.define(TEMPLATE_KEY, "")
+        data.define(PLAYERS, "")
+        data.define(REVEAL_ORDER, MatchSettlementRevealOrder.LAST_TO_FIRST.name)
+        data.define(ROW_REVEAL_INTERVAL, 12)
+        data.define(READING_TICKS, 100)
     }
 
     /**

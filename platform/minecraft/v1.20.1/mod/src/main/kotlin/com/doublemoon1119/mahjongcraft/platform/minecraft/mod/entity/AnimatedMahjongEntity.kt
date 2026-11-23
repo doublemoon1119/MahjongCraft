@@ -11,7 +11,6 @@ import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.sounds.SoundSource
-import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.level.Level
 
@@ -32,7 +31,7 @@ import net.minecraft.world.level.Level
 abstract class AnimatedMahjongEntity<C>(
     type: EntityType<out AnimatedMahjongEntity<C>>,
     world: Level,
-) : Entity(type, world) {
+) : MahjongEntity(type, world) {
     /** 尚未完成的持久化動畫步驟，依序由 server tick 推進。 */
     private val queue: ArrayDeque<AnimationStep<C>> = ArrayDeque()
 

@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.FormScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.MahjongScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelIcon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
@@ -20,7 +21,6 @@ import net.minecraft.ChatFormatting
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.Tooltip
-import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 
 /**
@@ -38,7 +38,7 @@ internal class HistoryRoundEventsScreen(
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val eventPresenter: HistoryRoundEventPresenter,
     settlementTemplates: WinSettlementPresentationTemplateRegistry,
-) : Screen(Component.translatable(MinecraftHistoryScreenKeys.ROUND_TITLE)) {
+) : MahjongScreen(Component.translatable(MinecraftHistoryScreenKeys.ROUND_TITLE)) {
     /** 固定區與內容區共用幾何。 */
     private var layout = HistoryRoundEventsLayout.measure(width = 0, height = 0, contentTop = 0)
 
@@ -220,7 +220,7 @@ internal class HistoryRoundEventsScreen(
      * @param delta 幀內插值。
      */
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
-        renderBackground(context)
+        renderScreenBackground(context, mouseX, mouseY, delta)
         val round = currentRound()
         val status = round?.eventsStatus ?: HistoryBrowseStatus.Failed(HistoryBrowseFailure.NOT_AVAILABLE)
         val heading = title.copy().append(" • ").append(Component.translatable(MinecraftHistoryScreenKeys.ROUND_NUMBER, round?.roundNumber ?: "—"))
@@ -260,7 +260,7 @@ internal class HistoryRoundEventsScreen(
         context.disableScissor()
         if (events != null) renderScrollbar(context, height)
         renderPage(context, round)
-        super.render(context, mouseX, mouseY, delta)
+        renderWidgets(context, mouseX, mouseY, delta)
         if (!dragging) tooltip?.let { context.renderComponentTooltip(font, it, mouseX, mouseY) }
     }
 
@@ -604,8 +604,8 @@ internal class HistoryRoundEventsScreen(
      * @param amount 滾輪增量。
      * @return 是否已處理。
      */
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
-        if (mouseY < layout.contentTop || mouseY >= layout.contentBottom) return super.mouseScrolled(mouseX, mouseY, amount)
+    override fun mouseWheelScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
+        if (mouseY < layout.contentTop || mouseY >= layout.contentBottom) return super.mouseWheelScrolled(mouseX, mouseY, amount)
         if (currentRound()?.eventsStatus == HistoryBrowseStatus.Ready) {
             scroll = layout.clampScroll(scroll - amount * 18.0, readyContentHeight())
             session.controller.rememberRoundPosition(scroll)

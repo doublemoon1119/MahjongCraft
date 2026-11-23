@@ -259,18 +259,18 @@ class WinSettlementPresentationEntity(
     /** 結算舞台不能被選取。 */
     override fun isPickable() = false
 
-    override fun defineSynchedData() {
-        entityData.define(TABLE_ID, "")
-        entityData.define(START_GAME_TIME, 0L)
-        entityData.define(END_GAME_TIME, 0L)
-        entityData.define(OUTCOME_ID, "")
-        entityData.define(TEMPLATE_KEY, "")
-        entityData.define(IS_TSUMO, false)
-        entityData.define(WIN_ACTION_LABEL_KEY, "")
-        entityData.define(WINNERS, "")
-        entityData.define(RANKINGS, "")
-        entityData.define(REVEAL_TIMING, "")
-        entityData.define(CUSTOM_SOUND_CUES, "")
+    override fun defineSyncedData(data: SyncedDataDefiner) {
+        data.define(TABLE_ID, "")
+        data.define(START_GAME_TIME, 0L)
+        data.define(END_GAME_TIME, 0L)
+        data.define(OUTCOME_ID, "")
+        data.define(TEMPLATE_KEY, "")
+        data.define(IS_TSUMO, false)
+        data.define(WIN_ACTION_LABEL_KEY, "")
+        data.define(WINNERS, "")
+        data.define(RANKINGS, "")
+        data.define(REVEAL_TIMING, "")
+        data.define(CUSTOM_SOUND_CUES, "")
     }
 
     /**

@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.C
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic.ClientAutomaticControlUpdateCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.FormScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.MahjongScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.MarqueeState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
@@ -45,7 +46,7 @@ class MahjongClientConfigScreen(
     private val displayResolver: AutomaticControlDisplayResolver,
     private val preferenceService: ClientAutoSortHandPreferenceService,
     private val hudPreviewRenderer: MahjongHudPreviewRenderer,
-) : Screen(Component.translatable(MinecraftClientConfigScreenKeys.TITLE)) {
+) : MahjongScreen(Component.translatable(MinecraftClientConfigScreenKeys.TITLE)) {
     /** 伺服器權威狀態之外的畫面專用本局草稿。 */
     private val automaticDraft = ClientAutomaticControlDraftSession(automaticCoordinator.snapshot())
 
@@ -166,18 +167,18 @@ class MahjongClientConfigScreen(
     }
 
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
-        renderBackground(context)
+        renderScreenBackground(context, mouseX, mouseY, delta)
         val layout = layout()
         ScreenRendering.title(context, font, title, width)
         ScreenRendering.tabLine(context, tabStrip(layout))
         val hoveredLabel = renderFieldLabels(context, layout, mouseX, mouseY)
         renderStatus(context, layout, mouseX, mouseY)
         VerticalScrollbar.render(context, layout.scrollbarLeft, layout.scrollbar(rows().size, rowScroll.index))
-        super.render(context, mouseX, mouseY, delta)
+        renderWidgets(context, mouseX, mouseY, delta)
         hoveredLabel?.let { context.renderTooltip(font, it, mouseX, mouseY) }
     }
 
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
+    override fun mouseWheelScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         val layout = layout()
         val strip = tabStrip(layout)
         if (strip.contains(mouseX, mouseY) && strip.maximumScroll > 0) {
@@ -192,7 +193,7 @@ class MahjongClientConfigScreen(
             rebuild()
             return true
         }
-        return super.mouseScrolled(mouseX, mouseY, amount)
+        return super.mouseWheelScrolled(mouseX, mouseY, amount)
     }
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {

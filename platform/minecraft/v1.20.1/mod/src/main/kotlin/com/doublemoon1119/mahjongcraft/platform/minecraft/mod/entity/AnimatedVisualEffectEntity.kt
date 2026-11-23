@@ -132,13 +132,13 @@ abstract class AnimatedVisualEffectEntity(
     }
 
     /** 初始化所有視覺效果共用的 tracked data。 */
-    override fun defineSynchedData() {
-        entityData.define(TABLE_ID, "")
-        entityData.define(EFFECT_KEY, "")
-        entityData.define(TARGET_ENTITY_ID, "")
-        entityData.define(ANIMATION_SEED, 0L)
-        entityData.define(START_GAME_TIME, 0L)
-        entityData.define(END_GAME_TIME, 0L)
+    override fun defineSyncedData(data: SyncedDataDefiner) {
+        data.define(TABLE_ID, "")
+        data.define(EFFECT_KEY, "")
+        data.define(TARGET_ENTITY_ID, "")
+        data.define(ANIMATION_SEED, 0L)
+        data.define(START_GAME_TIME, 0L)
+        data.define(END_GAME_TIME, 0L)
     }
 
     /** 從世界存檔還原效果描述與絕對時間軸。 */

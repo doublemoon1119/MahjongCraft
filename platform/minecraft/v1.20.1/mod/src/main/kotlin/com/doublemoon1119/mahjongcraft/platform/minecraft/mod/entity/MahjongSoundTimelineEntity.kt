@@ -58,8 +58,8 @@ class MahjongSoundTimelineEntity(
         if (!level().isClientSide && !isAnimating) discard()
     }
 
-    override fun defineSynchedData() {
-        entityData.define(TABLE_ID, "")
+    override fun defineSyncedData(data: SyncedDataDefiner) {
+        data.define(TABLE_ID, "")
     }
 
     /**

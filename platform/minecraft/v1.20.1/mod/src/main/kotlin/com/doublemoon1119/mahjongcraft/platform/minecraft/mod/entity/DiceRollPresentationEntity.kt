@@ -6,7 +6,6 @@ import net.minecraft.nbt.CompoundTag
 import net.minecraft.network.syncher.EntityDataAccessor
 import net.minecraft.network.syncher.EntityDataSerializers
 import net.minecraft.network.syncher.SynchedEntityData
-import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.level.Level
 import net.minecraft.world.phys.AABB
@@ -21,7 +20,7 @@ import kotlin.uuid.Uuid
 class DiceRollPresentationEntity(
     type: EntityType<out DiceRollPresentationEntity> = ModEntities.diceRollPresentation,
     world: Level,
-) : Entity(type, world) {
+) : MahjongEntity(type, world) {
     /** 所屬麻將桌；未完成設定或資料損壞時為 `null`。 */
     val managedTableId: Uuid?
         get() = entityData[TABLE_ID].takeIf(String::isNotBlank)?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
@@ -105,11 +104,11 @@ class DiceRollPresentationEntity(
     }
 
     /** 初始化 client/server 同步欄位。 */
-    override fun defineSynchedData() {
-        entityData.define(TABLE_ID, "")
-        entityData.define(POINTS, "")
-        entityData.define(REVEAL_GAME_TIME, 0L)
-        entityData.define(END_GAME_TIME, 0L)
+    override fun defineSyncedData(data: SyncedDataDefiner) {
+        data.define(TABLE_ID, "")
+        data.define(POINTS, "")
+        data.define(REVEAL_GAME_TIME, 0L)
+        data.define(END_GAME_TIME, 0L)
     }
 
     /** 從世界存檔還原完整擲骰結果時間線。 */

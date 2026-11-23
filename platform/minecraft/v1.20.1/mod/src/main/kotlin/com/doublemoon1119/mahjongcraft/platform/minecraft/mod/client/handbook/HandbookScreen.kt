@@ -2,12 +2,12 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.handbook
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.handbook.MinecraftHandbookScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.fitClientText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.MahjongScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScrollState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
 import net.minecraft.client.gui.GuiGraphics
-import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 import org.lwjgl.glfw.GLFW
 
@@ -22,7 +22,7 @@ import org.lwjgl.glfw.GLFW
 internal class HandbookScreen(
     private val entries: List<HandbookEntry>,
     private val openHint: () -> Component,
-) : Screen(Component.translatable(MinecraftHandbookScreenKeys.TITLE)) {
+) : MahjongScreen(Component.translatable(MinecraftHandbookScreenKeys.TITLE)) {
     /** 入口清單的捲動位置。 */
     private val scroll = ScrollState()
 
@@ -51,13 +51,13 @@ internal class HandbookScreen(
         )
     }
 
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
+    override fun mouseWheelScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         val layout = layout()
         if (layout.isOverScrollableArea(mouseX, mouseY) && scroll.scrollBy(amount, layout.maximumScroll)) {
             init()
             return true
         }
-        return super.mouseScrolled(mouseX, mouseY, amount)
+        return super.mouseWheelScrolled(mouseX, mouseY, amount)
     }
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
@@ -86,7 +86,7 @@ internal class HandbookScreen(
     override fun isPauseScreen(): Boolean = false
 
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
-        renderBackground(context)
+        renderScreenBackground(context, mouseX, mouseY, delta)
         val layout = layout()
         ScreenRendering.title(context, font, fitClientText(font, title, layout.contentWidth), width)
         val bar = layout.scrollbar
@@ -100,7 +100,7 @@ internal class HandbookScreen(
                 HINT_COLOR,
             )
         }
-        super.render(context, mouseX, mouseY, delta)
+        renderWidgets(context, mouseX, mouseY, delta)
     }
 
     /** 建立所有繪製與輸入共用的版面。 */

@@ -158,11 +158,11 @@ class MahjongTileSelectionConfirmEntity(
      */
     override fun deserializeCustomStep(nbt: CompoundTag): Nothing = error("Tile selection confirm panel has no custom animation step")
 
-    override fun defineSynchedData() {
-        entityData.define(HOLDER_ID, "")
-        entityData.define(MANAGED_TABLE_ID, "")
-        entityData.define(IS_PRIMARY, true)
-        entityData.define(SEGMENT_INDEX, 0)
+    override fun defineSyncedData(data: SyncedDataDefiner) {
+        data.define(HOLDER_ID, "")
+        data.define(MANAGED_TABLE_ID, "")
+        data.define(IS_PRIMARY, true)
+        data.define(SEGMENT_INDEX, 0)
     }
 
     /**

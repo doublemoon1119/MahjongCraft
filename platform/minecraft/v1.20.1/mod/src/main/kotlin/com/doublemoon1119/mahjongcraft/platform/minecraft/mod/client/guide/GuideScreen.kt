@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.guide.MinecraftGuideSc
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongHudPreviewRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.fitClientText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.CardBackground
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.MahjongScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelIcon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelScrollState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
@@ -62,7 +63,7 @@ internal class GuideScreen(
     internal val returnScreen: Screen?,
     private var tab: GuideTab,
     private val onTabChanged: (GuideTab) -> Unit,
-) : Screen(Component.translatable(MinecraftGuideScreenKeys.TITLE)) {
+) : MahjongScreen(Component.translatable(MinecraftGuideScreenKeys.TITLE)) {
     /** 目前頁籤的區塊；切換頁籤時重新建立。 */
     private var blocks: List<GuideBlock> = GuidePages.blocks(tab, viewer())
 
@@ -258,13 +259,13 @@ internal class GuideScreen(
      */
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         if (language !== Language.getInstance()) rebuildWidgets()
-        renderBackground(context)
+        renderScreenBackground(context, mouseX, mouseY, delta)
         ScreenRendering.title(context, font, fitClientText(font, title, layout.contentWidth), width)
         val tooltip = renderContent(context = context, mouseX = mouseX, mouseY = mouseY, delta = delta)
         val bar = layout.scrollbar(contentHeight = content.height, scroll = scroll.offset)
         if (bar.maximumScroll > 0) VerticalScrollbar.renderWithin(context, layout.scrollbarLeft, layout.scrollbarLeft + VerticalScrollbar.WIDTH, bar)
         ScreenRendering.tabLine(context, layout.tabs)
-        super.render(context, mouseX, mouseY, delta)
+        renderWidgets(context, mouseX, mouseY, delta)
         if (scroll.isDragging || draggingScene != null) return
         when (tooltip) {
             is ContentTooltip.Scene -> context.renderTooltip(
@@ -489,12 +490,12 @@ internal class GuideScreen(
         return lines.flatMap { line -> font.split(line, maximumWidth) }
     }
 
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
+    override fun mouseWheelScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         if (layout.inContent(mouseX, mouseY) || layout.onScrollbar(mouseX, mouseY)) {
             scroll.scrollBy(amount = amount, layout = layout, contentHeight = content.height)
             return true
         }
-        return super.mouseScrolled(mouseX, mouseY, amount)
+        return super.mouseWheelScrolled(mouseX, mouseY, amount)
     }
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {

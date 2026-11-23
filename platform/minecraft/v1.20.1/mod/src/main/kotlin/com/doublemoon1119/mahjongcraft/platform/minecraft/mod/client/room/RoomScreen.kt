@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.Control
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOption
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOverlay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.FormScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.MahjongScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelIcon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
@@ -108,7 +109,7 @@ class RoomScreen(
     private val ruleCatalogue: RuleCatalogueScreenController,
     private val tableSpaceObstructions: ClientTableSpaceObstructionStore,
     openSettings: Boolean = false,
-) : Screen(Component.translatable(MinecraftRoomScreenKeys.TITLE)) {
+) : MahjongScreen(Component.translatable(MinecraftRoomScreenKeys.TITLE)) {
     /** 外觀解析與呈現降級的診斷記錄。 */
     private val logger = mahjongCraftLogger(RoomScreen::class)
 
@@ -423,7 +424,7 @@ class RoomScreen(
     } ?: Component.literal("AI")
 
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
-        renderBackground(context)
+        renderScreenBackground(context, mouseX, mouseY, delta)
         ScreenRendering.title(context, font, title, width)
         val pointerX = dropdown.pointer(mouseX)
         val pointerY = dropdown.pointer(mouseY)
@@ -434,14 +435,14 @@ class RoomScreen(
             }
             Page.SETTINGS -> settingsPage.renderContent(context, pointerX, pointerY)
         }
-        super.render(context, pointerX, pointerY, delta)
+        renderWidgets(context, pointerX, pointerY, delta)
         labelTooltip?.let { context.renderTooltip(font, it, mouseX, mouseY) }
         dropdown.render(context, font, height, mouseX, mouseY)
     }
 
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
+    override fun mouseWheelScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         if (dropdown.mouseScrolled(font, height, amount)) return true
-        if (amount == 0.0) return super.mouseScrolled(mouseX, mouseY, amount)
+        if (amount == 0.0) return super.mouseWheelScrolled(mouseX, mouseY, amount)
         if (page == Page.SETTINGS) return settingsPage.mouseScrolled(mouseX, mouseY, amount)
         if (page == Page.ROOM && stateStore.tableOccupancy(tableId)?.occupancy == TableOccupancyDto.GAME) {
             val grid = playingGrid()
@@ -461,7 +462,7 @@ class RoomScreen(
             if (memberScroll.scrollBy(amount, grid.scrollbar.maximumScroll)) rebuild()
             return true
         }
-        return super.mouseScrolled(mouseX, mouseY, amount)
+        return super.mouseWheelScrolled(mouseX, mouseY, amount)
     }
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {

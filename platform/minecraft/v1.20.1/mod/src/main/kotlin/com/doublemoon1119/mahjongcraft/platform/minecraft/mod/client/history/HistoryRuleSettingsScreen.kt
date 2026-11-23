@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.FormScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.MahjongScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.TabStripLayout
@@ -22,7 +23,6 @@ import net.minecraft.ChatFormatting
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.Tooltip
-import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 import org.lwjgl.glfw.GLFW
 
@@ -34,7 +34,7 @@ import org.lwjgl.glfw.GLFW
  */
 internal class HistoryRuleSettingsScreen(
     private val session: HistoryBrowseSession,
-) : Screen(Component.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_TITLE)) {
+) : MahjongScreen(Component.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_TITLE)) {
     /** 第一個可見欄位的索引。 */
     private var scrollIndex = 0
 
@@ -236,7 +236,7 @@ internal class HistoryRuleSettingsScreen(
      * @param amount 滾輪增量。
      * @return 是否處理此輸入。
      */
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
+    override fun mouseWheelScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         val layout = layout
         val strip = tabStrip(layout, builtFor?.definition?.categories?.size ?: 0)
         if (strip.contains(mouseX, mouseY) && strip.maximumScroll > 0) {
@@ -251,7 +251,7 @@ internal class HistoryRuleSettingsScreen(
             scrollIndex = (scrollIndex + if (amount < 0) 1 else -1).coerceIn(0, maximumScroll())
             return true
         }
-        return super.mouseScrolled(mouseX, mouseY, amount)
+        return super.mouseWheelScrolled(mouseX, mouseY, amount)
     }
 
     /**
@@ -309,7 +309,7 @@ internal class HistoryRuleSettingsScreen(
     /** 繪製規則名稱、唯讀說明、分類頁籤與目前分類的欄位。 */
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         if (presentation() !== builtFor) rebuildWidgets()
-        renderBackground(context)
+        renderScreenBackground(context, mouseX, mouseY, delta)
         ScreenRendering.title(context, font, title, width)
         val layout = layout
         val state = session.controller.state.value
@@ -330,7 +330,7 @@ internal class HistoryRuleSettingsScreen(
                 hoveredTooltip = renderFields(context, layout, mouseX, mouseY)
             }
         }
-        super.render(context, mouseX, mouseY, delta)
+        renderWidgets(context, mouseX, mouseY, delta)
         hoveredTooltip?.let { context.renderComponentTooltip(font, it, mouseX, mouseY) }
     }
 

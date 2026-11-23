@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSE
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.network.syncher.EntityDataSerializers
 import net.minecraft.network.syncher.SynchedEntityData
-import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.level.Level
 import kotlin.uuid.Uuid
@@ -23,7 +22,7 @@ import kotlin.uuid.Uuid
 class TablePropTileEntity(
     type: EntityType<out TablePropTileEntity> = ModEntities.tablePropTile,
     world: Level,
-) : Entity(type, world) {
+) : MahjongEntity(type, world) {
     /** 所屬桌子；未指派或保存資料無效時為 null。 */
     var managedTableId: Uuid? = null
 
@@ -61,9 +60,9 @@ class TablePropTileEntity(
     override fun isPickable(): Boolean = false
 
     /** 初始化只含公開資料的同步欄位。 */
-    override fun defineSynchedData() {
-        entityData.define(ASSET_KEY, UNKNOWN_TILE_ASSET_KEY)
-        entityData.define(APPEARANCE_ID, BuiltInMinecraftTileAppearances.DEFAULT.id)
+    override fun defineSyncedData(data: SyncedDataDefiner) {
+        data.define(ASSET_KEY, UNKNOWN_TILE_ASSET_KEY)
+        data.define(APPEARANCE_ID, BuiltInMinecraftTileAppearances.DEFAULT.id)
     }
 
     /**

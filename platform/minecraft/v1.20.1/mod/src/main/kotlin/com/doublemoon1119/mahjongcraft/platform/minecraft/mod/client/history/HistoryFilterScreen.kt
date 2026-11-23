@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.CycleBu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOption
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOverlay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.FormScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.MahjongScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
@@ -19,7 +20,6 @@ import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.components.Tooltip
-import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner
 import net.minecraft.network.chat.Component
 import net.minecraft.util.FormattedCharSequence
@@ -36,7 +36,7 @@ import java.time.format.DateTimeFormatter
  */
 internal class HistoryFilterScreen(
     private val session: HistoryBrowseSession,
-) : Screen(Component.translatable(MinecraftHistoryScreenKeys.FILTERS)) {
+) : MahjongScreen(Component.translatable(MinecraftHistoryScreenKeys.FILTERS)) {
     /** 文字輸入欄位。 */
     private val fields = mutableMapOf<HistoryBrowseFilterField, EditBox>()
 
@@ -458,14 +458,14 @@ internal class HistoryFilterScreen(
     }
 
     /** 清單展開時在清單內捲動，否則逐列捲動篩選欄位。 */
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
+    override fun mouseWheelScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         if (dropdown.mouseScrolled(font, height, amount)) return true
         val layout = layout
         if (mouseY >= layout.fieldsTop && mouseY < layout.fieldsBottom && amount != 0.0) {
             scrollTo(scrollIndex + if (amount < 0) 1 else -1)
             return true
         }
-        return super.mouseScrolled(mouseX, mouseY, amount)
+        return super.mouseWheelScrolled(mouseX, mouseY, amount)
     }
 
     /**
@@ -515,7 +515,7 @@ internal class HistoryFilterScreen(
     }
 
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
-        renderBackground(context)
+        renderScreenBackground(context, mouseX, mouseY, delta)
         ScreenRendering.title(context, font, title, width)
         val layout = layout
         val input = session.filterDraft.input
@@ -544,7 +544,7 @@ internal class HistoryFilterScreen(
         ruleButton?.message = ruleDisplayLabel()
         resetButton?.active = input != HistoryBrowseFilterInput()
         VerticalScrollbar.render(context, layout.scrollbarLeft, layout.scrollbar(fieldCount = rows().size, scrollIndex = scrollIndex))
-        super.render(context, dropdown.pointer(mouseX), dropdown.pointer(mouseY), delta)
+        renderWidgets(context, dropdown.pointer(mouseX), dropdown.pointer(mouseY), delta)
         dropdown.render(context, font, height, mouseX, mouseY)
     }
 

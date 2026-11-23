@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.Control
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.CycleButtonInput
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOption
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOverlay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.MahjongScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelIcon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RowStripe
@@ -20,7 +21,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.Tooltip
-import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner
 import net.minecraft.locale.Language
 import net.minecraft.network.chat.Component
@@ -33,7 +33,7 @@ import net.minecraft.util.FormattedCharSequence
  */
 internal class HistoryListScreen(
     private val session: HistoryBrowseSession,
-) : Screen(Component.translatable(MinecraftHistoryScreenKeys.TITLE)) {
+) : MahjongScreen(Component.translatable(MinecraftHistoryScreenKeys.TITLE)) {
     /** 目前版面幾何。 */
     private var layout = HistoryScreenLayout.measure(width = 0, height = 0)
 
@@ -162,9 +162,9 @@ internal class HistoryListScreen(
         session.controller.rememberListPosition(scroll)
     }
 
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
+    override fun mouseWheelScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         if (dropdown.mouseScrolled(font, height, amount)) return true
-        if (mouseY < layout.contentTop || mouseY > layout.contentBottom) return super.mouseScrolled(mouseX, mouseY, amount)
+        if (mouseY < layout.contentTop || mouseY > layout.contentBottom) return super.mouseWheelScrolled(mouseX, mouseY, amount)
         session.controller.rememberListPosition(layout.clampScroll(scroll - amount * 18.0, contentHeight(displayEntries())))
         return true
     }
@@ -355,7 +355,7 @@ internal class HistoryListScreen(
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         val pointerX = dropdown.pointer(mouseX)
         val pointerY = dropdown.pointer(mouseY)
-        renderBackground(context)
+        renderScreenBackground(context, mouseX, mouseY, delta)
         ScreenRendering.title(context, font, title, width)
         val state = session.controller.state.value
         hoveredEntry = null
@@ -443,7 +443,7 @@ internal class HistoryListScreen(
                 secondary = HistoryPaging.totalText(list.totalCount),
             )
         }
-        super.render(context, pointerX, pointerY, delta)
+        renderWidgets(context, pointerX, pointerY, delta)
         hoveredEntry?.let { context.renderComponentTooltip(font, it, mouseX, mouseY) }
         dropdown.render(context, font, height, mouseX, mouseY)
     }

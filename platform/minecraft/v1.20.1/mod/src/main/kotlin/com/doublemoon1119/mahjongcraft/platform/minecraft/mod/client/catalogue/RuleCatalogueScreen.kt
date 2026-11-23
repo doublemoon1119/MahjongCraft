@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOption
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.DropdownOverlay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.MahjongScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.PixelScrollState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenRendering
@@ -43,7 +44,7 @@ internal class RuleCatalogueScreen(
     private val tileFaces: MahjongTileFaceRenderer,
     private val openingContext: RuleCatalogueBrowseContext,
     private val exit: RuleCatalogueExit,
-) : Screen(Component.translatable(MinecraftRuleCatalogueScreenKeys.TITLE)) {
+) : MahjongScreen(Component.translatable(MinecraftRuleCatalogueScreenKeys.TITLE)) {
     /** 返回時回到的畫面；直接關回遊戲時為 null。 */
     internal val returnScreen: Screen? get() = exit.returnScreen
 
@@ -326,7 +327,7 @@ internal class RuleCatalogueScreen(
      */
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         if (language !== Language.getInstance()) rebuildWidgets()
-        renderBackground(context)
+        renderScreenBackground(context, mouseX, mouseY, delta)
         ScreenRendering.title(context, font, title, width)
         val pointerX = dropdown.pointer(mouseX)
         val pointerY = dropdown.pointer(mouseY)
@@ -336,7 +337,7 @@ internal class RuleCatalogueScreen(
         layout.sourceLabelY?.let { labelY ->
             context.drawString(font, sourceLabel(), layout.contentLeft, labelY, SOURCE_LABEL_COLOR)
         }
-        super.render(context, pointerX, pointerY, delta)
+        renderWidgets(context, pointerX, pointerY, delta)
         if (contentTooltip.isNotEmpty() && !scroll.isDragging) context.renderComponentTooltip(font, contentTooltip, mouseX, mouseY)
         dropdown.render(context, font, height, mouseX, mouseY)
     }
@@ -415,7 +416,7 @@ internal class RuleCatalogueScreen(
      * @param amount 滾輪方向與幅度。
      * @return 是否處理事件。
      */
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
+    override fun mouseWheelScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         if (dropdown.mouseScrolled(font, height, amount)) return true
         val strip = layout.tabStrip(tabCount = categoryOptions().size, scroll = tabScroll)
         if (strip.contains(mouseX, mouseY) && strip.maximumScroll > 0) {
@@ -430,7 +431,7 @@ internal class RuleCatalogueScreen(
             scroll.scrollBy(amount = amount, layout = layout, contentHeight = contentHeight)
             return true
         }
-        return super.mouseScrolled(mouseX, mouseY, amount)
+        return super.mouseWheelScrolled(mouseX, mouseY, amount)
     }
 
     /**
