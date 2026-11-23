@@ -12,6 +12,7 @@ import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.client.player.LocalPlayer
 import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.commands.CommandSourceStack
+import net.minecraft.network.protocol.game.ServerboundInteractPacket
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.packs.resources.ResourceManager
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener
@@ -20,7 +21,9 @@ import net.minecraft.world.InteractionResult
 import net.minecraft.world.InteractionResultHolder
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.item.ItemStack
+import net.minecraft.world.phys.EntityHitResult
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent
+import net.minecraftforge.client.event.InputEvent
 import net.minecraftforge.client.event.RegisterClientCommandsEvent
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent
@@ -93,16 +96,30 @@ object ForgeClientEvents : ClientEvents {
         listen<EntityLeaveLevelEvent> { event -> (event.level as? ClientLevel)?.let { listener(event.entity, it) } }
     }
 
-    /** Forge 在伺服器與用戶端都會發出這個事件，這裡只轉交用戶端的那一次；監聽器的結果不是 pass 時取消事件並採用該結果。 */
+    /**
+     * 在按下使用鍵、原版送出任何互動之前轉交準星指向的實體；Forge 的實體互動事件在原版把互動送到伺服器之後才發出，
+     * 取消它攔不住伺服器端的處理。
+     *
+     * 監聽器的結果不是 pass 時取消這次按鍵：結果會消耗這次操作時只送出「互動實體上某個位置」，伺服器不會因此呼叫實體
+     * 本身的互動；結果要求揮手時揮手。
+     */
     override fun onClientUseEntity(listener: (LocalPlayer, ClientLevel, InteractionHand, Entity) -> InteractionResult) {
-        listen<PlayerInteractEvent.EntityInteract> { event ->
-            val level = event.level as? ClientLevel ?: return@listen
-            val player = event.entity as? LocalPlayer ?: return@listen
-            val result = listener(player, level, event.hand, event.target)
-            if (result != InteractionResult.PASS) {
-                event.cancellationResult = result
-                event.isCanceled = true
+        listen<InputEvent.InteractionKeyMappingTriggered> { event ->
+            if (!event.isUseItem) return@listen
+            val client = Minecraft.getInstance()
+            val hit = client.hitResult as? EntityHitResult ?: return@listen
+            val player = client.player ?: return@listen
+            val level = client.level ?: return@listen
+            val entity = hit.entity
+            if (!level.worldBorder.isWithinBounds(entity.blockPosition())) return@listen
+            val result = listener(player, level, event.hand, entity)
+            if (result == InteractionResult.PASS) return@listen
+            if (result.consumesAction()) {
+                val location = hit.location.subtract(entity.position())
+                player.connection.send(ServerboundInteractPacket.createInteractionPacket(entity, player.isShiftKeyDown, event.hand, location))
             }
+            event.setSwingHand(result.shouldSwing())
+            event.isCanceled = true
         }
     }
 

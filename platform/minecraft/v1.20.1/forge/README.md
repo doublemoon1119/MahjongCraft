@@ -28,6 +28,13 @@ Forge draws the in-game screen with its own `ForgeGui` overlays instead of vanil
 shared `GuiMixin` never runs on Forge. The HUD drawn before the chat, such as the compact countdown and the
 hand analysis, is a GUI overlay registered below Forge's chat panel instead.
 
+Vanilla sends a right-click on an entity to the server before Forge fires its client entity interaction event,
+so cancelling that event cannot stop the server from handling the click, for example as an ordinary discard
+of a clicked hand tile. Client listeners for entity use therefore run when the use key is pressed, before
+vanilla sends anything, as Fabric's do. A click a listener handles sends only an interaction at a position on
+the entity, which does not run the entity's own interaction on the server, and the server listeners for
+entity use receive both kinds of interaction.
+
 ## Dependencies
 
 - Kotlin for Forge provides the Kotlin standard library, kotlin-reflect, kotlinx-coroutines and
