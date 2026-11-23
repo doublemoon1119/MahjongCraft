@@ -27,8 +27,6 @@ val forgeMixinConfig = "mahjongcraft.forge.mixins.json"
 val sharedMixinConfig = "mahjongcraft.mixins.json"
 
 configure<MinecraftModPackagingExtension> {
-    // 載入器接點尚未全部實作，不交付給玩家。
-    distributable.set(false)
     dependencyRequirements.put("minecraft", mc1201.versions.require.forge.minecraft)
     dependencyRequirements.put("forge", mc1201.versions.require.forge.loader)
     dependencyRequirements.put("kotlinForForge", mc1201.versions.require.forge.kotlinforforge)

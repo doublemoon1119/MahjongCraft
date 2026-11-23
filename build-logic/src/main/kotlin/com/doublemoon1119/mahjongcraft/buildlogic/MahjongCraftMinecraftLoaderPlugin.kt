@@ -79,8 +79,9 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
 /**
  * 把這個模組交付給玩家的 JAR 接到 root 的 [CI_ARTIFACTS_TASK_NAME]；[MinecraftModPackagingExtension.distributable] 為否時不接。
  *
- * Fabric Loom 模組交付的是重新映射後的 `remapJar`，其他模組是 `jar`。root 沒有套用 target 管理外掛時（例如只建置部分專案的
- * 測試建置）不做任何事。
+ * 交付的是轉成執行時名稱後的 JAR：Fabric Loom 模組的 `remapJar`、ModDevGradle 舊版 Forge 模組的 `reobfJar`，都沒有時是
+ * `jar`。這些模組的 `jar` 使用開發時的名稱，不能交給玩家。root 沒有套用 target 管理外掛時（例如只建置部分專案的測試建置）
+ * 不做任何事。
  *
  * @param packaging 這個模組的打包設定。
  */
@@ -90,16 +91,19 @@ private fun Project.contributeCiArtifact(packaging: MinecraftModPackagingExtensi
         rootProject.tasks.named(CI_ARTIFACTS_TASK_NAME, Sync::class.java).configure {
             from(
                 Callable {
-                    when {
-                        !packaging.distributable.get() -> emptyList<Any>()
-                        project.tasks.names.contains("remapJar") -> listOf(project.tasks.named("remapJar"))
-                        else -> listOf(project.tasks.named("jar"))
+                    if (packaging.distributable.get()) {
+                        listOf(project.tasks.named(DISTRIBUTED_JAR_TASK_NAMES.first(project.tasks.names::contains)))
+                    } else {
+                        emptyList<Any>()
                     }
                 },
             )
         }
     }
 }
+
+/** 可交付 JAR 的任務名稱，依優先順序排列；最後的 `jar` 一定存在。 */
+private val DISTRIBUTED_JAR_TASK_NAMES: List<String> = listOf("remapJar", "reobfJar", "jar")
 
 /**
  * 模組目錄的名稱，例如 `platform/minecraft/v1.20.1/fabric` 的 `fabric`；作為產物名稱的一部分，也是

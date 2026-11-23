@@ -78,7 +78,9 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   loader it runs on. Its JAR name keeps the directory name.
 - A loader module's mod JAR is distributable unless its packaging sets `distributable` to `false`, as
   development-only modules and examples do. Distributable mods are what `collectCiArtifacts` gathers for CI:
-  the remapped JAR for Fabric Loom modules, otherwise the plain JAR.
+  the JAR converted to run-time names, which is `remapJar` for Fabric Loom modules and `reobfJar` for
+  ModDevGradle's legacy Forge modules, otherwise the plain JAR. Those modules' plain JAR keeps development
+  names and is not distributable.
 - `-PmahjongcraftBuildMetadata=<value>` appends `.<value>` to the metadata version and `+<value>` to the JAR
   version, for example to identify a CI build by its commit. It must be dot-separated letters, digits and
   hyphens, and it leaves project versions and the version policy unchanged.

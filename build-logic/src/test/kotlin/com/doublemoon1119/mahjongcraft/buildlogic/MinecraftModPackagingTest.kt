@@ -80,6 +80,33 @@ class MinecraftModPackagingTest {
         assertEquals(listOf("mahjongcraft-fabric-1.20.1-0.0.0-dev.jar"), collected)
     }
 
+    /** 模組有 `reobfJar` 時，CI 收集它轉成執行時名稱的 JAR，而不是使用開發時名稱的 `jar`。 */
+    @Test
+    fun `ci artifacts prefer the reobfuscated jar`() = withFixture { root ->
+        prepareFixture(root)
+        root.resolve("build.gradle").writeText(
+            "plugins {\n    id(\"mahjongcraft.target-management\")\n}\n" + root.resolve("build.gradle").readText(),
+        )
+        root.resolve("example/platform/minecraft/v1.20.1/fabric/build.gradle").appendText(
+            "\nminecraftModPackaging {\n    distributable = false\n}\n",
+        )
+        root.resolve("platform/v1.20.1/fabric/build.gradle").appendText(
+            """
+
+            tasks.register("reobfJar", Jar) {
+                archiveBaseName = "reobfuscated"
+                destinationDirectory = layout.buildDirectory.dir("reobf")
+                from(sourceSets.main.output)
+            }
+            """.trimIndent() + "\n",
+        )
+
+        runner(root, "collectCiArtifacts").build()
+
+        val collected = root.resolve("build/ci/artifacts").list().orEmpty().sorted()
+        assertEquals(listOf("reobfuscated-0.0.0-dev.jar"), collected)
+    }
+
     /** example 可覆寫自己的 metadata 與 archive 名稱，但不會改變正式 mod 的 root ID。 */
     @Test
     fun `example packaging can override metadata without changing formal id`() = withFixture { root ->

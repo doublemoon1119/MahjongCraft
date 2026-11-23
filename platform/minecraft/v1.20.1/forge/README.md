@@ -12,8 +12,9 @@ Its Gradle project path is `:minecraft_v1.20.1_forge`, its code uses the
 
 ## Status
 
-The server and client sides are implemented, including the config screen opened from Forge's mod list.
-The development tools are not, so the adapter is not distributed.
+The server and client sides are implemented, including the config screen opened from Forge's mod list,
+and development runs load the [debug tools](../forge-debug/README.md). The mod JAR is distributable: CI
+collects the JAR converted to Forge's run-time names by `reobfJar`, not the development JAR.
 
 The Mahjong tile recipe uses the `mahjongcraft:dyes` item tag. Each loader defines it: this module combines
 the vanilla dyes with Forge's `forge:dyes`, so dyes from other mods work as well.
