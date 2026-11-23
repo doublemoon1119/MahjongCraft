@@ -132,3 +132,26 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   unless a build sets it explicitly.
 - A group name means the same kind of environment on every target, but each target chooses the actual mods.
   The groups a target declares, and how to use them, belong in that loader module's README.
+
+## Automated Test Runs
+
+- Development clients can test themselves without anyone at the keyboard. Pass the steps to run, or `true`
+  for all of them:
+
+  ```shell
+  ./gradlew :minecraft_v1.20.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=true"
+  ```
+
+- The loader modules pass the switch to their runs as the `mahjongcraft.autotest` system property, together
+  with the module name for the report. Without the switch, development runs stay unchanged. The debug tools
+  read the property, so the packaged mod never runs automated tests.
+- Once the title screen has loaded, the client deletes the previous test world, creates a flat creative world
+  with a fixed seed, runs the selected steps, writes a report and closes the game. The report lives in the
+  run directory under `autotest/<start time>/` as `report.md`, `report.json` and screenshots, and
+  `autotest/latest.txt` names the latest folder. Closing the game early still writes a report that marks the
+  unfinished step as aborted.
+- While a test runs, the game ignores mouse and keyboard input, leaves the cursor free, keeps running without
+  focus and plays no sound; it records each sound request in the report instead. It does not change the saved
+  volume or other options. Do not minimise the window: Minecraft stops drawing while minimised.
+- The steps and the input and sound handling live in the
+  [Minecraft 1.20.1 mod debug tools](../../platform/minecraft/v1.20.1/mod-debug/README.md).

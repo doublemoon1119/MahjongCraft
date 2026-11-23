@@ -33,6 +33,8 @@ tasks.withType<Test>().configureEach {
 dependencies {
     implementation(project(":minecraft_v1.20.1_mod"))
     implementation(project(":minecraft_common-debug"))
+    // 自動測試的 mixin 只對註解編譯；各載入器在執行時提供 Mixin。
+    compileOnly(mc1201.mixin)
     // 本體附帶的專案模組與函式庫，與載入器模組相同的共用清單。
     minecraftModLibraries.addTo("implementation")
     implementation(libs.kotlinx.coroutines)

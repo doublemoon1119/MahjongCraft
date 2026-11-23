@@ -44,6 +44,19 @@ fun Project.includeTestSourcesOf(projectPath: String, sourceDirectory: String) {
 }
 
 /**
+ * 開發執行要傳給遊戲的自動測試系統屬性，由 Gradle 屬性 `mahjongcraftAutotest` 決定。
+ *
+ * 屬性值原樣傳給 debug 模組，例如 `true` 執行全部步驟、`world,screens` 只執行列出的步驟；另外傳入這個模組的名稱，例如
+ * `minecraft_v1.20.1_fabric`，供報告記錄測試的目標。沒有設定時為空，開發執行與平常相同。
+ *
+ * @return 系統屬性名稱與值。
+ */
+fun Project.autotestSystemProperties(): Map<String, String> {
+    val selection = providers.gradleProperty("mahjongcraftAutotest").orNull?.takeIf(String::isNotBlank) ?: return emptyMap()
+    return mapOf("mahjongcraft.autotest" to selection, "mahjongcraft.autotest.target" to name)
+}
+
+/**
  * 把另一個專案的資源一起打包進這個模組，例如跨版本共用模組的材質與翻譯。
  *
  * @param projectPath 提供資源的專案路徑。

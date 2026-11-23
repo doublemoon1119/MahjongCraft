@@ -50,3 +50,16 @@ The debug language file test reads the files in the common debug tools.
 connect to the main mod: the extension registration, the command tree and the development hooks. It
 needs a loader's service graph, so this module does not compile it. Each loader debug module compiles it
 with its own tests and supplies that graph.
+
+## Automated tests
+
+`client/debug/autotest` holds the automated client test that development runs start with
+`-PmahjongcraftAutotest` (see
+[Minecraft Build](../../../../docs/contributing/minecraft-build.md#automated-test-runs)). Each
+step implements `AutotestStep` and is listed in `autotestClientSteps`; the first step creates and enters the test
+world and always runs. A step records checks and screenshots through `AutotestContext`; an exception or a failed
+check fails the step without stopping the steps after it.
+
+The mixins in `mahjongcraft.debug.mixins.json` ignore input, keep the game running without focus and record
+sounds instead of playing them, only while the test runs. The loader debug modules register the configuration:
+Fabric in `fabric.mod.json`, Forge through the mixin configurations of its development runs.

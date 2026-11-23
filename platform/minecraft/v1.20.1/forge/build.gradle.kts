@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.buildlogic.StripModuleInfo
 import com.doublemoon1119.mahjongcraft.buildlogic.UnpackLibraryJars
 import com.doublemoon1119.mahjongcraft.buildlogic.VerifyEmbeddedLibrariesTask
 import com.doublemoon1119.mahjongcraft.buildlogic.VerifyNoSplitPackagesTask
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestSystemProperties
 import com.doublemoon1119.mahjongcraft.buildlogic.hideForgeDeprecationsOfVanillaApis
 import com.doublemoon1119.mahjongcraft.buildlogic.includeResourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
@@ -64,10 +65,13 @@ legacyForge {
         create("client") {
             client()
             gameDirectory.set(layout.projectDirectory.dir("run/client"))
+            // -PmahjongcraftAutotest 時，debug 模組在遊戲啟動後自動執行測試並關閉遊戲。
+            autotestSystemProperties().forEach { (name, value) -> systemProperty(name, value) }
         }
         create("server") {
             server()
             gameDirectory.set(layout.projectDirectory.dir("run/server"))
+            autotestSystemProperties().forEach { (name, value) -> systemProperty(name, value) }
             programArgument("--nogui")
         }
     }
@@ -127,6 +131,8 @@ mixin {
     add(sourceSets.main.get(), "mahjongcraft.refmap.json")
     config(forgeMixinConfig)
     config(sharedMixinConfig)
+    // debug 模組的自動測試 mixin；只有開發執行會載入 debug 模組，正式 JAR 的 MixinConfigs 不含它。
+    config("mahjongcraft.debug.mixins.json")
 }
 
 tasks.jar {

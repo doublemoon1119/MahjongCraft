@@ -10,6 +10,9 @@
   "license": "${license}",
   "icon": "assets/${id}/icon.png",
   "environment": "*",
+  "mixins": [
+    "mahjongcraft.debug.mixins.json"
+  ],
   "entrypoints": {
     "client": [
       "com.doublemoon1119.mahjongcraft.platform.fabric.client.debug.DebugClientEntrypoint"
