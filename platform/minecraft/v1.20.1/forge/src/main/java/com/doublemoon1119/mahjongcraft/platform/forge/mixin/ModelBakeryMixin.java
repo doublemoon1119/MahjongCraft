@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * 讀取模型時先問程式能否提供模型，能的話就不讀模型檔。
  *
- * <p>Forge 沒有為沒有模型檔的 ID 提供模型的事件；這裡在 Fabric API 提供同名功能的位置，交給 {@link ForgeModelLoadings}。</p>
+ * <p>Forge 沒有為沒有模型檔的 ID 提供模型的事件；這裡在原版讀取模型檔之前，先交給 {@link ForgeModelLoadings}。</p>
  */
 @Mixin(ModelBakery.class)
 public abstract class ModelBakeryMixin {

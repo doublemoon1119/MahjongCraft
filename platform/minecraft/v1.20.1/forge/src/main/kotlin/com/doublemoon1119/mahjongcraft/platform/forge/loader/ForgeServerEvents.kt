@@ -31,8 +31,9 @@ import java.util.concurrent.CopyOnWriteArrayList
 /**
  * 以 Forge 的事件實作 [ServerEvents]。
  *
- * Forge 沒有「實體加入世界之後」、「方塊實體載入」與「玩家破壞方塊之後」的事件，這三個時間點由 Forge 專用的 mixin
- * 在 Fabric API 發出同名事件的位置呼叫 [fireEntityLoad]、[fireBlockEntityLoad] 與 [fireAfterPlayerBreakBlock]。
+ * Forge 沒有「實體加入世界之後」、「方塊實體載入」與「玩家破壞方塊之後」的事件，由 Forge 專用的 mixin 補上：原版開始
+ * 追蹤實體之後呼叫 [fireEntityLoad]，區塊記錄方塊實體之後呼叫 [fireBlockEntityLoad]，玩家破壞的方塊確實被移除之後呼叫
+ * [fireAfterPlayerBreakBlock]。
  */
 object ForgeServerEvents : ServerEvents {
     /** 實體加入世界之後的監聽器。 */
