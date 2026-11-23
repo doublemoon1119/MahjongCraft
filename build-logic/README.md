@@ -52,9 +52,8 @@ and Kotlin Serialization. Its serialization compiler follows Gradle's embedded K
 
 ## Testing
 
-Gradle TestKit covers catalog validation, target selection and precedence, selecting several targets, optional example modules,
-loader metadata isolation, local target management,
-repository verification,
+Gradle TestKit covers catalog validation, target selection and precedence, selecting several targets,
+optional example modules, loader metadata isolation, local target management, repository verification,
 and public API ABI filtering and failure detection for JVM and KMP modules. Run the included build's tests with
 `./gradlew -p build-logic test`, in addition to the project-wide checks documented in
 [CONTRIBUTING.md](../CONTRIBUTING.md).

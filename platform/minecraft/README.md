@@ -31,7 +31,8 @@ Run commands from the repository root; quote the target property, including on P
 ```
 
 Each target loads the cross-version common layer, the 1.20.1 mod module, one loader adapter and
-their debug tools. It does not validate other Minecraft versions or loaders.
+their debug tools. It does not validate other Minecraft versions or loaders. Both targets can be selected
+together, as described in [Build](../../docs/contributing/build.md).
 
 ## Boundaries
 

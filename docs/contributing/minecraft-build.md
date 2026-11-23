@@ -18,6 +18,9 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   without applying them, so every module loads the same plugin classes. Modules that apply different plugin
   sets would otherwise load Loom in separate class loaders, and Loom fails when it reaches another project, for
   example while an IDE sync creates `genSources` tasks. Declare a new loader's plugins there as well.
+- ModDevGradle's tools that prepare Minecraft default to a Java version the plugin chooses. The version mod and
+  loader conventions run them on the Java running Gradle instead, so no extra JDK is installed or downloaded;
+  CI disables toolchain downloads.
 
 ## Version Mod Modules
 
@@ -29,7 +32,12 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   names. The mod module's JAR is never distributed.
 - Loader modules call `includeSourcesOf` from build-logic to compile another project's sources and resources with
   their own, and `includeResourcesOf` to package only its resources, such as the textures and translations in
-  `:minecraft_common`.
+  `:minecraft_common`. `includeTestSourcesOf` adds a test folder that only loader modules compile, such as
+  the debug assembly test shared by the loader debug modules.
+- Modules that use the version mod module's access transformer, such as Forge modules, debug modules and the
+  example's version module, read it through `minecraftModAccessTransformer()`. Forge modules call
+  `hideForgeDeprecationsOfVanillaApis()`, as the [Forge adapter](../../platform/minecraft/v1.20.1/forge/README.md)
+  explains.
 - Logic that does not need Minecraft classes belongs in the cross-version common layer instead, so the code each
   new Minecraft version copies stays small.
 
@@ -100,8 +108,8 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   does not declare and lists the groups it does declare, while a module that declares no groups, such as a
   debug module, ignores the switch. Like the example switch, it is not saved in `local.dev.properties`.
 - Each loader module declares its groups in its build script through the `devMods` extension of the
-  Minecraft loader convention, for example `group("iris", mc1201.sodium, mc1201.iris)`. Versions live in
-  the Minecraft version's catalog. Fabric Loom modules add selected groups to `modLocalRuntime`, so the mods
+  Minecraft loader convention. A group's mods are a bundle in the Minecraft version's catalog, so modules
+  that offer the same group share it, for example `group("iris", mc1201.bundles.dev.iris)`. Fabric Loom modules add selected groups to `modLocalRuntime`, so the mods
   are neither bundled nor published as dependencies; other loaders set `configurationName` to their
   equivalent.
 - Groups hold runtime mods only. Product code must not depend on them. An integration that compiles
@@ -109,7 +117,7 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   keeps the other mod optional in its metadata; the group only supplies the mod for development runs.
 - Fabric Loom removes the libraries a mod bundles in its own JAR when it prepares the mod for development
   runs, and expects them as Maven dependencies instead. When a mod's published metadata does not declare
-  them, list those libraries in the group as well, at the versions the mod bundles.
+  them, list those libraries in the group's bundle as well, at the versions the mod bundles.
 - Development runs use the libraries of the target's Minecraft release. Loom would otherwise choose them for
   the Java version running Gradle, for example upgrading LWJGL on Java 19 or newer, while the runs use the
   target's Java toolchain. The loader convention sets Loom's runtime Java version to the target's toolchain

@@ -59,13 +59,14 @@ other classes are created with a no-argument constructor.
 [Minecraft 1.20.1 mod](../mod/README.md) module. `mahjongcraft.forge.mixins.json` lists the Forge-only
 mixins:
 
-- The server events Forge does not have, at the same points where Fabric API fires them: an entity added to
-  a world, a block entity loaded into a chunk, and a block a player has broken.
+- The server events Forge does not have: after vanilla starts tracking an entity added to a world, after a
+  chunk records a block entity, and after a block a player breaks is actually removed.
 - The Mahjong tile item supplies its programmatic renderer, because Forge asks only the item's own class.
 - Model loading asks the registered model loadings first, so tile variants without a model file still load.
 
-The shared mixins use MixinExtras, which Forge 1.20.1 does not ship; the mod embeds it with jar-in-jar. ModDevGradle does not add `MixinConfigs` to the JAR manifest,
-so the `jar` task adds it; production Forge ignores mixin configurations missing from the manifest.
+The shared mixins use MixinExtras, which Forge 1.20.1 does not ship; the mod embeds it with jar-in-jar.
+ModDevGradle does not add `MixinConfigs` to the JAR manifest, so the `jar` task adds it; production Forge
+ignores mixin configurations missing from the manifest.
 
 ## Deprecation Warnings
 

@@ -73,6 +73,6 @@ antlr-runtime = { group = "org.antlr", name = "antlr4-runtime", version.ref = "a
 
 [bundles]
 # 開發執行時可選載入的相容測試組合，以 -PmahjongcraftDevMods 選擇；本體與範例的 Fabric 模組共用。
-# Iris 的組合包含它在開發執行時需要的 Sodium 與函式庫。
+# Iris 的組合包含 Sodium，以及 Iris 附帶在自己 JAR 中的函式庫：Loom 準備開發執行時會移除它們，須另外提供。
 dev-iris = ["sodium", "iris", "jcpp", "glsl-transformer", "antlr-runtime"]
 dev-modmenu = ["mod-menu"]
