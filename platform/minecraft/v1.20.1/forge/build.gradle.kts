@@ -35,8 +35,16 @@ configure<MinecraftModPackagingExtension> {
 repositories {
     // Kotlin for Forge 只發布在作者自己的 Maven 倉庫。
     kotlinForForge()
-    // Oculus 只發布在 Modrinth 的 Maven 倉庫。
+    // Oculus 與 Embeddium 只發布在 Modrinth 的 Maven 倉庫。
     modrinth()
+}
+
+// 開發執行時可選載入的相容測試模組，以 -PmahjongcraftDevMods 選擇；不打包，也不成為模組的依賴。
+devMods {
+    // Oculus 與它需要的 Embeddium，測試光影。
+    group("shaders", mc1201.bundles.dev.forge.oculus)
+    // Forge 內建的模組清單就有設定按鈕，不需要另外的模組；宣告這個組合，讓同時選擇 Fabric 時同一個開關也能使用。
+    group("modmenu")
 }
 
 // 材質、模型與翻譯放在跨版本、跨載入器共用的 :minecraft_common，與本模組的資源一起打包。

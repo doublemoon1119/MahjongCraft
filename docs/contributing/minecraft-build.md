@@ -100,7 +100,7 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   such as a shader mod for compatibility checks. Pass the groups as a comma-separated list:
 
   ```shell
-  ./gradlew :minecraft_v1.20.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftDevMods=iris,modmenu"
+  ./gradlew :minecraft_v1.20.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftDevMods=shaders,modmenu"
   ```
 
 - Without the switch, or with an empty value, no group is loaded and development runs stay unchanged. The
@@ -109,9 +109,14 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   debug module, ignores the switch. Like the example switch, it is not saved in `local.dev.properties`.
 - Each loader module declares its groups in its build script through the `devMods` extension of the
   Minecraft loader convention. A group's mods are a bundle in the Minecraft version's catalog, so modules
-  that offer the same group share it, for example `group("iris", mc1201.bundles.dev.iris)`. Fabric Loom modules add selected groups to `modLocalRuntime`, so the mods
-  are neither bundled nor published as dependencies; other loaders set `configurationName` to their
-  equivalent.
+  that offer the same group share it, for example `group("shaders", mc1201.bundles.dev.fabric.iris)`. Group
+  names describe the environment, not one mod, while bundle names include the loader and name the mods, because
+  each loader needs its own mods.
+- Fabric Loom modules add selected groups to `modLocalRuntime`, and ModDevGradle's legacy Forge modules to
+  `modRuntimeOnly`, so the mods are neither bundled nor published as dependencies. Another loader sets
+  `configurationName` to its equivalent.
+- When several targets are selected, one switch applies to all of them, so a loader that needs no mods for
+  a group declares it empty, as Forge does for `modmenu` because its own mod list has a settings button.
 - Groups hold runtime mods only. Product code must not depend on them. An integration that compiles
   against another mod's API, such as a ModMenu settings entry point, declares that API as compile-only and
   keeps the other mod optional in its metadata; the group only supplies the mod for development runs.

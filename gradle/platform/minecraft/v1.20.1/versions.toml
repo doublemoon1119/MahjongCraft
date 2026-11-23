@@ -22,8 +22,10 @@ forge = "1.20.1-47.4.29"
 kotlinforforge = "4.13.0"
 # Forge 1.20.1 附帶的 Mixin 版本；它的 annotation processor 產生 Forge 名稱用的 refmap。
 mixin = "0.8.5"
-# Forge 上的光影模組，只對它的 API 編譯、不打包。
+# Forge 上的光影模組，只對它的 API 編譯、不打包；開發執行時也可由 shaders 組合載入。
 oculus = "1.20.1-1.8.0"
+# Oculus 需要的 Sodium 移植，只在開發執行時由 shaders 組合載入。
+embeddium = "0.3.31+mc1.20.1"
 
 # 共用 mixin 使用的 MixinExtras；與 Fabric Loader 附帶的版本一致，Forge 1.20.1 沒有附帶，由 mod 以 jar-in-jar 附帶。
 mixinextras = "0.5.4"
@@ -60,6 +62,7 @@ kotlinforforge = { group = "thedarkcolour", name = "kotlinforforge", version.ref
 kotlinforforge-lib = { group = "thedarkcolour", name = "kfflib", version.ref = "kotlinforforge" }
 mixin = { group = "org.spongepowered", name = "mixin", version.ref = "mixin" }
 oculus = { group = "maven.modrinth", name = "oculus", version.ref = "oculus" }
+embeddium = { group = "maven.modrinth", name = "embeddium", version.ref = "embeddium" }
 mixinextras-common = { group = "io.github.llamalad7", name = "mixinextras-common", version.ref = "mixinextras" }
 mixinextras-forge = { group = "io.github.llamalad7", name = "mixinextras-forge", version.ref = "mixinextras" }
 
@@ -72,7 +75,9 @@ glsl-transformer = { group = "io.github.douira", name = "glsl-transformer", vers
 antlr-runtime = { group = "org.antlr", name = "antlr4-runtime", version.ref = "antlr-runtime" }
 
 [bundles]
-# 開發執行時可選載入的相容測試組合，以 -PmahjongcraftDevMods 選擇；本體與範例的 Fabric 模組共用。
-# Iris 的組合包含 Sodium，以及 Iris 附帶在自己 JAR 中的函式庫：Loom 準備開發執行時會移除它們，須另外提供。
-dev-iris = ["sodium", "iris", "jcpp", "glsl-transformer", "antlr-runtime"]
-dev-modmenu = ["mod-menu"]
+# 開發執行時可選載入的相容測試組合，以 -PmahjongcraftDevMods 選擇；同一個載入器的本體與範例模組共用。
+# Fabric 的 Iris 組合包含 Sodium，以及 Iris 附帶在自己 JAR 中的函式庫：Loom 準備開發執行時會移除它們，須另外提供。
+dev-fabric-iris = ["sodium", "iris", "jcpp", "glsl-transformer", "antlr-runtime"]
+dev-fabric-modmenu = ["mod-menu"]
+# Forge 的光影組合：Oculus 與它需要的 Embeddium。
+dev-forge-oculus = ["embeddium", "oculus"]

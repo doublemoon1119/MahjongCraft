@@ -168,7 +168,8 @@ private const val LOOM_RUNTIME_JAVA_PROPERTY = "fabric.loom.runtimeJavaCompatibi
 /**
  * 建立開發執行時可選載入模組的 `devMods` 擴充；專案有宣告組合時，開關選中卻沒有宣告的組合在專案設定完成後報錯。
  *
- * Fabric Loom 模組預設把選中的組合加入只在開發執行時載入的 `modLocalRuntime`。
+ * Fabric Loom 模組預設把選中的組合加入只在開發執行時載入的 `modLocalRuntime`；ModDevGradle 舊版 Forge 模組預設加入
+ * `modRuntimeOnly`，模組先轉成開發時的名稱，只在執行時使用、不打包。
  */
 private fun Project.configureDevMods() {
     val selected = MinecraftDevMods.parse(providers.gradleProperty(MinecraftDevMods.PROPERTY_NAME).orNull)
@@ -176,10 +177,16 @@ private fun Project.configureDevMods() {
     pluginManager.withPlugin(FABRIC_LOOM_PLUGIN_ID) {
         devMods.configurationName.convention(LOOM_LOCAL_RUNTIME_CONFIGURATION)
     }
+    pluginManager.withPlugin(MODDEV_LEGACY_FORGE_PLUGIN_ID) {
+        devMods.configurationName.convention(MODDEV_REMAPPED_RUNTIME_CONFIGURATION)
+    }
     afterEvaluate {
         MinecraftDevMods.requireDeclared(path, selected, devMods.groupNames)
     }
 }
+
+/** ModDevGradle 舊版 Forge 外掛轉成開發時名稱、只在執行時使用的模組設定。 */
+private const val MODDEV_REMAPPED_RUNTIME_CONFIGURATION = "modRuntimeOnly"
 
 /** Fabric Loom 只在開發執行時載入、不打包也不發布的模組設定。 */
 private const val LOOM_LOCAL_RUNTIME_CONFIGURATION = "modLocalRuntime"

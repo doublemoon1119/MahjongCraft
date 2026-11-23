@@ -90,4 +90,18 @@ warnings for files under this module. The Forge debug tools and the Forge exampl
 Development runs also load the [debug tools module](../forge-debug/README.md), which provides the
 `/mahjongcraft debug` commands; the packaged mod does not contain it.
 
+Compatibility checks can load extra mods into development runs with `-PmahjongcraftDevMods`
+(see [Minecraft Build](../../../../docs/contributing/minecraft-build.md#development-runtime-mods)). This module and the
+Forge example declare the same groups:
+
+- `shaders`: Oculus and the Embeddium it requires, for checking rendering with and without a shader pack. Shader
+  packs are not part of the repository; put one in `run/client/shaderpacks` and select it in the game's video
+  settings.
+- `modmenu`: empty, so the switch also works when Fabric is selected together; Forge's own mod list already
+  has the settings button that opens the client settings.
+
+```shell
+./gradlew :minecraft_v1.20.1_forge:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-forge" "-PmahjongcraftDevMods=shaders"
+```
+
 Client and dedicated-server runs use `run/client` and `run/server` under this module.

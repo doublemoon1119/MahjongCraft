@@ -32,8 +32,8 @@ repositories {
 
 // 開發執行時可選載入的相容測試模組，以 -PmahjongcraftDevMods 選擇；不打包，也不成為模組的依賴。
 devMods {
-    group("iris", mc1201.bundles.dev.iris)
-    group("modmenu", mc1201.bundles.dev.modmenu)
+    group("shaders", mc1201.bundles.dev.fabric.iris)
+    group("modmenu", mc1201.bundles.dev.fabric.modmenu)
 }
 
 loom {

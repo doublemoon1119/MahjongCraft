@@ -48,14 +48,14 @@ Compatibility checks can load extra mods into development runs with `-Pmahjongcr
 (see [Minecraft Build](../../../../docs/contributing/minecraft-build.md#development-runtime-mods)). This module and the
 example module declare the same groups:
 
-- `iris`: Sodium and Iris, for checking rendering with and without a shader pack. Loom drops the libraries
+- `shaders`: Sodium and Iris, for checking rendering with and without a shader pack. Loom drops the libraries
   a mod bundles in its own JAR and expects them as Maven dependencies, which Iris on Modrinth does not
   declare, so the group also lists the libraries Iris bundles, at the versions it bundles. Shader packs are
   not part of the repository; put one in `run/client/shaderpacks` and select it in the game's video settings.
 - `modmenu`: ModMenu, for checking the mod list entry, whose settings button opens the client settings.
 
 ```shell
-./gradlew :minecraft_v1.20.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftDevMods=iris,modmenu"
+./gradlew :minecraft_v1.20.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftDevMods=shaders,modmenu"
 ```
 
 The ModMenu integration itself is part of the mod: it compiles against the ModMenu API without bundling

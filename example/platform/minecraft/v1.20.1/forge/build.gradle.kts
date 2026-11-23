@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.buildlogic.hideForgeDeprecationsOfVanilla
 import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.kotlinForForge
 import com.doublemoon1119.mahjongcraft.buildlogic.minecraftModAccessTransformer
+import com.doublemoon1119.mahjongcraft.buildlogic.modrinth
 
 plugins {
     alias(libs.plugins.mahjongcraft.minecraft.loader)
@@ -31,6 +32,16 @@ configure<MinecraftModPackagingExtension> {
 repositories {
     // Kotlin for Forge 只發布在作者自己的 Maven 倉庫。
     kotlinForForge()
+    // 相容測試模組只發布在 Modrinth 的 Maven 倉庫。
+    modrinth()
+}
+
+// 與本體相同的相容測試組合，讓範例的開發執行也能在同樣的環境中測試；本體的組合不會傳到這裡。
+devMods {
+    // Oculus 與它需要的 Embeddium，測試光影。
+    group("shaders", mc1201.bundles.dev.forge.oculus)
+    // Forge 內建的模組清單就有設定按鈕，不需要另外的模組；宣告這個組合，讓同時選擇 Fabric 時同一個開關也能使用。
+    group("modmenu")
 }
 
 // 範例中呼叫 Minecraft 1.20.1 但不用載入器的程式在 :example-minecraft_v1.20.1_mod；比照本體，把原始碼納入本模組，
