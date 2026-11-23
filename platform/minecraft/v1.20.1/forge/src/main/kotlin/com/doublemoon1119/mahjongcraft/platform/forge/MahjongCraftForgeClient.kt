@@ -21,6 +21,7 @@ import net.minecraftforge.client.ConfigScreenHandler
 import net.minecraftforge.client.event.EntityRenderersEvent
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent
 import net.minecraftforge.client.event.RegisterColorHandlersEvent
+import net.minecraftforge.client.event.RegisterGuiOverlaysEvent
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent
 import net.minecraftforge.eventbus.api.Event
 import net.minecraftforge.eventbus.api.EventPriority
@@ -32,7 +33,7 @@ import org.koin.core.context.GlobalContext
  * Forge 用戶端的初始化；只在用戶端由 [MahjongCraftForge] 呼叫。
  *
  * 用戶端啟動流程會讀取已登記的物品與實體，Forge 卻在 mod 建構之後才寫入登記表，因此流程延到 Forge 第一個用戶端登記事件
- * 才執行：這時登記表已經寫好，而按鍵、實體繪製器、物品顏色與資源重載監聽都還沒登記。
+ * 才執行：這時登記表已經寫好，而按鍵、實體繪製器、物品顏色、資源重載監聽與畫面疊加層都還沒登記。
  */
 internal object MahjongCraftForgeClient {
     /** Forge 用戶端初始化的記錄器。 */
@@ -58,6 +59,7 @@ internal object MahjongCraftForgeClient {
             RegisterClientReloadListenersEvent::class.java,
             EntityRenderersEvent.RegisterRenderers::class.java,
             RegisterKeyMappingsEvent::class.java,
+            RegisterGuiOverlaysEvent::class.java,
         ).forEach { eventType -> startOn(modBus, eventType, registrar) }
     }
 

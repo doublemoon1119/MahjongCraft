@@ -7,6 +7,7 @@ import com.mojang.blaze3d.vertex.PoseStack
 import net.minecraft.client.Camera
 import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.client.player.LocalPlayer
 import net.minecraft.client.renderer.MultiBufferSource
@@ -22,8 +23,10 @@ import net.minecraft.world.item.ItemStack
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent
 import net.minecraftforge.client.event.RegisterClientCommandsEvent
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent
+import net.minecraftforge.client.event.RegisterGuiOverlaysEvent
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent
 import net.minecraftforge.client.event.RenderLevelStageEvent
+import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay
 import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.event.TickEvent
 import net.minecraftforge.event.entity.EntityLeaveLevelEvent
@@ -35,8 +38,8 @@ import net.minecraftforge.eventbus.api.IEventBus
 /**
  * 以 Forge 的事件實作 [ClientEvents]。
  *
- * 按鍵與資源重載監聽要在 Forge 的登記事件中加入，因此先保留，事件發生時才登記；世界畫完的時間點由共用的 mixin 經
- * [WorldRenderFinishedHook] 提供。
+ * 按鍵、資源重載監聽與畫面疊加層要在 Forge 的登記事件中加入，因此先保留，事件發生時才登記；世界畫完的時間點由共用的
+ * mixin 經 [WorldRenderFinishedHook] 提供。
  */
 object ForgeClientEvents : ClientEvents {
     /** 等待 Forge 按鍵登記事件的按鍵。 */
@@ -44,6 +47,9 @@ object ForgeClientEvents : ClientEvents {
 
     /** 等待 Forge 資源重載監聽登記事件的處理。 */
     private val pendingReloadListeners = mutableListOf<(ResourceManager) -> Unit>()
+
+    /** 等待 Forge 畫面疊加層登記事件、要畫在聊天欄之前的 HUD。 */
+    private val pendingHudBeforeChat = mutableListOf<(GuiGraphics) -> Unit>()
 
     /**
      * 接上本 mod 的事件匯流排，在 Forge 的登記事件中加入保留的按鍵與資源重載監聽。
@@ -54,6 +60,12 @@ object ForgeClientEvents : ClientEvents {
         modBus.addListener(EventPriority.NORMAL, false, RegisterKeyMappingsEvent::class.java) { event ->
             pendingKeyMappings.forEach(event::register)
             pendingKeyMappings.clear()
+        }
+        modBus.addListener(EventPriority.NORMAL, false, RegisterGuiOverlaysEvent::class.java) { event ->
+            pendingHudBeforeChat.forEachIndexed { index, listener ->
+                event.registerBelow(VanillaGuiOverlay.CHAT_PANEL.id(), "hud_before_chat_$index") { _, graphics, _, _, _ -> listener(graphics) }
+            }
+            pendingHudBeforeChat.clear()
         }
         modBus.addListener(EventPriority.NORMAL, false, RegisterClientReloadListenersEvent::class.java) { event ->
             pendingReloadListeners.forEach { listener -> event.registerReloadListener(ResourceManagerReloadListener { listener(it) }) }
@@ -114,6 +126,11 @@ object ForgeClientEvents : ClientEvents {
 
     override fun onWorldRenderFinished(listener: () -> Unit) {
         WorldRenderFinishedHook.addListener(listener)
+    }
+
+    /** Forge 不以原版 `Gui.render` 繪製遊戲畫面，改以排在聊天欄下面的疊加層提供這個時間點。 */
+    override fun onHudRenderBeforeChat(listener: (GuiGraphics) -> Unit) {
+        pendingHudBeforeChat += listener
     }
 
     /** 以畫完方塊實體的階段作為除錯線條之前的時間點；線條寫入用戶端共用的緩衝區，由原版在之後送出。 */

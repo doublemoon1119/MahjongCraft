@@ -97,6 +97,7 @@ class PlayerDecisionHudController(
     fun registerEvents(events: ClientEvents) {
         activeController = this
         events.onClientTickEnd(::tick)
+        events.onHudRenderBeforeChat(::renderBeforeChat)
         events.onClientUseEntity { _, _, _, entity ->
             if (entity is MahjongTileEntity && entity.managedByGame) {
                 if (submissionTracker.isPending()) {
@@ -430,7 +431,7 @@ class PlayerDecisionHudController(
     }
 
     /**
-     * 在原版聊天欄之前繪製被動提示；隱藏 HUD 或編輯 HUD 位置時不繪製。
+     * 在遊戲畫面的聊天欄之前繪製被動提示；隱藏 HUD 或編輯 HUD 位置時不繪製。
      *
      * @param context 本幀繪製環境。
      */
@@ -748,16 +749,6 @@ class PlayerDecisionHudController(
         /** 由客戶端初始化後提供給版本限定 mixin 的唯一 controller。 */
         @Volatile
         private var activeController: PlayerDecisionHudController? = null
-
-        /**
-         * 供聊天欄前方的 mixin 繪製被動 HUD；尚未註冊控制器時不繪製。
-         *
-         * @param context 繪製環境。
-         */
-        @JvmStatic
-        fun renderPassiveHudBeforeChat(context: GuiGraphics) {
-            activeController?.renderBeforeChat(context)
-        }
 
         /** 供 [MahjongTileSelectionConfirmEntityRenderer] 查詢目前選牌是否可送出，決定面板文字顏色。 */
         @JvmStatic

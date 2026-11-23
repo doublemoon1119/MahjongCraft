@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack
 import net.minecraft.client.Camera
 import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.client.player.LocalPlayer
 import net.minecraft.client.renderer.MultiBufferSource
@@ -85,6 +86,16 @@ interface ClientEvents {
      * @param listener 畫完時的處理。
      */
     fun onWorldRenderFinished(listener: () -> Unit)
+
+    /**
+     * 每一幀遊戲畫面畫聊天欄之前，可以把 HUD 畫在聊天欄下面；介面隱藏時是否呼叫由載入器決定，處理本身仍須自行檢查。
+     *
+     * 原版沒有這個時間點的事件；以原版 `Gui.render` 繪製遊戲畫面的載入器經 [HudBeforeChatHook] 提供，其他載入器以自己的
+     * 畫面分層提供同一個時間點。
+     *
+     * @param listener 收到本幀繪製環境的處理。
+     */
+    fun onHudRenderBeforeChat(listener: (GuiGraphics) -> Unit)
 
     /**
      * 每一幀繪製除錯用線條之前，可以把線框畫進世界。

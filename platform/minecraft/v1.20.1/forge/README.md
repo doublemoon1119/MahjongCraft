@@ -21,7 +21,12 @@ the vanilla dyes with Forge's `forge:dyes`, so dyes from other mods work as well
 
 The shared client startup reads registered items and entities, which Forge writes only after the mod is
 constructed. The client therefore starts at the first client registration event, when the registries are
-complete and key mappings, entity renderers, item colors and reload listeners are not registered yet.
+complete and key mappings, entity renderers, item colors, reload listeners and GUI overlays are not
+registered yet.
+
+Forge draws the in-game screen with its own `ForgeGui` overlays instead of vanilla `Gui.render`, so the
+shared `GuiMixin` never runs on Forge. The HUD drawn before the chat, such as the compact countdown and the
+hand analysis, is a GUI overlay registered below Forge's chat panel instead.
 
 ## Dependencies
 

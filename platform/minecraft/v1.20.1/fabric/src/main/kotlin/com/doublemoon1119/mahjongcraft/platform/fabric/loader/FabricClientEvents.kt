@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.loader
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.HudBeforeChatHook
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.WorldRenderFinishedHook
 import com.mojang.blaze3d.vertex.PoseStack
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
@@ -18,6 +19,7 @@ import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener
 import net.minecraft.client.Camera
 import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.client.player.LocalPlayer
 import net.minecraft.client.renderer.MultiBufferSource
@@ -75,6 +77,11 @@ object FabricClientEvents : ClientEvents {
     /** Fabric API 沒有這個時間點的事件，由共用的 mixin 經 [WorldRenderFinishedHook] 通知。 */
     override fun onWorldRenderFinished(listener: () -> Unit) {
         WorldRenderFinishedHook.addListener(listener)
+    }
+
+    /** Fabric 以原版 `Gui.render` 繪製遊戲畫面，由共用的 mixin 經 [HudBeforeChatHook] 通知。 */
+    override fun onHudRenderBeforeChat(listener: (GuiGraphics) -> Unit) {
+        HudBeforeChatHook.addListener(listener)
     }
 
     override fun onWorldRenderBeforeDebug(listener: (PoseStack, MultiBufferSource, Camera) -> Unit) {
