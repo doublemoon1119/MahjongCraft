@@ -76,8 +76,8 @@ compilation therefore disables the deprecation warnings; real deprecations in th
 reported by the [Minecraft 1.20.1 mod](../mod/README.md) and Fabric builds.
 
 The setting also hides deprecated Forge APIs used by this module's own code. When changing that code,
-compile once without the `-Xwarning-level` arguments in `build.gradle.kts` and check the warnings for files
-under this module.
+compile once without the `hideForgeDeprecationsOfVanillaApis()` call in `build.gradle.kts` and check the
+warnings for files under this module. The Forge debug tools and the Forge example use the same setting.
 
 ## Running
 

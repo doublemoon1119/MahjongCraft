@@ -1,8 +1,10 @@
 import com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtension
 import com.doublemoon1119.mahjongcraft.buildlogic.ModPackagingTestArguments
 import com.doublemoon1119.mahjongcraft.buildlogic.UnpackLibraryJars
+import com.doublemoon1119.mahjongcraft.buildlogic.hideForgeDeprecationsOfVanillaApis
 import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.kotlinForForge
+import com.doublemoon1119.mahjongcraft.buildlogic.minecraftModAccessTransformer
 
 plugins {
     alias(libs.plugins.mahjongcraft.minecraft.loader)
@@ -37,10 +39,8 @@ repositories {
 // 由 ModDevGradle 一起轉成 Forge 執行時的名稱並打包。
 includeSourcesOf(":example-minecraft_v1.20.1_mod")
 
-// 與本體相同：共用程式只能用原版寫法，不顯示 Forge 對原版寫法的過時警告。
-kotlin.compilerOptions {
-    freeCompilerArgs.addAll("-Xwarning-level=DEPRECATION:disabled", "-Xwarning-level=OVERRIDE_DEPRECATION:disabled")
-}
+// 與 Fabric 共用的程式只能用原版寫法，不顯示 Forge 對原版寫法的過時警告。
+hideForgeDeprecationsOfVanillaApis()
 
 // 只收集兩份範例程式庫，不將它們依賴的本體與 Kotlin 套件再打包一次。
 val exampleLibraries = configurations.create("exampleLibraries") {
@@ -81,7 +81,7 @@ val exampleLibrariesSourceSet = sourceSets.create("exampleLibraries") {
 legacyForge {
     version = mc1201.versions.forge.get()
     // 與本體使用同一份 access transformer，開發用的 Minecraft 與本體的開發執行相同。
-    accessTransformers.from(project(":minecraft_v1.20.1_mod").file("src/main/resources/META-INF/accesstransformer.cfg"))
+    accessTransformers.from(minecraftModAccessTransformer())
     runs {
         create("client") {
             client()

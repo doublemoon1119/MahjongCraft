@@ -11,10 +11,11 @@ import org.gradle.kotlin.dsl.exclude
 /**
  * MahjongCraft mod 執行時需要、由載入器模組一起交付的函式庫：本專案的模組與外部函式庫。
  *
- * 各載入器以自己的方式附帶它們，例如 Fabric 的 `include` 或 Forge 的 jar-in-jar，清單只在這裡維護。載入器模組把整份清單
- * 加進 `implementation`，因為它直接使用這些模組的公開型別：本專案的模組彼此多以 `implementation` 依賴，不會把型別傳給下游。
+ * 各載入器以自己的方式附帶它們，例如 Fabric 的 `include` 或 Forge 的 jar-in-jar，清單只在這裡維護。載入器模組、版本 mod 模組與
+ * 它們的 debug 模組把整份清單加進 `implementation`，因為它們直接使用這些模組的公開型別：本專案的模組彼此多以 `implementation`
+ * 依賴，不會把型別傳給下游。
  *
- * @property project 套用載入器 convention 的模組。
+ * @property project 套用載入器或版本 mod convention 的模組。
  */
 abstract class MinecraftModLibrariesExtension(private val project: Project) {
     /**

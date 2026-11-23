@@ -38,34 +38,12 @@ legacyForge {
     addModdingDependenciesTo(sourceSets.test.get())
 }
 
-// 準備 Minecraft 的工具預設另找 Java 21 執行；改用執行 Gradle 的 Java，不需要另外安裝或下載 JDK（CI 停用自動下載）。
-tasks.withType<net.neoforged.nfrtgradle.NeoFormRuntimeTask>().configureEach {
-    javaExecutable.set(
-        javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.current()) }
-            .map { it.executablePath.asFile.absolutePath },
-    )
-}
-
 // 與載入器模組使用相同的專案模組與函式庫；載入器模組編譯這裡的原始碼時自行宣告同樣的依賴，並負責打包。
 dependencies {
-    implementation(project(":minecraft_common"))
-    implementation(project(":mahjong-logic"))
-    implementation(project(":mahjong-ai"))
-    implementation(project(":mahjong-flow:mahjong-flow-common"))
-    implementation(project(":mahjong-flow:mahjong-flow-client"))
-    implementation(project(":mahjong-flow:mahjong-flow-server"))
-    implementation(project(":mahjong-flow:mahjong-flow-network-dto"))
-    implementation(project(":mahjong-flow:mahjong-flow-persistence-format"))
-    implementation(project(":mahjong-extension-api"))
-    implementation(project(":mahjong-bundled-extensions"))
-    implementation(project.dependencies.platform(libs.koin.bom))
-    implementation(libs.koin.core)
+    // 本體附帶的專案模組與函式庫，與載入器模組相同的共用清單。
+    minecraftModLibraries.addTo("implementation")
     implementation(libs.kotlinx.coroutines)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.ktoml.core)
-    implementation(libs.exposed.core)
-    implementation(libs.exposed.jdbc)
-    implementation(libs.sqlite.jdbc)
     // 共用的 mixin 只對註解編譯；各載入器在執行時提供 Mixin 與 MixinExtras。
     compileOnly(mc1201.mixin)
     compileOnly(mc1201.mixinextras.common)

@@ -41,10 +41,11 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
 
 ## Bundled Libraries
 
-- The libraries a mod JAR carries are listed once, in the `minecraftModLibraries` extension of the loader
-  convention: the core modules and external libraries such as Koin, ktoml, Exposed and SQLite. Each loader
-  module adds the list to `implementation` and to its own packaging, for example Loom's `include` or Forge's
-  jar-in-jar, through `minecraftModLibraries.addTo`.
+- The libraries a mod JAR carries are listed once, in the `minecraftModLibraries` extension of the loader and
+  version mod conventions: the core modules and external libraries such as Koin, ktoml, Exposed and SQLite.
+  Each loader module adds the list to `implementation` and to its own packaging, for example Loom's
+  `include` or Forge's jar-in-jar, through `minecraftModLibraries.addTo`. Version mod modules and debug
+  modules add the same list to `implementation` instead of repeating it.
 - Packaging configurations pass `excludeRuntimeProvided = true`. It leaves out the libraries the selected
   target lists in `provided-versions`, such as the Kotlin standard library a Kotlin loader ships, and the SLF4J
   that Minecraft ships. A provided name without known modules fails the build, so a new provided library

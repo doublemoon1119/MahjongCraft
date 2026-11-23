@@ -1,7 +1,9 @@
 import com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtension
+import com.doublemoon1119.mahjongcraft.buildlogic.hideForgeDeprecationsOfVanillaApis
 import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.includeTestSourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.kotlinForForge
+import com.doublemoon1119.mahjongcraft.buildlogic.minecraftModAccessTransformer
 
 plugins {
     alias(libs.plugins.mahjongcraft.minecraft.loader)
@@ -40,10 +42,8 @@ includeSourcesOf(":minecraft_v1.20.1_mod-debug")
 // 各載入器共用的 debug 組裝測試；本模組提供 Forge 的服務組合。
 includeTestSourcesOf(":minecraft_v1.20.1_mod-debug", "src/loaderTest/kotlin")
 
-// 與本體相同：共用程式只能用原版寫法，不顯示 Forge 對原版寫法的過時警告。
-kotlin.compilerOptions {
-    freeCompilerArgs.addAll("-Xwarning-level=DEPRECATION:disabled", "-Xwarning-level=OVERRIDE_DEPRECATION:disabled")
-}
+// 與 Fabric 共用的程式只能用原版寫法，不顯示 Forge 對原版寫法的過時警告。
+hideForgeDeprecationsOfVanillaApis()
 
 // 本體的開發執行以這份輸出載入 debug 工具。Koin 編譯外掛產生的 hints 只在編譯期使用，本體的輸出也有這個套件；Forge 不允許
 // 兩個 mod 有同名套件，因此去掉後再交給本體，與本體的 JAR 排除它的做法相同。
@@ -60,7 +60,7 @@ sourceSets.create("devMod") {
 legacyForge {
     version = mc1201.versions.forge.get()
     // 與本體使用同一份 access transformer，debug 程式看得到本體開放的原版成員。
-    accessTransformers.from(project(":minecraft_v1.20.1_mod").file("src/main/resources/META-INF/accesstransformer.cfg"))
+    accessTransformers.from(minecraftModAccessTransformer())
     // 單元測試只測不需要啟動遊戲的程式；測試也要對 Minecraft 與 Forge 的類別編譯。
     addModdingDependenciesTo(sourceSets.test.get())
 }
@@ -68,22 +68,10 @@ legacyForge {
 dependencies {
     // 本模組沒有自己的開發執行；這些依賴只供編譯與測試，開發執行時由本體提供。
     implementation(project(":minecraft_v1.20.1_forge"))
-    implementation(project(":minecraft_common"))
-    implementation(project(":mahjong-logic"))
-    implementation(project(":mahjong-ai"))
-    implementation(project(":mahjong-flow:mahjong-flow-common"))
-    implementation(project(":mahjong-flow:mahjong-flow-client"))
-    implementation(project(":mahjong-flow:mahjong-flow-server"))
-    implementation(project(":mahjong-flow:mahjong-flow-network-dto"))
-    implementation(project(":mahjong-flow:mahjong-flow-persistence-format"))
-    implementation(project(":mahjong-extension-api"))
-    implementation(project(":mahjong-bundled-extensions"))
-    implementation(project.dependencies.platform(libs.koin.bom))
-    implementation(libs.koin.core)
+    // 本體附帶的專案模組與函式庫，與載入器模組相同的共用清單。
+    minecraftModLibraries.addTo("implementation")
     implementation(libs.kotlinx.coroutines)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.exposed.core)
-    implementation(libs.exposed.jdbc)
 
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)

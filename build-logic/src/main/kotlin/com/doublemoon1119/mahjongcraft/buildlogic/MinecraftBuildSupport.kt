@@ -6,6 +6,7 @@ import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.maven
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
+import java.io.File
 
 /**
  * 把另一個專案的原始碼與資源一起編譯並打包進這個模組。
@@ -52,6 +53,29 @@ fun Project.includeResourcesOf(projectPath: String, sourceDirectory: String) {
     val directory = project(projectPath).projectDir.resolve(sourceDirectory)
     extensions.getByType<SourceSetContainer>().named("main").configure {
         resources.srcDir(directory.resolve("resources"))
+    }
+}
+
+/**
+ * 這個 Minecraft 版本的 mod 模組所用的 access transformer，例如 `:minecraft_v1.20.1_mod` 的那份。
+ *
+ * 模組放在 Minecraft 版本資料夾底下，例如 `platform/minecraft/v1.20.1/forge` 或範例的 `example/platform/minecraft/v1.20.1/mod`；
+ * 版本取自上層資料夾的名稱。Forge 與以原版編譯的模組都讀這一份，本體在執行時也套用同一份。
+ *
+ * @return access transformer 檔案。
+ */
+fun Project.minecraftModAccessTransformer(): File =
+    project(":minecraft_${projectDir.parentFile.name}_mod").file("src/main/resources/META-INF/accesstransformer.cfg")
+
+/**
+ * 不顯示 Forge 對原版寫法的過時警告。
+ *
+ * Forge 把部分原版寫法標成過時，要 mod 改用 Forge 的寫法；與 Fabric 共用的程式只能用原版寫法。共用程式真正的過時寫法仍由
+ * 以原版編譯的 mod 模組與 Fabric 的編譯提醒。
+ */
+fun Project.hideForgeDeprecationsOfVanillaApis() {
+    extensions.getByType<KotlinJvmProjectExtension>().compilerOptions {
+        freeCompilerArgs.addAll("-Xwarning-level=DEPRECATION:disabled", "-Xwarning-level=OVERRIDE_DEPRECATION:disabled")
     }
 }
 
