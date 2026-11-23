@@ -15,7 +15,8 @@ import java.util.concurrent.Callable
 
 /**
  * 套用 Minecraft loader module 的 target Java、archive 與 metadata 政策，讓整個建置的重新映射任務排隊執行，並提供
- * 開發執行時可選載入的模組組合與 mod 要附帶的函式庫清單；測試的工作目錄放在 build 目錄中。
+ * 開發執行時可選載入的模組組合與 mod 要附帶的函式庫清單；測試的工作目錄放在 build 目錄中。ModDevGradle 準備 Minecraft 的
+ * 工具改用執行 Gradle 的 Java。
  */
 class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
     /** 套用 JVM convention 並設定 loader-specific build 行為。 */
@@ -73,6 +74,7 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
         serializeRemapTasks()
         alignLoomRuntimeJava()
         configureDevMods()
+        useGradleJavaForNeoForm()
     }
 }
 

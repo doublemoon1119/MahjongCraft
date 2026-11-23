@@ -51,7 +51,7 @@ dependencies {
     modCompileOnly(mc1201.kotlinforforge.lib)
 
     // 對本體編譯；開發執行時本體由下方的開發用 mod 載入，不放在啟動 classpath，以免同一個 mod 出現兩次。
-    compileOnly(mainMod)
+    compileOnly(project(":minecraft_v1.20.1_forge"))
     compileOnly(project(":mahjong-extension-api"))
     compileOnly(project(":minecraft_common"))
     compileOnly(project(":example:example-mahjong-extension"))
