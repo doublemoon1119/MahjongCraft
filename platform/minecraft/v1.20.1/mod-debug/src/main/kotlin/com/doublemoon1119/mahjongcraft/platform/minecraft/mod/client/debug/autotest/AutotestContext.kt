@@ -42,6 +42,17 @@ internal class AutotestContext(
     }
 
     /**
+     * 以本機玩家的身分執行指令，並等伺服器處理。
+     *
+     * @param command 不含開頭斜線的指令。
+     */
+    suspend fun runCommand(command: String) {
+        val connection = checkNotNull(client.player) { "No player to run the command" }.connection
+        connection.sendCommand(command)
+        waitTicks(COMMAND_SETTLE_TICKS)
+    }
+
+    /**
      * 等待指定的遊戲刻數。
      *
      * @param ticks 遊戲刻數。
@@ -68,6 +79,9 @@ internal class AutotestContext(
      * @param name 截圖名稱，會加上步驟識別碼作為檔名。
      */
     suspend fun screenshot(name: String) {
+        // 聊天訊息與右上角的提示會遮住畫面，截圖前清掉。
+        client.gui.chat.clearMessages(false)
+        client.toasts.clear()
         waitTicks(SCREENSHOT_SETTLE_TICKS)
         val fileName = "screenshots/$stepId-$name.png"
         val file = outputDirectory.resolve(fileName)
@@ -82,5 +96,8 @@ internal class AutotestContext(
 
         /** 截圖前等待畫面穩定的遊戲刻數。 */
         const val SCREENSHOT_SETTLE_TICKS = 2
+
+        /** 執行指令後等待伺服器處理的遊戲刻數。 */
+        const val COMMAND_SETTLE_TICKS = 4
     }
 }

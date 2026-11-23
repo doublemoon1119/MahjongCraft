@@ -150,8 +150,9 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   run directory under `autotest/<start time>/` as `report.md`, `report.json` and screenshots, and
   `autotest/latest.txt` names the latest folder. Closing the game early still writes a report that marks the
   unfinished step as aborted.
-- While a test runs, the game ignores mouse and keyboard input, leaves the cursor free, keeps running without
-  focus and plays no sound; it records each sound request in the report instead. It does not change the saved
-  volume or other options. Do not minimise the window: Minecraft stops drawing while minimised.
+- While a test runs, the game ignores mouse and keyboard input, leaves the cursor free and keeps running without
+  focus. Its client run sets `ALSOFT_DRIVERS=null`, so OpenAL Soft loads and plays sounds into a null output that
+  nobody hears; the test records each sound request in the report. It does not change the saved volume or other
+  options. Do not minimise the window: Minecraft stops drawing while minimised.
 - The steps and the input and sound handling live in the
   [Minecraft 1.20.1 mod debug tools](../../platform/minecraft/v1.20.1/mod-debug/README.md).

@@ -1,4 +1,5 @@
 import com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtension
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestClientEnvironment
 import com.doublemoon1119.mahjongcraft.buildlogic.autotestSystemProperties
 import com.doublemoon1119.mahjongcraft.buildlogic.includeResourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
@@ -45,6 +46,7 @@ loom {
             // 分離 client 與 server 的 log、設定及世界資料，避免同時測試時互相覆寫。
             runDirectory.set(layout.projectDirectory.dir("run/client"))
             // -PmahjongcraftAutotest 時，debug 模組在遊戲啟動後自動執行測試並關閉遊戲。
+            autotestClientEnvironment().forEach { (name, value) -> environmentVariable(name, value) }
             autotestSystemProperties().forEach { (name, value) -> vmArg("-D$name=$value") }
         }
         named("server") {

@@ -31,6 +31,9 @@ object SceneEntityTranslucency {
     /** 各貼圖的半透明圖層。 */
     private val renderTypes = ConcurrentHashMap<ResourceLocation, RenderType>()
 
+    /** 自訂著色器是否已經載入；尚未載入或載入失敗時，半透明圖層改用原版的畫法。 */
+    val isShaderLoaded: Boolean get() = shader != null
+
     /**
      * 登記半透明圖層使用的自訂著色器。
      *

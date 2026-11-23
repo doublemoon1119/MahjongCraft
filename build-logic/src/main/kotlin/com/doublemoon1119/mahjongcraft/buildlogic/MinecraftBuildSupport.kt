@@ -57,6 +57,15 @@ fun Project.autotestSystemProperties(): Map<String, String> {
 }
 
 /**
+ * 自動測試的開發用戶端要加上的環境變數：讓 Minecraft 使用的音訊庫 OpenAL Soft 使用空輸出，聲音照常載入與播放但聽不到，
+ * 也不改動遊戲的音量或輸出裝置設定。沒有設定 `mahjongcraftAutotest` 時為空。
+ *
+ * @return 環境變數名稱與值。
+ */
+fun Project.autotestClientEnvironment(): Map<String, String> =
+    if (autotestSystemProperties().isEmpty()) emptyMap() else mapOf("ALSOFT_DRIVERS" to "null")
+
+/**
  * 把另一個專案的資源一起打包進這個模組，例如跨版本共用模組的材質與翻譯。
  *
  * @param projectPath 提供資源的專案路徑。

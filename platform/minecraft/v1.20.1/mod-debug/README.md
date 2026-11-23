@@ -61,5 +61,5 @@ world and always runs. A step records checks and screenshots through `AutotestCo
 check fails the step without stopping the steps after it.
 
 The mixins in `mahjongcraft.debug.mixins.json` ignore input, keep the game running without focus and record
-sounds instead of playing them, only while the test runs. The loader debug modules register the configuration:
+each sound request, only while the test runs. The loader debug modules register the configuration:
 Fabric in `fabric.mod.json`, Forge through the mixin configurations of its development runs.
