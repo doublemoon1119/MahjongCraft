@@ -14,6 +14,11 @@
 - The configuration cache is enabled by default. Custom tasks must not read `Task.project` while executing;
   pass the data they need as task properties at configuration time. A new platform target must build and run
   its `run` tasks with the configuration cache, or document why its builds pass `--no-configuration-cache`.
+- The local build cache is enabled by default and lives in the Gradle user home, so worktrees and branches
+  reuse each other's compile, test and check results. A task is cached only when every input that affects it
+  is declared: a test that reads a file or setting outside its declared inputs must declare it, as tests do for
+  the `MAHJONGCRAFT_*` environment variables. Custom tasks are not cacheable unless marked `@CacheableTask`.
+  Pass `--no-build-cache` or `--rerun` to run a task again regardless.
 - The built-in `core` target loads only logic, flow, AI, extension API, and testing modules. Formal
   platform targets are declared in `gradle/platform/<platform>/<version>/targets.toml`; directory presence
   alone does not

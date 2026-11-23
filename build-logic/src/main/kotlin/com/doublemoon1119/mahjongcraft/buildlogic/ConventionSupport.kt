@@ -82,14 +82,20 @@ private fun Project.configureCompilerTasks(toolchain: Int, release: Int, overrid
         compilerOptions.apiVersion.set(kotlinApiVersion)
     }
     val toolchains = extensions.getByType<JavaToolchainService>()
+    // 需要手動開啟的量測與壓力測試讀取這些環境變數；列為輸入，改變時測試才不會被判定為最新或從建置快取取用舊結果。
+    val testEnvironment = providers.environmentVariablesPrefixedBy(TEST_ENVIRONMENT_PREFIX)
     tasks.withType<Test>().configureEach {
         javaLauncher.convention(
             toolchains.launcherFor {
                 languageVersion.set(JavaLanguageVersion.of(toolchain))
             },
         )
+        inputs.property("mahjongcraftEnvironment", testEnvironment)
     }
 }
+
+/** 測試讀取的環境變數共同的前綴。 */
+private const val TEST_ENVIRONMENT_PREFIX: String = "MAHJONGCRAFT_"
 
 /** `libs` version catalog 中 Kotlin API 版本上限的名稱。 */
 internal const val KOTLIN_API_VERSION_ALIAS: String = "kotlin-api-version"
