@@ -3,10 +3,12 @@
   "package": "com.doublemoon1119.mahjongcraft.platform.minecraft.mod.mixin.client",
   "compatibilityLevel": "JAVA_17",
   "client": [
+    "CapeLayerMixin",
     "GuiMixin",
     "GameRendererMixin",
     "EntityRenderDispatcherMixin",
-    "LivingEntityRendererMixin"
+    "LivingEntityRendererMixin",
+    "PlayerModelAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -43,6 +43,13 @@ class ClientPlayerProfileResolver {
         ): Boolean = size > SKIN_CACHE_LIMIT
     }
 
+    /** 原生 skin 載入時一併取得的有限披風材質快取；沒有披風的玩家不會出現在這裡。 */
+    private val capes = object : LinkedHashMap<Uuid, ResourceLocation>(SKIN_CACHE_LIMIT, 0.75f, true) {
+        override fun removeEldestEntry(
+            eldest: MutableMap.MutableEntry<Uuid, ResourceLocation>?,
+        ): Boolean = size > SKIN_CACHE_LIMIT
+    }
+
     /** 已啟動原生 skin 載入的 UUID 與開始時間。 */
     private val skinRequests = LinkedHashMap<Uuid, TimeMark>()
 
@@ -84,6 +91,7 @@ class ClientPlayerProfileResolver {
         synchronized(resolved) { resolved.clear() }
         synchronized(requested) { requested.clear() }
         synchronized(skins) { skins.clear() }
+        synchronized(capes) { capes.clear() }
         synchronized(skinRequests) { skinRequests.clear() }
         synchronized(skinFailures) { skinFailures.clear() }
     }
@@ -124,6 +132,17 @@ class ClientPlayerProfileResolver {
     fun resolvedSkinModel(playerId: Uuid): String? {
         Minecraft.getInstance().connection?.getPlayerInfo(playerId.toJavaUuid())?.let { return it.modelName }
         return synchronized(skins) { skins[playerId] }?.model
+    }
+
+    /**
+     * 取得披風材質，與 [resolvedSkinTexture] 使用同一份皮膚資料；在線上時以玩家列表為準。
+     *
+     * @param playerId 玩家識別碼。
+     * @return 披風材質；玩家沒有披風或皮膚資料尚未取得時為 null。
+     */
+    fun resolvedCapeTexture(playerId: Uuid): ResourceLocation? {
+        Minecraft.getInstance().connection?.getPlayerInfo(playerId.toJavaUuid())?.let { return it.capeLocation }
+        return synchronized(capes) { capes[playerId] }
     }
 
     /**
@@ -169,6 +188,12 @@ class ClientPlayerProfileResolver {
             Minecraft.getInstance().skinManager.registerSkins(
                 profile,
                 SkinManager.SkinTextureCallback { type, texture, profileTexture ->
+                    if (type == MinecraftProfileTexture.Type.CAPE) {
+                        Minecraft.getInstance().execute {
+                            if (generation == sessionGeneration && texture != null) synchronized(capes) { capes[playerId] = texture }
+                        }
+                        return@SkinTextureCallback
+                    }
                     if (type != MinecraftProfileTexture.Type.SKIN) return@SkinTextureCallback
                     Minecraft.getInstance().execute {
                         if (generation == sessionGeneration) {

@@ -28,6 +28,7 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.model.TridentModel
 import net.minecraft.client.model.geom.ModelLayers
 import net.minecraft.client.multiplayer.ClientLevel
+import net.minecraft.client.player.AbstractClientPlayer
 import net.minecraft.client.renderer.GameRenderer
 import net.minecraft.client.renderer.LightTexture
 import net.minecraft.client.renderer.MultiBufferSource
@@ -636,6 +637,8 @@ internal class GuideSceneRenderer : AutoCloseable {
         if (figure.seated) entity.startRiding(seat, true)
         try {
             entity.setPos(0.0, DETACHED_Y, 0.0)
+            // 披風角度取決於披風位置落後實體位置多少；場景實體不跑遊戲刻，對齊後披風像靜止的玩家一樣自然垂下。
+            if (entity is AbstractClientPlayer) alignCloak(entity)
             if (entity is LivingEntity) {
                 entity.yBodyRot = figure.yaw
                 entity.yBodyRotO = figure.yaw
@@ -658,6 +661,25 @@ internal class GuideSceneRenderer : AutoCloseable {
                 entity.oAttackAnim = 0f
             }
         }
+    }
+
+    /**
+     * 把披風位置與前一刻位置都對齊到玩家目前的位置，並清除走路晃動，讓披風照原版靜止時的角度垂下。
+     *
+     * @param player 場景中的玩家模型。
+     */
+    private fun alignCloak(player: AbstractClientPlayer) {
+        player.xCloak = player.x
+        player.yCloak = player.y
+        player.zCloak = player.z
+        player.xCloakO = player.x
+        player.yCloakO = player.y
+        player.zCloakO = player.z
+        player.xo = player.x
+        player.yo = player.y
+        player.zo = player.z
+        player.bob = 0f
+        player.oBob = 0f
     }
 
     /**

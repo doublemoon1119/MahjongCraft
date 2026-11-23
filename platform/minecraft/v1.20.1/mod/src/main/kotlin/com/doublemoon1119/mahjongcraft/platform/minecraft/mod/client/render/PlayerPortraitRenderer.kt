@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCha
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.ClientAiCharacterPreviews
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.RoomFigureArea
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.ClientPlayerProfileResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.modelPartShown
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceContext
@@ -17,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.isKnownTileAssetKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureResourceId
+import com.mojang.blaze3d.systems.RenderSystem
 import com.mojang.blaze3d.vertex.PoseStack
 import kotlinx.coroutines.CancellationException
 import net.minecraft.client.Minecraft
@@ -27,6 +29,7 @@ import net.minecraft.client.renderer.RenderType
 import net.minecraft.client.renderer.texture.OverlayTexture
 import net.minecraft.client.resources.DefaultPlayerSkin
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.entity.player.PlayerModelPart
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -294,6 +297,11 @@ class PlayerPortraitRenderer internal constructor(
                     ?: Minecraft.getInstance().connection?.getPlayerInfo(playerId.toJavaUuid())?.skinLocation
                     ?: DefaultPlayerSkin.getDefaultSkin(playerId.toJavaUuid())
                 context.blit(texture, x, y, size, size, 8f, 8f, 8, 8, 64, 64)
+                if (modelPartShown(playerId, PlayerModelPart.HAT)) {
+                    RenderSystem.enableBlend()
+                    context.blit(texture, x, y, size, size, 40f, 8f, 8, 8, 64, 64)
+                    RenderSystem.disableBlend()
+                }
             }
             is PlayerPortraitSource.TileFace -> {
                 val width = (size * TILE_ASPECT_RATIO).toInt()
@@ -367,6 +375,9 @@ class PlayerPortraitRenderer internal constructor(
             ?: Minecraft.getInstance().connection?.getPlayerInfo(uuid)?.skinLocation
             ?: DefaultPlayerSkin.getDefaultSkin(uuid)
         renderRegion(texture, x, y, size, size, alpha, z, 8f / 64f, 8f / 64f, 16f / 64f, 16f / 64f, true, matrices, consumers)
+        if (modelPartShown(playerId, PlayerModelPart.HAT)) {
+            renderRegion(texture, x, y, size, size, alpha, z - HAT_LAYER_DEPTH, 40f / 64f, 8f / 64f, 48f / 64f, 16f / 64f, true, matrices, consumers)
+        }
     }
 
     /**
@@ -452,6 +463,9 @@ class PlayerPortraitRenderer internal constructor(
     private companion object {
         /** 牌面貼圖相對於頭像 slot 的寬高比例。 */
         const val TILE_ASPECT_RATIO = 0.75f
+
+        /** 皮膚帽子層往觀看者方向的深度位移；局部深度越小越靠前，避免與臉部底層重疊閃爍。 */
+        const val HAT_LAYER_DEPTH = 0.01f
     }
 }
 
