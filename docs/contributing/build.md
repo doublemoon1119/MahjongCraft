@@ -115,6 +115,8 @@
   ./gradlew build detektAll --continue --stacktrace "-PmahjongcraftTarget=<target>" "-PmahjongcraftExample=<true|false>"
   ```
 
+  CI sets the `CI` environment variable, so modules that start Koin recheck their whole dependency graph
+  on every build, as `-PmahjongcraftKoinStrictSafety=true` does locally.
   Gradle runs on JDK 25. The target's toolchain JDK is installed separately and found through
   `org.gradle.java.installations.fromEnv`; toolchain downloads are disabled, so a missing JDK fails the job.
 - Pushes save the Gradle cache, including Loom's Minecraft files; pull requests only read it.

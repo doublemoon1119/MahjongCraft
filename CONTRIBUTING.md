@@ -49,6 +49,10 @@ kind of change you are making; the rules in them apply even when this file does 
 - Use `-PmahjongcraftTarget=core` for an explicit core-only build even when local development
   settings select a Minecraft target. Use `./gradlew switchTarget -PtoTarget=<target-id>` to persist
   a local selection, or `./gradlew clearTarget` to restore the core-only default.
+- Add `-PmahjongcraftKoinStrictSafety=true` to the build before committing. Modules that start Koin then
+  recheck their whole dependency graph, which catches a Koin registration another module changed without
+  changing its public API. Without it, which is the default outside CI, those modules check the graph only
+  when they recompile themselves, so ordinary builds do not recompile them every time.
 - CI reruns the same verification for every target on pushes and pull requests (see
   [Build](docs/contributing/build.md#continuous-integration)); it does not replace this local check.
 - A passing build does not mean warning-free: compiler warnings (e.g. redundant casts, unused
