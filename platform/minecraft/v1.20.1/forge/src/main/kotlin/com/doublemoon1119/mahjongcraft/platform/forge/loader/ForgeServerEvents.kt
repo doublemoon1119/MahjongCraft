@@ -126,16 +126,34 @@ object ForgeServerEvents : ServerEvents {
         listen<RegisterCommandsEvent> { listener(it.dispatcher) }
     }
 
-    /** 只轉交伺服器端那一次；監聽器回傳 [InteractionResult.PASS] 以外的結果時取消事件並採用該結果。 */
+    /**
+     * 只轉交伺服器端那一次；監聽器回傳 [InteractionResult.PASS] 以外的結果時取消事件並採用該結果。
+     *
+     * 玩家互動實體本身與互動實體上某個位置都會轉交：用戶端監聽器處理了互動時只送出後者。
+     */
     override fun onPlayerUseEntity(listener: (ServerPlayer, ServerLevel, InteractionHand, Entity) -> InteractionResult) {
-        listen<PlayerInteractEvent.EntityInteract> { event ->
-            val level = event.level as? ServerLevel ?: return@listen
-            val player = event.entity as? ServerPlayer ?: return@listen
-            val result = listener(player, level, event.hand, event.target)
-            if (result != InteractionResult.PASS) {
-                event.cancellationResult = result
-                event.isCanceled = true
-            }
+        listen<PlayerInteractEvent.EntityInteract> { event -> forwardEntityInteraction(event, event.target, listener) }
+        listen<PlayerInteractEvent.EntityInteractSpecific> { event -> forwardEntityInteraction(event, event.target, listener) }
+    }
+
+    /**
+     * 把伺服器端的實體互動交給監聽器，結果不是 pass 時取消事件並採用該結果。
+     *
+     * @param event Forge 的實體互動事件。
+     * @param target 被互動的實體。
+     * @param listener 共用的實體互動監聽器。
+     */
+    private fun forwardEntityInteraction(
+        event: PlayerInteractEvent,
+        target: Entity,
+        listener: (ServerPlayer, ServerLevel, InteractionHand, Entity) -> InteractionResult,
+    ) {
+        val level = event.level as? ServerLevel ?: return
+        val player = event.entity as? ServerPlayer ?: return
+        val result = listener(player, level, event.hand, target)
+        if (result != InteractionResult.PASS) {
+            event.cancellationResult = result
+            event.isCanceled = true
         }
     }
 

@@ -42,8 +42,8 @@ repositories {
 
 // 與本體相同的相容測試組合，讓範例的開發執行也能在同樣的環境中測試；本體的組合不會傳到這裡。
 devMods {
-    group("iris", mc1201.bundles.dev.iris)
-    group("modmenu", mc1201.bundles.dev.modmenu)
+    group("shaders", mc1201.bundles.dev.fabric.iris)
+    group("modmenu", mc1201.bundles.dev.fabric.modmenu)
 }
 
 loom {

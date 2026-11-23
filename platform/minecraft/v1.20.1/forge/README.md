@@ -21,7 +21,19 @@ the vanilla dyes with Forge's `forge:dyes`, so dyes from other mods work as well
 
 The shared client startup reads registered items and entities, which Forge writes only after the mod is
 constructed. The client therefore starts at the first client registration event, when the registries are
-complete and key mappings, entity renderers, item colors and reload listeners are not registered yet.
+complete and key mappings, entity renderers, item colors, reload listeners and GUI overlays are not
+registered yet.
+
+Forge draws the in-game screen with its own `ForgeGui` overlays instead of vanilla `Gui.render`, so the
+shared `GuiMixin` never runs on Forge. The HUD drawn before the chat, such as the compact countdown and the
+hand analysis, is a GUI overlay registered below Forge's chat panel instead.
+
+Vanilla sends a right-click on an entity to the server before Forge fires its client entity interaction event,
+so cancelling that event cannot stop the server from handling the click, for example as an ordinary discard
+of a clicked hand tile. Client listeners for entity use therefore run when the use key is pressed, before
+vanilla sends anything, as Fabric's do. A click a listener handles sends only an interaction at a position on
+the entity, which does not run the entity's own interaction on the server, and the server listeners for
+entity use receive both kinds of interaction.
 
 ## Dependencies
 
@@ -63,6 +75,9 @@ mixins:
   chunk records a block entity, and after a block a player breaks is actually removed.
 - The Mahjong tile item supplies its programmatic renderer, because Forge asks only the item's own class.
 - Model loading asks the registered model loadings first, so tile variants without a model file still load.
+- Commands run by clicking a chat message also go to Forge's client command handler first. Forge does this
+  only for typed commands, so a click on a link such as a match result's details would otherwise send a
+  client-only command to the server.
 
 The shared mixins use MixinExtras, which Forge 1.20.1 does not ship; the mod embeds it with jar-in-jar.
 ModDevGradle does not add `MixinConfigs` to the JAR manifest, so the `jar` task adds it; production Forge
@@ -89,5 +104,19 @@ warnings for files under this module. The Forge debug tools and the Forge exampl
 
 Development runs also load the [debug tools module](../forge-debug/README.md), which provides the
 `/mahjongcraft debug` commands; the packaged mod does not contain it.
+
+Compatibility checks can load extra mods into development runs with `-PmahjongcraftDevMods`
+(see [Minecraft Build](../../../../docs/contributing/minecraft-build.md#development-runtime-mods)). This module and the
+Forge example declare the same groups:
+
+- `shaders`: Oculus and the Embeddium it requires, for checking rendering with and without a shader pack. Shader
+  packs are not part of the repository; put one in `run/client/shaderpacks` and select it in the game's video
+  settings.
+- `modmenu`: empty, so the switch also works when Fabric is selected together; Forge's own mod list already
+  has the settings button that opens the client settings.
+
+```shell
+./gradlew :minecraft_v1.20.1_forge:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-forge" "-PmahjongcraftDevMods=shaders"
+```
 
 Client and dedicated-server runs use `run/client` and `run/server` under this module.

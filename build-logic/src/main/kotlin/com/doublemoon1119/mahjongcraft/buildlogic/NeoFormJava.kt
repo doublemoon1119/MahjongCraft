@@ -7,7 +7,7 @@ import org.gradle.jvm.toolchain.JavaToolchainService
 import org.gradle.kotlin.dsl.getByType
 
 /** ModDevGradle 舊版 Forge 外掛的 plugin ID；以原版編譯的模組也用它取得原版 Minecraft。 */
-private const val MODDEV_LEGACY_FORGE_PLUGIN_ID: String = "net.neoforged.moddev.legacyforge"
+internal const val MODDEV_LEGACY_FORGE_PLUGIN_ID: String = "net.neoforged.moddev.legacyforge"
 
 /** ModDevGradle 準備 Minecraft 的任務共同的類別。 */
 private const val NEOFORM_RUNTIME_TASK_CLASS: String = "net.neoforged.nfrtgradle.NeoFormRuntimeTask"
