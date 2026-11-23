@@ -161,6 +161,126 @@ class PlatformTargetsSettingsPluginTest {
         assertTrue(result.output.contains(":example-minecraft_common"), result.output)
     }
 
+    /** 以逗號分隔的多個 target 載入模組的聯集，共用的模組只載入一次，各模組取得自己 target 的設定。 */
+    @Test
+    fun `loads the union of several targets`() = withFixture { root ->
+        prepareBuild(root)
+        addSecondTarget(root, javaToolchain = 17)
+
+        val result = runner(root).withArguments(
+            "selectedTarget",
+            "projects",
+            "-PmahjongcraftTarget=minecraft-test, minecraft-test-forge",
+            "-PmahjongcraftExample=true",
+        ).build()
+
+        assertTrue(result.output.contains("selected=minecraft-test,minecraft-test-forge"), result.output)
+        assertTrue(result.output.contains("Target: minecraft-test, minecraft-test-forge"), result.output)
+        assertTrue(result.output.contains(":test"), result.output)
+        assertTrue(result.output.contains(":test-forge"), result.output)
+        assertTrue(result.output.contains(":shared"), result.output)
+        assertTrue(result.output.contains(":example-minecraft_v1.20.1_fabric"), result.output)
+        assertTrue(result.output.contains(":example-minecraft_v1.20.1_forge"), result.output)
+        val toolchains = result.output.lines().single { it.startsWith("toolchains=") }
+        listOf(":example:example-mahjong-extension", ":shared", ":test", ":test-forge").forEach { project ->
+            assertTrue(toolchains.contains("$project=17"), toolchains)
+        }
+        // 共用模組在兩個 target 中執行環境提供的函式庫不同，沒有單一答案。
+        assertTrue(result.output.contains(":shared=null"), result.output)
+        assertTrue(result.output.contains(":test={kotlin=2.0.0}"), result.output)
+        assertTrue(result.output.contains(":test-forge={kotlin=2.1.0}"), result.output)
+    }
+
+    /** 清單中的重複、空白項目與和其他 target 並列的 core 都使 Settings 階段失敗。 */
+    @Test
+    fun `rejects malformed target lists`() = withFixture { root ->
+        prepareBuild(root)
+        addSecondTarget(root, javaToolchain = 17)
+
+        mapOf(
+            "minecraft-test,minecraft-test" to "repeats",
+            "minecraft-test,,minecraft-test-forge" to "separate target IDs with single commas",
+            "core,minecraft-test" to "cannot be combined",
+            "minecraft-test,unknown" to "Unknown MahjongCraft target 'unknown'",
+        ).forEach { (selection, message) ->
+            val result = runner(root).withArguments("help", "-PmahjongcraftTarget=$selection").buildAndFail()
+            assertTrue(result.output.contains(message), result.output)
+        }
+    }
+
+    /** 共用模組所屬的 target 使用不同的 Java 版本時，不能一起選擇。 */
+    @Test
+    fun `rejects shared modules with different java versions`() = withFixture { root ->
+        prepareBuild(root)
+        addSecondTarget(root, javaToolchain = 21)
+
+        val result = runner(root).withArguments("help", "-PmahjongcraftTarget=minecraft-test,minecraft-test-forge").buildAndFail()
+
+        assertTrue(result.output.contains("Module platform/shared belongs to selected targets with different java-toolchain"), result.output)
+    }
+
+    /** 選擇的 target 都沒有範例模組時，啟用範例仍然失敗。 */
+    @Test
+    fun `rejects enabled examples when no selected target has any`() = withFixture { root ->
+        prepareBuild(root)
+        addSecondTarget(root, javaToolchain = 17)
+        val catalog = root.resolve("gradle/platform/minecraft/v1.20.1/targets.toml")
+        catalog.writeText(catalog.readText().replace(Regex("example-modules = \\[.*?]", RegexOption.DOT_MATCHES_ALL), ""))
+
+        val result = runner(root).withArguments(
+            "help",
+            "-PmahjongcraftTarget=minecraft-test,minecraft-test-forge",
+            "-PmahjongcraftExample=true",
+        ).buildAndFail()
+
+        assertTrue(result.output.contains("does not declare any example modules"), result.output)
+    }
+
+    /**
+     * 在 catalog 加入第二個 target，與原本的 target 共用 `platform/shared` 模組。
+     *
+     * @param root 測試專案根目錄。
+     * @param javaToolchain 第二個 target 的 Java toolchain。
+     */
+    private fun addSecondTarget(root: File, javaToolchain: Int) {
+        root.toPath().resolve("platform/test-forge").createDirectories()
+        root.toPath().resolve("platform/shared").createDirectories()
+        root.toPath().resolve("example/platform/minecraft/v1.20.1/forge").createDirectories()
+        root.resolve("platform/test-forge/build.gradle.kts").writeText("")
+        root.resolve("platform/shared/build.gradle.kts").writeText("")
+        root.resolve("example/platform/minecraft/v1.20.1/forge/build.gradle.kts").writeText("")
+        val catalog = root.resolve("gradle/platform/minecraft/v1.20.1/targets.toml")
+        catalog.writeText(
+            catalog.readText()
+                .replace("modules = [\"platform/test\"]", "modules = [\"platform/test\", \"platform/shared\"]")
+                .replace(
+                    "loader = \"fabric\"\n",
+                    "loader = \"fabric\"\n\n[targets.provided-versions]\nkotlin = \"2.0.0\"\n",
+                ) +
+                """
+
+                [[targets]]
+                id = "minecraft-test-forge"
+                platform = "minecraft"
+                java-toolchain = $javaToolchain
+                java-release = 17
+                modules = ["platform/test-forge", "platform/shared"]
+                example-modules = [
+                    "example/mahjong-extension",
+                    "example/platform/minecraft/common",
+                    "example/platform/minecraft/v1.20.1/forge",
+                ]
+
+                [targets.attributes]
+                minecraft-version = "v1.20.1"
+                loader = "forge"
+
+                [targets.provided-versions]
+                kotlin = "2.1.0"
+                """.trimIndent() + "\n",
+        )
+    }
+
     /**
      * 建立 Settings plugin 測試所需的 catalog 與 Gradle 專案。
      *
@@ -206,7 +326,10 @@ class PlatformTargetsSettingsPluginTest {
             }
             tasks.register("selectedTarget") {
                 doLast {
-                    println("selected=" + gradle.extensions.extraProperties["mahjongcraft.selectedTargetId"])
+                    val extras = gradle.extensions.extraProperties
+                    println("selected=" + (extras["mahjongcraft.selectedTargetIds"] as List<*>).joinToString(","))
+                    println("toolchains=" + (extras["mahjongcraft.targetJavaToolchain"] as Map<*, *>).toSortedMap(compareBy { it.toString() }))
+                    println("provided=" + (extras["mahjongcraft.targetProvidedVersions"] as Map<*, *>).toSortedMap(compareBy { it.toString() }))
                 }
             }
             """.trimIndent() + "\n",

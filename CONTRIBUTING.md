@@ -41,14 +41,15 @@ kind of change you are making; the rules in them apply even when this file does 
   are sorted by translation key. If it fails, run `./gradlew sortMinecraftLangFiles` to auto-fix instead
   of reordering entries by hand. This check reads that fixed directory directly and always runs
   regardless of the currently loaded target, unlike the per-module checks above.
-- "Currently loaded module" means the core modules plus whichever platform target is active per
-  `local.dev.properties`, `-PmahjongcraftTarget`, or `MAHJONGCRAFT_TARGET`. Run
+- "Currently loaded module" means the core modules plus whichever platform targets are active per
+  `local.dev.properties`, `-PmahjongcraftTarget`, or `MAHJONGCRAFT_TARGET`; several targets can be selected
+  together, separated by commas (see [Build](docs/contributing/build.md)). Run
   `./gradlew listPlatformTargets` to list valid targets. All of the checks above — including the
   `docs/temp/` scan — only see currently loaded modules; switch targets and rerun if you need to
   verify a platform module you're not currently building against.
 - Use `-PmahjongcraftTarget=core` for an explicit core-only build even when local development
-  settings select a Minecraft target. Use `./gradlew switchTarget -PtoTarget=<target-id>` to persist
-  a local selection, or `./gradlew clearTarget` to restore the core-only default.
+  settings select a Minecraft target. Use `./gradlew switchTarget -PtoTarget=<target-id>[,<target-id>...]` to
+  persist a local selection, or `./gradlew clearTarget` to restore the core-only default.
 - Add `-PmahjongcraftKoinStrictSafety=true` to the build before committing. Modules that start Koin then
   recheck their whole dependency graph, which catches a Koin registration another module changed without
   changing its public API. Without it, which is the default outside CI, those modules check the graph only

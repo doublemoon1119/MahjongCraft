@@ -44,6 +44,9 @@ Run a Minecraft build by selecting its target, for example Fabric or Forge for M
 ./gradlew build "-PmahjongcraftTarget=minecraft-v1.20.1-forge"
 ```
 
+Separate several targets with commas to build them together, for example
+`"-PmahjongcraftTarget=minecraft-v1.20.1-fabric,minecraft-v1.20.1-forge"`.
+
 On Windows PowerShell, replace `./gradlew` with `.\gradlew.bat` and keep the target argument quoted.
 Use `./gradlew listPlatformTargets` to inspect the catalog-backed platform targets; directory names
 alone do not establish supported releases.

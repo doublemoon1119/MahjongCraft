@@ -236,8 +236,8 @@ class MinecraftModPackagingTest {
             include(":formal", ":example")
             project(":formal").projectDir = file("platform/v1.20.1/fabric")
             project(":example").projectDir = file("example/platform/minecraft/v1.20.1/fabric")
-            gradle.ext.set("mahjongcraft.targetJavaToolchain", 17)
-            gradle.ext.set("mahjongcraft.targetJavaRelease", 17)
+            gradle.ext.set("mahjongcraft.targetJavaToolchain", [":formal": 17, ":example": 17])
+            gradle.ext.set("mahjongcraft.targetJavaRelease", [":formal": 17, ":example": 17])
             """.trimIndent() + "\n",
         )
         root.resolve("build.gradle").writeText(

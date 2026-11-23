@@ -1,10 +1,18 @@
 # Local Development Target
 # ------------------------
-# Copy this file to local.dev.properties. The local file is ignored by Git.
-# Run `./gradlew listPlatformTargets` to list valid target IDs.
+# Copy this file to local.dev.properties, or let `./gradlew switchTarget -PtoTarget=<target>` write it.
+# `./gradlew clearTarget` removes the selection and restores the core-only default.
+# The local file is ignored by Git. Run `./gradlew listPlatformTargets` to list valid target IDs.
+#
+# Separate several targets with commas to load them together, for example both loaders of one
+# Minecraft version: minecraft-v1.20.1-fabric,minecraft-v1.20.1-forge
+# Builds and IDE syncs then take longer, because every selected loader is prepared.
 #
 # Override priority:
 # -PmahjongcraftTarget > ORG_GRADLE_PROJECT_mahjongcraftTarget >
 # MAHJONGCRAFT_TARGET > this file > core
+#
+# Only the target is read from this file. Switches such as -PmahjongcraftExample and
+# -PmahjongcraftDevMods are passed on the command line for each build.
 
 mahjongcraftTarget=minecraft-v1.20.1-fabric

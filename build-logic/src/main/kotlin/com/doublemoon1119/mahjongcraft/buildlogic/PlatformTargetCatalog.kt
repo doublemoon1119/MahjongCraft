@@ -139,12 +139,12 @@ object PlatformTargetCatalog {
     }
 
     /**
-     * 依固定優先序選出 target；空白輸入視為未指定。
+     * 依固定優先序選出 target 的指定；空白輸入視為未指定。
      *
-     * @param gradleProperty 命令列或 Gradle property 指定的 target ID。
-     * @param environmentVariable 環境變數指定的 target ID。
-     * @param localProperty 本機設定檔中的 fallback target ID。
-     * @return 依 Gradle property、環境變數、本機設定檔順序選出的 ID；皆未指定時回傳 core ID。
+     * @param gradleProperty 命令列或 Gradle property 指定的 target。
+     * @param environmentVariable 環境變數指定的 target。
+     * @param localProperty 本機設定檔中的 fallback target。
+     * @return 依 Gradle property、環境變數、本機設定檔順序選出的指定，可能是以逗號分隔的多個 ID；皆未指定時回傳 core ID。
      */
     fun resolveSelectedTargetId(
         gradleProperty: String?,
@@ -154,6 +154,33 @@ object PlatformTargetCatalog {
         .mapNotNull { it?.trim()?.takeIf(String::isNotEmpty) }
         .firstOrNull()
         ?: CORE_TARGET_ID
+
+    /**
+     * 解析選擇的 target 清單。
+     *
+     * @param selection 以逗號分隔的 target ID，例如同一個 Minecraft 版本的兩個載入器；`core` 只能單獨出現。
+     * @param targets catalog 中的 target。
+     * @return 依指定順序排列的 target；選擇 `core` 時為空。
+     * @throws GradleException 清單有空白項目、重複的 ID、與其他 target 並列的 `core` 或不存在的 ID。
+     */
+    fun selectTargets(selection: String, targets: List<PlatformTarget>): List<PlatformTarget> {
+        val ids = selection.split(',').map(String::trim)
+        if (ids.any(String::isEmpty)) {
+            throw GradleException("Invalid MahjongCraft target list '$selection'; separate target IDs with single commas")
+        }
+        val duplicates = ids.groupingBy { it }.eachCount().filterValues { it > 1 }.keys
+        if (duplicates.isNotEmpty()) throw GradleException("MahjongCraft target list '$selection' repeats ${duplicates.sorted()}")
+        if (CORE_TARGET_ID in ids) {
+            if (ids.size > 1) throw GradleException("'$CORE_TARGET_ID' selects no platform target and cannot be combined: $selection")
+            return emptyList()
+        }
+        return ids.map { id ->
+            targets.singleOrNull { it.id == id } ?: throw GradleException(
+                "Unknown MahjongCraft target '$id'. Available targets: " +
+                    (listOf(CORE_TARGET_ID) + targets.map(PlatformTarget::id)).joinToString(),
+            )
+        }
+    }
 
     /**
      * 驗證 target ID、平台設定、Java 版本與 repository 內的 module 目錄。

@@ -31,6 +31,12 @@
   .\gradlew.bat build "-PmahjongcraftTarget=minecraft-v1.20.1-fabric"
   ```
 
+- A selection may list several targets separated by commas, for example
+  `minecraft-v1.20.1-fabric,minecraft-v1.20.1-forge`, to build and sync both loaders of one Minecraft
+  version together. The build loads the union of their modules once. Each module takes its Java version and
+  the libraries its runtime provides from the targets that contain it; a module shared by targets with
+  different Java versions fails the selection, so select those targets separately. `core` cannot be
+  combined with other targets. CI still verifies every target on its own.
 - Properties that only apply to Minecraft builds, such as extra mods for development runs and build
   metadata, are described in [Minecraft Build](minecraft-build.md).
 - Core modules use `core-java-toolchain` and `core-java-release` from `gradle/libs.versions.toml`.

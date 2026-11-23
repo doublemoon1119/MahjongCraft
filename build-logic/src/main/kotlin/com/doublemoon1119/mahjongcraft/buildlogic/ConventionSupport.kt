@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.buildlogic
 
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.plugins.ExtensionAware
@@ -100,17 +101,18 @@ private const val TEST_ENVIRONMENT_PREFIX: String = "MAHJONGCRAFT_"
 /** `libs` version catalog 中 Kotlin API 版本上限的名稱。 */
 internal const val KOTLIN_API_VERSION_ALIAS: String = "kotlin-api-version"
 
-/** 讀取 Settings plugin 發布的 target Java toolchain。 */
-internal fun Project.targetJavaToolchain(): Int = gradleExtras().get(PlatformTargetsSettingsPlugin.TARGET_JAVA_TOOLCHAIN_EXTRA) as Int
+/** 讀取 Settings plugin 為這個模組發布的 target Java toolchain。 */
+internal fun Project.targetJavaToolchain(): Int = targetSetting<Int>(PlatformTargetsSettingsPlugin.TARGET_JAVA_TOOLCHAIN_EXTRA)
 
 /**
- * 讀取 Settings plugin 發布的 target 執行環境提供的函式庫版本；core target 沒有。
+ * 讀取 Settings plugin 為這個模組發布的 target 執行環境提供的函式庫版本。
  *
  * @return 以 `libs` version catalog 版本名稱為 key 的版本。
+ * @throws GradleException 模組屬於多個提供不同函式庫的 target，沒有單一答案。
  */
-@Suppress("UNCHECKED_CAST")
 internal fun Project.targetProvidedVersions(): Map<String, String> =
-    gradleExtras().get(PlatformTargetsSettingsPlugin.TARGET_PROVIDED_VERSIONS_EXTRA) as Map<String, String>
+    targetSetting<Map<String, String>?>(PlatformTargetsSettingsPlugin.TARGET_PROVIDED_VERSIONS_EXTRA)
+        ?: throw GradleException("$path belongs to several selected targets that provide different libraries at run time")
 
 /**
  * 把測試的工作目錄放在 build 目錄中；測試期間 Minecraft 的記錄檔等以相對路徑建立的檔案可由 clean 移除。
@@ -125,8 +127,23 @@ internal fun Project.isolateTestRunDirectory() {
     }
 }
 
-/** 讀取 Settings plugin 發布的 target Java release。 */
-internal fun Project.targetJavaRelease(): Int = gradleExtras().get(PlatformTargetsSettingsPlugin.TARGET_JAVA_RELEASE_EXTRA) as Int
+/** 讀取 Settings plugin 為這個模組發布的 target Java release。 */
+internal fun Project.targetJavaRelease(): Int = targetSetting<Int>(PlatformTargetsSettingsPlugin.TARGET_JAVA_RELEASE_EXTRA)
+
+/**
+ * 讀取 Settings plugin 依 project path 為各模組發布的 target 設定。
+ *
+ * @param T 設定值的型別。
+ * @param key Gradle extra 的 key。
+ * @return 這個模組的設定值。
+ * @throws GradleException 這個模組不屬於任何選擇的 target。
+ */
+@Suppress("UNCHECKED_CAST")
+private fun <T> Project.targetSetting(key: String): T {
+    val settings = gradleExtras().get(key) as Map<String, T>
+    if (path !in settings) throw GradleException("$path is not a module of the selected platform targets")
+    return settings.getValue(path)
+}
 
 /** 讀取 Gradle instance 的 extra properties。 */
 private fun Project.gradleExtras() = (gradle as ExtensionAware).extensions.extraProperties
