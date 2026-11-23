@@ -17,7 +17,7 @@
   "environment": "*",
   "accessWidener": "mahjongcraft.accesswidener",
   "mixins": [
-    "mahjongcraft.client.mixins.json"
+    "mahjongcraft.mixins.json"
   ],
   "entrypoints": {
     "main": [

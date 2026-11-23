@@ -261,10 +261,17 @@ class MahjongCraftClientBootstrap(
                 logger.warn("Rejected invalid public character snapshot", cause)
             }
         }
+        // 伺服器送來格式錯誤的資料時只記錄第一次，之後同樣的錯誤不再記錄。
+        var reportedInvalidIdentity = false
         MahjongChannels.playerIdentity.registerClientReceiver(json) { payload ->
             if (payload.entries.size > PlayerIdentityPayload.MAX_ENTRIES) return@registerClientReceiver
             payload.entries.forEach { entry ->
-                val id = runCatching { Uuid.parse(entry.playerId) }.getOrNull() ?: return@forEach
+                val id = runCatching { Uuid.parse(entry.playerId) }.getOrNull()
+                if (id == null) {
+                    if (!reportedInvalidIdentity) logger.debug("Ignored a player name from the server with an invalid player ID: {}", entry.playerId)
+                    reportedInvalidIdentity = true
+                    return@forEach
+                }
                 profileResolver.rememberServerName(id, entry.name)
             }
         }
@@ -470,7 +477,7 @@ class MahjongCraftClientBootstrap(
                 if (result.createdDefaultFile) {
                     logger.info("Created and loaded default client config at {}", configStore.path)
                 } else {
-                    logger.info("Loaded client config from {}", configStore.path)
+                    logger.debug("Loaded client config from {}", configStore.path)
                 }
             }
             is MahjongClientConfigUpdateResult.Failure -> {

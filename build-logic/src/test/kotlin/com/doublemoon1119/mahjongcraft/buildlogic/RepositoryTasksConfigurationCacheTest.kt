@@ -128,7 +128,7 @@ class RepositoryTasksConfigurationCacheTest {
             LANG_DIRECTORY,
         )
             .forEach { root.resolve(it).toPath().createDirectories() }
-        root.resolve("gradle/platform-targets.toml").writeText(
+        root.resolve("gradle/platform/minecraft/v1.20.1/targets.toml").apply { parentFile.mkdirs() }.writeText(
             """
             schema-version = 1
 
@@ -150,6 +150,7 @@ class RepositoryTasksConfigurationCacheTest {
             extension-api-version = "1.0.0"
             bundled-extensions-version = "1.0.0"
             core-java-toolchain = "17"
+            kotlin-api-version = "2.4"
             """.trimIndent() + "\n",
         )
         root.resolve("settings.gradle.kts").writeText(

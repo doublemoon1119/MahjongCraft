@@ -40,6 +40,19 @@ class MinecraftModPackagingTest {
         assertTrue(root.resolve("platform/v1.20.1/fabric/build/libs/mahjongcraft-fabric-1.20.1-0.0.0-dev+a0f6307.jar").isFile)
     }
 
+    /** 指定載入器時，模組 metadata 的版本改用指定的載入器，產出檔名仍沿用模組資料夾的名稱。 */
+    @Test
+    fun `loader override changes the mod version but not the archive name`() = withFixture { root ->
+        prepareFixture(root)
+        root.resolve("platform/v1.20.1/fabric/build.gradle").appendText("\nminecraftModPackaging {\n    loader = \"quilt\"\n}\n")
+
+        runner(root, ":formal:processResources", ":formal:jar").build()
+
+        val metadata = root.resolve("platform/v1.20.1/fabric/build/resources/main/fabric.mod.json").readText()
+        assertTrue(metadata.contains("\"version\": \"0.0.0-dev+1.20.1-quilt\""), metadata)
+        assertTrue(root.resolve("platform/v1.20.1/fabric/build/libs/mahjongcraft-fabric-1.20.1-0.0.0-dev.jar").isFile)
+    }
+
     /** 建置資訊不符合 SemVer 時建置失敗，不產出版本字串錯誤的模組。 */
     @Test
     fun `invalid build metadata fails the build`() = withFixture { root ->
@@ -65,6 +78,33 @@ class MinecraftModPackagingTest {
 
         val collected = root.resolve("build/ci/artifacts").list().orEmpty().sorted()
         assertEquals(listOf("mahjongcraft-fabric-1.20.1-0.0.0-dev.jar"), collected)
+    }
+
+    /** 模組有 `reobfJar` 時，CI 收集它轉成執行時名稱的 JAR，而不是使用開發時名稱的 `jar`。 */
+    @Test
+    fun `ci artifacts prefer the reobfuscated jar`() = withFixture { root ->
+        prepareFixture(root)
+        root.resolve("build.gradle").writeText(
+            "plugins {\n    id(\"mahjongcraft.target-management\")\n}\n" + root.resolve("build.gradle").readText(),
+        )
+        root.resolve("example/platform/minecraft/v1.20.1/fabric/build.gradle").appendText(
+            "\nminecraftModPackaging {\n    distributable = false\n}\n",
+        )
+        root.resolve("platform/v1.20.1/fabric/build.gradle").appendText(
+            """
+
+            tasks.register("reobfJar", Jar) {
+                archiveBaseName = "reobfuscated"
+                destinationDirectory = layout.buildDirectory.dir("reobf")
+                from(sourceSets.main.output)
+            }
+            """.trimIndent() + "\n",
+        )
+
+        runner(root, "collectCiArtifacts").build()
+
+        val collected = root.resolve("build/ci/artifacts").list().orEmpty().sorted()
+        assertEquals(listOf("reobfuscated-0.0.0-dev.jar"), collected)
     }
 
     /** example 可覆寫自己的 metadata 與 archive 名稱，但不會改變正式 mod 的 root ID。 */
@@ -169,6 +209,8 @@ class MinecraftModPackagingTest {
                 [versions]
                 core-java-toolchain = "17"
                 core-java-release = "17"
+                kotlin-api-version = "2.4"
+                minecraft-mod-version = "0.0.0-dev"
                 """.trimIndent() + "\n",
             )
         }
@@ -195,8 +237,8 @@ class MinecraftModPackagingTest {
             include(":formal", ":example")
             project(":formal").projectDir = file("platform/v1.20.1/fabric")
             project(":example").projectDir = file("example/platform/minecraft/v1.20.1/fabric")
-            gradle.ext.set("mahjongcraft.targetJavaToolchain", 17)
-            gradle.ext.set("mahjongcraft.targetJavaRelease", 17)
+            gradle.ext.set("mahjongcraft.targetJavaToolchain", [":formal": 17, ":example": 17])
+            gradle.ext.set("mahjongcraft.targetJavaRelease", [":formal": 17, ":example": 17])
             """.trimIndent() + "\n",
         )
         root.resolve("build.gradle").writeText(

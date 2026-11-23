@@ -26,7 +26,7 @@ class ExampleModPackagingTest {
         }
     }
 
-    /** 三層範例合併成單一 mod，既不遺漏共用類別，也不重複包入本體與相依套件。 */
+    /** 各層範例合併成單一 mod，既不遺漏共用類別，也不重複包入本體與相依套件。 */
     @Test
     fun `example jar contains all layers without bundling main mod dependencies`() {
         ZipFile(System.getProperty("mahjongcraft.exampleJar")).use { jar ->
@@ -34,12 +34,12 @@ class ExampleModPackagingTest {
             listOf(
                 "com/doublemoon1119/mahjongcraft/example/ExampleMahjongExtension.class",
                 "com/doublemoon1119/mahjongcraft/example/minecraft/ExampleMinecraftMahjongExtension.class",
-                "com/doublemoon1119/mahjongcraft/example/fabric/ExampleNativeMahjongExtension.class",
+                "com/doublemoon1119/mahjongcraft/example/minecraft/mod/ExampleNativeMahjongExtension.class",
                 "com/doublemoon1119/mahjongcraft/example/fabric/ExampleMod.class",
                 "com/doublemoon1119/mahjongcraft/example/fabric/ExampleModClient.class",
-                "com/doublemoon1119/mahjongcraft/example/fabric/ExampleNativeMahjongClientExtension.class",
-                "com/doublemoon1119/mahjongcraft/example/fabric/character/ExampleActorEntity.class",
-                "com/doublemoon1119/mahjongcraft/example/fabric/furniture/block/ExampleBenchBlock.class",
+                "com/doublemoon1119/mahjongcraft/example/minecraft/mod/ExampleNativeMahjongClientExtension.class",
+                "com/doublemoon1119/mahjongcraft/example/minecraft/mod/character/ExampleActorEntity.class",
+                "com/doublemoon1119/mahjongcraft/example/minecraft/mod/furniture/block/ExampleBenchBlock.class",
                 "fabric.mod.json",
                 "assets/mahjongcraft_example/icon.png",
                 "assets/mahjongcraft_example/lang/en_us.json",
@@ -143,7 +143,7 @@ class ExampleModPackagingTest {
         ZipFile(System.getProperty("mahjongcraft.exampleJar")).use { jar ->
             val metadata = Json.parseToJsonElement(jar.getInputStream(jar.getEntry("fabric.mod.json")).bufferedReader().readText()).jsonObject
             val entries = metadata.getValue("entrypoints").jsonObject
-            val clientClass = "com.doublemoon1119.mahjongcraft.example.fabric.ExampleNativeMahjongClientExtension"
+            val clientClass = "com.doublemoon1119.mahjongcraft.example.minecraft.mod.ExampleNativeMahjongClientExtension"
             assertEquals(listOf(clientClass), entries.getValue("mahjongcraft:client_extension").jsonArray.map { it.jsonPrimitive.content })
             listOf("main", "mahjongcraft:extension").forEach { key ->
                 assertFalse(entries.getValue(key).jsonArray.any { it.jsonPrimitive.content == clientClass })

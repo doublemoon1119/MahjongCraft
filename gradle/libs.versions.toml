@@ -11,13 +11,16 @@ bundled-extensions-version = "0.4.0-SNAPSHOT"
 
 # MahjongCraft core JVM policy
 # toolchain 是執行編譯器與測試的 JDK；release 是產出 bytecode 的最低 Java 版本。
-# Minecraft version-specific modules 改由 gradle/platform-targets.toml 指定 Java policy。
+# Minecraft version-specific modules 改由 gradle/platform/minecraft/<版本>/targets.toml 指定 Java policy。
 core-java-toolchain = "17"
 core-java-release = "17"
 
 # Kotlin ecosystem
 kotlin = "2.4.20"
-coroutines = "1.11.0"
+# 程式可使用的 Kotlin 標準函式庫 API 版本上限，不得高於任何建置目標執行時提供的 Kotlin。
+# 各目標提供的版本記錄在 gradle/platform/<平台>/<版本>/targets.toml 的 provided-versions。
+kotlin-api-version = "2.4"
+kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.11.0"
 kotlinx-datetime = "0.7.1-0.6.x-compat"
 ktoml = "0.7.1"
@@ -30,31 +33,10 @@ koin-plugin = "1.2.1"
 ktlint-gradle = "14.2.0"
 detekt = "2.0.0-alpha.6"
 
-# Minecraft v1.20.1 + Fabric target dependencies
-# 版本號帶數字結尾的 key 刻意不用 dash 分段（例如 minecraft1201 而非 minecraft-v1-20-1），
-# 避免 Gradle version catalog 的巢狀 accessor 在數字開頭區段產生不穩定的名稱。
+# Minecraft build plugins
+# 可建置多個 Minecraft 版本的外掛；各 Minecraft 版本自己的依賴在 gradle/platform/minecraft/<版本>/versions.toml。
 fabric-loom = "1.17.19"
 moddev = "2.0.148"
-minecraft1201 = "1.20.1"
-fabric-loader = "0.19.3"
-fabricApi1201 = "0.92.11+1.20.1"
-fabric-language-kotlin = "1.13.14+kotlin.2.4.20"
-
-# Fabric 1.20.1 的執行相容範圍，與上方編譯依賴版本分開維護。
-fabricLoaderRequirement1201 = ">=0.19.0"
-fabricApiRequirement1201 = "*"
-fabricLanguageKotlinRequirement1201 = ">=1.13.14"
-
-# Fabric 1.20.1 開發執行時可選載入的相容測試模組（-PmahjongcraftDevMods），從 Modrinth 的 Maven 倉庫取得；
-# ModMenu 同時是 ModMenu 整合的編譯依賴，但不打包。
-modMenu1201 = "7.2.2"
-iris1201 = "1.7.6+1.20.1"
-sodium1201 = "mc1.20.1-0.5.13-fabric"
-# Iris 打包在自己 JAR 中的程式庫。Loom 為開發環境轉換模組時會拿掉內嵌的程式庫，改由 Maven 依賴提供，
-# 但 Modrinth 的 Iris 沒有宣告這些依賴，所以 iris 組合另外列出；版本與 Iris 內嵌的一致。
-irisJcpp1201 = "1.4.14"
-irisGlslTransformer1201 = "2.0.1"
-irisAntlrRuntime1201 = "4.13.1"
 
 [libraries]
 
@@ -68,8 +50,8 @@ detekt-kotlin-analysis-api = { group = "dev.detekt", name = "detekt-kotlin-analy
 detekt-test = { group = "dev.detekt", name = "detekt-test", version.ref = "detekt" }
 
 # Kotlin ecosystem libraries
-kotlinx-coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
-kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
+kotlinx-coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 ktoml-core = { group = "com.akuleshov7", name = "ktoml-core", version.ref = "ktoml" }
 kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version.ref = "kotlinx-datetime" }
@@ -81,17 +63,12 @@ sqlite-jdbc = { group = "org.xerial", name = "sqlite-jdbc", version.ref = "sqlit
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
 koin-core = { module = "io.insert-koin:koin-core" }
 
-# Minecraft v1.20.1 + Fabric target libraries
-minecraft1201 = { group = "com.mojang", name = "minecraft", version.ref = "minecraft1201" }
-fabric-loader = { group = "net.fabricmc", name = "fabric-loader", version.ref = "fabric-loader" }
-fabricApi1201 = { group = "net.fabricmc.fabric-api", name = "fabric-api", version.ref = "fabricApi1201" }
-fabric-language-kotlin = { group = "net.fabricmc", name = "fabric-language-kotlin", version.ref = "fabric-language-kotlin" }
-modMenu1201 = { group = "maven.modrinth", name = "modmenu", version.ref = "modMenu1201" }
-iris1201 = { group = "maven.modrinth", name = "iris", version.ref = "iris1201" }
-sodium1201 = { group = "maven.modrinth", name = "sodium", version.ref = "sodium1201" }
-irisJcpp1201 = { group = "org.anarres", name = "jcpp", version.ref = "irisJcpp1201" }
-irisGlslTransformer1201 = { group = "io.github.douira", name = "glsl-transformer", version.ref = "irisGlslTransformer1201" }
-irisAntlrRuntime1201 = { group = "org.antlr", name = "antlr4-runtime", version.ref = "irisAntlrRuntime1201" }
+# JVM artifacts of Kotlin multiplatform libraries
+# 只給無法處理多平台轉址的打包方式使用（例如 ModDevGradle 的 jar-in-jar）；一般模組使用上面的通用座標。
+# 版本與通用座標相同，Koin 的版本即 BOM 的版本。
+jvm-koin-core = { group = "io.insert-koin", name = "koin-core-jvm", version.ref = "koin-bom" }
+jvm-ktoml-core = { group = "com.akuleshov7", name = "ktoml-core-jvm", version.ref = "ktoml" }
+jvm-kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime-jvm", version.ref = "kotlinx-datetime" }
 
 [plugins]
 

@@ -477,7 +477,7 @@ class EntityMahjongTileWallPresenter(
         val missingTileCount = revealedTileIds.size - managedTiles.size
         if (missingTileCount > 0) {
             logger.warn(
-                "revealReservedWallTiles tableId={} skipped {} tile(s): no existing managed entity found",
+                "Revealing reserved wall tiles on table {} skipped {} tile(s) whose entities are missing",
                 tableId,
                 missingTileCount,
             )

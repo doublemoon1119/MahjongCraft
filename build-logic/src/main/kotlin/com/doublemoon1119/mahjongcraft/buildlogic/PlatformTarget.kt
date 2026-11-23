@@ -10,6 +10,8 @@ package com.doublemoon1119.mahjongcraft.buildlogic
  * @property modules Settings 階段必須載入的模組目錄。
  * @property exampleModules 啟用範例建置時額外載入的模組目錄。
  * @property attributes 由各平台自行定義並解讀的額外屬性。
+ * @property providedVersions 執行環境提供、建置產物不附帶的函式庫版本，key 為 `libs` version catalog 的版本名稱；
+ * `kotlin` 指 Kotlin 標準函式庫。
  */
 data class PlatformTarget(
     val id: String,
@@ -19,4 +21,5 @@ data class PlatformTarget(
     val modules: List<String>,
     val exampleModules: List<String> = emptyList(),
     val attributes: Map<String, String>,
+    val providedVersions: Map<String, String> = emptyMap(),
 )

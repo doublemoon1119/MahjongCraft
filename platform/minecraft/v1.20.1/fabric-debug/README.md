@@ -36,4 +36,5 @@ The adapter never references debug classes.
 ## Dependency injection
 
 The debug services are checked at build time together with the adapter's server and client graphs through
-`debugKoinApplication`, which the tests also use to build the debug services.
+`debugKoinApplication`. The tests pass it to the shared assembly test in the
+[Minecraft 1.20.1 mod debug tools](../mod-debug/README.md#testing).

@@ -10,8 +10,9 @@ It uses the same compiler, Java and Minecraft version policies as the main proje
   [registration map](common/README.md#registration-map) for extension authors.
 - [Minecraft 1.20.1 mod](v1.20.1/mod/README.md): loader-independent 1.20.1 code, such as the
   game-event chat and furniture behavior that does not depend on how the content is registered.
-- Version/loader adapters: for example, the currently available
-  [Fabric 1.20.1 adapter](v1.20.1/fabric/README.md) supplies native entrypoints and furniture.
+- Version/loader adapters: each one registers the 1.20.1 content in its loader's own way, for
+  example the [Fabric 1.20.1 adapter](v1.20.1/fabric/README.md) and the
+  [Forge 1.20.1 adapter](v1.20.1/forge/README.md).
 
 The common extension registers the pairing rule, custom tile and Tsumogiri strategy.
 Minecraft presentation adds room settings, hand-reveal and exchange prompts, settlement text,
@@ -22,7 +23,8 @@ printed to online administrators' chat so their supplied fields can be inspected
 ## Build and Run
 
 Choose a supported target and its example loader project. The commands below use the currently
-available Fabric 1.20.1 adapter as an example; other adapters have their own target and task paths.
+available Fabric 1.20.1 adapter as an example; other adapters have their own target and task paths,
+such as `minecraft-v1.20.1-forge` and `:example-minecraft_v1.20.1_forge` for the Forge 1.20.1 adapter.
 Run them from the repository root. The flag accepts only `true` or `false`.
 Omitting it is equivalent to `false`; it is not saved by `switchTarget`.
 
@@ -71,8 +73,10 @@ under the example's own resource namespace.
 No example module starts Koin. Extension registration goes through MahjongCraft's public entrypoint.
 Successful compilation alone is not evidence that a rule or another extension capability works.
 
-For the current Fabric 1.20.1 adapter, the loader-specific entry is
-[`ExampleMod.kt`](v1.20.1/fabric/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleMod.kt),
+The loader-specific entries are the Fabric 1.20.1
+[`ExampleMod.kt`](v1.20.1/fabric/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleMod.kt)
+and the Forge 1.20.1
+[`ExampleMod.kt`](v1.20.1/forge/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/forge/ExampleMod.kt),
 and the observer test shared by the 1.20.1 loaders is
 [`ExampleGameEventChatTest.kt`](v1.20.1/mod/src/test/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/mod/event/ExampleGameEventChatTest.kt).
 The shared Minecraft registration and its test are
@@ -227,9 +231,9 @@ Two matching copies of the same rank count once. The win panel lists the bonus p
 The shared [prop describer](common/src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/presentation/ExamplePairingTableProps.kt)
 reads the saved selection. It also requests one custom gold hand-reveal token per revealed player.
 Both kinds use the same central layout. The public tile kind comes from MahjongCraft; the token's
-native kind, entity and renderer belong entirely to the example adapter. For instance, the current
-Fabric adapter registers them in
-[`ExampleNativeMahjongExtension`](v1.20.1/fabric/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleNativeMahjongExtension.kt).
+native kind, entity and renderer belong entirely to the example. The Minecraft 1.20.1 example registers
+them in
+[`ExampleNativeMahjongExtension`](v1.20.1/mod/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/mod/ExampleNativeMahjongExtension.kt).
 
 After building, check the following in a disposable example world:
 

@@ -14,8 +14,14 @@
 - The configuration cache is enabled by default. Custom tasks must not read `Task.project` while executing;
   pass the data they need as task properties at configuration time. A new platform target must build and run
   its `run` tasks with the configuration cache, or document why its builds pass `--no-configuration-cache`.
+- The local build cache is enabled by default and lives in the Gradle user home, so worktrees and branches
+  reuse each other's compile, test and check results. A task is cached only when every input that affects it
+  is declared: a test that reads a file or setting outside its declared inputs must declare it, as tests do for
+  the `MAHJONGCRAFT_*` environment variables. Custom tasks are not cacheable unless marked `@CacheableTask`.
+  Pass `--no-build-cache` or `--rerun` to run a task again regardless.
 - The built-in `core` target loads only logic, flow, AI, extension API, and testing modules. Formal
-  platform targets are declared in `gradle/platform-targets.toml`; directory presence alone does not
+  platform targets are declared in `gradle/platform/<platform>/<version>/targets.toml`; directory presence
+  alone does not
   make a platform releasable.
 - Target selection precedence is `-PmahjongcraftTarget`,
   `ORG_GRADLE_PROJECT_mahjongcraftTarget`, `MAHJONGCRAFT_TARGET`, `local.dev.properties`, then
@@ -25,18 +31,62 @@
   .\gradlew.bat build "-PmahjongcraftTarget=minecraft-v1.20.1-fabric"
   ```
 
+- A selection may list several targets separated by commas, for example
+  `minecraft-v1.20.1-fabric,minecraft-v1.20.1-forge`, to build and sync both loaders of one Minecraft
+  version together. The build loads the union of their modules once. Each module takes its Java version and
+  the libraries its runtime provides from the targets that contain it; a module shared by targets with
+  different Java versions fails the selection, so select those targets separately. `core` cannot be
+  combined with other targets. CI still verifies every target on its own.
 - Properties that only apply to Minecraft builds, such as extra mods for development runs and build
   metadata, are described in [Minecraft Build](minecraft-build.md).
 - Core modules use `core-java-toolchain` and `core-java-release` from `gradle/libs.versions.toml`.
   Platform modules use the Java policy declared by their selected platform target; see
   [Minecraft Build](minecraft-build.md) for the Minecraft modules.
 - MahjongCraft release trains are independent: Minecraft modules, logic, flow, AI, and extension
-  API each read their own version from `gradle/libs.versions.toml`. The root and testing projects remain
-  `0.0.0-dev` because they are not published.
+  API each read their own version from `gradle/libs.versions.toml`. Modules under `platform/minecraft`
+  and `example/platform/minecraft` get `minecraft-mod-version` from the base convention; the others set
+  their version in their build script. The root and testing projects remain `0.0.0-dev` because they are
+  not published.
+
+## Version Catalogs and Targets
+
+- `gradle/libs.versions.toml` (`libs`) holds the versions shared by every platform version: Kotlin, the
+  core libraries and build tooling.
+- Each platform version has its own folder, `gradle/platform/<platform>/<version>/`:
+  - `targets.toml` declares that version's platform targets. The build reads every such file and fails
+    when two files declare the same target ID.
+  - `versions.toml`, when present, holds that version's dependencies and runtime requirements as a separate
+    catalog. Each platform's build guide names its catalogs.
+- Catalog names use lowercase words joined by `-`, never camelCase, so Gradle accessors stay predictable,
+  and no segment may be a Kotlin keyword such as `for`. A name must not also be the prefix of another
+  name, for example `foo` next to `foo-bar`; choose a distinct name instead.
+- Group entries into sections with a `#` comment heading, in the same order in `[versions]` and
+  `[libraries]`. Keep runtime requirements written into package metadata apart from the compile versions,
+  named `require-<loader>-<dependency>`.
+
+## Runtime-Provided Versions
+
+- Some platforms load libraries the build output does not bundle, for example a loader that ships the Kotlin
+  standard library. A target records those versions in `targets.toml` under `[targets.provided-versions]`,
+  keyed by `libs` version names. `kotlin` stands for the Kotlin standard library.
+- Only one copy of a provided library is loaded, so the project may not use a newer version than any target
+  provides:
+  - `kotlin-api-version` in `libs` caps the standard library API that Kotlin code may use, and is applied to
+    every Kotlin compilation. It must not exceed the oldest provided `kotlin`. The compiler, `kotlin`, may be
+    newer.
+  - Every other provided name must be a `libs` version no newer than the provided one.
+- `verifyProvidedVersions`, part of the root `check`, reads every target, whichever target is selected, and
+  fails when a version exceeds what a target provides, when a provided name is not a `libs` version, or when
+  two versions cannot be compared because one is not purely numeric.
+- To upgrade Kotlin or a provided library:
+  1. Wait until every target's runtime provides the new version, and update `provided-versions` and the
+     runtime requirement in that target's metadata.
+  2. Raise the version in `libs`, and `kotlin-api-version` for a new Kotlin minor version.
+  3. Run the full verification for every target.
 
 ## Example Builds
 
-- A target may declare `example-modules` in the existing platform catalog. They are loaded only when
+- A target may declare `example-modules` in its `targets.toml` entry. They are loaded only when
   `-PmahjongcraftExample=true` is passed. Missing or `false` keeps them out of the project graph;
   other values are rejected. The switch is not saved in `local.dev.properties`.
 - Example modules use the existing conventions and read their versions from the version catalog.
@@ -70,7 +120,7 @@
   manually. Branches that predate the workflow do not contain it, so pushing them does not run CI. A newer
   push to the same branch or pull request cancels the run in progress.
 - The first job runs `./gradlew writeCiTargetMatrix`, which writes `build/ci/target-matrix.json`: the
-  built-in `core` target and every target in `gradle/platform-targets.toml`, each with its Java toolchain
+  built-in `core` target and every target in the `targets.toml` files, each with its Java toolchain
   and whether it has example modules. A new target is verified without editing the workflow.
 - Each target then runs the same full verification as a local check, in its own job:
 
@@ -78,6 +128,8 @@
   ./gradlew build detektAll --continue --stacktrace "-PmahjongcraftTarget=<target>" "-PmahjongcraftExample=<true|false>"
   ```
 
+  CI sets the `CI` environment variable, so modules that start Koin recheck their whole dependency graph
+  on every build, as `-PmahjongcraftKoinStrictSafety=true` does locally.
   Gradle runs on JDK 25. The target's toolchain JDK is installed separately and found through
   `org.gradle.java.installations.fromEnv`; toolchain downloads are disabled, so a missing JDK fails the job.
 - Pushes save the Gradle cache, including Loom's Minecraft files; pull requests only read it.

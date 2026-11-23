@@ -158,7 +158,7 @@ class MahjongTableBlock(
         if (!completed) {
             placedParts.forEach { placedPos -> world.removeBlock(placedPos, false) }
             world.removeBlock(pos, false)
-            logger.warn("Rolled back incomplete Mahjong table placement at {}", pos)
+            logger.debug("Rolled back incomplete Mahjong table placement at {}", pos)
         }
     }
 
@@ -188,7 +188,7 @@ class MahjongTableBlock(
         if (!world.isClientSide) {
             val controllerPos = mahjongTableControllerPos(world, pos, state) ?: return InteractionResult.FAIL
             if (!isComplete(world, controllerPos, world.getBlockState(controllerPos))) {
-                logger.warn("Rejected interaction with incomplete Mahjong table at {}", controllerPos)
+                logger.debug("Rejected interaction with incomplete Mahjong table at {}", controllerPos)
                 return InteractionResult.FAIL
             }
         }

@@ -88,8 +88,8 @@ class EntityMahjongPlayerAreaPresenter(
             val tile = world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity
             if (tile == null) {
                 missingTileCount++
-                logger.warn(
-                    "publishWinCelebration tableId={} tileId={} skipped: no existing managed tile entity found to claim",
+                logger.debug(
+                    "Win celebration on table {} is missing the entity of tile {}",
                     presentation.tableId,
                     tileId,
                 )
@@ -175,7 +175,7 @@ class EntityMahjongPlayerAreaPresenter(
         table.blockEntity.setChanged()
         val result = if (missingTileCount > 0) {
             logger.warn(
-                "publishWinCelebration tableId={} presented with {} missing tile(s)",
+                "Win celebration on table {} was shown without {} tile(s) whose entities are missing",
                 presentation.tableId,
                 missingTileCount,
             )
@@ -220,8 +220,8 @@ class EntityMahjongPlayerAreaPresenter(
             val tile = world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity
             if (tile == null) {
                 missingTileCount++
-                logger.warn(
-                    "presentInitialDeal tableId={} tileId={} skipped: no existing wall entity found to claim",
+                logger.debug(
+                    "Initial deal on table {} is missing the wall entity of tile {}",
                     presentation.tableId,
                     tileId,
                 )
@@ -310,7 +310,7 @@ class EntityMahjongPlayerAreaPresenter(
         table.blockEntity.setChanged()
         if (missingTileCount > 0) {
             logger.warn(
-                "presentInitialDeal tableId={} presented with {} missing tile(s)",
+                "Initial deal on table {} was shown without {} tile(s) whose wall entities are missing",
                 presentation.tableId,
                 missingTileCount,
             )

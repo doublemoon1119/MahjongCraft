@@ -56,6 +56,16 @@ class RepositoryVerificationPlugin : Plugin<Project> {
             this.rootDirectory.set(rootDirectory)
             expectedReadmes.set(project.provider { expectedModuleReadmes(project) })
         }
+        val verifyProvidedVersions = project.tasks.register("verifyProvidedVersions", VerifyProvidedVersionsTask::class.java) {
+            group = "verification"
+            description = "Verifies that no version exceeds what a platform target provides at run time."
+            val providedVersions = project.provider {
+                PlatformTargetCatalog.loadAll(project.rootDir).associate { it.id to it.providedVersions }
+            }
+            this.providedVersions.set(providedVersions)
+            kotlinApiVersion.set(project.provider { project.catalogVersion(KOTLIN_API_VERSION_ALIAS) })
+            catalogVersions.set(providedVersions.map { catalogVersionsOf(project, it.values.flatMap(Map<String, String>::keys).toSet()) })
+        }
         val sortedLangDirectories = SORTED_MINECRAFT_LANG_DIRECTORIES.map { rootDirectory.dir(it).asFile }
         project.tasks.register("sortMinecraftLangFiles", SortMinecraftLangFilesTask::class.java) {
             group = "formatting"
@@ -86,6 +96,7 @@ class RepositoryVerificationPlugin : Plugin<Project> {
                 verifyJsonFormatBoundary,
                 verifyProjectVersionPolicy,
                 verifyModuleReadmes,
+                verifyProvidedVersions,
                 verifyMinecraftLangFileKeyOrder,
                 verifyMinecraftLangKeysUsed,
             )
@@ -130,6 +141,18 @@ private val RELEASE_TRAIN_VERSION_NAMES: List<String> = listOf(
     "extension-api-version",
     "bundled-extensions-version",
 )
+
+/**
+ * 從 `libs` version catalog 讀取指定名稱的版本。
+ *
+ * @param project 提供 root version catalog 的 project。
+ * @param names 要讀取的版本名稱。
+ * @return 以版本名稱為 key 的版本；catalog 沒有的名稱不在其中。
+ */
+private fun catalogVersionsOf(project: Project, names: Set<String>): Map<String, String> {
+    val catalog = project.extensions.getByType(VersionCatalogsExtension::class.java).named("libs")
+    return names.mapNotNull { name -> catalog.findVersion(name).orElse(null)?.let { name to it.requiredVersion } }.toMap()
+}
 
 /**
  * 從 `libs` version catalog 讀取所有 release train 版本。
@@ -204,21 +227,13 @@ private fun String.withLfLineEndings(): String = replace("\r\n", "\n")
  */
 internal fun expectedModuleReadmes(project: Project): Set<File> {
     val root = project.rootDir
-    val catalog = root.resolve("gradle/platform-targets.toml")
-    val catalogModules = if (catalog.isFile) {
-        PlatformTargetCatalog.load(catalog, root).flatMap(PlatformTarget::modules)
-    } else {
-        emptyList()
-    }
+    val targets = PlatformTargetCatalog.loadAll(root)
+    val catalogModules = targets.flatMap(PlatformTarget::modules)
     val directories = buildSet {
         add(root)
         project.rootProject.allprojects.mapTo(this) { it.projectDir }
         catalogModules.mapTo(this) { root.resolve(it) }
-        if (catalog.isFile) {
-            PlatformTargetCatalog.load(catalog, root)
-                .flatMap(PlatformTarget::exampleModules)
-                .mapTo(this) { root.resolve(it) }
-        }
+        targets.flatMap(PlatformTarget::exampleModules).mapTo(this) { root.resolve(it) }
         add(root.resolve("build-logic"))
         add(root.resolve("platform"))
         add(root.resolve("platform/minecraft"))

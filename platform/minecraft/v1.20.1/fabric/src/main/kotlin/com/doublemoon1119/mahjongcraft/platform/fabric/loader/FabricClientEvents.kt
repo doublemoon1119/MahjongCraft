@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.loader
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.WorldRenderFinishedHook
 import com.mojang.blaze3d.vertex.PoseStack
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
@@ -28,7 +29,6 @@ import net.minecraft.world.InteractionResult
 import net.minecraft.world.InteractionResultHolder
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.item.ItemStack
-import java.util.concurrent.CopyOnWriteArrayList
 
 /** 以 Fabric API 的用戶端事件實作 [ClientEvents]。 */
 object FabricClientEvents : ClientEvents {
@@ -72,17 +72,9 @@ object FabricClientEvents : ClientEvents {
         WorldRenderEvents.START.register { listener() }
     }
 
-    /** 世界畫完時的處理；Fabric API 沒有這個時間點的事件，由 `GameRendererMixin` 呼叫 [fireWorldRenderFinished]。 */
-    private val worldRenderFinishedListeners = CopyOnWriteArrayList<() -> Unit>()
-
+    /** Fabric API 沒有這個時間點的事件，由共用的 mixin 經 [WorldRenderFinishedHook] 通知。 */
     override fun onWorldRenderFinished(listener: () -> Unit) {
-        worldRenderFinishedListeners += listener
-    }
-
-    /** 通知世界已畫完；只由 `GameRendererMixin` 在原版畫完整個世界、畫手上物品之前呼叫。 */
-    @JvmStatic
-    fun fireWorldRenderFinished() {
-        worldRenderFinishedListeners.forEach { it() }
+        WorldRenderFinishedHook.addListener(listener)
     }
 
     override fun onWorldRenderBeforeDebug(listener: (PoseStack, MultiBufferSource, Camera) -> Unit) {

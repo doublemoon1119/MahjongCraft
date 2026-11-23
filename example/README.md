@@ -4,9 +4,34 @@ This directory contains small extensions that show how to use MahjongCraft's
 public extension points. Examples are optional: normal builds and the main mod
 do not load them.
 
-Start with the [platform-independent extension](mahjong-extension/README.md),
-then read the [Minecraft adapter guide](platform/minecraft/README.md) when you
-want to run the example in a game.
+## Reading order
+
+The example is split into layers, from the most general to the most specific. Read them in this
+order and stop once you have what you need:
+
+1. [Platform-independent extension](mahjong-extension/README.md): the rule, AI strategy and settings,
+   with no Minecraft code.
+2. [Minecraft common](platform/minecraft/common/README.md): presentation shared by every Minecraft
+   version and loader.
+3. The shared code of one Minecraft version, for example the
+   [Minecraft 1.20.1 example](platform/minecraft/v1.20.1/mod/README.md): the extension class that
+   connects the example to MahjongCraft, and the furniture, tables and actors.
+4. One loader adapter, for example the [Fabric 1.20.1](platform/minecraft/v1.20.1/fabric/README.md)
+   or [Forge 1.20.1](platform/minecraft/v1.20.1/forge/README.md) adapter: how the loader finds the
+   extension and how the content is registered.
+
+Connecting a mod to MahjongCraft takes two things: an extension class that implements the extension
+interfaces, and its declaration in the loader's mod metadata. Blocks, items and entities are
+registered the usual way for that loader; MahjongCraft does not require a particular registration
+style. The example passes its registration through its own `ExampleRegistrar` only so that both
+loaders share one list of content. A mod for a single loader does not need it.
+
+The example's build scripts depend on MahjongCraft's projects in this repository, and their
+development runs are set up for that. A separate mod depends on a MahjongCraft release instead, so
+those parts of the build scripts are not meant to be copied.
+
+The [Minecraft adapter guide](platform/minecraft/README.md) explains how to build the example and
+run it in a game.
 
 ## What the examples cover
 
@@ -22,8 +47,8 @@ want to run the example in a game.
 | Network and persistence registration | Example-owned DTOs and mappings | [round-trip test](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/ExampleFormatRoundTripTest.kt) | Automated |
 | Minecraft presentation | Names, settings, history text and tile assets | [common adapter](platform/minecraft/common/README.md) | Automated and game-tested |
 | Public table props | Saved bonus tiles and custom hand-reveal tokens | [prop checks](platform/minecraft/README.md#bonus-tiles-and-table-props) | Automated; game check pending |
-| Native seating | Block chair and persistent cushion | [Fabric adapter](platform/minecraft/v1.20.1/fabric/README.md) | Game-tested; ABI baseline established |
-| Public game events | Administrator chat observer | [Fabric adapter](platform/minecraft/v1.20.1/fabric/README.md) | Game-tested |
+| Native seating | Block chair and persistent cushion | [1.20.1 mod code](platform/minecraft/v1.20.1/mod/README.md) | Game-tested; ABI baseline established |
+| Public game events | Administrator chat observer | [1.20.1 mod code](platform/minecraft/v1.20.1/mod/README.md) | Game-tested |
 | Missing-extension recovery | Keep authoritative data and restore it after reinstall | [recovery procedure](platform/minecraft/README.md#safe-recovery-check) | Manual check pending |
 
 Minecraft game checks in this table currently refer to the Fabric 1.20.1
@@ -54,7 +79,7 @@ These limits describe the example, not a restriction on the public API.
 ## Build commands
 
 Build from the repository root with the example switch and the desired target.
-For example, the currently available Fabric 1.20.1 target uses:
+For example, the Fabric 1.20.1 target uses:
 
 ```shell
 ./gradlew build "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" -PmahjongcraftExample=true

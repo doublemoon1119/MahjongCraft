@@ -15,7 +15,8 @@ import java.util.concurrent.Callable
 
 /**
  * 套用 Minecraft loader module 的 target Java、archive 與 metadata 政策，讓整個建置的重新映射任務排隊執行，並提供
- * 開發執行時可選載入的模組組合。
+ * 開發執行時可選載入的模組組合與 mod 要附帶的函式庫清單；測試的工作目錄放在 build 目錄中。ModDevGradle 準備 Minecraft 的
+ * 工具改用執行 Gradle 的 Java。
  */
 class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
     /** 套用 JVM convention 並設定 loader-specific build 行為。 */
@@ -30,12 +31,17 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
         packaging.description.convention("Bring Mahjong to Minecraft and play with your friends.")
         packaging.icon.convention(rootProject.layout.projectDirectory.file("docs/assets/branding/logo.png"))
         packaging.distributable.convention(true)
+        extensions.create("minecraftModLibraries", MinecraftModLibrariesExtension::class.java, this)
+        isolateTestRunDirectory()
+        packaging.loader.convention(platformLoader())
         packaging.archiveBaseName.convention("$rootProjectId-${platformLoader()}-${platformMinecraftVersion()}")
         extensions.configure<BasePluginExtension> {
             archivesName.set(packaging.archiveBaseName)
         }
         val buildMetadata = buildMetadata()
-        val modVersion = buildMetadata.map { metadata -> "$version+${platformMinecraftVersion()}-${platformLoader()}${metadata.map { ".$it" }.orElse("")}" }
+        val modVersion = buildMetadata.zip(packaging.loader) { metadata, loader ->
+            "$version+${platformMinecraftVersion()}-$loader${metadata.map { ".$it" }.orElse("")}"
+        }
         tasks.withType<AbstractArchiveTask>().configureEach {
             archiveVersion.set(buildMetadata.map { metadata -> "$version${metadata.map { "+$it" }.orElse("")}" })
         }
@@ -60,7 +66,7 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
                 rename { "icon.png" }
             }
             inputs.property("modMetadata", metadata)
-            filesMatching(listOf("fabric.mod.json", "META-INF/neoforge.mods.toml")) {
+            filesMatching(listOf("fabric.mod.json", "META-INF/mods.toml", "META-INF/neoforge.mods.toml")) {
                 expand(metadata.get())
             }
         }
@@ -68,14 +74,16 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
         serializeRemapTasks()
         alignLoomRuntimeJava()
         configureDevMods()
+        useGradleJavaForNeoForm()
     }
 }
 
 /**
  * 把這個模組交付給玩家的 JAR 接到 root 的 [CI_ARTIFACTS_TASK_NAME]；[MinecraftModPackagingExtension.distributable] 為否時不接。
  *
- * Fabric Loom 模組交付的是重新映射後的 `remapJar`，其他模組是 `jar`。root 沒有套用 target 管理外掛時（例如只建置部分專案的
- * 測試建置）不做任何事。
+ * 交付的是轉成執行時名稱後的 JAR：Fabric Loom 模組的 `remapJar`、ModDevGradle 舊版 Forge 模組的 `reobfJar`，都沒有時是
+ * `jar`。這些模組的 `jar` 使用開發時的名稱，不能交給玩家。root 沒有套用 target 管理外掛時（例如只建置部分專案的測試建置）
+ * 不做任何事。
  *
  * @param packaging 這個模組的打包設定。
  */
@@ -85,10 +93,10 @@ private fun Project.contributeCiArtifact(packaging: MinecraftModPackagingExtensi
         rootProject.tasks.named(CI_ARTIFACTS_TASK_NAME, Sync::class.java).configure {
             from(
                 Callable {
-                    when {
-                        !packaging.distributable.get() -> emptyList<Any>()
-                        project.tasks.names.contains("remapJar") -> listOf(project.tasks.named("remapJar"))
-                        else -> listOf(project.tasks.named("jar"))
+                    if (packaging.distributable.get()) {
+                        listOf(project.tasks.named(DISTRIBUTED_JAR_TASK_NAMES.first(project.tasks.names::contains)))
+                    } else {
+                        emptyList<Any>()
                     }
                 },
             )
@@ -96,10 +104,14 @@ private fun Project.contributeCiArtifact(packaging: MinecraftModPackagingExtensi
     }
 }
 
+/** 可交付 JAR 的任務名稱，依優先順序排列；最後的 `jar` 一定存在。 */
+private val DISTRIBUTED_JAR_TASK_NAMES: List<String> = listOf("remapJar", "reobfJar", "jar")
+
 /**
- * 模組目錄名稱代表的載入器，例如 `platform/minecraft/v1.20.1/fabric` 的 `fabric`。
+ * 模組目錄的名稱，例如 `platform/minecraft/v1.20.1/fabric` 的 `fabric`；作為產物名稱的一部分，也是
+ * [MinecraftModPackagingExtension.loader] 的預設值。
  *
- * @return 載入器名稱。
+ * @return 模組目錄的名稱。
  */
 private fun Project.platformLoader(): String = projectDir.name
 

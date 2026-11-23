@@ -94,6 +94,7 @@ class MinecraftDevModsTest {
                 [versions]
                 core-java-toolchain = "17"
                 core-java-release = "17"
+                kotlin-api-version = "2.4"
                 """.trimIndent() + "\n",
             )
         }
@@ -121,8 +122,8 @@ class MinecraftDevModsTest {
             project(":loader").projectDir = file("platform/v1.20.1/fabric")
             include(":debug")
             project(":debug").projectDir = file("platform/v1.20.1/fabric-debug")
-            gradle.ext.set("mahjongcraft.targetJavaToolchain", 17)
-            gradle.ext.set("mahjongcraft.targetJavaRelease", 17)
+            gradle.ext.set("mahjongcraft.targetJavaToolchain", [":loader": 17, ":debug": 17])
+            gradle.ext.set("mahjongcraft.targetJavaRelease", [":loader": 17, ":debug": 17])
             """.trimIndent() + "\n",
         )
         root.resolve("build.gradle").writeText(

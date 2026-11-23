@@ -16,7 +16,8 @@ sub-packages so that no package overlaps with the [Minecraft 1.20.1 mod](../mod/
 Loader APIs do not belong here; this module compiles against vanilla Minecraft only, so using one
 fails its build. Debug code that does not need Minecraft belongs in the
 [common debug tools](../../common-debug/README.md), and loader entrypoints belong in the loader's debug
-module, such as [Fabric debug tools](../fabric-debug/README.md).
+module, such as the [Fabric debug tools](../fabric-debug/README.md) or the
+[Forge debug tools](../forge-debug/README.md).
 
 Debug code may use the main mod's public declarations only; when it needs something internal, make that
 declaration public in the main mod instead of copying it.
@@ -44,3 +45,8 @@ Run this module's tests against vanilla Minecraft from the repository root:
 ```
 
 The debug language file test reads the files in the common debug tools.
+
+`src/loaderTest/kotlin` holds `DebugDevelopmentAssemblyContract`, which checks that the debug services
+connect to the main mod: the extension registration, the command tree and the development hooks. It
+needs a loader's service graph, so this module does not compile it. Each loader debug module compiles it
+with its own tests and supplies that graph.

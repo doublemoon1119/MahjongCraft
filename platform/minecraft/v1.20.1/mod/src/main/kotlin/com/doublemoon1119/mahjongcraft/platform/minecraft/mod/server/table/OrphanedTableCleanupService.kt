@@ -124,7 +124,7 @@ class OrphanedTableCleanupService(
 
         if (decision.result == OrphanedTableCleanupResult.STALE_REQUEST) return decision.result
         if (decision.result == OrphanedTableCleanupResult.RETAINED) {
-            logger.warn(
+            logger.info(
                 "Retained orphaned Mahjong table state {} at {} because policy is {}",
                 tableId,
                 entry.location,
@@ -177,7 +177,7 @@ class OrphanedTableCleanupService(
             if (decision.result == OrphanedTableCleanupResult.REMOVED_LOCATION) {
                 logger.debug("Removed stale Mahjong table location {} at {}", tableId, entry.location)
             } else {
-                logger.warn(
+                logger.info(
                     "Cleaned orphaned Mahjong table {} at {} with result {}",
                     tableId,
                     entry.location,

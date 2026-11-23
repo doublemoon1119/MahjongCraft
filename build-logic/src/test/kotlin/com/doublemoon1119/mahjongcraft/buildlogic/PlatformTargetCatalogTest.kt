@@ -133,6 +133,23 @@ class PlatformTargetCatalogTest {
         assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
     }
 
+    /** target 可以記錄執行環境提供的函式庫版本；沒有記錄時為空。 */
+    @Test
+    fun `loads provided versions`() = withFixture { root ->
+        createModule(root, "platform/one")
+        createModule(root, "platform/two")
+        val catalog = writeCatalog(
+            root,
+            target("minecraft-one", "platform/one") + "\n[targets.provided-versions]\nkotlin = \" 2.4.20 \"\n\n" +
+                target("minecraft-two", "platform/two"),
+        )
+
+        val targets = PlatformTargetCatalog.load(catalog, root)
+
+        assertEquals(mapOf("kotlin" to "2.4.20"), targets.first().providedVersions)
+        assertEquals(emptyMap(), targets.last().providedVersions)
+    }
+
     /** 非 Minecraft 平台不需要提供 Minecraft 專屬欄位。 */
     @Test
     fun `loads platform neutral target`() = withFixture { root ->
@@ -211,6 +228,34 @@ class PlatformTargetCatalogTest {
         assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
     }
 
+    /** 各平台版本資料夾的 target 檔案依路徑順序合併。 */
+    @Test
+    fun `loads targets from every platform version directory`() = withFixture { root ->
+        createModule(root, "platform/new")
+        createModule(root, "platform/old")
+        writeVersionTargets(root, "minecraft/v1.21.1", target("minecraft-new", "platform/new"))
+        writeVersionTargets(root, "minecraft/v1.20.1", target("minecraft-old", "platform/old"))
+        root.resolve("gradle/platform/minecraft/notes.toml").writeText("not a target file\n")
+
+        assertEquals(listOf("minecraft-old", "minecraft-new"), PlatformTargetCatalog.loadAll(root).map(PlatformTarget::id))
+    }
+
+    /** 不同檔案宣告同一個 target ID 時拒絕。 */
+    @Test
+    fun `rejects duplicate target ids across files`() = withFixture { root ->
+        createModule(root, "platform/test")
+        writeVersionTargets(root, "minecraft/v1.20.1", target("minecraft-test", "platform/test"))
+        writeVersionTargets(root, "minecraft/v1.21.1", target("minecraft-test", "platform/test"))
+
+        assertFailsWith<GradleException> { PlatformTargetCatalog.loadAll(root) }
+    }
+
+    /** 沒有任何 target 檔案時只剩 core。 */
+    @Test
+    fun `loads no targets without target files`() = withFixture { root ->
+        assertEquals(emptyList(), PlatformTargetCatalog.loadAll(root))
+    }
+
     /** Gradle property 應依序覆寫環境變數與 local fallback。 */
     @Test
     fun `resolves target by documented precedence`() {
@@ -276,6 +321,18 @@ class PlatformTargetCatalogTest {
      */
     private fun writeCatalog(root: File, targets: String): File = root.resolve("platform-targets.toml").apply {
         writeText("schema-version = 1\n\n$targets")
+    }
+
+    /**
+     * 將 target 定義寫入某個平台版本資料夾的 target 檔案。
+     *
+     * @param root 測試專案根目錄。
+     * @param platformVersion 相對於 `gradle/platform` 的平台與版本資料夾，例如 `minecraft/v1.20.1`。
+     * @param targets 要寫入的 TOML target 定義。
+     */
+    private fun writeVersionTargets(root: File, platformVersion: String, targets: String) {
+        root.resolve("gradle/platform/$platformVersion/targets.toml").apply { parentFile.mkdirs() }
+            .writeText("schema-version = 1\n\n$targets")
     }
 
     /**

@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCra
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.entity.MahjongTileCollisionService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.configReloadFailureMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.prefixedConfigMessage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.readableBy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.serverConfigShowMessage
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -100,7 +101,7 @@ class ServerConfigCommand(
         is MinecraftServerConfigUpdateResult.Failure -> {
             logger.warn("Server config reload requested by {} failed: {}", source.textName, result.message)
             source.sendFailure(
-                configReloadFailureMessage(Component.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG), result.message),
+                configReloadFailureMessage(Component.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG), result.message).readableBy(source),
             )
             COMMAND_FAILURE
         }
@@ -113,7 +114,7 @@ class ServerConfigCommand(
      * @return 訊息送出後的成功結果碼。
      */
     private fun show(source: CommandSourceStack): Int {
-        logger.debug(
+        logger.trace(
             "Effective server config hover displayedTo={} path={} config={}",
             source.textName,
             configManager.displayPath,
@@ -121,7 +122,7 @@ class ServerConfigCommand(
         )
         source.sendSuccess(
             {
-                serverConfigShowMessage(configManager.displayPath, configManager.current)
+                serverConfigShowMessage(configManager.displayPath, configManager.current).readableBy(source)
             },
             false,
         )

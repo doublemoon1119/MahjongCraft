@@ -6,8 +6,6 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-version = libs.versions.minecraft.mod.version.get()
-
 kotlin {
     jvm()
 

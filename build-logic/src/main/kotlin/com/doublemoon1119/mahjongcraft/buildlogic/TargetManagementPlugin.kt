@@ -132,7 +132,7 @@ abstract class SwitchTargetTask : DefaultTask() {
     @get:Internal
     abstract val rootDirectory: DirectoryProperty
 
-    /** `-PtoTarget` 指定的 target ID；未指定時沒有值。 */
+    /** `-PtoTarget` 指定的 target ID，可以是以逗號分隔的多個 ID；未指定時沒有值。 */
     @get:Internal
     abstract val requestedTarget: Property<String>
 
@@ -140,13 +140,13 @@ abstract class SwitchTargetTask : DefaultTask() {
     @TaskAction
     fun switchTarget() {
         val root = rootDirectory.get().asFile
-        val targetId = requestedTarget.orNull
+        val requested = requestedTarget.orNull
             ?.trim()?.takeIf(String::isNotEmpty)
-            ?: throw GradleException("Missing -PtoTarget=<target-id>")
-        val validIds = loadTargets(root).mapTo(mutableSetOf(), PlatformTarget::id) + PlatformTargetCatalog.CORE_TARGET_ID
-        if (targetId !in validIds) throw GradleException("Unknown target '$targetId'. Available targets: ${validIds.sorted()}")
-        updateLocalProperty(root.resolve("local.dev.properties"), targetId)
-        logger.lifecycle("Development target switched to $targetId. Reload the Gradle project to apply it.")
+            ?: throw GradleException("Missing -PtoTarget=<target-id>[,<target-id>...]")
+        val selected = PlatformTargetCatalog.selectTargets(requested, loadTargets(root))
+        val selection = selected.joinToString(",", transform = PlatformTarget::id).ifEmpty { PlatformTargetCatalog.CORE_TARGET_ID }
+        updateLocalProperty(root.resolve("local.dev.properties"), selection)
+        logger.lifecycle("Development target switched to $selection. Reload the Gradle project to apply it.")
     }
 }
 
@@ -156,10 +156,7 @@ abstract class SwitchTargetTask : DefaultTask() {
  * @param root repository 根目錄。
  * @return 已驗證且依 catalog 順序排列的 target。
  */
-private fun loadTargets(root: File): List<PlatformTarget> = PlatformTargetCatalog.load(
-    root.resolve("gradle/platform-targets.toml"),
-    root,
-)
+private fun loadTargets(root: File): List<PlatformTarget> = PlatformTargetCatalog.loadAll(root)
 
 /**
  * 只替換 target property，保留 local file 中其餘內容。

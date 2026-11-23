@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
     alias(libs.plugins.mahjongcraft.kotlin.multiplatform)
     alias(libs.plugins.mahjongcraft.public.api.abi)
@@ -24,7 +22,7 @@ val generateProjectMetadata = tasks.register("generateProjectMetadata") {
     }
     inputs.property("projectId", projectId)
     inputs.property("projectDisplayName", projectDisplayName)
-    outputs.file(outputFile)
+    outputs.dir(generatedProjectMetadataDir)
     doLast {
         val file = outputFile.get().asFile
         file.parentFile.mkdirs()
@@ -50,7 +48,8 @@ kotlin {
 
     sourceSets {
         commonMain {
-            kotlin.srcDir(generatedProjectMetadataDir)
+            // 以任務作為原始碼來源：編譯、ktlint 等讀取原始碼的任務都會先產生檔案，不必各自宣告依賴。
+            kotlin.srcDir(generateProjectMetadata)
         }
 
         commonTest.dependencies {
@@ -58,12 +57,4 @@ kotlin {
             implementation(project(":testing:testing-mahjong-logic"))
         }
     }
-}
-
-tasks.withType<KotlinCompile>().configureEach {
-    dependsOn(generateProjectMetadata)
-}
-
-tasks.matching { it.name.startsWith("runKtlint") }.configureEach {
-    dependsOn(generateProjectMetadata)
 }

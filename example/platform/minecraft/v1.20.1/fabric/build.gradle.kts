@@ -1,14 +1,14 @@
 import com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtension
 import com.doublemoon1119.mahjongcraft.buildlogic.ModPackagingTestArguments
 import com.doublemoon1119.mahjongcraft.buildlogic.UnpackLibraryJars
+import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
+import com.doublemoon1119.mahjongcraft.buildlogic.modrinth
 import net.fabricmc.loom.task.RemapJarTask
 
 plugins {
     alias(libs.plugins.mahjongcraft.minecraft.loader)
     alias(libs.plugins.fabric.loom)
 }
-
-version = libs.versions.minecraft.mod.version.get()
 
 configure<MinecraftModPackagingExtension> {
     modId.set("mahjongcraft_example")
@@ -17,10 +17,10 @@ configure<MinecraftModPackagingExtension> {
     archiveBaseName.set("mahjongcraft-example-fabric-1.20.1")
     // 範例模組不是交付給玩家的成品，CI 不收集它的 JAR。
     distributable.set(false)
-    dependencyRequirements.put("minecraft", libs.versions.minecraft1201)
-    dependencyRequirements.put("fabricLoader", libs.versions.fabricLoaderRequirement1201)
-    dependencyRequirements.put("fabricApi", libs.versions.fabricApiRequirement1201)
-    dependencyRequirements.put("fabricLanguageKotlin", libs.versions.fabricLanguageKotlinRequirement1201)
+    dependencyRequirements.put("minecraft", mc1201.versions.require.fabric.minecraft)
+    dependencyRequirements.put("fabricLoader", mc1201.versions.require.fabric.loader)
+    dependencyRequirements.put("fabricApi", mc1201.versions.require.fabric.api)
+    dependencyRequirements.put("fabricLanguageKotlin", mc1201.versions.require.fabric.language.kotlin)
 }
 
 // 只收集兩份範例程式庫，不將它們依賴的本體與 Kotlin 套件再打包一次。
@@ -36,24 +36,14 @@ val mainModArtifact = configurations.create("mainModArtifact") {
 }
 
 repositories {
-    // 相容測試模組只發布在 Modrinth 的 Maven 倉庫；這個倉庫只提供 Modrinth 的套件。
-    exclusiveContent {
-        forRepository { maven("https://api.modrinth.com/maven") { name = "Modrinth" } }
-        filter { includeGroup("maven.modrinth") }
-    }
+    // 相容測試模組只發布在 Modrinth 的 Maven 倉庫。
+    modrinth()
 }
 
 // 與本體相同的相容測試組合，讓範例的開發執行也能在同樣的環境中測試；本體的組合不會傳到這裡。
 devMods {
-    group(
-        "iris",
-        libs.sodium1201,
-        libs.iris1201,
-        libs.irisJcpp1201,
-        libs.irisGlslTransformer1201,
-        libs.irisAntlrRuntime1201,
-    )
-    group("modmenu", libs.modMenu1201)
+    group("iris", mc1201.bundles.dev.iris)
+    group("modmenu", mc1201.bundles.dev.modmenu)
 }
 
 loom {
@@ -77,11 +67,11 @@ loom {
 }
 
 dependencies {
-    minecraft(libs.minecraft1201)
+    minecraft(mc1201.minecraft)
     mappings(loom.officialMojangMappings())
-    modImplementation(libs.fabric.loader)
-    modImplementation(libs.fabricApi1201)
-    modImplementation(libs.fabric.language.kotlin)
+    modImplementation(mc1201.fabric.loader)
+    modImplementation(mc1201.fabric.api)
+    modImplementation(mc1201.fabric.language.kotlin)
 
     // Loom 子專案使用未重新映射的 namedElements，避免在開發環境讀取 intermediary 名稱。
     implementation(project(path = ":minecraft_v1.20.1_fabric", configuration = "namedElements"))
@@ -105,12 +95,6 @@ val packagingTestArguments = objects.newInstance<ModPackagingTestArguments>().ap
     exampleJar.from(exampleModJar.flatMap { it.archiveFile })
 }
 tasks.test {
-    // 模型測試會啟用 Minecraft logging，相對輸出與正式模組一樣限制在 build 目錄。
-    val testRunDirectory = layout.buildDirectory.dir("test-runs/$name")
-    workingDir(testRunDirectory)
-    doFirst {
-        testRunDirectory.get().asFile.mkdirs()
-    }
     // 對實際 remap 後的產物驗證，不以普通 JVM fixture 代替真正的 mod 打包。
     dependsOn(exampleModJar, mainModArtifact)
     jvmArgumentProviders.add(packagingTestArguments)
@@ -118,9 +102,7 @@ tasks.test {
 
 // 範例中呼叫 Minecraft 1.20.1 但不用載入器的程式在 :example-minecraft_v1.20.1_mod；比照本體，把原始碼納入本模組，
 // 由 Loom 一起重新映射並打包。
-kotlin.sourceSets.main {
-    kotlin.srcDir(project(":example-minecraft_v1.20.1_mod").projectDir.resolve("src/main/kotlin"))
-}
+includeSourcesOf(":example-minecraft_v1.20.1_mod")
 
 val unpackLibraryJars = objects.newInstance<UnpackLibraryJars>()
 tasks.jar {

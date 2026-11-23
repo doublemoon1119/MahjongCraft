@@ -29,7 +29,9 @@ interface ModRegistrar {
     /**
      * 在這之前交出的所有項目都寫入登記表之後執行 [action]。
      *
-     * @param action 需要讀取已登記物件的工作。
+     * [action] 在遊戲主執行緒上執行，不會與其他 mod 的初始化同時進行，可以寫入原版共用的表。
+     *
+     * @param action 需要讀取已登記物件或寫入原版共用表的工作。
      */
     fun afterRegistration(action: () -> Unit)
 
