@@ -43,8 +43,10 @@
   Platform modules use the Java policy declared by their selected platform target; see
   [Minecraft Build](minecraft-build.md) for the Minecraft modules.
 - MahjongCraft release trains are independent: Minecraft modules, logic, flow, AI, and extension
-  API each read their own version from `gradle/libs.versions.toml`. The root and testing projects remain
-  `0.0.0-dev` because they are not published.
+  API each read their own version from `gradle/libs.versions.toml`. Modules under `platform/minecraft`
+  and `example/platform/minecraft` get `minecraft-mod-version` from the base convention; the others set
+  their version in their build script. The root and testing projects remain `0.0.0-dev` because they are
+  not published.
 
 ## Version Catalogs and Targets
 

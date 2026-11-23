@@ -10,8 +10,6 @@ plugins {
     alias(libs.plugins.fabric.loom)
 }
 
-version = libs.versions.minecraft.mod.version.get()
-
 configure<MinecraftModPackagingExtension> {
     modId.set("mahjongcraft_example")
     displayName.set("MahjongCraft Extension Example")
@@ -44,15 +42,8 @@ repositories {
 
 // 與本體相同的相容測試組合，讓範例的開發執行也能在同樣的環境中測試；本體的組合不會傳到這裡。
 devMods {
-    group(
-        "iris",
-        mc1201.sodium,
-        mc1201.iris,
-        mc1201.jcpp,
-        mc1201.glsl.transformer,
-        mc1201.antlr.runtime,
-    )
-    group("modmenu", mc1201.mod.menu)
+    group("iris", mc1201.bundles.dev.iris)
+    group("modmenu", mc1201.bundles.dev.modmenu)
 }
 
 loom {

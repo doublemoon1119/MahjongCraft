@@ -11,8 +11,6 @@ plugins {
     alias(libs.plugins.moddev.legacyforge)
 }
 
-version = libs.versions.minecraft.mod.version.get()
-
 // 開發執行要載入本體的輸出，本體的設定須先完成。
 evaluationDependsOn(":minecraft_v1.20.1_forge")
 val mainMod = project(":minecraft_v1.20.1_forge")

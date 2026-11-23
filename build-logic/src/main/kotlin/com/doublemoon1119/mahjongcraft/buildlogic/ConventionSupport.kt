@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.io.File
 
 /**
  * 從 root version catalog 取得指定 version alias。
@@ -93,6 +94,22 @@ private fun Project.configureCompilerTasks(toolchain: Int, release: Int, overrid
         )
         inputs.property("mahjongcraftEnvironment", testEnvironment)
     }
+}
+
+/** `libs` version catalog 中 Minecraft 模組 release train 版本的名稱。 */
+internal const val MINECRAFT_MOD_VERSION_ALIAS: String = "minecraft-mod-version"
+
+/**
+ * 判斷模組是否屬於 Minecraft 平台：本體放在 `platform/minecraft` 底下，範例放在 `example/platform/minecraft` 底下。
+ *
+ * @param rootDirectory repository 根目錄。
+ * @param directory 模組目錄。
+ * @return 是 Minecraft 模組時為 true。
+ */
+internal fun isMinecraftModuleDirectory(rootDirectory: File, directory: File): Boolean {
+    val path = directory.toPath()
+    return path.startsWith(rootDirectory.resolve("platform/minecraft").toPath()) ||
+        path.startsWith(rootDirectory.resolve("example/platform/minecraft").toPath())
 }
 
 /** 測試讀取的環境變數共同的前綴。 */

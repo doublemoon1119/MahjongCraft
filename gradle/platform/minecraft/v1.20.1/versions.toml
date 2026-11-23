@@ -70,3 +70,9 @@ sodium = { group = "maven.modrinth", name = "sodium", version.ref = "sodium" }
 jcpp = { group = "org.anarres", name = "jcpp", version.ref = "jcpp" }
 glsl-transformer = { group = "io.github.douira", name = "glsl-transformer", version.ref = "glsl-transformer" }
 antlr-runtime = { group = "org.antlr", name = "antlr4-runtime", version.ref = "antlr-runtime" }
+
+[bundles]
+# 開發執行時可選載入的相容測試組合，以 -PmahjongcraftDevMods 選擇；本體與範例的 Fabric 模組共用。
+# Iris 的組合包含它在開發執行時需要的 Sodium 與函式庫。
+dev-iris = ["sodium", "iris", "jcpp", "glsl-transformer", "antlr-runtime"]
+dev-modmenu = ["mod-menu"]

@@ -20,8 +20,6 @@ plugins {
     alias(libs.plugins.koin.compiler)
 }
 
-version = libs.versions.minecraft.mod.version.get()
-
 /** Forge 專用 mixin 的設定檔名稱。 */
 val forgeMixinConfig = "mahjongcraft.forge.mixins.json"
 

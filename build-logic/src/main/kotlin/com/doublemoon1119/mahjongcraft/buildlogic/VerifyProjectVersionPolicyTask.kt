@@ -30,8 +30,7 @@ abstract class VerifyProjectVersionPolicyTask : DefaultTask() {
     @TaskAction
     fun verifyVersions() {
         val versions = releaseTrainVersions.get()
-        val minecraftDirectory = rootDirectory.get().asFile.resolve("platform/minecraft").toPath()
-        val minecraftExampleDirectory = rootDirectory.get().asFile.resolve("example/platform/minecraft").toPath()
+        val root = rootDirectory.get().asFile
         val directories = projectDirectories.get()
         val violations = projectVersions.get().mapNotNull { (path, actual) ->
             val expected = when {
@@ -42,8 +41,7 @@ abstract class VerifyProjectVersionPolicyTask : DefaultTask() {
                 path == ":mahjong-bundled-extensions" -> versions.getValue("bundled-extensions-version")
                 path == ":mahjong-flow" || path.startsWith(":mahjong-flow:") -> versions.getValue("flow-version")
                 path == ":testing" || path.startsWith(":testing:") -> "0.0.0-dev"
-                directories.getValue(path).toPath().let { it.startsWith(minecraftDirectory) || it.startsWith(minecraftExampleDirectory) } ->
-                    versions.getValue("minecraft-mod-version")
+                isMinecraftModuleDirectory(root, directories.getValue(path)) -> versions.getValue(MINECRAFT_MOD_VERSION_ALIAS)
                 path == ":example" || path.startsWith(":example:") -> versions.getValue("extension-api-version")
                 else -> return@mapNotNull "$path has no version policy"
             }

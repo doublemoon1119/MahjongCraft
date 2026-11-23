@@ -210,6 +210,7 @@ class MinecraftModPackagingTest {
                 core-java-toolchain = "17"
                 core-java-release = "17"
                 kotlin-api-version = "2.4"
+                minecraft-mod-version = "0.0.0-dev"
                 """.trimIndent() + "\n",
             )
         }

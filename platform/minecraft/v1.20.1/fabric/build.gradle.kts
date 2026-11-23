@@ -10,8 +10,6 @@ plugins {
     alias(libs.plugins.koin.compiler)
 }
 
-version = libs.versions.minecraft.mod.version.get()
-
 configure<MinecraftModPackagingExtension> {
     dependencyRequirements.put("minecraft", mc1201.versions.require.fabric.minecraft)
     dependencyRequirements.put("fabricLoader", mc1201.versions.require.fabric.loader)
@@ -34,15 +32,8 @@ repositories {
 
 // 開發執行時可選載入的相容測試模組，以 -PmahjongcraftDevMods 選擇；不打包，也不成為模組的依賴。
 devMods {
-    group(
-        "iris",
-        mc1201.sodium,
-        mc1201.iris,
-        mc1201.jcpp,
-        mc1201.glsl.transformer,
-        mc1201.antlr.runtime,
-    )
-    group("modmenu", mc1201.mod.menu)
+    group("iris", mc1201.bundles.dev.iris)
+    group("modmenu", mc1201.bundles.dev.modmenu)
 }
 
 loom {

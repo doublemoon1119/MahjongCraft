@@ -9,8 +9,6 @@ plugins {
     alias(libs.plugins.moddev.legacyforge)
 }
 
-version = libs.versions.minecraft.mod.version.get()
-
 legacyForge {
     // 原版模式：只提供套用 Mojang 名稱的原版 Minecraft，不含任何載入器。
     mcpVersion = mc1201.versions.minecraft.get()

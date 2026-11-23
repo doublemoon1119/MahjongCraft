@@ -14,8 +14,6 @@ plugins {
     alias(libs.plugins.koin.compiler)
 }
 
-version = libs.versions.minecraft.mod.version.get()
-
 configure<MinecraftModPackagingExtension> {
     modId.set("mahjongcraft_debug")
     // 版本與本體相同；mods.toml 要求同一版本的本體。
