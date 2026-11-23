@@ -130,8 +130,10 @@
 
   CI sets the `CI` environment variable, so modules that start Koin recheck their whole dependency graph
   on every build, as `-PmahjongcraftKoinStrictSafety=true` does locally.
-  Gradle runs on JDK 25. The target's toolchain JDK is installed separately and found through
+  Gradle runs on JDK 25. The target's toolchain JDK and JDK 21 are installed separately and found through
   `org.gradle.java.installations.fromEnv`; toolchain downloads are disabled, so a missing JDK fails the job.
+  JDK 21 runs the tool that prepares Minecraft for ModDevGradle (see
+  [Minecraft Build](minecraft-build.md)), which needs at least Java 21.
 - Pushes save the Gradle cache, including Loom's Minecraft files; pull requests only read it.
 - CI builds pass the short commit hash as [build metadata](minecraft-build.md#mod-versions), so a Minecraft mod built
   by CI reads like `0.4.0-SNAPSHOT+1.20.1-fabric.a0f6307` and its JAR like

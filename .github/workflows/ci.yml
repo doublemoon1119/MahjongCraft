@@ -51,12 +51,15 @@ jobs:
       matrix: ${{ fromJSON(needs.targets.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v7
-      # The target's toolchain JDK is installed first; the JDK running Gradle is installed last,
-      # so it becomes JAVA_HOME. Gradle finds the toolchain through the JAVA_HOME_<version>_X64 variable.
+      # The target's toolchain JDK and JDK 21 are installed first; the JDK running Gradle is installed last,
+      # so it becomes JAVA_HOME. Gradle finds the toolchains through the JAVA_HOME_<version>_X64 variables.
+      # JDK 21 runs the tool that prepares Minecraft for ModDevGradle, which needs at least Java 21.
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: ${{ matrix.javaToolchain }}
+          java-version: |
+            21
+            ${{ matrix.javaToolchain }}
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -70,7 +73,7 @@ jobs:
           "-PmahjongcraftTarget=${{ matrix.target }}"
           "-PmahjongcraftExample=${{ matrix.examples }}"
           "-PmahjongcraftBuildMetadata=${GITHUB_SHA::7}"
-          "-Porg.gradle.java.installations.fromEnv=JAVA_HOME_${{ matrix.javaToolchain }}_X64"
+          "-Porg.gradle.java.installations.fromEnv=JAVA_HOME_${{ matrix.javaToolchain }}_X64,JAVA_HOME_21_X64"
           "-Porg.gradle.java.installations.auto-download=false"
           "-Pkotlin.compiler.execution.strategy=in-process"
           "-Dorg.gradle.jvmargs=-Xmx5g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"

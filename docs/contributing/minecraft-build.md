@@ -18,9 +18,12 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   without applying them, so every module loads the same plugin classes. Modules that apply different plugin
   sets would otherwise load Loom in separate class loaders, and Loom fails when it reaches another project, for
   example while an IDE sync creates `genSources` tasks. Declare a new loader's plugins there as well.
-- ModDevGradle's tools that prepare Minecraft default to a Java version the plugin chooses. The version mod and
-  loader conventions run them on the Java running Gradle instead, so no extra JDK is installed or downloaded;
-  CI disables toolchain downloads.
+- ModDevGradle's tools that prepare Minecraft decompile and recompile it with the Java they run on. The version
+  mod and loader conventions run them on the target's toolchain, or on Java 21 when the target is older, since
+  the tools need at least Java 21. A newer Java names compiler-generated methods such as lambdas differently from
+  vanilla, and development runs with mods that change those methods, such as Embeddium, then fail. The tools'
+  cache does not record the Java version, so after changing it delete `~/.gradle/caches/neoformruntime` to
+  recompile. CI installs each target's JDK and JDK 21 and disables toolchain downloads.
 
 ## Version Mod Modules
 
