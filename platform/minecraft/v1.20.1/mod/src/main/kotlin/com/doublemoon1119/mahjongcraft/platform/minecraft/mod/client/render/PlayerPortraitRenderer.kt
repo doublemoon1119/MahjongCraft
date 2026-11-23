@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.R
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.modelPartShown
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceProviderException
@@ -82,8 +83,8 @@ class PlayerPortraitRenderer internal constructor(
             is AiCharacterFace.TextureRegion -> PlayerPortraitSource.TextureRegion(face.resourceId, face.u0, face.v0, face.u1, face.v1)
         }
         val resource = when (face) {
-            is AiCharacterFace.Tile -> ResourceLocation(tileTextureResourceId(face.assetKey, tileAssetRegistry))
-            is AiCharacterFace.TextureRegion -> ResourceLocation(face.resourceId)
+            is AiCharacterFace.Tile -> resourceId(tileTextureResourceId(face.assetKey, tileAssetRegistry))
+            is AiCharacterFace.TextureRegion -> resourceId(face.resourceId)
         }
         if (!Minecraft.getInstance().resourceManager.getResource(resource).isPresent) {
             if (warnedProviderIds.add("${snapshot.characterId}/$resource")) logger.warn("Character portrait resource is unavailable characterId={} resourceId={}", snapshot.characterId, resource)
@@ -308,7 +309,7 @@ class PlayerPortraitRenderer internal constructor(
                 context.blit(resolveTileTexture(source.assetKey), x + (size - width) / 2, y, width, size, 0f, 0f, 16, 16, 16, 16)
             }
             is PlayerPortraitSource.TextureRegion -> {
-                context.blit(ResourceLocation(source.resourceId), x, y, size, size, source.u0 * 256f, source.v0 * 256f, ((source.u1 - source.u0) * 256f).toInt(), ((source.v1 - source.v0) * 256f).toInt(), 256, 256)
+                context.blit(resourceId(source.resourceId), x, y, size, size, source.u0 * 256f, source.v0 * 256f, ((source.u1 - source.u0) * 256f).toInt(), ((source.v1 - source.v0) * 256f).toInt(), 256, 256)
             }
         }
     }
@@ -343,7 +344,7 @@ class PlayerPortraitRenderer internal constructor(
             renderRegion(resolveTileTexture(source.assetKey), x + (size - width) / 2f, y, width, size, alpha, z, 0f, 0f, 1f, 1f, false, matrices, consumers)
         }
         is PlayerPortraitSource.TextureRegion -> renderRegion(
-            texture = ResourceLocation(source.resourceId), x = x, y = y, width = size, height = size, alpha = alpha, z = z,
+            texture = resourceId(source.resourceId), x = x, y = y, width = size, height = size, alpha = alpha, z = z,
             u0 = source.u0, v0 = source.v0, u1 = source.u1, v1 = source.v1, usesEntityLayer = false, matrices = matrices, consumers = consumers,
         )
     }
@@ -439,11 +440,11 @@ class PlayerPortraitRenderer internal constructor(
      * @return 可用的貼圖識別碼。
      */
     private fun resolveTileTexture(assetKey: String): ResourceLocation = tileTextures.getOrPut(assetKey) {
-        val requested = ResourceLocation(tileTextureResourceId(assetKey, tileAssetRegistry))
+        val requested = resourceId(tileTextureResourceId(assetKey, tileAssetRegistry))
         if (Minecraft.getInstance().resourceManager.getResource(requested).isPresent) {
             requested
         } else {
-            ResourceLocation(tileTextureResourceId(UNKNOWN_TILE_ASSET_KEY, tileAssetRegistry))
+            resourceId(tileTextureResourceId(UNKNOWN_TILE_ASSET_KEY, tileAssetRegistry))
         }
     }
 

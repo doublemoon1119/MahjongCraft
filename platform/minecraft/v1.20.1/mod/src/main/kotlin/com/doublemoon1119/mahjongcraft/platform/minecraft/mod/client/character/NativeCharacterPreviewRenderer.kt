@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterPreviewHandle
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.ModelViewMatrix
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSource
 import com.mojang.blaze3d.pipeline.TextureTarget
 import com.mojang.blaze3d.platform.NativeImage
@@ -87,8 +88,8 @@ internal class NativeCharacterPreviewRenderer(private val registry: ClientAiChar
                         target.clear(Minecraft.ON_OSX)
                         target.bindWrite(true)
                         // 離屏圖片使用自己的投影與座標原點，不沿用 GUI 深度位移。
-                        RenderSystem.getModelViewStack().setIdentity()
-                        RenderSystem.applyModelViewMatrix()
+                        ModelViewMatrix.setIdentity()
+                        ModelViewMatrix.apply()
                         RenderSystem.setProjectionMatrix(Matrix4f().setOrtho(0f, SIZE.toFloat(), SIZE.toFloat(), 0f, -1000f, 1000f), VertexSorting.ORTHOGRAPHIC_Z)
                         RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
                         RenderSystem.disableScissor()

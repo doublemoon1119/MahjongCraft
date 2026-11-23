@@ -3,10 +3,10 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.MahjongAnimationSounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.RegisteredEntry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiGameActionVoiceSoundIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanGameActionVoiceSoundIds
 import net.minecraft.core.registries.Registries
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.sounds.SoundEvent
 
 /** MahjongCraft 內建聲音事件的集中登記點；可直接播放的實例在 [register] 登記完成後才能讀取。 */
@@ -68,7 +68,7 @@ object ModSounds {
      * @return 登記完成後可讀取事件實例的項目。
      */
     private fun ModRegistrar.registerSound(soundId: String, fixedRange: Float? = null): RegisteredEntry<SoundEvent> {
-        val id = ResourceLocation(soundId)
+        val id = resourceId(soundId)
         return register(registry = Registries.SOUND_EVENT, id = id) {
             fixedRange?.let { SoundEvent.createFixedRangeEvent(id, it) } ?: SoundEvent.createVariableRangeEvent(id)
         }

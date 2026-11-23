@@ -7,12 +7,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCh
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.LoaderPlatform
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSource
 import net.minecraft.ReportedException
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.multiplayer.ClientLevel
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.entity.Entity
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.Uuid
@@ -94,7 +94,7 @@ internal class ClientAiCharacterPreviews(
                 }
             }
         }
-        events.onClientResourceReload(ResourceLocation("mahjongcraft", "character_previews")) {
+        events.onClientResourceReload(resourceId("mahjongcraft", "character_previews")) {
             Minecraft.getInstance().execute { clear() }
         }
     }

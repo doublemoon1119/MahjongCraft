@@ -22,11 +22,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinCelebrat
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.RegisteredEntry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropDefinitions
 import net.minecraft.core.registries.Registries
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.entity.EntityType
 
 /** MahjongCraft 實體型別的集中登記點；各型別在 [register] 登記完成後才能讀取。 */
@@ -165,7 +165,7 @@ object ModEntities {
     fun register(registrar: ModRegistrar) {
         mahjongBotEntry = registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_bot"),
+            id = resourceId(MinecraftModMetadata.MOD_ID, "mahjong_bot"),
         ) {
             MahjongEntityTypes.create(
                 factory = ::MahjongBotEntity,
@@ -178,7 +178,7 @@ object ModEntities {
         }
         mahjongSoundTimelineEntry = registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_sound_timeline"),
+            id = resourceId(MinecraftModMetadata.MOD_ID, "mahjong_sound_timeline"),
         ) {
             MahjongEntityTypes.create(
                 factory = ::MahjongSoundTimelineEntity,
@@ -190,7 +190,7 @@ object ModEntities {
         }
         mahjongDiceEntry = registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_dice"),
+            id = resourceId(MinecraftModMetadata.MOD_ID, "mahjong_dice"),
         ) {
             MahjongEntityTypes.create(
                 factory = ::MahjongDiceEntity,
@@ -202,7 +202,7 @@ object ModEntities {
         }
         diceRollPresentationEntry = registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "dice_roll_presentation"),
+            id = resourceId(MinecraftModMetadata.MOD_ID, "dice_roll_presentation"),
         ) {
             MahjongEntityTypes.create(
                 factory = ::DiceRollPresentationEntity,
@@ -214,7 +214,7 @@ object ModEntities {
         }
         mahjongTileEntry = registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_tile"),
+            id = resourceId(MinecraftModMetadata.MOD_ID, "mahjong_tile"),
         ) {
             MahjongEntityTypes.create(
                 factory = ::MahjongTileEntity,
@@ -226,7 +226,7 @@ object ModEntities {
         }
         tablePropTileEntry = registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "table_prop_tile"),
+            id = resourceId(MinecraftModMetadata.MOD_ID, "table_prop_tile"),
         ) {
             MahjongEntityTypes.create(
                 factory = ::TablePropTileEntity,
@@ -238,7 +238,7 @@ object ModEntities {
         }
         mahjongTileSelectionConfirmEntry = registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_tile_selection_confirm"),
+            id = resourceId(MinecraftModMetadata.MOD_ID, "mahjong_tile_selection_confirm"),
         ) {
             MahjongEntityTypes.create(
                 factory = ::MahjongTileSelectionConfirmEntity,
@@ -250,7 +250,7 @@ object ModEntities {
         }
         mahjongScoringStickEntry = registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_scoring_stick"),
+            id = resourceId(MinecraftModMetadata.MOD_ID, "mahjong_scoring_stick"),
         ) {
             MahjongEntityTypes.create(
                 factory = ::MahjongScoringStickEntity,
@@ -262,7 +262,7 @@ object ModEntities {
         }
         mahjongRulerEntry = registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, MahjongRulerColor.BASE_ITEM_PATH),
+            id = resourceId(MinecraftModMetadata.MOD_ID, MahjongRulerColor.BASE_ITEM_PATH),
         ) {
             MahjongEntityTypes.create(
                 factory = ::MahjongRulerEntity,
@@ -274,7 +274,7 @@ object ModEntities {
         }
         mahjongRoundInfoEntry = registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_round_info"),
+            id = resourceId(MinecraftModMetadata.MOD_ID, "mahjong_round_info"),
         ) {
             MahjongEntityTypes.create(
                 factory = ::MahjongRoundInfoEntity,
@@ -286,7 +286,7 @@ object ModEntities {
         }
         mahjongPlayerInfoEntry = registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_player_info"),
+            id = resourceId(MinecraftModMetadata.MOD_ID, "mahjong_player_info"),
         ) {
             MahjongEntityTypes.create(
                 factory = ::MahjongPlayerInfoEntity,
@@ -298,7 +298,7 @@ object ModEntities {
         }
         mahjongLobbyInfoEntry = registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_lobby_info"),
+            id = resourceId(MinecraftModMetadata.MOD_ID, "mahjong_lobby_info"),
         ) {
             MahjongEntityTypes.create(
                 factory = ::MahjongLobbyInfoEntity,
@@ -310,7 +310,7 @@ object ModEntities {
         }
         winCelebrationEffectEntry = registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "win_celebration_effect"),
+            id = resourceId(MinecraftModMetadata.MOD_ID, "win_celebration_effect"),
         ) {
             MahjongEntityTypes.create(
                 factory = ::WinCelebrationEffectEntity,
@@ -322,7 +322,7 @@ object ModEntities {
         }
         winCelebrationShowcaseEntry = registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "win_celebration_showcase"),
+            id = resourceId(MinecraftModMetadata.MOD_ID, "win_celebration_showcase"),
         ) {
             MahjongEntityTypes.create(
                 factory = ::WinCelebrationShowcaseEntity,
@@ -334,7 +334,7 @@ object ModEntities {
         }
         exhaustiveDrawSettlementPresentationEntry = registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "exhaustive_draw_settlement_presentation"),
+            id = resourceId(MinecraftModMetadata.MOD_ID, "exhaustive_draw_settlement_presentation"),
         ) {
             MahjongEntityTypes.create(
                 factory = ::ExhaustiveDrawSettlementPresentationEntity,
@@ -346,7 +346,7 @@ object ModEntities {
         }
         winSettlementPresentationEntry = registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "win_settlement_presentation"),
+            id = resourceId(MinecraftModMetadata.MOD_ID, "win_settlement_presentation"),
         ) {
             MahjongEntityTypes.create(
                 factory = ::WinSettlementPresentationEntity,
@@ -358,7 +358,7 @@ object ModEntities {
         }
         matchSettlementPresentationEntry = registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "match_settlement_presentation"),
+            id = resourceId(MinecraftModMetadata.MOD_ID, "match_settlement_presentation"),
         ) {
             MahjongEntityTypes.create(
                 factory = ::MatchSettlementPresentationEntity,
@@ -370,7 +370,7 @@ object ModEntities {
         }
         mahjongStoolSeatEntry = registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_stool_seat"),
+            id = resourceId(MinecraftModMetadata.MOD_ID, "mahjong_stool_seat"),
         ) {
             MahjongEntityTypes.create(
                 factory = ::MahjongStoolSeatEntity,

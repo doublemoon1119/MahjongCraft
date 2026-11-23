@@ -1,10 +1,12 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.framePartialTick
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.multiplyPose
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.renderEntityFollowingLook
 import com.mojang.blaze3d.platform.Lighting
 import com.mojang.blaze3d.systems.RenderSystem
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
-import net.minecraft.client.gui.screens.inventory.InventoryScreen
 import net.minecraft.client.renderer.LightTexture
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.LivingEntity
@@ -36,12 +38,12 @@ internal object GuiEntityModelRenderer {
             try {
                 if (entity is LivingEntity) {
                     LivingPose(entity).use {
-                        InventoryScreen.renderEntityInInventoryFollowsMouse(context, view.centerX, view.feetY, scale, view.lookX, view.lookY, entity)
+                        renderEntityFollowingLook(context, view.centerX, view.feetY, scale, view.lookX, view.lookY, entity)
                     }
                 } else {
                     matrices.pushPose()
                     matrices.translate(view.centerX.toDouble(), view.feetY.toDouble(), 50.0)
-                    matrices.mulPoseMatrix(view.scaleMatrix(scale))
+                    matrices.multiplyPose(view.scaleMatrix(scale))
                     matrices.mulPose(view.modelRotation())
                     Lighting.setupForEntityInInventory()
                     val dispatcher = client.entityRenderDispatcher
@@ -52,7 +54,7 @@ internal object GuiEntityModelRenderer {
                     @Suppress("DEPRECATION")
                     RenderSystem.runAsFancy {
                         AutoCloseable { consumers.endBatch() }.use {
-                            dispatcher.render(entity, 0.0, 0.0, 0.0, view.bodyYaw(), client.frameTime, matrices, consumers, LightTexture.FULL_BRIGHT)
+                            dispatcher.render(entity, 0.0, 0.0, 0.0, view.bodyYaw(), client.framePartialTick, matrices, consumers, LightTexture.FULL_BRIGHT)
                         }
                     }
                 }

@@ -2,11 +2,11 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongStoolBlock
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableBlock
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.craftingRecipes
 import net.minecraft.client.Minecraft
 import net.minecraft.world.item.BlockItem
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.crafting.Ingredient
-import net.minecraft.world.item.crafting.RecipeType
 import net.minecraft.world.item.crafting.ShapedRecipe
 
 /**
@@ -30,8 +30,8 @@ internal object GuideRecipes {
     fun find(client: Minecraft): List<GuideRecipe> {
         val world = client.level ?: return emptyList()
         val registries = world.registryAccess()
-        return world.recipeManager.getAllRecipesFor(RecipeType.CRAFTING)
-            .mapNotNull { recipe ->
+        return craftingRecipes(world)
+            .mapNotNull { (id, recipe) ->
                 val output = recipe.getResultItem(registries)
                 val order = when ((output.item as? BlockItem)?.block) {
                     is MahjongTableBlock -> TABLE_ORDER
@@ -39,7 +39,7 @@ internal object GuideRecipes {
                     else -> return@mapNotNull null
                 }
                 val width = (recipe as? ShapedRecipe)?.width ?: GuideRecipeLayout.GRID_SIZE
-                Triple(order, recipe.id.toString(), GuideRecipe(slots = gridSlots(recipe.ingredients, width), output = output.copy()))
+                Triple(order, id.toString(), GuideRecipe(slots = gridSlots(recipe.ingredients, width), output = output.copy()))
             }
             .sortedWith(compareBy({ it.first }, { it.second }))
             .map { it.third }

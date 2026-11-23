@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.tile
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTileEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.blockInteractionReach
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.entityInteractionReach
 import net.minecraft.client.Minecraft
 import net.minecraft.world.phys.EntityHitResult
 import net.minecraft.world.phys.HitResult
@@ -56,12 +58,12 @@ object ClientHandTileLayoutBridge {
         if (!active.hasOverrides) return original
         val world = client.level ?: return original
         val cameraEntity = client.cameraEntity ?: return original
-        val interaction = client.gameMode ?: return original
-        val reachDistance = if (interaction.hasFarPickRange()) 6.0 else 3.0
+        val reachDistance = entityInteractionReach(client) ?: return original
+        val blockReach = blockInteractionReach(client) ?: return original
         val start = cameraEntity.getEyePosition(tickDelta)
         // 沿用原版的視線起點與固定 1.0 朝向插值，第三人稱也不另換成攝影機位置。
         val end = start.add(cameraEntity.getViewVector(1.0f).scale(reachDistance))
-        val blockTarget = cameraEntity.pick(interaction.pickRange.toDouble(), tickDelta, false)
+        val blockTarget = cameraEntity.pick(blockReach, tickDelta, false)
         val blockDistance = if (blockTarget.type == HitResult.Type.BLOCK) blockTarget.location.distanceToSqr(start) else Double.POSITIVE_INFINITY
         val originalEntity = (original as? EntityHitResult)?.entity
         val originalMoved = originalEntity is MahjongTileEntity && active.display(originalEntity) != null

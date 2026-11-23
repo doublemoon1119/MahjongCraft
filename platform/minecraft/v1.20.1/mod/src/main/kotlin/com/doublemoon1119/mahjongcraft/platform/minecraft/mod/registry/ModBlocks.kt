@@ -9,8 +9,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.entity.Mahjo
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.RegisteredEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.MahjongStoolSeatService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import net.minecraft.core.registries.Registries
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.BlockItem
 import net.minecraft.world.item.Item
 import net.minecraft.world.level.block.Block
@@ -103,7 +103,7 @@ object ModBlocks {
         )
         mahjongTableBlockEntityEntry = registrar.register(
             registry = Registries.BLOCK_ENTITY_TYPE,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_table"),
+            id = resourceId(MinecraftModMetadata.MOD_ID, "mahjong_table"),
         ) {
             MahjongBlockEntityTypes.create(::MahjongTableBlockEntity, woodenMahjongTable, concreteMahjongTable)
         }
@@ -161,7 +161,7 @@ object ModBlocks {
      * @return 登記完成後可讀取方塊的項目。
      */
     private fun ModRegistrar.registerWithItem(path: String, factory: () -> Block): RegisteredEntry<Block> {
-        val id = ResourceLocation(MinecraftModMetadata.MOD_ID, path)
+        val id = resourceId(MinecraftModMetadata.MOD_ID, path)
         val block = register(registry = Registries.BLOCK, id = id, factory = factory)
         register(registry = Registries.ITEM, id = id) { BlockItem(block.get(), Item.Properties()) }
         return block

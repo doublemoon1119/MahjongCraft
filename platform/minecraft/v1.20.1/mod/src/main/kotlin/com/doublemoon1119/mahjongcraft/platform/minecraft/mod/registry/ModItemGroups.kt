@@ -3,11 +3,11 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftItemGroupKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.STANDARD_TILE_ASSET_KEYS
 import net.minecraft.core.registries.Registries
 import net.minecraft.network.chat.Component
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.ItemStack
 
 /** MahjongCraft 創造模式物品分類的集中登記點。 */
@@ -20,7 +20,7 @@ object ModItemGroups {
     fun register(registrar: ModRegistrar) {
         registrar.register(
             registry = Registries.CREATIVE_MODE_TAB,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "main"),
+            id = resourceId(MinecraftModMetadata.MOD_ID, "main"),
         ) {
             registrar.creativeModeTabBuilder()
                 .icon(::iconStack)

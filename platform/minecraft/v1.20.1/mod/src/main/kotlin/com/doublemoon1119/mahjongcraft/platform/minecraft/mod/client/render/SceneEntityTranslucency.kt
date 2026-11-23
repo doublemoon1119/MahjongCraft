@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.mojang.blaze3d.vertex.DefaultVertexFormat
 import com.mojang.blaze3d.vertex.VertexFormat
 import net.minecraft.client.renderer.RenderStateShard
@@ -109,7 +110,7 @@ object SceneEntityTranslucency {
     )
 
     /** 自訂著色器的識別碼，設定檔位於 `assets/mahjongcraft/shaders/core/scene_entity_translucent.json`。 */
-    private val SHADER_ID = ResourceLocation(MinecraftModMetadata.MOD_ID, "scene_entity_translucent")
+    private val SHADER_ID = resourceId(MinecraftModMetadata.MOD_ID, "scene_entity_translucent")
 
     /** 半透明圖層的頂點緩衝大小，與原版生物圖層相同。 */
     private const val BUFFER_SIZE = 256

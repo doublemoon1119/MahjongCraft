@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.Mahj
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.framePartialTick
 import net.minecraft.client.Minecraft
 import net.minecraft.world.phys.EntityHitResult
 import kotlin.math.sin
@@ -41,7 +42,7 @@ class MatchingTileHighlightController(
         val snapshot = stateStore.gameSnapshot(tableId) ?: return
         val interpretation = moduleRegistry.getModule(snapshot.config).createTileInterpretationPolicy()
         val canonicalTarget = interpretation.canonicalize(targetTile)
-        val time = target.level().gameTime + client.frameTime.toDouble()
+        val time = target.level().gameTime + client.framePartialTick.toDouble()
         val targetColor = targetColor(time)
         val otherMatchColor = otherMatchColor(time)
         tiles.asSequence()

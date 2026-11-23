@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.RoomScreen
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import com.mojang.authlib.GameProfile
 import net.minecraft.client.multiplayer.ClientLevel
@@ -29,6 +30,6 @@ class OfflinePlayerPreviewEntity(world: ClientLevel, profile: GameProfile) : Rem
     override fun getName(): Component = Component.translatable(MinecraftRoomScreenKeys.OFFLINE_PLAYER)
 
     private companion object {
-        val TEXTURE: ResourceLocation = ResourceLocation(MinecraftModMetadata.MOD_ID, "textures/entity/player/offline_player_skin.png")
+        val TEXTURE: ResourceLocation = resourceId(MinecraftModMetadata.MOD_ID, "textures/entity/player/offline_player_skin.png")
     }
 }

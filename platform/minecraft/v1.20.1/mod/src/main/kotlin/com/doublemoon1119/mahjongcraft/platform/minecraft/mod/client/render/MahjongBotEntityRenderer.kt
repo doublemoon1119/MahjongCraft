@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongBotA
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongBotEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientModels
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.math.Axis
@@ -238,7 +239,7 @@ class MahjongBotEntityRenderer(
     /** 固定角色比例，不改變任何正式麻將牌模型尺寸。 */
     private companion object {
         /** 四肢模型繼承牌體圖集，六面都使用白色區域。 */
-        val LIMB_MODEL_ID: ResourceLocation = ResourceLocation(BuiltInAiCharacters.TILE_MASCOT_LIMB_MODEL_ID)
+        val LIMB_MODEL_ID: ResourceLocation = resourceId(BuiltInAiCharacters.TILE_MASCOT_LIMB_MODEL_ID)
 
         /** 牌體世界高度。 */
         const val BODY_HEIGHT: Float = 0.8f

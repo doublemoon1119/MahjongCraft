@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.Achievemen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.PlayerAchievements
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.StatisticThreshold
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
@@ -71,7 +72,7 @@ class MahjongAchievementCriterion : SimpleCriterionTrigger<MahjongAchievementCri
     /** 進度條件識別碼與 JSON 欄位解析。 */
     companion object {
         /** 進度 JSON 引用此條件的 trigger ID。 */
-        val ID: ResourceLocation = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_achievement")
+        val ID: ResourceLocation = resourceId(MinecraftModMetadata.MOD_ID, "mahjong_achievement")
 
         /** 同次觸發必須達成的成果 ID 清單欄位。 */
         private const val ACHIEVEMENTS = "achievements"

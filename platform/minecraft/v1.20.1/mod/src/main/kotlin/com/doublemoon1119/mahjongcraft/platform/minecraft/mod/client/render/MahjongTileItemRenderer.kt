@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.item.MahjongTileIt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientModels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ItemStackRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
@@ -144,8 +145,8 @@ object MahjongTileItemRenderer : ItemStackRenderer {
                 )
             renderModel(
                 model = findBakedModel(FixedMahjongTileModelPreparedData.syntheticUnknownModelId(appearance.id)),
-                fallbackTextureId = ResourceLocation(appearance.unknownFaceTextureId),
-                coverTextureId = ResourceLocation(appearance.coverTextureId),
+                fallbackTextureId = resourceId(appearance.unknownFaceTextureId),
+                coverTextureId = resourceId(appearance.coverTextureId),
                 mode = mode,
                 matrices = matrices,
                 vertexConsumers = vertexConsumers,
@@ -210,9 +211,9 @@ object MahjongTileItemRenderer : ItemStackRenderer {
         val appearance = effectiveAppearance(registry, assetKey, appearanceId)
         val resource = registry.findResources(assetKey)
         val textureId = resource?.textureId?.let(::ResourceLocation)
-            ?: ResourceLocation(tileTextureResourceId(assetKey, registry))
+            ?: resourceId(tileTextureResourceId(assetKey, registry))
         val coverTextureId = appearance?.coverTextureId?.let(::ResourceLocation)
-            ?: ResourceLocation(MinecraftModMetadata.MOD_ID, tileTextureAssetPath("cover"))
+            ?: resourceId(MinecraftModMetadata.MOD_ID, tileTextureAssetPath("cover"))
         val bakedModel = if (appearance != null) {
             findBakedModel(FixedMahjongTileModelPreparedData.syntheticModelId(appearance.id, assetKey))
         } else {
@@ -330,7 +331,7 @@ object MahjongTileItemRenderer : ItemStackRenderer {
      */
     private fun findBakedModel(assetKey: String): BakedModel? {
         val registry = GlobalContext.get().get<MinecraftTileAssetRegistry>()
-        return findBakedModel(ResourceLocation(tileModelResourceId(assetKey, registry)))
+        return findBakedModel(resourceId(tileModelResourceId(assetKey, registry)))
     }
 
     /**

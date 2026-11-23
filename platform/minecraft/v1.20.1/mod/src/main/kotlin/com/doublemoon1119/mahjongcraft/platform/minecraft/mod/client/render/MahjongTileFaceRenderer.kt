@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileO
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model.MahjongTileModelLoadingPlugin
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTileEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTilePreviewTexture
@@ -22,7 +23,6 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.renderer.LightTexture
 import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.network.chat.Component
-import net.minecraft.resources.ResourceLocation
 import org.joml.Matrix4f
 import kotlin.math.roundToInt
 
@@ -106,7 +106,7 @@ class MahjongTileFaceRenderer(
         appearance: MinecraftTileSetAppearanceDefinition = BuiltInMinecraftTileAppearances.DEFAULT,
     ) {
         val preview = resolvePreviewTexture(assetKey, appearance)
-        val buffer = consumers.getBuffer(ExhaustiveDrawSettlementTileFaceRenderType.get(ResourceLocation(preview.resourceId)))
+        val buffer = consumers.getBuffer(ExhaustiveDrawSettlementTileFaceRenderType.get(resourceId(preview.resourceId)))
         val matrix = matrices.last().pose()
         val left = centerX - width / 2f
         val right = centerX + width / 2f
@@ -261,7 +261,7 @@ class MahjongTileFaceRenderer(
         RenderSystem.enableBlend()
         RenderSystem.defaultBlendFunc()
         context.blit(
-            ResourceLocation(preview.resourceId),
+            resourceId(preview.resourceId),
             x,
             y,
             width,
@@ -379,12 +379,12 @@ class MahjongTileFaceRenderer(
     private fun resolvePreviewTexture(assetKey: String, appearance: MinecraftTileSetAppearanceDefinition): MinecraftTilePreviewTexture {
         val effectiveAppearance = MahjongTileModelLoadingPlugin.effectiveAppearance(appearance)
         val requested = tilePreviewTexture(assetKey, tileAssetRegistry, effectiveAppearance)
-        val requestedId = ResourceLocation(requested.resourceId)
+        val requestedId = resourceId(requested.resourceId)
         return if (Minecraft.getInstance().resourceManager.getResource(requestedId).isPresent) {
             requested
         } else {
             val unknownPreview = MinecraftTilePreviewTexture(effectiveAppearance.unknownFaceTextureId, 0f, 0f, 1f, 1f)
-            if (Minecraft.getInstance().resourceManager.getResource(ResourceLocation(unknownPreview.resourceId)).isPresent) {
+            if (Minecraft.getInstance().resourceManager.getResource(resourceId(unknownPreview.resourceId)).isPresent) {
                 unknownPreview
             } else {
                 MinecraftTilePreviewTexture(BuiltInMinecraftTileAppearances.DEFAULT.unknownFaceTextureId, 0f, 0f, 1f, 1f)

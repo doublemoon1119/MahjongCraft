@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModPackets
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import io.netty.buffer.Unpooled
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.KSerializer
@@ -111,7 +112,7 @@ internal fun <T> decodeBoundedPayload(
  */
 class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private val maxPayloadBytes: Int? = null) {
     /** 收送封包使用的頻道識別碼。 */
-    val channelId: ResourceLocation = ResourceLocation(MinecraftModMetadata.MOD_ID, id).also(ModPackets.transport::declareChannel)
+    val channelId: ResourceLocation = resourceId(MinecraftModMetadata.MOD_ID, id).also(ModPackets.transport::declareChannel)
 
     /** 記錄丟棄過大回應的 logger。 */
     private val logger = mahjongCraftLogger(S2CChannel::class)
@@ -199,7 +200,7 @@ class C2SChannel<T>(
     private val logger = mahjongCraftLogger(C2SChannel::class)
 
     /** 收送封包使用的頻道識別碼。 */
-    val channelId: ResourceLocation = ResourceLocation(MinecraftModMetadata.MOD_ID, id).also(ModPackets.transport::declareChannel)
+    val channelId: ResourceLocation = resourceId(MinecraftModMetadata.MOD_ID, id).also(ModPackets.transport::declareChannel)
 
     /** 依 `rateLimit` 判斷要求是否接受；由接收端自行准入時為 null。 */
     private val limiter: PlayerRequestRateLimiter? = (rateLimit as? C2SRateLimit.PerPlayer)

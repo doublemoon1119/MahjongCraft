@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.AchievementStatisticIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.achievement.MahjongAchievementCriterion
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import net.minecraft.advancements.CriteriaTriggers
 import net.minecraft.core.registries.Registries
 import net.minecraft.resources.ResourceLocation
@@ -32,7 +33,7 @@ object ModAchievements {
      */
     fun register(registrar: ModRegistrar) {
         AchievementStatisticIds.ALL.forEach { statisticId ->
-            val id = ResourceLocation(statisticId)
+            val id = resourceId(statisticId)
             registrar.register(registry = Registries.CUSTOM_STAT, id = id) { id }
             statistics[statisticId] = id
         }

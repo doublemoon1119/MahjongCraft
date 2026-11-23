@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureResourceId
@@ -9,7 +10,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import net.minecraft.client.gui.Font
 import net.minecraft.locale.Language
 import net.minecraft.network.chat.Style
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.packs.resources.ResourceManager
 
 /**
@@ -45,7 +45,7 @@ internal class ResourceCatalogueTileArt(
         val assetKey = tile.toAssetKey(assets)
         val face = tile.tile
         val name = if (face is Tile.Extension) "${face.typeId.namespace}:${face.typeId.path}" else assetKey
-        val texture = ResourceLocation(tileTextureResourceId(assetKey, assets))
+        val texture = resourceId(tileTextureResourceId(assetKey, assets))
         if (assetKey == UNKNOWN_TILE_ASSET_KEY || resources.getResource(texture).isEmpty) {
             CatalogueTileArt(assetKey = UNKNOWN_TILE_ASSET_KEY, missingName = name)
         } else {

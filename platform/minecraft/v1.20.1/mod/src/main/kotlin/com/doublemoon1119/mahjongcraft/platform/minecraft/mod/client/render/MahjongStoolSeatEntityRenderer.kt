@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import net.minecraft.client.renderer.entity.EntityRenderer
 import net.minecraft.client.renderer.entity.EntityRendererProvider
 import net.minecraft.resources.ResourceLocation
@@ -19,6 +20,6 @@ class MahjongStoolSeatEntityRenderer(
     /** 固定參數。 */
     companion object {
         /** 不會實際取樣的空材質 ID。 */
-        private val EMPTY_TEXTURE = ResourceLocation("mahjongcraft", "textures/empty.png")
+        private val EMPTY_TEXTURE = resourceId("mahjongcraft", "textures/empty.png")
     }
 }

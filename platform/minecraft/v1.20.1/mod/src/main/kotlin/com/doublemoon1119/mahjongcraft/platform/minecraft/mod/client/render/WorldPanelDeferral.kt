@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
-import com.mojang.blaze3d.systems.RenderSystem
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.ModelViewMatrix
 import com.mojang.blaze3d.vertex.PoseStack
 import net.minecraft.client.Minecraft
 import net.minecraft.client.renderer.MultiBufferSource
@@ -64,15 +64,14 @@ internal object WorldPanelDeferral {
     private fun drawPending() {
         val panels = queue.drain()
         if (panels.isEmpty()) return
-        val modelView = RenderSystem.getModelViewStack()
-        modelView.pushPose()
-        modelView.setIdentity()
-        RenderSystem.applyModelViewMatrix()
+        ModelViewMatrix.push()
+        ModelViewMatrix.setIdentity()
+        ModelViewMatrix.apply()
         try {
             panels.forEach { it() }
         } finally {
-            modelView.popPose()
-            RenderSystem.applyModelViewMatrix()
+            ModelViewMatrix.pop()
+            ModelViewMatrix.apply()
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.dyeTextureRgb
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerColor
 import net.minecraft.world.item.DyeColor
 
@@ -14,15 +15,6 @@ internal object MahjongRulerTint {
     /** 染色牌尺的不透明度。 */
     private const val DYED_ALPHA: Int = 180
 
-    /** 一個顏色通道的最大值。 */
-    private const val CHANNEL_MAX: Float = 255.0f
-
-    /** 紅色通道在打包顏色中的位移。 */
-    private const val RED_SHIFT: Int = 16
-
-    /** 綠色通道在打包顏色中的位移。 */
-    private const val GREEN_SHIFT: Int = 8
-
     /**
      * 牌尺的顏色。
      *
@@ -30,9 +22,8 @@ internal object MahjongRulerTint {
      * @return 以 `0xRRGGBB` 打包的顏色。
      */
     fun rgb(color: MahjongRulerColor): Int {
-        val components = color.dyeName?.let { DyeColor.byName(it, null) }?.textureDiffuseColors ?: return CLEAR_RGB
-        val (red, green, blue) = components.map { (it * CHANNEL_MAX).toInt().coerceIn(0, CHANNEL_MAX.toInt()) }
-        return (red shl RED_SHIFT) or (green shl GREEN_SHIFT) or blue
+        val dye = color.dyeName?.let { DyeColor.byName(it, null) } ?: return CLEAR_RGB
+        return dyeTextureRgb(dye)
     }
 
     /**

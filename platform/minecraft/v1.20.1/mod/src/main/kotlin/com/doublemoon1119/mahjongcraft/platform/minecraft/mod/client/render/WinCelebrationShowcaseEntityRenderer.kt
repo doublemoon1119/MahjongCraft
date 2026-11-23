@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ShowcaseCardSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinCelebrationCinematicTimeline
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinCelebrationShowcaseEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.ShowcaseVisualLayer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
@@ -1448,9 +1449,9 @@ class WinCelebrationShowcaseEntityRenderer(
     private fun seededUnit(seed: Long, salt: Int): Double = (((seed xor (salt.toLong() * -7046029254386353131L)) ushr 11) and 0xFFFF).toDouble() / 65535.0
 
     private companion object {
-        val ELYTRA_TEXTURE = ResourceLocation("minecraft", "textures/entity/elytra.png")
-        val GLOW_TEXTURE = ResourceLocation("mahjongcraft", "textures/showcase/glow.png")
-        val SMOKE_TEXTURES = Array(12) { frame -> ResourceLocation("minecraft", "textures/particle/big_smoke_$frame.png") }
+        val ELYTRA_TEXTURE = resourceId("minecraft", "textures/entity/elytra.png")
+        val GLOW_TEXTURE = resourceId("mahjongcraft", "textures/showcase/glow.png")
+        val SMOKE_TEXTURES = Array(12) { frame -> resourceId("minecraft", "textures/particle/big_smoke_$frame.png") }
         const val FULL_BRIGHT_LIGHT = 15728880
         const val ARMING_START_TICK = 0.0
         const val LIFT_END_TICK = 7.0

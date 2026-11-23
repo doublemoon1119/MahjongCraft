@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongRulerEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerDimensions
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
@@ -112,7 +113,7 @@ class MahjongRulerEntityRenderer(
 
     private companion object {
         /** 牌尺的純白貼圖。 */
-        val TEXTURE: ResourceLocation = ResourceLocation(MinecraftModMetadata.MOD_ID, "textures/entity/mahjong_ruler.png")
+        val TEXTURE: ResourceLocation = resourceId(MinecraftModMetadata.MOD_ID, "textures/entity/mahjong_ruler.png")
 
         /** 長邊的一端。 */
         const val X0: Float = (-MahjongRulerDimensions.LENGTH / 2.0).toFloat()

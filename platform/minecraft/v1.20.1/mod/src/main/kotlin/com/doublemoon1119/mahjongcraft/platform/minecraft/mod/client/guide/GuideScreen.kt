@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideViewer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.toNameText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
@@ -588,7 +589,7 @@ internal class GuideScreen(
         const val OUTSIDE = Int.MIN_VALUE / 2
 
         /** 原版工作台介面圖。 */
-        val CRAFTING_TABLE_TEXTURE: ResourceLocation = ResourceLocation("textures/gui/container/crafting_table.png")
+        val CRAFTING_TABLE_TEXTURE: ResourceLocation = resourceId("textures/gui/container/crafting_table.png")
 
         /** 原版容器標題的文字顏色。 */
         const val CONTAINER_TITLE_COLOR = 0x404040

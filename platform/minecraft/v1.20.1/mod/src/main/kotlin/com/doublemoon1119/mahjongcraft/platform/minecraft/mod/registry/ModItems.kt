@@ -8,9 +8,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.item.MahjongScorin
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.RegisteredEntry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerColor
 import net.minecraft.core.registries.Registries
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.Item
 
 /** MahjongCraft 一般物品的集中登記點；各物品在 [register] 登記完成後才能讀取。 */
@@ -75,7 +75,7 @@ object ModItems {
      */
     private fun ModRegistrar.registerItem(path: String, factory: () -> Item): RegisteredEntry<Item> = register(
         registry = Registries.ITEM,
-        id = ResourceLocation(MinecraftModMetadata.MOD_ID, path),
+        id = resourceId(MinecraftModMetadata.MOD_ID, path),
         factory = factory,
     )
 }

@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.ModelViewMatrix
 import com.mojang.blaze3d.platform.GlStateManager
 import com.mojang.blaze3d.systems.RenderSystem
-import com.mojang.blaze3d.vertex.PoseStack
 import net.minecraft.client.Minecraft
 import org.joml.Matrix4f
 import org.joml.Quaternionf
@@ -92,11 +92,11 @@ internal class CharacterPreviewRenderState : AutoCloseable {
     }
 
     /** 保留呼叫端原有的座標系；離屏圖片自行設定原點。 */
-    private val modelView = ModelViewScope(RenderSystem.getModelViewStack())
+    private val modelView = ModelViewScope(push = ModelViewMatrix::push, pop = ModelViewMatrix::pop)
 
     init {
         RenderSystem.activeTexture(activeTexture)
-        RenderSystem.applyModelViewMatrix()
+        ModelViewMatrix.apply()
     }
 
     /** 還原這次模型繪製之前的圖形與實體繪製器狀態。 */
@@ -105,7 +105,7 @@ internal class CharacterPreviewRenderState : AutoCloseable {
         dispatcher.setRenderShadow(shadows)
         dispatcher.setRenderHitBoxes(hitboxes)
         modelView.close()
-        RenderSystem.applyModelViewMatrix()
+        ModelViewMatrix.apply()
         RenderSystem.setProjectionMatrix(projection, sorting)
         GlStateManager._glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, drawFramebuffer)
         GlStateManager._glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, readFramebuffer)
@@ -130,16 +130,17 @@ internal class CharacterPreviewRenderState : AutoCloseable {
     /**
      * 保留呼叫端的矩陣，並在正常或例外結束時恢復。
      *
-     * @property matrices 此次繪製使用的矩陣堆疊。
+     * @param push 保存目前的矩陣；建立時呼叫一次。
+     * @property pop 還原 [push] 保存的矩陣。
      */
-    internal class ModelViewScope(private val matrices: PoseStack) : AutoCloseable {
+    internal class ModelViewScope(push: () -> Unit, private val pop: () -> Unit) : AutoCloseable {
         init {
-            matrices.pushPose()
+            push()
         }
 
         /** 恢復進入前的座標系，不將 GUI 位移清成單位矩陣。 */
         override fun close() {
-            matrices.popPose()
+            pop()
         }
     }
 }

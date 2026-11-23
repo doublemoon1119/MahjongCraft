@@ -95,6 +95,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCra
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModItems
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerIdentityPayload
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
@@ -110,7 +111,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import net.minecraft.client.Minecraft
-import net.minecraft.resources.ResourceLocation
 import org.koin.core.Koin
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
@@ -139,7 +139,7 @@ class MahjongCraftClientBootstrap(
         characterPreviews.initialize(events)
         koin.get<ClientTablePropPreviews>().initialize(events)
         val portraits = koin.get<PlayerPortraitRenderer>()
-        events.onClientResourceReload(ResourceLocation("mahjongcraft", "character_portrait_resources")) {
+        events.onClientResourceReload(resourceId("mahjongcraft", "character_portrait_resources")) {
             Minecraft.getInstance().execute { portraits.clearResources() }
         }
         ClientAiSeatInteraction.register(
@@ -153,7 +153,7 @@ class MahjongCraftClientBootstrap(
         registrar.registerItemRenderer(ModItems.MAHJONG_TILE, MahjongTileItemRenderer)
         registrar.registerItemProperty(
             item = ModItems.MAHJONG_SCORING_STICK,
-            id = ResourceLocation(MinecraftModMetadata.MOD_ID, "denomination"),
+            id = resourceId(MinecraftModMetadata.MOD_ID, "denomination"),
         ) { stack, _, _, _ -> MahjongScoringStickItem.readDenomination(stack).toModelPredicateValue() }
         ModItems.MAHJONG_RULERS.forEach { (color, item) ->
             registrar.registerItemColor(color = { _, _ -> MahjongRulerTint.rgb(color) }, items = listOf(item))

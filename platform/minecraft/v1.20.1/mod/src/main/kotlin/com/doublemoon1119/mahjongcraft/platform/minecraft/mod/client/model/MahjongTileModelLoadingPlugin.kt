@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModelLoading
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
@@ -34,10 +35,10 @@ object MahjongTileModelLoadingPlugin : ModelLoading<FixedMahjongTileModelPrepare
         val registry = GlobalContext.get().get<MinecraftTileAssetRegistry>()
         return buildList {
             registry.allTileAssetKeys().mapTo(this) { assetKey ->
-                ResourceLocation(tileModelResourceId(assetKey, registry))
+                resourceId(tileModelResourceId(assetKey, registry))
             }
             data.variants.mapTo(this) { it.modelId }
-            add(ResourceLocation(BuiltInAiCharacters.TILE_MASCOT_LIMB_MODEL_ID))
+            add(resourceId(BuiltInAiCharacters.TILE_MASCOT_LIMB_MODEL_ID))
         }
     }
 

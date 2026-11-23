@@ -13,6 +13,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongBotE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongRoundInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.framePartialTick
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.multiplyPose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
 import com.mojang.blaze3d.platform.Lighting
@@ -137,7 +139,7 @@ internal class GuideSceneRenderer : AutoCloseable {
         try {
             matrices.translate(centerX, centerY, SCENE_Z)
             // 上下翻轉只套用在位置；法線只受視角旋轉影響，光線因此可以直接以鏡頭的方向指定。
-            matrices.mulPoseMatrix(Matrix4f().scaling(scale, -scale, scale))
+            matrices.multiplyPose(Matrix4f().scaling(scale, -scale, scale))
             matrices.translate(-bounds.centerX.toDouble(), -bounds.centerY.toDouble(), 0.0)
             matrices.mulPose(Quaternionf().setFromNormalized(rotation))
             val sceneToScreen = Matrix4f(matrices.last().pose())
@@ -171,7 +173,7 @@ internal class GuideSceneRenderer : AutoCloseable {
             } finally {
                 consumers.endBatch()
             }
-            val time = (client.level?.gameTime ?: 0L) + client.frameTime.toDouble()
+            val time = (client.level?.gameTime ?: 0L) + client.framePartialTick.toDouble()
             val outlined = scene.tiles.mapNotNull { tile ->
                 when {
                     hovered != null && tile.region == hovered.region -> tile to HOVER_COLOR

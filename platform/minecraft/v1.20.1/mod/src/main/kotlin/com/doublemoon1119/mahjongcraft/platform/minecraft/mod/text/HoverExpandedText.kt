@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.literalText
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.ComponentContents
 import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.MutableComponent
-import net.minecraft.network.chat.contents.LiteralContents
 
 /**
  * 依指令來源調整訊息：玩家照原樣收到滑鼠提示；伺服器主控台、RCON 與指令方塊看不到提示，改收到 [withHoverTextExpanded] 的結果。
@@ -90,8 +90,9 @@ private fun withoutOwnContents(node: Component): MutableComponent = Component.em
  */
 private fun indented(node: Component): MutableComponent {
     val contents = node.contents
-    val copy = if (contents is LiteralContents) {
-        Component.literal(contents.text().replace("\n", "\n$HOVER_INDENT")).setStyle(node.style)
+    val text = literalText(contents)
+    val copy = if (text != null) {
+        Component.literal(text.replace("\n", "\n$HOVER_INDENT")).setStyle(node.style)
     } else {
         MutableComponent.create(contents).setStyle(node.style)
     }

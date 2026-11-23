@@ -16,7 +16,7 @@ class CharacterPreviewProjectionTest {
         val matrices = PoseStack()
         matrices.translate(0.0, 0.0, -11000.0)
         val projection = Matrix4f().setOrtho(0f, 320f, 180f, 0f, 1000f, 21000f)
-        CharacterPreviewRenderState.ModelViewScope(matrices).use {
+        CharacterPreviewRenderState.ModelViewScope(push = { matrices.pushPose() }, pop = { matrices.popPose() }).use {
             val point = projection.mul(matrices.last().pose()).transformProject(Vector3f(160f, 90f, 50f))
             assertTrue(point.z in -1f..1f, "The production scope must retain GUI depth translation")
         }
@@ -28,7 +28,7 @@ class CharacterPreviewProjectionTest {
         val matrices = PoseStack()
         matrices.translate(0.0, 0.0, -11000.0)
         val original = Matrix4f(matrices.last().pose())
-        CharacterPreviewRenderState.ModelViewScope(matrices).use {
+        CharacterPreviewRenderState.ModelViewScope(push = { matrices.pushPose() }, pop = { matrices.popPose() }).use {
             matrices.setIdentity()
             val projection = Matrix4f().setOrtho(0f, 128f, 128f, 0f, -1000f, 1000f)
             val point = projection.mul(matrices.last().pose()).transformProject(Vector3f(64f, 64f, 50f))
@@ -44,7 +44,7 @@ class CharacterPreviewProjectionTest {
         matrices.translate(0.0, 0.0, -11000.0)
         val original = Matrix4f(matrices.last().pose())
         assertFailsWith<IllegalStateException> {
-            CharacterPreviewRenderState.ModelViewScope(matrices).use {
+            CharacterPreviewRenderState.ModelViewScope(push = { matrices.pushPose() }, pop = { matrices.popPose() }).use {
                 matrices.setIdentity()
                 error("Simulated renderer failure")
             }

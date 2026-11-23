@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScreenR
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScrollState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ScrollbarLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.VerticalScrollbar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.tickCursor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.ExcludedParticipantIdentity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import net.minecraft.client.gui.GuiGraphics
@@ -174,7 +175,7 @@ internal class RoomExcludedParticipantsScreen(
     }
 
     override fun tick() {
-        search.tick()
+        search.tickCursor()
         val room = readRoom()
         if (room == null || !room.isHost) {
             onClose()
