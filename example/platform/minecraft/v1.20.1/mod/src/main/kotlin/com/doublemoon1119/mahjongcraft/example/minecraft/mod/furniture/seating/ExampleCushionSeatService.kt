@@ -1,0 +1,129 @@
+package com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.seating
+
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.entity.ExampleSeatGeometry
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.seating.ExampleFurnitureSeatRules
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.seating.ExampleSeatAttempt
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.ExampleFurnitureEntities
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.entity.ExampleCushionEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatState
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.phys.AABB
+
+/** 真人手動入座、人偶建立與座位 provider 共用的坐墊服務。 */
+internal object ExampleCushionSeatService {
+    /**
+     * 依實際坐墊檢查載入、占用及身體空間，不移動家具。
+     *
+     * @param world 乘坐世界。
+     * @param cushion 座位本體。
+     * @param rider 要入座的乘坐者。
+     * @return 本格座位目前狀態。
+     */
+    fun inspect(
+        world: ServerLevel,
+        cushion: ExampleCushionEntity,
+        rider: Entity,
+    ): SeatState {
+        if (rider.level() !== world || cushion.level() !== world || cushion.isRemoved || !ExampleFurnitureEntities.isRegistered()) return SeatState.INVALID
+        if (!world.chunkSource.hasChunk(cushion.blockX shr 4, cushion.blockZ shr 4)) return SeatState.INVALID
+        if (rider.vehicle === cushion) return SeatState.SEATED
+        val occupancy = ExampleFurnitureSeatRules.occupancyState(rider.isPassenger, cushion.isVehicle)
+        if (occupancy != SeatState.AVAILABLE) return occupancy
+        val body = AABB(
+            cushion.x - rider.bbWidth / 2.0,
+            cushion.y + 0.2,
+            cushion.z - rider.bbWidth / 2.0,
+            cushion.x + rider.bbWidth / 2.0,
+            ExampleSeatGeometry.cushionFeetY(cushion.y) + rider.bbHeight,
+            cushion.z + rider.bbWidth / 2.0,
+        )
+        return if (ExampleFurnitureSpace.isClear(
+                world = world,
+                actor = rider,
+                box = body,
+                ignoredSeat = cushion,
+            )
+        ) {
+            SeatState.AVAILABLE
+        } else {
+            SeatState.BLOCKED
+        }
+    }
+
+    /**
+     * 掛載後定位並核對，失敗時還原乘坐者，永不刪除既有坐墊。
+     *
+     * @param world 乘坐世界。
+     * @param cushion 座位本體。
+     * @param rider 要入座的乘坐者。
+     * @param yaw 本次面向。
+     * @return 入座成功時為 true。
+     */
+    fun sit(
+        world: ServerLevel,
+        cushion: ExampleCushionEntity,
+        rider: Entity,
+        yaw: Float,
+    ): Boolean {
+        if (inspect(
+                world = world,
+                cushion = cushion,
+                rider = rider,
+            ) != SeatState.AVAILABLE
+        ) {
+            return false
+        }
+        val original = rider.position()
+        val originalYaw = rider.yRot
+        val pitch = rider.xRot
+        return ExampleSeatAttempt.run(
+            create = { cushion },
+            spawn = { true },
+            mount = { rider.startRiding(it, true) },
+            finish = {
+                it.positionRider(rider)
+                if (rider is ServerPlayer) {
+                    rider.connection.teleport(
+                        rider.x,
+                        rider.y,
+                        rider.z,
+                        yaw,
+                        pitch,
+                    )
+                } else {
+                    rider.moveTo(
+                        rider.x,
+                        rider.y,
+                        rider.z,
+                        yaw,
+                        pitch,
+                    )
+                }
+                rider.vehicle === it
+            },
+            restore = {
+                if (rider.vehicle === cushion) rider.stopRiding()
+                if (rider is ServerPlayer) {
+                    rider.connection.teleport(
+                        original.x,
+                        original.y,
+                        original.z,
+                        originalYaw,
+                        pitch,
+                    )
+                } else {
+                    rider.moveTo(
+                        original.x,
+                        original.y,
+                        original.z,
+                        originalYaw,
+                        pitch,
+                    )
+                }
+            },
+            discard = {},
+        )
+    }
+}

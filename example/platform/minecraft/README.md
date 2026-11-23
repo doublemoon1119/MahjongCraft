@@ -227,9 +227,9 @@ Two matching copies of the same rank count once. The win panel lists the bonus p
 The shared [prop describer](common/src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/presentation/ExamplePairingTableProps.kt)
 reads the saved selection. It also requests one custom gold hand-reveal token per revealed player.
 Both kinds use the same central layout. The public tile kind comes from MahjongCraft; the token's
-native kind, entity and renderer belong entirely to the example adapter. For instance, the current
-Fabric adapter registers them in
-[`ExampleNativeMahjongExtension`](v1.20.1/fabric/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleNativeMahjongExtension.kt).
+native kind, entity and renderer belong entirely to the example. The Minecraft 1.20.1 example registers
+them in
+[`ExampleNativeMahjongExtension`](v1.20.1/mod/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/mod/ExampleNativeMahjongExtension.kt).
 
 After building, check the following in a disposable example world:
 
