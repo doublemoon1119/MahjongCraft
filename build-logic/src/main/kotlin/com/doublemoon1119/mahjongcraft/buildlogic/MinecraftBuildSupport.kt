@@ -40,6 +40,14 @@ fun Project.includeResourcesOf(projectPath: String, sourceDirectory: String) {
     }
 }
 
+/** 加入 Kotlin for Forge 作者自己的 Maven 倉庫；它只提供 Kotlin for Forge 的套件，其他套件不會向它查詢。 */
+fun RepositoryHandler.kotlinForForge() {
+    exclusiveContent {
+        forRepository { maven("https://thedarkcolour.github.io/KotlinForForge/") { name = "KotlinForForge" } }
+        filter { includeGroup("thedarkcolour") }
+    }
+}
+
 /** 加入 Modrinth 的 Maven 倉庫；它只提供 Modrinth 的套件，其他套件不會向它查詢。 */
 fun RepositoryHandler.modrinth() {
     exclusiveContent {

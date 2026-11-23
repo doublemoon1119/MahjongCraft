@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.table
 
 import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.ExampleFurnitureIds
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.table.ExampleFlatTableDesign
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.registry.ExampleBlockEntityTypes
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.registry.ExampleRegistrar
 import net.minecraft.core.registries.Registries
 import net.minecraft.resources.ResourceLocation
@@ -42,7 +43,7 @@ object ExampleTables {
         registrar.register(
             registry = Registries.BLOCK_ENTITY_TYPE,
             id = ResourceLocation(ExampleFurnitureIds.TABLE_BLOCK_ENTITY),
-            factory = { BlockEntityType.Builder.of(::ExampleTableBlockEntity, *tables.toTypedArray()).build(null) },
+            factory = { ExampleBlockEntityTypes.create(::ExampleTableBlockEntity, *tables.toTypedArray()) },
             onRegistered = { blockEntityType = it },
         )
     }

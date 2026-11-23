@@ -12,6 +12,8 @@ version = libs.versions.minecraft.mod.version.get()
 legacyForge {
     // 原版模式：只提供套用 Mojang 名稱的原版 Minecraft，不含任何載入器。
     mcpVersion = mc1201.versions.minecraft.get()
+    // 範例一定與本體一起執行，本體開放的原版類別與成員在執行時都可使用；以本體的 access transformer 編譯，與本體的程式相同。
+    accessTransformers.from(project(":minecraft_v1.20.1_mod").file("src/main/resources/META-INF/accesstransformer.cfg"))
     // 測試同樣以原版 Minecraft 編譯與執行。
     addModdingDependenciesTo(sourceSets.test.get())
 }

@@ -40,6 +40,12 @@ modules = [
     "platform/minecraft/v1.20.1/mod",
     "platform/minecraft/v1.20.1/forge",
 ]
+example-modules = [
+    "example/mahjong-extension",
+    "example/platform/minecraft/common",
+    "example/platform/minecraft/v1.20.1/mod",
+    "example/platform/minecraft/v1.20.1/forge",
+]
 
 [targets.attributes]
 minecraft-version = "v1.20.1"

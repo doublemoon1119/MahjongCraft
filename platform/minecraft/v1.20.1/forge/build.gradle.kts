@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.buildlogic.VerifyEmbeddedLibrariesTask
 import com.doublemoon1119.mahjongcraft.buildlogic.VerifyNoSplitPackagesTask
 import com.doublemoon1119.mahjongcraft.buildlogic.includeResourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
+import com.doublemoon1119.mahjongcraft.buildlogic.kotlinForForge
 import com.doublemoon1119.mahjongcraft.buildlogic.modrinth
 import net.neoforged.moddevgradle.tasks.JarJar
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
@@ -34,11 +35,8 @@ configure<MinecraftModPackagingExtension> {
 }
 
 repositories {
-    // Kotlin for Forge 只發布在作者自己的 Maven 倉庫；這個倉庫只提供 Kotlin for Forge 的套件。
-    exclusiveContent {
-        forRepository { maven("https://thedarkcolour.github.io/KotlinForForge/") { name = "KotlinForForge" } }
-        filter { includeGroup("thedarkcolour") }
-    }
+    // Kotlin for Forge 只發布在作者自己的 Maven 倉庫。
+    kotlinForForge()
     // Oculus 只發布在 Modrinth 的 Maven 倉庫。
     modrinth()
 }

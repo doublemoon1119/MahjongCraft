@@ -10,6 +10,9 @@ import net.minecraft.world.item.CreativeModeTab
  *
  * 範例要登記的內容只在共用程式中列一次。有的載入器在呼叫當下就寫入登記表，有的要等到各登記表輪到時才寫入，
  * 因此登記時交出建立物件的函式，寫入後再以 [register] 的 `onRegistered` 交回物件。
+ *
+ * 這個介面屬於範例，不是 MahjongCraft 的 API，只為了讓兩個載入器的範例共用同一份內容清單。只支援一個載入器的 mod
+ * 直接用該載入器平常的方式登記即可，例如 Fabric 的 `Registry.register` 或 Forge 的 `DeferredRegister`。
  */
 interface ExampleRegistrar {
     /**

@@ -16,6 +16,10 @@ extension registers preview factories. The dedicated server does not load either
 Seat providers are registered through the extension callback without reading native content during
 construction. World lookup and seating occur only when the provider is used.
 
+The [build script](build.gradle.kts) depends on MahjongCraft's projects in this repository and loads
+them as a separate mod in the development runs. A separate mod depends on a MahjongCraft release
+instead and does not need that setup.
+
 The block chair uses a temporary invisible support. Empty leftover supports do not occupy a seat:
 queries leave them alone, and the seating service cleans its own empty supports before creating one.
 Supports with passengers are preserved. The cushion is
