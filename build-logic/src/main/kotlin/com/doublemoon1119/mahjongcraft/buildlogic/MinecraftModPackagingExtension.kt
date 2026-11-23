@@ -18,6 +18,13 @@ abstract class MinecraftModPackagingExtension {
     /** 複製至 mod 自己的 assets 目錄、命名為 icon.png 的來源圖示。 */
     abstract val icon: RegularFileProperty
 
+    /**
+     * mod 執行時所在的載入器，寫進 metadata 的版本，例如 `fabric`；預設為模組資料夾的名稱。
+     *
+     * 開發用的附屬模組放在另一個資料夾，例如 `forge-debug`，須設成它實際所在的載入器，版本才會與本體相同。
+     */
+    abstract val loader: Property<String>
+
     /** JAR 名稱中版本號之前的部分。 */
     abstract val archiveBaseName: Property<String>
 

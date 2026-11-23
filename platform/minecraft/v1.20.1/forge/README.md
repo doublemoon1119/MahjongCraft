@@ -85,4 +85,7 @@ under this module.
 ./gradlew :minecraft_v1.20.1_forge:runServer "-PmahjongcraftTarget=minecraft-v1.20.1-forge"
 ```
 
+Development runs also load the [debug tools module](../forge-debug/README.md), which provides the
+`/mahjongcraft debug` commands; the packaged mod does not contain it.
+
 Client and dedicated-server runs use `run/client` and `run/server` under this module.

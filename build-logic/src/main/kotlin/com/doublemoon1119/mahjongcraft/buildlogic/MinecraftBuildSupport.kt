@@ -28,6 +28,21 @@ fun Project.includeSourcesOf(projectPath: String, sourceDirectory: String = "src
 }
 
 /**
+ * 把另一個專案中只給其他模組使用的測試原始碼，加入這個模組的測試一起編譯與執行。
+ *
+ * 用於各載入器共用、但需要載入器提供部分內容才能執行的測試；提供原始碼的專案自己不編譯它們。
+ *
+ * @param projectPath 提供測試原始碼的專案路徑。
+ * @param sourceDirectory 相對於該專案的 Kotlin 原始碼資料夾。
+ */
+fun Project.includeTestSourcesOf(projectPath: String, sourceDirectory: String) {
+    val directory = project(projectPath).projectDir.resolve(sourceDirectory)
+    extensions.getByType<KotlinJvmProjectExtension>().sourceSets.named("test").configure {
+        kotlin.srcDir(directory)
+    }
+}
+
+/**
  * 把另一個專案的資源一起打包進這個模組，例如跨版本共用模組的材質與翻譯。
  *
  * @param projectPath 提供資源的專案路徑。

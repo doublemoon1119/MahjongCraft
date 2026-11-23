@@ -37,8 +37,11 @@ java-toolchain = 17
 java-release = 17
 modules = [
     "platform/minecraft/common",
+    "platform/minecraft/common-debug",
     "platform/minecraft/v1.20.1/mod",
+    "platform/minecraft/v1.20.1/mod-debug",
     "platform/minecraft/v1.20.1/forge",
+    "platform/minecraft/v1.20.1/forge-debug",
 ]
 example-modules = [
     "example/mahjong-extension",

@@ -40,6 +40,19 @@ class MinecraftModPackagingTest {
         assertTrue(root.resolve("platform/v1.20.1/fabric/build/libs/mahjongcraft-fabric-1.20.1-0.0.0-dev+a0f6307.jar").isFile)
     }
 
+    /** 指定載入器時，模組 metadata 的版本改用指定的載入器，產出檔名仍沿用模組資料夾的名稱。 */
+    @Test
+    fun `loader override changes the mod version but not the archive name`() = withFixture { root ->
+        prepareFixture(root)
+        root.resolve("platform/v1.20.1/fabric/build.gradle").appendText("\nminecraftModPackaging {\n    loader = \"quilt\"\n}\n")
+
+        runner(root, ":formal:processResources", ":formal:jar").build()
+
+        val metadata = root.resolve("platform/v1.20.1/fabric/build/resources/main/fabric.mod.json").readText()
+        assertTrue(metadata.contains("\"version\": \"0.0.0-dev+1.20.1-quilt\""), metadata)
+        assertTrue(root.resolve("platform/v1.20.1/fabric/build/libs/mahjongcraft-fabric-1.20.1-0.0.0-dev.jar").isFile)
+    }
+
     /** 建置資訊不符合 SemVer 時建置失敗，不產出版本字串錯誤的模組。 */
     @Test
     fun `invalid build metadata fails the build`() = withFixture { root ->

@@ -71,8 +71,11 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
 
 - A loader module's metadata version is its release train version with the Minecraft version and loader as
   SemVer build metadata, for example `0.4.0-SNAPSHOT+1.20.1-fabric`. Both come from the module's directory,
-  as its JAR name `mahjongcraft-fabric-1.20.1-<version>.jar` does. Build metadata does not affect version
-  ordering, so dependency checks compare only the release train version.
+  as its JAR name `mahjongcraft-fabric-1.20.1-<version>.jar` does.
+- Loaders compare this version differently: some ignore the build metadata, while others compare the whole
+  string, so a mod that requires the same version as MahjongCraft must produce exactly the same version. A
+  module in another directory, such as a debug module in `forge-debug`, sets its packaging's `loader` to the
+  loader it runs on. Its JAR name keeps the directory name.
 - A loader module's mod JAR is distributable unless its packaging sets `distributable` to `false`, as
   development-only modules and examples do. Distributable mods are what `collectCiArtifacts` gathers for CI:
   the remapped JAR for Fabric Loom modules, otherwise the plain JAR.

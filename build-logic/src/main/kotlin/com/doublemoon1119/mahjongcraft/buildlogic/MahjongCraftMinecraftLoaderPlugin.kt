@@ -32,12 +32,15 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
         packaging.distributable.convention(true)
         extensions.create("minecraftModLibraries", MinecraftModLibrariesExtension::class.java, this)
         isolateTestRunDirectory()
+        packaging.loader.convention(platformLoader())
         packaging.archiveBaseName.convention("$rootProjectId-${platformLoader()}-${platformMinecraftVersion()}")
         extensions.configure<BasePluginExtension> {
             archivesName.set(packaging.archiveBaseName)
         }
         val buildMetadata = buildMetadata()
-        val modVersion = buildMetadata.map { metadata -> "$version+${platformMinecraftVersion()}-${platformLoader()}${metadata.map { ".$it" }.orElse("")}" }
+        val modVersion = buildMetadata.zip(packaging.loader) { metadata, loader ->
+            "$version+${platformMinecraftVersion()}-$loader${metadata.map { ".$it" }.orElse("")}"
+        }
         tasks.withType<AbstractArchiveTask>().configureEach {
             archiveVersion.set(buildMetadata.map { metadata -> "$version${metadata.map { "+$it" }.orElse("")}" })
         }
@@ -99,9 +102,10 @@ private fun Project.contributeCiArtifact(packaging: MinecraftModPackagingExtensi
 }
 
 /**
- * 模組目錄名稱代表的載入器，例如 `platform/minecraft/v1.20.1/fabric` 的 `fabric`。
+ * 模組目錄的名稱，例如 `platform/minecraft/v1.20.1/fabric` 的 `fabric`；作為產物名稱的一部分，也是
+ * [MinecraftModPackagingExtension.loader] 的預設值。
  *
- * @return 載入器名稱。
+ * @return 模組目錄的名稱。
  */
 private fun Project.platformLoader(): String = projectDir.name
 

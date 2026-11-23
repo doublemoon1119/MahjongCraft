@@ -163,11 +163,18 @@ val unpackDevLibraries = tasks.register<Sync>("unpackDevLibraries") {
 val devLibrariesSourceSet = sourceSets.create("devLibraries") {
     output.dir(mapOf("builtBy" to unpackDevLibraries), layout.buildDirectory.dir("devLibraries"))
 }
+// 開發專用的 debug 工具只在開發執行時以它自己的輸出載入，不進入測試也不打包；本體的程式從不參照 debug 類別。
+evaluationDependsOn(":minecraft_v1.20.1_forge-debug")
+val debugSourceSets = project(":minecraft_v1.20.1_forge-debug").extensions.getByType<SourceSetContainer>()
 legacyForge {
     mods {
         create("mahjongcraft") {
             sourceSet(sourceSets.main.get())
             sourceSet(devLibrariesSourceSet)
+        }
+        // debug 模組整理過的輸出，不含與本體同名的套件。
+        create("mahjongcraft_debug") {
+            sourceSet(debugSourceSets.getByName("devMod"))
         }
     }
     // 單元測試只測不需要啟動遊戲的程式；測試也要對 Minecraft 與 Forge 的類別編譯。

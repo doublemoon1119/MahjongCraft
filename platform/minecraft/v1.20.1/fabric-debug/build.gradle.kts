@@ -1,4 +1,5 @@
 import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
+import com.doublemoon1119.mahjongcraft.buildlogic.includeTestSourcesOf
 
 plugins {
     alias(libs.plugins.mahjongcraft.minecraft.loader)
@@ -13,6 +14,8 @@ version = libs.versions.minecraft.mod.version.get()
 
 configure<com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtension> {
     modId.set("mahjongcraft_debug")
+    // 版本與本體相同；fabric.mod.json 要求同一版本的本體。
+    loader.set("fabric")
     // 只在開發時使用，CI 不收集它的 JAR。
     distributable.set(false)
     displayName.set("MahjongCraft Debug Tools")
@@ -28,6 +31,8 @@ configure<com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtens
 // 重新映射並打包。
 includeSourcesOf(":minecraft_common-debug", "src/jvmMain")
 includeSourcesOf(":minecraft_v1.20.1_mod-debug")
+// 各載入器共用的 debug 組裝測試；本模組提供 Fabric 的服務組合。
+includeTestSourcesOf(":minecraft_v1.20.1_mod-debug", "src/loaderTest/kotlin")
 
 dependencies {
     minecraft(mc1201.minecraft)
