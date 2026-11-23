@@ -65,6 +65,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.Mahj
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.MatchSettlementPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.PlayerPortraitRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.PublicPlayerIndicatorTextResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SceneEntityTranslucency
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.TablePropTileEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.WinCelebrationEffectEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.WinCelebrationShowcaseEntityRenderer
@@ -133,6 +134,7 @@ class MahjongCraftClientBootstrap(
 
     /** 註冊所有 client 內容並掛上客戶端事件。 */
     fun initialize() {
+        SceneEntityTranslucency.registerShader(events)
         val characterPreviews = koin.get<ClientAiCharacterPreviews>()
         characterPreviews.initialize(events)
         koin.get<ClientTablePropPreviews>().initialize(events)

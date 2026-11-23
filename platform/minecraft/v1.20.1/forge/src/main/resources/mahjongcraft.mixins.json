@@ -5,10 +5,12 @@
   "compatibilityLevel": "JAVA_17",
   "refmap": "mahjongcraft.refmap.json",
   "client": [
+    "CapeLayerMixin",
     "GuiMixin",
     "GameRendererMixin",
     "EntityRenderDispatcherMixin",
-    "LivingEntityRendererMixin"
+    "LivingEntityRendererMixin",
+    "PlayerModelAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

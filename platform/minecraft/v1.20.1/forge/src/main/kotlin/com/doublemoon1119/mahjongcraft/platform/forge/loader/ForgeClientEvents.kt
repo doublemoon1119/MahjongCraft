@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientComma
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.WorldRenderFinishedHook
 import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.blaze3d.vertex.VertexFormat
 import net.minecraft.client.Camera
 import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
@@ -11,6 +12,7 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.client.player.LocalPlayer
 import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.ShaderInstance
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.network.protocol.game.ServerboundInteractPacket
 import net.minecraft.resources.ResourceLocation
@@ -28,6 +30,7 @@ import net.minecraftforge.client.event.RegisterClientCommandsEvent
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent
+import net.minecraftforge.client.event.RegisterShadersEvent
 import net.minecraftforge.client.event.RenderLevelStageEvent
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay
 import net.minecraftforge.common.MinecraftForge
@@ -37,11 +40,12 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent
 import net.minecraftforge.eventbus.api.Event
 import net.minecraftforge.eventbus.api.EventPriority
 import net.minecraftforge.eventbus.api.IEventBus
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * 以 Forge 的事件實作 [ClientEvents]。
  *
- * 按鍵、資源重載監聽與畫面疊加層要在 Forge 的登記事件中加入，因此先保留，事件發生時才登記；世界畫完的時間點由共用的
+ * 按鍵、資源重載監聽、畫面疊加層與自訂著色器要在 Forge 的登記事件中加入，因此先保留，事件發生時才登記；世界畫完的時間點由共用的
  * mixin 經 [WorldRenderFinishedHook] 提供。
  */
 object ForgeClientEvents : ClientEvents {
@@ -50,6 +54,18 @@ object ForgeClientEvents : ClientEvents {
 
     /** 等待 Forge 資源重載監聽登記事件的處理。 */
     private val pendingReloadListeners = mutableListOf<(ResourceManager) -> Unit>()
+
+    /** 每次 Forge 著色器登記事件都要建立的自訂核心著色器。 */
+    private val coreShaders = CopyOnWriteArrayList<CoreShader>()
+
+    /**
+     * 一個自訂核心著色器的登記內容。
+     *
+     * @property id 著色器的識別碼。
+     * @property format 著色器接收的頂點格式。
+     * @property onLoaded 收到建立好的著色器。
+     */
+    private class CoreShader(val id: ResourceLocation, val format: VertexFormat, val onLoaded: (ShaderInstance) -> Unit)
 
     /** 等待 Forge 畫面疊加層登記事件、要畫在聊天欄之前的 HUD。 */
     private val pendingHudBeforeChat = mutableListOf<(GuiGraphics) -> Unit>()
@@ -69,6 +85,12 @@ object ForgeClientEvents : ClientEvents {
                 event.registerBelow(VanillaGuiOverlay.CHAT_PANEL.id(), "hud_before_chat_$index") { _, graphics, _, _, _ -> listener(graphics) }
             }
             pendingHudBeforeChat.clear()
+        }
+        // 每次資源重新載入都會重新建立著色器，登記內容因此保留，不在登記後清除。
+        modBus.addListener(EventPriority.NORMAL, false, RegisterShadersEvent::class.java) { event ->
+            coreShaders.forEach { shader ->
+                event.registerShader(ShaderInstance(event.resourceProvider, shader.id, shader.format), shader.onLoaded)
+            }
         }
         modBus.addListener(EventPriority.NORMAL, false, RegisterClientReloadListenersEvent::class.java) { event ->
             pendingReloadListeners.forEach { listener -> event.registerReloadListener(ResourceManagerReloadListener { listener(it) }) }
@@ -160,6 +182,10 @@ object ForgeClientEvents : ClientEvents {
     }
 
     /** Forge 的資源重載監聽不需要識別碼，[id] 不使用。 */
+    override fun onRegisterCoreShader(id: ResourceLocation, format: VertexFormat, onLoaded: (ShaderInstance) -> Unit) {
+        coreShaders += CoreShader(id, format, onLoaded)
+    }
+
     override fun onClientResourceReload(id: ResourceLocation, listener: (ResourceManager) -> Unit) {
         pendingReloadListeners += listener
     }

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader
 
 import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.blaze3d.vertex.VertexFormat
 import net.minecraft.client.Camera
 import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
@@ -8,6 +9,7 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.client.player.LocalPlayer
 import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.ShaderInstance
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.packs.resources.ResourceManager
 import net.minecraft.world.InteractionHand
@@ -111,6 +113,17 @@ interface ClientEvents {
      * @param listener 收到重新載入後的資源管理器。
      */
     fun onClientResourceReload(id: ResourceLocation, listener: (ResourceManager) -> Unit)
+
+    /**
+     * 登記一個自訂核心著色器；每次用戶端資源重新載入、原版重新建立著色器時都會重新建立並交給 [onLoaded]。
+     *
+     * 著色器設定檔位於 `assets/<命名空間>/shaders/core/<路徑>.json`，其中的頂點與片段程式可以用帶命名空間的名稱指定。
+     *
+     * @param id 著色器的識別碼。
+     * @param format 著色器接收的頂點格式。
+     * @param onLoaded 收到建立好的著色器。
+     */
+    fun onRegisterCoreShader(id: ResourceLocation, format: VertexFormat, onLoaded: (ShaderInstance) -> Unit)
 
     /**
      * 登記一個按鍵綁定，讓它出現在按鍵設定中並由用戶端更新狀態。
