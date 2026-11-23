@@ -11,6 +11,7 @@
     "MahjongTileItemMixin"
   ],
   "client": [
+    "ClientPacketListenerMixin",
     "ModelBakeryMixin"
   ],
   "injectors": {

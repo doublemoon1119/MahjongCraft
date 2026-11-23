@@ -68,6 +68,9 @@ mixins:
   chunk records a block entity, and after a block a player breaks is actually removed.
 - The Mahjong tile item supplies its programmatic renderer, because Forge asks only the item's own class.
 - Model loading asks the registered model loadings first, so tile variants without a model file still load.
+- Commands run by clicking a chat message also go to Forge's client command handler first. Forge does this
+  only for typed commands, so a click on a link such as a match result's details would otherwise send a
+  client-only command to the server.
 
 The shared mixins use MixinExtras, which Forge 1.20.1 does not ship; the mod embeds it with jar-in-jar.
 ModDevGradle does not add `MixinConfigs` to the JAR manifest, so the `jar` task adds it; production Forge
