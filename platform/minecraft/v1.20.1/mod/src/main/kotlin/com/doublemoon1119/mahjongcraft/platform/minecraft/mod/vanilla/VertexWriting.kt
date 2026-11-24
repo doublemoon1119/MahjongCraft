@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla
 
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
+import net.minecraft.client.renderer.block.model.BakedQuad
 import org.joml.Matrix4f
 
 // 寫頂點的方法依新版 Minecraft 的名稱提供；新版本直接使用原版的同名方法。每個頂點寫完後呼叫 [finishVertex]。
@@ -88,4 +89,29 @@ fun VertexConsumer.setNormal(x: Float, y: Float, z: Float): VertexConsumer = nor
 /** 結束目前的頂點；寫完一個頂點的全部資料後呼叫。 */
 fun VertexConsumer.finishVertex() {
     endVertex()
+}
+
+/**
+ * 把一個已烘焙的模型面整批寫入，名稱與參數與新版 Minecraft 相同。這個版本的原版方法沒有不透明度，[alpha] 不會套用。
+ *
+ * @param pose 目前的姿勢。
+ * @param quad 要寫入的模型面。
+ * @param red 乘上去的紅色，0 到 1。
+ * @param green 乘上去的綠色，0 到 1。
+ * @param blue 乘上去的藍色，0 到 1。
+ * @param alpha 乘上去的不透明度，0 到 1。
+ * @param light 光照。
+ * @param overlay 疊加色座標。
+ */
+fun VertexConsumer.putBulkData(
+    pose: PoseStack.Pose,
+    quad: BakedQuad,
+    red: Float,
+    green: Float,
+    blue: Float,
+    @Suppress("UNUSED_PARAMETER") alpha: Float,
+    light: Int,
+    overlay: Int,
+) {
+    putBulkData(pose, quad, red, green, blue, light, overlay)
 }

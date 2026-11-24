@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinCelebrat
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinCelebrationShowcaseEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.render
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setLight
@@ -45,6 +46,7 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider
 import net.minecraft.client.renderer.texture.OverlayTexture
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.util.FastColor
 import net.minecraft.world.inventory.InventoryMenu
 import net.minecraft.world.item.ItemDisplayContext
 import net.minecraft.world.item.ItemStack
@@ -55,6 +57,7 @@ import org.joml.Quaternionf
 import org.joml.Vector3f
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.math.sqrt
 
@@ -618,7 +621,7 @@ class WinCelebrationShowcaseEntityRenderer(
         matrices.mulPose(Axis.ZP.rotationDegrees(180.0f))
         matrices.scale((ELYTRA_SCALE * scale).toFloat(), (ELYTRA_SCALE * scale).toFloat(), (ELYTRA_SCALE * scale).toFloat())
         val buffer = consumers.getBuffer(RenderType.entityTranslucent(ELYTRA_TEXTURE))
-        elytraRoot.render(matrices, buffer, light, OverlayTexture.NO_OVERLAY, 1.0f, 1.0f, 1.0f, (appearance * visibility).toFloat())
+        elytraRoot.render(matrices, buffer, light, OverlayTexture.NO_OVERLAY, FastColor.ARGB32.color((appearance * visibility * 255).roundToInt().coerceIn(0, 255), 255, 255, 255))
         matrices.popPose()
     }
 

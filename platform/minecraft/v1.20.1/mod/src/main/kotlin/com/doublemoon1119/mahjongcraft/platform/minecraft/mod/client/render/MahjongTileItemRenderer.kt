@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ItemStackRe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.putBulkData
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setLight
@@ -217,9 +218,9 @@ object MahjongTileItemRenderer : ItemStackRenderer {
         val registry = GlobalContext.get().get<MinecraftTileAssetRegistry>()
         val appearance = effectiveAppearance(registry, assetKey, appearanceId)
         val resource = registry.findResources(assetKey)
-        val textureId = resource?.textureId?.let(::ResourceLocation)
+        val textureId = resource?.textureId?.let(::resourceId)
             ?: resourceId(tileTextureResourceId(assetKey, registry))
-        val coverTextureId = appearance?.coverTextureId?.let(::ResourceLocation)
+        val coverTextureId = appearance?.coverTextureId?.let(::resourceId)
             ?: resourceId(MinecraftModMetadata.MOD_ID, tileTextureAssetPath("cover"))
         val bakedModel = if (appearance != null) {
             findBakedModel(FixedMahjongTileModelPreparedData.syntheticModelId(appearance.id, assetKey))
@@ -375,7 +376,7 @@ object MahjongTileItemRenderer : ItemStackRenderer {
         val buffer = tileBuffer(vertexConsumers, BLOCK_ATLAS_TEXTURE, translucent, alpha)
         val entry = matrices.last()
         model.getQuads(null, null, quadRandom).forEach { quad ->
-            buffer.putBulkData(entry, quad, 1.0f, 1.0f, 1.0f, light, overlay)
+            buffer.putBulkData(entry, quad, 1.0f, 1.0f, 1.0f, 1.0f, light, overlay)
         }
     }
 

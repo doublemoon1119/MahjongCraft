@@ -14,6 +14,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongPlay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongRoundInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.begin
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.buildOrThrow
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.framePartialTick
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.mulPose
@@ -470,8 +472,7 @@ internal class GuideSceneRenderer : AutoCloseable {
         RenderSystem.disableDepthTest()
         RenderSystem.disableCull()
         RenderSystem.setShader(GameRenderer::getPositionColorShader)
-        val buffer = Tesselator.getInstance().builder
-        buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR)
+        val buffer = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR)
         val grow = Vector3f(expansion, expansion, expansion)
         outlined.forEach { (tile, color) ->
             addBox(
@@ -482,7 +483,7 @@ internal class GuideSceneRenderer : AutoCloseable {
                 color = color,
             )
         }
-        BufferUploader.drawWithShader(buffer.end())
+        BufferUploader.drawWithShader(buffer.buildOrThrow())
         RenderSystem.enableCull()
         RenderSystem.enableDepthTest()
         val consumers = client.renderBuffers().bufferSource()

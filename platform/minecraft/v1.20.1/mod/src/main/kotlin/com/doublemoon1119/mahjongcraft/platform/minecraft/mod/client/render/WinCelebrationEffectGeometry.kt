@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.renderToBuffer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.mojang.blaze3d.vertex.PoseStack
@@ -132,14 +133,11 @@ class WinCelebrationEffectGeometry(private val tridentModel: TridentModel) {
             true,
         )
         tridentModel.renderToBuffer(
-            matrices,
-            buffer,
-            light,
-            OverlayTexture.NO_OVERLAY,
-            1.0f,
-            1.0f,
-            1.0f,
-            1.0f,
+            pose = matrices,
+            buffer = buffer,
+            light = light,
+            overlay = OverlayTexture.NO_OVERLAY,
+            color = OPAQUE_WHITE,
         )
         matrices.popPose()
     }
@@ -738,3 +736,6 @@ class WinCelebrationEffectGeometry(private val tridentModel: TridentModel) {
         private const val GLOW_BLUE: Int = 62
     }
 }
+
+/** 不改變模型顏色的不透明白色 ARGB。 */
+private const val OPAQUE_WHITE: Int = -1

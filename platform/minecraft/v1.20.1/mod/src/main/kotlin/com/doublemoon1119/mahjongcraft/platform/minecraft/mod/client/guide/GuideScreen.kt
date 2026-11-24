@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.scene.GuideViewer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.toNameText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.gameProfile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
@@ -235,7 +236,7 @@ internal class GuideScreen(
      * @return 看著畫面的玩家。
      */
     private fun viewer(): GuideViewer {
-        val profile = Minecraft.getInstance().user.gameProfile
+        val profile = Minecraft.getInstance().gameProfile
         return GuideViewer(id = profile.id.toKotlinUuid(), name = profile.name)
     }
 

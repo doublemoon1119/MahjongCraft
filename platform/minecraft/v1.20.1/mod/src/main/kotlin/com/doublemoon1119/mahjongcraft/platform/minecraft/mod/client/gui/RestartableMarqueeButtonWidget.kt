@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.fitClientText
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
-import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner
 import net.minecraft.network.chat.Component
 import kotlin.time.Duration
@@ -30,7 +29,7 @@ internal class RestartableMarqueeButtonWidget private constructor(
     height: Int,
     message: Component,
     onPress: OnPress,
-) : Button(x, y, width, height, message, onPress, DEFAULT_NARRATION) {
+) : MahjongButton(x, y, width, height, message, onPress, DEFAULT_NARRATION) {
     /** 是否以白色外框標示選中狀態。 */
     var outlined: Boolean = false
 
@@ -151,8 +150,8 @@ internal class RestartableMarqueeButtonWidget private constructor(
         context.disableScissor()
     }
 
-    override fun createTooltipPositioner(): ClientTooltipPositioner = ScreenFittingTooltipPositioner(
-        base = super.createTooltipPositioner(),
+    override fun adjustTooltipPositioner(base: ClientTooltipPositioner): ClientTooltipPositioner = ScreenFittingTooltipPositioner(
+        base = base,
         shownSince = tooltipStartedAt,
     )
 
