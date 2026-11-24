@@ -1,12 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.CustomSkinPlayer
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.SkinTextures
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.RoomScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import com.mojang.authlib.GameProfile
 import net.minecraft.client.multiplayer.ClientLevel
-import net.minecraft.client.player.RemotePlayer
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 
@@ -20,12 +21,8 @@ import net.minecraft.resources.ResourceLocation
  * @param world 此替身所屬的 client world。
  * @param profile 與原玩家關聯的 profile；此類別不使用其中的皮膚或名稱顯示。
  */
-class OfflinePlayerPreviewEntity(world: ClientLevel, profile: GameProfile) : RemotePlayer(world, profile) {
-    override fun isSkinLoaded(): Boolean = true
-
-    override fun getSkinTextureLocation(): ResourceLocation = TEXTURE
-
-    override fun getModelName(): String = "default"
+class OfflinePlayerPreviewEntity(world: ClientLevel, profile: GameProfile) : CustomSkinPlayer(world, profile) {
+    override fun customSkin(): SkinTextures = SkinTextures(texture = TEXTURE, modelName = SkinTextures.DEFAULT_MODEL, cape = null)
 
     override fun getName(): Component = Component.translatable(MinecraftRoomScreenKeys.OFFLINE_PLAYER)
 

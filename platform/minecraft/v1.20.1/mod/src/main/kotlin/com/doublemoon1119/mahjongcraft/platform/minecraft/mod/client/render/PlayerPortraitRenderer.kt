@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.Clie
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.modelPartShown
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.defaultSkinTextures
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
@@ -17,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setLight
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setNormal
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setOverlay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setUv
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.skinTextures
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceProviderException
@@ -35,7 +37,6 @@ import net.minecraft.client.renderer.LightTexture
 import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.client.renderer.RenderType
 import net.minecraft.client.renderer.texture.OverlayTexture
-import net.minecraft.client.resources.DefaultPlayerSkin
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.entity.player.PlayerModelPart
 import kotlin.math.roundToInt
@@ -302,8 +303,8 @@ class PlayerPortraitRenderer internal constructor(
             PlayerPortraitSource.PlayerSkinFace -> {
                 val texture = skinTexture
                     ?: profiles.resolvedSkinTexture(playerId)
-                    ?: Minecraft.getInstance().connection?.getPlayerInfo(playerId.toJavaUuid())?.skinLocation
-                    ?: DefaultPlayerSkin.getDefaultSkin(playerId.toJavaUuid())
+                    ?: Minecraft.getInstance().connection?.getPlayerInfo(playerId.toJavaUuid())?.skinTextures()?.texture
+                    ?: defaultSkinTextures(playerId.toJavaUuid()).texture
                 context.blit(texture, x, y, size, size, 8f, 8f, 8, 8, 64, 64)
                 if (modelPartShown(playerId, PlayerModelPart.HAT)) {
                     RenderSystem.enableBlend()
@@ -380,8 +381,8 @@ class PlayerPortraitRenderer internal constructor(
     ) {
         val uuid = playerId.toJavaUuid()
         val texture = profiles.resolvedSkinTexture(playerId)
-            ?: Minecraft.getInstance().connection?.getPlayerInfo(uuid)?.skinLocation
-            ?: DefaultPlayerSkin.getDefaultSkin(uuid)
+            ?: Minecraft.getInstance().connection?.getPlayerInfo(uuid)?.skinTextures()?.texture
+            ?: defaultSkinTextures(uuid).texture
         renderRegion(texture, x, y, size, size, alpha, z, 8f / 64f, 8f / 64f, 16f / 64f, 16f / 64f, true, matrices, consumers)
         if (modelPartShown(playerId, PlayerModelPart.HAT)) {
             renderRegion(texture, x, y, size, size, alpha, z - HAT_LAYER_DEPTH, 40f / 64f, 8f / 64f, 48f / 64f, 16f / 64f, true, matrices, consumers)

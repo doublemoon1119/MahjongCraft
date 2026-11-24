@@ -1,12 +1,12 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.ClientPlayerProfileResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.CustomSkinPlayer
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.SkinTextures
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.modelPartShown
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.defaultSkinTextures
 import com.mojang.authlib.GameProfile
 import net.minecraft.client.multiplayer.ClientLevel
-import net.minecraft.client.player.RemotePlayer
-import net.minecraft.client.resources.DefaultPlayerSkin
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.entity.player.PlayerModelPart
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -29,16 +29,15 @@ internal class HistoryReplayPlayerEntity(
     private val playerId: Uuid,
     profile: GameProfile,
     private val profiles: ClientPlayerProfileResolver,
-) : RemotePlayer(world, profile) {
-    override fun isSkinLoaded(): Boolean = true
-
-    override fun getSkinTextureLocation(): ResourceLocation = profiles.resolvedSkinTexture(playerId) ?: DefaultPlayerSkin.getDefaultSkin(playerId.toJavaUuid())
-
-    override fun getModelName(): String = profiles.resolvedSkinModel(playerId) ?: DefaultPlayerSkin.getSkinModelName(playerId.toJavaUuid())
-
-    override fun isCapeLoaded(): Boolean = cloakTextureLocation != null
-
-    override fun getCloakTextureLocation(): ResourceLocation? = profiles.resolvedCapeTexture(playerId)
+) : CustomSkinPlayer(world, profile) {
+    override fun customSkin(): SkinTextures {
+        val fallback = defaultSkinTextures(playerId.toJavaUuid())
+        return SkinTextures(
+            texture = profiles.resolvedSkinTexture(playerId) ?: fallback.texture,
+            modelName = profiles.resolvedSkinModel(playerId) ?: fallback.modelName,
+            cape = profiles.resolvedCapeTexture(playerId),
+        )
+    }
 
     override fun isModelPartShown(part: PlayerModelPart): Boolean = modelPartShown(playerId, part)
 }

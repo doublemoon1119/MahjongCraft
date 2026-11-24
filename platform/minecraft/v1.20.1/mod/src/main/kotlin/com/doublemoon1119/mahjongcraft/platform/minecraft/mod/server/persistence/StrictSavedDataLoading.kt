@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.computeSavedData
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.saveddata.SavedData
@@ -56,8 +57,9 @@ internal fun <S : SavedData> loadSavedDataStrict(
     create: () -> S,
 ): S {
     var decodeFailure: Exception? = null
-    return manager.computeIfAbsent(
-        { nbt ->
+    return manager.computeSavedData(
+        key = key,
+        decode = { nbt ->
             try {
                 decode(nbt)
             } catch (failure: Exception) {
@@ -65,12 +67,11 @@ internal fun <S : SavedData> loadSavedDataStrict(
                 throw failure
             }
         },
-        {
+        create = {
             decodeFailure?.let { throw it }
             check(Files.notExists(dataFile)) { "Existing saved state could not be read: $key" }
             create()
         },
-        key,
     )
 }
 

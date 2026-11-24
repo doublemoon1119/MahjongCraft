@@ -6,7 +6,6 @@ import com.mojang.datafixers.schemas.Schema
 import com.mojang.serialization.Dynamic
 import net.minecraft.SharedConstants
 import net.minecraft.nbt.CompoundTag
-import net.minecraft.world.level.saveddata.SavedData
 import net.minecraft.world.level.storage.DimensionDataStorage
 import java.nio.file.Files
 import java.nio.file.Path
@@ -113,9 +112,9 @@ class StrictSavedDataLoadingTest {
      *
      * @property value 測試用保存內容。
      */
-    private class TestState(val value: String) : SavedData() {
+    private class TestState(val value: String) : MahjongSavedData() {
         /** 將測試文字完整寫入原生 NBT 容器。 */
-        override fun save(nbt: CompoundTag): CompoundTag = nbt.apply { putString(VALUE_KEY, value) }
+        override fun writeData(nbt: CompoundTag): CompoundTag = nbt.apply { putString(VALUE_KEY, value) }
     }
 
     /** 測試不遷移遊戲資料，只讓原生管理器走完整的 NBT 載入流程。 */

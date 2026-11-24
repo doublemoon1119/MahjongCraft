@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModBlocks
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.dice.toMahjongTableFacing
 import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag
-import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.block.state.properties.BlockStateProperties
 
@@ -22,7 +21,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties
 class MahjongTableBlockEntity(
     pos: BlockPos,
     state: BlockState,
-) : BlockEntity(ModBlocks.mahjongTableBlockEntity, pos, state),
+) : MahjongBlockEntity(ModBlocks.mahjongTableBlockEntity, pos, state),
     MahjongTableController {
     /** 桌子 ID 與呈現時間軸，隨此方塊實體存讀檔。 */
     override val mahjongTableState: MahjongTableControllerState = MahjongTableControllerState(::setChanged)
@@ -36,8 +35,7 @@ class MahjongTableBlockEntity(
      *
      * @param nbt 要讀取的 NBT 欄位。
      */
-    override fun load(nbt: CompoundTag) {
-        super.load(nbt)
+    override fun readData(nbt: CompoundTag) {
         mahjongTableState.readNbt(nbt)
     }
 
@@ -46,8 +44,7 @@ class MahjongTableBlockEntity(
      *
      * @param nbt 接收序列化欄位的 NBT。
      */
-    override fun saveAdditional(nbt: CompoundTag) {
-        super.saveAdditional(nbt)
+    override fun writeData(nbt: CompoundTag) {
         mahjongTableState.writeNbt(nbt)
     }
 }

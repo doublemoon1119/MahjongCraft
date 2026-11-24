@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.requestSkinTextures
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.skinTextures
 import com.mojang.authlib.GameProfile
-import com.mojang.authlib.minecraft.MinecraftProfileTexture
 import net.minecraft.client.Minecraft
-import net.minecraft.client.resources.SkinManager
 import net.minecraft.resources.ResourceLocation
 import java.util.LinkedHashMap
 import java.util.LinkedHashSet
@@ -115,7 +115,7 @@ class ClientPlayerProfileResolver {
      */
     fun resolvedSkinTexture(playerId: Uuid): ResourceLocation? {
         val client = Minecraft.getInstance()
-        client.connection?.getPlayerInfo(playerId.toJavaUuid())?.let { return it.skinLocation }
+        client.connection?.getPlayerInfo(playerId.toJavaUuid())?.let { return it.skinTextures().texture }
         if (!supportsNativePlayerSkinLookup(playerId)) return null
         synchronized(skins) { skins[playerId] }?.let { return it.texture }
         val profile = knownProfile(playerId) ?: return null
@@ -130,7 +130,7 @@ class ClientPlayerProfileResolver {
      * @return 原版模型名稱：細手臂為 `slim`，一般手臂為 `default`；皮膚尚未取得時為 null。
      */
     fun resolvedSkinModel(playerId: Uuid): String? {
-        Minecraft.getInstance().connection?.getPlayerInfo(playerId.toJavaUuid())?.let { return it.modelName }
+        Minecraft.getInstance().connection?.getPlayerInfo(playerId.toJavaUuid())?.let { return it.skinTextures().modelName }
         return synchronized(skins) { skins[playerId] }?.model
     }
 
@@ -141,7 +141,7 @@ class ClientPlayerProfileResolver {
      * @return 披風材質；玩家沒有披風或皮膚資料尚未取得時為 null。
      */
     fun resolvedCapeTexture(playerId: Uuid): ResourceLocation? {
-        Minecraft.getInstance().connection?.getPlayerInfo(playerId.toJavaUuid())?.let { return it.capeLocation }
+        Minecraft.getInstance().connection?.getPlayerInfo(playerId.toJavaUuid())?.let { return it.skinTextures().cape }
         return synchronized(capes) { capes[playerId] }
     }
 
@@ -156,7 +156,7 @@ class ClientPlayerProfileResolver {
     }
 
     /**
-     * 透過 Minecraft 原生 SkinManager 非同步載入指定 profile 的 skin。
+     * 透過 Minecraft 原生的皮膚管理器非同步載入指定 profile 的 skin。
      *
      * @param playerId 玩家 UUID。
      * @param profile 已知玩家 profile。
@@ -185,20 +185,12 @@ class ClientPlayerProfileResolver {
         }
         val generation = sessionGeneration
         runCatching {
-            Minecraft.getInstance().skinManager.registerSkins(
-                profile,
-                SkinManager.SkinTextureCallback { type, texture, profileTexture ->
-                    if (type == MinecraftProfileTexture.Type.CAPE) {
-                        Minecraft.getInstance().execute {
-                            if (generation == sessionGeneration && texture != null) synchronized(capes) { capes[playerId] = texture }
-                        }
-                        return@SkinTextureCallback
-                    }
-                    if (type != MinecraftProfileTexture.Type.SKIN) return@SkinTextureCallback
+            requestSkinTextures(
+                profile = profile,
+                onSkin = { texture, model ->
                     Minecraft.getInstance().execute {
                         if (generation == sessionGeneration) {
                             if (texture != null) {
-                                val model = if (profileTexture.getMetadata(MODEL_METADATA) == SLIM_MODEL) SLIM_MODEL else DEFAULT_MODEL
                                 synchronized(skins) { skins[playerId] = LoadedSkin(texture, model) }
                             } else {
                                 rememberSkinFailure(playerId)
@@ -207,7 +199,11 @@ class ClientPlayerProfileResolver {
                         }
                     }
                 },
-                true,
+                onCape = { texture ->
+                    Minecraft.getInstance().execute {
+                        if (generation == sessionGeneration) synchronized(capes) { capes[playerId] = texture }
+                    }
+                },
             )
         }.onFailure { error ->
             synchronized(skinRequests) { skinRequests.remove(playerId) }
@@ -257,15 +253,6 @@ class ClientPlayerProfileResolver {
     private data class LoadedSkin(val texture: ResourceLocation, val model: String)
 
     private companion object {
-        /** 皮膚資料中記錄手臂款式的欄位。 */
-        const val MODEL_METADATA = "model"
-
-        /** 細手臂的原版模型名稱。 */
-        const val SLIM_MODEL = "slim"
-
-        /** 一般手臂的原版模型名稱。 */
-        const val DEFAULT_MODEL = "default"
-
         /** 單一客戶端工作階段最多保留的已解析 profile 數量。 */
         const val PROFILE_CACHE_LIMIT = 256
 

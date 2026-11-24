@@ -15,7 +15,6 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.Tag
-import net.minecraft.world.level.saveddata.SavedData
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.Uuid
 
@@ -38,7 +37,7 @@ class MahjongAuthoritativeSavedData private constructor(
     registry: AiCharacterRegistry,
     private val originalCharacterData: Tag?,
     val characterDataFailure: Throwable?,
-) : SavedData() {
+) : MahjongSavedData() {
     /** 記錄保存容量與診斷的 logger。 */
     private val logger = mahjongCraftLogger(MahjongAuthoritativeSavedData::class)
 
@@ -157,7 +156,7 @@ class MahjongAuthoritativeSavedData private constructor(
      * @param nbt 世界提供的保存容器。
      * @return 寫入後的容器。
      */
-    override fun save(nbt: CompoundTag): CompoundTag {
+    override fun writeData(nbt: CompoundTag): CompoundTag {
         val current = characterState.snapshot()
         val authoritative = current.authoritative
         val encoded = codec.encode(authoritative.rooms.values, authoritative.games.values, authoritative.historyRecordingState).encodeToByteArray()

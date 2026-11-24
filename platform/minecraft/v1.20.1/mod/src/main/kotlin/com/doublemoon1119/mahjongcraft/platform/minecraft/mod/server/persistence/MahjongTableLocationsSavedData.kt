@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEnt
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.Tag
-import net.minecraft.world.level.saveddata.SavedData
 import kotlin.uuid.Uuid
 
 /**
@@ -17,7 +16,7 @@ import kotlin.uuid.Uuid
  */
 class MahjongTableLocationsSavedData private constructor(
     initialEntries: Collection<TableLocationEntry>,
-) : SavedData() {
+) : MahjongSavedData() {
     /** 目前等待 Minecraft 世界儲存流程寫入的不可變位置集合。 */
     var entries: List<TableLocationEntry> = initialEntries.toList()
         private set
@@ -38,7 +37,7 @@ class MahjongTableLocationsSavedData private constructor(
      * @param nbt Minecraft 提供的 NBT compound。
      * @return 寫入位置索引後的 NBT compound。
      */
-    override fun save(nbt: CompoundTag): CompoundTag {
+    override fun writeData(nbt: CompoundTag): CompoundTag {
         nbt.putInt(NBT_KEY_VERSION, CURRENT_VERSION)
         val entriesNbt = ListTag()
         entries.forEach { entry ->

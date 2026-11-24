@@ -14,7 +14,7 @@ import net.minecraft.world.item.context.UseOnContext
 import net.minecraft.world.level.Level
 
 /**
- * 麻將點棒 item：單一 item 類型代表所有面額，實際面額由 NBT 的 [NBT_KEY_DENOMINATION] 決定。
+ * 麻將點棒 item：單一 item 類型代表所有面額，實際面額由物品保存的面額名稱決定，讀寫見 [MahjongScoringStickItemStackData]。
  *
  * 非蹲下右鍵循環切換面額；蹲下對方塊右鍵則放置保留目前面額的 [MahjongScoringStickEntity]。
  *
@@ -64,9 +64,6 @@ class MahjongScoringStickItem(settings: Properties) : Item(settings) {
     }
 
     companion object {
-        /** ItemStack 自訂資料內保存面額的欄位名稱。 */
-        const val NBT_KEY_DENOMINATION = MahjongScoringStickItemStackData.NBT_KEY_DENOMINATION
-
         /**
          * 讀取 item 保存的面額；缺失或非法值使用百分棒。
          *

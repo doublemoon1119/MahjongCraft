@@ -18,8 +18,8 @@ import net.minecraft.world.level.Level
 import org.koin.core.context.GlobalContext
 
 /**
- * 麻將牌 item：單一 item 類型代表所有牌面，實際牌面由 NBT 的 [NBT_KEY_TILE] 字串決定
- * （對應 [allTileAssetKeys]）。
+ * 麻將牌 item：單一 item 類型代表所有牌面，實際牌面由物品保存的牌面名稱決定（對應 [allTileAssetKeys]），讀寫見
+ * [MahjongTileItemStackData]。
  *
  * 非蹲下右鍵循環切換牌面；蹲下對方塊右鍵則放置保留目前牌面的 [MahjongTileEntity]。
  *
@@ -70,9 +70,6 @@ class MahjongTileItem(settings: Properties) : Item(settings) {
     }
 
     companion object {
-        /** ItemStack 自訂資料內保存牌面 asset key 的名稱。 */
-        const val NBT_KEY_TILE = MahjongTileItemStackData.NBT_KEY_TILE
-
         /**
          * 讀取並正規化 item 保存的牌面；缺失值使用配方預設 `m1`，非法值回退為 `unknown`。
          *

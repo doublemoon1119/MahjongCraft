@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCra
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.Tag
-import net.minecraft.world.level.saveddata.SavedData
 import java.util.UUID
 
 /**
@@ -15,7 +14,7 @@ import java.util.UUID
  */
 class MahjongPlayerIdentitySavedData private constructor(
     initialNames: Map<UUID, String>,
-) : SavedData() {
+) : MahjongSavedData() {
     /** 目前已知的玩家普通名稱，不含聊天樣式或互動資料。 */
     private val names = initialNames.toMutableMap()
 
@@ -56,7 +55,7 @@ class MahjongPlayerIdentitySavedData private constructor(
      * @param nbt Minecraft 要寫入的 NBT compound。
      * @return 寫入完成的 [nbt]。
      */
-    override fun save(nbt: CompoundTag): CompoundTag {
+    override fun writeData(nbt: CompoundTag): CompoundTag {
         nbt.putInt(NBT_KEY_VERSION, CURRENT_VERSION)
         val entries = ListTag()
         names.forEach { (playerId, name) ->
