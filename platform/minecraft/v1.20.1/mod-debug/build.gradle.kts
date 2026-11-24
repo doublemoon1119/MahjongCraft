@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.buildlogic.minecraftModAccessTransformer
 // 開發專用 debug 工具中呼叫 Minecraft 1.20.1、但不使用任何載入器的部分：debug 指令、情境、壓力測試、歷史生成與自動測試。
 // 由各載入器的 debug 模組一起編譯與打包；這個模組自己只對原版 Minecraft 編譯與測試，確認其中的程式不依賴載入器，
 // 產出的 JAR 不發布。各 Minecraft 版本相同的程式與測試放在跨版本共用的 platform/minecraft/mod-debug，這裡只放 1.20.1
-// 專屬的部分，例如自動測試的 mixin。
+// 專屬的部分，例如自動測試的 mixin 與 debug 的版本轉接。
 
 plugins {
     alias(libs.plugins.mahjongcraft.minecraft.mod)

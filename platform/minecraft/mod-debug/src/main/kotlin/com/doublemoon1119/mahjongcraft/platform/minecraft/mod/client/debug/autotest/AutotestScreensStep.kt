@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue.R
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigScreenController
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.guide.GuideScreenController
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.handbook.MahjongHandbookScreenController
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.scrollScreen
 import org.koin.core.context.GlobalContext
 
 /**
@@ -62,7 +63,7 @@ internal object AutotestScreensStep : AutotestStep {
         waitTicks(SCREEN_SETTLE_TICKS)
         screenshot("${screen.name}-opened")
         val current = checkNotNull(client.screen)
-        current.mouseScrolled(current.width / 2.0, current.height / 2.0, SCROLL_DELTA)
+        scrollScreen(current, current.width / 2.0, current.height / 2.0, SCROLL_DELTA)
         waitTicks(SCREEN_SETTLE_TICKS)
         screenshot("${screen.name}-scrolled")
         current.onClose()

@@ -12,11 +12,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.Automa
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryManagementResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.MahjongTableRoomService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.registries.BuiltInRegistries
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.item.ItemStack
@@ -55,7 +55,7 @@ internal class AutotestServerTable(val rule: String, val botName: String, val po
     fun place(bot: ServerPlayer): Uuid? {
         approach(bot)
         val level = bot.serverLevel()
-        val stack = ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation(MinecraftModMetadata.MOD_ID, TABLE_ITEM)))
+        val stack = ItemStack(BuiltInRegistries.ITEM.get(resourceId(MinecraftModMetadata.MOD_ID, TABLE_ITEM)))
         bot.setItemInHand(InteractionHand.MAIN_HAND, stack)
         val below = position.below()
         bot.gameMode.useItemOn(bot, level, stack, InteractionHand.MAIN_HAND, BlockHitResult(Vec3.atCenterOf(below).add(0.0, 0.5, 0.0), Direction.UP, below, false))

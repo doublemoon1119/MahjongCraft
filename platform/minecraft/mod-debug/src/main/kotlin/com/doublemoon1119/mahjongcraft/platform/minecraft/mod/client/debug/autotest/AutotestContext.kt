@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.auto
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.AutotestCheck
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.performCommand
 import com.mojang.blaze3d.platform.NativeImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
@@ -77,7 +78,7 @@ internal class AutotestContext(
         val feedback = AutotestCommandFeedback(command)
         val result = onServer { server ->
             val player = checkNotNull(server.playerList.getPlayer(playerId)) { "The player is not on the server" }
-            server.commands.performPrefixedCommand(player.createCommandSourceStack().withSource(feedback), command)
+            performCommand(server, player.createCommandSourceStack().withSource(feedback), command)
         }
         feedback.result = result
         return feedback

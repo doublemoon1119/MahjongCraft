@@ -12,6 +12,9 @@
   `mahjongcraft.debug.mixins.json`. The mixins ignore input, keep the game running without focus and record
   each sound request, only while the test runs. The loader debug modules register the configuration:
   Fabric in `fabric.mod.json`, Forge through the mixin configurations of its development runs.
+- Provide the 1.20.1 side of the debug adapters the shared debug tools call, in the `debug.vanilla` package,
+  such as creating and leaving the test world, running commands, looking up loot tables and connecting bot
+  players.
 
 ## Boundaries
 

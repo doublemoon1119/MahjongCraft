@@ -1,7 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.autotest
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.createFreshWorld
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.leaveWorld
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.openExistingWorld
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.screens.GenericDirtMessageScreen
 import net.minecraft.client.gui.screens.TitleScreen
 import net.minecraft.core.registries.Registries
 import net.minecraft.network.chat.Component
@@ -30,9 +32,14 @@ internal object AutotestWorld {
         val storage = client.levelSource
         if (storage.levelExists(LEVEL_ID)) storage.createAccess(LEVEL_ID).use { it.deleteLevel() }
         val settings = LevelSettings(LEVEL_ID, GameType.CREATIVE, false, Difficulty.PEACEFUL, true, GameRules(), WorldDataConfiguration.DEFAULT)
-        client.createWorldOpenFlows().createFreshLevel(LEVEL_ID, settings, WorldOptions(SEED, false, false)) { registries ->
-            registries.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions()
-        }
+        createFreshWorld(
+            client = client,
+            levelId = LEVEL_ID,
+            settings = settings,
+            options = WorldOptions(SEED, false, false),
+            dimensions = { registries -> registries.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions() },
+            returnScreen = TitleScreen(),
+        )
     }
 
     /**
@@ -42,7 +49,7 @@ internal object AutotestWorld {
      */
     fun saveAndQuit(client: Minecraft) {
         client.level?.disconnect()
-        client.clearLevel(GenericDirtMessageScreen(Component.translatable("menu.savingLevel")))
+        leaveWorld(client, Component.translatable("menu.savingLevel"))
         client.setScreen(TitleScreen())
     }
 
@@ -52,6 +59,6 @@ internal object AutotestWorld {
      * @param client 目前客戶端。
      */
     fun reenter(client: Minecraft) {
-        client.createWorldOpenFlows().loadLevel(TitleScreen(), LEVEL_ID)
+        openExistingWorld(client, LEVEL_ID, TitleScreen())
     }
 }

@@ -1,5 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.autotest
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.answerKeepAlive
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.newServerPlayer
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.placeNewPlayer
 import com.mojang.authlib.GameProfile
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelOutboundHandlerAdapter
@@ -9,8 +12,6 @@ import io.netty.util.ReferenceCountUtil
 import net.minecraft.core.UUIDUtil
 import net.minecraft.network.Connection
 import net.minecraft.network.protocol.PacketFlow
-import net.minecraft.network.protocol.game.ClientboundKeepAlivePacket
-import net.minecraft.network.protocol.game.ServerboundKeepAlivePacket
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 
@@ -29,11 +30,11 @@ internal object AutotestBotPlayer {
      * @return 已加入的玩家。
      */
     fun join(server: MinecraftServer, name: String): ServerPlayer {
-        val player = ServerPlayer(server, server.overworld(), GameProfile(UUIDUtil.createOfflinePlayerUUID(name), name))
+        val player = newServerPlayer(server, GameProfile(UUIDUtil.createOfflinePlayerUUID(name), name))
         val connection = Connection(PacketFlow.SERVERBOUND)
         // 通道建立時會通知連線它已經連上；送往機器人的封包經過丟棄的處理器，不會累積在記憶體中。
         EmbeddedChannel(DiscardingOutbound(player), connection)
-        server.playerList.placeNewPlayer(connection, player)
+        placeNewPlayer(server, connection, player)
         return player
     }
 
@@ -44,7 +45,7 @@ internal object AutotestBotPlayer {
      */
     private class DiscardingOutbound(private val player: ServerPlayer) : ChannelOutboundHandlerAdapter() {
         override fun write(context: ChannelHandlerContext, message: Any, promise: ChannelPromise) {
-            if (message is ClientboundKeepAlivePacket) player.connection.handleKeepAlive(ServerboundKeepAlivePacket(message.id))
+            answerKeepAlive(player, message)
             ReferenceCountUtil.release(message)
             promise.setSuccess()
         }

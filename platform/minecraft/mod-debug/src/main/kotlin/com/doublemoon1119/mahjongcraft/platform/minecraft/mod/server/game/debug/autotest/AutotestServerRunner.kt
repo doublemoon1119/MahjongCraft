@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.Aut
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.AutotestStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.AutotestStepResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.autotestReportMarkdown
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.serverDirectory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.autotest.AutotestServerTable.Companion.playerId
@@ -106,7 +107,7 @@ internal class AutotestServerRunner(private val koin: Koin) {
      */
     private fun start(server: MinecraftServer) {
         AutotestErrorLog.install()
-        val root = server.serverDirectory.toPath().resolve("autotest")
+        val root = serverDirectory(server).resolve("autotest")
         if (phase == PHASE_START) {
             val now = LocalDateTime.now()
             startedAt = now.toString()

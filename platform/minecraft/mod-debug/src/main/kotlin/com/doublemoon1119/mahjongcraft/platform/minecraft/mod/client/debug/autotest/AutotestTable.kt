@@ -6,11 +6,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatingSessionFactory
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyDto
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.BuiltInRegistries
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.phys.Vec3
 import org.koin.core.context.GlobalContext
 import kotlin.math.hypot
@@ -185,4 +185,4 @@ private val SYNC_TIMEOUT = 10.seconds
 private const val SEAT_TOLERANCE = 0.25
 
 /** 本 mod 內建 AI 角色的實體種類。 */
-private val BOT_ENTITY_ID = ResourceLocation(MinecraftModMetadata.MOD_ID, "mahjong_bot")
+private val BOT_ENTITY_ID = resourceId(MinecraftModMetadata.MOD_ID, "mahjong_bot")

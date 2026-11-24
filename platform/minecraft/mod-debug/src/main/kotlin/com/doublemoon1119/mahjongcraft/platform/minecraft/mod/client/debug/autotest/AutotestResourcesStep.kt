@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.auto
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SceneEntityTranslucency
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.isBlockLootTableMissing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -12,10 +13,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.core.registries.Registries
 import net.minecraft.tags.TagKey
-import net.minecraft.world.level.storage.loot.BuiltInLootTables
-import net.minecraft.world.level.storage.loot.LootDataId
-import net.minecraft.world.level.storage.loot.LootDataType
-import net.minecraft.world.level.storage.loot.LootTable
 
 /**
  * 檢查本 mod 的資源：物品與方塊模型、實體繪製器、配方、進度、方塊戰利品表、物品標籤、聲音與自訂著色器。
@@ -83,10 +80,7 @@ internal object AutotestResourcesStep : AutotestStep {
         val advancements = server.advancements.allAdvancements.filter { it.id.namespace == NAMESPACE }
         context.check("Advancements are loaded", advancements.isNotEmpty(), "${advancements.size} advancements")
         val blocks = BuiltInRegistries.BLOCK.filter { BuiltInRegistries.BLOCK.getKey(it).namespace == NAMESPACE }
-        val withoutLoot = blocks.filter { block ->
-            val table = block.lootTable
-            table != BuiltInLootTables.EMPTY && server.lootData.getElement(LootDataId(LootDataType.TABLE, table)).let { it == null || it === LootTable.EMPTY }
-        }.map { BuiltInRegistries.BLOCK.getKey(it).toString() }
+        val withoutLoot = blocks.filter { block -> isBlockLootTableMissing(server, block) }.map { BuiltInRegistries.BLOCK.getKey(it).toString() }
         context.check("All ${blocks.size} blocks have loot tables", withoutLoot.isEmpty(), withoutLoot.joinToString().ifEmpty { null })
         val dyes = BuiltInRegistries.ITEM.getTag(TagKey.create(Registries.ITEM, resourceId(NAMESPACE, "dyes")))
         val dyeCount = dyes.map { it.size() }.orElse(0)

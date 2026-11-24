@@ -7,7 +7,9 @@ java-toolchain = 21
 java-release = 21
 modules = [
     "platform/minecraft/common",
+    "platform/minecraft/common-debug",
     "platform/minecraft/v1.21.1/mod",
+    "platform/minecraft/v1.21.1/mod-debug",
 ]
 example-modules = []
 
