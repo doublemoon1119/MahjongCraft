@@ -4,8 +4,9 @@ import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.ExampleFurnit
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.table.ExampleFlatTableDesign
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.registry.ExampleBlockEntityTypes
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.registry.ExampleRegistrar
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.vanilla.copyBlockProperties
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.vanilla.resourceId
 import net.minecraft.core.registries.Registries
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.BlockItem
 import net.minecraft.world.item.Item
 import net.minecraft.world.level.block.Block
@@ -42,7 +43,7 @@ object ExampleTables {
         }
         registrar.register(
             registry = Registries.BLOCK_ENTITY_TYPE,
-            id = ResourceLocation(ExampleFurnitureIds.TABLE_BLOCK_ENTITY),
+            id = resourceId(ExampleFurnitureIds.TABLE_BLOCK_ENTITY),
             factory = { ExampleBlockEntityTypes.create(::ExampleTableBlockEntity, *tables.toTypedArray()) },
             onRegistered = { blockEntityType = it },
         )
@@ -54,7 +55,7 @@ object ExampleTables {
      * @param baseBlock 提供材質設定基礎的原版方塊。
      * @return 桌子的方塊設定。
      */
-    private fun tableSettings(baseBlock: Block): BlockBehaviour.Properties = BlockBehaviour.Properties.copy(baseBlock)
+    private fun tableSettings(baseBlock: Block): BlockBehaviour.Properties = copyBlockProperties(baseBlock)
         .strength(2.5f)
         .pushReaction(PushReaction.BLOCK)
         .forceSolidOn()
@@ -71,13 +72,13 @@ object ExampleTables {
         lateinit var table: Block
         registrar.register(
             registry = Registries.BLOCK,
-            id = ResourceLocation(id),
+            id = resourceId(id),
             factory = factory,
             onRegistered = {
                 table = it
                 tables += it
             },
         )
-        registrar.register(Registries.ITEM, ResourceLocation(id), { BlockItem(table, Item.Properties()) })
+        registrar.register(Registries.ITEM, resourceId(id), { BlockItem(table, Item.Properties()) })
     }
 }

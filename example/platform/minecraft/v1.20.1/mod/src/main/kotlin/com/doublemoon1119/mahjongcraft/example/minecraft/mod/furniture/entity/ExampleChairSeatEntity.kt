@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.entity
 
 import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.entity.ExampleSeatGeometry
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.ExampleFurnitureBlocks
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.vanilla.ExampleEntity
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.nbt.CompoundTag
@@ -24,7 +25,7 @@ import net.minecraft.world.phys.Vec3
 class ExampleChairSeatEntity(
     type: EntityType<out ExampleChairSeatEntity>,
     world: Level,
-) : Entity(type, world) {
+) : ExampleEntity(type, world) {
     /** 是否需要在載入後重新檢查同一張椅子上的座位。 */
     private var needsOccupancyCheck = true
 
@@ -74,9 +75,6 @@ class ExampleChairSeatEntity(
 
     /** 方塊位置與乘客由原版保存，沒有額外欄位。 */
     override fun addAdditionalSaveData(nbt: CompoundTag) = Unit
-
-    /** entity 不需要資料追蹤欄位。 */
-    override fun defineSynchedData() = Unit
 
     /** 查詢指定方塊上的範例椅子座位。 */
     companion object {

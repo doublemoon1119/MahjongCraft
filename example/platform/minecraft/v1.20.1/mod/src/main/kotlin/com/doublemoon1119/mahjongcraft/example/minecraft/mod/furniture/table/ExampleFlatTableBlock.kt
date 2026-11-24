@@ -6,11 +6,11 @@ import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.table.Exa
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.table.scheduleWaterTickIfWaterlogged
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.table.waterloggedAt
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.table.waterloggedFluidState
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.vanilla.ExampleEntityBlock
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.table.MahjongTableStructureBlock
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.table.MahjongTables
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
-import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.player.Player
@@ -19,7 +19,6 @@ import net.minecraft.world.item.context.BlockPlaceContext
 import net.minecraft.world.level.BlockGetter
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.LevelAccessor
-import net.minecraft.world.level.block.BaseEntityBlock
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.RenderShape
 import net.minecraft.world.level.block.SimpleWaterloggedBlock
@@ -45,7 +44,7 @@ import net.minecraft.world.phys.shapes.VoxelShape
 class ExampleFlatTableBlock(
     settings: Properties,
     private val design: ExampleFlatTableDesign,
-) : BaseEntityBlock(settings),
+) : ExampleEntityBlock(settings),
     MahjongTableStructureBlock,
     SimpleWaterloggedBlock {
     /** 正在移除整張桌子的中央位置，避免各格的回呼重複清理。 */
@@ -75,13 +74,11 @@ class ExampleFlatTableBlock(
     ): BlockPos? = if (state.`is`(this)) ExampleFlatTableStructure.centerPos(pos, state.getValue(PART)) else null
 
     /** 右鍵任何一格都交給 MahjongCraft 開啟房間畫面。 */
-    @Suppress("OVERRIDE_DEPRECATION")
-    override fun use(
+    override fun useWithoutItem(
         state: BlockState,
         world: Level,
         pos: BlockPos,
         player: Player,
-        hand: InteractionHand,
         hit: BlockHitResult,
     ): InteractionResult = MahjongTables.interact(world, pos, state, player)
 

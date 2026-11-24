@@ -22,6 +22,14 @@ These two interfaces belong to the example, not to MahjongCraft. They exist only
 and Forge examples share one list of content. A mod for a single loader registers its content the
 usual way for that loader, such as Fabric's `Registry.register` or Forge's `DeferredRegister`.
 
+Calls whose API differs between Minecraft versions go through the example's own `vanilla` package:
+small functions such as `resourceId` and `copyBlockProperties`, and base classes for blocks, entities,
+block entities and tooltip items that turn the version's own override points into ones that stay the
+same, such as `useWithoutItem`, `readData` and `writeData`. Each Minecraft version keeps its own copy of
+this package with the same names, so the rest of the example does not change between versions. The
+example does not use MahjongCraft's internal adapters; a mod that supports several Minecraft versions
+keeps its own in the same way.
+
 To see what connects the example to MahjongCraft, start with
 [`ExampleNativeMahjongExtension.kt`](src/main/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/mod/ExampleNativeMahjongExtension.kt).
 It registers the seats, table props, seat placements and actors through MahjongCraft's public

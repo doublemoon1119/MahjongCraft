@@ -6,11 +6,11 @@ import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.block.Exa
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.block.ExampleBenchPlacement
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.entity.ExampleChairSeatEntity
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.seating.ExampleChairSeatService
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.vanilla.ExampleBlock
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.util.RandomSource
-import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.context.BlockPlaceContext
@@ -38,7 +38,7 @@ import net.minecraft.world.phys.shapes.VoxelShape
  * @param settings 原生方塊設定。
  */
 class ExampleBenchBlock(settings: Properties) :
-    Block(settings),
+    ExampleBlock(settings),
     SimpleWaterloggedBlock {
     /** 真人與角色共用的家具入座服務。 */
     private val seats = ExampleChairSeatService()
@@ -149,16 +149,14 @@ class ExampleBenchBlock(settings: Properties) :
     }
 
     /** 玩家使用本格時只嘗試本格，不轉到鄰座或搶走乘客。 */
-    @Suppress("OVERRIDE_DEPRECATION")
-    override fun use(
+    override fun useWithoutItem(
         state: BlockState,
         world: Level,
         pos: BlockPos,
         player: Player,
-        hand: InteractionHand,
         hit: BlockHitResult,
     ): InteractionResult {
-        if (player.isShiftKeyDown || player.isPassenger || player.getItemInHand(hand).`is`(ExampleActors.item)) return InteractionResult.PASS
+        if (player.isShiftKeyDown || player.isPassenger || player.mainHandItem.`is`(ExampleActors.item)) return InteractionResult.PASS
         if (world is ServerLevel) {
             seats.sit(
                 world = world,

@@ -4,8 +4,8 @@ import com.doublemoon1119.mahjongcraft.example.minecraft.character.ExampleCharac
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.entity.ExampleCushionEntity
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.registry.ExampleEntityTypes
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.registry.ExampleRegistrar
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.vanilla.resourceId
 import net.minecraft.core.registries.Registries
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
@@ -43,19 +43,19 @@ object ExampleActors {
     fun register(registrar: ExampleRegistrar) {
         registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(ExampleCharacterIds.ACTOR),
+            id = resourceId(ExampleCharacterIds.ACTOR),
             factory = { actorEntityType(saveable = true) },
             onRegistered = { actorType = it },
         )
         registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(ExampleCharacterIds.OWNED_ACTOR),
+            id = resourceId(ExampleCharacterIds.OWNED_ACTOR),
             factory = { actorEntityType(saveable = false) },
             onRegistered = { proxyType = it },
         )
         registrar.register(
             registry = Registries.ITEM,
-            id = ResourceLocation(ExampleCharacterIds.ACTOR),
+            id = resourceId(ExampleCharacterIds.ACTOR),
             factory = { ExampleActorItem(Item.Properties().stacksTo(16)) },
             onRegistered = { item = it },
         )

@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.example.minecraft.mod.table
 
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.vanilla.ExampleEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ManagedTableNbt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TablePropIdentityNbt
 import net.minecraft.nbt.CompoundTag
-import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.level.Level
 import kotlin.uuid.Uuid
@@ -19,7 +19,7 @@ import kotlin.uuid.Uuid
 class ExampleHandRevealChipEntity(
     type: EntityType<out ExampleHandRevealChipEntity>,
     world: Level,
-) : Entity(type, world) {
+) : ExampleEntity(type, world) {
     /** 所屬桌子 UUID。 */
     var managedTableId: Uuid? = null
 
@@ -42,9 +42,6 @@ class ExampleHandRevealChipEntity(
 
     /** 晶片不能被玩家點選。 */
     override fun isPickable(): Boolean = false
-
-    /** 這個示範 entity 不需要原生資料追蹤欄位。 */
-    override fun defineSynchedData() = Unit
 
     /** 保存桌面同步所需的管理身分。 */
     override fun addAdditionalSaveData(nbt: CompoundTag) {

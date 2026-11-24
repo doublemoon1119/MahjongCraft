@@ -5,8 +5,8 @@ import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.entity.Ex
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.entity.ExampleCushionEntity
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.registry.ExampleEntityTypes
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.registry.ExampleRegistrar
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.vanilla.resourceId
 import net.minecraft.core.registries.Registries
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.entity.EntityType
 
 /** 範例家具 entity type 的集中註冊點。 */
@@ -30,7 +30,7 @@ object ExampleFurnitureEntities {
     fun register(registrar: ExampleRegistrar) {
         registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(ExampleFurnitureIds.CHAIR_SEAT),
+            id = resourceId(ExampleFurnitureIds.CHAIR_SEAT),
             factory = {
                 ExampleEntityTypes.create(
                     factory = ::ExampleChairSeatEntity,
@@ -45,7 +45,7 @@ object ExampleFurnitureEntities {
         )
         registrar.register(
             registry = Registries.ENTITY_TYPE,
-            id = ResourceLocation(ExampleFurnitureIds.CUSHION),
+            id = resourceId(ExampleFurnitureIds.CUSHION),
             factory = {
                 ExampleEntityTypes.create(
                     factory = ::ExampleCushionEntity,

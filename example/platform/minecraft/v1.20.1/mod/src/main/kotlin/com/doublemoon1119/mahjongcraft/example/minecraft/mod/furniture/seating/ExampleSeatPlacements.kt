@@ -3,11 +3,11 @@ package com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.seating
 import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.ExampleFurnitureIds
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.ExampleFurniture
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.block.ExampleBenchPlacement
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.seating.SeatPlacementContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.seating.SeatPlacementDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.seating.SeatPlacementProvider
 import net.minecraft.core.registries.BuiltInRegistries
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.phys.Vec3
 
@@ -33,7 +33,7 @@ internal object ExampleSeatPlacements {
 
     /** 放置視角與開口相反，讓成功放置的長凳朝向指定席位。 */
     private object Bench : SeatPlacementProvider {
-        override fun supports(stack: ItemStack): Boolean = stack.`is`(BuiltInRegistries.ITEM.get(ResourceLocation(ExampleFurnitureIds.BENCH)))
+        override fun supports(stack: ItemStack): Boolean = stack.`is`(BuiltInRegistries.ITEM.get(resourceId(ExampleFurnitureIds.BENCH)))
 
         override fun place(context: SeatPlacementContext): Boolean = context.placeBlockItem(ExampleBenchPlacement.playerYaw(context.request.seat.yaw))
     }

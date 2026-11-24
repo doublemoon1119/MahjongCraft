@@ -3,8 +3,8 @@ package com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture
 import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.ExampleFurnitureIds
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.item.ExampleCushionItem
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.registry.ExampleRegistrar
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.vanilla.resourceId
 import net.minecraft.core.registries.Registries
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.Item
 
 /** 範例家具物品的集中註冊點。 */
@@ -21,7 +21,7 @@ object ExampleFurnitureItems {
     fun register(registrar: ExampleRegistrar) {
         registrar.register(
             registry = Registries.ITEM,
-            id = ResourceLocation(ExampleFurnitureIds.CUSHION),
+            id = resourceId(ExampleFurnitureIds.CUSHION),
             factory = { ExampleCushionItem(Item.Properties().stacksTo(16)) },
             onRegistered = { cushion = it },
         )

@@ -2,10 +2,10 @@ package com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.block
 
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.character.ExampleActors
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.seating.ExampleChairSeatService
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.vanilla.ExampleBlock
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
-import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.context.BlockPlaceContext
@@ -30,7 +30,7 @@ import net.minecraft.world.phys.shapes.VoxelShape
  */
 class ExampleChairBlock(
     settings: Properties,
-) : Block(settings),
+) : ExampleBlock(settings),
     SimpleWaterloggedBlock {
     /** 預設不含水。 */
     init {
@@ -44,16 +44,14 @@ class ExampleChairBlock(
     private val seatService = ExampleChairSeatService()
 
     /** 讓玩家右鍵椅子時嘗試坐下。 */
-    @Suppress("OVERRIDE_DEPRECATION")
-    override fun use(
+    override fun useWithoutItem(
         state: BlockState,
         world: Level,
         pos: BlockPos,
         player: Player,
-        hand: InteractionHand,
         hit: BlockHitResult,
     ): InteractionResult {
-        if (player.isShiftKeyDown || player.isPassenger || player.getItemInHand(hand).`is`(ExampleActors.item)) return InteractionResult.PASS
+        if (player.isShiftKeyDown || player.isPassenger || player.mainHandItem.`is`(ExampleActors.item)) return InteractionResult.PASS
         if (world is ServerLevel) seatService.sit(world, pos, player, player.yRot)
         return InteractionResult.sidedSuccess(world.isClientSide)
     }

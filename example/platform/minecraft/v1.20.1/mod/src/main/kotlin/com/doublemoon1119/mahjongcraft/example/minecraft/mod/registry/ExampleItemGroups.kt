@@ -3,11 +3,11 @@ package com.doublemoon1119.mahjongcraft.example.minecraft.mod.registry
 import com.doublemoon1119.mahjongcraft.example.minecraft.character.ExampleCharacterIds
 import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.ExampleFurnitureIds
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.ExampleFurniture
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.example.minecraft.text.ExampleFurnitureMessageKeys
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.core.registries.Registries
 import net.minecraft.network.chat.Component
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.ItemStack
 
 /** 範例專屬的創造模式分頁，不更改本體的物品分類。 */
@@ -31,12 +31,12 @@ object ExampleItemGroups {
     fun register(registrar: ExampleRegistrar) {
         registrar.register(
             registry = Registries.CREATIVE_MODE_TAB,
-            id = ResourceLocation(ExampleFurnitureIds.ITEM_GROUP),
+            id = resourceId(ExampleFurnitureIds.ITEM_GROUP),
             factory = {
                 registrar.creativeModeTabBuilder()
                     .icon { ItemStack(ExampleFurniture.chairItem) }
                     .title(Component.translatable(ExampleFurnitureMessageKeys.ITEM_GROUP))
-                    .displayItems { _, entries -> itemIds().forEach { entries.accept(BuiltInRegistries.ITEM.get(ResourceLocation(it))) } }
+                    .displayItems { _, entries -> itemIds().forEach { entries.accept(BuiltInRegistries.ITEM.get(resourceId(it))) } }
                     .build()
             },
         )

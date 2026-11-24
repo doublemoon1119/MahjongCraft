@@ -4,8 +4,9 @@ import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.ExampleFurnit
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.block.ExampleBenchBlock
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.block.ExampleChairBlock
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.registry.ExampleRegistrar
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.vanilla.copyBlockProperties
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.vanilla.resourceId
 import net.minecraft.core.registries.Registries
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.BlockItem
 import net.minecraft.world.item.Item
 import net.minecraft.world.level.block.Block
@@ -37,18 +38,18 @@ object ExampleFurnitureBlocks {
     fun register(registrar: ExampleRegistrar) {
         registrar.register(
             registry = Registries.BLOCK,
-            id = ResourceLocation(ExampleFurnitureIds.CHAIR),
+            id = resourceId(ExampleFurnitureIds.CHAIR),
             factory = { ExampleChairBlock(settings = seatSettings()) },
             onRegistered = { chair = it },
         )
-        registrar.register(Registries.ITEM, ResourceLocation(ExampleFurnitureIds.CHAIR), { BlockItem(chair, Item.Properties()) })
+        registrar.register(Registries.ITEM, resourceId(ExampleFurnitureIds.CHAIR), { BlockItem(chair, Item.Properties()) })
         registrar.register(
             registry = Registries.BLOCK,
-            id = ResourceLocation(ExampleFurnitureIds.BENCH),
+            id = resourceId(ExampleFurnitureIds.BENCH),
             factory = { ExampleBenchBlock(seatSettings()) },
             onRegistered = { bench = it },
         )
-        registrar.register(Registries.ITEM, ResourceLocation(ExampleFurnitureIds.BENCH), { BlockItem(bench, Item.Properties()) })
+        registrar.register(Registries.ITEM, resourceId(ExampleFurnitureIds.BENCH), { BlockItem(bench, Item.Properties()) })
     }
 
     /**
@@ -56,5 +57,5 @@ object ExampleFurnitureBlocks {
      *
      * @return 以橡木木材為基礎、保持實心的設定。
      */
-    private fun seatSettings(): BlockBehaviour.Properties = BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS).strength(1.5f).forceSolidOn()
+    private fun seatSettings(): BlockBehaviour.Properties = copyBlockProperties(Blocks.OAK_PLANKS).strength(1.5f).forceSolidOn()
 }

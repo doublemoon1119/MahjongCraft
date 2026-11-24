@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.seating.Examp
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.ExampleFurnitureItems
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.seating.ExampleCushionPlacement
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.seating.ExampleCushionSeatService
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.vanilla.ExampleEntity
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.InteractionHand
@@ -26,7 +27,7 @@ import net.minecraft.world.level.Level
 class ExampleCushionEntity(
     type: EntityType<out ExampleCushionEntity>,
     world: Level,
-) : Entity(type, world) {
+) : ExampleEntity(type, world) {
     init {
         setNoGravity(true)
     }
@@ -92,9 +93,6 @@ class ExampleCushionEntity(
 
     /** 坐墊 entity 沒有額外的持久化欄位；UUID 與位置由原版保存。 */
     override fun addAdditionalSaveData(nbt: CompoundTag) = Unit
-
-    /** 坐墊不需要資料追蹤欄位。 */
-    override fun defineSynchedData() = Unit
 
     /** 依坐姿高度定位乘客，使坐姿模型落在坐墊表面。 */
     override fun positionRider(passenger: Entity, positionUpdater: MoveFunction) {

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.table
 
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.vanilla.ExampleBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableController
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableControllerState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
@@ -8,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.table.writeNbt
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.nbt.CompoundTag
-import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.block.state.properties.BlockStateProperties
 
@@ -23,7 +23,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties
 class ExampleTableBlockEntity(
     pos: BlockPos,
     state: BlockState,
-) : BlockEntity(ExampleTables.blockEntityType, pos, state),
+) : ExampleBlockEntity(ExampleTables.blockEntityType, pos, state),
     MahjongTableController {
     /** MahjongCraft 的桌子狀態，隨此方塊實體存讀檔。 */
     override val mahjongTableState: MahjongTableControllerState = MahjongTableControllerState(::setChanged)
@@ -42,8 +42,7 @@ class ExampleTableBlockEntity(
      *
      * @param nbt 方塊實體的 NBT。
      */
-    override fun load(nbt: CompoundTag) {
-        super.load(nbt)
+    override fun readData(nbt: CompoundTag) {
         mahjongTableState.readNbt(nbt)
     }
 
@@ -52,8 +51,7 @@ class ExampleTableBlockEntity(
      *
      * @param nbt 方塊實體的 NBT。
      */
-    override fun saveAdditional(nbt: CompoundTag) {
-        super.saveAdditional(nbt)
+    override fun writeData(nbt: CompoundTag) {
         mahjongTableState.writeNbt(nbt)
     }
 }

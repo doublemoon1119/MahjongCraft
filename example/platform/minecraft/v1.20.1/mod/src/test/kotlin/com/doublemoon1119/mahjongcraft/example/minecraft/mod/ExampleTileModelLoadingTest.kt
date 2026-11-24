@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example.minecraft.mod
 
 import com.doublemoon1119.mahjongcraft.example.minecraft.ExampleMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model.FixedMahjongTileModelPreparedData
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
@@ -37,11 +38,11 @@ class ExampleTileModelLoadingTest {
         val unknown = prepared.variants.single {
             it.modelId == FixedMahjongTileModelPreparedData.syntheticUnknownModelId(appearance.id)
         }
-        assertEquals(ResourceLocation(tile.textureId), visible.frontTextureId)
-        assertEquals(ResourceLocation(tile.modelId), visible.templateModelId)
-        assertEquals(ResourceLocation(appearance.coverTextureId), visible.coverTextureId)
+        assertEquals(resourceId(tile.textureId), visible.frontTextureId)
+        assertEquals(resourceId(tile.modelId), visible.templateModelId)
+        assertEquals(resourceId(appearance.coverTextureId), visible.coverTextureId)
         assertEquals(visible.coverTextureId, unknown.coverTextureId)
-        assertEquals(ResourceLocation(appearance.unknownFaceTextureId), unknown.frontTextureId)
+        assertEquals(resourceId(appearance.unknownFaceTextureId), unknown.frontTextureId)
     }
 
     /** 從測試執行時實際打包的資源載入指定完整 ID，不製造模型或替貼圖補路徑。 */
