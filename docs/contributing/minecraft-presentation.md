@@ -429,7 +429,7 @@ readable replay unusable. The client keeps historical descriptions separate from
 For local development, `/mahjongcraft debug seated_participant` creates an ordinary armor stand at
 an available furniture seat that keeps existing occupants in place in the command user's waiting room. It does not insert a room member:
 normal discovery must do that. This command and its borrowed-actor adapter belong to the development-only
-[debug tools module](../../platform/minecraft/v1.20.1/mod-debug/README.md) and require operator permission. They are a small contract check, not a
+[debug tools](../../platform/minecraft/mod-debug/README.md) and require operator permission. They are a small contract check, not a
 replacement for testing another mod's ownership, behavior restoration and furniture integration.
 
 ### Providing a world character

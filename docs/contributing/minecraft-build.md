@@ -234,7 +234,7 @@ Each kind of run in detail:
   nobody hears; the test records each sound request in the report. Do not minimise the window: Minecraft stops
   drawing while minimised.
 - The steps and the input and sound handling live in the
-  [Minecraft 1.20.1 mod debug tools](../../platform/minecraft/v1.20.1/mod-debug/README.md).
+  [shared Minecraft mod debug tools](../../platform/minecraft/mod-debug/README.md).
 
 ### Automated Server Test
 
