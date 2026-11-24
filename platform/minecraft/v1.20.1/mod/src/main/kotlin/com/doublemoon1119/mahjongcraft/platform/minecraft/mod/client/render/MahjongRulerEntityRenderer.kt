@@ -2,7 +2,14 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongRulerEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setLight
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setNormal
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setOverlay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setUv
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerDimensions
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
@@ -100,13 +107,13 @@ class MahjongRulerEntityRenderer(
          */
         private fun face(normalX: Float, normalY: Float, normalZ: Float, corners: List<Triple<Float, Float, Float>>) {
             corners.zip(FACE_UVS).forEach { (corner, uv) ->
-                consumer.vertex(entry.pose(), corner.first, corner.second, corner.third)
-                    .color(red, green, blue, alpha)
-                    .uv(uv.first, uv.second)
-                    .overlayCoords(OverlayTexture.NO_OVERLAY)
-                    .uv2(light)
-                    .normal(entry.normal(), normalX, normalY, normalZ)
-                    .endVertex()
+                consumer.addVertex(entry.pose(), corner.first, corner.second, corner.third)
+                    .setColor(red, green, blue, alpha)
+                    .setUv(uv.first, uv.second)
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setLight(light)
+                    .setNormal(entry, normalX, normalY, normalZ)
+                    .finishVertex()
             }
         }
     }

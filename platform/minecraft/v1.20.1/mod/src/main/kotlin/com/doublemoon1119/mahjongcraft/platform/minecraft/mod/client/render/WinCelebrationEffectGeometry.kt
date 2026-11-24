@@ -1,5 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
@@ -330,9 +333,9 @@ class WinCelebrationEffectGeometry(private val tridentModel: TridentModel) {
         green: Int,
         blue: Int,
     ) {
-        buffer.vertex(positionMatrix, x.toFloat(), y.toFloat(), z.toFloat())
-            .color(red, green, blue, alpha)
-            .endVertex()
+        buffer.addVertex(positionMatrix, x.toFloat(), y.toFloat(), z.toFloat())
+            .setColor(red, green, blue, alpha)
+            .finishVertex()
     }
 
     /**

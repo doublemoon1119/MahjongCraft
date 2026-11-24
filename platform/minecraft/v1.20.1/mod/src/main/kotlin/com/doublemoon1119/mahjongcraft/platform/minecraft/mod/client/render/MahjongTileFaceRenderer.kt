@@ -4,7 +4,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileO
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model.MahjongTileModelLoadingPlugin
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTileEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setLight
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setUv
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTilePreviewTexture
@@ -114,8 +119,8 @@ class MahjongTileFaceRenderer(
         val bottom = centerY + height / 2f
         val opacity = (alpha.coerceIn(0f, 1f) * 255).roundToInt()
         fun vertex(x: Float, y: Float, u: Float, v: Float) {
-            buffer.vertex(matrix, x, y, z).color(255, 255, 255, opacity).uv(u, v)
-                .uv2(LightTexture.FULL_BRIGHT).endVertex()
+            buffer.addVertex(matrix, x, y, z).setColor(255, 255, 255, opacity).setUv(u, v)
+                .setLight(LightTexture.FULL_BRIGHT).finishVertex()
         }
         vertex(left, top, preview.u0, preview.v0)
         vertex(right, top, preview.u1, preview.v0)

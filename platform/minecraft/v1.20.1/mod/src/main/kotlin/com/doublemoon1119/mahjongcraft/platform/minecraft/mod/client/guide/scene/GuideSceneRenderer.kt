@@ -13,8 +13,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongBotE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongRoundInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongStoolSeatEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.framePartialTick
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.multiplyPose
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.mulPose
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
 import com.mojang.blaze3d.platform.Lighting
@@ -139,7 +142,7 @@ internal class GuideSceneRenderer : AutoCloseable {
         try {
             matrices.translate(centerX, centerY, SCENE_Z)
             // 上下翻轉只套用在位置；法線只受視角旋轉影響，光線因此可以直接以鏡頭的方向指定。
-            matrices.multiplyPose(Matrix4f().scaling(scale, -scale, scale))
+            matrices.mulPose(Matrix4f().scaling(scale, -scale, scale))
             matrices.translate(-bounds.centerX.toDouble(), -bounds.centerY.toDouble(), 0.0)
             matrices.mulPose(Quaternionf().setFromNormalized(rotation))
             val sceneToScreen = Matrix4f(matrices.last().pose())
@@ -568,7 +571,7 @@ internal class GuideSceneRenderer : AutoCloseable {
             listOf(Vector3f(min.x, min.y, min.z), Vector3f(max.x, min.y, min.z), Vector3f(max.x, min.y, max.z), Vector3f(min.x, min.y, max.z)),
         )
         faces.flatten().forEach { corner ->
-            buffer.vertex(matrix, corner.x, corner.y, corner.z).color(red, green, blue, CHANNEL_MASK).endVertex()
+            buffer.addVertex(matrix, corner.x, corner.y, corner.z).setColor(red, green, blue, CHANNEL_MASK).finishVertex()
         }
     }
 

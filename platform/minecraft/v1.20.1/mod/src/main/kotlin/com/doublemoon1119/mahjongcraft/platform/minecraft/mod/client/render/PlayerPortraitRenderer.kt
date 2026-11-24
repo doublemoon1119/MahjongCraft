@@ -9,7 +9,14 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character.R
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.modelPartShown
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setLight
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setNormal
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setOverlay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setUv
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceProviderException
@@ -420,11 +427,11 @@ class PlayerPortraitRenderer internal constructor(
         val matrix = matrices.last().pose()
         val a = (alpha.coerceIn(0f, 1f) * 255).roundToInt()
         fun vertex(px: Float, py: Float, u: Float, v: Float) {
-            val vertex = buffer.vertex(matrix, px, py, z).color(255, 255, 255, a).uv(u, v)
+            val vertex = buffer.addVertex(matrix, px, py, z).setColor(255, 255, 255, a).setUv(u, v)
             if (usesEntityLayer) {
-                vertex.overlayCoords(OverlayTexture.NO_OVERLAY).uv2(LightTexture.FULL_BRIGHT).normal(0f, 0f, 1f).endVertex()
+                vertex.setOverlay(OverlayTexture.NO_OVERLAY).setLight(LightTexture.FULL_BRIGHT).setNormal(0f, 0f, 1f).finishVertex()
             } else {
-                vertex.uv2(LightTexture.FULL_BRIGHT).endVertex()
+                vertex.setLight(LightTexture.FULL_BRIGHT).finishVertex()
             }
         }
         vertex(x, y, u0, v0)

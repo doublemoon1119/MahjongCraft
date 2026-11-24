@@ -9,6 +9,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettleme
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementRankingSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementWinnerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.winSettlementTileGroups
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementTemplateKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.EntryEmphasis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExtensionPresentationField
@@ -647,10 +650,10 @@ class WinSettlementPresentationEntityRenderer(
             val r = (argb ushr 16) and 0xFF
             val g = (argb ushr 8) and 0xFF
             val b = argb and 0xFF
-            buffer.vertex(matrix, left, top, 0.5f).color(r, g, b, a).endVertex()
-            buffer.vertex(matrix, right, top, 0.5f).color(r, g, b, a).endVertex()
-            buffer.vertex(matrix, right, bottom, 0.5f).color(r, g, b, a).endVertex()
-            buffer.vertex(matrix, left, bottom, 0.5f).color(r, g, b, a).endVertex()
+            buffer.addVertex(matrix, left, top, 0.5f).setColor(r, g, b, a).finishVertex()
+            buffer.addVertex(matrix, right, top, 0.5f).setColor(r, g, b, a).finishVertex()
+            buffer.addVertex(matrix, right, bottom, 0.5f).setColor(r, g, b, a).finishVertex()
+            buffer.addVertex(matrix, left, bottom, 0.5f).setColor(r, g, b, a).finishVertex()
         }
         if ((style.backgroundArgb ushr 24) != 0) quad(x, y, x + size.width, y + size.height, style.backgroundArgb)
         if (style.borderWidth > 0f && (style.borderArgb ushr 24) != 0) {
@@ -787,10 +790,10 @@ class WinSettlementPresentationEntityRenderer(
         val matrix = matrices.last().pose()
         val buffer = consumers.getBuffer(WorldPanelRenderType.layer)
         val a = (alpha.coerceIn(0f, 1f) * 255).roundToInt()
-        buffer.vertex(matrix, left, top, RANKING_HIGHLIGHT_Z).color(255, 205, 92, a).endVertex()
-        buffer.vertex(matrix, right, top, RANKING_HIGHLIGHT_Z).color(255, 238, 178, a).endVertex()
-        buffer.vertex(matrix, right, bottom, RANKING_HIGHLIGHT_Z).color(255, 238, 178, a).endVertex()
-        buffer.vertex(matrix, left, bottom, RANKING_HIGHLIGHT_Z).color(255, 205, 92, a).endVertex()
+        buffer.addVertex(matrix, left, top, RANKING_HIGHLIGHT_Z).setColor(255, 205, 92, a).finishVertex()
+        buffer.addVertex(matrix, right, top, RANKING_HIGHLIGHT_Z).setColor(255, 238, 178, a).finishVertex()
+        buffer.addVertex(matrix, right, bottom, RANKING_HIGHLIGHT_Z).setColor(255, 238, 178, a).finishVertex()
+        buffer.addVertex(matrix, left, bottom, RANKING_HIGHLIGHT_Z).setColor(255, 205, 92, a).finishVertex()
     }
 
     /**
@@ -882,10 +885,10 @@ class WinSettlementPresentationEntityRenderer(
         val matrix = matrices.last().pose()
         val buffer = consumers.getBuffer(WorldPanelRenderType.layer)
         val a = (alpha * 0.78f * 255).roundToInt()
-        buffer.vertex(matrix, -halfWidth, top, 0.5f).color(0, 0, 0, a).endVertex()
-        buffer.vertex(matrix, halfWidth, top, 0.5f).color(0, 0, 0, a).endVertex()
-        buffer.vertex(matrix, halfWidth, bottom, 0.5f).color(0, 0, 0, a).endVertex()
-        buffer.vertex(matrix, -halfWidth, bottom, 0.5f).color(0, 0, 0, a).endVertex()
+        buffer.addVertex(matrix, -halfWidth, top, 0.5f).setColor(0, 0, 0, a).finishVertex()
+        buffer.addVertex(matrix, halfWidth, top, 0.5f).setColor(0, 0, 0, a).finishVertex()
+        buffer.addVertex(matrix, halfWidth, bottom, 0.5f).setColor(0, 0, 0, a).finishVertex()
+        buffer.addVertex(matrix, -halfWidth, bottom, 0.5f).setColor(0, 0, 0, a).finishVertex()
     }
 
     /**

@@ -7,6 +7,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.Clie
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ExhaustiveDrawSettlementPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ExhaustiveDrawSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ScoreRankingAnimation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.exhaustiveDrawSettlementStatusTranslationKey
@@ -170,10 +173,10 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         val matrix = matrices.last().pose()
         val buffer = vertexConsumers.getBuffer(WorldPanelRenderType.layer)
         val panelAlpha = (alpha * PANEL_ALPHA * 255).roundToInt()
-        buffer.vertex(matrix, -panelHalfWidth, PANEL_TOP, PANEL_Z).color(0, 0, 0, panelAlpha).endVertex()
-        buffer.vertex(matrix, panelHalfWidth, PANEL_TOP, PANEL_Z).color(0, 0, 0, panelAlpha).endVertex()
-        buffer.vertex(matrix, panelHalfWidth, panelBottom, PANEL_Z).color(0, 0, 0, panelAlpha).endVertex()
-        buffer.vertex(matrix, -panelHalfWidth, panelBottom, PANEL_Z).color(0, 0, 0, panelAlpha).endVertex()
+        buffer.addVertex(matrix, -panelHalfWidth, PANEL_TOP, PANEL_Z).setColor(0, 0, 0, panelAlpha).finishVertex()
+        buffer.addVertex(matrix, panelHalfWidth, PANEL_TOP, PANEL_Z).setColor(0, 0, 0, panelAlpha).finishVertex()
+        buffer.addVertex(matrix, panelHalfWidth, panelBottom, PANEL_Z).setColor(0, 0, 0, panelAlpha).finishVertex()
+        buffer.addVertex(matrix, -panelHalfWidth, panelBottom, PANEL_Z).setColor(0, 0, 0, panelAlpha).finishVertex()
     }
 
     /**
@@ -312,10 +315,10 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         val matrix = matrices.last().pose()
         val buffer = vertexConsumers.getBuffer(WorldPanelRenderType.layer)
         val a = (alpha.coerceIn(0f, 1f) * 255).roundToInt()
-        buffer.vertex(matrix, left, top, RANKING_HIGHLIGHT_Z).color(255, 205, 92, a).endVertex()
-        buffer.vertex(matrix, right, top, RANKING_HIGHLIGHT_Z).color(255, 238, 178, a).endVertex()
-        buffer.vertex(matrix, right, bottom, RANKING_HIGHLIGHT_Z).color(255, 238, 178, a).endVertex()
-        buffer.vertex(matrix, left, bottom, RANKING_HIGHLIGHT_Z).color(255, 205, 92, a).endVertex()
+        buffer.addVertex(matrix, left, top, RANKING_HIGHLIGHT_Z).setColor(255, 205, 92, a).finishVertex()
+        buffer.addVertex(matrix, right, top, RANKING_HIGHLIGHT_Z).setColor(255, 238, 178, a).finishVertex()
+        buffer.addVertex(matrix, right, bottom, RANKING_HIGHLIGHT_Z).setColor(255, 238, 178, a).finishVertex()
+        buffer.addVertex(matrix, left, bottom, RANKING_HIGHLIGHT_Z).setColor(255, 205, 92, a).finishVertex()
     }
 
     /**

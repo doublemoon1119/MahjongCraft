@@ -1,5 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
 import com.mojang.blaze3d.systems.RenderSystem
 import com.mojang.blaze3d.vertex.PoseStack
 import net.minecraft.client.gui.Font
@@ -37,10 +40,10 @@ object WorldPanelRenderer {
         val red = color ushr 16 and 0xFF
         val green = color ushr 8 and 0xFF
         val blue = color and 0xFF
-        buffer.vertex(matrix, left, top, z).color(red, green, blue, alpha).endVertex()
-        buffer.vertex(matrix, right, top, z).color(red, green, blue, alpha).endVertex()
-        buffer.vertex(matrix, right, bottom, z).color(red, green, blue, alpha).endVertex()
-        buffer.vertex(matrix, left, bottom, z).color(red, green, blue, alpha).endVertex()
+        buffer.addVertex(matrix, left, top, z).setColor(red, green, blue, alpha).finishVertex()
+        buffer.addVertex(matrix, right, top, z).setColor(red, green, blue, alpha).finishVertex()
+        buffer.addVertex(matrix, right, bottom, z).setColor(red, green, blue, alpha).finishVertex()
+        buffer.addVertex(matrix, left, bottom, z).setColor(red, green, blue, alpha).finishVertex()
     }
 
     /**

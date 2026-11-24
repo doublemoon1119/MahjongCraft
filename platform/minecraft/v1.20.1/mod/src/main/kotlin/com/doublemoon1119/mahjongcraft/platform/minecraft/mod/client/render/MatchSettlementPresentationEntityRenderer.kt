@@ -5,6 +5,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.player.Clie
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MatchSettlementPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MatchSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
@@ -232,10 +235,10 @@ class MatchSettlementPresentationEntityRenderer(
         val right = maxOf(x1, x2)
         val top = minOf(y1, y2)
         val bottom = maxOf(y1, y2)
-        buffer.vertex(matrix, left, top, HIGHLIGHT_Z).color(255, 211, 82, alpha).endVertex()
-        buffer.vertex(matrix, right, top, HIGHLIGHT_Z).color(255, 241, 170, alpha).endVertex()
-        buffer.vertex(matrix, right, bottom, HIGHLIGHT_Z).color(255, 241, 170, alpha).endVertex()
-        buffer.vertex(matrix, left, bottom, HIGHLIGHT_Z).color(255, 211, 82, alpha).endVertex()
+        buffer.addVertex(matrix, left, top, HIGHLIGHT_Z).setColor(255, 211, 82, alpha).finishVertex()
+        buffer.addVertex(matrix, right, top, HIGHLIGHT_Z).setColor(255, 241, 170, alpha).finishVertex()
+        buffer.addVertex(matrix, right, bottom, HIGHLIGHT_Z).setColor(255, 241, 170, alpha).finishVertex()
+        buffer.addVertex(matrix, left, bottom, HIGHLIGHT_Z).setColor(255, 211, 82, alpha).finishVertex()
     }
 
     /**
@@ -261,10 +264,10 @@ class MatchSettlementPresentationEntityRenderer(
         val red = color ushr 16 and 0xFF
         val green = color ushr 8 and 0xFF
         val blue = color and 0xFF
-        buffer.vertex(matrix, -layout.panelHalfWidth, PANEL_TOP, PANEL_Z).color(red, green, blue, a).endVertex()
-        buffer.vertex(matrix, layout.panelHalfWidth, PANEL_TOP, PANEL_Z).color(red, green, blue, a).endVertex()
-        buffer.vertex(matrix, layout.panelHalfWidth, layout.panelBottom, PANEL_Z).color(red, green, blue, a).endVertex()
-        buffer.vertex(matrix, -layout.panelHalfWidth, layout.panelBottom, PANEL_Z).color(red, green, blue, a).endVertex()
+        buffer.addVertex(matrix, -layout.panelHalfWidth, PANEL_TOP, PANEL_Z).setColor(red, green, blue, a).finishVertex()
+        buffer.addVertex(matrix, layout.panelHalfWidth, PANEL_TOP, PANEL_Z).setColor(red, green, blue, a).finishVertex()
+        buffer.addVertex(matrix, layout.panelHalfWidth, layout.panelBottom, PANEL_Z).setColor(red, green, blue, a).finishVertex()
+        buffer.addVertex(matrix, -layout.panelHalfWidth, layout.panelBottom, PANEL_Z).setColor(red, green, blue, a).finishVertex()
     }
 
     /**

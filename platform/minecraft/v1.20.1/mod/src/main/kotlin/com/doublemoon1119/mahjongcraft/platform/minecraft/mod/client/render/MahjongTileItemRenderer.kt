@@ -7,7 +7,14 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.item.MahjongTileIt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientModels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ItemStackRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setLight
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setNormal
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setOverlay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setUv
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
@@ -404,13 +411,13 @@ object MahjongTileItemRenderer : ItemStackRenderer {
             val buffer = if (face.usesFaceTexture) faceBuffer else coverBuffer
             face.corners.forEachIndexed { index, corner ->
                 val (u, v) = face.uvAt(index)
-                buffer.vertex(entry.pose(), corner.x, corner.y, corner.z)
-                    .color(1.0f, 1.0f, 1.0f, 1.0f)
-                    .uv(u, v)
-                    .overlayCoords(overlay)
-                    .uv2(light)
-                    .normal(entry.normal(), face.normal.x, face.normal.y, face.normal.z)
-                    .endVertex()
+                buffer.addVertex(entry.pose(), corner.x, corner.y, corner.z)
+                    .setColor(1.0f, 1.0f, 1.0f, 1.0f)
+                    .setUv(u, v)
+                    .setOverlay(overlay)
+                    .setLight(light)
+                    .setNormal(entry, face.normal.x, face.normal.y, face.normal.z)
+                    .finishVertex()
             }
         }
     }

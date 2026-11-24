@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.framePartialTick
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.multiplyPose
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.mulPose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.renderEntityFollowingLook
 import com.mojang.blaze3d.platform.Lighting
 import com.mojang.blaze3d.systems.RenderSystem
@@ -43,7 +43,7 @@ internal object GuiEntityModelRenderer {
                 } else {
                     matrices.pushPose()
                     matrices.translate(view.centerX.toDouble(), view.feetY.toDouble(), 50.0)
-                    matrices.multiplyPose(view.scaleMatrix(scale))
+                    matrices.mulPose(view.scaleMatrix(scale))
                     matrices.mulPose(view.modelRotation())
                     Lighting.setupForEntityInInventory()
                     val dispatcher = client.entityRenderDispatcher

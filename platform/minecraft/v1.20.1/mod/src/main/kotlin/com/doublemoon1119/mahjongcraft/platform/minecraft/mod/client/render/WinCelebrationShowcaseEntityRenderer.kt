@@ -20,7 +20,14 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ShowcaseCardSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinCelebrationCinematicTimeline
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinCelebrationShowcaseEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setLight
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setNormal
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setOverlay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setUv
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.ShowcaseVisualLayer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
@@ -43,7 +50,6 @@ import net.minecraft.world.item.ItemDisplayContext
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.world.level.block.Blocks
-import org.joml.Matrix3f
 import org.joml.Matrix4f
 import org.joml.Quaternionf
 import org.joml.Vector3f
@@ -186,8 +192,8 @@ class WinCelebrationShowcaseEntityRenderer(
         )
         faces.forEach { face ->
             (face + face.reversedArray()).forEach { point ->
-                buffer.vertex(matrix, point[0].toFloat(), point[1].toFloat(), point[2].toFloat())
-                    .color(255, 255, 255, alpha.coerceIn(0, 255)).endVertex()
+                buffer.addVertex(matrix, point[0].toFloat(), point[1].toFloat(), point[2].toFloat())
+                    .setColor(255, 255, 255, alpha.coerceIn(0, 255)).finishVertex()
             }
         }
     }
@@ -324,10 +330,10 @@ class WinCelebrationShowcaseEntityRenderer(
         val smokeFrame = (progress * SMOKE_TEXTURES.size).toInt().coerceIn(0, SMOKE_TEXTURES.lastIndex)
         val buffer = consumers.getBuffer(RenderType.entityTranslucent(SMOKE_TEXTURES[smokeFrame]))
         val color = if (index % 4 == 0) EXPLOSION_WHITE_COLOR else SMOKE_COLOR
-        texturedVertex(buffer, entry.pose(), entry.normal(), -size, -size, 0f, 0f, 1f, 15728880, alpha / 255.0, color)
-        texturedVertex(buffer, entry.pose(), entry.normal(), size, -size, 0f, 1f, 1f, 15728880, alpha / 255.0, color)
-        texturedVertex(buffer, entry.pose(), entry.normal(), size, size, 0f, 1f, 0f, 15728880, alpha / 255.0, color)
-        texturedVertex(buffer, entry.pose(), entry.normal(), -size, size, 0f, 0f, 0f, 15728880, alpha / 255.0, color)
+        texturedVertex(buffer, entry.pose(), entry, -size, -size, 0f, 0f, 1f, 15728880, alpha / 255.0, color)
+        texturedVertex(buffer, entry.pose(), entry, size, -size, 0f, 1f, 1f, 15728880, alpha / 255.0, color)
+        texturedVertex(buffer, entry.pose(), entry, size, size, 0f, 1f, 0f, 15728880, alpha / 255.0, color)
+        texturedVertex(buffer, entry.pose(), entry, -size, size, 0f, 0f, 0f, 15728880, alpha / 255.0, color)
         matrices.popPose()
     }
 
@@ -1023,7 +1029,7 @@ class WinCelebrationShowcaseEntityRenderer(
             val point = flightPosition(entity, card, wingIndex, startX, startY, startZ, localTargetX, returnStart, sampleElapsed, billboardRotation, winningTile)
             val strength = 1.0 - index.toDouble() / segmentCount
             val color = if (winningTile) WINNING_TILE_TRAIL_COLOR else CARD_TRAIL_COLOR
-            texturedThinQuad(buffer, entry.pose(), entry.normal(), previous, point, 0.004 + strength * 0.009, (strength * 175).toInt(), light, color)
+            texturedThinQuad(buffer, entry.pose(), entry, previous, point, 0.004 + strength * 0.009, (strength * 175).toInt(), light, color)
             previous = point
         }
     }
@@ -1033,7 +1039,7 @@ class WinCelebrationShowcaseEntityRenderer(
      *
      * @param buffer 接收頂點的 consumer。
      * @param matrix 頂點位置矩陣。
-     * @param normal 頂點法線矩陣。
+     * @param normal 轉換頂點法線的姿勢。
      * @param start 線段起點。
      * @param end 線段終點。
      * @param width 四邊形半寬。
@@ -1041,20 +1047,20 @@ class WinCelebrationShowcaseEntityRenderer(
      * @param light 頂點光照值。
      * @param color RGB 顏色。
      */
-    private fun texturedThinQuad(buffer: VertexConsumer, matrix: Matrix4f, normal: Matrix3f, start: Vector3f, end: Vector3f, width: Double, alpha: Int, light: Int, color: Int) {
+    private fun texturedThinQuad(buffer: VertexConsumer, matrix: Matrix4f, normal: PoseStack.Pose, start: Vector3f, end: Vector3f, width: Double, alpha: Int, light: Int, color: Int) {
         val dx = end.x - start.x
         val dz = end.z - start.z
         val length = sqrt((dx * dx + dz * dz).toDouble()).coerceAtLeast(0.0001)
         val ox = (-dz / length * width).toFloat()
         val oz = (dx / length * width).toFloat()
         fun vertex(point: Vector3f, sideX: Float, sideZ: Float, u: Float, v: Float) {
-            buffer.vertex(matrix, point.x + sideX, point.y, point.z + sideZ)
-                .color(color shr 16 and 0xFF, color shr 8 and 0xFF, color and 0xFF, alpha.coerceIn(0, 255))
-                .uv(u, v)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(light)
-                .normal(normal, 0.0f, 1.0f, 0.0f)
-                .endVertex()
+            buffer.addVertex(matrix, point.x + sideX, point.y, point.z + sideZ)
+                .setColor(color shr 16 and 0xFF, color shr 8 and 0xFF, color and 0xFF, alpha.coerceIn(0, 255))
+                .setUv(u, v)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(light)
+                .setNormal(normal, 0.0f, 1.0f, 0.0f)
+                .finishVertex()
         }
         vertex(start, -ox, -oz, 0.0f, 1.0f)
         vertex(start, ox, oz, 1.0f, 1.0f)
@@ -1363,8 +1369,8 @@ class WinCelebrationShowcaseEntityRenderer(
             doubleArrayOf(ax + ox, ay, az + oz),
             doubleArrayOf(ax - ox, ay, az - oz),
         ).forEach { point ->
-            buffer.vertex(matrix, point[0].toFloat(), point[1].toFloat(), point[2].toFloat())
-                .color(color shr 16 and 0xFF, color shr 8 and 0xFF, color and 0xFF, alpha.coerceIn(0, 255)).endVertex()
+            buffer.addVertex(matrix, point[0].toFloat(), point[1].toFloat(), point[2].toFloat())
+                .setColor(color shr 16 and 0xFF, color shr 8 and 0xFF, color and 0xFF, alpha.coerceIn(0, 255)).finishVertex()
         }
     }
 
@@ -1373,7 +1379,7 @@ class WinCelebrationShowcaseEntityRenderer(
      *
      * @param buffer 接收頂點的 consumer。
      * @param matrix 頂點位置矩陣。
-     * @param normal 頂點法線矩陣。
+     * @param normal 轉換頂點法線的姿勢。
      * @param x 頂點 X 座標。
      * @param y 頂點 Y 座標。
      * @param z 頂點 Z 座標。
@@ -1383,8 +1389,8 @@ class WinCelebrationShowcaseEntityRenderer(
      * @param alpha 透明度比例。
      * @param color RGB 顏色，預設為白色。
      */
-    private fun texturedVertex(buffer: VertexConsumer, matrix: Matrix4f, normal: Matrix3f, x: Float, y: Float, z: Float, u: Float, v: Float, light: Int, alpha: Double, color: Int = 0xFFFFFF) {
-        buffer.vertex(matrix, x, y, z).color(color shr 16 and 0xFF, color shr 8 and 0xFF, color and 0xFF, (alpha * 255).toInt()).uv(u, v).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(normal, 0f, 0f, 1f).endVertex()
+    private fun texturedVertex(buffer: VertexConsumer, matrix: Matrix4f, normal: PoseStack.Pose, x: Float, y: Float, z: Float, u: Float, v: Float, light: Int, alpha: Double, color: Int = 0xFFFFFF) {
+        buffer.addVertex(matrix, x, y, z).setColor(color shr 16 and 0xFF, color shr 8 and 0xFF, color and 0xFF, (alpha * 255).toInt()).setUv(u, v).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(normal, 0f, 0f, 1f).finishVertex()
     }
 
     /**
@@ -1400,7 +1406,7 @@ class WinCelebrationShowcaseEntityRenderer(
      * @param alpha 透明度比例。
      */
     private fun titleVertex(buffer: VertexConsumer, matrix: Matrix4f, x: Float, y: Float, z: Float, u: Float, v: Float, alpha: Double) {
-        buffer.vertex(matrix, x, y, z).color(255, 255, 255, (alpha * 255).toInt()).uv(u, v).uv2(FULL_BRIGHT_LIGHT).endVertex()
+        buffer.addVertex(matrix, x, y, z).setColor(255, 255, 255, (alpha * 255).toInt()).setUv(u, v).setLight(FULL_BRIGHT_LIGHT).finishVertex()
     }
 
     /**
