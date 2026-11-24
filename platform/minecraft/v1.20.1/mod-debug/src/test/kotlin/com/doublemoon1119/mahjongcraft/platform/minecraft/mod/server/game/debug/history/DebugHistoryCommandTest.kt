@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryRetentionCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history.HistoryGenerationRuntimeFactory
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history.fixture.HistoryFixtureRuntimeFactory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import com.mojang.brigadier.tree.CommandNode
@@ -42,6 +43,7 @@ class DebugHistoryCommandTest {
             controller = HistoryGenerationController(
                 writer = writer,
                 runtimeFactory = HistoryGenerationRuntimeFactory { error("Unexpected runtime creation") },
+                fixtureRuntimeFactory = HistoryFixtureRuntimeFactory { error("Unexpected runtime creation") },
                 store = store,
                 configState = MinecraftServerConfigState(),
                 scope = TestAppScope(),
@@ -55,7 +57,7 @@ class DebugHistoryCommandTest {
         val node = command.build().build()
 
         assertEquals("history", node.name)
-        assertEquals(setOf("generate", "status", "cancel"), node.children.map(CommandNode<CommandSourceStack>::getName).toSet())
+        assertEquals(setOf("generate", "fixture", "status", "cancel"), node.children.map(CommandNode<CommandSourceStack>::getName).toSet())
         assertNotNull(node.getChild("status")?.command)
         assertNotNull(node.getChild("cancel")?.command)
         val generate = node.getChild("generate")

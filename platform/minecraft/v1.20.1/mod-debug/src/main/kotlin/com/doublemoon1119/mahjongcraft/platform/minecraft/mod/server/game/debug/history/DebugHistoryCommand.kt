@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.prefixedConfigMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history.HistoryGenerationStartResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history.fixture.HistoryFixtures
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
@@ -23,6 +24,7 @@ import net.minecraft.commands.SharedSuggestionProvider
 import net.minecraft.commands.arguments.ResourceLocationArgument
 import net.minecraft.network.chat.Component
 import java.util.concurrent.CompletableFuture
+import kotlin.uuid.Uuid
 
 /**
  * 建立 `/mahjongcraft debug history` 的歷史生成、狀態及取消指令。
@@ -48,6 +50,13 @@ class DebugHistoryCommand(
                         .then(argument(COUNT_ARGUMENT, IntegerArgumentType.integer(MIN_COUNT, MAX_COUNT)).executes(::generate)),
                 ),
         )
+        .then(
+            literal(FIXTURE_SUBCOMMAND).then(
+                argument(FIXTURE_ARGUMENT, ResourceLocationArgument.id())
+                    .suggests(::suggestFixtures)
+                    .executes(::fixture),
+            ),
+        )
         .then(literal(STATUS_SUBCOMMAND).executes { status(it) })
         .then(literal(CANCEL_SUBCOMMAND).executes { cancel(it) })
 
@@ -60,14 +69,35 @@ class DebugHistoryCommand(
     private fun generate(context: CommandContext<CommandSourceStack>): Int {
         val scenario = ResourceLocationArgument.getId(context, SCENARIO_ARGUMENT).toString()
         val count = IntegerArgumentType.getInteger(context, COUNT_ARGUMENT)
-        val source = context.source
+        return startAndReply(context.source) { session -> controller.start(scenario, count, session) }
+    }
+
+    /**
+     * 產生一份固定內容的測試牌譜。
+     *
+     * @param context Brigadier 指令內容。
+     * @return 指令已接受的結果碼；實際工作於協程中執行。
+     */
+    private fun fixture(context: CommandContext<CommandSourceStack>): Int {
+        val fixture = ResourceLocationArgument.getId(context, FIXTURE_ARGUMENT).toString()
+        return startAndReply(context.source) { session -> controller.startFixture(fixture, session) }
+    }
+
+    /**
+     * 在目前的存檔 session 開始一批工作，並在伺服器主執行緒回覆開始或拒絕的原因。
+     *
+     * @param source 指令來源。
+     * @param start 以 session 開始工作。
+     * @return 指令已接受的結果碼；實際工作於協程中執行。
+     */
+    private fun startAndReply(source: CommandSourceStack, start: suspend (Uuid) -> HistoryGenerationStartResult): Int {
         val session = writer.currentSessionId
         if (session == null) {
             source.sendFailure(message(HistoryDebugKeys.STORAGE_UNAVAILABLE, "History storage is unavailable", ChatFormatting.RED))
             return FAILURE
         }
         scope.launch(dispatchers.main) {
-            val result = controller.start(scenario, count, session)
+            val result = start(session)
             withContext(dispatchers.main) {
                 if (!writer.isCurrentSession(session)) return@withContext
                 when (result) {
@@ -124,6 +154,15 @@ class DebugHistoryCommand(
     private fun suggestScenarios(context: CommandContext<CommandSourceStack>, builder: SuggestionsBuilder): CompletableFuture<Suggestions> = SharedSuggestionProvider.suggest(HeadlessHistoryScenario.entries.map { it.identifier }, builder)
 
     /**
+     * 提供所有測試牌譜的 tab 補全。
+     *
+     * @param context Brigadier 指令內容。
+     * @param builder 補全結果建構器。
+     * @return 非同步補全結果。
+     */
+    private fun suggestFixtures(context: CommandContext<CommandSourceStack>, builder: SuggestionsBuilder): CompletableFuture<Suggestions> = SharedSuggestionProvider.suggest(HistoryFixtures.ALL.map { it.id }, builder)
+
+    /**
      * 建立帶有固定前綴與英文 fallback 的安全回覆。
      *
      * @param key 翻譯鍵。
@@ -139,6 +178,12 @@ class DebugHistoryCommand(
 
         /** 批次生成子指令名稱。 */
         const val GENERATE_SUBCOMMAND = "generate"
+
+        /** 測試牌譜子指令名稱。 */
+        const val FIXTURE_SUBCOMMAND = "fixture"
+
+        /** 測試牌譜引數名稱。 */
+        const val FIXTURE_ARGUMENT = "fixture"
 
         /** 進度查詢子指令名稱。 */
         const val STATUS_SUBCOMMAND = "status"

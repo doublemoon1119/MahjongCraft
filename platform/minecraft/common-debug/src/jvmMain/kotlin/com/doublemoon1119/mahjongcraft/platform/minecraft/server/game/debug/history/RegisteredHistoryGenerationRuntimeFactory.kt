@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history
 
+import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
@@ -19,6 +20,9 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDet
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history.fixture.HistoryFixture
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history.fixture.HistoryFixtureRuntime
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history.fixture.HistoryFixtureRuntimeFactory
 
 /**
  * 使用 extension 初始化完成後的 registry 建立隔離生成環境，讓生成的對局與正式對局使用同一套規則登記。
@@ -34,6 +38,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
  * @property gameCommands 擴充命令 handler。
  * @property ruleDecisionResolvers 規則選擇流程，例如補花。
  * @property failurePolicy 判斷 AI 策略丟出的失敗能否改用固定結果。
+ * @property extensionActions 測試牌譜的腳本 AI 把立直等規則擴充動作轉成命令。
  */
 class RegisteredHistoryGenerationRuntimeFactory(
     private val moduleRegistry: MahjongModuleRegistry,
@@ -47,7 +52,22 @@ class RegisteredHistoryGenerationRuntimeFactory(
     private val gameCommands: ExtensionGameCommandExecutorRegistry,
     private val ruleDecisionResolvers: RuleDecisionResolverRegistry,
     private val failurePolicy: ExtensionFailurePolicy,
-) : HistoryGenerationRuntimeFactory {
+    private val extensionActions: ExtensionGameActionAiRegistry,
+) : HistoryGenerationRuntimeFactory,
+    HistoryFixtureRuntimeFactory {
+    /**
+     * 建立照腳本進行的測試牌譜對局：每個座位都使用照腳本做決定的 AI，種子固定。
+     *
+     * @param fixture 測試牌譜。
+     * @return 可檢查腳本是否照順序執行完的對局環境。
+     */
+    override suspend fun createFixture(fixture: HistoryFixture): HistoryFixtureRuntime = HistoryFixtureRuntime.create(
+        fixture = fixture,
+        registries = registries(),
+        extensionActions = extensionActions,
+        failurePolicy = failurePolicy,
+    )
+
     /**
      * 建立全部座位都是真 AI 的完整對局。
      *

@@ -24,12 +24,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.text.DebugTextCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history.HistoryGenerationRuntimeFactory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history.RegisteredHistoryGenerationRuntimeFactory
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history.fixture.HistoryFixtureRuntimeFactory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.presentation.DebugWinShowcaseOverride
 import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.scenario.DebugGameScenarioPresentationPublisher
 import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.support.DebugVirtualTableLayoutFactory
 import org.koin.core.module.Module
-import org.koin.dsl.bind
+import org.koin.dsl.binds
 import org.koin.dsl.module
 import org.koin.plugin.module.dsl.single
 
@@ -40,7 +41,7 @@ val debugServerModule: Module = module {
     single<DebugAnimationCommand>()
     single<DebugDecisionCommand>()
     single<DebugHistoryCommand>()
-    single<RegisteredHistoryGenerationRuntimeFactory>() bind HistoryGenerationRuntimeFactory::class
+    single<RegisteredHistoryGenerationRuntimeFactory>() binds arrayOf(HistoryGenerationRuntimeFactory::class, HistoryFixtureRuntimeFactory::class)
     single<HistoryGenerationController>()
     single<DebugWinRoundContinuationState>()
     single<DebugWinShowcaseOverride>()

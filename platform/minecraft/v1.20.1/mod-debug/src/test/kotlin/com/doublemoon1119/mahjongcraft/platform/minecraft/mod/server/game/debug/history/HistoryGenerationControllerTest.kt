@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.His
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryRetentionCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history.HistoryGenerationRuntimeFactory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history.HistoryGenerationStartResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history.fixture.HistoryFixtureRuntimeFactory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledHeadlessHistoryRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
@@ -53,6 +54,7 @@ class HistoryGenerationControllerTest {
             val controller = HistoryGenerationController(
                 writer = writer,
                 runtimeFactory = HistoryGenerationRuntimeFactory { error("runtime must not be created") },
+                fixtureRuntimeFactory = HistoryFixtureRuntimeFactory { error("runtime must not be created") },
                 store = store,
                 configState = config,
                 scope = scope,
@@ -93,6 +95,7 @@ class HistoryGenerationControllerTest {
                     matchSeed = testMatchSeed(creations),
                 )
             },
+            fixtureRuntimeFactory = HistoryFixtureRuntimeFactory { error("runtime must not be created") },
             store = store,
             configState = config,
             scope = scope,

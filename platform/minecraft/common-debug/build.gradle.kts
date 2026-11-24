@@ -28,6 +28,8 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(project(":testing:testing-mahjong-logic"))
+                implementation(project(":testing:testing-mahjong-flow"))
+                implementation(libs.kotlinx.coroutines.test)
             }
         }
     }

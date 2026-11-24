@@ -17,6 +17,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.His
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history.HistoryGenerationRuntimeFactory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history.HistoryGenerationStartResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history.fixture.HistoryFixtureRuntime
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history.fixture.HistoryFixtureRuntimeFactory
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.history.fixture.HistoryFixtures
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -46,6 +49,7 @@ import kotlin.uuid.Uuid
  *
  * @property writer 唯一正式 outbox writer 與 session 邊界。
  * @property runtimeFactory 隔離 Flow 組裝入口。
+ * @property fixtureRuntimeFactory 測試牌譜的隔離對局組裝入口。
  * @property store 正式待寫佇列，僅讀取提交確認與固定記錄決策。
  * @property configState 開始前檢查的有效 server 設定。
  * @property scope 隨伺服器 session 取消的應用作用域。
@@ -54,6 +58,7 @@ import kotlin.uuid.Uuid
 class HistoryGenerationController(
     private val writer: HistoryOutboxWriter,
     private val runtimeFactory: HistoryGenerationRuntimeFactory,
+    private val fixtureRuntimeFactory: HistoryFixtureRuntimeFactory,
     private val store: AuthoritativeStateStore,
     private val configState: MinecraftServerConfigState,
     private val scope: AppCoroutineScope,
@@ -85,10 +90,42 @@ class HistoryGenerationController(
      * @param expectedSessionId 要求發出時所屬的存檔 session。
      * @return 開始或拒絕的安全原因。
      */
-    suspend fun start(scenarioId: String, count: Int, expectedSessionId: Uuid? = writer.currentSessionId): HistoryGenerationStartResult = startMutex.withLock {
+    suspend fun start(scenarioId: String, count: Int, expectedSessionId: Uuid? = writer.currentSessionId): HistoryGenerationStartResult {
         require(count in 1..MAX_MATCHES) { "History generation count must be between 1 and 100" }
         val scenario = HeadlessHistoryScenario.entries.firstOrNull { it.identifier == scenarioId }
-            ?: return@withLock HistoryGenerationStartResult.InvalidScenario
+            ?: return HistoryGenerationStartResult.InvalidScenario
+        return startBatch(scenario.identifier, count, expectedSessionId, create = { runtimeFactory.create(scenario) }, verify = {})
+    }
+
+    /**
+     * 驗證政策及 session 後產生一份測試牌譜；整場打完後確認腳本全部照順序執行完。
+     *
+     * @param fixtureId 測試牌譜的識別碼。
+     * @param expectedSessionId 要求發出時所屬的存檔 session。
+     * @return 開始或拒絕的安全原因。
+     */
+    suspend fun startFixture(fixtureId: String, expectedSessionId: Uuid? = writer.currentSessionId): HistoryGenerationStartResult {
+        val fixture = HistoryFixtures.find(fixtureId) ?: return HistoryGenerationStartResult.InvalidScenario
+        return startBatch(fixture.id, 1, expectedSessionId, create = { fixtureRuntimeFactory.createFixture(fixture) }, verify = { (it as HistoryFixtureRuntime).verify() })
+    }
+
+    /**
+     * 驗證政策及 session 後啟動一批工作。
+     *
+     * @param label 進度顯示的情境或測試牌譜識別碼。
+     * @param count 要求場數。
+     * @param expectedSessionId 要求發出時所屬的存檔 session。
+     * @param create 建立一場隔離對局。
+     * @param verify 整場打完、封存之前的額外檢查；失敗時這批以驗證錯誤停止。
+     * @return 開始或拒絕的安全原因。
+     */
+    private suspend fun startBatch(
+        label: String,
+        count: Int,
+        expectedSessionId: Uuid?,
+        create: suspend () -> HeadlessHistoryMatchRuntime,
+        verify: (HeadlessHistoryMatchRuntime) -> Unit,
+    ): HistoryGenerationStartResult = startMutex.withLock {
         val session = writer.currentSessionId ?: return@withLock HistoryGenerationStartResult.SessionUnavailable
         if (expectedSessionId != session) return@withLock HistoryGenerationStartResult.SessionUnavailable
         if (job?.isActive == true) {
@@ -103,8 +140,8 @@ class HistoryGenerationController(
         scope.coroutineContext.ensureActive()
         cancellationRequested.set(false)
         sessionId = session
-        state.value = HistoryGenerationProgress(scenario.identifier, count)
-        job = scope.launch(dispatchers.default, start = CoroutineStart.LAZY) { runBatch(scenario, count, session) }
+        state.value = HistoryGenerationProgress(label, count)
+        job = scope.launch(dispatchers.default, start = CoroutineStart.LAZY) { runBatch(count, session, create, verify) }
         job?.start()
         HistoryGenerationStartResult.Started
     }
@@ -131,11 +168,17 @@ class HistoryGenerationController(
     /**
      * 在批次時間限制內逐場計算及封存。
      *
-     * @param scenario 場長情境。
      * @param count 要求場數。
      * @param session 開始時固定的存檔 session。
+     * @param create 建立一場隔離對局。
+     * @param verify 整場打完、封存之前的額外檢查。
      */
-    private suspend fun runBatch(scenario: HeadlessHistoryScenario, count: Int, session: Uuid) {
+    private suspend fun runBatch(
+        count: Int,
+        session: Uuid,
+        create: suspend () -> HeadlessHistoryMatchRuntime,
+        verify: (HeadlessHistoryMatchRuntime) -> Unit,
+    ) {
         val started = TimeSource.Monotonic.markNow()
         var activeRuntime: HeadlessHistoryMatchRuntime? = null
         val completed = mutableSetOf<Uuid>()
@@ -149,7 +192,7 @@ class HistoryGenerationController(
                 repeat(count) {
                     if (cancellationRequested.get()) return@withTimeout
                     requireSession(session)
-                    activeRuntime = withTimeout(MATCH_TIMEOUT) { runtimeFactory.create(scenario) }
+                    activeRuntime = withTimeout(MATCH_TIMEOUT) { create() }
                     val runtime = checkNotNull(activeRuntime)
                     val game = checkNotNull(runtime.currentGame()) { "Generated match has no opening game" }
                     if (!managed(session) { writer.beginGeneration(game, session) }) {
@@ -169,6 +212,7 @@ class HistoryGenerationController(
                                     "Generated match has no authoritative terminal evidence"
                                 }
                                 check(terminal.completed) { "Generated match did not complete normally" }
+                                verify(runtime)
                                 completed += batch.matchId
                                 val receipt = managed(session) { writer.finishGeneration(batch.matchId, terminal, session) }
                                 recordReceipt(receipt, archived, pruned, samples)
@@ -194,6 +238,7 @@ class HistoryGenerationController(
                             replayBytes = samples.values.sum(),
                             largestReplayBytes = samples.values.maxOrNull() ?: 0L,
                             replaySampleCount = samples.size,
+                            archivedMatchIds = archived.map(Uuid::toString),
                             elapsed = started.elapsedNow(),
                         )
                     }
@@ -230,6 +275,7 @@ class HistoryGenerationController(
                         replayBytes = samples.values.sum(),
                         largestReplayBytes = samples.values.maxOrNull() ?: 0L,
                         replaySampleCount = samples.size,
+                        archivedMatchIds = archived.map(Uuid::toString),
                     )
                 }
             }

@@ -22,6 +22,7 @@ import kotlin.time.Duration
  * @property replayBytes 已確認的批次 Replay 存放位元組（壓縮後）合計，不是磁碟釋放量。
  * @property largestReplayBytes 已確認的最大單場 Replay 存放位元組數（壓縮後）。
  * @property replaySampleCount 已量得 Replay payload 大小的場數，作為平均值的分母。
+ * @property archivedMatchIds 已證實封存的對局識別碼，依封存順序排列。
  */
 internal data class HistoryGenerationProgress(
     val scenarioId: String,
@@ -40,6 +41,7 @@ internal data class HistoryGenerationProgress(
     val replayBytes: Long = 0L,
     val largestReplayBytes: Long = 0L,
     val replaySampleCount: Int = 0,
+    val archivedMatchIds: List<String> = emptyList(),
 )
 
 /** 生成器回覆使用的固定安全分類，原始例外只記錄於伺服器 log。 */
