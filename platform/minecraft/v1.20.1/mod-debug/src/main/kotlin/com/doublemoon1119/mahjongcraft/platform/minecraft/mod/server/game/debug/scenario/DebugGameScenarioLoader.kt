@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.GameEventExclusions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.scenario.DebugGameScenario
 import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.scenario.DebugGameScenarioContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.scenario.DebugGameScenarioLoadResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.scenario.DebugGameScenarioPresentation
@@ -23,13 +24,17 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /**
  * 驗證、原子替換並同步 development-only 權威對局情境；載入情境的場次不再產生進度、統計、事件掛勾與歷史紀錄。
+ *
+ * 牌桌正在播演出或對局在換局途中時，等到可以換上情境再載入，等待有上限。
  *
  * 以完整開局呈現的情境（[DebugGameScenarioPresentation.InitialRound]）與正式開局相同，發牌呈現後開啟局首的規則選擇，
  * 例如台灣麻將的補花。
@@ -109,19 +114,9 @@ class DebugGameScenarioLoader(
         val scenario = registry.get(scenarioId) ?: return DebugGameScenarioLoadResult.Rejected("Unknown scenario: $scenarioId")
         val tableId = membershipRepository.getVenueId(playerId)
             ?: return DebugGameScenarioLoadResult.Rejected("Player is not in a Mahjong game")
-        if (busyTracker.isBusy(tableId)) return DebugGameScenarioLoadResult.Rejected("Table presentation is still busy")
-
         val loaded = try {
-            gameRepository.updateGame(tableId) { currentGame ->
-                requireNotNull(currentGame) { "The table does not have a running game" }
-                require(!currentGame.isMatchOver) { "The game has already ended" }
-                require(currentGame.pendingTransition == null) { "The game has a pending transition" }
-                exclusions.exclude(currentGame.matchId)
-                val context = DebugGameScenarioContext(currentGame, playerId, componentRegistry)
-                val result = scenario.build(context).continueAutomaticControls(currentGame).withRuleFlowConfig()
-                validator.validate(context, result)
-                result.game to result
-            }
+            withTimeoutOrNull(READY_TIMEOUT) { replaceWhenReady(tableId, playerId, scenario) }
+                ?: return DebugGameScenarioLoadResult.Rejected("The table did not become ready within $READY_TIMEOUT")
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
@@ -146,6 +141,38 @@ class DebugGameScenarioLoader(
         decisionAvailabilityService.reconcile(tableId, completedPlayerId = playerId)
         snapshotSynchronizer.syncAll(tableId)
         return DebugGameScenarioLoadResult.Success(scenarioId, presentationCount)
+    }
+
+    /**
+     * 等牌桌沒有在播演出、對局也不在換局途中，在同一次權威更新內確認這些條件並換上情境；對局會在等待期間繼續進行，
+     * 所以條件在更新內重新確認，不成立時繼續等。
+     *
+     * @param tableId 牌桌識別碼。
+     * @param playerId 發起指令的玩家識別碼。
+     * @param scenario 要載入的情境。
+     * @return 已寫入的情境結果。
+     * @throws IllegalArgumentException 沒有進行中的對局、對局已結束或情境驗證失敗時拋出。
+     */
+    private suspend fun replaceWhenReady(
+        tableId: Uuid,
+        playerId: Uuid,
+        scenario: DebugGameScenario,
+    ): DebugGameScenarioResult {
+        while (true) {
+            while (busyTracker.isBusy(tableId)) delay(PRESENTATION_POLL_INTERVAL)
+            val loaded = gameRepository.updateGame(tableId) { currentGame ->
+                requireNotNull(currentGame) { "The table does not have a running game" }
+                require(!currentGame.isMatchOver) { "The game has already ended" }
+                if (currentGame.pendingTransition != null || busyTracker.isBusy(tableId)) return@updateGame currentGame to null
+                exclusions.exclude(currentGame.matchId)
+                val context = DebugGameScenarioContext(currentGame, playerId, componentRegistry)
+                val result = scenario.build(context).continueAutomaticControls(currentGame).withRuleFlowConfig()
+                validator.validate(context, result)
+                result.game to result
+            }
+            if (loaded != null) return loaded
+            delay(PRESENTATION_POLL_INTERVAL)
+        }
     }
 
     /**
@@ -176,8 +203,11 @@ class DebugGameScenarioLoader(
         }
     }
 
-    /** 重建呈現時的等待上限與檢查間隔。 */
+    /** 等待牌桌與呈現的上限與檢查間隔。 */
     private companion object {
+        /** 等牌桌可以換上情境的上限。 */
+        val READY_TIMEOUT: Duration = 2.minutes
+
         /** 每輪等待桌面呈現完成的上限。 */
         val PRESENTATION_TIMEOUT: Duration = 30.seconds
 

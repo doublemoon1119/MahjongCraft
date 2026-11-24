@@ -1,7 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.autotest
 
 import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.screens.GenericDirtMessageScreen
+import net.minecraft.client.gui.screens.TitleScreen
 import net.minecraft.core.registries.Registries
+import net.minecraft.network.chat.Component
 import net.minecraft.world.Difficulty
 import net.minecraft.world.level.GameRules
 import net.minecraft.world.level.GameType
@@ -30,5 +33,25 @@ internal object AutotestWorld {
         client.createWorldOpenFlows().createFreshLevel(LEVEL_ID, settings, WorldOptions(SEED, false, false)) { registries ->
             registries.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions()
         }
+    }
+
+    /**
+     * 存檔並離開測試世界，回到主選單；與暫停選單的「儲存並離開」相同。
+     *
+     * @param client 目前客戶端。
+     */
+    fun saveAndQuit(client: Minecraft) {
+        client.level?.disconnect()
+        client.clearLevel(GenericDirtMessageScreen(Component.translatable("menu.savingLevel")))
+        client.setScreen(TitleScreen())
+    }
+
+    /**
+     * 重新進入測試世界；進入的過程由原版的載入畫面接手。
+     *
+     * @param client 目前客戶端。
+     */
+    fun reenter(client: Minecraft) {
+        client.createWorldOpenFlows().loadLevel(TitleScreen(), LEVEL_ID)
     }
 }

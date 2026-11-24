@@ -60,6 +60,20 @@ step implements `AutotestStep` and is listed in `autotestClientSteps`; the first
 world and always runs. A step records checks and screenshots through `AutotestContext`; an exception or a failed
 check fails the step without stopping the steps after it.
 
+Automated tests run in a fixed environment and act only on explicit conditions:
+
+- Before an action, wait for the state that decides whether it is accepted, read from the same source the
+  game uses. For example, wait until the server's game can take an operation before loading a scenario, and
+  for the player's decision prompt before choosing an action.
+- After an action, wait for its visible result, such as the client receiving a teleport or an item, a call
+  being voiced, or a presentation removing its entities.
+- Do not resend an action on a timer. A rejected command or action fails the check; every wait has a time
+  limit that also fails the check.
+- A fixed number of game ticks is only for choosing when to take a screenshot during an animation.
+
+Server commands run on the integrated server thread as the local player and return their feedback instead of
+sending it to chat; feedback that arrives later, such as an asynchronous scenario load, joins the same result.
+
 The mixins in `mahjongcraft.debug.mixins.json` ignore input, keep the game running without focus and record
 each sound request, only while the test runs. The loader debug modules register the configuration:
 Fabric in `fabric.mod.json`, Forge through the mixin configurations of its development runs.

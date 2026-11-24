@@ -7,12 +7,14 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import net.minecraft.client.CloudStatus
 import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.screens.AccessibilityOnboardingScreen
 import net.minecraft.client.gui.screens.TitleScreen
+import net.minecraft.client.tutorial.TutorialSteps
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.util.concurrent.Executor
 import kotlin.time.TimeSource
 
@@ -20,7 +22,8 @@ import kotlin.time.TimeSource
  * 用戶端自動測試的執行者：遊戲到主選單後依序執行各步驟，寫出報告並關閉遊戲。
  *
  * 報告寫在遊戲資料夾的 `autotest/<開始時間>/`，包含 `report.md`、`report.json` 與截圖；`autotest/latest.txt` 記錄最近一次的
- * 資料夾名稱。遊戲在測試途中被關閉時，仍寫出報告，未完成的步驟記為中止。
+ * 資料夾名稱。只保留最近幾次的報告（[AutotestReportRetention]），更舊的在開始時刪掉。遊戲在測試途中被關閉時，仍寫出報告，
+ * 未完成的步驟記為中止。
  *
  * @property selection 要執行的步驟。
  * @property steps 全部步驟，依執行順序；第一個步驟建立並進入測試世界，一律執行。
@@ -56,12 +59,18 @@ internal class AutotestClientRunner(
     private lateinit var outputDirectory: Path
 
     /**
-     * 掛上用戶端事件；遊戲第一次到主選單、而且啟動時的資源載入已經結束時開始執行。
+     * 掛上用戶端事件；遊戲第一次到主選單、而且啟動時的資源載入已經結束時開始執行。第一次啟動的無障礙設定引導會被略過。
      *
      * @param events 登記用戶端事件用的事件來源。
      */
     fun register(events: ClientEvents) {
         events.onClientTickEnd { client ->
+            // 執行目錄第一次啟動時，原版先顯示無障礙設定引導；略過它並記下已完成，之後直接到主選單。
+            if (!started && client.screen is AccessibilityOnboardingScreen && client.overlay == null) {
+                client.options.onboardAccessibility = false
+                client.options.save()
+                client.setScreen(TitleScreen())
+            }
             if (!started && client.screen is TitleScreen && client.overlay == null) {
                 started = true
                 start(client)
@@ -75,10 +84,14 @@ internal class AutotestClientRunner(
      * @param client 目前客戶端。
      */
     private fun start(client: Minecraft) {
+        applyDisplayOptions(client)
         val root = client.gameDirectory.toPath().resolve("autotest")
-        outputDirectory = root.resolve(startedAt.format(FOLDER_FORMAT)).toAbsolutePath().normalize()
+        outputDirectory = root.resolve(startedAt.format(AutotestReportRetention.FOLDER_FORMAT)).toAbsolutePath().normalize()
         Files.createDirectories(outputDirectory)
         Files.writeString(root.resolve("latest.txt"), outputDirectory.fileName.toString())
+        val keep = AutotestReportRetention.keepCount(System.getProperty(AutotestReportRetention.KEEP_PROPERTY))
+        val pruned = AutotestReportRetention.prune(root, keep)
+        if (pruned.isNotEmpty()) logger.info("Autotest kept the latest {} reports and removed {} older ones", keep, pruned.size)
         Runtime.getRuntime().addShutdownHook(Thread({ writeReport(aborted = true) }, "MahjongCraft autotest report"))
         logger.info("Autotest started; report folder {}", outputDirectory)
         CoroutineScope(SupervisorJob() + (client as Executor).asCoroutineDispatcher()).launch {
@@ -89,6 +102,24 @@ internal class AutotestClientRunner(
             logger.info("Autotest finished; closing the game")
             client.stop()
         }
+    }
+
+    /**
+     * 固定影響截圖的畫面設定：視野、介面縮放，並關掉視角搖晃、雲與新手教學提示。自動測試使用獨立的執行目錄，設定存在那裡，
+     * 不影響平常的開發執行。
+     *
+     * @param client 目前客戶端。
+     */
+    private fun applyDisplayOptions(client: Minecraft) {
+        val options = client.options
+        options.fov().set(FOV)
+        options.guiScale().set(GUI_SCALE)
+        options.bobView().set(false)
+        options.cloudStatus().set(CloudStatus.OFF)
+        options.tutorialStep = TutorialSteps.NONE
+        client.tutorial.setStep(TutorialSteps.NONE)
+        options.save()
+        client.resizeDisplay()
     }
 
     /**
@@ -148,8 +179,11 @@ internal class AutotestClientRunner(
         /** 開發執行以這個系統屬性傳入測試的目標。 */
         const val TARGET_PROPERTY = "mahjongcraft.autotest.target"
 
-        /** 報告資料夾名稱的時間格式。 */
-        val FOLDER_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")
+        /** 截圖時的視野角度。 */
+        const val FOV = 70
+
+        /** 截圖時的介面縮放。 */
+        const val GUI_SCALE = 2
 
         /** 報告的 JSON 格式。 */
         val JSON = Json { prettyPrint = true }

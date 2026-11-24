@@ -92,7 +92,7 @@ import kotlin.uuid.toJavaUuid
 class RoomScreen(
     private val stateStore: ClientMahjongStateStore,
     private val characters: AiCharacterClientStateStore,
-    private val tableId: Uuid,
+    val tableId: Uuid,
     configPresentations: GameConfigPresentationRegistry,
     configResolver: GameConfigPresentationResolver,
     ruleNames: RuleModuleDisplayNameRegistry,

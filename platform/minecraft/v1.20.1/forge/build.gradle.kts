@@ -4,8 +4,10 @@ import com.doublemoon1119.mahjongcraft.buildlogic.StripModuleInfo
 import com.doublemoon1119.mahjongcraft.buildlogic.UnpackLibraryJars
 import com.doublemoon1119.mahjongcraft.buildlogic.VerifyEmbeddedLibrariesTask
 import com.doublemoon1119.mahjongcraft.buildlogic.VerifyNoSplitPackagesTask
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestClientArguments
 import com.doublemoon1119.mahjongcraft.buildlogic.autotestClientEnvironment
 import com.doublemoon1119.mahjongcraft.buildlogic.autotestSystemProperties
+import com.doublemoon1119.mahjongcraft.buildlogic.clientRunDirectory
 import com.doublemoon1119.mahjongcraft.buildlogic.hideForgeDeprecationsOfVanillaApis
 import com.doublemoon1119.mahjongcraft.buildlogic.includeResourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
@@ -65,10 +67,11 @@ legacyForge {
     runs {
         create("client") {
             client()
-            gameDirectory.set(layout.projectDirectory.dir("run/client"))
+            gameDirectory.set(layout.projectDirectory.dir(clientRunDirectory()))
             // -PmahjongcraftAutotest 時，debug 模組在遊戲啟動後自動執行測試並關閉遊戲。
             autotestSystemProperties().forEach { (name, value) -> systemProperty(name, value) }
             autotestClientEnvironment().forEach { (name, value) -> environment(name, value) }
+            autotestClientArguments().forEach(::programArgument)
         }
         create("server") {
             server()

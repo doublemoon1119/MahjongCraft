@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.buildlogic
 
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.tasks.SourceSetContainer
@@ -47,13 +48,19 @@ fun Project.includeTestSourcesOf(projectPath: String, sourceDirectory: String) {
  * 開發執行要傳給遊戲的自動測試系統屬性，由 Gradle 屬性 `mahjongcraftAutotest` 決定。
  *
  * 屬性值原樣傳給 debug 模組，例如 `true` 執行全部步驟、`world,screens` 只執行列出的步驟；另外傳入這個模組的名稱，例如
- * `minecraft_v1.20.1_fabric`，供報告記錄測試的目標。沒有設定時為空，開發執行與平常相同。
+ * `minecraft_v1.20.1_fabric`，供報告記錄測試的目標。Gradle 屬性 `mahjongcraftAutotestKeep` 指定要保留最近幾次的報告，
+ * 沒有指定時由 debug 模組使用預設值。沒有設定 `mahjongcraftAutotest` 時為空，開發執行與平常相同。
  *
  * @return 系統屬性名稱與值。
+ * @throws GradleException `mahjongcraftAutotestKeep` 不是正整數時拋出。
  */
 fun Project.autotestSystemProperties(): Map<String, String> {
     val selection = providers.gradleProperty("mahjongcraftAutotest").orNull?.takeIf(String::isNotBlank) ?: return emptyMap()
-    return mapOf("mahjongcraft.autotest" to selection, "mahjongcraft.autotest.target" to name)
+    val keep = providers.gradleProperty("mahjongcraftAutotestKeep").orNull?.let { value ->
+        value.toIntOrNull()?.takeIf { it >= 1 } ?: throw GradleException("mahjongcraftAutotestKeep must be a positive integer: $value")
+    }
+    return mapOf("mahjongcraft.autotest" to selection, "mahjongcraft.autotest.target" to name) +
+        listOfNotNull(keep?.let { "mahjongcraft.autotest.keep" to it.toString() })
 }
 
 /**
@@ -64,6 +71,26 @@ fun Project.autotestSystemProperties(): Map<String, String> {
  */
 fun Project.autotestClientEnvironment(): Map<String, String> =
     if (autotestSystemProperties().isEmpty()) emptyMap() else mapOf("ALSOFT_DRIVERS" to "null")
+
+/**
+ * 自動測試的開發用戶端要加上的程式參數：固定玩家名稱與視窗大小。開發環境的玩家 UUID 由名稱決定，固定後每次測試的玩家、
+ * 房主與截圖中的名稱都相同；固定的視窗大小讓每次的截圖可以互相比對。沒有設定 `mahjongcraftAutotest` 時為空。
+ *
+ * @return 程式參數。
+ */
+fun Project.autotestClientArguments(): List<String> = if (autotestSystemProperties().isEmpty()) {
+    emptyList()
+} else {
+    listOf("--username", "MahjongTest", "--width", "1920", "--height", "1080")
+}
+
+/**
+ * 開發用戶端的執行目錄名稱，相對於模組資料夾。自動測試使用獨立的 `run/autotest-client`，它的設定、世界與報告不會與平常的
+ * `run/client` 混在一起。
+ *
+ * @return 執行目錄名稱。
+ */
+fun Project.clientRunDirectory(): String = if (autotestSystemProperties().isEmpty()) "run/client" else "run/autotest-client"
 
 /**
  * 把另一個專案的資源一起打包進這個模組，例如跨版本共用模組的材質與翻譯。

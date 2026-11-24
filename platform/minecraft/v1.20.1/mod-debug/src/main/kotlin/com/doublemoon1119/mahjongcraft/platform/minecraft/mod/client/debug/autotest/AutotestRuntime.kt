@@ -5,7 +5,7 @@ import kotlin.time.Duration
 import kotlin.time.TimeSource
 
 /**
- * 自動測試期間 mixin 查詢與回報的共用狀態：是否忽略輸入與靜音，以及被攔下的聲音播放要求。
+ * 自動測試期間 mixin 查詢與回報的共用狀態：是否處於自動測試模式，以及記錄下來的聲音播放要求。
  *
  * 自動測試模式從遊戲啟動起就生效，直到遊戲關閉。
  */
@@ -42,6 +42,13 @@ object AutotestRuntime {
     internal fun drainSounds(): List<AutotestSoundRequest> = buildList {
         while (sounds.isNotEmpty()) add(sounds.removeAt(0))
     }
+
+    /**
+     * 從上次取出後記錄的聲音播放要求，不取出。
+     *
+     * @return 依發生順序的聲音播放要求。
+     */
+    internal fun peekSounds(): List<AutotestSoundRequest> = sounds.toList()
 
     /** 自動測試開始至今的時間。 */
     internal fun elapsed(): Duration = startedAt.elapsedNow()

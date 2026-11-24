@@ -145,14 +145,20 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
 - The loader modules pass the switch to their runs as the `mahjongcraft.autotest` system property, together
   with the module name for the report. Without the switch, development runs stay unchanged. The debug tools
   read the property, so the packaged mod never runs automated tests.
-- Once the title screen has loaded, the client deletes the previous test world, creates a flat creative world
-  with a fixed seed, runs the selected steps, writes a report and closes the game. The report lives in the
-  run directory under `autotest/<start time>/` as `report.md`, `report.json` and screenshots, and
-  `autotest/latest.txt` names the latest folder. Closing the game early still writes a report that marks the
-  unfinished step as aborted.
+- Test runs use their own run directory, `run/autotest-client`, so the test's options and worlds never touch
+  the normal development client. The client always signs in as `MahjongTest` with a 1920×1080 window.
+- Once the title screen has loaded, the client skips the first-launch accessibility screen, sets fixed display
+  options (field of view, GUI scale, view bobbing, clouds), deletes the previous test world, creates a flat
+  creative world with a fixed seed, runs the selected steps, writes a report and closes the game. The world
+  keeps a fixed time and clear weather, and spawns no mobs. The report lives in the run directory under
+  `autotest/<start time>/` as `report.md`, `report.json` and screenshots, and `autotest/latest.txt` names the
+  latest folder. Closing the game early still writes a report that marks the unfinished step as aborted.
+- Each run keeps only the latest 10 report folders and deletes older ones when it starts. Pass
+  `-PmahjongcraftAutotestKeep=<count>` to keep a different number. Only folders named with the report time
+  format are deleted; anything else under `autotest/` stays.
 - While a test runs, the game ignores mouse and keyboard input, leaves the cursor free and keeps running without
   focus. Its client run sets `ALSOFT_DRIVERS=null`, so OpenAL Soft loads and plays sounds into a null output that
-  nobody hears; the test records each sound request in the report. It does not change the saved volume or other
-  options. Do not minimise the window: Minecraft stops drawing while minimised.
+  nobody hears; the test records each sound request in the report. Do not minimise the window: Minecraft stops
+  drawing while minimised.
 - The steps and the input and sound handling live in the
   [Minecraft 1.20.1 mod debug tools](../../platform/minecraft/v1.20.1/mod-debug/README.md).
