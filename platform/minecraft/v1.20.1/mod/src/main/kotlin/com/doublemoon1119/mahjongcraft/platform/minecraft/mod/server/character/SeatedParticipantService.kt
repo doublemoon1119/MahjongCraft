@@ -373,7 +373,7 @@ internal class SeatedParticipantService(
     }
 
     /**
-     * 按規則已決定的正式名冊準備本次入座，不重新擲骰或重排。
+     * 按規則已決定的正式名冊準備本次入座，不重新擲骰或重排；先清除上一場留下的角色，避免擋住新席位。
      *
      * @param room 仍在等待的原房間。
      * @param playerIds 本次規則產生的正式座位順序。
@@ -382,6 +382,7 @@ internal class SeatedParticipantService(
     fun startSeating(room: Room, playerIds: List<Uuid>): RoomStartSeating? {
         val current = server ?: return null
         if (playerIds.size != room.playerIds.size || playerIds.toSet() != room.playerIds.toSet() || prepareStart(room) == null) return null
+        bindings.releaseStale()
         val table = sessions.prepareTable(room.id) ?: return null
         val seating = sessions.prepare(room.id, playerIds) ?: return null
         val riders = playerIds.map { player ->

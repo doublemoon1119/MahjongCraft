@@ -50,13 +50,16 @@ internal class AiCharacterBindings(
     }
 
     /**
-     * 移除已離開對局的角色與診斷。
+     * 移除不屬於目前任何權威對局的角色與診斷；入座前先呼叫，新一場的入座不會遇到上一場留下的角色。
      *
-     * @param expected 目前權威名冊中的代理。
+     * 只能在伺服器主執行緒呼叫。
+     *
+     * @return 目前權威對局應有的角色身分。
      */
-    fun retain(expected: Set<AiCharacterBindingKey>) {
-        coordinator.retain(expected)
+    fun releaseStale(): Set<AiCharacterBindingKey> {
+        val expected = coordinator.retainGames(persistence.characterSnapshot()?.authoritative?.games?.values.orEmpty())
         reported.keys.retainAll(expected)
+        return expected
     }
 
     /**

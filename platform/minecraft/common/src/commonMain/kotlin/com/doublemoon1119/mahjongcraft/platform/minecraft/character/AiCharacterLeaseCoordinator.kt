@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.character
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterOwnership
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.Uuid
@@ -155,6 +156,18 @@ class AiCharacterLeaseCoordinator<R>(
      */
     fun retain(expected: Set<AiCharacterBindingKey>) {
         (leases.keys - expected).toList().forEach(::remove)
+    }
+
+    /**
+     * 只保留目前權威對局中的 AI 角色；同一張桌子上一場的角色也會清除。
+     *
+     * @param games 目前全部的權威對局。
+     * @return 這些對局應有的角色身分。
+     */
+    fun retainGames(games: Collection<Game>): Set<AiCharacterBindingKey> {
+        val expected = games.flatMap { game -> game.aiPlayerIds.map { AiCharacterBindingKey(game.id, game.matchId, it) } }.toSet()
+        retain(expected)
+        return expected
     }
 
     /**
