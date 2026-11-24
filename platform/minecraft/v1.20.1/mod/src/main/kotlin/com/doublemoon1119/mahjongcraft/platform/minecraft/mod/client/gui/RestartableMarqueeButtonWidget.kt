@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.fitClientText
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
@@ -119,7 +120,7 @@ internal class RestartableMarqueeButtonWidget private constructor(
     }
 
     /**
-     * 繪製按鈕文字；文字過寬時裁切，且只在游標停留期間播放跑馬燈。
+     * 繪製按鈕文字；文字過寬時截斷並加上省略號，游標停留期間改為播放跑馬燈。
      *
      * @param context 本幀繪製環境。
      * @param text 欲繪製的文字。
@@ -134,6 +135,11 @@ internal class RestartableMarqueeButtonWidget private constructor(
         val color = if (active) 0xFFFFFF else 0xA0A0A0
         if (textWidth <= availableWidth) {
             context.drawString(textRenderer, text, x + (width - textWidth) / 2, textY, color)
+            return
+        }
+        if (!hovered) {
+            val fitted = fitClientText(textRenderer, text, availableWidth)
+            context.drawString(textRenderer, fitted, x + (width - textRenderer.width(fitted)) / 2, textY, color)
             return
         }
 
@@ -231,6 +237,14 @@ internal class RestartableMarqueeButtonWidget private constructor(
          * @return 按鈕寬度。
          */
         fun selectorWidth(textWidth: Int): Int = textWidth + SELECTOR_TEXT_PADDING * 2
+
+        /**
+         * 一般按鈕完整顯示一段文字所需的寬度，包含兩側留白。
+         *
+         * @param textWidth 文字寬度。
+         * @return 按鈕寬度。
+         */
+        fun buttonWidth(textWidth: Int): Int = textWidth + HORIZONTAL_PADDING * 2
 
         /**
          * 建立按鈕建構器。

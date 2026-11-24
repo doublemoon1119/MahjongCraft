@@ -1458,14 +1458,25 @@ internal class HistoryReplayScreen(
         val card = settlementCard.bounds.takeIf { showing }
         settlementHideButton.visible = card != null
         card?.let {
+            settlementHideButton.width = settlementButtonWidth(settlementHideButton, it.width - SETTLEMENT_BUTTON_MARGIN * 2)
             settlementHideButton.x = it.right - SETTLEMENT_BUTTON_MARGIN - settlementHideButton.width
             settlementHideButton.y = it.y + SETTLEMENT_BUTTON_MARGIN
         }
         settlementShowButton.visible = showing && settlementCard.collapsed
+        settlementShowButton.width = settlementButtonWidth(settlementShowButton, scene.width - SETTLEMENT_BUTTON_MARGIN * 2)
         settlementShowButton.x = scene.x + (scene.width - settlementShowButton.width) / 2
         settlementShowButton.y = bottom - SETTLEMENT_BUTTON_MARGIN * 2 - settlementShowButton.height
         return tooltip
     }
+
+    /**
+     * 結算卡片按鈕的寬度：完整顯示文字所需的寬度，不小於預設寬度；超過可用寬度時以可用寬度為準，文字改為截斷並在游標停留時捲動。
+     *
+     * @param button 按鈕。
+     * @param available 可用的寬度。
+     * @return 按鈕寬度。
+     */
+    private fun settlementButtonWidth(button: RestartableMarqueeButtonWidget, available: Int): Int = RestartableMarqueeButtonWidget.buttonWidth(font.width(button.message)).coerceAtLeast(SETTLEMENT_BUTTON_WIDTH).coerceAtMost(available.coerceAtLeast(1))
 
     /**
      * 依 replay 身分對應摘要玩家，供結算卡片畫頭像。
