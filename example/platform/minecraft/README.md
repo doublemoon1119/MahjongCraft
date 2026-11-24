@@ -8,8 +8,11 @@ It uses the same compiler, Java and Minecraft version policies as the main proje
 - [Platform-independent extension](../../mahjong-extension/README.md): common Kotlin code.
 - [Minecraft common](common/README.md): shared presentation and resources, with a
   [registration map](common/README.md#registration-map) for extension authors.
-- [Minecraft 1.20.1 mod](v1.20.1/mod/README.md): loader-independent 1.20.1 code, such as the
-  game-event chat and furniture behavior that does not depend on how the content is registered.
+- [Shared Minecraft mod](mod/README.md): loader-independent Minecraft code that is the same for every
+  version, such as the game-event chat and furniture behavior that does not depend on how the content is
+  registered.
+- [Minecraft 1.20.1 mod](v1.20.1/mod/README.md): the example's own adapters for 1.20.1 and the files each
+  Minecraft version keeps its own copy of.
 - Version/loader adapters: each one registers the 1.20.1 content in its loader's own way, for
   example the [Fabric 1.20.1 adapter](v1.20.1/fabric/README.md) and the
   [Forge 1.20.1 adapter](v1.20.1/forge/README.md).
@@ -78,7 +81,7 @@ The loader-specific entries are the Fabric 1.20.1
 and the Forge 1.20.1
 [`ExampleMod.kt`](v1.20.1/forge/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/forge/ExampleMod.kt),
 and the observer test shared by the 1.20.1 loaders is
-[`ExampleGameEventChatTest.kt`](v1.20.1/mod/src/test/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/mod/event/ExampleGameEventChatTest.kt).
+[`ExampleGameEventChatTest.kt`](mod/src/test/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/mod/event/ExampleGameEventChatTest.kt).
 The shared Minecraft registration and its test are
 [`ExampleMinecraftMahjongExtension.kt`](common/src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/ExampleMinecraftMahjongExtension.kt)
 and [`ExampleMinecraftRegistrationTest.kt`](common/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/ExampleMinecraftRegistrationTest.kt).
@@ -233,7 +236,7 @@ reads the saved selection. It also requests one custom gold hand-reveal token pe
 Both kinds use the same central layout. The public tile kind comes from MahjongCraft; the token's
 native kind, entity and renderer belong entirely to the example. The Minecraft 1.20.1 example registers
 them in
-[`ExampleNativeMahjongExtension`](v1.20.1/mod/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/mod/ExampleNativeMahjongExtension.kt).
+[`ExampleNativeMahjongExtension`](mod/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/mod/ExampleNativeMahjongExtension.kt).
 
 After building, check the following in a disposable example world:
 
