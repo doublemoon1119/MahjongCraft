@@ -775,7 +775,7 @@ internal class HistoryReplayScreen(
     }
 
     /** 開啟可見性子頁，帶入目前各家的名稱與視角。 */
-    private fun openVisibility() {
+    fun openVisibility() {
         val state = session.controller.state.value.replay?.state ?: return
         val seats = state.players.sortedBy { it.initialSeatIndex }.map { player ->
             HistoryReplayVisibilityContext.Seat(initialSeat = player.initialSeatIndex, label = viewText(state, player.initialSeatIndex))

@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
@@ -83,7 +85,7 @@ class HistoryScreenController internal constructor(
     private val characterPreviews: ClientAiCharacterPreviews,
     private val tablePropPreviews: ClientTablePropPreviews,
     private val clientConfig: MahjongClientConfigStore,
-) {
+) : HistoryScreenAutomation {
     /** 同一 client 連線共用的歷史查詢送出 gate。 */
     private val requestGate = ClientHistoryRequestGate(
         minimumInterval = { transport.minimumInterval.value },
@@ -200,6 +202,66 @@ class HistoryScreenController internal constructor(
         )
         active = session
         session.open()
+    }
+
+    override fun automationSnapshot(): HistoryScreenAutomationSnapshot? {
+        val session = active?.takeIf { it.isOpen } ?: return null
+        val state = session.controller.state.value
+        val round = state.selectedRoundNumber?.let(state.rounds::get)
+        val replay = state.replay
+        val status = when (state.page) {
+            HistoryBrowsePage.LIST, HistoryBrowsePage.FILTERS -> state.list.status
+            HistoryBrowsePage.SUMMARY -> state.summary?.status
+            HistoryBrowsePage.RULE_SETTINGS -> state.ruleSettings?.status
+            HistoryBrowsePage.ROUND_EVENTS -> round?.eventsStatus
+            HistoryBrowsePage.ROUND_STATE -> round?.stateStatus
+            HistoryBrowsePage.ROUND_REPLAY -> replay?.status
+        }
+        return HistoryScreenAutomationSnapshot(
+            page = HistoryScreenAutomationPage.valueOf(state.page.name),
+            loading = status == HistoryBrowseStatus.Loading || (replay != null && replay.eventsStatus == HistoryBrowseStatus.Loading),
+            failed = status is HistoryBrowseStatus.Failed || replay?.eventsStatus is HistoryBrowseStatus.Failed,
+            listedMatchIds = state.list.entries.map { it.matchId },
+            roundCount = state.summary?.detail?.rounds?.size,
+            replayStep = replay?.step,
+            replayStepReady = replay?.state != null && replay.status == HistoryBrowseStatus.Ready,
+            replayTransactions = if (replay?.eventsStatus == HistoryBrowseStatus.Ready) replay.eventPages.flatMap { it.transactions } else emptyList(),
+        )
+    }
+
+    override fun automationShowAllMatches(): Boolean {
+        val controller = active?.controller ?: return false
+        val state = controller.state.value
+        return state.allowAll && controller.updateQuery(state.query.copy(scope = HistoryQueryScopeDto.ALL))
+    }
+
+    override fun automationOpenSummary(matchId: String): Boolean = active?.openSummary(matchId) == true
+
+    override fun automationOpenRuleSettings(): Boolean = active?.openRuleSettings() == true
+
+    override fun automationBackToSummary(): Boolean = active?.backToSummary() == true
+
+    override fun automationOpenRound(roundNumber: Int): Boolean = active?.openRound(roundNumber) == true
+
+    override fun automationOpenRoundState(transactionIndex: Int?): Boolean = active?.openRoundState(transactionIndex?.let(HistoryRoundPositionDto::AfterTransaction) ?: HistoryRoundPositionDto.Initial) == true
+
+    override fun automationBackToRound(): Boolean {
+        val session = active ?: return false
+        return if (session.controller.state.value.page == HistoryBrowsePage.ROUND_REPLAY) session.backFromReplay() else session.backToRound()
+    }
+
+    override fun automationOpenReplay(step: Int): Boolean = active?.openReplay(step) == true
+
+    override fun automationReplayTo(step: Int): Boolean = active?.controller?.replayTo(step) == true
+
+    override fun automationOpenReplayVisibility(): Boolean {
+        val replay = Minecraft.getInstance().screen as? HistoryReplayScreen ?: return false
+        replay.openVisibility()
+        return Minecraft.getInstance().screen is HistoryReplayVisibilityScreen
+    }
+
+    override fun automationClose() {
+        active?.close()
     }
 }
 
