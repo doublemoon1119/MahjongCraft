@@ -7,15 +7,19 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.RuleDecisionAiContext
 import com.doublemoon1119.mahjongcraft.ai.defaultSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTileSnapshot
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanFlowerRuleDecisionIds
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import kotlin.uuid.Uuid
 
 /**
- * 照 [HistoryFixtureScript] 做決定的 AI：腳本有寫的照做，沒寫的時候輪到自己就打出剛摸到的牌，回應一律放過。
+ * 照 [HistoryFixtureScript] 做決定的 AI：腳本有寫的照做，沒寫的時候輪到自己就打出剛摸到的牌，回應一律放過；規則問要不要以花牌
+ * 和牌時，沒寫就放棄，其餘規則選擇使用預設的回答。
  *
  * 不使用任何亂數，同樣的對局一定做出同樣的決定。腳本要求的動作此時不合法時記下原因，改用預設的決定讓對局繼續。
  *
@@ -43,7 +47,15 @@ class HistoryFixtureAiStrategy(
         }
     }
 
-    override suspend fun decideRuleDecision(context: RuleDecisionAiContext) = context.defaultSubmission()
+    override suspend fun decideRuleDecision(context: RuleDecisionAiContext): RuleDecisionSubmission {
+        val spec = context.inputSpec
+        if (context.stepId != TaiwanFlowerRuleDecisionIds.SPECIAL_FLOWER_WIN || spec !is RuleDecisionInputSpec.SingleChoice) return context.defaultSubmission()
+        val pass = checkNotNull(spec.passOptionId) { "A special flower win offers a pass option" }
+        val wind = context.snapshot.players.first { it.id == context.selfId }.seatWind
+        if (script.next(wind) != HistoryFixtureAction.AcceptSpecialFlowerWin) return RuleDecisionSubmission.Choice(pass)
+        script.consume(wind)
+        return RuleDecisionSubmission.Choice(spec.optionIds.first { it != pass })
+    }
 
     /**
      * 輪到自己時的決定。
@@ -64,6 +76,12 @@ class HistoryFixtureAiStrategy(
             HistoryFixtureAction.Tsumo -> GameCommand.Tsumo.takeIf { GameAction.Tsumo in context.legalActions }
             is HistoryFixtureAction.ClosedKan -> kan(context, GameAction.KanType.CLOSED_KAN, action.tile.tile)
             is HistoryFixtureAction.AddedKan -> kan(context, GameAction.KanType.ADDED_KAN, action.tile.tile)
+            HistoryFixtureAction.PullNorth -> context.legalActions.filterIsInstance<GameAction.Extension>()
+                .filter { it.value.id == RiichiGameAction.PullNorth.id }
+                .flatMap { extensionActions.createCandidates(it.value, context) }
+                .firstOrNull()
+                ?.command
+            HistoryFixtureAction.DeclareExhaustiveDraw -> context.legalActions.filterIsInstance<GameAction.ExhaustiveDraw>().firstOrNull()?.let { GameCommand.DeclareExhaustiveDraw(it.reason) }
             else -> null
         }
         if (command == null) {

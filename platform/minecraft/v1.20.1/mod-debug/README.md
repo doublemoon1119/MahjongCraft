@@ -78,7 +78,9 @@ Steps that need fixed situations create them instead of waiting for them by chan
 - `/mahjongcraft debug history fixture <id>` records a fixed match from the common debug tools'
   `HistoryFixtures`: its first rounds deal scripted hands, walls and dice and follow scripted decisions; the
   later rounds use a fixed seed and every player discards the drawn tile and passes every call until the
-  match ends. A fixture whose script cannot be followed fails and is not archived.
+  match ends. A rule whose dealer keeps the seat after a draw, such as Taiwan mahjong, cannot end a match that
+  way, so its fixtures script every round. A fixture whose script cannot be followed fails and is not
+  archived.
 - The replay step finds the steps to show by the kind of event in the replay, not by step numbers.
 
 Steps drive the main mod's screens only through its public entry points; the history screens offer

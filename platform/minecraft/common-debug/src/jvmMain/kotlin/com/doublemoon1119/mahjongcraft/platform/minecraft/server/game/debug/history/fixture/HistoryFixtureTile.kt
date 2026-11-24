@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.his
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 
 /**
  * 測試牌譜指定的一張牌。
@@ -32,8 +33,8 @@ data class HistoryFixtureTile(val tile: Tile, val red: Boolean = false) {
         private val HONORS = listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.North, Tile.Honor.White, Tile.Honor.Green, Tile.Honor.Red)
 
         /**
-         * 解析牌面寫法，例如 `123m 0p 789s 1157z`：數字後面接花色，`m` 萬、`p` 筒、`s` 索、`z` 字牌；`0` 是赤五。空白只用來分隔，
-         * 不影響順序。
+         * 解析牌面寫法，例如 `123m 0p 789s 1157z 18f`：數字後面接花色，`m` 萬、`p` 筒、`s` 索、`z` 字牌、`f` 花牌；`0` 是赤五。
+         * 花牌 1～8 依序是春、夏、秋、冬、梅、蘭、菊、竹。空白只用來分隔，不影響順序。
          *
          * @param notation 牌面寫法。
          * @return 依寫法順序排列的牌。
@@ -68,6 +69,10 @@ data class HistoryFixtureTile(val tile: Tile, val red: Boolean = false) {
             if (suit == 'z') {
                 require(digit in 1..HONORS.size) { "Honor tiles are 1z to 7z: $notation" }
                 return HistoryFixtureTile(HONORS[digit - 1])
+            }
+            if (suit == 'f') {
+                require(digit in 1..TaiwanTileTypes.ALL.size) { "Flower tiles are 1f to ${TaiwanTileTypes.ALL.size}f: $notation" }
+                return HistoryFixtureTile(Tile.Extension(TaiwanTileTypes.ALL[digit - 1]))
             }
             val numericSuit = when (suit) {
                 'm' -> Tile.Suit.Character

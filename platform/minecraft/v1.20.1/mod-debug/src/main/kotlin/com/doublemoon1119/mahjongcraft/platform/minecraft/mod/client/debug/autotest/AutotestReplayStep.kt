@@ -36,8 +36,30 @@ internal object AutotestReplayStep : AutotestStep {
         if (!context.replayRound(name = "ron", round = 1, targets = RON_TARGETS)) return
         if (!context.openPage("events after the replay", HistoryScreenAutomationPage.ROUND_EVENTS) { it.automationBackToRound() }) return
         if (!context.openPage("summary after the ron round", HistoryScreenAutomationPage.SUMMARY) { it.automationBackToSummary() }) return
-        context.replayRound(name = "exhaustive-draw", round = 2, targets = DRAW_TARGETS)
+        if (!context.replayRound(name = "exhaustive-draw", round = 2, targets = DRAW_TARGETS)) return
         automation().automationClose()
+        for ((fixture, rounds) in ROUND_TOURS) {
+            if (!context.openAllMatches(matchIds.values)) return
+            if (!context.replayRounds(matchIds.getValue(fixture), rounds)) return
+            automation().automationClose()
+        }
+    }
+
+    /**
+     * 從牌譜列表打開一場對局的摘要，依序回放指定的局，每局看完回到摘要。
+     *
+     * @param matchId 對局識別碼。
+     * @param rounds 要回放的局。
+     * @return 全部局都回放完時為 true。
+     */
+    private suspend fun AutotestContext.replayRounds(matchId: String, rounds: List<RoundTour>): Boolean {
+        if (!openPage("summary of $matchId", HistoryScreenAutomationPage.SUMMARY) { it.automationOpenSummary(matchId) }) return false
+        for (tour in rounds) {
+            if (!replayRound(name = tour.name, round = tour.round, targets = tour.targets)) return false
+            if (!openPage("events after the ${tour.name} replay", HistoryScreenAutomationPage.ROUND_EVENTS) { it.automationBackToRound() }) return false
+            if (!openPage("summary after the ${tour.name} round", HistoryScreenAutomationPage.SUMMARY) { it.automationBackToSummary() }) return false
+        }
+        return true
     }
 
     /**
@@ -104,9 +126,10 @@ internal object AutotestReplayStep : AutotestStep {
         val transactions = automation().automationSnapshot()!!.replayTransactions
         var previous = 0
         for (target in targets) {
-            val index = transactions.indexOfFirst { transaction -> transaction.facts.any(target.matches) }
-            if (!check("The round $round replay has ${target.name}", index >= 0 && index + 1 > previous, describeFacts(transactions))) return false
-            val step = index + 1
+            // 每個要看的步驟都在上一個之後；同一種事件出現多次時（例如同一局的幾次槓）依序取用。
+            val index = (previous until transactions.size).firstOrNull { transactions[it].facts.any(target.matches) }
+            if (!check("The round $round replay has ${target.name}", index != null, describeFacts(transactions))) return false
+            val step = checkNotNull(index) + 1
             previous = step
             val shown = automation().automationReplayTo(step) &&
                 waitUntil(LOAD_TIMEOUT) { automation().automationSnapshot()?.let { it.replayStep == step && it.replayStepReady } == true }
@@ -200,6 +223,93 @@ internal object AutotestReplayStep : AutotestStep {
 
     /** 流局那一局要看的步驟。 */
     private val DRAW_TARGETS = listOf(ReplayTarget("exhaustive draw") { it.typeKey == ROUND_COMPLETED })
+
+    /** 一局的結算。 */
+    private val SETTLEMENT = ReplayTarget("settlement") { it.typeKey == ROUND_COMPLETED }
+
+    /** 自摸。 */
+    private val TSUMO = ReplayTarget("tsumo") { it is HistoryReplayFactDto.KnownAction && it.actionType == "tsumo" }
+
+    /**
+     * 回放一局時要看的步驟。
+     *
+     * @property name 截圖名稱前綴。
+     * @property round 局序號。
+     * @property targets 要看的步驟。
+     */
+    private class RoundTour(val name: String, val round: Int, val targets: List<ReplayTarget>)
+
+    /**
+     * 指定動作種類的步驟。
+     *
+     * @param name 截圖與檢查使用的名稱。
+     * @param actionType 動作種類。
+     * @return 要看的步驟。
+     */
+    private fun action(name: String, actionType: String) = ReplayTarget(name) { it is HistoryReplayFactDto.KnownAction && it.actionType == actionType }
+
+    /** 開局補花的事件種類。 */
+    private const val FLOWER_REPLACEMENT = "tile_replacement_round_resolved"
+
+    /** 由規則效果結束一局的花牌和牌。 */
+    private val FLOWER_WIN = ReplayTarget("flower win") { it.typeKey == "rule_effect_resolved" || it.typeKey == WIN_SETTLED }
+
+    /** 其餘測試牌譜各自要回放的局。 */
+    private val ROUND_TOURS: List<Pair<HistoryFixture, List<RoundTour>>> = listOf(
+        HistoryFixtures.RIICHI_CALLS_AND_KANS to listOf(
+            element = RoundTour(
+                name = "calls-kans",
+                round = 1,
+                targets = listOf(
+                    action("closed kan", "kan"),
+                    action("pon", "pon"),
+                    action("chi", "chi"),
+                    action("added kan", "kan"),
+                    action("open kan", "kan"),
+                    TSUMO,
+                    SETTLEMENT,
+                ),
+            ),
+        ),
+        HistoryFixtures.RIICHI_DOUBLE_RON_PAO_KYUUSHU to listOf(
+            RoundTour(name = "double-ron", round = 1, targets = listOf(ReplayTarget("double ron") { it.typeKey == WIN_SETTLED }, SETTLEMENT)),
+            RoundTour(name = "kyuushu", round = 2, targets = listOf(SETTLEMENT)),
+            RoundTour(
+                name = "pao",
+                round = 3,
+                targets = listOf(action("white pon", "pon"), action("green pon", "pon"), action("red pon", "pon"), TSUMO, SETTLEMENT),
+            ),
+        ),
+        HistoryFixtures.THREE_PLAYER_RIICHI_PULL_NORTH_TSUMO to listOf(
+            element = RoundTour(
+                name = "pull-north",
+                round = 1,
+                targets = listOf(
+                    ReplayTarget("pull north") { it is HistoryReplayFactDto.KnownAction && it.extensionTypeId.orEmpty().contains("pull_north") },
+                    TSUMO,
+                    SETTLEMENT,
+                ),
+            ),
+        ),
+        HistoryFixtures.TAIWAN_FLOWERS_TSUMO_RON_DRAW to listOf(
+            RoundTour(
+                name = "taiwan-flowers",
+                round = 1,
+                targets = listOf(
+                    ReplayTarget("dealt flower") { it.typeKey == FLOWER_REPLACEMENT },
+                    ReplayTarget("drawn flower") { it is HistoryReplayFactDto.KnownAction && it.extensionTypeId.orEmpty().contains("reveal_flower") },
+                    TSUMO,
+                    SETTLEMENT,
+                ),
+            ),
+            RoundTour(name = "taiwan-ron", round = 2, targets = listOf(ReplayTarget("ron") { it.typeKey == WIN_SETTLED }, SETTLEMENT)),
+            RoundTour(name = "taiwan-draw", round = 3, targets = listOf(SETTLEMENT)),
+        ),
+        HistoryFixtures.TAIWAN_EIGHT_FLOWERS_AND_ROBBING to listOf(
+            RoundTour(name = "eight-flowers", round = 1, targets = listOf(FLOWER_WIN)),
+            RoundTour(name = "seven-rob-one", round = 2, targets = listOf(FLOWER_WIN)),
+        ),
+    )
 
     /** 一局結束的事件種類。 */
     private const val ROUND_COMPLETED = "round_completed"
