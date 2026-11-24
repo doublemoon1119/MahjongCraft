@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.kotlinForForge
 import com.doublemoon1119.mahjongcraft.buildlogic.minecraftModAccessTransformer
 import com.doublemoon1119.mahjongcraft.buildlogic.modrinth
+import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestClientTasks
 import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestServerTasks
 import com.doublemoon1119.mahjongcraft.buildlogic.serverRunDirectory
 import net.neoforged.moddevgradle.tasks.JarJar
@@ -95,7 +96,8 @@ legacyForge {
         }
     }
 }
-registerAutotestServerTasks(startTask = "runServer", resumeTask = "runAutotestServerResume")
+registerAutotestClientTasks(clientTask = "runClient")
+registerAutotestServerTasks(startTask = "runServer", resumeTask = "runAutotestServerResume", portOffset = 1)
 
 dependencies {
     modImplementation(mc1201.kotlinforforge)

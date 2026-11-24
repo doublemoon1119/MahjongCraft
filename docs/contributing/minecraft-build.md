@@ -135,6 +135,58 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
 
 ## Automated Test Runs
 
+Common commands, each followed by what it runs. The sections below explain each kind of run.
+
+- Every selected target's client and server tests, with a summary report; the server tests accept the
+  Minecraft EULA on your behalf (see [Automated Server Test](#automated-server-test)):
+
+  ```shell
+  ./gradlew autotest "-PmahjongcraftTarget=minecraft-v1.20.1-fabric,minecraft-v1.20.1-forge" "-PmahjongcraftAutotest=true"
+  ```
+
+- One loader's client and server tests at the same time, with a summary report: select only that target.
+
+  ```shell
+  ./gradlew autotest "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=true"
+  ```
+
+- The same together with the example's client test, which also covers screens that need extension content:
+
+  ```shell
+  ./gradlew autotest "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftExample=true" "-PmahjongcraftAutotest=true"
+  ```
+
+- One module's tests without a summary report; failed checks do not fail the build:
+
+  ```shell
+  ./gradlew :minecraft_v1.20.1_fabric:autotestTarget "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=true"
+  ```
+
+- Only the client test, every step:
+
+  ```shell
+  ./gradlew :minecraft_v1.20.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=true"
+  ```
+
+- Only some client steps, listed by id; the step that enters the test world always runs:
+
+  ```shell
+  ./gradlew :minecraft_v1.20.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=table,replay"
+  ```
+
+- Only the server test, both of its runs:
+
+  ```shell
+  ./gradlew :minecraft_v1.20.1_fabric:autotestServer "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=true"
+  ```
+
+- Options that combine with any of the above:
+  - `-PmahjongcraftAutotestParallel=<count>`: how many games run at once.
+  - `-PmahjongcraftAutotestKeep=<count>`: how many reports to keep.
+  - `-PmahjongcraftAutotestServerPort=<port>`: the first server port.
+
+Each kind of run in detail:
+
 - Development clients can test themselves without anyone at the keyboard. Pass the steps to run, or `true`
   for all of them:
 
@@ -191,3 +243,21 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   second run, `runAutotestServerResume`, loads the same world, checks what was restored and finishes the
   matches. Both runs write into the same report under `run/autotest-server/autotest/<start time>/`, which
   keeps the latest reports like the client test.
+
+### Running Every Target
+
+- The root `autotest` task runs every selected target's client and server tests in one build, and the
+  example's client tests when `-PmahjongcraftExample=true` is also passed:
+
+  ```shell
+  ./gradlew autotest "-PmahjongcraftTarget=minecraft-v1.20.1-fabric,minecraft-v1.20.1-forge" "-PmahjongcraftAutotest=true"
+  ```
+
+- At most two games run at the same time; pass `-PmahjongcraftAutotestParallel=<count>` to change it. Each game
+  needs a few gigabytes of memory, and every client opens its own window.
+- `-PmahjongcraftAutotestServerPort` sets the first server port; each loader module adds its own offset, so
+  servers that run together never share a port.
+- A failing or crashing target does not stop the others. When every run has ended, the task writes
+  `build/reports/autotest/<start time>/summary.md`, which links each report and lists the failed checks, and
+  fails if any report did not pass or a run wrote no report. Only reports started during this build count,
+  and the latest summaries are kept like the reports.

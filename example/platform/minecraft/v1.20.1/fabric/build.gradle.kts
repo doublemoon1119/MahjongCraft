@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.buildlogic.autotestSystemProperties
 import com.doublemoon1119.mahjongcraft.buildlogic.clientRunDirectory
 import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.modrinth
+import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestClientTasks
 import net.fabricmc.loom.task.RemapJarTask
 
 plugins {
@@ -125,3 +126,6 @@ tasks.jar {
         exclude("META-INF/MANIFEST.MF")
     }
 }
+
+// 總任務 autotest 也執行範例的用戶端自動測試。
+registerAutotestClientTasks(clientTask = "runClient")

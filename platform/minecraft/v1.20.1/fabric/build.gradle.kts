@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.buildlogic.clientRunDirectory
 import com.doublemoon1119.mahjongcraft.buildlogic.includeResourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.modrinth
+import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestClientTasks
 import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestServerTasks
 import com.doublemoon1119.mahjongcraft.buildlogic.serverRunDirectory
 
@@ -71,7 +72,8 @@ loom {
         }
     }
 }
-registerAutotestServerTasks(startTask = "runServer", resumeTask = "runAutotestServerResume")
+registerAutotestClientTasks(clientTask = "runClient")
+registerAutotestServerTasks(startTask = "runServer", resumeTask = "runAutotestServerResume", portOffset = 0)
 
 // 材質、模型與翻譯放在跨版本、跨載入器共用的 :minecraft_common，與本模組的資源一起打包。
 // :minecraft_v1.20.1_mod 的程式與資源（例如配方）由本模組一起編譯與打包：mod 模組自己的 JAR 使用 Mojang 名稱，

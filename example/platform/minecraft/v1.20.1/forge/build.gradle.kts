@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.kotlinForForge
 import com.doublemoon1119.mahjongcraft.buildlogic.minecraftModAccessTransformer
 import com.doublemoon1119.mahjongcraft.buildlogic.modrinth
+import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestClientTasks
 
 plugins {
     alias(libs.plugins.mahjongcraft.minecraft.loader)
@@ -159,3 +160,6 @@ tasks.test {
     dependsOn(mainModJar, exampleModJar)
     jvmArgumentProviders.add(packagingTestArguments)
 }
+
+// 總任務 autotest 也執行範例的用戶端自動測試。
+registerAutotestClientTasks(clientTask = "runClient")
