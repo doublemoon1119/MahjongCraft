@@ -220,8 +220,9 @@ internal class AutotestServerRunner(private val koin: Koin) {
 
     /** 三張牌桌再開一場，等日麻桌的機器人決策時間開始倒數，記下各桌的牌局進度。 */
     private suspend fun AutotestServerContext.interruptSecondMatch() {
-        val games = startMatches() ?: return
         val riichi = tables.first()
+        // 機器人坐莊家位置，第一個要做決定的就是它；其他家在機器人輪到之前就讓這一場結束（例如九種九牌）時，就等不到倒數。
+        val games = startMatches(dealerBotRule = riichi.rule) ?: return
         val tableId = checkNotNull(riichi.tableId)
         val botId = bots.getValue(riichi.botName).playerId()
         val timers = koin.get<GameDecisionTimerManager>()
@@ -308,14 +309,22 @@ internal class AutotestServerRunner(private val koin: Koin) {
     /**
      * 三張牌桌由機器人照玩家流程開局，等牌局都開始。
      *
+     * @param dealerBotRule 機器人要坐莊家位置的牌桌規則；其他牌桌照種子排座。沒有指定時全部照種子排座。
      * @return 各規則的牌局；有牌桌沒有開局時為 null。
      */
-    private suspend fun AutotestServerContext.startMatches(): Map<String, Game>? {
+    private suspend fun AutotestServerContext.startMatches(dealerBotRule: String? = null): Map<String, Game>? {
         val gameRepository = koin.get<GameRepository>()
+        val rooms = koin.get<RoomRepository>()
         for (table in tables) {
             val bot = bots.getValue(table.botName)
             table.approach(bot)
-            AutotestServerTable.rooms(koin).start(bot)
+            val seatOrder = if (table.rule == dealerBotRule) {
+                val members = checkNotNull(rooms.getRoom(checkNotNull(table.tableId))).playerIds
+                listOf(bot.playerId()) + (members - bot.playerId())
+            } else {
+                null
+            }
+            AutotestServerTable.rooms(koin).start(bot, seatOrder)
         }
         val started = waitUntil(SYNC_TIMEOUT) { tables.all { gameRepository.getGame(checkNotNull(it.tableId)) != null } }
         if (!check("Every table starts a match", started)) return null
