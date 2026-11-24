@@ -8,6 +8,9 @@ project path is `:example-minecraft_v1.20.1_mod`.
   classes for blocks, entities, block entities and tooltip items that the shared code extends.
 - `ExampleEntityTypes` and `ExampleBlockEntityTypes` create the entity types and the table block entity type
   with the 1.20.1 constructors.
+- The blocks' loot tables live here, because data pack files change their format and folder names between
+  Minecraft versions; models, textures and translations stay in the [Minecraft common](../../common/README.md)
+  module.
 
 The module compiles and tests against vanilla Minecraft only, so using a loader API fails its build. Each
 loader's example adapter, the [Fabric 1.20.1 example](../fabric/README.md) and the
