@@ -218,16 +218,20 @@ internal class AutotestServerRunner(private val koin: Koin) {
         waitForMatchesToFinish(games)
     }
 
-    /** 三張牌桌再開一場，等日麻桌的機器人決策時間開始倒數，記下各桌的牌局進度。 */
+    /** 三張牌桌再開一場，等各桌機器人的決策時間都開始倒數，記下各桌的牌局進度。 */
     private suspend fun AutotestServerContext.interruptSecondMatch() {
+        // 機器人都坐莊家位置，各桌第一個要做決定的就是它；牌局停在等機器人決定，記錄後到關機前不會再前進。
+        // 其他家坐莊時，可能在機器人輪到之前就讓這一場結束（例如九種九牌），或在記錄之後才做動作（例如拔北）。
+        val games = startMatches(botsAsDealers = true) ?: return
+        val timers = koin.get<GameDecisionTimerManager>()
+        for (table in tables) {
+            val tableBotId = bots.getValue(table.botName).playerId()
+            val counting = waitUntil(MATCH_TIMEOUT) { timers.getStatuses(checkNotNull(table.tableId))[tableBotId] != null }
+            if (!check("${table.botName}'s decision time is counting down", counting)) return
+        }
         val riichi = tables.first()
-        // 機器人坐莊家位置，第一個要做決定的就是它；其他家在機器人輪到之前就讓這一場結束（例如九種九牌）時，就等不到倒數。
-        val games = startMatches(dealerBotRule = riichi.rule) ?: return
         val tableId = checkNotNull(riichi.tableId)
         val botId = bots.getValue(riichi.botName).playerId()
-        val timers = koin.get<GameDecisionTimerManager>()
-        val waiting = waitUntil(MATCH_TIMEOUT) { timers.getStatuses(tableId)[botId] != null }
-        if (!check("${riichi.botName}'s decision time is counting down", waiting)) return
         val status = checkNotNull(timers.getStatuses(tableId)[botId]).time
         val gameRepository = koin.get<GameRepository>()
         val records = tables.map { table ->
@@ -309,16 +313,16 @@ internal class AutotestServerRunner(private val koin: Koin) {
     /**
      * 三張牌桌由機器人照玩家流程開局，等牌局都開始。
      *
-     * @param dealerBotRule 機器人要坐莊家位置的牌桌規則；其他牌桌照種子排座。沒有指定時全部照種子排座。
+     * @param botsAsDealers 為 true 時各桌的機器人坐莊家位置，其他人照房間順序；為 false 時全部照種子排座。
      * @return 各規則的牌局；有牌桌沒有開局時為 null。
      */
-    private suspend fun AutotestServerContext.startMatches(dealerBotRule: String? = null): Map<String, Game>? {
+    private suspend fun AutotestServerContext.startMatches(botsAsDealers: Boolean = false): Map<String, Game>? {
         val gameRepository = koin.get<GameRepository>()
         val rooms = koin.get<RoomRepository>()
         for (table in tables) {
             val bot = bots.getValue(table.botName)
             table.approach(bot)
-            val seatOrder = if (table.rule == dealerBotRule) {
+            val seatOrder = if (botsAsDealers) {
                 val members = checkNotNull(rooms.getRoom(checkNotNull(table.tableId))).playerIds
                 listOf(bot.playerId()) + (members - bot.playerId())
             } else {
