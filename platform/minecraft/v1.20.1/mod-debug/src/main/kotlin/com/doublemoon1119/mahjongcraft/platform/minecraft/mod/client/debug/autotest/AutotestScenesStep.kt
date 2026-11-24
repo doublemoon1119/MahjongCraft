@@ -2,9 +2,11 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.auto
 
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.PlayerDecisionHudController
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiGameActionVoiceSoundIds
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.world.entity.Entity
+import org.koin.core.context.GlobalContext
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -72,6 +74,12 @@ internal object AutotestScenesStep : AutotestStep {
     private suspend fun playBeforePaoPon(context: AutotestContext) {
         val pon = context.waitForAction(BuiltInGameActionIds.PON)
         if (!context.check("Pon is offered", pon != null, context.offeredActions()) || pon == null) return
+        // 與玩家右鍵自己的手牌相同，重新打開仍有效的選擇畫面。
+        context.client.setScreen(null)
+        GlobalContext.get().get<PlayerDecisionHudController>().reopen()
+        if (!context.check("The decision screen opens for the pon", context.waitForScreen("PlayerDecisionScreen"))) return
+        context.waitTicks(SCREEN_SETTLE_TICKS)
+        context.screenshot("pon-decision-screen")
         if (!context.check("Pon is accepted", context.submit(pon))) return
         context.check("The pon call is voiced", context.waitForSound(RiichiGameActionVoiceSoundIds.PON))
         if (!context.check("The pon presentation finishes", context.waitUntilTableIdle())) return
