@@ -3,15 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.item
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongRulerEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModSounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerColor
-import com.google.common.collect.ImmutableMultimap
-import com.google.common.collect.Multimap
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.InteractionResult
-import net.minecraft.world.entity.EquipmentSlot
-import net.minecraft.world.entity.ai.attributes.Attribute
-import net.minecraft.world.entity.ai.attributes.AttributeModifier
-import net.minecraft.world.entity.ai.attributes.Attributes
-import net.minecraft.world.item.Item
 import net.minecraft.world.item.context.UseOnContext
 
 /**
@@ -24,15 +17,7 @@ import net.minecraft.world.item.context.UseOnContext
 class MahjongRulerItem(
     val color: MahjongRulerColor,
     settings: Properties,
-) : Item(settings) {
-    /** 主手持有時套用的攻擊力與攻擊速度。 */
-    private val mainHandModifiers: Multimap<Attribute, AttributeModifier> = ImmutableMultimap.of(
-        Attributes.ATTACK_DAMAGE,
-        AttributeModifier(BASE_ATTACK_DAMAGE_UUID, WEAPON_MODIFIER_NAME, ATTACK_DAMAGE_BONUS, AttributeModifier.Operation.ADDITION),
-        Attributes.ATTACK_SPEED,
-        AttributeModifier(BASE_ATTACK_SPEED_UUID, WEAPON_MODIFIER_NAME, ATTACK_SPEED_BONUS, AttributeModifier.Operation.ADDITION),
-    )
-
+) : MahjongWeaponItem(settings, ATTACK_DAMAGE_BONUS, ATTACK_SPEED_BONUS) {
     /**
      * 蹲下時在命中點放置面向玩家的牌尺；沒有蹲下時不做任何事。
      *
@@ -57,18 +42,7 @@ class MahjongRulerItem(
         return InteractionResult.CONSUME
     }
 
-    /**
-     * 主手持有時提供木劍的攻擊力與攻擊速度。
-     *
-     * @param slot 物品所在的裝備欄位。
-     * @return 該欄位套用的屬性修飾。
-     */
-    override fun getDefaultAttributeModifiers(slot: EquipmentSlot): Multimap<Attribute, AttributeModifier> = if (slot == EquipmentSlot.MAINHAND) mainHandModifiers else super.getDefaultAttributeModifiers(slot)
-
     private companion object {
-        /** 屬性修飾的名稱，比照原版武器。 */
-        const val WEAPON_MODIFIER_NAME: String = "Weapon modifier"
-
         /** 攻擊力加成；玩家基礎攻擊力 1，合計 4，與木劍相同。 */
         const val ATTACK_DAMAGE_BONUS: Double = 3.0
 

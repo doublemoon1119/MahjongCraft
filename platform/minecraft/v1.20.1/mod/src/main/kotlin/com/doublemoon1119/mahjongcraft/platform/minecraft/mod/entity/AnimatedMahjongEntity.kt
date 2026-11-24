@@ -128,12 +128,11 @@ abstract class AnimatedMahjongEntity<C>(
         x: Double,
         y: Double,
         z: Double,
-        yaw: Float,
-        pitch: Float,
-        interpolationSteps: Int,
-        interpolate: Boolean,
+        yRot: Float,
+        xRot: Float,
+        steps: Int,
     ) {
-        super.lerpTo(x, y, z, yaw, pitch, interpolationSteps, interpolate)
+        super.lerpTo(x, y, z, yRot, xRot, steps)
         setOldPosAndRot()
     }
 

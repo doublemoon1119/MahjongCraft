@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.Mah
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
-import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.context.BlockPlaceContext
@@ -37,7 +36,7 @@ class MahjongStoolBlock(
     settings: Properties,
     val design: MahjongStoolDesign,
     private val seatService: MahjongStoolSeatService,
-) : Block(settings),
+) : MahjongBlock(settings),
     SimpleWaterloggedBlock {
     init {
         registerDefaultState(
@@ -75,13 +74,11 @@ class MahjongStoolBlock(
      *
      * 蹲下或正在騎乘時交回原版處理；其他情況一律消耗這次右鍵，即使凳子已被占用而沒有坐下，手上的物品也不會被使用。
      */
-    @Suppress("OVERRIDE_DEPRECATION")
-    override fun use(
+    override fun useWithoutItem(
         state: BlockState,
         world: Level,
         pos: BlockPos,
         player: Player,
-        hand: InteractionHand,
         hit: BlockHitResult,
     ): InteractionResult {
         if (player.isShiftKeyDown || player.isPassenger) return InteractionResult.PASS

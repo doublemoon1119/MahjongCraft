@@ -3,10 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.item
 import com.doublemoon1119.mahjongcraft.platform.minecraft.handbook.MinecraftHandbookScreenKeys
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
-import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.TooltipFlag
-import net.minecraft.world.level.Level
 
 /**
  * 麻將手冊：拿在手上按右鍵開啟麻將手冊快捷畫面，不消耗物品。
@@ -15,8 +13,8 @@ import net.minecraft.world.level.Level
  *
  * @param settings 物品設定。
  */
-class MahjongHandbookItem(settings: Properties) : Item(settings) {
-    override fun appendHoverText(stack: ItemStack, world: Level?, tooltip: MutableList<Component>, context: TooltipFlag) {
-        tooltip += Component.translatable(MinecraftHandbookScreenKeys.ITEM_TOOLTIP).withStyle(ChatFormatting.GRAY)
+class MahjongHandbookItem(settings: Properties) : MahjongTooltipItem(settings) {
+    override fun addTooltipLines(stack: ItemStack, lines: MutableList<Component>, flag: TooltipFlag) {
+        lines += Component.translatable(MinecraftHandbookScreenKeys.ITEM_TOOLTIP).withStyle(ChatFormatting.GRAY)
     }
 }

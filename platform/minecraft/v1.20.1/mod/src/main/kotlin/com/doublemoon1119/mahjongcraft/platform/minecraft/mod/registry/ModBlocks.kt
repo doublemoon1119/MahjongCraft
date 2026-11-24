@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.entity.Mahjo
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.RegisteredEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.MahjongStoolSeatService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.copyBlockProperties
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import net.minecraft.core.registries.Registries
 import net.minecraft.world.item.BlockItem
@@ -123,7 +124,7 @@ object ModBlocks {
         baseBlock: Block,
     ): RegisteredEntry<Block> = registerWithItem(path) {
         MahjongTableBlock(
-            settings = BlockBehaviour.Properties.copy(baseBlock)
+            settings = copyBlockProperties(baseBlock)
                 .strength(2.5f)
                 .pushReaction(PushReaction.BLOCK)
                 .forceSolidOn(),
