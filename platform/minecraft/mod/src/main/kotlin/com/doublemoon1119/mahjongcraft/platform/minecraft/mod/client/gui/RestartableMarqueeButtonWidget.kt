@@ -60,11 +60,11 @@ internal class RestartableMarqueeButtonWidget private constructor(
     /** 本次提示框播放起點的單調時鐘時間。 */
     private var tooltipStartedAt = Duration.ZERO
 
-    override fun renderWidget(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun renderContents(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         val originalMessage = message
         try {
             message = Component.empty()
-            super.renderWidget(context, mouseX, mouseY, delta)
+            super.renderContents(context, mouseX, mouseY, delta)
         } finally {
             message = originalMessage
         }

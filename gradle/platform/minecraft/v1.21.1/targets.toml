@@ -1,0 +1,22 @@
+schema-version = 1
+
+[[targets]]
+id = "minecraft-v1.21.1-fabric"
+platform = "minecraft"
+java-toolchain = 21
+java-release = 21
+modules = [
+    "platform/minecraft/common",
+    "platform/minecraft/v1.21.1/mod",
+]
+example-modules = []
+
+[targets.attributes]
+minecraft-version = "v1.21.1"
+loader = "fabric"
+
+# Fabric Language Kotlin 1.13.14 在執行時提供、mod 不附帶的版本。
+[targets.provided-versions]
+kotlin = "2.4.20"
+kotlinx-coroutines = "1.11.0"
+kotlinx-serialization = "1.11.0"

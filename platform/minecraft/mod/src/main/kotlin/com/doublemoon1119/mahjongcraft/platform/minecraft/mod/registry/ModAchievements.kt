@@ -26,8 +26,8 @@ object ModAchievements {
     /**
      * 登記進度條件與全部通用統計。
      *
-     * 統計項目在統計 ID 寫入登記表之後才建立，統計畫面因此會列出玩家還沒獲得過的統計。進度條件寫入原版共用的條件表，
-     * 與統計項目一起在登記完成後由載入器安排的時機加入，不與其他 mod 的初始化同時寫入。
+     * 統計項目在統計 ID 寫入登記表之後才建立，統計畫面因此會列出玩家還沒獲得過的統計；統計項目在登記完成後
+     * 由載入器安排的時機加入，不與其他 mod 的初始化同時寫入原版共用的統計表。
      *
      * @param registrar 寫入登記表的方式。
      */
@@ -37,8 +37,13 @@ object ModAchievements {
             registrar.register(registry = Registries.CUSTOM_STAT, id = id) { id }
             statistics[statisticId] = id
         }
+        registerCriterion(
+            registrar = registrar,
+            id = MahjongAchievementCriterion.ID,
+            factory = ::MahjongAchievementCriterion,
+            onRegistered = { criterion -> mahjongAchievementCriterion = criterion },
+        )
         registrar.afterRegistration {
-            mahjongAchievementCriterion = registerCriterion(MahjongAchievementCriterion.ID, MahjongAchievementCriterion())
             statistics.values.forEach { id -> Stats.CUSTOM.get(id, StatFormatter.DEFAULT) }
         }
     }

@@ -28,17 +28,20 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
 ## Version Mod Modules
 
 - Each Minecraft version has one mod module, such as `platform/minecraft/v1.20.1/mod`, for the code and resources
-  that call that Minecraft version but no loader API. Its build applies the ModDevGradle legacy plugin in vanilla
-  mode, so it compiles and tests against vanilla Minecraft with Mojang names and fails when code uses a loader API.
+  that call that Minecraft version but no loader API. Its build applies ModDevGradle in vanilla mode, the legacy
+  plugin for 1.20.1 and the regular plugin from 1.21.1, so it compiles and tests against vanilla Minecraft with
+  Mojang names and fails when code uses a loader API.
 - Code, resources and tests that are the same for every supported Minecraft version live once in
   `platform/minecraft/mod`, which is a plain folder, not a Gradle project. Each version's mod module compiles it
   with its own sources through `includeSharedVersionSources()`, so the shared code is compiled and tested once
   per version. Where Minecraft versions differ, the shared code calls an adapter or extends a base class that
   each version's mod module provides with the same name, mostly in the `vanilla` package.
 - Adapters use the newer Minecraft name when the newer version has a method that does the same thing: the older
-  version's adapter is an extension function with that name, and the newer version needs none. Differences
-  without such a method get a neutral name that describes what the adapter does. Before using a newer name,
-  check that the older version has no method with that name and a different purpose.
+  version's adapter is an extension function with that name. The shared code imports these functions, so the
+  newer version declares the same names as extensions that only call the vanilla member, with
+  `EXTENSION_SHADOWED_BY_MEMBER` suppressed; calls still resolve to the member. Differences without such a
+  method get a neutral name that describes what the adapter does. Before using a newer name, check that the
+  older version has no method with that name and a different purpose.
 - Data pack files whose format or folder name changes between Minecraft versions, such as recipes,
   advancements, loot tables and item tags, stay in each version's mod module.
 - Loader modules compile the mod module's sources and package its resources together with their own, instead of

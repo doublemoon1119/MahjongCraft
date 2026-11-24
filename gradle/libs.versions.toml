@@ -92,3 +92,4 @@ ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }
 # Minecraft loader plugins
 fabric-loom = { id = "fabric-loom", version.ref = "fabric-loom" }
 moddev-legacyforge = { id = "net.neoforged.moddev.legacyforge", version.ref = "moddev" }
+moddev = { id = "net.neoforged.moddev", version.ref = "moddev" }

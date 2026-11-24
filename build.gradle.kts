@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.fabric.loom) apply false
     alias(libs.plugins.moddev.legacyforge) apply false
+    alias(libs.plugins.moddev) apply false
     alias(libs.plugins.koin.compiler) apply false
 }
 

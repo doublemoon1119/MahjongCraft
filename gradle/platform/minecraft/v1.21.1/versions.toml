@@ -1,0 +1,18 @@
+# Minecraft 1.21.1 的依賴與執行相容範圍；build 腳本中以 mc1211 取用，例如 mc1211.mixin。
+# 執行相容範圍寫進 mod 的 metadata，與編譯依賴的版本分開維護，一律以 require-<載入器>-<對象> 命名。
+
+[versions]
+
+# Minecraft
+minecraft = "1.21.1"
+# 原版模式編譯用的 NeoForm：只套用 Mojang 名稱，不含任何載入器。
+neoform = "1.21.1-20240808.144430"
+
+# 共用 mixin 只對註解編譯；各載入器在執行時提供 Mixin 與 MixinExtras。
+mixin = "0.8.5"
+mixinextras = "0.5.4"
+
+[libraries]
+
+mixin = { group = "org.spongepowered", name = "mixin", version.ref = "mixin" }
+mixinextras-common = { group = "io.github.llamalad7", name = "mixinextras-common", version.ref = "mixinextras" }

@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.item.MahjongScorin
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.RegisteredEntry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.registerItemStackFields
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerColor
 import net.minecraft.core.registries.Registries
@@ -52,11 +53,12 @@ object ModItems {
     }
 
     /**
-     * 登記 MahjongCraft 的一般 item。
+     * 登記 MahjongCraft 的一般 item，以及物品保存資料需要的登記項目。
      *
      * @param registrar 寫入登記表的方式。
      */
     fun register(registrar: ModRegistrar) {
+        registerItemStackFields(registrar)
         mahjongDiceEntry = registrar.registerItem("mahjong_dice") { MahjongDiceItem(Item.Properties()) }
         mahjongTileEntry = registrar.registerItem("mahjong_tile") { MahjongTileItem(Item.Properties()) }
         mahjongHandbookEntry = registrar.registerItem("mahjong_handbook") { MahjongHandbookItem(Item.Properties()) }

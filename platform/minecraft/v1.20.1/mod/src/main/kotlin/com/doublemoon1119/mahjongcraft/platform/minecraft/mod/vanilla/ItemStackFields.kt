@@ -1,10 +1,19 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickItemData
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileItemData
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.Tag
 import net.minecraft.world.item.ItemStack
+
+/**
+ * 登記物品保存欄位需要的登記表項目。這個版本把欄位存在物品 NBT，不需要登記。
+ *
+ * @param registrar 寫入登記表的方式。
+ */
+@Suppress("UNUSED_PARAMETER")
+fun registerItemStackFields(registrar: ModRegistrar) = Unit
 
 /**
  * 麻將牌物品保存的牌面名稱。
