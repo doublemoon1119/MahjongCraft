@@ -537,8 +537,9 @@ class MahjongTableRoomService internal constructor(
      * 自動摸牌）兩種開局。
      *
      * @param player 發起開始操作的房主。
+     * @param seatOrder 指定開場的座位順序，例如除錯時固定某位玩家的座位；null 時依種子隨機排座。不符合房間成員時拒絕開局。
      */
-    fun start(player: ServerPlayer) {
+    fun start(player: ServerPlayer, seatOrder: List<Uuid>? = null) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -585,7 +586,7 @@ class MahjongTableRoomService internal constructor(
                     rejected = { Outcome.Error(RoomError.RoomLayoutConflict(tableId)) },
                 ) {
                     val prepared = if (room != null && participants.isNotEmpty()) {
-                        when (val result = startGame.prepare(room, playerId)) {
+                        when (val result = startGame.prepare(room = room, operatorId = playerId, seatOrder = seatOrder)) {
                             is Outcome.Success -> result.value
                             is Outcome.Error -> return@withParticipants Outcome.Error(result.error)
                         }
@@ -605,6 +606,7 @@ class MahjongTableRoomService internal constructor(
                             expectedRoom = room,
                             requireImmediateCommit = participants.isNotEmpty(),
                             preparedStart = prepared,
+                            seatOrder = seatOrder.takeIf { prepared == null },
                         )
                     } finally {
                         // 已提交的對局不能因後續通知失敗而按舊房間恢復位置。

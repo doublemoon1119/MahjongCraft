@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.presentation.DebugPresentationCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.progression.DebugProgressionCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.progression.DebugRoundCommand
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.room.DebugRoomCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.scenario.DebugGameScenarioLoader
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.scenario.DebugGameScenarioPresentationSynchronizer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.scenario.DebugGameScenarioRegistry
@@ -46,6 +47,7 @@ val debugServerModule: Module = module {
     single<DebugPresentationCommand>()
     single<DebugProgressionCommand>()
     single<DebugRoundCommand>()
+    single<DebugRoomCommand>()
     single<DebugGameScenarioLoader>()
     single<DebugGameScenarioPresentationPublisher>()
     single<DebugGameScenarioPresentationSynchronizer>()

@@ -191,6 +191,32 @@ class GameInitializerTest {
         assertTrue(firstPlayerSeats.toSet().size > 1, "Seat assignment should vary across multiple initializations.")
     }
 
+    /** 指定座位順序時照順序排座，不受亂數影響；順序與玩家不符時拒絕。 */
+    @Test
+    fun `specified seat order replaces the random seating`() {
+        val playerIds = List(4) { Uuid.random() }
+        val seatOrder = listOf(playerIds[2], playerIds[0], playerIds[3], playerIds[1])
+        repeat(5) { seed ->
+            val table = GameInitializer.initialize(
+                id = Uuid.random(),
+                playerIds = playerIds,
+                module = module,
+                randomness = testRoundRandomness(seed),
+                seatOrder = seatOrder,
+            ).tableState
+            assertEquals(seatOrder, table.players.map { it.id })
+        }
+        assertFailsWith<IllegalArgumentException> {
+            GameInitializer.initialize(
+                id = Uuid.random(),
+                playerIds = playerIds,
+                module = module,
+                randomness = testRoundRandomness(),
+                seatOrder = playerIds.drop(1) + Uuid.random(),
+            )
+        }
+    }
+
     /**
      * 驗證玩家人數不在規則允許範圍內時會拋出例外。
      */

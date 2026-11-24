@@ -26,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.presentation.DebugPresentationCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.progression.DebugProgressionCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.progression.DebugRoundCommand
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.room.DebugRoomCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.scenario.DebugScenarioCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.support.DebugPlayerTableScope
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.support.DebugPreviewEntityLifecycle
@@ -137,6 +138,7 @@ abstract class DebugDevelopmentAssemblyContract {
                 "win_showcase_override",
                 "rule_decision",
                 "round",
+                "room",
             ),
             actual = debugNode.children.map { it.name }.toSet(),
             message = "every family subcommand is mounted under the debug root, and nothing else is",
@@ -148,6 +150,10 @@ abstract class DebugDevelopmentAssemblyContract {
         assertEquals(
             expected = setOf("next", "combo"),
             actual = koin.get<DebugRoundCommand>().buildRoundCommand().build().children.map { it.name }.toSet(),
+        )
+        assertEquals(
+            expected = setOf("start"),
+            actual = koin.get<DebugRoomCommand>().build().build().children.map { it.name }.toSet(),
         )
         val presentationCommand = koin.get<DebugPresentationCommand>()
         assertEquals(

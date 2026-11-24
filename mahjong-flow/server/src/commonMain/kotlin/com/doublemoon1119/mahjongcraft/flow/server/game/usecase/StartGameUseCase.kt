@@ -59,6 +59,8 @@ class StartGameUseCase(
      * @param preparedStart 預先建立的正式排位；只可用在其原房間，提交時再次確認房間未變。
      * @param matchSeed 指定這場對局的種子，供重現對局使用；null 時以安全亂數產生。有 [preparedStart] 時種子已決定，
      *   不可再指定。
+     * @param seatOrder 指定開場的座位順序，例如除錯時固定某位玩家的座位；null 時依種子隨機排座。必須剛好包含房間的每位玩家
+     *   各一次，否則拒絕開局。有 [preparedStart] 時座位已決定，不可再指定。
      * @return 開局結果，成功時包含對局 Uuid（等同 [roomId]），失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
@@ -68,8 +70,10 @@ class StartGameUseCase(
         requireImmediateCommit: Boolean = false,
         preparedStart: PreparedGameStart? = null,
         matchSeed: MatchSeed? = null,
+        seatOrder: List<Uuid>? = null,
     ): Outcome<Uuid, RoomError> {
         require(preparedStart == null || matchSeed == null) { "A prepared start already decided its match seed" }
+        require(preparedStart == null || seatOrder == null) { "A prepared start already decided its seat order" }
         // 1. 驗證房間狀態、初始化桌況、移除 Room 與新增 Game 都在同一次 store 交易內完成。
         val outcome = try {
             authoritativeStateStore.update(waitForLock = !requireImmediateCommit) { state ->
@@ -81,8 +85,9 @@ class StartGameUseCase(
                     room.hostId != operatorId -> AuthoritativeStateUpdate(state, Outcome.Error(RoomError.NotHost(operatorId)))
                     !room.isPlayerCountValid -> AuthoritativeStateUpdate(state, Outcome.Error(RoomError.RoomPlayerCountInvalid(roomId)))
                     !room.canStart -> AuthoritativeStateUpdate(state, Outcome.Error(RoomError.RoomNotReadyToStart(roomId)))
+                    !room.accepts(seatOrder) -> AuthoritativeStateUpdate(state, Outcome.Error(RoomError.RoomLayoutConflict(roomId)))
                     else -> {
-                        val prepared = preparedStart ?: initialize(room, matchSeed ?: MatchSeed.generate())
+                        val prepared = preparedStart ?: initialize(room, matchSeed ?: MatchSeed.generate(), seatOrder)
                         val organizedResult = prepared.initializationResult
                         val organizedState = organizedResult.tableState
                         AuthoritativeStateUpdate(
@@ -180,9 +185,14 @@ class StartGameUseCase(
      *
      * @param room 經權限與準備狀態檢查的房間。
      * @param matchSeed 這場對局的種子；開場使用第 0 局的亂數。
+     * @param seatOrder 已確認符合房間成員的指定座位順序；null 時依種子隨機排座。
      * @return 可供接入端安排入座後提交的同一份開局資料。
      */
-    private fun initialize(room: Room, matchSeed: MatchSeed): PreparedGameStart {
+    private fun initialize(
+        room: Room,
+        matchSeed: MatchSeed,
+        seatOrder: List<Uuid>?,
+    ): PreparedGameStart {
         val module = moduleRegistry.getModule(room.gameConfig.ruleConfig)
         val randomness = matchSeed.roundRandomness(roundOrdinal = 0)
         val initializationResult = GameInitializer.initialize(
@@ -190,6 +200,7 @@ class StartGameUseCase(
             playerIds = room.playerIds,
             module = module,
             randomness = randomness,
+            seatOrder = seatOrder,
         ).initializeRuleComponents(
             ruleModuleId = module.id,
             registry = componentRegistry,
@@ -226,12 +237,27 @@ class StartGameUseCase(
      * @param room 目前預檢的完整房間。
      * @param operatorId 提出開局的操作者。
      * @param matchSeed 這場對局的種子；預設以安全亂數產生。
+     * @param seatOrder 指定開場的座位順序；null 時依種子隨機排座。不符合房間成員時拒絕開局。
      * @return 已驗證的預備開局資料，或既有房間拒絕原因。
      */
-    fun prepare(room: Room, operatorId: Uuid, matchSeed: MatchSeed = MatchSeed.generate()): Outcome<PreparedGameStart, RoomError> = when {
+    fun prepare(
+        room: Room,
+        operatorId: Uuid,
+        matchSeed: MatchSeed = MatchSeed.generate(),
+        seatOrder: List<Uuid>? = null,
+    ): Outcome<PreparedGameStart, RoomError> = when {
         room.hostId != operatorId -> Outcome.Error(RoomError.NotHost(operatorId))
         !room.isPlayerCountValid -> Outcome.Error(RoomError.RoomPlayerCountInvalid(room.id))
         !room.canStart -> Outcome.Error(RoomError.RoomNotReadyToStart(room.id))
-        else -> Outcome.Success(initialize(room, matchSeed))
+        !room.accepts(seatOrder) -> Outcome.Error(RoomError.RoomLayoutConflict(room.id))
+        else -> Outcome.Success(initialize(room, matchSeed, seatOrder))
     }
+
+    /**
+     * 指定的座位順序是否剛好包含房間的每位玩家各一次。
+     *
+     * @param seatOrder 指定的座位順序；null 表示隨機排座，一律接受。
+     * @return 可以用來開局時為 true。
+     */
+    private fun Room.accepts(seatOrder: List<Uuid>?): Boolean = seatOrder == null || (seatOrder.size == playerIds.size && seatOrder.toSet() == playerIds.toSet())
 }

@@ -32,9 +32,10 @@ object GameInitializer {
      * 依據 [module] 建立一場新對局的初始 [TableState]。
      *
      * @param id 對局的唯一識別碼。
-     * @param playerIds 參與對局的玩家 Uuid 列表（尚未分配座位，內部會隨機排序）。
+     * @param playerIds 參與對局的玩家 Uuid 列表（尚未分配座位，未指定 [seatOrder] 時內部會隨機排序）。
      * @param module 該對局採用的規則模組，提供牌山工廠、牌河實作與規則配置。
      * @param randomness 這一局的座位、牌山與擲骰亂數來源。
+     * @param seatOrder 指定的座位順序，必須剛好包含 [playerIds] 的每位玩家各一次；null 時依 [randomness] 隨機排座。
      * @return 已完成洗牌、（若規則支援）擲骰開門、發牌、分數初始化的新結果，含權威 [TableState] 與
      * 供呼叫端處理的牌牆結構資料；完整擲骰記錄保存在回傳桌況的
      * [TableState.openingDiceRolls]。
@@ -45,13 +46,17 @@ object GameInitializer {
         playerIds: List<Uuid>,
         module: MahjongRuleModule<*>,
         randomness: RoundRandomness,
+        seatOrder: List<Uuid>? = null,
     ): GameInitializationResult {
         require(playerIds.size in module.config.minPlayers..module.config.maxPlayers) {
             "Player count ${playerIds.size} out of range for this rule config " +
                 "(${module.config.minPlayers}..${module.config.maxPlayers})"
         }
+        require(seatOrder == null || (seatOrder.size == playerIds.size && seatOrder.toSet() == playerIds.toSet())) {
+            "Seat order must contain every player exactly once"
+        }
 
-        val shuffledPlayerIds = playerIds.shuffled(randomness.seatOrder)
+        val shuffledPlayerIds = seatOrder ?: playerIds.shuffled(randomness.seatOrder)
         val opening = module.resolveRoundOpening(
             playerIdsInTurnOrder = shuffledPlayerIds,
             firstRound = true,

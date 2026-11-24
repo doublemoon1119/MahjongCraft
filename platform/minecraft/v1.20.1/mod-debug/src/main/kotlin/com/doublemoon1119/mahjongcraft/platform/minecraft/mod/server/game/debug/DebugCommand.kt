@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.presentation.DebugPresentationCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.progression.DebugProgressionCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.progression.DebugRoundCommand
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.room.DebugRoomCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.scenario.DebugScenarioCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.stress.DebugStressCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.stress.StressTestController
@@ -32,6 +33,7 @@ import net.minecraft.commands.Commands.literal
  * - `decision_hud`、`rule decision`：[DebugDecisionCommand]
  * - `match_progression`：[DebugProgressionCommand]
  * - `round`：[DebugRoundCommand]
+ * - `room`：[DebugRoomCommand]
  * - `history`：[DebugHistoryCommand]
  *
  * 本類別只保留三項責任：development gating、op 權限，以及各 family 共用的臨時 entity 到期清除驅動
@@ -50,6 +52,7 @@ import net.minecraft.commands.Commands.literal
  * @property decisionCommand 建立玩家決策互動預覽子指令樹。
  * @property progressionCommand 建立終局推進預覽子指令樹。
  * @property roundCommand 建立換局推進子指令樹。
+ * @property roomCommand 建立指定座位開局子指令樹。
  * @property historyCommand 建立隔離歷史生成子指令樹。
  * @property stressCommand 建立壓力測試子指令樹。
  * @property stressController 壓力測試的 tick 推進與伺服器關閉時的清理。
@@ -65,6 +68,7 @@ class DebugCommand internal constructor(
     private val decisionCommand: DebugDecisionCommand,
     private val progressionCommand: DebugProgressionCommand,
     private val roundCommand: DebugRoundCommand,
+    private val roomCommand: DebugRoomCommand,
     private val historyCommand: DebugHistoryCommand,
     private val stressCommand: DebugStressCommand,
     private val stressController: StressTestController,
@@ -107,6 +111,7 @@ class DebugCommand internal constructor(
             .then(presentationCommand.buildWinShowcaseOverrideCommand())
             .then(decisionCommand.buildRuleDecisionCommand())
             .then(roundCommand.buildRoundCommand())
+            .then(roomCommand.build())
             .then(historyCommand.build())
             .then(stressCommand.build())
             .then(seatedParticipantCommand.build()),
