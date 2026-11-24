@@ -142,6 +142,15 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   ./gradlew :minecraft_v1.20.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=true"
   ```
 
+- The example's loader modules take the same switch and also load the debug module, so the same steps run with
+  the example extension installed; build them with `-PmahjongcraftExample=true`:
+
+  ```shell
+  ./gradlew :example-minecraft_v1.20.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftExample=true" "-PmahjongcraftAutotest=true"
+  ```
+
+  Some checks need an extension's content, such as the multi-choice settings screen, which no built-in rule
+  uses. A run without that content records the check as skipped.
 - The loader modules pass the switch to their runs as the `mahjongcraft.autotest` system property, together
   with the module name for the report. Without the switch, development runs stay unchanged. The debug tools
   read the property, so the packaged mod never runs automated tests.

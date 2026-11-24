@@ -66,4 +66,4 @@ private fun buttonsIn(listener: GuiEventListener): List<AbstractButton> = listOf
  * @param key 翻譯鍵。
  * @return 使用時為 true。
  */
-private fun Component.usesKey(key: String): Boolean = (contents as? TranslatableContents)?.key == key || siblings.any { it.usesKey(key) }
+internal fun Component.usesKey(key: String): Boolean = (contents as? TranslatableContents)?.key == key || siblings.any { it.usesKey(key) }

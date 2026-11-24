@@ -1,6 +1,10 @@
 import com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtension
 import com.doublemoon1119.mahjongcraft.buildlogic.ModPackagingTestArguments
 import com.doublemoon1119.mahjongcraft.buildlogic.UnpackLibraryJars
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestClientArguments
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestClientEnvironment
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestSystemProperties
+import com.doublemoon1119.mahjongcraft.buildlogic.clientRunDirectory
 import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.modrinth
 import net.fabricmc.loom.task.RemapJarTask
@@ -58,10 +62,15 @@ loom {
     }
     runs {
         named("client") {
-            runDirectory.set(layout.projectDirectory.dir("run/client"))
+            runDirectory.set(layout.projectDirectory.dir(clientRunDirectory()))
+            // -PmahjongcraftAutotest 時，debug 模組在遊戲啟動後自動執行測試並關閉遊戲，與本體的開發執行相同。
+            autotestClientEnvironment().forEach { (name, value) -> environmentVariable(name, value) }
+            autotestClientArguments().forEach(::programArg)
+            autotestSystemProperties().forEach { (name, value) -> vmArg("-D$name=$value") }
         }
         named("server") {
             runDirectory.set(layout.projectDirectory.dir("run/server"))
+            autotestSystemProperties().forEach { (name, value) -> vmArg("-D$name=$value") }
         }
     }
 }
@@ -84,6 +93,10 @@ dependencies {
     exampleLibraries(project(":example:example-mahjong-extension"))
     exampleLibraries(project(":example-minecraft_common"))
     mainModArtifact(project(path = ":minecraft_v1.20.1_fabric", configuration = "runtimeElements"))
+    // 開發專用的 debug 模組只在開發執行時載入，讓範例也能使用 debug 指令與自動測試；不進入測試、不打包。
+    localRuntime(project(path = ":minecraft_v1.20.1_fabric-debug", configuration = "namedElements")) {
+        isTransitive = false
+    }
 
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.serialization.json)

@@ -1,6 +1,10 @@
 import com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtension
 import com.doublemoon1119.mahjongcraft.buildlogic.ModPackagingTestArguments
 import com.doublemoon1119.mahjongcraft.buildlogic.UnpackLibraryJars
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestClientArguments
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestClientEnvironment
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestSystemProperties
+import com.doublemoon1119.mahjongcraft.buildlogic.clientRunDirectory
 import com.doublemoon1119.mahjongcraft.buildlogic.hideForgeDeprecationsOfVanillaApis
 import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.kotlinForForge
@@ -16,6 +20,9 @@ plugins {
 evaluationDependsOn(":minecraft_v1.20.1_forge")
 val mainMod = project(":minecraft_v1.20.1_forge")
 val mainModSourceSets = mainMod.extensions.getByType<SourceSetContainer>()
+// 開發專用的 debug 工具以它自己整理過的輸出載入，讓範例也能使用 debug 指令與自動測試；不進入測試也不打包。
+evaluationDependsOn(":minecraft_v1.20.1_forge-debug")
+val debugSourceSets = project(":minecraft_v1.20.1_forge-debug").extensions.getByType<SourceSetContainer>()
 
 configure<MinecraftModPackagingExtension> {
     modId.set("mahjongcraft_example")
@@ -94,11 +101,16 @@ legacyForge {
     runs {
         create("client") {
             client()
-            gameDirectory.set(layout.projectDirectory.dir("run/client"))
+            gameDirectory.set(layout.projectDirectory.dir(clientRunDirectory()))
+            // -PmahjongcraftAutotest 時，debug 模組在遊戲啟動後自動執行測試並關閉遊戲，與本體的開發執行相同。
+            autotestSystemProperties().forEach { (name, value) -> systemProperty(name, value) }
+            autotestClientEnvironment().forEach { (name, value) -> environment(name, value) }
+            autotestClientArguments().forEach(::programArgument)
         }
         create("server") {
             server()
             gameDirectory.set(layout.projectDirectory.dir("run/server"))
+            autotestSystemProperties().forEach { (name, value) -> systemProperty(name, value) }
             programArgument("--nogui")
         }
     }
@@ -112,15 +124,20 @@ legacyForge {
             sourceSet(mainModSourceSets.main.get())
             sourceSet(mainModSourceSets.getByName("devLibraries"))
         }
+        // debug 模組整理過的輸出，不含與本體同名的套件。
+        create("mahjongcraft_debug") {
+            sourceSet(debugSourceSets.getByName("devMod"))
+        }
     }
     // 單元測試只測不需要啟動遊戲的程式；測試也要對 Minecraft 與 Forge 的類別編譯。
     addModdingDependenciesTo(sourceSets.test.get())
 }
 
-// 開發執行載入本體的 mixin；範例自己沒有 mixin。
+// 開發執行載入本體與 debug 模組的 mixin；範例自己沒有 mixin。
 mixin {
     config("mahjongcraft.forge.mixins.json")
     config("mahjongcraft.mixins.json")
+    config("mahjongcraft.debug.mixins.json")
 }
 
 tasks.jar {

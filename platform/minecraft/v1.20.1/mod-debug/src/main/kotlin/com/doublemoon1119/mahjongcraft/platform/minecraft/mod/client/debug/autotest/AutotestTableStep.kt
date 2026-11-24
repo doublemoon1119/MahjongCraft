@@ -6,8 +6,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room.RoomScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.MahjongChannels
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import net.minecraft.client.gui.components.AbstractButton
 import net.minecraft.core.Direction
 import net.minecraft.core.registries.BuiltInRegistries
@@ -15,6 +18,8 @@ import net.minecraft.world.InteractionHand
 import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.Vec3
 import org.koin.core.context.GlobalContext
+import org.lwjgl.glfw.GLFW
+import kotlin.math.abs
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -98,8 +103,63 @@ internal object AutotestTableStep : AutotestStep {
             waitTicks(SCREEN_SETTLE_TICKS)
             screenshot("room-settings-${index + 1}")
         }
+        if (!tourMultiChoice()) return false
         checkNotNull(client.screen).onClose()
         return check("The room settings return to the member page", waitUntil(SCREEN_TIMEOUT) { client.screen is RoomScreen && tabs().isEmpty() })
+    }
+
+    /**
+     * 在設定頁把規則改選成有多選設定的規則，打開多選畫面截圖後取消，再以「復原」放棄改選，回到原本的規則。
+     *
+     * 改選規則只改變設定頁的草稿，沒有按套用就不會送到伺服器，房間的規則全程不變。沒有任何規則提供多選設定時（例如沒有載入
+     * 範例擴充），記錄略過並視為通過。
+     *
+     * @return 全部畫面都正常切換，或沒有規則可以測試時為 true。
+     */
+    private suspend fun AutotestContext.tourMultiChoice(): Boolean {
+        val koin = GlobalContext.get()
+        val presentations = koin.get<GameConfigPresentationRegistry>()
+        val ruleNames = koin.get<RuleModuleDisplayNameRegistry>()
+        // 與設定頁的規則選單相同的選項順序。
+        val candidates = presentations.ruleModuleIds.mapNotNull(presentations::find)
+        val nameKeys = candidates.mapNotNull { ruleNames.find(it.ruleModuleId) }.toSet()
+        val selector = screenButtons().firstOrNull { button -> nameKeys.any { button.message.usesKey(it) } }
+        if (!check("The room settings show the rule selector", selector != null)) return false
+        val currentKey = nameKeys.first { checkNotNull(selector).message.usesKey(it) }
+        val targetIndex = candidates.indexOfFirst { candidate ->
+            candidate.selectable &&
+                ruleNames.find(candidate.ruleModuleId) != currentKey &&
+                candidate.fields.any { it.editor is GameConfigEditorSpec.MultiChoice }
+        }
+        if (targetIndex < 0) return check("No rule offers a multi-choice setting, so the multi-choice screen is skipped", true)
+        val targetKey = checkNotNull(ruleNames.find(candidates[targetIndex].ruleModuleId))
+
+        // 與玩家用鍵盤操作相同：打開規則選單，從目前的規則移到目標規則再按 Enter。
+        checkNotNull(selector).onPress()
+        val currentIndex = candidates.indexOfFirst { ruleNames.find(it.ruleModuleId) == currentKey }
+        val screen = checkNotNull(client.screen)
+        val key = if (targetIndex > currentIndex) GLFW.GLFW_KEY_DOWN else GLFW.GLFW_KEY_UP
+        repeat(abs(targetIndex - currentIndex)) { screen.keyPressed(key, 0, 0) }
+        screen.keyPressed(GLFW.GLFW_KEY_ENTER, 0, 0)
+        val switched = waitUntil(SCREEN_TIMEOUT) { screenButtons().any { it.message.usesKey(targetKey) } }
+        if (!check("The settings page switches to a rule with a multi-choice setting", switched)) return false
+
+        // 改選規則後顯示第一個分類；多選欄位不在這個分類時依序切換分頁直到出現。
+        for (tab in tabs()) {
+            if (screenButtons().any { it.message.usesKey(MinecraftRoomScreenKeys.SELECTED_COUNT) }) break
+            tab.onPress()
+            waitUntil(SCREEN_TIMEOUT) { tab !in screenButtons() }
+        }
+        if (!check("The multi-choice setting button is pressed", pressButton(MinecraftRoomScreenKeys.SELECTED_COUNT))) return false
+        if (!check("The multi-choice screen opens", waitForScreen("MultiChoiceScreen"))) return false
+        waitTicks(SCREEN_SETTLE_TICKS)
+        screenshot("room-multi-choice")
+        checkNotNull(client.screen).onClose()
+        if (!check("Cancelling the multi-choice screen returns to the room settings", waitUntil(SCREEN_TIMEOUT) { client.screen is RoomScreen && tabs().isNotEmpty() })) return false
+
+        if (!check("The undo button is pressed", pressButton(MinecraftRoomScreenKeys.UNDO))) return false
+        val restored = waitUntil(SCREEN_TIMEOUT) { screenButtons().any { it.message.usesKey(currentKey) } }
+        return check("Undo returns the settings page to the room's rule", restored)
     }
 
     /**
