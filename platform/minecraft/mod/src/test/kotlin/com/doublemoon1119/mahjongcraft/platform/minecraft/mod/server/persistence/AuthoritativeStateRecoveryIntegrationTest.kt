@@ -515,7 +515,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
          */
         suspend fun restore(source: AuthoritativeStateSnapshot) {
             val savedState = MahjongAuthoritativeSavedData.create(codec, testCharacterRegistry()).apply { update(source) }
-            val nbt = savedState.save(CompoundTag())
+            val nbt = savedState.writeData(CompoundTag())
             val restored = MahjongAuthoritativeSavedData.fromNbt(nbt, codec, testCharacterRegistry()).snapshot
             store.load(restored)
             restorer.restore(restored)

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.MinecraftTestBootstrap
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryCleanupPreview
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryCleanupReason
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryCleanupReport
@@ -11,6 +12,7 @@ import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.contents.TranslatableContents
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -20,6 +22,11 @@ import kotlin.time.Instant
 
 /** 驗證歷史管理指令的可見數字、分類懸停與安全容量格式。 */
 class HistoryManagementChatFormattingTest {
+    @BeforeTest
+    fun bootstrapMinecraft() {
+        MinecraftTestBootstrap.ensure()
+    }
+
     /** 用量訊息直接顯示四類場數、磁碟摘要、更新時間與過期標記。 */
     @Test
     fun `storage message exposes visible counts disk time and stale marker`() {

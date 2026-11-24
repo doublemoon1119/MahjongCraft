@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.dimensionDataStorage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.saveToFile
 import com.mojang.datafixers.DSL
 import com.mojang.datafixers.DataFixer
 import com.mojang.datafixers.schemas.Schema
@@ -32,7 +34,7 @@ class StrictSavedDataLoadingTest {
         state.setDirty()
         manager.save()
         assertTrue(Files.exists(directory.resolve(FILE_NAME)))
-        val second = DimensionDataStorage(directory.toFile(), IdentityDataFixer)
+        val second = dimensionDataStorage(directory, IdentityDataFixer)
         assertEquals("new-world", loadSavedDataStrict(second, directory.resolve(FILE_NAME), KEY, ::decode) { error("Saved data must not use the create function") }.value)
     }
 
@@ -42,7 +44,7 @@ class StrictSavedDataLoadingTest {
         val file = directory.resolve(FILE_NAME)
         TestState("original").apply {
             setDirty()
-            save(file.toFile())
+            saveToFile(file)
         }
         val before = Files.readAllBytes(file)
         val expected = IllegalArgumentException("Unsupported saved data")
@@ -92,7 +94,7 @@ class StrictSavedDataLoadingTest {
         SharedConstants.tryDetectVersion()
         val directory = Files.createTempDirectory("mahjongcraft-strict-state-")
         try {
-            test(directory, DimensionDataStorage(directory.toFile(), IdentityDataFixer))
+            test(directory, dimensionDataStorage(directory, IdentityDataFixer))
         } finally {
             Files.deleteIfExists(directory.resolve(FILE_NAME))
             Files.deleteIfExists(directory)

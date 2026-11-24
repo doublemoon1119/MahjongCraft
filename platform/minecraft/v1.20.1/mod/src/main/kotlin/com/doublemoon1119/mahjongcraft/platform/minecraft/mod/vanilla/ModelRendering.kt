@@ -6,7 +6,7 @@ import net.minecraft.client.model.Model
 import net.minecraft.client.model.geom.ModelPart
 import net.minecraft.util.FastColor
 
-// 以一個 ARGB 顏色繪製模型，名稱與參數與新版 Minecraft 相同；新版本直接使用原版的同名方法。
+// 以一個 ARGB 顏色繪製模型，名稱與參數與新版 Minecraft 相同。
 
 /**
  * 以指定顏色繪製這個模型部位與它的子部位。

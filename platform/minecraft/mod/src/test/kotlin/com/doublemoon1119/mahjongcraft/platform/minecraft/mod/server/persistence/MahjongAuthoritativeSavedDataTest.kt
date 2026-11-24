@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterParticipantCapture
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.readCompressedNbt
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledComponentValidator
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.coroutines.CompletableDeferred
@@ -84,7 +85,7 @@ class MahjongAuthoritativeSavedDataTest {
         val state = MahjongAuthoritativeSavedData.create(codec, testCharacterRegistry())
 
         state.update(expected)
-        val restored = MahjongAuthoritativeSavedData.fromNbt(state.save(CompoundTag()), codec, testCharacterRegistry())
+        val restored = MahjongAuthoritativeSavedData.fromNbt(state.writeData(CompoundTag()), codec, testCharacterRegistry())
 
         assertTrue(state.isDirty)
         assertEquals(expected, restored.snapshot)
@@ -99,8 +100,8 @@ class MahjongAuthoritativeSavedDataTest {
         }
         val second = MahjongAuthoritativeSavedData.create(codec, testCharacterRegistry())
 
-        val restoredFirst = MahjongAuthoritativeSavedData.fromNbt(first.save(CompoundTag()), codec, testCharacterRegistry())
-        val restoredSecond = MahjongAuthoritativeSavedData.fromNbt(second.save(CompoundTag()), codec, testCharacterRegistry())
+        val restoredFirst = MahjongAuthoritativeSavedData.fromNbt(first.writeData(CompoundTag()), codec, testCharacterRegistry())
+        val restoredSecond = MahjongAuthoritativeSavedData.fromNbt(second.writeData(CompoundTag()), codec, testCharacterRegistry())
 
         assertEquals(setOf(room.id), restoredFirst.snapshot.rooms.keys)
         assertTrue(restoredSecond.snapshot.rooms.isEmpty())
@@ -115,8 +116,8 @@ class MahjongAuthoritativeSavedDataTest {
         assertTrue(codec.encode(rooms.values, emptyList()).encodeToByteArray().size > NBT_STRING_LIMIT_BYTES)
 
         val output = ByteArrayOutputStream()
-        NbtIo.writeCompressed(state.save(CompoundTag()), output)
-        val nbt = NbtIo.readCompressed(ByteArrayInputStream(output.toByteArray()))
+        NbtIo.writeCompressed(state.writeData(CompoundTag()), output)
+        val nbt = readCompressedNbt(ByteArrayInputStream(output.toByteArray()))
         val restored = MahjongAuthoritativeSavedData.fromNbt(nbt, codec, testCharacterRegistry())
 
         assertEquals(expected, restored.snapshot)
@@ -125,7 +126,7 @@ class MahjongAuthoritativeSavedDataTest {
     /** 驗證狀態以位元組陣列欄位寫入。 */
     @Test
     fun `state is written as a byte array`() {
-        val nbt = MahjongAuthoritativeSavedData.create(codec, testCharacterRegistry()).save(CompoundTag())
+        val nbt = MahjongAuthoritativeSavedData.create(codec, testCharacterRegistry()).writeData(CompoundTag())
 
         assertEquals(setOf(MahjongAuthoritativeSavedData.NBT_KEY_STATE, MahjongAuthoritativeSavedData.NBT_KEY_CHARACTERS), nbt.allKeys)
         assertEquals(Tag.TAG_BYTE_ARRAY, nbt.getTagType(MahjongAuthoritativeSavedData.NBT_KEY_CHARACTERS))

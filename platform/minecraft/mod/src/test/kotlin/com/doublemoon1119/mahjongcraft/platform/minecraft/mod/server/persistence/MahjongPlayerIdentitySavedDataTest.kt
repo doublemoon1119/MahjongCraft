@@ -16,7 +16,7 @@ class MahjongPlayerIdentitySavedDataTest {
         val state = MahjongPlayerIdentitySavedData.create()
 
         assertTrue(state.remember(playerId, "PlayerOne"))
-        val restored = MahjongPlayerIdentitySavedData.fromNbt(state.save(CompoundTag()))
+        val restored = MahjongPlayerIdentitySavedData.fromNbt(state.writeData(CompoundTag()))
 
         assertEquals("PlayerOne", restored.nameOf(playerId))
     }
@@ -24,7 +24,7 @@ class MahjongPlayerIdentitySavedDataTest {
     /** 確認未知格式版本不會被當成可用身分資料。 */
     @Test
     fun `rejects unsupported format version`() {
-        val nbt = MahjongPlayerIdentitySavedData.create().save(CompoundTag()).apply {
+        val nbt = MahjongPlayerIdentitySavedData.create().writeData(CompoundTag()).apply {
             putInt("Version", MahjongPlayerIdentitySavedData.CURRENT_VERSION + 1)
         }
 
@@ -37,7 +37,7 @@ class MahjongPlayerIdentitySavedDataTest {
         val playerId = UUID.randomUUID()
         val entries = MahjongPlayerIdentitySavedData.create().apply {
             remember(playerId, "PlayerOne")
-        }.save(CompoundTag()).getList("Entries", Tag.TAG_COMPOUND.toInt())
+        }.writeData(CompoundTag()).getList("Entries", Tag.TAG_COMPOUND.toInt())
         entries.add(CompoundTag().apply { putString("PlayerId", "invalid") })
         val nbt = CompoundTag().apply {
             putInt("Version", MahjongPlayerIdentitySavedData.CURRENT_VERSION)

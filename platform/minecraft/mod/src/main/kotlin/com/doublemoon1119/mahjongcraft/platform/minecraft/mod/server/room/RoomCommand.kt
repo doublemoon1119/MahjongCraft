@@ -46,7 +46,7 @@ import kotlin.uuid.toKotlinUuid
  * [StringArgumentType.string]（而非 [StringArgumentType.word]），因為策略 key 慣用的命名空間冒號
  * 在未加引號的字串引數中不合法，Tab 補全時改用 [StringArgumentType.escapeIfRequired] 視需要自動加上
  * 引號。補全 AI 候選項目時，打進聊天框的實際文字固定是語言無關的技術代號（見
- * [RoomMemberCandidate.token]），因為伺服器端在 1.20.1 無法得知玩家客戶端語言；真正依語言顯示的
+ * [RoomMemberCandidate.token]），同一個指令不因輸入者的語言而不同；真正依語言顯示的
  * 「AI 玩家 N」文字是透過 [com.mojang.brigadier.suggestion.SuggestionsBuilder.suggest] 的 tooltip
  * 參數（[Component.translatable]）呈現，由客戶端依玩家自己的語言設定解析。
  *

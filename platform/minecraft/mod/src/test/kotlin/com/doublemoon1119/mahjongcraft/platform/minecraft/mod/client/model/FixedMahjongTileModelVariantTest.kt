@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import net.minecraft.client.renderer.block.model.BlockModel
-import net.minecraft.resources.ResourceLocation
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -19,15 +19,15 @@ class FixedMahjongTileModelVariantTest {
         assertEquals(variant.modelId.toString(), model.name)
         assertEquals(setOf(variant.templateModelId), model.dependencies.toSet())
         assertEquals(
-            expected = ResourceLocation("example", "item/mahjong_tile/inverted_five_pin"),
+            expected = resourceId("example", "item/mahjong_tile/inverted_five_pin"),
             actual = model.getMaterial("0").texture(),
         )
         assertEquals(
-            expected = ResourceLocation("example", "item/mahjong_tile/example_cover"),
+            expected = resourceId("example", "item/mahjong_tile/example_cover"),
             actual = model.getMaterial("1").texture(),
         )
         assertEquals(
-            expected = ResourceLocation("example", "item/mahjong_tile/example_cover"),
+            expected = resourceId("example", "item/mahjong_tile/example_cover"),
             actual = model.getMaterial("particle").texture(),
         )
 
@@ -49,7 +49,7 @@ class FixedMahjongTileModelVariantTest {
         val data = FixedMahjongTileModelPreparedData(variants = listOf(variant), effectiveAppearances = emptyMap())
 
         assertNotNull(MahjongTileModelLoadingPlugin.resolveModel(data, variant.modelId))
-        assertNull(MahjongTileModelLoadingPlugin.resolveModel(data, ResourceLocation("example", "item/other")))
+        assertNull(MahjongTileModelLoadingPlugin.resolveModel(data, resourceId("example", "item/other")))
     }
 
     /** 可見與未知牌 synthetic ID 不會因為 asset key 剛好叫 unknown 而互相覆蓋。 */
@@ -65,9 +65,9 @@ class FixedMahjongTileModelVariantTest {
 
     /** 建立使用第三方 namespace 的固定牌模型變體測試資料。 */
     private fun variant(): FixedMahjongTileModelVariant = FixedMahjongTileModelVariant(
-        modelId = ResourceLocation("example", "mahjong_tile/variant/demo"),
-        templateModelId = ResourceLocation("mahjongcraft", "item/mahjong_tile_base"),
-        frontTextureId = ResourceLocation("example", "textures/item/mahjong_tile/inverted_five_pin.png"),
-        coverTextureId = ResourceLocation("example", "textures/item/mahjong_tile/example_cover.png"),
+        modelId = resourceId("example", "mahjong_tile/variant/demo"),
+        templateModelId = resourceId("mahjongcraft", "item/mahjong_tile_base"),
+        frontTextureId = resourceId("example", "textures/item/mahjong_tile/inverted_five_pin.png"),
+        coverTextureId = resourceId("example", "textures/item/mahjong_tile/example_cover.png"),
     )
 }

@@ -12,13 +12,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocab
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.literalText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistryImpl
 import net.minecraft.network.chat.Component
-import net.minecraft.network.chat.contents.LiteralContents
 import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -48,7 +48,7 @@ class GameActionDisplayTextTest {
             .toDisplayText(fiveDot, ruleModuleId, actionVocabulary, displayNameRegistry, assetRegistry, emojiRegistry, exhaustiveDrawReasonDisplayNameRegistry).contents as TranslatableContents
         assertEquals("mahjongcraft.message.game_action_discard", content.key)
         val tileArg = content.args.single() as Component
-        assertEquals("🀝 ", (tileArg.contents as LiteralContents).text())
+        assertEquals("🀝 ", literalText(tileArg.contents))
         val tileArgContent = tileArg.siblings.single().contents as TranslatableContents
         assertEquals("mahjongcraft.message.tile_suit_dot", tileArgContent.key)
     }

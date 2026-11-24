@@ -36,7 +36,7 @@ import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
 /**
- * 使用 Minecraft 1.20.1 entity 呈現並替換指定麻將桌的正式牌牆。
+ * 使用 Minecraft entity 呈現並替換指定麻將桌的正式牌牆。
  *
  * @property serverHolder 取得目前伺服器工作階段及已載入世界。
  * @property spawnGateway 將新牌 entity 加入指定伺服器世界。

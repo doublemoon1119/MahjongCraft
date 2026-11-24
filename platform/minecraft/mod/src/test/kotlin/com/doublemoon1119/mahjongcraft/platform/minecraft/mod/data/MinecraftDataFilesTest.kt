@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.data
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.DataPackLayout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -13,7 +14,7 @@ import kotlin.test.assertIs
 
 /** 驗證這個 Minecraft 版本的資料包檔案：配方、掉落表與物品標籤。這些檔案的格式與資料夾名稱會隨 Minecraft 版本改變。 */
 class MinecraftDataFilesTest {
-    /** Vanilla 1.20.1 提供的全部染料 item ID。 */
+    /** 原版的全部染料 item ID。 */
     private val vanillaDyeIds = setOf(
         "minecraft:white_dye",
         "minecraft:orange_dye",
@@ -36,7 +37,7 @@ class MinecraftDataFilesTest {
     /** 驗證無形配方使用三種既定材料並產出兩顆骰子。 */
     @Test
     fun `dice recipe combines concrete and pip dyes`() {
-        val recipe = loadJson("/data/mahjongcraft/recipes/mahjong_dice.json")
+        val recipe = loadJson("/${DataPackLayout.RECIPES}/mahjong_dice.json")
         val ingredients = recipe.getValue("ingredients").jsonArray.mapTo(mutableSetOf()) { ingredient ->
             ingredient.jsonObject.getValue("item").jsonPrimitive.content
         }
@@ -47,7 +48,7 @@ class MinecraftDataFilesTest {
             expected = setOf("minecraft:white_concrete", "minecraft:red_dye", "minecraft:black_dye"),
             actual = ingredients,
         )
-        assertEquals("mahjongcraft:mahjong_dice", result.getValue("item").jsonPrimitive.content)
+        assertEquals("mahjongcraft:mahjong_dice", result.getValue(DataPackLayout.RECIPE_RESULT_ITEM).jsonPrimitive.content)
         assertEquals(2, result.getValue("count").jsonPrimitive.content.toInt())
     }
 
@@ -56,7 +57,7 @@ class MinecraftDataFilesTest {
     fun `stool loot tables drop their matching block items`() {
         listOf("wooden", "plastic").forEach { style ->
             val id = "${style}_mahjong_stool"
-            val lootTable = loadJson("/data/mahjongcraft/loot_tables/blocks/$id.json")
+            val lootTable = loadJson("/${DataPackLayout.LOOT_TABLES}/blocks/$id.json")
             val entry = lootTable.getValue("pools").jsonArray.single().jsonObject
                 .getValue("entries").jsonArray.single().jsonObject
 
@@ -67,7 +68,7 @@ class MinecraftDataFilesTest {
     /** 驗證木製款接受任意木製半磚與柵欄，並一次產出兩張凳子。 */
     @Test
     fun `wooden stool recipe uses vanilla wooden material tags`() {
-        val recipe = loadJson("/data/mahjongcraft/recipes/wooden_mahjong_stool.json")
+        val recipe = loadJson("/${DataPackLayout.RECIPES}/wooden_mahjong_stool.json")
 
         assertEquals("minecraft:crafting_shaped", recipe.getValue("type").jsonPrimitive.content)
         assertEquals(listOf("SSS", "F F"), recipe.getValue("pattern").jsonArray.map { it.jsonPrimitive.content })
@@ -80,7 +81,7 @@ class MinecraftDataFilesTest {
     /** 驗證塑膠款可由紅色染料與鷹架任意擺放合成。 */
     @Test
     fun `plastic stool recipe combines red dye and scaffolding`() {
-        val recipe = loadJson("/data/mahjongcraft/recipes/plastic_mahjong_stool.json")
+        val recipe = loadJson("/${DataPackLayout.RECIPES}/plastic_mahjong_stool.json")
         val ingredients = recipe.getValue("ingredients").jsonArray.mapTo(mutableSetOf()) { ingredient ->
             ingredient.jsonObject.getValue("item").jsonPrimitive.content
         }
@@ -106,7 +107,7 @@ class MinecraftDataFilesTest {
      * @return recipe result 中的 item ID。
      */
     private fun JsonObject.resultItem(): String = getValue("result").jsonObject
-        .getValue("item").jsonPrimitive.content
+        .getValue(DataPackLayout.RECIPE_RESULT_ITEM).jsonPrimitive.content
 
     /**
      * 讀取配方輸出的物品數量。
@@ -119,7 +120,7 @@ class MinecraftDataFilesTest {
     /** 驗證麻將牌配方使用穩定染料 tag、固定牌體材料，並一次產出 32 張。 */
     @Test
     fun `tile recipe uses the portable dye tag and produces thirty two tiles`() {
-        val recipe = loadJson("/data/mahjongcraft/recipes/mahjong_tile.json")
+        val recipe = loadJson("/${DataPackLayout.RECIPES}/mahjong_tile.json")
         val key = recipe.getValue("key").jsonObject
         val result = recipe.getValue("result").jsonObject
 
@@ -130,14 +131,14 @@ class MinecraftDataFilesTest {
             actual = key.getValue("G").jsonObject.getValue("tag").jsonPrimitive.content,
         )
         assertEquals("mahjongcraft:dyes", key.getValue("D").jsonObject.getValue("tag").jsonPrimitive.content)
-        assertEquals("mahjongcraft:mahjong_tile", result.getValue("item").jsonPrimitive.content)
+        assertEquals("mahjongcraft:mahjong_tile", result.getValue(DataPackLayout.RECIPE_RESULT_ITEM).jsonPrimitive.content)
         assertEquals(32, result.getValue("count").jsonPrimitive.content.toInt())
     }
 
     /** 驗證跨 loader fallback tag 完整列出 16 種 Vanilla 染料。 */
     @Test
     fun `vanilla dyes tag contains every vanilla dye color`() {
-        val tag = loadJson("/data/mahjongcraft/tags/items/vanilla_dyes.json")
+        val tag = loadJson("/${DataPackLayout.ITEM_TAGS}/vanilla_dyes.json")
         val values = assertIs<JsonArray>(tag["values"]).mapTo(mutableSetOf()) {
             assertIs<JsonPrimitive>(it).content
         }
@@ -148,7 +149,7 @@ class MinecraftDataFilesTest {
     /** 驗證牌背材料同時接受綠色與淺綠色混凝土。 */
     @Test
     fun `tile back concretes tag contains green and lime concrete`() {
-        val tag = loadJson("/data/mahjongcraft/tags/items/mahjong_tile_back_concretes.json")
+        val tag = loadJson("/${DataPackLayout.ITEM_TAGS}/mahjong_tile_back_concretes.json")
         val values = assertIs<JsonArray>(tag["values"]).mapTo(mutableSetOf()) {
             assertIs<JsonPrimitive>(it).content
         }

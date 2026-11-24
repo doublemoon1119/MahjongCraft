@@ -114,8 +114,8 @@ tasks.test {
     jvmArgumentProviders.add(packagingTestArguments)
 }
 
-// 範例中呼叫 Minecraft 1.20.1 但不用載入器的程式在 :example-minecraft_v1.20.1_mod；比照本體，把原始碼納入本模組，
-// 由 Loom 一起重新映射並打包。
+// 範例中呼叫 Minecraft 但不用載入器的程式在 :example-minecraft_v1.20.1_mod 與它一起編譯的跨版本共用
+// example/platform/minecraft/mod；它們的 JAR 使用 Mojang 名稱，因此把原始碼納入本模組，由 Loom 一起重新映射並打包。
 includeSourcesOf(":example-minecraft_v1.20.1_mod")
 
 val unpackLibraryJars = objects.newInstance<UnpackLibraryJars>()

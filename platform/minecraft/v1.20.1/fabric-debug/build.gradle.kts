@@ -24,8 +24,8 @@ configure<com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtens
     dependencyRequirements.put("fabricLanguageKotlin", mc1201.versions.require.fabric.language.kotlin)
 }
 
-// debug 中呼叫 Minecraft 1.20.1 但不用載入器的程式在 :minecraft_v1.20.1_mod-debug，不需要 Minecraft 的程式、翻譯與材質在
-// :minecraft_common-debug。本體開發執行只載入這個模組、不帶它的依賴，因此兩者的原始碼與資源都納入本模組，由 Loom 一起
+// debug 中呼叫 Minecraft 但不用載入器的程式在 :minecraft_v1.20.1_mod-debug 與它一起編譯的跨版本共用
+// platform/minecraft/mod-debug，不需要 Minecraft 的程式、翻譯與材質在 :minecraft_common-debug。本體開發執行只載入這個模組、不帶它的依賴，因此兩者的原始碼與資源都納入本模組，由 Loom 一起
 // 重新映射並打包。
 includeSourcesOf(":minecraft_common-debug", "src/jvmMain")
 includeSourcesOf(":minecraft_v1.20.1_mod-debug")

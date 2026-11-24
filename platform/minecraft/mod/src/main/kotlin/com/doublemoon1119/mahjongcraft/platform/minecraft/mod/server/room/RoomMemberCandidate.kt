@@ -6,9 +6,9 @@ import kotlin.uuid.Uuid
  * `/mahjongcraft room kick`／`ai strategy` 等指令共用的房間成員候選目標。
  *
  * @property playerId 實際指向的成員 Uuid。
- * @property token 打進聊天輸入框的實際文字。伺服器端在 1.20.1 無法得知玩家客戶端語言，Brigadier
- *   補全文字本身也只能是純字串，不能是可依語言翻譯的 [net.minecraft.network.chat.Component]，因此固定用語言無關
- *   的技術性代號（真人玩家則直接用其 Minecraft 使用者名稱，本來就無需翻譯）。
+ * @property token 打進聊天輸入框的實際文字。Brigadier 補全文字只能是純字串，不能是可依語言翻譯的
+ *   [net.minecraft.network.chat.Component]；同一個指令也不應因輸入者的語言而不同，因此固定用語言無關的技術性代號
+ *   （真人玩家則直接用其 Minecraft 使用者名稱，本來就無需翻譯）。
  *
  * @property aiSequence 這個候選是 AI 時，牠在目前房間內的顯示序號；真人玩家為 `null`。呼叫端用這個
  *   序號組出 `Component.translatable` tooltip，翻譯交給客戶端依玩家語言處理。

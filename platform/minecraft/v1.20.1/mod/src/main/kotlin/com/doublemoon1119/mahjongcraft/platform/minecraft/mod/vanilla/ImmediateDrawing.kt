@@ -4,7 +4,7 @@ import com.mojang.blaze3d.vertex.BufferBuilder
 import com.mojang.blaze3d.vertex.Tesselator
 import com.mojang.blaze3d.vertex.VertexFormat
 
-// 立即繪製的開始與結束，名稱與新版 Minecraft 相同；新版本直接使用原版的同名方法。
+// 立即繪製的開始與結束，名稱與新版 Minecraft 相同。
 
 /**
  * 開始一段立即繪製，之後寫入的頂點在結束時一次畫出。

@@ -1,11 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.MinecraftTestBootstrap
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.contents.TranslatableContents
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -14,6 +16,11 @@ import kotlin.test.assertTrue
 
 /** [MahjongDataStatus] 的停用範圍、通知對象與詳細資訊內容測試。 */
 class MahjongDataStatusTest {
+    @BeforeTest
+    fun bootstrapMinecraft() {
+        MinecraftTestBootstrap.ensure()
+    }
+
     /** 只有房間與對局無法讀取時停用麻將功能；位置索引與牌譜資料庫各自降級。 */
     @Test
     fun `only authoritative state disables mahjong`() {

@@ -76,8 +76,9 @@ registerAutotestClientTasks(clientTask = "runClient")
 registerAutotestServerTasks(startTask = "runServer", resumeTask = "runAutotestServerResume", portOffset = 0)
 
 // 材質、模型與翻譯放在跨版本、跨載入器共用的 :minecraft_common，與本模組的資源一起打包。
-// :minecraft_v1.20.1_mod 的程式與資源（例如配方）由本模組一起編譯與打包：mod 模組自己的 JAR 使用 Mojang 名稱，
-// Fabric 執行時需要 intermediary 名稱，因此不直接依賴它的 JAR，而是把原始碼納入本模組，由 Loom 一起重新映射。
+// :minecraft_v1.20.1_mod 與它一起編譯的跨版本共用 platform/minecraft/mod，程式與資源（例如配方）由本模組一起編譯與打包：
+// mod 模組自己的 JAR 使用 Mojang 名稱，Fabric 執行時需要 intermediary 名稱，因此不直接依賴它的 JAR，而是把原始碼納入
+// 本模組，由 Loom 一起重新映射。
 includeResourcesOf(":minecraft_common", "src/jvmMain")
 includeSourcesOf(":minecraft_v1.20.1_mod")
 

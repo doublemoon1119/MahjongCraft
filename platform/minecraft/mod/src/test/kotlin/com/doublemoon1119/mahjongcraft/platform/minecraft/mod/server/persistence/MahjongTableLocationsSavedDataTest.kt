@@ -27,7 +27,7 @@ class MahjongTableLocationsSavedDataTest {
         val state = MahjongTableLocationsSavedData.create()
         state.update(mapOf(first.tableId to first, second.tableId to second))
 
-        val restored = MahjongTableLocationsSavedData.fromNbt(state.save(CompoundTag()))
+        val restored = MahjongTableLocationsSavedData.fromNbt(state.writeData(CompoundTag()))
 
         assertEquals(setOf(first, second), restored.entries.toSet())
     }
@@ -45,7 +45,7 @@ class MahjongTableLocationsSavedDataTest {
     /** 寫入時附上目前格式版本。 */
     @Test
     fun `test written nbt carries the current format version`() {
-        val nbt = MahjongTableLocationsSavedData.create().save(CompoundTag())
+        val nbt = MahjongTableLocationsSavedData.create().writeData(CompoundTag())
 
         assertEquals(
             expected = MahjongTableLocationsSavedData.CURRENT_VERSION,
@@ -59,7 +59,7 @@ class MahjongTableLocationsSavedDataTest {
         val entry = TableLocationEntry(Uuid.random(), TableLocation("minecraft:overworld", 1, 2, 3), 5)
         val state = MahjongTableLocationsSavedData.create()
         state.update(mapOf(entry.tableId to entry))
-        val nbt = state.save(CompoundTag()).apply { remove(MahjongTableLocationsSavedData.NBT_KEY_VERSION) }
+        val nbt = state.writeData(CompoundTag()).apply { remove(MahjongTableLocationsSavedData.NBT_KEY_VERSION) }
 
         assertEquals(emptyList(), MahjongTableLocationsSavedData.fromNbt(nbt).entries)
     }
@@ -70,7 +70,7 @@ class MahjongTableLocationsSavedDataTest {
         val valid = TableLocationEntry(Uuid.random(), TableLocation("minecraft:overworld", 4, 5, 6), 2)
         val state = MahjongTableLocationsSavedData.create()
         state.update(mapOf(valid.tableId to valid))
-        val nbt = state.save(CompoundTag())
+        val nbt = state.writeData(CompoundTag())
         nbt.getList(MahjongTableLocationsSavedData.NBT_KEY_ENTRIES, Tag.TAG_COMPOUND.toInt())
             .add(CompoundTag().apply { putString(MahjongTableLocationsSavedData.NBT_KEY_TABLE_ID, "not-a-uuid") })
 
@@ -83,7 +83,7 @@ class MahjongTableLocationsSavedDataTest {
         val entry = TableLocationEntry(Uuid.random(), TableLocation("minecraft:overworld", 7, 8, 9), 1)
         val state = MahjongTableLocationsSavedData.create()
         state.update(mapOf(entry.tableId to entry))
-        val nbt = state.save(CompoundTag()).apply {
+        val nbt = state.writeData(CompoundTag()).apply {
             putInt(
                 MahjongTableLocationsSavedData.NBT_KEY_VERSION,
                 MahjongTableLocationsSavedData.CURRENT_VERSION + 1,
@@ -145,5 +145,5 @@ class MahjongTableLocationsSavedDataTest {
      */
     private fun indexedNbt(entry: TableLocationEntry): CompoundTag = MahjongTableLocationsSavedData.create().apply {
         update(mapOf(entry.tableId to entry))
-    }.save(CompoundTag())
+    }.writeData(CompoundTag())
 }

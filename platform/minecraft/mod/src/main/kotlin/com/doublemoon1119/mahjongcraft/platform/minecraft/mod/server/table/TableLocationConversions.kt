@@ -5,7 +5,7 @@ import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
 
 /**
- * 將 Minecraft 1.20.1 世界與方塊座標轉為版本無關的桌子位置。
+ * 將 Minecraft 世界與方塊座標轉為版本無關的桌子位置。
  *
  * @param pos 要轉換的方塊座標。
  * @return 含維度 ID 與座標的桌子位置。

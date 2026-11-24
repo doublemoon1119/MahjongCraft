@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.LocatedMahjongTable
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableLookup
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.blockInteractionReach
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.DimensionChunkKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSpace
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableInteractionReach
@@ -14,11 +15,8 @@ import net.minecraft.world.level.GameType
 /**
  * 依玩家目前實際可互動範圍，從 [TableLocationRegistry] 找出可選的麻將桌。
  *
- * 1.20.1 沒有公開的「這個方塊在玩家可觸範圍內嗎」API（那是 1.20.5＋ reach-distance attribute
- * 改版後才加入的 `Player.canInteractWithBlock`）；原版右鍵方塊互動本身在伺服器端也幾乎不驗證
- * 距離，純粹信任客戶端。這裡自行依 gamemode 套用原版已知的固定可觸距離（創造 5 格、生存／冒險 4.5
- * 格、旁觀視同無限），逼近「跟右鍵桌子手勢一致」的效果。日後升級到 1.20.5 以上時，應改用
- * `player.canInteractWithBlock(pos, additionalRange)` 取代這裡手動維護的距離常數。
+ * 可觸距離取玩家目前與方塊互動的距離（[blockInteractionReach]），旁觀模式視同無限；距離量到整張桌子範圍最近的點，
+ * 不是單一控制方塊，與右鍵桌子任何一部分的手勢一致。
  *
  * @property tableLocationRegistry 目前 server session 的桌子位置索引。
  */
@@ -64,16 +62,12 @@ class ReachableMahjongTableResolver(
     }
 
     /**
-     * 依原版已知的固定可觸距離，換算玩家目前 gamemode 對應的可觸距離（方塊數）。
+     * 玩家目前的可觸距離（方塊數）。
      *
-     * @param player 要檢查遊戲模式的玩家。
-     * @return 該模式的可觸距離。
+     * @param player 要檢查的玩家。
+     * @return 可觸距離。
      */
-    private fun reachDistanceFor(player: ServerPlayer): Double = when (player.gameMode.gameModeForPlayer) {
-        GameType.CREATIVE -> CREATIVE_REACH_DISTANCE
-        GameType.SPECTATOR -> Double.MAX_VALUE
-        else -> SURVIVAL_REACH_DISTANCE
-    }
+    private fun reachDistanceFor(player: ServerPlayer): Double = tableReachDistance(player.gameMode.gameModeForPlayer) { blockInteractionReach(player) }
 
     /**
      * 玩家座標到麻將桌固定範圍（[MahjongTableSpace] 的控制層與擺牌層，不是單一控制方塊）最近點的直線距離。
@@ -88,11 +82,14 @@ class ReachableMahjongTableResolver(
     private companion object {
         /** 方塊座標轉換為 16×16 chunk 座標的位移量，與 [TableLocation] 一致。 */
         const val CHUNK_COORDINATE_SHIFT: Int = 4
-
-        /** 原版創造模式的可觸距離（方塊數）。 */
-        const val CREATIVE_REACH_DISTANCE: Double = TableInteractionReach.CREATIVE
-
-        /** 原版生存／冒險模式的可觸距離（方塊數）。 */
-        const val SURVIVAL_REACH_DISTANCE: Double = TableInteractionReach.SURVIVAL
     }
 }
+
+/**
+ * 依遊戲模式決定選桌時的可觸距離：旁觀模式不限距離，其他模式使用玩家與方塊互動的距離。
+ *
+ * @param gameType 玩家目前的遊戲模式。
+ * @param blockReach 取得玩家與方塊互動的距離；旁觀模式不呼叫。
+ * @return 可觸距離（方塊數）。
+ */
+internal fun tableReachDistance(gameType: GameType, blockReach: () -> Double): Double = if (gameType == GameType.SPECTATOR) Double.MAX_VALUE else blockReach()

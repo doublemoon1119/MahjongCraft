@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.mixin.client;
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.WorldRenderFinishedHook;
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.tile.ClientHandTileLayoutBridge;
-import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.world.phys.EntityHitResult;
@@ -22,8 +22,9 @@ public abstract class GameRendererMixin {
 
     /** 每幀先固定本人牌張的顯示結果，視線選取與 renderer 不各自重算。 */
     @Inject(method = "render", at = @At("HEAD"))
-    private void mahjongcraft$beginHandDisplayFrame(float tickDelta, long startTime, boolean tick, CallbackInfo callbackInfo) {
-        ClientHandTileLayoutBridge.beginFrame(minecraft, tickDelta);
+    private void mahjongcraft$beginHandDisplayFrame(DeltaTracker deltaTracker, boolean tick, CallbackInfo callbackInfo) {
+        // 與原版 renderLevel 交給視線選取的進度相同。
+        ClientHandTileLayoutBridge.beginFrame(minecraft, deltaTracker.getGameTimeDeltaPartialTick(true));
     }
 
     /** 原版畫完整個世界後（光影模組的後製也已完成）、畫手上物品之前，通知世界繪製完成。 */
@@ -31,11 +32,11 @@ public abstract class GameRendererMixin {
         method = "renderLevel",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/LevelRenderer;renderLevel(Lcom/mojang/blaze3d/vertex/PoseStack;FJZLnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lorg/joml/Matrix4f;)V",
+            target = "Lnet/minecraft/client/renderer/LevelRenderer;renderLevel(Lnet/minecraft/client/DeltaTracker;ZLnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;)V",
             shift = At.Shift.AFTER
         )
     )
-    private void mahjongcraft$afterLevelRender(float tickDelta, long limitTime, PoseStack matrices, CallbackInfo callbackInfo) {
+    private void mahjongcraft$afterLevelRender(DeltaTracker deltaTracker, CallbackInfo callbackInfo) {
         WorldRenderFinishedHook.fire();
     }
 

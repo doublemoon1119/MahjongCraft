@@ -5,7 +5,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer
 import net.minecraft.client.renderer.block.model.BakedQuad
 import org.joml.Matrix4f
 
-// 寫頂點的方法依新版 Minecraft 的名稱提供；新版本直接使用原版的同名方法。每個頂點寫完後呼叫 [finishVertex]。
+// 寫頂點的方法依新版 Minecraft 的名稱提供。每個頂點寫完後呼叫 [finishVertex]。
 
 /**
  * 開始一個新頂點，位置先經過矩陣轉換。

@@ -17,14 +17,17 @@ public abstract class EntityRenderDispatcherMixin {
         method = "render(Lnet/minecraft/world/entity/Entity;DDDFFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/entity/EntityRenderDispatcher;renderHitbox(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;Lnet/minecraft/world/entity/Entity;F)V"
+            target = "Lnet/minecraft/client/renderer/entity/EntityRenderDispatcher;renderHitbox(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;Lnet/minecraft/world/entity/Entity;FFFF)V"
         )
     )
     private boolean mahjongcraft$skipHiddenDebugHitbox(
         PoseStack poseStack,
         VertexConsumer vertexConsumer,
         Entity entity,
-        float partialTick
+        float partialTick,
+        float red,
+        float green,
+        float blue
     ) {
         return !(entity instanceof HiddenDebugHitboxEntity);
     }

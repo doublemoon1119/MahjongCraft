@@ -3,13 +3,14 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.catalogue
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.testPackResources
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileResources
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.packs.PackResources
-import net.minecraft.server.packs.PathPackResources
 import net.minecraft.server.packs.resources.Resource
 import net.minecraft.server.packs.resources.ResourceManager
 import java.io.ByteArrayInputStream
@@ -54,13 +55,13 @@ class ResourceCatalogueTileArtTest {
                 ),
             ),
         )
-        resources.availableIds += ResourceLocation("example", "textures/item/mahjong_tile/inverted_five_pin.png")
+        resources.availableIds += resourceId("example", "textures/item/mahjong_tile/inverted_five_pin.png")
 
         val art = ResourceCatalogueTileArt(assets = assets, resources = resources)
 
         assertEquals("example_inverted_five_pin", art.resolve(TileFaceView(Tile.Extension(typeId))).assetKey)
         assertEquals(
-            expected = ResourceLocation("example", "textures/item/mahjong_tile/inverted_five_pin.png"),
+            expected = resourceId("example", "textures/item/mahjong_tile/inverted_five_pin.png"),
             actual = resources.requested.single(),
         )
 
@@ -85,7 +86,7 @@ class ResourceCatalogueTileArtTest {
         override fun getResource(id: ResourceLocation): Optional<Resource> {
             requested += id
             return if (available || id in availableIds) {
-                Optional.of(Resource(PathPackResources("test", Path.of(""), true)) { ByteArrayInputStream(ByteArray(0)) })
+                Optional.of(Resource(testPackResources("test", Path.of(""))) { ByteArrayInputStream(ByteArray(0)) })
             } else {
                 Optional.empty()
             }

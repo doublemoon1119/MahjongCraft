@@ -2,11 +2,14 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.achievemen
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.AchievementStatisticIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.BuiltInAchievementIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.MinecraftTestBootstrap
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.DataPackLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement.RiichiAchievementIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.achievement.TaiwanAchievementIds
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.io.File
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -15,6 +18,11 @@ import kotlin.test.fail
 
 /** 驗證內建進度 JSON 與成果、統計、語系資料彼此一致，並驗證條件 JSON 的解析。 */
 class MahjongAchievementResourcesTest {
+    @BeforeTest
+    fun bootstrapMinecraft() {
+        MinecraftTestBootstrap.ensure()
+    }
+
     /** 必須具有完整成果翻譯的語言清單。 */
     private val locales = listOf("en_us", "ja_jp", "zh_cn", "zh_tw")
 
@@ -136,7 +144,7 @@ class MahjongAchievementResourcesTest {
      * @return 進度識別碼與 JSON 的對照；找不到資源或內容為空時使測試失敗。
      */
     private fun loadAdvancements(): Map<String, JsonObject> {
-        val root = javaClass.classLoader.getResource(ADVANCEMENT_ROOT) ?: fail("Missing $ADVANCEMENT_ROOT")
+        val root = javaClass.classLoader.getResource(DataPackLayout.ADVANCEMENTS) ?: fail("Missing ${DataPackLayout.ADVANCEMENTS}")
         val directory = File(root.toURI())
         return directory.walkTopDown()
             .filter { it.isFile && it.extension == "json" }
@@ -159,9 +167,6 @@ class MahjongAchievementResourcesTest {
     }
 
     private companion object {
-        /** 內建進度 JSON 的資源根目錄。 */
-        const val ADVANCEMENT_ROOT = "data/mahjongcraft/advancements"
-
         /** 內建進度可以使用的原版觸發條件：取得物品，以及用牌尺打中其他玩家。 */
         val VANILLA_TRIGGERS: Set<String> = setOf("minecraft:inventory_changed", "minecraft:player_hurt_entity")
     }

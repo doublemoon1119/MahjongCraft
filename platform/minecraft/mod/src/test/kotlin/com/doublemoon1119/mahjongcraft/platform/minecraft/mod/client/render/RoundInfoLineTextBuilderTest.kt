@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.literalText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoArgument
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineCodec
@@ -20,7 +21,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefiniti
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistryImpl
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import net.minecraft.network.chat.Component
-import net.minecraft.network.chat.contents.LiteralContents
 import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -68,7 +68,7 @@ class RoundInfoLineTextBuilderTest {
         val content = assertIs<TranslatableContents>(text.contents)
         assertEquals("thirdparty.round_info.line", content.key)
         val tileText = assertIs<Component>(content.args[0])
-        assertEquals("🀫 ", assertIs<LiteralContents>(tileText.contents).text())
+        assertEquals("🀫 ", literalText(tileText.contents))
         assertEquals("thirdparty.tile.flower", assertIs<TranslatableContents>(tileText.siblings.single().contents).key)
         val messageText = assertIs<Component>(content.args[1])
         assertEquals("thirdparty.round_info.exchange_enabled", assertIs<TranslatableContents>(messageText.contents).key)
@@ -94,7 +94,7 @@ class RoundInfoLineTextBuilderTest {
 
         val content = assertIs<TranslatableContents>(builder.buildLineText(line).contents)
 
-        assertEquals("thirdparty:unnamed", assertIs<LiteralContents>(assertIs<Component>(content.args.single()).contents).text())
+        assertEquals("thirdparty:unnamed", literalText(assertIs<Component>(content.args.single()).contents))
     }
 
     /** 數字、風位與已登記的訊息參數依各自種類組成文字。 */
@@ -153,8 +153,8 @@ class RoundInfoLineTextBuilderTest {
         )
 
         val content = assertIs<TranslatableContents>(builder.buildLineText(line).contents)
-        assertEquals("thirdparty:missing", assertIs<LiteralContents>(assertIs<Component>(content.args[0]).contents).text())
-        assertEquals("?", assertIs<LiteralContents>(assertIs<Component>(content.args[2]).contents).text())
+        assertEquals("thirdparty:missing", literalText(assertIs<Component>(content.args[0]).contents))
+        assertEquals("?", literalText(assertIs<Component>(content.args[2]).contents))
         builder.buildLineText(line)
         builder.buildLineText(RoundInfoLine("example:line", listOf(RoundInfoArgument.Message("thirdparty:another_missing"))))
 

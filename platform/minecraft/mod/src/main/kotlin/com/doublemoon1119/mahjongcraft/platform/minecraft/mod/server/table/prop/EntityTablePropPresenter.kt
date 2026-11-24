@@ -27,7 +27,7 @@ import net.minecraft.world.entity.Entity
 import kotlin.uuid.Uuid
 
 /**
- * 使用 Minecraft 1.20.1 entity 差量同步規則桌面物件；每個物件由 [TablePropKindRegistry] 裡對應的種類
+ * 使用 Minecraft entity 差量同步規則桌面物件；每個物件由 [TablePropKindRegistry] 裡對應的種類
  * 負責生成與辨識。
  *
  * 內容或幾何無法完整呈現時清除失效顯示並回報，不留下部分成功或過時的規則物件。

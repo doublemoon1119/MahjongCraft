@@ -83,7 +83,7 @@ internal fun <S : SavedData> loadSavedDataStrict(
  */
 internal fun savedDataDisplayPath(key: String): String = SavedDataStoragePaths.DIRECTORY + "/" + key + SavedDataStoragePaths.EXTENSION
 
-/** Minecraft 1.20.1 overworld 持久化管理器使用的檔案位置。 */
+/** Minecraft overworld 持久化管理器使用的檔案位置。 */
 private object SavedDataStoragePaths {
     /** 世界根目錄內的持久化資料目錄。 */
     const val DIRECTORY = "data"

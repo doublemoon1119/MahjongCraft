@@ -42,6 +42,9 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   `EXTENSION_SHADOWED_BY_MEMBER` suppressed; calls still resolve to the member. Differences without such a
   method get a neutral name that describes what the adapter does. Before using a newer name, check that the
   older version has no method with that name and a different purpose.
+- Shared tests follow the same rule: where a test needs a Minecraft call that differs by version, such as
+  creating saved data storage or locating a data pack folder, each version's mod module provides a test-only
+  adapter with the same name in its own test sources.
 - Data pack files whose format or folder name changes between Minecraft versions, such as recipes,
   advancements, loot tables and item tags, stay in each version's mod module.
 - Loader modules compile the mod module's sources and package its resources together with their own, instead of

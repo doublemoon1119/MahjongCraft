@@ -19,7 +19,7 @@ import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 
 /**
- * Minecraft 1.20.1 的一桌一 entity 玩家公開資訊 presenter。
+ * Minecraft 的一桌一 entity 玩家公開資訊 presenter。
  *
  * @property serverHolder 取得目前伺服器世界。
  * @property spawnGateway 透過平台入口生成玩家資訊 entity。

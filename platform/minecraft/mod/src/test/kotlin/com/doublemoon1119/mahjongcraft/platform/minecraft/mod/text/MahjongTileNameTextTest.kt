@@ -6,10 +6,10 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.literalText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
-import net.minecraft.network.chat.contents.LiteralContents
 import net.minecraft.network.chat.contents.TranslatableContents
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -52,6 +52,6 @@ class MahjongTileNameTextTest {
     fun `unregistered extension tiles show their type id`() {
         val name = Tile.Extension(TileTypeId.parse("example:unknown")).toNameText(displayNames)
 
-        assertEquals("example:unknown", (name.contents as LiteralContents).text())
+        assertEquals("example:unknown", literalText(name.contents))
     }
 }

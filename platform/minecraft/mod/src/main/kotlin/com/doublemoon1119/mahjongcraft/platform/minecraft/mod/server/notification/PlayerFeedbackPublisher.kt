@@ -32,7 +32,7 @@ import net.minecraft.network.chat.MutableComponent
 import kotlin.uuid.Uuid
 
 /**
- * 使用 Minecraft 1.20.1 呈現一次性玩家回饋。
+ * 使用 Minecraft 呈現一次性玩家回饋。
  *
  * 目前所有回饋均轉成本地化 chat 訊息。每個 exhaustive `when` 分支可執行零到多個版本特有效果，
  * 不要求回饋與 translation key 一對一。若其他版本能使用新的 bar、title、音效或多種效果並行，

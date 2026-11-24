@@ -19,7 +19,7 @@ import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 
 /**
- * 使用 Minecraft 1.20.1 entity 呈現桌面中央局況顯示——比照
+ * 使用 Minecraft entity 呈現桌面中央局況顯示——比照
  * [EntityMahjongTileWallPresenter] 的
  * 「找到既有的就更新，找不到才生成」模式，不是每次都整批換新（見 [MahjongRoundInfoPresenter] KDoc）。
  *

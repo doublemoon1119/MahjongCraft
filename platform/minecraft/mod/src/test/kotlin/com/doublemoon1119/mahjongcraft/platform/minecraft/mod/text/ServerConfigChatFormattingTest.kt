@@ -3,15 +3,22 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MissingAiPlayerPolicy
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.MinecraftTestBootstrap
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.contents.TranslatableContents
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 /** 伺服器設定的分類順序與獨立懸停訊息測試。 */
 class ServerConfigChatFormattingTest {
+    @BeforeTest
+    fun bootstrapMinecraft() {
+        MinecraftTestBootstrap.ensure()
+    }
+
     /** 分類依 TOML 順序排列，每項設定只出現一次。 */
     @Test
     fun `test sections follow toml order and contain all settings`() {

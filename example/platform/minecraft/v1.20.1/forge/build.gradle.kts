@@ -52,8 +52,9 @@ devMods {
     group("modmenu")
 }
 
-// 範例中呼叫 Minecraft 1.20.1 但不用載入器的程式在 :example-minecraft_v1.20.1_mod；比照本體，把原始碼納入本模組，
-// 由 ModDevGradle 一起轉成 Forge 執行時的名稱並打包。
+// 範例中呼叫 Minecraft 但不用載入器的程式在 :example-minecraft_v1.20.1_mod 與它一起編譯的跨版本共用
+// example/platform/minecraft/mod；它們的 JAR 使用 Mojang 名稱，因此把原始碼納入本模組，由 ModDevGradle 一起轉成
+// Forge 執行時的名稱並打包。
 includeSourcesOf(":example-minecraft_v1.20.1_mod")
 
 // 與 Fabric 共用的程式只能用原版寫法，不顯示 Forge 對原版寫法的過時警告。

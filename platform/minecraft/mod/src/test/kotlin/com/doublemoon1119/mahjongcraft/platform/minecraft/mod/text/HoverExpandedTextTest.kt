@@ -1,14 +1,21 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.MinecraftTestBootstrap
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
 import java.util.Optional
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /** 驗證把滑鼠提示展開成一般文字，供看不到提示的指令來源閱讀。 */
 class HoverExpandedTextTest {
+    @BeforeTest
+    fun bootstrapMinecraft() {
+        MinecraftTestBootstrap.ensure()
+    }
+
     /** 沒有提示的訊息內容不變。 */
     @Test
     fun `keeps text without hover`() {
