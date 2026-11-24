@@ -30,11 +30,23 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
 - Each Minecraft version has one mod module, such as `platform/minecraft/v1.20.1/mod`, for the code and resources
   that call that Minecraft version but no loader API. Its build applies the ModDevGradle legacy plugin in vanilla
   mode, so it compiles and tests against vanilla Minecraft with Mojang names and fails when code uses a loader API.
+- Code, resources and tests that are the same for every supported Minecraft version live once in
+  `platform/minecraft/mod`, which is a plain folder, not a Gradle project. Each version's mod module compiles it
+  with its own sources through `includeSharedVersionSources()`, so the shared code is compiled and tested once
+  per version. Where Minecraft versions differ, the shared code calls an adapter or extends a base class that
+  each version's mod module provides with the same name, mostly in the `vanilla` package.
+- Adapters use the newer Minecraft name when the newer version has a method that does the same thing: the older
+  version's adapter is an extension function with that name, and the newer version needs none. Differences
+  without such a method get a neutral name that describes what the adapter does. Before using a newer name,
+  check that the older version has no method with that name and a different purpose.
+- Data pack files whose format or folder name changes between Minecraft versions, such as recipes,
+  advancements, loot tables and item tags, stay in each version's mod module.
 - Loader modules compile the mod module's sources and package its resources together with their own, instead of
   depending on its JAR. That JAR uses Mojang names, while each loader remaps the combined output to its own runtime
   names. The mod module's JAR is never distributed.
 - Loader modules call `includeSourcesOf` from build-logic to compile another project's sources and resources with
-  their own, and `includeResourcesOf` to package only its resources, such as the textures and translations in
+  their own, and for a module in a Minecraft version folder also the matching shared folder.
+  `includeResourcesOf` packages only another project's resources, such as the textures and translations in
   `:minecraft_common`. `includeTestSourcesOf` adds a test folder that only loader modules compile, such as
   the debug assembly test shared by the loader debug modules.
 - Modules that use the version mod module's access transformer, such as Forge modules, debug modules and the

@@ -131,7 +131,7 @@ rules come from collisions that only showed up in game, so check them even when 
   that ID. An argument it cannot understand is preserved in its position as `?`, with one warning. A malformed
   JSON document still decodes to an empty list.
 - See the [pairing example registration](../../example/platform/minecraft/common/src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/presentation/ExamplePairingRoundInfo.kt),
-  the [Minecraft 1.20.1 parameter builder test](../../platform/minecraft/v1.20.1/mod/src/test/kotlin/com/doublemoon1119/mahjongcraft/platform/minecraft/mod/client/render/RoundInfoLineTextBuilderTest.kt)
+  the [Minecraft mod parameter builder test](../../platform/minecraft/mod/src/test/kotlin/com/doublemoon1119/mahjongcraft/platform/minecraft/mod/client/render/RoundInfoLineTextBuilderTest.kt)
   and the [example provider test](../../example/platform/minecraft/common/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/presentation/ExamplePairingPresentationTest.kt).
 
 ## Tile Appearance Styles

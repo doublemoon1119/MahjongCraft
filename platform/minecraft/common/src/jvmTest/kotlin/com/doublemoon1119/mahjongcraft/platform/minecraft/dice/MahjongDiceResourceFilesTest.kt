@@ -12,7 +12,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-/** 驗證麻將骰子的 item model、材質、配方與語系資源。 */
+/** 驗證麻將骰子的 item model、材質與語系資源。 */
 class MahjongDiceResourceFilesTest {
     /** 驗證骰子尺寸、六面 UV、材質路徑及每面 16×16 的 atlas 比例。 */
     @Test
@@ -70,24 +70,6 @@ class MahjongDiceResourceFilesTest {
                 6 to image.countPips(32, 0),
             ),
         )
-    }
-
-    /** 驗證無形配方使用三種既定材料並產出兩顆骰子。 */
-    @Test
-    fun `dice recipe combines concrete and pip dyes`() {
-        val recipe = loadJson("/data/mahjongcraft/recipes/mahjong_dice.json")
-        val ingredients = recipe.getValue("ingredients").jsonArray.mapTo(mutableSetOf()) { ingredient ->
-            ingredient.jsonObject.getValue("item").jsonPrimitive.content
-        }
-        val result = recipe.getValue("result").jsonObject
-
-        assertEquals("minecraft:crafting_shapeless", recipe.getValue("type").jsonPrimitive.content)
-        assertEquals(
-            expected = setOf("minecraft:white_concrete", "minecraft:red_dye", "minecraft:black_dye"),
-            actual = ingredients,
-        )
-        assertEquals("mahjongcraft:mahjong_dice", result.getValue("item").jsonPrimitive.content)
-        assertEquals(2, result.getValue("count").jsonPrimitive.content.toInt())
     }
 
     /**

@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.minecraft.table
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.data
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -11,7 +11,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 /** 驗證兩種首發麻將桌的配方與材料 tag 資源。 */
-class MahjongTableResourceFilesTest {
+class MahjongTableDataFilesTest {
     /** Vanilla 1.20.1 提供的全部混凝土 item ID。 */
     private val concreteIds = setOf(
         "minecraft:white_concrete",

@@ -13,13 +13,72 @@ import java.io.File
  * 把另一個專案的原始碼與資源一起編譯並打包進這個模組。
  *
  * 用於載入器模組納入版本 mod 模組等原始碼：那些模組的 JAR 使用 Mojang 名稱，各載入器要把它們與自己的程式一起轉成執行時
- * 的名稱。不存在的資料夾會被略過。
+ * 的名稱。提供原始碼的是 Minecraft 版本資料夾中的模組時（例如 `platform/minecraft/v1.20.1/mod`），跨版本共用的同名資料夾
+ * （[sharedVersionDirectory]）中相同位置的原始碼也一併納入。不存在的資料夾會被略過。
  *
  * @param projectPath 提供原始碼的專案路徑。
  * @param sourceDirectory 相對於該專案的原始碼資料夾，例如 `src/main` 或 Kotlin 多平台模組的 `src/jvmMain`。
  */
 fun Project.includeSourcesOf(projectPath: String, sourceDirectory: String = "src/main") {
-    val directory = project(projectPath).projectDir.resolve(sourceDirectory)
+    val provider = project(projectPath).projectDir
+    listOfNotNull(sharedVersionDirectory(provider), provider).map { it.resolve(sourceDirectory) }.forEach { directory ->
+        addMainSources(directory)
+    }
+}
+
+/**
+ * 把另一個專案中只給其他模組使用的測試原始碼，加入這個模組的測試一起編譯與執行；跨版本共用的同名資料夾中相同位置的測試
+ * 也一併納入。
+ *
+ * 用於各載入器共用、但需要載入器提供部分內容才能執行的測試；提供原始碼的專案自己不編譯它們。
+ *
+ * @param projectPath 提供測試原始碼的專案路徑。
+ * @param sourceDirectory 相對於該專案的 Kotlin 原始碼資料夾。
+ */
+fun Project.includeTestSourcesOf(projectPath: String, sourceDirectory: String) {
+    val provider = project(projectPath).projectDir
+    listOfNotNull(sharedVersionDirectory(provider), provider).map { it.resolve(sourceDirectory) }.forEach { directory ->
+        extensions.getByType<KotlinJvmProjectExtension>().sourceSets.named("test").configure {
+            kotlin.srcDir(directory)
+        }
+    }
+}
+
+/**
+ * 讓 Minecraft 版本資料夾中的模組一起編譯跨版本共用的原始碼、資源與測試：例如 `platform/minecraft/v1.20.1/mod` 編譯
+ * `platform/minecraft/mod` 的 `src/main` 與 `src/test`。共用的資料夾本身不是 Gradle 專案，只能對某個 Minecraft 版本編譯；
+ * 兩個版本 API 不同的部分放在各版本自己的資料夾。
+ */
+fun Project.includeSharedVersionSources() {
+    val shared = checkNotNull(sharedVersionDirectory(projectDir)) { "$path is not in a Minecraft version folder" }
+    addMainSources(shared.resolve("src/main"))
+    extensions.getByType<SourceSetContainer>().named("test").configure {
+        resources.srcDir(shared.resolve("src/test/resources"))
+    }
+    extensions.getByType<KotlinJvmProjectExtension>().sourceSets.named("test").configure {
+        kotlin.srcDir(shared.resolve("src/test/kotlin"))
+    }
+}
+
+/**
+ * Minecraft 版本資料夾中的模組對應的跨版本共用資料夾：`<平台>/v<版本>/<模組>` 對應 `<平台>/<模組>`，例如
+ * `platform/minecraft/v1.20.1/mod` 對應 `platform/minecraft/mod`。
+ *
+ * @param moduleDirectory 模組資料夾。
+ * @return 共用資料夾；模組不在 Minecraft 版本資料夾中或沒有共用資料夾時為 null。
+ */
+fun sharedVersionDirectory(moduleDirectory: File): File? {
+    val versionDirectory = moduleDirectory.parentFile ?: return null
+    if (!VERSION_DIRECTORY.matches(versionDirectory.name)) return null
+    return versionDirectory.parentFile?.resolve(moduleDirectory.name)?.takeIf(File::isDirectory)
+}
+
+/**
+ * 把一個原始碼資料夾中的 Java、Kotlin 與資源加入主程式。
+ *
+ * @param directory 原始碼資料夾，例如 `src/main`。
+ */
+private fun Project.addMainSources(directory: File) {
     extensions.getByType<SourceSetContainer>().named("main").configure {
         java.srcDir(directory.resolve("java"))
         resources.srcDir(directory.resolve("resources"))
@@ -29,20 +88,8 @@ fun Project.includeSourcesOf(projectPath: String, sourceDirectory: String = "src
     }
 }
 
-/**
- * 把另一個專案中只給其他模組使用的測試原始碼，加入這個模組的測試一起編譯與執行。
- *
- * 用於各載入器共用、但需要載入器提供部分內容才能執行的測試；提供原始碼的專案自己不編譯它們。
- *
- * @param projectPath 提供測試原始碼的專案路徑。
- * @param sourceDirectory 相對於該專案的 Kotlin 原始碼資料夾。
- */
-fun Project.includeTestSourcesOf(projectPath: String, sourceDirectory: String) {
-    val directory = project(projectPath).projectDir.resolve(sourceDirectory)
-    extensions.getByType<KotlinJvmProjectExtension>().sourceSets.named("test").configure {
-        kotlin.srcDir(directory)
-    }
-}
+/** Minecraft 版本資料夾的名稱，例如 `v1.20.1`。 */
+private val VERSION_DIRECTORY = Regex("""v\d+(\.\d+)+""")
 
 /**
  * 開發執行要傳給遊戲的自動測試系統屬性，由 Gradle 屬性 `mahjongcraftAutotest` 決定。
