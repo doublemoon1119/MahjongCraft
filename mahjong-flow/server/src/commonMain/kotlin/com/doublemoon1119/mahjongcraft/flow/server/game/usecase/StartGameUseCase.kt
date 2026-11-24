@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
+import com.doublemoon1119.mahjongcraft.flow.server.game.random.RoundRandomnessSource
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateBusyException
@@ -38,6 +39,7 @@ import kotlin.uuid.Uuid
  * @property presentationPublisher 對局 in-process 呈現觸發器。
  * @property componentRegistry 正式開局與換局使用的組件建立及保留規格。
  * @property beginRuleDecisionUseCase 開局後啟動第一個回合選擇步驟的用例。
+ * @property roundRandomnessSource 第一局的亂數來源。
  */
 class StartGameUseCase(
     private val authoritativeStateStore: AuthoritativeStateStore,
@@ -48,6 +50,7 @@ class StartGameUseCase(
     private val presentationPublisher: GamePresentationPublisher,
     private val componentRegistry: ComponentRegistry,
     private val beginRuleDecisionUseCase: BeginRuleDecisionUseCase,
+    private val roundRandomnessSource: RoundRandomnessSource = RoundRandomnessSource.SEEDED,
 ) {
     /**
      * 執行開始遊戲邏輯。
@@ -194,7 +197,7 @@ class StartGameUseCase(
         seatOrder: List<Uuid>?,
     ): PreparedGameStart {
         val module = moduleRegistry.getModule(room.gameConfig.ruleConfig)
-        val randomness = matchSeed.roundRandomness(roundOrdinal = 0)
+        val randomness = roundRandomnessSource.roundRandomness(matchSeed, roundOrdinal = 0)
         val initializationResult = GameInitializer.initialize(
             id = room.id,
             playerIds = room.playerIds,

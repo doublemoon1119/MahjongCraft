@@ -29,6 +29,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundCo
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.HandReadinessVisibilityPolicy
+import com.doublemoon1119.mahjongcraft.flow.server.game.random.RoundRandomnessSource
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
@@ -165,6 +166,7 @@ val flowServerModule = module {
     single<WinSettlementDetailResolverRegistry>()
     single<RuleDecisionWinPresentationStager>()
     factory<AdvanceAutomaticRuleDecisionUseCase>()
+    single<RoundRandomnessSource> { RoundRandomnessSource.SEEDED }
     factory<AdvanceRoundUseCase>()
     factory<BeginRuleDecisionUseCase>()
     factory<DeclareAbortiveDrawUseCase>()

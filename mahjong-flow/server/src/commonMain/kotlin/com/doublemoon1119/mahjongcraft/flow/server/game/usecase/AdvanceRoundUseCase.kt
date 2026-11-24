@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.random.RoundRandomnessSource
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
@@ -54,6 +55,7 @@ import kotlin.uuid.Uuid
  * @property componentRegistry 正式開局與換局使用的組件建立及保留規格。
  * @property beginRuleDecisionUseCase 新局發牌後啟動規則選擇步驟的 use case。
  * @property failurePolicy 判斷規則失敗能否回報為無法推進；取消與致命錯誤不得轉成一般錯誤。
+ * @property roundRandomnessSource 新一局的亂數來源。
  */
 class AdvanceRoundUseCase(
     private val gameRepository: GameRepository,
@@ -65,6 +67,7 @@ class AdvanceRoundUseCase(
     private val componentRegistry: ComponentRegistry,
     private val beginRuleDecisionUseCase: BeginRuleDecisionUseCase,
     private val failurePolicy: ExtensionFailurePolicy = ExtensionFailurePolicy.Default,
+    private val roundRandomnessSource: RoundRandomnessSource = RoundRandomnessSource.SEEDED,
 ) {
     /**
      * 執行連莊/過莊、開下一局邏輯。
@@ -170,7 +173,7 @@ class AdvanceRoundUseCase(
                                 error = GameError.InvalidMatchProgression(gameId, error.message ?: error::class.simpleName.orEmpty()),
                             )
                         }
-                        val randomness = game.matchSeed.roundRandomness(roundOrdinal = game.openedRoundCount)
+                        val randomness = roundRandomnessSource.roundRandomness(game.matchSeed, game.openedRoundCount)
                         val initializationResult = GameInitializer.startNextRound(
                             gameId = gameId,
                             roundAdvancement = roundAdvancement,

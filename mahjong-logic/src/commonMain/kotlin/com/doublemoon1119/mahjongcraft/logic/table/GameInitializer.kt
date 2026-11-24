@@ -18,7 +18,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningStep
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.logic.table.seat.SeatWindAssignmentContext
 import com.doublemoon1119.mahjongcraft.logic.table.seat.assignValidated
-import kotlin.random.Random
 import kotlin.uuid.Uuid
 
 /**
@@ -68,7 +67,7 @@ object GameInitializer {
         val dealOrderPlayerIds = List(shuffledPlayerIds.size) { offset ->
             shuffledPlayerIds[(dealerIndex + offset) % shuffledPlayerIds.size]
         }
-        val openedWall = module.buildOpenedWall(shuffledPlayerIds.size, opening.wallOpening, randomness.wall)
+        val openedWall = module.buildOpenedWall(shuffledPlayerIds.size, opening.wallOpening, randomness)
         val seatWinds = module.assignSeatWinds(shuffledPlayerIds, opening.dealerPlayerId, openedWall, opening.diceRolls)
         val (hands, remainingWall) = module.dealInitialHands(openedWall.wall, dealOrderPlayerIds)
         val handsByPlayerId = dealOrderPlayerIds.zip(hands).toMap()
@@ -137,7 +136,7 @@ object GameInitializer {
             fixedDealerPlayerId = roundAdvancement.dealerPlayerId,
             diceRollSource = randomness.dice,
         )
-        val openedWall = module.buildOpenedWall(roundAdvancement.players.size, opening.wallOpening, randomness.wall)
+        val openedWall = module.buildOpenedWall(roundAdvancement.players.size, opening.wallOpening, randomness)
         // TableState.players 依座位順序排列、不是從莊家開始排的，發牌輪轉順序需要另外把玩家
         // 列表依莊家旋轉過（見 dealInitialHands KDoc 對 playerIds 順序的要求），發完牌後再依原本的座位
         // 順序組回 players 列表，不能直接沿用旋轉過的順序。
@@ -305,16 +304,28 @@ object GameInitializer {
      *
      * @param playerCount 本局完整玩家名單的人數。
      * @param wallOpening 開局程序已決定的最終開門位置；未使用開門時為 null。
-     * @param random 建立牌山時產生牌張 ID 與洗牌的亂數來源。
+     * @param randomness 建立牌山時產生牌張 ID 與洗牌的亂數來源，以及洗好之後的排列。
      * @return 已整理的摸牌牌山，以及可用時的開門、保留牌和牌牆布局資料。
      */
     private fun MahjongRuleModule<*>.buildOpenedWall(
         playerCount: Int,
         wallOpening: WallOpening?,
-        random: Random,
+        randomness: RoundRandomness,
     ): OpenedWall {
-        val shuffledWall = createWallFactory(playerCount).create(random)
         val layout = createWallLayout(playerCount)
+        val shuffledTiles = createWallFactory(playerCount).create(randomness.wall).getAllTiles()
+        val arrangedTiles = randomness.wallArrangement.arrange(shuffledTiles) { tiles ->
+            if (wallOpening == null) {
+                OpenedTileWallOrder(tiles, emptyList())
+            } else {
+                val result = requireNotNull(layout) { "A round opening requires a wall layout" }.resolve(tiles, wallOpening)
+                OpenedTileWallOrder(result.drawOrder, result.reservedWallTiles)
+            }
+        }
+        require(arrangedTiles.size == shuffledTiles.size && arrangedTiles.map { it.id }.toSet() == shuffledTiles.map { it.id }.toSet()) {
+            "A wall arrangement must reorder the same tiles"
+        }
+        val shuffledWall = TileWall(arrangedTiles)
         if (wallOpening == null) {
             return OpenedWall(
                 wall = shuffledWall,

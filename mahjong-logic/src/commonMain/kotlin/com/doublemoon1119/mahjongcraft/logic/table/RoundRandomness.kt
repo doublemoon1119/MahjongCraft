@@ -13,10 +13,12 @@ import kotlin.random.Random
  * @property wall 建立牌山時洗牌並產生每張牌的 ID。
  * @property dice 擲骰結果。
  * @property components 建立規則組件初值，例如由規則隨機決定的本局狀態。
+ * @property wallArrangement 洗好的牌山的排列；正式對局直接使用洗牌結果，固定內容的測試對局可以指定排列。
  */
 class RoundRandomness(
     val seatOrder: Random,
     val wall: Random,
     val dice: DiceRollSource,
     val components: Random,
+    val wallArrangement: TileWallArrangement = TileWallArrangement.SHUFFLED,
 )
