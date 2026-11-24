@@ -5,9 +5,11 @@ internal val autotestClientSteps: List<AutotestStep> = buildList {
     add(AutotestEnterWorldStep)
     add(AutotestResourcesStep)
     add(AutotestItemsStep)
+    add(AutotestScreensStep)
     add(AutotestPresentationsStep)
     add(AutotestTableStep)
     add(AutotestScenesStep)
     add(AutotestSaveStep)
     add(AutotestPlayStep)
+    add(AutotestReplayStep)
 }

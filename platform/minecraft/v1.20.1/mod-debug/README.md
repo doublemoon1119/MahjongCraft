@@ -71,6 +71,19 @@ Automated tests run in a fixed environment and act only on explicit conditions:
   limit that also fails the check.
 - A fixed number of game ticks is only for choosing when to take a screenshot during an animation.
 
+Steps that need fixed situations create them instead of waiting for them by chance:
+
+- `/mahjongcraft debug room start <seat>` starts the room's match through the normal start flow with the
+  host at the given seat, so a new match always moves the player to a different seat.
+- `/mahjongcraft debug history fixture <id>` records a fixed match from the common debug tools'
+  `HistoryFixtures`: its first rounds deal scripted hands, walls and dice and follow scripted decisions; the
+  later rounds use a fixed seed and every player discards the drawn tile and passes every call until the
+  match ends. A fixture whose script cannot be followed fails and is not archived.
+- The replay step finds the steps to show by the kind of event in the replay, not by step numbers.
+
+Steps drive the main mod's screens only through its public entry points; the history screens offer
+`HistoryScreenAutomation` for opening pages and moving through a replay.
+
 Server commands run on the integrated server thread as the local player and return their feedback instead of
 sending it to chat; feedback that arrives later, such as an asynchronous scenario load, joins the same result.
 

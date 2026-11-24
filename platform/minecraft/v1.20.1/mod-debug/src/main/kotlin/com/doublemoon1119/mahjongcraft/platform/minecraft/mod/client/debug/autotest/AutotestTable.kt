@@ -115,7 +115,9 @@ internal suspend fun AutotestContext.ensureGameRunning(): Boolean {
     val states = koin.get<ClientMahjongStateStore>()
     val settled = waitUntil(READY_TIMEOUT) { isGameReady() || states.tableOccupancy(tableId)?.occupancy == TableOccupancyDto.ROOM }
     if (!check("The table has a game or a room", settled)) return false
-    if (!isGameReady() && !startNextMatchAtAnotherSeat(tableId)) return false
+    // 對局在等待期間仍會繼續進行，是否要再開一場只看伺服器上的牌桌是不是已經回到房間。
+    val returnedToRoom = koin.get<RoomRepository>().getRoom(tableId) != null
+    if (returnedToRoom && !startNextMatchAtAnotherSeat(tableId)) return false
     client.setScreen(null)
     if (!check("The player is seated at the table", waitUntil(SYNC_TIMEOUT) { AutotestTable.isSeated(client) })) return false
     val atSeat = waitUntil(SYNC_TIMEOUT) { seatDistance(tableId)?.let { it <= SEAT_TOLERANCE } == true }
