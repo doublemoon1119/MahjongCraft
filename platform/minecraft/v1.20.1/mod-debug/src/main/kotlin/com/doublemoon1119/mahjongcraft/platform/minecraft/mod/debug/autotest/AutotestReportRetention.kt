@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.autotest
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest
 
 import java.nio.file.Files
 import java.nio.file.Path

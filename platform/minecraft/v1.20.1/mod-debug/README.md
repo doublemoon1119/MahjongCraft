@@ -92,3 +92,14 @@ sending it to chat; feedback that arrives later, such as an asynchronous scenari
 The mixins in `mahjongcraft.debug.mixins.json` ignore input, keep the game running without focus and record
 each sound request, only while the test runs. The loader debug modules register the configuration:
 Fabric in `fabric.mod.json`, Forge through the mixin configurations of its development runs.
+
+`server/game/debug/autotest` holds the dedicated server's automated test, which the development entry point
+starts on a dedicated server when the switch is set. A dedicated server has no players, so bot players join
+through the vanilla join path on an in-memory connection: they are online like real players, every packet
+sent to them is dropped, and they answer keep-alive checks so the server does not disconnect them. Each bot
+places a table, opens a room, switches it to its rule and fills it with AI players through the same room
+service the room screen uses. The first run plays one match with automatic controls, starts a second match
+and records its progress, including every player's score, once a bot's decision time is counting down; the
+second run compares the loaded state with that record before the bots rejoin and finish. Both runs check how long the server takes to stop
+and that MahjongCraft logged no errors. The report and its retention are shared with the client test in
+`debug/autotest`.

@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.autotest
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest
 
 /**
  * 自動測試要執行哪些步驟，由開發執行的系統屬性 [PROPERTY] 決定。

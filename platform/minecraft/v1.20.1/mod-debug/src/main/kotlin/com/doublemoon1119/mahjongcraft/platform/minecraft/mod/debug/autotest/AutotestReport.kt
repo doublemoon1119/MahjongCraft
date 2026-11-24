@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.autotest
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest
 
 import kotlinx.serialization.Serializable
 
@@ -9,6 +9,7 @@ import kotlinx.serialization.Serializable
  * @property startedAt 開始時間，ISO 8601 格式。
  * @property durationMillis 總耗時（毫秒）。
  * @property status 整體結果：任何步驟失敗或中止時不是通過。
+ * @property notes 執行測試的人需要知道的事，例如測試代為同意了 Minecraft EULA；沒有時為空。
  * @property steps 各步驟的結果，依執行順序。
  */
 @Serializable
@@ -17,6 +18,7 @@ internal data class AutotestReport(
     val startedAt: String,
     val durationMillis: Long,
     val status: AutotestStatus,
+    val notes: List<String>,
     val steps: List<AutotestStepResult>,
 )
 

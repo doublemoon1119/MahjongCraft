@@ -1,5 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.autotest
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.AutotestCheck
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.AutotestReport
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.AutotestReportRetention
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.AutotestSelection
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.AutotestSoundRecord
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.AutotestStatus
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.AutotestStepResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.autotestReportMarkdown
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import kotlinx.coroutines.CoroutineScope
@@ -169,6 +177,7 @@ internal class AutotestClientRunner(
             startedAt = startedAt.toString(),
             durationMillis = startMark.elapsedNow().inWholeMilliseconds,
             status = status,
+            notes = emptyList(),
             steps = stepResults,
         )
         Files.writeString(outputDirectory.resolve("report.json"), JSON.encodeToString(AutotestReport.serializer(), report))

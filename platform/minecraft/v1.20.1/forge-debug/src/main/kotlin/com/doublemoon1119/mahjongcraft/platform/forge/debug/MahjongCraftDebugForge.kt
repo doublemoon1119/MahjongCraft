@@ -4,8 +4,8 @@ import com.doublemoon1119.mahjongcraft.platform.forge.loader.ForgeClientEvents
 import com.doublemoon1119.mahjongcraft.platform.forge.loader.ForgeLoaderPlatform
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.DebugClientCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.autotest.AutotestClientRunner
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.autotest.AutotestSelection
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.autotest.autotestClientSteps
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.AutotestSelection
 import net.minecraftforge.fml.common.Mod
 import org.koin.core.context.GlobalContext
 

@@ -93,6 +93,62 @@ fun Project.autotestClientArguments(): List<String> = if (autotestSystemProperti
 fun Project.clientRunDirectory(): String = if (autotestSystemProperties().isEmpty()) "run/client" else "run/autotest-client"
 
 /**
+ * 開發伺服器的執行目錄名稱，相對於模組資料夾。伺服器自動測試使用獨立的 `run/autotest-server`，測試世界、設定與報告不會與平常的
+ * `run/server` 混在一起。
+ *
+ * @return 執行目錄名稱。
+ */
+fun Project.serverRunDirectory(): String = if (autotestSystemProperties().isEmpty()) "run/server" else "run/autotest-server"
+
+/**
+ * 伺服器自動測試某一段要傳給伺服器的系統屬性：[autotestSystemProperties] 加上這是第幾段。沒有設定 `mahjongcraftAutotest` 時為空。
+ *
+ * @param phase 第幾段，[AUTOTEST_SERVER_START] 或 [AUTOTEST_SERVER_RESUME]。
+ * @return 系統屬性名稱與值。
+ */
+fun Project.autotestServerSystemProperties(phase: String): Map<String, String> =
+    autotestSystemProperties().takeIf { it.isNotEmpty() }?.plus("mahjongcraft.autotest.serverPhase" to phase).orEmpty()
+
+/** 伺服器自動測試的第一段：準備好的新世界上開局，打到一半關機。 */
+const val AUTOTEST_SERVER_START: String = "start"
+
+/** 伺服器自動測試的第二段：讀回第一段留下的世界，確認恢復後打完。 */
+const val AUTOTEST_SERVER_RESUME: String = "resume"
+
+/**
+ * 接上伺服器自動測試的任務：`autotestServer` 先執行一般的開發伺服器（第一段），再執行讀回世界的第二段伺服器；第一段開機前由
+ * [PrepareAutotestServerTask] 準備測試專用的執行目錄。沒有設定 `mahjongcraftAutotest` 時不做任何事。
+ *
+ * Gradle 屬性 `mahjongcraftAutotestServerPort` 指定伺服器的連接埠，沒有指定時為 25599。
+ *
+ * @param startTask 第一段，也就是一般開發伺服器的執行任務名稱。
+ * @param resumeTask 第二段伺服器的執行任務名稱。
+ * @throws GradleException `mahjongcraftAutotestServerPort` 不是有效的連接埠時拋出。
+ */
+fun Project.registerAutotestServerTasks(startTask: String, resumeTask: String) {
+    if (autotestSystemProperties().isEmpty()) return
+    val port = providers.gradleProperty("mahjongcraftAutotestServerPort").orNull?.let { value ->
+        value.toIntOrNull()?.takeIf { it in 1..65535 } ?: throw GradleException("mahjongcraftAutotestServerPort must be a port number: $value")
+    } ?: DEFAULT_AUTOTEST_SERVER_PORT
+    val prepare = tasks.register("prepareAutotestServer", PrepareAutotestServerTask::class.java) {
+        group = "verification"
+        description = "Prepares the automated server test's run directory."
+        runDirectory.set(layout.projectDirectory.dir(serverRunDirectory()))
+        this.port.set(port)
+    }
+    tasks.named(startTask) { dependsOn(prepare) }
+    tasks.named(resumeTask) { mustRunAfter(startTask) }
+    tasks.register("autotestServer") {
+        group = "verification"
+        description = "Runs the automated server test: plays at tables, restarts the server and checks what was restored."
+        dependsOn(startTask, resumeTask)
+    }
+}
+
+/** 伺服器自動測試預設的連接埠，避開平常開發伺服器使用的 25565。 */
+private const val DEFAULT_AUTOTEST_SERVER_PORT = 25599
+
+/**
  * 把另一個專案的資源一起打包進這個模組，例如跨版本共用模組的材質與翻譯。
  *
  * @param projectPath 提供資源的專案路徑。

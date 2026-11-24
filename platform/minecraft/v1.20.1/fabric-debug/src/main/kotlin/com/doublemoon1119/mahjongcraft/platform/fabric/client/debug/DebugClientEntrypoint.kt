@@ -3,8 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.debug
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.DebugClientCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.autotest.AutotestClientRunner
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.autotest.AutotestSelection
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.autotest.autotestClientSteps
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.AutotestSelection
 import net.fabricmc.api.ClientModInitializer
 import org.koin.core.context.GlobalContext
 

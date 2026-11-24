@@ -1,7 +1,7 @@
-package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.autotest
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest
 
 /**
- * 把報告轉成給人閱讀的 Markdown：先列整體結果與各步驟摘要，再列每個步驟的檢查、截圖與聲音。
+ * 把報告轉成給人閱讀的 Markdown：先列整體結果、提醒事項與各步驟摘要，再列每個步驟的檢查、截圖與聲音。
  *
  * @param report 自動測試報告。
  * @return Markdown 文字。
@@ -13,6 +13,7 @@ internal fun autotestReportMarkdown(report: AutotestReport): String = buildStrin
     appendLine("- Started: ${report.startedAt}")
     appendLine("- Duration: ${report.durationMillis} ms")
     appendLine("- Result: ${report.status.label()}")
+    report.notes.forEach { appendLine("- Note: $it") }
     appendLine()
     report.steps.forEach { step -> appendLine("- ${step.status.label()} `${step.id}` (${step.durationMillis} ms)") }
     report.steps.filter { it.status != AutotestStatus.SKIPPED }.forEach { step ->

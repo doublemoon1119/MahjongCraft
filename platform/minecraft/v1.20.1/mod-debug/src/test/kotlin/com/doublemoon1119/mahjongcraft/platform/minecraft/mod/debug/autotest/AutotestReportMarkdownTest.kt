@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.autotest
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest
 
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -6,7 +6,7 @@ import kotlin.test.assertFalse
 
 /** 驗證自動測試報告轉成 Markdown 的內容。 */
 class AutotestReportMarkdownTest {
-    /** 報告列出整體結果與各步驟，失敗步驟附上未通過的檢查、截圖、聲音與錯誤；略過的步驟只出現在摘要。 */
+    /** 報告列出整體結果、提醒事項與各步驟，失敗步驟附上未通過的檢查、截圖、聲音與錯誤；略過的步驟只出現在摘要。 */
     @Test
     fun `markdown lists the results, failed checks, screenshots, sounds and errors`() {
         val report = AutotestReport(
@@ -14,6 +14,7 @@ class AutotestReportMarkdownTest {
             startedAt = "2026-11-24T10:00",
             durationMillis = 1_500,
             status = AutotestStatus.FAILED,
+            notes = listOf("The Minecraft EULA was accepted on your behalf"),
             steps = listOf(
                 AutotestStepResult(
                     id = "world",
@@ -31,6 +32,7 @@ class AutotestReportMarkdownTest {
         val markdown = autotestReportMarkdown(report)
 
         assertContains(markdown, "- Result: FAILED")
+        assertContains(markdown, "- Note: The Minecraft EULA was accepted on your behalf")
         assertContains(markdown, "- SKIPPED `screens`")
         assertContains(markdown, "- [ ] Entered the test world - timed out")
         assertContains(markdown, "[screenshots/world-entered.png](screenshots/world-entered.png)")

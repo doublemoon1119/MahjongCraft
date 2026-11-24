@@ -171,3 +171,23 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   drawing while minimised.
 - The steps and the input and sound handling live in the
   [Minecraft 1.20.1 mod debug tools](../../platform/minecraft/v1.20.1/mod-debug/README.md).
+
+### Automated Server Test
+
+- The dedicated server has its own automated test, run by the `autotestServer` task with the same switch:
+
+  ```shell
+  ./gradlew :minecraft_v1.20.1_fabric:autotestServer "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=true"
+  ```
+
+- **The test accepts the Minecraft EULA on your behalf.** Before the first server starts,
+  `prepareAutotestServer` writes `eula=true` to the test's own `run/autotest-server/eula.txt` and prints a
+  warning, and every report repeats the reminder. Do not run the server test unless you agree to the
+  [Minecraft EULA](https://aka.ms/MinecraftEULA). The normal `run/server` is never touched.
+- The same task deletes the previous test world and writes fixed server settings: a flat world with a fixed
+  seed, offline mode, peaceful creative play and port 25599. Pass `-PmahjongcraftAutotestServerPort=<port>`
+  to use another port.
+- The task starts the server twice. The first run plays at tables and stops in the middle of a match; the
+  second run, `runAutotestServerResume`, loads the same world, checks what was restored and finishes the
+  matches. Both runs write into the same report under `run/autotest-server/autotest/<start time>/`, which
+  keeps the latest reports like the client test.

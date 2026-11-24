@@ -1,11 +1,16 @@
+import com.doublemoon1119.mahjongcraft.buildlogic.AUTOTEST_SERVER_RESUME
+import com.doublemoon1119.mahjongcraft.buildlogic.AUTOTEST_SERVER_START
 import com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtension
 import com.doublemoon1119.mahjongcraft.buildlogic.autotestClientArguments
 import com.doublemoon1119.mahjongcraft.buildlogic.autotestClientEnvironment
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestServerSystemProperties
 import com.doublemoon1119.mahjongcraft.buildlogic.autotestSystemProperties
 import com.doublemoon1119.mahjongcraft.buildlogic.clientRunDirectory
 import com.doublemoon1119.mahjongcraft.buildlogic.includeResourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.modrinth
+import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestServerTasks
+import com.doublemoon1119.mahjongcraft.buildlogic.serverRunDirectory
 
 plugins {
     alias(libs.plugins.mahjongcraft.minecraft.loader)
@@ -53,11 +58,20 @@ loom {
             autotestSystemProperties().forEach { (name, value) -> vmArg("-D$name=$value") }
         }
         named("server") {
-            runDirectory.set(layout.projectDirectory.dir("run/server"))
-            autotestSystemProperties().forEach { (name, value) -> vmArg("-D$name=$value") }
+            runDirectory.set(layout.projectDirectory.dir(serverRunDirectory()))
+            // -PmahjongcraftAutotest 時是伺服器自動測試的第一段：開局、打到一半後關機。
+            autotestServerSystemProperties(AUTOTEST_SERVER_START).forEach { (name, value) -> vmArg("-D$name=$value") }
+        }
+        // 伺服器自動測試的第二段：讀回第一段留下的世界；只由 autotestServer 任務接在第一段之後執行。
+        register("autotestServerResume") {
+            server()
+            ideConfigGenerated(false)
+            runDirectory.set(layout.projectDirectory.dir(serverRunDirectory()))
+            autotestServerSystemProperties(AUTOTEST_SERVER_RESUME).forEach { (name, value) -> vmArg("-D$name=$value") }
         }
     }
 }
+registerAutotestServerTasks(startTask = "runServer", resumeTask = "runAutotestServerResume")
 
 // 材質、模型與翻譯放在跨版本、跨載入器共用的 :minecraft_common，與本模組的資源一起打包。
 // :minecraft_v1.20.1_mod 的程式與資源（例如配方）由本模組一起編譯與打包：mod 模組自己的 JAR 使用 Mojang 名稱，
