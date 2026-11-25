@@ -8,8 +8,8 @@ import kotlin.uuid.Uuid
  *
  * @property checkpoint 目前抵達的規則中立流程節點。
  * @property tableState 目前的權威桌況。
- * @property actorPlayerId 觸發此節點的玩家；沒有單一玩家時為 null。
- * @property sourceAction 觸發此節點的已完成動作；沒有單一動作時為 null。
+ * @property actorPlayerId 觸發此節點的玩家。沒有單一玩家時為 null。
+ * @property sourceAction 觸發此節點的已完成動作。沒有單一動作時為 null。
  */
 data class WallRevealContext(
     val checkpoint: WallRevealCheckpoint,

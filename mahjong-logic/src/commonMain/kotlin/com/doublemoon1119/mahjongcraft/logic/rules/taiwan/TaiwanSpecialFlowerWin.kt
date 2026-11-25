@@ -15,8 +15,8 @@ object TaiwanSpecialFlowerWin {
      *
      * @property taiResult 八仙過海或七搶一及其台數。
      * @property winnerId 可以選擇花胡的玩家。
-     * @property payerId 七搶一的被搶花玩家；八仙過海由三家付款，因此為 null。
-     * @property claimedFlower 七搶一中被搶的花牌；八仙過海為 null。
+     * @property payerId 七搶一的被搶花玩家。八仙過海由三家付款，因此為 null。
+     * @property claimedFlower 七搶一中被搶的花牌。八仙過海為 null。
      */
     data class Opportunity(
         val taiResult: TaiwanTaiResult,
@@ -33,7 +33,7 @@ object TaiwanSpecialFlowerWin {
      * @param tableState 已將新花牌放進公開花區的桌況。
      * @param revealingPlayerId 本次公開花牌的玩家。
      * @param revealedFlower 本次剛公開的花牌。
-     * @return 成立的花胡資格；沒有資格時為 null。
+     * @return 成立的花胡資格。沒有資格時為 null。
      */
     fun findOpportunity(
         tableState: TableState,

@@ -10,10 +10,10 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
  * 兩杯口 (Ryanpeikou) 役種檢測器。
  *
  * 手牌中有兩個不同的相同順子（例如一個 123 萬和一個 456 萬）。
- * 必須為門前清（無副露），否則不能成立此役種。
  *
- * 與 [calculateRiichiIipeikou] 互斥，兩杯口優先於一杯口（3 翻 > 1 翻）。
- * 同時也與七對子互斥，七對子優先於一杯口（2 翻 > 1 翻）。
+ * - 必須為門前清（無副露），否則不能成立此役種。
+ * - 與 [calculateRiichiIipeikou] 互斥，兩杯口優先於一杯口（3 翻 > 1 翻）。
+ * - 同時也與七對子互斥，七對子優先於一杯口（2 翻 > 1 翻）。
  *
  * @param handStructure 手牌結構（由 [RiichiHandDecomposer] 分割後的結果）。
  * @param isMenzen 是否為門前清（無副露）。

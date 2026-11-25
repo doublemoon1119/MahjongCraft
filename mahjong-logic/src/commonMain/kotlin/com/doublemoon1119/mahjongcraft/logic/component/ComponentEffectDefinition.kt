@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
  * @property id 效果來源的完整識別碼。
  * @property ownerType 適用的對象定義。
  * @property appliesTo 判斷規則及設定是否適用，不執行 I/O 或改變狀態。
- * @property resolve 從同一版本的輸入計算效果；不得使用亂數或依賴呼叫順序。
+ * @property resolve 從同一版本的輸入計算效果。不得使用亂數或依賴呼叫順序。
  */
 class ComponentEffectDefinition<O : Any>(
     val id: String,

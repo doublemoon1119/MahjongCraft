@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 /**
  * MahjongCraft 跨平台共用的專案識別資訊。
  *
- * 實際值由 root Gradle project metadata 單一來源產生；規則、flow 與各平台應引用此物件，不應自行
+ * 實際值由 root Gradle project metadata 單一來源產生。規則、flow 與各平台應引用此物件，不應自行
  * 寫入 MahjongCraft 的 namespace。
  */
 object MahjongCraftMetadata {

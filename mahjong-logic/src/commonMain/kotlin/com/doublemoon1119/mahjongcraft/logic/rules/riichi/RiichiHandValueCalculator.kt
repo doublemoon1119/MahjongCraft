@@ -50,7 +50,7 @@ import kotlin.math.abs
  *
  * 負責計算手牌的全部番數，使用 [RiichiHandValueContext] 提供計算所需的上下文資訊。
  *
- * @property useLocalYaku 是否啟用古役（Local Yaku）；關閉時只計算一般役種。
+ * @property useLocalYaku 是否啟用古役（Local Yaku）。關閉時只計算一般役種。
  */
 class RiichiHandValueCalculator(
     private val useLocalYaku: Boolean = false,

@@ -60,7 +60,7 @@ class RiichiHandValueContextCalculatorTest {
      * 建立具有指定手牌與可選立直狀態的測試玩家。
      *
      * @param hand 玩家手牌。
-     * @param riichiState 規則狀態；未提供時使用空的立直狀態。
+     * @param riichiState 規則狀態。未提供時使用空的立直狀態。
      * @return 測試玩家。
      */
     private fun createPlayer(hand: Hand, riichiState: ComponentSet? = null): MahjongPlayer = FakeMahjongPlayerFactory.create(
@@ -693,7 +693,7 @@ class RiichiHandValueContextCalculatorTest {
         assertTrue(context.isRinshanKaihou)
     }
 
-    /** 以放銃者標記為立直宣言牌的捨牌榮和時，上下文標記為立直宣言牌；其他捨牌、自摸與搶槓都不標記。 */
+    /** 以放銃者標記為立直宣言牌的捨牌榮和時，上下文標記為立直宣言牌。其他捨牌、自摸與搶槓都不標記。 */
     @Test
     fun `ron on a riichi declaration discard is marked`() {
         val calculator = createCalculator()
@@ -725,7 +725,7 @@ class RiichiHandValueContextCalculatorTest {
         assertFalse(context(tile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))).isRiichiDeclarationDiscard)
     }
 
-    /** 放銃者槓牌並補牌後打出的牌被榮和時標記為槓後捨牌；一般摸牌後的捨牌不標記。 */
+    /** 放銃者槓牌並補牌後打出的牌被榮和時標記為槓後捨牌。一般摸牌後的捨牌不標記。 */
     @Test
     fun `ron on the discard after a kan is marked`() {
         val calculator = createCalculator()

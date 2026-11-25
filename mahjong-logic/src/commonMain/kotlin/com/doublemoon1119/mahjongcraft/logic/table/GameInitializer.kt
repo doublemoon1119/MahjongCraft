@@ -105,21 +105,22 @@ object GameInitializer {
     }
 
     /**
-     * 依連莊/過莊判定的結果（[roundAdvancement]），建立下一局的桌況：重新擲骰開門、重新建牌山、
-     * 重新發手牌，並重置每局狀態（手牌、牌河、規則特有的玩家狀態），但保留跨局狀態（分數、局數/
-     * 本場數/場風/各玩家方位，皆直接沿用 [roundAdvancement] 算好的結果）。
+     * 依連莊／過莊判定的結果（[roundAdvancement]），建立下一局的桌況。
      *
-     * 座位順序直接採用 [roundAdvancement] 的 `players` 列表順序（規則要求局間換位時已是新順序），不會重新洗牌，
-     * 只有發牌本身、每局狀態會全部重來——跟 [initialize] 開新對局時「連座位順序都重新洗牌、分數歸零」不同。
-     * 連莊仍是新的一局，也會重新擲骰開門。
+     * - 重新擲骰開門、重新建牌山、重新發手牌。
+     * - 重置每局狀態：手牌、牌河、規則特有的玩家狀態。
+     * - 保留跨局狀態：分數、局數、本場數、場風與各玩家方位，皆沿用 [roundAdvancement] 算好的結果。
+     * - 座位順序直接採用 [roundAdvancement] 的 `players` 列表順序，不重新洗牌。規則要求局間換位時，這已是新順序。
+     *   這點和 [initialize] 開新對局時重新洗座位、分數歸零不同。
+     * - 連莊仍是新的一局，也會重新擲骰開門。
      *
      * @param gameId 對局 Uuid（延續同一場對局，不是新對局）。
      * @param roundAdvancement 連莊/過莊判定後的結果（見 [TableState.advanceRound]），提供下一局的
-     *        玩家列表與局位資料；玩家自風會依規則 policy 重新指派。
+     *        玩家列表與局位資料。玩家自風會依規則 policy 重新指派。
      * @param module 該對局採用的規則模組。
      * @param randomness 這一局的座位、牌山與擲骰亂數來源。
      * @return 已完成重新擲骰開門、重新建牌山、發牌，並套用連莊/過莊結果的新結果，代表下一局的起始
-     * 狀態，含權威 [TableState] 與供呼叫端處理的牌牆結構資料；完整擲骰記錄保存在
+     * 狀態，含權威 [TableState] 與供呼叫端處理的牌牆結構資料。完整擲骰記錄保存在
      * 回傳桌況的 [TableState.openingDiceRolls]。
      */
     fun startNextRound(
@@ -196,7 +197,7 @@ object GameInitializer {
      * @param playerIdsInTurnOrder 本局的玩家回合順序。
      * @param firstRound 是否正在選定整場的起家。
      * @param provisionalPlayerId 程序開始時的暫定擲骰玩家。
-     * @param fixedDealerPlayerId 換局時已由賽程決定的莊家；選起家時為 null。
+     * @param fixedDealerPlayerId 換局時已由賽程決定的莊家。選起家時為 null。
      * @param diceRollSource 產生每次指定顆數的六面骰點數。
      * @return 最終莊家、開門位置與本局完整擲骰記錄。
      */
@@ -262,7 +263,7 @@ object GameInitializer {
      * 執行完本局開局程序後的結果。
      *
      * @property dealerPlayerId 本局莊家。
-     * @property wallOpening 開門位置；未使用開門時為 null。
+     * @property wallOpening 開門位置。未使用開門時為 null。
      * @property diceRolls 依執行順序排列的完整骰子結果。
      */
     private data class RoundOpeningResolution(
@@ -304,7 +305,7 @@ object GameInitializer {
      *   一般摸牌序列，之後成為 [TableState.tileWall]。
      *
      * @param playerCount 本局完整玩家名單的人數。
-     * @param wallOpening 開局程序已決定的最終開門位置；未使用開門時為 null。
+     * @param wallOpening 開局程序已決定的最終開門位置。未使用開門時為 null。
      * @param randomness 建立牌山時產生牌張 ID 與洗牌的亂數來源，以及洗好之後的排列。
      * @return 已整理的摸牌牌山，以及可用時的開門、保留牌和牌牆布局資料。
      */
@@ -354,10 +355,10 @@ object GameInitializer {
      * 牌牆結構座標。
      *
      * @property wall 已套用開門結果的一般摸牌序列。
-     * @property wallOpening 開門位置；規則未提供開門能力時為 null。
+     * @property wallOpening 開門位置。規則未提供開門能力時為 null。
      * @property reservedWallTiles 不屬於一般摸牌序列的規則保留牌。
-     * @property structure 依開門結果排列的牌牆結構座標；未建立布局時為 null。
-     * @property layoutResult 開門布局結果；規則未提供所需布局能力時為 null。
+     * @property structure 依開門結果排列的牌牆結構座標。未建立布局時為 null。
+     * @property layoutResult 開門布局結果。規則未提供所需布局能力時為 null。
      */
     private data class OpenedWall(
         val wall: TileWall,
@@ -371,7 +372,7 @@ object GameInitializer {
          *
          * @param module 提供牌牆實體布局 policy 的規則模組。
          * @param remainingWall 發牌後的一般摸牌牌山。
-         * @return 完整初始牌牆布局與只保留仍在牌牆牌張的目前布局；沒有牌牆布局結果或規則不砌牌牆時為 null。
+         * @return 完整初始牌牆布局與只保留仍在牌牆牌張的目前布局。沒有牌牆布局結果或規則不砌牌牆時為 null。
          * @throws IllegalStateException 規則拒絕建立初始布局時拋出。
          */
         fun createPhysicalLayouts(module: MahjongRuleModule<*>, remainingWall: TileWall): PhysicalLayouts? {
@@ -428,7 +429,7 @@ object GameInitializer {
      * 初始手牌——每一輪 [playerIds] 依序各摸一批，模擬真實麻將「莊家先抓兩墩、換下一家抓兩墩、輪完
      * 一圈才回到莊家抓下一輪」的發牌方式，直到每位玩家都湊滿整手牌。
      *
-     * [playerIds] 的順序即發牌輪轉順序，必須由呼叫端排成從莊家開始的固定順序；發牌完成後，呼叫端
+     * [playerIds] 的順序即發牌輪轉順序，必須由呼叫端排成從莊家開始的固定順序。發牌完成後，呼叫端
      * 可以再依原本的固定座位順序組回玩家列表。
      *
      * `internal` 而非 `private`：讓同模組的 `GameInitializerTest` 能直接用可控制的 [TileWall] 測試
@@ -437,7 +438,7 @@ object GameInitializer {
      *
      * @return 依 [playerIds] 對應順序排列的手牌列表，與發牌後剩餘的牌山。
      * @param wall 開始發牌前的牌山。
-     * @param playerIds 發牌輪轉順序；第一位玩家先拿牌。
+     * @param playerIds 發牌輪轉順序。第一位玩家先拿牌。
      */
     internal fun MahjongRuleModule<*>.dealInitialHands(
         wall: TileWall,

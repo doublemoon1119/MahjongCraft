@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentProjectionDefini
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentRoundTransition
 
 /**
- * 登記日麻供託的跨局保留與公開投影，以及本局補牌進度的重設；補牌進度只供伺服器使用，不交付觀察者。
+ * 登記日麻供託的跨局保留與公開投影，以及本局補牌進度的重設。補牌進度只供伺服器使用，不交付觀察者。
  *
  * @param registry 尚未凍結的組件登記。
  */

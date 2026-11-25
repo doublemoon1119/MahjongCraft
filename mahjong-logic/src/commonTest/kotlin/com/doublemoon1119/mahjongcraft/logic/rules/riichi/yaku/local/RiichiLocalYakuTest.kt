@@ -30,7 +30,7 @@ class RiichiLocalYakuTest {
     /** 未啟用古役的計算器。 */
     private val standard = RiichiHandValueCalculator()
 
-    /** 燕返：以立直宣言牌榮和為 1 翻；自摸或未啟用古役時不成立。 */
+    /** 燕返：以立直宣言牌榮和為 1 翻。自摸或未啟用古役時不成立。 */
     @Test
     fun `tsubame gaeshi needs a ron on the riichi declaration tile`() {
         val context = context(plainHand(), m(9), isRiichiDeclarationDiscard = true)
@@ -50,7 +50,7 @@ class RiichiLocalYakuTest {
         assertFalse(local.calculate(context.copy(isTsumo = true)).has(RiichiYakuType.Kanburi))
     }
 
-    /** 十二落抬：四組副露後單騎和牌為 1 翻；有暗槓時不成立。 */
+    /** 十二落抬：四組副露後單騎和牌為 1 翻。有暗槓時不成立。 */
     @Test
     fun `shiiaru raotai needs four open melds and a single wait`() {
         val melds = listOf(chi(m(1)), pon(p(5)), chi(s(7)), pon(Tile.Honor.East))
@@ -61,7 +61,7 @@ class RiichiLocalYakuTest {
         assertFalse(local.calculate(context(FakeHandFactory.create(listOf(Tile.Honor.White), withClosedKan), Tile.Honor.White, isMenzen = false)).has(RiichiYakuType.ShiiaruRaotai))
     }
 
-    /** 五門齊：萬、筒、索、風、三元齊全為 2 翻，七對子也成立；缺一種時不成立。 */
+    /** 五門齊：萬、筒、索、風、三元齊全為 2 翻，七對子也成立。缺一種時不成立。 */
     @Test
     fun `uumen chii needs all five tile groups`() {
         val hand = FakeHandFactory.create(listOf(m(1), m(2), m(3), p(4), p(5), p(6), s(7), s(8), s(9), Tile.Honor.East, Tile.Honor.East, Tile.Honor.East, Tile.Honor.White))
@@ -74,7 +74,7 @@ class RiichiLocalYakuTest {
         assertFalse(local.calculate(context(noDragon, Tile.Honor.South)).has(RiichiYakuType.UumenChii))
     }
 
-    /** 三連刻：同花色連續三組刻子為 2 翻；不同花色不成立。 */
+    /** 三連刻：同花色連續三組刻子為 2 翻。不同花色不成立。 */
     @Test
     fun `sanrenkou needs three consecutive triplets of one suit`() {
         val hand = FakeHandFactory.create(listOf(m(5), m(5), m(5), p(2), p(3), s(9), s(9)), listOf(pon(m(3)), pon(m(4))))
@@ -99,7 +99,7 @@ class RiichiLocalYakuTest {
     }
 
     /**
-     * 三組相同順子也能讀成三組連續刻子；依高點法取較高的讀法，且一色三同順與一杯口不會同時出現。
+     * 三組相同順子也能讀成三組連續刻子。依高點法取較高的讀法，且一色三同順與一杯口不會同時出現。
      */
     @Test
     fun `isshoku sanjun never stacks with iipeikou`() {
@@ -111,7 +111,7 @@ class RiichiLocalYakuTest {
         assertTrue(standard.calculate(context(closed, s(9))).yakuResults.none { it.yaku.isLocal })
     }
 
-    /** 一筒摸月取代海底摸月為 5 翻；海底不是一筒時仍是海底摸月。 */
+    /** 一筒摸月取代海底摸月為 5 翻。海底不是一筒時仍是海底摸月。 */
     @Test
     fun `iipin moyue replaces haitei when the last draw is one pin`() {
         val hand = FakeHandFactory.create(listOf(m(2), m(3), m(4), s(5), s(6), s(7), s(2), s(3), s(4), Tile.Honor.East, Tile.Honor.East, p(2), p(3)))
@@ -134,7 +134,7 @@ class RiichiLocalYakuTest {
         assertFalse(result.has(RiichiYakuType.Houtei))
     }
 
-    /** 人和：非莊家在第一巡榮和為役滿；莊家、自摸或非第一巡都不成立。 */
+    /** 人和：非莊家在第一巡榮和為役滿。莊家、自摸或非第一巡都不成立。 */
     @Test
     fun `renhou needs a non dealer ron in the first go around`() {
         val context = context(plainHand(), m(9), isFirstTurn = true)
@@ -146,7 +146,7 @@ class RiichiLocalYakuTest {
         assertFalse(standard.calculate(context).has(RiichiYakuType.Renhou))
     }
 
-    /** 大車輪、大竹林、大數鄰分別為筒、索、萬的 2～8 各兩張；含 1 或 9 時不成立。 */
+    /** 大車輪、大竹林、大數鄰分別為筒、索、萬的 2～8 各兩張。含 1 或 9 時不成立。 */
     @Test
     fun `wheel yakuman needs pairs of two to eight in one suit`() {
         listOf(
@@ -175,7 +175,7 @@ class RiichiLocalYakuTest {
         assertFalse(local.calculate(tsumo.copy(isLastDraw = false)).has(RiichiYakuType.IshinoUeSannen))
     }
 
-    /** 大七星：七種字牌各一對為雙倍役滿，取代字一色；未啟用古役時仍是字一色。 */
+    /** 大七星：七種字牌各一對為雙倍役滿，取代字一色。未啟用古役時仍是字一色。 */
     @Test
     fun `daichisei is a double yakuman replacing tsuuiisou`() {
         val honors = listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.North, Tile.Honor.White, Tile.Honor.Green, Tile.Honor.Red)
@@ -329,7 +329,7 @@ class RiichiLocalYakuTest {
      * 取得計算結果中指定役的翻數。
      *
      * @param yaku 要查詢的役種。
-     * @return 該役翻數；結果沒有該役時為 `0`。
+     * @return 該役翻數。結果沒有該役時為 `0`。
      */
     private fun RiichiHandValueResult.han(yaku: RiichiYakuType): Int = yakuResults.firstOrNull { it.yaku == yaku }?.han ?: 0
 }

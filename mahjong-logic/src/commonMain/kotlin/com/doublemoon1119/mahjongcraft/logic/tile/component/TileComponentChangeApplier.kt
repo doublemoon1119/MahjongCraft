@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 /**
  * 在當前持有位置套用一張牌的組件變更，舊桌況與歷史參照保持不變。
  *
- * 呼叫端須在正式權威交易內驗證動作與執行者；本函式不提供外部請求授權。
+ * 呼叫端須在正式權威交易內驗證動作與執行者。本函式不提供外部請求授權。
  *
  * @param change 目標牌張與帶預期舊值的組件變更。
  * @param registry 本次執行的組件定義。

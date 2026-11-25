@@ -11,22 +11,19 @@ import kotlin.uuid.Uuid
 /**
  * 代表一名麻將玩家及其持有的資源與基本狀態。
  *
- * 本類別作為玩家數據的載體，封裝了手牌、牌河、分數及方位。
+ * 封裝手牌、牌河、分數及方位。本類別為不可變值物件，改變玩家狀態的操作都回傳新的 [MahjongPlayer] 實例。
  *
- * 本類別為不可變值物件：所有會改變玩家狀態的操作皆不會修改原實例，
- * 而是回傳一個反映變更後狀態的新 [MahjongPlayer] 實例。
- *
- * @property tileAreas 規則建立的移出牌區；牌張仍由玩家持有，但不屬於手牌或牌河。
+ * @property tileAreas 規則建立的移出牌區。牌張仍由玩家持有，但不屬於手牌或牌河。
  * @property components 此對象攜帶的規則組件。
  * @property id 玩家的唯一識別碼。
  * @property initialSeatIndex 整場固定的起家座位順位，從 `0` 起算。
  * @property hand 該玩家的手牌實體。
  * @property discardPile 該玩家的牌河實體，其具體類型由遊戲規則決定。
  * @property score 玩家目前的總分（持點）。其初始值通常由 [TableState] 根據規則配置進行初始化。
- * @property seatWind 玩家本局由規則指派的自風／門風；不得用來反推莊家。
+ * @property seatWind 玩家本局由規則指派的自風／門風。不得用來反推莊家。
  * @property passedTilesInRound 玩家上次取牌（摸牌或鳴牌）後，交給玩家、但玩家沒有榮和的牌：他家每一張沒有被
  *                              榮和的捨牌，以及玩家有資格搶槓卻放過的槓牌。規則以此判斷下次取牌前的限制（例如
- *                              日麻的同巡振聽）；玩家摸牌或鳴牌時清除。
+ *                              日麻的同巡振聽）。玩家摸牌或鳴牌時清除。
  * @property actionHistory 記錄玩家執行的動作歷史，用於判斷特定的胡牌役（如嶺上開花需要「槓牌 → 摸牌」的動作序列）。
  */
 data class MahjongPlayer(

@@ -9,8 +9,8 @@ import kotlin.uuid.Uuid
  *
  * @property tile 當前完整牌張，包含自己的組件。
  * @property region 目前所在區域。
- * @property playerAreaId 明確移出牌區的完整識別碼；其他區域為 null。
- * @property ownerId 區域所屬玩家；活牌與保留牌沒有持有人。
+ * @property playerAreaId 明確移出牌區的完整識別碼。其他區域為 null。
+ * @property ownerId 區域所屬玩家。活牌與保留牌沒有持有人。
  */
 data class TileAreaEntry(
     val tile: IdentifiedTile,

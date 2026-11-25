@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 /**
  * 內建捨牌反應的預設 policy。
  *
- * 這個 policy 只提供現有 Flow 能直接套用的 Pass、Ron、Chi、Pon 與明槓；第三方動作必須由規則模組
+ * 這個 policy 只提供現有 Flow 能直接套用的 Pass、Ron、Chi、Pon 與明槓。第三方動作必須由規則模組
  * 明確提供對應效果，不能因為動作名稱相似就被當成內建鳴牌。
  */
 object DefaultDiscardReactionPolicy : DiscardReactionPolicy {

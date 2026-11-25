@@ -13,8 +13,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
  * 三暗刻是立直麻將中的二翻役：含有三組暗面子（暗刻或暗槓），可以有其他副露。
  *
  * 暗面子是指在手中自行湊成的三張或四張相同牌組：
- * - 手牌中的刻子是暗刻；但雙碰聽牌榮和時，靠別人捨牌湊成的那組刻子是明刻。
- * - 副露中只有暗槓是暗面子；碰、明槓、加槓都是明面子。
+ * - 手牌中的刻子是暗刻。但雙碰聽牌榮和時，靠別人捨牌湊成的那組刻子是明刻。
+ * - 副露中只有暗槓是暗面子。碰、明槓、加槓都是明面子。
  *
  * @param handStructure 手牌結構（由 [RiichiHandDecomposer] 分割後的結果）。
  * @param isTsumo 是否為自摸。

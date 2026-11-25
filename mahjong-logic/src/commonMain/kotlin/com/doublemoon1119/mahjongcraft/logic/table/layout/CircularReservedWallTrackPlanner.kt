@@ -10,7 +10,7 @@ internal object CircularReservedWallTrackPlanner {
     /**
      * 從最接近開門位置的候選開始，尋找不會占用現有牌張的初始保留區位置。
      *
-     * 軌道未來才使用的尾端可以暫時由活牌占用；補牌時，那些牌會依既有補位流程逐步移入保留區。
+     * 軌道未來才使用的尾端可以暫時由活牌占用。補牌時，那些牌會依既有補位流程逐步移入保留區。
      *
      * @param opening 本局牌牆開門位置。
      * @param sideCount 牌牆面數。
@@ -20,7 +20,7 @@ internal object CircularReservedWallTrackPlanner {
      * @param initialVacantStackCount 開局時立即由保留牌占用的軌道墩數。
      * @param extraStacksAfterHead 軌道頭端之外需要保持淨空的墩數。
      * @param alongWallStacks 保留牌沿牌牆方向套用的固定偏移。
-     * @return 可用軌道；找不到時為 null。
+     * @return 可用軌道。找不到時為 null。
      */
     fun plan(
         opening: WallOpening,

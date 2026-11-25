@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpeningPolicy
 /**
  * 四人日本麻將的雙骰牌牆開門規則。
  *
- * 依 WRC 規則，以莊家為一開始逆時針數骰子總點數決定牌牆面；再從該面玩家視角的右端數相同墩數
+ * 依 WRC 規則，以莊家為一開始逆時針數骰子總點數決定牌牆面。再從該面玩家視角的右端數相同墩數
  * 建立缺口。四人日麻的雙骰總和為 `2..12`，不會超過每面 17 墩。
  */
 object RiichiWallOpeningPolicy : WallOpeningPolicy {

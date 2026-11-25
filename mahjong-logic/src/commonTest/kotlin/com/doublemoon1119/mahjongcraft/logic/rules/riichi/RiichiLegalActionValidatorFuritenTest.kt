@@ -191,7 +191,7 @@ class RiichiLegalActionValidatorFuritenTest {
     /**
      * 放過普通 5 萬後，他家打赤 5 萬仍然可以碰。
      *
-     * 赤五與普通五視為同一張牌的判斷照舊，但那只影響榮和；碰不受放過清單限制。
+     * 赤五與普通五視為同一張牌的判斷照舊，但那只影響榮和。碰不受放過清單限制。
      */
     @Test
     fun `test can pon after passing with red dora`() {

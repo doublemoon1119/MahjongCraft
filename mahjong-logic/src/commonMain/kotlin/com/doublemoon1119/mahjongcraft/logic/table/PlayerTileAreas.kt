@@ -28,7 +28,7 @@ class PlayerTileAreas(areas: List<PlayerTileArea>) {
      * 取得指定區域，不以空集合掩蓋未建立的區域。
      *
      * @param id 區域完整識別碼。
-     * @return 對應區域；不存在時為 null。
+     * @return 對應區域。不存在時為 null。
      */
     operator fun get(id: String): PlayerTileArea? = contents.firstOrNull { it.id == id }
 

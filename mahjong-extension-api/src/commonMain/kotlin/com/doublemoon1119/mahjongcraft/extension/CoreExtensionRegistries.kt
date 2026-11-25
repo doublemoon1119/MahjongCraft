@@ -21,7 +21,8 @@ import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 /**
  * 集中保存平台無關 extension bootstrap 使用的強型別 registry。
  *
- * 一般遊戲服務仍應只依賴實際需要的單一 registry；這個集合只用於 extension 註冊與統一凍結邊界。
+ * - 一般遊戲服務仍應只依賴實際需要的單一 registry。
+ * - 這個集合只用於 extension 註冊，以及統一凍結。
  *
  * @property moduleRegistry 規則模組 registry。
  * @property tileTypeRegistry 牌種類型 registry。

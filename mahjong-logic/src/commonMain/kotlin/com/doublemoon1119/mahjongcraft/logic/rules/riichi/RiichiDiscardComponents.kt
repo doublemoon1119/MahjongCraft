@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 
 /** 日麻捨牌紀錄使用的組件，不屬於被打出牌張的永久特性。 */
 object RiichiDiscardComponents {
-    /** 這次捨牌是立直宣告牌，並提供既有的公共牌譜標記；未附加此項即表示不是宣告牌。 */
+    /** 這次捨牌是立直宣告牌，並提供既有的公共牌譜標記。未附加此項即表示不是宣告牌。 */
     val RIICHI_DECLARED = ComponentType(
         id = "mahjongcraft:riichi/discard/riichi_declared",
         valueClass = Unit::class,

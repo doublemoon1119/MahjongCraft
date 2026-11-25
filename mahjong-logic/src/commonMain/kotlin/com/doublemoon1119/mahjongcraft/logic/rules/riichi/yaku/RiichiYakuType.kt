@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalcula
  *
  * 包含所有可計算番數的役種，由 [RiichiHandValueCalculator] 進行檢測與計算。
  *
- * @property isLocal 是否為古役；只有規則設定啟用古役時才會成立。
+ * @property isLocal 是否為古役。只有規則設定啟用古役時才會成立。
  */
 enum class RiichiYakuType(
     val isLocal: Boolean = false,

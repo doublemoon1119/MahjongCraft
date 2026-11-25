@@ -15,7 +15,7 @@ interface SidewaysMarkedDiscardPile {
     /**
      * 獲取目前應該側身標示的那張牌唯一識別碼。
      *
-     * @return 應側身呈現的 [IdentifiedTile] 唯一識別碼；
+     * @return 應側身呈現的 [IdentifiedTile] 唯一識別碼。
      *         沒有任何一張需要側身時回傳 `null`。
      */
     fun sidewaysMarkedTileId(): Uuid?

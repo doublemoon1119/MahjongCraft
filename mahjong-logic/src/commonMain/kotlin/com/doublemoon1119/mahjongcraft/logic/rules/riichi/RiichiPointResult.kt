@@ -11,7 +11,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
  */
 sealed interface RiichiPointResult {
 
-    /** 按四人付款結構計算的總點數；較少人數的自摸損金額由 [totalFor] 換算。 */
+    /** 按四人付款結構計算的總點數。較少人數的自摸損金額由 [totalFor] 換算。 */
     val total: Int
 
     /**
@@ -50,11 +50,11 @@ sealed interface RiichiPointResult {
      * 結果形狀與 [Ron] 相同（單一玩家支付全額），但實際付款人是包牌責任者而非放銃者，
      * 由呼叫端依 [RiichiPaoLiability.direction] 決定對象。
      *
-     * @property paoPayment 包牌責任者支付的點數——依觸發包牌的那個役滿本身的倍數換算（大三元 1
-     * 倍、大四喜 2 倍，見 [RiichiYakuResult.doubleYakuman]），不是整體役滿倍數。
-     * @property remainder 若和了同時疊加其他役滿（例如大四喜 + 四暗刻），超出包牌範圍的那部分改走
-     * 正常自摸結算（[DealerTsumo]/[NonDealerTsumo]），由呼叫端疊加進正常付款對象；沒有
-     * 疊加時為 null，全額都在包牌範圍內。
+     * @property paoPayment 包牌責任者支付的點數。依觸發包牌的那個役滿本身的倍數換算，不是整體役滿倍數：
+     *   大三元 1 倍、大四喜 2 倍（見 [RiichiYakuResult.doubleYakuman]）。
+     * @property remainder 同時疊加其他役滿時（例如大四喜加四暗刻），超出包牌範圍的部分。
+     *   這部分走正常自摸結算（[DealerTsumo]／[NonDealerTsumo]），由呼叫端疊加進正常付款對象。
+     *   沒有疊加時為 null，全額都在包牌範圍內。
      */
     data class PaoTsumo(val paoPayment: Int, val remainder: RiichiPointResult? = null) : RiichiPointResult {
         override val total: Int get() = paoPayment + (remainder?.total ?: 0)
@@ -66,7 +66,7 @@ sealed interface RiichiPointResult {
      * @property paymentEach 兩人各自支付的點數（依觸發包牌的役滿本身倍數換算，理由同
      * [PaoTsumo.paoPayment]）。
      * @property remainder 若和了同時疊加其他役滿，超出包牌範圍的那部分改走正常榮和結算（[Ron]），
-     *           由放銃者全額支付、疊加進正常付款對象；沒有疊加時為 null，全額都在包牌範圍內。
+     *           由放銃者全額支付、疊加進正常付款對象。沒有疊加時為 null，全額都在包牌範圍內。
      */
     data class PaoRon(val paymentEach: Int, val remainder: RiichiPointResult? = null) : RiichiPointResult {
         override val total: Int get() = paymentEach * 2 + (remainder?.total ?: 0)
@@ -74,7 +74,7 @@ sealed interface RiichiPointResult {
 }
 
 /**
- * 在 [playerCount] 人對局中贏家實際收到的點數；自摸時每位其他玩家照 [RiichiPointResult] 的金額各付一份，
+ * 在 [playerCount] 人對局中贏家實際收到的點數。自摸時每位其他玩家照 [RiichiPointResult] 的金額各付一份，
  * 人數少於四人時缺少的那一份不支付（自摸損）。四人對局等同 [RiichiPointResult.total]。
  *
  * @param playerCount 對局人數。

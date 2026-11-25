@@ -23,10 +23,10 @@ import com.doublemoon1119.mahjongcraft.logic.tile.component.registerBuiltInTileC
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 
 /**
- * MahjongCraft 不屬於任何規則的內建整合；所有規則中立的內建登記都寫在這裡。
+ * MahjongCraft 不屬於任何規則的內建整合，所有規則中立的內建登記都寫在這裡。
  *
- * 平台把它交給 [MahjongExtensionBootstrap.registerAndFreeze] 的 `builtIn`，啟動報告將它的登記列為內建來源。
- * 登記方式與其他 extension 相同，不具有覆寫或繞過重複 key 驗證的特權。
+ * - 平台把它交給 [MahjongExtensionBootstrap.registerAndFreeze] 的 `builtIn`，啟動報告將它的登記列為內建來源。
+ * - 登記方式與其他 extension 相同，不能覆寫，也不能繞過重複 key 的驗證。
  *
  * @property moduleRegistry 期望值策略依對局設定取得規則模組。
  * @property extensionActionRegistry 將規則擴充動作轉成命令候選。
@@ -55,7 +55,7 @@ class BuiltInMahjongExtension(
         registerBuiltInTileComponents(registry)
     }
 
-    /** 依初級、中級、高級、隨機出牌的順序登記；列出策略時依此順序呈現。 */
+    /** 依初級、中級、高級、隨機出牌的順序登記。列出策略時依此順序呈現。 */
     override fun registerAiStrategies(registry: MahjongAiStrategyRegistrar) {
         mapOf(
             BuiltInAiStrategyKeys.BEGINNER to InformationLevel.BEGINNER,

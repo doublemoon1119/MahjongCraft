@@ -7,11 +7,11 @@ import kotlin.reflect.KClass
 /**
  * 麻將規則模組註冊中心介面。
  * 負責管理不同麻將規則配置 (Config) 與其對應模組 (Module) 的映射關係。
- * 擴充只透過 [MahjongModuleRegistrar] 登記；查詢與凍結由 MahjongCraft 使用。
+ * 擴充只透過 [MahjongModuleRegistrar] 登記。查詢與凍結由 MahjongCraft 使用。
  */
 interface MahjongModuleRegistry : MahjongModuleRegistrar {
 
-    /** 凍結註冊表；凍結後不得再新增或覆寫規則模組。 */
+    /** 凍結註冊表。凍結後不得再新增或覆寫規則模組。 */
     fun freeze()
 
     /**
@@ -35,7 +35,7 @@ interface MahjongModuleRegistry : MahjongModuleRegistrar {
      * 根據 ID 獲取對應的配置類別。
      *
      * @param id 欲查詢的規則模組 ID。
-     * @return 對應的配置類別；ID 尚未註冊時為 null。
+     * @return 對應的配置類別。ID 尚未註冊時為 null。
      */
     fun getConfigClass(id: String): KClass<out MahjongRuleConfig>?
 }

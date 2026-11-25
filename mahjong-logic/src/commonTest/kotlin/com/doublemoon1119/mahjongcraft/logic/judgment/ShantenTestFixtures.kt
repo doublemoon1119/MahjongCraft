@@ -17,7 +17,7 @@ internal object ShantenTestFixtures {
     val TILE_KINDS: List<Tile> = Tile.Suit.entries.flatMap { suit -> (1..9).map { Tile.Numeric(suit, it) } } +
         listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.North, Tile.Honor.White, Tile.Honor.Green, Tile.Honor.Red)
 
-    /** 副露的種類輪替使用，讓槓與碰、吃都出現；向聽計算只看副露的組數。 */
+    /** 副露的種類輪替使用，讓槓與碰、吃都出現。向聽計算只看副露的組數。 */
     private val MELD_TYPES = listOf(MeldType.Pon, MeldType.Chi, MeldType.ClosedKan, MeldType.OpenKan, MeldType.AddedKan)
 
     /**
@@ -30,7 +30,7 @@ internal object ShantenTestFixtures {
     fun handOf(tiles: List<Tile>, meldCount: Int): Hand = FakeHandFactory.create(tiles = tiles, melds = melds(meldCount))
 
     /**
-     * 隨機組成 [groups] 組面子（刻子或順子）加一組雀頭的牌，每種牌最多 4 張；拿掉其中一張即為確實聽牌的手牌。
+     * 隨機組成 [groups] 組面子（刻子或順子）加一組雀頭的牌，每種牌最多 4 張。拿掉其中一張即為確實聽牌的手牌。
      *
      * @param random 固定 seed 的亂數來源。
      * @param groups 面子組數。
@@ -119,7 +119,7 @@ internal object ShantenTestFixtures {
     /**
      * 每種牌各四張的牌山。
      *
-     * @param replace 接收每張牌與它是第幾張（0～3），回傳替換後的牌；回傳 null 表示移除，例如拿掉三人麻將不用的牌。
+     * @param replace 接收每張牌與它是第幾張（0～3），回傳替換後的牌。回傳 null 表示移除，例如拿掉三人麻將不用的牌。
      * @return 依替換函式產生的牌山列表。
      */
     fun fullWall(replace: (Tile, Int) -> Tile? = { tile, _ -> tile }): List<Tile> = TILE_KINDS.flatMap { tile -> (0 until 4).mapNotNull { copy -> replace(tile, copy) } }
@@ -136,7 +136,7 @@ internal object ShantenTestFixtures {
      * 建立 [count] 組白板副露，供向聽測試使用。
      *
      * @param count 要建立的副露組數。
-     * @return 副露清單；每組的型別依測試用清單輪替。
+     * @return 副露清單。每組的型別依測試用清單輪替。
      */
     private fun melds(count: Int): List<Meld> = List(count) { index ->
         val type = MELD_TYPES[index % MELD_TYPES.size]

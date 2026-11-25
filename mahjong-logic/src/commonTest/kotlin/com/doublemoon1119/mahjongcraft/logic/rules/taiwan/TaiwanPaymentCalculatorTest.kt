@@ -236,7 +236,7 @@ class TaiwanPaymentCalculatorTest {
         assertEquals(mapOf(players[3] to BuiltInPaymentReasonIds.PAO), pao.paymentReasonIdsByPlayerId)
     }
 
-    /** 別人放槍時包牌者與放槍者平分；除不盡時包牌者多付一點，總額不變。 */
+    /** 別人放槍時包牌者與放槍者平分。除不盡時包牌者多付一點，總額不變。 */
     @Test
     fun `pao discard win by someone else is split with the liable player paying the odd point`() {
         val even = ron(discarder = players[2], baseScore = 30)

@@ -11,7 +11,7 @@ import kotlin.test.assertEquals
 
 /** 驗證日麻的牌面解讀與計算用牌值。 */
 class RiichiTileInterpretationPolicyTest {
-    /** 赤五的基本牌面就是普通五；計算用牌值只保留赤寶牌特性，不帶外觀。 */
+    /** 赤五的基本牌面就是普通五。計算用牌值只保留赤寶牌特性，不帶外觀。 */
     @Test
     fun `red fives keep only the red dora feature for calculation`() {
         Tile.Suit.entries.forEach { suit ->

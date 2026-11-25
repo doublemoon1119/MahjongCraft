@@ -7,13 +7,13 @@ object StandardHandDecomposer {
     /**
      * 將不含和牌張的立牌與和牌張合併，列舉拆法與和牌張可能的位置。
      *
-     * 已宣告的槓算一組面子，不在立牌中重新拆槓；本函式不讀取或修改任何遊戲狀態。
+     * 已宣告的槓算一組面子，不在立牌中重新拆槓。本函式不讀取或修改任何遊戲狀態。
      *
      * @param handTiles 不含和牌張與已宣告副露的立牌。
      * @param winningTile 獨立傳入的和牌張。
      * @param exposedMeldCount 已宣告的面子數，包含暗槓。
      * @param targetMelds 完整和牌需要的面子數，支援1至5。
-     * @return 所有不同拆法；牌數、牌種或立牌張數不符時為空。
+     * @return 所有不同拆法。牌數、牌種或立牌張數不符時為空。
      */
     fun decompose(
         handTiles: List<Tile>,

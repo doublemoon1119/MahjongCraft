@@ -117,7 +117,7 @@ class RiichiLegalActionValidatorRiichiTest {
     /**
      * 測試不可執行立直動作之情況（牌山剩餘張數不足以讓自己再摸一次）。
      *
-     * 四人局裡，牌山剩餘張數必須 >= 玩家人數（4），確保這位宣告者輪到自己之前牌山不會先摸盡；
+     * 四人局裡，牌山剩餘張數必須 >= 玩家人數（4），確保這位宣告者輪到自己之前牌山不會先摸盡。
      * 剩餘 3 張（< 4）時即使聽牌、門前清、點數充足，也不可立直。
      */
     @Test
@@ -276,7 +276,7 @@ class RiichiLegalActionValidatorRiichiTest {
      * 呼叫端不需要自行剝離 `lastDrawn`，也不需要為同一個回合再呼叫一次驗證器。
      *
      * 沿用 [RiichiLegalActionValidatorTest] `test can tsumo` 的手牌（1112345678999m + 摸到 9m 完成
-     * 清一色）；完整手牌同時應提供自摸、立直，以及立直所需的合法捨牌候選。
+     * 清一色）。完整手牌同時應提供自摸、立直，以及立直所需的合法捨牌候選。
      */
     @Test
     fun `test single own turn context surfaces lastDrawn eligibility`() {

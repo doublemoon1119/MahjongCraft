@@ -12,11 +12,13 @@ import kotlin.uuid.Uuid
 /**
  * 以 [TileReplacementRounds] 逐輪處理台灣麻將補花，並在特殊花胡成立時暫停等待選擇。
  *
- * 局首補花由莊家開始依序，每位玩家把手上的花一次全部公開、補同樣張數；補到的花等這一輪結束後的下一輪再補。
- * 牌局中摸到花時只有摸牌者一人，補到的花當場接著補。七搶一在公開花之後、補牌之前開放選擇；八仙過海在本人補完牌
- * 之後開放選擇。沒有牌可以補時，花公開後不開放七搶一，本局流局。
+ * - 局首補花由莊家開始依序，每位玩家把手上的花一次全部公開、補同樣張數。補到的花等下一輪再補。
+ * - 牌局中摸到花時只有摸牌者一人，補到的花當場接著補。
+ * - 七搶一在公開花之後、補牌之前開放選擇。
+ * - 八仙過海在本人補完牌之後開放選擇。
+ * - 沒有牌可以補時，花公開後不開放七搶一，本局流局。
  *
- * 本物件不保存可變狀態；[Pending] 帶齊恢復流程所需的進度，重新載入後可以用同一份資料繼續。
+ * 本物件不保存可變狀態。[Pending] 帶齊恢復流程所需的進度，重新載入後可以用同一份資料繼續。
  */
 object TaiwanFlowerFlow {
     /** 一次補花流程的結果。 */
@@ -75,9 +77,9 @@ object TaiwanFlowerFlow {
     /**
      * 一次可恢復的特殊花胡選擇。
      *
-     * @property tableState 暫停時的桌況；八仙過海也已完成本次補牌。
+     * @property tableState 暫停時的桌況。八仙過海也已完成本次補牌。
      * @property opportunity 本次唯一的花胡資格。
-     * @property playerOrderIds 每一輪補花的玩家順序；牌局中摸到花時只有摸牌者。
+     * @property playerOrderIds 每一輪補花的玩家順序。牌局中摸到花時只有摸牌者。
      * @property position 放棄花胡後繼續補花的位置。
      * @property revealingPlayerId 本次公開花牌的玩家。
      * @property revealedFlower 讓花胡成立的花牌。
@@ -95,7 +97,7 @@ object TaiwanFlowerFlow {
      * 從 [from] 開始逐輪補花。
      *
      * @param tableState 補花前的桌況。
-     * @param playerOrderIds 每一輪的玩家順序；局首由莊家開始，牌局中只放入摸牌者。
+     * @param playerOrderIds 每一輪的玩家順序。局首由莊家開始，牌局中只放入摸牌者。
      * @param from 開始或繼續的位置。
      * @return 完成、耗盡或等待花胡選擇的結果。
      */
@@ -118,7 +120,7 @@ object TaiwanFlowerFlow {
      * @param tableState 花牌已公開的桌況。
      * @param playerId 公開花牌的玩家。
      * @param flower 已公開的花牌。
-     * @return 花胡選擇、補牌耗盡或完成後續連續補花的結果；牌區變化從這張花的補牌開始，不含摸牌時已公開的這張花。
+     * @return 花胡選擇、補牌耗盡或完成後續連續補花的結果。牌區變化從這張花的補牌開始，不含摸牌時已公開的這張花。
      */
     fun processRevealed(
         tableState: TableState,

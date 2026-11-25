@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
  * 內建規則共用的環狀牌牆排列邏輯：牌牆由莊家面起逆時針排成數面，每面墩數相同。
  *
  * 供內建規則（日本麻將四人與三人、台灣麻將）的 [TileWallLayout] 實作重用同一段墩位運算，各規則只需
- * 提供自己的面數、每面墩數與保留區墩數；不屬於 [TileWallLayout] 本身的公開契約，因為並非所有規則都必然採用
+ * 提供自己的面數、每面墩數與保留區墩數。不屬於 [TileWallLayout] 本身的公開契約，因為並非所有規則都必然採用
  * 這種牌牆形狀。[TileWallPosition.side] 是從莊家面起逆時針數的牌牆面序號。
  */
 internal object WallRingLayoutSupport {
@@ -20,10 +20,11 @@ internal object WallRingLayoutSupport {
     /**
      * 依 [sideCount]、[stacksPerSide] 與 [reservedWallStacks] 排列牌牆。
      *
-     * 規則保留區從開門缺口本身開始，往右（全域墩序號遞減，跨面時繞到前一面的最右墩）連續數
-     * [reservedWallStacks] 墩；一般摸牌區緊接在保留區另一端之後，往左（全域墩序號遞增）連續繞完剩餘墩數，
-     * 最終繞回緊鄰缺口右側。牌牆內部的建牌填入順序（哪個索引對應哪面哪墩哪層）與墩內的摸牌順序
-     * （上層先或下層先）皆為內部慣例，牌組進入此函式前已完成洗牌，不影響公平性。
+     * - 規則保留區從開門缺口本身開始往右連續數 [reservedWallStacks] 墩。往右即全域墩序號遞減，
+     *   跨面時繞到前一面的最右墩。
+     * - 一般摸牌區緊接在保留區另一端之後，往左（全域墩序號遞增）繞完剩餘墩數，最後回到缺口右側。
+     * - 建牌填入順序（哪個索引對應哪面哪墩哪層）與墩內摸牌順序（上層先或下層先）都是內部慣例。
+     *   牌組進入此函式前已完成洗牌，不影響公平性。
      *
      * @throws IllegalArgumentException 當 [shuffledTiles] 張數與 [stacksPerSide] 不吻合，或 [opening]
      * 超出面數／墩數範圍時拋出。

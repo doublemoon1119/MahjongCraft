@@ -10,15 +10,15 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiScoreConfig
 /**
  * 三人日本麻將的規則配置。
  *
- * 牌組沒有二～八萬（108 張），不能吃，北可以拔出當寶牌；自摸時少一家支付（自摸損）。
+ * 牌組沒有二～八萬（108 張），不能吃，北可以拔出當寶牌。自摸時少一家支付（自摸損）。
  *
  * @property redDoraCount 赤寶牌總張數：0 或 2（五筒、五條各一）。
  * @property allowOpenTanyao 是否允許食斷，預設為 true。
  * @property useLocalYaku 是否啟用古役，預設為 false。
  * @property minimumWinConstraint 起胡番數限制，預設為 1。
- * @property scoreConfig 積分配置；預設起始 35000 點、一位必要點數 40000 點。
+ * @property scoreConfig 積分配置。預設起始 35000 點、一位必要點數 40000 點。
  * @property gameLength 遊戲長度，預設為 [RiichiGameLength.OneGame]。
- * @property multiRonPolicy 一炮多響時的結算方式；三人對局最多兩家同時榮和，預設兩家都和。
+ * @property multiRonPolicy 一炮多響時的結算方式。三人對局最多兩家同時榮和，預設兩家都和。
  * @property transparentTiles 是否使用透明牌，預設為 false。
  * @property buildsWall 是否砌牌牆，預設為 true。
  */

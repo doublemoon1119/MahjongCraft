@@ -21,13 +21,13 @@ fun interface DiscardReactionPolicy {
     /**
      * 依玩家提交的選牌重新計算副露效果。
      *
-     * 預設只接受 [resolve] 已列出的完整候選；需要依選牌組合計算效果的規則必須覆寫此方法，不能由 Flow
+     * 預設只接受 [resolve] 已列出的完整候選。需要依選牌組合計算效果的規則必須覆寫此方法，不能由 Flow
      * 猜測或拼接副露效果。
      *
      * @param context 權威反應情境。
      * @param action 玩家選擇的動作。
      * @param selectedTileIds 玩家選出的實體牌 ID。
-     * @return 規則確認後的候選；選牌不合法時為 `null`。
+     * @return 規則確認後的候選。選牌不合法時為 `null`。
      */
     fun resolveSelection(
         context: DiscardReactionPolicyContext,

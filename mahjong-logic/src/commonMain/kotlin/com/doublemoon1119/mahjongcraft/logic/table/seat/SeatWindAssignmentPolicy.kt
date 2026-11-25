@@ -6,7 +6,7 @@ import kotlin.uuid.Uuid
 /** 依規則將本局所有玩家指派至唯一自風的 policy。 */
 fun interface SeatWindAssignmentPolicy {
     /**
-     * 產生本局自風；回傳值必須恰好涵蓋所有玩家，且不可重複使用風位。
+     * 產生本局自風。回傳值必須恰好涵蓋所有玩家，且不可重複使用風位。
      *
      * @param context 本局玩家順序、莊家、骰子與開門資訊。
      * @return 玩家 Uuid 至本局自風的完整映射。

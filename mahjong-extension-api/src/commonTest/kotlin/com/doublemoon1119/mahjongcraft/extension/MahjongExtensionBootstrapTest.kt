@@ -124,7 +124,7 @@ class MahjongExtensionBootstrapTest {
         }
     }
 
-    /** 呼叫前已存在的登記歸為內建來源，每個 extension 只列出自己新增的登記；沒有登記任何項目的 extension 仍會列出。 */
+    /** 呼叫前已存在的登記歸為內建來源，每個 extension 只列出自己新增的登記。沒有登記任何項目的 extension 仍會列出。 */
     @Test
     fun `registrations are grouped by the source that registered them`() {
         val opponentModelRegistry = OpponentModelRegistry().apply {
@@ -183,7 +183,7 @@ class MahjongExtensionBootstrapTest {
         assertTrue(error.message.orEmpty().contains("example:broken"))
     }
 
-    /** 判斷規則接受隔離的錯誤包成指出 extension ID 的註冊例外；不接受的錯誤原樣往外傳。 */
+    /** 判斷規則接受隔離的錯誤，包成指出 extension ID 的註冊例外。不接受的錯誤原樣往外傳。 */
     @Test
     fun `registration errors follow the failure policy`() {
         val policy = ExtensionFailurePolicy { it is IsolatableTestError || ExtensionFailurePolicy.Default.isIsolatable(it) }

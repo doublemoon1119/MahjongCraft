@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
  * 供要求莊家先摸牌、再處理局首事項的規則使用，例如先摸牌再依序補花。只有輪到莊家且在等摸牌階段時才摸。
  *
  * @param module 本局的規則模組。
- * @return 摸牌結果；不是輪到莊家摸牌或活牌已經摸完時為 null。
+ * @return 摸牌結果。不是輪到莊家摸牌或活牌已經摸完時為 null。
  */
 fun TableState.drawDealerOpeningTile(module: MahjongRuleModule<*>): PlayerDraw? {
     if (turnPhase != TurnPhase.AwaitingDraw || currentPlayerIndex != dealerIndex) return null

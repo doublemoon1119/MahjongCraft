@@ -23,7 +23,7 @@ internal class TaiwanWinEvaluation(private val config: TaiwanRuleConfig) {
      * @param winningTile 胡牌張。
      * @param isTsumo 是否為自摸。
      * @param isRobbingKong 是否搶加槓。
-     * @return 計台結果；牌型不成立或未達最低台數時 [TaiwanHandValueResult.isWinningHand] 為 false。
+     * @return 計台結果。牌型不成立或未達最低台數時 [TaiwanHandValueResult.isWinningHand] 為 false。
      */
     fun evaluate(
         tableState: TableState,
@@ -47,7 +47,7 @@ internal class TaiwanWinEvaluation(private val config: TaiwanRuleConfig) {
     /**
      * 分析指定牌作為胡牌張時，胡牌與自摸是否達到起胡台數。
      *
-     * 兩種判定都沿用正式結算的計台情境；呼叫端另行處理過水等玩家資格限制。
+     * 兩種判定都沿用正式結算的計台情境。呼叫端另行處理過水等玩家資格限制。
      *
      * @param tableState 胡牌前的權威桌況。
      * @param player 手牌不含胡牌張的玩家。

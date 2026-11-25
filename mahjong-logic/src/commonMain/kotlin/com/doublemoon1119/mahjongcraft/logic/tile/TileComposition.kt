@@ -9,7 +9,7 @@ import kotlin.uuid.Uuid
 /**
  * 同時供建牌與假設計算使用的不可變牌組組成。
  *
- * @param entries 各種牌值及其張數；重複牌值會被拒絕。
+ * @param entries 各種牌值及其張數。重複牌值會被拒絕。
  */
 class TileComposition(entries: List<TileCompositionEntry>) {
     /** 與來源獨立、保持規則順序的牌值清單。 */
@@ -36,14 +36,14 @@ class TileComposition(entries: List<TileCompositionEntry>) {
      * 查詢一種完整牌值的張數，不合併不同特性。
      *
      * @param value 要查詢的牌值。
-     * @return 張數；沒有時為 0。
+     * @return 張數。沒有時為 0。
      */
     fun count(value: TileValue): Int = values.firstOrNull { it.value == value }?.count ?: 0
 
     /**
-     * 建立帶有原特性的實際牌張，再洗牌；純組成查詢不呼叫此方法。
+     * 建立帶有原特性的實際牌張，再洗牌。純組成查詢不呼叫此方法。
      *
-     * @param random 產生牌張 ID 與洗牌使用的亂數來源；同一個來源狀態產生同一副牌山。
+     * @param random 產生牌張 ID 與洗牌使用的亂數來源。同一個來源狀態產生同一副牌山。
      * @return 新建立的牌山。
      */
     fun createWall(random: Random): TileWall {

@@ -7,11 +7,10 @@ import kotlin.reflect.KClass
 /**
  * [MahjongModuleRegistry] 的預設實作。
  *
- * 建構時是空的對照表，不會預先塞入任何規則。要新增規則，直接呼叫 [register] 即可，
- * 不需要修改這個類別。內建規則也由外層組裝時呼叫 [register] 註冊，跟第三方規則走同一套流程，
- * 這個類別本身不知道、也不在乎誰註冊了什麼。
- *
- * `:mahjong-logic` 不依賴 DI 框架；把這個類別綁定成 [MahjongModuleRegistry] 由外層組裝負責。
+ * - 建構時是空的對照表，不會預先塞入任何規則。
+ * - 要新增規則，直接呼叫 [register]，不需要修改這個類別。
+ * - 內建規則也由外層組裝時呼叫 [register] 註冊，跟第三方規則走同一套流程。這個類別不區分註冊來源。
+ * - `:mahjong-logic` 不依賴 DI 框架。把這個類別綁定成 [MahjongModuleRegistry] 由外層組裝負責。
  */
 class MahjongModuleRegistryImpl : MahjongModuleRegistry {
 

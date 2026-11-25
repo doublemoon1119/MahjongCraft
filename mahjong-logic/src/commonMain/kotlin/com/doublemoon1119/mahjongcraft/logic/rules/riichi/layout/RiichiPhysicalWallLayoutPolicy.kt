@@ -16,7 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 /**
  * 日本麻將（四人或三人）的獨立王牌區、特殊嶺上牌位置與補牌後的補位布局。
  *
- * 王牌最前面的 [rinshanTileCount] 張是嶺上牌，其後是寶牌與裏寶牌指示牌；嶺上牌張數同時是一局最多的補牌次數。
+ * 王牌最前面的 [rinshanTileCount] 張是嶺上牌，其後是寶牌與裏寶牌指示牌。嶺上牌張數同時是一局最多的補牌次數。
  * 共用的分界與補位幾何由 [ReplenishingReservedWallPhysicalLayoutPolicy] 處理，本類別只提供日麻特有的嶺上牌形狀
  * 與補牌進度。
  *

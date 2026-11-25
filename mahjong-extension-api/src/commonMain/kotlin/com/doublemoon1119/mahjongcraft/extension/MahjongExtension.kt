@@ -28,12 +28,16 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
  * - AI 策略與對手模型：[registerAiStrategies]、[registerOpponentModels]。
  * - 網路與存檔資料轉換：[registerNetworkDtos]、[registerPersistenceDtos]。
  *
- * 平台專屬整合（如 Minecraft 的貼圖 asset key、顯示名稱與演出效果）由該平台的 extension 介面負責。
- * Minecraft 使用 `com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension`。
- * 這讓 `mahjong-extension-api` 不必依賴特定平台，同一份規則邏輯也能在不同平台重複使用。
+ * 平台專屬的整合：
  *
- * loader adapter 負責發現實作並交給 [MahjongExtensionBootstrap]；extension 不應自行取得 Koin 或依賴
- * MahjongCraft 的初始化順序。
+ * - 例如 Minecraft 的貼圖 asset key、顯示名稱與演出效果，由該平台的 extension 介面負責。Minecraft 使用
+ *   `com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension`。
+ * - 這樣 `mahjong-extension-api` 不必依賴特定平台，同一份規則邏輯也能在不同平台使用。
+ *
+ * 發現與初始化：
+ *
+ * - loader adapter 負責找出實作，交給 [MahjongExtensionBootstrap]。
+ * - extension 不應自行取得 Koin，也不應依賴 MahjongCraft 的初始化順序。
  */
 interface MahjongExtension {
     /** extension 的穩定識別字串，用於標示登記來源、檢查重複並診斷註冊錯誤。 */
@@ -86,21 +90,21 @@ interface MahjongExtension {
     fun registerPersistenceDtos(registries: PersistenceRegistrars)
 
     /**
-     * 登記規則擴充動作供 AI 建立命令的 handler；handler 被呼叫時會拿到這一局的規則模組。
+     * 登記規則擴充動作供 AI 建立命令的 handler。handler 被呼叫時會拿到這一局的規則模組。
      *
      * @param registry 用於登記擴充動作 AI handler 的 registry。
      */
     fun registerGameActionAiHandlers(registry: ExtensionGameActionAiRegistrar) = Unit
 
     /**
-     * 登記平台無關的 AI 策略；策略顯示名稱由各平台的呈現 extension 另行登記。
+     * 登記平台無關的 AI 策略。策略顯示名稱由各平台的呈現 extension 另行登記。
      *
      * @param registry 用於登記 AI 策略的 registry。
      */
     fun registerAiStrategies(registry: MahjongAiStrategyRegistrar) = Unit
 
     /**
-     * 登記規則專屬的 AI 對手模型；沒有登記的規則，AI 改用規則中立的對手模型估計對手。
+     * 登記規則專屬的 AI 對手模型。沒有登記的規則，AI 改用規則中立的對手模型估計對手。
      *
      * @param registry 用於登記規則專屬對手模型的 registry。
      */
@@ -114,7 +118,7 @@ interface MahjongExtension {
     fun registerGameActionCommandFactories(registry: ExtensionGameActionCommandFactoryRegistrar) = Unit
 
     /**
-     * 登記規則擴充命令的 handler 建立方式；每個執行環境以自己的對局流程服務建立 handler。
+     * 登記規則擴充命令的 handler 建立方式。每個執行環境以自己的對局流程服務建立 handler。
      *
      * @param registry 用於登記擴充命令 executor factory 的 registry。
      */
@@ -149,7 +153,7 @@ interface MahjongExtension {
     fun registerWinRoundContinuationResolvers(registry: WinRoundContinuationResolverRegistrar) = Unit
 
     /**
-     * 登記規則專屬胡牌詳情欄位的解析器；欄位只含語意資料，顯示方式由平台決定。
+     * 登記規則專屬胡牌詳情欄位的解析器。欄位只含語意資料，顯示方式由平台決定。
      *
      * @param registry 用於登記胡牌結算詳情解析器的 registry。
      */

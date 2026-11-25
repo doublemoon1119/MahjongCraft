@@ -15,7 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
  * - 役牌 (Yakuhai)：手牌中有三元牌（白、發、中）的刻子/槓，每種三元牌各自是一個役種
  *
  * @param handTiles 手牌中的牌（不含副露、不含和牌張，不含赤寶牌標記）。
- * @param winningTile 和牌張；靠它補成的刻子同樣成立字牌役，因此必須一併統計。
+ * @param winningTile 和牌張。靠它補成的刻子同樣成立字牌役，因此必須一併統計。
  * @param fuuro 副露列表。
  * @param roundWind 圈風。
  * @param seatWind 自風。

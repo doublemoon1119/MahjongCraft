@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentRoundTransition
 /**
  * 登記日麻捨牌紀錄的組件，只適用日麻系規則。
  *
- * 立直宣告標記由宣告動作寫入，新捨牌沒有初值；捨牌紀錄不跨局存在。
+ * 立直宣告標記由宣告動作寫入，新捨牌沒有初值。捨牌紀錄不跨局存在。
  *
  * @param registry 尚未凍結的組件登記。
  */

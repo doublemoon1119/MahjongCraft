@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponent
 /**
  * 將規則明確選擇公開的牌值轉成牌面與公開特徵，不建立牌張或產生 UUID。
  *
- * 呼叫端負責確認牌值可以公開；未知牌應走逐張可見性入口，不能傳到此處。
+ * 呼叫端負責確認牌值可以公開。未知牌應走逐張可見性入口，不能傳到此處。
  * 投影使用公共讀取情境且沒有局內對象，不會取得依持有者授權的私有組件。
  *
  * @param ruleModuleId 選擇公開牌值的規則。

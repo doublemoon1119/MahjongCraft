@@ -54,7 +54,7 @@ class TileComponentMovementTest {
         assertNotEquals(open.components, hidden.components)
     }
 
-    /** 所有當前區域都能修改；被取走牌河與原桌況維持原值。 */
+    /** 所有當前區域都能修改。被取走牌河與原桌況維持原值。 */
     @Test
     fun `component changes cover all current areas without rewriting history`() {
         val tile = tile()

@@ -18,7 +18,7 @@ fun TableState.isRiichiFirstGoAround(player: MahjongPlayer): Boolean = players.a
     player.discardPile.entries.isEmpty()
 
 /**
- * 這位玩家本局是否拔過北；三人麻將的拔北與鳴牌一樣會中斷第一巡。
+ * 這位玩家本局是否拔過北。三人麻將的拔北與鳴牌一樣會中斷第一巡。
  *
  * @receiver 本局待檢查的玩家。
  * @return 玩家本局曾拔北時為 true。

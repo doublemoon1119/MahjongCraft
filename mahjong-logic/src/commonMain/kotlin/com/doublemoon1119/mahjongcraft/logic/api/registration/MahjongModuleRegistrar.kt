@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.api.registration
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 
-/** 擴充登記規則模組時取得的登記介面；查詢與凍結由 MahjongCraft 進行。 */
+/** 擴充登記規則模組時取得的登記介面。查詢與凍結由 MahjongCraft 進行。 */
 interface MahjongModuleRegistrar {
     /**
      * 註冊一個新的規則模組。

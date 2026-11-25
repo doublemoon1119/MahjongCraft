@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai
 
 /**
- * 台灣麻將的計台項目；莊家與連莊由付款另計。
+ * 台灣麻將的計台項目。莊家與連莊由付款另計。
  *
  * 只表示項目本身，台數由各項目的判定在成立時決定。成立結果依宣告順序排列。
  */

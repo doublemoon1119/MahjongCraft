@@ -14,7 +14,7 @@ class ComponentPatchExpectationTest {
     /** 不被這次變更觸及的對局數值。 */
     private val untouched = ComponentType("test:untouched", Int::class, { it }, target = BuiltInComponentOwners.TABLE)
 
-    /** 舊值相符時套用；舊值已被改動時拒絕，不覆寫新值。 */
+    /** 舊值相符時套用。舊值已被改動時拒絕，不覆寫新值。 */
     @Test
     fun `stale expected value is rejected`() {
         val original = ComponentSet.EMPTY.with(points, 1000)
@@ -27,7 +27,7 @@ class ComponentPatchExpectationTest {
         assertFailsWith<IllegalArgumentException> { patch.applyTo(original.with(points, 1500), BuiltInComponentOwners.TABLE) }
     }
 
-    /** 設定值、移除與預期舊值都相同的變更相等；任一項不同就不相等。 */
+    /** 設定值、移除與預期舊值都相同的變更相等。任一項不同就不相等。 */
     @Test
     fun `patches with the same changes are equal`() {
         val patch = ComponentPatch.basedOn(ComponentSet.EMPTY.with(points, 1000), values = ComponentSet.EMPTY.with(points, 2000), removals = setOf(untouched))
@@ -49,7 +49,7 @@ class ComponentPatchExpectationTest {
         assertFailsWith<IllegalArgumentException> { patch.applyTo(ComponentSet.EMPTY.with(points, 1000), BuiltInComponentOwners.TABLE) }
     }
 
-    /** 從讀到的集合建立的變更只記下被改動組件的舊值；移除同樣比對舊值。 */
+    /** 從讀到的集合建立的變更只記下被改動組件的舊值。移除同樣比對舊值。 */
     @Test
     fun `based on captures only changed components`() {
         val current = ComponentSet.EMPTY.with(points, 1000).with(untouched, 7)

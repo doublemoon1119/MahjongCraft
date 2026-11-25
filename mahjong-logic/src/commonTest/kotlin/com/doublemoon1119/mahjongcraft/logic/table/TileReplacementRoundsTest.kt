@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證逐輪移出並補牌的順序、暫停與無牌可補。 */
 class TileReplacementRoundsTest {
-    /** 每位玩家一次移出全部指定牌；補到的指定牌等這一輪所有玩家處理完，下一輪再處理。 */
+    /** 每位玩家一次移出全部指定牌。補到的指定牌等這一輪所有玩家處理完，下一輪再處理。 */
     @Test
     fun `each round sets aside all marked tiles and defers replacements that are marked again`() {
         val first = marked()
@@ -128,8 +128,8 @@ class TileReplacementRoundsTest {
     /**
      * 以紅中為指定牌、從活牌前端補牌到立牌的測試規則。
      *
-     * @property pauseAfterSetAsideBy 這位玩家移出後暫停；不暫停時為 null。
-     * @property pauseAfterReplacementBy 這位玩家補完牌後暫停；不暫停時為 null。
+     * @property pauseAfterSetAsideBy 這位玩家移出後暫停。不暫停時為 null。
+     * @property pauseAfterReplacementBy 這位玩家補完牌後暫停。不暫停時為 null。
      * @property observedReplacementsRemaining 記錄每次補牌前仍待補入的張數。
      */
     private class Rules(
@@ -177,7 +177,7 @@ class TileReplacementRoundsTest {
     /**
      * 建立指定手牌與活牌的桌況。
      *
-     * @param hands 依座位排列的手牌；沒有列出的座位沒有手牌。
+     * @param hands 依座位排列的手牌。沒有列出的座位沒有手牌。
      * @param wall 活牌，依摸牌順序排列。
      * @return 桌況。
      */

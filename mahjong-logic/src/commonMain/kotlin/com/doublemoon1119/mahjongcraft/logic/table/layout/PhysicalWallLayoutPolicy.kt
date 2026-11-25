@@ -7,7 +7,7 @@ import kotlin.uuid.Uuid
 /**
  * 規則提供的抽象實體牌牆布局能力。
  *
- * 規則只描述正規化位置與移動階段；具體座標、碰撞安全路徑及移動方式由使用此結果的外層自行決定。
+ * 規則只描述正規化位置與移動階段。具體座標、碰撞安全路徑及移動方式由使用此結果的外層自行決定。
  */
 interface PhysicalWallLayoutPolicy {
     /** 建立一局牌牆的初始實體布局。 */
@@ -19,10 +19,10 @@ interface PhysicalWallLayoutPolicy {
     /**
      * 牌牆的牌在這一局剩下的時間裡可能佔到的所有位置，包含目前的位置。
      *
-     * 桌面其他牌區依這份位置讓開牌牆，所以同一局之內，後面的桌況回報的位置不可以超出前面回報的範圍；
+     * 桌面其他牌區依這份位置讓開牌牆，所以同一局之內，後面的桌況回報的位置不可以超出前面回報的範圍。
      * 牌只會離開、不會移動的規則回報目前位置即可。
      *
-     * @param tableState 目前桌況；沒有實體牌牆布局時回報空集合。
+     * @param tableState 目前桌況。沒有實體牌牆布局時回報空集合。
      * @return 目前與之後可能佔到的位置。
      */
     fun roundReach(tableState: TableState): Set<TileWallPlacement>
@@ -58,7 +58,7 @@ sealed interface PhysicalWallLayoutTransitionDecision {
      * 新布局與其宣告式移動階段已成功解析。
      *
      * @property layout 所有移動階段完成後的唯一權威最終布局。
-     * @property phases 依序播放的移動階段；只移除牌牆成員而沒有位置移動時可以為空。
+     * @property phases 依序播放的移動階段。只移除牌牆成員而沒有位置移動時可以為空。
      */
     data class Completed(
         val layout: TileWallPhysicalLayout,
@@ -113,7 +113,7 @@ object ContinuousPhysicalWallLayoutPolicy : PhysicalWallLayoutPolicy {
  * 建立並驗證初始實體牌牆布局。
  *
  * @param context 建立布局所需的牌牆、開門與占位牌資料。
- * @return policy 的原始決策；若完成布局未涵蓋完整初始牌牆，回傳無效結果拒絕決策。
+ * @return policy 的原始決策。若完成布局未涵蓋完整初始牌牆，回傳無效結果拒絕決策。
  */
 fun PhysicalWallLayoutPolicy.createInitialLayoutValidated(
     context: InitialPhysicalWallLayoutContext,
@@ -131,7 +131,7 @@ fun PhysicalWallLayoutPolicy.createInitialLayoutValidated(
  * 解析並驗證動作完成後的實體牌牆布局演進。
  *
  * @param context 動作前後桌況與目前布局。
- * @return policy 的決策；若結果未通過成員、位置或移動階段驗證，回傳無效結果拒絕決策。
+ * @return policy 的決策。若結果未通過成員、位置或移動階段驗證，回傳無效結果拒絕決策。
  */
 fun PhysicalWallLayoutPolicy.resolveTransitionValidated(
     context: PhysicalWallLayoutTransitionContext,

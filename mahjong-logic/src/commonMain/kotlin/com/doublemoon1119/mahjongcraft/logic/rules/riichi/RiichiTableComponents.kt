@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentType
 
 /** 日麻桌況攜帶的獨立規則資料。 */
 object RiichiTableComponents {
-    /** 場上供託的實際點數，跨局保留；收款後歸零。 */
+    /** 場上供託的實際點數，跨局保留。收款後歸零。 */
     val POT_POINTS: ComponentType<Int> = ComponentType(
         id = "mahjongcraft:riichi/table/pot_points",
         valueClass = Int::class,

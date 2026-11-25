@@ -128,7 +128,7 @@ object RiichiHandDecomposer {
      * @param handTiles 手牌中的立牌，不含和牌張。
      * @param winningTile 本次和牌的牌張。
      * @param fuuro 已曝光的副露面子。
-     * @return 符合七對子的結構；有副露或牌數／牌型不符時為 null。
+     * @return 符合七對子的結構。有副露或牌數／牌型不符時為 null。
      */
     private fun tryDecomposeChiitoitsu(
         handTiles: List<Tile>,
@@ -168,7 +168,7 @@ object RiichiHandDecomposer {
      * @param handTiles 手牌中的立牌，不含和牌張。
      * @param winningTile 本次和牌的牌張。
      * @param fuuro 已曝光的副露面子。
-     * @return 符合國士無雙的結構；有副露或牌型不符時為 null。
+     * @return 符合國士無雙的結構。有副露或牌型不符時為 null。
      */
     private fun tryDecomposeKokushiMusou(
         handTiles: List<Tile>,

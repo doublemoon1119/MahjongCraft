@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuResult
  * @property pointResult 依榮和/自摸區分的點數結算結果，詳見 [RiichiPointResult]。
  * @property isYakuman 是否為役滿。
  * @property paoLiability 若 [pointResult] 為包牌情境（[RiichiPointResult.PaoTsumo]／[RiichiPointResult.PaoRon]），
- *                        此欄位記錄對應的包牌責任方位；否則為 null。呼叫端需自行將方位對應回實際玩家。
+ *                        此欄位記錄對應的包牌責任方位。否則為 null。呼叫端需自行將方位對應回實際玩家。
  */
 data class RiichiHandValueResult(
     val yakuResults: List<RiichiYakuResult>,
@@ -22,6 +22,6 @@ data class RiichiHandValueResult(
     val isYakuman: Boolean = totalHan < 0,
     val paoLiability: RiichiPaoLiability? = null,
 ) : HandValueResult {
-    /** 點數結果按四人付款結構加總的金額；人數不足四人時應改用 [RiichiPointResult.totalFor]。 */
+    /** 點數結果按四人付款結構加總的金額。人數不足四人時應改用 [RiichiPointResult.totalFor]。 */
     val totalPoint: Int get() = pointResult.total
 }

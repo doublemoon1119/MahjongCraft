@@ -80,7 +80,7 @@ class LegalActionAutomaticControlPolicyTest {
      *
      * @param legalActions 可執行的合法動作。
      * @param enabledIds 啟用的自動控制 ID。
-     * @param drawnTileId 最近摸入牌的 ID；未提供時不設定摸牌。
+     * @param drawnTileId 最近摸入牌的 ID。未提供時不設定摸牌。
      * @return 對應桌況、玩家與合法動作的自動控制情境。
      */
     private fun context(

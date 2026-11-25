@@ -31,7 +31,7 @@ class RiichiWallProgressTest {
      * 讀取的來源），不是 [TableState.tileWall]（那是活牌堆，跟王牌完全無關，見該函式 KDoc）。
      *
      * @param deadWallTiles 要放入王牌區的牌。
-     * @param players 桌上的玩家；預設建立東、南兩家。
+     * @param players 桌上的玩家。預設建立東、南兩家。
      * @return 王牌區與玩家均依參數建立的桌況。
      */
     private fun createTableStateWithWall(

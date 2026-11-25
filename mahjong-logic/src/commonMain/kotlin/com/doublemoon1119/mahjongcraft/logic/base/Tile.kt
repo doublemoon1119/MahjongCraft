@@ -13,7 +13,7 @@ sealed class Tile {
     /**
      * 代表由內建規則或第三方 extension 註冊的非共用牌種。
      *
-     * 權威狀態只保存 [typeId]；實際張數、排序與特殊行為由目前規則解析，不由此值物件推論。
+     * 權威狀態只保存 [typeId]。實際張數、排序與特殊行為由目前規則解析，不由此值物件推論。
      *
      * @property typeId 指向 runtime [TileTypeRegistry] 的穩定 ID。
      */

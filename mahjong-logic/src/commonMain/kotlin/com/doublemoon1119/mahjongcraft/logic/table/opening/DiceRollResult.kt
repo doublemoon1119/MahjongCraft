@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.table.opening
 /**
  * 一次伺服器權威擲骰的個別點數。
  *
- * 保留每顆骰子的值，讓規則計算、平台呈現與 persistence 使用同一份結果；不得只保存總和後再由平台
+ * 保留每顆骰子的值，讓規則計算、平台呈現與 persistence 使用同一份結果。不得只保存總和後再由平台
  * 反推個別點數。
  *
  * @property values 依擲骰結果順序排列的點數，每個值皆位於 `1..6`，且至少包含一顆骰子。

@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
  * 計算與胡牌方式及時機有關的台：門清、自摸、不求人、獨聽、搶槓、槓上開花、海底撈月、天胡、地胡、人胡、
  * 報聽、天聽與地聽。
  *
- * 天胡、地胡、人胡成立時不再計報聽類的資格；天胡不另計獨聽與槓上開花，天胡與地胡不另計不求人。
+ * 天胡、地胡、人胡成立時不再計報聽類的資格。天胡不另計獨聽與槓上開花，天胡與地胡不另計不求人。
  *
  * @param isMenzen 是否門清。
  * @param isTsumo 是否自摸。

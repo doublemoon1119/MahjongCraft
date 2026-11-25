@@ -52,7 +52,7 @@ object TaiwanTileTypes {
      * 取得內建花牌的既定排序索引。
      *
      * @param tile 要查詢排序的牌。
-     * @return 內建花牌的排序索引；非內建花牌為 null。
+     * @return 內建花牌的排序索引。非內建花牌為 null。
      */
     fun orderIndex(tile: Tile): Int? = (tile as? Tile.Extension)?.typeId?.let(ALL::indexOf)?.takeIf { it >= 0 }
 }

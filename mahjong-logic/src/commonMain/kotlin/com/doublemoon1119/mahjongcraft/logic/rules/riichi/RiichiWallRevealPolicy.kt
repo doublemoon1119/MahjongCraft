@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.WallRevealContext
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealDecision
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealPolicy
 
-/** 日本麻將槓寶牌立即公開、延後公開與取消的純邏輯 policy；三人日麻拔北後的補牌不會公開槓寶牌。 */
+/** 日本麻將槓寶牌立即公開、延後公開與取消的純邏輯 policy。三人日麻拔北後的補牌不會公開槓寶牌。 */
 object RiichiWallRevealPolicy : WallRevealPolicy {
     /** 根據規則中立流程節點更新日麻槓寶牌公開狀態。 */
     override fun resolve(context: WallRevealContext): WallRevealDecision {
@@ -26,7 +26,7 @@ object RiichiWallRevealPolicy : WallRevealPolicy {
     }
 
     /**
-     * 依來源動作決定新指示牌立即公開或加入等待佇列；拔北的補牌不公開新指示牌。
+     * 依來源動作決定新指示牌立即公開或加入等待佇列。拔北的補牌不公開新指示牌。
      *
      * @param context 補牌完成的節點情境。
      * @param state 目前牌山進度。
@@ -61,7 +61,7 @@ object RiichiWallRevealPolicy : WallRevealPolicy {
      *
      * @param context 目前公開節點與桌況。
      * @param state 含待公開項目的牌山進度。
-     * @return 更新結果；沒有等待項目時為無變更。
+     * @return 更新結果。沒有等待項目時為無變更。
      */
     private fun revealPending(context: WallRevealContext, state: RiichiWallProgress): WallRevealDecision {
         val targetCount = state.pendingKanDoraReveals.maxOfOrNull { it.supplementalDrawNumber }
@@ -75,7 +75,7 @@ object RiichiWallRevealPolicy : WallRevealPolicy {
      * @param context 提供指示牌位置的桌況情境。
      * @param state 原始公開進度與待處理項目。
      * @param targetCount 要公開至第幾次槓補牌。
-     * @return 含新增公開牌識別碼的更新；進度或牌數不符時拒絕。
+     * @return 含新增公開牌識別碼的更新。進度或牌數不符時拒絕。
      */
     private fun revealThrough(
         context: WallRevealContext,
@@ -106,7 +106,7 @@ object RiichiWallRevealPolicy : WallRevealPolicy {
      * 胡牌成立時取消尚未公開的項目。
      *
      * @param state 目前牌山進度。
-     * @return 清除等待項目的更新；原本為空時不變。
+     * @return 清除等待項目的更新。原本為空時不變。
      */
     private fun cancelPending(state: RiichiWallProgress): WallRevealDecision = if (state.pendingKanDoraReveals.isEmpty()) {
         WallRevealDecision.NoChange

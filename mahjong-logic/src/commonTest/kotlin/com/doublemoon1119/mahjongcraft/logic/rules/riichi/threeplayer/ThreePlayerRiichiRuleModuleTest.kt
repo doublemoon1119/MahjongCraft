@@ -317,7 +317,7 @@ class ThreePlayerRiichiRuleModuleTest {
 
     /**
      * 驗證四次槓翻開的五組指示牌：前三組是開局王牌的第 5～7 墩（上層寶牌、下層裏寶牌），第 4、5 組落在補牌時
-     * 從活牌尾端補進來的牌上；補進來的每墩先補下層、再補上層，寶牌指示牌取上層那張。
+     * 從活牌尾端補進來的牌上。補進來的每墩先補下層、再補上層，寶牌指示牌取上層那張。
      */
     @Test
     fun `test later kan dora indicators come from replenished tiles`() {
@@ -598,7 +598,7 @@ class ThreePlayerRiichiRuleModuleTest {
     private fun other(seat: Wind) = FakeMahjongPlayerFactory.create(initialSeat = seat, components = riichiDeclarationComponents())
 
     /**
-     * 摸到最後一張紅中、自摸大三元的玩家；已經打過牌，不會成立天和或地和。
+     * 摸到最後一張紅中、自摸大三元的玩家。已經打過牌，不會成立天和或地和。
      *
      * @param seat 玩家座位風。
      * @return 符合上述條件的測試玩家。

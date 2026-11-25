@@ -20,7 +20,7 @@ sealed interface MatchProgressionDecision {
      * 繼續整場對局。
      *
      * @property transition 下一局位的連莊或過莊決策。
-     * @property seatOrder 局間換位後下一局完整的座位順序，也就是出牌順序；必須剛好包含本桌每位玩家各一次。
+     * @property seatOrder 局間換位後下一局完整的座位順序，也就是出牌順序。必須剛好包含本桌每位玩家各一次。
      * null 表示不換位。
      */
     data class ContinueMatch(

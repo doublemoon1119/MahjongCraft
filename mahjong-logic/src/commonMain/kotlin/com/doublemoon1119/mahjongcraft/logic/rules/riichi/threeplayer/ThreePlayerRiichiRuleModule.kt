@@ -101,7 +101,7 @@ class ThreePlayerRiichiRuleModule(
     override fun createMatchProgressionPolicy(): MatchProgressionPolicy = RiichiMatchProgressionPolicy(config)
 
     /**
-     * 莊家和牌、荒牌流局時莊家聽牌，或發生途中流局時，均由莊家連莊；其餘情況過莊。
+     * 莊家和牌、荒牌流局時莊家聽牌，或發生途中流局時，均由莊家連莊。其餘情況過莊。
      *
      * @param context 本局結算後的完整結果情境。
      * @return 三人日本麻將本局後的莊家推進決策。
@@ -118,13 +118,13 @@ class ThreePlayerRiichiRuleModule(
     /** 建立在三面牌牆之間數骰子的開門 policy。 */
     override fun createWallOpeningPolicy(): ThreePlayerRiichiWallOpeningPolicy = ThreePlayerRiichiWallOpeningPolicy
 
-    /** 砌牌牆時由莊家擲骰決定開門；不砌牌牆時不擲骰，使用固定開門位置切分摸牌序列與王牌。 */
+    /** 砌牌牆時由莊家擲骰決定開門。不砌牌牆時不擲骰，使用固定開門位置切分摸牌序列與王牌。 */
     override fun createRoundOpeningProcedure(playerCount: Int): RoundOpeningProcedure? = if (config.buildsWall) super.createRoundOpeningProcedure(playerCount) else RIICHI_WITHOUT_WALL_OPENING_PROCEDURE
 
     /** 建立三面、每面 18 墩的牌牆布局。 */
     override fun createWallLayout(playerCount: Int): ThreePlayerRiichiWallLayout = ThreePlayerRiichiWallLayout(config)
 
-    /** 與四人日麻共用的王牌區布局；嶺上牌為 8 張。不砌牌牆時沒有實體牌牆。 */
+    /** 與四人日麻共用的王牌區布局。嶺上牌為 8 張。不砌牌牆時沒有實體牌牆。 */
     override fun createPhysicalWallLayoutPolicy(): PhysicalWallLayoutPolicy? = if (config.buildsWall) {
         RiichiPhysicalWallLayoutPolicy(
             rinshanTileCount = config.rinshanTileCount,
@@ -141,7 +141,7 @@ class ThreePlayerRiichiRuleModule(
     /** 槓與拔北後的嶺上補牌 policy。 */
     override fun createSupplementalDrawPolicy(): SupplementalDrawPolicy = RiichiSupplementalDrawPolicy
 
-    /** 槓寶牌公開時序 policy；拔北不公開槓寶牌。 */
+    /** 槓寶牌公開時序 policy。拔北不公開槓寶牌。 */
     override fun createWallRevealPolicy(): WallRevealPolicy = RiichiWallRevealPolicy
 
     /** 與四人日麻相同的牌河。 */
@@ -172,7 +172,7 @@ class ThreePlayerRiichiRuleModule(
         shantenCalculator = createShantenCalculator(),
     )
 
-    /** 與四人日麻相同的手牌價值計算；拔北寶牌由上下文帶入。 */
+    /** 與四人日麻相同的手牌價值計算。拔北寶牌由上下文帶入。 */
     override fun createHandValueCalculator(): RiichiHandValueCalculator = RiichiHandValueCalculator(useLocalYaku = config.useLocalYaku)
 
     /** 帶入三人麻將牌組與拔北寶牌的手牌價值上下文計算。 */
@@ -186,7 +186,7 @@ class ThreePlayerRiichiRuleModule(
     /** 任何一次鳴牌都會讓場上所有玩家的一發資格失效。 */
     override fun onMeldCompleted(context: MeldCompletedContext): Map<Uuid, ComponentPatch> = context.playersAfter.associate { it.id to it.riichiIppatsuEndPatch() }
 
-    /** 碰／明槓觸發大三元或大四喜時記錄包牌責任；三人麻將不能吃。 */
+    /** 碰／明槓觸發大三元或大四喜時記錄包牌責任。三人麻將不能吃。 */
     override fun beforeDiscardClaimed(
         claimingPlayer: MahjongPlayer,
         meldType: MeldType,
@@ -194,7 +194,7 @@ class ThreePlayerRiichiRuleModule(
         sourceDirection: RelativeDirection,
     ): ComponentPatch = claimingPlayer.riichiPaoLiabilityPatch(meldType, calledTile, sourceDirection)
 
-    /** 自摸結算；少一家支付，贏家收到的點數是兩家付款的總和（自摸損）。 */
+    /** 自摸結算。少一家支付，贏家收到的點數是兩家付款的總和（自摸損）。 */
     override fun declareTsumo(tableState: TableState, player: MahjongPlayer): WinResolutionResult? {
         val winningTile = player.hand.lastDrawn ?: return null
         // 計算時的手牌不含和牌張，和牌張另以 incomingTile 傳入。
@@ -211,7 +211,7 @@ class ThreePlayerRiichiRuleModule(
     }
 
     /**
-     * 榮和結算；榮和拔出的北時 [discarderId] 是拔北的玩家，不計搶槓。
+     * 榮和結算。榮和拔出的北時 [discarderId] 是拔北的玩家，不計搶槓。
      */
     override fun declareRon(
         tableState: TableState,
@@ -251,7 +251,7 @@ class ThreePlayerRiichiRuleModule(
         )
     }
 
-    /** 一般流局；不聽罰符總額 2000 點。 */
+    /** 一般流局。不聽罰符總額 2000 點。 */
     override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult = declareExhaustiveDraw(tableState, emptySet())
 
     override fun declareExhaustiveDraw(
@@ -264,7 +264,7 @@ class ThreePlayerRiichiRuleModule(
         notenDeclaredPlayerIds = notenDeclaredPlayerIds,
     )
 
-    /** 流局滿貫；付款方式與自摸相同，少一家支付。 */
+    /** 流局滿貫。付款方式與自摸相同，少一家支付。 */
     override fun resolveNagashiMangan(tableState: TableState): RiichiNagashiManganResolution? = riichiNagashiMangan(tableState)
 
     /** 九種九牌需要公開宣告者手牌作為成立證明，其餘途中流局不公開手牌。 */
@@ -274,7 +274,7 @@ class ThreePlayerRiichiRuleModule(
         reason: ExhaustiveDrawReason,
     ): List<RevealedHandSettlement> = riichiAbortiveDrawRevealedHands(tableState, declarerId, reason)
 
-    /** 三人對局沒有三家和；多家和流局設定下沿用三家和了作為原因。 */
+    /** 三人對局沒有三家和。多家和流局設定下沿用三家和了作為原因。 */
     override fun resolveMultiRonAbortiveDraw(): ExhaustiveDrawReason = RiichiExhaustiveDrawReason.SanchaHou
 
     /** 四槓散了。 */
@@ -286,7 +286,7 @@ class ThreePlayerRiichiRuleModule(
     /** 這位玩家目前是否立直中。 */
     fun isPlayerInRiichi(player: MahjongPlayer): Boolean = player.riichiDeclaration != null
 
-    /** 立直後只能摸切；碰牌後不能食替。 */
+    /** 立直後只能摸切。碰牌後不能食替。 */
     override fun discardableTileIds(tableState: TableState, player: MahjongPlayer): Set<Uuid>? = RiichiDiscardRestriction.discardableTileIds(player = player, inRiichi = isPlayerInRiichi(player))
 
     /** 場上尚未被收下的立直棒支數。 */

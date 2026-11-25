@@ -35,7 +35,7 @@ interface DiscardPile<T : DiscardPile.DiscardEntry> {
      *
      * 當其他玩家進行鳴牌動作（如吃、碰、槓）時呼叫，將最後一張捨牌的 [DiscardEntry.isTaken] 狀態設為 true。
      *
-     * @return 標記後的新 [DiscardPile] 實例；若牌河為空則回傳原實例。
+     * @return 標記後的新 [DiscardPile] 實例。若牌河為空則回傳原實例。
      */
     fun takeLast(): DiscardPile<T>
 
@@ -52,7 +52,7 @@ interface DiscardPile<T : DiscardPile.DiscardEntry> {
     fun discardTile(tile: IdentifiedTile): DiscardPile<T>
 
     /**
-     * 替換尚未被取走的同張牌，只容許組件改變；舊的已取走紀錄保持原值。
+     * 替換尚未被取走的同張牌，只容許組件改變。舊的已取走紀錄保持原值。
      *
      * @param tile 要保存的新牌張版本。
      * @return 保留紀錄型別及其他欄位的新牌河。
@@ -85,7 +85,7 @@ interface DiscardPile<T : DiscardPile.DiscardEntry> {
         }
 
         /**
-         * 這張捨牌帶有的公開標記 ID，例如日麻的立直宣告牌；沒有標記時為空集合。
+         * 這張捨牌帶有的公開標記 ID，例如日麻的立直宣告牌。沒有標記時為空集合。
          *
          * 標記為所有玩家可見的資訊，牌譜依此保存並在回放中顯示。ID 帶命名空間，顯示名稱由平台另行登記。
          */
@@ -99,7 +99,7 @@ interface DiscardPile<T : DiscardPile.DiscardEntry> {
         open fun withTaken(): DiscardEntry = DiscardEntry(tile, isTaken = true, components = components)
 
         /**
-         * 保留紀錄資料，替換同張牌的組件版本；擴充紀錄必須覆寫以保留自己的欄位。
+         * 保留紀錄資料，替換同張牌的組件版本。擴充紀錄必須覆寫以保留自己的欄位。
          *
          * @param replacement 與原牌 UUID、牌面一致的新版本。
          * @return 不改變取走狀態的新紀錄。
@@ -111,7 +111,7 @@ interface DiscardPile<T : DiscardPile.DiscardEntry> {
         }
 
         /**
-         * 保留牌張與取走狀態，替換這筆紀錄的組件；擴充紀錄必須覆寫以保留自己的欄位。
+         * 保留牌張與取走狀態，替換這筆紀錄的組件。擴充紀錄必須覆寫以保留自己的欄位。
          *
          * @param replacement 這筆紀錄的完整新組件。
          * @return 只有組件不同的新紀錄。

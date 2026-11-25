@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.table
 
 /**
- * 一局目前所處的階段，回答「現在牌局在等什麼」；輪到哪位玩家由 [TableState.currentPlayerIndex] 記錄。
+ * 一局目前所處的階段，回答「現在牌局在等什麼」。輪到哪位玩家由 [TableState.currentPlayerIndex] 記錄。
  *
  * 流程依階段判斷玩家可以做什麼，不從手牌內容或動作紀錄推算。
  */

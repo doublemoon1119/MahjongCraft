@@ -18,7 +18,7 @@ data class TileWallSnapshot(
  * 產生一個 [TileWall] 的快照。
  *
  * [reservedWallTiles]（一般是 [TableState.reservedWallTiles]）也會併入快照——[TileWall] 本身只代表
- * 一般摸牌序列；若不把規則保留牌一起帶入，保留牌中的公開資訊便不會出現在 client 快照。
+ * 一般摸牌序列。若不把規則保留牌一起帶入，保留牌中的公開資訊便不會出現在 client 快照。
  *
  * @param visibleTileIds 應在快照中公開牌面的牌張 Uuid。
  * @param reservedWallTiles 不在一般摸牌序列中的規則保留牌。

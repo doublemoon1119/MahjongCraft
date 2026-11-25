@@ -17,12 +17,12 @@ data class PositionView(
     val snapshot: TableStateSnapshot,
     val evaluatorId: Uuid,
 ) {
-    /** 評估者本人；快照中找不到其識別碼時拋出 [NoSuchElementException]。 */
+    /** 評估者本人。快照中找不到其識別碼時拋出 [NoSuchElementException]。 */
     val evaluator: MahjongPlayerSnapshot
         get() = player(evaluatorId)
 
     /**
-     * 取得桌上指定玩家；不存在時拋出 [NoSuchElementException]。
+     * 取得桌上指定玩家。不存在時拋出 [NoSuchElementException]。
      *
      * @param playerId 要查詢的玩家 ID。
      * @return 快照中的玩家。
@@ -33,7 +33,7 @@ data class PositionView(
     /**
      * 評估者換成 [evaluator] 之後的視角。
      *
-     * @param evaluator 更新後的評估者快照；必須與目前評估者 ID 相同。
+     * @param evaluator 更新後的評估者快照。必須與目前評估者 ID 相同。
      * @return 使用更新快照的新視角。
      * @throws IllegalArgumentException [evaluator] 的 ID 與目前評估者不同時拋出。
      */

@@ -20,9 +20,9 @@ import kotlin.uuid.Uuid
  * @param tableState 目前桌況。
  * @param winnerId 自摸的玩家。
  * @param result 手牌價值計算結果。
- * @param isTsumoLoss 贏家收到的點數是否為所有付款的總和；三人麻將少一家，缺少的那一份不支付（自摸損）。
+ * @param isTsumoLoss 贏家收到的點數是否為所有付款的總和。三人麻將少一家，缺少的那一份不支付（自摸損）。
  *   為 false 時以計算結果的總點數為準。
- * @return 和牌結算；計算結果並非自摸應有的點數結算形狀（理論上不會發生，僅作防呆）時為 null。
+ * @return 和牌結算。計算結果並非自摸應有的點數結算形狀（理論上不會發生，僅作防呆）時為 null。
  */
 internal fun riichiTsumoResolution(
     tableState: TableState,
@@ -58,13 +58,13 @@ internal fun riichiTsumoResolution(
 }
 
 /**
- * 依榮和的計算結果換算成各玩家應付金額：一般由放銃者支付全額；包牌時由放銃者與責任者平分包牌部分。
+ * 依榮和的計算結果換算成各玩家應付金額：一般由放銃者支付全額。包牌時由放銃者與責任者平分包牌部分。
  *
  * @param tableState 判定莊家與包牌責任人的目前桌況。
  * @param winnerId 榮和玩家識別碼。
- * @param discarderId 放銃者；拔北被榮和時為拔北的玩家。
+ * @param discarderId 放銃者。拔北被榮和時為拔北的玩家。
  * @param result 手牌價值與點數計算結果。
- * @return 和牌結算；計算結果並非榮和應有的點數結算形狀（理論上不會發生，僅作防呆）時為 null。
+ * @return 和牌結算。計算結果並非榮和應有的點數結算形狀（理論上不會發生，僅作防呆）時為 null。
  */
 internal fun riichiRonResolution(
     tableState: TableState,
@@ -110,7 +110,7 @@ internal fun riichiRonResolution(
  * @param tableState 提供玩家及莊家身分的桌況。
  * @param winnerId 自摸玩家識別碼。
  * @param pointResult 待換算的點數結果。
- * @return 一般自摸的付款對照；包牌與榮和結果為空。
+ * @return 一般自摸的付款對照。包牌與榮和結果為空。
  */
 private fun riichiTsumoPayments(
     tableState: TableState,
@@ -144,7 +144,7 @@ private fun mergePayments(base: Map<Uuid, Int>, extra: Map<Uuid, Int>): Map<Uuid
  * @param tableState 要結算的桌況。
  * @param shantenCalculator 判定各家手牌型態的計算器。
  * @param notenPenaltyUnit 依仍在局中人數換算罰符總額的基數。
- * @param notenDeclaredPlayerIds 宣告不聽的玩家；必須都仍在局中且沒有立直。
+ * @param notenDeclaredPlayerIds 宣告不聽的玩家。必須都仍在局中且沒有立直。
  * @return 一般流局原因、聽牌玩家、公開手牌與分數差額。
  * @throws IllegalArgumentException 宣告不聽的玩家不在局中或已立直時。
  */
@@ -180,7 +180,7 @@ internal fun riichiExhaustiveDrawSettlement(
  * @param tableState 提供仍在局中玩家的桌況。
  * @param tenpaiIds 聽牌玩家識別碼。
  * @param notenPenaltyUnit 不聽罰符基數。
- * @return 聽牌者為正、不聽者為負的分數差額；無收付時為空。
+ * @return 聽牌者為正、不聽者為負的分數差額。無收付時為空。
  */
 private fun riichiNotenPenaltyDeltas(tableState: TableState, tenpaiIds: Set<Uuid>, notenPenaltyUnit: Int): Map<Uuid, Int> {
     val activeCount = tableState.activePlayers.size
@@ -194,13 +194,13 @@ private fun riichiNotenPenaltyDeltas(tableState: TableState, tenpaiIds: Set<Uuid
 }
 
 /**
- * 判定流局滿貫並計算自摸滿貫式收支；沒有任何人成立時回傳 `null`。
+ * 判定流局滿貫並計算自摸滿貫式收支。沒有任何人成立時回傳 `null`。
  *
- * 成立條件為牌河非空、全部是么九牌且從未被鳴走。只計入 [TableState.activePlayers]；付款方式與自摸相同，
+ * 成立條件為牌河非空、全部是么九牌且從未被鳴走。只計入 [TableState.activePlayers]。付款方式與自摸相同，
  * 少於四人時缺少的那一份不支付。
  *
  * @param tableState 判定牌河及付款對象的桌況。
- * @return 成立者與分數差額；沒有成立者時為 null。
+ * @return 成立者與分數差額。沒有成立者時為 null。
  */
 internal fun riichiNagashiMangan(tableState: TableState): RiichiNagashiManganResolution? {
     val achieverIds = tableState.activePlayers
@@ -235,9 +235,9 @@ internal fun riichiNagashiMangan(tableState: TableState): RiichiNagashiManganRes
  * 建立九種九牌需要公開的手牌證明。
  *
  * @param tableState 目前桌況。
- * @param declarerId 宣告者識別碼；null 表示沒有指定宣告者。
+ * @param declarerId 宣告者識別碼。null 表示沒有指定宣告者。
  * @param reason 途中流局原因。
- * @return 九種九牌且宣告者存在時，回傳該玩家的公開手牌項目；其他情況為空。
+ * @return 九種九牌且宣告者存在時，回傳該玩家的公開手牌項目。其他情況為空。
  */
 internal fun riichiAbortiveDrawRevealedHands(
     tableState: TableState,

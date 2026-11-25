@@ -17,7 +17,7 @@ class ComponentViewSet private constructor(private val entries: Map<String, Entr
      *
      * @param V 值型別。
      * @param type 已登記的輸出定義。
-     * @return 可讀值；沒有輸出該項時為 null。
+     * @return 可讀值。沒有輸出該項時為 null。
      */
     @Suppress("UNCHECKED_CAST")
     operator fun <V : Any> get(type: ComponentViewType<V>): V? {

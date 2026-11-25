@@ -27,7 +27,7 @@ import kotlin.uuid.Uuid
  */
 class TableStateSnapshotTest {
 
-    /** 最後打出的牌還在牌河、本局還沒結束時，快照帶出這張牌；被鳴走或本局結束後不帶。 */
+    /** 最後打出的牌還在牌河、本局還沒結束時，快照帶出這張牌。被鳴走或本局結束後不帶。 */
     @Test
     fun `latest discard is exposed only while it stays in the river during the round`() {
         val earlier = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
@@ -176,7 +176,7 @@ class TableStateSnapshotTest {
         assertEquals(setOf(finishedPlayer.id), snapshot.finishedPlayerIds)
     }
 
-    /** 已公開的牌只要還在手牌中，其他觀察者也看得到；已經離開手牌的不列入，其他手牌照舊隱藏。 */
+    /** 已公開的牌只要還在手牌中，其他觀察者也看得到。已經離開手牌的不列入，其他手牌照舊隱藏。 */
     @Test
     fun `revealed hand tiles lists revealed tiles still held in hands`() {
         val revealed = FakeIdentifiedTileFactory.create(Tile.Honor.North)
@@ -204,7 +204,7 @@ class TableStateSnapshotTest {
     }
 
     /**
-     * 看得到的牌包含自己的手牌、他家副露、牌河中未被鳴走的牌、移出手牌的牌、牌山已公開的牌與已公開的手牌；
+     * 看得到的牌包含自己的手牌、他家副露、牌河中未被鳴走的牌、移出手牌的牌、牌山已公開的牌與已公開的手牌。
      * 他家立牌與牌山中未公開的牌不列入，被鳴走的捨牌只隨副露計一次。
      */
     @Test
@@ -254,7 +254,7 @@ class TableStateSnapshotTest {
         assertEquals(snapshot.visibleTiles(IdentityTileInterpretationPolicy).size, snapshot.visibleTiles(IdentityTileInterpretationPolicy).map { it.id }.distinct().size)
     }
 
-    /** 玩家手上的牌包含看得到的立牌、剛摸到的牌、副露與移出手牌的牌；看不到牌面的他家立牌不列入。 */
+    /** 玩家手上的牌包含看得到的立牌、剛摸到的牌、副露與移出手牌的牌。看不到牌面的他家立牌不列入。 */
     @Test
     fun `held tiles include melds and set aside tiles but not hidden standing tiles`() {
         val standing = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))

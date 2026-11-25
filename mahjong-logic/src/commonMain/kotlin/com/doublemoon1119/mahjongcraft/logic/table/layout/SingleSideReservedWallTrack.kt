@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 /**
  * 固定於開門面的連續保留牌軌道。
  *
- * 保留牌一律落在單一面牆上，不跨面；軌道由頭端往回數，[stackIndices] 因此是同一面內的連續遞減墩序號。
+ * 保留牌一律落在單一面牆上，不跨面。軌道由頭端往回數，[stackIndices] 因此是同一面內的連續遞減墩序號。
  *
  * @property side 與 [WallOpening.wallSideOffsetFromDealer] 相同座標系的開門面。
  * @property stackIndices 由開門缺口一側往保留牌尾端排列的連續墩序號。

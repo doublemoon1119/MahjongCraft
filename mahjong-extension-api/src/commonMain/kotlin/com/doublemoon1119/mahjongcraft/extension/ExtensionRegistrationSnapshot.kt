@@ -25,10 +25,13 @@ class ExtensionRegistrationSnapshot(
     }
 
     /**
-     * 與 [current] 比較並回傳各類別新增的 key；沒有新增 key 的類別不會出現在結果中。
+     * 與 [current] 比較，回傳各類別新增的 key。
+     *
+     * - 沒有新增 key 的類別不會出現在結果中。
+     * - 分類內的 key 依字串排序。
      *
      * @param current 要與此快照比較的較新快照。
-     * @return 僅含新增 key 的分類；沒有新增 key 的分類會省略，分類內 key 依字串排序。
+     * @return 只含新增 key 的分類。
      */
     fun additionsSince(current: ExtensionRegistrationSnapshot): List<ExtensionRegistrationCategory> {
         val baselineById = categories.associateBy(ExtensionRegistrationSnapshotCategory::id)

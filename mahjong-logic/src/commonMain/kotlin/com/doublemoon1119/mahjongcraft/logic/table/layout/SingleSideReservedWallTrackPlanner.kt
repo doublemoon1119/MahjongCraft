@@ -8,17 +8,15 @@ object SingleSideReservedWallTrackPlanner {
     /**
      * 以最接近原開門格位的位置建立 [stackCount] 墩軌道，並避開 [occupiedPositions]。
      *
-     * **軌道一律落在開門面這一面牆內，不跨面。** 軌道由頭端往回數 [stackCount] 墩，所以頭端不得低於
-     * `stackCount - 1`，否則墩序號會溢到前一面。開門點本身低於這個下限時（例如 17 墩的牆、軌道 10 墩、
-     * 開門點在第 8 墩），軌道會整條往開門面內推，**保留牌因而不與開門點相鄰**——這是單面限制下的必然
-     * 結果，不是版位錯誤。
-     *
-     * [initialVacantStackCount] 表示開局時實際由保留牌佔用、因此必須避開其他牌的軌道前綴；其後格位
-     * 可以在開局時仍由活牌佔用，供後續補牌 transition 搬入，避免為未來容量預先挖出空墩。
-     *
-     * [extraStacksAfterHead] 會在軌道頭端之外多保留幾格，供保留牌整體朝開門空位平移時使用——平移量
-     * 為幾墩，就要保留幾墩，否則最外側的保留牌會被推出牆面。只有與候選軌道相同開門面的占位會參與碰撞
-     * 判斷；上下層分開計算。
+     * - **軌道一律落在開門面這一面牆內，不跨面。**
+     * - 軌道由頭端往回數 [stackCount] 墩，所以頭端不得低於 `stackCount - 1`，否則墩序號會溢到前一面。
+     * - 開門點低於這個下限時，軌道整條往開門面內推，**保留牌因而不與開門點相鄰**。
+     *   例如 17 墩的牆、軌道 10 墩、開門點在第 8 墩。這是單面限制下的必然結果，不是版位錯誤。
+     * - [initialVacantStackCount] 是開局時由保留牌佔用、必須避開其他牌的軌道前綴。
+     *   其後格位開局時可以仍由活牌佔用，供後續補牌搬入，不必為未來容量預先挖出空墩。
+     * - [extraStacksAfterHead] 在軌道頭端之外多保留幾格，供保留牌整體朝開門空位平移。
+     *   平移幾墩就要保留幾墩，否則最外側的保留牌會被推出牆面。
+     * - 只有與候選軌道相同開門面的占位參與碰撞判斷，上下層分開計算。
      *
      * @param opening 本局牌牆開門位置。
      * @param stacksPerSide 每面牌牆的墩數。
@@ -26,7 +24,7 @@ object SingleSideReservedWallTrackPlanner {
      * @param occupiedPositions 不能與軌道初始占用格位重疊的位置。
      * @param initialVacantStackCount 開局時已由保留牌占用的軌道前綴墩數。
      * @param extraStacksAfterHead 軌道頭端之外需保留的額外墩數。
-     * @return 可用的單面連續軌道；尺寸無法符合或找不到不重疊位置時為 null。
+     * @return 可用的單面連續軌道。尺寸無法符合或找不到不重疊位置時為 null。
      */
     fun plan(
         opening: WallOpening,

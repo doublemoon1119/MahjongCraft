@@ -20,7 +20,7 @@ object RiichiPointCalculator {
      * 成立時會忽略一般自摸/榮和的分攤方式，改回傳 [RiichiPointResult.PaoTsumo]
      * 或 [RiichiPointResult.PaoRon]。
      * @param paoYakuMultiplier 觸發包牌責任的那個役滿本身的倍數（大三元 1 倍、大四喜 2 倍——見 [RiichiYakuResult.doubleYakuman]），
-     * 僅在 [isPao] 為 true 時使用，決定包牌責任者實際承擔的倍數；預設 1。
+     * 僅在 [isPao] 為 true 時使用，決定包牌責任者實際承擔的倍數。預設 1。
      * @return 依榮和/自摸（或包牌）區分的 [RiichiPointResult]。
      */
     fun calculateYakumanPoint(
@@ -108,14 +108,13 @@ object RiichiPointCalculator {
     /**
      * 依役滿倍數、贏家身分與和牌方式，建立包牌情境下的 [RiichiPointResult]。
      *
-     * 包牌部分以 [paoYakuMultiplier] 倍役滿計算——大三元是 1 倍役滿，大四喜是雙倍役滿（見 [RiichiYakuResult.doubleYakuman]），
-     * 包牌責任者只承擔「觸發包牌的那個役滿本身」的倍數，不是寫死 1 倍。自摸包牌：包牌責任者一人
-     * 支付包牌部分全額，等同一般榮和的算法（基本點 * 身分倍率，一次性進位）。榮和包牌：由包牌
-     * 責任者與實際放銃者平分包牌部分。
-     *
-     * 若 [yakumanMultiplier] 大於 [paoYakuMultiplier]（和了同時疊加其他役滿，例如大四喜 + 四暗刻），
-     * 超出包牌範圍的 `(yakumanMultiplier - paoYakuMultiplier)` 倍改呼叫 [buildPointResult] 走正常
-     * 結算路徑，附加在回傳結果的 `remainder` 上，由呼叫端疊加進正常付款對象。
+     * - 包牌部分以 [paoYakuMultiplier] 倍役滿計算。包牌責任者只承擔觸發包牌的那個役滿本身的倍數：
+     *   大三元是 1 倍，大四喜是雙倍（見 [RiichiYakuResult.doubleYakuman]）。
+     * - 自摸包牌：包牌責任者一人支付包牌部分全額，算法等同一般榮和（基本點乘身分倍率，一次性進位）。
+     * - 榮和包牌：包牌責任者與實際放銃者平分包牌部分。
+     * - [yakumanMultiplier] 大於 [paoYakuMultiplier] 時（同時疊加其他役滿，例如大四喜加四暗刻），
+     *   超出的 `(yakumanMultiplier - paoYakuMultiplier)` 倍改用 [buildPointResult] 正常結算。
+     *   這部分放在回傳結果的 `remainder`，由呼叫端疊加進正常付款對象。
      *
      * @param yakumanMultiplier 役滿倍數（如 1, 2...）。
      * @param paoYakuMultiplier 觸發包牌責任的那個役滿本身的倍數（大三元 1、大四喜 2）。

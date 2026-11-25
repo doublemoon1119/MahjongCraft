@@ -7,7 +7,7 @@ import kotlin.uuid.Uuid
  * 不分規則的牌河快照，公開內容與權威牌河分開。
  *
  * @property entries 依捨牌順序排列、已裁切的紀錄。
- * @property sidewaysTileId 規則要求側放的牌；沒有時為 null。
+ * @property sidewaysTileId 規則要求側放的牌。沒有時為 null。
  */
 data class DiscardPileSnapshot(
     val entries: List<DiscardEntrySnapshot>,

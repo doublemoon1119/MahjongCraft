@@ -11,10 +11,10 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.HonorSetCompletionDetector
  * 包牌（責任払い）觸發判定器。
  *
  * 負責判斷「碰或明槓三元牌／風牌」這個動作，是否正是大三元的第 3 組副露或大四喜的第 4 組副露，進而觸發
- * 包牌責任；是否補齊整套字牌副露由 [HonorSetCompletionDetector] 判斷。
+ * 包牌責任。是否補齊整套字牌副露由 [HonorSetCompletionDetector] 判斷。
  *
  * 此判定必須在該次碰／明槓「實際套用到手牌之前」呼叫，以取得鳴牌當下、
- * 尚未加入新副露的手牌狀態；加槓（[MeldType.AddedKan]）
+ * 尚未加入新副露的手牌狀態。加槓（[MeldType.AddedKan]）
  * 與暗槓（[MeldType.ClosedKan]）不會產生新的包牌責任，
  * 不需要呼叫此判定器：
  * - 加槓沿用原本碰的來源方位，不會新增責任。
@@ -27,7 +27,7 @@ object RiichiPaoDetector {
      * @param hand 碰／明槓「之前」的手牌狀態。
      * @param calledTile 本次鳴取的牌。若非三元牌或風牌，一律回傳 null。
      * @param sourceDirection 本次鳴取的來源相對方位。
-     * @return 若此次鳴牌觸發包牌責任，回傳對應的 [RiichiPaoLiability]；否則回傳 null。
+     * @return 若此次鳴牌觸發包牌責任，回傳對應的 [RiichiPaoLiability]。否則回傳 null。
      */
     fun check(hand: Hand, calledTile: Tile, sourceDirection: RelativeDirection): RiichiPaoLiability? {
         val yaku = when (HonorSetCompletionDetector.completedBy(hand, calledTile)) {

@@ -73,7 +73,7 @@ class ComponentRegistryImpl : ComponentRegistry {
          * 只對符合對象與規則條件的來源執行計算。
          *
          * @param context 同一版本的權威輸入。
-         * @return 獨立效果；不適用時為 null。
+         * @return 獨立效果。不適用時為 null。
          */
         @Suppress("UNCHECKED_CAST")
         fun resolve(context: ComponentEffectContext<*>): ComponentSet? {
@@ -247,7 +247,7 @@ class ComponentRegistryImpl : ComponentRegistry {
         }
 
         /**
-         * 檢查適用對象與規則設定；原登記或任一額外範圍適用即可。
+         * 檢查適用對象與規則設定。原登記或任一額外範圍適用即可。
          *
          * @param context 目前建立情境。
          * @return 這項定義適用時為 true。
@@ -261,7 +261,7 @@ class ComponentRegistryImpl : ComponentRegistry {
         }
 
         /**
-         * 加入經驗證的值；缺少必要值時拒絕建立。
+         * 加入經驗證的值。缺少必要值時拒絕建立。
          *
          * @param result 已收集集合。
          * @param value 本項結果。

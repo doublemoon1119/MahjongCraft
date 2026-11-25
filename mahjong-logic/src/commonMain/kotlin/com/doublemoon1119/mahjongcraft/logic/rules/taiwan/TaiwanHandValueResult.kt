@@ -9,8 +9,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiResult
  *
  * @property isWinningHand 是否符合牌型與最低台數。
  * @property taiResults 選定拆法中成立的項目。
- * @property totalTai 手牌總台數；有效的零台和牌仍可為0。
- * @property decomposition 產生此結果的標準型拆法；無效牌型為null。
+ * @property totalTai 手牌總台數。有效的零台和牌仍可為0。
+ * @property decomposition 產生此結果的標準型拆法。無效牌型為null。
  */
 data class TaiwanHandValueResult(
     val isWinningHand: Boolean,

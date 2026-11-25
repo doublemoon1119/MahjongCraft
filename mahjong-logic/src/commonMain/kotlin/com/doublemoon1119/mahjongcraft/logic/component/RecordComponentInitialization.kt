@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 /**
  * 為新建立的捨牌紀錄或副露套用適用的組件初值，並驗證完整結果。
  *
- * 建立者已寫入的值優先於初值；未登記、對象不符、不適用目前規則或缺少必要值的組件會被拒絕。
+ * 建立者已寫入的值優先於初值。未登記、對象不符、不適用目前規則或缺少必要值的組件會被拒絕。
  *
  * @param O 紀錄型別。
  * @param context 新紀錄與其所在的候選桌況。
@@ -22,7 +22,7 @@ fun <O : Any> ComponentRegistry.initializeRecordComponents(context: ComponentLif
 /**
  * 為動作新建立的捨牌紀錄與副露套用組件初值，並驗證建立者寫入的組件。
  *
- * 新捨牌是玩家牌河比 [previous] 多出的紀錄；新副露是同一玩家在 [previous] 中沒有的副露 ID。
+ * 新捨牌是玩家牌河比 [previous] 多出的紀錄。新副露是同一玩家在 [previous] 中沒有的副露 ID。
  * 加槓沿用原副露 ID，保留原有組件，不再建立初值。
  *
  * @param previous 動作前的權威桌況。

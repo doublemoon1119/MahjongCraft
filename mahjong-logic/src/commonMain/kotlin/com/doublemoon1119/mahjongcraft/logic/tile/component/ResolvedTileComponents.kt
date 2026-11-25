@@ -27,13 +27,13 @@ data class ResolvedTileComponents(
     val isPublic: Boolean get() = publicEvidence || components[BuiltInTileComponents.FACE_ACCESS] == TileFaceAccess.Public
 
     /**
-     * 投影可展示的牌面與特徵；牌面不可讀時連特徵身分也不輸出。
+     * 投影可展示的牌面與特徵。牌面不可讀時連特徵身分也不輸出。
      *
      * @param context 已通過入口授權的讀取情境。
      * @param ruleModuleId 產生描述的規則識別碼。
      * @param tableState 產生描述時的同一份桌況。
      * @param registry 本次執行的特徵投影定義。
-     * @return 已裁切且不帶局內身分的牌面；無權讀取時為 null。
+     * @return 已裁切且不帶局內身分的牌面。無權讀取時為 null。
      */
     fun faceViewFor(
         context: TileReadContext,
@@ -88,7 +88,7 @@ data class ResolvedTileComponents(
      * 只為已知牌面回傳可使用的外觀樣式，不把私有組件值交給未知牌讀取者。
      *
      * @param context 已通過入口檢查的讀取情境。
-     * @return 可使用的樣式 ID；未知牌或未設定時為 null。
+     * @return 可使用的樣式 ID。未知牌或未設定時為 null。
      */
     fun appearanceFor(context: TileReadContext): String? = components[BuiltInTileComponents.APPEARANCE].takeIf { canRead(context) }
 }

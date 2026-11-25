@@ -12,9 +12,9 @@ import kotlin.uuid.Uuid
  * @property tableState 本局結算後的權威桌況。
  * @property outcomeId 本局結果的完整 namespaced 識別碼。
  * @property classification 本局結果的規則中立分類。
- * @property beneficiaryPlayerIds 本局結果的得利玩家；一般流局時可代表聽牌玩家。
- * @property responsiblePlayerIds 本局結果的責任玩家；沒有責任歸屬時為空集合。
- * @property exhaustiveDrawReason 本局是流局時使用的規則流局原因；其他結果為 null。
+ * @property beneficiaryPlayerIds 本局結果的得利玩家。一般流局時可代表聽牌玩家。
+ * @property responsiblePlayerIds 本局結果的責任玩家。沒有責任歸屬時為空集合。
+ * @property exhaustiveDrawReason 本局是流局時使用的規則流局原因。其他結果為 null。
  */
 data class RoundTransitionContext(
     val tableState: TableState,

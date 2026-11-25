@@ -9,7 +9,7 @@ import kotlin.uuid.Uuid
  * [waitingTiles] 為空仍可要求公開手牌，例如九種九牌需要攤牌證明，但不是聽牌展示。
  *
  * @property playerId 手牌所屬玩家 Uuid。
- * @property waitingTiles 規則判定的等待牌；沒有等待牌資訊時為空集合。
+ * @property waitingTiles 規則判定的等待牌。沒有等待牌資訊時為空集合。
  */
 data class RevealedHandSettlement(
     val playerId: Uuid,

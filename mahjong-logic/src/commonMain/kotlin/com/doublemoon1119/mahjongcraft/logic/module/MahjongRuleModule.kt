@@ -75,21 +75,21 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 建立捨牌反應的可執行效果與優先序判定。
      *
-     * @return 純計算的反應 policy；預設提供內建吃、碰、明槓、榮和與跳過。
+     * @return 純計算的反應 policy。預設提供內建吃、碰、明槓、榮和與跳過。
      */
     fun createDiscardReactionPolicy(): DiscardReactionPolicy = DefaultDiscardReactionPolicy
 
     /**
      * 取得宣告並捨牌的規則效果判定。
      *
-     * @return 支援此類宣告時的純計算 policy；未支援時為 null。
+     * @return 支援此類宣告時的純計算 policy。未支援時為 null。
      */
     fun declarationDiscardPolicy(): DeclarationDiscardPolicy? = null
 
     /**
      * 回傳此規則支援的本局自動操作控制 ID。
      *
-     * 控制 ID 只宣告能力；如何依合法動作解析並提交自動決策由呼叫端負責。沒有本局自動操作能力的
+     * 控制 ID 只宣告能力。如何依合法動作解析並提交自動決策由呼叫端負責。沒有本局自動操作能力的
      * 規則沿用空集合。
      *
      * @return 此規則支援的自動操作控制 ID 集合。
@@ -99,7 +99,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 建立解析本局自動操作行為的規則 policy。
      *
-     * 沒有自動操作行為的規則沿用 no-op；通用呼叫端不得自行套用其他玩法的動作分類。
+     * 沒有自動操作行為的規則沿用 no-op。通用呼叫端不得自行套用其他玩法的動作分類。
      *
      * @return 此規則的自動操作 policy。
      */
@@ -117,9 +117,10 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 決定本局結束後由誰坐莊：連莊、交給座位順序中的下一位，或交給指定的玩家（例如由和牌的玩家坐莊）。
      *
-     * 這是只讀且無副作用的規則判定；相同的 [context] 必須得到相同結果。結果在本局結束時計算一次並隨本局摘要
-     * 保存，讀檔後不再重新呼叫。未覆寫的規則預設交給下一位；需要依結果、聽牌或其他規則條件決定的模組應覆寫此方法。
-     * 指定的玩家不在本桌，或指定現任莊家卻不是連莊時，對局以規則錯誤中止。
+     * - 這是只讀且無副作用的規則判定。相同的 [context] 必須得到相同結果。
+     * - 結果在本局結束時計算一次並隨本局摘要保存，讀檔後不再重新呼叫。
+     * - 未覆寫的規則預設交給下一位。需要依結果、聽牌或其他規則條件決定的模組應覆寫此方法。
+     * - 指定的玩家不在本桌，或指定現任莊家卻不是連莊時，對局以規則錯誤中止。
      *
      * @param context 本局結算後的完整結果情境。
      * @return 下一任莊家。
@@ -129,7 +130,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 建立適用於該規則的牌山生成工廠。
      *
-     * @param playerCount 本局完整玩家名單的人數；不是目前在線或已連線玩家數。
+     * @param playerCount 本局完整玩家名單的人數。不是目前在線或已連線玩家數。
      * @return 實作了 [TileWallFactory] 的工廠物件。
      */
     fun createWallFactory(playerCount: Int): TileWallFactory
@@ -137,20 +138,20 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 建立適用於預設單輪開門流程的牌牆開門 policy。
      *
-     * 尚未定義預設單輪開門規則的模組可使用預設的 null；通用初始化流程不得自行套用其他玩法的公式。
+     * 尚未定義預設單輪開門規則的模組可使用預設的 null。通用初始化流程不得自行套用其他玩法的公式。
      * 直接覆寫 [createRoundOpeningProcedure] 的規則可以不使用此舊式 policy，改由自己的程序決定是否擲骰。
      *
-     * @return 此規則的 [WallOpeningPolicy]；未使用預設單輪流程時為 null。
+     * @return 此規則的 [WallOpeningPolicy]。未使用預設單輪流程時為 null。
      */
     fun createWallOpeningPolicy(): WallOpeningPolicy? = null
 
     /**
      * 建立本局選定起家與開門位置的程序。
      *
-     * 預設實作會在同時提供 [createWallOpeningPolicy] 與 [createWallLayout] 時建立單輪程序；規則可
+     * 預設實作會在同時提供 [createWallOpeningPolicy] 與 [createWallLayout] 時建立單輪程序。規則可
      * 覆寫此方法提供多輪、固定起家或其他純計算程序。回傳 `null` 時本局沿用固定起家且不擲骰。
      *
-     * @param playerCount 本局完整玩家名單的人數；規則可用它選擇對應的開局程序。
+     * @param playerCount 本局完整玩家名單的人數。規則可用它選擇對應的開局程序。
      * @return 規則的開局程序，未提供開局選定流程時為 null。
      */
     fun createRoundOpeningProcedure(playerCount: Int): RoundOpeningProcedure? = createWallOpeningPolicy()
@@ -162,7 +163,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 建立本規則每局用來指派自風／門風的 policy。
      *
-     * 預設以莊家為東並依實際玩家數分配風位；使用開門定風或其他風位規則的模組可覆寫。
+     * 預設以莊家為東並依實際玩家數分配風位。使用開門定風或其他風位規則的模組可覆寫。
      *
      * @return 此規則的座位風指派 policy。
      */
@@ -171,10 +172,11 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 建立適用於該規則的牌牆布局能力，將洗牌後的完整牌組依開門結果排列成正式的摸牌順序與結構。
      *
-     * 尚未定義牌牆布局的模組可使用預設的 null；通用初始化流程不得自行假設固定張數或固定每面墩數。
-     * 不提供時開局不產生牌山結構；依牌山結構呈現牌局的平台可能因此無法使用此規則。
+     * - 尚未定義牌牆布局的模組可使用預設的 null。
+     * - 通用初始化流程不得自行假設固定張數或固定每面墩數。
+     * - 不提供時開局不產生牌山結構，依牌山結構呈現牌局的平台可能因此無法使用此規則。
      *
-     * @param playerCount 本局完整玩家名單的人數；規則可用它選擇牌牆面數與牌山大小。
+     * @param playerCount 本局完整玩家名單的人數。規則可用它選擇牌牆面數與牌山大小。
      * @return 此規則的 [TileWallLayout]，若尚未支援則為 null。
      */
     fun createWallLayout(playerCount: Int): TileWallLayout? = null
@@ -187,14 +189,14 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 摸牌順序與保留牌照常由 [TileWallLayout] 決定，但牌在離開牌池之前沒有桌面位置，桌況的
      * [TableState.physicalWallLayout] 也為 null。
      *
-     * @return 此規則的實體牌牆布局 policy；不砌牌牆時為 null。
+     * @return 此規則的實體牌牆布局 policy。不砌牌牆時為 null。
      */
     fun createPhysicalWallLayoutPolicy(): PhysicalWallLayoutPolicy? = ContinuousPhysicalWallLayoutPolicy
 
     /**
      * 建立目前規則用於一般牌面比較的解讀 policy。
      *
-     * 沒有規則特有等價牌面的模組可使用預設原樣實作；共用流程不得自行判斷特定 extension ID。
+     * 沒有規則特有等價牌面的模組可使用預設原樣實作。共用流程不得自行判斷特定 extension ID。
      *
      * @return 此規則的牌面解讀 policy。
      */
@@ -231,7 +233,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 建立動作成立當下收付點數的 policy，例如槓牌時由放槓者付點數。
      *
-     * 局中的點數收付只能經由這個 policy 或宣告效果的成本；其他狀態掛勾只能修改規則狀態。預設不收付。
+     * 局中的點數收付只能經由這個 policy 或宣告效果的成本。其他狀態掛勾只能修改規則狀態。預設不收付。
      *
      * @return 此規則的動作即時計分 policy。
      */
@@ -302,7 +304,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 依目前桌況描述任一牌區的組件效果，不修改牌張上的固定組件。
      *
-     * @param tableState 權威桌況；同一輸入必須產生相同結果。
+     * @param tableState 權威桌況。同一輸入必須產生相同結果。
      * @return 每張目前牌張至多一筆描述，預設不增加效果。
      */
     fun describeTileComponents(tableState: TableState): List<TileComponentDescription> = emptyList()
@@ -319,8 +321,10 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 因應「玩家摸牌」事件，回傳這位玩家規則資料的變更。
      *
-     * 變更帶著讀到的舊值；舊值不符、對象不符或資料不屬於目前規則時，本局以規則錯誤中止。要收付點數請使用
-     * [createActionScoringPolicy]，要自動移出手牌請使用 [createDrawFollowUpPolicy]。預設不做任何變更。
+     * - 變更帶著讀到的舊值。舊值不符、對象不符或資料不屬於目前規則時，本局以規則錯誤中止。
+     * - 要收付點數請使用 [createActionScoringPolicy]。
+     * - 要自動移出手牌請使用 [createDrawFollowUpPolicy]。
+     * - 預設不做任何變更。
      *
      * @param player 剛完成摸牌的玩家（已套用摸牌本身造成的變化）。
      * @return 這位玩家組件的變更。
@@ -330,9 +334,11 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 因應「玩家捨牌」事件，回傳這位玩家規則資料的變更。
      *
-     * 一般捨牌與宣告附帶的捨牌都會呼叫，宣告時在套用宣告效果之前。
      * 例如日麻：立直者宣告後再打出下一張牌，代表一發的期限已經結束，需清除玩家的一發資格。
-     * 變更帶著讀到的舊值；不符合契約時本局以規則錯誤中止。預設不做任何變更。
+     *
+     * - 一般捨牌與宣告附帶的捨牌都會呼叫，宣告時在套用宣告效果之前。
+     * - 變更帶著讀到的舊值。不符合契約時本局以規則錯誤中止。
+     * - 預設不做任何變更。
      *
      * @param player 剛完成捨牌的玩家（已套用捨牌本身造成的變化）。
      * @return 這位玩家組件的變更。
@@ -342,10 +348,13 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 有玩家完成吃、碰或槓後，回傳各玩家規則資料的變更。
      *
-     * 吃、碰、明槓、暗槓與加槓都會呼叫一次。例如日麻的任何副露或槓都會讓全桌的一發資格失效；
-     * 台麻可比較槓牌前後的等待牌。鍵必須是這局的玩家，沒有列出的玩家不變。變更以
-     * [MeldCompletedContext.playersAfter] 的組件為基準；不符合契約時本局以規則錯誤中止。
-     * 動作當下要收付點數請使用 [createActionScoringPolicy]。預設不做任何變更。
+     * 例如日麻的任何副露或槓都會讓全桌的一發資格失效，台麻可比較槓牌前後的等待牌。
+     *
+     * - 吃、碰、明槓、暗槓與加槓都會呼叫一次。
+     * - 鍵必須是這局的玩家，沒有列出的玩家不變。
+     * - 變更以 [MeldCompletedContext.playersAfter] 的組件為基準。不符合契約時本局以規則錯誤中止。
+     * - 動作當下要收付點數請使用 [createActionScoringPolicy]。
+     * - 預設不做任何變更。
      *
      * @param context 本次完成的副露或槓及其前後玩家狀態。
      * @return 依玩家 ID 排列的組件變更。
@@ -355,11 +364,12 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 玩家鳴取他家捨牌（吃／碰／明槓）、副露尚未套用到手牌之前，讓規則依這次鳴牌更新該玩家的規則狀態。
      *
-     * 每一次鳴取捨牌都會呼叫，不論鳴牌種類；哪些鳴牌與自己的狀態有關由規則自行判斷（例如日麻只在碰／明槓
-     * 湊成大三元、大四喜時記錄包牌責任）。暗槓與加槓不是鳴取他家捨牌，不會呼叫。
-     *
-     * 呼叫時 [claimingPlayer] 的手牌仍是鳴牌當下、尚未加入新副露的狀態。變更帶著讀到的舊值；
-     * 不符合契約時本局以規則錯誤中止。預設不做任何變更。
+     * - 每一次鳴取捨牌都會呼叫，不論鳴牌種類。
+     * - 哪些鳴牌與自己的狀態有關由規則自行判斷，例如日麻只在碰／明槓湊成大三元、大四喜時記錄包牌責任。
+     * - 暗槓與加槓不是鳴取他家捨牌，不會呼叫。
+     * - 呼叫時 [claimingPlayer] 的手牌仍是鳴牌當下、尚未加入新副露的狀態。
+     * - 變更帶著讀到的舊值。不符合契約時本局以規則錯誤中止。
+     * - 預設不做任何變更。
      *
      * @param claimingPlayer 鳴牌的玩家（尚未套用本次鳴牌）。
      * @param meldType 本次鳴牌的種類。
@@ -375,57 +385,54 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     ): ComponentPatch = ComponentPatch()
 
     /**
-     * 計算一次自摸胡牌（[GameAction.Tsumo]）的點數結算：贏家實際獲得的點數，以及各應付款玩家
-     * 應支付的金額——實際如何拆分完全由各規則自己的覆寫決定（例如日麻依莊家/閒家身分、包牌責任
-     * 等因素區分），這裡不預設任何規則的具體公式。
+     * 計算一次自摸胡牌（[GameAction.Tsumo]）的點數結算：贏家實際獲得的點數，以及各應付款玩家應支付的金額。
      *
-     * 呼叫前應已確認 [GameAction.Tsumo] 目前合法（例如透過 [createLegalActionValidator]）——這是
-     * 規則無關的驗證，由呼叫端負責；這裡只處理規則特有的點數計算與分攤方式，因此呼叫端
-     * 永遠不需要知道、也不需要轉型成任何規則專屬的具體型別。
+     * - 實際如何拆分由各規則的覆寫決定，例如日麻依莊家／閒家身分、包牌責任等因素區分。這裡不預設任何公式。
+     * - 呼叫前應已確認 [GameAction.Tsumo] 目前合法，例如透過 [createLegalActionValidator]。
+     *   這是規則無關的驗證，由呼叫端負責。
+     * - 這裡只處理規則特有的點數計算與分攤方式，呼叫端不需要轉型成任何規則專屬的具體型別。
+     * - [player] 應為胡牌當下、尚未套用本次自摸任何變化的玩家實例，即 [tableState] 中的
+     *   `TableState.currentPlayer`。其 `Hand.lastDrawn` 即為胡牌張。
+     * - 胡牌張同時存在於 `hand.lastDrawn` 與役種計算的胡牌張參數，實作須自行避免重複計數，呼叫端不處理。
      *
-     * [player] 應為胡牌當下、尚未套用本次自摸任何變化的玩家實例（即 [tableState] 中對應的
-     * `TableState.currentPlayer`），其 `Hand.lastDrawn` 即為胡牌張。實作內部需自行處理「胡牌張
-     * 同時存在於 `hand.lastDrawn`、又要餵給役種計算所需的胡牌張參數」這個潛在的重複計數問題，
-     * 呼叫端不需要、也不應該自行處理這個細節。
+     * 何時回傳 null：
      *
-     * 不支援自摸結算的規則，或輸入尚未滿足自摸前置條件時，才應回傳 null。若合法動作判定器已提供
-     * 自摸，且呼叫端再次以權威桌況確認仍然成立，規則必須回傳結算結果；此時回傳 null 代表規則契約
-     * 失效，呼叫端應中止對局並留下診斷，不得把它當成放棄自摸或零分結果。
+     * - 不支援自摸結算的規則，或輸入尚未滿足自摸前置條件時，才應回傳 null。
+     * - 合法動作判定器已提供自摸，且呼叫端再次以權威桌況確認仍然成立時，規則必須回傳結算結果。
+     * - 此時回傳 null 代表規則契約失效。呼叫端應中止對局並留下診斷，不得把它當成放棄自摸或零分結果。
      *
      * @param tableState 目前的桌況（尚未套用本次自摸結算）。
      * @param player 宣告自摸的玩家（尚未套用本次自摸結算），其 `hand.lastDrawn` 即為胡牌張。
-     * @return 本次自摸的點數結算結果；規則不支援或 [player] 尚未滿足自摸前置條件時為 null。
+     * @return 本次自摸的點數結算結果。規則不支援或 [player] 尚未滿足自摸前置條件時為 null。
      */
     fun declareTsumo(tableState: TableState, player: MahjongPlayer): WinResolutionResult?
 
     /**
-     * 計算一次榮和胡牌（[GameAction.Ron]）的點數結算：贏家實際獲得的點數，以及各應付款玩家
-     * 應支付的金額——實際如何拆分完全由各規則自己的覆寫決定（例如日麻：一般情況下由放銃者一人
-     * 支付全額，包牌責任成立時由包牌責任者與放銃者平分，但若包牌責任者恰好就是放銃者本人則視為
-     * 單一玩家支付全額），這裡不預設任何規則的具體公式。
+     * 計算一次榮和胡牌（[GameAction.Ron]）的點數結算：贏家實際獲得的點數，以及各應付款玩家應支付的金額。
      *
-     * 呼叫前應已確認 [GameAction.Ron] 目前合法（例如透過 [createLegalActionValidator]）——這是
-     * 規則無關的驗證，由呼叫端負責；這裡只處理規則特有的點數計算與分攤方式，因此呼叫端
-     * 永遠不需要知道、也不需要轉型成任何規則專屬的具體型別。
+     * - 實際如何拆分由各規則的覆寫決定，這裡不預設任何公式。例如日麻一般由放銃者一人支付全額。
+     *   包牌責任成立時由包牌責任者與放銃者平分，包牌責任者就是放銃者本人時則由他一人支付全額。
+     * - 呼叫前應已確認 [GameAction.Ron] 目前合法，例如透過 [createLegalActionValidator]。
+     *   這是規則無關的驗證，由呼叫端負責。
+     * - 這裡只處理規則特有的點數計算與分攤方式，呼叫端不需要轉型成任何規則專屬的具體型別。
+     * - [player] 應為胡牌當下、尚未套用本次榮和任何變化的玩家實例。[winningTile] 為放銃者打出、被榮和的那張牌。
+     * - 規則特有的點數結果（例如日麻的 `RiichiPointResult`）不帶玩家身分。
+     *   呼叫端透過 [discarderId] 告知放銃者，實作才能把付款金額歸屬到實際玩家。
+     * - [isRobbingKan] 為 `true` 時代表這次榮和是搶槓（[GameAction.KanType.ADDED_KAN] 被搶）。
+     *   支援搶槓役種加成的規則應在此時額外計入，例如日麻的搶槓 1 翻。一般捨牌榮和使用預設的 `false`。
      *
-     * [player] 應為胡牌當下、尚未套用本次榮和任何變化的玩家實例，[winningTile] 為放銃者打出、
-     * 被榮和的那張牌。規則特有的點數結果（例如日麻的 `RiichiPointResult`）本身不帶玩家身分，因此需要呼叫端
-     * 額外透過 [discarderId] 告知放銃者是誰，實作才能把付款金額正確歸屬到實際玩家。
+     * 何時回傳 null：
      *
-     * [isRobbingKan] 為 `true` 時代表這次榮和是搶槓（[GameAction.KanType.ADDED_KAN] 被搶），
-     * 支援搶槓役種加成的規則應在此時額外計入（例如日麻的搶槓 1 翻）；預設 `false`，一般捨牌榮和
-     * 不需要呼叫端額外傳入。
-     *
-     * 不支援榮和結算的規則，或輸入尚未滿足榮和前置條件時，才應回傳 null。若合法動作判定器已提供
-     * 榮和，且呼叫端再次以權威桌況確認仍然成立，規則必須回傳結算結果；此時回傳 null 代表規則契約
-     * 失效，呼叫端應中止對局並留下診斷，不得把它當成放棄榮和或零分結果。
+     * - 不支援榮和結算的規則，或輸入尚未滿足榮和前置條件時，才應回傳 null。
+     * - 合法動作判定器已提供榮和，且呼叫端再次以權威桌況確認仍然成立時，規則必須回傳結算結果。
+     * - 此時回傳 null 代表規則契約失效。呼叫端應中止對局並留下診斷，不得把它當成放棄榮和或零分結果。
      *
      * @param tableState 目前的桌況（尚未套用本次榮和結算）。
      * @param player 宣告榮和的玩家（尚未套用本次榮和結算）。
      * @param winningTile 被榮和的捨牌。
      * @param discarderId 打出 [winningTile] 的玩家 Uuid。
      * @param isRobbingKan 這次榮和是否為搶槓（搶加槓）。
-     * @return 本次榮和的點數結算結果；規則不支援或輸入尚未滿足榮和前置條件時為 null。
+     * @return 本次榮和的點數結算結果。規則不支援或輸入尚未滿足榮和前置條件時為 null。
      */
     fun declareRon(
         tableState: TableState,
@@ -438,24 +445,25 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 收下場上供託（如立直棒）的總額，以及收下後應套用的新動態桌況狀態。
      *
-     * 不區分自摸、榮和、多家和、流局或整場結束；這裡只負責算出「這次收下多少、收下後狀態如何」，
-     * 由誰收、各收多少由 [allocateSettlementExtras] 決定。
-     *
-     * 不支援供託機制的規則應回傳 null；即使場上目前沒有供託可收（例如立直棒數量為 0），
-     * 只要規則本身有這個機制就應回傳非 null（金額為 0、狀態不變）——null 專門用來表示
-     * 「這個規則根本沒有供託機制」，不跟「目前沒有供託」混用。
+     * - 不區分自摸、榮和、多家和、流局或整場結束。
+     * - 這裡只算出這次收下多少、收下後狀態如何。由誰收、各收多少由 [allocateSettlementExtras] 決定。
+     * - 不支援供託機制的規則應回傳 null。
+     * - 規則有供託機制但場上目前沒有供託（例如立直棒數量為 0）時，仍回傳非 null：金額為 0，狀態不變。
+     *   null 只表示規則沒有供託機制，不表示目前沒有供託。
      *
      * @param tableState 目前的桌況（尚未套用本次收供託的變化）。
-     * @return 收下供託後應套用的動態桌況狀態，以及收下的總額；若此規則沒有供託機制則為 null。
+     * @return 收下供託後應套用的動態桌況狀態，以及收下的總額。若此規則沒有供託機制則為 null。
      */
     fun collectStickPot(tableState: TableState): PointPotCollection?
 
     /**
      * 決定這次結算時場上供託分給誰、各分多少，以及哪些玩家收取連莊點數。
      *
-     * 只讀且無副作用；相同的 [context] 必須得到相同結果。Flow 以回傳結果合併手牌結算後一次寫入，並驗證收款者都是候選玩家、
-     * 金額不為負、供託總額與收下的總額相符（整場結束時可以全部不分）；違反時以規則錯誤中止。
-     * 預設由候選順序中的第一位拿走全部供託；和牌時同一位也收取連莊點數，其他時機不收。
+     * - 只讀且無副作用。相同的 [context] 必須得到相同結果。
+     * - Flow 以回傳結果合併手牌結算後一次寫入。
+     * - Flow 驗證收款者都是候選玩家、金額不為負，且供託總額與收下的總額相符（整場結束時可以全部不分）。
+     *   違反時以規則錯誤中止。
+     * - 預設由候選順序中的第一位拿走全部供託。和牌時同一位也收取連莊點數，其他時機不收。
      *
      * @param context 這次結算的時機、候選玩家與供託總額。
      * @return 供託與連莊點數的歸屬。
@@ -472,15 +480,15 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 胡牌時，贏家依 [TableState.comboCount] 額外收取的連莊點數（如日麻的本場），以每位付款者支付的
      * 金額表示。
      *
-     * 由誰收取由 [allocateSettlementExtras] 決定，對每一位收取者各呼叫一次；這裡只負責依規則決定付款者與金額。
+     * 由誰收取由 [allocateSettlementExtras] 決定，對每一位收取者各呼叫一次。這裡只負責依規則決定付款者與金額。
      *
      * 預設沒有連莊點數，回傳空 map。
      *
      * @param tableState 目前的桌況（尚未套用本次胡牌結算）。
      * @param winnerId 收取連莊點數的玩家 Uuid。
-     * @param discarderId 放銃者 Uuid；自摸或與自摸等價的結果為 null。
-     * @param resolution 此贏家本次胡牌的結算結果；與胡牌等價但沒有手牌結算的結果為 null。
-     * @return 每位付款者應支付的連莊點數；金額皆為正數，不含 [winnerId]。
+     * @param discarderId 放銃者 Uuid。自摸或與自摸等價的結果為 null。
+     * @param resolution 此贏家本次胡牌的結算結果。與胡牌等價但沒有手牌結算的結果為 null。
+     * @return 每位付款者應支付的連莊點數。金額皆為正數，不含 [winnerId]。
      */
     fun resolveComboBonusPayments(
         tableState: TableState,
@@ -490,29 +498,32 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     ): Map<Uuid, Int> = emptyMap()
 
     /**
-     * 計算一次一般流局（牌山摸盡）的點數結算——實際如何結算完全由各規則自己的覆寫決定
-     * （例如日麻的聽牌／不聽罰符拆分），這裡不預設任何規則的具體公式。應優先於普通流局成立的
-     * 特殊結果交由呼叫端另外判定，不應混入本 hook。
+     * 計算一次一般流局（牌山摸盡）的點數結算。
      *
-     * 不支援一般流局結算的規則，或牌山尚未摸盡時，才應回傳 null。當牌山已摸盡、沒有其他規則結果
-     * 可以接管，且一般流局已由權威流程確認成立時，規則必須回傳結算結果；此時回傳 null 代表規則
-     * 契約失效，呼叫端應中止對局並留下診斷，不得把它當成普通拒絕或無分流局。
+     * - 實際如何結算由各規則的覆寫決定，例如日麻的聽牌／不聽罰符拆分。這裡不預設任何公式。
+     * - 應優先於普通流局成立的特殊結果交由呼叫端另外判定，不應混入本 hook。
+     *
+     * 何時回傳 null：
+     *
+     * - 不支援一般流局結算的規則，或牌山尚未摸盡時，才應回傳 null。
+     * - 牌山已摸盡、沒有其他規則結果可以接管，且一般流局已由權威流程確認成立時，規則必須回傳結算結果。
+     * - 此時回傳 null 代表規則契約失效。呼叫端應中止對局並留下診斷，不得把它當成普通拒絕或無分流局。
      *
      * @param tableState 目前的桌況（尚未套用本次流局結算，牌山應已摸盡）。
-     * @return 本次一般流局的結算結果；規則不支援或流局前置條件尚未成立時為 null。
+     * @return 本次一般流局的結算結果。規則不支援或流局前置條件尚未成立時為 null。
      */
     fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult?
 
     /**
      * 決定途中流局成立後需要公開的手牌。
      *
-     * 預設不公開；需要攤牌證明的規則（例如九種九牌）應回傳宣告者與其公開資料。這個 hook 只決定
+     * 預設不公開。需要攤牌證明的規則（例如九種九牌）應回傳宣告者與其公開資料。這個 hook 只決定
      * 權威公開資訊，不負責動畫或平台呈現。
      *
      * @param tableState 途中流局成立時的桌況。
-     * @param declarerId 主動宣告者 Uuid；系統判定的途中流局為 null。
+     * @param declarerId 主動宣告者 Uuid。系統判定的途中流局為 null。
      * @param reason 本次途中流局原因。
-     * @return 需要公開的玩家手牌資訊；預設不公開任何手牌。
+     * @return 需要公開的玩家手牌資訊。預設不公開任何手牌。
      */
     fun resolveAbortiveDrawRevealedHands(
         tableState: TableState,
@@ -534,9 +545,10 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 判斷一張已知牌面目前是否為規則視為加值的牌，例如日麻的寶牌。
      *
-     * 只讀呼叫端已獲准知道的牌面與公開特徵，不需要完整 [TableState]。是否以及如何呈現由呼叫端決定。
-     * 牌山牌面可見不代表它有特殊用途；規則須依自己投影的公開特徵判斷，例如日麻只看帶指示牌特徵的牌。
-     * 不支援此概念的規則固定回傳 `false`。
+     * - 只讀呼叫端已獲准知道的牌面與公開特徵，不需要完整 [TableState]。
+     * - 是否以及如何呈現由呼叫端決定。
+     * - 牌山牌面可見不代表它有特殊用途。規則須依自己投影的公開特徵判斷，例如日麻只看帶指示牌特徵的牌。
+     * - 不支援此概念的規則固定回傳 `false`。
      *
      * @param face 要判斷的已知牌面。
      * @param wallFaces 目前讀取者已知的牌山牌面。
@@ -545,19 +557,22 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun isBonusTile(face: TileFaceView, wallFaces: List<TileFaceView>): Boolean = false
 
     /**
-     * 取得玩家本次一般捨牌可以打出的牌；預設不限制。
+     * 取得玩家本次一般捨牌可以打出的牌。預設不限制。
      *
-     * 例如宣告後只能打出剛摸入的牌，或鳴牌後不能打出特定的牌。正式捨牌用例以此拒絕打出其他牌；
-     * AI 與其他自動決策者也以此避免送出違反規則狀態的捨牌命令。回傳的牌必須是玩家目前持有的立牌，且不能為空集合。
+     * 例如宣告後只能打出剛摸入的牌，或鳴牌後不能打出特定的牌。
+     *
+     * - 正式捨牌用例以此拒絕打出其他牌。
+     * - AI 與其他自動決策者也以此避免送出違反規則狀態的捨牌命令。
+     * - 回傳的牌必須是玩家目前持有的立牌，且不能為空集合。
      *
      * @param tableState 目前的權威桌況。
      * @param player 即將捨牌的玩家。
-     * @return 可以捨棄的牌 ID；`null` 表示規則未限制。
+     * @return 可以捨棄的牌 ID。`null` 表示規則未限制。
      */
     fun discardableTileIds(tableState: TableState, player: MahjongPlayer): Set<Uuid>? = null
 
     /**
-     * 取得可公開給全桌與旁觀者的玩家狀態；預設不公開任何 indicator。
+     * 取得可公開給全桌與旁觀者的玩家狀態。預設不公開任何 indicator。
      *
      * 實作不得回傳振聽、手牌或其他只有本人可見的資訊。
      *
@@ -596,9 +611,10 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 玩家放棄一次原本合法的和牌機會時，回傳這位玩家規則資料的變更。
      *
-     * 呼叫端在玩家放過合法榮和、或摸牌後可以自摸卻選擇捨牌時呼叫，不預先篩選玩家狀態；是否產生後果完全
-     * 由規則決定。例如日麻只對立直中的玩家設定本局永久振聽，未立直的玩家維持不變。
-     * 變更帶著讀到的舊值；不符合契約時本局以規則錯誤中止。預設不做任何變更。
+     * - 呼叫端在玩家放過合法榮和、或摸牌後可以自摸卻選擇捨牌時呼叫，不預先篩選玩家狀態。
+     * - 是否產生後果由規則決定。例如日麻只對立直中的玩家設定本局永久振聽，未立直的玩家維持不變。
+     * - 變更帶著讀到的舊值。不符合契約時本局以規則錯誤中止。
+     * - 預設不做任何變更。
      *
      * @param player 剛放棄和牌機會的玩家。
      * @return 這位玩家組件的變更。
@@ -606,7 +622,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun onPlayerDeclinedWin(player: MahjongPlayer): ComponentPatch = ComponentPatch()
 
     /**
-     * 玩家宣告 [action] 時會移出手牌的那張牌；[action] 不是本規則會移出手牌的動作、或玩家手中沒有對應的牌時回傳 null。
+     * 玩家宣告 [action] 時會移出手牌的那張牌。[action] 不是本規則會移出手牌的動作、或玩家手中沒有對應的牌時回傳 null。
      *
      * 移出手牌的動作是玩家在自己回合宣告、把手中一張牌放到手牌以外的區域，之後由
      * [createSupplementalDrawPolicy] 決定是否補牌的擴充動作，例如三人日麻的拔北。宣告後、套用前，
@@ -614,22 +630,26 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      *
      * @param player 宣告動作的玩家。
      * @param action 宣告的擴充動作。
-     * @return 要移出手牌的牌；不適用此動作或找不到對應牌時為 null。
+     * @return 要移出手牌的牌。不適用此動作或找不到對應牌時為 null。
      */
     fun tileSetAsideBy(player: MahjongPlayer, action: GameAction.Extension): IdentifiedTile? = null
 
     /**
      * 套用移出手牌的動作（見 [tileSetAsideBy]）：把那張牌移出 [actorPlayerId] 的手牌、記錄動作，並套用規則狀態變化。
-     * 不含補牌；補牌由呼叫端交給 [createSupplementalDrawPolicy]。
+     * 不含補牌。補牌由呼叫端交給 [createSupplementalDrawPolicy]。
      *
-     * 結果只能從執行者的立牌（含摸牌位）移出 [tileSetAsideBy] 指定的那一張牌，並把它接在執行者一個移出牌區
-     * （[MahjongPlayer.tileAreas]）的最後；執行者另外只能多一筆 [action] 的動作紀錄與規則資料變化，其他玩家只能改
-     * 規則資料，桌況只能改對局組件。不符合時本局以規則錯誤中止。
+     * 結果只能有以下變化，不符合時本局以規則錯誤中止：
+     *
+     * - 從執行者的立牌（含摸牌位）移出 [tileSetAsideBy] 指定的那一張牌，接在執行者一個移出牌區
+     *   （[MahjongPlayer.tileAreas]）的最後。
+     * - 執行者多一筆 [action] 的動作紀錄，並可改規則資料。
+     * - 其他玩家只能改規則資料。
+     * - 桌況只能改對局組件。
      *
      * @param tableState 尚未套用這次動作的權威桌況。
      * @param actorPlayerId 宣告動作的玩家。
      * @param action 宣告的擴充動作。
-     * @return 套用後的桌況；本規則不支援這個動作時回傳 null。
+     * @return 套用後的桌況。本規則不支援這個動作時回傳 null。
      */
     fun applyTileSetAsideAction(
         tableState: TableState,

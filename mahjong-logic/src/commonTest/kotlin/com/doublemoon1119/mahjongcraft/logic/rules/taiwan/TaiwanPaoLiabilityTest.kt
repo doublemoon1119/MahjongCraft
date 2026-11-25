@@ -69,7 +69,7 @@ class TaiwanPaoLiabilityTest {
         assertNull(liabilityAfterClaim(paoModule, concealedDragons, MeldType.Pon, Tile.Honor.White, RelativeDirection.Left))
     }
 
-    /** 以大三元自摸時包牌者付全部；放槍時與放槍者平分。 */
+    /** 以大三元自摸時包牌者付全部。放槍時與放槍者平分。 */
     @Test
     fun `big dragons win moves the payment to the liable player`() {
         val table = dragonsTable(liable = true)
@@ -107,7 +107,7 @@ class TaiwanPaoLiabilityTest {
      * @param meldType 鳴牌種類。
      * @param called 鳴取的牌。
      * @param direction 打出者的相對方位。
-     * @return 鳴牌後的包牌責任；沒有時為 null。
+     * @return 鳴牌後的包牌責任。沒有時為 null。
      */
     private fun liabilityAfterClaim(
         module: TaiwanRuleModule,
@@ -119,7 +119,7 @@ class TaiwanPaoLiabilityTest {
         .applyTo(claimer.components, BuiltInComponentOwners.PLAYER)[TaiwanPlayerComponents.PAO_LIABILITY]
 
     /**
-     * 建立南家副露中發白三組、單騎九索聽大三元的四人桌況；包牌者為北家。
+     * 建立南家副露中發白三組、單騎九索聽大三元的四人桌況。包牌者為北家。
      *
      * @param liable 南家是否帶有包牌責任。
      * @param liabilityHand 包牌責任的牌型。

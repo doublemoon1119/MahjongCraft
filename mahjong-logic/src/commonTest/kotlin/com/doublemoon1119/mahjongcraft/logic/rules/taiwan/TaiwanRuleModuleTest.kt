@@ -251,7 +251,7 @@ class TaiwanRuleModuleTest {
     }
 
     /**
-     * 宣告時機決定宣告種類：莊家第一打為天聽，全桌沒有副露時閒家第一打為地聽，其他時候為一般宣告聽牌；
+     * 宣告時機決定宣告種類：莊家第一打為天聽，全桌沒有副露時閒家第一打為地聽，其他時候為一般宣告聽牌。
      * 一般宣告只有開啟報聽時才成立。
      */
     @Test
@@ -268,7 +268,7 @@ class TaiwanRuleModuleTest {
         assertEquals(TaiwanReadyKind.GENERAL, declaredKind(generalReadyModule, table, afterDiscard))
     }
 
-    /** 放過胡牌後進入過水，天聽改為一般宣告聽牌；打出不能胡的牌後解除，打出聽的牌時不解除。 */
+    /** 放過胡牌後進入過水，天聽改為一般宣告聽牌。打出不能胡的牌後解除，打出聽的牌時不解除。 */
     @Test
     fun `declining a win starts passed win and a non-winning discard clears it`() {
         val heavenly = FakeMahjongPlayerFactory.create(components = ComponentSet.EMPTY.with(TaiwanPlayerComponents.READY_DECLARATION, TaiwanReadyKind.HEAVENLY))
@@ -285,7 +285,7 @@ class TaiwanRuleModuleTest {
         assertTrue(taiwanModule.onPlayerDiscarded(winning).isEmpty)
     }
 
-    /** 閒家自摸由其他三家各付一筆，莊家多付莊家台；放槍只由放槍者付款。 */
+    /** 閒家自摸由其他三家各付一筆，莊家多付莊家台。放槍只由放槍者付款。 */
     @Test
     fun `self draw is paid by three players and a discard win by the discarder`() {
         val winningTile = tile(Tile.Suit.Bamboo, 9)
@@ -301,7 +301,7 @@ class TaiwanRuleModuleTest {
         assertEquals(setOf(discarder), ron.paymentsByPlayerId.keys)
     }
 
-    /** 荒牌流局不付款；牌牆尚未摸完時不成立。 */
+    /** 荒牌流局不付款。牌牆尚未摸完時不成立。 */
     @Test
     fun `exhaustive draw pays nothing once the wall is empty`() {
         val table = fourPlayerTable(waiterHand = Hand())
@@ -311,7 +311,7 @@ class TaiwanRuleModuleTest {
         assertTrue(settled.scoreDeltas.values.all { it == 0 })
     }
 
-    /** 荒牌流局連莊；末局莊家連莊時繼續打，下莊時才結束整場。 */
+    /** 荒牌流局連莊。末局莊家連莊時繼續打，下莊時才結束整場。 */
     @Test
     fun `last round continues while the dealer repeats`() {
         val table = fourPlayerTable(waiterHand = Hand())
@@ -341,7 +341,7 @@ class TaiwanRuleModuleTest {
      * @param ruleModule 使用的規則模組。
      * @param table 宣告前的桌況。
      * @param player 宣告的玩家。
-     * @return 宣告種類；宣告不成立時為 null。
+     * @return 宣告種類。宣告不成立時為 null。
      */
     private fun declaredKind(
         ruleModule: TaiwanRuleModule,

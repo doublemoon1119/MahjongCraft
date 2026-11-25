@@ -8,7 +8,7 @@ package com.doublemoon1119.mahjongcraft.logic.component
  *
  * @property values 要設定的獨立值。
  * @param removals 要移除的組件定義，不能同時出現在 values。
- * @property expected 被設定或移除的組件在改動前的值；只能列出本次改動的組件。
+ * @property expected 被設定或移除的組件在改動前的值。只能列出本次改動的組件。
  */
 class ComponentPatch(
     val values: ComponentSet = ComponentSet.EMPTY,

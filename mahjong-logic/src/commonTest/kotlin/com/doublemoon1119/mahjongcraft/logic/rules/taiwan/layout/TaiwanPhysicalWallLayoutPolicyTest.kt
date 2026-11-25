@@ -467,7 +467,7 @@ class TaiwanPhysicalWallLayoutPolicyTest {
         /** 四面牌牆。 */
         const val WALL_SIDE_COUNT = 4
 
-        /** 模擬時每摸幾張活牌補一次牌；1 代表連續補牌。 */
+        /** 模擬時每摸幾張活牌補一次牌。1 代表連續補牌。 */
         val LIVE_DRAWS_PER_SUPPLEMENT: List<Int> = listOf(1, 2, 4)
 
         /** 環狀座標的精度倍數。 */

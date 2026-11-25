@@ -8,13 +8,13 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentProjectionDefini
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentType
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewType
 
-/** 擴充登記組件、效果、投影與生命週期時取得的登記介面；查詢、解析與凍結由 MahjongCraft 進行。 */
+/** 擴充登記組件、效果、投影與生命週期時取得的登記介面。查詢、解析與凍結由 MahjongCraft 進行。 */
 interface ComponentRegistrar {
     /** 是否禁止後續登記。 */
     val isFrozen: Boolean
 
     /**
-     * 登記可持有組件的對象；相同 ID 不能重複。
+     * 登記可持有組件的對象。相同 ID 不能重複。
      *
      * @param definition 對象定義。
      */
@@ -62,7 +62,7 @@ interface ComponentRegistrar {
     fun <O : Any, V : Any> registerLifecycle(definition: ComponentLifecycleDefinition<O, V>)
 
     /**
-     * 讓既有組件的生命週期額外適用其他規則；組件與其生命週期可以由其他擴充稍後登記，凍結時檢查。
+     * 讓既有組件的生命週期額外適用其他規則。組件與其生命週期可以由其他擴充稍後登記，凍結時檢查。
      *
      * @param definition 額外的適用範圍。
      */

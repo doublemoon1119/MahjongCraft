@@ -5,9 +5,9 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 /** 檢查立直手牌的所有標準和牌拆法，確認要暗槓的三張牌只能作為刻子。 */
 internal object RiichiClosedKanStructure {
     /**
-     * 對每種等待牌列舉雀頭與面子；任何拆法把槓牌用於雀頭或順子時，便不允許暗槓。
+     * 對每種等待牌列舉雀頭與面子。任何拆法把槓牌用於雀頭或順子時，便不允許暗槓。
      *
-     * 僅檢查暗槓前的立牌，已有暗槓以面子數計入；不判斷役種或暗槓後的等待牌。
+     * 僅檢查暗槓前的立牌，已有暗槓以面子數計入。不判斷役種或暗槓後的等待牌。
      *
      * @param standingTiles 不含本次摸牌的立牌。
      * @param winningTiles 暗槓前的完整等待牌集合。
@@ -40,13 +40,13 @@ internal object RiichiClosedKanStructure {
     }
 
     /**
-     * 取完所有牌才能成立和牌拆法；優先搜尋刻子，再搜尋包含目前牌張的所有順子。
+     * 取完所有牌才能成立和牌拆法。優先搜尋刻子，再搜尋包含目前牌張的所有順子。
      *
      * @param counts 尚未使用的牌種計數，遞迴返回前還原。
      * @param kanTile 要檢查的槓牌牌種。
      * @param remainingMelds 尚需組成的面子數。
      * @param alternate 是否已將槓牌用於雀頭或順子。
-     * @return 有效拆法的位元集合；找到替代解釋即可提早停止。
+     * @return 有效拆法的位元集合。找到替代解釋即可提早停止。
      */
     private fun searchMelds(
         counts: MutableMap<Tile, Int>,
@@ -79,12 +79,12 @@ internal object RiichiClosedKanStructure {
     }
 
     /**
-     * 暫時取走指定組合；牌張不足時跳過，搜尋結束後還原計數。
+     * 暫時取走指定組合。牌張不足時跳過，搜尋結束後還原計數。
      *
      * @param counts 目前可使用的牌種計數。
      * @param tiles 要取走的雀頭、刻子或順子。
      * @param search 取走組合後的拆牌搜尋。
-     * @return 搜尋結果；牌張不足時為零。
+     * @return 搜尋結果。牌張不足時為零。
      */
     private inline fun withGroup(counts: MutableMap<Tile, Int>, tiles: List<Tile>, search: () -> Int): Int {
         val required = tiles.groupingBy { it }.eachCount()
