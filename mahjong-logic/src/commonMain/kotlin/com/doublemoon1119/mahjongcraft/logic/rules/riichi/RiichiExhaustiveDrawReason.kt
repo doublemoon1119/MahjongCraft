@@ -16,16 +16,14 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 sealed class RiichiExhaustiveDrawReason : ExhaustiveDrawReason {
 
     /**
-     * 一般流局。
-     * 牌山摸盡且無勝負。
+     * 一般流局：牌山摸盡且無人和牌。
      */
     data object Normal : RiichiExhaustiveDrawReason() {
         override val id: String = MahjongCraftMetadata.id("riichi/exhaustive_draw/normal")
     }
 
     /**
-     * 九種九牌。
-     * 玩家在第一巡摸牌後，手牌中擁有 9 種（含）以上不同的「么九牌」（1、9 數牌與字牌）
+     * 九種九牌：玩家在第一巡摸牌後，手牌中有 9 種以上不同的么九牌（1、9 數牌與字牌）。
      */
     data object KyuushuKyuuhai : RiichiExhaustiveDrawReason() {
         override val id: String = MahjongCraftMetadata.id("riichi/exhaustive_draw/kyuushu_kyuuhai")
@@ -35,41 +33,36 @@ sealed class RiichiExhaustiveDrawReason : ExhaustiveDrawReason {
     }
 
     /**
-     * 四風連打。
-     * 在第一巡中，四名玩家連續打出同一種風牌（東、南、西、北）
+     * 四風連打：第一巡中，四名玩家連續打出同一種風牌（東、南、西、北）。
      */
     data object SuufonRenda : RiichiExhaustiveDrawReason() {
         override val id: String = MahjongCraftMetadata.id("riichi/exhaustive_draw/suufon_renda")
     }
 
     /**
-     * 四槓散了。
-     * 全場玩家合計進行了 4 次槓牌（明槓、暗槓、加槓皆算）。
+     * 四槓散了：全場玩家合計槓了 4 次，明槓、暗槓、加槓都算。
      *
-     * 例外情況：如果 4 個槓子都由同一個人達成，則不流局（因為該玩家可能正在做「四槓子」役滿）。
+     * 4 個槓都由同一個人槓出時不流局，因為該玩家可能正在做四槓子役滿。
      */
     data object SuukanNagare : RiichiExhaustiveDrawReason() {
         override val id: String = MahjongCraftMetadata.id("riichi/exhaustive_draw/suukan_nagare")
     }
 
     /**
-     * 四家立直。
-     * 四位玩家全部宣告立直。
+     * 四家立直：四位玩家全部宣告立直。
      */
     data object SuuchaRiichi : RiichiExhaustiveDrawReason() {
         override val id: String = MahjongCraftMetadata.id("riichi/exhaustive_draw/suucha_riichi")
     }
 
     /**
-     * 三家和了（トリロン）。
-     * 同一張牌同時有三家（或依 [MultiRonPolicy]
-     * 設定、二家）可榮和，且規則設定為流局（[RonResolution.ABORTIVE_DRAW]）時觸發——
-     * 這張牌可能是一般捨牌，也可能是搶槓（[PendingRobbingReaction]）
-     * 的來源，兩者共用同一套多響判定，沿用同一個原因值，不另外區分。
-     * 真實規則中「三家和了」專指三家同時可榮和的情境。本專案的 `MultiRonPolicy` 額外允許把雙響也
-     * 設定為 `ABORTIVE_DRAW`（見 [RiichiRuleConfig.multiRonPolicy] 的既有說明，本身就是刻意貼近
-     * 多數玩家熟悉體驗、不完全依循單一規則基準的設計），二響觸發時的遊戲行為（流局、莊家連莊、
-     * 不結算點數）與三響完全相同，同樣沿用同一個原因值。
+     * 三家和了（トリロン）：同一張牌有多家可以榮和，且 [MultiRonPolicy] 對這個人數設定為流局
+     * （[RonResolution.ABORTIVE_DRAW]）。
+     *
+     * - 這張牌可以是一般捨牌，也可以是被搶槓的牌（[PendingRobbingReaction]）。兩者共用同一套多響判定與這個原因。
+     * - 一般規則的三家和了只指三家同時榮和。[RiichiRuleConfig.multiRonPolicy] 也允許把雙響設定為流局，
+     *   這時同樣使用這個原因。
+     * - 雙響與三響觸發時的結果相同：本局流局、莊家連莊、不結算點數。
      */
     data object SanchaHou : RiichiExhaustiveDrawReason() {
         override val id: String = MahjongCraftMetadata.id("riichi/exhaustive_draw/sancha_hou")
