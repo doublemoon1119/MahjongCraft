@@ -16,4 +16,10 @@ object DataPackLayout {
 
     /** 配方成品中物品 ID 的欄位名稱。 */
     const val RECIPE_RESULT_ITEM: String = "item"
+
+    /** 麻將牌配方使用的染料標籤。 */
+    const val DYE_TAG: String = "mahjongcraft:dyes"
+
+    /** 混凝土麻將桌配方使用的混凝土標籤。 */
+    const val CONCRETE_TAG: String = "mahjongcraft:concretes"
 }

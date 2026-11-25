@@ -12,7 +12,7 @@ Its Gradle project path is `:minecraft_v1.21.1_fabric`.
 
 - Send and receive the mod's packets as Fabric API payload types: each channel is registered in the
   direction it sends, and its payload carries the bytes the shared channel code writes.
-- Hold the mod metadata `fabric.mod.json`, the access widener, the mixin configuration and the Fabric dye tag.
+- Hold the mod metadata `fabric.mod.json`, the access widener and the mixin configuration.
 
 The adapter code shared by every Minecraft version is described in the [shared Fabric sources](../../fabric/README.md).
 

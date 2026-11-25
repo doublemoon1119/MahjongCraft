@@ -26,6 +26,20 @@ class LangKeyUsageTest {
         assertEquals(listOf("item.mahjongcraft.missing"), unusedLangKeys(keys, literals, "mahjongcraft"))
     }
 
+    /** 依標籤 ID 組成的標籤名稱，只要完整標籤 ID 出現即可；path 中的 `/` 在 key 裡寫成 `.`。 */
+    @Test
+    fun `tag names accept the full tag id`() {
+        val keys = listOf(
+            "tag.item.mahjongcraft.tiles",
+            "tag.item.mahjongcraft.rulers.colored",
+            "tag.block.mahjongcraft.tables",
+            "tag.item.mahjongcraft.missing",
+        )
+        val literals = setOf("mahjongcraft:tiles", "#mahjongcraft:rulers/colored", "mahjongcraft:tables", "missing")
+
+        assertEquals(listOf("tag.item.mahjongcraft.missing"), unusedLangKeys(keys, literals, "mahjongcraft"))
+    }
+
     /** 其他 Minecraft 慣例 key（例如成就、字幕）仍需以完整字串出現在資源中。 */
     @Test
     fun `other minecraft keys still need a full reference`() {

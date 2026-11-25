@@ -11,8 +11,11 @@ import java.io.File
 /**
  * 驗證 Minecraft 語系檔中的每個 key 都有正式程式碼或資源使用。
  *
- * 翻譯 key 一律以完整字串寫在程式碼或資源中，因此只要比對正式原始碼與資源裡出現過的字串即可判斷；
- * Minecraft 依註冊 ID 自動組成的名稱（例如 `item.<namespace>.<path>`）改為確認註冊 ID 的路徑有出現。
+ * 比對正式原始碼與資源裡出現過的字串，判斷每個 key 是否有被使用：
+ *
+ * - 一般 key：以完整字串出現。
+ * - Minecraft 依註冊 ID 自動組成的名稱（例如 `item.<namespace>.<path>`）：註冊 ID 的路徑或完整 ID 出現。
+ * - Minecraft 依標籤 ID 自動組成的標籤名稱（`tag.<種類>.<namespace>.<path>`）：完整標籤 ID 出現。
  */
 abstract class VerifyMinecraftLangKeysUsedTask : DefaultTask() {
     /** repository 根目錄；在其下搜尋正式原始碼與資源。 */
@@ -44,6 +47,14 @@ abstract class VerifyMinecraftLangKeysUsedTask : DefaultTask() {
 
 /** Minecraft 依註冊 ID 組成名稱的 key 類別，格式為 `<類別>.<namespace>.<path>`。 */
 private val REGISTRY_NAME_CATEGORIES: Set<String> = setOf("item", "block", "entity", "itemGroup", "stat")
+
+/**
+ * Minecraft 依標籤 ID 組成標籤名稱的 key 開頭。
+ *
+ * - 格式為 `tag.<種類>.<namespace>.<path>`，例如 `tag.item.mahjongcraft.mahjong_rulers`。
+ * - path 中的 `/` 在 key 裡寫成 `.`。
+ */
+private const val TAG_NAME_PREFIX: String = "tag."
 
 /** 搜尋原始碼時略過的目錄名稱。 */
 private val SKIPPED_DIRECTORY_NAMES: Set<String> = setOf("build", ".gradle", ".git", ".idea", "docs", "lang")
@@ -101,7 +112,11 @@ internal fun langFileKeys(text: String): List<String> = text.lineSequence()
 /**
  * 找出沒有被任何字串引用的語系 key。
  *
- * 一般 key 必須以完整字串出現；Minecraft 依註冊 ID 組成的名稱只要求註冊 ID 的路徑（或完整 ID）以字串出現。
+ * 符合以下任一條件即算有使用：
+ *
+ * - 一般 key：完整 key 以字串出現。
+ * - 依註冊 ID 組成的名稱（`item`、`block` 等類別）：註冊 ID 的路徑，或完整的 `<namespace>:<path>`，以字串出現。
+ * - 依標籤 ID 組成的標籤名稱：完整標籤 ID 以字串出現，前面可以帶 `#`。
  *
  * @param keys 語系檔中的 key。
  * @param literals 正式原始碼與資源中的字串內容。
@@ -112,6 +127,23 @@ internal fun unusedLangKeys(keys: Collection<String>, literals: Set<String>, nam
     .filterNot { key ->
         val category = key.substringBefore('.')
         val registryPath = key.removePrefix("$category.$namespace.").takeIf { category in REGISTRY_NAME_CATEGORIES && it != key }
-        key in literals || (registryPath != null && (registryPath in literals || "$namespace:$registryPath" in literals))
+        key in literals ||
+            (registryPath != null && (registryPath in literals || "$namespace:$registryPath" in literals)) ||
+            tagId(key, namespace)?.let { it in literals || "#$it" in literals } == true
     }
     .sorted()
+
+/**
+ * 從標籤名稱 key 取回標籤 ID。
+ *
+ * @param key 語系檔中的 key。
+ * @param namespace 語系檔所屬的 namespace。
+ * @return 標籤 ID，格式如下：
+ *   - `tag.<種類>.<namespace>.<path>` 對應 `<namespace>:<path>`，path 中的 `.` 換回 `/`。
+ *   - 不是標籤名稱，或不屬於這個 namespace 時為 null。
+ */
+private fun tagId(key: String, namespace: String): String? {
+    val rest = key.removePrefix(TAG_NAME_PREFIX).takeIf { it != key } ?: return null
+    val path = rest.substringAfter('.').removePrefix("$namespace.").takeIf { it != rest.substringAfter('.') && it.isNotEmpty() } ?: return null
+    return "$namespace:${path.replace('.', '/')}"
+}

@@ -10,9 +10,14 @@
     "W": {
       "item": "minecraft:white_concrete"
     },
-    "G": {
-      "tag": "mahjongcraft:mahjong_tile_back_concretes"
-    },
+    "G": [
+      {
+        "item": "minecraft:green_concrete"
+      },
+      {
+        "item": "minecraft:lime_concrete"
+      }
+    ],
     "D": {
       "tag": "mahjongcraft:dyes"
     }

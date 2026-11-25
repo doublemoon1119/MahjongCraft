@@ -16,8 +16,9 @@ The server and client sides are implemented, including the config screen opened 
 and development runs load the [debug tools](../forge-debug/README.md). The mod JAR is distributable: CI
 collects the JAR converted to Forge's run-time names by `reobfJar`, not the development JAR.
 
-The Mahjong tile recipe uses the `mahjongcraft:dyes` item tag. Each loader defines it: this module combines
-the vanilla dyes with Forge's `forge:dyes`, so dyes from other mods work as well.
+The Mahjong tile recipe uses the `mahjongcraft:dyes` item tag because Fabric and Forge 1.20.1 name their dye
+tags differently. Each loader defines it: this module points it at Forge's `forge:dyes`, which includes the
+vanilla dyes, so dyes from other mods work as well.
 
 The shared client startup reads registered items and entities, which Forge writes only after the mod is
 constructed. The client therefore starts at the first client registration event, when the registries are

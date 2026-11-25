@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SceneEntityTranslucency
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.DebugDataPackFolders
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.isBlockLootTableMissing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.loadedRecipeIngredients
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -14,6 +15,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.packs.resources.ResourceManager
+import net.minecraft.world.item.Items
+import net.minecraft.world.item.crafting.Ingredient
 
 /**
  * 檢查本 mod 的資源：物品與方塊模型、實體繪製器、配方、進度、物品標籤、方塊戰利品表、聲音與自訂著色器。
@@ -71,15 +74,16 @@ internal object AutotestResourcesStep : AutotestStep {
 
     /**
      * 伺服器載入了本 mod 資料包中的每個配方、進度與物品標籤，以及每個方塊的戰利品表。資料檔讀取失敗時原版只記錄錯誤並略過
-     * 該檔案，所以逐一比對資料包中的檔案與伺服器載入的內容。
+     * 該檔案，所以逐一比對資料包中的檔案與伺服器載入的內容。本 mod 配方的每一格材料也都要有物品能放入。
      *
      * @param context 步驟環境。
      */
     private fun checkServerData(context: AutotestContext) {
         val server = context.client.singleplayerServer ?: return run { context.check("Integrated server is running", false) }
         val resources = server.resourceManager
-        val loadedRecipes = server.recipeManager.recipes.map { it.id }.toSet()
-        checkDataFiles(context, label = "recipes", files = dataFileIds(resources, DebugDataPackFolders.RECIPES), isLoaded = loadedRecipes::contains)
+        val recipeIngredients = loadedRecipeIngredients(server)
+        checkDataFiles(context, label = "recipes", files = dataFileIds(resources, DebugDataPackFolders.RECIPES), isLoaded = recipeIngredients::containsKey)
+        checkRecipeIngredients(context, recipeIngredients)
         val loadedAdvancements = server.advancements.allAdvancements.map { it.id }.toSet()
         checkDataFiles(
             context = context,
@@ -92,6 +96,26 @@ internal object AutotestResourcesStep : AutotestStep {
         val blocks = BuiltInRegistries.BLOCK.filter { BuiltInRegistries.BLOCK.getKey(it).namespace == NAMESPACE }
         val withoutLoot = blocks.filter { block -> isBlockLootTableMissing(server, block) }.map { BuiltInRegistries.BLOCK.getKey(it).toString() }
         context.check("All ${blocks.size} blocks have loot tables", withoutLoot.isEmpty(), withoutLoot.joinToString().ifEmpty { null })
+    }
+
+    /**
+     * 本 mod 每個配方的每一格材料，都至少有一種物品能放入。配方引用的標籤不存在或是空的時，原版照樣載入配方，那一格卻沒有
+     * 物品符合，配方永遠做不出來。有形配方的空格不算材料；Forge 會把空標籤顯示成屏障方塊，所以屏障不算能放入的物品。
+     *
+     * @param context 步驟環境。
+     * @param recipeIngredients 伺服器載入的配方與它的材料格。
+     */
+    private fun checkRecipeIngredients(context: AutotestContext, recipeIngredients: Map<ResourceLocation, List<Ingredient>>) {
+        val modRecipes = recipeIngredients.filterKeys { it.namespace == NAMESPACE }
+        val unusable = modRecipes.mapNotNull { (id, ingredients) ->
+            val emptySlots = ingredients.count { ingredient -> !ingredient.isEmpty && ingredient.items.none { !it.`is`(Items.BARRIER) } }
+            if (emptySlots == 0) null else "$id ($emptySlots slot(s))"
+        }
+        context.check(
+            name = "Every ingredient of all ${modRecipes.size} recipes accepts an item",
+            passed = modRecipes.isNotEmpty() && unusable.isEmpty(),
+            detail = unusable.joinToString().ifEmpty { null },
+        )
     }
 
     /**

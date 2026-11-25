@@ -1,7 +1,6 @@
 {
   "replace": false,
   "values": [
-    "#mahjongcraft:vanilla_dyes",
     "#forge:dyes"
   ]
 }

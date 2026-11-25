@@ -1675,5 +1675,7 @@
   "subtitles.mahjongcraft.voice.taiwan.pon": "Pon declared",
   "subtitles.mahjongcraft.voice.taiwan.ready": "Ready declared",
   "subtitles.mahjongcraft.voice.taiwan.tsumo": "Self-draw declared",
-  "subtitles.mahjongcraft.win.lightning": "Lightning strikes"
+  "subtitles.mahjongcraft.win.lightning": "Lightning strikes",
+  "tag.item.mahjongcraft.mahjong_rulers": "Mahjong Rulers",
+  "tag.item.mahjongcraft.mahjong_tiles": "Mahjong Tiles"
 }

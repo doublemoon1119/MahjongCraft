@@ -2,37 +2,14 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.data
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.DataPackLayout
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
 
-/** 驗證兩種首發麻將桌的配方與材料 tag 資源。 */
+/** 驗證兩種首發麻將桌的配方。 */
 class MahjongTableDataFilesTest {
-    /** 原版的全部混凝土 item ID。 */
-    private val concreteIds = setOf(
-        "minecraft:white_concrete",
-        "minecraft:orange_concrete",
-        "minecraft:magenta_concrete",
-        "minecraft:light_blue_concrete",
-        "minecraft:yellow_concrete",
-        "minecraft:lime_concrete",
-        "minecraft:pink_concrete",
-        "minecraft:gray_concrete",
-        "minecraft:light_gray_concrete",
-        "minecraft:cyan_concrete",
-        "minecraft:purple_concrete",
-        "minecraft:blue_concrete",
-        "minecraft:brown_concrete",
-        "minecraft:green_concrete",
-        "minecraft:red_concrete",
-        "minecraft:black_concrete",
-    )
-
     /** 驗證木製款接受所有 planks，且輸出固定木製麻將桌。 */
     @Test
     fun `wooden table recipe uses the vanilla planks tag`() {
@@ -43,25 +20,14 @@ class MahjongTableDataFilesTest {
         assertEquals("mahjongcraft:wooden_mahjong_table", recipe.resultItem())
     }
 
-    /** 驗證混凝土款使用專用混凝土 tag，且輸出固定混凝土麻將桌。 */
+    /** 驗證混凝土款使用這個版本的混凝土標籤，且輸出固定混凝土麻將桌。 */
     @Test
-    fun `concrete table recipe uses the MahjongCraft concretes tag`() {
+    fun `concrete table recipe uses the version concrete tag`() {
         val recipe = loadJson("/${DataPackLayout.RECIPES}/concrete_mahjong_table.json")
 
-        assertEquals("mahjongcraft:concretes", recipe.keyEntry("M")["tag"]?.jsonPrimitive?.content)
+        assertEquals(DataPackLayout.CONCRETE_TAG, recipe.keyEntry("M")["tag"]?.jsonPrimitive?.content)
         assertEquals("minecraft:wool_carpets", recipe.keyEntry("C")["tag"]?.jsonPrimitive?.content)
         assertEquals("mahjongcraft:concrete_mahjong_table", recipe.resultItem())
-    }
-
-    /** 驗證專用 tag 完整列出 16 種 Vanilla 混凝土。 */
-    @Test
-    fun `concretes tag contains every vanilla concrete color`() {
-        val tag = loadJson("/${DataPackLayout.ITEM_TAGS}/concretes.json")
-        val values = assertIs<JsonArray>(tag["values"]).mapTo(mutableSetOf()) {
-            assertIs<JsonPrimitive>(it).content
-        }
-
-        assertEquals(concreteIds, values)
     }
 
     /**
