@@ -84,7 +84,16 @@ data class FixedMahjongTileModelPreparedData(
                             logger.warn("Using unknown face texture for tile asset {} in appearance {} because its front texture is missing", assetKey, appearance.id)
                             unknownFaceTexture
                         }
-                        val usableTemplate = if (resourceManager.isFixedTileModel(sourceModel)) {
+                        val isFixedModel = resourceManager.isFixedTileModel(sourceModel) { failure ->
+                            logger.warn(
+                                "Tile model {} for asset {} in appearance {} could not be read",
+                                sourceModel,
+                                assetKey,
+                                appearance.id,
+                                failure,
+                            )
+                        }
+                        val usableTemplate = if (isFixedModel) {
                             sourceModel
                         } else {
                             logger.warn("Using canonical fixed tile template for asset {} in appearance {} because its model is missing or incompatible", assetKey, appearance.id)
@@ -155,10 +164,11 @@ private fun ResourceManager.hasTexture(textureId: ResourceLocation): Boolean = t
  * 檢查模型是否繼承固定基本模型，且沒有自行改變幾何或 display。
  *
  * @param modelId 要檢查的模型 ID。
+ * @param onReadFailure 模型存在但無法讀取或解析時收到原因。
  * @return 模型符合固定牌模型契約時為 `true`。
  */
-private fun ResourceManager.isFixedTileModel(modelId: ResourceLocation): Boolean {
-    val json = getResource(modelId.toModelResourceId()).orElse(null)?.readJson() ?: return false
+private fun ResourceManager.isFixedTileModel(modelId: ResourceLocation, onReadFailure: (Exception) -> Unit): Boolean {
+    val json = getResource(modelId.toModelResourceId()).orElse(null)?.readJson(onReadFailure) ?: return false
     return try {
         json.get("parent")?.asString == CANONICAL_TILE_MODEL.toString() &&
             !json.has("elements") &&
@@ -166,7 +176,8 @@ private fun ResourceManager.isFixedTileModel(modelId: ResourceLocation): Boolean
             !json.has("overrides")
     } catch (cancelled: CancellationException) {
         throw cancelled
-    } catch (_: RuntimeException) {
+    } catch (failure: RuntimeException) {
+        onReadFailure(failure)
         false
     }
 }
@@ -174,15 +185,18 @@ private fun ResourceManager.isFixedTileModel(modelId: ResourceLocation): Boolean
 /**
  * 讀取一個模型 JSON 資源；取消仍向外傳遞，一般讀取或解析失敗交由呼叫端回退。
  *
+ * @param onReadFailure 無法讀取或解析時收到原因。
  * @return 模型 JSON 物件；無法讀取或解析時為 `null`。
  */
-private fun Resource.readJson(): JsonObject? = try {
+private fun Resource.readJson(onReadFailure: (Exception) -> Unit): JsonObject? = try {
     open().use { JsonParser.parseReader(it.reader(StandardCharsets.UTF_8)).asJsonObject }
 } catch (cancelled: CancellationException) {
     throw cancelled
-} catch (_: IOException) {
+} catch (failure: IOException) {
+    onReadFailure(failure)
     null
-} catch (_: RuntimeException) {
+} catch (failure: RuntimeException) {
+    onReadFailure(failure)
     null
 }
 

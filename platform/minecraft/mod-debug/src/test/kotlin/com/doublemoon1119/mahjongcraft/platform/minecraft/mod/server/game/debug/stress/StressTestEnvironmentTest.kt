@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.HistoryTilePrese
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessFlowHistoryRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryScenario
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateFailureReporter
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryManagementResult
@@ -189,6 +190,7 @@ class StressTestEnvironmentTest {
             locations = TableLocationRegistry(),
             presentationNotes = ReplayPresentationNotes.NONE,
             tilePresentationResolver = HistoryTilePresentationResolverImpl(moduleRegistry, bundledCoreExtensionRegistries().componentRegistry),
+            failureReporter = AuthoritativeStateFailureReporter.NONE,
         )
     }
 

@@ -374,13 +374,14 @@ class AuthoritativeStateStoreTest {
     /** 歷史記錄函式失敗不能撤銷已接受的權威變更，且須留下可查的缺口。 */
     @Test
     fun `history extractor failure does not block game update`() = runTest {
-        val store = AuthoritativeStateStore(historyRecordingEnabled = true)
+        val reporter = RecordingFailureReporter()
+        val store = AuthoritativeStateStore(historyRecordingEnabled = true, failureReporter = reporter)
         val repository = componentValidatedGameRepository(store)
         val game = store.openGame(FakeTableStateFactory.create())
 
         repository.updateGame(
             gameId = game.id,
-            history = { _, _, _ -> error("history recording failed") },
+            history = { _, _, _ -> error(HISTORY_FAILURE_MESSAGE) },
         ) { current ->
             current!!.copy(
                 remainingReserveByPlayerId = current.tableState.players.associate { it.id to 1_000.milliseconds },
@@ -392,6 +393,10 @@ class AuthoritativeStateStoreTest {
         assertEquals(listOf(1L), snapshot.historyRecordingState.pendingEvents.map { it.sequence })
         assertEquals(2L, snapshot.historyRecordingState.firstMissingSequenceByMatchId.getValue(game.matchId))
         assertEquals(3L, snapshot.historyRecordingState.nextSequenceByMatchId.getValue(game.matchId))
+        assertEquals(
+            expected = listOf(game.matchId to HISTORY_FAILURE_MESSAGE),
+            actual = reporter.historyFailures.map { (matchId, failure) -> matchId to failure.message },
+        )
     }
 
     /** 同一場地重開須用新的場次身分；同筆交易內的事件依提交順序取得序號。 */
@@ -706,16 +711,17 @@ class AuthoritativeStateStoreTest {
         assertTrue(released)
     }
 
-    /** 接收者丟出例外時，交易照常提交。 */
+    /** 接收者丟出例外時，交易照常提交，並回報接收者的失敗。 */
     @Test
     fun `a failing listener does not undo the transaction`() = runTest {
-        val store = AuthoritativeStateStore()
+        val reporter = RecordingFailureReporter()
+        val store = AuthoritativeStateStore(failureReporter = reporter)
         val repository = componentValidatedGameRepository(store)
         val tableState = FakeTableStateFactory.create()
         repository.setTableState(tableState)
         store.setCommittedFactsListener(
             listener = object : CommittedFactsListener {
-                override fun onCommitted(sequence: Long, facts: CommittedGameFacts) = error("listener failed")
+                override fun onCommitted(sequence: Long, facts: CommittedGameFacts) = error(LISTENER_FAILURE_MESSAGE)
 
                 override fun onReleased(sequence: Long) = Unit
             },
@@ -727,6 +733,7 @@ class AuthoritativeStateStoreTest {
         ) { current -> current!!.copy(isMatchOver = true) to Unit }
 
         assertTrue(store.getGame(tableState.id)!!.isMatchOver)
+        assertEquals(listOf(LISTENER_FAILURE_MESSAGE), reporter.listenerFailures.map { it.message })
     }
 
     /** 對局中途出現、沒有開局事實的新場次不從中途建立歷史。 */
@@ -857,5 +864,35 @@ class AuthoritativeStateStoreTest {
             gameConfig = GameConfig(FakeMahjongRuleConfig()),
             playerIds = listOf(hostId),
         )
+    }
+
+    /**
+     * 記下收到的失敗，供測試檢查回報內容。
+     *
+     * @property historyFailures 收到的牌譜記錄失敗與所屬場次。
+     * @property listenerFailures 收到的接收者失敗。
+     */
+    private class RecordingFailureReporter : AuthoritativeStateFailureReporter {
+        val historyFailures = mutableListOf<Pair<Uuid, Throwable>>()
+        val listenerFailures = mutableListOf<Throwable>()
+
+        override fun onHistoryRecordingFailed(matchId: Uuid, failure: Throwable) {
+            historyFailures += matchId to failure
+        }
+
+        override fun onHistoryTableChangeUnavailable(matchId: Uuid, failure: Throwable) = Unit
+
+        override fun onCommittedFactsListenerFailed(failure: Throwable) {
+            listenerFailures += failure
+        }
+    }
+
+    /** 測試使用的失敗訊息。 */
+    private companion object {
+        /** 牌譜事件產生失敗時的訊息。 */
+        const val HISTORY_FAILURE_MESSAGE = "history recording failed"
+
+        /** 提交通知接收者失敗時的訊息。 */
+        const val LISTENER_FAILURE_MESSAGE = "listener failed"
     }
 }

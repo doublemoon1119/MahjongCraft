@@ -46,6 +46,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.failOnSkippedHistoryEvent
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
@@ -441,7 +442,11 @@ class ExamplePairingPublicApiIntegrationTest {
             val persistenceRegistries = emptyPersistenceRegistries()
             extension.registerPersistenceDtos(persistenceRegistries)
             persistenceRegistries.freeze()
-            persistenceCodec = AuthoritativeStatePersistenceCodec(persistenceRegistries, componentValidator = AuthoritativeComponentValidatorImpl(moduleRegistry, componentRegistry))
+            persistenceCodec = AuthoritativeStatePersistenceCodec(
+                registries = persistenceRegistries,
+                componentValidator = AuthoritativeComponentValidatorImpl(moduleRegistry, componentRegistry),
+                skippedHistoryEventReporter = failOnSkippedHistoryEvent,
+            )
         }
     }
 }

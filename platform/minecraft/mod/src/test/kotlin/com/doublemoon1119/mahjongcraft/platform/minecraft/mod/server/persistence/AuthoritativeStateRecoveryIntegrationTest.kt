@@ -68,6 +68,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledComponentVali
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.failOnSkippedHistoryEvent
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBuiltInAiStrategies
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
@@ -435,7 +436,11 @@ class AuthoritativeStateRecoveryIntegrationTest {
     /** 建立跨 persistence 與 server session 邊界的全新 runtime。 */
     private class RuntimeFixture {
         /** 內建 persistence codec。 */
-        private val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries(), componentValidator = bundledComponentValidator())
+        private val codec = AuthoritativeStatePersistenceCodec(
+            registries = bundledPersistenceRegistries(),
+            componentValidator = bundledComponentValidator(),
+            skippedHistoryEventReporter = failOnSkippedHistoryEvent,
+        )
 
         /** 日麻規則 registry。 */
         private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }

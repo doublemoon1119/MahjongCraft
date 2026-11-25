@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.STANDARD_TILE_ASS
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledComponentValidator
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.failOnSkippedHistoryEvent
 import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlinx.coroutines.test.runTest
 import net.minecraft.nbt.CompoundTag
@@ -36,7 +37,11 @@ import kotlin.uuid.Uuid
 /** 驗證原生 NBT 保存與真正權威提交共用相同的角色快照。 */
 class AiCharacterPersistenceIntegrationTest {
     /** 使用真實內建轉換器與組件驗證的保存 codec。 */
-    private val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries(), componentValidator = bundledComponentValidator())
+    private val codec = AuthoritativeStatePersistenceCodec(
+        registries = bundledPersistenceRegistries(),
+        componentValidator = bundledComponentValidator(),
+        skippedHistoryEventReporter = failOnSkippedHistoryEvent,
+    )
 
     /** 開局後立刻保存，提交接收者與還原後看到相同角色，不依賴延後公開事件。 */
     @Test

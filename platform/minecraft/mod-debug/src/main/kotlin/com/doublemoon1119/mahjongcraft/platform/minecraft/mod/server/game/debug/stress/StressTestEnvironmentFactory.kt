@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.Re
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.HistoryTilePresentationResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessStepTimer
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateFailureReporter
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftHistoryConfig
@@ -42,6 +43,7 @@ import kotlin.time.TimeSource
  * @property locations 封存 Replay 時解析場地用。
  * @property presentationNotes 封存 Replay 時為每份桌況附上擺放附註。
  * @property tilePresentationResolver 解算牌譜保存的牌張呈現。
+ * @property failureReporter 接收壓力測試狀態交易中已隔離的牌譜記錄與提交通知失敗。
  */
 class StressTestEnvironmentFactory(
     private val registries: PersistenceRegistries,
@@ -50,6 +52,7 @@ class StressTestEnvironmentFactory(
     private val locations: TableLocationRegistry,
     private val presentationNotes: ReplayPresentationNotes,
     private val tilePresentationResolver: HistoryTilePresentationResolver,
+    private val failureReporter: AuthoritativeStateFailureReporter,
 ) {
     private val logger = mahjongCraftLogger(StressTestEnvironmentFactory::class)
 
@@ -78,6 +81,7 @@ class StressTestEnvironmentFactory(
             historyRecordingEnabled = historyMode != StressHistoryMode.OFF,
             historyRecordingObserver = historyTimer,
             tilePresentationResolver = tilePresentationResolver,
+            failureReporter = failureReporter,
         )
         val sink = when (historyMode) {
             StressHistoryMode.WRITE -> openDatabase(store, writerTimer, path) ?: return null

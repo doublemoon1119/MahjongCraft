@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceEnvelopeDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.SkippedHistoryEventReporter
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.PersistenceMigrationRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.buildBuiltInPersistenceMigrationRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
@@ -17,11 +18,13 @@ import com.doublemoon1119.mahjongcraft.logic.component.AuthoritativeComponentVal
  *
  * @property registries 可擴充領域型別的持久化註冊表集合。
  * @property componentValidator 與正式寫入共用的完整組件驗證，不補建缺少的值。
+ * @property skippedHistoryEventReporter 接收保存或讀取時因無法轉換而略過的待寫歷史事件。
  * @property migrationRegistry schema 版本遷移註冊表。
  */
 class AuthoritativeStatePersistenceCodec(
     private val registries: PersistenceRegistries,
     private val componentValidator: AuthoritativeComponentValidator,
+    private val skippedHistoryEventReporter: SkippedHistoryEventReporter,
     private val migrationRegistry: PersistenceMigrationRegistry = buildBuiltInPersistenceMigrationRegistry(),
 ) {
     /**
@@ -43,6 +46,7 @@ class AuthoritativeStatePersistenceCodec(
             games = games,
             registries = registries,
             historyRecordingState = historyRecordingState,
+            skippedHistoryEventReporter = skippedHistoryEventReporter,
         )
         return persistenceJson.encodeToString(PersistenceEnvelopeDto.serializer(), state.toEnvelope())
     }
@@ -66,7 +70,7 @@ class AuthoritativeStatePersistenceCodec(
                 extensionGameActionRegistry = registries.extensionGameActions,
                 componentRegistry = registries.components,
             ).also { games -> games.values.forEach { componentValidator.validate(it.tableState) } },
-            historyRecordingState = state.toHistoryRecordingState(registries),
+            historyRecordingState = state.toHistoryRecordingState(registries, skippedHistoryEventReporter),
         )
     }
 }

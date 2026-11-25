@@ -57,12 +57,14 @@ class HistoryRecordingPersistenceMapper(
      * 隔離轉移中已接受的事件不採用略過處理；這些事件的編碼錯誤會向呼叫端傳遞。
      *
      * @param state 待保存的歷史記錄狀態。
+     * @param skippedEventReporter 接收編碼失敗而略過的事件與原因。
      * @return 編碼後的歷史記錄狀態，包含事件編碼失敗的序號缺口。
      */
-    fun encode(state: HistoryRecordingState): HistoryRecordingPersistenceDto {
+    fun encode(state: HistoryRecordingState, skippedEventReporter: SkippedHistoryEventReporter): HistoryRecordingPersistenceDto {
         val missing = state.firstMissingSequenceByMatchId.toMutableMap()
         val encoded = state.pendingEvents.mapNotNull { event ->
-            runCatching { encodeEvent(event) }.getOrElse {
+            runCatching { encodeEvent(event) }.getOrElse { failure ->
+                skippedEventReporter.onSkipped(event.matchId, event.sequence, failure)
                 missing[event.matchId] = minOf(missing[event.matchId] ?: event.sequence, event.sequence)
                 null
             }
@@ -92,13 +94,15 @@ class HistoryRecordingPersistenceMapper(
      * 此處不會略過無效的場次識別碼或其他狀態欄位；這些資料的解碼錯誤會向呼叫端傳遞。
      *
      * @param dto 待還原的歷史記錄狀態 DTO。
+     * @param skippedEventReporter 接收解碼失敗而略過的事件與原因。
      * @return 還原的歷史記錄狀態，包含無法解碼事件的序號缺口。
      */
-    fun decode(dto: HistoryRecordingPersistenceDto): HistoryRecordingState {
+    fun decode(dto: HistoryRecordingPersistenceDto, skippedEventReporter: SkippedHistoryEventReporter): HistoryRecordingState {
         val missing = dto.firstMissingSequenceByMatchId.mapKeys { Uuid.parse(it.key) }.toMutableMap()
         val decoded = dto.pendingEvents.mapNotNull { event ->
             val matchId = Uuid.parse(event.matchId)
-            runCatching { decodeEvent(event) }.getOrElse {
+            runCatching { decodeEvent(event) }.getOrElse { failure ->
+                skippedEventReporter.onSkipped(matchId, event.sequence, failure)
                 missing[matchId] = minOf(missing[matchId] ?: event.sequence, event.sequence)
                 null
             }

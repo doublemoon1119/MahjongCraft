@@ -211,5 +211,5 @@ val flowServerModule = module {
 
     // 使用建構子的預設設定；記錄政策由伺服器啟動流程套用。
     single<HistoryTilePresentationResolverImpl>() bind HistoryTilePresentationResolver::class
-    single { AuthoritativeStateStore(tilePresentationResolver = get()) }
+    single { AuthoritativeStateStore(tilePresentationResolver = get(), failureReporter = get()) }
 }

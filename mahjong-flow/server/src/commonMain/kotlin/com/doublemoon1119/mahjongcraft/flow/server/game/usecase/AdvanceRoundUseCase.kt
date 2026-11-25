@@ -128,7 +128,7 @@ class AdvanceRoundUseCase(
                     } catch (error: Throwable) {
                         if (!failurePolicy.isIsolatable(error)) throw error
                         return@updateGame game to Outcome.Error(
-                            error = GameError.InvalidMatchProgression(gameId, error.message ?: error::class.simpleName.orEmpty()),
+                            error = GameError.InvalidMatchProgression(gameId, error.stackTraceToString()),
                         )
                     }
 
@@ -170,7 +170,7 @@ class AdvanceRoundUseCase(
                         } catch (error: Throwable) {
                             if (!failurePolicy.isIsolatable(error)) throw error
                             return@updateGame game to Outcome.Error(
-                                error = GameError.InvalidMatchProgression(gameId, error.message ?: error::class.simpleName.orEmpty()),
+                                error = GameError.InvalidMatchProgression(gameId, error.stackTraceToString()),
                             )
                         }
                         val randomness = roundRandomnessSource.roundRandomness(game.matchSeed, game.openedRoundCount)

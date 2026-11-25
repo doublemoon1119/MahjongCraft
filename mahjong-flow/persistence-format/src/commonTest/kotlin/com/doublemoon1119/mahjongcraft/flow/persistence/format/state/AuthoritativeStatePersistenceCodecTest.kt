@@ -34,6 +34,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledComponentValidator
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.failOnSkippedHistoryEvent
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -92,7 +93,11 @@ class AuthoritativeStatePersistenceCodecTest {
     private val json = Json
 
     /** 使用所有內建 mapper 的待測 codec。 */
-    private val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries(), componentValidator = bundledComponentValidator())
+    private val codec = AuthoritativeStatePersistenceCodec(
+        registries = bundledPersistenceRegistries(),
+        componentValidator = bundledComponentValidator(),
+        skippedHistoryEventReporter = failOnSkippedHistoryEvent,
+    )
 
     /** 驗證空狀態能以版本化 envelope 完整 round-trip。 */
     @Test
@@ -222,7 +227,11 @@ class AuthoritativeStatePersistenceCodecTest {
         val registries = bundledPersistenceRegistries().copy(
             ruleConfigs = PersistenceDtoRegistry<MahjongRuleConfig> { error("No rule config mapper is registered in this test") },
         )
-        val codecWithoutRules = AuthoritativeStatePersistenceCodec(registries, componentValidator = bundledComponentValidator())
+        val codecWithoutRules = AuthoritativeStatePersistenceCodec(
+            registries = registries,
+            componentValidator = bundledComponentValidator(),
+            skippedHistoryEventReporter = failOnSkippedHistoryEvent,
+        )
 
         assertFailsWith<IllegalStateException> { codecWithoutRules.encode(listOf(createRoom()), emptyList()) }
     }
@@ -236,7 +245,11 @@ class AuthoritativeStatePersistenceCodecTest {
         )
 
         val failure = assertFailsWith<UnregisteredPersistenceTypeException> {
-            AuthoritativeStatePersistenceCodec(registries, componentValidator = bundledComponentValidator()).decode(saved)
+            AuthoritativeStatePersistenceCodec(
+                registries = registries,
+                componentValidator = bundledComponentValidator(),
+                skippedHistoryEventReporter = failOnSkippedHistoryEvent,
+            ).decode(saved)
         }
 
         assertTrue("\"${failure.typeKey}\"" in saved)

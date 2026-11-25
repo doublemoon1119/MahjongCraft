@@ -168,7 +168,7 @@ class MahjongClientConfigStore private constructor(private val resolvePath: () -
             revision += 1
             MahjongClientConfigUpdateResult.Success(config)
         } catch (exception: Exception) {
-            logger.warn("Unable to save client config at {}: {}", path, exception.message)
+            logger.warn("Unable to save client config at {}", path, exception)
             MahjongClientConfigUpdateResult.Failure(
                 message = "Unable to save client config at $displayPath: ${exception.message}",
                 cause = exception,

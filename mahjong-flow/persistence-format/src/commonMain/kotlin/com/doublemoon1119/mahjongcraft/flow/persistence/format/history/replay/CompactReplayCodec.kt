@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryDetailValueTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
@@ -106,8 +105,7 @@ object CompactReplayCodec {
     ): JsonObject {
         require(events.isNotEmpty()) { "Replay requires at least one history event" }
         validateDomainEvents(events)
-        val encodedEvents = mapper.encode(HistoryRecordingState(pendingEvents = events)).pendingEvents
-        require(encodedEvents.size == events.size) { "Replay contains an event that cannot be encoded" }
+        val encodedEvents = events.map(mapper::encodePendingEvent)
         val serialized = encodedEvents.map { persistenceJson.encodeToJsonElement(HistoryOutboxEventPersistenceDto.serializer(), it).jsonObject }
         val first = events.first()
         val typeDictionary = linkedMapOf<String, JsonElement>()

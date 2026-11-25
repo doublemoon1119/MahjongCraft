@@ -33,26 +33,29 @@ class HistoryQueryResponseBudgetTest {
         val registries = DefaultNetworkDtoRegistries().apply { registerBundledNetworkDtos() }
         val json = NetworkJson(registries)
         val config = GameConfig(RiichiRuleConfig())
-        val response = boundedHistoryRuleSettings("rules", HistoryRuleSettings(config), registries, json)
+        val response = boundedHistoryRuleSettings("rules", HistoryRuleSettings(config), registries, json, ::failOnConversion)
         assertEquals(config, assertNotNull(response.config).toDomain(registries))
         assertNull(response.errorCode)
 
-        val oversized = boundedHistoryRuleSettings("rules", HistoryRuleSettings(config), registries, json, limit = 1)
+        val oversized = boundedHistoryRuleSettings("rules", HistoryRuleSettings(config), registries, json, ::failOnConversion, limit = 1)
         assertEquals(HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, oversized.errorCode)
         assertNull(oversized.config)
     }
 
-    /** 儲存端可解碼但網路 codec 未註冊時，不回傳預設設定或玩家參數錯誤。 */
+    /** 儲存端可解碼但網路 codec 未註冊時，不回傳預設設定或玩家參數錯誤，並回報無法轉換的原因。 */
     @Test
     fun `missing rule network codec returns not available`() {
+        val failures = mutableListOf<RuntimeException>()
         val response = boundedHistoryRuleSettings(
             requestId = "rules",
             settings = HistoryRuleSettings(GameConfig(RiichiRuleConfig())),
             registries = DefaultNetworkDtoRegistries(),
             json = bundledNetworkJson(),
+            onConversionFailed = failures::add,
         )
         assertEquals(HistoryQueryErrorCodeDto.NOT_AVAILABLE, response.errorCode)
         assertNull(response.config)
+        assertEquals(1, failures.size)
     }
 
     /** 縮頁後的游標應指向實際傳出的最後一筆，不能跳過未傳資料。 */
@@ -189,4 +192,11 @@ class HistoryQueryResponseBudgetTest {
         /** 測試用的可信玩家 UUID。 */
         val PLAYER_ID: Uuid = Uuid.random()
     }
+
+    /**
+     * 設定應該轉換得了的測試，收到轉換失敗時直接讓測試失敗。
+     *
+     * @param failure 轉換時丟出的失敗。
+     */
+    private fun failOnConversion(failure: RuntimeException): Nothing = throw AssertionError("Rule settings conversion failed unexpectedly", failure)
 }

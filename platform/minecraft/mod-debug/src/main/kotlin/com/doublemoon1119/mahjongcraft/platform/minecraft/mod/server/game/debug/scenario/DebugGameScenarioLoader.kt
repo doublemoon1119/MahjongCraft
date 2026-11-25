@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.GameEventExclusions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
@@ -74,6 +75,9 @@ class DebugGameScenarioLoader(
     private val beginRuleDecisionUseCase: BeginRuleDecisionUseCase,
     private val componentRegistry: ComponentRegistry,
 ) {
+    /** 情境載入失敗的專用 logger。 */
+    private val logger = mahjongCraftLogger(DebugGameScenarioLoader::class)
+
     /**
      * 將情境套用到玩家目前所在的進行中遊戲。
      *
@@ -120,6 +124,7 @@ class DebugGameScenarioLoader(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
+            logger.warn("Debug scenario {} could not be loaded at table {}", scenarioId, tableId, error)
             return DebugGameScenarioLoadResult.Rejected(error.message ?: "Scenario validation failed")
         }
         stateStore.stopHistoryRecording(loaded.game.matchId)
@@ -136,6 +141,7 @@ class DebugGameScenarioLoader(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
+            logger.warn("Debug scenario {} could not be presented at table {}", scenarioId, tableId, error)
             return DebugGameScenarioLoadResult.Rejected(error.message ?: "Scenario presentation failed")
         }
         decisionAvailabilityService.reconcile(tableId, completedPlayerId = playerId)

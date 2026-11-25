@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -33,6 +34,9 @@ internal class HistoryArchiveStatusController(
     private val now: () -> Duration = { System.nanoTime().nanoseconds },
     private val requestGate: ClientHistoryRequestGate? = null,
 ) {
+    /** 保存狀態查詢的專用 logger。 */
+    private val logger = mahjongCraftLogger(HistoryArchiveStatusController::class)
+
     /** 供畫面觀察的狀態值。 */
     private val mutableView = MutableStateFlow<HistoryArchiveStatusView>(HistoryArchiveStatusView.Idle)
 
@@ -117,7 +121,11 @@ internal class HistoryArchiveStatusController(
             requestGate?.awaitSendSlot(ClientHistoryRequestPriority.BACKGROUND)
             if (paused || transport.sessionRevision.value != revision || target != matchId) return
             lastSentAt = now()
-            val requestId = runCatching { transport.query(matchId) }.getOrNull()
+            val requestId = runCatching { transport.query(matchId) }
+                .onFailure { failure ->
+                    logger.warn("History archive status query for match {} failed before it was sent", matchId, failure)
+                }
+                .getOrNull()
             if (requestId == null) {
                 if (target == matchId) mutableView.value = HistoryArchiveStatusView.Failed(matchId)
                 return

@@ -14,12 +14,14 @@ object HistoryResultProjector {
      *
      * @param events 同一場對局依序保存的權威事件。
      * @param moduleRegistry 已凍結的規則模組註冊表。
+     * @param onRankingFailed 規則模組解析或排名丟出失敗時收到原因；這時所有名次為 null。
      * @return 玩家 UUID 對應的終局結果；缺少開局或終局事實時為空清單。
      *   缺少任一玩家的終局分數，或規則模組解析及排名失敗時，所有名次均為 null。
      */
     fun project(
         events: List<HistoryOutboxEvent>,
         moduleRegistry: MahjongModuleRegistry,
+        onRankingFailed: (Throwable) -> Unit,
     ): List<HistoryResultSummary> {
         val opening = events.asSequence()
             .map { it.fact }
@@ -69,7 +71,7 @@ object HistoryResultProjector {
                         )
                     }.map { it.id }
                 rankedIds.mapIndexed { index, id -> id to index + 1 }.toMap()
-            }.getOrNull()
+            }.onFailure(onRankingFailed).getOrNull()
         } else {
             null
         }

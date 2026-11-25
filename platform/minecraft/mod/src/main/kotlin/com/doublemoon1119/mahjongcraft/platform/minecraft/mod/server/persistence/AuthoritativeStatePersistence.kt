@@ -75,6 +75,13 @@ class AuthoritativeStatePersistence(
                             failure.cause,
                         )
                     }
+                    restoreResult.scheduleFailures.forEach { failure ->
+                        logger.error(
+                            "Could not reschedule decisions for restored game gameId={}; it may wait for a player action to continue",
+                            failure.gameId,
+                            failure.cause,
+                        )
+                    }
                     store.setDirtyListener(state::update)
                     logger.debug(
                         "Attached authoritative persistence with {} room(s), {} game(s), and {} membership conflict(s)",

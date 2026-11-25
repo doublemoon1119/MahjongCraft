@@ -38,6 +38,7 @@ import kotlin.uuid.Uuid
  * @property maxPendingHistoryEvents 待寫佇列的容量上限；超出時只保留序號缺口，不阻塞對局。
  * @property historyRecordingObserver 接收每次交易記錄歷史事件的耗時與事件數；null 時不量測。
  * @property tilePresentationResolver 解算每筆交易提交後的牌張呈現；null 時牌譜不含牌張呈現。
+ * @property failureReporter 接收交易中已隔離的牌譜記錄與提交通知失敗。
  */
 class AuthoritativeStateStore(
     historyRecordingEnabled: Boolean = false,
@@ -45,6 +46,7 @@ class AuthoritativeStateStore(
     val maxPendingHistoryEvents: Int = 256,
     private val historyRecordingObserver: HistoryRecordingObserver? = null,
     private val tilePresentationResolver: HistoryTilePresentationResolver? = null,
+    private val failureReporter: AuthoritativeStateFailureReporter = AuthoritativeStateFailureReporter.NONE,
 ) {
     init {
         require(maxPendingHistoryEvents >= 0) { "Pending history capacity must not be negative" }
@@ -551,7 +553,13 @@ class AuthoritativeStateStore(
                         val after = update.state.games[entry.key]?.tableState
                         val hasSnapshot = entry.value.any { it.fact is HistoryFact.MatchStarted || it.fact is HistoryFact.RoundStarted }
                         val resultDraft = if (after != null && before != after && !hasSnapshot) {
-                            val change = if (before == null) null else runCatching { HistoryTableChange.between(before, after) }.getOrNull()
+                            val change = if (before == null) {
+                                null
+                            } else {
+                                runCatching { HistoryTableChange.between(before, after) }
+                                    .onFailure { failureReporter.onHistoryTableChangeUnavailable(game.matchId, it) }
+                                    .getOrNull()
+                            }
                             HistoryEventDraft(
                                 actorPlayerId = null,
                                 fact = HistoryFact.TableChanged(
@@ -565,15 +573,26 @@ class AuthoritativeStateStore(
                         runCatching {
                             val presentationDraft = tilePresentationDraft(before, after, hasSnapshot)
                             recording.append(game, entry.value + listOfNotNull(presentationDraft, resultDraft), timestamp, maxPendingHistoryEvents)
-                        }.getOrElse { recording.recordMissing(game) }
+                        }.getOrElse { failure ->
+                            failureReporter.onHistoryRecordingFailed(game.matchId, failure)
+                            recording.recordMissing(game)
+                        }
                     }
                     if (recordingMark != null && update.historyDraftsByVenueId.isNotEmpty()) {
                         val appended = (withDrafts.pendingEvents.size - recording.pendingEvents.size).coerceAtLeast(0)
                         historyRecordingObserver.onHistoryRecorded(recordingMark.elapsedNow(), appended)
                     }
-                    val recordingState = update.historyRecordingFailures.fold(withDrafts) { recording, venueId ->
+                    val recordingState = update.historyRecordingFailures.entries.fold(withDrafts) { recording, (venueId, failure) ->
                         val game = update.state.games[venueId] ?: currentState.games[venueId]
-                        if (game == null || (!recordingPolicy.enabled && !game.isMatchOver) || recording.decisionsByMatchId[game.matchId] != HistoryRecordingDecision.RECORDING) recording else recording.recordMissing(game)
+                        val skipsRecording = game == null ||
+                            (!recordingPolicy.enabled && !game.isMatchOver) ||
+                            recording.decisionsByMatchId[game.matchId] != HistoryRecordingDecision.RECORDING
+                        if (skipsRecording) {
+                            recording
+                        } else {
+                            failureReporter.onHistoryRecordingFailed(game.matchId, failure)
+                            recording.recordMissing(game)
+                        }
                     }
                     val active = update.state.games.values.mapTo(mutableSetOf()) { it.matchId } + recordingState.transfersByMatchId.keys
                     update.state.copy(
@@ -613,6 +632,7 @@ class AuthoritativeStateStore(
                     notification = pending
                     committedFacts.forEach { facts ->
                         runCatching { pending.listener.onCommitted(pending.sequence, facts) }
+                            .onFailure(failureReporter::onCommittedFactsListenerFailed)
                     }
                 }
                 update.result
@@ -620,6 +640,7 @@ class AuthoritativeStateStore(
         } finally {
             notification?.let { pending ->
                 runCatching { pending.listener.onReleased(pending.sequence) }
+                    .onFailure(failureReporter::onCommittedFactsListenerFailed)
             }
         }
     }

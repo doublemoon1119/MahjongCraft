@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecision
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceFailureReporter
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceFollowUp
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortEffects
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateFailureReporter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.di.flowServerModule
 import com.doublemoon1119.mahjongcraft.platform.minecraft.di.minecraftServerModule
@@ -79,6 +80,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.His
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryQueryService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.HistoryRetentionCoordinator
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.LoggingAuthoritativeStateFailureReporter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history.StressTestHistorySource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.network.AiCharacterSnapshotDelivery
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.network.AiCharacterSnapshotSender
@@ -199,6 +201,7 @@ val modServerModule = module {
     single<AutomaticControlUpdateService>()
     single<LoggingAiDecisionReporter>() bind AiDecisionReporter::class
     single<LoggingAutomatedAdvanceFailureReporter>() bind AutomatedAdvanceFailureReporter::class
+    single<LoggingAuthoritativeStateFailureReporter>() bind AuthoritativeStateFailureReporter::class
     single<AutoDrawAutomatedAdvanceFollowUp>() bind AutomatedAdvanceFollowUp::class
     single<TablePresentationGameAbortEffects>() bind GameAbortEffects::class
     single<DecisionTimerScheduler>()

@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCha
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.readCompressedNbt
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledComponentValidator
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.failOnSkippedHistoryEvent
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
@@ -38,7 +39,11 @@ import kotlin.uuid.Uuid
 /** 驗證 Minecraft NBT adapter 以位元組陣列保存 codec JSON，並維持每個世界各自的 snapshot。 */
 class MahjongAuthoritativeSavedDataTest {
     /** 使用所有內建 mapper 的待測 codec。 */
-    private val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries(), componentValidator = bundledComponentValidator())
+    private val codec = AuthoritativeStatePersistenceCodec(
+        registries = bundledPersistenceRegistries(),
+        componentValidator = bundledComponentValidator(),
+        skippedHistoryEventReporter = failOnSkippedHistoryEvent,
+    )
 
     /** 前次擷取結束前已離座者，等待結束後必須拒絕，不執行加入操作。 */
     @Test
@@ -169,7 +174,11 @@ class MahjongAuthoritativeSavedDataTest {
         val registriesWithoutRules = bundledPersistenceRegistries().copy(
             ruleConfigs = PersistenceDtoRegistry<MahjongRuleConfig> { error("No rule config mapper is registered in this test") },
         )
-        val codecWithoutRules = AuthoritativeStatePersistenceCodec(registriesWithoutRules, componentValidator = bundledComponentValidator())
+        val codecWithoutRules = AuthoritativeStatePersistenceCodec(
+            registries = registriesWithoutRules,
+            componentValidator = bundledComponentValidator(),
+            skippedHistoryEventReporter = failOnSkippedHistoryEvent,
+        )
         val nbt = CompoundTag().apply { putByteArray(MahjongAuthoritativeSavedData.NBT_KEY_STATE, encoded.encodeToByteArray()) }
 
         assertFailsWith<IllegalStateException> {

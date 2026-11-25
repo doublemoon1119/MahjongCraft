@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.state
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
@@ -16,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.failOnSkippedHistoryEvent
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -187,6 +189,8 @@ class AuthoritativeStatePersistenceDtoTest {
             rooms = emptyList(),
             games = listOf(game),
             registries = bundledPersistenceRegistries(),
+            historyRecordingState = HistoryRecordingState(),
+            skippedHistoryEventReporter = failOnSkippedHistoryEvent,
         )
 
         val restored = state.toGames(
@@ -214,6 +218,8 @@ class AuthoritativeStatePersistenceDtoTest {
             rooms = emptyList(),
             games = listOf(game),
             registries = bundledPersistenceRegistries(),
+            historyRecordingState = HistoryRecordingState(),
+            skippedHistoryEventReporter = failOnSkippedHistoryEvent,
         )
 
         val restored = state.toGames(
@@ -236,6 +242,8 @@ class AuthoritativeStatePersistenceDtoTest {
             rooms = emptyList(),
             games = listOf(game),
             registries = bundledPersistenceRegistries(),
+            historyRecordingState = HistoryRecordingState(),
+            skippedHistoryEventReporter = failOnSkippedHistoryEvent,
         )
 
         val restored = state.toGames(
@@ -265,6 +273,8 @@ class AuthoritativeStatePersistenceDtoTest {
             rooms = emptyList(),
             games = listOf(game),
             registries = bundledPersistenceRegistries(),
+            historyRecordingState = HistoryRecordingState(),
+            skippedHistoryEventReporter = failOnSkippedHistoryEvent,
         )
 
         val restored = state.toGames(
@@ -296,6 +306,8 @@ class AuthoritativeStatePersistenceDtoTest {
             rooms = emptyList(),
             games = listOf(game),
             registries = bundledPersistenceRegistries(),
+            historyRecordingState = HistoryRecordingState(),
+            skippedHistoryEventReporter = failOnSkippedHistoryEvent,
         )
 
         val restored = state.toGames(
@@ -390,6 +402,8 @@ class AuthoritativeStatePersistenceDtoTest {
         rooms = rooms,
         games = games.map { Game(it, GameFlowConfig()) },
         registries = bundledPersistenceRegistries(),
+        historyRecordingState = HistoryRecordingState(),
+        skippedHistoryEventReporter = failOnSkippedHistoryEvent,
     )
 
     /** 使用所有內建註冊表還原遊戲，再取出以遊戲 ID 索引的桌況。 */

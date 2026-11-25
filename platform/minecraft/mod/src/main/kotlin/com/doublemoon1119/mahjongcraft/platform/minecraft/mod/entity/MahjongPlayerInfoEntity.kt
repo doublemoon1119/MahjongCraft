@@ -46,7 +46,7 @@ class MahjongPlayerInfoEntity(
                 JSON.decodeFromString<List<PlayerEntryDto>>(raw)
             } catch (error: Exception) {
                 if (unreadablePlayers.shouldReport(raw)) {
-                    logger.warn("Player info entity {} has unreadable player data ({}); showing no players", uuid, error::class.simpleName)
+                    logger.warn("Player info entity {} has unreadable player data; showing no players", uuid, error)
                 }
                 return emptyList()
             }

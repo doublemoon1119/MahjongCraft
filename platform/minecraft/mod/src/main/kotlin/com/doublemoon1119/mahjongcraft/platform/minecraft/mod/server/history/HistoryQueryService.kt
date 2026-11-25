@@ -572,7 +572,15 @@ class HistoryQueryService(
                     val repository = WorldSessionHistoryQueryRepository(source.writer, sessionId, identityStore)
                     when (val result = GetHistoryRuleSettingsUseCase(repository, ::policy)(access, domain)) {
                         is HistoryQueryResult.Failure -> HistoryRuleSettingsResponseDto(request.requestId, errorCode = result.error.code.toDto(), config = null)
-                        is HistoryQueryResult.Success -> boundedHistoryRuleSettings(request.requestId, result.value, networkRegistries, json)
+                        is HistoryQueryResult.Success -> boundedHistoryRuleSettings(
+                            requestId = request.requestId,
+                            settings = result.value,
+                            registries = networkRegistries,
+                            json = json,
+                            onConversionFailed = { failure ->
+                                logger.warn("Rule settings of history match {} could not be sent to the client", request.matchId, failure)
+                            },
+                        )
                     }
                 } catch (_: IllegalArgumentException) {
                     HistoryRuleSettingsResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.INVALID_REQUEST, config = null)

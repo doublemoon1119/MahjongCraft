@@ -318,7 +318,13 @@ internal class HistoryArchiveService(
                 characterAppearance = appearanceFor(start.matchId, it.id)?.let(AiCharacterSnapshotCodec()::encode),
             )
         }
-        val projectedResults = HistoryResultProjector.project(events, moduleRegistry).associateBy { it.playerId.toString() }
+        val projectedResults = HistoryResultProjector.project(
+            events = events,
+            moduleRegistry = moduleRegistry,
+            onRankingFailed = { failure ->
+                logger.warn("Final ranks of history match {} could not be computed; ranks are left empty", start.matchId, failure)
+            },
+        ).associateBy { it.playerId.toString() }
         val participantResults = players.map { participant ->
             val projected = projectedResults[participant.playerId]
             HistoryParticipantResultRecord(
