@@ -140,7 +140,12 @@ internal object AutotestReplayStep : AutotestStep {
         if (!check("The replay visibility settings open", visibility)) return false
         screenshot("$name-visibility")
         client.screen?.onClose()
-        return check("The replay returns from its visibility settings", waitUntil(LOAD_TIMEOUT) { automation().automationSnapshot()?.page == HistoryScreenAutomationPage.ROUND_REPLAY })
+        val returned = waitUntil(LOAD_TIMEOUT) { automation().automationSnapshot()?.page == HistoryScreenAutomationPage.ROUND_REPLAY }
+        if (!check("The replay returns from its visibility settings", returned)) return false
+        // 遊戲面板預設隱藏；打開本局資訊與每一家的玩家資訊截一張，再恢復預設值。
+        if (!check("The replay shows its game panels", automation().automationShowReplayPanels(shown = true))) return false
+        screenshot("$name-panels")
+        return check("The replay restores its game panels", automation().automationShowReplayPanels(shown = false))
     }
 
     /**

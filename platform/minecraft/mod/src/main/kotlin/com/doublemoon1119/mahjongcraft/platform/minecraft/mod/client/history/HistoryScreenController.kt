@@ -260,6 +260,15 @@ class HistoryScreenController internal constructor(
         return Minecraft.getInstance().screen is HistoryReplayVisibilityScreen
     }
 
+    override fun automationShowReplayPanels(shown: Boolean): Boolean {
+        val session = active ?: return false
+        if (Minecraft.getInstance().screen !is HistoryReplayScreen) return false
+        val players = session.controller.state.value.replay?.state?.players ?: return false
+        session.replayVisibility.roundInfo = shown
+        players.forEach { player -> session.replayVisibility.setPlayerInfo(player.initialSeatIndex, shown) }
+        return true
+    }
+
     override fun automationClose() {
         active?.close()
     }

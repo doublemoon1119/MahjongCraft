@@ -88,6 +88,14 @@ interface HistoryScreenAutomation {
      */
     fun automationOpenReplayVisibility(): Boolean
 
+    /**
+     * 顯示或恢復回放的遊戲面板：顯示時畫出本局資訊與每一家的玩家資訊，不顯示時恢復為預設值。
+     *
+     * @param shown 是否顯示。
+     * @return 正在回放而已切換時為 true。
+     */
+    fun automationShowReplayPanels(shown: Boolean): Boolean
+
     /** 結束牌譜瀏覽並關閉畫面。 */
     fun automationClose()
 }

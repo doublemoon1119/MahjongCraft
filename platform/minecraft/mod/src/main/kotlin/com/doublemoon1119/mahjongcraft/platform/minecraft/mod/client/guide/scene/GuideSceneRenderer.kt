@@ -171,6 +171,8 @@ internal class GuideSceneRenderer : AutoCloseable {
                 renderEntities(client, scene.entities.filter { it.alpha >= 1f }, context, consumers)
                 val tiles = GuideSceneTileDrawOrder.split(scene.tiles, sceneToScreen, ::isTranslucent)
                 tiles.opaque.forEach { tile -> renderTile(tile, context, consumers) }
+                // 方塊等使用固定緩衝，最後才一起畫；先畫完它們，面板底色才不會被之後畫上的方塊蓋掉。
+                consumers.endBatch()
                 renderInfo(client, scene, rotation, context, consumers)
                 // 半透明的牌與人物最後畫：不透明的東西先全部畫進畫面，半透明的部分才透得出它後面的東西。
                 consumers.endBatch()
