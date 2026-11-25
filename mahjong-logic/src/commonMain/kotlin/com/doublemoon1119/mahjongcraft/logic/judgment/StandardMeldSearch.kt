@@ -5,11 +5,11 @@ import kotlin.math.min
 /**
  * 標準型（若干面子加一組雀頭）手牌的面子、搭子拆法搜尋，雀頭由呼叫端決定。
  *
- * 計數陣列使用 34 格的固定排列：萬子、筒子、條子的 1～9 依序為 0～8、9～17、18～26，字牌為 27～33。
- * 面子與搭子不會跨花色，因此四組牌各自列舉所有可達的（面子數, 搭子數）組合再合併；結果與對整副牌窮舉相同。
- * 數牌可組成刻子、順子、對子、兩面或邊張搭子與嵌張搭子；字牌只有刻子與對子。
- *
- * 每組牌的結果依該組牌型記憶，記憶只存在於這個實例；每個實例只供單次計算使用，不在執行緒間共用。
+ * - 計數陣列使用 34 格的固定排列：萬子、筒子、條子的 1～9 依序為 0～8、9～17、18～26，字牌為 27～33。
+ * - 面子與搭子不會跨花色，因此四組牌各自列舉所有可達的（面子數, 搭子數）組合再合併，結果與對整副牌窮舉相同。
+ * - 數牌可組成刻子、順子、對子、兩面或邊張搭子與嵌張搭子。字牌只有刻子與對子。
+ * - 每組牌的結果依該組牌型記憶，記憶只存在於這個實例。
+ * - 每個實例只供單次計算使用，不在執行緒間共用。
  *
  * @property targetMelds 和牌所需的面子數（含副露）。
  */
@@ -18,7 +18,7 @@ class StandardMeldSearch(private val targetMelds: Int) {
         require(targetMelds in 1..MAX_TARGET_MELDS) { "Target melds must be in 1..$MAX_TARGET_MELDS" }
     }
 
-    /** 每一維（面子數、搭子數）的格數；超過 [targetMelds] 的數量都記在最後一格。 */
+    /** 每一維（面子數、搭子數）的格數。超過 [targetMelds] 的數量都記在最後一格。 */
     private val width = targetMelds + 1
 
     /** 面子數已達上限的所有位元。 */
@@ -31,23 +31,23 @@ class StandardMeldSearch(private val targetMelds: Int) {
     private val reachableByGroup = LongTable()
 
     /**
-     * 搜尋目前這組牌時，各搜尋狀態可達的組合，key 為狀態索引（見 [GroupSearch.stateOf]）；每搜尋新的一組牌前清空，第一次需要時才建立。
+     * 搜尋目前這組牌時，各搜尋狀態可達的組合，key 為狀態索引（見 [GroupSearch.stateOf]）。每搜尋新的一組牌前清空，第一次需要時才建立。
      *
      * 處理到第 i 格時，只有第 i、i+1、i+2 格可能已被取走部分的牌，更後面的格子仍是原樣，
      * 因此以位置與這三格的剩餘張數表示狀態。
      */
     private var reachableByState: LongTable? = null
 
-    /** 搜尋單組牌的狀態；每組牌重新設定後重複使用。 */
+    /** 搜尋單組牌的狀態。每組牌重新設定後重複使用。 */
     private val groupSearch = GroupSearch()
 
     /**
      * 立牌中的面子與搭子能讓手牌最接近和牌的程度：`2 × 目標面子數 - 2 × 面子總數 - min(搭子總數, 目標面子數 - 面子總數)`。
      *
-     * 面子總數含 [initialMelds] 且最多算到目標面子數；不扣雀頭，由呼叫端在選定雀頭後自行減 1。
+     * 面子總數含 [initialMelds] 且最多算到目標面子數。不扣雀頭，由呼叫端在選定雀頭後自行減 1。
      * [initialMelds] 已達目標面子數時直接回傳 `2 × 目標面子數 - 2 × [initialMelds]`。
      *
-     * @param counts 34 格的立牌計數；搜尋時暫時取走牌，回傳前還原。
+     * @param counts 34 格的立牌計數。搜尋時暫時取走牌，回傳前還原。
      * @param initialMelds 已副露的面子數。
      * @return 上述公式在所有拆法中的最小值。
      * @throws IllegalArgumentException 若 [initialMelds] 為負數。
@@ -73,9 +73,9 @@ class StandardMeldSearch(private val targetMelds: Int) {
     }
 
     /**
-     * 立牌最多能組成的面子數，允許有不屬於任何面子的剩餘牌；超過目標面子數時以目標面子數計。
+     * 立牌最多能組成的面子數，允許有不屬於任何面子的剩餘牌。超過目標面子數時以目標面子數計。
      *
-     * @param counts 34 格的立牌計數；搜尋時暫時取走牌，回傳前還原。
+     * @param counts 34 格的立牌計數。搜尋時暫時取走牌，回傳前還原。
      * @return 面子數。
      */
     fun maxMelds(counts: IntArray): Int {
@@ -111,7 +111,7 @@ class StandardMeldSearch(private val targetMelds: Int) {
     }
 
     /**
-     * 一組牌（一個數牌花色或全部字牌）可達的組合；同一個牌型只搜尋一次。
+     * 一組牌（一個數牌花色或全部字牌）可達的組合。同一個牌型只搜尋一次。
      *
      * @param counts 34 格的立牌計數。
      * @param start 這組牌的第一格。
@@ -141,7 +141,7 @@ class StandardMeldSearch(private val targetMelds: Int) {
         return reachable
     }
 
-    /** 在計數陣列的一段之間搜尋一組牌；取走的牌在每次遞迴返回時還原。 */
+    /** 在計數陣列的一段之間搜尋一組牌。取走的牌在每次遞迴返回時還原。 */
     private inner class GroupSearch {
         /** 正在搜尋的計數陣列（與呼叫端共用，搜尋中暫時取走牌）。 */
         private var counts = IntArray(0)
@@ -155,7 +155,7 @@ class StandardMeldSearch(private val targetMelds: Int) {
         /** 是否為數牌。 */
         private var connected = false
 
-        /** 記憶搜尋狀態的表；不記憶時為 null。 */
+        /** 記憶搜尋狀態的表。不記憶時為 null。 */
         private var states: LongTable? = null
 
         /**
@@ -165,7 +165,7 @@ class StandardMeldSearch(private val targetMelds: Int) {
          * @param counts 這組牌共用的計數陣列。
          * @param start 這組牌的起始格。
          * @param end 這組牌結束位置（不含）。
-         * @param states 記憶搜尋狀態的空表；牌少到直接搜尋較快，或某一格超過 4 張時為 null。
+         * @param states 記憶搜尋狀態的空表。牌少到直接搜尋較快，或某一格超過 4 張時為 null。
          * @return 此組牌可達的面子與搭子組合。
          */
         fun search(counts: IntArray, start: Int, end: Int, connected: Boolean, states: LongTable?): Long {
@@ -178,7 +178,7 @@ class StandardMeldSearch(private val targetMelds: Int) {
         }
 
         /**
-         * 從 [index] 起（較小的位置已處理完）可達的組合；在同一個位置可以連續取多組牌，或放棄這個位置剩下的牌改看下一個位置。
+         * 從 [index] 起（較小的位置已處理完）可達的組合。在同一個位置可以連續取多組牌，或放棄這個位置剩下的牌改看下一個位置。
          *
          * @param index 開始搜尋的計數格。
          * @return 從該位置可達的組合位元集合。
@@ -221,7 +221,7 @@ class StandardMeldSearch(private val targetMelds: Int) {
         }
 
         /**
-         * 位置 [index] 與其後兩格的剩餘張數組成的狀態索引；超出這組牌的格子以 0 計。
+         * 位置 [index] 與其後兩格的剩餘張數組成的狀態索引。超出這組牌的格子以 0 計。
          *
          * @param index 要編碼的計數格。
          * @return 對應目前三格牌數的狀態索引。
@@ -255,7 +255,7 @@ class StandardMeldSearch(private val targetMelds: Int) {
     }
 
     /**
-     * 每個組合多一組面子；已在最後一格的仍留在最後一格。
+     * 每個組合多一組面子。已在最後一格的仍留在最後一格。
      *
      * @param reachable 原可達組合位元集合。
      * @return 增加一組面子後的位元集合。
@@ -263,7 +263,7 @@ class StandardMeldSearch(private val targetMelds: Int) {
     private fun addMeld(reachable: Long): Long = ((reachable and lastRow.inv()) shl width) or (reachable and lastRow)
 
     /**
-     * 每個組合多一組搭子；已在最後一格的仍留在最後一格。
+     * 每個組合多一組搭子。已在最後一格的仍留在最後一格。
      *
      * @param reachable 原可達組合位元集合。
      * @return 增加一組搭子後的位元集合。
@@ -288,10 +288,10 @@ class StandardMeldSearch(private val targetMelds: Int) {
     private fun rowMask(melds: Int): Long = ((1L shl width) - 1) shl (melds * width)
 
     /**
-     * 以非負 key 查可達組合的開放定址雜湊表，避免每次查詢配置物件；查不到時回傳 0（任何牌型與狀態至少可達「沒有面子與搭子」）。
+     * 以非負 key 查可達組合的開放定址雜湊表，避免每次查詢配置物件。查不到時回傳 0（任何牌型與狀態至少可達「沒有面子與搭子」）。
      */
     private class LongTable {
-        /** 各格的 key；[NO_KEY] 表示空格。容量固定為 2 的次方。 */
+        /** 各格的 key。[NO_KEY] 表示空格。容量固定為 2 的次方。 */
         private var keys = LongArray(INITIAL_CAPACITY) { NO_KEY }
 
         /** 與 [keys] 同一格的值。 */
@@ -304,7 +304,7 @@ class StandardMeldSearch(private val targetMelds: Int) {
          * 查詢 [key] 的值。
          *
          * @param key 非負的 key。
-         * @return 存放的值；不存在時為 0。
+         * @return 存放的值。不存在時為 0。
          */
         operator fun get(key: Long): Long {
             var slot = slotOf(key, keys.size)
@@ -324,7 +324,7 @@ class StandardMeldSearch(private val targetMelds: Int) {
         }
 
         /**
-         * 寫入或覆蓋 [key] 的值；存放的筆數超過容量一半時先擴充。
+         * 寫入或覆蓋 [key] 的值。存放的筆數超過容量一半時先擴充。
          *
          * @param key 非負的 key。
          * @param value 要存放的值，不可為 0（0 代表不存在）。
@@ -374,7 +374,7 @@ class StandardMeldSearch(private val targetMelds: Int) {
         }
 
         private companion object {
-            /** 初始容量；必須是 2 的次方。 */
+            /** 初始容量。必須是 2 的次方。 */
             const val INITIAL_CAPACITY = 16
 
             /** key 都不是負數，不會等於這個值。 */
@@ -410,7 +410,7 @@ class StandardMeldSearch(private val targetMelds: Int) {
         /** 不記憶搜尋狀態時的狀態值。 */
         const val NO_STATE = -1L
 
-        /** 一組牌至少有這麼多張時才記憶搜尋狀態；牌更少時直接搜尋較快。 */
+        /** 一組牌至少有這麼多張時才記憶搜尋狀態。牌更少時直接搜尋較快。 */
         const val STATE_MEMO_MIN_TILES = 6
 
         /** 刻子：從同一格取三張。以下各組都是相對於起始格要取走的位置。 */

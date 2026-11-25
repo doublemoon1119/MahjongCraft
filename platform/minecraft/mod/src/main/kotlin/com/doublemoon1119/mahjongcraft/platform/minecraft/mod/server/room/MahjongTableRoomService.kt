@@ -69,7 +69,7 @@ import kotlin.uuid.toKotlinUuid
  * 把 Minecraft 麻將桌互動路由到既有 Room／Game use case 的正式平台進場服務。
  *
  * 目前由右鍵／蹲下右鍵桌子（[interact]／[leave]）與 `/mahjongcraft` 玩家指令
- * （[ready]／[start]）共用；日後若互動方式改成懸浮 HUD 等其他觸發，只需要新增呼叫端，這裡的方法
+ * （[ready]／[start]）共用。日後若互動方式改成懸浮 HUD 等其他觸發，只需要新增呼叫端，這裡的方法
  * 本身不需要更動。
  *
  * @property scope 執行房間與遊戲操作的協程作用域。
@@ -146,7 +146,7 @@ class MahjongTableRoomService internal constructor(
     private val actionContextResolver: PlayerActionContextResolver,
 ) {
     /**
-     * 將 RoomScreen 的強型別操作路由到既有權威 use case；封包中的玩家身分一律忽略。
+     * 將 RoomScreen 的強型別操作路由到既有權威 use case。封包中的玩家身分一律忽略。
      *
      * @param player 載入器驗證過的封包來源玩家。
      * @param action RoomScreen 傳來的操作 DTO。
@@ -212,7 +212,7 @@ class MahjongTableRoomService internal constructor(
     /**
      * 組出一份桌子佔用狀態 payload，一律附上桌子座標。
      *
-     * 座標是客戶端判斷「玩家是否還在桌子附近」與「桌子是否還在」的依據；少帶座標的話，該關閉的畫面會
+     * 座標是客戶端判斷「玩家是否還在桌子附近」與「桌子是否還在」的依據。少帶座標的話，該關閉的畫面會
      * 一直留著。集中在這裡建立，就不會有呼叫端漏帶。
      *
      * @param tableId 桌子 UUID。
@@ -267,7 +267,7 @@ class MahjongTableRoomService internal constructor(
      * 在交付序列內讀取當前占用內容，不使用工作排程前保存的舊房間或對局。
      *
      * @param ticket 排程前捕捉的桌子與 session 來源。
-     * @param player 原請求的玩家；連線已被取代時不送出回覆。
+     * @param player 原請求的玩家。連線已被取代時不送出回覆。
      */
     private suspend fun sendCurrentOccupancy(ticket: TableStateTicket, player: ServerPlayer) {
         val playerId = player.uuid.toKotlinUuid()
@@ -358,7 +358,7 @@ class MahjongTableRoomService internal constructor(
     }
 
     /**
-     * RoomScreen 明確離開等待房間；房主會沿用既有語意解散房間。
+     * RoomScreen 明確離開等待房間。房主會沿用既有語意解散房間。
      *
      * @param tableId 要離開的桌子 UUID。
      * @param player 發起離開操作的玩家。
@@ -448,7 +448,7 @@ class MahjongTableRoomService internal constructor(
     }
 
     /**
-     * 讓玩家以蹲下右鍵離開目前麻將桌的等待階段；進行中的對局暫時禁止離開。
+     * 讓玩家以蹲下右鍵離開目前麻將桌的等待階段。進行中的對局暫時禁止離開。
      *
      * @param table 玩家互動的麻將桌。
      * @param player 發起離開操作的玩家。
@@ -491,7 +491,7 @@ class MahjongTableRoomService internal constructor(
 
     /**
      * 切換玩家在房間等待階段的準備狀態。以玩家目前的房間歸屬（[PlayerMembershipRepository]）解析
-     * 目標房間，並要求玩家目前實際在桌子的可互動範圍內（[isPlayerReachable]）；[start] 另外會在真正
+     * 目標房間，並要求玩家目前實際在桌子的可互動範圍內（[isPlayerReachable]）。[start] 另外會在真正
      * 開局前，對所有已準備成員各自重新驗證一次同樣的條件，兩處合起來確保開局當下每個成員都確實在場。
      *
      * 房主不參與準備機制（開局用 [start]），這裡先擋在呼叫 [toggleReady] 之前給出專屬回饋，避免
@@ -623,7 +623,7 @@ class MahjongTableRoomService internal constructor(
     }
 
     /**
-     * 桌子的擺牌層目前是否被擋住；查不到桌子位置、世界或區塊未載入時視為沒有擋住，由開局後的呈現自行處理。
+     * 桌子的擺牌層目前是否被擋住。查不到桌子位置、世界或區塊未載入時視為沒有擋住，由開局後的呈現自行處理。
      *
      * 只能在伺服器主執行緒呼叫。
      *
@@ -643,7 +643,7 @@ class MahjongTableRoomService internal constructor(
      * （[ReachableMahjongTableResolver]），不另外維護一套獨立的距離常數。查不到桌子位置索引時視為
      * 不可達。
      *
-     * 內部會讀取 [TableLocationRegistry] 與世界的 BlockEntity 狀態，兩者都只能在伺服器主執行緒存取；
+     * 內部會讀取 [TableLocationRegistry] 與世界的 BlockEntity 狀態，兩者都只能在伺服器主執行緒存取。
      * 呼叫端必須先 `withContext(dispatchers.main)` 切回主執行緒，不能直接在 [scope] 的背景協程裡呼叫。
      *
      * @param player 要驗證的線上玩家。
@@ -656,7 +656,7 @@ class MahjongTableRoomService internal constructor(
     }
 
     /**
-     * 房間設定的規則能否用於房間與開局；客戶端畫面只列出可選規則，伺服器仍自行檢查，不信任客戶端送來的設定。
+     * 房間設定的規則能否用於房間與開局。客戶端畫面只列出可選規則，伺服器仍自行檢查，不信任客戶端送來的設定。
      *
      * @param ruleConfig 房間設定使用的規則設定。
      * @param playerCount 房間完整玩家名單的人數，包含由 AI 操控的玩家。
@@ -673,7 +673,7 @@ class MahjongTableRoomService internal constructor(
      * 讓房主替房間新增一名 AI 玩家。同樣以玩家目前的房間歸屬解析目標房間。
      *
      * @param player 發起新增操作的房主。
-     * @param strategyKey AI 使用的策略登記 key；不傳時使用 [AddAiPlayerUseCase] 的預設策略。
+     * @param strategyKey AI 使用的策略登記 key。不傳時使用 [AddAiPlayerUseCase] 的預設策略。
      */
     fun addAi(player: ServerPlayer, strategyKey: String?) {
         if (dataStatus.rejectIfUnavailable(player)) return
@@ -724,10 +724,10 @@ class MahjongTableRoomService internal constructor(
     }
 
     /**
-     * 解除房主指定的排除記錄；不把對方直接加入房間。
+     * 解除房主指定的排除記錄。不把對方直接加入房間。
      *
      * @param player 操作者，權限由權威用例重驗。
-     * @param previousPlayerId 被排除者上次的成員編號；null 表示解除全部。
+     * @param previousPlayerId 被排除者上次的成員編號。null 表示解除全部。
      */
     fun allowRejoining(player: ServerPlayer, previousPlayerId: Uuid?) {
         if (dataStatus.rejectIfUnavailable(player)) return
@@ -777,7 +777,7 @@ class MahjongTableRoomService internal constructor(
 
     /**
      * 顯示玩家目前所在房間的完整遊戲設定，供指令印出可 hover／可點擊開啟編輯畫面的訊息。同樣以玩家
-     * 目前的房間歸屬解析目標房間；沒有房主限制，任何在房間內的玩家都能查看目前設定。
+     * 目前的房間歸屬解析目標房間。沒有房主限制，任何在房間內的玩家都能查看目前設定。
      *
      * @param player 要查看房間設定的玩家。
      */

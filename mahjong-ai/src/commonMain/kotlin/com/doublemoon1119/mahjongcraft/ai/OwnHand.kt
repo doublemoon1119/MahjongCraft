@@ -16,7 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
  * 只能用於觀察者本人的手牌：他家的手牌在快照中不可見，會拋出例外。
  *
  * @param interpretation 本局規則的牌值解讀方式。
- * @return 使用可見牌張重建的手牌；剛摸到的牌保留在立牌清單中。
+ * @return 使用可見牌張重建的手牌。剛摸到的牌保留在立牌清單中。
  * @throws IllegalStateException 立牌或副露中存在不可見的牌張。
  */
 internal fun HandSnapshot.toOwnHand(interpretation: TileInterpretationPolicy): Hand = Hand(

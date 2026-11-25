@@ -47,7 +47,7 @@ internal object AutotestPlayStep : AutotestStep {
      *
      * @param tableId 牌桌識別碼。
      * @param playerId 本機玩家識別碼。
-     * @return 牌河張數；不在牌局中時為 0。
+     * @return 牌河張數。不在牌局中時為 0。
      */
     private fun localDiscardCount(tableId: Uuid, playerId: Uuid): Int = GlobalContext.get().get<ClientMahjongStateStore>()
         .gameSnapshot(tableId)?.players?.firstOrNull { it.id == playerId }?.discardPile?.entries?.size ?: 0

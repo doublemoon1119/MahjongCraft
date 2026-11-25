@@ -119,7 +119,7 @@ class HistoryBrowseControllerTest {
         assertEquals(false, controller.state.value.allowAll)
     }
 
-    /** 壓力測試範圍由權威回覆開啟；壓力測試資料庫刪除後切回自己的紀錄。 */
+    /** 壓力測試範圍由權威回覆開啟。壓力測試資料庫刪除後切回自己的紀錄。 */
     @Test
     fun `test stress test scope falls back to own once the server withdraws it`() = runTest {
         val transport = FakeHistoryQueryTransport()
@@ -245,7 +245,7 @@ class HistoryBrowseControllerTest {
         assertFalse(controller.previousPage())
     }
 
-    /** 最後一頁從尾端往前取，使用回應的第一筆位置；第一頁從頭開始。 */
+    /** 最後一頁從尾端往前取，使用回應的第一筆位置。第一頁從頭開始。 */
     @Test
     fun `test first and last page jump to both ends`() = runTest {
         val transport = FakeHistoryQueryTransport()
@@ -586,7 +586,7 @@ class HistoryBrowseControllerTest {
         assertEquals(null, controller.state.value.ruleSettings)
     }
 
-    /** 規則設定只於點擊後查詢；返回與再次開啟使用同場快取並保留摘要位置。 */
+    /** 規則設定只於點擊後查詢。返回與再次開啟使用同場快取並保留摘要位置。 */
     @Test
     fun `test rule settings loads lazily and reuses same match cache`() = runTest {
         val transport = FakeHistoryQueryTransport()

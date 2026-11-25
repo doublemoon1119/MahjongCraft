@@ -62,7 +62,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.scen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.scenario.scenarioDiscardOrder
 import kotlin.uuid.Uuid
 
-/** 內建的日麻權威情境；除了開局與三人日麻情境以外都只適用四人日麻。 */
+/** 內建的日麻權威情境。除了開局與三人日麻情境以外都只適用四人日麻。 */
 object RiichiDebugGameScenarios {
     /** 所有內建日麻 debug 情境。 */
     val all: List<DebugGameScenario> = buildList {
@@ -101,7 +101,7 @@ internal val DEFAULT_WALL_OPENING = WallOpening(wallSideOffsetFromDealer = 0, st
 /**
  * 王牌區緊貼開門點、因此與活牌末端相鄰的開門位置。
  *
- * 王牌區與活牌區的分界、以及槓後補入牌與活牌末端的相對位置，只有在兩區相鄰時才會真正被檢驗；
+ * 王牌區與活牌區的分界、以及槓後補入牌與活牌末端的相對位置，只有在兩區相鄰時才會真正被檢驗。
  * [DEFAULT_WALL_OPENING] 下兩區隔得太遠，這類幾何問題不會顯現。
  */
 private val AT_BREAK_WALL_OPENING = WallOpening(wallSideOffsetFromDealer = 0, stacksFromRight = 10)
@@ -214,10 +214,9 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
 /**
  * 建立呼叫者可碰上家剛打出的白、以第 3 組三元牌副露湊齊大三元並讓上家成為包牌責任者的四人日麻情境。
  *
- * 呼叫者為莊家，已碰出發、中兩組，立牌為白白、二三萬、五五筒與一張北；碰白後打出北即聽一、四萬。活牌最前端
- * 交錯排著四萬與一萬：其他三家摸到後打出即可榮和（包牌榮和），輪到呼叫者時第一張即可自摸（包牌自摸）。
- *
- * 其他三家的立牌固定為 [PAO_OPPONENT_TILES]：不含一、四萬與三元牌，無法聽牌，也無法吃碰呼叫者的北與和牌張。
+ * - 呼叫者為莊家，已碰出發、中兩組，立牌為白白、二三萬、五五筒與一張北。碰白後打出北即聽一、四萬。
+ * - 活牌最前端交錯排著四萬與一萬。其他三家摸到後打出即可榮和（包牌榮和），輪到呼叫者時第一張即可自摸（包牌自摸）。
+ * - 其他三家的立牌固定為 [PAO_OPPONENT_TILES]：不含一、四萬與三元牌，無法聽牌，也無法吃碰呼叫者的北與和牌張。
  */
 private object RiichiBeforePaoPonScenario : DebugGameScenario {
     override val id: String = "mahjongcraft:riichi/debug/before_pao_pon"
@@ -345,7 +344,7 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
     }
 }
 
-/** 使用正式初始化流程建立完整日麻開局呈現情境；四人與三人日麻都適用。 */
+/** 使用正式初始化流程建立完整日麻開局呈現情境。四人與三人日麻都適用。 */
 private class RiichiOpeningScenario(
     override val id: String,
     private val requiresWallless: Boolean = false,
@@ -582,9 +581,9 @@ private class RiichiBeforeAnkanScenario(
     /**
      * 建立四家開局十三張手牌，將預定槓牌配置給指定玩家。
      *
-     * @param availableTiles 尚未分配的實體牌；填充牌會從中移除。
+     * @param availableTiles 尚未分配的實體牌。填充牌會從中移除。
      * @param dealerIndex 莊家在玩家清單中的索引。
-     * @param targetKan 莊家準備宣告的槓牌組；null 時不預放該組。
+     * @param targetKan 莊家準備宣告的槓牌組。null 時不預放該組。
      * @param establishedKans 按對手順序配置的已成立槓牌組。
      * @return 按玩家索引排列的初始手牌。
      */
@@ -616,7 +615,7 @@ private class RiichiBeforeAnkanScenario(
      *
      * @param hands 按玩家索引排列的初始手牌。
      * @param dealerIndex 第一個發牌的玩家索引。
-     * @param batchSizes 各輪每家取得的牌數；總和不得超過任一家手牌張數。
+     * @param batchSizes 各輪每家取得的牌數。總和不得超過任一家手牌張數。
      * @return 按發牌順序串接的實體牌。
      */
     private fun interleaveInitialDeal(
@@ -642,7 +641,7 @@ private class RiichiBeforeAnkanScenario(
      *
      * @param playerIndex 玩家在四人清單中的索引。
      * @param dealerIndex 莊家的索引。
-     * @return 非莊家的對手順序；莊家回傳 [Int.MAX_VALUE]，供安全查詢回傳無項目。
+     * @return 非莊家的對手順序。莊家回傳 [Int.MAX_VALUE]，供安全查詢回傳無項目。
      */
     private fun opponentOrder(playerIndex: Int, dealerIndex: Int): Int = if (playerIndex == dealerIndex) {
         Int.MAX_VALUE
@@ -747,7 +746,7 @@ private class RiichiBeforeMinkanScenario(
 internal fun scenarioConfig(currentGame: Game): RiichiRuleConfig = baseRiichiConfig(currentGame) as RiichiRuleConfig
 
 /**
- * 這一桌的日麻設定；正在用開發用規則時取出它包著的一般日麻設定，讓情境載入後恢復一般規則。
+ * 這一桌的日麻設定。正在用開發用規則時取出它包著的一般日麻設定，讓情境載入後恢復一般規則。
  *
  * @param currentGame 目前的對局。
  * @return 一般日麻或其他規則的設定。
@@ -762,12 +761,12 @@ internal fun baseRiichiConfig(currentGame: Game): MahjongRuleConfig = when (val 
 /**
  * 依目前這一桌的日麻設定建立情境使用的規則模組，四人與三人日麻都適用。
  *
- * 設定整份沿用，理由同 [scenarioConfig]；[multiRonPolicy] 不為 null 時只覆寫一炮多響設定。這一桌正在用開發用規則時
+ * 設定整份沿用，理由同 [scenarioConfig]。[multiRonPolicy] 不為 null 時只覆寫一炮多響設定。這一桌正在用開發用規則時
  * 沿用它包著的一般日麻設定（見 [baseRiichiConfig]），規則模組則依 [rule] 決定，因此每個情境載入後使用的規則只取決於
  * 情境本身。
  *
  * @param currentGame 提供四人或三人日麻設定的對局。
- * @param multiRonPolicy 要覆寫的一炮多響政策；null 時沿用原值。
+ * @param multiRonPolicy 要覆寫的一炮多響政策。null 時沿用原值。
  * @param rule 情境使用的規則模組。
  * @return 採用該設定的日麻規則模組。
  * @throws IllegalStateException 對局不屬於支援的日麻規則時拋出。
@@ -809,10 +808,10 @@ internal fun riichiFamilyScenarioModule(
 /**
  * 從牌庫依指定牌種順序各取出一張實體牌。
  *
- * @param tiles 尚未分配的實體牌；每次找到的牌會立即移除。
+ * @param tiles 尚未分配的實體牌。每次找到的牌會立即移除。
  * @param requestedTiles 依取牌順序排列的指定牌種。
  * @return 與指定牌種順序相同的實體牌。
- * @throws IllegalArgumentException 指定牌種不足時拋出；先前已取出的牌不會放回。
+ * @throws IllegalArgumentException 指定牌種不足時拋出。先前已取出的牌不會放回。
  */
 internal fun takeTiles(
     tiles: MutableList<IdentifiedTile>,
@@ -826,7 +825,7 @@ internal fun takeTiles(
 /**
  * 取出牌種互異的情境填充牌，減少意外形成相同牌種組合的機會。
  *
- * @param tiles 尚未分配的實體牌；選取成功後移除所選項目。
+ * @param tiles 尚未分配的實體牌。選取成功後移除所選項目。
  * @param count 所需張數，須為非負值。
  * @return 依原清單順序選出的不同牌種實體牌。
  * @throws IllegalArgumentException 張數為負值，或不同牌種不足時拋出。
@@ -844,7 +843,7 @@ internal fun takeDistinctFillers(tiles: MutableList<IdentifiedTile>, count: Int)
  * @param tiles 尚未分配的實體牌。
  * @param count 要取出的張數，須為非負值。
  * @return 按原順序取出的牌。
- * @throws IllegalArgumentException 張數為負值或牌不足時拋出；先前取出的牌不會放回。
+ * @throws IllegalArgumentException 張數為負值或牌不足時拋出。先前取出的牌不會放回。
  */
 internal fun takeFirst(tiles: MutableList<IdentifiedTile>, count: Int): List<IdentifiedTile> = List(count) {
     require(tiles.isNotEmpty()) { "Debug scenario ran out of tiles" }
@@ -914,7 +913,7 @@ private val PAO_INVOKING_TILES: List<Tile> = listOf(
 /**
  * 包牌情境中其他三家的立牌：筒 147、索 258、萬 369 與四張風牌。
  *
- * 各牌種互相隔開，無法聽牌；不含一、四萬與三元牌，每家的北也只有一張，因此無法吃碰呼叫者打出的北與和牌張。
+ * 各牌種互相隔開，無法聽牌。不含一、四萬與三元牌，每家的北也只有一張，因此無法吃碰呼叫者打出的北與和牌張。
  */
 private val PAO_OPPONENT_TILES: List<Tile> = listOf(
     Tile.Numeric(Tile.Suit.Dot, 1),
@@ -947,7 +946,7 @@ private val HONORS: List<Tile.Honor> = listOf(
 )
 
 /**
- * 取得砌牌牆的日麻規則的實體牌牆布局 policy；這些情境驗收牌牆本身，只能在砌牌牆的桌子載入。
+ * 取得砌牌牆的日麻規則的實體牌牆布局 policy。這些情境驗收牌牆本身，只能在砌牌牆的桌子載入。
  *
  * @return 實體牌牆布局 policy。
  * @throws IllegalArgumentException 桌子的規則不砌牌牆時拋出。

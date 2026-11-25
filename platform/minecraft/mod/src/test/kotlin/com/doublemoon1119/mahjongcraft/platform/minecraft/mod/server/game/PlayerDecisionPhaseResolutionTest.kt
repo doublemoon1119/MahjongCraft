@@ -45,7 +45,7 @@ class PlayerDecisionPhaseResolutionTest {
         assertNull(game.decisionPhaseFor(otherId, resolver))
     }
 
-    /** 別人打出的牌還沒回應時在等他；已經回應或不能回應的玩家沒有被等待。 */
+    /** 別人打出的牌還沒回應時在等他。已經回應或不能回應的玩家沒有被等待。 */
     @Test
     fun `only players who still have to react to a discard are awaited`() {
         val answeredId = Uuid.random()
@@ -70,7 +70,7 @@ class PlayerDecisionPhaseResolutionTest {
         assertNull(game.decisionPhaseFor(bystanderId, resolver))
     }
 
-    /** 規則選擇中還沒提交的參與者被等待；提交之後不再被等待。 */
+    /** 規則選擇中還沒提交的參與者被等待。提交之後不再被等待。 */
     @Test
     fun `rule decision participants are awaited until they submit`() {
         val waitingId = Uuid.random()
@@ -103,7 +103,7 @@ class PlayerDecisionPhaseResolutionTest {
      * 建立只帶指定桌況與規則選擇的對局。
      *
      * @param tableState 對局的桌況。
-     * @param pendingRuleDecision 進行中的規則選擇；沒有時為 null。
+     * @param pendingRuleDecision 進行中的規則選擇。沒有時為 null。
      * @return 測試用的對局。
      */
     private fun gameOf(tableState: TableState, pendingRuleDecision: PendingRuleDecision? = null): Game = Game(

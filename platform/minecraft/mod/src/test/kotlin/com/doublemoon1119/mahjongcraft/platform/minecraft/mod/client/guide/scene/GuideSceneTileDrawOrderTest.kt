@@ -6,7 +6,7 @@ import kotlin.test.assertEquals
 
 /** 驗證場景先畫不透明牌，半透明牌之後由遠到近畫。 */
 class GuideSceneTileDrawOrderTest {
-    /** 場景牌；以牌面 key 標示是否半透明。 */
+    /** 場景牌。以牌面 key 標示是否半透明。 */
     private fun tile(assetKey: String, z: Double): GuideSceneTile = GuideSceneTile(assetKey = assetKey, x = 0.0, y = 0.0, z = z, yaw = 0f)
 
     /** 測試用的半透明判斷。 */

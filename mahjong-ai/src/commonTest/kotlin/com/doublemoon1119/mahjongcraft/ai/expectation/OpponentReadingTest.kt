@@ -54,7 +54,7 @@ class OpponentReadingTest {
     private val riichiRules = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, RiichiRuleConfig()).createPositionRules()
     private val riichiReading = OpponentReading(interpretation = RiichiTileInterpretationPolicy, rules = riichiRules)
 
-    /** 早打四萬時，緊鄰的三萬、二萬折扣較強，較遠的一萬折扣較弱；內側的五萬與四萬本身不受影響。 */
+    /** 早打四萬時，緊鄰的三萬、二萬折扣較強，較遠的一萬折扣較弱。內側的五萬與四萬本身不受影響。 */
     @Test
     fun `tiles just outside an early discard get the strongest discount`() {
         val opponent = snapshotOf(player(discards = listOf(m(4))))
@@ -87,7 +87,7 @@ class OpponentReadingTest {
         assertEquals(MIDDLE_FAR_OUTSIDE_FACTOR, reading.earlyOutsideFactor(opponent, m(9)))
     }
 
-    /** 第 7 張以後打出的牌不算早巡；不同花色與字牌不受早外影響。 */
+    /** 第 7 張以後打出的牌不算早巡。不同花色與字牌不受早外影響。 */
     @Test
     fun `late discards other suits and honors are not affected`() {
         val late = snapshotOf(player(discards = List(6) { Tile.Honor.North } + m(4)))
@@ -161,7 +161,7 @@ class OpponentReadingTest {
         assertNotNull(reading.flushSignal(snapshotOf(player(discards = offSuitDiscards, melds = listOf(pon(p(3)))))))
     }
 
-    /** 用五萬宣告聽牌時，三萬、四萬、六萬、七萬比較危險；更遠的牌、其他花色，以及沒有宣告的對手都不受影響。 */
+    /** 用五萬宣告聽牌時，三萬、四萬、六萬、七萬比較危險。更遠的牌、其他花色，以及沒有宣告的對手都不受影響。 */
     @Test
     fun `tiles next to the declaration tile are more dangerous`() {
         val declarer = riichiPlayer(discardsBefore = listOf(Tile.Honor.North), declarationTile = m(5))
@@ -186,7 +186,7 @@ class OpponentReadingTest {
         assertEquals(1.0, riichiReading.declarationNeighborFactor(view, declarer.id, Tile.Honor.North))
     }
 
-    /** 寶牌是三萬時：三萬本身、一二四五萬比較危險，本身的倍率不和旁邊的倍率連乘；其他牌不受影響。 */
+    /** 寶牌是三萬時：三萬本身、一二四五萬比較危險，本身的倍率不和旁邊的倍率連乘。其他牌不受影響。 */
     @Test
     fun `bonus tiles and their neighbors are more dangerous`() {
         val view = riichiView(listOf(FakeMahjongPlayerFactory.create(Wind.EAST)), doraIndicators = listOf(m(2)))
@@ -261,10 +261,10 @@ class OpponentReadingTest {
     }
 
     /**
-     * 建立日麻桌上以南家為觀察者的視角；[doraIndicators] 不為空時，牌山只包含這些公開的寶牌指示牌。
+     * 建立日麻桌上以南家為觀察者的視角。[doraIndicators] 不為空時，牌山只包含這些公開的寶牌指示牌。
      *
      * @param players 觀察者以外的桌上玩家。
-     * @param doraIndicators 公開的寶牌指示牌；預設不替換牌山快照。
+     * @param doraIndicators 公開的寶牌指示牌。預設不替換牌山快照。
      * @return 以南家為評估者的局面視角。
      */
     private fun riichiView(players: List<MahjongPlayer>, doraIndicators: List<Tile> = emptyList()): PositionView {

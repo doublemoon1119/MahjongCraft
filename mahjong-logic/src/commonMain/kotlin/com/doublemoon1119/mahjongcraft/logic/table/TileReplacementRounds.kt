@@ -6,9 +6,11 @@ import kotlin.uuid.Uuid
 /**
  * 逐輪把手牌中規則指定的牌移出並補牌，例如使用花牌的規則在開局時補花。
  *
- * 每一輪依 [process] 的玩家順序，讓每位玩家把手上所有指定的牌一次移出，再補同樣張數；補到的牌又是指定的牌時，
- * 等這一輪所有玩家都處理完，下一輪再處理。一直重複到沒有玩家手上有指定的牌。規則可以在移出後或補牌後暫停，
- * 例如讓玩家選擇是否以這些牌和牌；暫停時回報的 [Position] 帶齊繼續所需的進度。
+ * 1. 每一輪依 [process] 的玩家順序，讓每位玩家把手上所有指定的牌一次移出，再補同樣張數。
+ * 2. 補到的牌又是指定的牌時，等這一輪所有玩家都處理完，下一輪再處理。
+ * 3. 一直重複到沒有玩家手上有指定的牌。
+ *
+ * 規則可以在移出後或補牌後暫停，例如讓玩家選擇是否以這些牌和牌。暫停時回報的 [Position] 帶齊繼續所需的進度。
  *
  * 本物件不保存可變狀態。
  */
@@ -17,7 +19,7 @@ object TileReplacementRounds {
      * 繼續處理的位置。
      *
      * @property playerOrderIndex 目前處理到的玩家在玩家順序中的索引。
-     * @property replacementsDue 這位玩家已移出、尚未補的張數；為 0 時從移出開始處理這位玩家。
+     * @property replacementsDue 這位玩家已移出、尚未補的張數。為 0 時從移出開始處理這位玩家。
      * @property round 目前所在的輪次，從 1 開始。
      */
     data class Position(
@@ -162,7 +164,7 @@ object TileReplacementRounds {
          * @param tableState 補牌前的桌況。
          * @param playerId 補牌的玩家。
          * @param replacementsRemaining 包含本次在內，這位玩家尚待補入的張數。
-         * @return 補牌後的桌況與補到的牌；已經沒有牌可以補時為 null。
+         * @return 補牌後的桌況與補到的牌。已經沒有牌可以補時為 null。
          */
         fun replace(
             tableState: TableState,
@@ -171,21 +173,21 @@ object TileReplacementRounds {
         ): PlayerDraw?
 
         /**
-         * 玩家移出 [tiles] 之後、補牌之前是否暫停；預設不暫停。
+         * 玩家移出 [tiles] 之後、補牌之前是否暫停。預設不暫停。
          *
          * @param tableState 移出後的桌況。
          * @param playerId 移出牌的玩家。
          * @param tiles 這次移出的牌。
-         * @return 暫停原因；不暫停時為 null。
+         * @return 暫停原因。不暫停時為 null。
          */
         fun pauseAfterSetAside(tableState: TableState, playerId: Uuid, tiles: List<IdentifiedTile>): P? = null
 
         /**
-         * 玩家補完這次的張數之後是否暫停；預設不暫停。
+         * 玩家補完這次的張數之後是否暫停。預設不暫停。
          *
          * @param tableState 補牌後的桌況。
          * @param playerId 補牌的玩家。
-         * @return 暫停原因；不暫停時為 null。
+         * @return 暫停原因。不暫停時為 null。
          */
         fun pauseAfterReplacement(tableState: TableState, playerId: Uuid): P? = null
     }

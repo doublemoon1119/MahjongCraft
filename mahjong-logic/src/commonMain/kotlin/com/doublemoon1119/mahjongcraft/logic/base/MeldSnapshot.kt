@@ -12,7 +12,7 @@ import kotlin.uuid.Uuid
  * @property id 副露的穩定識別碼。
  * @property type 副露種類。
  * @property tiles 依保存順序排列的牌張，未知牌仍保留實體識別碼。
- * @property sourceTile 鳴取的來源牌；沒有來源時為 null。
+ * @property sourceTile 鳴取的來源牌。沒有來源時為 null。
  * @property sourceDirection 來源玩家相對於本人的方位。
  * @property faceDownTileIds 實際朝下擺放的牌張，不代表該觀察者是否知道牌面。
  */
@@ -29,7 +29,7 @@ data class MeldSnapshot(
 /**
  * 產生一個 [Meld] 的快照。
  *
- * 觀察者本人或被授權者可以看見整組牌；其他觀察者只能看見公開集合中的牌面，其餘牌保留 ID。
+ * 觀察者本人或被授權者可以看見整組牌。其他觀察者只能看見公開集合中的牌面，其餘牌保留 ID。
  *
  * @param handIsVisible 觀察者是否為手牌本人或獲授權查看者。
  * @param revealsClosedKanTiles 規則是否公開暗槓牌面。

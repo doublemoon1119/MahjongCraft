@@ -42,7 +42,7 @@ class ExhaustiveDrawReasonDisplayNameRegistryTest {
         }
     }
 
-    /** 流局原因可另外登記玩家結算身分用語；未登記時查無結果，重複登記會失敗。 */
+    /** 流局原因可另外登記玩家結算身分用語。未登記時查無結果，重複登記會失敗。 */
     @Test
     fun `settlement status labels are registered per reason`() {
         val labels = ExhaustiveDrawSettlementStatusLabels(beneficiaryTranslationKey = "test.tenpai", othersTranslationKey = "test.noten")

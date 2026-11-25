@@ -5,10 +5,10 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import kotlin.uuid.Uuid
 
 /**
- * 單一固定座位的完整公開顯示快照；[playerName] 為 `null` 代表目前解析不出這個玩家的真實名稱。
+ * 單一固定座位的完整公開顯示快照。[playerName] 為 `null` 代表目前解析不出這個玩家的真實名稱。
  *
  * @property playerId 玩家 UUID。
- * @property playerName 目前解析出的玩家名稱；無法解析時為 `null`。
+ * @property playerName 目前解析出的玩家名稱。無法解析時為 `null`。
  * @property isAi 是否由 AI 操控。
  * @property seatIndex 固定座位索引。
  * @property seatWind 該座位的風位。

@@ -31,7 +31,7 @@ class EntityMahjongDiceRollPresenter(
     private val spawnGateway: EntitySpawnGateway,
 ) : MahjongDiceRollPresenter {
     /**
-     * 驗證 controller 後先建立新骰子；全部成功才移除同桌舊骰子。
+     * 驗證 controller 後先建立新骰子。全部成功才移除同桌舊骰子。
      *
      * @param presentation 權威骰子結果、桌位與投擲時間資料。
      * @return 已呈現、找不到相符牌桌，或實體生成失敗的結果。
@@ -131,7 +131,7 @@ class EntityMahjongDiceRollPresenter(
      * 依位置中的維度識別碼取得目前伺服器世界。
      *
      * @param location 包含維度識別碼的桌子位置。
-     * @return 相符世界；識別碼無效、伺服器不存在或世界未載入時為 null。
+     * @return 相符世界。識別碼無效、伺服器不存在或世界未載入時為 null。
      */
     private fun resolveWorld(location: TableLocation): ServerLevel? {
         val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null

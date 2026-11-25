@@ -121,7 +121,7 @@ internal class AutotestClientRunner(
     /**
      * 列出了不存在的步驟時的失敗結果，例如拼錯名稱。不檢查的話，測試只會執行進入世界就回報通過。
      *
-     * @return 失敗結果；列出的步驟都存在時為 null。
+     * @return 失敗結果。列出的步驟都存在時為 null。
      */
     private fun unknownSelection(): AutotestStepResult? {
         val known = steps.map(AutotestStep::id)

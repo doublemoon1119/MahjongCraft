@@ -147,7 +147,7 @@ class RiichiTablePropsTest {
         assertTrue(props.all { it.kind == BuiltInTablePropKinds.SCORING_STICK })
     }
 
-    /** 莊家角落先疊本場棒、再接延續的供託；延續支數是供託總數扣掉這局立直中的人數。 */
+    /** 莊家角落先疊本場棒、再接延續的供託。延續支數是供託總數扣掉這局立直中的人數。 */
     @Test
     fun `the dealer corner stacks combo sticks before the carried-over pot`() {
         val props = RiichiTableProps.describe(state(riichiSeatIndices = setOf(0), dealerSeatIndex = 2, comboCount = 2, stickPotCount = 3)) { null }
@@ -163,7 +163,7 @@ class RiichiTablePropsTest {
         assertEquals(emptyList(), RiichiTableProps.describe(state()) { null })
     }
 
-    /** 只有莊家角落佔寬度；寬度隨角落棒子支數成長，一整排之後往上疊不再加寬。 */
+    /** 只有莊家角落佔寬度。寬度隨角落棒子支數成長，一整排之後往上疊不再加寬。 */
     @Test
     fun `only the dealer corner is reserved and it grows up to one row`() {
         val step = MahjongScoringStickDimensions.STICK_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING
@@ -175,7 +175,7 @@ class RiichiTablePropsTest {
         assertEquals(4 * step, RiichiTableProps.cornerWidth(state(comboCount = 4, stickPotCount = 2), seatIndex = 0), EPSILON)
     }
 
-    /** 延續的供託也疊在莊家角落，算進寬度；這局宣告中的立直棒擺在牌河旁，不算。 */
+    /** 延續的供託也疊在莊家角落，算進寬度。這局宣告中的立直棒擺在牌河旁，不算。 */
     @Test
     fun `the carried-over pot counts toward the corner but declared riichi sticks do not`() {
         val step = MahjongScoringStickDimensions.STICK_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING
@@ -190,7 +190,7 @@ class RiichiTablePropsTest {
     }
 
     /**
-     * 立直棒的世界座標與朝向（controller 位於 12, 64, -7；四種桌子朝向、四個座位）。
+     * 立直棒的世界座標與朝向（controller 位於 12, 64, -7。四種桌子朝向、四個座位）。
      *
      * 以固定座標驗證各座位在四種桌子朝向下的擺放位置。
      */
@@ -222,7 +222,7 @@ class RiichiTablePropsTest {
     }
 
     /**
-     * 角落那一疊的世界座標與朝向（controller 位於 12, 64, -7；桌子朝北；莊家座位 1）：一排四根，第五根起往上疊。
+     * 角落那一疊的世界座標與朝向（controller 位於 12, 64, -7。桌子朝北。莊家座位 1）：一排四根，第五根起往上疊。
      *
      * 以固定座標驗證同一排的間距與往上堆疊的高度。
      */

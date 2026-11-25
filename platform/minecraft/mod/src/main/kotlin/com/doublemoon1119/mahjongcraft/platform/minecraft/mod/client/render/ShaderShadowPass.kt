@@ -3,9 +3,9 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ShadowPassProbe
 import org.koin.core.context.GlobalContext
 
-/** 光影模組是否正在畫陰影圖；判斷方式由載入器提供的 [ShadowPassProbe] 決定。 */
+/** 光影模組是否正在畫陰影圖。判斷方式由載入器提供的 [ShadowPassProbe] 決定。 */
 internal object ShaderShadowPass {
-    /** 載入器提供的判斷方式；第一次查詢時經 Koin 取得。 */
+    /** 載入器提供的判斷方式。第一次查詢時經 Koin 取得。 */
     private val probe: ShadowPassProbe by lazy { GlobalContext.get().get<ShadowPassProbe>() }
 
     /**

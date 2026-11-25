@@ -62,7 +62,7 @@ class MahjongLobbyInfoPresenter(
      * 移除指定桌子附近所有由此 presenter 管理的提示實體。
      *
      * @param tableId 桌子 UUID。
-     * @return 實際移除的提示實體數量；位置或世界無法解析時為 0。
+     * @return 實際移除的提示實體數量。位置或世界無法解析時為 0。
      */
     fun clear(tableId: Uuid): Int {
         val location = locations.get(tableId)?.location ?: return 0
@@ -87,7 +87,7 @@ class MahjongLobbyInfoPresenter(
      * 依位置中的維度 ID 解析目前伺服器世界。
      *
      * @param location 桌子所在位置。
-     * @return 對應的伺服器世界；維度 ID 無效、伺服器不存在或世界未載入時為 null。
+     * @return 對應的伺服器世界。維度 ID 無效、伺服器不存在或世界未載入時為 null。
      */
     private fun resolveWorld(location: TableLocation): ServerLevel? {
         val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null

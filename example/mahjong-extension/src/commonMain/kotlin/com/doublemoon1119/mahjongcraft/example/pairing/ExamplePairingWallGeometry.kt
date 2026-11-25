@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.example.pairing
 /** 簡易配對麻將依玩家人數與牌面種類數計算各面牌牆的墩數。 */
 internal object ExamplePairingWallGeometry {
     /**
-     * 計算每面牌牆的墩數；四面牌牆的多餘墩數依固定順序分到偶數面。
+     * 計算每面牌牆的墩數。四面牌牆的多餘墩數依固定順序分到偶數面。
      *
      * @param playerCount 本局完整玩家人數。
      * @param wallTileValueCount 牌山使用的牌面種類數。

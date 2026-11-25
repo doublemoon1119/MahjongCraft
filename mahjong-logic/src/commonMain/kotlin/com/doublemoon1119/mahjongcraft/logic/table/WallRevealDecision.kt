@@ -12,7 +12,7 @@ sealed interface WallRevealDecision {
     /**
      * 公開牌狀態已成功更新。
      *
-     * @property tableComponents 本次明確設定或移除的桌況組件；未指定的組件保持原值。
+     * @property tableComponents 本次明確設定或移除的桌況組件。未指定的組件保持原值。
      * @property newlyRevealedTileIds 本次新成為公開資訊的牌張 ID。
      */
     data class Updated(

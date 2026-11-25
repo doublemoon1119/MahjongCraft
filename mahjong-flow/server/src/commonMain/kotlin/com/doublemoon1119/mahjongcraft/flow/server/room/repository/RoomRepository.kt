@@ -32,7 +32,7 @@ interface RoomRepository {
      */
     suspend fun removeRoom(id: Uuid)
 
-    /** 清除目前 server session 中的所有房間；平台停止或切換存檔時使用。 */
+    /** 清除目前 server session 中的所有房間。平台停止或切換存檔時使用。 */
     suspend fun clearAll()
 
     /**
@@ -44,7 +44,7 @@ interface RoomRepository {
      * @param T 呼叫端自訂的回傳型別，通常用於攜帶驗證結果（如 [Outcome]）。
      * @param id 欲更新的房間 Uuid。
      * @param block 根據目前的房間狀態（不存在時為 null）計算「欲寫入的新狀態」與「回傳給呼叫端的結果」。
-     *              回傳的房間為 null 時代表該房間應被移除；若無需變更，回傳原本傳入的房間即可（等同無操作）。
+     *              回傳的房間為 null 時代表該房間應被移除。若無需變更，回傳原本傳入的房間即可（等同無操作）。
      * @return [block] 計算出的結果。
      */
     suspend fun <T> update(id: Uuid, block: suspend (Room?) -> Pair<Room?, T>): T

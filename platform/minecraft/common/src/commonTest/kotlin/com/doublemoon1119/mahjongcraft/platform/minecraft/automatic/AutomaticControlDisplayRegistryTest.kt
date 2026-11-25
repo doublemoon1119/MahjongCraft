@@ -51,7 +51,7 @@ class AutomaticControlDisplayRegistryTest {
         assertFailsWith<IllegalStateException> { registry.register(AutomaticControlDisplayDefinition("example:late", display)) }
     }
 
-    /** 日麻把摸到就打稱為摸切；台麻、第三方規則與不在對局中時使用中立名稱，排列順序不變。 */
+    /** 日麻把摸到就打稱為摸切。台麻、第三方規則與不在對局中時使用中立名稱，排列順序不變。 */
     @Test
     fun `rules override automatic control names only for their own tables`() {
         val registry = AutomaticControlDisplayRegistryImpl().apply {

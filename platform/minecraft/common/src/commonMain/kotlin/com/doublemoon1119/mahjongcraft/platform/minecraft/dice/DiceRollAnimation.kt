@@ -34,7 +34,7 @@ data class DiceRollAnimationSpec(
     }
 
     /**
-     * 依動畫階段與 [seed] 建立三次桌面接觸的權威聲音提示；使用向上取整確保聲音不會早於畫面接觸。
+     * 依動畫階段與 [seed] 建立三次桌面接觸的權威聲音提示。使用向上取整確保聲音不會早於畫面接觸。
      *
      * @param seed 用於重建確定性音高差異的動畫 seed。
      * @return 依接觸時間排列的聲音提示。
@@ -90,7 +90,7 @@ class DiceRollAnimation(
      *
      * @param seed 決定此動畫的固定隨機路徑。
      * @param elapsedTicks 動畫已經過的 tick 數，可包含小數部分。
-     * @param startOffset 畫面起點相對最終落點的偏移；預設取自 [spec]。
+     * @param startOffset 畫面起點相對最終落點的偏移。預設取自 [spec]。
      * @return 指定時間的位移、旋轉、進度與完成狀態。
      */
     fun frame(
@@ -205,7 +205,7 @@ class DiceRollAnimation(
     /**
      * 讓最終旋轉收斂的速度在兩端平滑。
      *
-     * @param progress 收斂進度；計算前會限制在 0 到 1。
+     * @param progress 收斂進度。計算前會限制在 0 到 1。
      * @return 平滑後的進度。
      */
     private fun smoothStep(progress: Double): Double {

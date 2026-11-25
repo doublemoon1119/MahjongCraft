@@ -18,7 +18,7 @@ import kotlin.uuid.Uuid
 internal const val HISTORY_REPLAY_QUERY_BYTES: Int = DEFAULT_REPLAY_JSON_BYTES
 
 /**
- * 在 writer 管理 lease 內先驗證公開條件，再讀取指定 Replay；不保存解析快取。
+ * 在 writer 管理 lease 內先驗證公開條件，再讀取指定 Replay。不保存解析快取。
  *
  * @param T 中立歷史讀模型型別。
  * @param database 唯一 session 所屬資料庫。
@@ -72,7 +72,7 @@ internal suspend fun <T> readAuthorizedHistoryRound(
 }
 
 /**
- * 以目前政策、SQL 參與者與終端證據確認 Replay 可公開；不讀入內容。
+ * 以目前政策、SQL 參與者與終端證據確認 Replay 可公開。不讀入內容。
  *
  * @param database 唯一 session 所屬資料庫。
  * @param access 可信連線身分。

@@ -49,7 +49,7 @@ class MahjongRoundInfoEntity(
         get() = RoundInfoLineCodec.decode(entityData[LINES])
         set(value) = entityData.set(LINES, RoundInfoLineCodec.encode(value))
 
-    /** 正式牌局所屬麻將桌；未指派時為 `null`。 */
+    /** 正式牌局所屬麻將桌。未指派時為 `null`。 */
     var managedTableId: Uuid?
         get() = entityData[MANAGED_TABLE_ID]
             .takeIf(String::isNotBlank)
@@ -61,19 +61,19 @@ class MahjongRoundInfoEntity(
     }
 
     /**
-     * 這個 entity 物件在記憶體裡第一次被 tick 到的 `level().gameTime`；只在記憶體內，不寫進存檔，理由跟
+     * 這個 entity 物件在記憶體裡第一次被 tick 到的 `level().gameTime`。只在記憶體內，不寫進存檔，理由跟
      * [MahjongScoringStickEntity.firstTickWorldTime] 完全一致（避免世界重新載入一次補跑大量 tick 時
      * 誤判成早就該消失了）。
      */
     private var firstTickWorldTime: Long = Long.MIN_VALUE
 
-    /** 目前局況顯示隱形 lease 的絕對截止時間；沒有 lease 時為 [Long.MIN_VALUE]。 */
+    /** 目前局況顯示隱形 lease 的絕對截止時間。沒有 lease 時為 [Long.MIN_VALUE]。 */
     private var hiddenUntilGameTime: Long = Long.MIN_VALUE
 
     /**
      * fallback 自動清除——**不是主要清除路徑**。正常生命週期是跟牌牆同時生成、換局時由
      * `EntityMahjongRoundInfoPresenter.present()` 找到既有 entity 就地更新內容（不重新生成），或由
-     * `ServerThreadGamePresentationPublisher.clearPlayerTiles()`（回房間等情境）顯式清除；這裡只是意外情境
+     * `ServerThreadGamePresentationPublisher.clearPlayerTiles()`（回房間等情境）顯式清除。這裡只是意外情境
      * （伺服器崩潰、對局非正常結束導致沒有機會走到正常清除流程）的保險，門檻抓得遠大於正常一局遊戲
      * 時長，理由同 [MahjongScoringStickEntity.tick] 的同款設計——這個 entity 沒有自由放置模式（一律
      * 由牌局管理），不需要像點棒那樣額外判斷 `managedByGame`。
@@ -151,7 +151,7 @@ class MahjongRoundInfoEntity(
     }
 
     /**
-     * 隱形到 [gameTime]；重複呼叫只能延長期限，期限隨 entity 保存。
+     * 隱形到 [gameTime]。重複呼叫只能延長期限，期限隨 entity 保存。
      *
      * @param gameTime 隱形 lease 結束的 server game time。
      */
@@ -166,7 +166,7 @@ class MahjongRoundInfoEntity(
     /**
      * 保持隱形直到管理此顯示的牌局清除 entity。
      *
-     * 終局面板結束後會立即返回房間，不應先恢復局況顯示再清除；隱藏期限會保存，載入與每次更新時都依期限恢復顯示狀態。
+     * 終局面板結束後會立即返回房間，不應先恢復局況顯示再清除。隱藏期限會保存，載入與每次更新時都依期限恢復顯示狀態。
      */
     fun hideUntilRemoved() {
         check(!level().isClientSide) { "Round info visibility lease must be changed by the server" }
@@ -192,7 +192,7 @@ class MahjongRoundInfoEntity(
      * 局況顯示不支援位移動畫。
      *
      * @param step 不支援的位移動畫步驟。
-     * @param startGameTime 位移動畫原定的絕對開始時間；此 entity 不接受該步驟。
+     * @param startGameTime 位移動畫原定的絕對開始時間。此 entity 不接受該步驟。
      */
     override fun applyPlayMotion(step: AnimationStep.PlayMotion, startGameTime: Long) = error("Round info display does not support motion animation")
 
@@ -200,14 +200,14 @@ class MahjongRoundInfoEntity(
      * 局況顯示沒有可序列化的專屬動畫。
      *
      * @param step 不支援的自訂動畫步驟（型別本身為 `Nothing`）。
-     * @param nbt 動畫步驟原定寫入的 NBT；此 entity 不接受該步驟。
+     * @param nbt 動畫步驟原定寫入的 NBT。此 entity 不接受該步驟。
      */
     override fun serializeCustomStep(step: Nothing, nbt: CompoundTag) = error("Round info display has no custom animation step")
 
     /**
      * 局況顯示沒有可還原的專屬動畫。
      *
-     * @param nbt 動畫步驟原定讀取的 NBT；此 entity 不接受自訂動畫步驟。
+     * @param nbt 動畫步驟原定讀取的 NBT。此 entity 不接受自訂動畫步驟。
      */
     override fun deserializeCustomStep(nbt: CompoundTag): Nothing = error("Round info display has no custom animation step")
 
@@ -241,7 +241,7 @@ class MahjongRoundInfoEntity(
         writeAnimationQueueToNbt(nbt)
     }
 
-    /** 依已保存的期限設定伺服器隱藏狀態；每個伺服器 tick 與期限變更時套用，是隱藏狀態的唯一來源。 */
+    /** 依已保存的期限設定伺服器隱藏狀態。每個伺服器 tick 與期限變更時套用，是隱藏狀態的唯一來源。 */
     private fun applyVisibility() {
         if (!level().isClientSide) isInvisible = TableOverlayVisibility.isHidden(hiddenUntilGameTime, level().gameTime)
     }
@@ -266,7 +266,7 @@ class MahjongRoundInfoEntity(
         private val LINES: EntityDataAccessor<String> =
             SynchedEntityData.defineId(MahjongRoundInfoEntity::class.java, EntityDataSerializers.STRING)
 
-        /** 同步所屬麻將桌 UUID；空字串表示尚未指派。 */
+        /** 同步所屬麻將桌 UUID。空字串表示尚未指派。 */
         private val MANAGED_TABLE_ID: EntityDataAccessor<String> =
             SynchedEntityData.defineId(MahjongRoundInfoEntity::class.java, EntityDataSerializers.STRING)
     }

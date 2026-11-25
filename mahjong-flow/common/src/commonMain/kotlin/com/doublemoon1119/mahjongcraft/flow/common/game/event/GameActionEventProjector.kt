@@ -89,7 +89,7 @@ internal object GameActionEventProjector {
      * @param actor 執行者。
      * @param previous 提交前桌況。
      * @param current 提交後桌況。
-     * @return 公開動作；未成立或不應通知時為 null。
+     * @return 公開動作。未成立或不應通知時為 null。
      */
     private fun applied(action: GameAction, actor: Uuid, previous: TableState, current: TableState): PerformedAction? {
         val player = current.players.firstOrNull { it.id == actor } ?: return null
@@ -143,7 +143,7 @@ internal object GameActionEventProjector {
     /** 建立沒有額外牌面資料的動作。 */
     private fun basic(action: GameAction, actor: Uuid, kind: PerformedActionKind): PerformedAction = PerformedAction.create(actionId(action), actor, kind)
 
-    /** 取得動作的完整公開 ID；擴充動作保留來源 ID。 */
+    /** 取得動作的完整公開 ID。擴充動作保留來源 ID。 */
     private fun actionId(action: GameAction): String = when (action) {
         is GameAction.Discard -> PublicGameActionIds.DISCARD
         is GameAction.Chi -> PublicGameActionIds.CHI

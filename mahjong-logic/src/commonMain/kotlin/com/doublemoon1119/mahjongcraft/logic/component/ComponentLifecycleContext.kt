@@ -11,8 +11,8 @@ import kotlin.random.Random
  * @property tableState 新一局的權威候選桌況。
  * @property ownerType 組件對象定義。
  * @property owner 新一局的對象。
- * @property previousTableState 上一局已結算桌況；第一局為 null。
- * @property random 開局或換局建立組件時可用的亂數來源，需要隨機初值的組件只能使用它，不得改用系統亂數；
+ * @property previousTableState 上一局已結算桌況。第一局為 null。
+ * @property random 開局或換局建立組件時可用的亂數來源，需要隨機初值的組件只能使用它，不得改用系統亂數。
  *   對局進行中新建的捨牌紀錄、副露以及驗證時為 null。
  */
 data class ComponentLifecycleContext<O : Any>(

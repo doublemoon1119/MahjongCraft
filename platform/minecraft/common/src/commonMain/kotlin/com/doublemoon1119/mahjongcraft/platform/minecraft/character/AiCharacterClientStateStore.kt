@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.character
 
 import kotlin.uuid.Uuid
 
-/** 客戶端角色資料；由登入生命週期指定 session，收到的更新不能自行切換 session。 */
+/** 客戶端角色資料。由登入生命週期指定 session，收到的更新不能自行切換 session。 */
 class AiCharacterClientStateStore {
     /** 目前已確認的伺服器 session。 */
     private var sessionId: Uuid? = null
@@ -50,7 +50,7 @@ class AiCharacterClientStateStore {
     }
 
     /**
-     * 接受同一 session 的較新版本；舊封包不能覆寫已接受內容。
+     * 接受同一 session 的較新版本。舊封包不能覆寫已接受內容。
      *
      * @param snapshot 完整公開角色快照。
      * @return 此快照被接受時為 true。
@@ -69,7 +69,7 @@ class AiCharacterClientStateStore {
      * 查詢最後接受的桌子角色資料。
      *
      * @param tableId 桌子 UUID。
-     * @return 同一 session 的公開資料；尚未同步時為 null。
+     * @return 同一 session 的公開資料。尚未同步時為 null。
      */
     fun find(tableId: Uuid): AiCharacterSyncSnapshot? = tables[tableId]
 
@@ -101,7 +101,7 @@ class AiCharacterClientStateStore {
         return apply(snapshot)
     }
 
-    /** 斷線時清除所有資料；延後抵達的舊更新會被拒絕。 */
+    /** 斷線時清除所有資料。延後抵達的舊更新會被拒絕。 */
     fun clear() {
         sessionId = null
         tables.clear()

@@ -30,7 +30,7 @@ class RuleCatalogueBrowserTest {
         assertEquals(listOf(PROVIDER_D, PROVIDER_B, PROVIDER_A, PROVIDER_C, PROVIDER_E), browser.snapshot(::translate).ruleOptions.map { it.ruleModuleId })
     }
 
-    /** 沒有開啟脈絡時優先選擇有目錄來源的規則；完全沒有來源時才使用已知 ID。 */
+    /** 沒有開啟脈絡時優先選擇有目錄來源的規則。完全沒有來源時才使用已知 ID。 */
     @Test
     fun `general browser prefers registered provider over known only rule`() {
         val browser = RuleCatalogueBrowser(
@@ -79,7 +79,7 @@ class RuleCatalogueBrowserTest {
         }
     }
 
-    /** 缺少原配置時不偷用預設配置；明確選擇一般說明後才呼叫預設配置。 */
+    /** 缺少原配置時不偷用預設配置。明確選擇一般說明後才呼叫預設配置。 */
     @Test
     fun `missing opening config does not call default until general explanation`() {
         val provider = RecordingProvider(PROVIDER_A, TaiwanRuleConfig())
@@ -160,7 +160,7 @@ class RuleCatalogueBrowserTest {
         assertEquals(listOf("example:text"), browser.snapshot(::translate).entries.map { it.id })
     }
 
-    /** 分類只接受目前目錄的分類；切換到也有同一分類的規則時保留分類與搜尋文字。 */
+    /** 分類只接受目前目錄的分類。切換到也有同一分類的規則時保留分類與搜尋文字。 */
     @Test
     fun `category selection intersects search and switching rules keeps a shared category`() {
         val first = RecordingProvider(PROVIDER_A, TaiwanRuleConfig())
@@ -192,7 +192,7 @@ class RuleCatalogueBrowserTest {
         assertEquals(null, browser.snapshot(::translate).categoryId)
     }
 
-    /** 全部分類平常不列只屬於「基本玩法」的條目，搜尋時才列出；同時屬於其他分類的條目照常列出。 */
+    /** 全部分類平常不列只屬於「基本玩法」的條目，搜尋時才列出。同時屬於其他分類的條目照常列出。 */
     @Test
     fun `all categories hide basics only entries unless searching`() {
         val base = sampleCatalogue()
@@ -229,7 +229,7 @@ class RuleCatalogueBrowserTest {
         assertEquals(null, unknown.snapshot(::translate).categoryId)
     }
 
-    /** 條目也會列在額外分類中；全部分類與搜尋時每個條目只出現一次。 */
+    /** 條目也會列在額外分類中。全部分類與搜尋時每個條目只出現一次。 */
     @Test
     fun `entries also appear in their additional categories without duplicates`() {
         val catalogue = sampleCatalogue().let { base ->

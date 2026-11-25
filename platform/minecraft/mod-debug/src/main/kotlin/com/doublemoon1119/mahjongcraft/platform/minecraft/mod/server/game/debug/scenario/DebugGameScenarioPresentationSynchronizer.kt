@@ -11,7 +11,7 @@ import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
 
 /**
- * 使用正式呈現介面重建開發情境的完整桌面；呼叫端須切換至伺服器主執行緒。
+ * 使用正式呈現介面重建開發情境的完整桌面。呼叫端須切換至伺服器主執行緒。
  *
  * @property serverHolder 目前伺服器，用於取得牌桌所在世界。
  * @property tableLocationRegistry 牌桌位置索引。

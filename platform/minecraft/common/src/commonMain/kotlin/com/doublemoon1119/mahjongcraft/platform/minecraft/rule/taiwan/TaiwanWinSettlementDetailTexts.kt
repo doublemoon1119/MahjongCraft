@@ -16,7 +16,7 @@ internal object TaiwanWinSettlementDetailTexts {
     /**
      * 將台種 ID 與台數轉成玩家可讀文字。
      *
-     * 只適用於部分付款者的條目（例如閒家自摸時的莊家台）以對應樣式顯示；其餘 [HIGHLIGHT_TAI] 台以上的台種以強調樣式顯示。
+     * 只適用於部分付款者的條目（例如閒家自摸時的莊家台）以對應樣式顯示。其餘 [HIGHLIGHT_TAI] 台以上的台種以強調樣式顯示。
      */
     val taiText: WinSettlementDetailTextFormatter = object : WinSettlementDetailTextFormatter {
         override fun quantities(quantities: List<WinSettlementQuantity>): PresentationValue.TextValue = FallbackWinSettlementDetailTextFormatter.quantities(quantities)

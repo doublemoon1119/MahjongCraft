@@ -137,7 +137,7 @@ class RoomScreen(
     /** 對局成員卡片內資訊清單的捲動狀態，每位玩家各自一份。 */
     private val playingInfoScrolls = mutableMapOf<Uuid, ScrollState>()
 
-    /** 正在拖曳資訊捲軸的玩家；沒有拖曳時為 null。 */
+    /** 正在拖曳資訊捲軸的玩家。沒有拖曳時為 null。 */
     private var playingInfoDragPlayer: Uuid? = null
 
     /** 等待室玩家卡片 grid 換列時的垂直捲動狀態，避免超出範圍的列疊在底部操作列上。 */
@@ -160,7 +160,7 @@ class RoomScreen(
      */
     private var wasRoomMember = stateStore.tableOccupancy(tableId)?.occupancy == TableOccupancyDto.ROOM && stateStore.roomSnapshot(tableId)?.isInRoom == true
 
-    /** 玩家模型預覽快取；未取得外觀資料時也可保存佔位模型。 */
+    /** 玩家模型預覽快取。未取得外觀資料時也可保存佔位模型。 */
     private val profilePreviews = mutableMapOf<Uuid, RemotePlayer>()
 
     /** 決定各成員的模型或頭像呈現方式。 */
@@ -213,7 +213,7 @@ class RoomScreen(
     }
 
     /**
-     * 建立頁面切換按鈕；目前所在的頁面以白色外框標示，再點一次沒有作用。
+     * 建立頁面切換按鈕。目前所在的頁面以白色外框標示，再點一次沒有作用。
      *
      * @param x 按鈕左界。
      * @param key 頁面名稱翻譯鍵。
@@ -246,7 +246,7 @@ class RoomScreen(
                  * @param key 按鈕文字翻譯鍵。
                  * @param action 點擊後傳送的房間操作。
                  * @param active 按鈕是否可點擊。
-                 * @param tooltipKey 按鈕提示的翻譯鍵；null 時不顯示提示。
+                 * @param tooltipKey 按鈕提示的翻譯鍵。null 時不顯示提示。
                  * @return 清單加入結果。
                  */
                 fun button(
@@ -345,11 +345,11 @@ class RoomScreen(
     }
 
     /**
-     * 在 AI 成員卡片上加入策略選擇器，點擊展開可選策略的清單；非房主只能檢視。
+     * 在 AI 成員卡片上加入策略選擇器，點擊展開可選策略的清單。非房主只能檢視。
      *
      * @param tableIdText 傳送房間操作使用的牌桌識別碼。
      * @param targetId AI 成員的識別碼。
-     * @param current 目前策略識別碼；未知時為 null。
+     * @param current 目前策略識別碼。未知時為 null。
      * @param editable 是否可以變更策略。
      * @param x 選擇器左界。
      * @param y 選擇器上界。
@@ -414,7 +414,7 @@ class RoomScreen(
     private fun send(action: RoomActionDto) = MahjongChannels.roomAction.sendToServer(json, action)
 
     /**
-     * 取得策略名稱；未知識別碼直接顯示，未提供識別碼時顯示 AI。
+     * 取得策略名稱。未知識別碼直接顯示，未提供識別碼時顯示 AI。
      *
      * @param strategyKey 策略識別碼。
      * @return 策略的顯示文字。
@@ -588,10 +588,10 @@ class RoomScreen(
     /**
      * 這張桌子目前是否仍可使用：玩家在同一個維度、距離夠近，而且桌子本身還在。
      *
-     * 桌子可能在畫面開著時被其他玩家破壞，因此距離之外還要確認方塊實體仍然存在；距離條件已經保證所在
+     * 桌子可能在畫面開著時被其他玩家破壞，因此距離之外還要確認方塊實體仍然存在。距離條件已經保證所在
      * 區塊是載入的，查不到方塊實體就代表桌子真的沒了。payload 沒有帶座標時無從判斷，一律視為仍可使用。
      *
-     * @return 牌桌資料存在且可用時為 true；缺少位置資訊時也視為可用。
+     * @return 牌桌資料存在且可用時為 true。缺少位置資訊時也視為可用。
      */
     internal fun isTableStillAvailable(): Boolean {
         val table = stateStore.tableOccupancy(tableId) ?: return false
@@ -644,7 +644,7 @@ class RoomScreen(
     /**
      * 進行中對局依權威自風排序，固定呈現東、南、西、北——卡片本身的大小與位置跟等待室
      * （[renderMembers]）共用同一套 grid、放大規則與捲動機制（[memberScroll]），差異只在名稱下方
-     * 顯示的是 player info（[resolvePlayingPlayerInfo]）而不是加入狀態；資訊放不下時捲軸畫在該卡片內，每張卡片各自捲動。
+     * 顯示的是 player info（[resolvePlayingPlayerInfo]）而不是加入狀態。資訊放不下時捲軸畫在該卡片內，每張卡片各自捲動。
      *
      * @param context 畫面繪製情境。
      * @param mouseX 游標水平座標，用於模型預覽朝向。
@@ -704,14 +704,14 @@ class RoomScreen(
     private fun infoRows(player: MahjongPlayerInfoEntry) = memberPresentation.infoRows(player, resolvePlayerInfoEntity()?.dealerPlayerId ?: stateStore.gameSnapshot(tableId)?.dealerPlayerId)
 
     /**
-     * 取得玩家卡片資訊清單的捲動狀態；第一次使用時建立。
+     * 取得玩家卡片資訊清單的捲動狀態。第一次使用時建立。
      *
      * @param playerId 玩家識別碼。
      * @return 這位玩家的捲動狀態。
      */
     private fun infoScroll(playerId: Uuid): ScrollState = playingInfoScrolls.getOrPut(playerId) { ScrollState() }
 
-    /** 優先使用 Player Info entity 的完整公開快照；同步尚未抵達時以遊戲快照安全降級。 */
+    /** 優先使用 Player Info entity 的完整公開快照。同步尚未抵達時以遊戲快照安全降級。 */
     private fun resolvePlayingPlayerInfo(): List<MahjongPlayerInfoEntry> {
         resolvePlayerInfoEntity()?.players?.takeIf { it.isNotEmpty() }?.let { return it }
         val snapshot = stateStore.gameSnapshot(tableId) ?: return emptyList()
@@ -723,7 +723,7 @@ class RoomScreen(
     /**
      * 在牌桌周圍搜尋屬於此牌桌的玩家資訊實體。
      *
-     * @return 第一個相符實體；世界、位置或實體尚未可用時為 null。
+     * @return 第一個相符實體。世界、位置或實體尚未可用時為 null。
      */
     private fun resolvePlayerInfoEntity(): MahjongPlayerInfoEntity? {
         val table = stateStore.tableOccupancy(tableId) ?: return null
@@ -859,7 +859,7 @@ class RoomScreen(
         )
     }
 
-    /** 對局中面板的卡片版面；跟等待室共用同一套換欄規則與捲動機制。 */
+    /** 對局中面板的卡片版面。跟等待室共用同一套換欄規則與捲動機制。 */
     private fun playingGrid(): RoomMemberGridLayout = memberGrid(resolvePlayingPlayerInfo().size)
 
     /**
@@ -913,7 +913,7 @@ class RoomScreen(
         )
     }
 
-    /** 取得房間設定，沒有房間快照時改用進行中對局的設定；兩者皆無時為 null。 */
+    /** 取得房間設定，沒有房間快照時改用進行中對局的設定。兩者皆無時為 null。 */
     private fun currentConfig(): GameConfig? = stateStore.roomSnapshot(tableId)?.gameConfig
         ?: stateStore.tableOccupancy(tableId)?.playingGameConfig?.let { dto -> dto.toDomain(networkRegistries) }
 
@@ -927,10 +927,10 @@ class RoomScreen(
     private fun memberName(playerId: Uuid, ai: Boolean): Component = Component.literal(displayNames.resolve(tableId, playerId.toString(), ai))
 
     /**
-     * 優先使用玩家列表或已解析的名稱；未知時要求解析器載入，依解析器的帳號政策決定是否外部查詢。
+     * 優先使用玩家列表或已解析的名稱。未知時要求解析器載入，依解析器的帳號政策決定是否外部查詢。
      *
      * @param playerId 真人玩家識別碼。
-     * @return 已知名稱；載入中或無法解析時為 null。
+     * @return 已知名稱。載入中或無法解析時為 null。
      */
     private fun resolveLocalPlayerName(playerId: Uuid): String? {
         val name = minecraft?.connection?.getPlayerInfo(playerId.toJavaUuid())?.profile?.name
@@ -953,7 +953,7 @@ class RoomScreen(
     )
 
     /**
-     * 目前畫面上實際顯示的卡片 grid 版面（等待室或進行中對局）；兩者共用同一套卡片版面與
+     * 目前畫面上實際顯示的卡片 grid 版面（等待室或進行中對局）。兩者共用同一套卡片版面與
      * [memberScroll] 捲動機制，不在這兩種狀態時為 null。
      */
     private fun currentMemberGrid(): RoomMemberGridLayout? = when (stateStore.tableOccupancy(tableId)?.occupancy) {
@@ -964,11 +964,11 @@ class RoomScreen(
 
     /**
      * 優先使用世界中的玩家，否則以玩家列表或已解析 profile 建立純客戶端預覽。
-     * 未取得 profile 時要求 [profileResolver] 載入並使用問號佔位模型；是否外部查詢由解析器的帳號政策決定。
+     * 未取得 profile 時要求 [profileResolver] 載入並使用問號佔位模型。是否外部查詢由解析器的帳號政策決定。
      * 取得 profile 後，下次呼叫會取代佔位模型。
      *
      * @param playerId 真人玩家識別碼。
-     * @return 可用的玩家或預覽模型；客戶端世界不可用時為 null。
+     * @return 可用的玩家或預覽模型。客戶端世界不可用時為 null。
      */
     private fun resolvePlayerPreview(playerId: Uuid): LivingEntity? {
         val minecraft = minecraft ?: return null
@@ -986,7 +986,7 @@ class RoomScreen(
         return RemotePlayer(world, profile).also { profilePreviews[playerId] = it }
     }
 
-    /** Esc 在設定頁返回成員頁，有尚未套用的修改時先確認；在成員頁才離開整個畫面。 */
+    /** Esc 在設定頁返回成員頁，有尚未套用的修改時先確認。在成員頁才離開整個畫面。 */
     override fun onClose() {
         if (page == Page.SETTINGS) settingsPage.close() else closeEntireScreen()
     }
@@ -1056,7 +1056,7 @@ class RoomScreen(
      * @property key 名稱翻譯鍵。
      * @property action 點擊後傳送的房間操作。
      * @property active 是否可點擊。
-     * @property tooltipKey 按鈕提示的翻譯鍵；null 時不顯示提示。
+     * @property tooltipKey 按鈕提示的翻譯鍵。null 時不顯示提示。
      */
     private data class ActionButton(
         val key: String,
@@ -1089,7 +1089,7 @@ class RoomScreen(
         /** AI 策略選擇器的高度。 */
         const val AI_STRATEGY_BUTTON_HEIGHT = 18
 
-        /** AI 策略選擇器上界在卡片資訊區上界之上的距離；選擇器放在名稱正下方。 */
+        /** AI 策略選擇器上界在卡片資訊區上界之上的距離。選擇器放在名稱正下方。 */
         const val AI_STRATEGY_BUTTON_LIFT = 2
 
         /** 踢除按鈕的邊長。 */

@@ -242,7 +242,7 @@ class GameDecisionAuthorityResolverTest {
         assertEquals(emptyMap(), automaticResolver.resolve(game))
     }
 
-    /** 驗證 AI 玩家摸牌後不建立真人決策計時；AI 策略的執行與逾時由其他元件管理。 */
+    /** 驗證 AI 玩家摸牌後不建立真人決策計時。AI 策略的執行與逾時由其他元件管理。 */
     @Test
     fun `test ai current player does not resolve own turn decision`() {
         val playerId = Uuid.random()

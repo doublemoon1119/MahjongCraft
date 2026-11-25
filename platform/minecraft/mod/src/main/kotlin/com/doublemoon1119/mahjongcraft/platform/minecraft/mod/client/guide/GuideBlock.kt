@@ -8,11 +8,11 @@ import net.minecraft.network.chat.Component
 /**
  * 「如何開始」內容區中由上而下排列的一個區塊。
  *
- * 區塊只描述內容；位置與高度由 [GuideContentLayout] 依可用寬度計算，繪製與互動由畫面負責。
+ * 區塊只描述內容。位置與高度由 [GuideContentLayout] 依可用寬度計算，繪製與互動由畫面負責。
  */
 internal sealed interface GuideBlock {
     /**
-     * 段落標題，以標題色呈現；不是頁面第一個區塊時上方多留一段間距。
+     * 段落標題，以標題色呈現。不是頁面第一個區塊時上方多留一段間距。
      *
      * @property text 標題文字。
      */
@@ -21,7 +21,7 @@ internal sealed interface GuideBlock {
     /**
      * 一段會自動換行的文字。
      *
-     * @property text 文字；以換行分隔句子。
+     * @property text 文字。以換行分隔句子。
      * @property hint 是否以灰色的補充說明呈現。
      */
     data class Paragraph(val text: Component, val hint: Boolean = false) : GuideBlock
@@ -81,7 +81,7 @@ internal sealed interface GuideBlock {
      */
     data class Button(val label: Component, val action: GuideAction) : GuideBlock
 
-    /** 麻將桌與麻將凳的合成配方輪播；找不到配方時不佔空間。 */
+    /** 麻將桌與麻將凳的合成配方輪播。找不到配方時不佔空間。 */
     data object Recipe : GuideBlock
 
     /**
@@ -96,7 +96,7 @@ internal sealed interface GuideBlock {
  * 編號步驟中的一步。
  *
  * @property text 步驟本身。
- * @property hint 步驟下方的灰色補充；沒有時為 null。
+ * @property hint 步驟下方的灰色補充。沒有時為 null。
  */
 internal data class GuideStep(val text: Component, val hint: Component? = null)
 
@@ -118,12 +118,12 @@ internal sealed interface GuideTileItem {
      * 一組相連的牌，上方可附標籤。
      *
      * @property tiles 由左到右的牌。
-     * @property label 牌組上方的小標籤；沒有時為 null。
+     * @property label 牌組上方的小標籤。沒有時為 null。
      */
     data class Group(val tiles: List<Tile>, val label: Component? = null) : GuideTileItem
 
     /**
-     * 牌組之間的符號，例如加號與箭頭，與牌面垂直置中；換行時跟著後面的項目移到下一行。
+     * 牌組之間的符號，例如加號與箭頭，與牌面垂直置中。換行時跟著後面的項目移到下一行。
      *
      * @property symbol 符號文字。
      */

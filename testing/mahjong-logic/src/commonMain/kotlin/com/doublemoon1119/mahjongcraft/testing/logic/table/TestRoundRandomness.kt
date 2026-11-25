@@ -6,10 +6,10 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.RandomDiceRollSource
 import kotlin.random.Random
 
 /**
- * 以固定數字建立一局的亂數來源；同一個 [seed] 每次得到相同的座位、牌山、骰子與組件初值，讓測試結果固定。
+ * 以固定數字建立一局的亂數來源。同一個 [seed] 每次得到相同的座位、牌山、骰子與組件初值，讓測試結果固定。
  *
- * @param seed 決定這一局結果的數字；需要多個不同牌局時傳入不同數字。
- * @param dice 擲骰來源；需要指定點數的測試可傳入固定來源。
+ * @param seed 決定這一局結果的數字。需要多個不同牌局時傳入不同數字。
+ * @param dice 擲骰來源。需要指定點數的測試可傳入固定來源。
  * @return 固定的亂數來源。
  */
 fun testRoundRandomness(

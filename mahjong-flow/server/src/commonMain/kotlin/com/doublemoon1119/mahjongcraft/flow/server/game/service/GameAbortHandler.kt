@@ -10,7 +10,7 @@ fun interface GameAbortHandler {
      * @param expectedGame 發現錯誤時的權威對局。
      * @param reasonId 可公開的終止原因識別碼。
      * @param diagnostic 僅提供給管理診斷的說明。
-     * @return 本次確實提交中止時為 true；過期或已結束時為 false。
+     * @return 本次確實提交中止時為 true。過期或已結束時為 false。
      */
     suspend fun abort(expectedGame: Game, reasonId: String, diagnostic: String): Boolean
 }

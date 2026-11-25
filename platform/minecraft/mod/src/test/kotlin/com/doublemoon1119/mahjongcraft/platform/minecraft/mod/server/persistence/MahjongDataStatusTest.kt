@@ -21,7 +21,7 @@ class MahjongDataStatusTest {
         MinecraftTestBootstrap.ensure()
     }
 
-    /** 只有房間與對局無法讀取時停用麻將功能；位置索引與牌譜資料庫各自降級。 */
+    /** 只有房間與對局無法讀取時停用麻將功能。位置索引與牌譜資料庫各自降級。 */
     @Test
     fun `only authoritative state disables mahjong`() {
         val status = MahjongDataStatus()
@@ -44,7 +44,7 @@ class MahjongDataStatusTest {
         assertFalse(receivesDetailedNotice(hasAdminPermission = false, isHost = false))
     }
 
-    /** 每份資料依序列出影響、檔案與原因；只有房間與對局附上紅色的最後手段。 */
+    /** 每份資料依序列出影響、檔案與原因。只有房間與對局附上紅色的最後手段。 */
     @Test
     fun `messages list each problem with its file and cause`() {
         val messages = dataProblemMessages(

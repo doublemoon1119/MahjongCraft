@@ -13,11 +13,11 @@ import net.minecraft.world.item.Item
 
 /** 範例家具的原生註冊與座位 provider 組裝入口。 */
 object ExampleFurniture {
-    /** 範例椅子物品；寫入登記表後可用。 */
+    /** 範例椅子物品。寫入登記表後可用。 */
     val chairItem: Item
         get() = BuiltInRegistries.ITEM.get(resourceId(ExampleFurnitureIds.CHAIR))
 
-    /** 範例坐墊物品；寫入登記表後可用。 */
+    /** 範例坐墊物品。寫入登記表後可用。 */
     val cushionItem: Item
         get() = BuiltInRegistries.ITEM.get(resourceId(ExampleFurnitureIds.CUSHION))
 

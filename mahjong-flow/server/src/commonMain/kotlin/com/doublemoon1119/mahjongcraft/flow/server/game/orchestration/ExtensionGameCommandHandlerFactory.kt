@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameComma
  */
 fun interface ExtensionGameCommandHandlerFactory<C : ExtensionGameCommand> {
     /**
-     * 建立綁定 [context] 的 handler；每個執行環境呼叫一次。
+     * 建立綁定 [context] 的 handler。每個執行環境呼叫一次。
      *
      * @param context 執行環境提供的命令處理情境。
      * @return 綁定指定情境的擴充命令處理器。

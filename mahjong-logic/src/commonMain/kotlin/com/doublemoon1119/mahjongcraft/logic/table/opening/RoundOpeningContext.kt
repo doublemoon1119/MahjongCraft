@@ -8,7 +8,7 @@ import kotlin.uuid.Uuid
  * @property playerIdsInTurnOrder 固定的玩家回合順序。
  * @property firstRound 是否為整場對局的第一局。
  * @property provisionalPlayerId 第一輪開始時暫定用來擲骰的玩家。
- * @property fixedDealerPlayerId 換局時由賽程決定且不可被程序改變的莊家；第一局為 null。
+ * @property fixedDealerPlayerId 換局時由賽程決定且不可被程序改變的莊家。第一局為 null。
  * @property rolls 已完成的擲骰記錄，依輪次排列。
  */
 data class RoundOpeningContext(

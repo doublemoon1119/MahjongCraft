@@ -24,7 +24,7 @@ class TileRevealReorderTest {
         assertEquals(2, queue.size)
     }
 
-    /** 正常立牌仍由原本角度倒下；其他姿態也以實際排定的角度為起點。 */
+    /** 正常立牌仍由原本角度倒下。其他姿態也以實際排定的角度為起點。 */
     @Test
     fun `laydown starts from the actual planned pose and keeps its timing`() {
         listOf(MahjongTilePose.STANDING, MahjongTilePose.FACE_DOWN).forEach { pose ->
@@ -84,7 +84,7 @@ class TileRevealReorderTest {
         }
     }
 
-    /** 整組翻牌聲由真的要倒下的牌中位於中間的那張播放，已平放的牌不參與；全部已平放時不播放。 */
+    /** 整組翻牌聲由真的要倒下的牌中位於中間的那張播放，已平放的牌不參與。全部已平放時不播放。 */
     @Test
     fun `group laydown sound comes from a tile that actually turns`() {
         val up = MahjongTilePose.FACE_UP

@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCh
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongBotEntity
 
 /**
- * 內建角色保持面向牌桌，只提供出牌回饋；注視沿用介面的無動作預設。
+ * 內建角色保持面向牌桌，只提供出牌回饋。注視沿用介面的無動作預設。
  *
  * @property entity 尚未生成或正在接管的牌體角色。
  */

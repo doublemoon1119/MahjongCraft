@@ -11,7 +11,7 @@ sealed interface TaiwanGameAction : ExtensionGameAction {
         override val id: String = MahjongCraftMetadata.id("taiwan/reveal_flower")
     }
 
-    /** 打出一張牌並宣告聽牌；依宣告時機成為一般宣告聽牌、天聽或地聽。 */
+    /** 打出一張牌並宣告聽牌。依宣告時機成為一般宣告聽牌、天聽或地聽。 */
     data object DeclareReady : TaiwanGameAction {
         override val id: String = MahjongCraftMetadata.id("taiwan/declare_ready")
     }

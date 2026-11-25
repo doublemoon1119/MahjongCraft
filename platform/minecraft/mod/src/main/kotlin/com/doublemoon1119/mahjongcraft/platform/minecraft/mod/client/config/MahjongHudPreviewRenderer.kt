@@ -50,10 +50,10 @@ class MahjongHudPreviewRenderer(
      *
      * @param element 要量測的 HUD 類型。
      * @param scenario 操作面板使用的預覽情境。
-     * @param automaticControlLabels 自動操作狀態要列出的項目名稱；沒有項目時自動操作狀態沒有尺寸。
+     * @param automaticControlLabels 自動操作狀態要列出的項目名稱。沒有項目時自動操作狀態沒有尺寸。
      * @param screenWidth 畫面寬度。
      * @param screenHeight 畫面高度。
-     * @return HUD 的實際尺寸；自動操作狀態沒有項目時為 `null`。
+     * @return HUD 的實際尺寸。自動操作狀態沒有項目時為 `null`。
      */
     internal fun size(
         element: HudElement,
@@ -154,7 +154,7 @@ class MahjongHudPreviewRenderer(
     }
 
     /**
-     * 畫出操作面板與它的按鈕及倒數；原版按鈕繪製時會重設著色，因此每顆按鈕畫完後重新套用 [opacity]。
+     * 畫出操作面板與它的按鈕及倒數。原版按鈕繪製時會重設著色，因此每顆按鈕畫完後重新套用 [opacity]。
      *
      * @param context 畫面繪製環境。
      * @param prompt 範例決策提示。
@@ -242,7 +242,7 @@ class MahjongHudPreviewRenderer(
     ): DecisionCardLayout = measureDecisionPanel(decisionContent(prompt, screenWidth), screenWidth, screenHeight, panelRatioY).geometry
 
     /**
-     * 建立 [content] 的操作面板版面；倒數保留寬度依範例倒數量測。
+     * 建立 [content] 的操作面板版面。倒數保留寬度依範例倒數量測。
      *
      * @param content 面板內容。
      * @param screenWidth 畫面寬度。
@@ -299,12 +299,12 @@ class MahjongHudPreviewRenderer(
     }
 
     /**
-     * 計算自動操作狀態在指定畫面上的版面；沒有項目時為 null。
+     * 計算自動操作狀態在指定畫面上的版面。沒有項目時為 null。
      *
      * @param labels 要呈現的項目名稱。
      * @param screenWidth 畫面寬度。
      * @param screenHeight 畫面高度。
-     * @return 自動操作狀態版面；沒有項目時為 `null`。
+     * @return 自動操作狀態版面。沒有項目時為 `null`。
      */
     private fun automaticControlLayout(labels: List<Component>, screenWidth: Int, screenHeight: Int) = labels.takeIf { it.isNotEmpty() }?.let {
         val renderer = Minecraft.getInstance().font
@@ -323,7 +323,7 @@ class MahjongHudPreviewRenderer(
         /** 預覽不跟隨游標，以畫面外的座標畫出沒有 hover 效果的按鈕與卡片。 */
         const val NO_POINTER = -1
 
-        /** 在指定範圍內繪製時計算版面所用的高度；面板貼齊上緣，高度只需足夠容納面板。 */
+        /** 在指定範圍內繪製時計算版面所用的高度。面板貼齊上緣，高度只需足夠容納面板。 */
         const val MEASURE_HEIGHT = 1000
 
         /** 範例倒數：基本 5 秒加保留 20 秒。 */

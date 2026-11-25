@@ -6,11 +6,16 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 /**
  * 以伺服器的房間設定為基礎，重建客戶端送來的新設定，只接受房間畫面本來就能做到的修改。
  *
- * 同一規則以房間目前設定為基礎，切換規則則先換成目標規則的預設值。先驗證並套用規則專屬欄位，
- * 再依重建後的規則設定決定哪些共用欄位可以修改，最後驗證並套用流程欄位。
- * 每個值都須符合欄位編輯器的限制（[GameConfigEditorSpec.accepts]）；重建結果與送來的設定不同時，
- * 代表客戶端改了不可編輯的內容，整份拒絕。識別欄位必須整組符合某個玩法，且該玩法的鎖定欄位必須是固定的值
- * （[GameConfigVariantResolver.isConsistent]），否則同樣整份拒絕。
+ * 1. 同一規則以房間目前設定為基礎。切換規則則先換成目標規則的預設值。
+ * 2. 驗證並套用規則專屬欄位。
+ * 3. 依重建後的規則設定決定哪些共用欄位可以修改。
+ * 4. 驗證並套用流程欄位。
+ *
+ * 以下情況整份拒絕：
+ *
+ * - 任一值不符合欄位編輯器的限制（[GameConfigEditorSpec.accepts]）。
+ * - 重建結果與送來的設定不同，代表客戶端改了不可編輯的內容。
+ * - 識別欄位沒有整組符合某個玩法，或該玩法的鎖定欄位不是固定的值（[GameConfigVariantResolver.isConsistent]）。
  */
 object RoomConfigSubmission {
     /** 審查送來的房間設定的結果。 */

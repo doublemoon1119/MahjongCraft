@@ -24,7 +24,7 @@ import net.minecraft.world.level.Level
  */
 class MahjongScoringStickItem(settings: Properties) : Item(settings) {
     /**
-     * 非蹲下右鍵空氣時切換面額；蹲下時交由方塊互動入口判斷是否放置。
+     * 非蹲下右鍵空氣時切換面額。蹲下時交由方塊互動入口判斷是否放置。
      *
      * @param world 互動所在世界。
      * @param user 使用物品的玩家。
@@ -38,7 +38,7 @@ class MahjongScoringStickItem(settings: Properties) : Item(settings) {
     }
 
     /**
-     * 非蹲下右鍵方塊切換面額；蹲下時在命中點放置點棒 entity。
+     * 非蹲下右鍵方塊切換面額。蹲下時在命中點放置點棒 entity。
      *
      * @param context 方塊互動位置、玩家及物品堆疊。
      */
@@ -67,10 +67,10 @@ class MahjongScoringStickItem(settings: Properties) : Item(settings) {
 
     companion object {
         /**
-         * 讀取 item 保存的面額；缺失或非法值使用百分棒。
+         * 讀取 item 保存的面額。缺失或非法值使用百分棒。
          *
          * @param stack 要讀取的點棒物品堆疊。
-         * @return 堆疊保存的有效面額；缺失或非法值時為百分棒。
+         * @return 堆疊保存的有效面額。缺失或非法值時為百分棒。
          */
         fun readDenomination(stack: ItemStack): MahjongScoringStickDenomination = MahjongScoringStickItemStackData.read(stack)
 
@@ -83,7 +83,7 @@ class MahjongScoringStickItem(settings: Properties) : Item(settings) {
         fun writeDenomination(stack: ItemStack, denomination: MahjongScoringStickDenomination) = MahjongScoringStickItemStackData.write(stack, denomination)
 
         /**
-         * 將 item 循環至下一個面額；無自訂資料的配方產物以目前顯示的百分棒為起點。
+         * 將 item 循環至下一個面額。無自訂資料的配方產物以目前顯示的百分棒為起點。
          *
          * @param stack 要更新的點棒物品堆疊。
          */

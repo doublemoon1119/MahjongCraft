@@ -293,7 +293,7 @@ class RoomCommand(
     }
 
     /**
-     * 列出目前已註冊的 AI 策略 key，作為 `ai add`／`ai strategy` 的策略引數 Tab 補全建議；tooltip
+     * 列出目前已註冊的 AI 策略 key，作為 `ai add`／`ai strategy` 的策略引數 Tab 補全建議。tooltip
      * 顯示該策略翻譯後的顯示名稱，與 AI 候選項目的呈現方式一致。
      *
      * @param context Brigadier 指令來源。
@@ -339,7 +339,7 @@ class RoomCommand(
     }
 
     /**
-     * 依 [listCandidates] 列出候選成員 tooltip 補全建議的共用邏輯；真人只顯示使用者名稱，AI 額外帶上
+     * 依 [listCandidates] 列出候選成員 tooltip 補全建議的共用邏輯。真人只顯示使用者名稱，AI 額外帶上
      * 序號與策略顯示名稱的 tooltip。
      *
      * 候選清單是一次 suspend 查詢，這裡用 [CompletableFuture] 手動橋接：[SuggestionsBuilder.build]

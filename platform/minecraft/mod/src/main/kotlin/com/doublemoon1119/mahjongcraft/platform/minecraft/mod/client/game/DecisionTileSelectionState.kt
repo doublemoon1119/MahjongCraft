@@ -8,12 +8,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionP
 /**
  * 以實體手牌進行選牌時的本機狀態機。
  *
- * 同一時間只會有一種進行中的選牌情境：規則選擇（rule decision）或帶選牌需求的動作（例如立直宣告後選捨牌），
- * 兩者互斥。另外還有「玩家已明確跳過特殊動作、接下來右鍵手牌就是普通出牌」這個模式。
- *
- * 本類別只操作 DTO 與牌張 ID 字串，不送封包、不碰畫面；轉換方法以 [Outcome] 與 [BeginRequest] 告訴呼叫端
- * 該不該消化這次互動、該不該送出選擇。動作選牌是否仍然有效由 [ClientDecisionPromptStore] 決定，呼叫端以
- * `isActionSelectionActive` 傳入。
+ * - 同一時間只會有一種進行中的選牌情境：規則選擇（rule decision），或帶選牌需求的動作（例如立直宣告後選捨牌）。
+ * - 另有一個模式：玩家已明確跳過特殊動作，接下來右鍵手牌就是普通出牌。
+ * - 本類別只操作 DTO 與牌張 ID 字串，不送封包、不碰畫面。
+ * - 轉換方法以 [Outcome] 與 [BeginRequest] 告訴呼叫端是否消化這次互動、是否送出選擇。
+ * - 動作選牌是否仍然有效由 [ClientDecisionPromptStore] 決定，呼叫端以 `isActionSelectionActive` 傳入。
  */
 internal class DecisionTileSelectionState {
     /** 進行中 rule decision 選牌的 decision key。 */
@@ -31,16 +30,16 @@ internal class DecisionTileSelectionState {
     /** 已允許右鍵手牌直接出牌的 decision key。 */
     private var directDiscardDecisionKey: String? = null
 
-    /** 進行中動作選牌的 token；沒有進行中的動作選牌時為 `null`。 */
+    /** 進行中動作選牌的 token。沒有進行中的動作選牌時為 `null`。 */
     val activeActionToken: String? get() = actionToken
 
     /**
      * 進入 rule decision 選牌模式。
      *
-     * 只有 `maxCount > 1` 需要伺服器生成確認面板；`maxCount == 1` 維持右鍵合法牌直接送出。
+     * 只有 `maxCount > 1` 需要伺服器生成確認面板。`maxCount == 1` 維持右鍵合法牌直接送出。
      *
      * @param prompt 最新的權威決策提示。
-     * @return 需要建立多選確認面板時的請求；單選或沒有選牌限制時為 null。
+     * @return 需要建立多選確認面板時的請求。單選或沒有選牌限制時為 null。
      */
     fun beginRuleDecision(prompt: PlayerDecisionPromptDto): BeginRequest? {
         selectedRuleDecisionTileIds.clear()
@@ -49,10 +48,10 @@ internal class DecisionTileSelectionState {
     }
 
     /**
-     * 進入動作選牌模式；確認面板的判斷同 [beginRuleDecision]。
+     * 進入動作選牌模式。確認面板的判斷同 [beginRuleDecision]。
      *
      * @param action 欲執行且需要選牌的動作。
-     * @return 需要建立多選確認面板時的請求；單選時為 null。
+     * @return 需要建立多選確認面板時的請求。單選時為 null。
      */
     fun beginAction(action: PlayerDecisionActionDto): BeginRequest? {
         selectedActionTileIds.clear()
@@ -72,9 +71,10 @@ internal class DecisionTileSelectionState {
     /**
      * 切換一張手牌的選取狀態。
      *
-     * 已選滿 `maxCount` 時，右鍵其他尚未選取的牌不會有反應，必須先取消一張；非合法候選牌同樣沒有反應。
-     * 兩種情況都仍然消化這次互動，避免右鍵穿透成普通出牌。只有 `maxCount == 1` 才選中即送出——
-     * `maxCount > 1` 一律要右鍵確認面板，即使剛好選滿也一樣，見 [confirm]。
+     * - 已選滿 `maxCount` 時，右鍵其他尚未選取的牌不會有反應，必須先取消一張。
+     * - 非合法候選牌同樣沒有反應。
+     * - 上述兩種情況都仍然消化這次互動，避免右鍵變成普通出牌。
+     * - 只有 `maxCount == 1` 才選中即送出。`maxCount > 1` 一律要右鍵確認面板，即使剛好選滿也一樣，見 [confirm]。
      *
      * @param prompt 最新的權威決策提示。
      * @param tileId 本次互動的牌張識別碼。
@@ -111,7 +111,7 @@ internal class DecisionTileSelectionState {
     /**
      * 右鍵多選確認面板。
      *
-     * 已選數量落在合法範圍內才送出；不在範圍內時仍然消化互動並維持選取狀態，讓玩家繼續選。
+     * 已選數量落在合法範圍內才送出。不在範圍內時仍然消化互動並維持選取狀態，讓玩家繼續選。
      *
      * @param prompt 最新的權威決策提示。
      * @param isActionSelectionActive 動作選牌是否仍有效。
@@ -146,11 +146,11 @@ internal class DecisionTileSelectionState {
     }
 
     /**
-     * 進行中選牌情境的已選數量與合法範圍；沒有進行中的選牌時為 `null`。
+     * 進行中選牌情境的已選數量與合法範圍。沒有進行中的選牌時為 `null`。
      *
      * @param prompt 最新的權威決策提示。
      * @param isActionSelectionActive 動作選牌是否仍有效。
-     * @return 有效選牌的進度；沒有有效情境時為 null。
+     * @return 有效選牌的進度。沒有有效情境時為 null。
      */
     fun progress(prompt: PlayerDecisionPromptDto, isActionSelectionActive: Boolean): Progress? {
         if (ruleDecisionDecisionKey == prompt.decisionKey) {
@@ -229,8 +229,8 @@ internal class DecisionTileSelectionState {
      * @param constraint 合法牌張與可選張數。
      * @param tileId 本次互動的牌張識別碼。
      * @param kind 提交的選擇種類。
-     * @param token 動作令牌；規則選擇時為 null。
-     * @return 已消化互動的結果；合法單選完成時攜帶最終選擇。
+     * @param token 動作令牌。規則選擇時為 null。
+     * @return 已消化互動的結果。合法單選完成時攜帶最終選擇。
      */
     private fun toggleIn(
         selected: MutableSet<String>,
@@ -253,7 +253,7 @@ internal class DecisionTileSelectionState {
      * @param selected 目前已選牌張。
      * @param constraint 合法牌張與可選張數。
      * @param kind 提交的選擇種類。
-     * @param token 動作令牌；規則選擇時為 null。
+     * @param token 動作令牌。規則選擇時為 null。
      * @return 已選數量合法時的最終選擇，否則為 null。
      */
     private fun finalSelectionIfComplete(
@@ -263,15 +263,15 @@ internal class DecisionTileSelectionState {
         token: String?,
     ): FinalSelection? = FinalSelection(kind, token, selected.toList()).takeIf { selected.size in constraint.range }
 
-    /** 目前 prompt 的 rule decision 選牌需求；不是選牌型態的 rule decision 為 `null`。 */
+    /** 目前 prompt 的 rule decision 選牌需求。不是選牌型態的 rule decision 為 `null`。 */
     private fun PlayerDecisionPromptDto.ruleDecisionConstraint(): Constraint? = (ruleDecision as? RuleDecisionPromptDto.TileSelection)
         ?.let { Constraint(it.eligibleTileIds, it.minCount, it.maxCount) }
 
     /**
-     * 指定動作 token 的選牌需求；找不到動作或該動作不需選牌時為 `null`。
+     * 指定動作 token 的選牌需求。找不到動作或該動作不需選牌時為 `null`。
      *
      * @param token 欲查詢的動作令牌。
-     * @return 選牌限制；找不到動作或不需選牌時為 null。
+     * @return 選牌限制。找不到動作或不需選牌時為 null。
      */
     private fun PlayerDecisionPromptDto.actionConstraint(token: String): Constraint? = actions.firstOrNull { it.token == token }
         ?.tileSelection
@@ -296,7 +296,7 @@ internal class DecisionTileSelectionState {
     /**
      * 需要通知伺服器生成確認面板的開始選牌請求。
      *
-     * @property token 動作令牌；規則選擇時為 null。
+     * @property token 動作令牌。規則選擇時為 null。
      */
     data class BeginRequest(val token: String?)
 
@@ -304,7 +304,7 @@ internal class DecisionTileSelectionState {
      * 送出後必須等待伺服器確認的最終選擇。
      *
      * @property kind 本次提交的選擇種類。
-     * @property token 動作令牌；規則選擇時為 null。
+     * @property token 動作令牌。規則選擇時為 null。
      * @property tileIds 依選取順序排列的牌張識別碼。
      */
     data class FinalSelection(
@@ -315,13 +315,13 @@ internal class DecisionTileSelectionState {
 
     /** 一次實體牌互動的處理結果。 */
     sealed interface Outcome {
-        /** 不屬於任何進行中的選牌情境；呼叫端應讓事件繼續往下傳遞。 */
+        /** 不屬於任何進行中的選牌情境。呼叫端應讓事件繼續往下傳遞。 */
         data object Ignored : Outcome
 
         /**
          * 互動已被選牌情境消化。
          *
-         * @property selection 呼叫端應送出的最終選擇；尚未完成或候選無效時為 null。
+         * @property selection 呼叫端應送出的最終選擇。尚未完成或候選無效時為 null。
          */
         data class Consumed(val selection: FinalSelection?) : Outcome
     }

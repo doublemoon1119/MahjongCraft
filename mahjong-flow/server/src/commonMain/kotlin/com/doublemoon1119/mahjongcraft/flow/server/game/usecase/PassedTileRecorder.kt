@@ -9,7 +9,7 @@ import kotlin.uuid.Uuid
 /**
  * 把一張交給玩家、但玩家沒有榮和的牌記入 [MahjongPlayer.passedTilesInRound]。
  *
- * 規則以這份清單判斷自己下次取牌前的限制（例如日麻的同巡振聽）；記錄前先以規則的牌面解讀正規化。
+ * 規則以這份清單判斷自己下次取牌前的限制（例如日麻的同巡振聽）。記錄前先以規則的牌面解讀正規化。
  */
 internal object PassedTileRecorder {
     /**

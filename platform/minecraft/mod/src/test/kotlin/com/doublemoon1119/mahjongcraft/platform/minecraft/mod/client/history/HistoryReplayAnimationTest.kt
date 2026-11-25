@@ -44,7 +44,7 @@ class HistoryReplayAnimationTest {
         assertEquals(RIVER, animation.samples().getValue(0).placement)
     }
 
-    /** 打出牌的玩家在動畫開頭揮一次手，做完回到 0；其他玩家不揮手。 */
+    /** 打出牌的玩家在動畫開頭揮一次手，做完回到 0。其他玩家不揮手。 */
     @Test
     fun `the discarding player swings once at the start`() {
         val discarded = tile(index = 0, region = TileRegion.HAND, placement = HAND, pose = TilePose.UPRIGHT)
@@ -119,7 +119,7 @@ class HistoryReplayAnimationTest {
         assertEquals(WinCelebrationEffectSteps.sounds(start).map { it.soundId }, sounds.map { it.soundId }.filter { it != MahjongAnimationSounds.TILE_HAND_TURN })
     }
 
-    /** 不攤牌的胡牌：手牌不動，其他牌動完停一下就在和牌張上放特效；同一步重看種子相同。 */
+    /** 不攤牌的胡牌：手牌不動，其他牌動完停一下就在和牌張上放特效。同一步重看種子相同。 */
     @Test
     fun `an unrevealed win plays the effect on the winning tile in place`() {
         val still = mapOf(7 to tile(index = 7, region = TileRegion.HAND, placement = HAND, pose = TilePose.UPRIGHT))

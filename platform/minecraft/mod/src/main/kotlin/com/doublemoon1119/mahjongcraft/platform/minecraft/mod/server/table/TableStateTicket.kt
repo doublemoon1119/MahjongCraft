@@ -8,7 +8,7 @@ import kotlin.uuid.Uuid
  *
  * @property tableId 工作對應的桌子。
  * @property sessionId 建立工作時的伺服器啟動身分。
- * @property entry 建立工作時的位置條目；使用物件身分比較，不依賴可能重用的 revision。
+ * @property entry 建立工作時的位置條目。使用物件身分比較，不依賴可能重用的 revision。
  * @property requestId 這份票據的唯一識別碼，避免同桌舊工作套用後來的移除請求。
  */
 class TableStateTicket(

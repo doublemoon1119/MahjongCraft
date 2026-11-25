@@ -45,7 +45,7 @@ internal class HistoryRoundEventsScreen(
     /** 目前事件頁的捲動偏移。 */
     private var scroll = 0.0
 
-    /** 已顯示頁起點；成功換頁時才更新。 */
+    /** 已顯示頁起點。成功換頁時才更新。 */
     private var displayedStart: Int? = null
 
     /** 是否正拖曳捲軸。 */
@@ -69,10 +69,10 @@ internal class HistoryRoundEventsScreen(
     /** 從初始牌面開始回放。 */
     private var replayButton: Button? = null
 
-    /** 卡片標題列從該筆交易後開始回放的按鈕，依交易索引建立；隨內容捲動，由本畫面在內容裁切範圍內繪製。 */
+    /** 卡片標題列從該筆交易後開始回放的按鈕，依交易索引建立。隨內容捲動，由本畫面在內容裁切範圍內繪製。 */
     private val replayButtons = mutableMapOf<Int, RestartableMarqueeButtonWidget>()
 
-    /** 卡片內查看局面與載入和牌手牌的按鈕，依交易索引與是否為和牌手牌建立；隨內容捲動，由本畫面在內容裁切範圍內繪製。 */
+    /** 卡片內查看局面與載入和牌手牌的按鈕，依交易索引與是否為和牌手牌建立。隨內容捲動，由本畫面在內容裁切範圍內繪製。 */
     private val stateButtons = mutableMapOf<Pair<Int, Boolean>, RestartableMarqueeButtonWidget>()
 
     /** 交易卡片中保存結算的各列，與回放的結算卡片共用。 */
@@ -146,10 +146,10 @@ internal class HistoryRoundEventsScreen(
     }
 
     /**
-     * 取得卡片標題列從該筆交易後開始回放的按鈕；同一筆交易重複使用同一顆按鈕。
+     * 取得卡片標題列從該筆交易後開始回放的按鈕。同一筆交易重複使用同一顆按鈕。
      *
      * @param index 交易索引。
-     * @return 按鈕；位置由繪製時決定。
+     * @return 按鈕。位置由繪製時決定。
      */
     private fun replayButton(index: Int): RestartableMarqueeButtonWidget = replayButtons.getOrPut(index) {
         RestartableMarqueeButtonWidget.builder(Component.translatable(MinecraftHistoryScreenKeys.REPLAY_OPEN)) { session.openReplay(index + 1) }
@@ -165,11 +165,11 @@ internal class HistoryRoundEventsScreen(
     }
 
     /**
-     * 取得卡片內的查看局面或載入和牌手牌按鈕；同一筆交易重複使用同一顆按鈕。
+     * 取得卡片內的查看局面或載入和牌手牌按鈕。同一筆交易重複使用同一顆按鈕。
      *
      * @param index 交易索引。
-     * @param inline 是否為留在事件頁展開和牌手牌的按鈕；否則為開啟局面頁的放大鏡按鈕。
-     * @return 按鈕；位置由繪製時決定。
+     * @param inline 是否為留在事件頁展開和牌手牌的按鈕。否則為開啟局面頁的放大鏡按鈕。
+     * @return 按鈕。位置由繪製時決定。
      */
     private fun stateButton(index: Int, inline: Boolean): RestartableMarqueeButtonWidget = stateButtons.getOrPut(index to inline) {
         val widget = if (inline) {
@@ -296,14 +296,14 @@ internal class HistoryRoundEventsScreen(
     }
 
     /**
-     * 這台電腦是否裝有這場對局使用的規則；沒裝時回放按鈕停用。
+     * 這台電腦是否裝有這場對局使用的規則。沒裝時回放按鈕停用。
      *
      * @return 裝有該規則或無從判斷時為 true。
      */
     private fun ruleInstalled(): Boolean = session.ruleInstalled(session.controller.state.value.summary?.detail?.summary?.ruleId)
 
     /**
-     * 回放按鈕的提示框；這台電腦沒有這場對局的規則時寫出無法回放的原因。
+     * 回放按鈕的提示框。這台電腦沒有這場對局的規則時寫出無法回放的原因。
      *
      * @param descriptionKey 按鈕說明的翻譯鍵。
      * @param installed 這台電腦是否裝有這場對局的規則。
@@ -426,7 +426,7 @@ internal class HistoryRoundEventsScreen(
      *
      * @param identity 初始玩家身分。
      * @param seat 初始座位。
-     * @return UUID 相符玩家；缺少映射時為 null。
+     * @return UUID 相符玩家。缺少映射時為 null。
      */
     private fun participant(identity: HistoryReplayIdentityDto, seat: Int): HistoryParticipantSummaryDto? {
         val id = identity.players.firstOrNull { it.initialSeatIndex == seat }?.playerId ?: return null
@@ -500,13 +500,13 @@ internal class HistoryRoundEventsScreen(
     }
 
     /**
-     * 繪製卡片內的按鈕；按鈕有任何部分在內容區內就顯示，點擊只在內容區內有效。
+     * 繪製卡片內的按鈕。按鈕有任何部分在內容區內就顯示，點擊只在內容區內有效。
      *
      * @param context 繪製上下文。
      * @param button 要繪製的按鈕。
      * @param active 按鈕是否可點。
-     * @param pointerX 交給按鈕的游標水平座標；游標不在內容區時在畫面外。
-     * @param pointerY 交給按鈕的游標垂直座標；游標不在內容區時在畫面外。
+     * @param pointerX 交給按鈕的游標水平座標。游標不在內容區時在畫面外。
+     * @param pointerY 交給按鈕的游標垂直座標。游標不在內容區時在畫面外。
      * @param delta 畫面更新比例。
      */
     private fun renderCardButton(context: GuiGraphics, button: RestartableMarqueeButtonWidget, active: Boolean, pointerX: Int, pointerY: Int, delta: Float) {
@@ -519,7 +519,7 @@ internal class HistoryRoundEventsScreen(
      * 尚未讀到可用結算的頁尾提示。
      *
      * @param events 事件頁。
-     * @return 本頁沒有結果時的提示；有結果時為 null。
+     * @return 本頁沒有結果時的提示。有結果時為 null。
      */
     private fun resultHint(events: HistoryRoundEventsDto): Component? {
         val ruleId = session.controller.state.value.summary?.detail?.summary?.ruleId

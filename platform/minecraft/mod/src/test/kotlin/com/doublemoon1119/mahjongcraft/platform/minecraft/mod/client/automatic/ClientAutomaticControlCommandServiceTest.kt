@@ -237,7 +237,7 @@ class ClientAutomaticControlCommandServiceTest {
     /**
      * 記錄本局完整替換要求，並可模擬傳送失敗。
      *
-     * @property failure 模擬的同步傳送錯誤；未指定時傳送成功。
+     * @property failure 模擬的同步傳送錯誤。未指定時傳送成功。
      */
     private class RecordingRoundSender(private val failure: RuntimeException?) : ClientAutomaticControlRequestSender {
         /** 成功交給 sender 的 requests。 */

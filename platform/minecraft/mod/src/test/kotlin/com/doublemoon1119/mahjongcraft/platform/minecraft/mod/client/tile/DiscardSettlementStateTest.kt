@@ -63,7 +63,7 @@ class DiscardSettlementStateTest {
         assertTrue(state.isSettled(table, discarded))
     }
 
-    /** 第一次看到時已經在移動，位置不會再變；停下來後就算落定。 */
+    /** 第一次看到時已經在移動，位置不會再變。停下來後就算落定。 */
     @Test
     fun `a discard first seen while moving settles when it stops`() {
         update(earlier)

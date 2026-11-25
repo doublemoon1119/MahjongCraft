@@ -46,29 +46,27 @@ class EntityMahjongPlayerAreaPresenter(
 
     /**
      * 依序完成三件事：
-     * 1. 強制理牌重排——不論贏家原本是否啟用自動整理手牌，把
-     *    [MahjongWinCelebrationPresentation.organizedStandingTileIds]（呼叫端已經算好的整理後目標順序）
-     *    裡每一張牌都排定在同一時刻瞬間到達整理後格位（[TileAnimationSteps.scheduleInstantReorder]）；
-     *    自摸胡牌張保留在 [MahjongTileTableLayout.drawnTilePlacement] 的右側間隔位置，其餘牌使用
-     *    [MahjongTileTableLayout.handPlacement]，
-     *    全部共用同一個絕對定位時刻，定位後等待 [MahjongTileTableLayout.WIN_POST_REORDER_DELAY_TICKS] 再開始倒牌流程。
-     * 2. 自摸（[MahjongWinCelebrationPresentation.isTsumo]）才有的中繼步驟：自摸牌
-     *    （[MahjongWinCelebrationPresentation.winningTileId]，步驟 1 已放到手牌右側的摸牌位）單獨倒下（[TileAnimationSteps.scheduleLaydown]），姿態從立牌轉平放牌面朝上，位置不變。
-     * 3. 其餘立牌（自摸時排除自摸牌，榮和／搶槓時是全部）在共用的絕對時刻一起倒下——自摸要等自摸牌
-     *    倒下播完、再等 [MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS]；榮和／搶槓省略自摸牌
-     *    那一步，直接在整理到位及短暫停頓後等待同一個常數。
      *
-     * 不攤牌（[MahjongWinCelebrationPresentation.revealsHand] 為 false）時三件事都不做：手牌與胡牌張留在原處，
-     * [MahjongWinCelebrationResult.handLaydownEndGameTime] 是演出開始的時間，降臨特效直接接在原處的胡牌張上。
+     * 1. 理牌重排，不論贏家是否啟用自動整理手牌。
+     *    [MahjongWinCelebrationPresentation.organizedStandingTileIds] 裡每一張牌都在同一時刻瞬間到達整理後格位
+     *    （[TileAnimationSteps.scheduleInstantReorder]）。自摸胡牌張保留在 [MahjongTileTableLayout.drawnTilePlacement]
+     *    的右側間隔位置，其餘牌使用 [MahjongTileTableLayout.handPlacement]。
+     *    定位後等待 [MahjongTileTableLayout.WIN_POST_REORDER_DELAY_TICKS] 再開始倒牌。
+     * 2. 只有自摸（[MahjongWinCelebrationPresentation.isTsumo]）才有：自摸牌（[MahjongWinCelebrationPresentation.winningTileId]）
+     *    單獨倒下（[TileAnimationSteps.scheduleLaydown]），從立牌轉成平放牌面朝上，位置不變。
+     * 3. 其餘立牌（自摸時排除自摸牌，榮和／搶槓時是全部）在共用的絕對時刻一起倒下。
+     *    自摸要等自摸牌倒下播完，再等 [MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS]。
+     *    榮和／搶槓省略第 2 步，在理牌到位及短暫停頓後等待同一個常數。
      *
-     * 找不到對應 UUID 的既有 entity 時該筆直接跳過並記警告 log，不中斷其餘牌的呈現，比照
-     * [presentInitialDeal] 的 best-effort 慣例；[MahjongWinCelebrationPresentation.winningTileId] 找不到既有 entity 時，
-     * 沒有任何一張牌可以當作降臨特效的目標，[MahjongWinCelebrationResult.handLaydownEndGameTime] 回傳
-     * `null`，呼叫端不應接續排定特效。
+     * 其他情況：
      *
-     * 不計算降臨特效本身——那是呼叫端（`ServerThreadGamePresentationPublisher`）拿到
-     * [MahjongWinCelebrationResult.handLaydownEndGameTime] 之後，另外委託
-     * `WinCelebrationEffectScheduler` 處理的職責，理由見該類別 KDoc。
+     * - 不攤牌（[MahjongWinCelebrationPresentation.revealsHand] 為 false）時三件事都不做。手牌與胡牌張留在原處，
+     *   [MahjongWinCelebrationResult.handLaydownEndGameTime] 是演出開始的時間，降臨特效直接接在原處的胡牌張上。
+     * - 找不到對應 UUID 的既有 entity 時，該筆跳過並記警告 log，不中斷其餘牌，比照 [presentInitialDeal] 的 best-effort 慣例。
+     * - [MahjongWinCelebrationPresentation.winningTileId] 找不到既有 entity 時，沒有特效目標，
+     *   [MahjongWinCelebrationResult.handLaydownEndGameTime] 回傳 `null`，呼叫端不應接續排定特效。
+     * - 不計算降臨特效本身。呼叫端（`ServerThreadGamePresentationPublisher`）拿到
+     *   [MahjongWinCelebrationResult.handLaydownEndGameTime] 後，另外委託 `WinCelebrationEffectScheduler` 處理，理由見該類別 KDoc。
      *
      * @param presentation 胡牌種類、贏牌與整理後手牌等慶祝呈現資料。
      * @return 呈現狀態，以及成功取得贏牌 entity 時手牌倒下動畫結束時間。
@@ -188,23 +186,20 @@ class EntityMahjongPlayerAreaPresenter(
     }
 
     /**
-     * 依 [MahjongInitialDealPresentation.dealBatchSizes] 分輪，每一輪依序（不是同時）輪流對每個座位
-     * 各排定一次「起飛→落下」動畫——莊家先抓一批，換下一家抓一批，輪完一圈才回到莊家抓下一批，跟
-     * [GameInitializer] 實際發牌的輪轉順序一致（座位輪轉順序同樣固定從
-     * [MahjongInitialDealPresentation.dealerSeatIndex] 開始）；「輪次×座位」攤平成一個全域循序索引
-     * 餵給 [MahjongTileTableLayout.dealBatchStartDelayTicks]，讓每一次抓取（不論哪個座位）都完整
-     * 播完才輪到下一次，理由同 [MahjongPlayerAreaPresenter.presentInitialDeal] KDoc。
-     * 批次內每張牌各自的世界起點就是牌牆生成時留下的既有位置（不重新查詢牌山結構座標，直接讀 entity
-     * 目前的實際座標），批次終點是 [MahjongTileTableLayout.handPlacement] 算出的最終手牌格位——不建立新 entity；
-     * [MahjongInitialDealPresentation.handTileIdsBySeatIndex] 各座位清單內的順序是加入手牌的時間軸，不是畫面左右順序，
-     * 反過來對應 `tileIndex`。
-     *
-     * 全部座位的最後一次抓取都落地後，額外統一排定一次翻牌動畫——所有
-     * 已成功領走的牌（不論哪一批、哪個座位）先趁牌背朝上瞬間換到整理後的格位，再同一時間一起原地翻起，觸發時機由
-     * [MahjongTileTableLayout.dealFlipStartDelayTicks] 依總抓取次數算出。
+     * - 依 [MahjongInitialDealPresentation.dealBatchSizes] 分輪，每一輪依序輪流對每個座位各排定一次「起飛→落下」動畫。
+     *   莊家先抓一批，換下一家抓一批，輪完一圈才回到莊家，與 [GameInitializer] 實際發牌的輪轉順序一致，
+     *   從 [MahjongInitialDealPresentation.dealerSeatIndex] 開始。
+     * - 「輪次×座位」攤平成一個全域循序索引交給 [MahjongTileTableLayout.dealBatchStartDelayTicks]，
+     *   每一次抓取都播完才輪到下一次，理由同 [MahjongPlayerAreaPresenter.presentInitialDeal] KDoc。
+     * - 每張牌的起點是 entity 目前的實際座標，也就是牌牆生成時的位置，不重新查詢牌山結構座標。
+     *   終點是 [MahjongTileTableLayout.handPlacement] 算出的最終手牌格位。不建立新 entity。
+     * - [MahjongInitialDealPresentation.handTileIdsBySeatIndex] 各座位清單的順序是加入手牌的時間軸，不是畫面左右順序，
+     *   反過來對應 `tileIndex`。
+     * - 全部座位的最後一次抓取都落地後，統一排定一次翻牌動畫。已領走的牌先趁牌背朝上瞬間換到整理後的格位，
+     *   再同時原地翻起。觸發時機由 [MahjongTileTableLayout.dealFlipStartDelayTicks] 依總抓取次數算出。
      *
      * @param presentation 莊家、各座位發牌批次與最終手牌順序。
-     * @return 桌子無效時為 `TABLE_NOT_FOUND`；缺少既有牌時為 `SPAWN_FAILED`；否則為 `PRESENTED`。
+     * @return 桌子無效時為 `TABLE_NOT_FOUND`。缺少既有牌時為 `SPAWN_FAILED`。否則為 `PRESENTED`。
      */
     override fun presentInitialDeal(presentation: MahjongInitialDealPresentation): MahjongPlayerAreaPresentationResult {
         val world = resolveWorld(presentation.tableLocation) ?: return MahjongPlayerAreaPresentationResult.TABLE_NOT_FOUND
@@ -341,7 +336,7 @@ class EntityMahjongPlayerAreaPresenter(
      * 由版本無關 dimension ID 取得目前 server session 的世界。
      *
      * @param location 桌子位置。
-     * @return 對應的已載入伺服器世界；無法解析時為 null。
+     * @return 對應的已載入伺服器世界。無法解析時為 null。
      */
     private fun resolveWorld(location: TableLocation): ServerLevel? {
         val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null
@@ -383,7 +378,7 @@ class EntityMahjongPlayerAreaPresenter(
         const val TILE_SEARCH_VERTICAL: Double = 2.0
     }
 
-    /** 依逐張共同姿態轉成原生姿態；未指定的牌保持直立。 */
+    /** 依逐張共同姿態轉成原生姿態。未指定的牌保持直立。 */
     private fun poseFor(tileId: Uuid, states: List<TilePoseState>): MahjongTilePose = when (
         states.firstOrNull { it.tileId == tileId }?.pose ?: TilePose.UPRIGHT
     ) {

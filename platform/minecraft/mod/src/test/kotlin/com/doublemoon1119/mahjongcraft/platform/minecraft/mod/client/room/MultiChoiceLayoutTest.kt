@@ -22,7 +22,7 @@ class MultiChoiceLayoutTest {
         assertNull(short.optionAt(short.checkboxX + 1.0, short.rowsTop + 1.0))
     }
 
-    /** 內容寬度最多 456 並置中；名稱在勾選方塊左邊，捲軸在內容右側的邊距內，清單在底部按鈕上方。 */
+    /** 內容寬度最多 456 並置中。名稱在勾選方塊左邊，捲軸在內容右側的邊距內，清單在底部按鈕上方。 */
     @Test
     fun `content matches the settings form across window sizes`() {
         for (width in listOf(240, 320, 640, 1280)) {

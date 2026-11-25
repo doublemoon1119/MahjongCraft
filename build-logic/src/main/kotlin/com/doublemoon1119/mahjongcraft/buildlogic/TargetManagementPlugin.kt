@@ -132,7 +132,7 @@ abstract class SwitchTargetTask : DefaultTask() {
     @get:Internal
     abstract val rootDirectory: DirectoryProperty
 
-    /** `-PtoTarget` 指定的 target ID，可以是以逗號分隔的多個 ID；未指定時沒有值。 */
+    /** `-PtoTarget` 指定的 target ID，可以是以逗號分隔的多個 ID。未指定時沒有值。 */
     @get:Internal
     abstract val requestedTarget: Property<String>
 
@@ -162,7 +162,7 @@ private fun loadTargets(root: File): List<PlatformTarget> = PlatformTargetCatalo
  * 只替換 target property，保留 local file 中其餘內容。
  *
  * @param file 要更新或移除的本機設定檔。
- * @param targetId 要寫入的 target ID；為 null 時移除 target property。
+ * @param targetId 要寫入的 target ID。為 null 時移除 target property。
  */
 internal fun updateLocalProperty(file: File, targetId: String?) {
     val originalLines = if (file.isFile) file.readLines() else emptyList()
@@ -188,6 +188,6 @@ internal fun updateLocalProperty(file: File, targetId: String?) {
 }
 
 /**
- * 收集目前目標所有交付成品的 root 任務名稱；各平台的建置慣例把自己的成品接到這個任務。
+ * 收集目前目標所有交付成品的 root 任務名稱。各平台的建置慣例把自己的成品接到這個任務。
  */
 const val CI_ARTIFACTS_TASK_NAME: String = "collectCiArtifacts"

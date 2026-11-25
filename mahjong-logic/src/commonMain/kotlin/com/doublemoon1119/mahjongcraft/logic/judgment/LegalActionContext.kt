@@ -11,7 +11,7 @@ import kotlin.uuid.Uuid
 /**
  * 從同一份桌況建立的合法動作判定資料。
  *
- * 原始玩家保留實際手牌；牌型計算使用 [handBeforeIncoming] 或 [handWithIncoming]，
+ * 原始玩家保留實際手牌。牌型計算使用 [handBeforeIncoming] 或 [handWithIncoming]，
  * 不需自行移除摸牌或再加入來源牌。本類別不修改桌況，也不代替操作時機與權限驗證。
  *
  * @property tableState 本次查詢依據的原始桌況。
@@ -23,12 +23,12 @@ class LegalActionContext private constructor(
     playerId: Uuid,
     val source: LegalActionSource,
 ) {
-    /** 從原始桌況取得的玩家；手牌不會為了判定而被改寫。 */
+    /** 從原始桌況取得的玩家。手牌不會為了判定而被改寫。 */
     val player: MahjongPlayer = requireNotNull(tableState.players.firstOrNull { it.id == playerId }) {
         "Decision player must belong to the table: $playerId"
     }
 
-    /** 來源玩家身分；自己回合時就是 [player]。 */
+    /** 來源玩家身分。自己回合時就是 [player]。 */
     val sourcePlayerId: Uuid = when (source) {
         LegalActionSource.OwnTurn -> player.id
         is LegalActionSource.Discard -> source.playerId
@@ -45,7 +45,7 @@ class LegalActionContext private constructor(
     /** 相對於判定玩家的來源方位，由同一份桌況計算。 */
     val sourceDirection: RelativeDirection
 
-    /** 本次來源牌；自己回合且尚未摸牌時為 null。 */
+    /** 本次來源牌。自己回合且尚未摸牌時為 null。 */
     val incomingTile: IdentifiedTile? = when (source) {
         LegalActionSource.OwnTurn -> player.hand.lastDrawn
         is LegalActionSource.Discard -> source.tile
@@ -97,7 +97,7 @@ class LegalActionContext private constructor(
         /**
          * 建立捨牌反應資料，不要求反應視窗已經建立。
          *
-         * 呼叫端須從本次權威操作取得捨牌者與捨牌；本方法不檢查牌河或操作時機。
+         * 呼叫端須從本次權威操作取得捨牌者與捨牌。本方法不檢查牌河或操作時機。
          *
          * @param tableState 判定時的桌況。
          * @param playerId 欲判定的玩家。
@@ -115,7 +115,7 @@ class LegalActionContext private constructor(
         /**
          * 建立宣告反應資料，不要求搶和視窗已經建立。
          *
-         * 呼叫端須從本次權威操作取得宣告者、完整動作與來源牌；本方法不判定宣告是否合法。
+         * 呼叫端須從本次權威操作取得宣告者、完整動作與來源牌。本方法不判定宣告是否合法。
          *
          * @param tableState 判定時的桌況。
          * @param playerId 欲判定的玩家。

@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.automatic
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultKindDto
 
-/** 一筆自動操作更新請求最後的結果；包含伺服器回覆的結果，以及等不到回覆時由重新同步判斷的結果。 */
+/** 一筆自動操作更新請求最後的結果。包含伺服器回覆的結果，以及等不到回覆時由重新同步判斷的結果。 */
 enum class ClientAutomaticControlResultKind {
     /** 伺服器接受請求，或重新同步確認請求內容已經生效。 */
     ACCEPTED,

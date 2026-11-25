@@ -19,8 +19,8 @@ import kotlin.math.roundToInt
  * 操作面板一次繪製所需的內容。
  *
  * @property title 面板標題。
- * @property triggerLines 觸發文字依畫面寬度換行後的每一行；沒有觸發文字時為空清單。
- * @property triggerTileAssetKey 觸發牌的牌面；沒有觸發牌時為 null。
+ * @property triggerLines 觸發文字依畫面寬度換行後的每一行。沒有觸發文字時為空清單。
+ * @property triggerTileAssetKey 觸發牌的牌面。沒有觸發牌時為 null。
  * @property entries 由左至右的操作卡。
  */
 internal data class DecisionPanelContent(
@@ -31,7 +31,7 @@ internal data class DecisionPanelContent(
 )
 
 /**
- * 由 [prompt] 組出操作面板的內容；操作畫面與 HUD 位置編輯器的預覽共用。
+ * 由 [prompt] 組出操作面板的內容。操作畫面與 HUD 位置編輯器的預覽共用。
  *
  * @param prompt 目前權威決策提示。
  * @param texts 動作與狀態文字解析器。
@@ -56,12 +56,12 @@ internal fun decisionPanelContent(
 )
 
 /**
- * 依觸發玩家與動作建立本地化提示；沒有來源玩家的摸牌使用自摸牌句型。
+ * 依觸發玩家與動作建立本地化提示。沒有來源玩家的摸牌使用自摸牌句型。
  *
  * @param prompt 目前權威決策提示。
  * @param texts 動作文字解析器。
  * @param resolvePlayerName 提示未附名稱時使用的玩家名稱查詢。
- * @return 觸發動作說明；沒有可描述的觸發牌或玩家方位時為 null。
+ * @return 觸發動作說明。沒有可描述的觸發牌或玩家方位時為 null。
  */
 private fun decisionTriggerText(
     prompt: PlayerDecisionPromptDto,
@@ -155,7 +155,7 @@ internal fun decisionPanelLayout(
 /**
  * 畫出操作面板的背景、標題、觸發牌、卡片與 scrollbar。
  *
- * 卡片按鈕由 [renderCardButtons] 在卡片列的裁切範圍內畫出；跳過按鈕、倒數與卡片說明由呼叫端另外畫。
+ * 卡片按鈕由 [renderCardButtons] 在卡片列的裁切範圍內畫出。跳過按鈕、倒數與卡片說明由呼叫端另外畫。
  * 呼叫端可以先平移矩陣，把整個面板畫在其他位置，例如「如何開始」畫面中的範例面板。
  *
  * @param renderer Minecraft 文字繪製器。
@@ -163,8 +163,8 @@ internal fun decisionPanelLayout(
  * @param content 要繪製的面板內容。
  * @param placements 依目前捲動量算出的卡片版位。
  * @param scroll 目前捲動量，決定 scrollbar thumb 的位置。
- * @param mouseX 游標水平座標；傳入畫面外座標可停用 hover。
- * @param mouseY 游標垂直座標；傳入畫面外座標可停用 hover。
+ * @param mouseX 游標水平座標。傳入畫面外座標可停用 hover。
+ * @param mouseY 游標垂直座標。傳入畫面外座標可停用 hover。
  * @param drawTile 在指定左上角畫出一張預覽尺寸的牌面。
  * @param renderCardButtons 在裁切區內繪製卡片按鈕的回呼。
  */

@@ -21,7 +21,7 @@ import kotlin.uuid.toJavaUuid
 /**
  * 定期檢查等待開局的桌子擺牌層是否被擋住，並把被擋住的格子同步給該房間在線的真人成員。
  *
- * 只檢查有房間且尚未開局的桌子；沒有房間的桌子可以自由擺放裝飾。送給誰、何時清除由 [TableSpaceObstructionSync] 決定。
+ * 只檢查有房間且尚未開局的桌子。沒有房間的桌子可以自由擺放裝飾。送給誰、何時清除由 [TableSpaceObstructionSync] 決定。
  *
  * @property store 房間與對局的權威狀態。
  * @property locations 麻將桌位置索引。
@@ -32,7 +32,7 @@ class TableSpaceObstructionService(
     private val locations: TableLocationRegistry,
     private val json: NetworkJson,
 ) {
-    /** 目前啟用的伺服器；session 外為 null。 */
+    /** 目前啟用的伺服器。session 外為 null。 */
     private var activeServer: MinecraftServer? = null
 
     /** 啟用 session 後經過的 tick 數。 */
@@ -65,14 +65,14 @@ class TableSpaceObstructionService(
         sync.reset()
     }
 
-    /** 停止檢查並忘記已送出的標示；玩家斷線時客戶端自行清除。 */
+    /** 停止檢查並忘記已送出的標示。玩家斷線時客戶端自行清除。 */
     fun stopSession() {
         activeServer = null
         sync.reset()
     }
 
     /**
-     * 檢查所有等待開局的桌子並送出有變化的標示；已不在等待中的桌子送出清除。
+     * 檢查所有等待開局的桌子並送出有變化的標示。已不在等待中的桌子送出清除。
      *
      * @param server 目前的伺服器。
      */
@@ -117,7 +117,7 @@ class TableSpaceObstructionService(
      *
      * @param server 目前的伺服器。
      * @param location 桌子位置。
-     * @return 桌子所在世界；維度不存在時為 null。
+     * @return 桌子所在世界。維度不存在時為 null。
      */
     private fun resolveWorld(server: MinecraftServer, location: TableLocation): ServerLevel? {
         val id = ResourceLocation.tryParse(location.dimensionId) ?: return null

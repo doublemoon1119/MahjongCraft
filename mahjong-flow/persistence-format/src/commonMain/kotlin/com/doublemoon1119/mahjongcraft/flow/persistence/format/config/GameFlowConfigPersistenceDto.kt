@@ -12,7 +12,7 @@ import kotlin.time.Duration
  *
  * @property base 每個玩家每次行動可用的基本思考時間。
  * @property reserve 每個玩家開局時取得的共用保留思考時間。
- * @property ruleDecision 規則選擇設定；不需要規則選擇時為 null。
+ * @property ruleDecision 規則選擇設定。不需要規則選擇時為 null。
  * @property decisionTimeoutPolicy 決策逾時時採用的處理政策。
  * @property spectatingPolicy 觀戰者的加入與觀看政策。
  * @property spectatorHandVisibility 觀戰者可見的手牌範圍。

@@ -9,7 +9,7 @@ import kotlin.math.sin
 /**
  * 牌尺的世界尺寸與佔用範圍。
  *
- * 牌尺是放在方塊上的長條，長邊與放置者的視線垂直，可以平放或豎放；尺寸依實體牌尺與牌的比例換算，長度約等於一面牌牆。
+ * 牌尺是放在方塊上的長條，長邊與放置者的視線垂直，可以平放或豎放。尺寸依實體牌尺與牌的比例換算，長度約等於一面牌牆。
  */
 object MahjongRulerDimensions {
     /** 牌尺長度相當於幾張牌並排的寬度。 */
@@ -18,10 +18,10 @@ object MahjongRulerDimensions {
     /** 牌尺長度。 */
     const val LENGTH: Double = MahjongTileDimensions.TILE_WIDTH * LENGTH_IN_TILES
 
-    /** 牌尺截面較寬的一邊；豎放時是高度，平放時是寬度。 */
+    /** 牌尺截面較寬的一邊。豎放時是高度，平放時是寬度。 */
     const val BROAD_SIDE: Double = 0.085
 
-    /** 牌尺截面較窄的一邊；豎放時是寬度，平放時是高度。 */
+    /** 牌尺截面較窄的一邊。豎放時是寬度，平放時是高度。 */
     const val NARROW_SIDE: Double = 0.04
 
     /**

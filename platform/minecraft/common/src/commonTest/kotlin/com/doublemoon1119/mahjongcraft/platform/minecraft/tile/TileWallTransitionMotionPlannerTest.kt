@@ -137,7 +137,7 @@ class TileWallTransitionMotionPlannerTest {
      * @param side 牌牆側面索引。
      * @param stack 側面上的墩索引。
      * @param layer 墩的層索引。
-     * @param along 沿側面的分數墩位偏移；預設為零。
+     * @param along 沿側面的分數墩位偏移。預設為零。
      * @return 對應的牌牆 placement。
      */
     private fun placement(side: Int, stack: Int, layer: Int, along: Double = 0.0): TileWallPlacement = TileWallPlacement(

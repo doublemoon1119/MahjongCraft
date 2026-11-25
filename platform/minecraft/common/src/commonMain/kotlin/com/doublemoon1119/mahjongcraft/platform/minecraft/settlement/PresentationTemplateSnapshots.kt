@@ -68,6 +68,6 @@ internal fun WinSettlementPresentationTemplate.snapshot(): WinSettlementPresenta
  * 建立終局結算模板快照。
  *
  * @receiver 要複製的終局結算模板。
- * @return 該模板的獨立值快照；其欄位全為不可變 scalar 或 enum，不需額外深複製。
+ * @return 該模板的獨立值快照。其欄位全為不可變 scalar 或 enum，不需額外深複製。
  */
 internal fun MatchSettlementPresentationTemplate.snapshot(): MatchSettlementPresentationTemplate = copy()

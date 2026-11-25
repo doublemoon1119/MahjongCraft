@@ -5,7 +5,7 @@ import kotlin.test.assertEquals
 
 /** 驗證 CI 目標矩陣涵蓋 `core` 與每個平台目標，並帶出各自的 Java toolchain。 */
 class CiTargetMatrixTest {
-    /** 平台目標依目錄順序排在 `core` 之後；有範例模組的目標標示要一起建置範例。 */
+    /** 平台目標依目錄順序排在 `core` 之後。有範例模組的目標標示要一起建置範例。 */
     @Test
     fun `matrix lists core and every platform target`() {
         val targets = listOf(

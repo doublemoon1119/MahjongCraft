@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
-/** 可於 bootstrap 登記、完成後凍結的 post-reaction outcome resolver registry；擴充只透過 [PostReactionRoundOutcomeResolverRegistrar] 登記。 */
+/** 可於 bootstrap 登記、完成後凍結的 post-reaction outcome resolver registry。擴充只透過 [PostReactionRoundOutcomeResolverRegistrar] 登記。 */
 class PostReactionRoundOutcomeResolverRegistry : PostReactionRoundOutcomeResolverRegistrar {
     /** 尚未凍結的 resolver 集合。 */
     private val resolvers = mutableListOf<PostReactionRoundOutcomeResolver>()
@@ -18,7 +18,7 @@ class PostReactionRoundOutcomeResolverRegistry : PostReactionRoundOutcomeResolve
     override val registrationKeys: Set<String> get() = resolvers.mapTo(mutableSetOf()) { registrationKey(it.ruleModuleId, it.id) }
 
     /**
-     * 登記 resolver；同一規則模組內 ID 不得重複，同一個 ID 可由不同規則模組各自登記。
+     * 登記 resolver。同一規則模組內 ID 不得重複，同一個 ID 可由不同規則模組各自登記。
      *
      * @param resolver 要登記的判定器。
      */
@@ -32,7 +32,7 @@ class PostReactionRoundOutcomeResolverRegistry : PostReactionRoundOutcomeResolve
         resolvers += resolver
     }
 
-    /** 凍結註冊表並依優先序、ID 固定判定順序；重複呼叫不改變結果。 */
+    /** 凍結註冊表並依優先序、ID 固定判定順序。重複呼叫不改變結果。 */
     fun freeze() {
         if (frozen) return
         resolvers.sortWith(compareByDescending<PostReactionRoundOutcomeResolver> { it.priority }.thenBy { registrationKey(it.ruleModuleId, it.id) })
@@ -40,11 +40,11 @@ class PostReactionRoundOutcomeResolverRegistry : PostReactionRoundOutcomeResolve
     }
 
     /**
-     * 依穩定順序回傳第一個成立的回合結果；註冊表必須先凍結。
+     * 依穩定順序回傳第一個成立的回合結果。註冊表必須先凍結。
      *
      * @param tableState 完成反應後的權威桌況。
      * @param ruleModule 目前對局使用的規則模組。
-     * @return 第一個成立的特殊回合結果；沒有 resolver 成立時為 null。
+     * @return 第一個成立的特殊回合結果。沒有 resolver 成立時為 null。
      */
     fun resolve(tableState: TableState, ruleModule: MahjongRuleModule<*>): ResolvedRoundOutcome? {
         check(frozen) { "Post-reaction round outcome resolver registry must be frozen before use" }

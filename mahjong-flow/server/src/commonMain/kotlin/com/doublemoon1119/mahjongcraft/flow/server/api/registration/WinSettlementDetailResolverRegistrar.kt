@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.api.registration
 
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverDefinition
 
-/** 擴充登記和牌結算明細解析器時取得的登記介面；解析與凍結由 MahjongCraft 進行。 */
+/** 擴充登記和牌結算明細解析器時取得的登記介面。解析與凍結由 MahjongCraft 進行。 */
 interface WinSettlementDetailResolverRegistrar {
     /** 目前已登記規則模組 ID 的快照。 */
     val registrationKeys: Set<String>

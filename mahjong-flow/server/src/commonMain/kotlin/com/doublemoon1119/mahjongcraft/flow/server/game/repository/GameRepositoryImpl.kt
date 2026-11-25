@@ -13,7 +13,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlin.uuid.Uuid
 
 /**
- * 透過權威交易讀寫對局，並在對局實際改變時建立本次交易的事實；是否寫入歷史由 [store] 依記錄政策決定。
+ * 透過權威交易讀寫對局，並在對局實際改變時建立本次交易的事實。是否寫入歷史由 [store] 依記錄政策決定。
  *
  * @property store 共用狀態、記錄資格與歷史提交的交易邊界。
  * @property componentValidator 在任何候選桌況寫入前驗證其完整組件。

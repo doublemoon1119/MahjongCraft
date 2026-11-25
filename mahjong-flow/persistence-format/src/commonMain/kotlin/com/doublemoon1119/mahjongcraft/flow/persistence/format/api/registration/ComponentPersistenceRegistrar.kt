@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration
 
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentPersistenceDefinition
 
-/** 擴充登記組件的保存格式時取得的登記介面；編碼、解碼與凍結由 MahjongCraft 進行。 */
+/** 擴充登記組件的保存格式時取得的登記介面。編碼、解碼與凍結由 MahjongCraft 進行。 */
 interface ComponentPersistenceRegistrar {
     /** 已登記 ID 的獨立集合。 */
     val registrationKeys: Set<String>

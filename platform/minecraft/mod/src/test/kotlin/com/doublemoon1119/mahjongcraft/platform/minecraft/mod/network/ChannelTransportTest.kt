@@ -72,7 +72,7 @@ class ChannelTransportTest {
         assertTrue(clientTransport.sent.isEmpty())
     }
 
-    /** 只記錄宣告的頻道；這些測試不經過伺服器端的收送。 */
+    /** 只記錄宣告的頻道。這些測試不經過伺服器端的收送。 */
     private class RecordingPacketTransport : PacketTransport {
         /** 依宣告順序記錄的頻道與方向。 */
         val declared = mutableListOf<Pair<ResourceLocation, ChannelDirection>>()

@@ -14,7 +14,7 @@ internal object FabricExtensionDiscovery {
     const val CLIENT_ENTRYPOINT: String = "${MinecraftModMetadata.MOD_ID}:client_extension"
 
     /**
-     * 找出第三方擴充；同一個類別可同時實作各層擴充介面，只需宣告這一個 entrypoint。
+     * 找出第三方擴充。同一個類別可同時實作各層擴充介面，只需宣告這一個 entrypoint。
      *
      * @return 依 Fabric Loader 提供順序排列的擴充。
      */

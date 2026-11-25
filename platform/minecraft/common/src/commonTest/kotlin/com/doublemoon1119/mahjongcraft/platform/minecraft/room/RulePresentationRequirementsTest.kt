@@ -24,7 +24,7 @@ import kotlin.test.assertTrue
 
 /** 驗證規則能否在麻將桌上呈現的條件、啟動時的可選規則檢查與房間設定的可用判斷。 */
 class RulePresentationRequirementsTest {
-    /** 內建四人日麻、三人日麻與台麻都提供牌山布局與可擺放的骰子數量；內建可選規則通過啟動檢查。 */
+    /** 內建四人日麻、三人日麻與台麻都提供牌山布局與可擺放的骰子數量。內建可選規則通過啟動檢查。 */
     @Test
     fun `built in rules can be presented on the table`() {
         val modules = bundledModules()
@@ -76,7 +76,7 @@ class RulePresentationRequirementsTest {
         assertNull(RulePresentationRequirements.unmetRequirement(adjustedModule(emptyOpeningProcedure = true)))
     }
 
-    /** 啟動檢查只拒絕無法呈現的可選規則；不可選的規則不檢查。 */
+    /** 啟動檢查只拒絕無法呈現的可選規則。不可選的規則不檢查。 */
     @Test
     fun `startup check rejects only selectable rules that cannot be presented`() {
         val modules = singleModuleRegistry { adjustedModule(providesLayout = false) }
@@ -111,7 +111,7 @@ class RulePresentationRequirementsTest {
         assertFalse(RulePresentationRequirements.isPlayable(RiichiRuleConfig(), presentations(definition(TEST_RULE_ID, selectable = true)), withoutWall))
     }
 
-    /** 實際開局人數必須符合規則與標準桌限制；合法人數仍須有對應的牌牆布局。 */
+    /** 實際開局人數必須符合規則與標準桌限制。合法人數仍須有對應的牌牆布局。 */
     @Test
     fun `actual player count respects rule and standard table limits`() {
         val module = adjustedModule(layoutPlayerCounts = setOf(4))
@@ -195,9 +195,9 @@ class RulePresentationRequirementsTest {
      * 建立牌山布局與開門骰子數量可調整、其餘行為沿用日麻的測試規則。
      *
      * @param providesLayout 是否提供牌山布局。
-     * @param diceCount 每輪開門擲出的骰子數量；null 表示不提供擲骰程序。
+     * @param diceCount 每輪開門擲出的骰子數量。null 表示不提供擲骰程序。
      * @param emptyOpeningProcedure 是否提供不需要擲骰的開局程序。
-     * @param layoutPlayerCounts 提供牌牆布局的玩家人數；null 表示所有設定支援的人數都提供。
+     * @param layoutPlayerCounts 提供牌牆布局的玩家人數。null 表示所有設定支援的人數都提供。
      * @return 測試規則模組。
      */
     private fun adjustedModule(
@@ -218,9 +218,9 @@ class RulePresentationRequirementsTest {
      *
      * @property delegate 提供其餘規則行為的日麻模組。
      * @property providesLayout 是否提供牌山布局。
-     * @property diceCount 每輪開門擲出的骰子數量；null 表示不提供擲骰程序。
+     * @property diceCount 每輪開門擲出的骰子數量。null 表示不提供擲骰程序。
      * @property emptyOpeningProcedure 是否提供不需要擲骰的開局程序。
-     * @property layoutPlayerCounts 提供牌牆布局的玩家人數；null 表示所有人數都提供。
+     * @property layoutPlayerCounts 提供牌牆布局的玩家人數。null 表示所有人數都提供。
      */
     private class AdjustedWallModule(
         private val delegate: RiichiRuleModule,

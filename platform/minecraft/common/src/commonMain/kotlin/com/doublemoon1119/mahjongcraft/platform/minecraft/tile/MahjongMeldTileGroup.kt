@@ -10,12 +10,12 @@ import kotlin.uuid.Uuid
  *
  * @property type 副露種類，決定是否有需要側身呈現的鳴取牌。
  * @property tileIds 組成這組副露的所有牌 Uuid，依宣告時的原始順序排列。
- * @property calledTileId [tileIds] 之中鳴取自他家、需側身呈現的那張牌 Uuid；暗槓沒有鳴牌來源時為
+ * @property calledTileId [tileIds] 之中鳴取自他家、需側身呈現的那張牌 Uuid。暗槓沒有鳴牌來源時為
  * `null`。
- * @property sourceDirection 鳴取來源的相對方位，決定 [calledTileId] 在組內橫放的位置（左／中／右）；
+ * @property sourceDirection 鳴取來源的相對方位，決定 [calledTileId] 在組內橫放的位置（左／中／右）。
  * 暗槓沒有鳴牌來源時為 [RelativeDirection.Self]。
- * @property allTilesFaceDown 整組牌是否都朝下擺放；牌面資訊能否查看由可見性快照決定。
- * @property faceDownTileIds 需要朝下呈現的牌張 ID；與牌面資訊是否公開分開處理。
+ * @property allTilesFaceDown 整組牌是否都朝下擺放。牌面資訊能否查看由可見性快照決定。
+ * @property faceDownTileIds 需要朝下呈現的牌張 ID。與牌面資訊是否公開分開處理。
  */
 data class MahjongMeldTileGroup(
     val type: MeldType,

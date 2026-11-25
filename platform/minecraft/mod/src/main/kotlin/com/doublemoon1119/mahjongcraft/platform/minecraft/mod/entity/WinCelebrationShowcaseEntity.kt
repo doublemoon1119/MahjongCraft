@@ -13,7 +13,7 @@ import net.minecraft.world.level.block.Blocks
 import kotlin.uuid.Uuid
 
 /**
- * 持久化共享胡牌 showcase 舞台；所有視覺皆由 client 依絕對時間與 [animationSeed] 決定。
+ * 持久化共享胡牌 showcase 舞台。所有視覺皆由 client 依絕對時間與 [animationSeed] 決定。
  *
  * @param type 展示舞台實體種類。
  * @param world 實體所屬世界。
@@ -39,7 +39,7 @@ class WinCelebrationShowcaseEntity(
     /** 共享胡牌張牌面 asset key。 */
     val winningTileAssetKey: String get() = entityData[WINNING_TILE_ASSET_KEY]
 
-    /** 胡牌張完整起飛所需快照；尚未寫入資料時為 null。 */
+    /** 胡牌張完整起飛所需快照。尚未寫入資料時為 null。 */
     val winningTileSnapshot: ShowcaseWinningTileSnapshot?
         get() = decodeWinningTile(entityData[WINNING_TILE_SNAPSHOT])
 
@@ -64,7 +64,7 @@ class WinCelebrationShowcaseEntity(
      * @param animationSeed 用來重建確定性視覺效果的 seed。
      * @param winningTile 共用權威胡牌張的牌面與起飛位置快照。
      * @param wings 各贏家展示翼資料，數量須為一至三。
-     * @param extraSounds 正式展示階段的額外音效；預設為空。
+     * @param extraSounds 正式展示階段的額外音效。預設為空。
      */
     fun configure(
         tableId: Uuid,
@@ -310,7 +310,7 @@ class WinCelebrationShowcaseEntity(
         ).joinToString("\u001f")
 
         /**
-         * 解析胡牌張同步字串；欄位缺失或數值格式錯誤時回傳 null。
+         * 解析胡牌張同步字串。欄位缺失或數值格式錯誤時回傳 null。
          *
          * @param encoded 待解析的同步字串。
          * @return 完整還原的胡牌張快照，或無法解析時的 null。
@@ -353,7 +353,7 @@ class WinCelebrationShowcaseEntity(
         }
 
         /**
-         * 還原 [encodeWings] 產生的同步字串；無效座位資料或牌序略過，選填欄位無效時採預設值。
+         * 還原 [encodeWings] 產生的同步字串。無效座位資料或牌序略過，選填欄位無效時採預設值。
          *
          * @param encoded 待解析的贏家翼同步字串。
          * @return 解析出的贏家翼快照清單。
@@ -395,7 +395,7 @@ class WinCelebrationShowcaseEntity(
         }
 
         /**
-         * 還原 [encodeSounds] 的額外音效快照；欄位缺失或格式錯誤的項目略過。
+         * 還原 [encodeSounds] 的額外音效快照。欄位缺失或格式錯誤的項目略過。
          *
          * @param encoded 待解析的額外音效同步字串。
          * @return 解析出的額外音效快照清單。

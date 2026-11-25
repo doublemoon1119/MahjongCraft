@@ -6,28 +6,32 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStat
 /**
  * 回放中的一局：整局的事件頁與牌面暫存，並決定下一次向伺服器要什麼。
  *
- * 要的順序是：還不知道交易總數時先要第一頁事件；目前這一步沒有牌面時先要牌面；接著把整局剩下的事件頁讀完，
- * 讓交易列表與進度條標記完整；最後預先要後面的牌面。同一時間只有一次要求在途。
+ * 要求的順序，同一時間只有一次要求在途：
+ *
+ * 1. 還不知道交易總數時，先要第一頁事件。
+ * 2. 目前這一步沒有牌面時，先要牌面。
+ * 3. 把整局剩下的事件頁讀完，讓交易列表與進度條標記完整。
+ * 4. 預先要後面的牌面。
  *
  * @property roundNumber 局序號。
  * @param initialStep 開始的步數：0 是初始牌面，k 是第 k - 1 筆交易完成後。
- * @param transactionCount 已知的本局交易總數；不知道時為 null，等第一頁事件回來再決定。
+ * @param transactionCount 已知的本局交易總數。不知道時為 null，等第一頁事件回來再決定。
  */
 internal class HistoryReplayRound(
     val roundNumber: Int,
     initialStep: Int,
     transactionCount: Int?,
 ) {
-    /** 還沒有牌面暫存時記住要去的步數；必須在 [buffer] 之前初始化。 */
+    /** 還沒有牌面暫存時記住要去的步數。必須在 [buffer] 之前初始化。 */
     private var requestedStep: Int = initialStep
 
-    /** 牌面暫存；還不知道交易總數時為 null。 */
+    /** 牌面暫存。還不知道交易總數時為 null。 */
     private var buffer: HistoryReplayBuffer? = transactionCount?.let(::createBuffer)
 
     /** 已取得的事件頁，依交易順序排列。 */
     private val pages = mutableListOf<HistoryRoundEventsDto>()
 
-    /** 在途事件頁的第一筆交易索引；沒有在途事件頁時為 null。 */
+    /** 在途事件頁的第一筆交易索引。沒有在途事件頁時為 null。 */
     private var eventsInFlight: Int? = null
 
     /** 已取得的事件頁。 */
@@ -42,7 +46,7 @@ internal class HistoryReplayRound(
     val step: Int
         get() = buffer?.current ?: requestedStep
 
-    /** 這一局的總步數；還不知道時為 null。 */
+    /** 這一局的總步數。還不知道時為 null。 */
     val stepCount: Int?
         get() = buffer?.stepCount
 
@@ -50,14 +54,14 @@ internal class HistoryReplayRound(
      * 取得某一步的牌面。
      *
      * @param step 步數。
-     * @return 牌面；還沒取得時為 null。
+     * @return 牌面。還沒取得時為 null。
      */
     fun stateAt(step: Int): HistoryRoundStateDto? = buffer?.stateAt(step)
 
     /**
      * 移到某一步。
      *
-     * @param step 新的步數；知道總步數後超出範圍時夾到第一步或最後一步。
+     * @param step 新的步數。知道總步數後超出範圍時夾到第一步或最後一步。
      */
     fun moveTo(step: Int) {
         requestedStep = step
@@ -65,7 +69,7 @@ internal class HistoryReplayRound(
     }
 
     /**
-     * 下一次要向伺服器要的東西；有要求在途或都已取得時為 null。
+     * 下一次要向伺服器要的東西。有要求在途或都已取得時為 null。
      *
      * @return 事件頁或一段牌面。
      */
@@ -90,7 +94,7 @@ internal class HistoryReplayRound(
     }
 
     /**
-     * 收下一頁事件；第一次知道交易總數時建立牌面暫存。
+     * 收下一頁事件。第一次知道交易總數時建立牌面暫存。
      *
      * @param start 這一頁的第一筆交易索引。
      * @param events 已驗證的事件頁。
@@ -121,14 +125,14 @@ internal class HistoryReplayRound(
     /**
      * 下一頁事件應該從哪一筆交易開始。
      *
-     * @return 交易索引；已讀完整局時為 null。
+     * @return 交易索引。已讀完整局時為 null。
      */
     private fun expectedEventsStart(): Int? = if (pages.isEmpty()) 0 else pages.last().nextTransactionIndex
 
     /**
      * 還需要讀的下一頁事件。
      *
-     * @return 交易索引；已讀完或已有在途事件頁時為 null。
+     * @return 交易索引。已讀完或已有在途事件頁時為 null。
      */
     private fun nextEventsStart(): Int? = if (eventsInFlight != null) null else expectedEventsStart()
 

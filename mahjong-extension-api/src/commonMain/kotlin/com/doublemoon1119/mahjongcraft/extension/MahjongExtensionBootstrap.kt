@@ -10,12 +10,13 @@ object MahjongExtensionBootstrap {
     /**
      * 先登記 [builtIn]，再依 [extensions] 順序登記，全部成功後凍結 registry。
      *
-     * 呼叫前已存在的登記與 [builtIn] 的登記視為內建登記；之後每個 extension 新增的登記歸在該 extension 名下。
+     * - 呼叫前已存在的登記，以及 [builtIn] 的登記，視為內建登記。
+     * - 之後每個 extension 新增的登記，歸在該 extension 名下。
      *
      * @param extensions 依此順序執行登記回呼的 extension 集合。
      * @param registries extension 要使用並在成功後凍結的 core registry 集合。
-     * @param builtIn 不屬於任何規則的內建整合；沒有時為 null。
-     * @param failurePolicy 判斷登記回呼丟出的失敗能否包成帶擴充識別碼的註冊例外；無法隔離的失敗原樣往外傳。
+     * @param builtIn 不屬於任何規則的內建整合，沒有時為 null。
+     * @param failurePolicy 判斷登記回呼丟出的失敗能否包成帶擴充識別碼的註冊例外。無法隔離的失敗原樣往外傳。
      * @return 依來源分組的所有登記：內建登記在前，接著依 [extensions] 順序排列每個 extension。
      * @throws MahjongExtensionRegistrationException 若任一 extension 註冊失敗。
      */

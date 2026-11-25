@@ -11,7 +11,7 @@ import kotlin.test.assertTrue
 
 /** 驗證和牌者坐莊、每局換位情境的排列。 */
 class RiichiSeatChangeDebugGameScenariosTest {
-    /** 載入後改用開發用規則；下家用和牌優先的腳本 AI，可以榮和呼叫者剛摸到的西，其他家不行。 */
+    /** 載入後改用開發用規則。下家用和牌優先的腳本 AI，可以榮和呼叫者剛摸到的西，其他家不行。 */
     @Test
     fun `winner dealer scenario lets the downstream player ron the drawn west`() {
         val registry = DebugGameScenarioRegistry()

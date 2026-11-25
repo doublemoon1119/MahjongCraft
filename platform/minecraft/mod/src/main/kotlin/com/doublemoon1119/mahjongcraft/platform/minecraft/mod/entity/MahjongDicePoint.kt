@@ -36,10 +36,10 @@ enum class MahjongDicePoint(
 
     companion object {
         /**
-         * 由數值取得點數；無效值使用一點。
+         * 由數值取得點數。無效值使用一點。
          *
          * @param value 要解析的點數值。
-         * @return 對應點數；不在一至六時回傳一點。
+         * @return 對應點數。不在一至六時回傳一點。
          */
         fun fromValueOrDefault(value: Int): MahjongDicePoint = entries.firstOrNull { it.value == value } ?: ONE
     }

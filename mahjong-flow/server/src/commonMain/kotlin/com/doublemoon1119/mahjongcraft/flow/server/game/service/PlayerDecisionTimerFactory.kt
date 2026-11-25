@@ -12,7 +12,7 @@ import kotlin.uuid.Uuid
 /**
  * 依權威 [Game] 狀態及目前單調時間建立玩家決策計時器。
  *
- * @property clock 提供目前 runtime session 的單調時間；實作由平台層提供，理由見 [MonotonicClock] KDoc。
+ * @property clock 提供目前 runtime session 的單調時間。實作由平台層提供，理由見 [MonotonicClock] KDoc。
  */
 class PlayerDecisionTimerFactory(
     private val clock: MonotonicClock,
@@ -24,12 +24,12 @@ class PlayerDecisionTimerFactory(
      * @param playerId 目前取得決策權的玩家。
      * @param phase 這次決策所屬的階段，決定基本思考秒數採用 [GameFlowConfig.timeControl]
      *   或規則提供的 [GameFlowConfig.ruleDecision]。
-     *   [PlayerDecisionPhase.RULE_DECISION] 完全不動用共用保留思考時間池——固定以 0 保留思考時間
-     *   起算，規則選擇時間用完就直接逾時；[GameDecisionTimerManager] 結算這個階段的計時器
-     *   時，同樣不會把結算結果寫回共用池，玩家在其他階段已經存下的保留思考時間不會被這個階段消耗，
-     *   也不會被清空。[PlayerDecisionPhase.RULE_ACTION] 則比照一般遊戲動作使用基本與保留時間。
+     *   - [PlayerDecisionPhase.RULE_DECISION] 不動用共用保留思考時間池。固定以 0 保留思考時間起算，規則選擇時間用完就直接逾時。
+     *   - [GameDecisionTimerManager] 結算這個階段的計時器時，同樣不寫回共用池。
+     *     玩家在其他階段存下的保留思考時間不會被消耗，也不會被清空。
+     *   - [PlayerDecisionPhase.RULE_ACTION] 比照一般遊戲動作使用基本與保留時間。
      * @param resumedBase 接續上一個 session 被中斷的同一次決策時，其尚未使用的基本思考
-     *   時間；`null` 代表這是一次全新的決策。
+     *   時間。`null` 代表這是一次全新的決策。
      * @return 以目前時間開始的 [PlayerDecisionTimer]。
      */
     fun create(

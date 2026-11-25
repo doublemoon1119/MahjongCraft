@@ -8,7 +8,7 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.history.query
  * @property sortDirection 排序方向。
  * @property filters 條件篩選。
  * @property pageSize 每頁筆數。
- * @property cursor 延續的游標；沒有游標時從第一筆或最後一筆開始。
+ * @property cursor 延續的游標。沒有游標時從第一筆或最後一筆開始。
  * @property direction 從游標往哪一邊取一頁。
  */
 data class HistoryListRequest(

@@ -22,7 +22,7 @@ import net.minecraft.world.phys.Vec3
  *
  * @property world 已載入的目標世界。
  * @property player 真正執行互動的玩家。
- * @property hand 觸發互動的手；耗材只來自這隻手。
+ * @property hand 觸發互動的手。耗材只來自這隻手。
  * @property rider 即將入座的角色，不得改變其身分或移往其他位置。
  * @property request MahjongCraft 決定的固定席位。
  * @property blockUse 載入器的方塊使用攔截，讓其他模組有機會拒絕放置。
@@ -43,7 +43,7 @@ class SeatPlacementContext private constructor(
      * 檢查完整範圍的區塊、邊界與玩家改動權限，不載入區塊。
      *
      * @param box 放置物件會占用的範圍。
-     * @return 範圍可查詢且玩家獲准改動時為 true；仍須由提供者檢查碰撞與支撐。
+     * @return 範圍可查詢且玩家獲准改動時為 true。仍須由提供者檢查碰撞與支撐。
      */
     fun canModify(box: AABB): Boolean {
         check(world.server.isSameThread) { "Seat placement requires the server thread" }
@@ -97,10 +97,10 @@ class SeatPlacementContext private constructor(
     }
 
     /**
-     * 以真正玩家及手持 BlockItem 的放置流程放在席位上；物品自行扣除及觸發原生放置回呼。
+     * 以真正玩家及手持 BlockItem 的放置流程放在席位上。物品自行扣除及觸發原生放置回呼。
      *
-     * @param placementYaw 傳給物品的放置視角；物品作者須依自己方塊的 facing 語意換算。
-     * @return 成功放置時為 true；入座由 MahjongCraft 隨後安排。
+     * @param placementYaw 傳給物品的放置視角。物品作者須依自己方塊的 facing 語意換算。
+     * @return 成功放置時為 true。入座由 MahjongCraft 隨後安排。
      */
     fun placeBlockItem(placementYaw: Float): Boolean {
         val stack = player.getItemInHand(hand)

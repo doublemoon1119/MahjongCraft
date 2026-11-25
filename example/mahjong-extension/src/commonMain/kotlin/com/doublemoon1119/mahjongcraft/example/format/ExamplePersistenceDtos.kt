@@ -13,7 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoDefinition
 
 /**
- * 登記範例自己的保存型別；網路 DTO 不作為存檔格式使用。
+ * 登記範例自己的保存型別。網路 DTO 不作為存檔格式使用。
  *
  * @param registries 啟動期間尚未凍結的保存註冊表。
  */

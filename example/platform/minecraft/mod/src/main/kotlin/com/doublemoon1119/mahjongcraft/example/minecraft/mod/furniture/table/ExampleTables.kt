@@ -21,14 +21,14 @@ import net.minecraft.world.level.material.PushReaction
  * MahjongCraft 不需要另外登記桌子：方塊實作 `MahjongTableStructureBlock`、方塊實體實作 `MahjongTableController` 即可。
  */
 object ExampleTables {
-    /** 三種範例麻將桌共用的方塊實體型別；寫入登記表後可用。 */
+    /** 三種範例麻將桌共用的方塊實體型別。寫入登記表後可用。 */
     lateinit var blockEntityType: BlockEntityType<ExampleTableBlockEntity>
         private set
 
     /**
      * 登記三種範例麻將桌、對應物品與共用方塊實體型別。
      *
-     * 桌子強制視為實心，避免依形狀被判定為不實心而遭水流沖掉；推不動，避免多格結構被活塞拆散。
+     * 桌子強制視為實心，避免依形狀被判定為不實心而遭水流沖掉。推不動，避免多格結構被活塞拆散。
      *
      * @param registrar 載入器的登記方式。
      */

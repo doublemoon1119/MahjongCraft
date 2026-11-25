@@ -6,7 +6,7 @@ import kotlin.test.assertEquals
 
 /** 驗證結算面板的牌組只把露出的牌面交給模板，蓋著的牌只帶牌背。 */
 class WinSettlementTileGroupsTest {
-    /** 暗槓兩端換成依牌面決定的牌背，模板拿不到蓋著那兩張的牌面；空的手牌組不列入。 */
+    /** 暗槓兩端換成依牌面決定的牌背，模板拿不到蓋著那兩張的牌面。空的手牌組不列入。 */
     @Test
     fun `face down meld tiles become backs without their faces`() {
         val groups = winSettlementTileGroups(

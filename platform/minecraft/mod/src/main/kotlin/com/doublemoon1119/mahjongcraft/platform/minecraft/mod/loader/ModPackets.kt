@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader
 /**
  * 封包頻道使用的收送方式。
  *
- * 載入器的進入點在建立任何頻道之前安裝；用戶端的部分只在用戶端安裝。尚未安裝就收送會丟出例外。
+ * 載入器的進入點在建立任何頻道之前安裝。用戶端的部分只在用戶端安裝。尚未安裝就收送會丟出例外。
  */
 object ModPackets {
     /** 伺服器與用戶端都會用到的收送方式。 */

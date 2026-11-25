@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.model
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 
 /**
- * 規則算出的一個胡牌詳情值；只描述結果本身，顯示文字與排版由平台依欄位與條目 ID 決定。
+ * 規則算出的一個胡牌詳情值。只描述結果本身，顯示文字與排版由平台依欄位與條目 ID 決定。
  */
 sealed interface WinSettlementDetailValue {
     /**

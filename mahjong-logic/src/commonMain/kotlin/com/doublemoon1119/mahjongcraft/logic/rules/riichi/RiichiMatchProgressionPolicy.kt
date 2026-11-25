@@ -12,10 +12,10 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 
 /**
- * 日麻（四人或三人）的固定賽程、南入／西入、驟死、和了止め與擊飛 policy；每圈局數等於玩家人數。
+ * 日麻（四人或三人）的固定賽程、南入／西入、驟死、和了止め與擊飛 policy。每圈局數等於玩家人數。
  *
  * 原定最後局與延長局一律莊家連莊優先：莊家連莊時，即使其他玩家（例如包含莊家的雙響中的子家）已達返點也繼續連莊，
- * 只有莊家本人和牌或聽牌、居首且達返點才終局；莊家沒有連莊時，有人達返點即終局，延長局打完最後一局也終局。
+ * 只有莊家本人和牌或聽牌、居首且達返點才終局。莊家沒有連莊時，有人達返點即終局，延長局打完最後一局也終局。
  *
  * @property config 賽程長度、返點與擊飛門檻等立直規則設定。
  */
@@ -106,7 +106,7 @@ class RiichiMatchProgressionPolicy(
         )
     }
 
-    /** 流局後即使過莊，本場數仍繼續累加；和牌與等同和牌的結果在過莊時歸零。 */
+    /** 流局後即使過莊，本場數仍繼續累加。和牌與等同和牌的結果在過莊時歸零。 */
     private fun RoundCompletionClassification.continuesCombo(): Boolean = when (this) {
         RoundCompletionClassification.EXHAUSTIVE_DRAW,
         RoundCompletionClassification.ABORTIVE_DRAW,
@@ -144,7 +144,7 @@ class RiichiMatchProgressionPolicy(
      *
      * @param gameLength 對局賽程長度。
      * @param roundsPerWind 每圈局數。
-     * @return 原定最後局與最多再一圈的延長最後局；單局制不延長。
+     * @return 原定最後局與最多再一圈的延長最後局。單局制不延長。
      */
     private fun scheduleFor(gameLength: RiichiGameLength, roundsPerWind: Int): Schedule = when (gameLength) {
         RiichiGameLength.OneGame -> Schedule(regularLastIndex = 0, extraLastIndex = 0)

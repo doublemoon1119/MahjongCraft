@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNa
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleModuleDisplayNameRegistrar
 
 /**
- * 開放註冊的麻將規則模組顯示名稱對照表；擴充只透過 [RuleModuleDisplayNameRegistrar] 登記。
+ * 開放註冊的麻將規則模組顯示名稱對照表。擴充只透過 [RuleModuleDisplayNameRegistrar] 登記。
  *
  * 比照 [AiStrategyDisplayNameRegistry] 的既有設計。
  * key 用 [MahjongModuleRegistry] 本來就有的穩定
@@ -14,9 +14,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleM
  */
 interface RuleModuleDisplayNameRegistry : RuleModuleDisplayNameRegistrar {
 
-    /** 凍結 registry；凍結後不得新增顯示名稱。 */
+    /** 凍結 registry。凍結後不得新增顯示名稱。 */
     fun freeze()
 
-    /** 查詢 [ruleModuleId] 的顯示名稱 translation key；未登記時回傳 null。 */
+    /** 查詢 [ruleModuleId] 的顯示名稱 translation key。未登記時回傳 null。 */
     fun find(ruleModuleId: String): String?
 }

@@ -53,12 +53,12 @@ class MatchingTileHighlightController(
             .forEach { tile -> tile.setMatchingHighlight(if (tile.uuid == target.uuid) targetColor else otherMatchColor) }
     }
 
-    /** 只有停止動畫的正式牌局牌可參與同種牌提示；牌面姿態不影響判斷，未知牌的快照本身就是 null。 */
+    /** 只有停止動畫的正式牌局牌可參與同種牌提示。牌面姿態不影響判斷，未知牌的快照本身就是 null。 */
     private fun MahjongTileEntity.canParticipate(): Boolean = managedByGame &&
         !animating &&
         managedTableId?.let { tableId -> stateStore.findManagedTileSnapshot(tableId, uuid.toKotlinUuid())?.tile != null } == true
 
-    /** 呼吸光的顏色與速度；其他畫面重現同種牌提示時共用。 */
+    /** 呼吸光的顏色與速度。其他畫面重現同種牌提示時共用。 */
     internal companion object {
         /** 準星目標呼吸效果最低亮度。 */
         const val TARGET_PULSE_DARK_COLOR: Int = 0x1A6B63
@@ -104,7 +104,7 @@ class MatchingTileHighlightController(
          *
          * @param from 起始 RGB 色彩。
          * @param to 結束 RGB 色彩。
-         * @param progress 內插比例；計算後的色彩通道會限制在 0–255。
+         * @param progress 內插比例。計算後的色彩通道會限制在 0–255。
          */
         private fun interpolateColor(from: Int, to: Int, progress: Float): Int {
             fun component(shift: Int): Int {

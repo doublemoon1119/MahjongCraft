@@ -10,7 +10,7 @@ import kotlin.uuid.Uuid
  *
  * 需要角色翻譯的 AI 先由 [playerInfoDisplayName] 解析，不因缺少普通名稱就當成離線。
  *
- * @param name 已解析的玩家名稱；null 時使用離線玩家翻譯文字。
+ * @param name 已解析的玩家名稱。null 時使用離線玩家翻譯文字。
  * @return 玩家名稱或本地化的離線玩家文字。
  */
 fun resolvedPlayerNameText(name: String?): Component = name?.let(Component::literal) ?: Component.translatable(MinecraftRoomScreenKeys.OFFLINE_PLAYER)

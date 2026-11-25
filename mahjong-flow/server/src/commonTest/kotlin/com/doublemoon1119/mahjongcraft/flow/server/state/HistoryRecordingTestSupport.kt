@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.testMatchSeed
 
 /**
- * 以正式開局事實建立一場對局，讓記錄政策決定它的歷史資格；開局事實占用該場序號 1。
+ * 以正式開局事實建立一場對局，讓記錄政策決定它的歷史資格。開局事實占用該場序號 1。
  *
  * @param tableState 新對局的開局桌況。
  * @return 已寫入權威狀態的對局。

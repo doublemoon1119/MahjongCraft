@@ -19,7 +19,7 @@ internal object RiichiDiscardRestriction {
      *
      * @param player 即將捨牌的玩家。
      * @param inRiichi 玩家是否已立直。
-     * @return 可以打出的牌；不限制時為 null。
+     * @return 可以打出的牌。不限制時為 null。
      */
     fun discardableTileIds(player: MahjongPlayer, inRiichi: Boolean): Set<Uuid>? {
         if (inRiichi) return player.hand.lastDrawn?.id?.let(::setOf)
@@ -34,7 +34,7 @@ internal object RiichiDiscardRestriction {
      * @param standingTiles 吃碰前的立牌。
      * @param usedTiles 吃碰時從立牌拿出的牌。
      * @param calledTile 吃或碰進的牌。
-     * @param isPon 是否為碰；false 表示吃。
+     * @param isPon 是否為碰。false 表示吃。
      * @return 還有可以打出的牌時為 true。
      */
     fun leavesDiscard(

@@ -86,17 +86,17 @@ internal interface RoomSettingsPageHost {
      */
     fun openRuleCatalogue(context: RuleCatalogueBrowseContext)
 
-    /** 取得房間設定，沒有房間時改用進行中對局的設定；兩者皆無時為 null。 */
+    /** 取得房間設定，沒有房間時改用進行中對局的設定。兩者皆無時為 null。 */
     fun currentConfig(): GameConfig?
 
-    /** 所屬畫面的展開清單；清單的繪製與輸入由所屬畫面處理。 */
+    /** 所屬畫面的展開清單。清單的繪製與輸入由所屬畫面處理。 */
     val dropdown: DropdownOverlay
 }
 
 /**
  * 房間畫面的設定頁：規則與玩法選擇器、分類頁籤、該分類的設定欄位與底部操作列。
  *
- * 房主修改的是本機草稿，按下套用或完成才送出；非房主與對局進行中只能檢視。
+ * 房主修改的是本機草稿，按下套用或完成才送出。非房主與對局進行中只能檢視。
  *
  * @property host 所屬畫面提供的能力。
  * @property stateStore 目前客戶端持有的房間、對局與牌桌快照。
@@ -117,7 +117,7 @@ internal class RoomSettingsPage(
     private val json: NetworkJson,
     private val networkRegistries: NetworkDtoRegistries,
 ) {
-    /** 選中的分類；尚未選定時為 null。 */
+    /** 選中的分類。尚未選定時為 null。 */
     private var selectedCategoryId: String? = null
 
     /** 設定欄位清單的捲動與拖曳狀態。 */
@@ -139,19 +139,19 @@ internal class RoomSettingsPage(
     /** 底部狀態文字的跑馬燈進度。 */
     private val statusMarquee = MarqueeState()
 
-    /** 套用按鈕；唯讀時為 null。 */
+    /** 套用按鈕。唯讀時為 null。 */
     private var applyButton: Button? = null
 
-    /** 復原按鈕；唯讀時為 null。 */
+    /** 復原按鈕。唯讀時為 null。 */
     private var undoButton: Button? = null
 
-    /** 重設為預設按鈕；唯讀時為 null。 */
+    /** 重設為預設按鈕。唯讀時為 null。 */
     private var resetButton: Button? = null
 
-    /** 完成按鈕；唯讀時為 null。 */
+    /** 完成按鈕。唯讀時為 null。 */
     private var doneButton: Button? = null
 
-    /** 依目前草稿建立規則列、分類頁籤、欄位與底部操作列；非房主只提供唯讀控制項。 */
+    /** 依目前草稿建立規則列、分類頁籤、欄位與底部操作列。非房主只提供唯讀控制項。 */
     fun init() {
         applyButton = null
         undoButton = null
@@ -194,7 +194,7 @@ internal class RoomSettingsPage(
      * @param context 畫面繪製情境。
      * @param mouseX 游標的水平座標。
      * @param mouseY 游標的垂直座標。
-     * @return 被截斷且正被游標指向的標籤全文；沒有時為 null。
+     * @return 被截斷且正被游標指向的標籤全文。沒有時為 null。
      */
     fun renderContent(context: GuiGraphics, mouseX: Int, mouseY: Int): Component? {
         val textRenderer = host.textRenderer
@@ -262,7 +262,7 @@ internal class RoomSettingsPage(
      * @param mouseX 游標的水平座標。
      * @param mouseY 游標的垂直座標。
      * @param amount 滾輪位移。
-     * @return 一律為 true；設定頁不把滾輪交給其他元件。
+     * @return 一律為 true。設定頁不把滾輪交給其他元件。
      */
     fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         val layout = layout()
@@ -337,7 +337,7 @@ internal class RoomSettingsPage(
      * 比對權威設定與草稿，回報所屬畫面需要做的事。
      *
      * @param authoritative 目前權威設定。
-     * @return 草稿與權威設定的比對結果；草稿過期時底部按鈕已同步更新。
+     * @return 草稿與權威設定的比對結果。草稿過期時底部按鈕已同步更新。
      */
     fun syncAuthoritative(authoritative: GameConfig): RoomSettingsDraft.Outcome {
         val outcome = draft.onAuthoritativeChanged(authoritative)
@@ -375,7 +375,7 @@ internal class RoomSettingsPage(
         }
     }
 
-    /** 目前是否有尚未套用、且可以直接套用的草稿；草稿過期或驗證失敗時視為沒有。 */
+    /** 目前是否有尚未套用、且可以直接套用的草稿。草稿過期或驗證失敗時視為沒有。 */
     private fun hasUnsavedDraft(): Boolean = draft.canDone(roomPlayerCount()) && draft.hasUnsavedChanges(host.currentConfig())
 
     /**
@@ -559,7 +559,7 @@ internal class RoomSettingsPage(
      * @param config 用於讀取目前值與提示內容的設定。
      * @param y 控制項上界。
      * @param editable 是否允許修改此欄位。
-     * @param locked 目前玩法鎖定這個欄位時的鎖定內容；沒有鎖定時為 null。
+     * @param locked 目前玩法鎖定這個欄位時的鎖定內容。沒有鎖定時為 null。
      */
     private fun addFieldControls(
         layout: FormScreenLayout,
@@ -659,7 +659,7 @@ internal class RoomSettingsPage(
     }
 
     /**
-     * 開啟多選欄位的選項畫面；套用時房間、房主身分或草稿已經改變的話放棄這次選擇。
+     * 開啟多選欄位的選項畫面。套用時房間、房主身分或草稿已經改變的話放棄這次選擇。
      *
      * @param field 多選欄位。
      * @param editor 多選編輯器規格。
@@ -697,7 +697,7 @@ internal class RoomSettingsPage(
     }
 
     /**
-     * 建立底部操作列：可編輯時為重設為預設、復原、套用、完成；唯讀時只有返回成員頁的完成按鈕。
+     * 建立底部操作列：可編輯時為重設為預設、復原、套用、完成。唯讀時只有返回成員頁的完成按鈕。
      *
      * @param layout 設定頁版面。
      * @param definition 目前規則的設定呈現定義。
@@ -793,7 +793,7 @@ internal class RoomSettingsPage(
      * 取得設定實際呈現的欄位，供欄位變更後清理已消失欄位的驗證狀態。
      *
      * @param config 要解析的設定。
-     * @return 呈現中的欄位 ID；規則沒有呈現定義時為空。
+     * @return 呈現中的欄位 ID。規則沒有呈現定義時為空。
      */
     private fun effectiveFieldIds(config: GameConfig): Set<String> = configResolver.resolve(config).definition
         ?.let { definition -> definition.fields.mapTo(mutableSetOf()) { it.id } }
@@ -825,7 +825,7 @@ internal class RoomSettingsPage(
         }
     }
 
-    /** 草稿未過期且驗證通過時送出設定更新；不自行判定伺服器是否接受。 */
+    /** 草稿未過期且驗證通過時送出設定更新。不自行判定伺服器是否接受。 */
     private fun applyDraft() {
         if (!draft.canDone(roomPlayerCount())) return
         val table = stateStore.tableOccupancy(tableId) ?: return
@@ -879,7 +879,7 @@ internal class RoomSettingsPage(
      *
      * @param field 欄位呈現定義。
      * @param config 讀取目前值及相依條件使用的設定。
-     * @param editable 是否允許修改此欄位；不可修改時不顯示操作提示。
+     * @param editable 是否允許修改此欄位。不可修改時不顯示操作提示。
      * @param locked 目前玩法鎖定這個欄位時的鎖定內容：選項類欄位把其他選項標為不可選並附上原因，其他欄位以提醒
      *   顯示原因。沒有鎖定時為 null。
      * @return 完整的多行欄位提示文字。
@@ -958,7 +958,7 @@ internal class RoomSettingsPage(
         }
     }
 
-    /** 房間目前人數（含 AI）；房間資料尚未同步時為 0。 */
+    /** 房間目前人數（含 AI）。房間資料尚未同步時為 0。 */
     private fun roomPlayerCount(): Int = stateStore.roomSnapshot(tableId)?.playerIds?.size ?: 0
 
     /**
@@ -1016,7 +1016,7 @@ internal class RoomSettingsPage(
         scroll = tabScroll,
     )
 
-    /** 目前草稿或權威設定解析出的欄位定義；沒有呈現定義時為 null。 */
+    /** 目前草稿或權威設定解析出的欄位定義。沒有呈現定義時為 null。 */
     private fun resolvedDefinition(): GameConfigPresentationDefinition? = (draft.config ?: host.currentConfig())?.let(configResolver::resolve)?.definition
 
     /** 目前分類的完整欄位數，供捲軸幾何與捲動上限共用。 */
@@ -1049,7 +1049,7 @@ internal class RoomSettingsPage(
      *
      * @param optionId 選項識別碼。
      * @param editor 單選或多選欄位編輯器描述。
-     * @return 已登記的本地化文字；未登記翻譯鍵時顯示完整選項 ID。
+     * @return 已登記的本地化文字。未登記翻譯鍵時顯示完整選項 ID。
      */
     private fun optionText(optionId: String, editor: GameConfigEditorSpec.ChoiceEditor): Component = editor.translationKeyFor(optionId)?.let(Component::translatable) ?: Component.literal(optionId)
 

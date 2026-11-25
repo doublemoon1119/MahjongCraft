@@ -18,7 +18,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證透明牌在還沒摸到時不公開，離開摸牌序列與保留牌後對所有人公開。 */
 class TransparentTileComponentsTest {
-    /** 牌山與保留牌中的透明牌不公開；手牌中的透明牌對所有人公開，同一手的普通牌仍只有自己知道。 */
+    /** 牌山與保留牌中的透明牌不公開。手牌中的透明牌對所有人公開，同一手的普通牌仍只有自己知道。 */
     @Test
     fun `transparent tiles are public only once drawn`() {
         val inWall = transparent(Tile.Numeric(Tile.Suit.Dot, 5))

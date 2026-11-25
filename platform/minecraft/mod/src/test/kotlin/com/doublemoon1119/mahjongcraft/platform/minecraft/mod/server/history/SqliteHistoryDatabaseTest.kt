@@ -54,7 +54,7 @@ class SqliteHistoryDatabaseTest {
         assertEquals(secondSave.resolve("mahjongcraft/history.sqlite"), HistoryDatabasePath.resolve(secondSave))
     }
 
-    /** 新檔建立 schema；重新開啟後仍可讀取且相同事件重送不增加筆數。 */
+    /** 新檔建立 schema。重新開啟後仍可讀取且相同事件重送不增加筆數。 */
     @Test
     fun `test schema and pending events survive reopening`() {
         val path = createTempDirectory("mahjongcraft-history-").resolve("world/mahjongcraft/history.sqlite")
@@ -78,7 +78,7 @@ class SqliteHistoryDatabaseTest {
         }
     }
 
-    /** 已封存 Replay 可讀取；存放大小與解壓後大小都套用同一個位元組上限。 */
+    /** 已封存 Replay 可讀取。存放大小與解壓後大小都套用同一個位元組上限。 */
     @Test
     fun `test replay payload read is bounded`() {
         val path = createTempDirectory("mahjongcraft-history-").resolve("history.sqlite")
@@ -253,7 +253,7 @@ class SqliteHistoryDatabaseTest {
         assertTrue(Files.exists(path))
     }
 
-    /** 摘要、Replay 與原始事件刪除必須共用交易；缺口場次不可封存。 */
+    /** 摘要、Replay 與原始事件刪除必須共用交易。缺口場次不可封存。 */
     @Test
     fun `test archive is atomic and refuses known gaps`() {
         val path = createTempDirectory("mahjongcraft-history-").resolve("history.sqlite")

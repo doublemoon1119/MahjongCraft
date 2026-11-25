@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.seating
 
-/** 座位空間只受實際身體碰撞影響，純顯示物件不占位；已有座位另由 provider 查詢。 */
+/** 座位空間只受實際身體碰撞影響，純顯示物件不占位。已有座位另由 provider 查詢。 */
 object SeatCollisionPolicy {
     /**
      * 判斷查詢範圍內的物件是否阻擋座位空間。

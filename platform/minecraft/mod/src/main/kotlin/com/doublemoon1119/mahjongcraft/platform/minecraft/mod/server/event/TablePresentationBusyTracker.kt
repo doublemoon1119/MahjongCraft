@@ -22,9 +22,10 @@ import kotlin.uuid.Uuid
 /**
  * 判斷桌子是否仍有待執行的呈現工作、阻塞操作的時間軸或實體動畫。
  *
- * 待執行工作以 [beginPending] 的標記追蹤，避免實體尚未生成時誤判為不忙碌。
- * 動畫開始後，依桌子與實體保存的狀態判斷；獲准不阻塞整桌的中途和牌動畫不計入。
- * 查詢世界與實體的 [isBusy]、[isPresentingContinuingWin] 必須在伺服器主執行緒呼叫。
+ * - 待執行工作以 [beginPending] 的標記追蹤，避免實體尚未生成時誤判為不忙碌。
+ * - 動畫開始後，依桌子與實體保存的狀態判斷。
+ * - 獲准不阻塞整桌的中途和牌動畫不計入。
+ * - 查詢世界與實體的 [isBusy]、[isPresentingContinuingWin] 必須在伺服器主執行緒呼叫。
  *
  * @property serverHolder 目前伺服器與世界的查詢來源。
  * @property tableLocationRegistry 將桌子識別碼對應到最後已知位置。
@@ -52,12 +53,12 @@ class TablePresentationBusyTracker(
         return PendingLease(tableId, leaseId, operation)
     }
 
-    /** 清除目前所有牌桌的 pending token；既有 lease 之後完成時不會影響新 lease。 */
+    /** 清除目前所有牌桌的 pending token。既有 lease 之後完成時不會影響新 lease。 */
     fun clearAll() {
         pendingLeasesByTable.clear()
     }
 
-    /** 清除指定桌子的待執行 lease；其他桌子的呈現工作不受影響。 */
+    /** 清除指定桌子的待執行 lease。其他桌子的呈現工作不受影響。 */
     fun clear(tableId: Uuid) {
         pendingLeasesByTable.remove(tableId)
     }
@@ -77,7 +78,7 @@ class TablePresentationBusyTracker(
         /** 防止同一 lease 重複完成時再次存取 tracker。 */
         private val completed = AtomicBoolean(false)
 
-        /** 完成此 lease；重複呼叫不會影響其他工作的 token。 */
+        /** 完成此 lease。重複呼叫不會影響其他工作的 token。 */
         fun complete() {
             if (!completed.compareAndSet(false, true)) return
             pendingLeasesByTable.computeIfPresent(tableId) { _, tokens ->
@@ -91,7 +92,7 @@ class TablePresentationBusyTracker(
      * 在伺服器主執行緒查詢整桌是否仍被呈現工作或動畫占用。
      *
      * @param tableId 要查詢的桌子。
-     * @return 有待執行工作、有效整桌時間軸或阻塞實體動畫時為 true；找不到世界且沒有待執行工作時為 false。
+     * @return 有待執行工作、有效整桌時間軸或阻塞實體動畫時為 true。找不到世界且沒有待執行工作時為 false。
      */
     fun isBusy(tableId: Uuid): Boolean {
         if (!pendingLeasesByTable[tableId].isNullOrEmpty()) return true
@@ -125,7 +126,7 @@ class TablePresentationBusyTracker(
      * 只用來讓本局延後換局。
      *
      * @param tableId 要查詢的桌子。
-     * @return 對應桌子的中途和牌時間軸尚未結束時為 true；找不到桌子或世界時為 false。
+     * @return 對應桌子的中途和牌時間軸尚未結束時為 true。找不到桌子或世界時為 false。
      */
     fun isPresentingContinuingWin(tableId: Uuid): Boolean {
         val location = tableLocationRegistry.get(tableId)?.location ?: return false
@@ -138,7 +139,7 @@ class TablePresentationBusyTracker(
      * 依桌子位置查詢目前伺服器的世界。
      *
      * @param location 提供維度識別碼的桌子位置。
-     * @return 對應世界；維度識別碼無效、沒有伺服器或世界不存在時為 null。
+     * @return 對應世界。維度識別碼無效、沒有伺服器或世界不存在時為 null。
      */
     private fun resolveWorld(location: TableLocation): ServerLevel? {
         val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null

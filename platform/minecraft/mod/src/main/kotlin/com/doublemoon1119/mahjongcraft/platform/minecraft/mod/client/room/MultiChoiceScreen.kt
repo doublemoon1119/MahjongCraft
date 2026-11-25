@@ -22,15 +22,17 @@ import org.lwjgl.glfw.GLFW
 /**
  * 編輯單一多選欄位：一列一個選項，名稱靠左、按鈕外觀的勾選方塊靠右，整列都可以點。
  *
- * 勾選只修改這個畫面的暫存選取；[完成] 把選取寫回房間設定頁的草稿並返回，[取消] 與 Esc 放棄這次的勾選並返回。
- * 已選到上限時其他選項停用，提示框寫出原因；選取數量不在範圍內時 [完成] 停用。
+ * - 勾選只修改這個畫面的暫存選取。
+ * - [完成] 把選取寫回房間設定頁的草稿並返回。[取消] 與 Esc 放棄這次的勾選並返回。
+ * - 已選到上限時其他選項停用，提示框寫出原因。
+ * - 選取數量不在範圍內時 [完成] 停用。
  *
  * @property parent 返回時要顯示的房間設定頁。
  * @param fieldName 欄位名稱翻譯鍵。
  * @property fieldDescriptionKey 欄位說明翻譯鍵，指向標題時顯示。
  * @property editor 多選欄位的可選項目與數量限制。
  * @param initialSelection 開啟畫面時的選取快照。
- * @property onApply 按下完成時以選取結果呼叫；由呼叫端寫回草稿並返回。
+ * @property onApply 按下完成時以選取結果呼叫。由呼叫端寫回草稿並返回。
  */
 internal class MultiChoiceScreen(
     private val parent: Screen,
@@ -105,7 +107,7 @@ internal class MultiChoiceScreen(
     }
 
     /**
-     * 切換一個選項；已選到上限時未選的選項不處理。
+     * 切換一個選項。已選到上限時未選的選項不處理。
      *
      * @param optionId 要切換的選項。
      */
@@ -242,7 +244,7 @@ internal class MultiChoiceScreen(
      *
      * @param optionId 選項。
      * @param layout 目前版面。
-     * @return 提示的每一行；沒有內容時為 null。
+     * @return 提示的每一行。沒有內容時為 null。
      */
     private fun optionTooltip(optionId: String, layout: MultiChoiceLayout): List<FormattedCharSequence>? {
         val name = optionText(optionId)

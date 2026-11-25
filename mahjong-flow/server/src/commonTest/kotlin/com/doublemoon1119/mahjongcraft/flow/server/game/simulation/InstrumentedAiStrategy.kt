@@ -91,7 +91,7 @@ internal class DecisionRecorder(private val traceLimit: Int = DEFAULT_TRACE_LIMI
     /** 最近的決策，舊的在前。 */
     val recent: List<DecisionRecord> get() = recentDecisions.toList()
 
-    /** 首次由測試策略送出的不合法命令；由模擬器在提交邊界轉成失敗。 */
+    /** 首次由測試策略送出的不合法命令。由模擬器在提交邊界轉成失敗。 */
     var illegalCommand: IllegalAiCommandException? = null
         private set
 
@@ -109,7 +109,7 @@ internal class DecisionRecorder(private val traceLimit: Int = DEFAULT_TRACE_LIMI
     /**
      * 記錄不合法命令，但不在策略 executor 內拋出，讓模擬器觀察正式提交結果。
      *
-     * @param failure 本次發現的不合法命令；已有紀錄時保留最先發現的問題。
+     * @param failure 本次發現的不合法命令。已有紀錄時保留最先發現的問題。
      */
     fun recordIllegalCommand(failure: IllegalAiCommandException) {
         illegalCommand = illegalCommand ?: failure
@@ -133,7 +133,7 @@ internal class IllegalAiCommandException(val decision: DecisionRecord, reason: S
 /**
  * 包裝一個策略：記錄每次決策與不合法命令，並由模擬器在命令提交邊界回報 [IllegalAiCommandException]。
  *
- * 合法範圍：回應捨牌或槓時只能送出合法動作或過；自己回合只能自摸、合法的槓與途中流局、擴充 handler 產生的命令，
+ * 合法範圍：回應捨牌或槓時只能送出合法動作或過。自己回合只能自摸、合法的槓與途中流局、擴充 handler 產生的命令，
  * 或打出自己手中的牌（規則強制捨牌時只能打出那張）。
  *
  * @property strategyKey 被包裝策略的登記 key。
@@ -166,11 +166,11 @@ internal class InstrumentedAiStrategy(
     override suspend fun decideRuleDecision(context: RuleDecisionAiContext): RuleDecisionSubmission = delegate.decideRuleDecision(context)
 
     /**
-     * [command] 不合法的原因；合法時為 null。
+     * [command] 不合法的原因。合法時為 null。
      *
      * @param context AI 當下的決策情境與合法動作。
      * @param command AI 送出的命令。
-     * @return 不合法原因；合法時為 null。
+     * @return 不合法原因。合法時為 null。
      */
     private fun illegalReason(context: AiDecisionContext, command: GameCommand): String? = when (context.phase) {
         AiDecisionPhase.RespondingToDiscard -> when (command) {
@@ -191,7 +191,7 @@ internal class InstrumentedAiStrategy(
      *
      * @param context AI 當下的決策情境與合法動作。
      * @param action AI 送出的反應動作。
-     * @return 不合法原因；合法時為 null。
+     * @return 不合法原因。合法時為 null。
      */
     private fun responseReason(context: AiDecisionContext, action: GameAction): String? = if (action == GameAction.Pass || action in context.legalActions) null else "action $action is not legal"
 
@@ -200,7 +200,7 @@ internal class InstrumentedAiStrategy(
      *
      * @param context AI 當下的決策情境與合法動作。
      * @param command AI 送出的命令。
-     * @return 不合法原因；合法時為 null。
+     * @return 不合法原因。合法時為 null。
      */
     private fun checkOwnTurn(context: AiDecisionContext, command: GameCommand): String? {
         val legal = context.legalActions

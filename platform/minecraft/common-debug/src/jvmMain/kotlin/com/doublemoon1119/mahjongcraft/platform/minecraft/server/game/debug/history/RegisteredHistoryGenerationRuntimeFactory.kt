@@ -81,13 +81,13 @@ class RegisteredHistoryGenerationRuntimeFactory(
     )
 
     /**
-     * 在 [store] 中建立全部座位都是真 AI 的完整對局；多場共用同一個權威來源，如同正式伺服器上同時進行的多桌。
+     * 在 [store] 中建立全部座位都是真 AI 的完整對局。多場共用同一個權威來源，如同正式伺服器上同時進行的多桌。
      *
      * @param scenario 規則與場長情境。
      * @param store 承載對局的共用權威來源。
      * @param stepTimer 這一桌的分項計時器。
      * @param decisionExecutor 呼叫 AI 策略的執行器。
-     * @param matchSeed 這場對局的種子；同一個種子重現同一場對局。
+     * @param matchSeed 這場對局的種子。同一個種子重現同一場對局。
      * @return 不產生世界實體的對局環境。
      */
     suspend fun createIn(

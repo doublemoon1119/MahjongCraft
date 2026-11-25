@@ -15,11 +15,11 @@ import net.minecraft.network.chat.Component
  * 客戶端的 debug 指令 `/mahjongcraft_client debug hovered_text client_config`：以正式設定訊息建構器顯示客戶端設定，
  * 檢查訊息懸停的內容。
  *
- * @property configStore 取得本機設定的來源；執行時才取，客戶端初始化順序不影響登記。
+ * @property configStore 取得本機設定的來源。執行時才取，客戶端初始化順序不影響登記。
  */
 class DebugClientCommand(private val configStore: () -> MahjongClientConfigStore) : ClientCommand {
     /**
-     * 建立指令樹；與本體的客戶端指令共用同一個根節點，由指令系統合併。
+     * 建立指令樹。與本體的客戶端指令共用同一個根節點，由指令系統合併。
      *
      * @return 指令樹的根節點。
      */

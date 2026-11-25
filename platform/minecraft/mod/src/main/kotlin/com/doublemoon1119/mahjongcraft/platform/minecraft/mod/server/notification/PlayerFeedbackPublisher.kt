@@ -206,10 +206,10 @@ class PlayerFeedbackPublisher(
     }
 
     /**
-     * 建立「已建立麻將遊戲」訊息；[location] 存在時句尾附上可 hover 顯示座標的 `[位置]` 標籤，主世界
+     * 建立「已建立麻將遊戲」訊息。[location] 存在時句尾附上可 hover 顯示座標的 `[位置]` 標籤，主世界
      * 以外的維度會額外多顯示一行維度 ID（多數桌子都在主世界，省略維度可以維持提示簡潔）。
      *
-     * @param location 可選的桌子位置；為 null 時只顯示建立成功文字。
+     * @param location 可選的桌子位置。為 null 時只顯示建立成功文字。
      * @return 可供玩家閱讀的建立成功訊息。
      */
     private fun gameCreatedMessage(location: TableLocation?): MutableComponent {
@@ -236,7 +236,7 @@ class PlayerFeedbackPublisher(
     )
 
     /**
-     * 建立「部分成員離線或太遠，無法開始對局」訊息；兩種原因各自成行，只有真的有內容的那一種才會出現。
+     * 建立「部分成員離線或太遠，無法開始對局」訊息。兩種原因各自成行，只有真的有內容的那一種才會出現。
      *
      * @param feedback 開局遭阻擋的離線與距離過遠玩家 UUID。
      * @return 分別列出有問題成員的訊息。
@@ -259,7 +259,7 @@ class PlayerFeedbackPublisher(
     }
 
     /**
-     * 用逗號串接每個玩家目前已知的名稱；查不到名稱時顯示未知玩家文字。
+     * 用逗號串接每個玩家目前已知的名稱。查不到名稱時顯示未知玩家文字。
      *
      * @param playerIds 要顯示的玩家 UUID 清單。
      * @return 以逗號分隔的名稱文字。
@@ -294,7 +294,7 @@ class PlayerFeedbackPublisher(
     }
 
     /**
-     * 建立「已變更遊戲設定」訊息；實際的「舊值 → 新值」差異位於可互動標籤的 hover。
+     * 建立「已變更遊戲設定」訊息。實際的「舊值 → 新值」差異位於可互動標籤的 hover。
      *
      * @param feedback 含舊、新設定 JSON 的回饋。
      * @return 可點擊並顯示設定差異的訊息。
@@ -321,7 +321,7 @@ class PlayerFeedbackPublisher(
     )
 
     /**
-     * 建立「顯示目前遊戲設定」訊息；可互動文字點擊後透過 [ClickEvent.Action.RUN_COMMAND] 觸發
+     * 建立「顯示目前遊戲設定」訊息。可互動文字點擊後透過 [ClickEvent.Action.RUN_COMMAND] 觸發
      * client-only 指令開啟設定編輯畫面（見 [RoomConfigScreenCommand]），
      * 不是複製 JSON。
      *
@@ -436,10 +436,10 @@ class PlayerFeedbackPublisher(
     }
 
     private companion object {
-        /** 主世界的 dimension registry identifier；hover 顯示位置時，這個維度不額外標示。 */
+        /** 主世界的 dimension registry identifier。hover 顯示位置時，這個維度不額外標示。 */
         const val OVERWORLD_DIMENSION_ID: String = "minecraft:overworld"
 
-        /** 開啟房間規則設定編輯畫面的 client-only 指令；點擊這個訊息或玩家自己手動輸入都能觸發，見 [RoomConfigScreenCommand] 的類別 KDoc。 */
+        /** 開啟房間規則設定編輯畫面的 client-only 指令。點擊這個訊息或玩家自己手動輸入都能觸發，見 [RoomConfigScreenCommand] 的類別 KDoc。 */
         const val OPEN_ROOM_CONFIG_SCREEN_COMMAND: String = "/mahjongcraft_client room_config screen"
     }
 }

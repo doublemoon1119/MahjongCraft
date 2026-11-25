@@ -8,7 +8,7 @@ import net.minecraft.world.InteractionResult
 import net.minecraft.world.item.context.UseOnContext
 
 /**
- * 牌尺 item：每種顏色一個物品。蹲下對方塊右鍵時在命中點放置同色的 [MahjongRulerEntity]；拿在主手時可以當武器，
+ * 牌尺 item：每種顏色一個物品。蹲下對方塊右鍵時在命中點放置同色的 [MahjongRulerEntity]。拿在主手時可以當武器，
  * 攻擊力與攻擊速度和木劍相同，沒有耐久度。
  *
  * @property color 這個物品的牌尺顏色。
@@ -19,7 +19,7 @@ class MahjongRulerItem(
     settings: Properties,
 ) : MahjongWeaponItem(settings, ATTACK_DAMAGE_BONUS, ATTACK_SPEED_BONUS) {
     /**
-     * 蹲下時在命中點放置面向玩家的牌尺；沒有蹲下時不做任何事。
+     * 蹲下時在命中點放置面向玩家的牌尺。沒有蹲下時不做任何事。
      *
      * @param context 方塊互動位置、玩家及物品堆疊。
      */
@@ -43,10 +43,10 @@ class MahjongRulerItem(
     }
 
     private companion object {
-        /** 攻擊力加成；玩家基礎攻擊力 1，合計 4，與木劍相同。 */
+        /** 攻擊力加成。玩家基礎攻擊力 1，合計 4，與木劍相同。 */
         const val ATTACK_DAMAGE_BONUS: Double = 3.0
 
-        /** 攻擊速度加成；玩家基礎攻擊速度 4，合計 1.6，與木劍相同。 */
+        /** 攻擊速度加成。玩家基礎攻擊速度 4，合計 1.6，與木劍相同。 */
         const val ATTACK_SPEED_BONUS: Double = -2.4
 
         /** 半圈的角度，讓牌尺面向放置的玩家。 */

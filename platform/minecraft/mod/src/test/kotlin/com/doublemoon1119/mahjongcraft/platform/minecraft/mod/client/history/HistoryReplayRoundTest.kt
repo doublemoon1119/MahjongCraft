@@ -78,7 +78,7 @@ class HistoryReplayRoundTest {
      * 建立一頁事件。
      *
      * @param start 第一筆交易索引。
-     * @param next 下一頁的第一筆交易索引；最後一頁為 null。
+     * @param next 下一頁的第一筆交易索引。最後一頁為 null。
      * @param count 本局交易總數。
      * @return 事件頁。
      */
@@ -92,7 +92,7 @@ class HistoryReplayRoundTest {
     )
 
     /**
-     * 建立一份最小牌面；這裡只看步數，不看內容。
+     * 建立一份最小牌面。這裡只看步數，不看內容。
      *
      * @return 牌面。
      */

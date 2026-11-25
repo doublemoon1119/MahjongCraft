@@ -21,8 +21,8 @@ import kotlin.uuid.Uuid
 /**
  * 台灣麻將的胡牌詳情解析器：贏家公開的花牌、成立的台種、莊家與連莊台，以及合計台數。
  *
- * 莊家台依付款規則只在贏家或付款者是莊家時計入：莊家胡牌或閒家胡莊家的牌時每一份付款都計入；閒家自摸時只有莊家那一份
- * 計入，條目標為只適用部分付款者，合計另外列出莊家那一份；閒家胡閒家的牌時不列。
+ * 莊家台依付款規則只在贏家或付款者是莊家時計入：莊家胡牌或閒家胡莊家的牌時每一份付款都計入。閒家自摸時只有莊家那一份
+ * 計入，條目標為只適用部分付款者，合計另外列出莊家那一份。閒家胡閒家的牌時不列。
  */
 object TaiwanWinSettlementDetailResolver : WinSettlementDetailResolver {
     override fun resolve(
@@ -61,7 +61,7 @@ object TaiwanWinSettlementDetailResolver : WinSettlementDetailResolver {
      *
      * @param state 胡牌成立時的桌況。
      * @param winnerId 贏家。
-     * @param responsiblePlayerId 單獨付款者；其他三家一起付款時為 null。
+     * @param responsiblePlayerId 單獨付款者。其他三家一起付款時為 null。
      * @param handEntries 手牌或花胡成立的台種。
      * @param handTai 不含莊家台的台數。
      * @return 台種清單、合計台數，以及閒家自摸時莊家那一份的合計。
@@ -115,7 +115,7 @@ object TaiwanWinSettlementDetailResolver : WinSettlementDetailResolver {
     private fun taiQuantities(tai: Int) = WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, tai)))
 
     /**
-     * 花牌欄位；沒有花牌時為 null，不顯示這一行。
+     * 花牌欄位。沒有花牌時為 null，不顯示這一行。
      *
      * @param flowers 依公開順序排列的花牌。
      * @param publicFace 將牌值轉成公開牌面的投影。

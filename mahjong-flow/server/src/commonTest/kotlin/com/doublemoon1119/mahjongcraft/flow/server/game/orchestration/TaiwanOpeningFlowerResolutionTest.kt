@@ -40,7 +40,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證台灣麻將局首補花：莊家先摸開門牌，再從莊家開始逐輪補花，並依處理順序回報呈現步驟。 */
 class TaiwanOpeningFlowerResolutionTest {
-    /** 起手八張花時，胡牌的選項沿用自摸並展示這八張花；放棄的選項不展示牌，以一般的跳過呈現。 */
+    /** 起手八張花時，胡牌的選項沿用自摸並展示這八張花。放棄的選項不展示牌，以一般的跳過呈現。 */
     @Test
     fun `the eight flowers choice shows the flowers on the win option`() {
         val flowers = TaiwanTileTypes.ALL.map { FakeIdentifiedTileFactory.create(Tile.Extension(it)) }
@@ -67,7 +67,7 @@ class TaiwanOpeningFlowerResolutionTest {
         assertEquals(TaiwanFlowerRuleDecisionIds.PASS_FLOWER_WIN, choice.passOptionId, "Passing is shown as the usual skip.")
     }
 
-    /** 莊家先摸一張，第一輪莊家一次補兩張、下家補一張；莊家補到的花在第二輪再補，補完莊家直接保留摸牌位的牌；每一輪各家移出的花都留下紀錄。 */
+    /** 莊家先摸一張，第一輪莊家一次補兩張、下家補一張。莊家補到的花在第二輪再補，補完莊家直接保留摸牌位的牌。每一輪各家移出的花都留下紀錄。 */
     @Test
     fun `the dealer draws first and flowers are replaced round by round`() {
         val flowers = TaiwanTileTypes.ALL.map { FakeIdentifiedTileFactory.create(Tile.Extension(it)) }
@@ -130,7 +130,7 @@ class TaiwanOpeningFlowerResolutionTest {
         )
     }
 
-    /** 牌局中摸到的花已經亮出；補到的牌又是花時依序呈現補牌、亮花與再補牌，第一張花不再移動也不再宣告。 */
+    /** 牌局中摸到的花已經亮出。補到的牌又是花時依序呈現補牌、亮花與再補牌，第一張花不再移動也不再宣告。 */
     @Test
     fun `a mid-game chain does not present the drawn flower again`() {
         val flowers = TaiwanTileTypes.ALL.map { FakeIdentifiedTileFactory.create(Tile.Extension(it)) }

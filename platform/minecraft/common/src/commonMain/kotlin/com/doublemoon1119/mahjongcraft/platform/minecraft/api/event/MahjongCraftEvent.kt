@@ -7,10 +7,11 @@ import kotlin.jvm.JvmSynthetic
 /**
  * 供第三方註冊單一事件類型監聽者的訂閱點。
  *
- * 監聽者只能在第一次伺服器 session 啟動前註冊；啟動時鎖定註冊點，後續 session 不會重新開放註冊。
- * 交付時會依註冊順序呼叫監聽者。
- * 監聽者在來源交易釋放鎖後於伺服器主執行緒執行，必須盡快返回；耗時工作應自行排程。
- * 單次監聽者失敗不影響其他監聽者與後續通知。通知不持久化、不補發，session 結束會捨棄尚未交付的事件。
+ * - 監聽者只能在第一次伺服器 session 啟動前註冊。啟動時鎖定註冊點，後續 session 不會重新開放註冊。
+ * - 交付時依註冊順序呼叫監聽者。
+ * - 監聽者在來源交易釋放鎖後於伺服器主執行緒執行，必須盡快返回。耗時工作應自行排程。
+ * - 單次監聽者失敗不影響其他監聽者與後續通知。
+ * - 通知不持久化、不補發，session 結束會捨棄尚未交付的事件。
  *
  * @param L 監聽者介面型別。
  */
@@ -20,7 +21,7 @@ class MahjongCraftEvent<L : Any> private constructor() {
     private val state = AtomicReference(RegistrationState<L>(listeners = emptyList(), locked = false))
 
     /**
-     * 註冊監聽者；初始化完成後註冊會被拒絕。
+     * 註冊監聽者。初始化完成後註冊會被拒絕。
      *
      * @param listener 要依註冊順序接收事件的監聽者。
      * @throws IllegalStateException 訂閱點已鎖定時拋出。
@@ -35,7 +36,7 @@ class MahjongCraftEvent<L : Any> private constructor() {
         }
     }
 
-    /** 鎖定註冊；之後不可再加入監聽者。 */
+    /** 鎖定註冊。之後不可再加入監聽者。 */
     internal fun lockRegistration() {
         while (true) {
             val current = state.load()
@@ -54,7 +55,7 @@ class MahjongCraftEvent<L : Any> private constructor() {
     /** MahjongCraft 內部建立訂閱點的入口。 */
     internal companion object {
         /**
-         * 建立尚未鎖定的訂閱點；此方法不暴露給 Java 第三方。
+         * 建立尚未鎖定的訂閱點。此方法不暴露給 Java 第三方。
          *
          * @param L 監聽者介面型別。
          * @return 空白且允許註冊的訂閱點。

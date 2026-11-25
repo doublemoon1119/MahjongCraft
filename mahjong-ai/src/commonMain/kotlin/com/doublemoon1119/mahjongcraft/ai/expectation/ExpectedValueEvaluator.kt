@@ -36,17 +36,17 @@ import kotlin.uuid.Uuid
  *
  * - 可換牌的手牌：之後可以隨時改打安全牌，因此「和牌期望 － 後續風險」最低為 0。
  * - 宣告後不能換牌的手牌：之後每一輪都要打出摸到的牌，後續風險一律計入。
- * - 鳴牌、過與槓牌之後都還要再打出一張牌，因此以其中最安全的一張計算立即放銃損失；
+ * - 鳴牌、過與槓牌之後都還要再打出一張牌，因此以其中最安全的一張計算立即放銃損失。
  *   鳴牌只在鳴牌後的手牌為聽牌或一向聽時列入候選，因為只有這兩種情況會由規則實際判斷能不能和牌。
  * - 兩向聽以上使用規則的基準打點，但不超過同一次決策中以實際手牌計算打點的選項（聽牌、一向聽）的平均每次和牌點數，
  *   避免拆掉接近聽牌的手牌只因為換成基準打點而顯得有利。
- * - 名次換算只用於和牌與放銃的點數；宣告成本在和牌時會以打點的一部分收回，因此以點數計算、不換算名次。
- * - 能和牌時一律和牌；可宣告途中流局時，最佳選項的和牌機率低於
+ * - 名次換算只用於和牌與放銃的點數。宣告成本在和牌時會以打點的一部分收回，因此以點數計算、不換算名次。
+ * - 能和牌時一律和牌。可宣告途中流局時，最佳選項的和牌機率低於
  *   [ExpectationParameters.abortiveDrawWinProbability] 就宣告。
- * - 期望值差距小於 [EXPECTED_VALUE_TIE_TOLERANCE] 時選擇候選清單中較前面的選項：過優先於鳴牌；
- *   捨牌依規則牌序排列，同一種牌優先打出剛摸到的那張；一般捨牌優先於附帶宣告的捨牌，再其次為槓。
+ * - 期望值差距小於 [EXPECTED_VALUE_TIE_TOLERANCE] 時選擇候選清單中較前面的選項：過優先於鳴牌。
+ *   捨牌依規則牌序排列，同一種牌優先打出剛摸到的那張。一般捨牌優先於附帶宣告的捨牌，再其次為槓。
  *
- * 規則擴充動作只評估 handler 說明了會打出哪張牌的候選；其他擴充命令無法評估，不會被選擇。
+ * 規則擴充動作只評估 handler 說明了會打出哪張牌的候選。其他擴充命令無法評估，不會被選擇。
  *
  * @property level 可使用的資訊範圍。
  * @property parameters 估計參數。
@@ -73,7 +73,7 @@ internal class ExpectedValueEvaluator(
     /** 評估者自己的完整手牌。 */
     private val ownHand: Hand = snapshot.players.first { it.id == selfId }.hand.toOwnHand(interpretation)
 
-    /** 評估者讀得到的牌面，依牌張 ID 索引；假設局面沿用這些牌面，保留赤寶牌等特徵與外觀。 */
+    /** 評估者讀得到的牌面，依牌張 ID 索引。假設局面沿用這些牌面，保留赤寶牌等特徵與外觀。 */
     private val knownFaces: Map<Uuid, IdentifiedTileSnapshot> = buildMap {
         snapshot.mapTiles { tile ->
             if (tile.face != null) put(tile.id, tile)
@@ -132,7 +132,7 @@ internal class ExpectedValueEvaluator(
         danger = { opponentId, tile -> opponentModel.discardDanger(currentView, opponentId, tile) },
     )
 
-    /** 估計後續風險時使用的放銃期望損失；依 [ExpectationParameters.futureRiskHighThreatOnly] 只計高威脅對手。 */
+    /** 估計後續風險時使用的放銃期望損失。依 [ExpectationParameters.futureRiskHighThreatOnly] 只計高威脅對手。 */
     private val laterDiscardRisk = if (parameters.futureRiskHighThreatOnly) {
         DealInRisk(
             threats = defendedThreats.filter { it.readyProbability >= parameters.highThreatReadyProbability },
@@ -177,7 +177,7 @@ internal class ExpectedValueEvaluator(
     )
 
     /**
-     * 評估並選出最佳選項；[candidates] 中至少要有一個可評估的選項。
+     * 評估並選出最佳選項。[candidates] 中至少要有一個可評估的選項。
      *
      * @param candidates 要比較的選項，依此順序處理相同期望值。
      * @return 期望值最高的選項與其評分。
@@ -194,7 +194,7 @@ internal class ExpectedValueEvaluator(
     }
 
     /**
-     * 評估 [candidates] 中可比較的選項，依原本的順序回傳；兩向聽以上的打點套用同一次決策的上限。
+     * 評估 [candidates] 中可比較的選項，依原本的順序回傳。兩向聽以上的打點套用同一次決策的上限。
      *
      * @param candidates 要評估的選項。
      * @return 排除不可評估選項後，依輸入順序排列的評分。
@@ -206,10 +206,10 @@ internal class ExpectedValueEvaluator(
     }
 
     /**
-     * 評估一個選項；不列入比較的選項回傳 null。
+     * 評估一個選項。不列入比較的選項回傳 null。
      *
      * @param candidate 要評估的選項。
-     * @return 可比較的評估結果；不適用時為 null。
+     * @return 可比較的評估結果。不適用時為 null。
      */
     private fun evaluate(candidate: DecisionCandidate): Evaluation? = when (candidate) {
         is DecisionCandidate.Pass -> evaluateWaitingHand(candidate, ownHand)
@@ -220,10 +220,10 @@ internal class ExpectedValueEvaluator(
     }
 
     /**
-     * 以實際手牌計算打點的評估中，依和牌機率加權的平均每次和牌點數；沒有這類評估時為 null。
+     * 以實際手牌計算打點的評估中，依和牌機率加權的平均每次和牌點數。沒有這類評估時為 null。
      *
      * @param evaluations 同一次決策中已完成的候選評估。
-     * @return 實際打點評估的加權平均值；沒有正和牌機率的此類評估時為 null。
+     * @return 實際打點評估的加權平均值。沒有正和牌機率的此類評估時為 null。
      */
     private fun exactValuePerWin(evaluations: List<Evaluation>): Double? {
         val exact = evaluations.map { it.assessment }.filter { it.estimatedValuePerWin == null && it.outlook.winProbability > 0 }
@@ -236,7 +236,7 @@ internal class ExpectedValueEvaluator(
      * 套用打點上限 [valueCap] 後的期望值。
      *
      * @param evaluation 要計分的候選評估。
-     * @param valueCap 兩向聽以上估計打點的上限；null 表示不套用上限。
+     * @param valueCap 兩向聽以上估計打點的上限。null 表示不套用上限。
      * @return 扣除固定損失後的候選評分。
      */
     private fun scoreOf(evaluation: Evaluation, valueCap: Double?): CandidateScore {
@@ -282,7 +282,7 @@ internal class ExpectedValueEvaluator(
         return choose(listOf(pass) + claimCandidates()).candidate.command
     }
 
-    /** 一般捨牌：規則允許打出的牌中，每種完整牌值一個候選，依規則牌序排列；同一種牌優先打出剛摸到的那張。 */
+    /** 一般捨牌：規則允許打出的牌中，每種完整牌值一個候選，依規則牌序排列。同一種牌優先打出剛摸到的那張。 */
     private fun discardCandidates(): List<DecisionCandidate> {
         val discardable = context.discardableTileIds
         val lastDrawnId = snapshot.players.first { it.id == selfId }.hand.lastDrawn?.id
@@ -384,7 +384,7 @@ internal class ExpectedValueEvaluator(
      * [PositionRules.afterTileSetAside]），例如日麻拔北後多一張拔北寶牌。
      *
      * @param candidate 移出手牌的候選。
-     * @return 可評估時的手牌與和牌前景；找不到該牌時為 null。
+     * @return 可評估時的手牌與和牌前景。找不到該牌時為 null。
      */
     private fun evaluateSetAside(candidate: DecisionCandidate.SetAside): Evaluation? {
         val tile = ownHand.tiles.firstOrNull { it.id == candidate.tileId } ?: return null
@@ -400,10 +400,10 @@ internal class ExpectedValueEvaluator(
     }
 
     /**
-     * 鳴牌後的評估；非槓的副露之後打出最佳的一張牌。鳴牌後無法聽牌或一向聽時不列入比較。
+     * 鳴牌後的評估。非槓的副露之後打出最佳的一張牌。鳴牌後無法聽牌或一向聽時不列入比較。
      *
      * @param candidate 已由他家捨牌建立的鳴牌候選。
-     * @return 可列入比較的最佳副露後評估；不符合向聽條件時為 null。
+     * @return 可列入比較的最佳副露後評估。不符合向聽條件時為 null。
      */
     private fun evaluateClaim(candidate: DecisionCandidate.Claim): Evaluation? {
         val meldTiles = ownHand.tiles.filter { it.id in candidate.handTileIds } + candidate.claimedTile
@@ -438,7 +438,7 @@ internal class ExpectedValueEvaluator(
     }
 
     /**
-     * 暫時不打牌的手牌（過、槓）的評估；之後要打出的牌以最安全的一張計算。
+     * 暫時不打牌的手牌（過、槓）的評估。之後要打出的牌以最安全的一張計算。
      *
      * @param candidate 過或槓的候選命令。
      * @param hand 暫時不打牌時的手牌。
@@ -453,7 +453,7 @@ internal class ExpectedValueEvaluator(
     )
 
     /**
-     * 和牌期望扣除後續風險；可換牌的手牌最低為 0。
+     * 和牌期望扣除後續風險。可換牌的手牌最低為 0。
      *
      * @param hand 評估完成後的手牌。
      * @param assessment 該手牌的和牌前景。
@@ -472,7 +472,7 @@ internal class ExpectedValueEvaluator(
     /**
      * 繼續進攻時，之後打出的牌的放銃風險。
      *
-     * 宣告後不能換牌時，以未見牌的平均損失乘上預期進行的輪數，再乘上 [ExpectationParameters.lockedFutureRiskFactor]；
+     * 宣告後不能換牌時，以未見牌的平均損失乘上預期進行的輪數，再乘上 [ExpectationParameters.lockedFutureRiskFactor]。
      * 可換牌時，依 [ExpectationParameters.futureRiskTiles] 估計之後打出的牌。
      *
      * @param hand 評估完成後的手牌。
@@ -499,10 +499,10 @@ internal class ExpectedValueEvaluator(
     }
 
     /**
-     * 暗槓或加槓後的手牌；手牌中找不到對應的牌時為 null。
+     * 暗槓或加槓後的手牌。手牌中找不到對應的牌時為 null。
      *
      * @param candidate 暗槓或加槓候選。
-     * @return 槓後手牌；牌不存在或找不到可升級的碰時為 null。
+     * @return 槓後手牌。牌不存在或找不到可升級的碰時為 null。
      */
     private fun selfKanHand(candidate: DecisionCandidate.SelfKan): Hand? {
         val kanTiles = ownHand.tiles.filter { it.id in candidate.tileIds }
@@ -550,7 +550,7 @@ internal class ExpectedValueEvaluator(
     )
 
     /**
-     * 取得這張牌在評估者視角下的牌面；讀不到時使用牌值本身。
+     * 取得這張牌在評估者視角下的牌面。讀不到時使用牌值本身。
      *
      * @return 牌張快照。
      */
@@ -560,7 +560,7 @@ internal class ExpectedValueEvaluator(
      * 評估者的手牌換成 [hand]、牌河加上 [discarded] 後的視角。
      *
      * @param hand 假設動作完成後的手牌。
-     * @param discarded 假設打出的牌；null 表示未新增捨牌。
+     * @param discarded 假設打出的牌。null 表示未新增捨牌。
      * @return 對應假設局面的視角與本次決策內唯一編號。
      */
     private fun hypotheticalView(hand: Hand, discarded: IdentifiedTile?): HypotheticalView {

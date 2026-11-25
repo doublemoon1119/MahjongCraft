@@ -145,7 +145,7 @@ class RiichiPositionRulesTest {
         assertEquals(WinValue.NotWinnable, rules.winValue(view(table, winner), winner.hand, TileValue(FIVE_BAMBOO), isTsumo = true))
     }
 
-    /** 立直要付出一支立直棒，且宣告後不能再換牌；其他擴充動作沒有效果。 */
+    /** 立直要付出一支立直棒，且宣告後不能再換牌。其他擴充動作沒有效果。 */
     @Test
     fun `riichi costs a stick and locks the hand`() {
         val self = seat(Wind.SOUTH)
@@ -194,7 +194,7 @@ class RiichiPositionRulesTest {
         assertIs<WinValue.Points>(rules.winValue(view(table, winner), winner.hand, TileValue(FIVE_BAMBOO), isTsumo = true))
     }
 
-    /** 尚未立直的門清手牌（含暗槓）聽牌後可以立直；有副露、已經立直或點數不足一支立直棒時不行。 */
+    /** 尚未立直的門清手牌（含暗槓）聽牌後可以立直。有副露、已經立直或點數不足一支立直棒時不行。 */
     @Test
     fun `a closed hand that has not declared riichi can riichi once ready`() {
         val riichi = setOf(RIICHI_GAME_ACTION)
@@ -217,7 +217,7 @@ class RiichiPositionRulesTest {
         assertEquals(emptySet(), prospective(broke))
     }
 
-    /** 對手自己打過的牌不能榮和，赤五與普通五視為同一種牌；沒有立直時沒有放過的牌。 */
+    /** 對手自己打過的牌不能榮和，赤五與普通五視為同一種牌。沒有立直時沒有放過的牌。 */
     @Test
     fun `an opponent cannot ron tiles from their own discards`() {
         val self = seat(Wind.SOUTH, discards = listOf(character(1), character(2), character(3)))
@@ -259,7 +259,7 @@ class RiichiPositionRulesTest {
         assertEquals(setOf(character(5)), passed)
     }
 
-    /** 已經立直的對手，宣告聽牌時打出的牌就是立直宣告牌；赤五的基本牌面是普通五。 */
+    /** 已經立直的對手，宣告聽牌時打出的牌就是立直宣告牌。赤五的基本牌面是普通五。 */
     @Test
     fun `the declaration tile of a riichi opponent is the tile discarded to declare`() {
         val self = seat(Wind.SOUTH)
@@ -343,7 +343,7 @@ class RiichiPositionRulesTest {
         assertTrue(assertIs<WinValue.Points>(withNineDora).points > assertIs<WinValue.Points>(withoutDora).points)
     }
 
-    /** 假想拔北後，北從手牌移到拔出的北，和牌價值多一張拔北寶牌；原本的視角不受影響。 */
+    /** 假想拔北後，北從手牌移到拔出的北，和牌價值多一張拔北寶牌。原本的視角不受影響。 */
     @Test
     fun `setting a north aside adds it to the pulled norths`() {
         val north = FakeIdentifiedTileFactory.create(Tile.Honor.North)
@@ -428,11 +428,11 @@ class RiichiPositionRulesTest {
     )
 
     /**
-     * 以 [player] 為觀察者的三人麻將視角；[doraIndicators] 不為空時，牌山只包含這些公開的寶牌指示牌。
+     * 以 [player] 為觀察者的三人麻將視角。[doraIndicators] 不為空時，牌山只包含這些公開的寶牌指示牌。
      *
      * @param table 權威桌況。
      * @param player 觀察桌況的玩家。
-     * @param doraIndicators 公開寶牌指示牌；預設不提供。
+     * @param doraIndicators 公開寶牌指示牌。預設不提供。
      * @return 隱藏其他玩家手牌的三人日麻查詢視角。
      */
     private fun threePlayerView(
@@ -514,11 +514,11 @@ class RiichiPositionRulesTest {
     )
 
     /**
-     * 以 [player] 為觀察者的視角；[doraIndicators] 不為空時，牌山只包含這些公開的寶牌指示牌。
+     * 以 [player] 為觀察者的視角。[doraIndicators] 不為空時，牌山只包含這些公開的寶牌指示牌。
      *
      * @param table 權威桌況。
      * @param player 觀察桌況的玩家。
-     * @param doraIndicators 公開寶牌指示牌；預設不提供。
+     * @param doraIndicators 公開寶牌指示牌。預設不提供。
      * @return 隱藏其他玩家手牌的查詢視角。
      */
     private fun view(

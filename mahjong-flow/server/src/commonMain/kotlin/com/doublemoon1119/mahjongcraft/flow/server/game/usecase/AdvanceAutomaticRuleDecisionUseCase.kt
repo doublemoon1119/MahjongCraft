@@ -130,8 +130,8 @@ class AdvanceAutomaticRuleDecisionUseCase(
      * 一次自動規則選擇收斂所產生的歷史事實。
      *
      * @property historyDrafts 此次收斂需要記錄的自動步驟事實。
-     * @property presentationUpdate 此次收斂的桌況差異；沒有待處理步驟時為 null。
-     * @property win 自動步驟直接成立的和牌；沒有時為 null。
+     * @property presentationUpdate 此次收斂的桌況差異。沒有待處理步驟時為 null。
+     * @property win 自動步驟直接成立的和牌。沒有時為 null。
      */
     private data class AutomaticRuleDecisionUpdate(
         val historyDrafts: List<HistoryEventDraft>,

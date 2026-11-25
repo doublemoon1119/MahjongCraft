@@ -13,7 +13,7 @@ interface ComponentViewNetworkConverter {
     fun encode(views: ComponentViewSet): List<ComponentViewDto>
 
     /**
-     * 還原輸出值，不建立權威組件；重複項目會拒絕。
+     * 還原輸出值，不建立權威組件。重複項目會拒絕。
      *
      * @param dtos 網路資料。
      * @return 已裁切的組件輸出。

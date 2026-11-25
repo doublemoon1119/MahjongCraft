@@ -21,7 +21,7 @@ class RiichiWallFactoryTest {
     /**
      * 驗證日麻牌山總數與標準 3 赤牌配置。
      *
-     * 預期總數為 136 張，且萬、筒、條應各有一張赤牌；赤牌的基本牌面是普通五，另帶赤五外觀。
+     * 預期總數為 136 張，且萬、筒、條應各有一張赤牌。赤牌的基本牌面是普通五，另帶赤五外觀。
      */
     @Test
     fun `test riichi wall composition with three red dora`() {
@@ -64,7 +64,7 @@ class RiichiWallFactoryTest {
         assertEquals(2, redBySuit[Tile.Suit.Dot]?.size)
     }
 
-    /** 使用透明牌時，四人與三人日麻每種牌四張中都有三張透明；不使用時沒有透明牌。 */
+    /** 使用透明牌時，四人與三人日麻每種牌四張中都有三張透明。不使用時沒有透明牌。 */
     @Test
     fun `transparent tiles mark three of every four copies`() {
         val fourPlayer = RiichiWallFactory(RiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0)).create(Random(0)).getAllTiles()

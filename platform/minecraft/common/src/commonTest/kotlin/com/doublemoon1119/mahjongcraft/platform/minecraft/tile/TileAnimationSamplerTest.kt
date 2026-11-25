@@ -11,7 +11,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證不經過牌實體算出的動畫樣子，與牌實體播放同一份步驟的時間與軌跡相同。 */
 class TileAnimationSamplerTest {
-    /** 開始前停在原位；飛行途中與牌實體用同一套軌跡；播完停在目的地。 */
+    /** 開始前停在原位。飛行途中與牌實體用同一套軌跡。播完停在目的地。 */
     @Test
     fun `flight follows the shared trajectory`() {
         val steps = PlannedTileMotionSteps.steps(motion(TileMotionKind.FLIGHT, TileRegion.HAND, TileRegion.DISCARD), START)
@@ -37,7 +37,7 @@ class TileAnimationSamplerTest {
         assertEquals(90.0f, after.poseDegrees)
     }
 
-    /** 摸牌抬起後隱形，等一下才在目的地出現並落下；聲音只在落地那一刻。 */
+    /** 摸牌抬起後隱形，等一下才在目的地出現並落下。聲音只在落地那一刻。 */
     @Test
     fun `draw hides between lifting and dropping`() {
         val steps = PlannedTileMotionSteps.steps(motion(TileMotionKind.DRAW, TileRegion.WALL, TileRegion.DRAWN), START)

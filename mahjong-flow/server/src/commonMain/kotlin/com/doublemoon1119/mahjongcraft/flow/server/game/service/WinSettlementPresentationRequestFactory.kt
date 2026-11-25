@@ -18,7 +18,7 @@ import kotlin.uuid.Uuid
 object WinSettlementPresentationRequestFactory {
     /**
      * 建立不偽造翻符或胡牌張的 win-equivalent 特殊 outcome request。
-     * 規則專屬欄位交由 [detailResolverRegistry] 解析；沒有解析器或不支援該結果時，詳情欄位為空，
+     * 規則專屬欄位交由 [detailResolverRegistry] 解析。沒有解析器或不支援該結果時，詳情欄位為空，
      * 但贏家、分數與名次仍照常保留。[aiPlayerIds] 為由 AI 操控的玩家。
      *
      * @param previousState 特殊結算前的權威桌況。
@@ -26,7 +26,7 @@ object WinSettlementPresentationRequestFactory {
      * @param module 本局使用的規則模組。
      * @param aiPlayerIds 由 AI 操控的玩家識別碼。
      * @param detailResolverRegistry 解析規則專屬結算詳情的註冊表。
-     * @param revealsWinnerHands 是否攤開贏家的手牌；不攤牌時贏家的立牌與副露都不列入，結算面板與對局紀錄都看不到。
+     * @param revealsWinnerHands 是否攤開贏家的手牌。不攤牌時贏家的立牌與副露都不列入，結算面板與對局紀錄都看不到。
      * @return 特殊胡牌等價結果的呈現請求。
      */
     fun createSpecialOutcome(
@@ -77,7 +77,7 @@ object WinSettlementPresentationRequestFactory {
     }
 
     /**
-     * 建立一般自摸／榮和 request。規則專屬欄位交由 [detailResolverRegistry] 解析；沒有解析器時，
+     * 建立一般自摸／榮和 request。規則專屬欄位交由 [detailResolverRegistry] 解析。沒有解析器時，
      * 詳情欄位為空，但共用的贏家、分數、名次與付款資料仍照常建立。[aiPlayerIds] 為由 AI 操控的玩家。
      *
      * @param previousState 胡牌結算前的權威桌況。
@@ -87,7 +87,7 @@ object WinSettlementPresentationRequestFactory {
      * @param outcomeId 胡牌結果識別碼。
      * @param isTsumo 是否為自摸。
      * @param winningTileId 本次胡牌使用的牌識別碼。
-     * @param responsiblePlayerId 負責支付的玩家；沒有時為 null。
+     * @param responsiblePlayerId 負責支付的玩家。沒有時為 null。
      * @param resolutions 各贏家的規則結算結果。
      * @param detailResolverRegistry 解析規則專屬結算詳情的註冊表。
      * @return 一般胡牌的呈現請求。
@@ -150,7 +150,7 @@ object WinSettlementPresentationRequestFactory {
      *
      * @param hand 含立牌及獨立摸牌張的權威手牌。
      * @param module 提供牌序的規則模組。
-     * @return 依規則牌序排列的立牌 ID；不包含副露牌。
+     * @return 依規則牌序排列的立牌 ID。不包含副露牌。
      */
     private fun sortedStandingTileIds(hand: Hand, module: MahjongRuleModule<*>): List<Uuid> = hand.standingTiles
         .sortedWith(compareBy(module.tileOrder.valueOrder) { it.toValue() })
@@ -160,10 +160,10 @@ object WinSettlementPresentationRequestFactory {
      * 合併各贏家結算給出的付款原因。
      *
      * 同一位玩家被多位贏家標上不同原因時，取頭跳順位較前（從 [responsiblePlayerId] 起算、座位順序最先
-     * 輪到）的贏家給出的原因；沒有 [responsiblePlayerId] 時依 [resolutions] 的順序。
+     * 輪到）的贏家給出的原因。沒有 [responsiblePlayerId] 時依 [resolutions] 的順序。
      *
      * @param state 胡牌結算後的權威桌況。
-     * @param responsiblePlayerId 頭跳順位的起點；沒有責任支付者時為 null。
+     * @param responsiblePlayerId 頭跳順位的起點。沒有責任支付者時為 null。
      * @param resolutions 各贏家的結算結果。
      * @return 每位付款者對應的第一個結算原因識別碼。
      */

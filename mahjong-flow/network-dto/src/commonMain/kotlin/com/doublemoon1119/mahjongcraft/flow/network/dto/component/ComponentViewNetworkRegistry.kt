@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewType
 import kotlinx.serialization.KSerializer
 import kotlin.reflect.KClass
 
-/** 登記已裁切組件的網路格式，不保存權威組件的轉換；擴充只透過 [ComponentViewNetworkRegistrar] 登記。 */
+/** 登記已裁切組件的網路格式，不保存權威組件的轉換。擴充只透過 [ComponentViewNetworkRegistrar] 登記。 */
 class ComponentViewNetworkRegistry :
     ComponentViewNetworkRegistrar,
     ComponentViewNetworkConverter {
@@ -64,7 +64,7 @@ class ComponentViewNetworkRegistry :
     }
 
     /**
-     * 還原輸出值，不建立權威組件；重複項目會拒絕。
+     * 還原輸出值，不建立權威組件。重複項目會拒絕。
      *
      * @param dtos 網路資料。
      * @return 已裁切的組件輸出。
@@ -82,7 +82,7 @@ class ComponentViewNetworkRegistry :
      * 取得目前 DTO 的動態序列化器。
      *
      * @param dto 網路值。
-     * @return 已登記序列化器；沒有時為 null。
+     * @return 已登記序列化器。沒有時為 null。
      */
     @Suppress("UNCHECKED_CAST")
     fun serializerFor(dto: ComponentViewDto): KSerializer<ComponentViewDto>? = byDtoClass[dto::class]?.definition?.serializer as? KSerializer<ComponentViewDto>
@@ -91,7 +91,7 @@ class ComponentViewNetworkRegistry :
      * 依網路序列化名稱取得轉換。
      *
      * @param serialName 序列化名稱。
-     * @return 已登記序列化器；沒有時為 null。
+     * @return 已登記序列化器。沒有時為 null。
      */
     fun serializerFor(serialName: String): KSerializer<out ComponentViewDto>? = bySerialName[serialName]?.definition?.serializer
 

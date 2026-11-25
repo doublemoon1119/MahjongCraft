@@ -11,13 +11,13 @@ import kotlin.time.Duration
  * @property ruleId 使用的規則模組識別碼。
  * @property startedAtEpochMillis 對局開始 UTC epoch milliseconds。
  * @property endedAtEpochMillis 對局結束 UTC epoch milliseconds。
- * @property outcome 對局結果；未知時為 null。
+ * @property outcome 對局結果。未知時為 null。
  * @property integrity 歷史資料的完整性狀態。
  * @property integrityDiagnostic 完整性不足時的穩定診斷摘要。
- * @property duration 對局持續時間；未知時為 null。
+ * @property duration 對局持續時間。未知時為 null。
  * @property participants 參與者清單。
  * @property roundCount 可用的回合數。
- * @property resultsAvailable 是否保存完整 Replay；單局查閱仍須驗證內容與 codec，不限制安全摘要查詢。
+ * @property resultsAvailable 是否保存完整 Replay。單局查閱仍須驗證內容與 codec，不限制安全摘要查詢。
  * @property results 可取得的終局結果。
  */
 @Serializable

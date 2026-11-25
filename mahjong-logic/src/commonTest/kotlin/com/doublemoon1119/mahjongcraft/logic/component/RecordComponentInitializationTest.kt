@@ -31,7 +31,7 @@ class RecordComponentInitializationTest {
     /** 新副露的標記，有初值。 */
     private val meldNote = ComponentType("test:meld_note", String::class, { it }, target = BuiltInComponentOwners.MELD)
 
-    /** 新捨牌紀錄帶上初值；動作前已存在的紀錄不重新初始化。 */
+    /** 新捨牌紀錄帶上初值。動作前已存在的紀錄不重新初始化。 */
     @Test
     fun `new discard record receives initial values`() {
         val before = table(FakeMahjongPlayerFactory.create(discardPile = FakeDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East))))
@@ -56,7 +56,7 @@ class RecordComponentInitializationTest {
         assertEquals("written", initialized.players.single().discardPile.entries.single().components[discardNote])
     }
 
-    /** 新副露帶上初值；加槓沿用同一個副露 ID 時保留原組件，不重新初始化。 */
+    /** 新副露帶上初值。加槓沿用同一個副露 ID 時保留原組件，不重新初始化。 */
     @Test
     fun `new meld receives initial values while an upgraded meld keeps its components`() {
         val ponTiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.Red) }

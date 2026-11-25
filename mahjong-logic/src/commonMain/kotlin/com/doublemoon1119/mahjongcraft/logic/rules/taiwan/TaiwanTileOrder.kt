@@ -6,7 +6,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 
 /**
  * 台灣麻將標準排序策略。
- * * 排序權重說明：
+ *
+ * 排序權重：
  * 1. 數牌：萬 (10+) > 筒 (20+) > 條 (30+)。
  * 2. 字牌：風牌 (41-44) > 三元牌 (45-47，順序為中、發、白)。
  * 3. 花牌：四季 (81-84) > 四君子 (85-88)。

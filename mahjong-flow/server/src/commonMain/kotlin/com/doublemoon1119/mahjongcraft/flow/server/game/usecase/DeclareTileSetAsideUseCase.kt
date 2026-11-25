@@ -28,10 +28,12 @@ import kotlin.uuid.Uuid
 /**
  * 宣告移出手牌的擴充動作（見 [MahjongRuleModule.tileSetAsideBy]，例如三人日麻的拔北）的用例。
  *
- * 流程比照暗槓／加槓（[DeclareKanUseCase]）：合法性交給規則的合法動作判定器；去向由 [TileSetAsideResolver] 決定：
- * 有人可以用移出的那張牌榮和時開啟反應視窗（[TableState.pendingRobbingReaction]），動作暫緩套用，交給
- * [RespondToRobbingUseCase] 解析；多位玩家同時可以榮和時依一炮多響設定決定開放給誰，判定為途中流局時這次動作視為未成立；
- * 沒人可以榮和時直接套用、收付並依規則補牌，補到的牌再交給 [DrawFollowUpApplier] 依規則自動處理。
+ * 流程比照暗槓／加槓（[DeclareKanUseCase]）。合法性交給規則的合法動作判定器，去向由 [TileSetAsideResolver] 決定：
+ *
+ * - 有人可以用移出的那張牌榮和時，開啟反應視窗（[TableState.pendingRobbingReaction]）。
+ *   動作暫緩套用，交給 [RespondToRobbingUseCase] 解析。
+ * - 多位玩家同時可以榮和時，依一炮多響設定決定開放給誰。判定為途中流局時，這次動作視為未成立。
+ * - 沒人可以榮和時直接套用、收付並依規則補牌。補到的牌再交給 [DrawFollowUpApplier] 依規則自動處理。
  *
  * @property componentRegistry 正式組件定義與純效果來源。
  * @property gameRepository 權威對局數據倉庫。
@@ -116,7 +118,7 @@ class DeclareTileSetAsideUseCase(
         return Outcome.Success(Unit)
     }
 
-    /** 驗證合法性並交給 [TileSetAsideResolver] 決定去向；套用並補牌後接著執行摸牌後的自動處理。 */
+    /** 驗證合法性並交給 [TileSetAsideResolver] 決定去向。套用並補牌後接著執行摸牌後的自動處理。 */
     private fun declare(
         state: TableState,
         gameId: Uuid,
@@ -191,12 +193,12 @@ class DeclareTileSetAsideUseCase(
      *
      * @property tableState 本次交易提交的權威桌況。
      * @property setAsideTile 這次要移出手牌的牌。
-     * @property applied 動作是否已成立並套用；開啟搶和視窗或判定途中流局時為 false。
-     * @property drawnTiles 這次移出後補到的牌；沒有補牌時為空清單。
-     * @property scoring 這次移出當下的點數收付；沒有成立或不收付時為 null。
-     * @property followUp 補牌之後的自動處理；沒有補牌時為 null。
-     * @property abortiveDrawReason 一炮多響依規則設定判定為流局時的原因；此時這次動作視為未成立。
-     * @property steps 依序呈現的步驟；開啟搶和視窗時只有牌已移出、尚未補牌的候選桌況。
+     * @property applied 動作是否已成立並套用。開啟搶和視窗或判定途中流局時為 false。
+     * @property drawnTiles 這次移出後補到的牌。沒有補牌時為空清單。
+     * @property scoring 這次移出當下的點數收付。沒有成立或不收付時為 null。
+     * @property followUp 補牌之後的自動處理。沒有補牌時為 null。
+     * @property abortiveDrawReason 一炮多響依規則設定判定為流局時的原因。此時這次動作視為未成立。
+     * @property steps 依序呈現的步驟。開啟搶和視窗時只有牌已移出、尚未補牌的候選桌況。
      */
     private data class SetAsideResult(
         val tableState: TableState,

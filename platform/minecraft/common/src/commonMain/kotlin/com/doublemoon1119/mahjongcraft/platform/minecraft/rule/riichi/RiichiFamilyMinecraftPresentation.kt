@@ -34,7 +34,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftRuleTile
  * 依規則模組 ID 登記的日麻 Minecraft 呈現，讓使用日麻規則元件的規則模組沿用日麻的牌面、結算版面、語音、局況資訊、
  * 動作用語、決策狀態與桌面物件。
  *
- * 這裡只登記綁定到規則模組的項目；它們引用的共用內容，例如日麻結算模板、局況行文字與赤五貼圖，由
+ * 這裡只登記綁定到規則模組的項目。它們引用的共用內容，例如日麻結算模板、局況行文字與赤五貼圖，由
  * [BundledRiichiMinecraftExtension] 登記一次。供託由桌況的日麻供託組件提供。
  */
 object RiichiFamilyMinecraftPresentation {
@@ -94,7 +94,7 @@ object RiichiFamilyMinecraftPresentation {
     }
 
     /**
-     * 登記立直與九種九牌的動作用語，接在核心動作（自摸為 4）之後；[includesPullNorth] 為 true 時另登記拔北。
+     * 登記立直與九種九牌的動作用語，接在核心動作（自摸為 4）之後。[includesPullNorth] 為 true 時另登記拔北。
      *
      * @param registry 動作用語 registry。
      * @param ruleModuleId 要登記的規則模組 ID。
@@ -190,7 +190,7 @@ object RiichiFamilyMinecraftPresentation {
     }
 }
 
-/** 依目前桌況建立日麻局況行；供託為零時省略供託行。 */
+/** 依目前桌況建立日麻局況行。供託為零時省略供託行。 */
 private fun buildRiichiRoundInfoLines(tableState: TableState): List<RoundInfoLine> {
     val stickPotCount = tableState.riichiPotPoints() / RIICHI_STICK_POINTS
     return listOfNotNull(
@@ -233,7 +233,7 @@ private const val KYUUSHU_KYUUHAI_ACTION_ORDER: Int = 6
 private const val PULL_NORTH_ACTION_ORDER: Int = 7
 
 /**
- * 核心動作的日麻說法；操作卡順序與共用預設相同。
+ * 核心動作的日麻說法。操作卡順序與共用預設相同。
  *
  * @property labelKey 操作卡名稱的翻譯鍵。
  * @property messageKey 聊天訊息的翻譯鍵。

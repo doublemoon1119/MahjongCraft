@@ -7,13 +7,13 @@ import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 
 /**
- * 離開仍有未套用變更的編輯畫面時共用的「套用並返回／放棄變更／繼續編輯」三選一確認畫面；
+ * 離開仍有未套用變更的編輯畫面時共用的「套用並返回／放棄變更／繼續編輯」三選一確認畫面。
  * Client Config、HUD 版面編輯器與 Room 設定頁共用同一份，避免各自複製一份後各自漂移。
  *
  * @property previousScreen 選擇繼續編輯或按 Esc 時返回的畫面。
- * @property onApply 套用變更的動作；呼叫端也負責後續畫面切換。
- * @property onDiscard 放棄變更的動作；呼叫端也負責後續畫面切換。
- * @property changesPreview 套用按鈕的變更預覽提示；null 時不顯示提示。
+ * @property onApply 套用變更的動作。呼叫端也負責後續畫面切換。
+ * @property onDiscard 放棄變更的動作。呼叫端也負責後續畫面切換。
+ * @property changesPreview 套用按鈕的變更預覽提示。null 時不顯示提示。
  */
 internal class UnsavedChangesConfirmationScreen(
     private val previousScreen: Screen,
@@ -21,7 +21,7 @@ internal class UnsavedChangesConfirmationScreen(
     private val onDiscard: () -> Unit,
     private val changesPreview: Component? = null,
 ) : MahjongScreen(Component.translatable(MinecraftClientConfigScreenKeys.UNSAVED_CHANGES_TITLE)) {
-    /** 建立套用、放棄與繼續編輯三個按鈕；套用按鈕附上呼叫端提供的變更預覽。 */
+    /** 建立套用、放棄與繼續編輯三個按鈕。套用按鈕附上呼叫端提供的變更預覽。 */
     override fun init() {
         val buttonWidth = minOf(160, width - 24)
         val left = (width - buttonWidth) / 2

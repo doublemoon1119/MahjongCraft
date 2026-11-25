@@ -25,12 +25,12 @@ internal object HistoryReplayScene {
      *
      * @param playerCount 這一局的人數，決定凳子的位置。
      * @param arranged 依局內牌索引排列的牌桌擺放，例如 [HistoryReplayArrangement.arrange] 的結果。
-     * @param samples 正在播放動畫的牌在這一刻的樣子，取代擺放中的位置；隱形的牌不畫。
+     * @param samples 正在播放動畫的牌在這一刻的樣子，取代擺放中的位置。隱形的牌不畫。
      * @param figures 坐在桌邊、以內建機器人外觀畫出的角色。
      * @param entities 坐在桌邊、以原版繪製器畫出的生物，例如真人玩家。
-     * @param winEffects 正在播放的胡牌特效，畫在和牌張這一刻的位置；和牌張不在場景中時不畫。
-     * @param assetKey 局內牌索引對應的牌面素材；看不到牌面時為 null。
-     * @return 牌桌場景；每張牌的 [GuideSceneTile.key] 是局內牌索引。
+     * @param winEffects 正在播放的胡牌特效，畫在和牌張這一刻的位置。和牌張不在場景中時不畫。
+     * @param assetKey 局內牌索引對應的牌面素材。看不到牌面時為 null。
+     * @return 牌桌場景。每張牌的 [GuideSceneTile.key] 是局內牌索引。
      */
     fun build(
         playerCount: Int,

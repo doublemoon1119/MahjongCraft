@@ -17,11 +17,11 @@ class PresentationLayoutSolver(
     private val textMeasurer: PresentationTextMeasurer,
 ) {
     /**
-     * 解析節點引用的欄位內容；不引用欄位的節點為 `null`。
+     * 解析節點引用的欄位內容。不引用欄位的節點為 `null`。
      *
      * @param layout 要解析的布局節點。
      * @param snapshot 本次呈現使用的結算欄位快照。
-     * @return 節點欄位值；不含欄位或找不到 provider 時為 `null`。
+     * @return 節點欄位值。不含欄位或找不到 provider 時為 `null`。
      */
     fun resolve(layout: PresentationLayout, snapshot: WinSettlementPresentationFieldSnapshot): PresentationValue? {
         val id = when (layout) {
@@ -44,7 +44,7 @@ class PresentationLayoutSolver(
      *
      * @param layout 要量測的布局節點。
      * @param snapshot 本次呈現使用的結算欄位快照。
-     * @return 節點的寬高；缺失欄位回傳零尺寸。
+     * @return 節點的寬高。缺失欄位回傳零尺寸。
      */
     fun measure(layout: PresentationLayout, snapshot: WinSettlementPresentationFieldSnapshot): PresentationNodeSize = when (layout) {
         is PresentationLayout.Text -> (resolve(layout, snapshot) as? PresentationValue.TextValue)?.let {
@@ -125,7 +125,7 @@ class PresentationLayoutSolver(
     }
 
     /**
-     * 子節點是否佔用主軸位置；權重節點一律佔用，其他節點量測為零尺寸（例如缺少欄位）時不佔空間、也不留間距。
+     * 子節點是否佔用主軸位置。權重節點一律佔用，其他節點量測為零尺寸（例如缺少欄位）時不佔空間、也不留間距。
      *
      * @param child 主軸上的子節點。
      * @param snapshot 本次呈現使用的結算欄位快照。
@@ -150,7 +150,7 @@ class PresentationLayoutSolver(
     /**
      * 分配水平主軸空間。
      *
-     * 非權重子節點取自己的量測寬度；剩下的空間依權重比例分給權重子節點，`fill` 為 `false` 的權重子節點
+     * 非權重子節點取自己的量測寬度。剩下的空間依權重比例分給權重子節點，`fill` 為 `false` 的權重子節點
      * 最多只拿到自己的量測寬度，不會被撐大。
      *
      * @param children 主軸上的子節點。
@@ -182,7 +182,7 @@ class PresentationLayoutSolver(
     }
 
     /**
-     * 分配垂直主軸空間；規則與 [allocateMainAxis] 相同，只是換成高度。
+     * 分配垂直主軸空間。規則與 [allocateMainAxis] 相同，只是換成高度。
      *
      * @param children 主軸上的子節點。
      * @param available 可用主軸高度。
@@ -222,7 +222,7 @@ class PresentationLayoutSolver(
          * @param available 可用主軸空間。
          * @param spacing 固定子節點間距。
          * @param arrangement 剩餘空間分配方式。
-         * @param occupied 各子節點是否佔用主軸位置，見 [occupies]；順序與 [widths] 相同。
+         * @param occupied 各子節點是否佔用主軸位置，見 [occupies]。順序與 [widths] 相同。
          * @return 各子節點沿主軸的起點。
          */
         fun arrange(
@@ -258,14 +258,14 @@ class PresentationLayoutSolver(
             PresentationAlignment.END -> size
         }
 
-        /** 子節點在交叉軸上的偏移；子節點比容器大時不產生負偏移。 */
+        /** 子節點在交叉軸上的偏移。子節點比容器大時不產生負偏移。 */
         fun crossAxisOffset(available: Float, childSize: Float, alignment: PresentationAlignment): Float = when (alignment) {
             PresentationAlignment.START -> 0f
             PresentationAlignment.CENTER -> (available - childSize).coerceAtLeast(0f) / 2f
             PresentationAlignment.END -> (available - childSize).coerceAtLeast(0f)
         }
 
-        /** 連續排列的牌張總寬度；沒有牌時為 0，不會算進負的間距。 */
+        /** 連續排列的牌張總寬度。沒有牌時為 0，不會算進負的間距。 */
         fun tileSequenceWidth(count: Int, tileWidth: Float, gap: Float): Float = count * tileWidth + (count - 1).coerceAtLeast(0) * gap
 
         /**
@@ -282,7 +282,7 @@ class PresentationLayoutSolver(
         /** 加上容器留白之後的尺寸。 */
         fun styledSize(width: Float, height: Float, style: PresentationContainerStyle): PresentationNodeSize = PresentationNodeSize(width + style.padding * 2f, height + style.padding * 2f)
 
-        /** 取出權重節點包住的實際節點；非權重節點回傳自己。 */
+        /** 取出權重節點包住的實際節點。非權重節點回傳自己。 */
         fun PresentationLayout.unweighted(): PresentationLayout = (this as? PresentationLayout.Weighted)?.child ?: this
 
         /** 宣告式版面可用的最大寬度。 */

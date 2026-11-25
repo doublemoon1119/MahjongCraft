@@ -8,7 +8,7 @@ import kotlin.io.path.invariantSeparatorsPathString
 /**
  * 由目前伺服器存檔根目錄決定唯一的歷史資料庫位置。
  *
- * 例如，單人世界可存於 `.minecraft/saves/MahjongWorld/mahjongcraft/history.sqlite`；
+ * 例如，單人世界可存於 `.minecraft/saves/MahjongWorld/mahjongcraft/history.sqlite`。
  * 專用伺服器可存於 `server/world/mahjongcraft/history.sqlite`。實際前綴取決於遊戲目錄與世界存檔名稱。
  * 同一存檔的所有維度共用這份資料庫，不會依玩家或維度另外建立檔案。
  */

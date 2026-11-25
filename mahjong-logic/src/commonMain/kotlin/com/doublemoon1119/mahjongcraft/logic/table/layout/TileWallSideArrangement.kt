@@ -3,11 +3,11 @@ package com.doublemoon1119.mahjongcraft.logic.table.layout
 /**
  * 規則指定的牌牆面與四個標準側面的對應。
  *
- * 第幾個元素對應同索引的邏輯牌牆面；數值為從上方俯視、相對 [reference] 的逆時針四分之一圈數，
+ * 第幾個元素對應同索引的邏輯牌牆面。數值為從上方俯視、相對 [reference] 的逆時針四分之一圈數，
  * `0` 為基準側、`1` 為右側、`2` 為對側、`3` 為左側。這裡不指定長度、座標或牌張尺寸。
  *
  * @property reference 側面配置是否隨莊家方向旋轉。
- * @param quarterTurns 各邏輯牌牆面使用的標準側面，不可重複；建立時會複製清單。
+ * @param quarterTurns 各邏輯牌牆面使用的標準側面，不可重複。建立時會複製清單。
  */
 class TileWallSideArrangement(
     val reference: TileWallSideReference,

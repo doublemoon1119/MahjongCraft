@@ -16,8 +16,8 @@ import kotlin.uuid.Uuid
  * @property tableLocation 麻將桌的基準方塊位置。
  * @property tableFacing 桌子的水平朝向。
  * @property seatLayout 完整玩家席位對應的標準布局。
- * @property placements 規則描述的完整清單；空清單會清除所有規則物件。
- * @property centerTilePlacements 已平放在桌子中央的牌，例如沒有實體牌牆時的寶牌指示牌；中央物件會避開這些牌。
+ * @property placements 規則描述的完整清單。空清單會清除所有規則物件。
+ * @property centerTilePlacements 已平放在桌子中央的牌，例如沒有實體牌牆時的寶牌指示牌。中央物件會避開這些牌。
  */
 data class TablePropPresentation(
     val tableId: Uuid,
@@ -35,7 +35,7 @@ data class TablePropPresentation(
      * 工作量超出保護上限時明確失敗，不嘗試無上限搜尋。
      *
      * @param definitions 登記時固定的種類定義。
-     * @return 完整配置；任一內容、位置或占用無效時為失敗，不回傳部分結果。
+     * @return 完整配置。任一內容、位置或占用無效時為失敗，不回傳部分結果。
      */
     fun targets(definitions: Map<String, TablePropKindDefinition>): TablePropLayoutResult {
         if (!MinecraftResourceIds.isValid(ruleModuleId)) return TablePropLayoutResult.Invalid(TablePropLayoutFailure.INVALID_PLACEMENT, "Invalid table prop rule: $ruleModuleId")

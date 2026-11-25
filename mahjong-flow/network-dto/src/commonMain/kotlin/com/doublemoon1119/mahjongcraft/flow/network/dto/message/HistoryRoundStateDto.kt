@@ -26,10 +26,10 @@ import kotlinx.serialization.Serializable
  * @property hasPendingReaction 是否有待處理反應。
  * @property hasPendingRobbingReaction 是否有待處理搶和反應。
  * @property outcome 結算結果。
- * @property wallPlacements 依牌索引的實體牌牆格位；規則沒有實體牌牆時為 null。
+ * @property wallPlacements 依牌索引的實體牌牆格位。規則沒有實體牌牆時為 null。
  * @property discardOrder 全桌依打出先後排列的捨牌索引，包含已被鳴走的牌。
- * @property tilePoses 依牌索引保存的共同姿態；沒有列出的牌維持所在區域的預設姿態。
- * @property presentationNotes 保存時由外層附上的呈現附註原文（JSON 物件）；沒有附註時為 null。
+ * @property tilePoses 依牌索引保存的共同姿態。沒有列出的牌維持所在區域的預設姿態。
+ * @property presentationNotes 保存時由外層附上的呈現附註原文（JSON 物件）。沒有附註時為 null。
  */
 @Serializable
 data class HistoryRoundStateDto(

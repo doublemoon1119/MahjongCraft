@@ -5,7 +5,7 @@ sealed interface HandReveal {
     /**
      * 胡牌倒牌。
      *
-     * @property winningTile 自摸時單獨先倒下的那張牌的局內牌索引；不是自摸時為 null。
+     * @property winningTile 自摸時單獨先倒下的那張牌的局內牌索引。不是自摸時為 null。
      */
     data class Win(val winningTile: Int?) : HandReveal
 

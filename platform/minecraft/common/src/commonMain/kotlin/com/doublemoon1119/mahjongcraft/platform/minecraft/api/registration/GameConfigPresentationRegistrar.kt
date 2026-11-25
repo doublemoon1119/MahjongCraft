@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationDefinition
 
-/** 擴充登記房間設定呈現時取得的登記介面；查詢與凍結由 MahjongCraft 進行。 */
+/** 擴充登記房間設定呈現時取得的登記介面。查詢與凍結由 MahjongCraft 進行。 */
 interface GameConfigPresentationRegistrar {
     /** 目前已登記規則模組 ID 的快照。 */
     val registrationKeys: Set<String>

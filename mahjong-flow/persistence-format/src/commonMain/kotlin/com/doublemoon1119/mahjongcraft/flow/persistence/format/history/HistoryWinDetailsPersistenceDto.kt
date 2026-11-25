@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  *
  * @property playerId 胡牌玩家 UUID 字串。
  * @property detailFields 胡牌詳情欄位。
- * @property hand 結算時的立牌順序與和牌張；未記錄時為 null。
+ * @property hand 結算時的立牌順序與和牌張。未記錄時為 null。
  */
 @Serializable
 data class HistoryWinDetailsPersistenceDto(

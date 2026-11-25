@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history
 
 import kotlin.time.Duration
 
-/** 接收歷史寫入背景工作各環節的耗時與寫入事件數，供壓力測試等量測使用；可能在背景執行緒上呼叫。 */
+/** 接收歷史寫入背景工作各環節的耗時與寫入事件數，供壓力測試等量測使用。可能在背景執行緒上呼叫。 */
 interface HistoryWriterObserver {
     /**
      * 完成一個環節。

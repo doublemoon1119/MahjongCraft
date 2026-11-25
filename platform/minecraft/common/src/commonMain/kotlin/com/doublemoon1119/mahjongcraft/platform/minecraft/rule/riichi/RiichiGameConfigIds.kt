@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 
-/** 日麻（四人與三人）房間設定欄位與選項的完整 ID；選項放在所屬欄位的路徑底下。 */
+/** 日麻（四人與三人）房間設定欄位與選項的完整 ID。選項放在所屬欄位的路徑底下。 */
 internal object RiichiGameConfigIds {
     /** 局長欄位。 */
     const val GAME_LENGTH: String = "mahjongcraft:riichi/config/game_length"
@@ -29,10 +29,10 @@ internal object RiichiGameConfigIds {
     /** 赤寶牌 4 張選項。 */
     const val RED_DORA_COUNT_4: String = "mahjongcraft:riichi/config/red_dora_count/4"
 
-    /** 透明牌欄位；只由玩法決定，不顯示在設定頁。 */
+    /** 透明牌欄位。只由玩法決定，不顯示在設定頁。 */
     const val TRANSPARENT_TILES: String = "mahjongcraft:riichi/config/transparent_tiles"
 
-    /** 砌牌牆欄位；只由玩法決定，不顯示在設定頁。 */
+    /** 砌牌牆欄位。只由玩法決定，不顯示在設定頁。 */
     const val BUILDS_WALL: String = "mahjongcraft:riichi/config/builds_wall"
 
     /** 鷲巢麻將玩法。 */

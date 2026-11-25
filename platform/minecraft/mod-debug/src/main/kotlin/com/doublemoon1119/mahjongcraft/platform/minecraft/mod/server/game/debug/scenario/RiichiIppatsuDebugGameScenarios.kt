@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.scen
  * 一發驗收用的日麻 debug 情境。
  *
  * 全部沿用 [SeatSetupScenario] 的座位設定與排定摸打。呼叫者聽一、四萬，剛摸到西風，預先有兩張捨牌，因此宣告立直
- * 不是雙立直；載入後由呼叫者宣告立直並打出西風，其他三家依排定的牌摸切，期間沒有任何鳴牌。
+ * 不是雙立直。載入後由呼叫者宣告立直並打出西風，其他三家依排定的牌摸切，期間沒有任何鳴牌。
  */
 object RiichiIppatsuDebugGameScenarios {
     /** 所有一發驗收情境。 */

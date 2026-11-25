@@ -46,7 +46,7 @@ class MahjongHandbookScreenController(
     private var openRequested = false
 
     /**
-     * 註冊按鍵、client tick 與使用物品事件；只能在 client entrypoint 呼叫一次。
+     * 註冊按鍵、client tick 與使用物品事件。只能在 client entrypoint 呼叫一次。
      *
      * @param events 登記用戶端事件用的事件來源。
      */
@@ -73,13 +73,13 @@ class MahjongHandbookScreenController(
         }
     }
 
-    /** 從指令開啟快捷畫面；延到下一個 client tick，避免指令執行後關閉聊天畫面時一併關掉快捷畫面。 */
+    /** 從指令開啟快捷畫面。延到下一個 client tick，避免指令執行後關閉聊天畫面時一併關掉快捷畫面。 */
     fun openFromCommand() {
         openRequested = true
     }
 
     /**
-     * 開啟指令要求的快捷畫面，並消耗按鍵事件；其他畫面開啟時按鍵不搶占使用者輸入。
+     * 開啟指令要求的快捷畫面，並消耗按鍵事件。其他畫面開啟時按鍵不搶占使用者輸入。
      *
      * @param client 本次 tick 的客戶端。
      */
@@ -130,7 +130,7 @@ class MahjongHandbookScreenController(
         ),
     )
 
-    /** 依目前的按鍵綁定產生開啟方式的提示；按鍵名稱以黃色標出，不加括號，綁定符號鍵時也看得清楚。 */
+    /** 依目前的按鍵綁定產生開啟方式的提示。按鍵名稱以黃色標出，不加括號，綁定符號鍵時也看得清楚。 */
     private fun openHint(): Component = if (openKeyBinding.isUnbound) {
         Component.translatable(MinecraftHandbookScreenKeys.OPEN_HINT_UNBOUND)
     } else {

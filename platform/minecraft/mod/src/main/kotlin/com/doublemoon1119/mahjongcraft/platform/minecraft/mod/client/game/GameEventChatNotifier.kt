@@ -72,14 +72,14 @@ fun buildRoundResultChatMessage(
 }
 
 /**
- * 結算結果的顯示文字：自摸與榮和使用規則的動作名稱；其他結果依序查規則的動作用語（例如九種九牌）、
+ * 結算結果的顯示文字：自摸與榮和使用規則的動作名稱。其他結果依序查規則的動作用語（例如九種九牌）、
  * 特殊結果名稱與流局原因名稱，都沒有登記時流局退回通用流局文字、和牌顯示結果 ID。
  *
  * @param result 欲顯示的權威結算結果。
  * @param actionVocabularyRegistry 規則專屬動作用語。
  * @param roundOutcomeDisplayNameRegistry 特殊結算結果的顯示名稱。
  * @param exhaustiveDrawReasonDisplayNameRegistry 流局原因的顯示名稱。
- * @return 本地化結果名稱；未知和牌結果使用原始識別碼。
+ * @return 本地化結果名稱。未知和牌結果使用原始識別碼。
  */
 private fun roundOutcomeText(
     result: RoundResultPayloadDto,
@@ -151,7 +151,7 @@ private const val HISTORY_OPEN_HINT_KEY = MinecraftHistoryScreenKeys.OPEN_HINT
  * @param message 接收排名文字的訊息，會直接更新。
  * @param rankedPlayers 依最終排名排列的玩家。
  * @param aiPlayerIds 由 AI 操控的玩家識別碼。
- * @param playerDisplayName 自訂名稱解析器；未提供時使用玩家清單與 AI 名稱。
+ * @param playerDisplayName 自訂名稱解析器。未提供時使用玩家清單與 AI 名稱。
  */
 private fun appendRankingLines(
     message: MutableComponent,
@@ -176,7 +176,7 @@ private fun appendRankingLines(
 
 /**
  * 真人玩家的麻將 Uuid 就是其 Minecraft 帳號 Uuid（見 `MahjongTableRoomService.join`），可以直接查
- * 玩家清單解析出帳號名稱；AI 使用座位順序命名，查不到真人名稱時使用短 ID。
+ * 玩家清單解析出帳號名稱。AI 使用座位順序命名，查不到真人名稱時使用短 ID。
  *
  * @param id 玩家識別碼。
  * @param isAi 是否由 AI 操控。
@@ -190,7 +190,7 @@ private fun resolvePlayerDisplayName(id: Uuid, isAi: Boolean, orderedAiPlayerIds
 }
 
 /**
- * 和牌動作在規則中的名稱；核心的自摸與榮和一定有內建用語。
+ * 和牌動作在規則中的名稱。核心的自摸與榮和一定有內建用語。
  *
  * @param actionVocabularyRegistry 規則專屬動作用語。
  * @param ruleModuleId 對局規則。

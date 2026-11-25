@@ -88,10 +88,10 @@ class AdvanceRoundUseCaseTest {
         )
 
         /**
-         * 依測試桌況的動作紀錄建立本局摘要，再寫入測試倉庫；不重新計算和牌或流局結算。
+         * 依測試桌況的動作紀錄建立本局摘要，再寫入測試倉庫。不重新計算和牌或流局結算。
          *
          * @param tableState 含有本局結算動作的桌況。
-         * @param remainingReserveByPlayerId 要保留的玩家思考時間；null 時沿用預設值。
+         * @param remainingReserveByPlayerId 要保留的玩家思考時間。null 時沿用預設值。
          * @param enabledAutomaticControlIdsByPlayerId 玩家目前啟用的自動控制項目。
          */
         suspend fun setCompletedState(

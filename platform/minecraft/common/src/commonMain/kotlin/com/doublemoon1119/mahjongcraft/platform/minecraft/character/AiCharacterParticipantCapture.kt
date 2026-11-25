@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomParticipantIde
 import kotlin.uuid.Uuid
 
 /**
- * 已在權威交易外擷取的實體外觀；只有對應房間與來源成功加入時才保存。
+ * 已在權威交易外擷取的實體外觀。只有對應房間與來源成功加入時才保存。
  *
  * @property roomInstanceId 預檢時的房間生命週期。
  * @property playerId 本次分配的成員編號。

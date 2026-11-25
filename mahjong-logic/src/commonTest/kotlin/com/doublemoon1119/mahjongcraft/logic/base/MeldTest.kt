@@ -117,7 +117,7 @@ class MeldTest {
         assertTrue(updatedMeld.tiles.contains(t4))
     }
 
-    /** 暗槓兩端朝下；規則公開暗槓時整組牌面公開，不公開時整組牌面都不公開。 */
+    /** 暗槓兩端朝下。規則公開暗槓時整組牌面公開，不公開時整組牌面都不公開。 */
     @Test
     fun `closed kan visibility follows the rule setting`() {
         val tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.Green) }
@@ -127,7 +127,7 @@ class MeldTest {
         assertEquals(setOf(tiles.first().id, tiles.last().id), closedKanFaceDownTileIds(tiles))
     }
 
-    /** 吃、碰、明槓與加槓一定要記錄被鳴的牌；暗槓不能有被鳴的牌。 */
+    /** 吃、碰、明槓與加槓一定要記錄被鳴的牌。暗槓不能有被鳴的牌。 */
     @Test
     fun `claimed melds require a source tile and closed kans forbid one`() {
         listOf(MeldType.Chi, MeldType.Pon, MeldType.OpenKan, MeldType.AddedKan).forEach { type ->

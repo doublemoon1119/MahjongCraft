@@ -32,7 +32,7 @@ import net.minecraft.world.phys.shapes.VoxelShape
  * 以底層中央為 controller 的 3×3×2 麻將桌方塊。
  *
  * 所有 parts 共用同一個方塊 registry ID，透過 [PART] 與 [Properties.HORIZONTAL_FACING] 保存結構位置。
- * 只有 [MahjongTablePart.BOTTOM_CENTER] 建立 [MahjongTableBlockEntity]；其餘 parts 的互動與生命週期皆
+ * 只有 [MahjongTablePart.BOTTOM_CENTER] 建立 [MahjongTableBlockEntity]。其餘 parts 的互動與生命週期皆
  * 先反查 controller。每個 part 與原版可含水方塊相同，放置時原位置是水源就含水。
  *
  * @param settings Minecraft 方塊設定。
@@ -75,7 +75,7 @@ class MahjongTableBlock(
         context: CollisionContext,
     ): VoxelShape = design.collisionShape(state.getValue(PART), state.getValue(BlockStateProperties.HORIZONTAL_FACING))
 
-    /** 回傳主要幾何的選取框；無碰撞的上層中央仍可被選取並轉交互動。 */
+    /** 回傳主要幾何的選取框。無碰撞的上層中央仍可被選取並轉交互動。 */
     @Suppress("OVERRIDE_DEPRECATION")
     override fun getShape(
         state: BlockState,
@@ -131,7 +131,7 @@ class MahjongTableBlock(
         }
     }
 
-    /** controller 放置後建立其餘 17 個 parts，各自依原位置決定是否含水；中途失敗時回滾本次結構。 */
+    /** controller 放置後建立其餘 17 個 parts，各自依原位置決定是否含水。中途失敗時回滾本次結構。 */
     override fun setPlacedBy(
         world: Level,
         pos: BlockPos,
@@ -173,7 +173,7 @@ class MahjongTableBlock(
         super.onRemove(state, world, pos, newState, moved)
     }
 
-    /** 在伺服器端把任意 part 的右鍵交給 controller；蹲下與否都只開啟 RoomScreen。 */
+    /** 在伺服器端把任意 part 的右鍵交給 controller。蹲下與否都只開啟 RoomScreen。 */
     override fun useWithoutItem(
         state: BlockState,
         world: Level,
@@ -197,7 +197,7 @@ class MahjongTableBlock(
      * @param world 方塊所在世界。
      * @param pos 任意結構 part 的座標。
      * @param state 該座標目前的方塊狀態。
-     * @return 依 part 與朝向換算的 controller 位置；方塊不是此桌時為 null。
+     * @return 依 part 與朝向換算的 controller 位置。方塊不是此桌時為 null。
      */
     override fun mahjongTableControllerPos(
         world: BlockGetter,

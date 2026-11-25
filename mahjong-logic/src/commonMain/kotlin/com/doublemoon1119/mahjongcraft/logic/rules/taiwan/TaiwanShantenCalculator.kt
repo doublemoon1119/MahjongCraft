@@ -18,7 +18,7 @@ class TaiwanShantenCalculator : ShantenCalculator {
 
     // 為了方便計算，將所有牌型映射到 0-33 的索引
     // 台麻雖然有花牌，但花牌不參與向聽計算（摸到即補），所以這裡只處理數牌和字牌
-    /** 將 34 種計算用牌映射到計數陣列索引；花牌不納入此表。 */
+    /** 將 34 種計算用牌映射到計數陣列索引。花牌不納入此表。 */
     private val tileMap: Map<Tile, Int> = buildMap {
         // 萬子 1-9 (0-8)
         (1..9).forEach { put(Tile.Numeric(Tile.Suit.Character, it), it - 1) }
@@ -105,7 +105,7 @@ class TaiwanShantenCalculator : ShantenCalculator {
     /**
      * 遞迴計算能夠組成的最多面子數。
      *
-     * @param counts 各牌的可用張數；遞迴時會暫時修改並還原。
+     * @param counts 各牌的可用張數。遞迴時會暫時修改並還原。
      * @param index 下一個要檢查的牌索引。
      * @param currentMelds 已組成的面子數。
      * @param targetMelds 本次搜尋的目標面子數。

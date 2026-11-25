@@ -69,7 +69,7 @@ class ClientHistoryQueryCoordinator(
     /**
      * 送出新清單要求並使舊條件的回覆失效。
      *
-     * @param request 查詢條件；配對 ID 由此處替換成唯一值。
+     * @param request 查詢條件。配對 ID 由此處替換成唯一值。
      * @return 此次要求的配對識別碼，即使傳送失敗仍回傳。
      */
     override fun queryList(request: HistoryListRequestDto): String {
@@ -126,7 +126,7 @@ class ClientHistoryQueryCoordinator(
     }
 
     /**
-     * 套用最新清單回應；過期或重複回應不更新狀態。
+     * 套用最新清單回應。過期或重複回應不更新狀態。
      *
      * @param response 伺服器線路回應。
      */
@@ -139,7 +139,7 @@ class ClientHistoryQueryCoordinator(
     }
 
     /**
-     * 套用最新摘要回應；過期或重複回應不更新狀態。
+     * 套用最新摘要回應。過期或重複回應不更新狀態。
      *
      * @param response 伺服器線路回應。
      */
@@ -154,7 +154,7 @@ class ClientHistoryQueryCoordinator(
     }
 
     /**
-     * 套用最新規則設定回應；過期或重複回應不更新狀態。
+     * 套用最新規則設定回應。過期或重複回應不更新狀態。
      *
      * @param response 伺服器線路回應。
      */
@@ -165,7 +165,7 @@ class ClientHistoryQueryCoordinator(
     }
 
     /**
-     * 套用目前單局事件回覆；配對識別碼、查詢種類、對局、局序號或起始交易索引不符時忽略。
+     * 套用目前單局事件回覆。配對識別碼、查詢種類、對局、局序號或起始交易索引不符時忽略。
      *
      * @param response 伺服器線路回應。
      */
@@ -184,7 +184,7 @@ class ClientHistoryQueryCoordinator(
     }
 
     /**
-     * 套用目前單局桌況回覆；配對識別碼、查詢種類、對局、局序號或局內位置不符時忽略。
+     * 套用目前單局桌況回覆。配對識別碼、查詢種類、對局、局序號或局內位置不符時忽略。
      *
      * @param response 伺服器線路回應。
      */

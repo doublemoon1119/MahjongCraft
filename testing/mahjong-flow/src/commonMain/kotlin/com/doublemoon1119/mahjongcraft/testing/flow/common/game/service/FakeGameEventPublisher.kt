@@ -28,11 +28,11 @@ class FakeGameEventPublisher : GameEventPublisher {
     }
 
     /**
-     * 獲取特定玩家收到的「最後一次」事件動作內容。
+     * 取得特定玩家最後一次收到的事件動作。
      *
-     * 若同一組 (gameId, targetPlayerId, actorId) 曾收到多次通知（例如立直宣告會依序廣播
-     * [RIICHI_GAME_ACTION] 再廣播 [GameAction.Discard]），只會回傳最後一次；需要驗證完整順序時
-     * 請改用 [getNotifiedActions]。
+     * - 同一組 (gameId, targetPlayerId, actorId) 收到多次通知時，只回傳最後一次。例如立直宣告會依序廣播
+     *   [RIICHI_GAME_ACTION] 與 [GameAction.Discard]。
+     * - 需要驗證完整順序時，改用 [getNotifiedActions]。
      *
      * @param gameId 對局 Uuid。
      * @param targetPlayerId 接收通知的玩家 Uuid。

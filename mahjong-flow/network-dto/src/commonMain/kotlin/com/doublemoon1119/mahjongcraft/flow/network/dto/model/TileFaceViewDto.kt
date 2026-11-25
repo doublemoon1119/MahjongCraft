@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
  *
  * @property tile 基本牌面。
  * @property views 這次允許交付的特徵。
- * @property appearanceId 可使用的外觀識別碼；沒有時為 null。
+ * @property appearanceId 可使用的外觀識別碼。沒有時為 null。
  */
 @Serializable
 data class TileFaceViewDto(

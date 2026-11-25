@@ -12,8 +12,8 @@ import net.minecraft.world.item.Item
  * 拿在主手時可以當武器的物品：攻擊力與攻擊速度以原版武器的方式加在玩家身上，各版本的原版屬性寫法由這個類別處理。
  *
  * @param properties 原版物品設定。
- * @param attackDamageBonus 攻擊力加成；玩家基礎攻擊力為 1。
- * @param attackSpeedBonus 攻擊速度加成；玩家基礎攻擊速度為 4。
+ * @param attackDamageBonus 攻擊力加成。玩家基礎攻擊力為 1。
+ * @param attackSpeedBonus 攻擊速度加成。玩家基礎攻擊速度為 4。
  */
 abstract class MahjongWeaponItem(properties: Properties, attackDamageBonus: Double, attackSpeedBonus: Double) : Item(properties) {
     /** 主手持有時套用的攻擊力與攻擊速度。 */

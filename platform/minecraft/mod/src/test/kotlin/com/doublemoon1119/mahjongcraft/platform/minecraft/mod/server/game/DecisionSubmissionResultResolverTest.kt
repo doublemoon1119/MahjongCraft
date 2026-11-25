@@ -39,7 +39,7 @@ class DecisionSubmissionResultResolverTest {
         }
     }
 
-    /** 類別連結錯誤由擴充失敗判斷隔離成 REJECTED；記憶體不足等嚴重錯誤原樣往外傳。 */
+    /** 類別連結錯誤由擴充失敗判斷隔離成 REJECTED。記憶體不足等嚴重錯誤原樣往外傳。 */
     @Test
     fun `test linkage errors are rejected and fatal errors are rethrown`() = runTest {
         val policy = LinkageIsolatingExtensionFailurePolicy()

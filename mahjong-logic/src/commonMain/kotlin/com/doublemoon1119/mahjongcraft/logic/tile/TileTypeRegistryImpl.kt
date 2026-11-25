@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 /**
  * [TileTypeRegistry] 的預設記憶體實作。
  *
- * 建構時不預先加入任何牌種；內建牌與第三方牌使用相同的 [register] 流程，並由外層組裝完成後呼叫
+ * 建構時不預先加入任何牌種。內建牌與第三方牌使用相同的 [register] 流程，並由外層組裝完成後呼叫
  * [freeze]。此類別不依賴 Koin，runtime single 由外層 DI module 管理。
  */
 class TileTypeRegistryImpl : TileTypeRegistry {

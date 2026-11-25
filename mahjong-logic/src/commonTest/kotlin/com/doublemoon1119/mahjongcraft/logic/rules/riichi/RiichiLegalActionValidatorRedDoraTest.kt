@@ -101,7 +101,7 @@ class RiichiLegalActionValidatorRedDoraTest {
 
     /**
      * 測試赤寶牌之情況：手牌同時有普通5萬與赤5萬時，碰有「兩張普通牌」與「普通牌加赤牌」兩個選項，
-     * 由玩家選擇；不用赤牌的選項排在前面。
+     * 由玩家選擇。不用赤牌的選項排在前面。
      */
     @Test
     fun `test pon offers plain and red dora choices with plain first`() {

@@ -19,7 +19,7 @@ import net.minecraft.resources.ResourceLocation
  * 「離線玩家」，不使用 [profile] 內部識別用的固定英文名稱。
  *
  * @param world 此替身所屬的 client world。
- * @param profile 與原玩家關聯的 profile；此類別不使用其中的皮膚或名稱顯示。
+ * @param profile 與原玩家關聯的 profile。此類別不使用其中的皮膚或名稱顯示。
  */
 class OfflinePlayerPreviewEntity(world: ClientLevel, profile: GameProfile) : CustomSkinPlayer(world, profile) {
     override fun customSkin(): SkinTextures = SkinTextures(texture = TEXTURE, modelName = SkinTextures.DEFAULT_MODEL, cape = null)

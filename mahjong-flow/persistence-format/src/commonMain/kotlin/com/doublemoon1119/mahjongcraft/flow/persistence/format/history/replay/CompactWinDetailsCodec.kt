@@ -7,7 +7,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
-/** 將和牌明細的固定結構轉成精簡陣列；條目、單位與擴充欄位 ID 仍由既有字典處理。 */
+/** 將和牌明細的固定結構轉成精簡陣列。條目、單位與擴充欄位 ID 仍由既有字典處理。 */
 internal object CompactWinDetailsCodec {
     /**
      * 編碼逐位明細，省略可還原的空白尾端欄位。

@@ -35,7 +35,7 @@ internal data class HistoryDatabaseStatistics(
  * @property partialMatchCount 已確認終止、但不完整的非活動場數。
  * @property unknownMatchCount 無法證實完整或終止的非活動場數。
  * @property pendingSqlEventCount SQLite 尚待封存的事件數。
- * @property pendingOutboxEventCount 權威待寫事件數；不得與 SQL 事件數相加。
+ * @property pendingOutboxEventCount 權威待寫事件數。不得與 SQL 事件數相加。
  * @property tombstoneCount 已清理場次的收據數，不算保存對局。
  * @property disk 主檔與 SQLite 附屬檔的實際大小。
  * @property policy 取得快照時固定的有效保留政策。

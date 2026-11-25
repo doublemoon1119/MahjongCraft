@@ -415,7 +415,7 @@ class WinSettlementPresentationRequestFactoryTest {
      * 使用榮和結果 ID 建立測試結算要求，自摸旗標則依是否有放銃者決定。
      *
      * @param state 結算前的桌況。
-     * @param responsiblePlayerId 放銃者；為 null 時建立自摸呈現請求。
+     * @param responsiblePlayerId 放銃者。為 null 時建立自摸呈現請求。
      * @param resolutions 每位贏家的權威結算結果。
      * @param aiPlayerIds AI 玩家識別碼。
      * @return 建立的胡牌結算呈現請求。

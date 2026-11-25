@@ -93,7 +93,7 @@ class EntityMahjongTileSelectionConfirmPresenter(
      * 由版本無關 dimension ID 取得目前 server session 的世界。
      *
      * @param location 桌子位置。
-     * @return 對應的已載入伺服器世界；無法解析時為 null。
+     * @return 對應的已載入伺服器世界。無法解析時為 null。
      */
     private fun resolveWorld(location: TableLocation): ServerLevel? {
         val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null

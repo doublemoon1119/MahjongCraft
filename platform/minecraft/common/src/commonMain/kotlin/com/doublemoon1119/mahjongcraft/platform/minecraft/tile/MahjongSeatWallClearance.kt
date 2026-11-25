@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 /**
- * 從一個座位看出去，牌牆在這一局剩下的時間裡可能佔到的範圍；由 [MahjongTableWallClearance.forSeat] 建立。
+ * 從一個座位看出去，牌牆在這一局剩下的時間裡可能佔到的範圍。由 [MahjongTableWallClearance.forSeat] 建立。
  *
  * @property stacksPerSide 牌牆每面的墩數。
  */

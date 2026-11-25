@@ -55,7 +55,7 @@ internal class AiSeatPlacementService(
     private val logger = mahjongCraftLogger(AiSeatPlacementService::class)
 
     /**
-     * 在伺服器端處理原生實體互動；客戶端只負責輸入路由。
+     * 在伺服器端處理原生實體互動。客戶端只負責輸入路由。
      *
      * @param events 登記事件用的伺服器事件來源。
      */

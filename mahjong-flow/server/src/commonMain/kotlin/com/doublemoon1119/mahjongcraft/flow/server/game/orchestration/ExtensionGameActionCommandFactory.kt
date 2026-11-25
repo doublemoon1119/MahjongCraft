@@ -11,11 +11,11 @@ import kotlin.uuid.Uuid
  */
 fun interface ExtensionGameActionCommandFactory<A : ExtensionGameAction> {
     /**
-     * 建立命令；選牌資料不符合動作契約時回傳 null。
+     * 建立命令。選牌資料不符合動作契約時回傳 null。
      *
      * @param action 要轉換的規則擴充動作。
      * @param selectedTileIds 玩家選取的牌識別碼。
-     * @return 可執行的擴充命令；選牌資料不符合動作契約時為 null。
+     * @return 可執行的擴充命令。選牌資料不符合動作契約時為 null。
      */
     fun create(action: A, selectedTileIds: List<Uuid>): ExtensionGameCommand?
 }

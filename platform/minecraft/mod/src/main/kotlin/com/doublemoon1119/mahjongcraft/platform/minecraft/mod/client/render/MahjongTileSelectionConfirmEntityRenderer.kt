@@ -19,38 +19,34 @@ import kotlin.math.abs
 import kotlin.uuid.toKotlinUuid
 
 /**
- * 多選選牌確認面板的 client renderer——只有本機玩家就是 [MahjongTileSelectionConfirmEntity.holderId]
- * 才畫出來，其他人的 client 完全不畫，等於視覺上對他們不存在（entity 本身仍透過原版 tracking 廣播給
- * 範圍內所有人，見該 entity KDoc 的取捨說明）。
+ * 多選選牌確認面板的 client renderer。
  *
- * 畫法比照 [MahjongPlayerInfoEntityRenderer]：固定朝向 entity 本身的 `yaw`（不像 billboard 那樣永遠
- * 轉向鏡頭），並疊一次背面（往法線方向平移一點再轉 180 度）做雙面渲染，讓面板不管從哪個角度接近都看
- * 得到文字。半透明黑底風格跟其他世界空間面板（局況顯示、玩家資訊等）一致。
+ * 可見範圍：
  *
- * 文字左右的 `>`／`<` 選取效果標記只在玩家目前準心正對著這組確認面板任一個 instance（見 [isHovered]）
- * 時才畫出來，暗示「現在可以互動」；但背景／可點擊寬度的量測**永遠把標記算進去**（`measurementLabel`），
- * 不管當下有沒有畫出來，避免標記出現／消失的瞬間背景寬度跟著跳動。文字顏色則另外依
- * [PlayerDecisionHudController.isTileSelectionConfirmable] 表示已選數量是否落在合法範圍內：綠色代表
- * 右鍵真的會送出，灰色代表選太少還不行——跟標記是否顯示是不同的資訊，分開判斷。不直接寫「右鍵」文字：
- * 避免用某個特定輸入裝置的動作名稱描述互動。
+ * - 只有本機玩家就是 [MahjongTileSelectionConfirmEntity.holderId] 時才畫出來，其他人的 client 不畫。
+ * - entity 本身仍透過原版 tracking 廣播給範圍內所有人，取捨見該 entity KDoc。
  *
- * [MahjongTileSelectionConfirmEntity] 的碰撞箱是原版慣用的「腳下往上」正立方體，跟這裡以錨點為中心
- * 對稱畫出的面板不同心，所以先把整塊面板往上平移半個 [MahjongTileSelectionConfirmEntity.HEIGHT]，讓
- * 視覺置中位置對齊碰撞箱的垂直中心。
+ * 外觀：
  *
- * **每個 instance 每幀都會執行到這個方法**（不只 [MahjongTileSelectionConfirmEntity.isPrimary] 那個），
- * 用來依目前實際渲染出的文字寬度更新自己的 [MahjongTileSelectionConfirmEntity.isActive]（見該欄位
- * KDoc）；只有 [MahjongTileSelectionConfirmEntity.isPrimary] 那個 instance 會再進一步畫出文字／背景，
- * 其餘 instance 更新完 `isActive` 就直接返回、不畫任何東西。背景／文字寬度使用同一次量測結果，超過
- * [MahjongTileTableLayout.TILE_SELECTION_CONFIRM_SEGMENT_COUNT] 個 instance 能涵蓋的最大寬度時用
- * [WorldPanelRenderer.fitText] 截斷並加上刪節號（跟 [MahjongPlayerInfoEntityRenderer] 顯示玩家名稱
- * 同一套處理方式），不縮小字體。
+ * - 畫法比照 [MahjongPlayerInfoEntityRenderer]：固定朝向 entity 本身的 `yaw`，不像 billboard 那樣轉向鏡頭。
+ * - 疊一次背面（往法線方向平移一點再轉 180 度）做雙面渲染，從哪個角度接近都看得到文字。
+ * - 半透明黑底風格與其他世界空間面板（局況顯示、玩家資訊等）一致。
+ * - 文字左右的 `>`／`<` 標記只在準心正對這組面板任一個 instance（見 [isHovered]）時畫出，表示現在可以互動。
+ * - 背景與可點擊寬度的量測一律把標記算進去（`measurementLabel`），標記出現或消失時背景寬度不會跳動。
+ * - 文字顏色依 [PlayerDecisionHudController.isTileSelectionConfirmable] 表示已選數量是否在合法範圍內：
+ *   綠色代表右鍵會送出，灰色代表還選得太少。這與標記是否顯示是不同的資訊，分開判斷。
+ * - 不寫「右鍵」文字，避免用特定輸入裝置的動作名稱描述互動。
  *
- * `isPrimary` 那個 instance 額外沿本地 X 軸平移
- * [MahjongTileTableLayout.tileSelectionConfirmSegmentAlongOffset] 的反方向，讓渲染內容對齊整組拼湊
- * 面板真正的中心，而不是這個 instance 自己的世界座標——兩者只有在
- * [MahjongTileTableLayout.TILE_SELECTION_CONFIRM_SEGMENT_COUNT] 是奇數、`isPrimary` 剛好選在正中央
- * 那個 index 時才會重合（偶數段數沒有任何一個 index 剛好落在正中央，這個平移就不是零）。
+ * 位置與寬度：
+ *
+ * - [MahjongTileSelectionConfirmEntity] 的碰撞箱是原版慣用的「腳下往上」正立方體，與以錨點為中心畫出的面板不同心。
+ *   因此整塊面板先往上平移半個 [MahjongTileSelectionConfirmEntity.HEIGHT]，對齊碰撞箱的垂直中心。
+ * - 每個 instance 每幀都會執行到這個方法，依實際渲染出的文字寬度更新自己的 [MahjongTileSelectionConfirmEntity.isActive]。
+ * - 只有 [MahjongTileSelectionConfirmEntity.isPrimary] 那個 instance 會畫出文字與背景，其餘更新完 `isActive` 就返回。
+ * - 背景與文字寬度使用同一次量測結果。超過 [MahjongTileTableLayout.TILE_SELECTION_CONFIRM_SEGMENT_COUNT] 個 instance
+ *   能涵蓋的最大寬度時，用 [WorldPanelRenderer.fitText] 截斷並加上刪節號，不縮小字體。
+ * - `isPrimary` 那個 instance 額外沿本地 X 軸往 [MahjongTileTableLayout.tileSelectionConfirmSegmentAlongOffset] 的反方向平移，
+ *   讓內容對齊整組面板的中心。段數為奇數、`isPrimary` 剛好在正中央時，這個平移為零。
  *
  * @param context Minecraft renderer factory 提供的 client context。
  */
@@ -110,7 +106,7 @@ class MahjongTileSelectionConfirmEntityRenderer(
     }
 
     /**
-     * 在 [text] 左右加上選取效果標記；版面量測永遠會把標記算進去，見類別 KDoc。
+     * 在 [text] 左右加上選取效果標記。版面量測永遠會把標記算進去，見類別 KDoc。
      *
      * @param text 要加上標記的文字。
      * @return 前後含標記的文字。
@@ -156,7 +152,7 @@ class MahjongTileSelectionConfirmEntityRenderer(
         )
     }
 
-    /** 純文字顯示，不提供單一 texture；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    /** 純文字顯示，不提供單一 texture。原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
     override fun getTextureLocation(entity: MahjongTileSelectionConfirmEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     private companion object {
@@ -188,7 +184,7 @@ class MahjongTileSelectionConfirmEntityRenderer(
          * 拼湊碰撞箱能涵蓋的最大寬度（世界座標格數），換算自
          * [MahjongTileTableLayout.TILE_SELECTION_CONFIRM_SEGMENT_COUNT] 乘上
          * [MahjongTileTableLayout.TILE_SELECTION_CONFIRM_SEGMENT_SPACING]。背景／可點擊範圍依實際文字
-         * 內容量測，用這個值當上限；不是 `const val`，運算式引用另一個模組的常數，讓兩邊調整拼湊面板
+         * 內容量測，用這個值當上限。不是 `const val`，運算式引用另一個模組的常數，讓兩邊調整拼湊面板
          * 尺寸時這個值自動保持一致。
          */
         const val MAX_PANEL_WIDTH_BLOCKS: Double =

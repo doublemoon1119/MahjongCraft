@@ -19,12 +19,12 @@ import net.minecraft.world.inventory.InventoryMenu
 /**
  * 將桌面中央的局況資訊畫成面向攝影機的文字面板。
  *
- * [MahjongRoundInfoEntity.lines] 只提供局況行 ID 與帶型別的參數。每行交給 [RoundInfoLineTextBuilder] 組成文字，
- * 再由用戶端依自己的語系顯示；牌名、牌面 emoji 與規則訊息都透過各自的 registry 查詢。
- * 未登記的行 ID 直接顯示原始 ID，不會讓整行消失。
- *
- * 繪製方式沿用原版實體名牌的座標方向：套用攝影機旋轉、以 `(-scale, -scale, scale)` 縮放，並使用
- * [Font.DisplayMode.NORMAL] 畫在半空中。
+ * - [MahjongRoundInfoEntity.lines] 只提供局況行 ID 與帶型別的參數。
+ * - 每行交給 [RoundInfoLineTextBuilder] 組成文字，再由用戶端依自己的語系顯示。
+ * - 牌名、牌面 emoji 與規則訊息都透過各自的 registry 查詢。
+ * - 未登記的行 ID 直接顯示原始 ID，不會讓整行消失。
+ * - 繪製方式沿用原版實體名牌的座標方向：套用攝影機旋轉、以 `(-scale, -scale, scale)` 縮放，
+ *   並使用 [Font.DisplayMode.NORMAL] 畫在半空中。
  *
  * @param context Minecraft renderer factory 提供的 client context。
  * @property configStore 提供局況面板可見性設定。
@@ -105,7 +105,7 @@ class MahjongRoundInfoEntityRenderer(
         }
     }
 
-    /** 純文字顯示，不提供單一 texture；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    /** 純文字顯示，不提供單一 texture。原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
     override fun getTextureLocation(entity: MahjongRoundInfoEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     companion object {

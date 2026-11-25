@@ -27,7 +27,7 @@ class HistoryReplayCharacterAppearanceTest {
         assertEquals(expected = face, actual = HistoryReplayCharacterAppearance.botFace(captured))
     }
 
-    /** 其他預覽能力的角色改用自己的模型；不以牌面當頭像時備援的機器人用未知牌面。 */
+    /** 其他預覽能力的角色改用自己的模型。不以牌面當頭像時備援的機器人用未知牌面。 */
     @Test
     fun `third-party characters use their preview model`() {
         val definition = AiCharacterDefinition(

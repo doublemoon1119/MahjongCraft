@@ -34,11 +34,11 @@ data class MahjongPlayerScoreChange(
 }
 
 /**
- * 指定座位在某時刻正在顯示的增減合計；同時有多筆時加總。
+ * 指定座位在某時刻正在顯示的增減合計。同時有多筆時加總。
  *
  * @param seatIndex 玩家座位。
  * @param gameTime 目前遊戲時間。
- * @return 正在顯示的增減合計；沒有或合計為 0 時為 null。
+ * @return 正在顯示的增減合計。沒有或合計為 0 時為 null。
  */
 fun List<MahjongPlayerScoreChange>.shownDeltaFor(seatIndex: Int, gameTime: Long): Int? = filter { it.seatIndex == seatIndex && it.isShownAt(gameTime) }
     .sumOf { it.delta.toLong() }

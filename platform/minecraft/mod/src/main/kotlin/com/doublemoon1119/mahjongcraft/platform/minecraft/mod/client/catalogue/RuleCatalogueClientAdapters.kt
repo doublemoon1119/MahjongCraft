@@ -29,7 +29,7 @@ internal class TextRendererCatalogueMetrics(private val font: Font) : RuleCatalo
 }
 
 /**
- * 從已載入的資源包找出範例牌面圖案；同一牌面與外觀在 [clearCache] 之前只查一次。
+ * 從已載入的資源包找出範例牌面圖案。同一牌面與外觀在 [clearCache] 之前只查一次。
  *
  * @property assets 牌種與素材鍵的對應。
  * @property resources 目前的資源管理器。
@@ -60,6 +60,6 @@ internal class ResourceCatalogueTileArt(
  * 取得目前語言的翻譯。
  *
  * @param key 翻譯鍵。
- * @return 翻譯文字；目前語言沒有這個鍵時為 null。
+ * @return 翻譯文字。目前語言沒有這個鍵時為 null。
  */
 internal fun currentLanguageTranslation(key: String): String? = Language.getInstance().takeIf { it.has(key) }?.getOrDefault(key)

@@ -92,7 +92,7 @@ class TableLifecycleService(
     /**
      * 玩家成功破壞後，當場記下目前的位置索引項目，再排入不受 orphan policy 保留選項影響的權威清理。
      *
-     * 清理只針對破壞當下的那個位置項目；排隊期間同一 UUID 的桌子重新登記時，清理會視為過期而不動新來源。
+     * 清理只針對破壞當下的那個位置項目。排隊期間同一 UUID 的桌子重新登記時，清理會視為過期而不動新來源。
      *
      * @param tableId 玩家破壞的桌子 UUID。
      */
@@ -187,10 +187,10 @@ class TableLifecycleService(
     }
 
     /**
-     * 對玩家破壞當下的位置索引項目執行清理；清理未過期時通知 [tableEndListeners]。
+     * 對玩家破壞當下的位置索引項目執行清理。清理未過期時通知 [tableEndListeners]。
      *
      * @param entry 玩家破壞當下觀察到的位置索引項目。
-     * @return 清理結果；位置索引已不再是同一個項目時為 [OrphanedTableCleanupResult.STALE_REQUEST]。
+     * @return 清理結果。位置索引已不再是同一個項目時為 [OrphanedTableCleanupResult.STALE_REQUEST]。
      */
     internal suspend fun cleanupPlayerBroken(entry: TableLocationEntry): OrphanedTableCleanupResult {
         val result = cleanupService.cleanupPlayerBroken(entry)

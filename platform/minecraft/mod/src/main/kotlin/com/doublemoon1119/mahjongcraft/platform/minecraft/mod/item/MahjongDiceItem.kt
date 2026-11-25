@@ -17,7 +17,7 @@ import net.minecraft.world.item.context.UseOnContext
  */
 class MahjongDiceItem(settings: Properties) : Item(settings) {
     /**
-     * 蹲下時精確放置骰子；普通右鍵上表面時由玩家手部附近向命中點投擲。
+     * 蹲下時精確放置骰子。普通右鍵上表面時由玩家手部附近向命中點投擲。
      *
      * @param context 方塊互動位置、玩家及物品堆疊。
      */

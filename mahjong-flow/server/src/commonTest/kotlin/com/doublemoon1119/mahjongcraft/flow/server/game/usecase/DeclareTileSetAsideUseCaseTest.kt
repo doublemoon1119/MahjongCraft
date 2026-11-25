@@ -211,7 +211,7 @@ class DeclareTileSetAsideUseCaseTest {
         assertEquals(TileRegion.DRAWN, resumed.last().tableState.tileRegion(rinshan.id))
     }
 
-    /** 驗證搶北榮和由拔北的玩家支付，拔北不成立，且不算搶槓；被搶的北留在拔北玩家手上但仍公開。 */
+    /** 驗證搶北榮和由拔北的玩家支付，拔北不成立，且不算搶槓。被搶的北留在拔北玩家手上但仍公開。 */
     @Test
     fun `robbing the north is paid by the puller without chankan`() = runTest {
         val fixtures = Fixtures()
@@ -282,7 +282,7 @@ class DeclareTileSetAsideUseCaseTest {
     /**
      * 建立拔北者目前可行動的三人日麻桌況。
      *
-     * @param puller 拔北玩家；預設為持有剛摸到北牌的玩家。
+     * @param puller 拔北玩家。預設為持有剛摸到北牌的玩家。
      * @param waiter 可搶北或不作反應的另一位玩家。
      * @return 包含指定補牌、第三位旁觀玩家與預設三人日麻設定的桌況。
      */

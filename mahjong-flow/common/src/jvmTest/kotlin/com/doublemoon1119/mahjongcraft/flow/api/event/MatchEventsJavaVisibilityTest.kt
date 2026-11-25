@@ -33,7 +33,7 @@ class MatchEventsJavaVisibilityTest {
         RuleResultsResolvedEvent::class.java,
     )
 
-    /** 每個型別都沒有 Java 看得到的建構子；編譯器產生的存取用建構子是 synthetic，Java 原始碼無法呼叫。 */
+    /** 每個型別都沒有 Java 看得到的建構子。編譯器產生的存取用建構子是 synthetic，Java 原始碼無法呼叫。 */
     @Test
     fun `no constructor is callable from Java`() {
         types.forEach { type ->

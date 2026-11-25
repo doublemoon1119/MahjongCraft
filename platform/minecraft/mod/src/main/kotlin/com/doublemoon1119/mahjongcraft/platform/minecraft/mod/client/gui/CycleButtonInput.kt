@@ -8,7 +8,7 @@ import net.minecraft.network.chat.Component
 /**
  * 循環切換按鈕的共用操作：左鍵選擇下一項，右鍵或按住 Shift 點擊選擇上一項。
  *
- * 選項至少三個時在提示框尾端說明兩種操作；只有兩個選項時往前往後結果相同，只說明左鍵；
+ * 選項至少三個時在提示框尾端說明兩種操作。只有兩個選項時往前往後結果相同，只說明左鍵。
  * 少於兩個選項時不說明。
  */
 internal object CycleButtonInput {
@@ -38,7 +38,7 @@ internal object CycleButtonInput {
     fun direction(shiftHeld: Boolean, secondaryClick: Boolean): Int = if (shiftHeld || secondaryClick) -1 else 1
 
     /**
-     * 以右鍵點擊的身分執行按鈕動作；動作執行期間 [step] 回報往上一項。
+     * 以右鍵點擊的身分執行按鈕動作。動作執行期間 [step] 回報往上一項。
      *
      * @param T 動作的回傳型別。
      * @param action 按鈕被右鍵點擊時執行的動作。
@@ -57,10 +57,10 @@ internal object CycleButtonInput {
     /**
      * 依方向取得下一個選項索引，頭尾相接。
      *
-     * @param currentIndex 目前選項的索引；不在選項中時為 -1。
+     * @param currentIndex 目前選項的索引。不在選項中時為 -1。
      * @param size 選項數量。
      * @param step 方向，1 為下一項、-1 為上一項。
-     * @return 下一個選項的索引；目前選項不在範圍內時，往下從第一項開始、往上從最後一項開始。
+     * @return 下一個選項的索引。目前選項不在範圍內時，往下從第一項開始、往上從最後一項開始。
      * @throws IllegalArgumentException [size] 不大於 0 時拋出。
      */
     fun nextIndex(
@@ -90,7 +90,7 @@ internal object CycleButtonInput {
     ): T = options[nextIndex(currentIndex = options.indexOf(current), size = options.size, step = step)]
 
     /**
-     * 在提示框尾端空一行後加上操作說明；選項少於兩個或按鈕停用時不加。
+     * 在提示框尾端空一行後加上操作說明。選項少於兩個或按鈕停用時不加。
      *
      * @param tooltip 原有的提示內容。
      * @param optionCount 選項數量。
@@ -110,7 +110,7 @@ internal object CycleButtonInput {
     }
 
     /**
-     * 逐行繪製的提示框版本：在最後空一行後加上操作說明；選項少於兩個或按鈕停用時不加。
+     * 逐行繪製的提示框版本：在最後空一行後加上操作說明。選項少於兩個或按鈕停用時不加。
      *
      * @param lines 原有提示的每一行。
      * @param optionCount 選項數量。

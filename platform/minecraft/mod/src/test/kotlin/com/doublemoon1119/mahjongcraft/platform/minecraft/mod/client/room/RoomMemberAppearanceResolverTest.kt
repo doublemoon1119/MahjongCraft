@@ -93,7 +93,7 @@ class RoomMemberAppearanceResolverTest {
                  * 此案例模擬登記表本身失敗。
                  *
                  * @param context 成員外觀解析脈絡。
-                 * @return 不會回傳；此案例固定拋出錯誤。
+                 * @return 不會回傳。此案例固定拋出錯誤。
                  */
                 override fun resolve(context: RoomMemberAppearanceContext): RoomMemberAppearanceSource = error("registry itself failed")
             },
@@ -114,7 +114,7 @@ class RoomMemberAppearanceResolverTest {
                  * 模擬外觀來源解析被取消。
                  *
                  * @param context 成員外觀解析脈絡。
-                 * @return 不會回傳；此案例固定拋出取消例外。
+                 * @return 不會回傳。此案例固定拋出取消例外。
                  */
                 override fun resolve(context: RoomMemberAppearanceContext): RoomMemberAppearanceSource = throw CancellationException("cancelled")
             },
@@ -134,7 +134,7 @@ class RoomMemberAppearanceResolverTest {
                  * 模擬外觀來源解析發生致命錯誤。
                  *
                  * @param context 成員外觀解析脈絡。
-                 * @return 不會回傳；此案例固定拋出致命錯誤。
+                 * @return 不會回傳。此案例固定拋出致命錯誤。
                  */
                 override fun resolve(context: RoomMemberAppearanceContext): RoomMemberAppearanceSource = throw AssertionError("fatal")
             },
@@ -165,7 +165,7 @@ class RoomMemberAppearanceResolverTest {
                  * 依目前測試識別碼模擬 provider 失敗。
                  *
                  * @param context 成員外觀解析脈絡。
-                 * @return 不會回傳；此案例固定拋出 provider 例外。
+                 * @return 不會回傳。此案例固定拋出 provider 例外。
                  */
                 override fun resolve(context: RoomMemberAppearanceContext): RoomMemberAppearanceSource = throw RoomMemberAppearanceSourceProviderException(providerId, IllegalStateException("boom"))
             },
@@ -240,7 +240,7 @@ class RoomMemberAppearanceResolverTest {
              * 以指定 provider 識別碼模擬來源解析失敗。
              *
              * @param context 成員外觀解析脈絡。
-             * @return 不會回傳；此替身固定拋出 provider 例外。
+             * @return 不會回傳。此替身固定拋出 provider 例外。
              */
             override fun resolve(context: RoomMemberAppearanceContext): RoomMemberAppearanceSource = throw RoomMemberAppearanceSourceProviderException(providerId, IllegalStateException("boom"))
         },
@@ -257,7 +257,7 @@ class RoomMemberAppearanceResolverTest {
         /**
          * 此測試不應新增外觀來源。
          *
-         * @param definition 外觀來源的完整登記描述；此替身拒絕所有登記。
+         * @param definition 外觀來源的完整登記描述。此替身拒絕所有登記。
          */
         override fun register(definition: RoomMemberAppearanceSourceDefinition) = error("Unexpected registration")
 

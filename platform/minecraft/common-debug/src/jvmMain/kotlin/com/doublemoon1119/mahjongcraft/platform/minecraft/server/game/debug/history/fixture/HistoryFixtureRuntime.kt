@@ -38,7 +38,7 @@ class HistoryFixtureRuntime private constructor(
          * 建立照腳本進行的測試牌譜對局：每個座位都使用照腳本做決定的 AI，種子固定。
          *
          * @param fixture 測試牌譜。
-         * @param registries 與正式對局相同的規則登記；AI 策略換成腳本 AI。
+         * @param registries 與正式對局相同的規則登記。AI 策略換成腳本 AI。
          * @param extensionActions 把立直等規則擴充動作轉成命令。
          * @param failurePolicy 判斷 AI 策略丟出的失敗能否隔離。
          * @return 已開局、可逐步推進的對局。

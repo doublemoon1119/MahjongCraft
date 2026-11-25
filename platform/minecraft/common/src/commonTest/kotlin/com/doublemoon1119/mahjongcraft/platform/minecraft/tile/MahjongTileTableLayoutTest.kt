@@ -28,7 +28,7 @@ import kotlin.test.assertNotEquals
 
 /** [MahjongTileTableLayout] 的墩位間距、四面旋轉、角落不重疊與輸入驗證測試。 */
 class MahjongTileTableLayoutTest {
-    /** 牌牆大小直接向規則查詢，不需要開局時排出的牌牆結構；台麻依是否使用花牌決定。 */
+    /** 牌牆大小直接向規則查詢，不需要開局時排出的牌牆結構。台麻依是否使用花牌決定。 */
     @Test
     fun `wall size comes from the rule without an opening record`() {
         assertEquals(17, MahjongTileTableLayout.wallStacksPerSide(RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, RiichiRuleConfig()), 4))
@@ -50,7 +50,7 @@ class MahjongTileTableLayoutTest {
     }
 
     /**
-     * 同一面內不同墩應等距排列，`stack` 0 在最大 X（該面玩家自己右手邊）、遞增時往負向移動；整條線
+     * 同一面內不同墩應等距排列，`stack` 0 在最大 X（該面玩家自己右手邊）、遞增時往負向移動。整條線
      *  額外偏移半個牌高（見 [MahjongTileTableLayout] 角落互相接角的說明），不是置中於側面正中央。 */
     @Test
     fun `stacks are evenly spaced and shifted for corner interlock`() {
@@ -66,7 +66,7 @@ class MahjongTileTableLayoutTest {
         assertEquals(first.z, last.z, ABSOLUTE_TOLERANCE)
     }
 
-    /** 桌面牌位配置讓整面牌牆往桌心移動，並往 `stack = 0` 那一端錯開；同面內的間距不變。 */
+    /** 桌面牌位配置讓整面牌牆往桌心移動，並往 `stack = 0` 那一端錯開。同面內的間距不變。 */
     @Test
     fun `table tile layout moves the wall toward the centre and along its row`() {
         val tileLayout = TableTileLayoutProfile(wallInset = 0.07, wallCornerOverhang = 0.18)
@@ -81,7 +81,7 @@ class MahjongTileTableLayoutTest {
     }
 
     /**
-     * 往左錯開時整面牌牆是往右錯開的鏡像：同一面牌牆中第幾墩的位置左右對調，轉角伸出的那一端換到另一邊；
+     * 往左錯開時整面牌牆是往右錯開的鏡像：同一面牌牆中第幾墩的位置左右對調，轉角伸出的那一端換到另一邊。
      * 手牌那一列避開牌牆後的可用範圍也左右對調。
      */
     @Test
@@ -165,7 +165,7 @@ class MahjongTileTableLayoutTest {
     }
 
     /**
-     * 三面牌牆（三人對局）的第 `side` 面擺在座位 `莊家 - side` 面前，跟四面牌牆中同一個座位面前的那一面位置相同；
+     * 三面牌牆（三人對局）的第 `side` 面擺在座位 `莊家 - side` 面前，跟四面牌牆中同一個座位面前的那一面位置相同。
      * 空座位那一側沒有牌牆。
      */
     @Test
@@ -572,7 +572,7 @@ class MahjongTileTableLayoutTest {
         assertNotEquals(lastTileOfSafeRows.z, fourthRowFirstTile.z)
     }
 
-    /** 角落有物件時，第一組副露與物件之間隔一個 [MahjongTileTableLayout.MELD_GROUP_GAP]；沒有物件時從桌角開始。 */
+    /** 角落有物件時，第一組副露與物件之間隔一個 [MahjongTileTableLayout.MELD_GROUP_GAP]。沒有物件時從桌角開始。 */
     @Test
     fun `meld start leaves a group gap after corner props only when there are any`() {
         assertEquals(0.0, MahjongTileTableLayout.meldStartOffset(0.0), ABSOLUTE_TOLERANCE)
@@ -592,7 +592,7 @@ class MahjongTileTableLayoutTest {
         assertEquals((HAND_SIZE - 1) * stackStep, shiftedFirst.x - shiftedLast.x, ABSOLUTE_TOLERANCE)
     }
 
-    /** `stack` 每加 1，掉落動畫延遲該多加一個 `WAVE_STEP_TICKS`；`stack = 0` 完全不延遲。 */
+    /** `stack` 每加 1，掉落動畫延遲該多加一個 `WAVE_STEP_TICKS`。`stack = 0` 完全不延遲。 */
     @Test
     fun `wall drop start delay grows linearly with stack`() {
         assertEquals(0, MahjongTileTableLayout.wallDropStartDelayTicks(0))
@@ -617,7 +617,7 @@ class MahjongTileTableLayoutTest {
 
     /**
      * 每多一次抓取，延遲該多加一個 [MahjongTileTableLayout.DEAL_TURN_STAGGER_TICKS]（只等上一次起飛
-     * 播完，不等上一次整段落地）；`turnIndex = 0` 完全不延遲。
+     * 播完，不等上一次整段落地）。`turnIndex = 0` 完全不延遲。
      */
     @Test
     fun `deal batch start delay grows by one turn stagger each time`() {
@@ -767,7 +767,7 @@ class MahjongTileTableLayoutTest {
         return Footprint(minX = x - halfX, maxX = x + halfX, minZ = z - halfZ, maxZ = z + halfZ)
     }
 
-    /** 只有 X 範圍與 Z 範圍都有正重疊時才視為碰撞；剛好貼齊的邊界不算碰撞。 */
+    /** 只有 X 範圍與 Z 範圍都有正重疊時才視為碰撞。剛好貼齊的邊界不算碰撞。 */
     private fun Footprint.overlaps(other: Footprint): Boolean {
         val overlapX = minOf(maxX, other.maxX) - maxOf(minX, other.minX)
         val overlapZ = minOf(maxZ, other.maxZ) - maxOf(minZ, other.minZ)

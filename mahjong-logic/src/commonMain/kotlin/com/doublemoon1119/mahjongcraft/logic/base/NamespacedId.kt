@@ -3,8 +3,11 @@ package com.doublemoon1119.mahjongcraft.logic.base
 /**
  * 規則、流程與擴充共用的 `namespace:path` 字串 ID 格式。
  *
- * namespace 僅允許小寫英文字母、數字、底線、連字號與句點；path 另外允許 `/`。兩者皆不可為空，
- * 且整個 ID 只有一個冒號。呼叫端以 [requireValid] 提供符合自身情境的錯誤訊息。
+ * - namespace 僅允許小寫英文字母、數字、底線、連字號與句點。
+ * - path 另外允許 `/`。
+ * - 兩者皆不可為空，且整個 ID 只有一個冒號。
+ *
+ * 呼叫端以 [requireValid] 提供符合自身情境的錯誤訊息。
  */
 object NamespacedId {
     /** 完整 ID 的合法格式。 */

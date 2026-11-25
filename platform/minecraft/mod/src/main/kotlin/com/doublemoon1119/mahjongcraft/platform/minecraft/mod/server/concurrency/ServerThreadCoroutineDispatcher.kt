@@ -15,16 +15,20 @@ import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * 將協程工作交給 Minecraft 伺服器主執行緒。
- * 已在主執行緒時可直接執行，否則排入 [MainThreadTaskQueue]，並透過 [net.minecraft.server.MinecraftServer.execute]
- * 請伺服器處理該佇列，不保證恰好在下一個 tick 邊界執行。關服流程可用 [drainUntil] 在主執行緒直接處理佇列。
- * 沒有目前伺服器時使用 [Dispatchers.Default]，此時不提供伺服器主執行緒保證。
  *
- * [Delay] 委派給 [tickClock]，依遊戲 tick 計算延遲，而非真實時間；單人世界暫停時延遲也停止前進。
+ * - 已在主執行緒時直接執行。否則排入 [MainThreadTaskQueue]，並透過 [net.minecraft.server.MinecraftServer.execute]
+ *   請伺服器處理該佇列，不保證恰好在下一個 tick 邊界執行。
+ * - 關服流程可用 [drainUntil] 在主執行緒直接處理佇列。
+ * - 沒有目前伺服器時使用 [Dispatchers.Default]，此時不提供伺服器主執行緒保證。
+ * - [Delay] 委派給 [tickClock]，依遊戲 tick 計算延遲，而非真實時間。單人世界暫停時延遲也停止前進。
  *
- * 主執行緒上的同步程式碼（方塊、實體與 tick 回呼）不得以 runBlocking 等待協程鎖或主執行緒上的工作。
- * 協程鎖先到先得：鎖可能先交給排在前面、使用本 dispatcher 的協程，而它必須回到主執行緒才能繼續並釋放鎖；
- * 主執行緒此時正被 runBlocking 佔住，雙方會互相等待。只需讀取時使用已發布的不可變快照，需要寫入時排入
- * 協程後立即返回。伺服器啟動時 session 協程尚未開始時不受此限；關服收尾以 [drainUntil] 邊處理佇列邊等待。
+ * 主執行緒上的同步程式碼（方塊、實體與 tick 回呼）不得以 runBlocking 等待協程鎖或主執行緒上的工作：
+ *
+ * - 協程鎖先到先得。鎖可能先交給排在前面、使用本 dispatcher 的協程，它必須回到主執行緒才能繼續並釋放鎖。
+ *   主執行緒此時被 runBlocking 佔住，雙方會互相等待。
+ * - 只需讀取時使用已發布的不可變快照。需要寫入時排入協程後立即返回。
+ * - 伺服器啟動、session 協程尚未開始時不受此限。
+ * - 關服收尾以 [drainUntil] 邊處理佇列邊等待。
  *
  * @property serverHolder 查詢目前 server session。
  * @property tickClock 依遊戲 tick 排程延遲工作的時鐘。
@@ -40,7 +44,7 @@ class ServerThreadCoroutineDispatcher(
     private val queue = MainThreadTaskQueue()
 
     /**
-     * 已在伺服器主執行緒時無須重新排程；沒有目前伺服器時交由 [dispatch] 使用預設排程器。
+     * 已在伺服器主執行緒時無須重新排程。沒有目前伺服器時交由 [dispatch] 使用預設排程器。
      *
      * @param context 要執行工作的協程情境。
      * @return 不在目前伺服器主執行緒，或沒有目前伺服器時為 true。

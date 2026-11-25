@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 /**
  * [RuleModuleDisplayNameRegistry] 的預設記憶體實作。
  *
- * 建構時不預先加入任何映射；內建與第三方顯示名稱使用相同的 [register] 流程，並由外層組裝完成後
+ * 建構時不預先加入任何映射。內建與第三方顯示名稱使用相同的 [register] 流程，並由外層組裝完成後
  * 呼叫 [freeze]。
  */
 class RuleModuleDisplayNameRegistryImpl : RuleModuleDisplayNameRegistry {

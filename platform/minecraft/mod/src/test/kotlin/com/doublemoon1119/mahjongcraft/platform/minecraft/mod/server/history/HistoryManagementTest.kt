@@ -101,7 +101,7 @@ class HistoryManagementTest {
         }
     }
 
-    /** 同時工作有界拒絕；取消後釋放鎖，世界切換後舊要求失效。 */
+    /** 同時工作有界拒絕。取消後釋放鎖，世界切換後舊要求失效。 */
     @Test
     fun `busy cancellation and session replacement do not reuse old results`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)

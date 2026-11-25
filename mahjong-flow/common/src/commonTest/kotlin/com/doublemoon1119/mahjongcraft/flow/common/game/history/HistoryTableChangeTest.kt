@@ -78,7 +78,7 @@ class HistoryTableChangeTest {
         assertEquals(after, change.applyTo(before))
     }
 
-    /** 新打出的牌接在打牌順序後面時，差異只記下新牌，套用後還原；沒有新牌時不記錄。 */
+    /** 新打出的牌接在打牌順序後面時，差異只記下新牌，套用後還原。沒有新牌時不記錄。 */
     @Test
     fun `change records and restores appended discards`() {
         val first = IdentifiedTile(Uuid.random(), Tile.Numeric(Tile.Suit.Dot, 1))

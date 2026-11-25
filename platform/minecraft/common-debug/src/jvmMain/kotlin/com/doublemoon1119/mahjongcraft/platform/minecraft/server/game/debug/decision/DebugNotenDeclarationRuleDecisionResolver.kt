@@ -24,8 +24,9 @@ import kotlin.time.Duration.Companion.seconds
  * [DebugNotenDeclarationRiichiRuleModule] 的規則選擇：一般流局結算前讓聽牌玩家選擇公開聽牌或宣告不聽，本局結算後
  * 請所有玩家確認。
  *
- * 一般流局結算前只詢問仍在局中、沒有立直且手牌聽牌的玩家；沒有這樣的玩家時直接結算。宣告不聽的玩家記錄
- * [DebugDeclareNotenAction]，由規則模組的一般流局結算當作不聽。逾時或 AI 沒有選擇時採用第一個選項，也就是公開聽牌。
+ * - 一般流局結算前只詢問仍在局中、沒有立直且手牌聽牌的玩家。沒有這樣的玩家時直接結算。
+ * - 宣告不聽的玩家記錄 [DebugDeclareNotenAction]，由規則模組的一般流局結算當作不聽。
+ * - 逾時或 AI 沒有選擇時採用第一個選項，也就是公開聽牌。
  */
 class DebugNotenDeclarationRuleDecisionResolver : RuleDecisionResolver {
     override val ruleModuleId: String = DebugNotenDeclarationRiichiRuleModule.ID

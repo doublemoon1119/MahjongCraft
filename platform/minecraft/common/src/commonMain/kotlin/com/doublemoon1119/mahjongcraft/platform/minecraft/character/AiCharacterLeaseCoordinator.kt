@@ -7,7 +7,7 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.Uuid
 
 /**
- * 管理角色的唯一綁定與釋放；由平台在其主執行緒呼叫。
+ * 管理角色的唯一綁定與釋放。由平台在其主執行緒呼叫。
  *
  * @param R 平台角色型別。
  * @property failurePolicy 第三方失敗的隔離政策。
@@ -35,7 +35,7 @@ class AiCharacterLeaseCoordinator<R>(
     /** 是否接受新的角色要求。 */
     private var active = false
 
-    /** 開始新 session；前一份角色先安全釋放。 */
+    /** 開始新 session。前一份角色先安全釋放。 */
     fun startSession() {
         stopSession()
         active = true
@@ -77,7 +77,7 @@ class AiCharacterLeaseCoordinator<R>(
     fun keyFor(entityId: Uuid): AiCharacterBindingKey? = claimed[entityId]?.takeIf { find(it) != null }
 
     /**
-     * 找回仍有效的角色；失效時解除綁定。
+     * 找回仍有效的角色。失效時解除綁定。
      *
      * @param key 要查詢的場次與 AI。
      * @return 仍有效的角色，否則為 null。
@@ -99,12 +99,12 @@ class AiCharacterLeaseCoordinator<R>(
     }
 
     /**
-     * 準備並啟用一份角色；外部回呼之後都重新確認 session。
+     * 準備並啟用一份角色。外部回呼之後都重新確認 session。
      *
      * @param key 場次與 AI 身分。
      * @param acquire 只取得角色，不暫停行為、不加入世界。
      * @param activate 執行安全定位、自有角色生成及必要驗證。
-     * @return 有效角色；無能力、失敗、重入或 session 已改變時為 null。
+     * @return 有效角色。無能力、失敗、重入或 session 已改變時為 null。
      */
     fun ensure(
         key: AiCharacterBindingKey,
@@ -171,7 +171,7 @@ class AiCharacterLeaseCoordinator<R>(
     }
 
     /**
-     * 清除一份角色；刪除登記後才執行外部回呼。
+     * 清除一份角色。刪除登記後才執行外部回呼。
      *
      * @param key 要解除的角色。
      */
@@ -182,7 +182,7 @@ class AiCharacterLeaseCoordinator<R>(
     }
 
     /**
-     * 不論原生恢復是否成功，自有角色都要移除；借用角色絕不移除。
+     * 不論原生恢復是否成功，自有角色都要移除。借用角色絕不移除。
      *
      * @param key 診斷身分。
      * @param lease 需要釋放的租用。

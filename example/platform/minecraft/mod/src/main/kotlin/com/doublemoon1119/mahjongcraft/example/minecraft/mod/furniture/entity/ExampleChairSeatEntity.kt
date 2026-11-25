@@ -17,7 +17,7 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 
 /**
- * 範例椅子與長凳共用的隱形支撐；有乘客時由原版保存，無乘客或家具失效時移除。
+ * 範例椅子與長凳共用的隱形支撐。有乘客時由原版保存，無乘客或家具失效時移除。
  *
  * @param type Minecraft entity 類型。
  * @param world 實體所屬世界。
@@ -40,7 +40,7 @@ class ExampleChairSeatEntity(
         needsOccupancyCheck = false
     }
 
-    /** 載入後核對乘客、家具與重複支撐；失效時只釋放本席。 */
+    /** 載入後核對乘客、家具與重複支撐。失效時只釋放本席。 */
     override fun tick() {
         super.tick()
         if (level().isClientSide) return

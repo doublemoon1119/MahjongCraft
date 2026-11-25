@@ -150,7 +150,7 @@ class GameEventCapabilitiesTest {
         assertEquals(1, calls)
     }
 
-    /** 無效或失敗的標記不吞掉核心結算；取消不能偽裝成空標記。 */
+    /** 無效或失敗的標記不吞掉核心結算。取消不能偽裝成空標記。 */
     @Test
     fun `invalid markers are diagnosed and cancellation propagates`() {
         val failures = mutableListOf<Throwable>()

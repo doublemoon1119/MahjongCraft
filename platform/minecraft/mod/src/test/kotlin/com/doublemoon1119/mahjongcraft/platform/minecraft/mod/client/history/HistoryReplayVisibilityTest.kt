@@ -8,7 +8,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 /** 驗證回放場景的顯示設定與人物不透明度。 */
 class HistoryReplayVisibilityTest {
-    /** 預設人物自動、面板隱藏、桌上物件與胡牌特效顯示；改過後恢復預設值。 */
+    /** 預設人物自動、面板隱藏、桌上物件與胡牌特效顯示。改過後恢復預設值。 */
     @Test
     fun `defaults and reset`() {
         val visibility = HistoryReplayVisibility()
@@ -45,7 +45,7 @@ class HistoryReplayVisibilityTest {
         assertTrue(visibility.isDefault)
     }
 
-    /** 自動時只有鏡頭那一側的座位半透明；視角所在的那一家一律不畫。 */
+    /** 自動時只有鏡頭那一側的座位半透明。視角所在的那一家一律不畫。 */
     @Test
     fun `auto makes the camera side translucent`() {
         // 鏡頭角度是某一家的座位朝向轉半圈時，鏡頭在那一家後方。

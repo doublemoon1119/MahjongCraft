@@ -27,10 +27,10 @@ data class RiichiDiscardPile(
     override val entries: List<DiscardEntry> get() = _entries
 
     /**
-     * 從宣告立直的那張牌開始往後找第一張還沒被鳴走的牌——立直宣告牌本身沒被鳴走時就是它自己；
+     * 從宣告立直的那張牌開始往後找第一張還沒被鳴走的牌——立直宣告牌本身沒被鳴走時就是它自己。
      * 被鳴走後（`takeLast()` 不會真的移除該筆紀錄，只標記 [DiscardEntry.isTaken]，
      * [DiscardEntry.isRiichiDeclaration] 透過 [DiscardEntry.withTaken] 保留），標記自然往後移到
-     * 下一張還留著的牌，連續好幾張都被鳴走也一樣正確；還沒有下一張時回傳 `null`，不需要額外的
+     * 下一張還留著的牌，連續好幾張都被鳴走也一樣正確。還沒有下一張時回傳 `null`，不需要額外的
      * 位移狀態機，下一次捨牌時再次呼叫本方法就會自然補上。
      */
     override fun sidewaysMarkedTileId(): Uuid? {
@@ -58,7 +58,7 @@ data class RiichiDiscardPile(
     /**
      * 標記最後一項紀錄已被取走。
      *
-     * @return 標記後的新 [RiichiDiscardPile] 實例；若牌河為空則回傳原實例。
+     * @return 標記後的新 [RiichiDiscardPile] 實例。若牌河為空則回傳原實例。
      */
     override fun takeLast(): RiichiDiscardPile {
         val last = _entries.lastOrNull() ?: return this

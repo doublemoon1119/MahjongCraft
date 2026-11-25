@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoDefinition
 
 /**
- * 擴充登記一類保存格式時取得的登記介面；編碼、解碼與凍結由 MahjongCraft 進行。
+ * 擴充登記一類保存格式時取得的登記介面。編碼、解碼與凍結由 MahjongCraft 進行。
  *
  * @param Domain 這一類的領域型別。
  */

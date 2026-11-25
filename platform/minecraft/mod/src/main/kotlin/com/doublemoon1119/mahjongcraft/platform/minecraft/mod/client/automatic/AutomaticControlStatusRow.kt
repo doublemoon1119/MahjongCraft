@@ -18,13 +18,13 @@ internal data class AutomaticControlStatusRow(
 )
 
 /**
- * 合併本機永久偏好與本人本局權威狀態；任何生命週期不符都不顯示。
+ * 合併本機永久偏好與本人本局權威狀態。任何生命週期不符都不顯示。
  *
  * @param activeGameId 目前玩家所在對局 ID。
  * @param snapshot 該玩家的最新權威自動操作快照。
  * @param autoSortHandEnabled 本機保存的永久自動理牌偏好。
  * @param displays 控制項本地化顯示解析器。
- * @return 可顯示的自動操作列；對局不符或無本局控制項時為空。
+ * @return 可顯示的自動操作列。對局不符或無本局控制項時為空。
  */
 internal fun automaticControlStatusRows(
     activeGameId: String?,

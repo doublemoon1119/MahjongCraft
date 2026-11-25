@@ -42,10 +42,10 @@ class MinecraftServerConfigTomlCodec {
     }
 
     /**
-     * 將 [config] 格式化為不含註解的標準 TOML；此方法不另外驗證設定值。
+     * 將 [config] 格式化為不含註解的標準 TOML。此方法不另外驗證設定值。
      *
      * @param config 欲編碼的完整伺服器設定。
-     * @return 使用穩定欄位名稱的 TOML 文字；欄位值仍須符合解碼時的驗證規則。
+     * @return 使用穩定欄位名稱的 TOML 文字。欄位值仍須符合解碼時的驗證規則。
      */
     fun encode(config: MinecraftServerConfig): String = toml.encodeToString(
         value = MinecraftServerConfigTomlDto.fromConfig(config),
@@ -194,9 +194,9 @@ private data class MahjongTileTomlDto(
 /**
  * 歷史資料記錄與封存 TOML 欄位。
  *
- * @property enabled 是否啟用歷史資料記錄；停用會停止目前記錄，重新啟用只會記錄之後的新牌局。
+ * @property enabled 是否啟用歷史資料記錄。停用會停止目前記錄，重新啟用只會記錄之後的新牌局。
  * @property includeAiMatches 是否記錄含有任一 AI 座位的牌局。
- * @property includeInterruptedMatches 是否保留無法接續的中止或部分紀錄；正常關服後可接續的對局不算中止。
+ * @property includeInterruptedMatches 是否保留無法接續的中止或部分紀錄。正常關服後可接續的對局不算中止。
  * @property queryEnabled 是否允許查詢已保存的歷史資料。
  * @property allowAdminQuery 是否允許管理員查詢全部歷史資料。
  * @property queryMinimumIntervalMilliseconds 同一玩家歷史查詢之間的最短間隔毫秒數。

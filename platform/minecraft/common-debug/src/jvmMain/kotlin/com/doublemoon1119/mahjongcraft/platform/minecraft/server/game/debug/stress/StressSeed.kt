@@ -28,7 +28,7 @@ data class StressSeed(val base: Long) {
         /** 輸出長度與 [MatchSeed.SIZE_BYTES] 相同的雜湊演算法。 */
         const val DIGEST_ALGORITHM = "SHA-256"
 
-        /** 衍生標籤；改變它會讓同一個基準種子產生不同的對局。 */
+        /** 衍生標籤。改變它會讓同一個基準種子產生不同的對局。 */
         const val LABEL = "mahjongcraft:stress_seed"
     }
 }

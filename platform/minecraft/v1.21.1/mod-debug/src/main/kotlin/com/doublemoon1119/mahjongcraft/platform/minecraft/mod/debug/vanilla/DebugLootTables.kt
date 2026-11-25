@@ -10,7 +10,7 @@ import net.minecraft.world.level.storage.loot.LootTable
  *
  * @param server 目前伺服器。
  * @param block 要檢查的方塊。
- * @return 宣告了戰利品表但沒有載入時為 true；方塊本來就不掉落時為 false。
+ * @return 宣告了戰利品表但沒有載入時為 true。方塊本來就不掉落時為 false。
  */
 fun isBlockLootTableMissing(server: MinecraftServer, block: Block): Boolean {
     val table = block.lootTable

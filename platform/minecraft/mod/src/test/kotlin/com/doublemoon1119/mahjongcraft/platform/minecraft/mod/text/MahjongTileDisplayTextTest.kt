@@ -16,7 +16,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/** [Tile.toDisplayText] 的單元測試類別；純函式，不需要 [net.minecraft.server.level.ServerPlayer]。 */
+/** [Tile.toDisplayText] 的單元測試類別。純函式，不需要 [net.minecraft.server.level.ServerPlayer]。 */
 class MahjongTileDisplayTextTest {
 
     private val displayNameRegistry = TileDisplayNameRegistryImpl().apply { BundledMinecraftMahjongExtensions.all.forEach { it.registerTileDisplayNames(this) } }

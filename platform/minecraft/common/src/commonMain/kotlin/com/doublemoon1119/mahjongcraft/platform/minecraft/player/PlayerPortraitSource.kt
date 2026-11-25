@@ -2,13 +2,13 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.player
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
 
-/** Renderer 可安全解讀的玩家頭像來源；不向 extension 暴露 Minecraft render callback。 */
+/** Renderer 可安全解讀的玩家頭像來源。不向 extension 暴露 Minecraft render callback。 */
 sealed interface PlayerPortraitSource {
     /** 使用玩家 skin 的正面臉部，不包含帽子 layer。 */
     data object PlayerSkinFace : PlayerPortraitSource
 
     /**
-     * 使用已註冊牌面 asset；適合 AI 或規則角色的純牌面 fallback。
+     * 使用已註冊牌面 asset。適合 AI 或規則角色的純牌面 fallback。
      *
      * @property assetKey 牌面 asset 的穩定識別鍵。
      */

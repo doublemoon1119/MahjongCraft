@@ -35,7 +35,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
     /** 檢查三人日麻情境結果的驗證器。 */
     private val scenarioValidator = DebugGameScenarioValidator(scenarioModuleRegistry)
 
-    /** 所有三人情境在兩種赤寶牌設定下都通過權威驗證；呼叫者是莊家且輪到自己，三家的自風依序是東、南、西。 */
+    /** 所有三人情境在兩種赤寶牌設定下都通過權威驗證。呼叫者是莊家且輪到自己，三家的自風依序是東、南、西。 */
     @Test
     fun `every three player scenario is valid at the invoking dealer's turn`() {
         ThreePlayerRiichiDebugGameScenarios.all.forEach { scenario ->
@@ -78,7 +78,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         assertEquals(LIVE_TILES_AFTER_DEAL, state.tileWall.getAllTiles().size)
     }
 
-    /** 先拔剛摸到的北、再拔手上的北；第二次補到的四條可以自摸。 */
+    /** 先拔剛摸到的北、再拔手上的北。第二次補到的四條可以自摸。 */
     @Test
     fun `pull north scenario completes the hand with the second replacement draw`() {
         val state = build("mahjongcraft:riichi_three_player/debug/pull_north")
@@ -111,7 +111,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         assertEquals(NINE_CHARACTER, after.currentPlayer.hand.lastDrawn?.tile)
     }
 
-    /** 立直中拔的是剛摸到的北；手上那對北在之後摸到別的牌時不能拔，補到的四條可以自摸。 */
+    /** 立直中拔的是剛摸到的北。手上那對北在之後摸到別的牌時不能拔，補到的四條可以自摸。 */
     @Test
     fun `pull north in riichi only sets aside the drawn north`() {
         val state = build("mahjongcraft:riichi_three_player/debug/pull_north_in_riichi")
@@ -129,7 +129,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         assertFalse(RIICHI_PULL_NORTH_GAME_ACTION in afterPull.ownTurnActions(offset = 0, drawnTile = laterDraw))
     }
 
-    /** 下家摸到北後會先拔北；單騎聽北的呼叫者可以搶這張北榮和，上家不能。 */
+    /** 下家摸到北後會先拔北。單騎聽北的呼叫者可以搶這張北榮和，上家不能。 */
     @Test
     fun `rob north scenario lets the invoker ron the pulled north`() {
         val result = registry.get("mahjongcraft:riichi_three_player/debug/rob_north")!!.build(createThreePlayerRiichiScenarioContext())
@@ -143,7 +143,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         assertFalse(state.canRobPulledNorth(offset = 2, north = north))
     }
 
-    /** 剛摸到北時可以拔北，也可以暗槓一筒、九筒、一條；王牌前端依序是九條、北、九條、九條，湊得出第四槓。 */
+    /** 剛摸到北時可以拔北，也可以暗槓一筒、九筒、一條。王牌前端依序是九條、北、九條、九條，湊得出第四槓。 */
     @Test
     fun `kan and pull north scenario offers every declaration and arranges the replacement draws`() {
         val state = build("mahjongcraft:riichi_three_player/debug/kan_and_pull_north")
@@ -162,7 +162,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         assertEquals(1, state.currentPlayer.hand.standingTiles.count { it.tile == NINE_BAMBOO })
     }
 
-    /** 公開牌面情境中，排定牌種的每一張都公開並使用 debug 樣式，且分布在副露、牌河、王牌與手牌；其他牌不受影響。 */
+    /** 公開牌面情境中，排定牌種的每一張都公開並使用 debug 樣式，且分布在副露、牌河、王牌與手牌。其他牌不受影響。 */
     @Test
     fun `public faces scenario marks the chosen tiles in every region`() {
         val state = build("mahjongcraft:riichi_three_player/debug/public_faces")
@@ -186,7 +186,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
     }
 
     /**
-     * 白從上家、發從下家碰出；連拔三次北依序補到七筒、八筒、四筒，第三次補牌可以自摸。活牌只剩排定的四張，
+     * 白從上家、發從下家碰出。連拔三次北依序補到七筒、八筒、四筒，第三次補牌可以自摸。活牌只剩排定的四張，
      * 其餘的牌依序分進三家牌河。
      */
     @Test
@@ -220,7 +220,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         assertTrue(GameAction.Tsumo in afterThirdPull.currentOwnTurnActions())
     }
 
-    /** 自動拔北情境改用開發用規則，設定沿用這一桌；之後在同一桌載入其他三人情境時恢復一般三人日麻。 */
+    /** 自動拔北情境改用開發用規則，設定沿用這一桌。之後在同一桌載入其他三人情境時恢復一般三人日麻。 */
     @Test
     fun `auto north scenarios switch the rule and other scenarios switch back`() {
         val config = ThreePlayerRiichiRuleConfig(redDoraCount = 0)
@@ -233,7 +233,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         assertEquals(config, plain.game.tableState.config)
     }
 
-    /** 連續自動拔北：兩家對手先摸東，呼叫者摸到北後，王牌前端依序補到北、北、四條；呼叫者聽一、四條。 */
+    /** 連續自動拔北：兩家對手先摸東，呼叫者摸到北後，王牌前端依序補到北、北、四條。呼叫者聽一、四條。 */
     @Test
     fun `auto north chain scenario arranges three consecutive pulls`() {
         val state = build("mahjongcraft:riichi_three_player/debug/auto_north_riichi_chain")
@@ -243,7 +243,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         assertTrue(state.canRon(offset = 0, discarderOffset = 1, tile = FOUR_BAMBOO))
     }
 
-    /** 自動拔北被搶：呼叫者碰出中與白，下家照常摸切，摸到的北由規則自動拔出；單騎聽北的呼叫者可以搶，上家不能。 */
+    /** 自動拔北被搶：呼叫者碰出中與白，下家照常摸切，摸到的北由規則自動拔出。單騎聽北的呼叫者可以搶，上家不能。 */
     @Test
     fun `auto north rob scenario lets the invoker ron the pulled north`() {
         val result = registry.get("mahjongcraft:riichi_three_player/debug/auto_north_riichi_rob")!!.build(createThreePlayerRiichiScenarioContext())
@@ -268,7 +268,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         assertEquals(listOf(Tile.Honor.East, Tile.Honor.East, Tile.Honor.North), state.tileWall.getAllTiles().map { it.tile })
     }
 
-    /** 槓牌收付：現在可以暗槓一筒，九筒從上家碰出、嶺上補到九筒可以加槓；下家會摸切一條，王牌前端依序是九筒、南、東。 */
+    /** 槓牌收付：現在可以暗槓一筒，九筒從上家碰出、嶺上補到九筒可以加槓。下家會摸切一條，王牌前端依序是九筒、南、東。 */
     @Test
     fun `auto north kan payments scenario arranges every kan`() {
         val state = build("mahjongcraft:riichi_three_player/debug/auto_north_riichi_kan_payments")
@@ -313,7 +313,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
     private fun TableState.module(): MahjongRuleModule<*> = scenarioModuleRegistry.getModule(config)
 
     /**
-     * 目前玩家拔北後，直接設定其補牌以模擬結果；不執行正式補牌流程。
+     * 目前玩家拔北後，直接設定其補牌以模擬結果。不執行正式補牌流程。
      *
      * @param replacement 模擬補到的牌。
      * @return 更新拔北狀態與目前玩家摸牌位後的桌況。

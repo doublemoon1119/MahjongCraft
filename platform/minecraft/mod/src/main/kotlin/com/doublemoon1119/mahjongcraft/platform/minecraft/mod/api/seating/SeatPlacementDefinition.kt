@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftReso
  *
  * @property id 完整 namespace:path 識別碼。
  * @property provider 物品辨識與放置實作。
- * @property priority 較大的值先選，同值依完整識別碼排序；一次互動只採用一項能力。
+ * @property priority 較大的值先選，同值依完整識別碼排序。一次互動只採用一項能力。
  */
 class SeatPlacementDefinition(
     val id: String,

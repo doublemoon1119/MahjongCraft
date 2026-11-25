@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 /**
  * 重播時一張牌目前的呈現結果，取自保存的呈現變化。
  *
- * @property appearanceId 外觀樣式；沒有時為 null。
+ * @property appearanceId 外觀樣式。沒有時為 null。
  * @property views 可公開的牌面特徵。
  * @property pose 共同姿態。
  */

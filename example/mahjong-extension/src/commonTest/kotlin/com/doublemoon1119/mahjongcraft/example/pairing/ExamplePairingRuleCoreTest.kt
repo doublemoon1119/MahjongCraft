@@ -96,7 +96,7 @@ class ExamplePairingRuleCoreTest {
         assertTrue(descriptions.all { it.isPublic && it.pose == TilePose.FACE_UP })
     }
 
-    /** 公開牌面關閉時沒有標記；開啟時每種點數剛好三張帶標記，第四張與倒置一萬保持普通。 */
+    /** 公開牌面關閉時沒有標記。開啟時每種點數剛好三張帶標記，第四張與倒置一萬保持普通。 */
     @Test
     fun `public faces mark three of four copies only when enabled`() {
         assertTrue(ExamplePairingWallFactory(2, setOf(1, 2)).create(Random(0)).getAllTiles().none { it.components[ExamplePairingComponents.PUBLIC_FACE] != null })
@@ -110,7 +110,7 @@ class ExamplePairingRuleCoreTest {
         assertEquals(8, tiles.size)
     }
 
-    /** 帶公開牌面標記的牌在牌山朝下時，其他玩家與旁觀者也讀得到牌面與公開牌面樣式；普通牌讀不到。 */
+    /** 帶公開牌面標記的牌在牌山朝下時，其他玩家與旁觀者也讀得到牌面與公開牌面樣式。普通牌讀不到。 */
     @Test
     fun `public face tiles are readable by everyone while face down`() {
         val marked = IdentifiedTile(Uuid.random(), Tile.Numeric(Tile.Suit.Character, 2), ComponentSet.EMPTY.with(ExamplePairingComponents.PUBLIC_FACE, Unit))
@@ -290,7 +290,7 @@ class ExamplePairingRuleCoreTest {
         assertTrue((2..20).any { seed -> bonusTiles(seed) != bonusTiles(seed = 1) }, "Different round randomness must be able to choose other bonus tiles.")
     }
 
-    /** 每局選出牌種數量比牌山少一種，自摸時每種加分牌只計一次；加分牌資料不交付觀察者。 */
+    /** 每局選出牌種數量比牌山少一種，自摸時每種加分牌只計一次。加分牌資料不交付觀察者。 */
     @Test
     fun `round bonus tiles are distinct and counted once per kind`() {
         val module = ExamplePairingRuleModule(

@@ -104,10 +104,14 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import kotlin.uuid.Uuid
 
 /**
- * 隨 MahjongCraft 發布的日麻 extension（四人與三人）；日麻在平台無關層的所有登記都寫在這裡，透過與第三方相同的 [MahjongExtension] 回呼登記。
+ * 隨 MahjongCraft 發布的日麻 extension（四人與三人）。
  *
- * 包含規則模組、赤寶牌等牌張特性、規則設定與規則狀態的網路及存檔格式、牌譜牌河格式、立直等擴充動作的格式、
- * AI 與命令處理、對手模型、途中流局與流局滿貫判定、胡牌詳情，以及役滿演出提示。
+ * 日麻在平台無關層的所有登記都寫在這裡，透過與第三方相同的 [MahjongExtension] 回呼登記，包含：
+ *
+ * - 規則模組，以及赤寶牌等牌張特性。
+ * - 規則設定與規則狀態的網路及存檔格式、牌譜牌河格式、立直等擴充動作的格式。
+ * - AI 與命令處理、對手模型。
+ * - 途中流局與流局滿貫判定、胡牌詳情，以及役滿演出提示。
  */
 object BundledRiichiExtension : MahjongExtension {
     override val id: String = MahjongCraftMetadata.id("riichi")
@@ -584,7 +588,12 @@ object BundledRiichiExtension : MahjongExtension {
         registry.register(RiichiNagashiManganOutcomeResolver(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER))
     }
 
-    /** 主動觸發的途中流局：四風連打、四家立直、四槓散了；三人日麻只有四槓散了。 */
+    /**
+     * 主動觸發的途中流局。
+     *
+     * - 四人日麻：四風連打、四家立直、四槓散了。
+     * - 三人日麻：只有四槓散了。
+     */
     override fun registerPostActionExhaustiveDrawResolvers(registry: PostActionExhaustiveDrawResolverRegistrar) {
         registry.register(RiichiSuufonRendaResolver())
         registry.register(RiichiSuuchaRiichiResolver())

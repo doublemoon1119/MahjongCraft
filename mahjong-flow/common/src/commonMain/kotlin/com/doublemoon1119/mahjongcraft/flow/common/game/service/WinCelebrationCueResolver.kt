@@ -3,13 +3,13 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.service
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationWinner
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
 
-/** 將指定規則的手牌價值結果解析成值得額外展示的理由 ID；順序與用途見 [WinCelebrationWinner.cueIds]。 */
+/** 將指定規則的手牌價值結果解析成值得額外展示的理由 ID。順序與用途見 [WinCelebrationWinner.cueIds]。 */
 fun interface WinCelebrationCueResolver {
     /**
      * 不需要額外展示時回傳空清單。
      *
      * @param result 待解析的手牌價值結果。
-     * @return 值得額外展示的理由 ID；沒有理由時為空清單。
+     * @return 值得額外展示的理由 ID。沒有理由時為空清單。
      */
     fun resolve(result: HandValueResult): List<String>
 }

@@ -15,7 +15,7 @@ class ClientHistoryChatEntryStore(private val transport: HistoryQueryTransport) 
     /**
      * 建立不包含玩家名稱或伺服器任意命令的聊天點擊命令。
      *
-     * @param matchId 選用的對局識別；無效識別只開啟一般列表。
+     * @param matchId 選用的對局識別。無效識別只開啟一般列表。
      * @return 使用本地隨機入口識別的 client 命令。
      */
     fun createCommand(matchId: String?): String {
@@ -27,7 +27,7 @@ class ClientHistoryChatEntryStore(private val transport: HistoryQueryTransport) 
     }
 
     /**
-     * 只接受目前連線建立的入口；重複點擊交由開啟控制器合併。
+     * 只接受目前連線建立的入口。重複點擊交由開啟控制器合併。
      *
      * @param token 聊天命令的本地入口識別。
      * @param open 接受有效入口的畫面開啟 callback。

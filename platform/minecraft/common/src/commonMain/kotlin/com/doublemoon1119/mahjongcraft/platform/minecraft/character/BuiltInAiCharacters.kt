@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharac
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterPreview
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 
-/** 不依賴外部服務的內建角色描述；原生能力由對應平台實作。 */
+/** 不依賴外部服務的內建角色描述。原生能力由對應平台實作。 */
 object BuiltInAiCharacters {
     /** 角色 FACE 的低優先序內建來源。 */
     const val PORTRAIT_SOURCE_ID: String = "mahjongcraft:character_portrait"
@@ -25,7 +25,7 @@ object BuiltInAiCharacters {
     /** 角色名稱的翻譯鍵。 */
     const val TILE_MASCOT_NAME_KEY: String = "mahjongcraft.character.tile_mascot"
 
-    /** 內建角色的預設描述；新場次的具體造型由開局快照固定，沒有場次時使用未知牌面。 */
+    /** 內建角色的預設描述。新場次的具體造型由開局快照固定，沒有場次時使用未知牌面。 */
     val TILE_MASCOT: AiCharacterDefinition = AiCharacterDefinition(
         id = TILE_MASCOT_ID,
         nameKey = TILE_MASCOT_NAME_KEY,

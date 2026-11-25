@@ -5,7 +5,7 @@ import kotlin.uuid.Uuid
 /**
  * 目前仍位於牌牆中的每張牌之權威抽象實體位置。
  *
- * @property placements 牌張 Uuid 到最終位置的映射；兩張牌不得占用完全相同的位置。
+ * @property placements 牌張 Uuid 到最終位置的映射。兩張牌不得占用完全相同的位置。
  */
 data class TileWallPhysicalLayout(val placements: Map<Uuid, TileWallPlacement>) {
     init {

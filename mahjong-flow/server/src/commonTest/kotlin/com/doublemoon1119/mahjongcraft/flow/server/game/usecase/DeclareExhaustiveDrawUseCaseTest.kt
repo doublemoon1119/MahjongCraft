@@ -167,7 +167,7 @@ class DeclareExhaustiveDrawUseCaseTest {
     }
 
     /**
-     * 驗證一般流局 use case 不再處理流局滿貫；該結果必須由 post-reaction outcome resolver 先攔截。
+     * 驗證一般流局 use case 不再處理流局滿貫。該結果必須由 post-reaction outcome resolver 先攔截。
      */
     @Test
     fun `test declare exhaustive draw does not settle nagashi mangan`() = runTest {

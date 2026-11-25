@@ -51,9 +51,11 @@ internal data class CatalogueRect(
 /**
  * 規則一覽畫面的固定區域與可捲動內容區域。
  *
- * 內容寬度與設定類畫面相同，最多 [FormScreenLayout.MAX_CONTENT_WIDTH] 並水平置中。標題下方是規則選擇器、搜尋與
- * 清除，寬度不足時規則選擇器獨佔一列；其下是分類頁籤；底部是等寬按鈕列，返回或關閉固定在最右一格。從房間或歷史
- * 開啟時，底部左側另有「說明依據」標籤與設定來源選擇器。
+ * - 內容寬度與設定類畫面相同，最多 [FormScreenLayout.MAX_CONTENT_WIDTH] 並水平置中。
+ * - 標題下方是規則選擇器、搜尋與清除。寬度不足時規則選擇器獨佔一列。
+ * - 其下是分類頁籤。
+ * - 底部是等寬按鈕列，返回或關閉固定在最右一格。
+ * - 從房間或歷史開啟時，底部左側另有「說明依據」標籤與設定來源選擇器。
  *
  * @property width 畫面寬度。
  * @property height 畫面高度。
@@ -64,8 +66,8 @@ internal data class CatalogueRect(
  * @property search 搜尋輸入框外框範圍。
  * @property clear 清除搜尋按鈕範圍。
  * @property tabsTop 分類頁籤列上界。
- * @property sourceLabelY 設定來源標籤文字的 Y 座標；隱藏標籤時為 null。
- * @property sourceSelector 設定來源選擇器範圍；不顯示時為 null。
+ * @property sourceLabelY 設定來源標籤文字的 Y 座標。隱藏標籤時為 null。
+ * @property sourceSelector 設定來源選擇器範圍。不顯示時為 null。
  * @property close 關閉或返回按鈕範圍。
  * @property contentBounds 可捲動內容區域。
  * @property scrollbarBounds 內容捲軸區域。
@@ -166,19 +168,19 @@ internal data class RuleCatalogueScreenLayout(
         /** 內容區與捲軸保留範圍之間的間距。 */
         const val SCROLLBAR_GAP: Int = 1
 
-        /** 捲軸保留的寬度；捲軸畫在其中央，命中範圍比繪製範圍寬。 */
+        /** 捲軸保留的寬度。捲軸畫在其中央，命中範圍比繪製範圍寬。 */
         const val SCROLLBAR_AREA_WIDTH: Int = 9
 
-        /** 底部按鈕列的按鈕數；返回或關閉固定在最後一格。 */
+        /** 底部按鈕列的按鈕數。返回或關閉固定在最後一格。 */
         const val FOOTER_SLOTS: Int = 4
 
         /**
-         * 建立畫面幾何；底部按鈕一律留在畫面內，空間不足時先縮小內容區。
+         * 建立畫面幾何。底部按鈕一律留在畫面內，空間不足時先縮小內容區。
          *
          * @param width 畫面寬度。
          * @param height 畫面高度。
          * @param clearWidth 清除搜尋按鈕依文字算出的寬度。
-         * @param sourceLabelWidth 設定來源標籤的文字寬度；不顯示設定來源時為 null。
+         * @param sourceLabelWidth 設定來源標籤的文字寬度。不顯示設定來源時為 null。
          * @return 計算後的畫面幾何。
          */
         fun measure(
@@ -292,7 +294,7 @@ internal data class RuleCatalogueTileLayoutResult(
 /**
  * 將範例牌組依序由左往右排列：放不下的牌組整組移到下一列，只有單組本身超過可用寬度時才在組內換列。
  *
- * 相鄰且標題相同的牌組共用一個標題，組與組之間仍保留間距；標題不同的牌組各有標題。
+ * 相鄰且標題相同的牌組共用一個標題，組與組之間仍保留間距。標題不同的牌組各有標題。
  */
 internal object RuleCatalogueTileLayout {
     /** 牌面寬度。 */
@@ -349,7 +351,7 @@ internal object RuleCatalogueTileLayout {
     }
 
     /**
-     * 逐列累積牌面；一列結束時才決定該列是否需要保留標題高度。
+     * 逐列累積牌面。一列結束時才決定該列是否需要保留標題高度。
      *
      * @property maxWidth 牌例區可用寬度。
      */

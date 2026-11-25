@@ -18,7 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigVariantDefinition
 
-/** 日麻設定畫面的 schema：規則與分數欄位可編輯；共用流程欄位由 registry 登記時附加。 */
+/** 日麻設定畫面的 schema：規則與分數欄位可編輯。共用流程欄位由 registry 登記時附加。 */
 internal fun riichiGameConfigPresentation(): GameConfigPresentationDefinition = GameConfigPresentationDefinition(
     ruleModuleId = BuiltInRuleModuleIds.RIICHI,
     descriptionTranslationKey = RiichiGameConfigTranslationKeys.DESCRIPTION,
@@ -165,7 +165,7 @@ internal fun riichiGameConfigPresentation(): GameConfigPresentationDefinition = 
 )
 
 /**
- * 四人與三人日麻共用的透明牌欄位；只由玩法決定，不顯示在設定頁。
+ * 四人與三人日麻共用的透明牌欄位。只由玩法決定，不顯示在設定頁。
  *
  * @param read 讀取規則設定中的透明牌旗標。
  * @param update 更新規則設定中的透明牌旗標。
@@ -181,7 +181,7 @@ internal fun riichiTransparentTilesField(read: (GameConfig) -> Boolean, update: 
 )
 
 /**
- * 四人與三人日麻共用的砌牌牆欄位；只由玩法決定，不顯示在設定頁。
+ * 四人與三人日麻共用的砌牌牆欄位。只由玩法決定，不顯示在設定頁。
  *
  * @param read 讀取規則設定中的砌牌牆旗標。
  * @param update 更新規則設定中的砌牌牆旗標。

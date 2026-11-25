@@ -16,7 +16,7 @@ import kotlin.test.assertTrue
 
 /** 驗證牌譜回放的攤牌判斷與共用的倒牌步驟。 */
 class HistoryReplayHandRevealsTest {
-    /** 記下手牌的胡牌從那一步之後倒牌；不記手牌的胡牌不倒；胡牌後繼續打時前一位贏家維持倒下。 */
+    /** 記下手牌的胡牌從那一步之後倒牌。不記手牌的胡牌不倒。胡牌後繼續打時前一位贏家維持倒下。 */
     @Test
     fun `winners reveal from the step after their win`() {
         val transactions = listOf(
@@ -30,7 +30,7 @@ class HistoryReplayHandRevealsTest {
         assertEquals(mapOf(1 to 9, 3 to null), HistoryReplayHandReveals.revealedWinners(transactions, step = 3))
     }
 
-    /** 自摸時自摸那張先倒，其餘的牌等它倒完再停一下才倒；榮和時理好後停一下全部一起倒。 */
+    /** 自摸時自摸那張先倒，其餘的牌等它倒完再停一下才倒。榮和時理好後停一下全部一起倒。 */
     @Test
     fun `win timings follow the live game`() {
         val tsumo = HandRevealSteps.winTimings(isTsumo = true)
@@ -45,7 +45,7 @@ class HistoryReplayHandRevealsTest {
         assertEquals(ron.handLaydown + laydown, ron.end)
     }
 
-    /** 已經是目標姿態的牌沒有動作；整組翻牌聲只放在真的要轉的牌中間那張。 */
+    /** 已經是目標姿態的牌沒有動作。整組翻牌聲只放在真的要轉的牌中間那張。 */
     @Test
     fun `turning steps skip tiles already in place`() {
         assertTrue(HandRevealSteps.laydown(TilePose.FACE_UP, startTick = 10L, playSound = true).isEmpty())
@@ -92,7 +92,7 @@ class HistoryReplayHandRevealsTest {
      * 建立一位贏家。
      *
      * @param seat 初始座位。
-     * @param standing 記下的立牌；空的代表不攤牌。
+     * @param standing 記下的立牌。空的代表不攤牌。
      * @param winningTile 和牌張。
      * @return 贏家詳情。
      */

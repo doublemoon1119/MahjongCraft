@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.Room
 import net.minecraft.world.entity.Entity
 import kotlin.uuid.Uuid
 
-/** 登記時只建立能力描述；原生類型與世界都在回呼被使用時才查詢。 */
+/** 登記時只建立能力描述。原生類型與世界都在回呼被使用時才查詢。 */
 internal object ExampleActorProviders {
     /** 只辨識範例人偶，房主仍須取得放置者授權。 */
     val PARTICIPANT: RoomParticipantProvider = object : RoomParticipantProvider {
@@ -32,7 +32,7 @@ internal object ExampleActorProviders {
         ExampleActorHandle(actor, AiCharacterOwnership.BORROWED)
     }
 
-    /** 自有代理不保存，由框架的生成及清理流程管理；不是一般房間的外觀選單。 */
+    /** 自有代理不保存，由框架的生成及清理流程管理。不是一般房間的外觀選單。 */
     val OWNED: AiCharacterProvider = AiCharacterProvider { context ->
         if (context.participant != null) return@AiCharacterProvider null
         ExampleActors.proxyType.create(context.world)?.let { ExampleActorHandle(it, AiCharacterOwnership.OWNED) }

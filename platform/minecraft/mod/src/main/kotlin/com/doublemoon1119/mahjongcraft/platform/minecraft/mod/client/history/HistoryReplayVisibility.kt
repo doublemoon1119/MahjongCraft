@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history
 /**
  * 牌譜回放場景中各項顯示的設定，在同一次牌譜瀏覽中沿用，換局、換一場也不重設。
  *
- * 人物與玩家資訊依玩家的初始座位記錄；沒有改過的項目使用預設值：人物自動、本局資訊與玩家資訊隱藏、桌上物件與胡牌特效
+ * 人物與玩家資訊依玩家的初始座位記錄。沒有改過的項目使用預設值：人物自動、本局資訊與玩家資訊隱藏、桌上物件與胡牌特效
  * 顯示。
  */
 internal class HistoryReplayVisibility {

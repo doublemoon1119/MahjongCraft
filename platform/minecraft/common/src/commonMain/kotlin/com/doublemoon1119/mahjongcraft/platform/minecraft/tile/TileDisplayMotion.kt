@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
 
 /**
- * 已同步的單段牌張動畫資料；只描述呈現，不代表任何遊戲操作權。
+ * 已同步的單段牌張動畫資料。只描述呈現，不代表任何遊戲操作權。
  *
  * @property startedAt 動畫開始的世界時間。
  * @property spec 動畫時長、弧線與翻轉參數。

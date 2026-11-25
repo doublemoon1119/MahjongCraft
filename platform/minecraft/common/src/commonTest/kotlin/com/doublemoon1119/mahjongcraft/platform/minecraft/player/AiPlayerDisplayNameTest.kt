@@ -57,7 +57,7 @@ class AiPlayerDisplayNameTest {
         assertEquals("AI 1", aiPlayerDisplayName(bot, listOf(actor, bot), appearances))
     }
 
-    /** 命名的內建角色也不占序號；沒有描述時維持名冊編號，不猜測身分。 */
+    /** 命名的內建角色也不占序號。沒有描述時維持名冊編號，不猜測身分。 */
     @Test
     fun `custom names override default appearances and absent metadata preserves numbering`() {
         val actor = Uuid.random()

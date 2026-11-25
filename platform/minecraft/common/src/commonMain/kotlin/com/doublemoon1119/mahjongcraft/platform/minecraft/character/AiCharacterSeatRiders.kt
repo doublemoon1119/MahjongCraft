@@ -9,7 +9,7 @@ object AiCharacterSeatRiders {
      *
      * @param R 平台乘坐者型別。
      * @param roster 完整席位名冊。
-     * @param includePlayers 開局及明確換位可移動真人；一般恢復須為 false。
+     * @param includePlayers 開局及明確換位可移動真人。一般恢復須為 false。
      * @param player 只查詢在線真人。
      * @param character 只查詢本場有效的 AI 角色。
      * @return 與原名冊等長的乘坐者，無法解析的席位為 null。

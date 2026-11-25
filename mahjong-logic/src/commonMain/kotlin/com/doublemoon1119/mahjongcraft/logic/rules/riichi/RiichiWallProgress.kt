@@ -23,15 +23,15 @@ data class RiichiWallProgress(
     /**
      * 計算並取得寶牌、裏寶牌列表。
      *
-     * 資料來源必須是 [TableState.reservedWallTiles]，不能用 [TableState.tileWall]——後者只保存仍可正常摸取
-     * 的活牌。每次槓後補牌會移除死牌區最前方的嶺上牌，再將活牌尾端補到死牌區末端，因此原本的
-     * 寶牌與裏寶牌會在列表中向前移動，指示牌索引必須扣除已完成的補牌次數。
-     *
-     * [TableState.reservedWallTiles] 的排列順序（[WallRingLayoutSupport] 建牌時決定）是「離開門缺口最近的
-     * 一墩排最前面，往深處排到最後」，每墩固定 [上層, 下層]；最前面的嶺上牌（四人日麻 4 張、三人麻將 8 張，
-     * 見 [RiichiFamilyRuleConfig.rinshanTileCount]）是王牌區前段的嶺上摸牌語意槽位，指示牌從其後開始。
-     * 指示牌實體位置依已完成補牌次數（槓與拔北合計）往前位移，而公開組數僅依已正式公開的槓寶牌數量
-     * 增加；延後公開期間兩者不必相等。
+     * - 資料來源必須是 [TableState.reservedWallTiles]。[TableState.tileWall] 只保存仍可正常摸取的活牌，不能使用。
+     * - 每次槓後補牌會移除死牌區最前方的嶺上牌，再將活牌尾端補到死牌區末端。
+     *   因此寶牌與裏寶牌會在列表中向前移動，指示牌索引必須扣除已完成的補牌次數。
+     * - [TableState.reservedWallTiles] 由 [WallRingLayoutSupport] 建牌時排列：離開門缺口最近的一墩在最前面，
+     *   往深處排到最後，每墩固定為 [上層, 下層]。
+     * - 最前面的嶺上牌是王牌區前段的嶺上摸牌槽位，指示牌從其後開始。張數為四人日麻 4 張、三人麻將 8 張，
+     *   見 [RiichiFamilyRuleConfig.rinshanTileCount]。
+     * - 指示牌實體位置依已完成補牌次數（槓與拔北合計）往前位移，公開組數則只依已正式公開的槓寶牌數量增加。
+     *   延後公開期間兩者不必相等。
      *
      * @param state 目前的權威桌況與死牌排列。
      * @return Pair<寶牌列表, 裏寶牌列表>
@@ -71,7 +71,7 @@ data class RiichiWallProgress(
     }
 
     companion object {
-        /** 桌況規則不是日麻配置時，王牌最前方嶺上牌的張數；比照四人日麻。 */
+        /** 桌況規則不是日麻配置時，王牌最前方嶺上牌的張數。比照四人日麻。 */
         internal const val DEFAULT_RINSHAN_TILE_COUNT = 4
     }
 }

@@ -27,7 +27,7 @@ data class ExcludedParticipantIdentity(val id: Uuid) {
          *
          * @param room 房間的觀察者快照。
          * @param member 被排除者的原成員編號。
-         * @return 可顯示的身分；沒有權限或不在名單時為 null。
+         * @return 可顯示的身分。沒有權限或不在名單時為 null。
          */
         fun resolve(room: RoomSnapshot, member: Uuid): ExcludedParticipantIdentity? {
             if (!room.isHost || member !in room.excludedPlayerIds) return null

@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
 /**
- * 一次選擇步驟提交前後的呈現；只在權威交易成功後交付。
+ * 一次選擇步驟提交前後的呈現。只在權威交易成功後交付。
  *
  * @property previous 規則選擇結果套用前的桌況。
  * @property current 此次交易提交的最終桌況。
@@ -17,7 +17,7 @@ internal data class RuleDecisionPresentationUpdate(
     val steps: List<TableStep> = emptyList(),
 ) {
     /**
-     * 依序呈現中間步驟，最後呈現 [current]（最後一步已是 [current] 時不重複）；桌況沒有改變時不呈現。
+     * 依序呈現中間步驟，最後呈現 [current]（最後一步已是 [current] 時不重複）。桌況沒有改變時不呈現。
      *
      * @param publisher 平台呈現出口。
      */

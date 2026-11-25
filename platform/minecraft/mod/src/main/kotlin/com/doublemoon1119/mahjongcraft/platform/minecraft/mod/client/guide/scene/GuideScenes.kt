@@ -117,7 +117,7 @@ internal object GuideScenes {
 
     /**
      * 認識牌桌的場景：與準備桌椅相同的斜上方視角，可以拖曳轉動。桌上擺著牌牆、四家手牌、牌河與一組副露，
-     * 桌子中央上方浮著局況，四個座位後上方浮著玩家資訊；各區塊都標示了滑鼠指著時要說明的名稱。
+     * 桌子中央上方浮著局況，四個座位後上方浮著玩家資訊。各區塊都標示了滑鼠指著時要說明的名稱。
      *
      * 牌的位置沿用遊戲的牌桌布局與預設的標準桌面配置，只擺各規則共通的區塊。
      *
@@ -251,7 +251,7 @@ internal object GuideScenes {
     }
 
     /**
-     * 四面各 [WALL_STACKS_PER_SIDE] 墩、上下兩層的牌牆，牌面朝下；第一面開頭幾墩已被摸走。
+     * 四面各 [WALL_STACKS_PER_SIDE] 墩、上下兩層的牌牆，牌面朝下。第一面開頭幾墩已被摸走。
      *
      * @return 牌牆的牌。
      */
@@ -334,7 +334,7 @@ internal object GuideScenes {
     )
 
     /**
-     * 鏡頭這一側（南側）的座位 index；場景以這個座位當作「你的座位」。
+     * 鏡頭這一側（南側）的座位 index。場景以這個座位當作「你的座位」。
      *
      * @param seats 依座位 index 排列的標準座位。
      * @return 南側座位的 index。
@@ -385,7 +385,7 @@ internal object GuideScenes {
     /** 地板從桌子中心往外延伸的格數，涵蓋四邊的凳子。 */
     private const val FLOOR_RADIUS: Int = 2
 
-    /** 桌子中心的水平座標；controller 位於原點方塊。 */
+    /** 桌子中心的水平座標。controller 位於原點方塊。 */
     private const val TABLE_CENTER: Double = 0.5
 
     /** 準備桌椅場景的水平旋轉，讓鏡頭這一側的凳子落在畫面下方。 */

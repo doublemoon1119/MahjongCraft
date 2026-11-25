@@ -17,7 +17,7 @@ enum class TileActionPopupKind {
          * 從同步名稱解析種類，未知值安全回退為 [NONE]。
          *
          * @param name 同步或持久化的種類名稱。
-         * @return 對應的提示種類；未知名稱回傳 [NONE]。
+         * @return 對應的提示種類。未知名稱回傳 [NONE]。
          */
         fun fromNameOrDefault(name: String): TileActionPopupKind = entries.firstOrNull { it.name == name } ?: NONE
     }

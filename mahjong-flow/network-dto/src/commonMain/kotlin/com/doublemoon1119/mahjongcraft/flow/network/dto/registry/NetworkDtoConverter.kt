@@ -18,7 +18,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
  * 所有可擴充網路 DTO 的唯讀轉換。
  *
  * MahjongCraft 呼叫 [DtoDefinition] 的轉換函式時傳入，讓擴充的轉換函式能轉換巢狀的可擴充型別，
- * 例如規則設定中的計分設定；只能轉換，不能登記或凍結。
+ * 例如規則設定中的計分設定。只能轉換，不能登記或凍結。
  */
 interface NetworkDtoConverter {
     /** 組件網路值。 */

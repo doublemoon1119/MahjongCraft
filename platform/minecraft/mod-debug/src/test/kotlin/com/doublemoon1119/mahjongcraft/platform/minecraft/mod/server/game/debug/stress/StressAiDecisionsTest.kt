@@ -54,7 +54,7 @@ class StressAiDecisionsTest {
         assertEquals(emptyList(), previous.outcomes)
     }
 
-    /** 在上一輪開始、下一輪開始後才有結果的決策，不算進任何一輪；下一輪自己的決策照常算進下一輪。 */
+    /** 在上一輪開始、下一輪開始後才有結果的決策，不算進任何一輪。下一輪自己的決策照常算進下一輪。 */
     @Test
     fun `a decision started by the previous run is not counted by the next run`() = runTest {
         val decisions = decisions(this, capacity = 4)

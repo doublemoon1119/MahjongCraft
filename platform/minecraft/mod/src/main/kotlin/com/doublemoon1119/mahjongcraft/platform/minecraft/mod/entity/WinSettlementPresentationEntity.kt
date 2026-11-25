@@ -25,7 +25,7 @@ class WinSettlementPresentationEntity(
 ) : SimpleAnimatedMahjongEntity(type, world),
     TableOwnedPresentationEntity,
     HiddenDebugHitboxEntity {
-    /** 所屬麻將桌；資料未設定或損壞時為 `null`。 */
+    /** 所屬麻將桌。資料未設定或損壞時為 `null`。 */
     override val managedTableId: Uuid? get() = entityData[TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
 
     /** 舞台開始的絕對遊戲時間。 */
@@ -46,7 +46,7 @@ class WinSettlementPresentationEntity(
     /** 這次和牌動作在本規則的名稱 translation key。 */
     val winActionLabelKey: String get() = entityData[WIN_ACTION_LABEL_KEY]
 
-    /** 贏家詳情快照；精簡中途胡牌演出可為空。 */
+    /** 贏家詳情快照。精簡中途胡牌演出可為空。 */
     val winners: List<WinSettlementWinnerSnapshot> get() = decodeWinners(entityData[WINNERS])
 
     /** 結算前後的玩家分數與排行快照。 */
@@ -55,7 +55,7 @@ class WinSettlementPresentationEntity(
     /** 模板指定的贏家詳情揭示節奏。 */
     val revealTiming: WinSettlementRevealTimingSnapshot get() = decodeRevealTiming(entityData[REVEAL_TIMING])
 
-    /** 覆蓋預設贏家詳情音效的自訂 cue；空集合時使用預設 cue。 */
+    /** 覆蓋預設贏家詳情音效的自訂 cue。空集合時使用預設 cue。 */
     val customSoundCues: List<WinSettlementSoundCueSnapshot> get() = decodeSoundCues(entityData[CUSTOM_SOUND_CUES])
 
     init {
@@ -76,10 +76,10 @@ class WinSettlementPresentationEntity(
      * @param templateKey 結算呈現模板 key。
      * @param isTsumo 本次是否為自摸。
      * @param winActionLabelKey 這次和牌動作在本規則的名稱 translation key。
-     * @param winners 贏家詳情快照；可為空。
-     * @param rankings 結算前後分數及排行；不可為空。
+     * @param winners 贏家詳情快照。可為空。
+     * @param rankings 結算前後分數及排行。不可為空。
      * @param revealTiming 贏家詳情揭示節奏。
-     * @param customSoundCues 自訂音效 cue；空集合時使用內建 cue。
+     * @param customSoundCues 自訂音效 cue。空集合時使用內建 cue。
      */
     fun configure(
         tableId: Uuid,
@@ -429,9 +429,9 @@ class WinSettlementPresentationEntity(
         }
 
         /**
-         * 計算整面面板的長度；[scoreRevealDelayTicks] 同 [winnerDurationTicks]。
+         * 計算整面面板的長度。[scoreRevealDelayTicks] 同 [winnerDurationTicks]。
          *
-         * @param winners 依揭示順序排列的贏家快照；可為空。
+         * @param winners 依揭示順序排列的贏家快照。可為空。
          * @param timing 贏家詳情揭示時間設定。
          * @param scoreRevealDelayTicks 模板版面決定的分數揭示延遲 tick 數。
          * @return 所有贏家段落、排行榜與淡出所需的總 tick 數。
@@ -443,9 +443,9 @@ class WinSettlementPresentationEntity(
         ): Long = winners.sumOf { winnerDurationTicks(it, timing, scoreRevealDelayTicks) } + RANKING_TICKS + FADE_OUT_TICKS
 
         /**
-         * 計算分數在逐條揭示結束後的延遲；找不到模板時視為 0，逐條揭示一結束就出現。
+         * 計算分數在逐條揭示結束後的延遲。找不到模板時視為 0，逐條揭示一結束就出現。
          *
-         * @param layout 結算模板版面；為 null 時使用零 tick 延遲。
+         * @param layout 結算模板版面。為 null 時使用零 tick 延遲。
          * @return 分數揭示延遲 tick 數。
          */
         fun scoreRevealDelayTicks(layout: PresentationLayout?): Long = layout?.let { WinSettlementRevealTimeline.scoreRevealDelayTicks(it).toLong() } ?: 0L
@@ -454,7 +454,7 @@ class WinSettlementPresentationEntity(
          * 依模板識別碼取得版面設計。
          *
          * @param templateKey 結算呈現模板 key。
-         * @return 註冊模板的根版面；找不到模板時為 null。
+         * @return 註冊模板的根版面。找不到模板時為 null。
          */
         fun layoutOf(templateKey: String): PresentationLayout? = GlobalContext.get().get<WinSettlementPresentationTemplateRegistry>().findTemplate(templateKey)?.root
 
@@ -505,7 +505,7 @@ class WinSettlementPresentationEntity(
         ).joinToString(F.toString())
 
         /**
-         * 解析揭示時間字串；可解析為整數的欄位數不為四時，使用內建時間預設值。
+         * 解析揭示時間字串。可解析為整數的欄位數不為四時，使用內建時間預設值。
          *
          * @param encoded 待解析的揭示時間字串。
          * @return 還原的揭示時間快照或預設快照。
@@ -530,7 +530,7 @@ class WinSettlementPresentationEntity(
         }
 
         /**
-         * 解析音效 cue 字串；欄位數或數值格式不符的列略過。
+         * 解析音效 cue 字串。欄位數或數值格式不符的列略過。
          *
          * @param encoded 待解析的音效 cue 字串。
          * @return 成功還原的音效 cue 清單。
@@ -571,7 +571,7 @@ class WinSettlementPresentationEntity(
         }
 
         /**
-         * 解析贏家快照字串；欄位數或必要數值無效的列略過，無效詳情項目不納入結果。
+         * 解析贏家快照字串。欄位數或必要數值無效的列略過，無效詳情項目不納入結果。
          *
          * @param encoded 待解析的贏家快照字串。
          * @return 成功還原的贏家快照清單。
@@ -602,7 +602,7 @@ class WinSettlementPresentationEntity(
         }
 
         /**
-         * 以牌列分隔字元拆解非空欄位；空字串對應空清單。
+         * 以牌列分隔字元拆解非空欄位。空字串對應空清單。
          *
          * @return 拆解出的字串清單。
          */

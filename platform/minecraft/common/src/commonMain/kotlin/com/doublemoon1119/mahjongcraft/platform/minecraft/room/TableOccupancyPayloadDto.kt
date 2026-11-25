@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 /**
  * 一張麻將桌目前的佔用狀態與公開資訊。
  *
- * [roomSnapshot] 只在 [TableOccupancyDto.ROOM] 時附帶；`playing` 開頭的欄位只在 [TableOccupancyDto.GAME]
+ * [roomSnapshot] 只在 [TableOccupancyDto.ROOM] 時附帶。`playing` 開頭的欄位只在 [TableOccupancyDto.GAME]
  * 時有值。座標供客戶端判斷玩家是否仍在桌子附近。
  *
  * @property tableId 麻將桌 ID。

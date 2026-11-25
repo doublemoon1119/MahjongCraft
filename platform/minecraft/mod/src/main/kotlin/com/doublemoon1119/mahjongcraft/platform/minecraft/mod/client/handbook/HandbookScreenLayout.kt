@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.Vertica
 /**
  * 麻將手冊快捷畫面的版面：標題下方一列一個入口，入口放不下時捲動，底部按鈕列上方是開啟方式的提示。
  *
- * 寬版的入口寬度最多 [ENTRY_MAX_WIDTH] 並水平置中；窄版的入口佔滿內容寬度，且不顯示開啟方式的提示。
+ * 寬版的入口寬度最多 [ENTRY_MAX_WIDTH] 並水平置中。窄版的入口佔滿內容寬度，且不顯示開啟方式的提示。
  * 內容寬度、邊距與底部按鈕列沿用 [FormScreenLayout]。
  *
  * @property windowWidth 視窗寬度。
@@ -59,7 +59,7 @@ internal data class HandbookScreenLayout(
         minimumThumbHeight = VerticalScrollbar.MINIMUM_THUMB_HEIGHT,
     )
 
-    /** 是否顯示開啟方式的提示；窄版不顯示。 */
+    /** 是否顯示開啟方式的提示。窄版不顯示。 */
     val showsOpenHint: Boolean = !frame.isCompact
 
     /** 開啟方式提示的 Y 座標，在底部按鈕列上方。 */
@@ -71,7 +71,7 @@ internal data class HandbookScreenLayout(
     /** 底部按鈕列上界。 */
     val footerY: Int = frame.footerY
 
-    /** 底部四格按鈕列；只使用右下角的關閉。 */
+    /** 底部四格按鈕列。只使用右下角的關閉。 */
     val footer: ButtonRowLayout = frame.footer(buttonCount = FOOTER_BUTTONS)
 
     /**
@@ -96,7 +96,7 @@ internal data class HandbookScreenLayout(
         mouseY < scrollbar.trackBottom
 
     /**
-     * 判斷游標是否指向捲軸；命中範圍比繪製範圍稍寬。
+     * 判斷游標是否指向捲軸。命中範圍比繪製範圍稍寬。
      *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。

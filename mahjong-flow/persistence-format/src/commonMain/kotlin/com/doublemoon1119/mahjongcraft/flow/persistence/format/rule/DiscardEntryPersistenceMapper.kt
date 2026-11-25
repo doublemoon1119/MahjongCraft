@@ -18,7 +18,7 @@ fun DiscardEntry.toPersistenceDto(registry: ComponentPersistenceConverter): Disc
 )
 
 /**
- * 還原捨牌紀錄；組件仍屬於紀錄，不會加到牌張上。
+ * 還原捨牌紀錄。組件仍屬於紀錄，不會加到牌張上。
  *
  * @param registry 組件保存轉換。
  * @return 經目標種類檢查的捨牌紀錄。

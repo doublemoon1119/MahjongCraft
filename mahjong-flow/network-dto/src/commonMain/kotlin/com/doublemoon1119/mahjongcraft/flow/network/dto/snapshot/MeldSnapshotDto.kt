@@ -15,7 +15,7 @@ import kotlinx.serialization.Serializable
  * @property id 副露的穩定識別碼。
  * @property type 副露類型。
  * @property tiles 副露包含的牌張。
- * @property sourceTile 被鳴入的牌；沒有時為 `null`。
+ * @property sourceTile 被鳴入的牌。沒有時為 `null`。
  * @property sourceDirection 牌張來源方向。
  * @property faceDownTileIds 需要在桌面上朝下呈現的牌張 ID。
  */

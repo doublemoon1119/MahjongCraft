@@ -110,7 +110,7 @@ class TaiwanPositionRulesTest {
         assertEquals(HEAVENLY_READY_TAI * pointsPerTai, declared.points - plain.points)
     }
 
-    /** 過水中最後打出的牌仍是自己聽的牌時不能胡；打出其他牌之後就能胡。 */
+    /** 過水中最後打出的牌仍是自己聽的牌時不能胡。打出其他牌之後就能胡。 */
     @Test
     fun `passed win blocks winning only while the last discard is still a wait`() {
         val passed = ComponentSet.EMPTY.with(TaiwanPlayerComponents.PASSED_WIN, Unit)
@@ -121,7 +121,7 @@ class TaiwanPositionRulesTest {
         assertIs<WinValue.Points>(rules.winValue(view(cleared, cleared.players[WAITER]), cleared.players[WAITER].hand, WINNING_VALUE, isTsumo = true))
     }
 
-    /** 宣告聽牌公開給所有玩家；過水只有本人看得到。 */
+    /** 宣告聽牌公開給所有玩家。過水只有本人看得到。 */
     @Test
     fun `ready declaration is public and passed win is private`() {
         val table = table(
@@ -138,7 +138,7 @@ class TaiwanPositionRulesTest {
         assertNotNull(asSelf.componentViews[TaiwanPlayerComponentViews.PASSED_WIN])
     }
 
-    /** 宣告聽牌不付分數且鎖住手牌；開啟報聽時已宣告後不再提議宣告。 */
+    /** 宣告聽牌不付分數且鎖住手牌。開啟報聽時已宣告後不再提議宣告。 */
     @Test
     fun `ready declaration locks the hand and is offered only once`() {
         val undeclared = table()
@@ -149,7 +149,7 @@ class TaiwanPositionRulesTest {
         assertEquals(emptySet(), generalReadyRules.prospectiveDeclarations(view(declared, declared.players[WAITER]), declared.players[WAITER].hand))
     }
 
-    /** 未開啟報聽時，已過天聽、地聽時機的局面不提議宣告；第一打前仍會提議。 */
+    /** 未開啟報聽時，已過天聽、地聽時機的局面不提議宣告。第一打前仍會提議。 */
     @Test
     fun `without the declared ready option only the opening turn offers a declaration`() {
         val laterTurn = table()
@@ -160,7 +160,7 @@ class TaiwanPositionRulesTest {
     }
 
     /**
-     * 建立莊家為東家、南家單騎九索聽牌的四人桌況；每位玩家都已打過一張牌，因此不是起手胡。
+     * 建立莊家為東家、南家單騎九索聽牌的四人桌況。每位玩家都已打過一張牌，因此不是起手胡。
      *
      * @param comboCount 連莊次數。
      * @param waiterComponents 南家的玩家組件。

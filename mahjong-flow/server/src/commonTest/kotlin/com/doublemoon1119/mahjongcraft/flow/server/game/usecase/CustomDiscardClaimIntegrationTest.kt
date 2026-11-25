@@ -280,7 +280,7 @@ class CustomDiscardClaimIntegrationTest {
     /**
      * 只覆寫捨牌反應的測試規則，其他行為委派給日麻規則。
      *
-     * @property delegate 提供測試未覆寫的行為；型別參數只用於已覆寫的 [config]，不接收配置參數。
+     * @property delegate 提供測試未覆寫的行為。型別參數只用於已覆寫的 [config]，不接收配置參數。
      * @property count 自訂副露取用的本人手牌張數。
      * @property priorities 各反應者的測試優先序。
      */
@@ -322,7 +322,7 @@ class CustomDiscardClaimIntegrationTest {
         }
     }
 
-    /** 自訂反應的完整動作；選牌獨立於此 payload。 */
+    /** 自訂反應的完整動作。選牌獨立於此 payload。 */
     private data object ClaimAction : ExtensionGameAction {
         override val id: String = "test:claim"
     }

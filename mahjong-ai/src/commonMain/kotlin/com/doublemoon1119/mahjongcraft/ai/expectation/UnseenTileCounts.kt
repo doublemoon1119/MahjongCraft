@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
 /**
  * 評估者眼中每種牌還沒看到的張數。
  *
- * 牌面一律以規則的 [MahjongRuleModule.createTileInterpretationPolicy] 正規化；日麻的赤五基本牌面就是普通五，算同一種。
+ * 牌面一律以規則的 [MahjongRuleModule.createTileInterpretationPolicy] 正規化。日麻的赤五基本牌面就是普通五，算同一種。
  * 同一種牌若有價值不同的牌值（例如日麻的赤五與普通五），另外記錄每一種牌值的未見張數，
  * 讓和牌價值可以依實際摸到或打出的牌面分別計算。
  *
@@ -38,7 +38,7 @@ internal class UnseenTileCounts private constructor(
     operator fun get(kind: Tile): Int = facesByKind[kind].orEmpty().sumOf { faceCounts[it] ?: 0 }
 
     /**
-     * 正規化牌面 [kind] 的每一種完整牌值，以及各自的未見張數；未見張數為 0 的牌面不列出。
+     * 正規化牌面 [kind] 的每一種完整牌值，以及各自的未見張數。未見張數為 0 的牌面不列出。
      *
      * @param kind 規則正規化後的牌面。
      * @return 實際牌面與其未見張數的配對清單。
@@ -48,7 +48,7 @@ internal class UnseenTileCounts private constructor(
         .filter { (_, count) -> count > 0 }
 
     /**
-     * 假設摸進一張實際牌面為 [face] 的牌之後的未見張數；該牌面張數最低為 0。
+     * 假設摸進一張實際牌面為 [face] 的牌之後的未見張數。該牌面張數最低為 0。
      *
      * @param face 假設摸進的實際牌面。
      * @return 其餘未見牌的張數快照。
@@ -64,14 +64,14 @@ internal class UnseenTileCounts private constructor(
         /**
          * 由 [selfId] 的視角計算未見張數。
          *
-         * [countsVisibleTiles] 為 `true` 時扣除快照中看得到的每一張牌（見 [TableStateSnapshot.visibleTilesOutsideDrawPool]）；為 `false`
+         * [countsVisibleTiles] 為 `true` 時扣除快照中看得到的每一張牌（見 [TableStateSnapshot.visibleTilesOutsideDrawPool]）。為 `false`
          * 時只扣除自己手上的牌（見 [MahjongPlayerSnapshot.heldTiles]）。看到的牌面不在規則的牌山組成中時，改從它的
          * 正規化牌面扣除。
          *
          * @param snapshot 供統計可見牌的桌況快照。
          * @param selfId 評估者的玩家識別碼。
          * @param module 本局使用的規則模組，用於取得牌山組成與牌面正規化方式。
-         * @param countsVisibleTiles 是否扣除快照中所有可見牌；否則只扣除評估者手牌。
+         * @param countsVisibleTiles 是否扣除快照中所有可見牌。否則只扣除評估者手牌。
          * @return 依上述視角計算的未見牌分布。
          */
         fun from(

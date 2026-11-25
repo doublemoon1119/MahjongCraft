@@ -11,8 +11,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.stre
  * @property pace 每桌推進節奏。
  * @property historyMode 歷史處理方式。
  * @property stutterLimitMillis 相鄰兩個 tick 開始的實際間隔超過此毫秒數時算一次卡頓。
- * @property warmupSeconds 開始後不列入統計與卡頓判斷的秒數；0 表示不暖機。
- * @property seed 指定的基準種子；null 表示開始測試時隨機產生。
+ * @property warmupSeconds 開始後不列入統計與卡頓判斷的秒數。0 表示不暖機。
+ * @property seed 指定的基準種子。null 表示開始測試時隨機產生。
  */
 data class StressRunOptions(
     val pace: StressTestPace,

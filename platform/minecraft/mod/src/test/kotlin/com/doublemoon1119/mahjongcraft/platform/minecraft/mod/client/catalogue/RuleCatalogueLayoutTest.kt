@@ -12,7 +12,7 @@ import kotlin.test.assertTrue
 
 /** 驗證規則一覽的畫面幾何與範例牌組排列。 */
 class RuleCatalogueLayoutTest {
-    /** 最小畫面（320×240）下規則選擇器獨佔一列，搜尋與清除在下一列；各區域不重疊且留在畫面內。 */
+    /** 最小畫面（320×240）下規則選擇器獨佔一列，搜尋與清除在下一列。各區域不重疊且留在畫面內。 */
     @Test
     fun `smallest screen gives the rule selector its own row`() {
         listOf<Int?>(null, 60).forEach { sourceLabelWidth ->
@@ -67,7 +67,7 @@ class RuleCatalogueLayoutTest {
         assertTrue(strip.maximumScroll > 0)
     }
 
-    /** 返回或關閉固定在底部最右一格；設定來源選擇器在標籤右側，不與返回按鈕重疊。 */
+    /** 返回或關閉固定在底部最右一格。設定來源選擇器在標籤右側，不與返回按鈕重疊。 */
     @Test
     fun `footer keeps close in the last slot and the source selector after its label`() {
         val general = measure(width = 480, height = 270)
@@ -248,7 +248,7 @@ class RuleCatalogueLayoutTest {
      * @param width 畫面寬度。
      * @param height 畫面高度。
      * @param clearWidth 清除按鈕寬度。
-     * @param sourceLabelWidth 設定來源標籤寬度；不顯示設定來源時為 null。
+     * @param sourceLabelWidth 設定來源標籤寬度。不顯示設定來源時為 null。
      * @return 畫面幾何。
      */
     private fun measure(

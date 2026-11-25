@@ -14,7 +14,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
  * @property responsiblePlayerIsAi 負責支付者是否為 AI。
  * @property totalScore 總分。
  * @property tileAssetKeys 手牌 asset key。
- * @property tileGroups 手牌與各組副露；蓋著的牌只帶牌背。
+ * @property tileGroups 手牌與各組副露。蓋著的牌只帶牌背。
  * @property winningTileAssetKey 和牌張 asset key。
  * @property extensionFields 第三方欄位。
  * @property initialFadeTicks 初始淡入時間。
@@ -43,10 +43,10 @@ data class WinSettlementPresentationFieldSnapshot(
     val scoreRevealDelayTicks: Int = 0,
 ) {
     /**
-     * 依完整 ID 取得強型別 extension 欄位；重複 ID 由建構端拒絕。
+     * 依完整 ID 取得強型別 extension 欄位。重複 ID 由建構端拒絕。
      *
      * @param id 欄位的完整識別碼。
-     * @return 對應欄位值；未提供時為 `null`。
+     * @return 對應欄位值。未提供時為 `null`。
      */
     fun extensionField(id: PresentationFieldId): PresentationValue? = extensionFields.firstOrNull { it.id == id }?.value
 

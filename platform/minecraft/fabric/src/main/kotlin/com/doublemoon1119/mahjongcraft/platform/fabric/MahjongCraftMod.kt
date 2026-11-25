@@ -21,7 +21,7 @@ import net.fabricmc.api.ModInitializer
 import org.koin.core.Koin
 import org.koin.core.context.startKoin
 
-/** Fabric mod 的初始化入口；安裝 Fabric 實作、組裝 runtime graph、登記擴充後交給 [MahjongCraftBootstrap]。 */
+/** Fabric mod 的初始化入口。安裝 Fabric 實作、組裝 runtime graph、登記擴充後交給 [MahjongCraftBootstrap]。 */
 class MahjongCraftMod : ModInitializer {
     override fun onInitialize() {
         // 頻道在建立時就會用到收送方式，必須在任何頻道建立前安裝。
@@ -45,7 +45,7 @@ class MahjongCraftMod : ModInitializer {
     /**
      * 依目前 Fabric environment 啟動 dedicated-server 或 client/integrated-server graph。
      *
-     * Minecraft client 可啟動 integrated server，因此 client graph 同時包含 [fabricServerModule] 與 [modClientModule]；
+     * Minecraft client 可啟動 integrated server，因此 client graph 同時包含 [fabricServerModule] 與 [modClientModule]。
      * 連線到 dedicated server 時 server-side single 維持延遲建立，不會建立第二個 Koin container。Dedicated server 只載入
      * [fabricServerModule]，不登記 client state。
      *

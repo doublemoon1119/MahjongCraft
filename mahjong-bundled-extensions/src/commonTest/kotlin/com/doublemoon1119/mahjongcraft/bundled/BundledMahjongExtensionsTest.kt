@@ -91,7 +91,7 @@ class BundledMahjongExtensionsTest {
     }
 
     /**
-     * 取得這個來源在指定分類中登記的 ID；沒有登記時為空清單。
+     * 取得這個來源在指定分類中登記的 ID。沒有登記時為空清單。
      *
      * @param categoryId 要查詢的登記分類 ID。
      * @return 該分類登記的 ID 清單。

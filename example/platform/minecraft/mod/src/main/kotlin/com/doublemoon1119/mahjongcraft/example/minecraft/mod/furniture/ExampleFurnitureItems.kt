@@ -9,7 +9,7 @@ import net.minecraft.world.item.Item
 
 /** 範例家具物品的集中註冊點。 */
 object ExampleFurnitureItems {
-    /** 放置可保存坐墊的物品；寫入登記表後可用。 */
+    /** 放置可保存坐墊的物品。寫入登記表後可用。 */
     lateinit var cushion: Item
         private set
 

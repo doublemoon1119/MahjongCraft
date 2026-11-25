@@ -22,7 +22,7 @@ import kotlin.uuid.Uuid
  *
  * - 捨牌危險度：依聽牌型估計（[WaitShapeDanger]）。台灣麻將沒有振聽，對手自己打過的牌仍可能讓他榮和，
  *   因此不排除任何牌。
- * - 對手威脅：宣告聽牌者視為確定聽牌；其餘依副露數與捨牌數估計聽牌可能性。
+ * - 對手威脅：宣告聽牌者視為確定聽牌。其餘依副露數與捨牌數估計聽牌可能性。
  * - 打點：依宣告聽牌、門清或副露估計基本台數，加上看得到的花台與副露中的三元牌、門風、圈風台，
  *   再以本局的付款計算換成分數，因此包含莊家台與連莊台。
  *
@@ -37,7 +37,7 @@ class TaiwanOpponentModel(
 ) : OpponentModel {
     private val waitShapeDanger = WaitShapeDanger(tileKinds = TILE_KINDS, copiesPerTile = COPIES_PER_TILE)
 
-    /** [playerId] 是評估者本人時，取每位對手放槍時收入的平均值；否則為評估者放槍時 [playerId] 的收入。 */
+    /** [playerId] 是評估者本人時，取每位對手放槍時收入的平均值。否則為評估者放槍時 [playerId] 的收入。 */
     override fun baselineWinValue(view: PositionView, playerId: Uuid): Int {
         val playerIds = view.snapshot.players.map { it.id }
         val payers = if (playerId == view.evaluatorId) playerIds.filter { it != playerId } else listOf(view.evaluatorId)
@@ -135,7 +135,7 @@ class TaiwanOpponentModel(
         /** 三元牌。 */
         val DRAGONS: List<Tile> = listOf(Tile.Honor.White, Tile.Honor.Green, Tile.Honor.Red)
 
-        /** 依公開副露數（0、1、2、3、4 組以上）估計聽牌可能性的參數；十六張手牌比十三張需要更多巡數。 */
+        /** 依公開副露數（0、1、2、3、4 組以上）估計聽牌可能性的參數。十六張手牌比十三張需要更多巡數。 */
         val READINESS_BY_OPEN_MELDS: List<ReadinessProfile> = listOf(
             ReadinessProfile(base = 0.02, perDiscard = 0.015, cap = 0.4),
             ReadinessProfile(base = 0.08, perDiscard = 0.025, cap = 0.55),
@@ -144,7 +144,7 @@ class TaiwanOpponentModel(
             ReadinessProfile(base = 0.65, perDiscard = 0.03, cap = 0.9),
         )
 
-        /** 會被打出的 34 種一般牌；花牌補出後不會被打出，不列入。 */
+        /** 會被打出的 34 種一般牌。花牌補出後不會被打出，不列入。 */
         val TILE_KINDS: List<Tile> = Tile.Suit.entries.flatMap { suit -> (1..9).map { Tile.Numeric(suit, it) } } +
             listOf(
                 Tile.Honor.East,

@@ -11,9 +11,9 @@ import kotlin.uuid.Uuid
  *
  * @param playerId 宣告動作的玩家。
  * @param action 成立的動作。
- * @param followUp 補牌之後的自動處理；沒有補牌時為 null。
- * @param announced 動作的宣告是否已經呈現過，例如等待搶和時先呈現了宣告；已呈現時動作成立那一步不再帶宣告事件。
- * @param drawnState 補牌之後、自動處理之前的桌況；預設為這次結果的桌況。
+ * @param followUp 補牌之後的自動處理。沒有補牌時為 null。
+ * @param announced 動作的宣告是否已經呈現過，例如等待搶和時先呈現了宣告。已呈現時動作成立那一步不再帶宣告事件。
+ * @param drawnState 補牌之後、自動處理之前的桌況。預設為這次結果的桌況。
  * @return 依序排列的步驟。
  */
 internal fun SelfDeclarationApplier.Result.Applied.tableSteps(

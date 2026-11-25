@@ -140,7 +140,7 @@ class HistoryRetentionPolicyTest {
      * 建立測試用保留政策。
      *
      * @param includeInterruptedMatches 是否將中斷場次納入保留評估。
-     * @param maxMatches 最多保留場次數；零表示不設此數量上限。
+     * @param maxMatches 最多保留場次數。零表示不設此數量上限。
      * @param retentionDuration 場次超過此保留時間後可被清理。
      * @return 使用指定保留條件且磁碟上限為一位元組的政策。
      */

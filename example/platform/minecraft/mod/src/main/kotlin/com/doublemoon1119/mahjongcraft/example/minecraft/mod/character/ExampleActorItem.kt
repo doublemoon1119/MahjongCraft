@@ -16,7 +16,7 @@ import net.minecraft.world.item.context.UseOnContext
  * @param settings 原生物品設定。
  */
 class ExampleActorItem(settings: Properties) : ExampleTooltipItem(settings) {
-    /** 座位使用命中本格，其餘使用一般方塊外側；權限及耗材由建立服務核對。 */
+    /** 座位使用命中本格，其餘使用一般方塊外側。權限及耗材由建立服務核對。 */
     override fun useOn(context: UseOnContext): InteractionResult {
         val player = context.player ?: return InteractionResult.PASS
         if (context.level.isClientSide) return InteractionResult.SUCCESS

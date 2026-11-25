@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * HUD 位置以合法可移動範圍的比例保存；零代表左／上界，一代表右／下界。
+ * HUD 位置以合法可移動範圍的比例保存。零代表左／上界，一代表右／下界。
  * 動態寬度面板固定水平置中，因此只保存垂直位置。
  *
  * @property decisionPanelY 操作面板的垂直位置比例。

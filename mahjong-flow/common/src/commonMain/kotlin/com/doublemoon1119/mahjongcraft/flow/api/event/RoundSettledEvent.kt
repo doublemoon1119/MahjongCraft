@@ -6,16 +6,16 @@ import kotlin.uuid.Uuid
 /**
  * 一次結算完成：和牌、流局（含途中流局）或規則的特殊結果。和牌後本局繼續時也會發出，因此不代表這一局已經結束。
  *
- * 同一次結算只發出一次；一炮多響是同一次結算，所有贏家都在 [beneficiaryPlayerIds] 中。
+ * 同一次結算只發出一次。一炮多響是同一次結算，所有贏家都在 [beneficiaryPlayerIds] 中。
  *
  * @property roundNumber 這一局在場次中的局數，從 1 開始。
  * @property outcomeId 結算結果的 namespaced ID：和牌為結果 ID（例如自摸、榮和），流局為流局原因 ID，特殊結果為規則提供的
  *   結果 ID。
  * @property kind 結算的種類。
- * @property beneficiaryPlayerIds 得利的玩家，例如贏家或流局時聽牌的玩家；途中流局沒有得利的玩家。
- * @property responsiblePlayerIds 負責的玩家，例如放銃者；沒有時為空集合。
+ * @property beneficiaryPlayerIds 得利的玩家，例如贏家或流局時聽牌的玩家。途中流局沒有得利的玩家。
+ * @property responsiblePlayerIds 負責的玩家，例如放銃者。沒有時為空集合。
  * @property players 依座位順序排列的每位玩家結算前後的分數與名次。
- * @property winGroups 這次結算中各組贏家的公開和牌詳情；不是和牌時為空集合。
+ * @property winGroups 這次結算中各組贏家的公開和牌詳情。不是和牌時為空集合。
  */
 class RoundSettledEvent private constructor(
     override val eventId: Uuid,
@@ -45,7 +45,7 @@ class RoundSettledEvent private constructor(
          * @param beneficiaryPlayerIds 得利的玩家 UUID。
          * @param responsiblePlayerIds 負責的玩家 UUID。
          * @param players 依座位順序排列的玩家結算前後資料。
-         * @param winGroups 各組贏家的公開和牌詳情；不是和牌時為空集合。
+         * @param winGroups 各組贏家的公開和牌詳情。不是和牌時為空集合。
          * @return 建立的一局結算事件。
          */
         @Suppress("LongParameterList")

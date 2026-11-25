@@ -23,7 +23,7 @@ internal fun fullWallPlacements(stacksPerSide: Int): List<TileWallPlacement> = (
 }
 
 /**
- * 四面牌牆一張都沒被摸走時，從局部南側座位看出去的讓位範圍；完整牌牆四面對稱，其他座位看出去也相同。
+ * 四面牌牆一張都沒被摸走時，從局部南側座位看出去的讓位範圍。完整牌牆四面對稱，其他座位看出去也相同。
  *
  * @param tileLayout 桌面牌位配置。
  * @param stacksPerSide 牌牆每面的墩數。

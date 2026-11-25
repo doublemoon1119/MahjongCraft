@@ -29,7 +29,7 @@ import kotlin.uuid.Uuid
 /**
  * 在獨立工作預算內重建指定局的位置或有限交易序列，不保存全場桌況快照。
  *
- * 輸入須已由外部解析；原始位元組及 JSON parser 的限制由呼叫端負責。
+ * 輸入須已由外部解析。原始位元組及 JSON parser 的限制由呼叫端負責。
  * 取消例外直接傳播，破損文件不產生部分成功結果。
  *
  * @property componentViews 牌面特徵的保存轉換。
@@ -40,7 +40,7 @@ class CompactReplayRoundReader(
     private val limits: ReplayReadLimits = ReplayReadLimits(),
 ) {
     /**
-     * 讀取指定局的一段交易；僅保留要求的交易，不還原其他局的桌況。
+     * 讀取指定局的一段交易。僅保留要求的交易，不還原其他局的桌況。
      *
      * @param document 已解析的 Replay 文件。
      * @param expectedMatchId 欲讀取的對局識別碼。
@@ -113,7 +113,7 @@ class CompactReplayRoundReader(
      * @param expectedMatchId 欲讀取的對局識別碼。
      * @param roundNumber 保存的局序號。
      * @param start 第一個位置：初始位置或指定交易之後。
-     * @param count 最多幾個位置；本局交易不足時只回傳到最後一筆交易之後。
+     * @param count 最多幾個位置。本局交易不足時只回傳到最後一筆交易之後。
      * @return 依位置先後排列的歷史專用桌況，至少一個。
      */
     suspend fun readStates(
@@ -360,7 +360,7 @@ class CompactReplayRoundReader(
     private fun selectRound(source: CompactReplayReadDocument, number: Int): EncodedReplayRound = source.rounds.singleOrNull { it.number == number } ?: missing()
 
     /**
-     * 初始化局游標；前面各局只掃描時間差，不重建投影或 patch。
+     * 初始化局游標。前面各局只掃描時間差，不重建投影或 patch。
      *
      * @param source 文件檢視。
      * @param round 目標局。
@@ -391,7 +391,7 @@ class CompactReplayRoundReader(
     }
 
     /**
-     * 套用交易中的牌張呈現變化；開局交易的呈現描述開局狀態本身。
+     * 套用交易中的牌張呈現變化。開局交易的呈現描述開局狀態本身。
      *
      * @param facts 已解碼的交易事實。
      * @param source 文件檢視。
@@ -512,7 +512,7 @@ class CompactReplayRoundReader(
      * @property tiles 截至目前位置可識別的牌。
      * @property time 從文件起始時間累加交易時間差後的時間戳。
      * @property presentations 截至目前交易保存的牌張呈現，依牌索引排列。
-     * @property decodedPresentationTypes 已解碼的牌張呈現字典項目，依字典代碼排列；每個項目只解碼一次。
+     * @property decodedPresentationTypes 已解碼的牌張呈現字典項目，依字典代碼排列。每個項目只解碼一次。
      * @property outcome 截至目前交易已保存的結算結果。
      * @property hasWinSettlement 是否已遇到較早的胡牌結算交易。
      * @property exhaustiveDrawSettlement 流局動作交易前後的分數快照。

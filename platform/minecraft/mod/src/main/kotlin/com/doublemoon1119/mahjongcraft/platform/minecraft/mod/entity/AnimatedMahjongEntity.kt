@@ -19,7 +19,7 @@ import net.minecraft.world.level.Level
  * `tick()` 自行繼續播放，而不是靠純記憶體的 JVM closure 串接多階段延遲——後者在 server 關閉時會遺失
  * 「接下來該做什麼」的資訊，動畫播放中離開世界後，牌會卡在半空。
  *
- * 「這個 entity 是否正在播動畫」＝[isAnimating]＝「佇列是否還有東西」，不需要另外一個獨立旗標；
+ * 「這個 entity 是否正在播動畫」＝[isAnimating]＝「佇列是否還有東西」，不需要另外一個獨立旗標。
  * 子類別（[MahjongTileEntity]／[MahjongDiceEntity]）的 `tick()` 只需要呼叫 `super.tick()`，佇列的
  * 進度處理已經包含在裡面。
  *
@@ -35,13 +35,13 @@ abstract class AnimatedMahjongEntity<C>(
     /** 尚未完成的持久化動畫步驟，依序由 server tick 推進。 */
     private val queue: ArrayDeque<AnimationStep<C>> = ArrayDeque()
 
-    /** 目前播放中動作的絕對結束時間；沒有啟動中的動作時為 `null`。 */
+    /** 目前播放中動作的絕對結束時間。沒有啟動中的動作時為 `null`。 */
     private var activeStepEndGameTime: Long? = null
 
-    /** 傳送後等待廣播完整定位封包的絕對時間；沒有待同步傳送時為 `null`。 */
+    /** 傳送後等待廣播完整定位封包的絕對時間。沒有待同步傳送時為 `null`。 */
     private var pendingTrackerResyncGameTime: Long? = null
 
-    /** 佇列是否還有未播完的 step；`false` 代表這個 entity 目前完全靜止。 */
+    /** 佇列是否還有未播完的 step。`false` 代表這個 entity 目前完全靜止。 */
     val isAnimating: Boolean
         get() = queue.isNotEmpty()
 
@@ -49,12 +49,12 @@ abstract class AnimatedMahjongEntity<C>(
      * 查詢佇列尾端的自訂狀態，供附加動畫時確認其起始狀態。
      *
      * @param currentState 尚未排定自訂狀態時採用的目前值。
-     * @return 最後排定的狀態；不修改佇列或額外保存一份狀態。
+     * @return 最後排定的狀態。不修改佇列或額外保存一份狀態。
      */
     protected fun finalQueuedCustomState(currentState: C): C = AnimationQueueDriver.finalCustomState(queue, currentState)
 
     /**
-     * 依序附加 [steps] 到佇列尾端；相鄰的絕對等待會自動合併為較晚時間，只能在 server 端呼叫。
+     * 依序附加 [steps] 到佇列尾端。相鄰的絕對等待會自動合併為較晚時間，只能在 server 端呼叫。
      *
      * @param steps 要附加的動畫步驟。
      */
@@ -102,7 +102,7 @@ abstract class AnimatedMahjongEntity<C>(
     protected abstract fun deserializeCustomStep(nbt: CompoundTag): C
 
     /**
-     * 依序處理佇列中的 step：到期的 [AnimationStep.PlaySound] 不受運動或等待阻擋；其他瞬間動作
+     * 依序處理佇列中的 step：到期的 [AnimationStep.PlaySound] 不受運動或等待阻擋。其他瞬間動作
      * （[AnimationStep.Teleport]／[AnimationStep.SetInvisible]／[AnimationStep.Custom]）連續處理到下一個計時
      * step 為止，計時 step（[AnimationStep.WaitUntil]／
      * [AnimationStep.PlayMotion]）未到期就停在原地、等下一個 tick 再檢查——同一個 tick 內可以連續
@@ -121,7 +121,7 @@ abstract class AnimatedMahjongEntity<C>(
     /**
      * 用戶端收到新位置時直接停在新位置，不在上一個 tick 的位置與新位置之間做畫面補間。
      *
-     * 這類實體只會因伺服器排定的傳送而改變位置，看得到的移動都由自己的動畫繪製；
+     * 這類實體只會因伺服器排定的傳送而改變位置，看得到的移動都由自己的動畫繪製。
      * 保留補間會讓單純的傳送在一個 tick 內閃過一段平移。
      */
     override fun lerpTo(

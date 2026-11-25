@@ -32,7 +32,7 @@ class MahjongClientConfigScreenController(
     private val ruleCatalogueScreenController: RuleCatalogueScreenController,
     private val hudPreviewRenderer: MahjongHudPreviewRenderer,
 ) {
-    /** 開啟 Client Config Screen 的按鍵綁定，預設不綁定；分號預設開啟麻將手冊。 */
+    /** 開啟 Client Config Screen 的按鍵綁定，預設不綁定。分號預設開啟麻將手冊。 */
     private lateinit var openKeyBinding: KeyMapping
 
     /** 開啟對局歷史的快捷鍵。 */
@@ -48,7 +48,7 @@ class MahjongClientConfigScreenController(
     private var openRequested = false
 
     /**
-     * 註冊按鍵綁定與 client tick listener；只能在 client entrypoint 呼叫一次。
+     * 註冊按鍵綁定與 client tick listener。只能在 client entrypoint 呼叫一次。
      *
      * @param events 登記用戶端事件用的事件來源。
      */
@@ -91,13 +91,13 @@ class MahjongClientConfigScreenController(
         open(Minecraft.getInstance(), returnScreen)
     }
 
-    /** 從指令開啟設定畫面；延到下一個 client tick，避免指令執行後關閉聊天畫面時一併關掉設定畫面。 */
+    /** 從指令開啟設定畫面。延到下一個 client tick，避免指令執行後關閉聊天畫面時一併關掉設定畫面。 */
     fun openFromCommand() {
         openRequested = true
     }
 
     /**
-     * 開啟指令要求的設定畫面，並消耗快捷鍵事件；其他畫面開啟時快捷鍵不搶占使用者輸入。
+     * 開啟指令要求的設定畫面，並消耗快捷鍵事件。其他畫面開啟時快捷鍵不搶占使用者輸入。
      *
      * @param client 本次 tick 的客戶端。
      */
@@ -127,7 +127,7 @@ class MahjongClientConfigScreenController(
      * 建立設定畫面並保留返回目標。
      *
      * @param client 要開啟畫面的客戶端。
-     * @param parent 返回目標；null 表示關回遊戲。
+     * @param parent 返回目標。null 表示關回遊戲。
      */
     private fun open(client: Minecraft, parent: Screen?) {
         client.setScreen(screen(parent))
@@ -136,7 +136,7 @@ class MahjongClientConfigScreenController(
     /**
      * 建立設定畫面但不開啟，供其他模組的畫面自己切換，例如模組清單的設定按鈕。
      *
-     * @param parent 返回目標；null 表示關回遊戲。
+     * @param parent 返回目標。null 表示關回遊戲。
      * @return 設定畫面。
      */
     fun screen(parent: Screen?): Screen = MahjongClientConfigScreen(

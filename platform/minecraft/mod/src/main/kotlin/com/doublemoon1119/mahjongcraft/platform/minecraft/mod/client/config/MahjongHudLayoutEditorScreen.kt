@@ -17,15 +17,15 @@ import net.minecraft.network.chat.Component
 import kotlin.math.roundToInt
 
 /**
- * 原生 HUD 位置編輯器；拖曳只修改草稿，套用時才交由父設定畫面原子保存。
+ * 原生 HUD 位置編輯器。拖曳只修改草稿，套用時才交由父設定畫面原子保存。
  *
- * 這個畫面只負責原版 widget 生命週期與繪製：全部狀態轉換（拖曳、選取、草稿比較）委派給
- * [MahjongHudLayoutEditorModel]，工具列與底部按鈕列的排列委派給 [MahjongHudToolbarLayout]，
- * 兩者都不依賴 Minecraft 型別，因此可以直接以 JVM 測試驗證。
- *
- * 工具列每個控制項上方有標籤。HUD 以下拉清單選擇；預覽情境只有操作面板有，編輯其他 HUD 時按鈕留在原位但停用，提示框說明原因。
- *
- * 選取中的 HUD 以真實內容的半透明預覽畫在草稿位置（見 [MahjongHudPreviewRenderer]），並在外框旁標示名稱與位置。
+ * - 這個畫面只負責原版 widget 生命週期與繪製。
+ * - 狀態轉換（拖曳、選取、草稿比較）委派給 [MahjongHudLayoutEditorModel]。
+ * - 工具列與底部按鈕列的排列委派給 [MahjongHudToolbarLayout]。
+ * - 上面兩者都不依賴 Minecraft 型別，可以直接以 JVM 測試驗證。
+ * - 工具列每個控制項上方有標籤。HUD 以下拉清單選擇。
+ * - 預覽情境只有操作面板有。編輯其他 HUD 時按鈕留在原位但停用，提示框說明原因。
+ * - 選取中的 HUD 以真實內容的半透明預覽畫在草稿位置（見 [MahjongHudPreviewRenderer]），並在外框旁標示名稱與位置。
  *
  * @property parent 開啟這個編輯器的設定畫面，套用草稿與返回都交由它處理。
  * @param initialLayout 開啟編輯器時的配置，作為草稿與復原基準。
@@ -38,7 +38,7 @@ class MahjongHudLayoutEditorScreen(
     private val automaticControlLabels: List<Component>,
     private val previewRenderer: MahjongHudPreviewRenderer,
 ) : MahjongScreen(Component.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_TITLE)) {
-    /** 編輯器的全部可測試狀態；拖曳、選取、草稿與控制項顯示都由它決定。 */
+    /** 編輯器的全部可測試狀態。拖曳、選取、草稿與控制項顯示都由它決定。 */
     private var model = MahjongHudLayoutEditorModel(baseline = initialLayout)
 
     /** 最近一次保存是否失敗。 */
@@ -59,11 +59,11 @@ class MahjongHudLayoutEditorScreen(
     /** HUD 選擇器的展開清單。 */
     private val dropdown = DropdownOverlay()
 
-    /** 預覽情境按鈕；編輯沒有情境的 HUD 時停用。 */
+    /** 預覽情境按鈕。編輯沒有情境的 HUD 時停用。 */
     private var scenarioButton: Button? = null
 
     /**
-     * 按鈕各自的 tooltip 內容（每個元素一行），於 [renderControls] 結尾統一補畫在最上層；停用的按鈕也顯示，
+     * 按鈕各自的 tooltip 內容（每個元素一行），於 [renderControls] 結尾統一補畫在最上層。停用的按鈕也顯示，
      * 讓玩家看得到停用的原因。用多行清單而不是單一 Text 內嵌 `\n`，因為 [GuiGraphics.renderTooltip] 的單行版本
      * 不會把 `\n` 拆成新的一行，只會把它當成一個缺字字元畫出來。
      */
@@ -150,7 +150,7 @@ class MahjongHudLayoutEditorScreen(
     }
 
     /**
-     * 循環切換操作面板的代表性內容情境；編輯其他 HUD 時停用，提示框說明沒有情境可切換。
+     * 循環切換操作面板的代表性內容情境。編輯其他 HUD 時停用，提示框說明沒有情境可切換。
      *
      * @param area 控制項範圍。
      * @return 情境按鈕。
@@ -176,7 +176,7 @@ class MahjongHudLayoutEditorScreen(
     }
 
     /**
-     * 循環切換非作用中 HUD 的預覽方式；與目前編輯哪個 HUD 無關，屬於全域設定。
+     * 循環切換非作用中 HUD 的預覽方式。與目前編輯哪個 HUD 無關，屬於全域設定。
      *
      * @param area 控制項範圍。
      * @return 切換其他 HUD 預覽方式的按鈕。
@@ -195,7 +195,7 @@ class MahjongHudLayoutEditorScreen(
     }
 
     /**
-     * 全域的隱藏控制項按鈕；與目前編輯哪個 HUD 無關。
+     * 全域的隱藏控制項按鈕。與目前編輯哪個 HUD 無關。
      *
      * @param area 控制項範圍。
      * @return 點擊後隱藏編輯控制項的按鈕。
@@ -272,7 +272,7 @@ class MahjongHudLayoutEditorScreen(
     }
 
     /**
-     * 外框預覽太窄而讓名稱被截斷時，補一個完整名稱與位置的 tooltip；選取中的元素已在外框旁標示完整內容，不另外顯示。
+     * 外框預覽太窄而讓名稱被截斷時，補一個完整名稱與位置的 tooltip。選取中的元素已在外框旁標示完整內容，不另外顯示。
      *
      * 只在沒有拖曳、且游標不在任何工具列按鈕上時顯示，避免與按鈕本身的 tooltip 疊在一起。
      *
@@ -296,7 +296,7 @@ class MahjongHudLayoutEditorScreen(
         context.renderComponentTooltip(font, listOf(name, Component.literal(position)), mouseX, mouseY)
     }
 
-    /** 左鍵按住任一預覽框時開始拖曳；按鈕點擊完全交由原版流程處理。 */
+    /** 左鍵按住任一預覽框時開始拖曳。按鈕點擊完全交由原版流程處理。 */
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
         if (dropdown.mouseClicked(font, height, mouseX, mouseY, button)) return true
         if (model.controlsVisible && super.mouseClicked(mouseX, mouseY, button)) return true
@@ -380,7 +380,7 @@ class MahjongHudLayoutEditorScreen(
         }
     }
 
-    /** 無變更時直接返回；有變更時開啟三選項確認畫面。 */
+    /** 無變更時直接返回。有變更時開啟三選項確認畫面。 */
     private fun requestReturn() {
         if (!model.hasUnsavedChanges) {
             minecraft?.setScreen(parent)
@@ -427,7 +427,7 @@ class MahjongHudLayoutEditorScreen(
 
     /**
      * 繪製控制項上方的標籤、全部按鈕的不透明底色與本體，以及展開的 HUD 清單。按鈕的 tooltip 延後到最後才畫，
-     * 確保不會被之後繪製的按鈕蓋住；HUD 清單展開時不顯示 tooltip。
+     * 確保不會被之後繪製的按鈕蓋住。HUD 清單展開時不顯示 tooltip。
      *
      * @param context 畫面繪製環境。
      * @param mouseX 游標水平座標。
@@ -457,7 +457,7 @@ class MahjongHudLayoutEditorScreen(
     }
 
     /**
-     * 判斷游標是否在按鈕範圍內；停用的按鈕也算，讓停用原因的提示框可以顯示。
+     * 判斷游標是否在按鈕範圍內。停用的按鈕也算，讓停用原因的提示框可以顯示。
      *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
@@ -465,7 +465,7 @@ class MahjongHudLayoutEditorScreen(
      */
     private fun Button.isHovered(mouseX: Int, mouseY: Int): Boolean = mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height
 
-    /** 以範例內容量測每個 HUD 的實際尺寸，讓預覽框與實際 HUD 同寬同高；無法量測的 HUD 沿用模型的內建預設尺寸。 */
+    /** 以範例內容量測每個 HUD 的實際尺寸，讓預覽框與實際 HUD 同寬同高。無法量測的 HUD 沿用模型的內建預設尺寸。 */
     private fun measurePreviews() {
         HudElement.entries.forEach { element ->
             val size = previewRenderer.size(
@@ -503,7 +503,7 @@ class MahjongHudLayoutEditorScreen(
     )
 
     /**
-     * 預覽框內顯示的位置百分比；只可調整垂直位置的元素不顯示 X。
+     * 預覽框內顯示的位置百分比。只可調整垂直位置的元素不顯示 X。
      *
      * @param element 欲顯示位置的 HUD 元件。
      * @return 可調整軸的位置百分比文字。
@@ -566,7 +566,7 @@ class MahjongHudLayoutEditorScreen(
     }
 
     /**
-     * 在預覽外框上方標示名稱與位置；上方空間不足時改標在下方。
+     * 在預覽外框上方標示名稱與位置。上方空間不足時改標在下方。
      *
      * @param context 畫面繪製環境。
      * @param element 欲標示的 HUD 元件。
@@ -604,7 +604,7 @@ class MahjongHudLayoutEditorScreen(
         context.drawCenteredString(font, label, bounds.left + bounds.width / 2, bounds.top + 7, OUTLINE_TEXT_COLOR)
     }
 
-    /** Editor 配色與 Z 位移常數；工具列版位常數見 [MahjongHudToolbarLayout]。 */
+    /** Editor 配色與 Z 位移常數。工具列版位常數見 [MahjongHudToolbarLayout]。 */
     private companion object {
         /** HUD 選擇器展開清單的識別值。 */
         const val HUD_SELECTOR_KEY = "hud"

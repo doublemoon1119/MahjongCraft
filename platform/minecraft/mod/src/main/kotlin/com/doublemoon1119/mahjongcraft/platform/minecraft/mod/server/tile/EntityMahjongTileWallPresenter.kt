@@ -48,25 +48,24 @@ class EntityMahjongTileWallPresenter(
     private val logger = mahjongCraftLogger(EntityMahjongTileWallPresenter::class)
 
     /**
-     * 驗證 controller 後先建立新牌；全部成功才移除同桌舊牌。[MahjongTileWallPresentation.finalLayout]
-     * 為空（例如對局結束）時，跳過建立步驟直接視為成功，等同只清除舊牌——重用同一段替換邏輯，不需要
-     * 另外開一個清除專用的呼叫路徑。
+     * 替換流程：
      *
-     * 每張新牌 entity 的 UUID 在加入世界前直接設為對應 [IdentifiedTile.id]，
-     * 沿用 [MahjongTileEntity] 既有 KDoc 早已寫下的設計意圖——此時 entity 尚未加入 world 的 UUID
-     * 索引，是唯一安全能覆寫 UUID 的時機點；`level.addFreshEntity` 之後才變更會與世界既有索引不一致。
+     * - 驗證 controller 後先建立新牌，全部成功才移除同桌舊牌。
+     * - [MahjongTileWallPresentation.finalLayout] 為空（例如對局結束）時跳過建立步驟，直接視為成功，等同只清除舊牌。
+     * - 每張新牌 entity 的 UUID 在加入世界前設為對應的 [IdentifiedTile.id]，見 [MahjongTileEntity] KDoc。
+     *   此時 entity 尚未加入 world 的 UUID 索引，是唯一能安全覆寫 UUID 的時機。`level.addFreshEntity` 之後再改會與世界索引不一致。
      *
-     * [MahjongTileWallPresentation.animateOpening] 啟用時，所有牌只依
-     * [MahjongTileWallPresentation.assemblyStructure] 生成；初次發牌與手牌翻起完成後，呼叫端再以
-     * [presentOpening] 把開門整理接到同一條持久化時間線。停用開門時代表恢復既有桌況，直接使用最終
-     * 布局與權威公開姿態。
+     * 開門動畫：
      *
-     * 這裡查詢並清除的「舊牌」不限定牌牆自己管理的牌，而是這張桌子目前所有管理中的麻將牌 entity
-     * （含已經被 [EntityMahjongPlayerAreaPresenter] 領走、目前呈現成手牌的那些）——因為每一局重新洗牌都會產生全新的 `IdentifiedTile.id`，
-     * 跟上一局完全無關，所以只要牌牆重新生成（代表新的一局開始），上一局不管是牌牆、王牌還是手牌的舊 entity
-     * 全部都已經沒有意義，應該整批清空，不需要區分「這張舊牌上一局屬於哪個呈現子系統」再各自分開
-     * 清理。這也是本方法是這條開局呈現鏈裡第一個被呼叫的原因：由它負責一次把整張桌子清乾淨，之後
-     * 手牌 presenter 只需要專心「領走這局的新牌」，不用再自己額外清理上一局的殘留。
+     * - [MahjongTileWallPresentation.animateOpening] 啟用時，所有牌只依 [MahjongTileWallPresentation.assemblyStructure] 生成。
+     *   初次發牌與手牌翻起完成後，呼叫端再以 [presentOpening] 把開門整理接到同一條持久化時間線。
+     * - 停用時代表恢復既有桌況，直接使用最終布局與權威公開姿態。
+     *
+     * 清除範圍：
+     *
+     * - 清除的舊牌是這張桌子目前所有管理中的麻將牌 entity，包含已被 [EntityMahjongPlayerAreaPresenter] 領走、呈現成手牌的牌。
+     * - 每一局重新洗牌都產生全新的 `IdentifiedTile.id`。牌牆重新生成代表新的一局開始，上一局的所有舊 entity 都已失去意義，整批清空。
+     * - 因此本方法是開局呈現鏈中第一個呼叫的，由它清乾淨整張桌子。之後手牌 presenter 只需要領走這局的新牌。
      *
      * @param presentation 此次要呈現的牌牆資料與布局。
      * @return 桌子有效且替換成功時為 `PRESENTED`，否則回報桌子或生成錯誤。
@@ -229,7 +228,7 @@ class EntityMahjongTileWallPresenter(
     }
 
     /**
-     * 將同桌既有牌牆 entity 同步至新的權威布局；此方法不建立、移除或清除任何 entity。
+     * 將同桌既有牌牆 entity 同步至新的權威布局。此方法不建立、移除或清除任何 entity。
      *
      * @param tableId 麻將桌 UUID。
      * @param tableLocation 麻將桌目前位置。
@@ -270,17 +269,15 @@ class EntityMahjongTileWallPresenter(
     }
 
     /**
-     * 每面牌牆同時由玩家右側（[TileWallPosition.stack] 為 `0`，見 [MahjongTileTableLayout.wallPlacement]
-     * KDoc）至左側依序半空生成掉落，形成波浪感——`stack` 越大延遲越久開始掉落，四面牌牆各自獨立套用
-     * 同一套延遲公式（[MahjongTileTableLayout.WAVE_STEP_TICKS]）、同時開始，天然同步成波浪；`layer`
-     * 不影響延遲，同一墩兩層一起落下。牌張本身已經 `moveTo` 到掉落終點，這裡只需要
-     * 疊加半空起點的動畫，起訖姿態相同（[MahjongTilePose.FACE_DOWN]），只有位置在動。「延遲到期前先
-     * 隱形」用 [AnimationStep.SetInvisible] 表達，不是像過去那樣提前把動畫起點設在未來、靠 renderer
-     * 端另外判斷「還沒到期」來隱藏——理由見 [AnimatedMahjongEntity] KDoc。
-     *
-     * 本方法只排牌牆由半空落桌的動畫；開門整理與初始公開牌翻面由 [presentOpening] 在初次發牌及四家
-     * 手牌翻起後另行排入。[MahjongTileWallPresentation.animateOpening] 為 `false` 時代表 recovery 或
-     * 靜態同步，牌牆會直接在最終座標與權威公開姿態生成，不重播已過去的開門或翻面動畫。
+     * - 每面牌牆從玩家右側（[TileWallPosition.stack] 為 `0`，見 [MahjongTileTableLayout.wallPlacement] KDoc）到左側依序從半空掉落，形成波浪。
+     *   `stack` 越大，延遲越久才開始掉落。
+     * - 四面牌牆各自套用同一套延遲公式（[MahjongTileTableLayout.WAVE_STEP_TICKS]）並同時開始，因此波浪同步。
+     * - `layer` 不影響延遲，同一墩兩層一起落下。
+     * - 牌已經 `moveTo` 到掉落終點，這裡只疊加半空起點的動畫。起訖姿態都是 [MahjongTilePose.FACE_DOWN]，只有位置在動。
+     * - 延遲到期前先以 [AnimationStep.SetInvisible] 隱形，見 [AnimatedMahjongEntity] KDoc。
+     * - 本方法只排牌牆落桌的動畫。開門整理與初始公開牌翻面由 [presentOpening] 在初次發牌及四家手牌翻起後另行排入。
+     * - [MahjongTileWallPresentation.animateOpening] 為 `false` 時代表 recovery 或靜態同步。
+     *   牌牆直接在最終座標與權威公開姿態生成，不重播已過去的開門或翻面動畫。
      *
      * @param world 牌牆所在的伺服器世界。
      * @param tilesWithPosition 每張牌的牌牆位置與 entity 配對。
@@ -351,7 +348,7 @@ class EntityMahjongTileWallPresenter(
     )
 
     /**
-     * 建立一墩牌牆落桌時的小音量聲音 step；同墩只由上層牌播放一次。
+     * 建立一墩牌牆落桌時的小音量聲音 step。同墩只由上層牌播放一次。
      *
      * @param gameTime 預定落桌音效的絕對遊戲 tick。
      * @return 帶播放與過期時刻的落桌音效步驟。
@@ -379,24 +376,22 @@ class EntityMahjongTileWallPresenter(
     )
 
     /**
-     * 牌牆上的牌翻面公開的「起飛→翻面→落下」步驟：牌原地（[x]／[z]／[yaw] 不變）往上抬起，在半空中
-     * 把姿態從 [MahjongTilePose.FACE_DOWN] 轉成 [MahjongTilePose.FACE_UP]（180 度旋轉插值，不是瞬間
-     * 換面——[MahjongTilePose.rotationDegrees] 這兩個姿態剛好相差 180 度），再落回原位，手法完全比照
-     * `EntityMahjongPlayerAreaPresenter` 開局發牌的起飛/翻牌/落下動畫。跟開局發牌不同的是這裡真實座標
-     * 全程只有 Y 在變、[x]／[z] 從頭到尾不變（牌本來就已經在開門後的正確位置，不需要像發牌那樣額外
-     * 傳送到不同的水平位置），因此不需要隱形／傳送到新座標那個轉場技巧。
+     * 牌牆上的牌翻面公開的「起飛→翻面→落下」步驟。
      *
-     * 翻面這段的 [AnimationStep.PlayMotion.easeRotation] 傳 `true`：旋轉本身也套用跟位移相同的
-     * ease-out 曲線，不是預設的純線性——遊戲內驗證過純線性旋轉在銜接下一個 step（落下）時，旋轉會
-     * 毫無預兆地瞬間停住，跟位移早已有的減速收尾比起來明顯生硬；套用同一條曲線後兩者收尾節奏一致，
-     * 翻面本身也有先快後慢的自然感，不是等速旋轉。這是刻意只在這個呼叫點加上的行為，不影響開局發牌
-     * 翻牌／摸牌換面等其他既有呼叫點的線性旋轉手感，見 [AnimationStep.PlayMotion.easeRotation] KDoc。
+     * - 牌原地往上抬起，[x]／[z]／[yaw] 不變。
+     * - 在半空中把姿態從 [MahjongTilePose.FACE_DOWN] 轉成 [MahjongTilePose.FACE_UP]，以 180 度旋轉插值，不是瞬間換面。
+     *   [MahjongTilePose.rotationDegrees] 中這兩個姿態正好相差 180 度。
+     * - 再落回原位。做法比照 `EntityMahjongPlayerAreaPresenter` 開局發牌的起飛／翻牌／落下動畫。
+     * - 與開局發牌不同，牌已經在開門後的正確位置，真實座標全程只有 Y 在變，因此不需要隱形並傳送到新座標的轉場。
+     * - 翻面這段的 [AnimationStep.PlayMotion.easeRotation] 傳 `true`，旋轉套用與位移相同的 ease-out 曲線。
+     *   純線性旋轉在接到落下時會突然停住，與位移的減速收尾不一致。
+     * - 只有這個呼叫點使用 ease-out 旋轉。開局發牌翻牌、摸牌換面等其他呼叫點仍是線性旋轉，見 [AnimationStep.PlayMotion.easeRotation] KDoc。
      *
      * @param x 動畫往返的世界 X 座標。
      * @param y 動畫往返的起始世界 Y 座標。
      * @param z 動畫往返的世界 Z 座標。
      * @param yaw 動畫期間維持的水平朝向。
-     * @param soundGameTime 選用提示聲的絕對播放 tick；null 時不加聲音步驟。
+     * @param soundGameTime 選用提示聲的絕對播放 tick。null 時不加聲音步驟。
      * @return 起飛、翻面與落下的持久化動畫步驟。
      */
     private fun revealFlipAnimationSteps(
@@ -451,7 +446,7 @@ class EntityMahjongTileWallPresenter(
 
     /**
      * 排定 [revealedTileIds] 對應的既有管理中牌播放「起飛→翻面→落下」動畫（見
-     * [revealFlipAnimationSteps]），公開成正面朝上；找不到對應 entity（例如桌子已被拆掉、或這局已經
+     * [revealFlipAnimationSteps]），公開成正面朝上。找不到對應 entity（例如桌子已被拆掉、或這局已經
      * 結束）的牌直接跳過，回傳結果只用來讓呼叫端記 log，不影響已成功排定的牌。牌目前的實際座標
      * （`tile.x`／`tile.y`／`tile.z`／`tile.yaw`）就是動畫的起訖點，不需要重新查詢牌牆結構座標——這張
      * 牌本來就已經在開門後的正確位置，手法同開局發牌動畫（`TileAnimationSteps.scheduleDealBatch`）
@@ -462,7 +457,7 @@ class EntityMahjongTileWallPresenter(
      * @param tableId 牌所屬桌子的 UUID。
      * @param tableLocation 桌子 controller 的版本無關位置。
      * @param revealedTileIds 要翻面的管理中牌 UUID。
-     * @return 桌子有效時回報呈現結果；世界未載入時回報 `TABLE_NOT_FOUND`。
+     * @return 桌子有效時回報呈現結果。世界未載入時回報 `TABLE_NOT_FOUND`。
      */
     override fun revealReservedWallTiles(tableId: Uuid, tableLocation: TableLocation, revealedTileIds: Set<Uuid>): MahjongTileWallPresentationResult {
         val world = resolveWorld(tableLocation) ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
@@ -490,7 +485,7 @@ class EntityMahjongTileWallPresenter(
      *
      * @param tableId 要清除牌張所屬的桌子 UUID。
      * @param tableLocation 桌子 controller 的版本無關位置。
-     * @return 實際移除的牌 entity 數；世界未載入時為 0。
+     * @return 實際移除的牌 entity 數。世界未載入時為 0。
      */
     override fun clear(tableId: Uuid, tableLocation: TableLocation): Int {
         val world = resolveWorld(tableLocation) ?: return 0
@@ -503,7 +498,7 @@ class EntityMahjongTileWallPresenter(
      * 由版本無關 dimension ID 取得目前 server session 的世界。
      *
      * @param location 要解析世界的桌子位置。
-     * @return 對應的已載入伺服器世界；ID 無效或未載入時為 null。
+     * @return 對應的已載入伺服器世界。ID 無效或未載入時為 null。
      */
     private fun resolveWorld(location: TableLocation): ServerLevel? {
         val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null
@@ -555,7 +550,7 @@ class EntityMahjongTileWallPresenter(
         const val REVEAL_LIFT_HEIGHT: Double = 0.4
 
         /**
-         * 牌牆上的牌翻面動畫起飛階段的時長；比其他牌張動畫的對應時長長，因為這段動畫沒有其他牌同時
+         * 牌牆上的牌翻面動畫起飛階段的時長。比其他牌張動畫的對應時長長，因為這段動畫沒有其他牌同時
          * 播放分散注意力，需要單獨看得清楚，遊戲內比對後從最初的 4 調到現在的值。
          */
         const val REVEAL_LIFT_DURATION_TICKS: Int = 8

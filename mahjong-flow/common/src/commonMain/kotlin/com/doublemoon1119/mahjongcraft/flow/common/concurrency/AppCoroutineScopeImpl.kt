@@ -13,7 +13,7 @@ import kotlin.time.Duration
  * 使用 [SupervisorJob] 隔離子工作失敗的共用作用域。
  *
  * @param dispatchers 提供作用域預設使用的調度器。
- * @param exceptionHandler 未捕獲例外的處理器；null 時使用協程預設的例外處理機制。
+ * @param exceptionHandler 未捕獲例外的處理器。null 時使用協程預設的例外處理機制。
  */
 class AppCoroutineScopeImpl(
     dispatchers: CoroutineDispatchers,

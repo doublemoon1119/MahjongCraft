@@ -21,14 +21,24 @@ import kotlin.uuid.Uuid
 /**
  * 累計無頭對局推進中各環節的耗時，供壓力測試拆解單步耗時。
  *
- * 量測的環節：建立 AI 視角快照（[aiContext]）、策略思考（[aiDecision]，可能在背景執行緒上）、快照同步（為每位觀察者裁切可見快照）、
- * 歷史記錄（權威交易中比對桌況並加入待寫佇列；作為權威來源的觀察者時才有）。呼叫端另外以 [addAiWait] 記下等待 AI 結果的時間，
- * 單步總耗時扣掉它就是主執行緒上的耗時。另外計算過期而沒有套用的 AI 決策數（[staleDecisions]）。
+ * 量測的環節：
  *
- * 另外記下本區間最久的一次 AI 出牌決策，以及正在進行中的 AI 出牌決策，用來找出異常緩慢的決策情境。
+ * - 建立 AI 視角快照（[aiContext]）。
+ * - 策略思考（[aiDecision]），可能在背景執行緒上。
+ * - 快照同步：為每位觀察者裁切可見快照。
+ * - 歷史記錄：權威交易中比對桌況並加入待寫佇列。作為權威來源的觀察者時才有。
  *
- * 呼叫端在每個量測區間開始前 [reset]，結束後讀取各項累計值；同一時間只量測一個區間，同一個區間內的寫入依序發生（策略思考
- * 可能在其他執行緒上，但結束後才回到呼叫端）。只有 [ongoingAiDecision] 可以在區間進行中從其他執行緒讀取。
+ * 另外記錄的項目：
+ *
+ * - 呼叫端以 [addAiWait] 記下等待 AI 結果的時間。單步總耗時扣掉它就是主執行緒上的耗時。
+ * - 過期而沒有套用的 AI 決策數（[staleDecisions]）。
+ * - 本區間最久的一次 AI 出牌決策，以及正在進行中的 AI 出牌決策，用來找出異常緩慢的決策情境。
+ *
+ * 使用方式：
+ *
+ * - 呼叫端在每個量測區間開始前 [reset]，結束後讀取各項累計值。
+ * - 同一時間只量測一個區間。同一個區間內的寫入依序發生，策略思考可能在其他執行緒上，但結束後才回到呼叫端。
+ * - 只有 [ongoingAiDecision] 可以在區間進行中從其他執行緒讀取。
  */
 class HeadlessStepTimer : HistoryRecordingObserver {
     /** 本區間策略思考的累計耗時。 */
@@ -59,11 +69,11 @@ class HeadlessStepTimer : HistoryRecordingObserver {
     var historyEvents: Int = 0
         private set
 
-    /** 本區間最久的一次 AI 出牌決策；本區間沒有出牌決策時為 null。 */
+    /** 本區間最久的一次 AI 出牌決策。本區間沒有出牌決策時為 null。 */
     var slowestAiDecision: TimedAiDecision? = null
         private set
 
-    /** 正在進行中的 AI 出牌決策；沒有時為 null。可從其他執行緒讀取，用來發現遲遲沒有結束的決策。 */
+    /** 正在進行中的 AI 出牌決策。沒有時為 null。可從其他執行緒讀取，用來發現遲遲沒有結束的決策。 */
     @Volatile var ongoingAiDecision: OngoingAiDecision? = null
         private set
 
@@ -165,7 +175,7 @@ internal class TimedVisibilityPolicy(
     override fun publicTileFaces(tableState: TableState, tileIds: Collection<Uuid>): Map<Uuid, TileFaceView> = delegate.publicTileFaces(tableState, tileIds)
 
     /**
-     * 執行 [block]，成功返回後回報耗時；拋出例外時不回報。
+     * 執行 [block]，成功返回後回報耗時。拋出例外時不回報。
      *
      * @param T 工作的回傳型別。
      * @param block 要量測的快照工作。

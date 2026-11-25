@@ -10,7 +10,7 @@ package com.doublemoon1119.mahjongcraft.logic.component
 class ComponentSet private constructor(
     private val entries: Map<String, Entry<*>>,
 ) {
-    /** 此集合使用的組件定義，依識別碼穩定排序；回傳獨立清單。 */
+    /** 此集合使用的組件定義，依識別碼穩定排序。回傳獨立清單。 */
     val types: List<ComponentType<*>> get() = entries.values.map { it.type }.sortedBy { it.id }
 
     /** 是否沒有任何組件。 */
@@ -21,7 +21,7 @@ class ComponentSet private constructor(
      *
      * @param T 組件值型別。
      * @param type 已登記的組件定義。
-     * @return 組件值；沒有設定時為 null。
+     * @return 組件值。沒有設定時為 null。
      */
     @Suppress("UNCHECKED_CAST")
     operator fun <T : Any> get(type: ComponentType<T>): T? {
@@ -55,7 +55,7 @@ class ComponentSet private constructor(
     }
 
     /**
-     * 按組件定義合併高層資料；未宣告合併方式的衝突會被拒絕。
+     * 按組件定義合併高層資料。未宣告合併方式的衝突會被拒絕。
      *
      * @param higher 較高層的不可變集合。
      * @return 合併後的獨立集合。

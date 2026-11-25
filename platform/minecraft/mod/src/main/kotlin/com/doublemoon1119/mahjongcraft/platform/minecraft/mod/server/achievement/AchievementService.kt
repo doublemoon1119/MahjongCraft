@@ -14,11 +14,12 @@ import kotlinx.coroutines.launch
 /**
  * 將公開事件批次中的通用與規則專屬成果合併，交給原版統計與進度。
  *
- * 收到同筆公開批次後才判定通用與規則專屬成果。
- * 同一玩家、同筆交易只排程一次合併後的授予。原生玩家資料只在主執行緒授予時讀取，離線略過且不補發。
- * 規則專屬判定失敗時整批不授予，其他交易仍可繼續。
+ * - 收到同筆公開批次後才判定通用與規則專屬成果。
+ * - 同一玩家、同筆交易只排程一次合併後的授予。
+ * - 原生玩家資料只在主執行緒授予時讀取。玩家離線時略過，不補發。
+ * - 規則專屬判定失敗時整批不授予，其他交易仍可繼續。
  *
- * @property scope 執行授予的協程 scope；隨 server session 結束取消。
+ * @property scope 執行授予的協程 scope。隨 server session 結束取消。
  * @property dispatchers 取得伺服器主執行緒 dispatcher。
  * @property gateway 把成果交給原版統計與進度系統。
  * @property failurePolicy 判斷規則成果判定與授予失敗能否隔離。

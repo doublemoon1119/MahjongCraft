@@ -20,9 +20,9 @@ fun roundRanksByPlayer(state: TableState, module: MahjongRuleModule<*>): Map<Uui
     .associate { (index, player) -> player.id to index + 1 }
 
 /**
- * 這一局以流局結束時的純結果資料，取自「本局已結束」階段記錄的結束方式；不是流局或本局尚未結束時為 null。
+ * 這一局以流局結束時的純結果資料，取自「本局已結束」階段記錄的結束方式。不是流局或本局尚未結束時為 null。
  *
- * 荒牌流局的得利者是流局時聽牌的玩家；途中流局沒有得利者。
+ * 荒牌流局的得利者是流局時聽牌的玩家。途中流局沒有得利者。
  *
  * @receiver 本局結束後的桌況。
  * @return 流局的純結果資料。

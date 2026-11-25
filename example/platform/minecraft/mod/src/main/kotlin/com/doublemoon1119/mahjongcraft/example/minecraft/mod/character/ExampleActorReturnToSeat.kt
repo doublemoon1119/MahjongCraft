@@ -19,7 +19,7 @@ import kotlin.math.abs
 /** 範例人偶在指定位置附近自行回座，沒有座位時回原位站立。 */
 internal object ExampleActorReturnToSeat {
     /**
-     * 優先使用指定位置的範例家具；沒有家具時，確認空間可用且腳下有支撐後回原位站立。
+     * 優先使用指定位置的範例家具。沒有家具時，確認空間可用且腳下有支撐後回原位站立。
      *
      * @param actor 仍在本場接管中的人偶。
      * @param request 最新指定席位。

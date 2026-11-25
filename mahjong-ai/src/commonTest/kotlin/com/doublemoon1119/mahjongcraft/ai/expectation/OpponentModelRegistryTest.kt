@@ -38,7 +38,7 @@ class OpponentModelRegistryTest {
         }
     }
 
-    /** 基本深度直接使用規則自己的模型；進階深度一律在外面套用共用讀牌，登記與未登記的規則皆然。 */
+    /** 基本深度直接使用規則自己的模型。進階深度一律在外面套用共用讀牌，登記與未登記的規則皆然。 */
     @Test
     fun `advanced depth layers the shared reading on every model`() {
         val registry = OpponentModelRegistry().apply { BundledRiichiExtension.registerOpponentModels(this) }

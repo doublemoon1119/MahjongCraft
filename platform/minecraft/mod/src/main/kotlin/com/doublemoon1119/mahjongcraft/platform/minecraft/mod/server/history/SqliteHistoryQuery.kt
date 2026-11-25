@@ -26,10 +26,10 @@ internal enum class SqliteHistorySortDirection {
 
 /** SQLite 查詢從游標往哪一邊取一頁。 */
 internal enum class SqliteHistoryPageDirection {
-    /** 取游標之後的列；沒有游標時從第一列開始。 */
+    /** 取游標之後的列。沒有游標時從第一列開始。 */
     AFTER,
 
-    /** 取游標之前的列；沒有游標時取最後一頁。 */
+    /** 取游標之前的列。沒有游標時取最後一頁。 */
     BEFORE,
 }
 
@@ -72,24 +72,24 @@ internal enum class SqliteHistoryIntegrityFilter {
 /**
  * 已驗證且已綁定權限範圍的 SQLite 查詢。
  *
- * @property playerId 查詢玩家 UUID；全部範圍查詢時為 null。
+ * @property playerId 查詢玩家 UUID。全部範圍查詢時為 null。
  * @property includeAll 是否查詢所有已發布對局。
  * @property sortField 排序欄位。
  * @property sortDirection 排序方向。
- * @property ruleId 規則 ID 篩選；null 表示不篩選。
- * @property outcome 終局狀態篩選；null 表示不篩選。
- * @property aiFilter AI 參與者篩選；null 表示不篩選。
- * @property integrityFilter Replay 完整性篩選；null 表示不篩選。
+ * @property ruleId 規則 ID 篩選。null 表示不篩選。
+ * @property outcome 終局狀態篩選。null 表示不篩選。
+ * @property aiFilter AI 參與者篩選。null 表示不篩選。
+ * @property integrityFilter Replay 完整性篩選。null 表示不篩選。
  * @property endedAtLowerInclusive 終局時間下界，包含此值。
  * @property endedAtUpperExclusive 終局時間上界，不包含此值。
  * @property minimumRank 名次下界，包含此值。
  * @property maximumRank 名次上界，包含此值。
  * @property pageSize 單頁筆數。
- * @property cursor 延續的 keyset 游標；沒有游標時從第一列或最後一列開始。
+ * @property cursor 延續的 keyset 游標。沒有游標時從第一列或最後一列開始。
  * @property direction 從游標往哪一邊取一頁。
  * @property excludedMatchIds 不可公開的活動或轉移中對局。
- * @property matchId 僅查詢指定對局時使用的 UUID；清單查詢為 null。
- * @property participantIds 名稱篩選解析出的玩家 UUID；null 表示不限制參與者名稱。
+ * @property matchId 僅查詢指定對局時使用的 UUID。清單查詢為 null。
+ * @property participantIds 名稱篩選解析出的玩家 UUID。null 表示不限制參與者名稱。
  */
 internal data class SqliteHistoryQuery(
     val playerId: String?,
@@ -115,7 +115,7 @@ internal data class SqliteHistoryQuery(
 /**
  * 不依賴資料列位置的 keyset 游標。
  *
- * @property sortValue 上一列的排序值；null 排序值以 [nullBucket] 表示。
+ * @property sortValue 上一列的排序值。null 排序值以 [nullBucket] 表示。
  * @property matchId 上一列的對局 ID，用於同值穩定排序。
  * @property nullBucket 上一列是否屬於 null 排序群組。
  */
@@ -131,14 +131,14 @@ internal data class SqliteHistoryCursor(
  * @property matchId 對局 UUID。
  * @property tableId 保存 metadata 的牌桌 UUID。
  * @property state 完整或已確認中斷狀態。
- * @property startedAtEpochMillis 開始時間；無法證實時為 null。
+ * @property startedAtEpochMillis 開始時間。無法證實時為 null。
  * @property endedAtEpochMillis 終局或中止確認時間。
- * @property ruleId 規則 ID；未知時為 null。
- * @property durationMillis 對局持續時間；未知時為 null。
+ * @property ruleId 規則 ID。未知時為 null。
+ * @property durationMillis 對局持續時間。未知時為 null。
  * @property participants 公開的參與者摘要。
- * @property ownFinalScore 查詢玩家的最終分數；未知時為 null。
- * @property ownFinalRank 查詢玩家的最終名次；未知時為 null。
- * @property outcome 權威終端狀態；與 Replay 完整性分開保存。
+ * @property ownFinalScore 查詢玩家的最終分數。未知時為 null。
+ * @property ownFinalRank 查詢玩家的最終名次。未知時為 null。
+ * @property outcome 權威終端狀態。與 Replay 完整性分開保存。
  * @property rounds 已知的局級摘要。
  */
 internal data class SqliteHistoryQueryEntry(
@@ -161,9 +161,9 @@ internal data class SqliteHistoryQueryEntry(
  *
  * @property seatIndex 開局座位。
  * @property playerId 玩家 UUID 字串。
- * @property aiStrategyId AI 策略 ID；真人玩家為 null。
- * @property finalScore 最終分數；資料不足時為 null。
- * @property finalRank 依規則比較器計算的最終名次；資料不足時為 null。
+ * @property aiStrategyId AI 策略 ID。真人玩家為 null。
+ * @property finalScore 最終分數。資料不足時為 null。
+ * @property finalRank 依規則比較器計算的最終名次。資料不足時為 null。
  */
 internal data class HistoryQueryParticipant(
     val seatIndex: Int,
@@ -192,7 +192,7 @@ internal data class HistoryQueryRound(
  * @property entries 本頁安全摘要。
  * @property nextCursor 尚有下一頁時，本頁最後一列的位置。
  * @property previousCursor 尚有上一頁時，本頁第一列的位置。
- * @property firstEntryIndex 本頁第一筆在所有符合列中的位置，從 1 開始；空頁為 0。
+ * @property firstEntryIndex 本頁第一筆在所有符合列中的位置，從 1 開始。空頁為 0。
  * @property totalCount 符合篩選條件的總列數，不受游標影響。
  */
 internal data class SqliteHistoryQueryPage(

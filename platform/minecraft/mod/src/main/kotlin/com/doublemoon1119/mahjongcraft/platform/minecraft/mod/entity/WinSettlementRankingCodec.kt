@@ -39,7 +39,7 @@ internal object WinSettlementRankingCodec {
     }
 
     /**
-     * 由 [encode] 的結果讀回排名；欄位數或數字格式不符的列會略過。
+     * 由 [encode] 的結果讀回排名。欄位數或數字格式不符的列會略過。
      *
      * @param encoded 編碼後的排名字串。
      * @return 成功解析的排名快照清單。

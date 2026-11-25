@@ -69,7 +69,7 @@ fun Project.includeSharedVersionSources() {
  * `platform/minecraft/v1.20.1/mod` 對應 `platform/minecraft/mod`。
  *
  * @param moduleDirectory 模組資料夾。
- * @return 共用資料夾；模組不在 Minecraft 版本資料夾中或沒有共用資料夾時為 null。
+ * @return 共用資料夾。模組不在 Minecraft 版本資料夾中或沒有共用資料夾時為 null。
  */
 fun sharedVersionDirectory(moduleDirectory: File): File? {
     val versionDirectory = moduleDirectory.parentFile ?: return null
@@ -101,7 +101,7 @@ private val VERSION_DIRECTORY = Regex("""v\d+(\.\d+)+""")
  * - 沒有設定、空白、`false`（不分大小寫）：關閉。
  * - 其他值：開啟，值是要執行的步驟。
  *
- * @param value Gradle 屬性的值；沒有設定時為 null。
+ * @param value Gradle 屬性的值。沒有設定時為 null。
  * @return 開啟時為 true。
  */
 internal fun isAutotestEnabled(value: String?): Boolean {
@@ -210,7 +210,7 @@ fun Project.includeResourcesOf(projectPath: String, sourceDirectory: String) {
 /**
  * 這個 Minecraft 版本的 mod 模組所用的 access transformer，例如 `:minecraft_v1.20.1_mod` 的那份。
  *
- * 模組放在 Minecraft 版本資料夾底下，例如 `platform/minecraft/v1.20.1/forge` 或範例的 `example/platform/minecraft/v1.20.1/mod`；
+ * 模組放在 Minecraft 版本資料夾底下，例如 `platform/minecraft/v1.20.1/forge` 或範例的 `example/platform/minecraft/v1.20.1/mod`。
  * 版本取自上層資料夾的名稱。Forge 與以原版編譯的模組都讀這一份，本體在執行時也套用同一份。
  *
  * @return access transformer 檔案。
@@ -221,7 +221,7 @@ fun Project.minecraftModAccessTransformer(): File =
 /**
  * 不顯示 Forge 對原版寫法的過時警告。
  *
- * Forge 把部分原版寫法標成過時，要 mod 改用 Forge 的寫法；與 Fabric 共用的程式只能用原版寫法。共用程式真正的過時寫法仍由
+ * Forge 把部分原版寫法標成過時，要 mod 改用 Forge 的寫法。與 Fabric 共用的程式只能用原版寫法。共用程式真正的過時寫法仍由
  * 以原版編譯的 mod 模組與 Fabric 的編譯提醒。
  */
 fun Project.hideForgeDeprecationsOfVanillaApis() {
@@ -230,7 +230,7 @@ fun Project.hideForgeDeprecationsOfVanillaApis() {
     }
 }
 
-/** 加入 Kotlin for Forge 作者自己的 Maven 倉庫；它只提供 Kotlin for Forge 的套件，其他套件不會向它查詢。 */
+/** 加入 Kotlin for Forge 作者自己的 Maven 倉庫。它只提供 Kotlin for Forge 的套件，其他套件不會向它查詢。 */
 fun RepositoryHandler.kotlinForForge() {
     exclusiveContent {
         forRepository { maven("https://thedarkcolour.github.io/KotlinForForge/") { name = "KotlinForForge" } }
@@ -238,7 +238,7 @@ fun RepositoryHandler.kotlinForForge() {
     }
 }
 
-/** 加入 Modrinth 的 Maven 倉庫；它只提供 Modrinth 的套件，其他套件不會向它查詢。 */
+/** 加入 Modrinth 的 Maven 倉庫。它只提供 Modrinth 的套件，其他套件不會向它查詢。 */
 fun RepositoryHandler.modrinth() {
     exclusiveContent {
         forRepository { maven("https://api.modrinth.com/maven") { name = "Modrinth" } }

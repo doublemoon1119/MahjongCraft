@@ -62,7 +62,7 @@ class ClientSessionLifecycleOwnerTest {
         clearTableSpaceObstruction = { calls += "table-space" },
     )
 
-    /** 預期的單次清理順序；不包含持久化偏好。 */
+    /** 預期的單次清理順序。不包含持久化偏好。 */
     private companion object {
         /** 每個資源僅出現一次。 */
         val RESOURCES = listOf("history-and-settings", "archive", "profiles", "chat", "game", "automatic", "timer", "prompt", "hud", "tile-appearance", "hand-layout", "table-space")

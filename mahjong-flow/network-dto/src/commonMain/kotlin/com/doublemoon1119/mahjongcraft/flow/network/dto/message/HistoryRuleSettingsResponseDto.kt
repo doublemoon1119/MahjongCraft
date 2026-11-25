@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
  *
  *
  * @property requestId 對應請求的識別碼。
- * @property config 對局開局時採用的完整遊戲設定；不可提供時為 null。
+ * @property config 對局開局時採用的完整遊戲設定。不可提供時為 null。
  * @property errorCode 安全的查詢錯誤代碼。
  */
 @Serializable

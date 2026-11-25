@@ -30,7 +30,7 @@ data class TileTypeId(
         /** namespace 的合法格式。 */
         private val NAMESPACE_PATTERN = Regex("[a-z0-9_.-]+")
 
-        /** path 的合法格式；斜線只能分隔非空片段。 */
+        /** path 的合法格式。斜線只能分隔非空片段。 */
         private val PATH_PATTERN = Regex("[a-z0-9_.-]+(?:/[a-z0-9_.-]+)*")
 
         /**

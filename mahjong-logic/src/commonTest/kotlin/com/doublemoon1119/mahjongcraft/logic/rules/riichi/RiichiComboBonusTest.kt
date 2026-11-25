@@ -142,9 +142,9 @@ class RiichiComboBonusTest {
     }
 
     /**
-     * 四人座位：東家為莊家；南家是贏家，手牌差一張中完成大三元。
+     * 四人座位：東家為莊家。南家是贏家，手牌差一張中完成大三元。
      *
-     * @param winnerPao 贏家身上包牌責任的方向；東家位於南家的 [RelativeDirection.Left]。
+     * @param winnerPao 贏家身上包牌責任的方向。東家位於南家的 [RelativeDirection.Left]。
      * @param drawn 贏家是否已摸進胡牌張，供自摸結算使用。
      */
     private class Seats(winnerPao: RelativeDirection?, drawn: Boolean = false) {

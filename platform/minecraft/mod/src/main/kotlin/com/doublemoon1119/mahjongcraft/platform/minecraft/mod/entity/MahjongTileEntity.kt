@@ -43,7 +43,7 @@ import kotlin.uuid.toKotlinUuid
  * 可自由放置的麻將牌 entity。
  *
  * 正式牌局接線後，權威 [IdentifiedTile] 的 ID 會直接使用此 entity 的 UUID，
- * 不在 entity 內複製麻將規則狀態；牌局管理中的 entity 由 [managedByGame]／[managedTableId] 區分自由放置模式，
+ * 不在 entity 內複製麻將規則狀態。牌局管理中的 entity 由 [managedByGame]／[managedTableId] 區分自由放置模式，
  * 比照 [MahjongDiceEntity] 的雙態設計。
  *
  * @param type Minecraft entity 類型。
@@ -53,13 +53,13 @@ class MahjongTileEntity(
     type: EntityType<out MahjongTileEntity> = ModEntities.mahjongTile,
     world: Level,
 ) : AnimatedMahjongEntity<MahjongTilePose>(type, world) {
-    /** 僅供本地 client 同種牌提示使用的原版 outline RGB；不追蹤也不持久化。 */
+    /** 僅供本地 client 同種牌提示使用的原版 outline RGB。不追蹤也不持久化。 */
     private var matchingHighlightColor: Int? = null
 
-    /** 僅供本地 client 動作選牌（例如多選 rule decision）使用的原版 outline RGB；不追蹤也不持久化。 */
+    /** 僅供本地 client 動作選牌（例如多選 rule decision）使用的原版 outline RGB。不追蹤也不持久化。 */
     private var selectionHighlightColor: Int? = null
 
-    /** 僅供本地 client 最新捨牌標示使用的原版 outline RGB；不追蹤也不持久化。 */
+    /** 僅供本地 client 最新捨牌標示使用的原版 outline RGB。不追蹤也不持久化。 */
     private var latestDiscardHighlightColor: Int? = null
 
     /** 原版或其他來源未啟用 glowing 時，加入本地選牌提示、同種牌提示或最新捨牌標示狀態。 */
@@ -69,7 +69,7 @@ class MahjongTileEntity(
         latestDiscardHighlightColor != null
 
     /**
-     * 原版 glowing 優先；其次是選牌提示（比同種牌提示更即時可動作），再來是同種牌提示，最後才是一直亮著的最新捨牌標示。
+     * 原版 glowing 優先。其次是選牌提示（比同種牌提示更即時可動作），再來是同種牌提示，最後才是一直亮著的最新捨牌標示。
      */
     override fun getTeamColor(): Int = if (super.isCurrentlyGlowing) {
         super.teamColor
@@ -108,7 +108,7 @@ class MahjongTileEntity(
     }
 
     /**
-     * 牌面素材 key；外部輸入會正規化為支援值或 `unknown`。
+     * 牌面素材 key。外部輸入會正規化為支援值或 `unknown`。
      *
      * 牌局管理中的 entity（[managedByGame] 為 `true`）恆定為 [UNKNOWN_TILE_ASSET_KEY]，不寫入真正
      * 牌面——tracked data 會廣播給所有 tracking 到這個 entity 的 client，沒辦法只給特定玩家看到真牌
@@ -121,29 +121,29 @@ class MahjongTileEntity(
             entityData.set(TILE_ASSET_KEY, normalized)
         }
 
-    /** 牌相對於表面的姿態；改變後立即更新 bounding box。 */
+    /** 牌相對於表面的姿態。改變後立即更新 bounding box。 */
     var tilePose: MahjongTilePose
         get() = MahjongTilePose.fromNameOrDefault(entityData[TILE_POSE])
         set(value) = entityData.set(TILE_POSE, value.name)
 
-    /** 伺服器目前佇列最後排定的姿態；沒有排定姿態時使用當前姿態。 */
+    /** 伺服器目前佇列最後排定的姿態。沒有排定姿態時使用當前姿態。 */
     val queuedTilePose: MahjongTilePose
         get() {
             check(!level().isClientSide) { "Queued tile pose is only available on the server" }
             return finalQueuedCustomState(tilePose)
         }
 
-    /** 是否阻擋玩家及其他非麻將牌 entity；由目前 server config 同步，不寫入世界存檔。 */
+    /** 是否阻擋玩家及其他非麻將牌 entity。由目前 server config 同步，不寫入世界存檔。 */
     var physicalCollisionEnabled: Boolean
         get() = entityData[PHYSICAL_COLLISION_ENABLED]
         set(value) = entityData.set(PHYSICAL_COLLISION_ENABLED, value)
 
-    /** 是否由正式牌局管理；管理中的牌不接受自由放置互動。 */
+    /** 是否由正式牌局管理。管理中的牌不接受自由放置互動。 */
     var managedByGame: Boolean
         get() = entityData[MANAGED_BY_GAME]
         set(value) = entityData.set(MANAGED_BY_GAME, value)
 
-    /** 正式牌局所屬麻將桌；自由放置牌為 null。 */
+    /** 正式牌局所屬麻將桌。自由放置牌為 null。 */
     var managedTableId: Uuid?
         get() = entityData[MANAGED_TABLE_ID]
             .takeIf(String::isNotBlank)
@@ -159,7 +159,7 @@ class MahjongTileEntity(
     /** 短暫牌面提示完成淡出的絕對時間。 */
     val actionPopupEndGameTime: Long get() = entityData[ACTION_POPUP_END_GAME_TIME]
 
-    /** 由單一錨點承載的完整副露提示排列；非副露錨點為空集合。 */
+    /** 由單一錨點承載的完整副露提示排列。非副露錨點為空集合。 */
     val meldActionPopupTiles: List<MeldActionPopupTile>
         get() = entityData[MELD_ACTION_POPUP_TILES].split(";").mapNotNull { encoded ->
             val parts = encoded.split(",")
@@ -202,21 +202,19 @@ class MahjongTileEntity(
     }
 
     /**
-     * 這張牌的動畫**不**列入整桌忙碌判定的絕對到期時間；`0` 代表沒有這種豁免（一般情況）。
+     * 這張牌的動畫**不**列入整桌忙碌判定的絕對到期時間。`0` 代表沒有這種豁免（一般情況）。
      *
-     * 存在的理由：中途胡牌（本局在胡牌後仍繼續）會在已完成玩家的真實牌上排入理牌、倒牌、隱形、恢復
-     * 顯示與蓋牌動畫。這些動畫**不該**阻擋其他仍在本局中的玩家繼續摸打，但
-     * [TablePresentationBusyTracker][TablePresentationBusyTracker]
-     * 的整桌忙碌判定是掃描「這桌有沒有任何牌正在動畫」，光靠呈現層不標記整桌 pending 攔不住。
-     *
-     * 刻意用「到期時間」而不是布林旗標：跟牌桌呈現時間軸與動畫佇列一樣是絕對 game time，寫進 entity
-     * NBT 後跨重啟語意不變，也不需要任何人負責事後清除——時間到了自然失效。
+     * - 中途胡牌（本局在胡牌後仍繼續）會在已完成玩家的真實牌上排入理牌、倒牌、隱形、恢復顯示與蓋牌動畫。
+     *   這些動畫不阻擋其他仍在本局中的玩家繼續摸打。
+     * - [TablePresentationBusyTracker] 的整桌忙碌判定會掃描這桌有沒有任何牌正在動畫，因此這些牌需要這個豁免。
+     * - 使用到期時間而不是布林旗標。它與牌桌呈現時間軸、動畫佇列一樣是絕對 game time，寫進 entity NBT 後跨重啟語意不變，
+     *   時間到了自然失效，不需要事後清除。
      */
     var nonBlockingPresentationUntilGameTime: Long = 0L
         private set
 
     /**
-     * 只在 server 端建立可持久化的「動畫不阻塞全桌」lease；重複呼叫只允許延長。
+     * 只在 server 端建立可持久化的「動畫不阻塞全桌」lease。重複呼叫只允許延長。
      *
      * 呼叫端負責涵蓋整段中途胡牌演出（含收尾的蓋牌動畫），見
      * `ServerThreadGamePresentationPublisher.publishWinPresentation`。
@@ -230,7 +228,7 @@ class MahjongTileEntity(
     }
 
     /**
-     * 這張牌目前的動畫是否應該讓整桌進入忙碌狀態；判斷規則本身見 [TablePresentationBusyPolicy]。
+     * 這張牌目前的動畫是否應該讓整桌進入忙碌狀態。判斷規則本身見 [TablePresentationBusyPolicy]。
      *
      * @param currentGameTime 目前的絕對 server game time。
      */
@@ -258,7 +256,7 @@ class MahjongTileEntity(
     val animationDurationTicks: Int
         get() = entityData[ANIMATION_DURATION_TICKS]
 
-    /** 拋物線最高額外高度；`0` 代表純直落，不套用拋物線。 */
+    /** 拋物線最高額外高度。`0` 代表純直落，不套用拋物線。 */
     val animationArcHeight: Double
         get() = entityData[ANIMATION_ARC_HEIGHT].toDouble()
 
@@ -294,7 +292,7 @@ class MahjongTileEntity(
     val animationLeanDegrees: Float
         get() = entityData[ANIMATION_LEAN]
 
-    /** 這個 entity 是否已經做過一次 [validateStillManagedByActiveGame] 檢查；只需要做一次。 */
+    /** 這個 entity 是否已經做過一次 [validateStillManagedByActiveGame] 檢查。只需要做一次。 */
     private var hasValidatedManagedState = false
 
     init {
@@ -328,7 +326,7 @@ class MahjongTileEntity(
         tilePose = step
     }
 
-    /** 序列化姿態名稱；持久化仍使用名稱以避免 enum 重排影響存檔，理由同 [addAdditionalSaveData]。 */
+    /** 序列化姿態名稱。持久化仍使用名稱以避免 enum 重排影響存檔，理由同 [addAdditionalSaveData]。 */
     override fun serializeCustomStep(step: MahjongTilePose, nbt: CompoundTag) {
         nbt.putString(NBT_KEY_POSE, step.name)
     }
@@ -337,7 +335,7 @@ class MahjongTileEntity(
     override fun deserializeCustomStep(nbt: CompoundTag): MahjongTilePose = MahjongTilePose.fromNameOrDefault(nbt.getString(NBT_KEY_POSE))
 
     /**
-     * 將牌標記為指定正式牌局桌子管理；[tileAssetKey] 的 setter 會因此自動鎖定為 [UNKNOWN_TILE_ASSET_KEY]。
+     * 將牌標記為指定正式牌局桌子管理。[tileAssetKey] 的 setter 會因此自動鎖定為 [UNKNOWN_TILE_ASSET_KEY]。
      *
      * @param tableId 所屬麻將桌 UUID。
      */
@@ -351,20 +349,13 @@ class MahjongTileEntity(
      * 只在這個 entity 存在後的第一個 server tick 驗證一次：`managedByGame` 為 `true` 時，
      * [managedTableId] 對應的對局是否還存在——查不到就自我 [discard]。
      *
-     * 這是崩潰恢復的安全網，補足「某條清除路徑忘記清 3D entity」這類漏洞（已知一例：
-     * `TableLocationValidationService.cleanupMissing`），不是取代既有的明確清除呼叫
-     * （`MahjongTileWallPresenter.clear()`／`MahjongPlayerAreaPresenter.clear()` 等）——那些呼叫仍是
-     * 正常流程下的清除方式，這裡只在「不知道為什麼漏清了」的情況下才會真的觸發。
-     *
-     * 只查「這個 tableId 是否還有對局」，不逐一比對這張牌的 UUID 是否還在牌牆／手牌／牌河／副露的
-     * 哪個位置——那需要把整個 `TableState` 攤開搜尋，對一個安全網來說成本太高；只要對局本身還在，
-     * 就交給既有的「每局重建時整批清空重新生成」機制（見 [EntityMahjongTileWallPresenter.present] KDoc）
-     * 保證舊局的牌會被正確換掉，不需要這裡重複驗證。
-     *
-     * 讀取 [AuthoritativeStateStore.state] 已發布的快照，不在 tick 這個主執行緒同步呼叫點等待權威狀態的鎖。
-     * 只在第一個 tick 檢查一次，不是每個 tick 都查：對「一整場遊戲可能有上百張管理中的牌」的規模，只在
-     * entity 剛存在（含世界重新載入後第一次 tick，也就是崩潰重啟後最需要驗證的時機點）驗證一次就足夠——這個
-     * entity 之後如果真的被清除，一定是走上面說的既有明確清除路徑，不會是本機制錯過的情況。
+     * - 這是崩潰恢復的安全網，處理清除路徑沒有清掉 3D entity 的情況，例如 `TableLocationValidationService.cleanupMissing`。
+     *   正常流程仍由明確的清除呼叫處理，例如 `MahjongTileWallPresenter.clear()`／`MahjongPlayerAreaPresenter.clear()`。
+     * - 只查這個 tableId 是否還有對局，不比對這張牌的 UUID 是否還在牌牆、手牌、牌河或副露。
+     *   對局還在時，由每局重建時整批清空重新生成的機制換掉舊局的牌，見 [EntityMahjongTileWallPresenter.present] KDoc。
+     * - 讀取 [AuthoritativeStateStore.state] 已發布的快照，不在 tick 這個主執行緒同步呼叫點等待權威狀態的鎖。
+     * - 只在 entity 剛存在時檢查一次，包括世界重新載入後的第一個 tick，也就是崩潰重啟後。
+     *   一場遊戲可能有上百張管理中的牌，因此不每個 tick 都查。之後的清除都走明確的清除路徑。
      */
     override fun tick() {
         super.tick()
@@ -377,7 +368,7 @@ class MahjongTileEntity(
     /**
      * 見 [tick] KDoc。
      *
-     * 麻將資料無法讀取時權威狀態是清空的，任何對局都會被誤判為已結束，因此保留這張牌；資料恢復後重新載入世界時，
+     * 麻將資料無法讀取時權威狀態是清空的，任何對局都會被誤判為已結束，因此保留這張牌。資料恢復後重新載入世界時，
      * entity 會重新建立並再次驗證。
      */
     private fun validateStillManagedByActiveGame() {
@@ -388,7 +379,7 @@ class MahjongTileEntity(
         if (!gameStillActive) discard()
     }
 
-    /** 依 server policy 決定是否提供物理阻擋；展示交接後的隱形牌不得繼續形成看不見的牆。 */
+    /** 依 server policy 決定是否提供物理阻擋。展示交接後的隱形牌不得繼續形成看不見的牆。 */
     override fun canBeCollidedWith(): Boolean = !isInvisible && physicalCollisionEnabled
 
     /** 麻將牌彼此永遠不產生物理碰撞，其他 entity 則依目前 server policy 與原版規則處理。 */
@@ -403,7 +394,7 @@ class MahjongTileEntity(
     /** 允許玩家視線 raycast 選取麻將牌，以執行右鍵互動與後續 HUD targeting。 */
     override fun isPickable(): Boolean = !isInvisible && !isRemoved
 
-    /** 允許麻將牌成為攻擊目標；與控制視線選取的 [isPickable] 分開處理。 */
+    /** 允許麻將牌成為攻擊目標。與控制視線選取的 [isPickable] 分開處理。 */
     override fun isAttackable(): Boolean = !isRemoved
 
     /** 依直立或平放姿態提供實際尺寸。 */
@@ -415,7 +406,7 @@ class MahjongTileEntity(
     /**
      * 姿態同步後立即重算 bounding box，並保留切換前的底面高度。
      *
-     * [refreshDimensions] 在 entity 由直立縮成平放尺寸時可能調整位置；重新以原本底面定位可避免模型與
+     * [refreshDimensions] 在 entity 由直立縮成平放尺寸時可能調整位置。重新以原本底面定位可避免模型與
      * bounding box 一起浮離所放置的表面。Server 本地更新與 client tracked data 同步都經過此入口。
      */
     override fun onSyncedDataUpdated(data: EntityDataAccessor<*>) {
@@ -428,11 +419,11 @@ class MahjongTileEntity(
     }
 
     /**
-     * 普通右鍵循環牌面；蹲下右鍵循環姿態。牌局管理中的牌改右鍵直接捨牌（見 [interactManaged]），
+     * 普通右鍵循環牌面。蹲下右鍵循環姿態。牌局管理中的牌改右鍵直接捨牌（見 [interactManaged]），
      * 不區分蹲下——立直宣告改由 GUI／HUD 詢問玩家，不使用蹲下右鍵麻將牌。
      *
      * @param player 互動的玩家。
-     * @param hand 使用的手；此 entity 的互動不區分主手與副手。
+     * @param hand 使用的手。此 entity 的互動不區分主手與副手。
      */
     override fun interact(player: Player, hand: InteractionHand): InteractionResult {
         if (managedByGame) return interactManaged(player)
@@ -450,7 +441,7 @@ class MahjongTileEntity(
      * 牌局管理中的牌右鍵直接捨牌。
      *
      * 這裡先做一次廉價過濾：這張牌是否確實是互動玩家目前的手牌，過濾不過直接發布拒絕回饋、不送出
-     * 指令，避免點別人的手牌、牌牆或牌河都各送一趟權威流程；[MahjongTableGameActionService.discard]
+     * 指令，避免點別人的手牌、牌牆或牌河都各送一趟權威流程。[MahjongTableGameActionService.discard]
      * 內部仍會經過 `DiscardTileUseCase` 完整驗證（是否輪到這位玩家、振聽等規則限制），這裡的過濾
      * 只是提早擋掉明顯不合理的點擊，不是唯一防線。
      *
@@ -482,9 +473,9 @@ class MahjongTileEntity(
     }
 
     /**
-     * 玩家左鍵攻擊時回收牌張；生存模式掉落保留牌面的物品，創造模式只移除 entity。牌局管理中的牌不能被回收。
+     * 玩家左鍵攻擊時回收牌張。生存模式掉落保留牌面的物品，創造模式只移除 entity。牌局管理中的牌不能被回收。
      *
-     * @param attacker 攻擊此牌的 entity；只有玩家能回收自由放置的牌。
+     * @param attacker 攻擊此牌的 entity。只有玩家能回收自由放置的牌。
      */
     override fun skipAttackInteraction(attacker: Entity): Boolean {
         if (managedByGame) return false
@@ -504,7 +495,7 @@ class MahjongTileEntity(
         MahjongTileItem.writeTileAssetKey(it, tileAssetKey)
     }
 
-    /** 創造模式中鍵複製自由牌；牌局管理中的牌不公開其隱藏牌面。 */
+    /** 創造模式中鍵複製自由牌。牌局管理中的牌不公開其隱藏牌面。 */
     override fun getPickResult(): ItemStack? = if (managedByGame) null else asItemStack()
 
     /** 初始化 client/server 同步的牌面、姿態與管理狀態。 */
@@ -566,7 +557,7 @@ class MahjongTileEntity(
     }
 
     companion object {
-        /** 麻將牌世界寬度；與 [MahjongTileTableLayout] 共用同一組數值來源。 */
+        /** 麻將牌世界寬度。與 [MahjongTileTableLayout] 共用同一組數值來源。 */
         const val TILE_WIDTH = MahjongTileDimensions.TILE_WIDTH.toFloat()
 
         /** 麻將牌世界高度。 */
@@ -613,7 +604,7 @@ class MahjongTileEntity(
         private val MELD_ACTION_POPUP_TILES: EntityDataAccessor<String> =
             SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.STRING)
 
-        /** 以名稱同步姿態；宣告順序不影響同步語意。 */
+        /** 以名稱同步姿態。宣告順序不影響同步語意。 */
         private val TILE_POSE: EntityDataAccessor<String> =
             SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.STRING)
 
@@ -625,7 +616,7 @@ class MahjongTileEntity(
         private val MANAGED_BY_GAME: EntityDataAccessor<Boolean> =
             SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.BOOLEAN)
 
-        /** 同步正式牌局所屬麻將桌 UUID；空字串表示自由放置。 */
+        /** 同步正式牌局所屬麻將桌 UUID。空字串表示自由放置。 */
         private val MANAGED_TABLE_ID: EntityDataAccessor<String> =
             SynchedEntityData.defineId(MahjongTileEntity::class.java, EntityDataSerializers.STRING)
 

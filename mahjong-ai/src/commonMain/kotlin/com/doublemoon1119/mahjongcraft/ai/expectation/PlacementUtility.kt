@@ -10,7 +10,7 @@ import kotlin.uuid.Uuid
 /**
  * 把點數得失換算成包含名次得失的價值。
  *
- * 啟用時，一筆得失的價值為點數本身，加上自己名次每升降一位的 [stepPoints]；名次以規則的整場排名比較，
+ * 啟用時，一筆得失的價值為點數本身，加上自己名次每升降一位的 [stepPoints]。名次以規則的整場排名比較，
  * 只改變自己的分數。未啟用時價值就是點數。
  *
  * @property players 目前所有玩家的排名資料。
@@ -35,15 +35,15 @@ internal class PlacementUtility private constructor(
     fun gain(points: Double): Double = if (enabled) points + placementChange(points) else points
 
     /**
-     * 依 [points] 計算自己失去點數的價值；若啟用名次換算，也會納入名次變化。
+     * 依 [points] 計算自己失去點數的價值。若啟用名次換算，也會納入名次變化。
      *
-     * @param points 傳入的損失點數；此函式不驗證正負。
-     * @return 未啟用名次換算時為原始點數；啟用時為納入名次變化後的價值。
+     * @param points 傳入的損失點數。此函式不驗證正負。
+     * @return 未啟用名次換算時為原始點數。啟用時為納入名次變化後的價值。
      */
     fun loss(points: Double): Double = if (enabled) points - placementChange(-points) else points
 
     /**
-     * 自己分數變動 [delta] 後，名次變化換算的點數；名次上升為正。
+     * 自己分數變動 [delta] 後，名次變化換算的點數。名次上升為正。
      *
      * @param delta 自己的分數變化量。
      * @return 名次變化對應的點數價值。

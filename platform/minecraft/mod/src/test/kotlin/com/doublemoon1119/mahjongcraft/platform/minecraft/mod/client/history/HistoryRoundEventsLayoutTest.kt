@@ -63,7 +63,7 @@ class HistoryRoundEventsLayoutTest {
         }
     }
 
-    /** 卡片命中區不包含捲軸與內容區以外的游標；捲軸在內容右側的邊距內。 */
+    /** 卡片命中區不包含捲軸與內容區以外的游標。捲軸在內容右側的邊距內。 */
     @Test
     fun `card hit testing is clipped to content`() {
         val layout = HistoryRoundEventsLayout.measure(800, 360, contentTop = 48)

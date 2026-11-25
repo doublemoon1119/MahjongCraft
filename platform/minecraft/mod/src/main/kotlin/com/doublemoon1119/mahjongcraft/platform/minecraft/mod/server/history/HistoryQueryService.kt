@@ -62,7 +62,7 @@ import kotlin.uuid.toKotlinUuid
  * @property writer 正式資料庫的唯一生命週期。
  * @property configState 目前有效的查詢政策。
  * @property store 檢查尚在進行及轉移中的權威對局。
- * @param scope 執行非同步查詢與設定同步的背景作用域；查詢只讀，關服時直接取消。世界有效性由 writer session 另行驗證。
+ * @param scope 執行非同步查詢與設定同步的背景作用域。查詢只讀，關服時直接取消。世界有效性由 writer session 另行驗證。
  * @param dispatchers 確保資料讀取及回覆分別使用 I/O 與伺服器主執行緒。
  * @property json 線路序列化設定。
  * @property networkRegistries 將已保存的規則設定映射為網路 DTO 的正式註冊表。
@@ -95,7 +95,7 @@ class HistoryQueryService(
     /** 六類查詢共用的執行與取消清理骨架。 */
     private val execution = HistoryQueryExecution(scope, dispatchers, admission, HistoryQueryLimits.timeout)
 
-    /** 伺服器生命週期發布的同步目標；背景設定通知只在主執行緒操作其玩家。 */
+    /** 伺服器生命週期發布的同步目標。背景設定通知只在主執行緒操作其玩家。 */
     @Volatile private var settingsServer: MinecraftServer? = null
 
     /** 隨 server session 重建的設定同步 publisher。 */
@@ -138,7 +138,7 @@ class HistoryQueryService(
     }
 
     /**
-     * 同步目前有效的間隔；不將工作上限或拒絕回覆政策交由客戶端決定。
+     * 同步目前有效的間隔。不將工作上限或拒絕回覆政策交由客戶端決定。
      *
      * @param player 已建立連線的玩家。
      */
@@ -267,7 +267,7 @@ class HistoryQueryService(
     }
 
     /**
-     * 接收單場保存狀態要求；狀態查詢與摘要查詢共用身分、session 與頻率限制。
+     * 接收單場保存狀態要求。狀態查詢與摘要查詢共用身分、session 與頻率限制。
      *
      * 回覆只含有界 request ID、固定狀態 enum 及固定錯誤 enum，欄位均有常數上限，
      * 因此不需額外套用可變內容回覆的 UTF-8 budget。
@@ -536,7 +536,7 @@ class HistoryQueryService(
     }
 
     /**
-     * 接收單場歷史規則設定要求；只回覆 Replay 開局 header 的設定。
+     * 接收單場歷史規則設定要求。只回覆 Replay 開局 header 的設定。
      *
      * @param server 目前伺服器。
      * @param player 已驗證連線玩家。
@@ -617,10 +617,10 @@ class HistoryQueryService(
     private fun policy(): HistoryQueryPolicy = configState.current.history.let { HistoryQueryPolicy(it.queryEnabled, it.allowAdminQuery) }
 
     /**
-     * 依查詢範圍選擇資料來源；壓力測試範圍只在開發環境且壓力測試資料庫存在時可用。
+     * 依查詢範圍選擇資料來源。壓力測試範圍只在開發環境且壓力測試資料庫存在時可用。
      *
      * @param scope 原要求範圍。
-     * @return 資料來源；壓力測試資料庫不可用時為 null。
+     * @return 資料來源。壓力測試資料庫不可用時為 null。
      */
     private fun sourceFor(scope: HistoryQueryScopeDto): HistoryDataSource? = selectHistoryDataSource(
         scope = scope,
@@ -724,7 +724,7 @@ private fun HistoryQueryAdmission.Admission.errorCode(): HistoryQueryErrorCodeDt
  * @param access 目前可信連線身分。
  * @param policy 目前有效政策。
  * @param scope 原要求範圍。
- * @return 無效資格的穩定代碼；null 表示仍可回覆。
+ * @return 無效資格的穩定代碼。null 表示仍可回覆。
  */
 internal fun replyError(access: HistoryQueryAccess, policy: HistoryQueryPolicy, scope: HistoryQueryScope): HistoryQueryErrorCodeDto? = when {
     !policy.queryEnabled -> HistoryQueryErrorCodeDto.QUERY_DISABLED

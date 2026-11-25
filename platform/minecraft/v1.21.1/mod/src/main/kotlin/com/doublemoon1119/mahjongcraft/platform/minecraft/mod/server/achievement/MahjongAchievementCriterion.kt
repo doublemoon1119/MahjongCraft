@@ -34,7 +34,7 @@ class MahjongAchievementCriterion : SimpleCriterionTrigger<MahjongAchievementCri
      *
      * @param player 達成成果的在線玩家。
      * @param achievements 同一次交易中這位玩家達成的成果。
-     * @param statisticValue 取得玩家目前統計值；應已包含這次交易累加的部分。
+     * @param statisticValue 取得玩家目前統計值。應已包含這次交易累加的部分。
      */
     fun trigger(
         player: ServerPlayer,
@@ -47,7 +47,7 @@ class MahjongAchievementCriterion : SimpleCriterionTrigger<MahjongAchievementCri
     /**
      * 解析後的條件。
      *
-     * @property playerPredicate 原版進度系統的玩家條件；沒有時為空。
+     * @property playerPredicate 原版進度系統的玩家條件。沒有時為空。
      * @property condition 與 Minecraft 版本無關的條件內容。
      */
     class Conditions(

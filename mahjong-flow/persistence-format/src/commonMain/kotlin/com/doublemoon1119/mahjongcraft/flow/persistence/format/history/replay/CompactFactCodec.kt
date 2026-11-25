@@ -39,7 +39,7 @@ object CompactFactCodec {
     }
 
     /**
-     * 解碼事實；字典索引、陣列長度與 payload 型別錯誤均會被拒絕。
+     * 解碼事實。字典索引、陣列長度與 payload 型別錯誤均會被拒絕。
      *
      * @param encoded 待解碼的精簡事實陣列。
      * @param factTypes 依索引排列的語意事實種類。
@@ -92,6 +92,6 @@ object CompactFactCodec {
         return result
     }
 
-    /** 由內建契約持有和牌明細的事實種類；不解析第三方任意同名欄位。 */
+    /** 由內建契約持有和牌明細的事實種類。不解析第三方任意同名欄位。 */
     private val WIN_DETAIL_FACT_TYPES = setOf(HistoryFactTypeKeys.WIN_SETTLED, HistoryFactTypeKeys.RULE_EFFECT_RESOLVED)
 }

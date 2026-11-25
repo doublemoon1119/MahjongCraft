@@ -10,7 +10,7 @@ import net.minecraft.world.entity.LivingEntity
 import kotlin.math.abs
 
 /**
- * 開局提交前的入座安排；失敗時恢復本次安排之前的乘坐與位置。
+ * 開局提交前的入座安排。失敗時恢復本次安排之前的乘坐與位置。
  *
  * @property riders 正式名冊中的在線玩家與借用角色，尚未生成的內建角色為 null。
  * @property session 正式席位的選擇資料。
@@ -28,7 +28,7 @@ internal class RoomStartSeating(
     private val logger = mahjongCraftLogger(RoomStartSeating::class)
 
     /**
-     * 先釋放本桌舊席位，再依正式排位入座；占用與安全檢查由既有協調器負責。
+     * 先釋放本桌舊席位，再依正式排位入座。占用與安全檢查由既有協調器負責。
      *
      * @return 全部現有成員完成入座或允許的站立時為 true。
      */
@@ -60,7 +60,7 @@ internal class RoomStartSeating(
         }
     }
 
-    /** 恢復本次移動的成員；先全部離開新載具，避免交換位置時阻擋彼此。 */
+    /** 恢復本次移動的成員。先全部離開新載具，避免交換位置時阻擋彼此。 */
     fun rollback() {
         val changed = originals.filter { (rider, original) -> !VehicleSeatEnvironment().unchanged(rider, original) }
         val temporary = changed.keys.mapNotNull { it.vehicle }.filter { vehicle -> originals.values.none { it.vehicle === vehicle } }

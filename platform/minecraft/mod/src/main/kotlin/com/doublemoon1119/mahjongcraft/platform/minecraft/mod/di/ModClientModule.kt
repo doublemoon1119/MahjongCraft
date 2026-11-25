@@ -75,7 +75,7 @@ import org.koin.plugin.module.dsl.single
 /**
  * Minecraft client 使用的 Koin 定義，與載入器無關。
  *
- * 此 module 只由 Minecraft client graph 載入，包含 HUD、renderer 與其他 client-only adapter；dedicated server graph 不載入此 module。
+ * 此 module 只由 Minecraft client graph 載入，包含 HUD、renderer 與其他 client-only adapter。dedicated server graph 不載入此 module。
  */
 val modClientModule = module {
     includes(flowClientModule, modCommonModule)

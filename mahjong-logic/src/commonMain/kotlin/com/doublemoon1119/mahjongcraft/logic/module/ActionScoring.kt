@@ -10,9 +10,9 @@ import kotlin.uuid.Uuid
  * 桌況組件，跨局保留與和牌時分配都由規則負責，例如日麻的立直供託。Flow 會驗證玩家與合計，
  * 回傳物件不代表已經寫入。
  *
- * @property scoreDeltas 各玩家的點數增減；只能列出本局玩家，不可為空，也不可包含 0。
- * @property potDeposit 放進規則點數池的點數，正數為放入、負數為取出；沒有點數池時為 0。
- * @property tableComponents 本次明確設定或移除的桌況組件；未指定的組件保持原值。
+ * @property scoreDeltas 各玩家的點數增減。只能列出本局玩家，不可為空，也不可包含 0。
+ * @property potDeposit 放進規則點數池的點數，正數為放入、負數為取出。沒有點數池時為 0。
+ * @property tableComponents 本次明確設定或移除的桌況組件。未指定的組件保持原值。
  */
 data class ActionScoring(
     val scoreDeltas: Map<Uuid, Int>,

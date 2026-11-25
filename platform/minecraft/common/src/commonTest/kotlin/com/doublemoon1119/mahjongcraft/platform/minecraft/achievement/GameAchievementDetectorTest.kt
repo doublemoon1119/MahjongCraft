@@ -291,7 +291,7 @@ class GameAchievementDetectorTest {
         )
     }
 
-    /** 牌山摸完的流局讓所有人取得流局；途中流局不算。 */
+    /** 牌山摸完的流局讓所有人取得流局。途中流局不算。 */
     @Test
     fun `only exhaustive draws count as draws`() {
         val game = fourPlayerGame()

@@ -17,8 +17,8 @@ internal object LegalActionTestContexts {
      * 建立尚未另外指定進牌的自己回合情境。
      *
      * @param tableState 包含 [player] 的實際測試桌況。
-     * @param player 要查詢合法動作的玩家；其遊戲資料必須與 [tableState] 中同一個 Uuid 的玩家一致。
-     *   允許測試桌工廠調整起家順位與自風；除此之外的玩家資料都必須一致。
+     * @param player 要查詢合法動作的玩家。其遊戲資料必須與 [tableState] 中同一個 Uuid 的玩家一致。
+     *   允許測試桌工廠調整起家順位與自風。除此之外的玩家資料都必須一致。
      * @return 以自己回合為來源的合法動作判定情境。
      * @throws IllegalArgumentException [player] 不在桌況中，或桌況中的手牌、分數、規則狀態等資料與
      * [player] 不一致。
@@ -29,8 +29,8 @@ internal object LegalActionTestContexts {
      * 建立包含指定摸牌的自己回合情境。
      *
      * @param tableState 包含 [player] 的實際測試桌況。
-     * @param player 要查詢合法動作的玩家；其遊戲資料必須與 [tableState] 中同一個 Uuid 的玩家一致。
-     *   允許測試桌工廠調整起家順位與自風；除此之外的玩家資料都必須一致。
+     * @param player 要查詢合法動作的玩家。其遊戲資料必須與 [tableState] 中同一個 Uuid 的玩家一致。
+     *   允許測試桌工廠調整起家順位與自風。除此之外的玩家資料都必須一致。
      * @param drawnTile 本次要放入玩家 [MahjongPlayer.hand] 的摸牌。
      * @return 以自己回合為來源、且已帶入 [drawnTile] 的合法動作判定情境。
      * @throws IllegalArgumentException [player] 不在桌況中，或桌況中的手牌、分數、規則狀態等資料與
@@ -56,8 +56,8 @@ internal object LegalActionTestContexts {
      * 建立回應其他玩家捨牌的情境，來源玩家由相對方位決定。
      *
      * @param tableState 包含 [player] 的實際測試桌況。
-     * @param player 要查詢合法動作的玩家；其遊戲資料必須與 [tableState] 中同一個 Uuid 的玩家一致。
-     *   允許測試桌工廠調整起家順位與自風；除此之外的玩家資料都必須一致。
+     * @param player 要查詢合法動作的玩家。其遊戲資料必須與 [tableState] 中同一個 Uuid 的玩家一致。
+     *   允許測試桌工廠調整起家順位與自風。除此之外的玩家資料都必須一致。
      * @param sourceDirection 捨牌者相對於 [player] 的方位。
      * @param discardedTile 其他玩家剛捨出的牌。
      * @return 以捨牌反應為來源的合法動作判定情境。
@@ -84,8 +84,8 @@ internal object LegalActionTestContexts {
      * 建立回應其他玩家宣告的情境，來源玩家由相對方位決定。
      *
      * @param tableState 包含 [player] 的實際測試桌況。
-     * @param player 要查詢合法動作的玩家；其遊戲資料必須與 [tableState] 中同一個 Uuid 的玩家一致。
-     *   允許測試桌工廠調整起家順位與自風；除此之外的玩家資料都必須一致。
+     * @param player 要查詢合法動作的玩家。其遊戲資料必須與 [tableState] 中同一個 Uuid 的玩家一致。
+     *   允許測試桌工廠調整起家順位與自風。除此之外的玩家資料都必須一致。
      * @param sourceDirection 宣告者相對於 [player] 的方位。
      * @param declaredAction 其他玩家剛宣告的動作。
      * @param declaredTile 其他玩家宣告時使用的牌。
@@ -117,7 +117,7 @@ internal object LegalActionTestContexts {
      *
      * @param tableState 要檢查的桌況。
      * @param player 呼叫端預期要判定的玩家。
-     * @return 原桌況；檢查成功後可直接交給情境 factory。
+     * @return 原桌況。檢查成功後可直接交給情境 factory。
      * @throws IllegalArgumentException 玩家不在桌況中，或兩份玩家的遊戲資料不一致。
      */
     private fun requirePlayerMatches(tableState: TableState, player: MahjongPlayer): TableState {
@@ -134,12 +134,12 @@ internal object LegalActionTestContexts {
     }
 
     /**
-     * 確保測試桌況包含指定方位的來源玩家；不足四人時補上測試玩家。
+     * 確保測試桌況包含指定方位的來源玩家。不足四人時補上測試玩家。
      *
      * @param tableState 原始測試桌況。
      * @param playerId 要判定合法動作的玩家 Uuid。
      * @param direction 要尋找的來源相對方位。
-     * @return 已包含來源玩家的桌況；若原本已有來源則回傳原桌況。
+     * @return 已包含來源玩家的桌況。若原本已有來源則回傳原桌況。
      */
     private fun tableWithSource(
         tableState: TableState,

@@ -399,7 +399,7 @@ class AuthoritativeStateStoreTest {
         )
     }
 
-    /** 同一場地重開須用新的場次身分；同筆交易內的事件依提交順序取得序號。 */
+    /** 同一場地重開須用新的場次身分。同筆交易內的事件依提交順序取得序號。 */
     @Test
     fun `history sequences are scoped to match rather than table`() = runTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
@@ -804,7 +804,7 @@ class AuthoritativeStateStoreTest {
         assertNull(recording.firstMissingSequenceByMatchId[game.matchId])
     }
 
-    /** 標記無法使用後交易被拒絕，狀態與 dirty 都不變；重新載入後恢復可用。 */
+    /** 標記無法使用後交易被拒絕，狀態與 dirty 都不變。重新載入後恢復可用。 */
     @Test
     fun `unavailable store rejects transactions until the next load`() = runTest {
         val store = AuthoritativeStateStore()

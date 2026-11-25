@@ -10,7 +10,7 @@ import kotlin.time.Duration
  * 一段可能放不下的文字的跑馬燈進度：記住目前正在完整顯示的對象，對象改變時從頭播放。
  */
 internal class MarqueeState {
-    /** 上一幀正在完整顯示的對象；沒有時為 null。 */
+    /** 上一幀正在完整顯示的對象。沒有時為 null。 */
     private var subject: Any? = null
 
     /** 開始完整顯示目前對象的單調時鐘時間。 */
@@ -19,9 +19,9 @@ internal class MarqueeState {
     /**
      * 取得這一幀的位移，並記住目前的對象。
      *
-     * @param subject 這一幀要完整顯示的對象，例如游標停留的選項；不需要完整顯示時為 null。
+     * @param subject 這一幀要完整顯示的對象，例如游標停留的選項。不需要完整顯示時為 null。
      * @param overflow 文字超出可用寬度的像素數。
-     * @return 介於 0 與 [overflow] 之間的位移；沒有對象時為 0。對象與上一幀不同時從頭開始。
+     * @return 介於 0 與 [overflow] 之間的位移。沒有對象時為 0。對象與上一幀不同時從頭開始。
      */
     fun offset(subject: Any?, overflow: Int): Int {
         if (subject != this.subject) {
@@ -46,8 +46,8 @@ internal object MarqueeText {
      * @param y 文字的 Y 座標。
      * @param color 文字顏色。
      * @param state 這段文字的跑馬燈進度。
-     * @param subject 要完整顯示時代表這段文字的對象，例如游標停留的選項；不需要完整顯示時為 null。
-     * @param centered 文字放得下或被截斷時是否在範圍內置中；否則靠左。
+     * @param subject 要完整顯示時代表這段文字的對象，例如游標停留的選項。不需要完整顯示時為 null。
+     * @param centered 文字放得下或被截斷時是否在範圍內置中。否則靠左。
      */
     fun draw(
         context: GuiGraphics,

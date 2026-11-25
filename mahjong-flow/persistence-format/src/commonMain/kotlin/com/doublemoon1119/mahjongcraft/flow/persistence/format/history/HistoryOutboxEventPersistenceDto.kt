@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
  * @property roundNumber 事件發生時所在的局數。
  * @property sequence 在同一對局內單調遞增的事件序號。
  * @property occurredAtEpochMillis 事件發生時間的 Unix epoch 毫秒值。
- * @property actorPlayerId 觸發事件的玩家 UUID 字串；系統事件為 null。
+ * @property actorPlayerId 觸發事件的玩家 UUID 字串。系統事件為 null。
  * @property fact 事件的具體歷史事實。
  * @property transactionFirstSequence 同一權威交易第一筆事件的序號。
  */

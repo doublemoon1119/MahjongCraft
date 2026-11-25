@@ -6,21 +6,22 @@ import kotlin.uuid.Uuid
 /**
  * 比較前後兩份整桌擺放，決定每張牌在這一步怎麼移動，以及這一步要多久。
  *
- * 區域改變的牌依來源與目的區域選擇動作；同一排內換位置的牌，能維持原本前後順序的最多一組牌平移，其餘越過其他牌的牌
- * 以弧線從上方越過。同一步的動作分成三段依序播放（[TileMotionPhase]）：先離開，再讓位，最後從牌牆摸進來的牌落下；
- * 同一段內的動作同時開始。
+ * - 區域改變的牌依來源與目的區域選擇動作。
+ * - 同一排內換位置的牌，能維持原本前後順序的最多一組牌平移，其餘越過其他牌的牌以弧線從上方越過。
+ * - 同一步的動作分成三段依序播放（[TileMotionPhase]）：先離開，再讓位，最後從牌牆摸進來的牌落下。
+ * - 同一段內的動作同時開始。
  */
 object TableStepMotionPlanner {
-    /** 牌牆與保留區；兩者之間的移動屬於牌牆重排。 */
+    /** 牌牆與保留區。兩者之間的移動屬於牌牆重排。 */
     private val WALL_REGIONS = setOf(TileRegion.WALL, TileRegion.RESERVED)
 
     /**
      * 規劃這一步每張牌的動作。
      *
-     * @param previous 這一步開始時的擺放；呈現端還沒有任何擺放時為 null，所有牌視為首次出現。
+     * @param previous 這一步開始時的擺放。呈現端還沒有任何擺放時為 null，所有牌視為首次出現。
      * @param next 這一步結束時的擺放。
-     * @param excludedTileIds 由其他方式呈現的牌，例如依規則分階段重排的牌牆；不規劃動作。
-     * @param dropsOnArrival 沒有先前位置的牌是否從目的地上方落下；只有桌上還沒有這張牌時才應落下，已在桌上的牌直接擺到新位置。
+     * @param excludedTileIds 由其他方式呈現的牌，例如依規則分階段重排的牌牆。不規劃動作。
+     * @param dropsOnArrival 沒有先前位置的牌是否從目的地上方落下。只有桌上還沒有這張牌時才應落下，已在桌上的牌直接擺到新位置。
      * @return 位置或姿態有改變的牌的動作。
      */
     fun plan(
@@ -79,7 +80,7 @@ object TableStepMotionPlanner {
     }
 
     /**
-     * 每一段相對這一步開始的時間：每一段在前一段最長的動作完成後開始；沒有動作的段落不佔時間。
+     * 每一段相對這一步開始的時間：每一段在前一段最長的動作完成後開始。沒有動作的段落不佔時間。
      *
      * @param motions 同一步的動作。
      * @return 各段的開始時間（tick）。
@@ -96,7 +97,7 @@ object TableStepMotionPlanner {
      * 一份動作清單播完需要的時間：三段依序播放，每一段取其中最長的動作。
      *
      * @param motions 同一步的動作。
-     * @return 這一步的時長（tick）；沒有動作時為 0。
+     * @return 這一步的時長（tick）。沒有動作時為 0。
      */
     fun stepDurationTicks(motions: List<PlannedTileMotion>): Int = motions.groupBy { phaseOf(it.kind) }.values.sumOf { inPhase -> inPhase.maxOf { durationTicks(it.kind) } }
 
@@ -106,7 +107,7 @@ object TableStepMotionPlanner {
      * @param before 這一步開始時的擺放。
      * @param after 這一步結束時的擺放。
      * @param slides 留在同一排時是否屬於維持前後順序的那一組。
-     * @return 動作種類；位置與姿態都沒變時為 null。
+     * @return 動作種類。位置與姿態都沒變時為 null。
      */
     private fun kindOf(before: ArrangedTile, after: ArrangedTile, slides: Boolean): TileMotionKind? {
         val from = before.row

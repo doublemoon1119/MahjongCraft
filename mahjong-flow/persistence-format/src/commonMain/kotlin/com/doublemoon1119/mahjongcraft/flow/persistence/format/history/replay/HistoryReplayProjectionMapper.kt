@@ -55,7 +55,7 @@ internal object HistoryReplayProjectionMapper {
      *
      * @param projection 已還原桌況。
      * @param identity header 玩家身分。
-     * @param roundNumber 這一局在整場對局中的順序號；連莊時與 [HistoryRoundState.roundPosition] 的賽程局數不同。
+     * @param roundNumber 這一局在整場對局中的順序號。連莊時與 [HistoryRoundState.roundPosition] 的賽程局數不同。
      * @param position 選取位置。
      * @param tileCatalog 已宣告的局內實體牌。
      * @param budget 走訪預算。
@@ -121,10 +121,10 @@ internal object HistoryReplayProjectionMapper {
     /**
      * 讀取依局內牌索引保存的實體牌牆格位，只取當時仍在牌牆與保留區的牌。
      *
-     * @param value 以 [ReplayWallLayoutFormat] 保存的格位；規則沒有實體牌牆時為 JSON null。
+     * @param value 以 [ReplayWallLayoutFormat] 保存的格位。規則沒有實體牌牆時為 JSON null。
      * @param tiles 當時仍在牌牆與保留區的牌。
      * @param context 讀取預算。
-     * @return 依牌參照索引的格位；沒有實體牌牆時為 null。
+     * @return 依牌參照索引的格位。沒有實體牌牆時為 null。
      */
     private fun wallPlacements(
         value: JsonElement,
@@ -257,7 +257,7 @@ internal object HistoryReplayProjectionMapper {
      * @param fact 已解碼的呈現變化事實，呈現結果為字典代碼。
      * @param tileCount 目前已宣告的牌數。
      * @param budget 走訪預算。
-     * @param presentation 依字典代碼取得呈現結果；代碼不存在時拋出例外。
+     * @param presentation 依字典代碼取得呈現結果。代碼不存在時拋出例外。
      * @return 依牌索引排列的呈現結果。
      */
     fun tilePresentations(
@@ -297,7 +297,7 @@ internal object HistoryReplayProjectionMapper {
      *
      * @param action 保存的動作物件。
      * @param context 索引驗證上下文。
-     * @return 動作種類與擴充動作種類；內建動作的擴充種類為 null。
+     * @return 動作種類與擴充動作種類。內建動作的擴充種類為 null。
      */
     private fun actionTypes(action: JsonObject, context: HistoryReplayProjectionContext): Pair<String, String?> {
         val actionType = string(action.getValue(ReplaySourceKeys.TYPE))
@@ -347,7 +347,7 @@ internal object HistoryReplayProjectionMapper {
     }
 
     /**
-     * 讀取不分規則的牌河項目；省略的鳴走與標記欄位分別代表未鳴走與沒有標記。
+     * 讀取不分規則的牌河項目。省略的鳴走與標記欄位分別代表未鳴走與沒有標記。
      *
      * @param value 牌河項目投影。
      * @param context 索引驗證上下文。
@@ -407,7 +407,7 @@ internal object HistoryReplayProjectionMapper {
      *
      * @param value 完成摘要。
      * @param context 座位驗證上下文。
-     * @param savedWinnerDetails 同一結算已保存的逐位和牌明細；未提供時不補造內容。
+     * @param savedWinnerDetails 同一結算已保存的逐位和牌明細。未提供時不補造內容。
      * @return 座位索引形式結果。
      */
     private fun outcome(
@@ -425,7 +425,7 @@ internal object HistoryReplayProjectionMapper {
     )
 
     /**
-     * 讀取保存的下一任莊家；指定的玩家已轉成牌譜座位索引。
+     * 讀取保存的下一任莊家。指定的玩家已轉成牌譜座位索引。
      *
      * @param value 保存的下一任莊家。
      * @param context 座位驗證上下文。
@@ -448,7 +448,7 @@ internal object HistoryReplayProjectionMapper {
     }
 
     /**
-     * 將保存的和牌欄位轉成局內座位與牌參照；缺少欄位時回傳空清單。
+     * 將保存的和牌欄位轉成局內座位與牌參照。缺少欄位時回傳空清單。
      *
      * @param value 已保存的逐位明細陣列。
      * @param context 座位與牌參照驗證上下文。

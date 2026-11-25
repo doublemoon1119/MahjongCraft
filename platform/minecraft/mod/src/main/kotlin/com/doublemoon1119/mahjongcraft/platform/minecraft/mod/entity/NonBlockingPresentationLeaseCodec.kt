@@ -29,10 +29,10 @@ internal object NonBlockingPresentationLeaseCodec {
     }
 
     /**
-     * 從 [nbt] 讀回豁免到期時間；欄位不存在或型別不符時回傳 [NO_LEASE]。
+     * 從 [nbt] 讀回豁免到期時間。欄位不存在或型別不符時回傳 [NO_LEASE]。
      *
      * @param nbt 含豁免到期欄位的 NBT compound。
-     * @return 豁免的絕對到期時間；缺少欄位時使用 [NO_LEASE]。
+     * @return 豁免的絕對到期時間。缺少欄位時使用 [NO_LEASE]。
      */
     fun read(nbt: CompoundTag): Long = nbt.getLong(NBT_KEY)
 }

@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileStyl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.standardAssetKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureAssetPath
 
-/** debug 情境使用的公開牌面樣式；牌面沿用基本牌面，牌身換成不同顏色。 */
+/** debug 情境使用的公開牌面樣式。牌面沿用基本牌面，牌身換成不同顏色。 */
 internal object DebugPublicFaceTiles {
     /** 公開牌面樣式的完整 ID。 */
     const val APPEARANCE_ID = "${MinecraftModMetadata.MOD_ID}:debug/public_face"

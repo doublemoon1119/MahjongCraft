@@ -9,7 +9,7 @@ import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.network.chat.Component
 
 /**
- * 麻將手冊快捷畫面的入口按鈕：一般按鈕底，左側物品圖示，右側名稱與一行灰色說明；放不下的文字截斷，
+ * 麻將手冊快捷畫面的入口按鈕：一般按鈕底，左側物品圖示，右側名稱與一行灰色說明。放不下的文字截斷，
  * 說明被截斷時以提示框顯示全文。
  *
  * @param x 按鈕左界。

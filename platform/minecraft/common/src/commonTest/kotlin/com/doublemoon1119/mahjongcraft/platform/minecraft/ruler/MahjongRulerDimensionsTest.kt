@@ -10,7 +10,7 @@ import kotlin.test.assertTrue
 
 /** 驗證牌尺的擺法，以及依擺法與朝向佔用的範圍。 */
 class MahjongRulerDimensionsTest {
-    /** 面向南北時牌尺沿東西方向放，面向東西時沿南北方向；平放比豎放寬、比豎放矮。 */
+    /** 面向南北時牌尺沿東西方向放，面向東西時沿南北方向。平放比豎放寬、比豎放矮。 */
     @Test
     fun `the long side lies across the placer's view`() {
         MahjongRulerPosture.entries.forEach { posture ->

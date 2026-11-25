@@ -42,7 +42,7 @@ class DiscardSourceTest {
         assertNull(DiscardSource.of(snapshot, Uuid.random(), viewerId = east.id))
     }
 
-    /** 入座時依座位順序得出上家、對家、下家或自己；旁觀時沒有相對位置。 */
+    /** 入座時依座位順序得出上家、對家、下家或自己。旁觀時沒有相對位置。 */
     @Test
     fun `relation follows the seat order and is absent for spectators`() {
         assertEquals(RelativeDirection.Right, DiscardSource.of(snapshot, inRiver.id, east.id)?.relation)

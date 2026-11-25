@@ -20,7 +20,7 @@ class ServerPlayerIdentityStore(
     @Volatile
     private var cachedNames: Map<Uuid, String> = emptyMap()
 
-    /** 載入目前伺服器存檔的名稱快照；必須在伺服器主執行緒呼叫。 */
+    /** 載入目前伺服器存檔的名稱快照。必須在伺服器主執行緒呼叫。 */
     fun refresh() {
         cachedNames = state()?.snapshot().orEmpty().mapKeys { it.key.toKotlinUuid() }
     }
@@ -29,12 +29,12 @@ class ServerPlayerIdentityStore(
      * 從目前伺服器存檔取得最後已知名稱。
      *
      * @param playerId 玩家 UUID。
-     * @return 最後已知普通名稱；尚未記錄時為 null。
+     * @return 最後已知普通名稱。尚未記錄時為 null。
      */
     fun nameOf(playerId: Uuid): String? = cachedNames[playerId]
 
     /**
-     * 依最後已知普通名稱尋找玩家 UUID；不向外部服務查詢。
+     * 依最後已知普通名稱尋找玩家 UUID。不向外部服務查詢。
      *
      * @param query 名稱片段，使用大小寫不敏感比對。
      * @return 名稱包含 [query] 的玩家 UUID。
@@ -49,7 +49,7 @@ class ServerPlayerIdentityStore(
      * 在伺服器主執行緒解析玩家普通名稱，並在看見線上玩家時更新持久化索引。
      *
      * @param playerId 玩家 UUID。
-     * @return 線上 GameProfile、已保存名稱或原版 GameProfileCache 名稱；都不存在時為 null。
+     * @return 線上 GameProfile、已保存名稱或原版 GameProfileCache 名稱。都不存在時為 null。
      */
     fun resolveKnownName(playerId: Uuid): String? {
         serverHolder.findPlayer(playerId)?.let { player ->
@@ -74,7 +74,7 @@ class ServerPlayerIdentityStore(
     fun remember(player: ServerPlayer): Boolean = remember(player.uuid.toKotlinUuid(), player.gameProfile.name)
 
     /**
-     * 依目前伺服器中的線上玩家資料記錄名稱；找不到玩家時安全略過。
+     * 依目前伺服器中的線上玩家資料記錄名稱。找不到玩家時安全略過。
      *
      * @param playerId 玩家 UUID。
      * @return 名稱有變更且已寫入索引時為 true。
@@ -82,7 +82,7 @@ class ServerPlayerIdentityStore(
     fun rememberOnline(playerId: Uuid): Boolean = serverHolder.findPlayer(playerId)?.let(::remember) == true
 
     /**
-     * 記錄指定 UUID 的普通名稱；無法取得伺服器或名稱無效時安全略過。
+     * 記錄指定 UUID 的普通名稱。無法取得伺服器或名稱無效時安全略過。
      *
      * @param playerId 玩家 UUID。
      * @param name 玩家普通名稱。
@@ -94,7 +94,7 @@ class ServerPlayerIdentityStore(
         return changed
     }
 
-    /** 取得目前伺服器 overworld 的持久化名稱索引；必須在伺服器主執行緒呼叫。 */
+    /** 取得目前伺服器 overworld 的持久化名稱索引。必須在伺服器主執行緒呼叫。 */
     private fun state(): MahjongPlayerIdentitySavedData? = serverHolder.current()?.overworld()?.dataStorage?.computeSavedData(
         key = MahjongPlayerIdentitySavedData.STORAGE_KEY,
         decode = MahjongPlayerIdentitySavedData::fromNbt,

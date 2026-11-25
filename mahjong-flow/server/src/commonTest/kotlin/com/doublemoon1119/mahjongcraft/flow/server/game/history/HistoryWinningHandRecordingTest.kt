@@ -102,7 +102,7 @@ class HistoryWinningHandRecordingTest {
      * @param playerId 贏家玩家 UUID。
      * @param seatIndex 贏家座位索引。
      * @param standing 排序後且不含和牌張的立牌 UUID。
-     * @param winning 獨立和牌 UUID；特殊結算時為 null。
+     * @param winning 獨立和牌 UUID。特殊結算時為 null。
      * @return 權威贏家呈現資料。
      */
     private fun winnerPresentation(

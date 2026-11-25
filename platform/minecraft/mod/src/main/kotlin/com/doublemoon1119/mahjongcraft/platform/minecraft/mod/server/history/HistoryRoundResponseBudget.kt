@@ -61,14 +61,14 @@ internal fun boundedHistoryRoundEvents(
 }
 
 /**
- * 傳送從第一個位置起放得進預算的連續桌況；每份桌況都完整傳送，不截斷持牌或牌牆，放不下的後續位置整份省略。
+ * 傳送從第一個位置起放得進預算的連續桌況。每份桌況都完整傳送，不截斷持牌或牌牆，放不下的後續位置整份省略。
  *
  * @param request 原查詢上下文。
  * @param states 已授權、依位置先後排列的完整狀態。
  * @param json 線路編碼設定。
  * @param registries 牌面特徵的網路轉換。
  * @param maximumBytes 回覆 UTF-8 位元組上限。
- * @return 放得下的連續狀態；第一份就放不下時為超限錯誤。
+ * @return 放得下的連續狀態。第一份就放不下時為超限錯誤。
  */
 internal fun boundedHistoryRoundStates(
     request: HistoryRoundStateRequestDto,

@@ -13,14 +13,14 @@ import kotlin.uuid.Uuid
  * 角色切換與牌局提交以同一個原子參考比對，不能覆寫交錯完成的更新。
  *
  * @property registry 已登記且凍結的角色描述。
- * @property changed 資料變更時通知平台需要保存；不可重入權威儲存。
+ * @property changed 資料變更時通知平台需要保存。不可重入權威儲存。
  */
 @OptIn(ExperimentalAtomicApi::class)
 class AiCharacterStateStore(
     private val registry: AiCharacterRegistry,
     private val changed: () -> Unit,
 ) {
-    /** 目前完整保存封套；新實例尚未載入任何世界。 */
+    /** 目前完整保存封套。新實例尚未載入任何世界。 */
     private val state = AtomicReference(AiCharacterStateSnapshot(AuthoritativeStateSnapshot(), null, Uuid.random(), 0L))
 
     /** 加入前擷取的暫態描述，不會單獨保存或公開。 */
@@ -57,7 +57,7 @@ class AiCharacterStateStore(
     /**
      * 從單一封套建立一張桌子的公開同步資料。
      *
-     * 呼叫端仍須檢查收件者是否可查看該桌；此方法不提供觀察授權。
+     * 呼叫端仍須檢查收件者是否可查看該桌。此方法不提供觀察授權。
      *
      * @param tableId 要查詢的桌子。
      * @return 可傳遞的完整角色資料。
@@ -77,10 +77,10 @@ class AiCharacterStateStore(
     }
 
     /**
-     * 載入另一個 session；不從目前登記內容重新產生歷史描述。
+     * 載入另一個 session。不從目前登記內容重新產生歷史描述。
      *
      * @param authoritative 已解碼的牌局。
-     * @param characters 已解碼的角色；null 代表不可用，保留原始保存資料。
+     * @param characters 已解碼的角色。null 代表不可用，保留原始保存資料。
      */
     fun restore(authoritative: AuthoritativeStateSnapshot, characters: AiCharacterMetadata?) {
         preparedParticipants.store(emptyMap())
@@ -155,7 +155,7 @@ class AiCharacterStateStore(
     }
 
     /**
-     * 只有成員、場次或歷史保留範圍變更時重建角色 map；一般摸打沿用原有角色資料。
+     * 只有成員、場次或歷史保留範圍變更時重建角色 map。一般摸打沿用原有角色資料。
      *
      * @param before 前一次牌局。
      * @param after 這次牌局。

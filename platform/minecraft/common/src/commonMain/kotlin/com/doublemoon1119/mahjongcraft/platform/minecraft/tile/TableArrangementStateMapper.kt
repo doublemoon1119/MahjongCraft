@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 /**
  * 從對局中的權威桌況取出擺牌需要的部分。
  *
- * @return 擺牌用桌況；散放牌河的位置表種子依桌子與本場局序決定。
+ * @return 擺牌用桌況。散放牌河的位置表種子依桌子與本場局序決定。
  */
 fun TableState.toArrangementState(): TableArrangementState = TableArrangementState(
     players = players.map { player ->

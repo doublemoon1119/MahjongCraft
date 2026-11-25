@@ -8,6 +8,6 @@ enum class MahjongDiceRollPresentationResult {
     /** 指定 dimension、controller 或桌子 UUID 與目前世界不一致。 */
     TABLE_NOT_FOUND,
 
-    /** 任一桌面骰子或聚合結果舞台無法加入世界；已回滾本次建立的 entity。 */
+    /** 任一桌面骰子或聚合結果舞台無法加入世界。已回滾本次建立的 entity。 */
     SPAWN_FAILED,
 }

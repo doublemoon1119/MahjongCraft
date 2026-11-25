@@ -21,9 +21,11 @@ import org.koin.plugin.module.dsl.single
 /**
  * 平台為共用流程組裝的服務與由擴充登記流程初始化的 registry。
  *
- * 規則模組與牌種 registry 的實作屬於框架無關的 `:mahjong-logic`，在這裡明確建立。平台啟動 Koin 後必須先取得這兩個 single，
- * 交給 extension bootstrap 完成內建與第三方登記並凍結，才能解析依賴它們的遊戲流程服務；network、persistence 與規則流程
- * 後續都使用同一個實例。規則選擇 resolver registry 也在此建立，讓 client 與 server 的設定呈現和流程使用同一份資料。
+ * - 規則模組與牌種 registry 的實作屬於框架無關的 `:mahjong-logic`，在這裡明確建立。
+ * - 平台啟動 Koin 後必須先取得這兩個 single，交給 extension bootstrap 完成內建與第三方登記並凍結，
+ *   才能解析依賴它們的遊戲流程服務。
+ * - network、persistence 與規則流程後續都使用同一個實例。
+ * - 規則選擇 resolver registry 也在此建立，讓 client 與 server 的設定呈現和流程使用同一份資料。
  */
 val flowCommonModule = module {
     single<MahjongModuleRegistry> { MahjongModuleRegistryImpl() }

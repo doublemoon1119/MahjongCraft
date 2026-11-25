@@ -5,7 +5,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.ruler
  *
  * 排列順序就是創造模式物品欄的順序，染料色比照原版染色玻璃的排法。
  *
- * @property dyeName 對應的原版染料顏色名稱；無色為 null。
+ * @property dyeName 對應的原版染料顏色名稱。無色為 null。
  */
 enum class MahjongRulerColor(val dyeName: String?) {
     CLEAR(null),
@@ -39,7 +39,7 @@ enum class MahjongRulerColor(val dyeName: String?) {
          * 依列舉名稱取得顏色。
          *
          * @param name 列舉名稱，例如 `RED`。
-         * @return 對應的顏色；名稱不存在時為無色。
+         * @return 對應的顏色。名稱不存在時為無色。
          */
         fun fromNameOrDefault(name: String): MahjongRulerColor = entries.firstOrNull { it.name == name } ?: CLEAR
     }

@@ -15,7 +15,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties
 /**
  * 三種範例麻將桌共用的控制方塊實體。
  *
- * MahjongCraft 只依 [MahjongTableController] 辨識桌子，不需要登記；狀態物件交給 MahjongCraft 的 NBT 函式存讀。
+ * MahjongCraft 只依 [MahjongTableController] 辨識桌子，不需要登記。狀態物件交給 MahjongCraft 的 NBT 函式存讀。
  *
  * @param pos 方塊實體所在位置。
  * @param state 建立時的方塊狀態。

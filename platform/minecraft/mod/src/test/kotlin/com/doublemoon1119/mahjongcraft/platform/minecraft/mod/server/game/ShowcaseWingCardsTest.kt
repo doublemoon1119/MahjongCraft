@@ -10,7 +10,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證役滿 showcase 一翼的牌依結算面板的手牌排法排列。 */
 class ShowcaseWingCardsTest {
-    /** 手牌在前，之後依鳴牌順序接上各組副露；組別依序遞增，暗槓兩端只帶依牌面決定的牌背，不帶牌面。 */
+    /** 手牌在前，之後依鳴牌順序接上各組副露。組別依序遞增，暗槓兩端只帶依牌面決定的牌背，不帶牌面。 */
     @Test
     fun `orders the hand before the melds and hides closed kan ends`() {
         val standing = List(2) { Uuid.random() }

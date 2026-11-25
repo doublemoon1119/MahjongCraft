@@ -59,7 +59,7 @@ class RiichiSwapCallTest {
         assertEquals(setOf(below.id, above.id), discardable(player))
     }
 
-    /** 邊張吃進三萬時，另一頭外側不存在，只限制同一種牌；吃進一萬時限制四萬。 */
+    /** 邊張吃進三萬時，另一頭外側不存在，只限制同一種牌。吃進一萬時限制四萬。 */
     @Test
     fun `edge chi limits the other end to existing tiles`() {
         val three = character(3)
@@ -85,7 +85,7 @@ class RiichiSwapCallTest {
         assertEquals(setOf(free.id), threePlayerModule.discardableTileIds(table(player), player))
     }
 
-    /** 不是剛吃碰時不限制；已立直時只能打出剛摸到的牌。 */
+    /** 不是剛吃碰時不限制。已立直時只能打出剛摸到的牌。 */
     @Test
     fun `other turns are not limited and riichi still allows only the drawn tile`() {
         val drawn = character(7)
@@ -143,7 +143,7 @@ class RiichiSwapCallTest {
      * 四人日本麻將規則下可以打出的牌。
      *
      * @param player 即將捨牌的玩家。
-     * @return 可以打出的牌；不限制時為 null。
+     * @return 可以打出的牌。不限制時為 null。
      */
     private fun discardable(player: MahjongPlayer) = module.discardableTileIds(table(player), player)
 

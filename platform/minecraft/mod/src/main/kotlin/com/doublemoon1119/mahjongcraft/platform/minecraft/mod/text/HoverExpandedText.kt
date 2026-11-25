@@ -8,7 +8,7 @@ import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.MutableComponent
 
 /**
- * 依指令來源調整訊息：玩家照原樣收到滑鼠提示；伺服器主控台、RCON 與指令方塊看不到提示，改收到 [withHoverTextExpanded] 的結果。
+ * 依指令來源調整訊息：玩家照原樣收到滑鼠提示。伺服器主控台、RCON 與指令方塊看不到提示，改收到 [withHoverTextExpanded] 的結果。
  *
  * @param source 收到訊息的指令來源。
  * @return 適合該來源閱讀的訊息。
@@ -18,7 +18,7 @@ fun Component.readableBy(source: CommandSourceStack): Component = if (source.isP
 /**
  * 把滑鼠提示的內容直接寫在對應的標籤後面，並移除提示與點擊動作。
  *
- * 單行提示接在標籤同一行；多行提示從下一行開始、縮排列出。多行提示的第一行若只是重複標籤或標籤前的文字，例如分類名稱，
+ * 單行提示接在標籤同一行。多行提示從下一行開始、縮排列出。多行提示的第一行若只是重複標籤或標籤前的文字，例如分類名稱，
  * 展開時略過這一行。
  *
  * @return 不需要滑鼠提示也能讀到全部內容的訊息。
@@ -29,7 +29,7 @@ fun Component.withHoverTextExpanded(): MutableComponent = expand(node = this, in
  * 展開一個節點與它的子節點。
  *
  * @param node 要展開的節點。
- * @param inheritedHover 上層節點已展開的提示；子節點帶著同一個提示時不再重複展開。
+ * @param inheritedHover 上層節點已展開的提示。子節點帶著同一個提示時不再重複展開。
  * @param precedingText 同一層中這個節點之前最後一段非空白的文字。
  * @return 展開後的節點。
  */

@@ -20,10 +20,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.Mah
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RulePresentationRequirements
 
 /**
- * 依序登記規則、Minecraft 呈現與原生整合三層擴充，與載入器無關；第三方擴充由載入器找出後傳入。
+ * 依序登記規則、Minecraft 呈現與原生整合三層擴充，與載入器無關。第三方擴充由載入器找出後傳入。
  *
- * 規則中立的 [BuiltInMahjongExtension] 先完成登記；接著 [BundledMahjongExtensions] 與第三方 extension 依序經由同一組回呼登記，
- * 取得 runtime 實際使用的同一批 registry；全部成功後由 [MahjongExtensionBootstrap] 凍結 registry。
+ * 1. 規則中立的 [BuiltInMahjongExtension] 先完成登記。
+ * 2. [BundledMahjongExtensions] 與第三方 extension 依序經由同一組回呼登記，取得 runtime 實際使用的同一批 registry。
+ * 3. 全部成功後由 [MahjongExtensionBootstrap] 凍結 registry。
+ *
  * 啟動 log 依來源列出所有啟用的登記：INFO 只列每個來源的筆數，DEBUG 另外列出完整內容。
  */
 internal object MahjongCraftExtensions {
@@ -71,9 +73,9 @@ internal object MahjongCraftExtensions {
     /**
      * 使用明確提供的 [extensions] 初始化，供平台測試驗證組裝順序。
      *
-     * 所有相依都必須由呼叫端明確提供，測試與正式啟動共用相同的註冊路徑。
-     * 各層啟動流程成功後各自凍結；後續層失敗時中止啟動，不回滾先前層的登記或重試。
-     * Minecraft 呈現登記完成後，檢查每個可選規則都能在麻將桌上呈現（[RulePresentationRequirements]），不符合時中止啟動。
+     * - 所有相依都必須由呼叫端明確提供，測試與正式啟動共用相同的註冊路徑。
+     * - 各層啟動流程成功後各自凍結。後續層失敗時中止啟動，不回滾先前層的登記，也不重試。
+     * - Minecraft 呈現登記完成後，檢查每個可選規則都能在麻將桌上呈現（[RulePresentationRequirements]），不符合時中止啟動。
      *
      * @return 規則、Minecraft 呈現與原生整合依來源合併後的所有登記。
      * @param coreRegistries 規則核心 registry 集合。

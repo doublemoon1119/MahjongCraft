@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
  * 歷史查詢讀取的資料來源。
  *
  * @property writer 持有資料庫連線與 session 的寫入元件。
- * @property store 承載這個來源中進行中對局的權威來源；查詢結果須排除其中仍在進行的對局。
+ * @property store 承載這個來源中進行中對局的權威來源。查詢結果須排除其中仍在進行的對局。
  */
 class HistoryDataSource(
     val writer: HistoryOutboxWriter,
@@ -15,13 +15,13 @@ class HistoryDataSource(
 )
 
 /**
- * 依查詢範圍選擇資料來源；壓力測試範圍只在開發環境且壓力測試資料庫存在時可用。
+ * 依查詢範圍選擇資料來源。壓力測試範圍只在開發環境且壓力測試資料庫存在時可用。
  *
  * @param scope 要查詢的歷史範圍。
  * @param formal 正式歷史的資料來源，供自己的對局與全部對局使用。
- * @param stressTest 壓力測試資料來源；沒有壓力測試資料庫時為 null。
+ * @param stressTest 壓力測試資料來源。沒有壓力測試資料庫時為 null。
  * @param isDevelopment 是否為開發環境。
- * @return 資料來源；壓力測試資料不可用時為 null。
+ * @return 資料來源。壓力測試資料不可用時為 null。
  */
 internal fun selectHistoryDataSource(
     scope: HistoryQueryScopeDto,

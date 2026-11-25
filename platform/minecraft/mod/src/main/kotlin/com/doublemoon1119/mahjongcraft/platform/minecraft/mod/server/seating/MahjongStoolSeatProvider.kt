@@ -16,7 +16,7 @@ import net.minecraft.world.entity.Entity
 /**
  * 將固定席位上的內建麻將凳轉換成通用座位目標。
  *
- * 只檢查請求指定的方塊位置，不搜尋附近的其他凳子；實際入座由
+ * 只檢查請求指定的方塊位置，不搜尋附近的其他凳子。實際入座由
  * [MahjongStoolSeatService] 執行。
  *
  * @property seatService 內建麻將凳的原生入座服務。
@@ -139,7 +139,7 @@ private class MahjongStoolSeatTarget(
      *
      * @param world 要執行入座的伺服器世界。
      * @param rider 要乘坐凳子的實體。
-     * @return 入座後的座位狀態；服務拒絕時不留下自有座位實體。
+     * @return 入座後的座位狀態。服務拒絕時不留下自有座位實體。
      */
     override fun trySit(world: ServerLevel, rider: Entity): SeatState {
         val current = inspect(world, rider)

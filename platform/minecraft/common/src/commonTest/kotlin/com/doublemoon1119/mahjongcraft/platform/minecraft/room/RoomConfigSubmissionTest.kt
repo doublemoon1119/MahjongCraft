@@ -49,7 +49,7 @@ class RoomConfigSubmissionTest {
         assertEquals(RoomConfigSubmission.Result.Accepted(edited), review(edited))
     }
 
-    /** 選擇鷲巢麻將時一起改變識別欄位與鎖定的赤寶牌，可以接受；四人與三人日麻相同。 */
+    /** 選擇鷲巢麻將時一起改變識別欄位與鎖定的赤寶牌，可以接受。四人與三人日麻相同。 */
     @Test
     fun `switching to the washizu variant is accepted`() {
         val washizu = current.copy(ruleConfig = RiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0))
@@ -275,7 +275,7 @@ class RoomConfigSubmissionTest {
         )
     }
 
-    /** 草稿先選擇手牌可見度再關閉觀戰，仍可提交；停用控制項不會清除先前選好的偏好。 */
+    /** 草稿先選擇手牌可見度再關閉觀戰，仍可提交。停用控制項不會清除先前選好的偏好。 */
     @Test
     fun `visibility selected before disabling spectating remains a valid draft`() {
         val definition = requireNotNull(presentations.find("mahjongcraft:riichi"))
@@ -296,7 +296,7 @@ class RoomConfigSubmissionTest {
         assertEquals(RoomConfigSubmission.Result.Accepted(submitted), review(submitted))
     }
 
-    /** 編輯器判斷值的種類與限制；整數只檢查範圍與可否為空。 */
+    /** 編輯器判斷值的種類與限制。整數只檢查範圍與可否為空。 */
     @Test
     fun `editor specs accept only values they can produce`() {
         val integer = GameConfigEditorSpec.IntegerInput(minimum = 0, maximum = 10, step = 5)

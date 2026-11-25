@@ -56,7 +56,7 @@ private class ExamplePairingRevealHandHandler(
      * 保存一次權威寫入的結果與寫入後桌況，供後續通知使用。
      *
      * @property outcome 權威驗證與寫入結果。
-     * @property tableState 寫入成功後的桌況；拒絕命令時為當前桌況，找不到對局時為 null。
+     * @property tableState 寫入成功後的桌況。拒絕命令時為當前桌況，找不到對局時為 null。
      */
     private data class RevealHandUpdate(
         val outcome: Outcome<Unit, GameError>,

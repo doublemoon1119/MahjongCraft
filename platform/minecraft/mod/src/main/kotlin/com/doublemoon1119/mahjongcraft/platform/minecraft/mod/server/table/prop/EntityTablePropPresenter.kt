@@ -79,7 +79,7 @@ class EntityTablePropPresenter(
     }
 
     /**
-     * 驗證完整場景後一次套用；任一步驟失敗時移除失效顯示，不影響權威對局。
+     * 驗證完整場景後一次套用。任一步驟失敗時移除失效顯示，不影響權威對局。
      *
      * @param presentation 桌子與目標桌面物件的呈現資料。
      * @return 完整呈現、桌子不存在或呈現失敗的結果。
@@ -212,7 +212,7 @@ class EntityTablePropPresenter(
      * 由版本無關 dimension ID 取得目前 server session 的世界。
      *
      * @param location 桌子位置。
-     * @return 對應的已載入伺服器世界；無法解析時為 null。
+     * @return 對應的已載入伺服器世界。無法解析時為 null。
      */
     private fun resolveWorld(location: TableLocation): ServerLevel? {
         val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null
@@ -238,9 +238,9 @@ class EntityTablePropPresenter(
         val entity: Entity,
     ) {
         /**
-         * 讀出目前的身分與落點；種類認不得變體時為 null。
+         * 讀出目前的身分與落點。種類認不得變體時為 null。
          *
-         * @return entity 對應的桌面物件目標；無法辨識變體時為 null。
+         * @return entity 對應的桌面物件目標。無法辨識變體時為 null。
          */
         fun target(): TablePropTarget? {
             val id = kind.placementIdOf(entity) ?: return null

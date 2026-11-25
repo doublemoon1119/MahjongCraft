@@ -8,12 +8,12 @@ import kotlin.uuid.Uuid
 /**
  * 將權威牌牆結構呈現於 Minecraft 世界的版本 adapter 邊界。
  *
- * 呼叫端提供結構座標與莊家座位；entity、UUID 對齊、舊牌替換及版本 API 均由實作處理。
+ * 呼叫端提供結構座標與莊家座位。entity、UUID 對齊、舊牌替換及版本 API 均由實作處理。
  * 比照 [MahjongDiceRollPresenter] 的 best-effort 慣例。
  */
 interface MahjongTileWallPresenter {
     /**
-     * 在指定桌面呈現整副牌牆；[MahjongTileWallPresentation.finalLayout] 為空時等同只清除舊牌。
+     * 在指定桌面呈現整副牌牆。[MahjongTileWallPresentation.finalLayout] 為空時等同只清除舊牌。
      *
      * @param presentation 已由規則決定的牌牆呈現資料。
      * @return 牌牆呈現結果。
@@ -43,8 +43,8 @@ interface MahjongTileWallPresenter {
      * @param tableLocation 麻將桌目前位置。
      * @param context 將抽象牌牆格位投影到此桌世界座標的資料。
      * @param layout 目前權威牌牆中每張牌的格位。
-     * @param revealedTileIds 目前應翻面的牌張 UUID；其他牌維持蓋牌。
-     * @return 所有布局牌張都存在並完成同步時為 [MahjongTileWallPresentationResult.PRESENTED]；桌子無效或牌張缺失時
+     * @param revealedTileIds 目前應翻面的牌張 UUID。其他牌維持蓋牌。
+     * @return 所有布局牌張都存在並完成同步時為 [MahjongTileWallPresentationResult.PRESENTED]。桌子無效或牌張缺失時
      *   回傳對應錯誤，且不做部分同步。
      */
     fun synchronizeLayout(
@@ -61,8 +61,8 @@ interface MahjongTileWallPresenter {
      *
      * @param tableId 麻將桌 UUID。
      * @param tableLocation 麻將桌目前位置。
-     * @param revealedTileIds 本次新增公開翻面的牌 Uuid 集合；實作只處理這一批，重複 ID 仍須保持冪等。
-     * @return 找不到對應 entity 的張數；比照本介面 best-effort 慣例，找不到的牌會被跳過。
+     * @param revealedTileIds 本次新增公開翻面的牌 Uuid 集合。實作只處理這一批，重複 ID 仍須保持冪等。
+     * @return 找不到對應 entity 的張數。比照本介面 best-effort 慣例，找不到的牌會被跳過。
      */
     fun revealReservedWallTiles(tableId: Uuid, tableLocation: TableLocation, revealedTileIds: Set<Uuid>): MahjongTileWallPresentationResult
 

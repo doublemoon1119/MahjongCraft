@@ -13,7 +13,7 @@ import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.phys.AABB
 
 /**
- * 讓任何 entity 坐上麻將凳的伺服器端入口；玩家右鍵凳子與開局入座都透過這裡。
+ * 讓任何 entity 坐上麻將凳的伺服器端入口。玩家右鍵凳子與開局入座都透過這裡。
  *
  * 坐下只是 Minecraft 的乘坐，與房間、牌局或座位分配無關。
  *
@@ -30,7 +30,7 @@ class MahjongStoolSeatService(
      * @param world 麻將凳所在的伺服器世界。
      * @param stoolPos 要坐上的凳子方塊座標。
      * @param entity 要乘坐凳子的實體。
-     * @param seatYaw 入座後的水平面向；省略時沿用實體目前的面向。
+     * @param seatYaw 入座後的水平面向。省略時沿用實體目前的面向。
      * @return 是否坐下。
      */
     fun sit(
@@ -103,7 +103,7 @@ class MahjongStoolSeatService(
     }
 
     /**
-     * 新入座後設定面向；玩家須透過連線同步視角，僅改伺服器實體角度不會更新本機相機。
+     * 新入座後設定面向。玩家須透過連線同步視角，僅改伺服器實體角度不會更新本機相機。
      *
      * 保留既有乘坐關係與仰角，不使用會卸乘的跨世界傳送入口。
      *
@@ -131,7 +131,7 @@ class MahjongStoolSeatService(
     }
 
     /**
-     * 檢查 [entity] 是否可以嘗試坐上指定的麻將凳；此方法不會建立座位或移動實體。
+     * 檢查 [entity] 是否可以嘗試坐上指定的麻將凳。此方法不會建立座位或移動實體。
      *
      * @param world 麻將凳所在的伺服器世界。
      * @param stoolPos 要檢查的凳子方塊座標。

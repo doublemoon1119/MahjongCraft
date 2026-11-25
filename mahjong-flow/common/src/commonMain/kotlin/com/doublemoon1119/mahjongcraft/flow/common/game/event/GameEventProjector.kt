@@ -42,9 +42,11 @@ import kotlin.uuid.Uuid
  *
  * 每一種事實都明確決定是否產生事件：
  * - 對局開始：[HistoryFact.MatchStarted]。
- * - 結算：在實際計分的交易產生，同一筆交易最多一次。有 [HistoryFact.WinSettled] 時為和牌（一炮多響也只有一次）；
- *   否則有帶本局結算摘要的 [HistoryFact.RuleEffectResolved] 時為特殊結果；否則這筆交易寫入流局的本局結算摘要、或新增了
- *   流局記錄時為流局。
+ * - 結算：在實際計分的交易產生，同一筆交易最多一次。種類依序判斷：
+ *   1. 有 [HistoryFact.WinSettled] 時為和牌，一炮多響也只有一次。
+ *   2. 否則有帶本局結算摘要的 [HistoryFact.RuleEffectResolved] 時為特殊結果。
+ *   3. 否則這筆交易寫入流局的本局結算摘要、或新增了流局記錄時為流局。
+ *
  *   結算前後的分數取交易前後的對局。換局交易的 [HistoryFact.RoundCompleted] 另產生本局完成事件，不重發結算。
  * - 對局結束：[HistoryFact.MatchCompleted] 或移除交易的 [HistoryFact.MatchAborted]，名次依規則的終局排名決定。
  *
@@ -86,10 +88,10 @@ class GameEventProjector(
     }
 
     /**
-     * 投影一次交易，保留玩家名單與同筆通知的邊界；沒有公開通知時不建立空批次。
+     * 投影一次交易，保留玩家名單與同筆通知的邊界。沒有公開通知時不建立空批次。
      *
      * @param facts 已提交交易。
-     * @return 只讀事件批次；沒有公開通知時為 null。
+     * @return 只讀事件批次。沒有公開通知時為 null。
      */
     fun projectBatch(facts: CommittedGameFacts): CommittedMatchEventBatch? {
         val events = project(facts)
@@ -106,10 +108,10 @@ class GameEventProjector(
     }
 
     /**
-     * 產生 [facts] 對應的事件，依開始、成立動作、結算、本局完成、終局排列；舊三種事件的相對順序不變。
+     * 產生 [facts] 對應的事件，依開始、成立動作、結算、本局完成、終局排列。舊三種事件的相對順序不變。
      *
      * @param facts 一次權威交易對單一場地提交的事實。
-     * @return 對應的事件；沒有任何事件時為空清單。
+     * @return 對應的事件。沒有任何事件時為空清單。
      */
     fun project(facts: CommittedGameFacts): List<MatchEvent> {
         val game = facts.game ?: run {
@@ -209,15 +211,15 @@ class GameEventProjector(
     )
 
     /**
-     * 建立這筆交易的結算事件；沒有結算時為 null。
+     * 建立這筆交易的結算事件。沒有結算時為 null。
      *
      * @param previous 交易前的對局。
      * @param game 交易後的對局。
      * @param module 提供回合排名規則的模組。
      * @param wins 本次交易提交的和牌結算事實。
-     * @param specialOutcome 本次交易直接產生的特殊結算摘要；沒有時為 null。
+     * @param specialOutcome 本次交易直接產生的特殊結算摘要。沒有時為 null。
      * @param facts 取得同筆動作分類與規則標記的來源。
-     * @return 合併同筆交易贏家與分數變化的結算事件；無結算時為 null。
+     * @return 合併同筆交易贏家與分數變化的結算事件。無結算時為 null。
      */
     private fun roundSettled(
         previous: Game,
@@ -268,14 +270,14 @@ class GameEventProjector(
     }
 
     /**
-     * 建立這筆交易的流局事件資料；沒有流局時為 null。
+     * 建立這筆交易的流局事件資料。沒有流局時為 null。
      *
-     * 規則的流局交易同時寫入摘要時使用它（荒牌流局沒有人聽牌時，玩家的動作記錄不會新增流局，只能由摘要得知）；否則依這筆
+     * 規則的流局交易同時寫入摘要時使用它（荒牌流局沒有人聽牌時，玩家的動作記錄不會新增流局，只能由摘要得知）。否則依這筆
      * 交易新增的流局記錄建立，例如由反應或動作後判定直接產生、摘要之後才補上的途中流局。
      *
      * @param previous 交易前的對局。
      * @param game 交易後的對局。
-     * @return 本次交易產生的流局事件資料；沒有時為 null。
+     * @return 本次交易產生的流局事件資料。沒有時為 null。
      */
     private fun drawCompletion(previous: Game, game: Game): Settlement? {
         val committed = game.roundCompletion
@@ -295,8 +297,8 @@ class GameEventProjector(
      * @param reasonId 原樣轉交的終局原因 ID。
      * @param completion 正常完成或中途終止的分類。
      * @param facts 產生終局標記的前後來源。
-     * @param completedPlayerIds 正常完成名單；中止時為空。
-     * @param completedScores 正常終局提交的明確分數；中止時為空。
+     * @param completedPlayerIds 正常完成名單。中止時為空。
+     * @param completedScores 正常終局提交的明確分數。中止時為空。
      * @return 依規則排名的對局結束事件。
      */
     private fun matchEnded(
@@ -384,7 +386,7 @@ class GameEventProjector(
      * @param facts 來源交易。
      * @param ruleId 規則 ID。
      * @param kind 公開事件種類。
-     * @param winnerId 和牌贏家；終局時為 null。
+     * @param winnerId 和牌贏家。終局時為 null。
      * @param resolve 規則的純讀取方法。
      * @return 已複製的公開標記。
      */
@@ -455,7 +457,7 @@ class GameEventProjector(
         )
 
         /**
-         * 由交易中新增的流局事實建立事件內容；不使用或重新計算莊家推進決策。
+         * 由交易中新增的流局事實建立事件內容。不使用或重新計算莊家推進決策。
          *
          * @param outcome 流局的純結果資料。
          * @param kind 此事件採用的結算分類。

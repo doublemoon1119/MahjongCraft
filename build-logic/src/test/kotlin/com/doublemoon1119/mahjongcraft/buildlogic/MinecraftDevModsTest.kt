@@ -11,7 +11,7 @@ import kotlin.test.assertTrue
 
 /** 驗證開發執行時可選載入模組的開關解析，以及載入器模組只加入選中的組合。 */
 class MinecraftDevModsTest {
-    /** 沒給開關或只有空白時不選任何組合；名稱去掉空白與重複，保留順序。 */
+    /** 沒給開關或只有空白時不選任何組合。名稱去掉空白與重複，保留順序。 */
     @Test
     fun `parse trims names and ignores empty values`() {
         assertEquals(emptySet(), MinecraftDevMods.parse(null))

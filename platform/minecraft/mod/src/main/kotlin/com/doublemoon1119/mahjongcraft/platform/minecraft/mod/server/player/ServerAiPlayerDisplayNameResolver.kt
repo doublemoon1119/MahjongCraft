@@ -19,7 +19,7 @@ class ServerAiPlayerDisplayNameResolver(
      *
      * @param game 名稱所屬對局。
      * @param playerId 需要名稱的 AI 成員。
-     * @return 普通自訂名稱、AI 編號或短 UUID 備援；需由客戶端翻譯的角色回傳 null。
+     * @return 普通自訂名稱、AI 編號或短 UUID 備援。需由客戶端翻譯的角色回傳 null。
      */
     fun resolve(game: Game, playerId: Uuid): String? {
         val characters = charactersForMatch(game.matchId)

@@ -153,7 +153,7 @@ class ObserverSnapshotBroadcasterTest {
     /**
      * 在測試 store 中以 Room 取代同 ID 的 Game。
      *
-     * @param room 要保存的房間；為 null 時移除同 ID 的房間。
+     * @param room 要保存的房間。為 null 時移除同 ID 的房間。
      */
     private suspend fun AuthoritativeStateStore.setRoom(room: Room?) = update { state ->
         AuthoritativeStateUpdate(

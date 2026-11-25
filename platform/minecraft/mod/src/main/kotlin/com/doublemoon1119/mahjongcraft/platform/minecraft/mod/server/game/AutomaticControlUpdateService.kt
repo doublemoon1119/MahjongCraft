@@ -21,7 +21,7 @@ import kotlin.uuid.Uuid
  * @property updateControls 套用自動操作集合的用例。
  * @property advanceManager 集合實際改變時請求推進，讓新啟用的自動操作立即生效。
  * @property dataStatus 麻將資料無法讀取時回覆無法使用。
- * @property failurePolicy 判斷套用時丟出的失敗能否收斂為無法使用；協程取消與無法隔離的失敗原樣往外傳。
+ * @property failurePolicy 判斷套用時丟出的失敗能否收斂為無法使用。協程取消與無法隔離的失敗原樣往外傳。
  */
 class AutomaticControlUpdateService(
     private val updateControls: UpdatePlayerAutomaticControlsUseCase,
@@ -33,14 +33,14 @@ class AutomaticControlUpdateService(
     private val logger = mahjongCraftLogger(AutomaticControlUpdateService::class)
 
     /**
-     * 處理 [request]；[playerId] 必須來自已驗證的網路連線，不能來自 payload。
+     * 處理 [request]。[playerId] 必須來自已驗證的網路連線，不能來自 payload。
      *
      * 回覆會原樣帶回請求識別字串，因此識別字串不符合 [ClientRequestIds] 的要求直接丟棄，不回覆。
      * 套用時發生可以隔離的失敗時回覆無法使用。
      *
      * @param playerId 已驗證連線的玩家識別碼。
      * @param request 客戶端自動操作更新要求。
-     * @return 與要求配對的更新結果；請求識別字串無效時為 null。
+     * @return 與要求配對的更新結果。請求識別字串無效時為 null。
      */
     suspend operator fun invoke(
         playerId: Uuid,
@@ -71,10 +71,10 @@ class AutomaticControlUpdateService(
 /**
  * 套用自動操作更新，把可以隔離的失敗收斂成 null。
  *
- * @param failurePolicy 判斷失敗能否隔離；協程取消與無法隔離的失敗原樣往外傳。
+ * @param failurePolicy 判斷失敗能否隔離。協程取消與無法隔離的失敗原樣往外傳。
  * @param onFailure 可以隔離的失敗發生時的通知回呼。
  * @param update 套用更新並取得權威結果的掛起操作。
- * @return 權威結果；發生可以隔離的失敗時為 null。
+ * @return 權威結果。發生可以隔離的失敗時為 null。
  */
 internal suspend fun updateIsolatingFailures(
     failurePolicy: ExtensionFailurePolicy,

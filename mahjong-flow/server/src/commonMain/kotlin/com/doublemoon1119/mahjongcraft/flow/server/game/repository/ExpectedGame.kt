@@ -7,7 +7,7 @@ import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 import kotlin.uuid.Uuid
 
-/** 寫入前發現權威遊戲已不是預期的遊戲；只在 [runWithExpectedGame] 內傳遞，不外流。 */
+/** 寫入前發現權威遊戲已不是預期的遊戲。只在 [runWithExpectedGame] 內傳遞，不外流。 */
 private class StaleExpectedGameException : RuntimeException("The authoritative game is no longer the expected game")
 
 /**
@@ -22,14 +22,14 @@ internal class ExpectedGameScope(
     val gameId: Uuid,
     private val expectedGame: Game,
 ) : AbstractCoroutineContextElement(Key) {
-    /** 範圍內是否已判定過期；判定後這一局的寫入一律拒絕。 */
+    /** 範圍內是否已判定過期。判定後這一局的寫入一律拒絕。 */
     var stale = false
         private set
 
     /** 範圍內是否已寫入這一局。 */
     private var written = false
 
-    /** 範圍內是否曾第二次寫入這一局；一旦違反就不會清除，即使命令攔下了例外。 */
+    /** 範圍內是否曾第二次寫入這一局。一旦違反就不會清除，即使命令攔下了例外。 */
     var violated = false
         private set
 
@@ -57,17 +57,17 @@ internal class ExpectedGameScope(
 }
 
 /**
- * 目前協程中限制 [gameId] 的範圍；沒有時為 null。
+ * 目前協程中限制 [gameId] 的範圍。沒有時為 null。
  *
  * @param gameId 即將寫入的遊戲。
- * @return 限制該局的條件式寫入範圍；沒有時為 null。
+ * @return 限制該局的條件式寫入範圍。沒有時為 null。
  */
 internal suspend fun expectedGameScopeFor(gameId: Uuid): ExpectedGameScope? = currentCoroutineContext()[ExpectedGameScope]?.takeIf { it.gameId == gameId }
 
 /**
  * [GameRepository.withExpectedGame] 的共用實作：在帶有 [ExpectedGameScope] 的協程情境中執行 [command]。
  *
- * 命令即使攔下了過期的例外，只要範圍已判定過期，結果仍是 [ExpectedGameResult.Stale]；命令即使攔下了第二次寫入的例外，
+ * 命令即使攔下了過期的例外，只要範圍已判定過期，結果仍是 [ExpectedGameResult.Stale]。命令即使攔下了第二次寫入的例外，
  * 範圍結束時仍丟出 [ExpectedGameWrittenTwiceException]，不會被當成正常完成。
  *
  * @param T 命令的回傳型別。

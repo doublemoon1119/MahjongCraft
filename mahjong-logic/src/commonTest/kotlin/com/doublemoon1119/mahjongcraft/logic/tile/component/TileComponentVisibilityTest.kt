@@ -64,7 +64,7 @@ class TileComponentVisibilityTest {
         assertEquals(first.pose, second.pose)
     }
 
-    /** 牌面公開也不表示牌上所有特徵都能公開；私人特徵仍依同一讀取情境裁切。 */
+    /** 牌面公開也不表示牌上所有特徵都能公開。私人特徵仍依同一讀取情境裁切。 */
     @Test
     fun `known face does not expose private component values or keys`() {
         val viewer = Uuid.random()

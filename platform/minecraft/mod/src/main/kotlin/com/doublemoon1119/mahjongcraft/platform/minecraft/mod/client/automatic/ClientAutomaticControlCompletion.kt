@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControl
  * @property requestId 完成的請求識別碼。
  * @property gameId 請求所屬的對局識別碼。
  * @property result 請求最後的結果。
- * @property authoritativeSnapshot 完成時可用的最新權威快照；沒有快照時為 null。
+ * @property authoritativeSnapshot 完成時可用的最新權威快照。沒有快照時為 null。
  */
 data class ClientAutomaticControlCompletion(
     val sequence: Long,

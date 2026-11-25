@@ -58,7 +58,7 @@ class StressTestOptionsTest {
         assertEquals(0L, StressRunOptions.DEFAULT.copy(warmupSeconds = 0).warmupTicks)
     }
 
-    /** 輪到名稱時補全尚未使用的選項，輪到值時補全該選項可用的值；位置從最後一個字開始。 */
+    /** 輪到名稱時補全尚未使用的選項，輪到值時補全該選項可用的值。位置從最後一個字開始。 */
     @Test
     fun `suggestions follow the position in the options`() {
         assertEquals(0 to listOf("pace", "history", "max_mspt", "warmup", "seed"), stressOptionSuggestions(""))

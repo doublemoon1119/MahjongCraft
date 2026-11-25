@@ -42,7 +42,7 @@ class ReplayTableNotesTest {
     /** 讀寫桌上物件牌面所用的網路資料登記。 */
     private val registries = DefaultNetworkDtoRegistries().apply { registerBundledNetworkDtos() }
 
-    /** 附註寫成 JSON 後讀回內容相同；寬度為 0 的座位與沒有標記的座位不寫。 */
+    /** 附註寫成 JSON 後讀回內容相同。寬度為 0 的座位與沒有標記的座位不寫。 */
     @Test
     fun `notes round trip through saved text`() {
         val notes = ReplayTableNotes(
@@ -107,7 +107,7 @@ class ReplayTableNotesTest {
         ).forEach { text -> assertNull(ReplayTableNotes.decode(text, registries), text) }
     }
 
-    /** 記錄的讓位範圍只包含目前沒有牌牆牌的格位，與規則回報的範圍合起來相同；散放牌河記下這一局的位置表種子。 */
+    /** 記錄的讓位範圍只包含目前沒有牌牆牌的格位，與規則回報的範圍合起來相同。散放牌河記下這一局的位置表種子。 */
     @Test
     fun `recorder saves reach beyond the wall and the scatter seed`() {
         val modules = riichiModules()

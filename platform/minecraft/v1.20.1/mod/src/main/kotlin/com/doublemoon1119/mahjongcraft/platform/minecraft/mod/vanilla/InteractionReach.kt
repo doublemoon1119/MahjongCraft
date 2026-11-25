@@ -8,7 +8,7 @@ import net.minecraft.world.level.GameType
  * 本機玩家能與方塊互動的距離。
  *
  * @param client 目前客戶端。
- * @return 距離；沒有進行中的遊戲時為 null。
+ * @return 距離。沒有進行中的遊戲時為 null。
  */
 fun blockInteractionReach(client: Minecraft): Double? = client.gameMode?.pickRange?.toDouble()
 
@@ -24,7 +24,7 @@ fun blockInteractionReach(player: ServerPlayer): Double = if (player.gameMode.ga
  * 本機玩家能與實體互動的距離。
  *
  * @param client 目前客戶端。
- * @return 距離；沒有進行中的遊戲時為 null。
+ * @return 距離。沒有進行中的遊戲時為 null。
  */
 fun entityInteractionReach(client: Minecraft): Double? = client.gameMode?.let { if (it.hasFarPickRange()) FAR_ENTITY_REACH else ENTITY_REACH }
 

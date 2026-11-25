@@ -29,11 +29,11 @@ internal sealed interface DecisionEntryIntent {
  *
  * @property label 卡片按鈕的文字。
  * @property previewTileAssetKeys 卡片內要顯示的預覽牌面。
- * @property claimedTileIndex [previewTileAssetKeys] 中要額外標記的牌索引；沒有要標記時為 `null`。
+ * @property claimedTileIndex [previewTileAssetKeys] 中要額外標記的牌索引。沒有要標記時為 `null`。
  * @property intent 點擊後要執行的事。
- * @property description 滑鼠移到卡片上時顯示的說明；沒有說明時為 `null`。
- * @property cardBody 卡片中央的簡短說明；沒有說明時為 `null`。
- * @property cardHint 按鈕附近的補充提示；沒有提示時為 `null`。
+ * @property description 滑鼠移到卡片上時顯示的說明。沒有說明時為 `null`。
+ * @property cardBody 卡片中央的簡短說明。沒有說明時為 `null`。
+ * @property cardHint 按鈕附近的補充提示。沒有提示時為 `null`。
  */
 internal data class DecisionEntry(
     val label: Component,
@@ -54,7 +54,7 @@ private const val UNREGISTERED_ACTION_ORDER: Int = Int.MAX_VALUE
 /**
  * 由權威 prompt 組出由左至右的操作卡清單。
  *
- * 動作卡在前並依固定顯示順序排列，「跳過」不佔卡片位置（由 header 右側的專屬按鈕負責）；規則選擇的三種
+ * 動作卡在前並依固定顯示順序排列，「跳過」不佔卡片位置（由 header 右側的專屬按鈕負責）。規則選擇的三種
  * 型態各自展開成確認、每個選項一張，或單一張選牌卡。
  *
  * @param texts 動作名稱、排序與說明的解析器。

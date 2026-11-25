@@ -27,7 +27,7 @@ fun EntityRenderDispatcher.overrideCameraFacingRotation(rotation: Quaternionf) {
  * 原版鏡頭轉向對應的面向鏡頭轉向。
  *
  * @param orientation 原版的鏡頭轉向。
- * @return 新的面向鏡頭轉向；不改動傳入的轉向。
+ * @return 新的面向鏡頭轉向。不改動傳入的轉向。
  */
 internal fun cameraFacingRotation(orientation: Quaternionf): Quaternionf = Quaternionf(orientation).rotateY(PI.toFloat())
 

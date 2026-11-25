@@ -31,15 +31,15 @@ class BeginRuleDecisionUseCase(
     private val abortGameHandler: GameAbortHandler,
 ) {
     /**
-     * 在 [timing] 開啟規則選擇視窗；規則不需要選擇時不改變對局。
+     * 在 [timing] 開啟規則選擇視窗。規則不需要選擇時不改變對局。
      *
      * 已經有視窗開著時不再開新的，只寫入 [transition]。[transition] 與開窗在同一筆寫入中保存，視窗關閉後才接續它。
      *
      * @param gameId 對局識別碼。
      * @param timing 目前的時間點。
-     * @param transition 同時排定、等視窗關閉後才執行的流程；沒有時為 null。
-     * @return 是否開啟了視窗；對局不存在時回傳錯誤。
-     * @throws RuleContractViolationException 規則需要玩家選擇但沒有時間設定時；對局會先嘗試中止。
+     * @param transition 同時排定、等視窗關閉後才執行的流程。沒有時為 null。
+     * @return 是否開啟了視窗。對局不存在時回傳錯誤。
+     * @throws RuleContractViolationException 規則需要玩家選擇但沒有時間設定時。對局會先嘗試中止。
      */
     suspend operator fun invoke(
         gameId: Uuid,
@@ -77,7 +77,7 @@ class BeginRuleDecisionUseCase(
      * 原子更新後的開窗結果與歷史事實。
      *
      * @property outcome use case 對呼叫端回傳的結果。
-     * @property historyDrafts 開啟視窗時要記錄的事實；沒有開窗時為空。
+     * @property historyDrafts 開啟視窗時要記錄的事實。沒有開窗時為空。
      */
     private data class BeginUpdate(
         val outcome: Outcome<Boolean, GameError>,

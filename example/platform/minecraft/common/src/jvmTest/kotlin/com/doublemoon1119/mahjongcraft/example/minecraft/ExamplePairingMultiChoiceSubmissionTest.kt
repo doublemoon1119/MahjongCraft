@@ -85,7 +85,7 @@ class ExamplePairingMultiChoiceSubmissionTest {
         assertEquals(selectedIds, (field.read(restored.gameConfig) as GameConfigPresentationValue.MultiChoiceValue).optionIds)
     }
 
-    /** 三人或四人已在房間時，不能套用只足夠更少玩家的牌山；拒絕後原房間保持不變。 */
+    /** 三人或四人已在房間時，不能套用只足夠更少玩家的牌山。拒絕後原房間保持不變。 */
     @Test
     fun `room rejects wall selection too small for its actual roster`() = runTest {
         for ((playerCount, selectedValues) in listOf(3 to setOf(1, 2), 4 to setOf(1, 2, 3))) {

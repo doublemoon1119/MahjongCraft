@@ -6,8 +6,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 /**
  * 玩家狀態與累積動作紀錄的局部變化。
  *
- * @property playerWithoutHistory 交易後玩家狀態；[MahjongPlayer.actionHistory] 固定為空，避免反覆保存累積紀錄。
- * @property retainedActionCount 從交易前動作紀錄保留的前綴筆數；清空紀錄時為零。
+ * @property playerWithoutHistory 交易後玩家狀態。[MahjongPlayer.actionHistory] 固定為空，避免反覆保存累積紀錄。
+ * @property retainedActionCount 從交易前動作紀錄保留的前綴筆數。清空紀錄時為零。
  * @property appendedActions 本次交易新追加的動作。
  */
 data class HistoryPlayerChange(

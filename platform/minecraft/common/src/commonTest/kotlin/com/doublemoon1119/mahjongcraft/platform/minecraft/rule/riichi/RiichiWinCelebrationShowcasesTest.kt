@@ -35,7 +35,7 @@ class RiichiWinCelebrationShowcasesTest {
         }
     }
 
-    /** 展示理由與目錄的役滿分類涵蓋同一組役滿役種；役滿成就涵蓋其中非古役的部分。 */
+    /** 展示理由與目錄的役滿分類涵蓋同一組役滿役種。役滿成就涵蓋其中非古役的部分。 */
     @Test
     fun `cue achievement and catalogue yakuman sets match`() {
         val catalogue = RiichiCatalogueYaku.entries

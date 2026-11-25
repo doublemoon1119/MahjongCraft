@@ -9,7 +9,7 @@ interface AiCharacterRegistry : AiCharacterRegistrar {
      * 查詢完整角色描述。
      *
      * @param id 完整角色 ID。
-     * @return 已登記的描述；缺少時為 null。
+     * @return 已登記的描述。缺少時為 null。
      */
     fun find(id: String): AiCharacterDefinition?
 

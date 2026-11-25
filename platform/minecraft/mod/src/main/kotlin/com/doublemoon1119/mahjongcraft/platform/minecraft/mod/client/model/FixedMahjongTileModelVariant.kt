@@ -6,7 +6,7 @@ import net.minecraft.resources.ResourceLocation
 /**
  * 固定牌模型的材質變體描述。
  *
- * 變體只覆寫固定模板的正面、牌體圖集與粒子材質；模型的 parent、幾何與 display
+ * 變體只覆寫固定模板的正面、牌體圖集與粒子材質。模型的 parent、幾何與 display
  * 轉換仍由模板提供，因此不開放改變牌的尺寸或放置契約。
  *
  * @property modelId 資源重載期間用來識別此合成模型的 synthetic model ID。

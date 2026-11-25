@@ -20,7 +20,7 @@ import org.lwjgl.glfw.GLFW
  * 開啟可見性畫面時回放場景的座位與視角。
  *
  * @property seats 各家的初始座位與名稱，依座位順序。
- * @property viewedSeat 目前視角所在那一家的初始座位；自由視角為 null。
+ * @property viewedSeat 目前視角所在那一家的初始座位。自由視角為 null。
  * @property viewLabel 目前視角的名稱。
  */
 internal data class HistoryReplayVisibilityContext(
@@ -38,7 +38,7 @@ internal data class HistoryReplayVisibilityContext(
 }
 
 /**
- * 牌譜回放的可見性子頁：分「人物」「遊戲面板」「桌上物件」「特效」四段，每列左邊是名稱、右邊是選擇器，改了立即生效；
+ * 牌譜回放的可見性子頁：分「人物」「遊戲面板」「桌上物件」「特效」四段，每列左邊是名稱、右邊是選擇器，改了立即生效。
  * 底部是「恢復預設值」與「完成」。視角所在那一家的人物與玩家資訊固定隱藏並停用。
  *
  * @property session 此畫面所屬的共用瀏覽 session。
@@ -66,7 +66,7 @@ internal class HistoryReplayVisibilityScreen(
         add(VisibilityRow.WinEffect)
     }
 
-    /** 各列的選擇器；標題列沒有。 */
+    /** 各列的選擇器。標題列沒有。 */
     private val selectors = mutableMapOf<VisibilityRow, RestartableMarqueeButtonWidget>()
 
     /** 選擇器展開的清單。 */
@@ -84,7 +84,7 @@ internal class HistoryReplayVisibilityScreen(
     /** 恢復預設值按鈕。 */
     private var resetButton: RestartableMarqueeButtonWidget? = null
 
-    /** 目前畫面的版面；標題下方留一行目前視角。 */
+    /** 目前畫面的版面。標題下方留一行目前視角。 */
     private val layout: FormScreenLayout
         get() = FormScreenLayout(windowWidth = width, windowHeight = height, hasPageSwitch = false, hasRuleRow = false, hasTabs = false, headerHeight = HEADER_HEIGHT)
 
@@ -146,7 +146,7 @@ internal class HistoryReplayVisibilityScreen(
     }
 
     /**
-     * 一列可選的顯示方式：人物有自動、顯示、半透明、隱藏；面板與桌上物件只有顯示、隱藏。
+     * 一列可選的顯示方式：人物有自動、顯示、半透明、隱藏。面板與桌上物件只有顯示、隱藏。
      *
      * @param row 有選擇器的列。
      * @return 依顯示順序的選項。
@@ -157,7 +157,7 @@ internal class HistoryReplayVisibilityScreen(
     }
 
     /**
-     * 一列目前的顯示方式；視角所在那一家的人物與玩家資訊固定為隱藏。
+     * 一列目前的顯示方式。視角所在那一家的人物與玩家資訊固定為隱藏。
      *
      * @param row 有選擇器的列。
      * @return 目前的顯示方式。
@@ -213,7 +213,7 @@ internal class HistoryReplayVisibilityScreen(
     }
 
     /**
-     * 選擇器的提示：說明與全部選項；固定隱藏的列在其他選項上寫出原因。
+     * 選擇器的提示：說明與全部選項。固定隱藏的列在其他選項上寫出原因。
      *
      * @param row 有選擇器的列。
      * @return 提示文字。
@@ -245,7 +245,7 @@ internal class HistoryReplayVisibilityScreen(
      * 固定隱藏的原因：視角所在那一家的人物與玩家資訊。
      *
      * @param row 列。
-     * @return 原因；可以調整時為 null。
+     * @return 原因。可以調整時為 null。
      */
     private fun lockedReason(row: VisibilityRow): Component? = when {
         row is VisibilityRow.Figure && isViewed(row.seat) -> Component.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_FIGURE_VIEWED)
@@ -327,7 +327,7 @@ internal class HistoryReplayVisibilityScreen(
         return super.mouseClicked(mouseX, mouseY, button)
     }
 
-    /** 清單展開時不將拖曳傳遞至背景控制項；拖曳捲軸時逐列捲動。 */
+    /** 清單展開時不將拖曳傳遞至背景控制項。拖曳捲軸時逐列捲動。 */
     override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, deltaX: Double, deltaY: Double): Boolean {
         if (dropdown.isOpen) return true
         if (scrollDragging && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
@@ -337,7 +337,7 @@ internal class HistoryReplayVisibilityScreen(
         return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)
     }
 
-    /** 清單展開時不將放開滑鼠事件傳遞至背景控制項；放開左鍵時結束拖曳。 */
+    /** 清單展開時不將放開滑鼠事件傳遞至背景控制項。放開左鍵時結束拖曳。 */
     override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean {
         if (dropdown.isOpen) return true
         if (scrollDragging && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {

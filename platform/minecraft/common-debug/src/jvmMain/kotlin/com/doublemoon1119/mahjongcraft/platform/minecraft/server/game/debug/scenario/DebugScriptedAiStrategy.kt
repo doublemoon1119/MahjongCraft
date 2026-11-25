@@ -13,10 +13,13 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 /**
  * 開發環境限定的腳本 AI，讓 debug 情境的對手依排定的牌山順序行動。
  *
- * 他家捨牌或宣告槓、拔北時一律跳過；自己回合優先遵守規則限定的捨牌，否則摸切或打出第一張立牌。
- * 預設不和牌、不吃碰、不立直。
- * [declaresKanFirst] 為 `true` 時，自己回合有可宣告的槓就先宣告；[pullsNorthFirst] 為 `true` 時，三人日麻自己回合
- * 可以拔北就先拔北；[winsFirst] 為 `true` 時，可以榮和或自摸就和牌。只依決策情境計算，沒有可變狀態。
+ * - 他家捨牌或宣告槓、拔北時一律跳過。
+ * - 自己回合優先遵守規則限定的捨牌，否則摸切或打出第一張立牌。
+ * - 預設不和牌、不吃碰、不立直。
+ * - [declaresKanFirst] 為 `true` 時，自己回合有可宣告的槓就先宣告。
+ * - [pullsNorthFirst] 為 `true` 時，三人日麻自己回合可以拔北就先拔北。
+ * - [winsFirst] 為 `true` 時，可以榮和或自摸就和牌。
+ * - 只依決策情境計算，沒有可變狀態。
  *
  * @property declaresKanFirst 自己回合是否優先宣告可用的暗槓或加槓。
  * @property pullsNorthFirst 自己回合是否優先拔北。

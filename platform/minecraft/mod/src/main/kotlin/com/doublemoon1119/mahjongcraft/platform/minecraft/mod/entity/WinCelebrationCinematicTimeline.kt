@@ -61,7 +61,7 @@ object WinCelebrationCinematicTimeline {
      *
      * @param rank 牌在展示編隊中的順位索引。
      * @param totalCards 展示牌張總數。
-     * @return 此牌開始返回編隊的 tick；牌數不超過一張時直接返回共同起始時間。
+     * @return 此牌開始返回編隊的 tick。牌數不超過一張時直接返回共同起始時間。
      */
     fun returnStartTick(rank: Int, totalCards: Int): Double {
         if (totalCards <= 1) return FORMATION_RETURN_START

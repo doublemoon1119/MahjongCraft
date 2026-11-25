@@ -52,7 +52,7 @@ class PlannedTileMotionStepsTest {
         )
     }
 
-    /** 飛到牌河是一段拋物線，落地播放捨牌聲；飛到副露區播放副露聲；不播聲音時沒有聲音步驟。 */
+    /** 飛到牌河是一段拋物線，落地播放捨牌聲。飛到副露區播放副露聲。不播聲音時沒有聲音步驟。 */
     @Test
     fun `flights arc to the destination with the landing sound of the area`() {
         val discard = PlannedTileMotionSteps.steps(motion(TileMotionKind.FLIGHT, TileRegion.HAND, TileRegion.DISCARD, TilePose.UPRIGHT, TilePose.FACE_UP), START)
@@ -68,7 +68,7 @@ class PlannedTileMotionStepsTest {
         assertTrue(silent.none { it is AnimationStep.PlaySound })
     }
 
-    /** 立著越過其他牌的弧線往前傾；平移、翻面與直接擺放沒有落地聲。 */
+    /** 立著越過其他牌的弧線往前傾。平移、翻面與直接擺放沒有落地聲。 */
     @Test
     fun `upright arcs lean and row moves are silent`() {
         val arc = PlannedTileMotionSteps.steps(motion(TileMotionKind.ARC, TileRegion.HAND, TileRegion.HAND, TilePose.UPRIGHT, TilePose.UPRIGHT), START)
@@ -82,7 +82,7 @@ class PlannedTileMotionStepsTest {
         }
     }
 
-    /** 一步之中先離開、再讓位、最後摸牌落下；一起落到同一排的牌只有一張播放落地聲。 */
+    /** 一步之中先離開、再讓位、最後摸牌落下。一起落到同一排的牌只有一張播放落地聲。 */
     @Test
     fun `a step starts each phase after the previous one and plays one sound per landing row`() {
         val discard = motion(TileMotionKind.FLIGHT, TileRegion.HAND, TileRegion.DISCARD, TilePose.UPRIGHT, TilePose.FACE_UP)

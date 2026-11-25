@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue
 
 /**
- * 規則的一覽說明資料；列表順序即呈現順序，不參與計分或和牌判定。
+ * 規則的一覽說明資料。列表順序即呈現順序，不參與計分或和牌判定。
  *
  * @property categories 規則自訂分類，不限制翻數或計分單位。
  * @property entries 說明條目，包含役種、加算項目或流局說明。

@@ -99,7 +99,7 @@ class TaiwanDiscardReadinessAnalyzer internal constructor(
      * @param tableState 目前權威桌況。
      * @param player 要分析的玩家。
      * @param visibleTiles 這位玩家看得到牌面的牌。
-     * @param projectPlayer 套用動作專屬狀態的投影；回傳 `null` 時略過該候選。
+     * @param projectPlayer 套用動作專屬狀態的投影。回傳 `null` 時略過該候選。
      * @return 捨牌後仍聽牌的候選。
      */
     private fun analyzeWithProjection(

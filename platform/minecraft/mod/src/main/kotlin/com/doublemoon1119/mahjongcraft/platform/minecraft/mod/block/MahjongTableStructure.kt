@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 
-/** 3×3×2 麻將桌的純座標換算；不讀取或修改 Minecraft 世界。 */
+/** 3×3×2 麻將桌的純座標換算。不讀取或修改 Minecraft 世界。 */
 object MahjongTableStructure {
     /** 麻將桌固定包含的 part 數量。 */
     const val PART_COUNT: Int = 18

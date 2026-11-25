@@ -117,7 +117,7 @@ class GameDecisionTimerManagerTest {
         )
     }
 
-    /** 驗證結算計時後重建管理器，會接續已保存的基本思考時間，而非重新給滿；不執行平台存檔或重啟。 */
+    /** 驗證結算計時後重建管理器，會接續已保存的基本思考時間，而非重新給滿。不執行平台存檔或重啟。 */
     @Test
     fun `test session restart resumes interrupted base time instead of granting a fresh one`() = runTest {
         val fixtures = Fixtures()

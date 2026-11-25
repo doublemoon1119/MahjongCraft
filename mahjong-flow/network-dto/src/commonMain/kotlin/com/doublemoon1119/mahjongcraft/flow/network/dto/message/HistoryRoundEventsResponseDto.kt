@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
  * @property matchId 回應所屬對局識別碼。
  * @property roundNumber 回應所屬局序號。
  * @property startTransactionIndex 回應起始交易索引。
- * @property events 事件頁；內容已通過查詢上限。
+ * @property events 事件頁。內容已通過查詢上限。
  * @property errorCode 安全的查詢錯誤代碼。
  */
 @Serializable

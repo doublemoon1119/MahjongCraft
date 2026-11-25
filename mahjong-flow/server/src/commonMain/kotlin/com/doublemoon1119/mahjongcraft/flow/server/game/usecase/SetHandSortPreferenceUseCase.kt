@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import kotlin.uuid.Uuid
 
 /**
- * 設定「是否自動整理手牌」偏好（[HandSortPreferenceStore]）；啟用時，若玩家目前正坐在進行中對局且沒有尚未決定的摸牌，會立即整理
+ * 設定「是否自動整理手牌」偏好（[HandSortPreferenceStore]）。啟用時，若玩家目前正坐在進行中對局且沒有尚未決定的摸牌，會立即整理
  * 並重新呈現手牌，不用等到下一次摸牌／打牌才生效。停用時只更新偏好，不會立即改變目前手牌順序。
  *
  * 若玩家手上還有一張尚未決定的摸牌（`Hand.lastDrawn != null`），這次先不整理——`Hand.organize` 會把
@@ -27,9 +27,13 @@ class SetHandSortPreferenceUseCase(
     private val presentationPublisher: GamePresentationPublisher,
 ) {
     /**
-     * 依 [mode] 更新 [enabled] 偏好；重連恢復只更新暫存值。玩家主動啟用時，若目前手牌可安全整理才立即整理並重新發布；停用不會整理手牌。
+     * 依 [mode] 更新 [enabled] 偏好。
      *
-     * 重連可能發生在開局發牌尚未呈現完時；若誤當成 [HandSortPreferenceUpdateMode.USER_CHANGE]，重新發布手牌會打斷
+     * - 重連恢復只更新暫存值。
+     * - 玩家主動啟用時，目前手牌可安全整理才立即整理並重新發布。
+     * - 停用不會整理手牌。
+     *
+     * 重連可能發生在開局發牌尚未呈現完時。若誤當成 [HandSortPreferenceUpdateMode.USER_CHANGE]，重新發布手牌會打斷
      * 尚未完成的開局發牌呈現。
      *
      * @param playerId 更新偏好的玩家識別碼。

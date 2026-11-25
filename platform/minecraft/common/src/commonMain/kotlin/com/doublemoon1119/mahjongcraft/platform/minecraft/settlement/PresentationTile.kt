@@ -12,7 +12,7 @@ sealed interface PresentationTile {
     ) : PresentationTile
 
     /**
-     * 蓋著的牌；只帶要畫的牌背，不帶牌面。
+     * 蓋著的牌。只帶要畫的牌背，不帶牌面。
      *
      * @property appearanceId 牌背使用的牌組外觀 ID。
      */

@@ -25,7 +25,7 @@ import kotlin.test.assertTrue
 /**
  * 以 Minecraft 這層實際附上的呈現附註編碼固定對局，確認正式牌譜仍在容量上限內，附註內容與規則提供的相同。
  *
- * flow 的容量測試不附任何呈現附註；這裡用 [ReplayTableNotesRecorder] 與內建日麻的登記，量出遊戲中實際存下的大小。
+ * flow 的容量測試不附任何呈現附註。這裡用 [ReplayTableNotesRecorder] 與內建日麻的登記，量出遊戲中實際存下的大小。
  */
 class MinecraftReplayCapacityTest {
     /** 用於轉換內建規則資料的 persistence registries。 */
@@ -111,7 +111,7 @@ class MinecraftReplayCapacityTest {
         /** JSON 上限。 */
         const val MAX_JSON_BYTES = 290_000
 
-        /** gzip 上限；歷史資料庫以 gzip 預設等級壓縮存放牌譜，這也是單場牌譜的存檔大小上限。 */
+        /** gzip 上限。歷史資料庫以 gzip 預設等級壓縮存放牌譜，這也是單場牌譜的存檔大小上限。 */
         const val MAX_GZIP_BYTES = 40_000
 
         /** 量測結果的紀錄。 */

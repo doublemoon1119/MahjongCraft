@@ -3,14 +3,16 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui
 /**
  * 分類頁籤列的版面：一排頁籤與貫穿內容寬度的底線。
  *
- * 頁籤寬 [PREFERRED_TAB_WIDTH] 並整排置中；放不下時平均縮窄，最窄 [MINIMUM_TAB_WIDTH]；仍放不下時整排靠左
- * 並可左右捲動。選中的頁籤比其他頁籤高，向上突出並與底線相連。
+ * - 頁籤寬 [PREFERRED_TAB_WIDTH] 並整排置中。
+ * - 放不下時平均縮窄，最窄 [MINIMUM_TAB_WIDTH]。
+ * - 仍放不下時整排靠左並可左右捲動。
+ * - 選中的頁籤比其他頁籤高，向上突出並與底線相連。
  *
  * @property left 頁籤列左界。
  * @property width 頁籤列寬度。
  * @property top 頁籤列上界，也就是選中頁籤的上界。
  * @property tabCount 頁籤數量。
- * @property scroll 向左捲動的像素數；超出合法範圍的部分不採用。
+ * @property scroll 向左捲動的像素數。超出合法範圍的部分不採用。
  */
 internal data class TabStripLayout(
     val left: Int,
@@ -29,7 +31,7 @@ internal data class TabStripLayout(
     /** 整排頁籤的總寬度。 */
     val totalWidth: Int = if (tabCount <= 0) 0 else tabCount * tabWidth + (tabCount - 1) * TAB_GAP
 
-    /** 最大捲動量；整排頁籤放得下時為 0。 */
+    /** 最大捲動量。整排頁籤放得下時為 0。 */
     val maximumScroll: Int = (totalWidth - width).coerceAtLeast(0)
 
     /** 實際採用的捲動量。 */
@@ -69,7 +71,7 @@ internal data class TabStripLayout(
     fun tabHeight(selected: Boolean): Int = if (selected) SELECTED_HEIGHT else UNSELECTED_HEIGHT
 
     /**
-     * 計算讓指定頁籤完整顯示所需的捲動量；已完整顯示時維持目前捲動量。
+     * 計算讓指定頁籤完整顯示所需的捲動量。已完整顯示時維持目前捲動量。
      *
      * @param index 頁籤順序，從 0 開始。
      * @return 合法範圍內的捲動量。
@@ -88,7 +90,7 @@ internal data class TabStripLayout(
     /**
      * 依滾輪方向捲動一個頁籤的距離。
      *
-     * @param amount 滾輪位移；負值向右看後面的頁籤，正值向左。
+     * @param amount 滾輪位移。負值向右看後面的頁籤，正值向左。
      * @return 合法範圍內的捲動量。
      */
     fun scrollByWheel(amount: Double): Int {

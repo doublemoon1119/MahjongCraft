@@ -33,7 +33,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 /**
  * 集中保存 Minecraft extension bootstrap 使用的強型別呈現 registry。
  *
- * 一般 renderer、screen 與 service 仍應只依賴實際需要的單一 registry；這個集合只用於 extension 註冊與
+ * 一般 renderer、screen 與 service 仍應只依賴實際需要的單一 registry。這個集合只用於 extension 註冊與
  * 統一凍結邊界。
  *
  * @property tileAssetRegistry 牌種 Minecraft asset registry。

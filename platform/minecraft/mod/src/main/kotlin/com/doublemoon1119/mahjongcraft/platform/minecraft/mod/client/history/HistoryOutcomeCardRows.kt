@@ -27,7 +27,7 @@ internal class HistoryOutcomeCardRows(
      *
      * @param builder 卡片內容。
      * @param outcome 結算的呈現內容。
-     * @param savedOutcome 保存的結算原文，提供贏家的和牌手牌；沒有時為 null。
+     * @param savedOutcome 保存的結算原文，提供贏家的和牌手牌。沒有時為 null。
      * @param ruleId 這場對局的規則。
      * @param transactionIndex 這筆結算所在的交易索引，供讀取和牌手牌的按鈕使用。
      * @param actorText 依初始座位取得玩家名稱。

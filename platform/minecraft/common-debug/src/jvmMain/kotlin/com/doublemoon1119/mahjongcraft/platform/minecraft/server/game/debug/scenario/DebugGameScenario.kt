@@ -6,7 +6,7 @@ interface DebugGameScenario {
     val id: String
 
     /**
-     * 依目前同桌玩家建立新的權威情境；結果由載入器驗證後寫入。
+     * 依目前同桌玩家建立新的權威情境。結果由載入器驗證後寫入。
      *
      * @param context 目前對局與指令發起者。
      * @return 新的對局狀態與呈現資料。

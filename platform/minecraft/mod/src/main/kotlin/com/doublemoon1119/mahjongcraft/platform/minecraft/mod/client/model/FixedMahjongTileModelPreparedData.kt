@@ -33,7 +33,7 @@ data class FixedMahjongTileModelPreparedData(
      * 依 synthetic model ID 取得變體。
      *
      * @param modelId 要載入的模型 ID。
-     * @return 對應的變體；這個 ID 不是本次準備的變體時為 null。
+     * @return 對應的變體。這個 ID 不是本次準備的變體時為 null。
      */
     fun variant(modelId: ResourceLocation): FixedMahjongTileModelVariant? = variantsById[modelId]
 

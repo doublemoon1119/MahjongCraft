@@ -15,7 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.stre
  * 除了場數與即時狀態，所有統計都只涵蓋暖機結束之後（見 [StressRunOptions.warmupSeconds]）。
  *
  * @property scenarioId 對局情境識別碼。
- * @property seed 基準種子；以同一個種子與相同設定重跑時，各桌的座位、牌山與骰子相同。
+ * @property seed 基準種子。以同一個種子與相同設定重跑時，各桌的座位、牌山與骰子相同。
  * @property mode 桌數安排。
  * @property pace 每桌推進節奏。
  * @property historyMode 歷史處理方式。
@@ -24,23 +24,23 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.stre
  * @property completedMatches 開始以來已打完的場數。
  * @property failedMatches 開始以來卡住而中止的場數。
  * @property elapsedTicks 開始以來已經過的伺服器 tick 數。
- * @property warmupTicks 暖機的 tick 數；0 表示不暖機。
- * @property warmupRemainingTicks 暖機剩餘的 tick 數；暖機已結束時為 0。
+ * @property warmupTicks 暖機的 tick 數。0 表示不暖機。
+ * @property warmupRemainingTicks 暖機剩餘的 tick 數。暖機已結束時為 0。
  * @property measuredSeconds 暖機結束後經過的實際秒數。
- * @property tickAverageMillis 最近一段時間 tick 本身處理時間的平均毫秒數；只供診斷，不含 tick 之間執行的工作。
+ * @property tickAverageMillis 最近一段時間 tick 本身處理時間的平均毫秒數。只供診斷，不含 tick 之間執行的工作。
  * @property tickP95Millis 最近一段時間 tick 本身處理時間的第 95 百分位毫秒數。
  * @property tickMaxMillis 最近一段時間 tick 本身處理時間的最大毫秒數。
  * @property tickIntervalAverageMillis 最近一段時間實際 tick 間隔（相鄰兩個 tick 開始的時間差）的平均毫秒數。
  * @property tickIntervalP95Millis 最近一段時間實際 tick 間隔的第 95 百分位毫秒數。
  * @property tickIntervalMaxMillis 最近一段時間實際 tick 間隔的最大毫秒數。
- * @property lagMillis 目前相對每 tick 50 ms 節奏的落後毫秒數；見 [StressSafetyValve]。
+ * @property lagMillis 目前相對每 tick 50 ms 節奏的落後毫秒數。見 [StressSafetyValve]。
  * @property advanceMillisPerSecond 暖機結束後每秒 MahjongCraft 推進（各桌推進協程在主執行緒上實際執行的片段）的平均毫秒數。
  * @property stepAverageMillis 最近一段時間單桌單步 MahjongCraft 推進耗時的平均毫秒數：這一步在主執行緒上實際執行的片段加總，
  *   不含等待 AI 結果的時間。
  *
  * @property stepP95Millis 最近一段時間單桌單步 MahjongCraft 推進耗時的第 95 百分位毫秒數。
  * @property stepMaxMillis 最近一段時間單桌單步 MahjongCraft 推進耗時的最大毫秒數。
- * @property stepStages 單步各環節的耗時；見 [StressStepStage]。
+ * @property stepStages 單步各環節的耗時。見 [StressStepStage]。
  * @property historyRecording 每 tick 歷史記錄的耗時。
  * @property aiDecisions 有結果的 AI 決策數。
  * @property aiTimeouts 等待超過上限而使用固定命令的 AI 決策數。
@@ -54,7 +54,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.stre
  * @property unfinishedStrategyCalls 目前尚未真正結束的策略工作數。
  * @property unfinishedStrategyPeak 暖機結束後同時存在、尚未真正結束的策略工作數的最大值，包含 tick 之間短暫出現的工作。
  * @property strategyCapacity 同時存在、尚未結束的策略工作上限。
- * @property writerStages 歷史背景工作各環節的耗時；只列出有發生的環節。
+ * @property writerStages 歷史背景工作各環節的耗時。只列出有發生的環節。
  * @property eventsProduced 新加入待寫佇列的歷史事件數。
  * @property eventsWritten 背景工作處理完（寫入或編碼後確認移除）的歷史事件數。
  * @property maxStepsInTick 單一 tick 內完成的最多步數。
@@ -63,16 +63,16 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.stre
  * @property slowTicks 以 [STRESS_SLOW_TICK_THRESHOLDS_MILLIS] 的每個門檻毫秒數為鍵，耗時超過門檻的 tick 數。
  * @property gc 記憶體回收次數與耗時。
  * @property stutterLimitMillis 單一 tick 間隔超過這個毫秒數就算一次卡頓。
- * @property stutterTables 第一次判定持續卡頓時的桌數；尚未發生時為 null。
+ * @property stutterTables 第一次判定持續卡頓時的桌數。尚未發生時為 null。
  * @property pendingEvents 目前歷史待寫佇列中的事件數。
  * @property pendingPeak 歷史待寫佇列的最大事件數。
  * @property pendingCapacity 歷史待寫佇列的容量。
  * @property lostSegments 出現序號缺口（遺失歷史）的場次數。
  * @property writerFailed 歷史背景工作是否發生錯誤或暫停。
  * @property usedMemoryMiB 目前 JVM 已使用的記憶體 MiB。
- * @property timeSeriesFile 每秒時間序列 CSV 的檔名；無法建立時為 null。
- * @property stopReason 停止原因；仍在執行時為 null。
- * @property sustainedTables 爬坡模式因安全閥停止時，已完整撐過一個階段的最大桌數；其他情況為 null。
+ * @property timeSeriesFile 每秒時間序列 CSV 的檔名。無法建立時為 null。
+ * @property stopReason 停止原因。仍在執行時為 null。
+ * @property sustainedTables 爬坡模式因安全閥停止時，已完整撐過一個階段的最大桌數。其他情況為 null。
  */
 data class StressTestReport(
     val scenarioId: String,

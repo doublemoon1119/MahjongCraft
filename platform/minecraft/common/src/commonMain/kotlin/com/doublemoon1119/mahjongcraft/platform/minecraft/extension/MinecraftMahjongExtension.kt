@@ -36,14 +36,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 /**
  * 第三方 Minecraft mod 在 MahjongCraft runtime 啟動前登記 Minecraft 專屬整合的共用契約。
  *
- * 跟遊戲平台無關的規則邏輯本身（規則配置與計算、自訂牌種、網路／存檔層的資料轉換）屬於
- * `MahjongExtension` 的職責，不在這裡登記；這裡只涵蓋
- * Minecraft 這個平台專屬的整合——[MinecraftTileAssetRegistry]／[AiStrategyDisplayNameRegistry] 這類
- * 概念屬於 Minecraft adapter，不應該出現在平台無關的 extension API 裡，才能讓規則邏輯保持可攜。
- *
- * 第三方類別若想同時登記規則層與 Minecraft 專屬整合，可以讓同一個類別同時實作兩個介面，不需要另外
- * 向載入器宣告第二種擴充——載入器只找出 `MahjongExtension`，再從中篩選出有實作此介面的部分；
- * 換句話說，只實作這個介面、沒有同時實作 `MahjongExtension` 的類別不會被發現。
+ * - 跟平台無關的規則邏輯（規則配置與計算、自訂牌種、網路／存檔層的資料轉換）由 `MahjongExtension` 登記，不在這裡。
+ * - 這裡只涵蓋 Minecraft 專屬的整合，例如 [MinecraftTileAssetRegistry]／[AiStrategyDisplayNameRegistry]。
+ *   它們屬於 Minecraft adapter，不放進平台無關的 extension API，規則邏輯才能保持可攜。
+ * - 要同時登記規則層與 Minecraft 專屬整合時，讓同一個類別同時實作兩個介面，不需要向載入器另外宣告。
+ * - 載入器只找出 `MahjongExtension`，再從中篩選有實作此介面的部分。
+ *   只實作這個介面、沒有同時實作 `MahjongExtension` 的類別不會被發現。
  */
 interface MinecraftMahjongExtension {
     /** 第三方 extension 的穩定識別字串，用於診斷註冊錯誤。 */
@@ -59,23 +57,23 @@ interface MinecraftMahjongExtension {
     /**
      * 登記第三方規則的自訂說明目錄來源。
      *
-     * 預設不登記任何來源，使既有 extension 不必加入空實作；目錄缺失不影響牌局。
+     * 預設不登記任何來源，使既有 extension 不必加入空實作。目錄缺失不影響牌局。
      *
      * @param registry 與內建來源共用、於 bootstrap 結束後凍結的目錄 registry。
      */
     fun registerRuleCatalogues(registry: RuleCatalogueRegistrar) = Unit
 
     /**
-     * 登記第三方規則的專屬成果判定；成果 ID 由該規則自己的進度資料引用。
+     * 登記第三方規則的專屬成果判定。成果 ID 由該規則自己的進度資料引用。
      *
-     * 預設不登記任何判定，使既有 extension 不必加入空實作；沒有判定的規則只會取得通用成果。
+     * 預設不登記任何判定，使既有 extension 不必加入空實作。沒有判定的規則只會取得通用成果。
      *
      * @param registry 與內建判定共用、於 bootstrap 結束後凍結的成果判定 registry。
      */
     fun registerGameAchievementResolvers(registry: GameAchievementResolverRegistrar) = Unit
 
     /**
-     * 登記第三方牌種對應的 Minecraft asset key；asset key 命名建議見 [MinecraftTileAssetRegistry.register]。
+     * 登記第三方牌種對應的 Minecraft asset key。asset key 命名建議見 [MinecraftTileAssetRegistry.register]。
      *
      * 預設不註冊任何映射，使只提供規則層整合的 extension 不必加入空實作。
      *
@@ -172,14 +170,14 @@ interface MinecraftMahjongExtension {
     fun registerHistoryDiscardMarkerDisplays(registry: HistoryDiscardMarkerDisplayRegistrar) = Unit
 
     /**
-     * 登記牌譜上規則移出牌區的標題與換牌用語，例如台灣麻將的「花牌」區與「補花」；未登記時顯示中立的「移出的牌」與「換牌」。
+     * 登記牌譜上規則移出牌區的標題與換牌用語，例如台灣麻將的「花牌」區與「補花」。未登記時顯示中立的「移出的牌」與「換牌」。
      *
      * @param registry 移出牌區呈現 registry。
      */
     fun registerHistoryTileSetAsideDisplays(registry: HistoryTileSetAsideDisplayRegistrar) = Unit
 
     /**
-     * 登記第三方規則選擇選項的本地化顯示名稱，顯示在決策面板的選項卡片上；代表跳過的選項使用一般的跳過用語，不需要登記。
+     * 登記第三方規則選擇選項的本地化顯示名稱，顯示在決策面板的選項卡片上。代表跳過的選項使用一般的跳過用語，不需要登記。
      *
      * @param registry 規則選擇顯示名稱 registry。
      */
@@ -208,7 +206,7 @@ interface MinecraftMahjongExtension {
      *
      * 預設不註冊任何映射，使不提供自訂牌面 emoji 的 extension 不必加入空實作。字元本身要能顯示成
      * 貼圖，還需要第三方 mod／資源包另外提供對應的 `assets/minecraft/font/default.json` bitmap
-     * provider；這個 registry 只負責保存字元對照，不管字型檔案。
+     * provider。這個 registry 只負責保存字元對照，不管字型檔案。
      *
      * @param registry 牌種 asset key 至 emoji 字元的 registry。
      */
@@ -217,7 +215,7 @@ interface MinecraftMahjongExtension {
     /**
      * 登記第三方牌種 asset key 對應的牌面角落標籤（非中文圈玩家可切換的輔助標籤）。
      *
-     * 預設不註冊任何映射，使不提供自訂標籤的 extension 不必加入空實作；未註冊的 asset key 呈現端會
+     * 預設不註冊任何映射，使不提供自訂標籤的 extension 不必加入空實作。未註冊的 asset key 呈現端會
      * 視為不顯示標籤，不是錯誤。
      *
      * @param registry 牌種 asset key 至角落標籤的 registry。
@@ -246,7 +244,7 @@ interface MinecraftMahjongExtension {
     fun registerMatchSettlementPresentationTemplates(registry: MatchSettlementPresentationTemplateRegistrar) = Unit
 
     /**
-     * 登記第三方玩家頭像來源；來源只能是 skin、牌面或 texture region。
+     * 登記第三方玩家頭像來源。來源只能是 skin、牌面或 texture region。
      *
      * @param registry 玩家頭像來源 registry。
      */
@@ -269,7 +267,7 @@ interface MinecraftMahjongExtension {
     fun registerGameConfigPresentations(registry: GameConfigPresentationRegistrar) = Unit
 
     /**
-     * 登記第三方房間成員外觀來源；完整 entity factory 留待 SeatActorProvider 階段。
+     * 登記第三方房間成員外觀來源。完整 entity factory 留待 SeatActorProvider 階段。
      *
      * @param registry 房間成員外觀來源 registry。
      */

@@ -17,7 +17,7 @@ import kotlin.uuid.Uuid
  * 依玩家目前的桌況列出 `/mahjongcraft game discard|action` 的候選項目。
  *
  * 候選 token 直接用可讀的牌面／動作簡寫（例如 `5m`／`3p`／`7s`／`east`、`chi`／`pon`／`ron`），不透過
- * tooltip 才看得懂；同一輪候選裡如果有重複（例如手牌兩張同樣的牌、或同時有多種吃法），第一個維持
+ * tooltip 才看得懂。同一輪候選裡如果有重複（例如手牌兩張同樣的牌、或同時有多種吃法），第一個維持
  * 原本的簡寫，其餘依序加上 `_2`／`_3`……後綴避免碰撞。[Tile.Extension] 沒有簡寫可用，直接用它本身的
  * `namespace:path` 字串當 token。
  *
@@ -38,7 +38,7 @@ class GameActionCandidateResolver(
      * 列出玩家目前手牌（含剛摸到的牌）作為捨牌或動作選牌候選。
      *
      * @param playerId 要查詢的玩家識別碼。
-     * @return 可選手牌候選；玩家不在對局中時為空清單。
+     * @return 可選手牌候選。玩家不在對局中時為空清單。
      */
     suspend fun listHandTileCandidates(playerId: Uuid): List<HandTileCandidate> {
         val gameId = membershipRepository.getVenueId(playerId) ?: return emptyList()
@@ -54,7 +54,7 @@ class GameActionCandidateResolver(
      * 列出玩家目前合法的特殊動作及各動作的額外選牌契約。
      *
      * @param playerId 要查詢的玩家識別碼。
-     * @return 合法動作候選；無法解析對局時為空清單。
+     * @return 合法動作候選。無法解析對局時為空清單。
      */
     suspend fun listActionCandidates(playerId: Uuid): List<GameActionCandidate> = resolveActionCandidates(playerId)?.actions.orEmpty()
 
@@ -62,7 +62,7 @@ class GameActionCandidateResolver(
      * 以同一次 Flow 查詢解析特殊動作候選與一般捨牌分析。
      *
      * @param playerId 要查詢的玩家識別碼。
-     * @return 候選及捨牌分析；玩家不在桌上或查詢失敗時為 null。
+     * @return 候選及捨牌分析。玩家不在桌上或查詢失敗時為 null。
      */
     suspend fun resolveActionCandidates(playerId: Uuid): ResolvedGameActionCandidates? {
         val gameId = membershipRepository.getVenueId(playerId) ?: return null
@@ -74,7 +74,7 @@ class GameActionCandidateResolver(
      *
      * @param gameId 已知的對局識別碼。
      * @param playerId 要查詢的玩家識別碼。
-     * @return 候選及捨牌分析；查詢沒有成功時為 null。
+     * @return 候選及捨牌分析。查詢沒有成功時為 null。
      */
     suspend fun resolveActionCandidates(gameId: Uuid, playerId: Uuid): ResolvedGameActionCandidates? {
         val outcome = getPlayerDecisionOptions(gameId, playerId)
@@ -88,7 +88,7 @@ class GameActionCandidateResolver(
      * 將 Flow 的完整決策選項映射成 Minecraft 指令與 HUD 共用的候選資料。
      *
      * @param ruleModuleId 對局所用規則模組識別碼。
-     * @param referenceFace 觸發牌經本人讀取權裁切的牌面；沒有觸發牌時為 null。
+     * @param referenceFace 觸發牌經本人讀取權裁切的牌面。沒有觸發牌時為 null。
      * @return 映射後的動作候選與捨牌分析。
      */
     private fun PlayerDecisionOptions.toCandidates(ruleModuleId: String, referenceFace: TileFaceView?): ResolvedGameActionCandidates {
@@ -109,7 +109,7 @@ class GameActionCandidateResolver(
      *
      * @param playerId 要查詢的玩家識別碼。
      * @param candidate 已選取的動作候選。
-     * @return 符合選牌契約的手牌；動作不需選牌時為空清單。
+     * @return 符合選牌契約的手牌。動作不需選牌時為空清單。
      */
     suspend fun listTileSelectionCandidates(
         playerId: Uuid,

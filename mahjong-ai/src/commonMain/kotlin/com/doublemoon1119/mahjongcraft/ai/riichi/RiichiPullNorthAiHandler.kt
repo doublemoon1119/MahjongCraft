@@ -13,7 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 /**
  * 三人日麻拔北動作的 AI action handler。
  *
- * 產生一個移出手中北的候選；要拔哪一張北由規則決定，評估時北與北之間沒有差別。
+ * 產生一個移出手中北的候選。要拔哪一張北由規則決定，評估時北與北之間沒有差別。
  */
 object RiichiPullNorthAiHandler : ExtensionGameActionAiHandler<RiichiGameAction.PullNorth> {
     override fun createCandidates(

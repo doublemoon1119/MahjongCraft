@@ -54,7 +54,7 @@ class DrawRevealedHandsTest {
     /** 兩位玩家的日麻桌況。 */
     private val table = FakeTableStateFactory.create(players = listOf(drawingPlayer, otherPlayer), config = RiichiRuleConfig())
 
-    /** 公開的是玩家全部立牌，包含剛摸到的牌；本局已完成的玩家不公開。 */
+    /** 公開的是玩家全部立牌，包含剛摸到的牌。本局已完成的玩家不公開。 */
     @Test
     fun `revealing a hand covers every standing tile except for finished players`() {
         val result = table.copy(finishedPlayerIds = setOf(otherPlayer.id))
@@ -64,7 +64,7 @@ class DrawRevealedHandsTest {
         assertEquals(3, result.publicTileEvidenceIds.size)
     }
 
-    /** 途中流局記錄給所有玩家；九種九牌只公開宣告者的手牌，系統判定的流局不公開任何手牌。 */
+    /** 途中流局記錄給所有玩家。九種九牌只公開宣告者的手牌，系統判定的流局不公開任何手牌。 */
     @Test
     fun `abortive draws reveal only the hands the rule asks for`() {
         val module = RiichiRuleModule("mahjongcraft:riichi", RiichiRuleConfig())

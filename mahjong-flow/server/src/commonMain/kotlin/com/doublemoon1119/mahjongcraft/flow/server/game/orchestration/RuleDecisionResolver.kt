@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
 /**
  * 一種規則模組的規則選擇流程：在各個時間點決定要不要請玩家做選擇、驗證提交，並在收齊後套用效果。
  *
- * 所有方法都只讀桌況、不保存可變狀態；相同輸入必須得到相同結果。選擇的效果寫進回傳的桌況，例如玩家規則狀態或動作紀錄，
+ * 所有方法都只讀桌況、不保存可變狀態。相同輸入必須得到相同結果。選擇的效果寫進回傳的桌況，例如玩家規則狀態或動作紀錄，
  * 之後的結算直接讀桌況。
  */
 interface RuleDecisionResolver {
@@ -25,20 +25,20 @@ interface RuleDecisionResolver {
      * 依實際規則設定決定是否需要玩家規則選擇時間。
      *
      * 相同設定必須回傳相同結果，不得修改狀態或依賴外部可變資料。房間設定與選擇流程會各自查詢，
-     * 不保證每局只呼叫一次；只需要自動處理，或比照一般遊戲動作計時的選擇步驟，不需要獨立的玩家時間設定。
+     * 不保證每局只呼叫一次。只需要自動處理，或比照一般遊戲動作計時的選擇步驟，不需要獨立的玩家時間設定。
      *
      * @param ruleConfig 目前對局使用的完整規則設定。
-     * @return 使用獨立規則選擇時間的步驟預設時間；沒有這類步驟時為 null。
+     * @return 使用獨立規則選擇時間的步驟預設時間。沒有這類步驟時為 null。
      */
     fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = null
 
     /**
-     * 在 [timing] 決定要不要開啟選擇；不需要時回傳 null，牌局直接接續。
+     * 在 [timing] 決定要不要開啟選擇。不需要時回傳 null，牌局直接接續。
      *
      * @param timing 目前的時間點。
      * @param tableState 這個時間點的桌況，例如開局時已完成發牌、流局前牌山已摸完。
      * @param ruleModule 目前對局使用的規則模組。
-     * @return 第一個選擇步驟；不需要選擇時為 null。
+     * @return 第一個選擇步驟。不需要選擇時為 null。
      */
     fun begin(
         timing: RuleDecisionTiming,
@@ -83,7 +83,7 @@ interface RuleDecisionResolver {
     /**
      * 收齊提交或遇到無參與者的自動步驟後，套用此步驟並解析下一步。
      *
-     * [RuleDecisionTiming.ROUND_END] 時本局已結算，回傳的桌況不能改變任何玩家的分數；要依選擇改變收付的規則，
+     * [RuleDecisionTiming.ROUND_END] 時本局已結算，回傳的桌況不能改變任何玩家的分數。要依選擇改變收付的規則，
      * 應在結算前的時間點開啟選擇，例如 [RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW]。
      *
      * @param tableState 套用選擇結果前的桌況。

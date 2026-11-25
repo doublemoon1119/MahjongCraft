@@ -27,27 +27,27 @@ object FakeTableStateFactory {
     /**
      * 建立一個測試用的 [TableState]。
      *
-     * [tileWall] 預設包含牌張，避免測試意外觸發依賴牌山剩餘張數的邊界判斷；這也符合
-     * [RiichiLegalActionValidator] 對河底／海底鳴牌與立直摸牌機會的檢查。需要測試牌山摸盡時，請傳入
-     * `TileWall(emptyList())`。
+     * - [tileWall] 預設包含牌張，避免測試意外觸發依賴牌山剩餘張數的邊界判斷，也符合 [RiichiLegalActionValidator] 對河底、海底
+     *   鳴牌與立直摸牌機會的檢查。
+     * - 需要測試牌山摸盡時，傳入 `TileWall(emptyList())`。
      *
      * @param id 桌況識別碼，預設隨機產生。
-     * @param players 玩家清單；每位玩家的起家順位會依清單索引正規化，若自風重複則改依索引指定自風。
-     * @param dealerPlayerId 莊家玩家識別碼，預設使用首位玩家的識別碼；清單為空時隨機產生。
+     * @param players 玩家清單。每位玩家的起家順位依清單索引正規化，自風重複時改依索引指定自風。
+     * @param dealerPlayerId 莊家玩家識別碼，預設使用首位玩家的識別碼，清單為空時隨機產生。
      * @param config 此桌況使用的規則設定。
-     * @param tileWall 牌山，預設包含 70 張測試牌；摸盡情境請明確傳入空牌山。
+     * @param tileWall 牌山，預設包含 70 張測試牌。摸盡情境請明確傳入空牌山。
      * @param prevalentWind 場風，預設為東風。
      * @param roundNumber 局數，預設為 1。
      * @param comboCount 連莊／本場數，預設為 0。
      * @param currentPlayerIndex 目前行動玩家在清單中的索引，預設為 0。
-     * @param pendingReaction 尚待處理的鳴牌反應；不為 null 時階段為等捨牌反應。
-     * @param pendingRobbingReaction 尚待處理的搶槓反應；不為 null 時階段為等搶和反應。
-     * @param turnPhase 明確指定的回合階段；為 null 時依反應參數決定，沒有反應時目前玩家有剛摸到的牌為等行動，否則為等摸牌。
+     * @param pendingReaction 尚待處理的鳴牌反應。不為 null 時階段為等捨牌反應。
+     * @param pendingRobbingReaction 尚待處理的搶槓反應。不為 null 時階段為等搶和反應。
+     * @param turnPhase 明確指定的回合階段。為 null 時依反應參數決定：沒有反應時，目前玩家有剛摸到的牌為等行動，否則為等摸牌。
      * @param reservedWallTiles 從牌山預留的牌，預設為空清單。
      * @param physicalWallLayout 實體牌牆配置，預設為 null。
      * @param finishedPlayerIds 已完成本局的玩家識別碼，預設為空集合。
-     * @param components 初始桌況組件；日麻設定預設建立零供託與本局初始進度，其他設定為空集合。
-     * @param discardOrder 本局打牌順序；為 null 時依 [interleavedDiscardOrder] 由各家牌河排出。
+     * @param components 初始桌況組件。日麻設定預設建立零供託與本局初始進度，其他設定為空集合。
+     * @param discardOrder 本局打牌順序。為 null 時依 [interleavedDiscardOrder] 由各家牌河排出。
      */
     fun create(
         id: Uuid = Uuid.random(),
@@ -107,7 +107,10 @@ object FakeTableStateFactory {
 }
 
 /**
- * 測試用的打牌順序：各家依座位順序輪流，先排每家第一張、再排每家第二張，依此類推；被鳴走的牌也列入。
+ * 測試用的打牌順序。
+ *
+ * - 各家依座位順序輪流：先排每家第一張，再排每家第二張，依此類推。
+ * - 被鳴走的牌也列入。
  *
  * @param players 依座位順序排列的玩家。
  * @return 每張捨牌剛好出現一次的順序。

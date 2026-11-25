@@ -15,18 +15,19 @@ import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import kotlin.uuid.Uuid
 
 /**
- * 依一張剛打出的牌，計算其他玩家的吃/碰/槓/榮和資格，並套用結果到桌況的共用邏輯。
+ * 依一張剛打出的牌，計算其他玩家的吃／碰／槓／榮和資格，並套用結果到桌況的共用邏輯。
  *
- * 供 [DiscardTileUseCase]（一般捨牌）與 [DeclareRiichiUseCase]（立直宣告牌）共用——兩者除了
- * 「捨牌前套用的規則特有狀態變化」不同（前者單純捨牌；後者還套用立直宣告的玩家與對局組件）之外，
- * 捨牌後「其他玩家能不能反應這張牌」的計算完全相同，不應該各自重寫一份。
+ * 供 [DiscardTileUseCase]（一般捨牌）與 [DeclareRiichiUseCase]（立直宣告牌）共用。兩者只有捨牌前套用的規則狀態不同：
+ * 後者還套用立直宣告的玩家與對局組件。捨牌後其他玩家能否反應這張牌的計算完全相同。
  *
- * 一炮多響（同一張捨牌同時被多位玩家榮和）依 [MultiRonPolicy] 決定實際開放給誰：恰有 2 人可榮和時查
- * [MultiRonPolicy.doubleRonResolution]，3 人（含）以上則查 [MultiRonPolicy.tripleRonResolution]——
- * [RonResolution.ALL_WINNERS] 全部開放；[RonResolution.NEAREST_WINNER] 只開放依
- * [TableState.nearestPlayerInTurnOrder] 判定、
- * 順位最接近放銃者下家的那一位（頭跳）；[RonResolution.ABORTIVE_DRAW] 且規則模組提供途中流局原因時，這張捨牌會讓本局直接結束；
- * 吃/碰/槓資格一併作廢、不開反應視窗，把 [GameAction.ExhaustiveDraw] 記錄進全員的 `actionHistory`，不結算任何點數（供託延續到下一局）。
+ * 一炮多響（同一張捨牌同時被多位玩家榮和）依 [MultiRonPolicy] 決定實際開放給誰。
+ * 恰有 2 人可榮和時查 [MultiRonPolicy.doubleRonResolution]，3 人以上查 [MultiRonPolicy.tripleRonResolution]：
+ *
+ * - [RonResolution.ALL_WINNERS]：全部開放。
+ * - [RonResolution.NEAREST_WINNER]：只開放依 [TableState.nearestPlayerInTurnOrder] 判定、最接近放銃者下家的那一位（頭跳）。
+ * - [RonResolution.ABORTIVE_DRAW]：規則模組提供途中流局原因時，這張捨牌讓本局直接結束。
+ *   吃／碰／槓資格一併作廢、不開反應視窗，[GameAction.ExhaustiveDraw] 記錄進全員的 `actionHistory`。
+ *   不結算任何點數，供託延續到下一局。
  */
 internal object DiscardReactionResolver {
 

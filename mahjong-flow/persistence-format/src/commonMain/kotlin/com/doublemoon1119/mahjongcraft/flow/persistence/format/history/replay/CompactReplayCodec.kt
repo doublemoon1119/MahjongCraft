@@ -31,7 +31,7 @@ import kotlin.uuid.Uuid
 /**
  * 將一整場已完成的權威歷史封裝成可查閱的精簡 Replay 文件。
  *
- * 此編碼器只在整場事件已完整保存後使用；對局進行中的 outbox 仍使用原本的
+ * 此編碼器只在整場事件已完整保存後使用。對局進行中的 outbox 仍使用原本的
  * [HistoryOutboxEventPersistenceDto] 格式。文件不包含逐張牌的原 UUID，只保留事件
  * 所需的 UUID 與相對序號，並以陣列欄位避免重複儲存事件封套。
  */
@@ -44,7 +44,7 @@ object CompactReplayCodec {
      *
      * @param document 已封存的精簡 Replay 文件。
      * @param registries 開局規則 persistence DTO 的註冊表。
-     * @param expectedMatchId 呼叫端已授權的對局 ID；不一致時拒絕文件。
+     * @param expectedMatchId 呼叫端已授權的對局 ID。不一致時拒絕文件。
      * @return Replay 開局時保存的完整遊戲設定。
      */
     fun decodeRuleSettings(
@@ -327,10 +327,10 @@ object CompactReplayCodec {
     /**
      * 解碼交易中的單筆或多筆語意事實。
      *
-     * @param value 交易中的事實資料；缺少時代表沒有語意事實。
+     * @param value 交易中的事實資料。缺少時代表沒有語意事實。
      * @param factTypes 依索引排列的語意事實種類。
      * @param actionTypes 依索引排列的動作種類。
-     * @param budget 有界讀取預算；完整解碼時為 null。
+     * @param budget 有界讀取預算。完整解碼時為 null。
      * @return 依原順序排列的語意事實。
      */
     internal fun decodeFacts(value: JsonElement?, factTypes: List<String>, actionTypes: List<String>, budget: ReplayReadBudget? = null): List<JsonObject> {
@@ -518,7 +518,7 @@ object CompactReplayCodec {
     }
 
     /**
-     * 將一張捨牌轉成不分規則的牌河項目；未鳴走與沒有標記時省略對應欄位。
+     * 將一張捨牌轉成不分規則的牌河項目。未鳴走與沒有標記時省略對應欄位。
      *
      * @param entry 規則的捨牌紀錄。
      * @param registries 保存此紀錄牌張版本所需的轉換。
@@ -571,7 +571,7 @@ object CompactReplayCodec {
     }
 
     /**
-     * 將牌張呈現變化事實中的呈現結果換成字典代碼；其他事實原樣回傳。
+     * 將牌張呈現變化事實中的呈現結果換成字典代碼。其他事實原樣回傳。
      *
      * @param fact 已翻譯局內索引的事實。
      * @param presentationTypes 牌張呈現字典。
@@ -585,7 +585,7 @@ object CompactReplayCodec {
     }
 
     /**
-     * 將牌張呈現變化事實中的字典代碼還原為呈現結果；其他事實原樣回傳。
+     * 將牌張呈現變化事實中的字典代碼還原為呈現結果。其他事實原樣回傳。
      *
      * @param fact 已解碼的事實。
      * @param presentationTypes 牌張呈現字典。
@@ -687,7 +687,7 @@ object CompactReplayCodec {
      * @property encodedTiles 實體牌 UUID 對應的牌種資料，用於驗證牌種不變。
      * @property playerIds 玩家 UUID 到初始座位索引的對照。
      * @property typeDictionary 跨局共用的牌種資料字典。
-     * @property compactPayloadTypeKeys 登記為可壓縮的資料 type key；其他帶 type key 的資料保留原始內容。
+     * @property compactPayloadTypeKeys 登記為可壓縮的資料 type key。其他帶 type key 的資料保留原始內容。
      * @property meldIds 本局副露穩定身分的獨立索引，不與牌張索引混用。
      * @property wallLayout 本局逐筆交易保存的實體牌牆格位。
      */
@@ -701,7 +701,7 @@ object CompactReplayCodec {
         val meldIds: MutableMap<String, Int> = linkedMapOf(),
         val wallLayout: ReplayWallLayoutFormat.RoundLayout = ReplayWallLayoutFormat.RoundLayout(),
     ) {
-        /** 建立查詢快取時的牌種數量；牌種字典只會增加，數量不同就重建快取。 */
+        /** 建立查詢快取時的牌種數量。牌種字典只會增加，數量不同就重建快取。 */
         private var cachedTypeCount = -1
 
         /** 牌種資料會出現的欄位組合。 */
@@ -716,7 +716,7 @@ object CompactReplayCodec {
          * 只有欄位組合與某個牌種相同的物件才需要轉成文字比對，其餘物件直接判定不是牌種。
          *
          * @param element 待比對的 JSON 物件。
-         * @return 牌種代碼；不是牌種時為 -1。
+         * @return 牌種代碼。不是牌種時為 -1。
          */
         fun typeCodeOf(element: JsonObject): Int {
             if (cachedTypeCount != typeDictionary.size) {
@@ -732,7 +732,7 @@ object CompactReplayCodec {
     /**
      * 編碼期間累積的單局內容與交易。
      *
-     * @property number 這一局在整場對局中的順序號，從 1 開始；連莊或續局也會遞增，與封存時的局列表一致。賽程局位保存在開局投影中。
+     * @property number 這一局在整場對局中的順序號，從 1 開始。連莊或續局也會遞增，與封存時的局列表一致。賽程局位保存在開局投影中。
      * @property tileTypes 開局時依局內牌索引排列的牌種代碼。
      * @property initial 開局時可查閱的遊戲內容投影。
      * @property transactions 已編碼的有序交易。
@@ -756,7 +756,7 @@ object CompactReplayCodec {
          *
          * @param before 交易前的 JSON 投影。
          * @param after 交易後的 JSON 投影。
-         * @return 可逆的結構差異；內容相同時為 null。
+         * @return 可逆的結構差異。內容相同時為 null。
          */
         fun diff(before: JsonElement, after: JsonElement): JsonElement? {
             if (before == after) return null
@@ -823,7 +823,7 @@ object CompactReplayCodec {
         ReplaySourceKeys.DISCARD_PILE,
     )
 
-    /** 完整牌張保存格式的欄位集合；不把其他帶 id 的物件誤當牌張。 */
+    /** 完整牌張保存格式的欄位集合。不把其他帶 id 的物件誤當牌張。 */
     private val PHYSICAL_TILE_KEYS = setOf(ReplaySourceKeys.ID, ReplaySourceKeys.TILE, ReplaySourceKeys.COMPONENTS)
 
     /** 常用 UUID 文字格式。 */

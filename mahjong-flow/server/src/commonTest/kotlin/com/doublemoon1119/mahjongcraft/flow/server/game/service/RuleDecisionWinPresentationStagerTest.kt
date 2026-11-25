@@ -31,8 +31,8 @@ import kotlin.test.assertNull
 /** [RuleDecisionWinPresentationStager] 的特殊花胡交接測試。 */
 class RuleDecisionWinPresentationStagerTest {
     /**
-     * 七搶一的演出與結算應使用規則提供的結果、成立花牌與責任玩家，不呈現成一般自摸；不攤牌，結算只列出自己的七張花與
-     * 被搶的那張。歷史紀錄與自摸、榮和相同寫成胡牌結算；不攤牌時不記手牌，攤牌時記下立牌與和牌張。
+     * 七搶一的演出與結算應使用規則提供的結果、成立花牌與責任玩家，不呈現成一般自摸。不攤牌，結算只列出自己的七張花與
+     * 被搶的那張。歷史紀錄與自摸、榮和相同寫成胡牌結算。不攤牌時不記手牌，攤牌時記下立牌與和牌張。
      */
     @Test
     fun `stage presents special win identity and responsibility`() {

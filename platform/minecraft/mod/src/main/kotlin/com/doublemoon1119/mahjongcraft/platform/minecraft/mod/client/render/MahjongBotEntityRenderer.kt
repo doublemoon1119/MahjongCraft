@@ -73,7 +73,7 @@ class MahjongBotEntityRenderer(
     }
 
     /**
-     * 以指定姿勢繪製機器人；不在世界中的預覽實體不能乘坐，由呼叫端直接決定是否坐著。
+     * 以指定姿勢繪製機器人。不在世界中的預覽實體不能乘坐，由呼叫端直接決定是否坐著。
      *
      * @param entity 要繪製的機器人。
      * @param yaw 水平朝向。
@@ -82,8 +82,8 @@ class MahjongBotEntityRenderer(
      * @param vertexConsumers 頂點緩衝。
      * @param light 光照。
      * @param seated 是否以坐姿繪製。
-     * @param swingProgress 揮手進度，0 到 1；預設依實體收到的揮手通知計算。
-     * @param alpha 0 到 1 之間的不透明度；小於 1 時以半透明圖層畫出淡化的機器人。
+     * @param swingProgress 揮手進度，0 到 1。預設依實體收到的揮手通知計算。
+     * @param alpha 0 到 1 之間的不透明度。小於 1 時以半透明圖層畫出淡化的機器人。
      */
     fun renderPose(
         entity: MahjongBotEntity,
@@ -140,7 +140,7 @@ class MahjongBotEntityRenderer(
     }
 
     /**
-     * 坐姿時先將腿部向外展，再往前伸；站姿維持直立。
+     * 坐姿時先將腿部向外展，再往前伸。站姿維持直立。
      *
      * @param x 臀部水平位置。
      * @param y 臀部高度。
@@ -180,7 +180,7 @@ class MahjongBotEntityRenderer(
      * @param light 世界光照。
      * @param yaw 手臂的水平旋轉角度。
      * @param roll 手臂向身體內側的旋轉角度。
-     * @param alpha 0 到 1 之間的不透明度；小於 1 時改用半透明圖層。
+     * @param alpha 0 到 1 之間的不透明度。小於 1 時改用半透明圖層。
      */
     private fun renderLimb(
         dimensions: LimbDimensions,
@@ -224,7 +224,7 @@ class MahjongBotEntityRenderer(
     override fun getTextureLocation(entity: MahjongBotEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     /**
-     * 從關節向下延伸的方柱尺寸；各面材質由共用模型指定。
+     * 從關節向下延伸的方柱尺寸。各面材質由共用模型指定。
      *
      * @property width 世界寬度。
      * @property length 世界長度。

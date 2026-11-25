@@ -7,15 +7,15 @@ import net.minecraft.world.entity.Entity
 import kotlin.uuid.Uuid
 
 /**
- * 建立世界角色時的公開資料；只在伺服器主執行緒使用，不可修改權威對局。
+ * 建立世界角色時的公開資料。只在伺服器主執行緒使用，不可修改權威對局。
  *
  * @property world 席位所在且已載入的世界。
  * @property tableId 桌子 UUID。
  * @property matchId 場次 UUID。
  * @property playerId MahjongCraft AI UUID，與世界實體 UUID 不同。
  * @property character 本場固定的角色外觀。
- * @property seat 固定席位要求；不能自行更改桌子幾何。
- * @property participant 自動入房時已綁定的既有實體；自有角色為 null。借用能力不得換成其他實體。
+ * @property seat 固定席位要求。不能自行更改桌子幾何。
+ * @property participant 自動入房時已綁定的既有實體。自有角色為 null。借用能力不得換成其他實體。
  */
 class AiCharacterContext private constructor(
     val world: ServerLevel,

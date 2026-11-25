@@ -29,7 +29,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 /**
- * 牌譜篩選子頁：一列一個條件，標籤在左、控制項在右，日期與名次的起訖放在同一列；輸入驗證失敗時保留最近一次
+ * 牌譜篩選子頁：一列一個條件，標籤在左、控制項在右，日期與名次的起訖放在同一列。輸入驗證失敗時保留最近一次
  * 有效查詢。
  *
  * @property session 此畫面所屬的共用瀏覽 session。
@@ -113,7 +113,7 @@ internal class HistoryFilterScreen(
         placeRows()
     }
 
-    /** 目前範圍顯示的列；全部紀錄沒有自己的名次，不顯示名次列。 */
+    /** 目前範圍顯示的列。全部紀錄沒有自己的名次，不顯示名次列。 */
     private fun rows(): List<FilterRow> = FilterRow.entries.filterNot {
         it == FilterRow.OWN_RANK && session.controller.state.value.query.scope.coversAllMatches
     }
@@ -168,7 +168,7 @@ internal class HistoryFilterScreen(
     }
 
     /**
-     * 建立並註冊一個文字輸入欄位；位置由 [placeRows] 決定。
+     * 建立並註冊一個文字輸入欄位。位置由 [placeRows] 決定。
      *
      * @param field 欄位種類。
      * @param placeholderKey 欄位沒有內容時灰色提示的翻譯鍵。
@@ -198,7 +198,7 @@ internal class HistoryFilterScreen(
     }
 
     /**
-     * 建立循環選項按鈕；左鍵選下一項，右鍵或 Shift＋左鍵選上一項。位置由 [placeRows] 決定。
+     * 建立循環選項按鈕。左鍵選下一項，右鍵或 Shift＋左鍵選上一項。位置由 [placeRows] 決定。
      *
      * @param action 點擊後執行的變更動作。
      * @return 已加入畫面的按鈕。
@@ -247,7 +247,7 @@ internal class HistoryFilterScreen(
      * 取得欄位目前的錯誤原因。
      *
      * @param field 欄位種類。
-     * @return 紅色的錯誤原因；沒有錯誤時為 null。
+     * @return 紅色的錯誤原因。沒有錯誤時為 null。
      */
     private fun fieldError(field: HistoryBrowseFilterField): Component? = session.filterDraft.errors[field]?.let {
         Component.translatable(it.translationKey).withStyle(ChatFormatting.RED)
@@ -274,7 +274,7 @@ internal class HistoryFilterScreen(
     }
 
     /**
-     * 驗證整份草稿；只有有效結果才送出查詢。
+     * 驗證整份草稿。只有有效結果才送出查詢。
      *
      * @return 是否已套用有效查詢。
      */
@@ -326,7 +326,7 @@ internal class HistoryFilterScreen(
     }
 
     /**
-     * 建立規則選擇器，點擊展開「不限」與所有已登記規則的清單；位置由 [placeRows] 決定。
+     * 建立規則選擇器，點擊展開「不限」與所有已登記規則的清單。位置由 [placeRows] 決定。
      *
      * @return 尚未加入畫面的選擇器按鈕。
      */
@@ -348,13 +348,13 @@ internal class HistoryFilterScreen(
         return selector
     }
 
-    /** 建立規則選項：「不限」在前，其餘依規則名稱的登記順序排列，與房間設定頁一致；空字串代表不限。 */
+    /** 建立規則選項：「不限」在前，其餘依規則名稱的登記順序排列，與房間設定頁一致。空字串代表不限。 */
     private fun ruleOptions(): List<String> = listOf("") + session.ruleNames.registrationKeys
 
     /**
      * 將規則篩選值轉成顯示文字。
      *
-     * @param ruleId 規則識別碼；空字串代表不限。
+     * @param ruleId 規則識別碼。空字串代表不限。
      * @return 「不限」、規則名稱加識別碼，或沒有名稱時的識別碼。
      */
     private fun ruleLabel(ruleId: String): Component = ruleId.takeUnless(String::isEmpty)?.let { id ->
@@ -379,7 +379,7 @@ internal class HistoryFilterScreen(
     /**
      * 將篩選值轉成顯示文字。
      *
-     * @param translationKey 篩選值的翻譯鍵；null 表示不限。
+     * @param translationKey 篩選值的翻譯鍵。null 表示不限。
      * @return 本地化選項文字。
      */
     private fun choiceLabel(translationKey: String?): Component = Component.translatable(translationKey ?: MinecraftHistoryScreenKeys.FILTER_ANY)
@@ -389,7 +389,7 @@ internal class HistoryFilterScreen(
      *
      * @param descriptionKey 欄位說明的翻譯鍵。
      * @param optionKeys 不含「不限」的選項翻譯鍵。
-     * @param currentIndex 目前選項在不含「不限」清單中的索引；不限時為 null。
+     * @param currentIndex 目前選項在不含「不限」清單中的索引。不限時為 null。
      * @return 提示文字。
      */
     private fun choiceTooltip(descriptionKey: String, optionKeys: List<String>, currentIndex: Int?): Tooltip {
@@ -405,12 +405,12 @@ internal class HistoryFilterScreen(
     }
 
     /**
-     * 取得循環選項中的下一個值；「不限」排在第一項，按住 Shift 時往回選。
+     * 取得循環選項中的下一個值。「不限」排在第一項，按住 Shift 時往回選。
      *
      * @param T 選項型別。
-     * @param value 目前選值；null 表示不限。
+     * @param value 目前選值。null 表示不限。
      * @param values 不含「不限」的可循環值清單。
-     * @return 下一個值；null 表示不限。
+     * @return 下一個值。null 表示不限。
      */
     private fun <T> next(value: T?, values: List<T>): T? = CycleButtonInput.next(options = listOf<T?>(null) + values, current = value)
 
@@ -494,7 +494,7 @@ internal class HistoryFilterScreen(
         return super.mouseClicked(mouseX, mouseY, button)
     }
 
-    /** 規則清單展開時不將拖曳傳遞至背景控制項；拖曳捲軸時逐列捲動。 */
+    /** 規則清單展開時不將拖曳傳遞至背景控制項。拖曳捲軸時逐列捲動。 */
     override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, deltaX: Double, deltaY: Double): Boolean {
         if (dropdown.isOpen) return true
         if (scrollDragging && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
@@ -504,7 +504,7 @@ internal class HistoryFilterScreen(
         return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)
     }
 
-    /** 規則清單展開時不將放開滑鼠事件傳遞至背景控制項；放開左鍵時結束拖曳。 */
+    /** 規則清單展開時不將放開滑鼠事件傳遞至背景控制項。放開左鍵時結束拖曳。 */
     override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean {
         if (dropdown.isOpen) return true
         if (scrollDragging && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
@@ -593,7 +593,7 @@ internal class HistoryFilterScreen(
         /** 結束日期起訖兩個輸入框。 */
         DATE,
 
-        /** 自己的名次上下限兩個輸入框；只在自己的紀錄出現。 */
+        /** 自己的名次上下限兩個輸入框。只在自己的紀錄出現。 */
         OWN_RANK,
 
         /** 結果循環按鈕。 */

@@ -35,7 +35,7 @@ class AutomaticControlCommand(
     private var pendingFeedback: PendingFeedback? = null
 
     /**
-     * 註冊 command tree 與 ACK 輪詢；只能在 client entrypoint 呼叫一次。
+     * 註冊 command tree 與 ACK 輪詢。只能在 client entrypoint 呼叫一次。
      *
      * @param events 登記用戶端指令的事件來源。
      */
@@ -134,7 +134,7 @@ class AutomaticControlCommand(
     /**
      * 依顯示登錄順序補全目前可調整的控制項識別碼。
      *
-     * @param context Brigadier 傳入的指令情境；此補全不依其內容判斷。
+     * @param context Brigadier 傳入的指令情境。此補全不依其內容判斷。
      * @param builder 累積補全建議的建構器。
      * @return 已加入控制項名稱提示的補全結果。
      */

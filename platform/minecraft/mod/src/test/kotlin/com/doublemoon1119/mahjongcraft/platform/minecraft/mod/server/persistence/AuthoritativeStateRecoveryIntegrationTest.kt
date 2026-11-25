@@ -248,7 +248,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
      * 規則選擇進行中經 NBT 恢復後，每位參與者都應重新取得只屬於自己的規則選擇快照。
      *
      * 選擇步驟未完成時流程會拒絕其他指令，因此如果恢復後沒有重建這份快照，玩家會既收不到提示、也無法
-     * 操作；快照只包含本人的輸入與提交，不包含其他玩家是否被詢問或已提交。
+     * 操作。快照只包含本人的輸入與提交，不包含其他玩家是否被詢問或已提交。
      */
     @Test
     fun `rule decision restores through NBT and stays private to each participant`() = runTest {
@@ -341,7 +341,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
     }
 
     /**
-     * 經 NBT 恢復後，每位玩家的快照只應公開自己的手牌；其他人的立牌與未摸到的牌山必須維持隱藏。
+     * 經 NBT 恢復後，每位玩家的快照只應公開自己的手牌。其他人的立牌與未摸到的牌山必須維持隱藏。
      *
      * 隱藏的牌在快照中保留 Uuid 但不帶牌面（`tile` 為 null），呈現層才能沿用同一個 entity 顯示成蓋牌。
      */
@@ -529,7 +529,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
         /**
          * 建立使用正式日麻 module 初始化的牌局。
          *
-         * @param playerIds 牌局中的玩家 UUID；省略時建立四位隨機玩家。
+         * @param playerIds 牌局中的玩家 UUID。省略時建立四位隨機玩家。
          * @return 已初始化的牌桌狀態。
          */
         fun createGame(
@@ -545,9 +545,9 @@ class AuthoritativeStateRecoveryIntegrationTest {
          * 將單一牌桌狀態包裝成權威 snapshot，可選帶上進行中的規則選擇步驟與 AI 玩家。
          *
          * @param state 要保存的牌桌狀態。
-         * @param pendingRuleDecision 尚未完成的規則選擇資料；預設沒有選擇步驟。
-         * @param aiPlayerStrategyKeys 由玩家 UUID 對應至 AI 策略 key 的映射；預設沒有 AI 玩家。
-         * @param flowConfig 此對局的流程設定；玩家選擇步驟須明確提供規則選擇設定。
+         * @param pendingRuleDecision 尚未完成的規則選擇資料。預設沒有選擇步驟。
+         * @param aiPlayerStrategyKeys 由玩家 UUID 對應至 AI 策略 key 的映射。預設沒有 AI 玩家。
+         * @param flowConfig 此對局的流程設定。玩家選擇步驟須明確提供規則選擇設定。
          * @return 僅包含此牌局的權威 snapshot。
          */
         fun snapshotWith(

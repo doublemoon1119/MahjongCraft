@@ -9,16 +9,16 @@ interface AiDecisionReporter {
      *
      * @param gameId 對局。
      * @param playerId 決策的 AI 玩家。
-     * @param strategyKey 玩家的策略 key；未指定時為 null。
+     * @param strategyKey 玩家的策略 key。未指定時為 null。
      */
     fun onTimedOut(gameId: Uuid, playerId: Uuid, strategyKey: String?)
 
     /**
-     * 這一局先前已逾時或已取消等待的策略呼叫尚未結束，這次直接使用固定命令；同一個未結束的呼叫只回報一次。
+     * 這一局先前已逾時或已取消等待的策略呼叫尚未結束，這次直接使用固定命令。同一個未結束的呼叫只回報一次。
      *
      * @param gameId 對局。
      * @param playerId 決策的 AI 玩家。
-     * @param strategyKey 玩家的策略 key；未指定時為 null。
+     * @param strategyKey 玩家的策略 key。未指定時為 null。
      */
     fun onPreviousStillRunning(gameId: Uuid, playerId: Uuid, strategyKey: String?)
 
@@ -27,7 +27,7 @@ interface AiDecisionReporter {
      *
      * @param gameId 對局。
      * @param playerId 決策的 AI 玩家。
-     * @param strategyKey 玩家的策略 key；未指定時為 null。
+     * @param strategyKey 玩家的策略 key。未指定時為 null。
      * @param failure 策略丟出的失敗。
      */
     fun onStrategyFailed(

@@ -76,7 +76,7 @@ class ExamplePairingRuleModule(
         )
     }
 
-    /** 將範例牌面轉成配對規則使用的萬子點數；倒置一萬也視為一萬。 */
+    /** 將範例牌面轉成配對規則使用的萬子點數。倒置一萬也視為一萬。 */
     private fun Tile.examplePairingValue(): Int? = when (this) {
         is Tile.Numeric -> value
         is Tile.Extension -> if (typeId == ExamplePairingIds.INVERTED_ONE_MAN) 1 else null

@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.event
 import com.doublemoon1119.mahjongcraft.flow.api.registration.GameEventPublicMarkerResolverRegistrar
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 
-/** 以規則模組 ID 登記、bootstrap 後凍結的公開事件標記解析器；擴充只透過 [GameEventPublicMarkerResolverRegistrar] 登記。 */
+/** 以規則模組 ID 登記、bootstrap 後凍結的公開事件標記解析器。擴充只透過 [GameEventPublicMarkerResolverRegistrar] 登記。 */
 class GameEventPublicMarkerResolverRegistry : GameEventPublicMarkerResolverRegistrar {
     /** 初始化時依規則 ID 登記的標記提供者。 */
     private val resolvers = linkedMapOf<String, GameEventPublicMarkerResolver>()
@@ -33,7 +33,7 @@ class GameEventPublicMarkerResolverRegistry : GameEventPublicMarkerResolverRegis
     }
 
     /**
-     * 查詢指定規則模組的 resolver；未登記時回傳 null。
+     * 查詢指定規則模組的 resolver。未登記時回傳 null。
      *
      * @param ruleModuleId 要查詢的完整規則模組識別碼。
      * @return 對應解析器，或未登記時為 null。

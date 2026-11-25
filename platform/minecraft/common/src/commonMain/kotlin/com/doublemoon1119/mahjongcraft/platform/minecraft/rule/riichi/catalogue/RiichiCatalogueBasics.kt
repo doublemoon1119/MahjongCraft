@@ -12,10 +12,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.catalogueTil
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiGameConfigTranslationKeys
 
 /**
- * 日本麻將「基本玩法」分類的條目：牌與手牌、和牌條件、立直、振聽、鳴牌、點數、賽程、流局、對局結束、一炮多響、包牌與鷲巢麻將；
+ * 日本麻將「基本玩法」分類的條目：牌與手牌、和牌條件、立直、振聽、鳴牌、點數、賽程、流局、對局結束、一炮多響、包牌與鷲巢麻將。
  * 三人日本麻將另有拔北，且牌組、鳴牌、賽程與點數的說明改用三人的版本。
  *
- * 說明一律用通用說法，可調整的數值寫標準值並列出房間設定欄位；只有條目是否適用依設定判斷。
+ * 說明一律用通用說法，可調整的數值寫標準值並列出房間設定欄位。只有條目是否適用依設定判斷。
  *
  * @param config 房間設定或一般說明使用的設定。
  * @return 依顯示順序排列的條目。
@@ -45,7 +45,7 @@ internal fun riichiCatalogueBasicsEntries(config: RiichiFamilyRuleConfig): List<
  * @property slug 條目代號。
  * @property nameKey 名稱翻譯鍵。
  * @property descriptionKey 說明翻譯鍵。
- * @property threePlayerDescriptionKey 三人日本麻將使用的說明翻譯鍵；與四人相同時為 null。
+ * @property threePlayerDescriptionKey 三人日本麻將使用的說明翻譯鍵。與四人相同時為 null。
  */
 internal enum class RiichiCatalogueBasic(
     val slug: String,
@@ -192,11 +192,11 @@ internal object RiichiCatalogueBasicsKeys {
 }
 
 /**
- * 條目的牌例；三人日本麻將沒有二到八萬，改用筒子與索子。
+ * 條目的牌例。三人日本麻將沒有二到八萬，改用筒子與索子。
  *
  * @param basic 條目。
  * @param threePlayer 是否為三人日本麻將。
- * @return 牌例；沒有時為空集合。
+ * @return 牌例。沒有時為空集合。
  */
 private fun riichiBasicExamples(basic: RiichiCatalogueBasic, threePlayer: Boolean): List<RuleCatalogueExample> = when (basic) {
     RiichiCatalogueBasic.Winning -> listOf(
@@ -241,8 +241,8 @@ private fun riichiBasicExamples(basic: RiichiCatalogueBasic, threePlayer: Boolea
  * 條目會用到的房間設定欄位名稱。
  *
  * @param basic 條目。
- * @param threePlayer 是否為三人日本麻將；三人沒有三響。
- * @return 欄位名稱翻譯鍵；沒有時為空集合。
+ * @param threePlayer 是否為三人日本麻將。三人沒有三響。
+ * @return 欄位名稱翻譯鍵。沒有時為空集合。
  */
 private fun riichiBasicSettings(basic: RiichiCatalogueBasic, threePlayer: Boolean): List<String> = when (basic) {
     RiichiCatalogueBasic.Winning -> listOf(RiichiGameConfigTranslationKeys.MINIMUM_WIN_CONSTRAINT)
@@ -280,7 +280,7 @@ private fun chiExample(): RuleCatalogueExample = RuleCatalogueExample(
  * 碰的食替牌例：別人打出一張，手上已有兩張同樣的牌，碰完不能打同一種牌。
  *
  * @param called 被碰的牌的簡寫。
- * @param note 牌例下方的說明；沒有時為 null。
+ * @param note 牌例下方的說明。沒有時為 null。
  * @return 局部示意。
  */
 private fun ponExample(called: String, note: String?): RuleCatalogueExample = RuleCatalogueExample(
@@ -320,7 +320,7 @@ private fun complete(
  *
  * @param role 牌組語意。
  * @param notation 牌的簡寫。
- * @param label 牌組上方標籤的翻譯鍵；null 時使用語意的標籤。
+ * @param label 牌組上方標籤的翻譯鍵。null 時使用語意的標籤。
  * @return 牌組。
  */
 private fun group(role: RuleCatalogueTileGroupRole, notation: String, label: String? = null): RuleCatalogueTileGroup = RuleCatalogueTileGroup(role = role, tiles = catalogueTiles(notation), labelTranslationKey = label)

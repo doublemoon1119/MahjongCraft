@@ -6,9 +6,9 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControl
 /**
  * 維護一個設定入口的本局自動操作草稿。
  *
- * 這個 session 不送封包，也不讀取 Minecraft widget；呼叫端以 coordinator 的 snapshot、request 與 completion 驅動狀態。
+ * 這個 session 不送封包，也不讀取 Minecraft widget。呼叫端以 coordinator 的 snapshot、request 與 completion 驅動狀態。
  *
- * @param initialSnapshot 開啟草稿時可用的權威快照；null 表示目前不可編輯。
+ * @param initialSnapshot 開啟草稿時可用的權威快照。null 表示目前不可編輯。
  */
 class ClientAutomaticControlDraftSession(initialSnapshot: AutomaticControlSnapshotDto?) {
     /** 最近收到的權威快照，供復原草稿使用。 */
@@ -43,10 +43,10 @@ class ClientAutomaticControlDraftSession(initialSnapshot: AutomaticControlSnapsh
     )
 
     /**
-     * 取代草稿；等待提交結果、依據已過期、不可編輯或含不支援的控制項時拒絕。
+     * 取代草稿。等待提交結果、依據已過期、不可編輯或含不支援的控制項時拒絕。
      *
      * @param enabledControlIds 草稿中要啟用的控制項識別碼。
-     * @return 草稿已更新時為 true；拒絕編輯時為 false。
+     * @return 草稿已更新時為 true。拒絕編輯時為 false。
      */
     fun replaceDraft(enabledControlIds: Set<String>): Boolean {
         val baseline = currentBaseline ?: return false
@@ -67,7 +67,7 @@ class ClientAutomaticControlDraftSession(initialSnapshot: AutomaticControlSnapsh
     /**
      * 放棄未提交草稿，採用目前已知的最新權威快照。
      *
-     * @return 已復原時為 true；等待提交結果或沒有權威快照時為 false。
+     * @return 已復原時為 true。等待提交結果或沒有權威快照時為 false。
      */
     fun undo(): Boolean {
         if (currentPendingRequest != null) return false
@@ -85,7 +85,7 @@ class ClientAutomaticControlDraftSession(initialSnapshot: AutomaticControlSnapsh
      *
      * @param request 呼叫端已送出的更新請求。
      * @param closeAfterAcceptance 請求獲接受後是否關閉編輯入口。
-     * @return 已登記時為 true；草稿不可提交或請求與草稿不符時為 false。
+     * @return 已登記時為 true。草稿不可提交或請求與草稿不符時為 false。
      */
     fun markSubmitted(request: AutomaticControlUpdateRequestDto, closeAfterAcceptance: Boolean): Boolean {
         val baseline = currentBaseline ?: return false
@@ -101,9 +101,9 @@ class ClientAutomaticControlDraftSession(initialSnapshot: AutomaticControlSnapsh
     /**
      * 接收新的權威快照。
      *
-     * 未修改的草稿直接刷新；已修改或等待 ACK 時保留輸入，並在快照與原依據不相容時標記 stale。
+     * 未修改的草稿直接刷新。已修改或等待 ACK 時保留輸入，並在快照與原依據不相容時標記 stale。
      *
-     * @param snapshot 新權威快照；null 表示目前不可編輯，會清除草稿狀態。
+     * @param snapshot 新權威快照。null 表示目前不可編輯，會清除草稿狀態。
      */
     fun applySnapshot(snapshot: AutomaticControlSnapshotDto?) {
         if (snapshot == null) {
@@ -134,10 +134,10 @@ class ClientAutomaticControlDraftSession(initialSnapshot: AutomaticControlSnapsh
     }
 
     /**
-     * 套用與目前待處理請求相符的完成結果；不相符時不改變草稿狀態。
+     * 套用與目前待處理請求相符的完成結果。不相符時不改變草稿狀態。
      *
      * @param completion 收到的提交完成事件。
-     * @return 配對後的接受與關閉結果；沒有配對請求時為 null。
+     * @return 配對後的接受與關閉結果。沒有配對請求時為 null。
      */
     fun applyCompletion(completion: ClientAutomaticControlCompletion): ClientAutomaticControlDraftCompletion? {
         val pending = currentPendingRequest ?: return null

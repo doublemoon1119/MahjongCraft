@@ -19,11 +19,11 @@ import kotlinx.serialization.Serializable
  * @property comboCount 當前連莊次數。
  * @property currentPlayerIndex 目前行動玩家的索引。
  * @property turnPhase 一局目前所處的階段。
- * @property wallOpening 本局權威擲骰決定的牌牆開門位置；沒有時為 null。
+ * @property wallOpening 本局權威擲骰決定的牌牆開門位置。沒有時為 null。
  * @property openingDiceRolls 本局開局程序已完成的逐輪擲骰結果。
  * @property reservedWallTiles 目前規則保留的牌張。
  * @property finishedPlayerIds 本局已完成玩家的 UUID 集合。
- * @property physicalWallLayout 仍在牌牆中的牌張實體位置；沒有時為 null。
+ * @property physicalWallLayout 仍在牌牆中的牌張實體位置。沒有時為 null。
  * @property publicTileEvidenceIds 本局對所有合法觀察者公開過的牌張 UUID 集合。
  * @property revealedHandSettlements 本局流局 resolver 計算出的公開手牌與等待牌資料。
  * @property roundSerial 這一局是本場對局開始的第幾局，從 `0` 起算。

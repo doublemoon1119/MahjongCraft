@@ -44,7 +44,7 @@ internal class ClientAiCharacterPreviews(
     /** 本人繪製失敗後暫停重試，不妨礙提供者備援。 */
     private val liveRetryAt = linkedMapOf<Uuid, Long>()
 
-    /** 目前預覽資源所屬世界；切換時清理全部資源。 */
+    /** 目前預覽資源所屬世界。切換時清理全部資源。 */
     private var world: ClientLevel? = null
 
     /** 模型重試與頭像截圖分開，頭像失敗不阻止直接模型。 */
@@ -133,19 +133,19 @@ internal class ClientAiCharacterPreviews(
      * 頭像缺少明確 FACE 或該 FACE 失敗時，取得模型圖片的頭像區域。
      *
      * @param snapshot 已授權或歷史保存的完整外觀。
-     * @return 已生成圖片；排隊中或能力缺失時為 null。
+     * @return 已生成圖片。排隊中或能力缺失時為 null。
      */
     fun portrait(snapshot: AiCharacterSnapshot?): PlayerPortraitSource? = image(snapshot)?.portrait
 
     /**
      * 直接繪製已授權且已載入的本人，缺少時使用提供者的獨立備援。
      *
-     * @param snapshot 當場描述；歷史僅使用這份資料。
+     * @param snapshot 當場描述。歷史僅使用這份資料。
      * @param context GUI 繪製上下文。
      * @param area 卡片上畫人物的範圍與放大倍數。
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
-     * @param worldEntityId 目前已授權的即時參照；歷史必須為 null。
+     * @param worldEntityId 目前已授權的即時參照。歷史必須為 null。
      * @return 成功繪製模型時為 true，否則由頭像備援。
      */
     fun renderModel(snapshot: AiCharacterSnapshot?, context: GuiGraphics, area: RoomFigureArea, mouseX: Int, mouseY: Int, worldEntityId: Uuid? = null): Boolean {
@@ -165,12 +165,12 @@ internal class ClientAiCharacterPreviews(
     }
 
     /**
-     * 取得可放進場景直接繪製的獨立模型；建立工作在 tick 中排隊執行，繪製失敗後的等待期間不回傳。
+     * 取得可放進場景直接繪製的獨立模型。建立工作在 tick 中排隊執行，繪製失敗後的等待期間不回傳。
      *
      * 模型與卡片預覽共用同一份快取，呼叫端畫完後須讓它離開座位等暫時狀態。
      *
      * @param snapshot 歷史保存的完整外觀。
-     * @return 已建立的模型；排隊中、能力缺失或等待重試時為 null。
+     * @return 已建立的模型。排隊中、能力缺失或等待重試時為 null。
      */
     fun sceneModel(snapshot: AiCharacterSnapshot?): Entity? {
         if (world !== Minecraft.getInstance().level) return null
@@ -181,7 +181,7 @@ internal class ClientAiCharacterPreviews(
     }
 
     /**
-     * 隔離繪製 [sceneModel] 模型時提供者造成的失敗；同類錯誤僅回報一次，失敗的外觀在等待重試期間不再提供模型。
+     * 隔離繪製 [sceneModel] 模型時提供者造成的失敗。同類錯誤僅回報一次，失敗的外觀在等待重試期間不再提供模型。
      *
      * @param snapshot 模型所屬的外觀。
      * @param draw 繪製工作。

@@ -11,7 +11,7 @@ object SeatedParticipantStartPreflight {
      *
      * @param room 即將開局的房間。
      * @param observations 本次預檢取得的狀態，鍵為邏輯成員編號。
-     * @return 全部符合時的擷取結果；缺少、未知、不合格或來源不同時為 null。
+     * @return 全部符合時的擷取結果。缺少、未知、不合格或來源不同時為 null。
      */
     fun capture(room: Room, observations: Map<Uuid, SeatedParticipantObservation>): List<AiCharacterParticipantCapture>? = room.admission.memberIdentities.map { (player, identity) ->
         val observation = observations[player] ?: return null

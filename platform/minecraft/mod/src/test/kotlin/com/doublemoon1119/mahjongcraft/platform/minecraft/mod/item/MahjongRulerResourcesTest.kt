@@ -26,7 +26,7 @@ class MahjongRulerResourcesTest {
         }
     }
 
-    /** 一排三片玻璃片合成四把同色牌尺；染色牌尺另外可以用任意牌尺加上同色染料換色。 */
+    /** 一排三片玻璃片合成四把同色牌尺。染色牌尺另外可以用任意牌尺加上同色染料換色。 */
     @Test
     fun `glass panes and dyes craft rulers of the matching colour`() {
         MahjongRulerColor.entries.forEach { color ->

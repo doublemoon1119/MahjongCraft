@@ -36,7 +36,7 @@ import kotlin.uuid.Uuid
 import com.sun.management.OperatingSystemMXBean as ComSunOperatingSystemMXBean
 
 /**
- * 可選的歷史查詢負載量測；預設略過，不讓一般品質門檻受機器效能影響。
+ * 可選的歷史查詢負載量測。預設略過，不讓一般品質門檻受機器效能影響。
  *
  * 以正式 SQLite 查詢、writer 的單一管理鎖與同一資料庫的待寫事件提交建立量測邊界。
  * 啟用方式為設定環境變數 `MAHJONGCRAFT_HISTORY_QUERY_LOAD_MEASUREMENT=true`。
@@ -105,9 +105,9 @@ class HistoryQueryLoadMeasurementTest {
      *
      * @param database 具有固定摘要資料的正式 SQLite 資料庫。
      * @param configuration 本次量測的准入上限、玩家數量與負載模式。
-     * @param repetition 正式量測的重複編號；負值表示暖機。
+     * @param repetition 正式量測的重複編號。負值表示暖機。
      * @param collect 是否收集延遲樣本。
-     * @return 正式量測的統計結果；暖機結果不應被使用。
+     * @return 正式量測的統計結果。暖機結果不應被使用。
      */
     private suspend fun runLoad(
         database: SqliteHistoryDatabase,
@@ -132,7 +132,7 @@ class HistoryQueryLoadMeasurementTest {
      *
      * @param database 具有固定摘要資料的正式 SQLite 資料庫。
      * @param configuration 本次量測的准入上限、玩家數量與負載模式。
-     * @param repetition 正式量測的重複編號；負值表示暖機。
+     * @param repetition 正式量測的重複編號。負值表示暖機。
      * @param collect 是否收集延遲與資源樣本。
      * @return 該組設定的量測結果。
      */
@@ -421,7 +421,7 @@ class HistoryQueryLoadMeasurementTest {
         }
     }
 
-    /** JVM 資源指標取樣器；不支援的指標保留 null。 */
+    /** JVM 資源指標取樣器。不支援的指標保留 null。 */
     private class RuntimeTelemetrySampler {
         /** 量測開始時觀察到的 heap 使用量。 */
         private var initialHeapBytes: Long? = null
@@ -452,7 +452,7 @@ class HistoryQueryLoadMeasurementTest {
         /**
          * 取得處理程序 CPU、heap 與 GC 的量測結果。
          *
-         * @return 本輪資源統計；不支援的指標為 null。
+         * @return 本輪資源統計。不支援的指標為 null。
          */
         fun finish(): RuntimeTelemetry {
             val processCpuMillis = processCpuNanos()?.let { current ->
@@ -467,7 +467,7 @@ class HistoryQueryLoadMeasurementTest {
         /**
          * 取得支援時的處理程序 CPU 奈秒數。
          *
-         * @return 處理程序累積 CPU 奈秒數；不支援時為 null。
+         * @return 處理程序累積 CPU 奈秒數。不支援時為 null。
          */
         private fun processCpuNanos(): Long? = (ManagementFactory.getOperatingSystemMXBean() as? ComSunOperatingSystemMXBean)
             ?.processCpuTime
@@ -476,7 +476,7 @@ class HistoryQueryLoadMeasurementTest {
         /**
          * 取得支援時的 GC 累積次數。
          *
-         * @return 所有 GC 的累積次數；不支援時為 null。
+         * @return 所有 GC 的累積次數。不支援時為 null。
          */
         private fun garbageCollectionCount(): Long? = ManagementFactory.getGarbageCollectorMXBeans()
             .map { it.collectionCount }
@@ -487,10 +487,10 @@ class HistoryQueryLoadMeasurementTest {
     /**
      * JVM 資源量測結果。
      *
-     * @property processCpuMillis 本輪處理程序 CPU 時間；不支援時為 null。
-     * @property initialHeapBytes 本輪開始取樣到的 heap 使用量；不支援時為 null。
-     * @property peakHeapBytes 本輪取樣到的最大 heap 使用量；不支援時為 null。
-     * @property garbageCollections 本 JVM 本輪 GC 次數增量；不支援時為 null。
+     * @property processCpuMillis 本輪處理程序 CPU 時間。不支援時為 null。
+     * @property initialHeapBytes 本輪開始取樣到的 heap 使用量。不支援時為 null。
+     * @property peakHeapBytes 本輪取樣到的最大 heap 使用量。不支援時為 null。
+     * @property garbageCollections 本 JVM 本輪 GC 次數增量。不支援時為 null。
      */
     private data class RuntimeTelemetry(
         val processCpuMillis: Long?,
@@ -592,7 +592,7 @@ class HistoryQueryLoadMeasurementTest {
      * @property cap 該次測試使用的全伺服器准入上限。
      * @property playerCount 該次固定發出要求的玩家數量。
      * @property mode 該次使用的輸入提交模式。
-     * @property repetition 該上限的正式重複編號；暖機不會建立此結果。
+     * @property repetition 該上限的正式重複編號。暖機不會建立此結果。
      * @property attempts 固定送出的查詢嘗試數。
      * @property gateBusy 被全伺服器准入層拒絕的嘗試數。
      * @property managementBusy 取得准入後被 writer 管理鎖拒絕的嘗試數。
@@ -600,12 +600,12 @@ class HistoryQueryLoadMeasurementTest {
      * @property queryP50Millis 查詢延遲近似第 50 百分位，單位為毫秒。
      * @property queryP95Millis 查詢延遲近似第 95 百分位，單位為毫秒。
      * @property queryThroughputPerSecond 每秒完成的查詢數量近似值。
-     * @property writeSamples 已完成的待寫事件提交數；僅正式量測時另外保留延遲樣本。
+     * @property writeSamples 已完成的待寫事件提交數。僅正式量測時另外保留延遲樣本。
      * @property writeP95Millis 待寫事件提交延遲近似第 95 百分位，單位為毫秒。
-     * @property processCpuMillis 本輪處理程序 CPU 時間；不支援時為 null。
-     * @property initialHeapBytes 本輪起始 heap 使用量；不支援時為 null。
-     * @property peakHeapBytes 本輪取樣到的最大 heap 使用量；不支援時為 null。
-     * @property garbageCollections 本輪觀察到的 GC 次數增量；不支援時為 null。
+     * @property processCpuMillis 本輪處理程序 CPU 時間。不支援時為 null。
+     * @property initialHeapBytes 本輪起始 heap 使用量。不支援時為 null。
+     * @property peakHeapBytes 本輪取樣到的最大 heap 使用量。不支援時為 null。
+     * @property garbageCollections 本輪觀察到的 GC 次數增量。不支援時為 null。
      */
     private data class LoadMeasurement(
         val cap: Int,

@@ -79,7 +79,7 @@ import kotlin.uuid.Uuid
  * 驗證創建房間、加入 AI、開局、完成對局、返回房間及再次開局的完整生命週期。
  * 房間與遊戲用例共用同一個 [AuthoritativeStateStore]，檢查房主、座位、準備狀態與新對局分數。
  *
- * 兩場對局都以固定種子開局，搭配固定決策的 [FakeAiStrategy]，每次執行產生相同對局；斷言著重狀態轉換，
+ * 兩場對局都以固定種子開局，搭配固定決策的 [FakeAiStrategy]，每次執行產生相同對局。斷言著重狀態轉換，
  * 不依賴特定牌序。
  */
 class RoomToRoomFullLifecycleIntegrationTest {
@@ -363,7 +363,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
     }
 
     /**
-     * 執行兩場完整對局並收集各場的待寫歷史事件；每次呼叫都是新洗的牌，用來統計容量分布。
+     * 執行兩場完整對局並收集各場的待寫歷史事件。每次呼叫都是新洗的牌，用來統計容量分布。
      *
      * @param gameLength 兩場對局使用的賽程長度。
      * @return 依對局完成順序排列的事件清單。
@@ -378,8 +378,8 @@ class RoomToRoomFullLifecycleIntegrationTest {
      * 驗證同一房間連續完成兩場對局後仍可恢復房間狀態。
      *
      * @param gameLength 對局使用的賽程長度。
-     * @param matchSeeds 第一場與第二場的對局種子；null 時以安全亂數產生。
-     * @param recordMatch 每場結束後接收待寫歷史事件；null 表示不啟用歷史記錄。
+     * @param matchSeeds 第一場與第二場的對局種子。null 時以安全亂數產生。
+     * @param recordMatch 每場結束後接收待寫歷史事件。null 表示不啟用歷史記錄。
      */
     private suspend fun testFullLifecycle(
         gameLength: RiichiGameLength,
@@ -475,7 +475,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
      * @param gameId 要查詢與操作的遊戲識別碼。
      * @param hostId 真人房主識別碼。
      * @param strategy 替房主選擇動作的策略。
-     * @return 是否已送出命令；不代表命令執行成功。無決策或遊戲不存在時為 false。
+     * @return 是否已送出命令。不代表命令執行成功。無決策或遊戲不存在時為 false。
      */
     private suspend fun Fixtures.driveHostTurn(gameId: Uuid, hostId: Uuid, strategy: MahjongAiStrategy): Boolean {
         val game = gameRepo.getGame(gameId) ?: return false

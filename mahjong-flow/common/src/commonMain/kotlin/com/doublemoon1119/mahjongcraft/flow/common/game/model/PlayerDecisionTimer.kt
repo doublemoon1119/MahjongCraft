@@ -7,7 +7,7 @@ import kotlin.uuid.Uuid
  * 單一玩家一次決策的基本思考時間與保留思考時間計時狀態。
  *
  * [startedAt] 屬於 runtime 的單調時間軸，不得持久化。伺服器停止前只需將
- * [statusAt] 算出的剩餘保留思考時間寫回 [Game.remainingReserveByPlayerId]；下次 session
+ * [statusAt] 算出的剩餘保留思考時間寫回 [Game.remainingReserveByPlayerId]。下次 session
  * 重新建立計時器，伺服器關閉期間便不會消耗思考時間。
  *
  * @property playerId 目前具有決策權的玩家。
@@ -55,14 +55,14 @@ data class PlayerDecisionTimer(
 /**
  * 以指定的基本思考時間及玩家目前剩餘保留思考時間建立一次決策計時器。
  *
- * 呼叫端會依決策階段提供基本時間和保留時間。一般回合與反應階段可使用玩家共用的保留時間池；
+ * 呼叫端會依決策階段提供基本時間和保留時間。一般回合與反應階段可使用玩家共用的保留時間池。
  * 規則選擇階段固定以零保留時間計時。
  *
  * @param base 此次決策重新取得的基本思考時間。
  * @param playerId 目前具有決策權的玩家。
  * @param remainingReserve 玩家在決策開始時剩餘的保留思考時間。
  * @param startedAt 此次決策開始時的單調時間。
- * @param resumedBase 接續被中斷的同一次決策時，其尚未使用的基本思考時間；
+ * @param resumedBase 接續被中斷的同一次決策時，其尚未使用的基本思考時間。
  *   `null` 代表這是一次全新的決策，重新取得完整基本思考時間。
  * @return 新建立的 [PlayerDecisionTimer]。
  */
@@ -85,7 +85,7 @@ fun startDecisionTimer(
  * @param playerId 目前具有決策權的玩家。
  * @param remainingReserve 玩家在決策開始時剩餘的保留思考時間。
  * @param startedAt 此次決策開始時的單調時間。
- * @param resumedBase 接續被中斷的同一次決策時，其尚未使用的基本思考時間；
+ * @param resumedBase 接續被中斷的同一次決策時，其尚未使用的基本思考時間。
  *   `null` 代表這是一次全新的決策，重新取得完整基本思考時間。
  * @return 新建立的 [PlayerDecisionTimer]。
  */

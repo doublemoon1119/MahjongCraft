@@ -6,13 +6,13 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
 /** 最後捨牌的所有反應結束後，以純邏輯判定一種特殊 round outcome。 */
 interface PostReactionRoundOutcomeResolver {
-    /** Resolver 的識別碼，依註冊 ID 慣例使用 `namespace:path` 格式；同優先序時作為穩定排序的最後決勝鍵。 */
+    /** Resolver 的識別碼，依註冊 ID 慣例使用 `namespace:path` 格式。同優先序時作為穩定排序的最後決勝鍵。 */
     val id: String
 
     /** 此 resolver 所屬的規則模組 ID。 */
     val ruleModuleId: String
 
-    /** 數值越大越先判定；同優先序再依穩定登記身分排序。 */
+    /** 數值越大越先判定。同優先序再依穩定登記身分排序。 */
     val priority: Int
 
     /**
@@ -20,7 +20,7 @@ interface PostReactionRoundOutcomeResolver {
      *
      * @param tableState 反應視窗結束後的桌況。
      * @param ruleModule 目前對局使用的規則模組。
-     * @return 成立時的特殊回合結果；不成立時為 null。
+     * @return 成立時的特殊回合結果。不成立時為 null。
      */
     fun resolve(tableState: TableState, ruleModule: MahjongRuleModule<*>): ResolvedRoundOutcome?
 }

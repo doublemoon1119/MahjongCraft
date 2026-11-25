@@ -139,7 +139,7 @@ class DeclareAbortiveDrawUseCase(
 
     /**
      * 原子更新後的桌況及實際採用的途中流局原因。此中繼結果讓 [reason] 能與 [tableState]
-     * 一起帶出 `gameRepository.update` 的作用域，供廣播事件使用；[reason] 不是 [TableState]
+     * 一起帶出 `gameRepository.update` 的作用域，供廣播事件使用。[reason] 不是 [TableState]
      * 的欄位，無法在作用域外從桌況反推。
      *
      * @property tableState 記錄途中流局後的權威桌況。

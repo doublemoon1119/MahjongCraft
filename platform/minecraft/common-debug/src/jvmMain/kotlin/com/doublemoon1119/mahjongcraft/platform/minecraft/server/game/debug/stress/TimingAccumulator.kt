@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.str
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 
-/** 累計筆數、總耗時與最大耗時；不保留個別數值。 */
+/** 累計筆數、總耗時與最大耗時。不保留個別數值。 */
 class TimingAccumulator {
     /** 筆數。 */
     private var count = 0L
@@ -26,7 +26,7 @@ class TimingAccumulator {
     }
 
     /**
-     * 目前的統計結果；尚無樣本時回傳 [TimingSummary.EMPTY]。
+     * 目前的統計結果。尚無樣本時回傳 [TimingSummary.EMPTY]。
      *
      * @return 筆數、平均值、最大值與總和。
      */

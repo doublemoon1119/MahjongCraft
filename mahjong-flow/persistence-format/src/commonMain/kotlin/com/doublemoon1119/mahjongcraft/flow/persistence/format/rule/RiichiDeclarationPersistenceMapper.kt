@@ -18,7 +18,7 @@ fun RiichiDeclaration.toPersistenceDto(): RiichiDeclarationPersistenceDto = Riic
 /**
  * 驗證並還原已保存的立直宣告。
  *
- * @return 立直宣告；無法辨識的種類或識別碼會拒絕。
+ * @return 立直宣告。無法辨識的種類或識別碼會拒絕。
  */
 fun RiichiDeclarationPersistenceDto.toDomain(): RiichiDeclaration = RiichiDeclaration(
     kind = RiichiDeclarationKind.valueOf(kind),

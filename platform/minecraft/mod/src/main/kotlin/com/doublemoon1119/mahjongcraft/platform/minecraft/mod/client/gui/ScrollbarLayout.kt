@@ -41,7 +41,7 @@ internal data class ScrollbarLayout(
     }
 
     /**
-     * 將按下位置換算為滑塊內的抓取偏移；按在軌道空白處時，改以滑塊中央為抓取點。
+     * 將按下位置換算為滑塊內的抓取偏移。按在軌道空白處時，改以滑塊中央為抓取點。
      *
      * @param mouseY 游標的縱座標。
      * @return 抓取點距離滑塊上界的距離。
@@ -57,7 +57,7 @@ internal data class ScrollbarLayout(
      *
      * @param mouseY 游標的縱座標。
      * @param grabOffset 抓取點距離滑塊上界的距離。
-     * @return 合法範圍內的索引；沒有可捲動距離時為 0。
+     * @return 合法範圍內的索引。沒有可捲動距離時為 0。
      */
     fun scrollIndexFor(mouseY: Double, grabOffset: Double): Int {
         if (maximumScroll == 0) return 0

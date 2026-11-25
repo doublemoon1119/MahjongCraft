@@ -6,7 +6,7 @@ import kotlin.uuid.Uuid
 /**
  * 牌局管理狀態的 NBT 讀寫工具。
  *
- * 牌局管理旗標和桌子 UUID 分開保存；旗標為 `true` 時，即使 UUID 損壞也不能退回自由放置模式。
+ * 牌局管理旗標和桌子 UUID 分開保存。旗標為 `true` 時，即使 UUID 損壞也不能退回自由放置模式。
  */
 object GameManagedEntityNbt {
     /**
@@ -25,7 +25,7 @@ object GameManagedEntityNbt {
      *
      * @param nbt 寫入目標 NBT compound。
      * @param managedByGame 是否由牌局生命週期管理。
-     * @param tableId 所屬桌子 UUID；沒有桌子時為 `null`。
+     * @param tableId 所屬桌子 UUID。沒有桌子時為 `null`。
      */
     fun write(nbt: CompoundTag, managedByGame: Boolean, tableId: Uuid?) {
         nbt.putBoolean(NBT_KEY_MANAGED_BY_GAME, managedByGame)

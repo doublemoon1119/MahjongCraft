@@ -8,7 +8,7 @@ import kotlin.math.sqrt
  * 一個估計值與其 95% 信賴區間的半寬。
  *
  * @property value 估計值。
- * @property halfWidth95 95% 信賴區間的半寬；區間為 [value] ± [halfWidth95]。
+ * @property halfWidth95 95% 信賴區間的半寬。區間為 [value] ± [halfWidth95]。
  */
 internal data class Estimate(
     val value: Double,
@@ -20,11 +20,11 @@ internal data class Estimate(
         private const val Z_95: Double = 1.96
 
         /**
-         * [successes] / [trials] 的比例；以常態近似計算區間。
+         * [successes] / [trials] 的比例。以常態近似計算區間。
          *
-         * @param successes 成功次數；呼叫端須保證介於零與試驗次數之間。
-         * @param trials 非負試驗次數；此處不驗證輸入範圍。
-         * @return 比例與其 95% 信賴區間半寬；試驗次數為 0 時兩者皆為 0。
+         * @param successes 成功次數。呼叫端須保證介於零與試驗次數之間。
+         * @param trials 非負試驗次數。此處不驗證輸入範圍。
+         * @return 比例與其 95% 信賴區間半寬。試驗次數為 0 時兩者皆為 0。
          */
         fun rate(successes: Int, trials: Int): Estimate {
             if (trials == 0) return Estimate(value = 0.0, halfWidth95 = 0.0)
@@ -33,10 +33,10 @@ internal data class Estimate(
         }
 
         /**
-         * [samples] 的平均；以樣本標準差計算區間，少於兩個樣本時半寬為 0。
+         * [samples] 的平均。以樣本標準差計算區間，少於兩個樣本時半寬為 0。
          *
          * @param samples 樣本值。
-         * @return 樣本平均與其 95% 信賴區間半寬；空集合時兩者皆為 0。
+         * @return 樣本平均與其 95% 信賴區間半寬。空集合時兩者皆為 0。
          */
         fun mean(samples: List<Int>): Estimate {
             if (samples.isEmpty()) return Estimate(value = 0.0, halfWidth95 = 0.0)
@@ -135,9 +135,9 @@ internal class SimulationStatistics {
     }
 
     /**
-     * 依策略彙整，依 [order] 排列；不在 [order] 中的策略排在後面。
+     * 依策略彙整，依 [order] 排列。不在 [order] 中的策略排在後面。
      *
-     * @param order 優先排列的策略 key；未列出的策略接續排列。
+     * @param order 優先排列的策略 key。未列出的策略接續排列。
      * @return 按策略彙整的統計資料。
      */
     fun byStrategy(order: List<String> = emptyList()): List<StrategyStatistics> {
@@ -170,7 +170,7 @@ internal class SimulationStatistics {
      * 以文字表格呈現的彙整結果：第一張表為和牌、放銃、名次與決策時間，第二張表為分數得失、
      * 其他玩家放銃給它的比例，以及有其他玩家立直時的攻守。
      *
-     * @param order 優先排列的策略 key；未列出的策略接續排列。
+     * @param order 優先排列的策略 key。未列出的策略接續排列。
      * @return 兩張統計表組成的文字。
      */
     fun report(order: List<String> = emptyList()): String = buildString {

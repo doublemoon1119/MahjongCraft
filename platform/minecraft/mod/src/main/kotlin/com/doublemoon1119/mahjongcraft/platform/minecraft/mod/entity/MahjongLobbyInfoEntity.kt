@@ -13,7 +13,7 @@ import net.minecraft.world.level.Level
 import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 
-/** 等待中遊戲的三行公開提示；由 [managedTableId] 管理並在所屬桌子失效時自行銷毀。 */
+/** 等待中遊戲的三行公開提示。由 [managedTableId] 管理並在所屬桌子失效時自行銷毀。 */
 class MahjongLobbyInfoEntity(
     type: EntityType<out MahjongLobbyInfoEntity> = ModEntities.mahjongLobbyInfo,
     world: Level,
@@ -34,7 +34,7 @@ class MahjongLobbyInfoEntity(
         get() = entityData[MAXIMUM_PLAYER_COUNT]
         set(value) = entityData.set(MAXIMUM_PLAYER_COUNT, value)
 
-    /** 所屬麻將桌；尚未指派或資料損壞時為 `null`。 */
+    /** 所屬麻將桌。尚未指派或資料損壞時為 `null`。 */
     var managedTableId: Uuid?
         get() = entityData[MANAGED_TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
         private set(value) = entityData.set(MANAGED_TABLE_ID, value?.toString().orEmpty())

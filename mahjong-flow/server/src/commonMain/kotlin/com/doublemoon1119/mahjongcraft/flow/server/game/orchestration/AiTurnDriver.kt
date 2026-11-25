@@ -45,14 +45,13 @@ class AiTurnDriver(
     private val actionContextResolver: PlayerActionContextResolver = PlayerActionContextResolver(),
 ) {
     /**
-     * 找出目前桌況下下一個該行動的 AI 玩家與其命令；若沒有任何 AI 需要行動則回傳 null。
+     * 找出目前桌況下下一個該行動的 AI 玩家與其命令。若沒有任何 AI 需要行動則回傳 null。
      *
-     * 判斷順序（搶和反應 → 捨牌反應 → 自己回合）由 [PlayerActionContextResolver] 統一解析。摸牌
-     * （[GameCommand.Draw]）不經過策略——這不是一個需要「策略」的決定，是每位玩家（人類/AI）
-     * 回合開始時都必須做的機械動作，直接回傳固定命令。
+     * - 判斷順序（搶和反應 → 捨牌反應 → 自己回合）由 [PlayerActionContextResolver] 統一解析。
+     * - 摸牌（[GameCommand.Draw]）不經過策略，直接回傳固定命令。它是每位玩家回合開始時都必須做的機械動作。
      *
      * @param gameId 對局 Uuid。
-     * @return 下一個該行動的 AI 玩家、其命令與決策依據的遊戲；沒有 AI 需要行動、對局已結束、對局不存在，或這一局已有
+     * @return 下一個該行動的 AI 玩家、其命令與決策依據的遊戲。沒有 AI 需要行動、對局已結束、對局不存在，或這一局已有
      *   策略呼叫正在計算時為 null。
      * @throws RuleContractViolationException 必須決策時沒有安全的後備命令。
      */
@@ -85,13 +84,13 @@ class AiTurnDriver(
 
     /**
      * 依 [aiId] 在 [Game.aiPlayerStrategyKeys] 的策略 key 從 [aiStrategyRegistry] 解析出策略，組出 [AiDecisionContext]
-     * 並經 [decisionExecutor] 問它該怎麼行動；策略失敗、逾時或舊工作尚未結束而無法再次詢問時，
+     * 並經 [decisionExecutor] 問它該怎麼行動。策略失敗、逾時或舊工作尚未結束而無法再次詢問時，
      * 使用與真人逾時相同的安全代操作。
      *
      * @param game 決策所依據的權威遊戲。
      * @param aiId 要決策的 AI 玩家。
      * @param phase 玩家目前需要決策的階段。
-     * @return 決定的命令；這一局已有策略呼叫正在計算時為 null。
+     * @return 決定的命令。這一局已有策略呼叫正在計算時為 null。
      */
     private suspend fun decideGameCommand(
         game: Game,

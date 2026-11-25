@@ -13,7 +13,7 @@ import net.minecraft.network.chat.ComponentUtils
 /** 將已驗證歷史桌況轉為共用牌組幾何，不重排或重新判定規則。 */
 internal object HistoryRoundStatePresenter {
     /**
-     * 取得保存當下的和牌手牌（立牌與分開的和牌張），不含副露；立牌已失去對應時不猜測原手牌。
+     * 取得保存當下的和牌手牌（立牌與分開的和牌張），不含副露。立牌已失去對應時不猜測原手牌。
      *
      * @param state 已驗證的交易後桌況。
      * @param winner 該筆結算的贏家描述。
@@ -31,14 +31,14 @@ internal object HistoryRoundStatePresenter {
     }
 
     /**
-     * 玩家擺在自己桌前的公開牌組成的一列：先是各組副露，後接各個移出牌區，例如花牌；各組間保留間距，放不下時整組換行。
+     * 玩家擺在自己桌前的公開牌組成的一列：先是各組副露，後接各個移出牌區，例如花牌。各組間保留間距，放不下時整組換行。
      *
      * 同時記下每組副露被鳴的牌來自哪個座位，以及加槓補上的牌。
      *
      * @param state 已驗證的交易後桌況。
      * @param player 擁有這些牌的玩家。
      * @param maxWidth 可用寬度。
-     * @return 公開牌組與標記；沒有副露也沒有移出牌時為 null。
+     * @return 公開牌組與標記。沒有副露也沒有移出牌時為 null。
      */
     fun exposedTiles(
         state: HistoryRoundStateDto,
@@ -82,7 +82,7 @@ internal object HistoryRoundStatePresenter {
      * @param state 已驗證的交易後桌況。
      * @param player 基準玩家。
      * @param direction 相對方位。
-     * @return 該玩家的初始座位；自己或人數不支援該方位時為 null。
+     * @return 該玩家的初始座位。自己或人數不支援該方位時為 null。
      */
     private fun sourceSeat(
         state: HistoryRoundStateDto,
@@ -102,7 +102,7 @@ internal object HistoryRoundStatePresenter {
     }
 
     /**
-     * 玩家卡片中的手牌：贏家的和牌張分離顯示，榮和時和牌張取自和牌描述；其他玩家的最近摸牌分離顯示。
+     * 玩家卡片中的手牌：贏家的和牌張分離顯示，榮和時和牌張取自和牌描述。其他玩家的最近摸牌分離顯示。
      *
      * 和牌描述與保存手牌對不上時不猜測，改為一般手牌。
      *
@@ -138,7 +138,7 @@ internal object HistoryRoundStatePresenter {
     fun hand(player: HistoryReplayPlayerStateDto, maxWidth: Float): HistoryTileGroupLayout = HistoryTileGroupLayoutCalculator.hand(player.handTiles, player.lastDrawn, maxWidth)
 
     /**
-     * 保留牌河槽位；帶有登記為橫擺的公開標記的牌橫置。
+     * 保留牌河槽位。帶有登記為橫擺的公開標記的牌橫置。
      *
      * @param player 已驗證的玩家桌況。
      * @param maxWidth 可用寬度。
@@ -208,7 +208,7 @@ internal data class HistoryExposedTiles(
     /**
      * 這一列的標題，依實際內容列出「副露」與各移出牌區的名稱。
      *
-     * @param areaNameKey 依移出牌區識別碼取得名稱的翻譯 key；沒有登記時為 null。
+     * @param areaNameKey 依移出牌區識別碼取得名稱的翻譯 key。沒有登記時為 null。
      * @return 以間隔號連接的標題。
      */
     fun heading(areaNameKey: (String) -> String?): Component {
@@ -236,7 +236,7 @@ internal data class HistoryExposedTiles(
     }
 }
 
-/** 加槓完整牌數；少於此數的保存資料不標示加槓補上的牌。 */
+/** 加槓完整牌數。少於此數的保存資料不標示加槓補上的牌。 */
 private const val ADDED_KAN_TILE_COUNT = 4
 
 /** 有對家的最少人數。 */

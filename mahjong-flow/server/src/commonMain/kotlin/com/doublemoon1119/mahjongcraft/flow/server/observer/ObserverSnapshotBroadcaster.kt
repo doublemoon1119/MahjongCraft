@@ -17,12 +17,13 @@ import kotlin.uuid.Uuid
 /**
  * 依權威狀態把每個房間或對局目前的內容推送給它的觀察者。
  *
- * 推送有兩個觸發來源，兩者都進入同一條 [broadcast] 流程：[observeState] 訂閱權威狀態，狀態一改變就
- * 推送；呼叫端另外定期呼叫 [broadcast]，讓觀察者集合的變化（可見範圍改變、離線、重新連線）也能被
- * 發現。
+ * 推送有兩個觸發來源，兩者都進入同一條 [broadcast] 流程：
  *
- * 每位觀察者都記住「上次送給他的內容」，內容相同就不再送出。觀察者離開後其紀錄一併刪除，因此下次
- * 再成為觀察者時會重新收到一份完整內容，不需要另外處理初次送出。
+ * - [observeState] 訂閱權威狀態，狀態一改變就推送。
+ * - 呼叫端定期呼叫 [broadcast]，讓觀察者集合的變化（可見範圍改變、離線、重新連線）也能被發現。
+ *
+ * 每位觀察者都記住上次送給他的內容，內容相同就不再送出。觀察者離開後其紀錄一併刪除，
+ * 因此下次再成為觀察者時會重新收到一份完整內容，不需要另外處理初次送出。
  *
  * @property store 房間與對局的權威狀態。
  * @property visibilityPolicy 產生依觀察者裁切後對局快照的政策。
@@ -41,7 +42,7 @@ class ObserverSnapshotBroadcaster(
     /**
      * 單一房間或對局的送出紀錄。
      *
-     * @property source 產生 [snapshots] 時所依據的權威房間或對局實例；`null` 代表當時兩者都不存在。
+     * @property source 產生 [snapshots] 時所依據的權威房間或對局實例。`null` 代表當時兩者都不存在。
      * @property snapshots 各觀察者上次收到的內容。
      */
     private class BroadcastRecord(
@@ -71,7 +72,7 @@ class ObserverSnapshotBroadcaster(
     /**
      * 送出紀錄中各場地最後一次看見的觀察者快照。
      *
-     * requestVenueInvalidation 不等待 broadcaster mutex，因此不能直接讀取 [recordsById]；這份原子快照讓它在
+     * requestVenueInvalidation 不等待 broadcaster mutex，因此不能直接讀取 [recordsById]。這份原子快照讓它在
      * 自己的線性化點捕捉既有接收者，避免稍後的 retainAll 把它們遺失。
      */
     private val recordObserversSnapshot = AtomicReference<Map<Uuid, Set<Uuid>>>(emptyMap())
@@ -79,7 +80,7 @@ class ObserverSnapshotBroadcaster(
     /** 不等待 broadcaster mutex 的待交付失效請求。 */
     private val pendingInvalidations = AtomicReference<Map<Uuid, PendingInvalidation>>(emptyMap())
 
-    /** 尚未交付的非破壞性刷新；外部公開資料變更不需要假造房間變更。 */
+    /** 尚未交付的非破壞性刷新。外部公開資料變更不需要假造房間變更。 */
     private val pendingRefreshes = AtomicReference<Set<Uuid>>(emptySet())
 
     /**
@@ -94,7 +95,7 @@ class ObserverSnapshotBroadcaster(
         }
     }
 
-    /** 訂閱權威狀態，於每次狀態變更後推送；這個函式只在呼叫端的協程被取消時結束。 */
+    /** 訂閱權威狀態，於每次狀態變更後推送。這個函式只在呼叫端的協程被取消時結束。 */
     suspend fun observeState() {
         store.state.collect { broadcast() }
     }
@@ -103,12 +104,12 @@ class ObserverSnapshotBroadcaster(
     suspend fun broadcast() = broadcastLatest()
 
     /**
-     * 登記一筆場地失效通知並立即返回；實際交付會與一般快照共用 broadcast 序列。
+     * 登記一筆場地失效通知並立即返回。實際交付會與一般快照共用 broadcast 序列。
      *
      * @param id 即將失效的房間或對局識別碼。
      * @param additionalObserverIds 清理前已捕捉、即使位置索引已移除仍應通知的觀察者。
-     * @param requestId 本次清理請求的唯一識別碼；舊請求不得清除同 ID 的新請求。
-     * @param isStillValid 交付前確認清理來源仍有效的檢查；回傳 false 時只丟棄本次通知。
+     * @param requestId 本次清理請求的唯一識別碼。舊請求不得清除同 ID 的新請求。
+     * @param isStillValid 交付前確認清理來源仍有效的檢查。回傳 false 時只丟棄本次通知。
      */
     fun requestVenueInvalidation(
         id: Uuid,
@@ -135,7 +136,7 @@ class ObserverSnapshotBroadcaster(
         }
     }
 
-    /** 取得最新權威狀態後推送；同一時間只有一次推送在進行，其餘呼叫依序等待。 */
+    /** 取得最新權威狀態後推送。同一時間只有一次推送在進行，其餘呼叫依序等待。 */
     private suspend fun broadcastLatest() = mutex.withLock {
         val observersById = audienceSource.observersById()
         val pending = pendingInvalidations.load()
@@ -196,7 +197,7 @@ class ObserverSnapshotBroadcaster(
         recordObserversSnapshot.store(recordsById.mapValues { (_, record) -> record.snapshots.keys.toSet() })
     }
 
-    /** 推送單一房間或對局；內容來源與觀察者集合都沒變時直接跳過，不重新產生任何快照。 */
+    /** 推送單一房間或對局。內容來源與觀察者集合都沒變時直接跳過，不重新產生任何快照。 */
     private suspend fun broadcastTo(
         id: Uuid,
         observerIds: Set<Uuid>,
@@ -223,7 +224,7 @@ class ObserverSnapshotBroadcaster(
         }
     }
 
-    /** 產生指定觀察者目前應該看到的內容；房間與對局都不存在時為 `null`。 */
+    /** 產生指定觀察者目前應該看到的內容。房間與對局都不存在時為 `null`。 */
     private fun snapshotFor(id: Uuid, observerId: Uuid, state: AuthoritativeStateSnapshot): ObserverSnapshot? {
         val game = state.games[id]
         if (game != null) {
@@ -238,7 +239,7 @@ class ObserverSnapshotBroadcaster(
         return ObserverSnapshot.OfRoom(room.toSnapshot(observerId))
     }
 
-    /** 清除所有送出紀錄；換 server session 時呼叫，讓下一輪推送重新送出完整內容。 */
+    /** 清除所有送出紀錄。換 server session 時呼叫，讓下一輪推送重新送出完整內容。 */
     suspend fun clearAll() = mutex.withLock {
         recordsById.clear()
         recordObserversSnapshot.store(emptyMap())

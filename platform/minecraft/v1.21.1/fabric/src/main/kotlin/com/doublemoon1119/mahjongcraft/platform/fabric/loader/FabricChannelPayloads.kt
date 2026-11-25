@@ -51,7 +51,7 @@ internal object FabricChannelPayloads {
      * 把寫好的封包內容包成這個頻道的封包。
      *
      * @param channelId 已宣告的頻道識別碼。
-     * @param buf 封包內容；從目前的讀取位置讀到結尾。
+     * @param buf 封包內容。從目前的讀取位置讀到結尾。
      * @return 封包。
      */
     fun wrap(channelId: ResourceLocation, buf: FriendlyByteBuf): ChannelPayload = ChannelPayload(

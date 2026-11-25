@@ -40,7 +40,7 @@ class TaiwanFlowerFlowTest {
         assertEquals(finalReplacement, result.tableState.players[0].hand.lastDrawn)
     }
 
-    /** 局前逐輪補花：從莊家開始，每一家一次公開手上所有的花、補同樣張數；補到的花等下一輪再補。 */
+    /** 局前逐輪補花：從莊家開始，每一家一次公開手上所有的花、補同樣張數。補到的花等下一輪再補。 */
     @Test
     fun `opening flowers go round by round`() {
         val firstFlower = flower(0)

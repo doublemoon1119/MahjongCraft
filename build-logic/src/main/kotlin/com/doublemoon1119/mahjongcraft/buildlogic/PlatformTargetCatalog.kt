@@ -56,7 +56,7 @@ object PlatformTargetCatalog {
      * 找出 repository 中所有平台 target 檔案：`gradle/platform/<平台>/<版本>/targets.toml`。
      *
      * @param rootDirectory repository 根目錄。
-     * @return 依相對路徑排序的檔案；沒有時為空。
+     * @return 依相對路徑排序的檔案。沒有時為空。
      */
     fun targetFiles(rootDirectory: File): List<File> = rootDirectory.resolve(TARGET_FILE_DIRECTORY)
         .listFiles().orEmpty()
@@ -70,7 +70,7 @@ object PlatformTargetCatalog {
      * 載入並驗證 repository 中所有平台 target 檔案的 target。
      *
      * @param rootDirectory 用於找出 target 檔案與驗證 module 路徑的 repository 根目錄。
-     * @return 依檔案路徑與檔案內順序排列的已驗證 target；沒有 target 檔案時為空。
+     * @return 依檔案路徑與檔案內順序排列的已驗證 target。沒有 target 檔案時為空。
      */
     fun loadAll(rootDirectory: File): List<PlatformTarget> {
         val targets = targetFiles(rootDirectory).flatMap(::parse)
@@ -128,7 +128,7 @@ object PlatformTargetCatalog {
      * 只讀取 local properties 中的 target fallback。
      *
      * @param file 含有 target property 的本機設定檔。
-     * @return 去除空白後的 target ID；檔案不存在或 property 為空白時回傳 null。
+     * @return 去除空白後的 target ID。檔案不存在或 property 為空白時回傳 null。
      */
     fun readLocalTarget(file: File): String? {
         if (!file.isFile) return null
@@ -139,12 +139,12 @@ object PlatformTargetCatalog {
     }
 
     /**
-     * 依固定優先序選出 target 的指定；空白輸入視為未指定。
+     * 依固定優先序選出 target 的指定。空白輸入視為未指定。
      *
      * @param gradleProperty 命令列或 Gradle property 指定的 target。
      * @param environmentVariable 環境變數指定的 target。
      * @param localProperty 本機設定檔中的 fallback target。
-     * @return 依 Gradle property、環境變數、本機設定檔順序選出的指定，可能是以逗號分隔的多個 ID；皆未指定時回傳 core ID。
+     * @return 依 Gradle property、環境變數、本機設定檔順序選出的指定，可能是以逗號分隔的多個 ID。皆未指定時回傳 core ID。
      */
     fun resolveSelectedTargetId(
         gradleProperty: String?,
@@ -158,9 +158,9 @@ object PlatformTargetCatalog {
     /**
      * 解析選擇的 target 清單。
      *
-     * @param selection 以逗號分隔的 target ID，例如同一個 Minecraft 版本的兩個載入器；`core` 只能單獨出現。
+     * @param selection 以逗號分隔的 target ID，例如同一個 Minecraft 版本的兩個載入器。`core` 只能單獨出現。
      * @param targets catalog 中的 target。
-     * @return 依指定順序排列的 target；選擇 `core` 時為空。
+     * @return 依指定順序排列的 target。選擇 `core` 時為空。
      * @throws GradleException 清單有空白項目、重複的 ID、與其他 target 並列的 `core` 或不存在的 ID。
      */
     fun selectTargets(selection: String, targets: List<PlatformTarget>): List<PlatformTarget> {

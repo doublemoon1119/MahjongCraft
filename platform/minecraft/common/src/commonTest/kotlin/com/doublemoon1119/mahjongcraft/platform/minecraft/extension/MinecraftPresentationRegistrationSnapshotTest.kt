@@ -28,7 +28,7 @@ class MinecraftPresentationRegistrationSnapshotTest {
         assertEquals(emptyList(), captured.additionsSince(captured))
     }
 
-    /** 來源可以沒有新增項目，但不能含沒有 key 的分類；分類 key 必須排序且不重複。 */
+    /** 來源可以沒有新增項目，但不能含沒有 key 的分類。分類 key 必須排序且不重複。 */
     @Test
     fun `report rejects empty categories and unordered or duplicate ids`() {
         assertFailsWith<IllegalArgumentException> {

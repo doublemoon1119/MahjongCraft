@@ -22,12 +22,12 @@ import kotlinx.serialization.json.intOrNull
  * 這些資料在對局中由規則或桌子依完整桌況算出，牌譜本身沒有足夠資料重算，所以保存結果。
  *
  * @property extraWallReach 手牌與副露要讓開、但目前沒有牌牆牌的牌牆格位，例如之後補牌會用到的位置。
- * @property scatterPatternSeed 散放牌河這一局使用的位置表種子；牌河不散放時為 null。
- * @property cornerWidthBySeat 各座位副露角落被桌上物件占用的寬度；沒有列出的座位為 0。
+ * @property scatterPatternSeed 散放牌河這一局使用的位置表種子。牌河不散放時為 null。
+ * @property cornerWidthBySeat 各座位副露角落被桌上物件占用的寬度。沒有列出的座位為 0。
  * @property roundInfo 本局資訊面板的內容，由規則提供。
- * @property playerIndicators 各座位玩家資訊上的公開標記，例如立直；沒有列出的座位沒有標記。
+ * @property playerIndicators 各座位玩家資訊上的公開標記，例如立直。沒有列出的座位沒有標記。
  * @property tableProps 規則描述的桌上物件，例如點棒。
- * @property drawHandReveals 流局結束時各座位的手牌是否公開：公開的倒下、其他的蓋起來；本局先胡牌退場的座位與不是流局
+ * @property drawHandReveals 流局結束時各座位的手牌是否公開：公開的倒下、其他的蓋起來。本局先胡牌退場的座位與不是流局
  * 結束的桌況不列出。
  */
 data class ReplayTableNotes(
@@ -40,10 +40,10 @@ data class ReplayTableNotes(
     val drawHandReveals: Map<Int, Boolean>,
 ) {
     /**
-     * 寫成牌譜保存的 JSON 物件；空的項目不寫。
+     * 寫成牌譜保存的 JSON 物件。空的項目不寫。
      *
      * @param registries 寫出桌上物件中牌面所用的網路資料登記。
-     * @return 附註物件；沒有任何內容時為 null。
+     * @return 附註物件。沒有任何內容時為 null。
      */
     fun encode(registries: NetworkDtoRegistries): JsonObject? {
         val fields = buildMap {
@@ -100,9 +100,9 @@ data class ReplayTableNotes(
         /**
          * 讀取牌譜保存的附註原文。
          *
-         * @param text 附註原文；沒有附註時為 null。
+         * @param text 附註原文。沒有附註時為 null。
          * @param registries 讀取桌上物件中牌面所用的網路資料登記。
-         * @return 附註；原文格式不符時為 null。
+         * @return 附註。原文格式不符時為 null。
          */
         fun decode(text: String?, registries: NetworkDtoRegistries): ReplayTableNotes? {
             if (text == null) return EMPTY
@@ -156,7 +156,7 @@ data class ReplayTableNotes(
          * 讀取整數。
          *
          * @param value 待讀取的值。
-         * @return 整數；不是整數時為 null。
+         * @return 整數。不是整數時為 null。
          */
         private fun integer(value: JsonElement): Int? = (value as? JsonPrimitive)?.takeUnless { it.isString }?.intOrNull
 
@@ -164,7 +164,7 @@ data class ReplayTableNotes(
          * 讀取數字。
          *
          * @param value 待讀取的值。
-         * @return 數字；不是數字時為 null。
+         * @return 數字。不是數字時為 null。
          */
         private fun number(value: JsonElement): Double? = (value as? JsonPrimitive)?.takeUnless { it.isString }?.doubleOrNull
     }

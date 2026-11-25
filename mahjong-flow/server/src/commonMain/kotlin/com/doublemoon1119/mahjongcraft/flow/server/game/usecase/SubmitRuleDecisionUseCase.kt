@@ -47,9 +47,9 @@ class SubmitRuleDecisionUseCase(
      *
      * @param gameId 對局識別碼。
      * @param playerId 提交選擇的玩家識別碼。
-     * @param windowId 提交對象的選擇視窗；不是目前開著的視窗時視為過期。
+     * @param windowId 提交對象的選擇視窗。不是目前開著的視窗時視為過期。
      * @param submission 玩家提交的規則選擇。
-     * @return 提交結果；對局不存在、視窗已過期、選擇步驟不可用或內容無效時回傳 [GameError]。
+     * @return 提交結果。對局不存在、視窗已過期、選擇步驟不可用或內容無效時回傳 [GameError]。
      */
     suspend operator fun invoke(
         gameId: Uuid,
@@ -177,9 +177,9 @@ class SubmitRuleDecisionUseCase(
      * 將更新結果與可選的歷史事件草稿帶出交易區塊。
      *
      * @property outcome 對外回傳的提交結果。
-     * @property historyDrafts 本次成功提交的歷史事件，以及完成步驟的換牌結果；失敗時為空清單。
-     * @property presentationUpdate 已完成步驟的桌況差異；尚未收齊或提交失敗時為 null。
-     * @property win 已完成步驟直接成立的和牌；沒有時為 null。
+     * @property historyDrafts 本次成功提交的歷史事件，以及完成步驟的換牌結果。失敗時為空清單。
+     * @property presentationUpdate 已完成步驟的桌況差異。尚未收齊或提交失敗時為 null。
+     * @property win 已完成步驟直接成立的和牌。沒有時為 null。
      */
     private data class RuleDecisionSubmissionUpdate(
         val outcome: Outcome<Unit, GameError>,
@@ -192,7 +192,7 @@ class SubmitRuleDecisionUseCase(
 /**
  * 判斷提交內容是否為玩家輸入規格中代表跳過的選項。
  *
- * @param spec 這位玩家在步驟中的輸入規格；沒有規格時視為未跳過。
+ * @param spec 這位玩家在步驟中的輸入規格。沒有規格時視為未跳過。
  * @return 選擇的是代表跳過的選項時為 true。
  */
 private fun RuleDecisionSubmission.isPassFor(spec: RuleDecisionInputSpec?): Boolean {

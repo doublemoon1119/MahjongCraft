@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorS
 /** 多選子畫面使用的純選取規則，避免 UI 元件自行複製上下限判斷。 */
 internal object MultiChoiceSelection {
     /**
-     * 切換一個選項；取消選取可以暫時低於最小數量，讓使用者能把 A 換成 B。
+     * 切換一個選項。取消選取可以暫時低於最小數量，讓使用者能把 A 換成 B。
      *
      * @param selected 目前已選項目。
      * @param optionId 要切換的選項。

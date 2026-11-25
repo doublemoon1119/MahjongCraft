@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 /**
  * [MinecraftTileAssetRegistry] 的預設記憶體實作。
  *
- * 建構時不預先加入任何映射；內建與第三方 asset key 使用相同的 [register] 流程，並由外層組裝完成後
+ * 建構時不預先加入任何映射。內建與第三方 asset key 使用相同的 [register] 流程，並由外層組裝完成後
  * 呼叫 [freeze]。runtime single 由 Koin 管理。
  */
 class MinecraftTileAssetRegistryImpl : MinecraftTileAssetRegistry {

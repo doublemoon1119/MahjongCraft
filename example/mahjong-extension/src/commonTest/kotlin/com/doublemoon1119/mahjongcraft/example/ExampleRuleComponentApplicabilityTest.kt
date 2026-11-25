@@ -28,7 +28,7 @@ class ExampleRuleComponentApplicabilityTest {
     /** 內建規則與範例共用的正式組件登記。 */
     private val registry: ComponentRegistry = bundledCoreExtensionRegistries(additionalExtensions = listOf(ExampleMahjongExtension())).componentRegistry
 
-    /** 日麻、三人日麻只帶日麻資料，台麻沒有規則資料，範例只帶範例資料；開局與換局都一樣。 */
+    /** 日麻、三人日麻只帶日麻資料，台麻沒有規則資料，範例只帶範例資料。開局與換局都一樣。 */
     @Test
     fun `each rule creates only its own components at opening and round change`() {
         val cases = listOf(
@@ -79,7 +79,7 @@ class ExampleRuleComponentApplicabilityTest {
      *
      * @property module 受測規則。
      * @property playerCount 開局人數。
-     * @property ownNamespace 這套規則組件的識別碼前綴；不建立任何組件時為 null。
+     * @property ownNamespace 這套規則組件的識別碼前綴。不建立任何組件時為 null。
      */
     private data class Case(
         val module: MahjongRuleModule<*>,

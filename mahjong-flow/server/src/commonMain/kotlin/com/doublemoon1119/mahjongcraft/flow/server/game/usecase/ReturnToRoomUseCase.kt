@@ -17,15 +17,17 @@ import kotlin.uuid.Uuid
 /**
  * 對局結束後把場地從 Game 轉回 Room 的實例化用例。
  *
- * 是 [StartGameUseCase] 的反向操作：在 [AuthoritativeStateStore] 的單次交易內把識別碼從 Game 移回
- * Room，讓玩家能重新使用房間階段的操作（加入／準備／開新局／離開）。呼叫前必須確認[Game.isMatchOver] 已成立——
- * 這裡只負責狀態轉移，不重複判斷對局是否真的結束，那是 [AdvanceRoundUseCase] 的責任。
+ * - 這是 [StartGameUseCase] 的反向操作。在 [AuthoritativeStateStore] 的單次交易內把識別碼從 Game 移回 Room，
+ *   讓玩家能重新使用房間階段的操作（加入／準備／開新局／離開）。
+ * - 呼叫前必須確認 [Game.isMatchOver] 已成立。這裡只負責狀態轉移，對局是否結束由 [AdvanceRoundUseCase] 判斷。
  *
- * 還原後的 [Room]：`playerIds` 沿用最終桌況的座位順序、`aiPlayerStrategyKeys` 沿用
- * [Game.aiPlayerStrategyKeys]、`hostId` 沿用開局時記錄在 [Game.hostId] 的原房主。
- * `readyPlayerIds` 只清空真人玩家（新的一局要所有人重新準備）——AI 玩家維持準備完成，
- * 比照 `AddAiPlayerUseCase` 加入時就直接準備就緒的既有慣例：AI 沒有辦法自己切換準備狀態，若這裡
- * 也把 AI 一併清空，房間會永遠卡在 `Room.canStart` 不成立，沒有人能幫 AI 重新準備。
+ * 還原後的 [Room]：
+ *
+ * - `playerIds` 沿用最終桌況的座位順序。
+ * - `aiPlayerStrategyKeys` 沿用 [Game.aiPlayerStrategyKeys]。
+ * - `hostId` 沿用開局時記錄在 [Game.hostId] 的原房主。
+ * - `readyPlayerIds` 只清空真人玩家，新的一局要他們重新準備。AI 玩家維持準備完成，和 `AddAiPlayerUseCase` 加入時一樣。
+ *   AI 無法自己切換準備狀態，清空後 `Room.canStart` 會永遠不成立。
  *
  * @property authoritativeStateStore Room 與 Game 共用的權威狀態儲存。
  * @property roomSnapshotRepository 房間快照數據倉庫。

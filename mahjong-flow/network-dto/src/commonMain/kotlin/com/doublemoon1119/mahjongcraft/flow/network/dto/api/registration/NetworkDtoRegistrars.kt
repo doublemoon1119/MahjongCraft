@@ -13,7 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.GameLength
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
 
-/** 擴充登記網路 DTO 時取得的各類登記介面；轉換與凍結由 MahjongCraft 進行。 */
+/** 擴充登記網路 DTO 時取得的各類登記介面。轉換與凍結由 MahjongCraft 進行。 */
 interface NetworkDtoRegistrars {
     /** 已完成授權裁切的組件網路值。 */
     val componentViews: ComponentViewNetworkRegistrar

@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.showcase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationWinner
 
 /**
- * 第三方可登記的胡牌展示定義；起飛與收尾不在可自定義範圍內。
+ * 第三方可登記的胡牌展示定義。起飛與收尾不在可自定義範圍內。
  *
  * @property cueKey 對應的展示理由 ID（[WinCelebrationWinner.cueIds] 中的一項）。
  * @property titleTranslationKey 標題 translation key。
@@ -12,8 +12,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationWinn
  * @property showcaseDurationTicks 展示階段長度。
  * @property layers 啟用的視覺層。
  * @property extraSounds 展示階段額外播放的音效。
- * @property priority 一位贏家有多個展示理由時的挑選優先序；數值大者優先，相同時依 cue key 排序。
- * @property pausesContinuingRound 本局在胡牌後繼續時，播放這段展示期間仍在本局中的玩家是否要等它播完；
+ * @property priority 一位贏家有多個展示理由時的挑選優先序。數值大者優先，相同時依 cue key 排序。
+ * @property pausesContinuingRound 本局在胡牌後繼續時，播放這段展示期間仍在本局中的玩家是否要等它播完。
  * 不論設定為何，下一局都會等整段胡牌呈現結束才開始。
  */
 data class WinCelebrationShowcaseDefinition(

@@ -35,7 +35,7 @@ import kotlin.uuid.toJavaUuid
  */
 class DebugTilePreviewSupport(private val tileAssetRegistry: MinecraftTileAssetRegistry) {
     /**
-     * 取得預覽牌蓋著時要畫的牌背外觀；預覽桌沒有規則，沒有指定牌身時使用內建預設外觀。
+     * 取得預覽牌蓋著時要畫的牌背外觀。預覽桌沒有規則，沒有指定牌身時使用內建預設外觀。
      *
      * @param assetKey 牌面素材 key。
      * @return 牌背外觀 ID。
@@ -47,7 +47,7 @@ class DebugTilePreviewSupport(private val tileAssetRegistry: MinecraftTileAssetR
      * [onExecute] 收到的 `tileArg` 為 `null`，由呼叫端自行決定預設牌面，見 [resolveAssetKey]。
      *
      * 這裡的 `tile` 是全域固定的素材 asset key（見 [suggestTileAssetKeys]），單純選擇要渲染成什麼
-     * 牌面，與任何玩家手牌無關；跟 `InGameCommand` 的 `tile` 引數（依玩家當下手牌動態算出的
+     * 牌面，與任何玩家手牌無關。跟 `InGameCommand` 的 `tile` 引數（依玩家當下手牌動態算出的
      * candidate token，對應一張實體牌）是兩個不同概念，不應合併實作。
      *
      * @param node 要加入兩種執行路徑的 Brigadier 節點。
@@ -71,7 +71,7 @@ class DebugTilePreviewSupport(private val tileAssetRegistry: MinecraftTileAssetR
     /**
      * 補全 `tile` 引數：所有牌面的 asset key，排除佔位用的 [UNKNOWN_TILE_ASSET_KEY]。
      *
-     * @param context Brigadier 補全查詢情境；此處不讀取其內容。
+     * @param context Brigadier 補全查詢情境。此處不讀取其內容。
      * @param builder 收集候選字串並建立回覆的 builder。
      * @return 已建立的候選結果。
      */

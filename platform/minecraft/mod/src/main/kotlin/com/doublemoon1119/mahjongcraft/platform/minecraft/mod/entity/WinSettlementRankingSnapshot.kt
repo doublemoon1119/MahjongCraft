@@ -10,7 +10,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity
  * @property currentScore 結算後分數。
  * @property previousRank 結算前名次。
  * @property currentRank 結算後名次。
- * @property paymentReasonId 點數支付原因識別碼；沒有指定時為 null。
+ * @property paymentReasonId 點數支付原因識別碼。沒有指定時為 null。
  */
 data class WinSettlementRankingSnapshot(
     val playerId: String,

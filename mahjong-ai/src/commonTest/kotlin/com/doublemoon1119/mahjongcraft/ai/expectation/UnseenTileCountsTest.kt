@@ -38,7 +38,7 @@ class UnseenTileCountsTest {
     private val opponent = player(Wind.EAST, discards = listOf(m(5), Tile.Honor.North))
     private val table = table(listOf(opponent, self))
 
-    /** 只扣除自己的手牌時，對手牌河中的牌仍算未見；剛摸到的牌只算一次。 */
+    /** 只扣除自己的手牌時，對手牌河中的牌仍算未見。剛摸到的牌只算一次。 */
     @Test
     fun `without counting visible tiles only the own hand is deducted`() {
         val counts = UnseenTileCounts.from(table.toRiichiSnapshotForTests(self.id), self.id, module, countsVisibleTiles = false)
@@ -48,7 +48,7 @@ class UnseenTileCountsTest {
         assertEquals(136 - 3, counts.total)
     }
 
-    /** 扣除所有可見牌時，對手牌河中的牌也一併扣除；看到的普通五萬多於牌山中的張數時，改從赤五萬扣除。 */
+    /** 扣除所有可見牌時，對手牌河中的牌也一併扣除。看到的普通五萬多於牌山中的張數時，改從赤五萬扣除。 */
     @Test
     fun `counting visible tiles also deducts discards`() {
         val counts = UnseenTileCounts.from(table.toRiichiSnapshotForTests(self.id), self.id, module, countsVisibleTiles = true)
@@ -77,7 +77,7 @@ class UnseenTileCountsTest {
         assertEquals(listOf(TileValue(Tile.Honor.North) to 4), counts.faces(Tile.Honor.North))
     }
 
-    /** 假設摸進赤五筒後，只少掉赤五筒；張數為 0 的牌面不列出。 */
+    /** 假設摸進赤五筒後，只少掉赤五筒。張數為 0 的牌面不列出。 */
     @Test
     fun `drawing a red five removes only the red copy`() {
         val withPlain = player(Wind.SOUTH, hand = hand(listOf(p(5))))
@@ -97,7 +97,7 @@ class UnseenTileCountsTest {
         assertEquals(counts.total - 1, counts.without(TileValue(Tile.Honor.North)).total)
     }
 
-    /** 自己拔出的北一律扣除；扣除所有可見牌時，他家拔出的北也一併扣除。 */
+    /** 自己拔出的北一律扣除。扣除所有可見牌時，他家拔出的北也一併扣除。 */
     @Test
     fun `pulled north tiles are deducted`() {
         val threePlayerModule = ThreePlayerRiichiRuleModule(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, ThreePlayerRiichiRuleConfig())

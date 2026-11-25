@@ -52,14 +52,14 @@ class AuthoritativeStateStore(
         require(maxPendingHistoryEvents >= 0) { "Pending history capacity must not be negative" }
     }
 
-    /** 目前新場資格政策；變更及權威交易皆由同一 mutex 排序。 */
+    /** 目前新場資格政策。變更及權威交易皆由同一 mutex 排序。 */
     @Volatile private var recordingPolicy = HistoryRecordingPolicy(enabled = historyRecordingEnabled)
 
     /** 歷史儲存端目前是否可接受新的事件。 */
     @Volatile var isHistoryStorageAvailable: Boolean = true
         private set
 
-    /** 目前 session 的權威資料是否可用；不可用時任何寫入都會拋出 [AuthoritativeStateUnavailableException]。 */
+    /** 目前 session 的權威資料是否可用。不可用時任何寫入都會拋出 [AuthoritativeStateUnavailableException]。 */
     @Volatile var isAvailable: Boolean = true
         private set
 
@@ -75,11 +75,11 @@ class AuthoritativeStateStore(
     /**
      * 目前狀態，並在每次實際變更後發出新值。
      *
-     * 訂閱者取得的是已提交的狀態；發出時機在 [update] 的交易內，因此不會觀察到中間狀態。
+     * 訂閱者取得的是已提交的狀態。發出時機在 [update] 的交易內，因此不會觀察到中間狀態。
      */
     val state: StateFlow<AuthoritativeStateSnapshot> = mutableState.asStateFlow()
 
-    /** 已提交事實的接收者；同一交易的提交與釋放通知使用同一個接收者快照。 */
+    /** 已提交事實的接收者。同一交易的提交與釋放通知使用同一個接收者快照。 */
     @Volatile private var committedFactsListener: CommittedFactsListener = CommittedFactsListener.NONE
 
     /** store 生命週期內下一筆含有效事實交易的通知序號。 */
@@ -102,10 +102,10 @@ class AuthoritativeStateStore(
     /** 取得目前完整狀態的不可變快照。 */
     suspend fun snapshot(): AuthoritativeStateSnapshot = mutex.withLock { currentState }
 
-    /** 取得指定 Room；純讀取不會改變 dirty 狀態。 */
+    /** 取得指定 Room。純讀取不會改變 dirty 狀態。 */
     suspend fun getRoom(id: Uuid): Room? = mutex.withLock { currentState.rooms[id] }
 
-    /** 取得指定 Game；純讀取不會改變 dirty 狀態。 */
+    /** 取得指定 Game。純讀取不會改變 dirty 狀態。 */
     suspend fun getGame(id: Uuid): Game? = mutex.withLock { currentState.games[id] }
 
     /** 目前是否存在尚未保存的狀態變更。 */
@@ -126,20 +126,20 @@ class AuthoritativeStateStore(
     /**
      * 登記已提交事實的接收者，取代先前登記的接收者。
      *
-     * 接收者在提交後於鎖內收到事實，解鎖後收到釋放通知；store 只保留最新登記的接收者，不補發先前交易。若交易已經
+     * 接收者在提交後於鎖內收到事實，解鎖後收到釋放通知。store 只保留最新登記的接收者，不補發先前交易。若交易已經
      * 捕捉到舊接收者，該交易的 [CommittedFactsListener.onReleased] 仍會交給同一個接收者。
      *
-     * @param listener 接收者；傳入 [CommittedFactsListener.NONE] 即可停止接收。
+     * @param listener 接收者。傳入 [CommittedFactsListener.NONE] 即可停止接收。
      */
     fun setCommittedFactsListener(listener: CommittedFactsListener) {
         committedFactsListener = listener
     }
 
     /**
-     * 以相同交易邊界更新政策與外部有效設定；關閉後不恢復已停止場次。
+     * 以相同交易邊界更新政策與外部有效設定。關閉後不恢復已停止場次。
      *
      * @param policy 新場資格政策。
-     * @param onApplied 同步發布有效設定的非阻塞 callback；不得重入 store 或執行 I/O。
+     * @param onApplied 同步發布有效設定的非阻塞 callback。不得重入 store 或執行 I/O。
      */
     suspend fun applyHistoryRecordingPolicy(policy: HistoryRecordingPolicy, onApplied: () -> Unit = {}) = mutex.withLock {
         var recording = restoreDecisions(currentState)
@@ -161,7 +161,7 @@ class AuthoritativeStateStore(
     }
 
     /**
-     * 更新歷史儲存端容量旗標；不可用期間仍保留權威交易，但不建立待寫事件。
+     * 更新歷史儲存端容量旗標。不可用期間仍保留權威交易，但不建立待寫事件。
      *
      * @param available 儲存端是否可接受新的歷史事件。
      */
@@ -184,7 +184,7 @@ class AuthoritativeStateStore(
     }
 
     /**
-     * 永久停止仍在記錄中的 [matchId]，保留缺口；對局被正常流程以外的方式修改（例如開發用指令）時使用。
+     * 永久停止仍在記錄中的 [matchId]，保留缺口。對局被正常流程以外的方式修改（例如開發用指令）時使用。
      *
      * 該場不在權威狀態中或沒有在記錄時不做任何事。
      *
@@ -244,7 +244,7 @@ class AuthoritativeStateStore(
     /**
      * 確認儲存端已提交的清理收據，避免較舊待寫歷史重新建立已清理紀錄。
      *
-     * 只丟棄收據涵蓋且已離開進行中集合的歷史事件；遊戲本身及其他場次不受影響。
+     * 只丟棄收據涵蓋且已離開進行中集合的歷史事件。遊戲本身及其他場次不受影響。
      * 可接續的同 ID 對局保留既有待寫資料並停止新增，待真正終止後再確認。
      *
      * @param confirmations 由儲存 adapter 讀取已提交 tombstone 所建立的收據，不得由玩家輸入建立。
@@ -271,7 +271,7 @@ class AuthoritativeStateStore(
     }
 
     /**
-     * 由現存序號辨識原有記錄；缺少開局證據的對局不從中途新增。
+     * 由現存序號辨識原有記錄。缺少開局證據的對局不從中途新增。
      *
      * @param snapshot 待補足每場判定的權威快照。
      * @return 帶固定資格的待寫歷史狀態。
@@ -321,14 +321,14 @@ class AuthoritativeStateStore(
     /**
      * 標記目前 session 的已保存資料無法讀取，之後所有寫入都拋出 [AuthoritativeStateUnavailableException]，直到下一次 [load]。
      *
-     * 讀取不受影響；此時的狀態是清空後的空狀態，不代表已保存的資料。
+     * 讀取不受影響。此時的狀態是清空後的空狀態，不代表已保存的資料。
      */
     suspend fun markUnavailable() = mutex.withLock { isAvailable = false }
 
     /**
-     * 載入已保存的完整狀態；隔離來源不會重啟，未完成轉移固定為中止。
+     * 載入已保存的完整狀態。隔離來源不會重啟，未完成轉移固定為中止。
      *
-     * 一般載入維持乾淨；轉移恢復產生的新終點標記為待保存，但不呼叫前一 session 的 callback。載入後狀態恢復可用，
+     * 一般載入維持乾淨。轉移恢復產生的新終點標記為待保存，但不呼叫前一 session 的 callback。載入後狀態恢復可用，
      * 解除 [markUnavailable]。
      *
      * @param state 經 schema migration 與 DTO 驗證後的狀態。
@@ -372,10 +372,10 @@ class AuthoritativeStateStore(
     }
 
     /**
-     * 接收完整交易批次並保留正常對局的待寫容量；滿載時不推進序號或產生缺口。
+     * 接收完整交易批次並保留正常對局的待寫容量。滿載時不推進序號或產生缺口。
      *
      * @param matchId 已建立轉移的場次。
-     * @param events 原始權威事件；最多 64 筆，且不得切斷來源交易。
+     * @param events 原始權威事件。最多 64 筆，且不得切斷來源交易。
      * @return 接收、等待容量或永久停止的結果。
      */
     suspend fun appendHistoryTransfer(matchId: Uuid, events: List<HistoryOutboxEvent>): HistoryTransferResult = mutex.withLock {
@@ -422,10 +422,10 @@ class AuthoritativeStateStore(
     }
 
     /**
-     * 提交來源終點；完整場次須已接收 MatchCompleted 及 ReturnedToRoom。
+     * 提交來源終點。完整場次須已接收 MatchCompleted 及 ReturnedToRoom。
      *
      * @param matchId 欲結束的隔離轉移。
-     * @param terminal 來源的權威終點證據；正常完成時保留原時間戳。
+     * @param terminal 來源的權威終點證據。正常完成時保留原時間戳。
      */
     suspend fun finishHistoryTransfer(matchId: Uuid, terminal: HistoryRecordingTerminal) = mutex.withLock {
         val recording = currentState.historyRecordingState
@@ -468,7 +468,7 @@ class AuthoritativeStateStore(
     }
 
     /**
-     * 已捕捉的提交通知；用來確保提交與釋放通知使用同一 listener。
+     * 已捕捉的提交通知。用來確保提交與釋放通知使用同一 listener。
      *
      * @property sequence 這筆權威交易的單調遞增序號。
      * @property listener 交易提交時捕捉的 listener。
@@ -483,13 +483,14 @@ class AuthoritativeStateStore(
     /**
      * 以原子方式讀取並更新完整伺服器權威狀態。
      *
-     * 只有 [AuthoritativeStateUpdate.state] 與目前狀態不同時才會標記 dirty；有有效事實的交易才通知接收者。提交事實的
-     * [CommittedFactsListener.onCommitted] 會在交易鎖內依序呼叫；[CommittedFactsListener.onReleased] 會在
-     * 交易鎖釋放後呼叫。新場次只有在同一交易提交 [HistoryFact.MatchStarted] 時才依記錄政策決定資格；沒有
-     * 開局事實的新場次一律為 [HistoryRecordingDecision.EXCLUDED_NO_OPENING]，不從中途建立歷史。
+     * - 只有 [AuthoritativeStateUpdate.state] 與目前狀態不同時才會標記 dirty。
+     * - 有有效事實的交易才通知接收者。[CommittedFactsListener.onCommitted] 在交易鎖內依序呼叫，
+     *   [CommittedFactsListener.onReleased] 在交易鎖釋放後呼叫。
+     * - 新場次只有在同一交易提交 [HistoryFact.MatchStarted] 時才依記錄政策決定資格。
+     *   沒有開局事實的新場次一律為 [HistoryRecordingDecision.EXCLUDED_NO_OPENING]，不從中途建立歷史。
      *
      * @param T 交易回傳結果的型別。
-     * @param waitForLock 是否等待其他交易；false 時忙碌即拒絕，避免沿用等待前的外部預檢。
+     * @param waitForLock 是否等待其他交易。false 時忙碌即拒絕，避免沿用等待前的外部預檢。
      * @param block 在交易鎖內根據目前狀態產生新狀態、事實與結果。
      * @return [block] 產生的交易結果。
      * @throws AuthoritativeStateBusyException 不允許等待且已有其他交易時拋出，尚未執行本次修改。
@@ -646,7 +647,7 @@ class AuthoritativeStateStore(
     }
 
     /**
-     * 取得寫入鎖；外部預檢需要立即提交時，不在此掛起等待。
+     * 取得寫入鎖。外部預檢需要立即提交時，不在此掛起等待。
      *
      * @param waitForLock 是否允許等待。
      * @param block 已取得執行權的交易。
@@ -665,10 +666,10 @@ class AuthoritativeStateStore(
     /**
      * 建立牌張呈現變化：開局交易列出所有牌，其他交易只列出呈現改變的牌。
      *
-     * @param before 交易前的桌況；新對局為 null。
-     * @param after 交易後的桌況；對局移除時為 null。
+     * @param before 交易前的桌況。新對局為 null。
+     * @param after 交易後的桌況。對局移除時為 null。
      * @param hasSnapshot 本交易是否保存開局完整桌況。
-     * @return 呈現變化的歷史事件；沒有解算器、沒有桌況或沒有變化時為 null。
+     * @return 呈現變化的歷史事件。沒有解算器、沒有桌況或沒有變化時為 null。
      */
     private fun tilePresentationDraft(
         before: TableState?,

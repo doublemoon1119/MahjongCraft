@@ -99,7 +99,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證第三方 Minecraft extension 的統一註冊順序、錯誤診斷與 registry freeze。 */
 class MinecraftMahjongExtensionBootstrapTest {
-    /** 新角色回呼與其他登記共用來源報告與凍結；重複 ID 以 extension 身分回報。 */
+    /** 新角色回呼與其他登記共用來源報告與凍結。重複 ID 以 extension 身分回報。 */
     @Test
     fun `character registration uses the shared bootstrap diagnostics and freeze`() {
         val characters = AiCharacterRegistryImpl()

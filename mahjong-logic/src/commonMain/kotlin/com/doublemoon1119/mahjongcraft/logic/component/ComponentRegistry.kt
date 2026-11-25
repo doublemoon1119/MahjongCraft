@@ -2,14 +2,14 @@ package com.doublemoon1119.mahjongcraft.logic.component
 
 import com.doublemoon1119.mahjongcraft.logic.api.registration.ComponentRegistrar
 
-/** 管理已登記的組件定義；擴充只透過 [ComponentRegistrar] 登記，查詢、解析與凍結由 MahjongCraft 使用。 */
+/** 管理已登記的組件定義。擴充只透過 [ComponentRegistrar] 登記，查詢、解析與凍結由 MahjongCraft 使用。 */
 interface ComponentRegistry : ComponentRegistrar {
 
     /**
      * 取得對象定義。
      *
      * @param id 完整對象識別碼。
-     * @return 已登記定義；找不到時為 null。
+     * @return 已登記定義。找不到時為 null。
      */
     fun findOwner(id: String): ComponentOwnerType<*>?
 
@@ -65,7 +65,7 @@ interface ComponentRegistry : ComponentRegistrar {
     /**
      * 驗證對象現有的組件定義、適用規則及必要值，不建立初值或改動資料。
      *
-     * 有登記生命週期的組件只能出現在適用的規則與設定中；對象要求生命週期時，沒有登記的組件也會被拒絕。
+     * 有登記生命週期的組件只能出現在適用的規則與設定中。對象要求生命週期時，沒有登記的組件也會被拒絕。
      *
      * @param context 對象與規則設定。
      * @param components 對象目前攜帶的完整組件。
@@ -79,7 +79,7 @@ interface ComponentRegistry : ComponentRegistrar {
      * 依完整 ID 查詢組件定義。
      *
      * @param id 完整組件識別碼。
-     * @return 已登記定義；不存在時為 null。
+     * @return 已登記定義。不存在時為 null。
      */
     fun find(id: String): ComponentType<*>?
 

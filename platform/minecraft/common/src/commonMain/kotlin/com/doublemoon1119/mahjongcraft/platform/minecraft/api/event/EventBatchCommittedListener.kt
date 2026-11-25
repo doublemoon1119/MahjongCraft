@@ -8,7 +8,7 @@ fun interface EventBatchCommittedListener {
      * 處理同一筆交易內已依序交付的事件批次。
      *
      * @param batch 同一筆交易中的公開事件批次。
-     * @param context 事件產生時的情境；批次內所有事件共用同一份情境快照。
+     * @param context 事件產生時的情境。批次內所有事件共用同一份情境快照。
      */
     fun onEventBatchCommitted(batch: CommittedMatchEventBatch, context: GameEventContext)
 }

@@ -5,11 +5,11 @@ import kotlin.math.ceil
 /**
  * 判斷壓力測試是否該停止，並偵測持續卡頓。
  *
- * 以實際 tick 間隔判斷伺服器是否跟不上：連續 [StressSafetyThresholds.sustainedWindows] 個不重疊視窗的平均間隔都超過門檻就停止；
- * 另外追蹤相對目標節奏的落後量（每個 tick 加上間隔與目標的差，最低為 0），伺服器追上時會下降，超過
- * [StressSafetyThresholds.maxLagMillis] 就緊急停止。爬坡進入新的階段時以 [resetLag] 重設落後量。持續卡頓（間隔尖峰）只回報
- * 狀態、不停止，讓同一次測試同時量到「開始卡頓」與「撐不住」兩個桌數。歷史遺失、寫入失敗與積壓達到比例門檻則立即停止，讓測試
- * 在真的遺失歷史之前停下。
+ * - 跟不上：連續 [StressSafetyThresholds.sustainedWindows] 個不重疊視窗的平均 tick 間隔都超過門檻就停止。
+ * - 落後量：每個 tick 加上間隔與目標的差，最低為 0，伺服器追上時會下降。
+ *   超過 [StressSafetyThresholds.maxLagMillis] 就緊急停止。爬坡進入新的階段時以 [resetLag] 重設。
+ * - 持續卡頓（間隔尖峰）只回報狀態、不停止，讓同一次測試同時量到「開始卡頓」與「撐不住」兩個桌數。
+ * - 歷史遺失、寫入失敗與積壓達到比例門檻時立即停止，讓測試在真的遺失歷史之前停下。
  *
  * @property thresholds 停止門檻。
  */
@@ -37,11 +37,11 @@ class StressSafetyValve(private val thresholds: StressSafetyThresholds) {
     val stuttering: Boolean get() = stutters >= thresholds.stutterTicks
 
     /**
-     * 記錄一個 tick 的實際間隔；伺服器持續跟不上或落後太多時回傳停止原因。
+     * 記錄一個 tick 的實際間隔。伺服器持續跟不上或落後太多時回傳停止原因。
      *
      * @param intervalMillis 這個 tick 與上一個 tick 開始的時間差毫秒數。
-     * @param countStutter 這個 tick 是否列入卡頓判斷；暖機期間不列入，但仍會判斷是否落後。
-     * @return 持續落後或累計落後超過上限時的停止原因；否則為 null。
+     * @param countStutter 這個 tick 是否列入卡頓判斷。暖機期間不列入，但仍會判斷是否落後。
+     * @return 持續落後或累計落後超過上限時的停止原因。否則為 null。
      */
     fun recordTick(intervalMillis: Double, countStutter: Boolean): StressStopReason? {
         val stutter = countStutter && intervalMillis > thresholds.stutterLimitMillis
@@ -71,7 +71,7 @@ class StressSafetyValve(private val thresholds: StressSafetyThresholds) {
      * @param capacity 待寫佇列容量。
      * @param lostSegments 出現序號缺口的場次數。
      * @param writerFailed 寫入元件是否發生錯誤或暫停寫入。
-     * @return 優先回報歷史遺失，其次寫入失敗與積壓；未達門檻時為 null。
+     * @return 優先回報歷史遺失，其次寫入失敗與積壓。未達門檻時為 null。
      */
     fun checkHistory(pendingEvents: Int, capacity: Int, lostSegments: Int, writerFailed: Boolean): StressStopReason? = when {
         lostSegments > 0 -> StressStopReason.HISTORY_LOST

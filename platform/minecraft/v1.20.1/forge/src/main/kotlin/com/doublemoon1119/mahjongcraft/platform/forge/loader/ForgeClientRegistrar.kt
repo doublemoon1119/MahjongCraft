@@ -22,7 +22,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent
 /**
  * 以 Forge 的登記事件實作 [ClientRegistrar]：登記先保留，Forge 發出對應的登記事件時才套用。
  *
- * 實體繪製器與物品顏色在各自的登記事件中加入，物品屬性在用戶端設定階段的主執行緒加入；以程式繪製的物品與模型載入
+ * 實體繪製器與物品顏色在各自的登記事件中加入，物品屬性在用戶端設定階段的主執行緒加入。以程式繪製的物品與模型載入
  * 分別由 [ForgeItemRenderers] 與 [ForgeModelLoadings] 在 Forge 需要時取用。
  */
 class ForgeClientRegistrar : ClientRegistrar {

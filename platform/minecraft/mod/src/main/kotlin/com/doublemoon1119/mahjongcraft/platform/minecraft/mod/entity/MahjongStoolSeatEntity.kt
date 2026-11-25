@@ -16,9 +16,11 @@ import net.minecraft.world.phys.Vec3
 /**
  * 讓 entity 坐在麻將凳上的隱形座位，位置與高度見 [MahjongStoolSeatGeometry]。
  *
- * 座位只認自己目前所在的方塊。伺服器端每 tick 檢查，沒有乘客、所在方塊不再是麻將凳，或從存檔重新生成後發現同一張凳子
- * 已有其他座位時，讓乘客下來並移除自己。座位不保存額外資料：有玩家乘坐時原版不把座位存進區塊，而是隨玩家存檔保存，
- * 玩家回來時重新生成並坐回去。轉頭不受限制。
+ * - 座位只認自己目前所在的方塊。
+ * - 伺服器端每 tick 檢查。沒有乘客、所在方塊不再是麻將凳，或從存檔重新生成後發現同一張凳子已有其他座位時，
+ *   讓乘客下來並移除自己。
+ * - 座位不保存額外資料。有玩家乘坐時原版不把座位存進區塊，而是隨玩家存檔保存，玩家回來時重新生成並坐回去。
+ * - 轉頭不受限制。
  *
  * @param type Minecraft entity 類型。
  * @param world 實體所屬世界。
@@ -27,7 +29,7 @@ class MahjongStoolSeatEntity(
     type: EntityType<out MahjongStoolSeatEntity> = ModEntities.mahjongStoolSeat,
     world: Level,
 ) : MahjongEntity(type, world) {
-    /** 是否還需要確認同一張凳子沒有其他座位；坐下入口新建的座位在生成前已確認。 */
+    /** 是否還需要確認同一張凳子沒有其他座位。坐下入口新建的座位在生成前已確認。 */
     private var needsOccupancyCheck = true
 
     init {
@@ -64,7 +66,7 @@ class MahjongStoolSeatEntity(
     }
 
     /**
-     * 依 [MahjongStoolSeatGeometry.dismountDirections] 找第一個站得下的相鄰方塊；都不行時站到凳子上方。
+     * 依 [MahjongStoolSeatGeometry.dismountDirections] 找第一個站得下的相鄰方塊。都不行時站到凳子上方。
      *
      * @param passenger 要離開座位的乘客。
      * @return 可供乘客站立的下座位置。
@@ -78,7 +80,7 @@ class MahjongStoolSeatEntity(
      * 座位不會受到任何傷害。
      *
      * @param source 傷害來源。
-     * @param amount 傷害量；此座位一律不受傷害。
+     * @param amount 傷害量。此座位一律不受傷害。
      * @return 一律回傳 `false`，表示傷害未造成效果。
      */
     override fun hurt(source: DamageSource, amount: Float): Boolean = false

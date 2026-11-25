@@ -24,7 +24,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.uuid.Uuid
 
-/** [GameAction.toDisplayText] 的單元測試類別；純函式，不需要 [net.minecraft.server.level.ServerPlayer]。 */
+/** [GameAction.toDisplayText] 的單元測試類別。純函式，不需要 [net.minecraft.server.level.ServerPlayer]。 */
 class GameActionDisplayTextTest {
 
     private val displayNameRegistry = TileDisplayNameRegistryImpl().apply { BundledMinecraftMahjongExtensions.all.forEach { it.registerTileDisplayNames(this) } }

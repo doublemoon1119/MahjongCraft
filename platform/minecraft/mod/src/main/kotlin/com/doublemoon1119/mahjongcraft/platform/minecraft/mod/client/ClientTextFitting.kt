@@ -9,7 +9,7 @@ import net.minecraft.network.chat.Component
  * @param textRenderer 目前 client 使用的字型測量器。
  * @param text 原始文字。
  * @param maximumWidth 可用的像素寬度。
- * @return 原始文字或附加省略號的裁切文字；寬度不為正時為空文字。
+ * @return 原始文字或附加省略號的裁切文字。寬度不為正時為空文字。
  */
 internal fun fitClientText(
     textRenderer: Font,

@@ -21,7 +21,7 @@ import net.minecraft.world.entity.Entity
 import net.minecraft.world.level.block.state.properties.BlockStateProperties
 import net.minecraft.world.phys.AABB
 
-/** 建立椅子、長凳與坐墊的座位 provider；登記時不讀取原生世界。 */
+/** 建立椅子、長凳與坐墊的座位 provider。登記時不讀取原生世界。 */
 object ExampleFurnitureSeatProviders {
     /** 建立三種家具的 provider 描述。 */
     fun definitions(): List<RegisteredSeatProvider<ServerLevel, Entity>> = listOf(
@@ -147,7 +147,7 @@ private class ExampleChairSeatTarget(
 
 /** 在標準席位附近查詢已載入範圍內範例坐墊的 provider。 */
 private class ExampleCushionSeatProvider : SeatProvider<ServerLevel, Entity> {
-    /** 只查標準席位附近已載入的坐墊；實際乘坐幾何由本體再次篩選。 */
+    /** 只查標準席位附近已載入的坐墊。實際乘坐幾何由本體再次篩選。 */
     override fun resolve(world: ServerLevel, request: SeatRequest): List<SeatTarget<ServerLevel, Entity>> {
         if (request.dimensionId != world.dimension().location().toString()) return emptyList()
         if (!ExampleFurnitureEntities.isRegistered()) return emptyList()

@@ -14,7 +14,7 @@ import kotlin.math.roundToInt
  * 從標準牌面與牌身貼圖產生透明牌的貼圖與模型。產生的檔案與其他資源一起保存在 src 底下，可再手動修圖。
  *
  * 只在標準牌面或牌身改動後手動執行，一般建置不會執行。對每種標準牌面 `mahjong_tile_<key>.png` 產生：
- * - `mahjong_tile_transparent_<key>.png`：只留圖案。牌面最外圈出現最多的顏色視為底色；每個像素依比底色暗多少決定
+ * - `mahjong_tile_transparent_<key>.png`：只留圖案。牌面最外圈出現最多的顏色視為底色。每個像素依比底色暗多少決定
  *   不透明度，並扣除底色成分還原圖案顏色，讓圖案邊緣不留淡白光暈。不比底色暗的像素（底色、斜角亮面、雜點）全透明。
  * - `mahjong_tile_transparent_<key>_preview.png`：同樣的圖案墊上半透明白底，供平面顯示使用。
  * - `mahjong_tile_transparent_<key>.json`：透明牌面的 item model。

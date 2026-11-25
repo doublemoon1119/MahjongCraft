@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
-/** 自摸時每一本場由其他每位玩家各付的點數；榮和時放銃者一人付「這個點數 × 其他玩家人數」。 */
+/** 自摸時每一本場由其他每位玩家各付的點數。榮和時放銃者一人付「這個點數 × 其他玩家人數」。 */
 const val RIICHI_COMBO_BONUS_TSUMO_POINTS_PER_PAYER: Int = 100
 
 /**
@@ -25,9 +25,9 @@ internal fun riichiComboBonusRonPoints(playerCount: Int): Int = RIICHI_COMBO_BON
  *
  * @param tableState 目前的桌況（尚未套用本次胡牌結算）。
  * @param winnerId 收取本場的贏家 Uuid。
- * @param discarderId 放銃者 Uuid；自摸或流局滿貫為 null。
- * @param paoPlayerId 本次胡牌成立包牌時的責任者 Uuid；沒有包牌時為 null。
- * @return 每位付款者應支付的本場點數；本場數為 0 時回傳空 map。
+ * @param discarderId 放銃者 Uuid。自摸或流局滿貫為 null。
+ * @param paoPlayerId 本次胡牌成立包牌時的責任者 Uuid。沒有包牌時為 null。
+ * @return 每位付款者應支付的本場點數。本場數為 0 時回傳空 map。
  */
 internal fun riichiComboBonusPayments(
     tableState: TableState,

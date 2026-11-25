@@ -35,7 +35,7 @@ class GameConfigVariantResolverTest {
         )
     }
 
-    /** 識別欄位符合哪個玩法就是哪個玩法；識別欄位不顯示在設定頁。 */
+    /** 識別欄位符合哪個玩法就是哪個玩法。識別欄位不顯示在設定頁。 */
     @Test
     fun `current variant follows the identifying fields`() {
         val definition = definition(variants = listOf(closedHandVariant(), localVariant()))
@@ -132,7 +132,7 @@ class GameConfigVariantResolverTest {
         assertFailsWith<IllegalArgumentException> { definition(variants = listOf(closedHandVariant(), closedHandVariant())) }
     }
 
-    /** 同一規則的玩法必須指定同一組識別欄位；識別欄位不能同時鎖定，鎖定欄位也必須是可編輯欄位的合法值。 */
+    /** 同一規則的玩法必須指定同一組識別欄位。識別欄位不能同時鎖定，鎖定欄位也必須是可編輯欄位的合法值。 */
     @Test
     fun `identifying and locked fields must follow the variant rules`() {
         val onlyOpenTanyao = variant("test:only_open_tanyao", mapOf(OPEN_TANYAO to GameConfigPresentationValue.BooleanValue(false)))

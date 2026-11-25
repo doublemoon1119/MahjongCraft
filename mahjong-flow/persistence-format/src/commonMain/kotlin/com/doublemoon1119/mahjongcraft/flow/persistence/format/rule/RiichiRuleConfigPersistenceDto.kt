@@ -11,7 +11,7 @@ import kotlinx.serialization.Serializable
  * @property useLocalYaku 是否啟用規則專屬役種。
  * @property minimumWinConstraint 和牌所需的最低翻數限制。
  * @property initialScore 對局開始時每位玩家的分數。
- * @property bustThreshold 低於此分數時判定為擊飛；沒有設定時為 null。
+ * @property bustThreshold 低於此分數時判定為擊飛。沒有設定時為 null。
  * @property minPointsToWin 和牌至少需要的基本分數。
  * @property notenPenaltyUnit 流局未聽罰符的單位分數。
  * @property gameLength 對局長度。

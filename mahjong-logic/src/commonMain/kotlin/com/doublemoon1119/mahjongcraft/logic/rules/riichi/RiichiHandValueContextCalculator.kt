@@ -116,12 +116,12 @@ class RiichiHandValueContextCalculator(
     }
 
     /**
-     * 找出打出榮和牌的玩家；自摸與搶槓沒有放銃的捨牌。
+     * 找出打出榮和牌的玩家。自摸與搶槓沒有放銃的捨牌。
      *
      * @param tableState 目前桌況。
      * @param winner 和牌玩家。
      * @param incomingTile 榮和的牌。
-     * @return 最後一個動作是打出這張牌的其他玩家；找不到時為 null。
+     * @return 最後一個動作是打出這張牌的其他玩家。找不到時為 null。
      */
     private fun discarderOf(
         tableState: TableState,
@@ -144,10 +144,10 @@ class RiichiHandValueContextCalculator(
     }
 
     /**
-     * 放銃者是否在槓牌並補牌後打出這張牌；同一回合連續槓牌也算。
+     * 放銃者是否在槓牌並補牌後打出這張牌。同一回合連續槓牌也算。
      *
      * @param discarder 放銃者。
-     * @return 打出這張牌之前的動作依序為槓牌、補牌時為 true；中間的規則專屬宣告（例如立直）不影響判定。
+     * @return 打出這張牌之前的動作依序為槓牌、補牌時為 true。中間的規則專屬宣告（例如立直）不影響判定。
      */
     private fun isDiscardAfterKan(discarder: MahjongPlayer): Boolean {
         val beforeDiscard = discarder.actionHistory.dropLast(1).dropLastWhile { it is GameAction.Extension }

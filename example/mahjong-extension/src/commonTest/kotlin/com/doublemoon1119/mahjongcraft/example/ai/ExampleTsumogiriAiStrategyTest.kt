@@ -30,7 +30,7 @@ class ExampleTsumogiriAiStrategyTest {
      * @param hand 測試玩家的手牌。
      * @param phase AI 所處的決策階段。
      * @param legalActions 呼叫端提供的合法動作。
-     * @param discardableTileIds 規則允許打出的牌；null 表示未限制。
+     * @param discardableTileIds 規則允許打出的牌。null 表示未限制。
      * @return 可供策略使用的決策情境。
      */
     private fun context(

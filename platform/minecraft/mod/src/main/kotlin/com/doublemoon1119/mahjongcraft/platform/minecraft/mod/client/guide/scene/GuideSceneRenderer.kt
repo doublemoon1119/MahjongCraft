@@ -58,13 +58,14 @@ import kotlin.math.max
 import kotlin.math.min
 
 /**
- * 在畫面上的一塊範圍內繪製 [GuideScene]：固定斜上方視角，依範圍大小等比例縮放並置中；
- * 場景指定關注範圍時只顯示該範圍，否則完整顯示整個場景。
+ * 在畫面上的一塊範圍內繪製 [GuideScene]：固定斜上方視角，依範圍大小等比例縮放並置中。
  *
- * 方塊、角色、牌、局況與玩家資訊都交給遊戲自己的繪製器，以最亮的光照繪製；方向光從鏡頭前上方照來，
- * 朝向玩家的面最亮。發光的牌畫上貼著輪廓、顏色與遊戲同種牌提示相同的外框；滑鼠指著標示了區塊的東西時，
- * 同一區塊的牌一起畫上白色外框。場景前後各清一次深度，讓場景不被先前的介面擋住，之後繪製的介面也能蓋在場景上。
- * 預覽實體不加入世界，換世界時重建，[close] 時釋放。
+ * - 場景指定關注範圍時只顯示該範圍，否則完整顯示整個場景。
+ * - 方塊、角色、牌、局況與玩家資訊都交給遊戲自己的繪製器，以最亮的光照繪製。方向光從鏡頭前上方照來，朝向玩家的面最亮。
+ * - 發光的牌畫上貼著輪廓的外框，顏色與遊戲的同種牌提示相同。
+ * - 滑鼠指著標示了區塊的東西時，同一區塊的牌一起畫上白色外框。
+ * - 場景前後各清一次深度，讓場景不被先前的介面擋住，之後繪製的介面也能蓋在場景上。
+ * - 預覽實體不加入世界，換世界時重建，[close] 時釋放。
  */
 internal class GuideSceneRenderer : AutoCloseable {
     /** 繪製角色共用的預覽實體。 */
@@ -76,13 +77,13 @@ internal class GuideSceneRenderer : AutoCloseable {
     /** 繪製玩家資訊的預覽實體。 */
     private var playerInfoEntity: MahjongPlayerInfoEntity? = null
 
-    /** 胡牌特效的畫法；第一次畫特效時才建立。 */
+    /** 胡牌特效的畫法。第一次畫特效時才建立。 */
     private var winEffectGeometry: WinCelebrationEffectGeometry? = null
 
-    /** 讓坐著的生物騎乘的凳子座位，與遊戲中坐凳子時相同；不在世界中，也不是生物，不影響乘客的朝向。 */
+    /** 讓坐著的生物騎乘的凳子座位，與遊戲中坐凳子時相同。不在世界中，也不是生物，不影響乘客的朝向。 */
     private var seatEntity: Entity? = null
 
-    /** 上一次繪製時滑鼠指著、離鏡頭最近的牌的 [GuideSceneTile.key]；沒有指著牌時為 null。 */
+    /** 上一次繪製時滑鼠指著、離鏡頭最近的牌的 [GuideSceneTile.key]。沒有指著牌時為 null。 */
     var hoveredTileKey: Int? = null
         private set
 
@@ -97,11 +98,11 @@ internal class GuideSceneRenderer : AutoCloseable {
      * @param height 範圍高度。
      * @param mouseX 滑鼠水平位置。
      * @param mouseY 滑鼠垂直位置。
-     * @param yawOffset 玩家拖曳轉動的水平角度，加在場景視角上；只有可轉動的場景使用。
+     * @param yawOffset 玩家拖曳轉動的水平角度，加在場景視角上。只有可轉動的場景使用。
      * @param zoom 在放得下整個範圍的大小上再放大的倍數。
      * @param panX 放大後場景中心往右移動的像素。
      * @param panY 放大後場景中心往下移動的像素。
-     * @return 滑鼠指著、離鏡頭最近的東西所屬的區塊與它在畫面上的範圍；沒有指著任何區塊時為 null。
+     * @return 滑鼠指著、離鏡頭最近的東西所屬的區塊與它在畫面上的範圍。沒有指著任何區塊時為 null。
      */
     fun render(
         context: GuiGraphics,
@@ -212,7 +213,7 @@ internal class GuideSceneRenderer : AutoCloseable {
      * @param scale 每格方塊在畫面上的像素數。
      * @param mouseX 滑鼠水平位置。
      * @param mouseY 滑鼠垂直位置。
-     * @return 滑鼠指著的東西所屬的區塊與它在畫面上的範圍；沒有時為 null。
+     * @return 滑鼠指著的東西所屬的區塊與它在畫面上的範圍。沒有時為 null。
      */
     private fun hoveredRegion(scene: GuideScene, sceneToScreen: Matrix4f, scale: Float, mouseX: Int, mouseY: Int): GuideSceneHover? {
         val candidates = buildList {
@@ -261,7 +262,7 @@ internal class GuideSceneRenderer : AutoCloseable {
      * @param sceneToScreen 場景座標換算成畫面座標的矩陣。
      * @param mouseX 滑鼠水平位置。
      * @param mouseY 滑鼠垂直位置。
-     * @return 牌的識別值；沒有指著這樣的牌時為 null。
+     * @return 牌的識別值。沒有指著這樣的牌時為 null。
      */
     private fun hoveredTile(scene: GuideScene, sceneToScreen: Matrix4f, mouseX: Int, mouseY: Int): Int? = scene.tiles
         .mapNotNull { tile -> tile.key?.let { key -> key to projectBox(tileModelMatrix(sceneToScreen, tile), tileModelMin(), tileModelMax()) } }
@@ -327,7 +328,7 @@ internal class GuideSceneRenderer : AutoCloseable {
     }
 
     /**
-     * 以遊戲的局況與玩家資訊繪製器畫出浮在桌上的資訊；局況會轉向鏡頭，與遊戲中相同。
+     * 以遊戲的局況與玩家資訊繪製器畫出浮在桌上的資訊。局況會轉向鏡頭，與遊戲中相同。
      *
      * @param client 目前客戶端。
      * @param scene 場景。
@@ -401,7 +402,7 @@ internal class GuideSceneRenderer : AutoCloseable {
     }
 
     /**
-     * 這張牌是否以半透明方式繪製；看不到牌面的牌以未知牌畫出，不是半透明。
+     * 這張牌是否以半透明方式繪製。看不到牌面的牌以未知牌畫出，不是半透明。
      *
      * @param tile 場景中的牌。
      * @return 半透明時為 true。
@@ -533,7 +534,7 @@ internal class GuideSceneRenderer : AutoCloseable {
      * @param matrix 長方體座標換算成畫面座標的矩陣。
      * @param min 最小角。
      * @param max 最大角。
-     * @return 畫面上的外接矩形；深度越大越靠近鏡頭。
+     * @return 畫面上的外接矩形。深度越大越靠近鏡頭。
      */
     private fun projectBox(matrix: Matrix4f, min: Vector3f, max: Vector3f): ProjectedBox {
         var minX = Float.POSITIVE_INFINITY
@@ -583,9 +584,9 @@ internal class GuideSceneRenderer : AutoCloseable {
     }
 
     /**
-     * 用原版繪製器畫出實體；坐姿的實體在繪製期間騎在不在世界中的座位上。
+     * 用原版繪製器畫出實體。坐姿的實體在繪製期間騎在不在世界中的座位上。
      *
-     * 原版依實體與鏡頭的距離決定是否畫名牌；實體不在世界中，繪製前放到遠離鏡頭的位置，名牌就不會出現。
+     * 原版依實體與鏡頭的距離決定是否畫名牌。實體不在世界中，繪製前放到遠離鏡頭的位置，名牌就不會出現。
      *
      * @param client 目前客戶端。
      * @param entities 要畫的生物。
@@ -616,7 +617,7 @@ internal class GuideSceneRenderer : AutoCloseable {
     }
 
     /**
-     * 判斷一個實體這一幀要不要畫：不透明度為 0 時不畫；半透明時只有原版生物繪製器畫的生物能畫，其他不畫。
+     * 判斷一個實體這一幀要不要畫：不透明度為 0 時不畫。半透明時只有原版生物繪製器畫的生物能畫，其他不畫。
      *
      * @param figure 要畫的實體與不透明度。
      * @param dispatcher 原版實體繪製器。
@@ -695,7 +696,7 @@ internal class GuideSceneRenderer : AutoCloseable {
     }
 
     /**
-     * 取得屬於 [world] 的座位實體；世界改變時重建。
+     * 取得屬於 [world] 的座位實體。世界改變時重建。
      *
      * @param world 目前客戶端世界。
      * @return 不在世界中的座位實體。
@@ -707,7 +708,7 @@ internal class GuideSceneRenderer : AutoCloseable {
     }
 
     /**
-     * 取得屬於 [world] 的角色預覽實體；世界改變時重建。
+     * 取得屬於 [world] 的角色預覽實體。世界改變時重建。
      *
      * @param world 目前客戶端世界。
      * @return 不在世界中的預覽實體。
@@ -719,7 +720,7 @@ internal class GuideSceneRenderer : AutoCloseable {
     }
 
     /**
-     * 取得屬於 [world] 的局況預覽實體；世界改變時重建。
+     * 取得屬於 [world] 的局況預覽實體。世界改變時重建。
      *
      * @param world 目前客戶端世界。
      * @return 不在世界中的預覽實體。
@@ -731,7 +732,7 @@ internal class GuideSceneRenderer : AutoCloseable {
     }
 
     /**
-     * 取得屬於 [world] 的玩家資訊預覽實體；世界改變時重建。
+     * 取得屬於 [world] 的玩家資訊預覽實體。世界改變時重建。
      *
      * @param world 目前客戶端世界。
      * @return 不在世界中的預覽實體。
@@ -921,7 +922,7 @@ internal class GuideSceneRenderer : AutoCloseable {
         /** 場景佔可用範圍的比例，四周留一點空白。 */
         const val FILL_RATIO: Float = 0.92f
 
-        /** 場景在 GUI 深度上的位置；前後已清除深度，只需落在投影範圍內。 */
+        /** 場景在 GUI 深度上的位置。前後已清除深度，只需落在投影範圍內。 */
         const val SCENE_Z: Double = 200.0
 
         /** 最亮的方塊與天空光照。 */

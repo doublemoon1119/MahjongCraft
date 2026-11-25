@@ -16,7 +16,7 @@ import kotlin.uuid.toJavaUuid
 
 /**
  * 集中管理目前伺服器提供的玩家 profile，以及 Minecraft 原生 skin provider 的材質查詢。
- * 真人名稱不由客戶端主動猜測；正版玩家的 UUID 可交由原生服務解析，offline-mode UUID 則保留預設呈現。
+ * 真人名稱不由客戶端主動猜測。正版玩家的 UUID 可交由原生服務解析，offline-mode UUID 則保留預設呈現。
  */
 class ClientPlayerProfileResolver {
     /** 記錄皮膚載入失敗與逾時的 logger。 */
@@ -26,7 +26,7 @@ class ClientPlayerProfileResolver {
     @Volatile
     private var sessionGeneration: Long = 0
 
-    /** 已完成解析的有限 profile 快取；最久未使用的項目會先被移除。 */
+    /** 已完成解析的有限 profile 快取。最久未使用的項目會先被移除。 */
     private val resolved = object : LinkedHashMap<Uuid, GameProfile>(PROFILE_CACHE_LIMIT, 0.75f, true) {
         override fun removeEldestEntry(
             eldest: MutableMap.MutableEntry<Uuid, GameProfile>?,
@@ -43,7 +43,7 @@ class ClientPlayerProfileResolver {
         ): Boolean = size > SKIN_CACHE_LIMIT
     }
 
-    /** 原生 skin 載入時一併取得的有限披風材質快取；沒有披風的玩家不會出現在這裡。 */
+    /** 原生 skin 載入時一併取得的有限披風材質快取。沒有披風的玩家不會出現在這裡。 */
     private val capes = object : LinkedHashMap<Uuid, ResourceLocation>(SKIN_CACHE_LIMIT, 0.75f, true) {
         override fun removeEldestEntry(
             eldest: MutableMap.MutableEntry<Uuid, ResourceLocation>?,
@@ -60,15 +60,15 @@ class ClientPlayerProfileResolver {
      * 取得伺服器同步的最後已知 profile。
      *
      * @param playerId 玩家識別碼。
-     * @return 已快取的普通名稱與 UUID；尚未收到名稱時為 null。
+     * @return 已快取的普通名稱與 UUID。尚未收到名稱時為 null。
      */
     fun resolvedProfile(playerId: Uuid): GameProfile? = synchronized(resolved) { resolved[playerId] }
 
     /**
-     * 取得目前可用的 profile；線上資料優先於已完成的離線解析。
+     * 取得目前可用的 profile。線上資料優先於已完成的離線解析。
      *
      * @param playerId 玩家識別碼。
-     * @return 線上或已快取的 profile；尚未解析時為 null。
+     * @return 線上或已快取的 profile。尚未解析時為 null。
      */
     fun knownProfile(playerId: Uuid): GameProfile? = onlineProfile(playerId) ?: resolvedProfile(playerId)
 
@@ -100,7 +100,7 @@ class ClientPlayerProfileResolver {
      * 取得目前 player list 中的 profile。
      *
      * @param playerId 玩家識別碼。
-     * @return 線上玩家資料；玩家離線或尚未收到資料時為 null。
+     * @return 線上玩家資料。玩家離線或尚未收到資料時為 null。
      */
     fun onlineProfile(playerId: Uuid): GameProfile? = Minecraft.getInstance()
         .connection
@@ -111,7 +111,7 @@ class ClientPlayerProfileResolver {
      * 取得已解析 profile 的原生皮膚材質。
      *
      * @param playerId 玩家識別碼。
-     * @return 原生皮膚材質；尚未解析或材質不可用時為 null。
+     * @return 原生皮膚材質。尚未解析或材質不可用時為 null。
      */
     fun resolvedSkinTexture(playerId: Uuid): ResourceLocation? {
         val client = Minecraft.getInstance()
@@ -127,7 +127,7 @@ class ClientPlayerProfileResolver {
      * 取得已解析皮膚的手臂款式，與 [resolvedSkinTexture] 使用同一份皮膚。
      *
      * @param playerId 玩家識別碼。
-     * @return 原版模型名稱：細手臂為 `slim`，一般手臂為 `default`；皮膚尚未取得時為 null。
+     * @return 原版模型名稱：細手臂為 `slim`，一般手臂為 `default`。皮膚尚未取得時為 null。
      */
     fun resolvedSkinModel(playerId: Uuid): String? {
         Minecraft.getInstance().connection?.getPlayerInfo(playerId.toJavaUuid())?.let { return it.skinTextures().modelName }
@@ -135,10 +135,10 @@ class ClientPlayerProfileResolver {
     }
 
     /**
-     * 取得披風材質，與 [resolvedSkinTexture] 使用同一份皮膚資料；在線上時以玩家列表為準。
+     * 取得披風材質，與 [resolvedSkinTexture] 使用同一份皮膚資料。在線上時以玩家列表為準。
      *
      * @param playerId 玩家識別碼。
-     * @return 披風材質；玩家沒有披風或皮膚資料尚未取得時為 null。
+     * @return 披風材質。玩家沒有披風或皮膚資料尚未取得時為 null。
      */
     fun resolvedCapeTexture(playerId: Uuid): ResourceLocation? {
         Minecraft.getInstance().connection?.getPlayerInfo(playerId.toJavaUuid())?.let { return it.skinTextures().cape }
@@ -146,7 +146,7 @@ class ClientPlayerProfileResolver {
     }
 
     /**
-     * 對已知正版玩家 profile 啟動原生皮膚解析；名稱仍只使用伺服器提供的普通名稱。
+     * 對已知正版玩家 profile 啟動原生皮膚解析。名稱仍只使用伺服器提供的普通名稱。
      *
      * @param playerId 欲解析的正版玩家 UUID。
      */

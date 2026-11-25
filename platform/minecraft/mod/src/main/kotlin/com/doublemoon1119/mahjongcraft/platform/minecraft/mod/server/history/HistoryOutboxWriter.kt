@@ -60,18 +60,18 @@ import kotlin.time.TimeSource
 import kotlin.uuid.Uuid
 
 /**
- * 在獨立 I/O 協程中將權威 outbox 送入 SQLite；只在交易成功後確認已寫入的事件。
+ * 在獨立 I/O 協程中將權威 outbox 送入 SQLite。只在交易成功後確認已寫入的事件。
  *
  * @property store 權威待寫事件與精確確認的來源。
  * @param registries 歷史事件與 Replay 設定的擴充型別轉換表。
  * @property dispatchers 平台提供的 I/O dispatcher。
- * @param moduleRegistry 解析開局使用的規則模組；只交給封存服務。
- * @param locations 取得牌桌位置摘要；只交給封存服務。
- * @param presentationNotes 為牌譜每份桌況附上擺放附註的來源；只交給封存服務。
+ * @param moduleRegistry 解析開局使用的規則模組。只交給封存服務。
+ * @param locations 取得牌桌位置摘要。只交給封存服務。
+ * @param presentationNotes 為牌譜每份桌況附上擺放附註的來源。只交給封存服務。
  * @property configState 目前有效的不可變設定，供 session 初始化使用。
  * @property retentionCoordinator 將清理與有效政策更新排序的協調邊界。
- * @property observer 接收背景工作各環節耗時與寫入事件數；null 時不量測。
- * @param characterAppearance 從同場保存快照讀取角色描述；未提供的平台沒有角色外觀資料。
+ * @property observer 接收背景工作各環節耗時與寫入事件數。null 時不量測。
+ * @param characterAppearance 從同場保存快照讀取角色描述。未提供的平台沒有角色外觀資料。
  */
 class HistoryOutboxWriter(
     private val store: AuthoritativeStateStore,
@@ -100,7 +100,7 @@ class HistoryOutboxWriter(
     /** 共用唯讀 preview 與清理政策的 I/O 維護服務。 */
     private val retentionService = HistoryRetentionService(store)
 
-    /** 清理後磁碟用量是否在上限內；每個存檔 session 只在暫停或恢復記錄時記錄 log。 */
+    /** 清理後磁碟用量是否在上限內。每個存檔 session 只在暫停或恢復記錄時記錄 log。 */
     private val diskLimitTracker = HistoryDiskLimitTracker()
 
     /** 與啟動 log 及管理指令共用的統計組合邊界。 */
@@ -112,14 +112,14 @@ class HistoryOutboxWriter(
     /** 目前管理工作所屬協程，detach 時取消並等待其停止。 */
     @Volatile private var managementJob: Job? = null
 
-    /** 目前存檔 session 識別碼；重連不改變，切換存檔時失效。 */
+    /** 目前存檔 session 識別碼。重連不改變，切換存檔時失效。 */
     @Volatile var currentSessionId: Uuid? = null
         private set
 
-    /** 正式 session 所屬 server；無平台實例的測試為 null。 */
+    /** 正式 session 所屬 server。無平台實例的測試為 null。 */
     private var attachedServer: MinecraftServer? = null
 
-    /** 此 session 最後一份成功統計；失敗回覆須明示舊快照。 */
+    /** 此 session 最後一份成功統計。失敗回覆須明示舊快照。 */
     @Volatile private var cachedStorageSnapshot: HistoryStorageSnapshot? = null
 
     /** 最近一次統計嘗試的政策，失敗也記錄以避免每個 tick 重試。 */
@@ -134,11 +134,11 @@ class HistoryOutboxWriter(
     /** 保護資料庫連線與背景 worker 的 session 鎖。 */
     private val sessionMutex = Mutex()
 
-    /** 最近一次非預期寫入錯誤的安全摘要；資料庫無法開啟時說明原因。 */
+    /** 最近一次非預期寫入錯誤的安全摘要。資料庫無法開啟時說明原因。 */
     @Volatile var lastError: String? = null
         private set
 
-    /** 近期已結束場次的最小查詢證據；避免歷史狀態查詢依賴仍存在的 Game。 */
+    /** 近期已結束場次的最小查詢證據。避免歷史狀態查詢依賴仍存在的 Game。 */
     private val recentMatchEvidence = LinkedHashMap<String, RecentHistoryMatchEvidence>()
 
     /** 最近一次對帳已知的序號缺口。 */
@@ -151,7 +151,7 @@ class HistoryOutboxWriter(
     private var synchronizedStops: Map<String, String> = emptyMap()
 
     /**
-     * 上次與資料庫同步紀錄決定後的權威紀錄狀態；為 null 時下一次寫入前必須重新同步。
+     * 上次與資料庫同步紀錄決定後的權威紀錄狀態。為 null 時下一次寫入前必須重新同步。
      *
      * 同步的結果只取決於權威紀錄狀態與資料庫內容，資料庫只由本 writer 寫入，因此兩者都沒變時不必再查詢資料庫。
      */
@@ -164,15 +164,15 @@ class HistoryOutboxWriter(
     private var worker: Job? = null
 
     /**
-     * 開啟目前世界的資料庫；連線狀態不改變資格政策，失敗時待寫事件仍由有界佇列保留。
+     * 開啟目前世界的資料庫。連線狀態不改變資格政策，失敗時待寫事件仍由有界佇列保留。
      *
      * @param server 目前執行中的 Minecraft 伺服器。
-     * @return 成功開啟並完成對帳時為 true；失敗時暫停記錄，原因見 [lastError]。
+     * @return 成功開啟並完成對帳時為 true。失敗時暫停記錄，原因見 [lastError]。
      */
     suspend fun attach(server: MinecraftServer): Boolean = attachSession(HistoryDatabasePath.resolve(server), server)
 
     /**
-     * 驗證管理要求仍屬於同一存檔；null 只代表目前未綁定 session。
+     * 驗證管理要求仍屬於同一存檔。null 只代表目前未綁定 session。
      *
      * @param id 命令建立時捕捉的 session 識別碼。
      * @return 是否仍屬於目前 session。
@@ -184,7 +184,7 @@ class HistoryOutboxWriter(
      *
      * @param matchId 已結束場次識別碼。
      * @param participantIds 場次參與者 UUID。
-     * @param decision 該場權威記錄決策；已無決策證據時為 null。
+     * @param decision 該場權威記錄決策。已無決策證據時為 null。
      */
     internal fun rememberEndedMatch(matchId: Uuid, participantIds: Set<Uuid>, decision: HistoryRecordingDecision?) {
         synchronized(recentMatchEvidence) {
@@ -197,7 +197,7 @@ class HistoryOutboxWriter(
      * 取得最近結束場次的參與者與記錄決策。
      *
      * @param matchId 已結束場次識別碼。
-     * @return 記住的證據；未記住或已被較新場次擠出時為 null。
+     * @return 記住的證據。未記住或已被較新場次擠出時為 null。
      */
     internal fun recentEndedMatch(matchId: Uuid): RecentHistoryMatchEvidence? = synchronized(recentMatchEvidence) {
         recentMatchEvidence[matchId.toString()]
@@ -259,10 +259,10 @@ class HistoryOutboxWriter(
     suspend fun generationReceipt(matchIds: Set<Uuid>, sessionId: Uuid): HistoryManagementResult<HistoryGenerationReceipt> = manage(sessionId) { activeDatabase, _ -> activeDatabase.readGenerationReceipt(matchIds.mapTo(mutableSetOf()) { it.toString() }) }
 
     /**
-     * 在來源失敗時提交中止證據；資料庫失聯亦可保存，不修改其他 session。
+     * 在來源失敗時提交中止證據。資料庫失聯亦可保存，不修改其他 session。
      *
      * @param matchId 欲中止的來源場次。
-     * @param terminal 來源桌子與中止時間；完整旗標在此強制為 false。
+     * @param terminal 來源桌子與中止時間。完整旗標在此強制為 false。
      * @param sessionId 開始生成時固定的 session。
      */
     suspend fun abortGeneration(matchId: Uuid, terminal: HistoryRecordingTerminal, sessionId: Uuid) {
@@ -272,7 +272,7 @@ class HistoryOutboxWriter(
     }
 
     /**
-     * 非同步更新用量；未連線時不重新開庫，已有工作時不加入等待佇列。
+     * 非同步更新用量。未連線時不重新開庫，已有工作時不加入等待佇列。
      *
      * @param expectedSessionId 原要求所屬 session。
      * @return 新快照或安全的管理狀態。
@@ -301,7 +301,7 @@ class HistoryOutboxWriter(
     }
 
     /**
-     * 手動觸發同一保留政策；部分失敗仍回報已提交的刪除事實。
+     * 手動觸發同一保留政策。部分失敗仍回報已提交的刪除事實。
      *
      * @param expectedSessionId 原要求所屬 session。
      * @return 實際清理結果或附有部分結果的失敗。
@@ -373,7 +373,7 @@ class HistoryOutboxWriter(
      * @param access 由連線提供的可信身分。
      * @param request 已通過 Flow 驗證的要求。
      * @param sessionId 收到要求時捕捉的世界 session。
-     * @param participantIds 名稱篩選解析出的玩家 UUID；null 表示不限制名稱。
+     * @param participantIds 名稱篩選解析出的玩家 UUID。null 表示不限制名稱。
      * @return 同一政策 lease 下的有界資料庫結果。
      */
     internal suspend fun queryList(
@@ -546,7 +546,7 @@ class HistoryOutboxWriter(
     /**
      * 依權威記錄狀態與 SQLite 證據判定單場歷史保存狀態。
      *
-     * @param access 可信查詢身分；管理員只在目前政策允許時可查詢未參與場次。
+     * @param access 可信查詢身分。管理員只在目前政策允許時可查詢未參與場次。
      * @param matchId 欲查詢的對局識別碼。
      * @param sessionId 收到要求時捕捉的世界 session。
      * @return 不包含 Replay 內容或資料庫內部診斷的穩定狀態。
@@ -599,7 +599,7 @@ class HistoryOutboxWriter(
      *
      * @param expectedSessionId 原要求捕捉的 session。
      * @param operation 型別化的資料庫管理工作，不得重入此入口。
-     * @return 工作結果；例外只寫入內部 log，不傳送原始原因。
+     * @return 工作結果。例外只寫入內部 log，不傳送原始原因。
      */
     private suspend fun <T> manage(
         expectedSessionId: Uuid?,
@@ -635,7 +635,7 @@ class HistoryOutboxWriter(
     }
 
     /**
-     * 回報連線與權威待寫狀態；原始錯誤只供內部 log 使用。
+     * 回報連線與權威待寫狀態。原始錯誤只供內部 log 使用。
      *
      * @return 不包含路徑與 payload 的安全狀態摘要。
      */
@@ -655,7 +655,7 @@ class HistoryOutboxWriter(
      * 僅在斷線時重新開啟目前存檔的固定資料庫，不建立第二個 worker。
      *
      * @param server 目前執行中的 Minecraft 伺服器。
-     * @param expectedSessionId 指令建立時的 session；等待鎖期間切換存檔時拒絕操作。
+     * @param expectedSessionId 指令建立時的 session。等待鎖期間切換存檔時拒絕操作。
      * @return 重新連線、已連線或失敗結果。
      */
     suspend fun retry(server: MinecraftServer, expectedSessionId: Uuid? = currentSessionId): HistoryRetryResult = sessionMutex.withLock {
@@ -689,7 +689,7 @@ class HistoryOutboxWriter(
      * 初始化固定路徑與 session 身分，不沿用前一存檔的用量或工作。
      *
      * @param path 目前存檔的固定資料庫位置。
-     * @param server 正式 session 的平台實例；測試可為 null。
+     * @param server 正式 session 的平台實例。測試可為 null。
      */
     private suspend fun attachSession(path: Path, server: MinecraftServer?) = sessionMutex.withLock {
         check(currentSessionId == null && worker == null && database == null) { "History writer is already attached" }
@@ -711,7 +711,7 @@ class HistoryOutboxWriter(
     }
 
     /**
-     * 開啟、驗證並對帳；失敗時保留原資料與有效記錄政策，並暫停記錄新的歷史事件。
+     * 開啟、驗證並對帳。失敗時保留原資料與有效記錄政策，並暫停記錄新的歷史事件。
      *
      * @param path 歷史資料庫檔案位置。
      * @return 是否成功建立背景寫入 session。
@@ -816,7 +816,7 @@ class HistoryOutboxWriter(
         return true
     }
 
-    /** 停止背景工作並有界嘗試提交最後的待寫事件；未提交者仍留在世界存檔。 */
+    /** 停止背景工作並有界嘗試提交最後的待寫事件。未提交者仍留在世界存檔。 */
     suspend fun detach() = sessionMutex.withLock {
         currentSessionId = null
         synchronized(recentMatchEvidence) { recentMatchEvidence.clear() }
@@ -959,7 +959,7 @@ class HistoryOutboxWriter(
     /**
      * 對一份不可變快照提交最多一批，確認時只移除該批的穩定鍵。
      *
-     * 權威紀錄狀態與資料庫自上次同步後都沒變時不再同步；沒有待寫事件時不讀取資料庫，閒置時因此不執行任何查詢。
+     * 權威紀錄狀態與資料庫自上次同步後都沒變時不再同步。沒有待寫事件時不讀取資料庫，閒置時因此不執行任何查詢。
      *
      * @param activeDatabase 目前 session 的固定資料庫。
      * @return 是否成功提交至少一筆事件。

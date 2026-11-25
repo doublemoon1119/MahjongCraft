@@ -21,30 +21,30 @@ import kotlin.uuid.Uuid
  * @property players 參與遊戲的玩家列表。
  * @property config 當前遊戲的規則配置，包含物理參數與計分規則。
  * @property tileWall 當前仍可依一般摸牌流程取得的牌堆。支援開門布局時，規則保留牌已在初始化階段排除並
- * 另存於 [reservedWallTiles]；因此 [TileWall.remainingCount] 就是一般摸牌流程的剩餘張數，不得再次扣除
+ * 另存於 [reservedWallTiles]。因此 [TileWall.remainingCount] 就是一般摸牌流程的剩餘張數，不得再次扣除
  * [MahjongRuleConfig.reservedTileCount]。未支援開門布局的規則則由其初始化流程自行定義這個容器的內容。
- * @property dealerPlayerId 本局權威莊家 Uuid；莊家身分與自風彼此獨立。
+ * @property dealerPlayerId 本局權威莊家 Uuid。莊家身分與自風彼此獨立。
  * @property prevalentWind 當前的場風（圈風）。
  * @property roundNumber 當前的局數。
- * @property roundPosition 整場對局中的權威局位；既有場風與絕對局數欄位必須與它一致。
- * @property comboCount 連莊次數（日麻：本場數；台麻：連幾）。
+ * @property roundPosition 整場對局中的權威局位。既有場風與絕對局數欄位必須與它一致。
+ * @property comboCount 連莊次數（日麻：本場數。台麻：連幾）。
  * @property currentPlayerIndex 目前輪到執行動作的玩家索引。
- * @property turnPhase 一局目前所處的階段；流程依它判斷玩家可以做什麼。
- * @property wallOpening 本局權威擲骰決定的牌牆開門位置；規則尚未支援開門流程時為 null。
- * @property openingDiceRolls 本局完整擲骰記錄；規則不使用擲骰時為空清單。
+ * @property turnPhase 一局目前所處的階段。流程依它判斷玩家可以做什麼。
+ * @property wallOpening 本局權威擲骰決定的牌牆開門位置。規則尚未支援開門流程時為 null。
+ * @property openingDiceRolls 本局完整擲骰記錄。規則不使用擲骰時為空清單。
  * @property reservedWallTiles 目前不由一般 [tileWall] 摸牌流程取得、改由規則解讀用途與順序的保留牌。日麻將它
- * 解讀為王牌；其他規則可以維持連續牌牆、採用不同補牌語意或完全不使用保留牌。
- * @property physicalWallLayout 目前仍位於活牌區與規則保留區的權威抽象實體位置；不支援實體布局的規則為 null。
- * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合。供第三方規則實作
- * 「胡牌後本局可能不結束」的擴充（如持續胡牌局）；核心規則預設不會寫入這個集合，因此對現有
- * 規則永遠是空集合、行為不變。座位、分數、快照仍保留這些玩家；見 [isPlayerActive]、[activePlayers]、
- * [nextActivePlayerAfter]。
+ * 解讀為王牌。其他規則可以維持連續牌牆、採用不同補牌語意或完全不使用保留牌。
+ * @property physicalWallLayout 目前仍位於活牌區與規則保留區的權威抽象實體位置。不支援實體布局的規則為 null。
+ * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合。
+ *   - 供第三方規則實作胡牌後本局不結束的玩法，例如持續胡牌局。
+ *   - 內建規則不寫入這個集合，對它們永遠是空集合。
+ *   - 座位、分數、快照仍保留這些玩家。見 [isPlayerActive]、[activePlayers]、[nextActivePlayerAfter]。
  * @property publicTileEvidenceIds 本局曾明確對所有合法觀察者公開的牌張，不限目前所在區域。
- * 私人授權不能寫入此集合；牌移動或更換持有人不清除公共證據，換局才清空。
- * @property revealedHandSettlements 本局流局 resolver 第一次計算出的公開手牌與等待牌資料；呈現流程只讀這份結果，
+ * 私人授權不能寫入此集合。牌移動或更換持有人不清除公共證據，換局才清空。
+ * @property revealedHandSettlements 本局流局 resolver 第一次計算出的公開手牌與等待牌資料。呈現流程只讀這份結果，
  * 每局重新開始時為空集合。
- * @property roundSerial 這一局是本場對局開始的第幾局，從 `0` 起算；每開一局加一，連莊與流局重來的局也算。
- * @property discardOrder 本局全桌打出的牌，依打出先後排列；各家牌河中的每張牌（包含被鳴走的）都剛好出現一次，
+ * @property roundSerial 這一局是本場對局開始的第幾局，從 `0` 起算。每開一局加一，連莊與流局重來的局也算。
+ * @property discardOrder 本局全桌打出的牌，依打出先後排列。各家牌河中的每張牌（包含被鳴走的）都剛好出現一次，
  * 每局重新開始時為空清單。
  */
 data class TableState(
@@ -113,16 +113,16 @@ data class TableState(
         }
     }
 
-    /** 本局最後打出的牌；這張牌之後被鳴走或胡走仍是它，本局還沒有人打牌時為 null。 */
+    /** 本局最後打出的牌。這張牌之後被鳴走或胡走仍是它，本局還沒有人打牌時為 null。 */
     val lastDiscardTileId: Uuid? get() = discardOrder.lastOrNull()
 
     /** 獲取參與遊戲的總人數。 */
     val playerCount: Int get() = players.size
 
-    /** 目前尚待其他玩家回應（吃／碰／槓／過）的捨牌反應；不在這個階段時為 null。 */
+    /** 目前尚待其他玩家回應（吃／碰／槓／過）的捨牌反應。不在這個階段時為 null。 */
     val pendingReaction: PendingReaction? get() = (turnPhase as? TurnPhase.AwaitingDiscardReaction)?.reaction
 
-    /** 目前尚待其他玩家回應（搶和／過）的槓或移出手牌反應；不在這個階段時為 null。 */
+    /** 目前尚待其他玩家回應（搶和／過）的槓或移出手牌反應。不在這個階段時為 null。 */
     val pendingRobbingReaction: PendingRobbingReaction? get() = (turnPhase as? TurnPhase.AwaitingRobbingReaction)?.reaction
 
     /** 獲取目前輪到執行動作的玩家。 */
@@ -184,7 +184,7 @@ data class TableState(
      * 找出從 [afterPlayerId] 起算、下一位仍在本局中（未列入 [finishedPlayerIds]）的玩家。
      *
      * 與 [getNextPlayer] 的差異：[getNextPlayer] 回傳座位表上物理相鄰的下一位，不論其是否已完成
-     * 本局；此函式跳過 finished 玩家，用於決定「回合真正輪到誰」。座位相對方向（[relativeDirectionOf]）
+     * 本局。此函式跳過 finished 玩家，用於決定「回合真正輪到誰」。座位相對方向（[relativeDirectionOf]）
      * 與頭跳、供託候選順位（[playersInTurnOrderFrom]）仍應使用 [getNextPlayer] 那套完整座位順序，不應改用
      * 這個函式。
      *
@@ -210,13 +210,10 @@ data class TableState(
      * 依 [players] 目前的座位順序（即回合順序，與 [getNextPlayer] 使用同一套順序）計算
      * [toPlayerId] 相對於 [fromPlayerId] 的方位。
      *
-     * 座位順序中的下一位玩家（[getNextPlayer]）即為 [fromPlayerId] 的下家（[RelativeDirection.Right]）；
-     * 反之，順序中排在 [fromPlayerId] 前一位的玩家即為其上家（[RelativeDirection.Left]，
-     * 也是唯一合法的吃牌來源）。
-     *
-     * 判斷順序：先判斷是否為自己、上家、下家，其餘（僅四人桌可能出現）才是對家。這個順序在三人桌
-     * 這類 [playerCount] 較小的情境下格外重要——例如三人桌中「下一位」與「上一位」以外已經沒有
-     * 第三種座位關係，此時「差值 2」同時等於「playerCount - 1」，必須被判定為上家而非對家。
+     * - 座位順序中的下一位玩家（[getNextPlayer]）是 [fromPlayerId] 的下家（[RelativeDirection.Right]）。
+     * - 順序中排在 [fromPlayerId] 前一位的玩家是上家（[RelativeDirection.Left]），也是唯一合法的吃牌來源。
+     * - 依序判斷自己、上家、下家，其餘才是對家（只有四人桌會出現）。
+     * - 這個順序在三人桌很重要：差值 2 同時等於 `playerCount - 1`，必須判定為上家而不是對家。
      *
      * @param fromPlayerId 作為方位判斷基準的玩家 Uuid。
      * @param toPlayerId 欲判斷相對方位的玩家 Uuid。
@@ -276,11 +273,11 @@ data class TableState(
      * 套用已由 [MatchProgressionPolicy] 決定的局位變化與局間換位，以及本局保存的下一任莊家，不在此重新判斷終局。
      *
      * 過莊給下一位（[RoundTransitionDirective.PassToNextSeat]）依本局、也就是換位前的座位順序計算。換位只改變
-     * 下一局 `players` 的順序；玩家身分、分數與 [MahjongPlayer.initialSeatIndex] 都不變。
+     * 下一局 `players` 的順序。玩家身分、分數與 [MahjongPlayer.initialSeatIndex] 都不變。
      *
      * @param transition 局位變化。
-     * @param directive 本局結束時保存的下一任莊家；連莊必須搭配 [RoundTransitionDirective.RepeatDealer]，前進局位必須搭配過莊。
-     * @param seatOrder 下一局完整的座位順序；null 表示不換位。
+     * @param directive 本局結束時保存的下一任莊家。連莊必須搭配 [RoundTransitionDirective.RepeatDealer]，前進局位必須搭配過莊。
+     * @param seatOrder 下一局完整的座位順序。null 表示不換位。
      * @return 下一局初始化所需的權威資料。
      * @throws IllegalArgumentException 局位變化與下一任莊家矛盾、指定的莊家不在本桌或就是現任莊家，或座位順序不是本桌玩家的完整排列。
      */

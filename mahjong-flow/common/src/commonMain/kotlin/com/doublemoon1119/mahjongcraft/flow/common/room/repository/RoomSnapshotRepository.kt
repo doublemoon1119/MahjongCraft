@@ -43,7 +43,7 @@ interface RoomSnapshotRepository {
      * @param roomId 房間的 Uuid。
      * @param observerId 觀察者的 Uuid。
      * @param isStillValid 鎖內刪除前確認來源仍屬於這次工作的條件。
-     * @return 條件成立並完成這次移除時為 true；條件不成立時不修改資料並回傳 false。
+     * @return 條件成立並完成這次移除時為 true。條件不成立時不修改資料並回傳 false。
      */
     suspend fun removeSnapshotIf(
         roomId: Uuid,

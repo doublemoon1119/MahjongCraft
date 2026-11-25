@@ -28,7 +28,7 @@ class JarModuleLayoutTest {
         assertEquals(listOf("kotlinx/datetime/LocalDate.class"), entryNames(output))
     }
 
-    /** 同一個套件出現在 mod 與附帶的 JAR 時列出兩邊；只在 META-INF 的類別不算。 */
+    /** 同一個套件出現在 mod 與附帶的 JAR 時列出兩邊。只在 META-INF 的類別不算。 */
     @Test
     fun `reports packages shared between the mod and embedded jars`() = withDirectory { directory ->
         val modJar = directory.resolve("mod.jar")

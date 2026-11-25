@@ -29,7 +29,7 @@ object TaiwanFlowerReplacement {
      * @param tableState 公開前的桌況。
      * @param playerId 持有花牌的玩家。
      * @param flower 要公開的花牌。
-     * @return 更新後桌況；牌不在該玩家手中或不是花牌時為 null。
+     * @return 更新後桌況。牌不在該玩家手中或不是花牌時為 null。
      */
     fun reveal(
         tableState: TableState,
@@ -60,7 +60,7 @@ object TaiwanFlowerReplacement {
      * @param tableState 補牌前的桌況。
      * @param playerId 接收補牌的玩家。
      * @param replacementsRemaining 包含本次在內，這位玩家本輪尚待補入的張數。
-     * @return 補牌結果；已無合法補牌或玩家不存在時為 null。
+     * @return 補牌結果。已無合法補牌或玩家不存在時為 null。
      */
     fun supplement(
         tableState: TableState,

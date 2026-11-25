@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlaye
 import kotlinx.serialization.Serializable
 
 /**
- * [ThreePlayerRiichiRuleConfig] 的完整網路 DTO；人數、王牌張數等由規則固定的欄位只作為顯示用途傳送。
+ * [ThreePlayerRiichiRuleConfig] 的完整網路 DTO。人數、王牌張數等由規則固定的欄位只作為顯示用途傳送。
  *
  * @property initialHandSize 起始手牌張數。
  * @property reservedTileCount 規則保留區的牌張數。

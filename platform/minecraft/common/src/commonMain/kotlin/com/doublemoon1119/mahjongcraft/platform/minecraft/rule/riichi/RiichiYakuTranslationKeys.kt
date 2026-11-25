@@ -75,14 +75,14 @@ object RiichiYakuTranslationKeys {
     /** 取得指定役種的完整 translation key。 */
     fun keyFor(type: RiichiYakuType): String = KEYS.getValue(type)
 
-    /** 流局滿貫的役種名稱 key；流局滿貫不經過一般役種偵測流程，不屬於 [RiichiYakuType]。 */
+    /** 流局滿貫的役種名稱 key。流局滿貫不經過一般役種偵測流程，不屬於 [RiichiYakuType]。 */
     const val NAGASHI_MANGAN: String = "mahjongcraft.riichi.yaku.nagashi_mangan"
 
     /**
      * 取得胡牌詳情役種條目的名稱 key。
      *
      * @param entryId [RiichiWinSettlementIds] 定義的役種或流局滿貫條目 ID。
-     * @return 名稱 key；不是日麻役種條目時為 null。
+     * @return 名稱 key。不是日麻役種條目時為 null。
      */
     fun keyForEntry(entryId: String): String? = when (entryId) {
         RiichiWinSettlementIds.NAGASHI_MANGAN -> NAGASHI_MANGAN

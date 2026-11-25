@@ -7,7 +7,7 @@ import net.minecraft.network.chat.Component
  *
  * @property controlId 控制項識別碼。
  * @property label 本地化項目名稱。
- * @property description 本地化說明；沒有說明時為 null。
+ * @property description 本地化說明。沒有說明時為 null。
  * @property displayOrder 顯示排序值。
  */
 data class ResolvedAutomaticControlDisplay(

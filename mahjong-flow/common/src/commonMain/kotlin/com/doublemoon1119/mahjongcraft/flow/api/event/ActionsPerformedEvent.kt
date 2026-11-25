@@ -6,7 +6,7 @@ import kotlin.uuid.Uuid
 /**
  * 一批同一筆提交中已成立的公開遊戲動作。
  *
- * 一般摸牌不單獨產生事件；事件只包含需要讓訂閱者知道的成立動作。
+ * 一般摸牌不單獨產生事件。事件只包含需要讓訂閱者知道的成立動作。
  *
  * @property eventId 事件的唯一識別碼。
  * @property matchId 場次 UUID。

@@ -15,17 +15,15 @@ import net.minecraft.network.chat.Component
 /**
  * 將 [Tile] 轉成人類可讀的顯示文字，供對局指令的手牌列表、候選 tooltip 與回饋訊息共用。
  *
- * 放在 Minecraft 版本模組（而非 `platform/minecraft/common`）——`net.minecraft.network.chat.Component` 只在
- * 依賴實際 Minecraft 版本的模組才看得到，`platform/minecraft/common` 刻意不依賴任何版本的 Minecraft，
- * 比照 [PlayerFeedbackPublisher]「共用模型在 common、實際組 Text 在版本模組」的既有分工。
- *
- * [Tile.Extension] 查 [displayNameRegistry]（第三方規則模組可自行登記自己的擴充牌種）；查不到時 fallback
- * 顯示原始 [TileTypeId] 字串。帶外觀樣式的牌面（例如赤五）改用 [TileFaceView.toDisplayText]。
- *
- * 翻譯文字前面會依 [tileAssetRegistry] 解出的 asset key，查 [tileEmojiRegistry] 加上對應的牌面 emoji
- * 字元（要實際顯示成貼圖，還需要有人提供對應的 `assets/minecraft/font/default.json` bitmap
- * provider，例如 `platform/minecraft/common/src/jvmMain/resources` 內建的那份）；查不到對應 emoji
- * （例如未登記的第三方牌種）時只顯示純文字，不強行湊一個不存在的圖案。
+ * - 放在 Minecraft 版本模組，而非 `platform/minecraft/common`。`net.minecraft.network.chat.Component` 只在依賴實際
+ *   Minecraft 版本的模組才看得到，`platform/minecraft/common` 不依賴任何版本的 Minecraft。
+ *   這比照 [PlayerFeedbackPublisher] 的分工：共用模型在 common，實際組 Text 在版本模組。
+ * - [Tile.Extension] 查 [displayNameRegistry]，第三方規則模組可自行登記自己的擴充牌種。查不到時顯示原始 [TileTypeId] 字串。
+ * - 帶外觀樣式的牌面（例如赤五）改用 [TileFaceView.toDisplayText]。
+ * - 翻譯文字前面依 [tileAssetRegistry] 解出的 asset key，查 [tileEmojiRegistry] 加上牌面 emoji 字元。
+ *   要顯示成貼圖，還需要對應的 `assets/minecraft/font/default.json` bitmap provider，
+ *   例如 `platform/minecraft/common/src/jvmMain/resources` 內建的那份。
+ * - 查不到 emoji（例如未登記的第三方牌種）時只顯示純文字。
  *
  * @param displayNameRegistry 擴充牌種顯示名稱查詢來源。
  * @param tileAssetRegistry 牌種到貼圖資產鍵的轉換來源。
@@ -45,7 +43,7 @@ fun Tile.toDisplayText(
 /**
  * 將 [Tile] 轉成本地化牌名，不加牌面 emoji，例如滑鼠提示中的「3萬」。
  *
- * [Tile.Extension] 查 [displayNameRegistry]；查不到時顯示原始 [TileTypeId] 字串。
+ * [Tile.Extension] 查 [displayNameRegistry]。查不到時顯示原始 [TileTypeId] 字串。
  *
  * @param displayNameRegistry 擴充牌種顯示名稱查詢來源。
  * @return 本地化牌名。

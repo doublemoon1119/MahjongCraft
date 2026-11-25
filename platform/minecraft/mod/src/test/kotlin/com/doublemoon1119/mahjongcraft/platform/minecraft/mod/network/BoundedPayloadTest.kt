@@ -276,7 +276,7 @@ class BoundedPayloadTest {
         assertEquals(1, dispatches)
     }
 
-    /** 原生字串讀取會替換損壞的 UTF-8；本次保留該行為，不額外改變編碼政策。 */
+    /** 原生字串讀取會替換損壞的 UTF-8。本次保留該行為，不額外改變編碼政策。 */
     @Test
     fun `utf8 replacement matches native string decoding`() {
         val bytes = byteArrayOf(0x22, 0xC3.toByte(), 0x28, 0x22)
@@ -317,7 +317,7 @@ class BoundedPayloadTest {
          * 解碼時重新拋出測試指定的錯誤。
          *
          * @param decoder 本次測試不使用的解碼器。
-         * @return 不會回傳；固定拋出指定錯誤。
+         * @return 不會回傳。固定拋出指定錯誤。
          */
         override fun deserialize(decoder: Decoder): String = throw failure
 

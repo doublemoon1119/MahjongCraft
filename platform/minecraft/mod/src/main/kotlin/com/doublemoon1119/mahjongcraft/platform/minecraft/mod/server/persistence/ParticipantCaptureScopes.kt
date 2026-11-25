@@ -9,7 +9,7 @@ internal class ParticipantCaptureScopes {
     /** 只保護登記，不在持鎖時執行操作或等待協程。 */
     private val monitor = Any()
 
-    /** 使用中及等待中的房間；最後一位離開時移除。 */
+    /** 使用中及等待中的房間。最後一位離開時移除。 */
     private val entries = mutableMapOf<Uuid, Entry>()
 
     /**
@@ -29,11 +29,11 @@ internal class ParticipantCaptureScopes {
     }
 
     /**
-     * 不等待地執行刷新；已有開局或加入操作時留待下輪，不在權威鎖內等待另一把鎖。
+     * 不等待地執行刷新。已有開局或加入操作時留待下輪，不在權威鎖內等待另一把鎖。
      *
      * @param roomInstanceId 本次房間生命週期。
      * @param action 不會掛起的刷新操作。
-     * @return 操作結果；房間正忙碌時為 null。
+     * @return 操作結果。房間正忙碌時為 null。
      */
     fun <T : Any> tryWithScope(roomInstanceId: Uuid, action: () -> T): T? {
         val entry = retain(roomInstanceId)

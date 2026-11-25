@@ -14,26 +14,21 @@ import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import kotlin.uuid.Uuid
 
 /**
- * 套用榮和結算：更新贏家與放銃者（或包牌責任者）的分數、記錄各贏家的 [GameAction.Ron] 動作歷史、
- * 清除反應視窗。手牌到此結束，不套用任何副露、不標記捨牌已被鳴走、不推進 `currentPlayerIndex`、
- * 不清除一發（一發是否失效在手牌已結束的情況下沒有意義）——這些皆與碰/吃/槓的結算路徑不同。
+ * 套用榮和結算：更新贏家與放銃者（或包牌責任者）的分數、記錄各贏家的 [GameAction.Ron] 動作歷史、清除反應視窗。
  *
- * 從 [RespondToDiscardUseCase] 抽出的共用邏輯：一般捨牌榮和與搶槓榮和（[RespondToRobbingUseCase]）
- * 的結算方式完全相同，差異只在「誰扮演放銃者角色」（一般捨牌是真正的放銃者；搶槓則是暗槓/加槓的
- * 宣告者）與是否要額外計入搶槓役種，這兩者都已經是規則無關的參數，不需要各自重寫一份。
- *
- * `winnerIds` 可能不只一人（一炮多響、且規則設定為多家和時）：每位贏家各自呼叫
- * [MahjongRuleModule.declareRon] 獨立結算，再把所有結算金額加總到同一份分數異動——同一位玩家
- * 有可能同時是某人的贏家、又是另一人的包牌責任者，需要正確疊加而非互相覆蓋。
- *
- * 場上供託（如立直棒）與連莊點數（如本場）的歸屬交給規則的 [MahjongRuleModule.allocateSettlementExtras]：
- * 候選贏家依頭跳順位（從放銃者的下家起算）排列，規則可以只給最近的贏家、給每位贏家或自行分配。
+ * - 手牌到此結束。不套用副露、不標記捨牌已被鳴走、不推進 `currentPlayerIndex`、不清除一發，這些都與吃／碰／槓不同。
+ * - 一般捨牌榮和與搶槓榮和（[RespondToRobbingUseCase]）共用這段邏輯。差異只在誰是放銃者，以及是否計入搶槓役種：
+ *   一般捨牌是真正的放銃者，搶槓則是暗槓／加槓的宣告者。
+ * - `winnerIds` 可能不只一人（一炮多響且規則設定為多家和）。每位贏家各自呼叫 [MahjongRuleModule.declareRon] 獨立結算，
+ *   再把金額加總到同一份分數異動。同一位玩家可能同時是某人的贏家、又是另一人的包牌責任者，金額疊加而不覆蓋。
+ * - 場上供託（例如立直棒）與連莊點數（例如本場）的歸屬交給 [MahjongRuleModule.allocateSettlementExtras]。
+ *   候選贏家依頭跳順位（從放銃者的下家起算）排列，規則可以只給最近的贏家、給每位贏家或自行分配。
  */
 internal object RonSettlementResolver {
     /**
      * 榮和後桌況與每位贏家的完整算役結果。
      *
-     * @property tableState 榮和結算後的桌況；反應視窗是否清除由呼叫端決定。
+     * @property tableState 榮和結算後的桌況。反應視窗是否清除由呼叫端決定。
      * @property resolutions 各贏家的規則結算結果。
      */
     data class Result(val tableState: TableState, val resolutions: Map<Uuid, WinResolutionResult>)
@@ -41,7 +36,7 @@ internal object RonSettlementResolver {
     /**
      * @param state 目前的桌況（尚未套用本次榮和結算）。
      * @param players 目前的玩家列表（可能已套用本次回應者的過水/振聽等變化，尚未套用榮和結算）。
-     * @param discarderId 放銃者 Uuid（一般捨牌榮和為真正的放銃者；搶槓榮和為暗槓/加槓的宣告者）。
+     * @param discarderId 放銃者 Uuid（一般捨牌榮和為真正的放銃者。搶槓榮和為暗槓/加槓的宣告者）。
      * @param winningTile 被榮和的那張牌。
      * @param module 該對局採用的規則模組。
      * @param winnerIds 本次榮和的贏家 Uuid 集合。

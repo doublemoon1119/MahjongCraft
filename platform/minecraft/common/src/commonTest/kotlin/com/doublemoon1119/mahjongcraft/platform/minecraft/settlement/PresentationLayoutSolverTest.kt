@@ -366,7 +366,7 @@ class PresentationLayoutSolverTest {
     }
 
     /**
-     * 建立測試用的解算器；文字寬度以固定值回應，與字型無關。
+     * 建立測試用的解算器。文字寬度以固定值回應，與字型無關。
      *
      * @return 使用固定文字尺寸與測試 registry 的解算器。
      */

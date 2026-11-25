@@ -10,7 +10,7 @@ fun interface WinCelebrationRequestAdjuster {
      *
      * @param tableId 演出所屬的牌桌。
      * @param request 目前的演出請求。
-     * @return 調整後的請求；不調整時回傳原請求。
+     * @return 調整後的請求。不調整時回傳原請求。
      */
     fun adjust(tableId: Uuid, request: WinCelebrationRequest): WinCelebrationRequest
 }

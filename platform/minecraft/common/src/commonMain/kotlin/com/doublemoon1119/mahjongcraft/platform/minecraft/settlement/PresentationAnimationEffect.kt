@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
-/** renderer 支援的受控動畫效果；第三方不需要也不能提供任意 callback。 */
+/** renderer 支援的受控動畫效果。第三方不需要也不能提供任意 callback。 */
 sealed interface PresentationAnimationEffect {
     /**
      * 透明度淡入淡出。

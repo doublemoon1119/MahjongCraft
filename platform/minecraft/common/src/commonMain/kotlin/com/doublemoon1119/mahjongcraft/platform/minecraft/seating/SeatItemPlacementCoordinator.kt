@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.seating
 
 /**
- * 在同一角色的一次同步互動內，依序驗證、放置及入座；不回復已成功的物品放置。
+ * 在同一角色的一次同步互動內，依序驗證、放置及入座。不回復已成功的物品放置。
  *
  * @param K 此次接管的身分型別。
  */
@@ -14,7 +14,7 @@ class SeatItemPlacementCoordinator<K : Any> {
      *
      * @param key 角色接管身分。
      * @param valid 查詢本次互動是否仍有效且獲准。
-     * @param place 放置物品；成功時已完成正常耗材。
+     * @param place 放置物品。成功時已完成正常耗材。
      * @param seat 安排原角色入座。
      * @return 放置與入座的結果。
      */

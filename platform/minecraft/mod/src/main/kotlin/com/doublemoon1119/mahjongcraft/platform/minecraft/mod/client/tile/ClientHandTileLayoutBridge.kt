@@ -7,9 +7,9 @@ import net.minecraft.client.Minecraft
 import net.minecraft.world.phys.EntityHitResult
 import net.minecraft.world.phys.HitResult
 
-/** GameRenderer mixin 使用的靜態橋接；實際狀態仍由 Koin 管理的 controller 持有。 */
+/** GameRenderer mixin 使用的靜態橋接。實際狀態仍由 Koin 管理的 controller 持有。 */
 object ClientHandTileLayoutBridge {
-    /** 目前 client instance 的 controller；連線切換只清除內容，不替換 instance。 */
+    /** 目前 client instance 的 controller。連線切換只清除內容，不替換 instance。 */
     @Volatile
     private var controller: ClientHandTileLayoutController? = null
 
@@ -41,7 +41,7 @@ object ClientHandTileLayoutBridge {
     }
 
     /**
-     * 依本地顯示位置修正手牌命中；沒有位移時保留原版結果。
+     * 依本地顯示位置修正手牌命中。沒有位移時保留原版結果。
      *
      * @param client 目前客戶端。
      * @param original 原版視線選取結果。

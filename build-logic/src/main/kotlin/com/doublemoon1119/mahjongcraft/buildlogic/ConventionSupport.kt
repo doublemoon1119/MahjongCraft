@@ -36,7 +36,7 @@ internal fun Project.catalogVersion(alias: String): String = extensions.getByTyp
  *
  * @param toolchain 編譯與測試使用的 JDK toolchain 版本。
  * @param release 編譯輸出的 JVM bytecode release。
- * @param overrideDefaults 是否直接設定 release 與 jvmTarget；false 時以 convention 提供。
+ * @param overrideDefaults 是否直接設定 release 與 jvmTarget。false 時以 convention 提供。
  */
 internal fun Project.configureMultiplatformJvm(toolchain: Int, release: Int, overrideDefaults: Boolean) {
     extensions.configure<KotlinMultiplatformExtension> {
@@ -50,7 +50,7 @@ internal fun Project.configureMultiplatformJvm(toolchain: Int, release: Int, ove
  *
  * @param toolchain 編譯與測試使用的 JDK toolchain 版本。
  * @param release 編譯輸出的 JVM bytecode release。
- * @param overrideDefaults 是否直接設定 release 與 jvmTarget；false 時以 convention 提供。
+ * @param overrideDefaults 是否直接設定 release 與 jvmTarget。false 時以 convention 提供。
  */
 internal fun Project.configureKotlinJvm(toolchain: Int, release: Int, overrideDefaults: Boolean) {
     extensions.configure<KotlinJvmProjectExtension> {
@@ -64,7 +64,7 @@ internal fun Project.configureKotlinJvm(toolchain: Int, release: Int, overrideDe
  *
  * @param toolchain 測試 launcher 使用的 JDK toolchain 版本。
  * @param release Java 與 Kotlin 編譯輸出的 JVM bytecode release。
- * @param overrideDefaults 是否直接設定 release 與 jvmTarget；false 時以 convention 提供。
+ * @param overrideDefaults 是否直接設定 release 與 jvmTarget。false 時以 convention 提供。
  */
 private fun Project.configureCompilerTasks(toolchain: Int, release: Int, overrideDefaults: Boolean) {
     tasks.withType<JavaCompile>().configureEach {
@@ -132,7 +132,7 @@ internal fun Project.targetProvidedVersions(): Map<String, String> =
         ?: throw GradleException("$path belongs to several selected targets that provide different libraries at run time")
 
 /**
- * 把測試的工作目錄放在 build 目錄中；測試期間 Minecraft 的記錄檔等以相對路徑建立的檔案可由 clean 移除。
+ * 把測試的工作目錄放在 build 目錄中。測試期間 Minecraft 的記錄檔等以相對路徑建立的檔案可由 clean 移除。
  */
 internal fun Project.isolateTestRunDirectory() {
     tasks.withType<Test>().configureEach {

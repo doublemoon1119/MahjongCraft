@@ -5,10 +5,10 @@ import kotlin.uuid.Uuid
 /**
  * 同一房間生命週期內的成員來源與暫時排除資料。
  *
- * 開局與回房仍保留來源及排除資料；只有解散才結束這份資料的生命週期。
+ * 開局與回房仍保留來源及排除資料。只有解散才結束這份資料的生命週期。
  *
- * @property instanceId 這次房間的識別碼；同一場地重新建房會使用另一個值。
- * @property memberIdentities 非預設來源的成員身分；真人未列入時使用玩家身分。
+ * @property instanceId 這次房間的識別碼。同一場地重新建房會使用另一個值。
+ * @property memberIdentities 非預設來源的成員身分。真人未列入時使用玩家身分。
  * @property excludedParticipants 已排除的來源身分與上一次成員編號，供房主辨識及解除。
  */
 data class RoomAdmissionState(

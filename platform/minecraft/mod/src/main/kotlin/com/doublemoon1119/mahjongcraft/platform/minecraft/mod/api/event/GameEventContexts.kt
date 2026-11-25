@@ -9,7 +9,7 @@ object GameEventContexts {
     /**
      * 取得事件產生時所屬的 Minecraft server。
      *
-     * 情境只在產生它的伺服器 session 仍然有效時可轉換；換世界或伺服器停止後會拒絕，避免第三方
+     * 情境只在產生它的伺服器 session 仍然有效時可轉換。換世界或伺服器停止後會拒絕，避免第三方
      * 把舊事件誤用到新的 server。
      *
      * @param context 要驗證並轉換的事件情境。
@@ -27,9 +27,9 @@ object GameEventContexts {
     }
 
     /**
-     * 安裝目前 session 的轉換綁定；只由伺服器 session 的生命週期呼叫。
+     * 安裝目前 session 的轉換綁定。只由伺服器 session 的生命週期呼叫。
      *
-     * @param serverProvider 取得此 session 所屬的伺服器；不得改為動態查詢另一個 session。
+     * @param serverProvider 取得此 session 所屬的伺服器。不得改為動態查詢另一個 session。
      * @param isValid 驗證情境是否仍屬於有效 session。
      */
     @JvmSynthetic
@@ -40,7 +40,7 @@ object GameEventContexts {
         activeBinding.set(Binding(serverProvider, isValid))
     }
 
-    /** 清除目前 session 的轉換綁定；只由伺服器 session 的生命週期呼叫。 */
+    /** 清除目前 session 的轉換綁定。只由伺服器 session 的生命週期呼叫。 */
     @JvmSynthetic
     internal fun clear() {
         activeBinding.set(null)

@@ -23,7 +23,7 @@ import kotlin.test.assertEquals
 
 /** 驗證牌譜呈現使用與觀察者快照相同的解算：外觀、公開特徵、姿態與知道牌面的讀取者。 */
 class HistoryTilePresentationResolverImplTest {
-    /** 手牌中的赤五只有持有者知道，帶赤五外觀與赤寶牌特徵；捨牌全體公開；暗槓兩端朝下。 */
+    /** 手牌中的赤五只有持有者知道，帶赤五外觀與赤寶牌特徵。捨牌全體公開。暗槓兩端朝下。 */
     @Test
     fun `presentation follows the resolved components of every area`() {
         val owner = FakeMahjongPlayerFactory.create().id

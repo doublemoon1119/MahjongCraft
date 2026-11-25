@@ -63,7 +63,7 @@ class ObserverSnapshotBroadcasterSourceReplacementTest {
         private val store: AuthoritativeStateStore,
         private val delegate: GameVisibilityPolicy,
     ) : GameVisibilityPolicy {
-        /** 下一次產生快照時要被替換的對局；替換一次後清除。 */
+        /** 下一次產生快照時要被替換的對局。替換一次後清除。 */
         var replaceOnSnapshot: Game? = null
 
         override fun snapshotFor(game: Game, observerId: Uuid): TableStateSnapshot {
@@ -81,7 +81,7 @@ class ObserverSnapshotBroadcasterSourceReplacementTest {
         override fun publicTileFaces(tableState: TableState, tileIds: Collection<Uuid>): Map<Uuid, TileFaceView> = delegate.publicTileFaces(tableState, tileIds)
     }
 
-    /** 來源在記錄前被替換時不記錄該次內容；下一輪即使內容相同也會送出。 */
+    /** 來源在記錄前被替換時不記錄該次內容。下一輪即使內容相同也會送出。 */
     @Test
     fun `a snapshot skipped for a replaced source is sent on the next broadcast`() = runTest {
         val store = AuthoritativeStateStore()
@@ -117,7 +117,7 @@ class ObserverSnapshotBroadcasterSourceReplacementTest {
     /**
      * 建立由房主控制、含兩名玩家的測試對局。
      *
-     * @param secondPlayerId 第二名玩家的識別碼；不同的值讓觀察者看到不同內容。
+     * @param secondPlayerId 第二名玩家的識別碼。不同的值讓觀察者看到不同內容。
      * @return 以測試場地 ID 建立的對局。
      */
     private fun game(secondPlayerId: Uuid) = Game(

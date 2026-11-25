@@ -22,7 +22,7 @@ class GameAdvanceRotationTest {
         assertEquals(games.size, perTick.flatten().size)
     }
 
-    /** 已結束的對局釋放位置、不再推進；新對局分到空出來的位置。 */
+    /** 已結束的對局釋放位置、不再推進。新對局分到空出來的位置。 */
     @Test
     fun `ended games release their slot`() {
         val rotation = GameAdvanceRotation(CYCLE)
@@ -55,7 +55,7 @@ class GameAdvanceRotationTest {
         assertFalse(removed in following)
     }
 
-    /** 處理工作等待超過一整個週期時每局只保留一次待推進；恢復後每 tick 推進的局數不超過上限，依序逐步消化。 */
+    /** 處理工作等待超過一整個週期時每局只保留一次待推進。恢復後每 tick 推進的局數不超過上限，依序逐步消化。 */
     @Test
     fun `long waits keep one pending advance per game and catch up gradually`() {
         val rotation = GameAdvanceRotation(CYCLE)
@@ -86,7 +86,7 @@ class GameAdvanceRotationTest {
         assertEquals(listOf(games[0], games[2]), rotation.takeDue())
     }
 
-    /** 全域處理每個週期到期一次；延後完成時維持到期，完成後重新計算。 */
+    /** 全域處理每個週期到期一次。延後完成時維持到期，完成後重新計算。 */
     @Test
     fun `global work is due once per cycle`() {
         val rotation = GameAdvanceRotation(CYCLE)

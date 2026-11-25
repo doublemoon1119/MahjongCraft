@@ -17,22 +17,29 @@ import kotlinx.coroutines.launch
 /**
  * 以 Minecraft server tick 驅動權威決策逾時、自動操作心跳與時間同步的 adapter。
  *
- * 各對局的自動推進經由 [GameAdvanceRotation] 分散到一秒內的各個 tick：每局每秒請求推進一次，但不同對局在不同 tick 請求，
- * 避免所有對局擠在同一個 tick。推進本身由 [AutomatedAdvanceManager] 在各局自己的協程中進行，這裡只請求、不等待，因此
- * AI 決策期間其他對局與全域處理照常進行。暫停 busy 桌、決策逾時與倒數同步仍是每秒一次的全域處理：先暫停所有 busy 桌，
- * 再判定逾時，最後同步倒數。逾時已請求推進的對局不在同一輪重複請求。每個 tick 的處理見 [DecisionTickProcessor]。
+ * 每局的推進：
  *
- * 每局請求推進前只檢查呈現是否忙碌與是否已在推進，不另外重新計時或同步倒數，因此每局每秒的權威狀態更新與倒數封包次數不變。
+ * - 經由 [GameAdvanceRotation] 分散到一秒內的各個 tick。每局每秒請求推進一次，不同對局在不同 tick 請求，避免擠在同一個 tick。
+ * - 推進本身由 [AutomatedAdvanceManager] 在各局自己的協程中進行。這裡只請求、不等待，AI 決策期間其他對局與全域處理照常進行。
+ * - 請求推進前只檢查呈現是否忙碌與是否已在推進，不另外重新計時或同步倒數，因此每局每秒的權威狀態更新與倒數封包次數不變。
+ *
+ * 每秒一次的全域處理：
+ *
+ * 1. 暫停所有 busy 桌。
+ * 2. 判定逾時。逾時已請求推進的對局不在同一輪重複請求。
+ * 3. 同步倒數。
+ *
+ * 每個 tick 的處理見 [DecisionTickProcessor]。
  *
  * @property appScope 將工作綁定目前 server session。
  * @property dispatchers 確保計時工作在 server thread 執行。
- * @property failurePolicy 判斷每 tick 處理中丟出的失敗能否記錄後等下個 tick 重試；無法隔離的失敗原樣往外傳。
+ * @property failurePolicy 判斷每 tick 處理中丟出的失敗能否記錄後等下個 tick 重試。無法隔離的失敗原樣往外傳。
  * @param availabilityService 在逾時判定前先暫停 busy 桌，並在閒置後恢復決策。
  * @param timeoutService 執行與平台無關的逾時政策。
  * @param gameRepository 用於列出所有進行中對局，供心跳巡邏使用。
  * @param advanceManager 請求推進各對局的自動操作，並查詢對局是否已在推進。
  * @param synchronizationService 每秒同步一次所有真人決策者的權威時間。
- * @param busyGate 判斷對局是否仍在播放呈現；播放中的對局這一輪不推進。
+ * @param busyGate 判斷對局是否仍在播放呈現。播放中的對局這一輪不推進。
  */
 class DecisionTimerScheduler(
     private val appScope: AppCoroutineScope,
@@ -60,7 +67,7 @@ class DecisionTimerScheduler(
         synchronizeAll = { synchronizationService.synchronizeAll() },
     )
 
-    /** 避免上一輪尚未完成時重複啟動處理；處理中的 tick 只標記待推進。 */
+    /** 避免上一輪尚未完成時重複啟動處理。處理中的 tick 只標記待推進。 */
     private var isProcessing = false
 
     /**
@@ -92,7 +99,7 @@ class DecisionTimerScheduler(
     }
 
     private companion object {
-        /** Minecraft 正常運行時每秒的 server tick 數；每局每秒推進一次，全域處理每秒一次。 */
+        /** Minecraft 正常運行時每秒的 server tick 數。每局每秒推進一次，全域處理每秒一次。 */
         const val TICKS_PER_SECOND = 20
     }
 }

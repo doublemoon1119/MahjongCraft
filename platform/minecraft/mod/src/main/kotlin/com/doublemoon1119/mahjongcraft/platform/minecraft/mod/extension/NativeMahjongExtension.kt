@@ -28,7 +28,7 @@ interface NativeMahjongExtension {
     /**
      * 登記規則桌面物件種類，說明描述裡的種類識別碼要生成哪種 entity、如何找回既有的 entity。
      *
-     * 預設不登記；只使用內建種類的 extension 不必實作。
+     * 預設不登記。只使用內建種類的 extension 不必實作。
      *
      * @param registry 桌面物件種類 registry。
      */
@@ -37,21 +37,21 @@ interface NativeMahjongExtension {
     /**
      * 登記此 Minecraft 版本可解析的座位 provider。
      *
-     * 預設不登記；只使用內建座位 provider 的 extension 不必實作。
+     * 預設不登記。只使用內建座位 provider 的 extension 不必實作。
      *
      * @param registry 座位 provider registry。
      */
     fun registerSeatProviders(registry: SeatProviderRegistrar) = Unit
 
     /**
-     * 登記世界角色能力；第三方不需要接觸 MahjongCraft 的依賴注入。
+     * 登記世界角色能力。第三方不需要接觸 MahjongCraft 的依賴注入。
      *
      * @param registry 初始化期間可寫入的角色能力登記入口。
      */
     fun registerAiCharacterCapabilities(registry: AiCharacterCapabilityRegistrar) = Unit
 
     /**
-     * 登記物品如何在 AI 的固定席位放置座位；不代替已有座位的解析。
+     * 登記物品如何在 AI 的固定席位放置座位。不代替已有座位的解析。
      *
      * @param registry 初始化期間的座位放置能力登記入口。
      */

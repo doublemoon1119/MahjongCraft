@@ -15,7 +15,7 @@ internal object TaiwanDiscardRestriction {
      * 計算可以打出的牌。
      *
      * @param player 即將捨牌的玩家。
-     * @return 可以打出的牌；不限制時為 null。
+     * @return 可以打出的牌。不限制時為 null。
      */
     fun discardableTileIds(player: MahjongPlayer): Set<Uuid>? {
         val hand = player.hand

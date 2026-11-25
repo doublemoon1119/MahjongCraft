@@ -34,25 +34,28 @@ import kotlin.uuid.Uuid
 /**
  * 宣告暗槓（[GameAction.KanType.CLOSED_KAN]）或加槓（[GameAction.KanType.ADDED_KAN]）的實例化用例。
  *
- * 是否合法完全交給該規則模組自己的 `LegalActionValidator`——這裡不重新實作暗槓/加槓的偵測邏輯
- * （含立直後暗槓「不能改變聽牌」的限制），理由與 [DeclareRiichiUseCase]、
- * [DeclareAbortiveDrawUseCase] 相同。合法性確認後，先檢查有沒有其他玩家可以搶槓
- * （是否允許搶槓以及哪些和牌形能搶，完全由規則模組的合法動作判定器決定）：
- * 有人可以搶時開一次反應視窗（[TableState.pendingRobbingReaction]，副露暫緩套用，交給
- * [RespondToRobbingUseCase] 解析）；沒人可以搶時直接套用（[SelfDeclarationApplier]）。多位玩家同時
- * 可搶時（罕見），依 [MahjongRuleConfig.multiRonPolicy] 決定實際開放
- * 給誰，與一般捨牌榮和共用同一套判定（見 [DiscardReactionResolver]）；判定為途中流局時，這次
- * 加槓視為未成立，不開反應視窗、不套用副露。
+ * 合法性與搶槓：
  *
- * 套用副露後依序記錄 [GameAction.Kan] 與規則的即時收付，再由 [MahjongRuleModule.createSupplementalDrawPolicy]
- * 決定是否補牌、補牌來源及牌牆變化，公開牌則由規則的牌牆公開 policy 決定。若規則補牌成功，
- * Flow 會記錄 [GameAction.Draw]，補到的牌再交給 [DrawFollowUpApplier] 依規則自動處理；
- * 規則層可依動作歷史判斷其專屬役種或狀態。
+ * - 是否合法交給規則模組自己的 `LegalActionValidator`。這裡不重新實作暗槓／加槓的偵測邏輯
+ *   （含立直後暗槓不能改變聽牌的限制），理由與 [DeclareRiichiUseCase]、[DeclareAbortiveDrawUseCase] 相同。
+ * - 合法性確認後，先檢查有沒有其他玩家可以搶槓。是否允許搶槓以及哪些和牌形能搶，由規則模組的合法動作判定器決定。
+ * - 有人可以搶時開一次反應視窗（[TableState.pendingRobbingReaction]），副露暫緩套用，交給 [RespondToRobbingUseCase] 解析。
+ * - 沒人可以搶時直接套用（[SelfDeclarationApplier]）。
+ * - 多位玩家同時可搶時，依 [MahjongRuleConfig.multiRonPolicy] 決定實際開放給誰，與一般捨牌榮和共用同一套判定
+ *   （見 [DiscardReactionResolver]）。判定為途中流局時，這次加槓視為未成立，不開反應視窗、不套用副露。
  *
- * 暗槓與加槓都不是鳴取他家捨牌，不呼叫 [MahjongRuleModule.beforeDiscardClaimed]；加槓沿用
- * `Hand.upgradeToAddedKan` 保留的原碰副露來源方位。
+ * 套用副露之後：
  *
- * 明牌（[GameAction.KanType.OPEN_KAN]，反應別人的捨牌）不在本用例範圍內，走 [RespondToDiscardUseCase]。
+ * 1. 依序記錄 [GameAction.Kan] 與規則的即時收付。
+ * 2. [MahjongRuleModule.createSupplementalDrawPolicy] 決定是否補牌、補牌來源及牌牆變化。公開牌由規則的牌牆公開 policy 決定。
+ * 3. 規則補牌成功時，Flow 記錄 [GameAction.Draw]，補到的牌再交給 [DrawFollowUpApplier] 依規則自動處理。
+ *
+ * 其他：
+ *
+ * - 規則層可依動作歷史判斷其專屬役種或狀態。
+ * - 暗槓與加槓都不是鳴取他家捨牌，不呼叫 [MahjongRuleModule.beforeDiscardClaimed]。
+ * - 加槓沿用 `Hand.upgradeToAddedKan` 保留的原碰副露來源方位。
+ * - 明槓（[GameAction.KanType.OPEN_KAN]，反應別人的捨牌）不在本用例範圍內，走 [RespondToDiscardUseCase]。
  *
  * @property componentRegistry 正式組件定義與純效果來源。
  * @property gameRepository 權威對局數據倉庫。
@@ -75,7 +78,7 @@ class DeclareKanUseCase(
      * @param gameId 對局 Uuid。
      * @param playerId 發起宣告的玩家 Uuid。
      * @param kanType 欲宣告的槓牌種類（僅支援 [GameAction.KanType.CLOSED_KAN]／[GameAction.KanType.ADDED_KAN]）。
-     * @param tileId 合法槓牌候選中作為觸發牌的唯一識別碼；暗槓候選可位於既有立牌中。
+     * @param tileId 合法槓牌候選中作為觸發牌的唯一識別碼。暗槓候選可位於既有立牌中。
      * @return 宣告結果，成功時為 [Unit]，失敗時為 [GameError]。
      */
     suspend operator fun invoke(
@@ -291,11 +294,11 @@ class DeclareKanUseCase(
      * @property tableState 此次原子更新後的權威桌況。
      * @property kanAction 規則判定成立的槓動作。
      * @property applied 槓是否已成立並套用。
-     * @property drawnTiles 槓成立後補到的牌；沒有補牌時為空清單。
-     * @property scoring 槓成立當下的點數收付；沒有成立或不收付時為 null。
-     * @property followUp 補牌之後的自動處理；沒有補牌時為 null。
-     * @property abortiveDrawReason 搶槓多響成立的途中流局原因；未發生時為 null。
-     * @property steps 依序呈現的步驟；開啟搶槓反應視窗時只有槓已移入副露、尚未補牌的候選桌況。
+     * @property drawnTiles 槓成立後補到的牌。沒有補牌時為空清單。
+     * @property scoring 槓成立當下的點數收付。沒有成立或不收付時為 null。
+     * @property followUp 補牌之後的自動處理。沒有補牌時為 null。
+     * @property abortiveDrawReason 搶槓多響成立的途中流局原因。未發生時為 null。
+     * @property steps 依序呈現的步驟。開啟搶槓反應視窗時只有槓已移入副露、尚未補牌的候選桌況。
      */
     private data class KanResult(
         val tableState: TableState,

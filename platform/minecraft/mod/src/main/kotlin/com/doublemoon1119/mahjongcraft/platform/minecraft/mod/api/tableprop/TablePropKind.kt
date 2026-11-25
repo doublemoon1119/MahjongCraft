@@ -25,7 +25,7 @@ interface TablePropKind {
      * 讀取實體保存的規則物件 ID。
      *
      * @param entity 要辨識的實體。
-     * @return 穩定 ID；無法辨識時為 null，交由同步移除。
+     * @return 穩定 ID。無法辨識時為 null，交由同步移除。
      */
     fun placementIdOf(entity: Entity): String?
 
@@ -33,7 +33,7 @@ interface TablePropKind {
      * 讀取物件建立時所屬規則，不用目前場景的規則補造既有物件資料。
      *
      * @param entity 要辨識的實體。
-     * @return 已保存的規則 ID；無法辨識時為 null。
+     * @return 已保存的規則 ID。無法辨識時為 null。
      */
     fun ruleModuleIdOf(entity: Entity): String?
 
@@ -53,17 +53,17 @@ interface TablePropKind {
      * 讀取實體保存的型別化公開內容。
      *
      * @param entity 要辨識的實體。
-     * @return 可辨識內容；資料不完整時為 null。
+     * @return 可辨識內容。資料不完整時為 null。
      */
     fun contentOf(entity: Entity): TablePropContent?
 
     /**
      * 建立一個擺在 [target] 落點、標記給指定桌子的新 entity，尚未加入世界。
      *
-     * 只能準備物件，不得自行生成、改動權威狀態或發布其他副作用；失敗前配置的外部資源由種類自行釋放。
+     * 只能準備物件，不得自行生成、改動權威狀態或發布其他副作用。失敗前配置的外部資源由種類自行釋放。
      * 將穩定 ID 和內容寫入可重建的實體保存資料，讓重載後的同步能找回同一物件。
      *
-     * @return 新 entity；無法建立已通過共用驗證的內容時回傳 null。
+     * @return 新 entity。無法建立已通過共用驗證的內容時回傳 null。
      * @param world 用來建立 entity 的伺服器世界。
      * @param tableId 要管理新 entity 的桌子 UUID。
      * @param target 物件種類、變體與落點。

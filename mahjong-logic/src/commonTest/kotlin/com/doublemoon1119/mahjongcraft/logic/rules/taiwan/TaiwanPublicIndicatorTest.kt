@@ -12,7 +12,7 @@ class TaiwanPublicIndicatorTest {
     /** 標示由規則模組提供。 */
     private val module = TaiwanRuleModule(id = "mahjongcraft:taiwan", config = TaiwanRuleConfig())
 
-    /** 連莊一次以上時只有莊家帶連莊次數；初莊時沒有。 */
+    /** 連莊一次以上時只有莊家帶連莊次數。初莊時沒有。 */
     @Test
     fun `only a dealer with a streak shows the streak count`() {
         val (dealer, other) = List(2) { FakeMahjongPlayerFactory.create() }

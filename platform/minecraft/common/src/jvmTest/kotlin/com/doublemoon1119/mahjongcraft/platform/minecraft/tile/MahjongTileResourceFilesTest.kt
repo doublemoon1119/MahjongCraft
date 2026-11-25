@@ -51,7 +51,7 @@ class MahjongTileResourceFilesTest {
 
     /** 驗證牌面及共用牌體貼圖維持模型 UV 所依賴的像素尺寸。 */
     /**
-     * 每種標準牌面都有尺寸相同的透明版貼圖與平面預覽貼圖，透明牌身與一般牌身尺寸相同；新增或改動標準牌面後須以
+     * 每種標準牌面都有尺寸相同的透明版貼圖與平面預覽貼圖，透明牌身與一般牌身尺寸相同。新增或改動標準牌面後須以
      * Gradle 任務 `generateTransparentTileTextures` 重新產生。
      */
     @Test

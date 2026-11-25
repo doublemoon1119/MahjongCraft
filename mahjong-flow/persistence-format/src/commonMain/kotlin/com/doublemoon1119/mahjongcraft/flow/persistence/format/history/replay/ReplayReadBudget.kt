@@ -9,7 +9,7 @@ import kotlinx.serialization.json.JsonPrimitive
  * 讀取 Replay 時集中執行資源上限與取消檢查的內部記帳器。
  *
  * @property limits 每次獨立讀取的資源上限。
- * @property checkCancellation 檢查執行作業是否已取消；取消例外直接傳播。
+ * @property checkCancellation 檢查執行作業是否已取消。取消例外直接傳播。
  */
 internal class ReplayReadBudget(
     internal val limits: ReplayReadLimits,
@@ -81,7 +81,7 @@ internal class ReplayReadBudget(
     }
 
     /**
-     * 驗證投影 JSON 的存活節點與深度；既有字串不重複記為展開配置。
+     * 驗證投影 JSON 的存活節點與深度。既有字串不重複記為展開配置。
      *
      * @param element 待檢查的投影 JSON 樹。
      */

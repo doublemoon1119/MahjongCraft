@@ -52,7 +52,7 @@ class ExampleActorEntity(type: EntityType<out ArmorStand>, world: Level) : Armor
     /** 讓世界人偶接受正常指向互動，供座位物品及命名牌使用。 */
     override fun isPickable(): Boolean = !isRemoved
 
-    /** 不提供裝備編輯；命名牌仍可沿物品的互動流程命名。 */
+    /** 不提供裝備編輯。命名牌仍可沿物品的互動流程命名。 */
     override fun interactAt(
         player: Player,
         hitPos: Vec3,

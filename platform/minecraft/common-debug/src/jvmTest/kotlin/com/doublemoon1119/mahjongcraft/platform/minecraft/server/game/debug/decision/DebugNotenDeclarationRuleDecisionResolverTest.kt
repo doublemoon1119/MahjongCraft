@@ -33,7 +33,7 @@ class DebugNotenDeclarationRuleDecisionResolverTest {
         config = DebugNotenDeclarationRiichiRuleConfig(RiichiRuleConfig()),
     )
 
-    /** 一般流局結算前只詢問沒有立直的聽牌玩家；已立直與不聽的玩家不參與。 */
+    /** 一般流局結算前只詢問沒有立直的聽牌玩家。已立直與不聽的玩家不參與。 */
     @Test
     fun `only tenpai players without riichi choose before the exhaustive draw`() {
         val state = state()
@@ -58,7 +58,7 @@ class DebugNotenDeclarationRuleDecisionResolverTest {
         assertNull(resolver.begin(RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW, state, module))
     }
 
-    /** 本局結算後請所有玩家確認；開局與胡牌後繼續本局不開啟選擇。 */
+    /** 本局結算後請所有玩家確認。開局與胡牌後繼續本局不開啟選擇。 */
     @Test
     fun `every player confirms after the round and no other timing opens a choice`() {
         val state = state()
@@ -70,7 +70,7 @@ class DebugNotenDeclarationRuleDecisionResolverTest {
         assertNull(resolver.begin(RuleDecisionTiming.WIN_CONTINUES, state, module))
     }
 
-    /** 只有選擇宣告不聽的玩家記錄宣告；逾時或 AI 沒有選擇時預設公開聽牌。 */
+    /** 只有選擇宣告不聽的玩家記錄宣告。逾時或 AI 沒有選擇時預設公開聽牌。 */
     @Test
     fun `only a noten choice is recorded and revealing is the default`() {
         val state = state()
@@ -116,7 +116,7 @@ class DebugNotenDeclarationRuleDecisionResolverTest {
     )
 
     /**
-     * 十三張萬子立牌 1112345678999m；加入任一種萬子都能和牌。
+     * 十三張萬子立牌 1112345678999m。加入任一種萬子都能和牌。
      *
      * @return 聽牌的手牌。
      */

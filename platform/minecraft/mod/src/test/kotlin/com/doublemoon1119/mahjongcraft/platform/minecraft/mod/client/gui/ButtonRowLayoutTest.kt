@@ -17,7 +17,7 @@ class ButtonRowLayoutTest {
         assertEquals(12 + 456, layout.buttonX(3) + layout.buttonWidth(3))
     }
 
-    /** 寬度無法整除時按鈕寬度最多相差一像素，彼此不重疊，仍橫跨整個寬度；任意顆數都成立。 */
+    /** 寬度無法整除時按鈕寬度最多相差一像素，彼此不重疊，仍橫跨整個寬度。任意顆數都成立。 */
     @Test
     fun `leftover pixels go to the first buttons for any button count`() {
         (1..6).forEach { count ->

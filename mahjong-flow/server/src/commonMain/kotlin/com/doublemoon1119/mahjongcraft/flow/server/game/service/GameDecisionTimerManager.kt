@@ -22,7 +22,7 @@ import kotlin.uuid.Uuid
  * @property gameRepository 權威遊戲狀態倉庫。
  * @property authorityResolver 解析目前具有決策權的玩家與階段。
  * @property timerFactory 依權威剩餘保留思考時間建立新的決策計時器。
- * @property clock 提供計算與結算使用的單調時間；實作由平台層提供，理由見 [MonotonicClock] KDoc。
+ * @property clock 提供計算與結算使用的單調時間。實作由平台層提供，理由見 [MonotonicClock] KDoc。
  */
 class GameDecisionTimerManager(
     private val gameRepository: GameRepository,
@@ -39,12 +39,13 @@ class GameDecisionTimerManager(
     /**
      * 暫停指定遊戲目前仍有效的決策計時器，並將剩餘基本與保留時間寫回權威狀態。
      *
-     * [completedPlayerId] 已完成的舊決策不會留下可恢復基本時間；階段已改變或失去決策權的 timer 也只會
-     * 結算保留時間。只有目前仍維持相同決策階段的 timer 會寫入 `interruptedBaseByPlayerId`，供下一次
-     * [reconcile] 接續一次。重複暫停沒有 runtime timer 時不會改寫既有中斷資料。
+     * - [completedPlayerId] 已完成的舊決策不會留下可恢復基本時間。
+     * - 階段已改變或失去決策權的 timer 也只會結算保留時間。
+     * - 只有目前仍維持相同決策階段的 timer 會寫入 `interruptedBaseByPlayerId`，供下一次 [reconcile] 接續一次。
+     * - 重複暫停沒有 runtime timer 時不會改寫既有中斷資料。
      *
      * @param gameId 欲暫停計時器的遊戲識別碼。
-     * @param completedPlayerId 在造成暫停的命令中剛完成決策的玩家；純呈現狀態變化時為 null。
+     * @param completedPlayerId 在造成暫停的命令中剛完成決策的玩家。純呈現狀態變化時為 null。
      */
     suspend fun pause(gameId: Uuid, completedPlayerId: Uuid? = null) = mutex.withLock {
         val previousTimers = activeTimers[gameId].orEmpty()
@@ -79,12 +80,12 @@ class GameDecisionTimerManager(
     /**
      * 依目前權威遊戲狀態調整決策計時器。
      *
-     * [completedPlayerId] 的既有計時器必定先結算；若狀態轉移後該玩家再次取得決策權，會以結算後的
+     * [completedPlayerId] 的既有計時器必定先結算。若狀態轉移後該玩家再次取得決策權，會以結算後的
      * 保留思考時間
      * 建立新計時器並重新取得基本思考時間。其他仍處於相同 decision phase 的玩家不會重設。
      *
      * @param gameId 欲調整計時器的遊戲識別碼。
-     * @param completedPlayerId 剛完成一次決策的玩家；純狀態恢復或首次建立時為 null。
+     * @param completedPlayerId 剛完成一次決策的玩家。純狀態恢復或首次建立時為 null。
      * @return 調整完成後所有目前決策者的權威時間狀態。
      */
     suspend fun reconcile(gameId: Uuid, completedPlayerId: Uuid? = null): Map<Uuid, ActivePlayerDecisionStatus> = mutex.withLock {
@@ -151,7 +152,7 @@ class GameDecisionTimerManager(
      * 取得指定遊戲目前所有決策者的權威時間狀態。
      *
      * @param gameId 欲查詢的遊戲識別碼。
-     * @return 以玩家識別碼索引的時間狀態；尚未建立計時器時為空 map。
+     * @return 以玩家識別碼索引的時間狀態。尚未建立計時器時為空 map。
      */
     suspend fun getStatuses(gameId: Uuid): Map<Uuid, ActivePlayerDecisionStatus> = mutex.withLock {
         statusesAt(activeTimers[gameId].orEmpty(), clock.now())
@@ -166,7 +167,7 @@ class GameDecisionTimerManager(
     /**
      * 取得並標記目前所有完整逾時的玩家，確保同一次逾時只交給 scheduler 處理一次。
      *
-     * 玩家會在同一個 repository 交易中耗盡保留思考時間並進入強制自動操作；對應 runtime timer
+     * 玩家會在同一個 repository 交易中耗盡保留思考時間並進入強制自動操作。對應 runtime timer
      * 隨即移除，後續決策由自動操作 driver 直接處理，不再建立新的思考計時器。
      *
      * @return 本次取得處理權的完整逾時決策。
@@ -207,11 +208,14 @@ class GameDecisionTimerManager(
     /**
      * 結算目前 session 的所有決策計時器並清除 runtime 索引。
      *
-     * 平台停止 server session 時必須先停止新的遊戲命令，再呼叫本方法，最後才解除 persistence dirty
-     * listener；如此最後使用的保留思考時間才會進入平台已快取的權威存檔快照。每場遊戲各自以一次 repository
-     * 交易寫回所有玩家的剩餘保留思考時間。「先停止新的遊戲命令」這件事本身，
-     * 交給呼叫端用 [AppCoroutineScope.shutdown] 完成——
-     * 停止接受新工作、等現有工作自然跑完，而不是直接 `cancel()` 把還在等鎖、卡在中途的協程攔腰砍斷。
+     * 平台停止 server session 時的順序：
+     *
+     * 1. 停止新的遊戲命令。呼叫端用 [AppCoroutineScope.shutdown] 停止接受新工作、等現有工作自然跑完，
+     *    不直接 `cancel()` 還在等鎖或執行到一半的協程。
+     * 2. 呼叫本方法。每場遊戲各自以一次 repository 交易寫回所有玩家的剩餘保留思考時間。
+     * 3. 解除 persistence dirty listener。
+     *
+     * 照這個順序，最後使用的保留思考時間才會進入平台已快取的權威存檔快照。
      */
     suspend fun settleAll() = mutex.withLock {
         val settledAt = clock.now()
@@ -275,7 +279,7 @@ class GameDecisionTimerManager(
      *
      * @property game 已結算失效 timer 所消耗保留思考時間的權威遊戲狀態。
      * @property targets 目前仍需要計時的玩家與階段。
-     * @property resumeBaseByPlayerId 本次重建計時器時該接續的剩餘基本思考時間；已從 [game] 消耗。
+     * @property resumeBaseByPlayerId 本次重建計時器時該接續的剩餘基本思考時間。已從 [game] 消耗。
      */
     private data class Reconciliation(
         val game: Game,

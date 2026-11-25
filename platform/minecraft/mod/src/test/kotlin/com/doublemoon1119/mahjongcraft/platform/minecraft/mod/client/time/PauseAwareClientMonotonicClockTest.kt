@@ -10,7 +10,7 @@ class PauseAwareClientMonotonicClockTest {
     /** 受測的時鐘。 */
     private val clock = PauseAwareClientMonotonicClock()
 
-    /** 第一個 tick 只建立起點；之後每個未暫停的 tick 累加與上一個 tick 之間的時間。 */
+    /** 第一個 tick 只建立起點。之後每個未暫停的 tick 累加與上一個 tick 之間的時間。 */
     @Test
     fun `unpaused ticks accumulate elapsed time`() {
         clock.onTick(paused = false, now = millis(1_000))

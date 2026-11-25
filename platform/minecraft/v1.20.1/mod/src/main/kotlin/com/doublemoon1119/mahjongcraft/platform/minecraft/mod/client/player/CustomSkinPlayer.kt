@@ -10,7 +10,7 @@ import net.minecraft.resources.ResourceLocation
  * 方法都交給它。
  *
  * @param world 所屬的用戶端世界。
- * @param profile 玩家 profile；只用來建立模型。
+ * @param profile 玩家 profile。只用來建立模型。
  */
 abstract class CustomSkinPlayer(world: ClientLevel, profile: GameProfile) : RemotePlayer(world, profile) {
     /**

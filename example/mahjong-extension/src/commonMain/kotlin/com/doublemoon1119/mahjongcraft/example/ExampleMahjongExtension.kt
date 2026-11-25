@@ -27,7 +27,7 @@ import com.doublemoon1119.mahjongcraft.logic.api.registration.TileTypeRegistrar
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeDefinition
 
-/** 平台無關的範例擴充入口；平台轉接層可繼承並補上自己的呈現與原生整合。 */
+/** 平台無關的範例擴充入口。平台轉接層可繼承並補上自己的呈現與原生整合。 */
 open class ExampleMahjongExtension : MahjongExtension {
     override val id: String = ExampleExtensionIds.EXTENSION
 

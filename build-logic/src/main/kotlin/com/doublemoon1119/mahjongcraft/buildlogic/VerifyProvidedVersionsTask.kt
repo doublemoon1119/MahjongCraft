@@ -10,14 +10,14 @@ import org.gradle.api.tasks.TaskAction
 /**
  * 驗證專案使用的版本不高於任何建置目標執行時提供的版本。
  *
- * 執行環境提供、建置產物不附帶的函式庫只會有一份；版本高於它時，程式在執行時會找不到較新的 API。
+ * 執行環境提供、建置產物不附帶的函式庫只會有一份。版本高於它時，程式在執行時會找不到較新的 API。
  */
 abstract class VerifyProvidedVersionsTask : DefaultTask() {
     /** `libs` version catalog 中的 Kotlin API 版本上限。 */
     @get:Input
     abstract val kotlinApiVersion: Property<String>
 
-    /** 建置目標提到的函式庫在 `libs` version catalog 中的版本；catalog 沒有的名稱不在其中。 */
+    /** 建置目標提到的函式庫在 `libs` version catalog 中的版本。catalog 沒有的名稱不在其中。 */
     @get:Input
     abstract val catalogVersions: MapProperty<String, String>
 
@@ -43,7 +43,7 @@ abstract class VerifyProvidedVersionsTask : DefaultTask() {
  * @param kotlinApiVersion Kotlin API 版本上限，例如 `2.4`。
  * @param catalogVersions `libs` version catalog 中的版本，key 為版本名稱。
  * @param providedVersions 依 target ID 索引的執行環境提供版本。
- * @return 每項違規的說明；沒有違規時為空。
+ * @return 每項違規的說明。沒有違規時為空。
  */
 internal fun findProvidedVersionViolations(
     kotlinApiVersion: String,
@@ -67,7 +67,7 @@ internal fun findProvidedVersionViolations(
  *
  * @param first 第一個版本。
  * @param second 第二個版本。
- * @return 第一個版本較低時為負、相同時為 0、較高時為正；任一版本不是純數字版本時為 null。
+ * @return 第一個版本較低時為負、相同時為 0、較高時為正。任一版本不是純數字版本時為 null。
  */
 internal fun compareNumericVersions(first: String, second: String): Int? {
     if (!NUMERIC_VERSION.matches(first) || !NUMERIC_VERSION.matches(second)) return null

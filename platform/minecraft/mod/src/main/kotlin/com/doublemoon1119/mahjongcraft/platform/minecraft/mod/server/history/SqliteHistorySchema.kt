@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history
 
 import org.jetbrains.exposed.v1.core.Table
 
-/** 歷史資料庫的獨立 schema 版本；不沿用權威世界存檔的版本。 */
+/** 歷史資料庫的獨立 schema 版本。不沿用權威世界存檔的版本。 */
 internal object HistorySchemaVersionTable : Table("history_schema_version") {
     val id = integer("id")
     val version = integer("version")
@@ -42,12 +42,12 @@ internal object HistoryParticipantTable : Table("history_participant") {
     }
 }
 
-/** 已封存對局的可查詢結果投影；單場缺少投影列時，相關欄位保持未知。 */
+/** 已封存對局的可查詢結果投影。單場缺少投影列時，相關欄位保持未知。 */
 internal object HistoryResultProjectionTable : Table("history_result_projection") {
     /** 對局的穩定 UUID 字串。 */
     val matchId = varchar("match_id", 36)
 
-    /** 對局總持續時間；無法證實時為 null。 */
+    /** 對局總持續時間。無法證實時為 null。 */
     val durationMillis = long("duration_millis").nullable()
 
     /** 每場對局只保存一份時間投影。 */
@@ -66,10 +66,10 @@ internal object HistoryParticipantResultTable : Table("history_participant_resul
     /** 參與者的開局座位。 */
     val seatIndex = integer("seat_index")
 
-    /** 最終分數；規則未提供時為 null。 */
+    /** 最終分數。規則未提供時為 null。 */
     val finalScore = integer("final_score").nullable()
 
-    /** 最終名次；規則未提供或無法排序時為 null。 */
+    /** 最終名次。規則未提供或無法排序時為 null。 */
     val finalRank = integer("final_rank").nullable()
 
     /** 每場對局的各開局座位只保存一份結果。 */
@@ -90,7 +90,7 @@ internal object HistoryRoundTable : Table("history_round") {
     override val primaryKey = PrimaryKey(matchId, roundNumber)
 }
 
-/** 封存前的原始權威事件；同一場內依序號唯一。 */
+/** 封存前的原始權威事件。同一場內依序號唯一。 */
 internal object HistoryPendingEventTable : Table("history_pending_event") {
     val matchId = varchar("match_id", 36)
     val sequence = long("sequence")
@@ -149,7 +149,7 @@ internal object HistoryTombstoneTable : Table("history_tombstone") {
     override val primaryKey = PrimaryKey(matchId)
 }
 
-/** 記錄器終局訊息；未完成終局可作為部分歷史保留候選。 */
+/** 記錄器終局訊息。未完成終局可作為部分歷史保留候選。 */
 internal object HistoryTerminalTable : Table("history_terminal") {
     /** 對局的穩定 UUID 字串。 */
     val matchId = varchar("match_id", 36)

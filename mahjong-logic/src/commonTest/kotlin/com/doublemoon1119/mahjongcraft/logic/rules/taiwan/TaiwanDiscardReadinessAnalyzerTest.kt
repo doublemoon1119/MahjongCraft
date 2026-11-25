@@ -41,7 +41,7 @@ class TaiwanDiscardReadinessAnalyzerTest {
         Tile.Numeric(Tile.Suit.Bamboo, 5),
     )
 
-    /** 含一組刻子的普通聽牌；榮和只有門清一台，自摸另有自摸與不求人。 */
+    /** 含一組刻子的普通聽牌。榮和只有門清一台，自摸另有自摸與不求人。 */
     private val mixedTenpaiTiles = listOf(
         Tile.Numeric(Tile.Suit.Character, 1),
         Tile.Numeric(Tile.Suit.Character, 1),

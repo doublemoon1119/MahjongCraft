@@ -23,7 +23,7 @@ import kotlin.test.assertNotNull
 
 /** 驗證台灣麻將宣告聽牌、連莊標示與局況資訊的登記。 */
 class TaiwanReadyPresentationTest {
-    /** 宣告聽牌有按鈕名稱、說明與語音；三種宣告與連莊都有標示文字。 */
+    /** 宣告聽牌有按鈕名稱、說明與語音。三種宣告與連莊都有標示文字。 */
     @Test
     fun `declare ready has a label, a voice and indicator wording`() {
         val vocabulary = GameActionVocabularyRegistryImpl().also(BundledTaiwanMinecraftExtension::registerGameActionVocabulary)
@@ -40,7 +40,7 @@ class TaiwanReadyPresentationTest {
         assertEquals("mahjongcraft.taiwan.indicator.dealer_streak", indicators.find(TaiwanPublicIndicatorIds.DEALER_STREAK)?.translationKey)
     }
 
-    /** 局況資訊依序是圈風與局數、連莊一次以上時的連莊次數，以及活牌剩餘張數；每一行都有顯示文字。 */
+    /** 局況資訊依序是圈風與局數、連莊一次以上時的連莊次數，以及活牌剩餘張數。每一行都有顯示文字。 */
     @Test
     fun `round info lists the round, the streak only when there is one and the wall`() {
         val registry = RoundInfoLineDisplayRegistryImpl().also(BuiltInMinecraftMahjongExtension::registerRoundInfoPresentations).also(BundledTaiwanMinecraftExtension::registerRoundInfoPresentations)
@@ -55,7 +55,7 @@ class TaiwanReadyPresentationTest {
         lines.forEach { line -> assertNotNull(registry.find(line.key), line.key) }
     }
 
-    /** 牌數行使用內建的中立局況行；可以胡牌的狀態改用台麻的胡牌說法。 */
+    /** 牌數行使用內建的中立局況行。可以胡牌的狀態改用台麻的胡牌說法。 */
     @Test
     fun `wall line uses neutral wording and win availability uses taiwan wording`() {
         val roundInfo = RoundInfoLineDisplayRegistryImpl().also(BuiltInMinecraftMahjongExtension::registerRoundInfoPresentations).also(BundledTaiwanMinecraftExtension::registerRoundInfoPresentations)

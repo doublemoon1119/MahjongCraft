@@ -133,7 +133,7 @@ class PlatformTargetCatalogTest {
         assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
     }
 
-    /** target 可以記錄執行環境提供的函式庫版本；沒有記錄時為空。 */
+    /** target 可以記錄執行環境提供的函式庫版本。沒有記錄時為空。 */
     @Test
     fun `loads provided versions`() = withFixture { root ->
         createModule(root, "platform/one")

@@ -484,7 +484,7 @@ class HistoryOutboxWriterTest {
      *
      * @param store 受測的權威歷史來源。
      * @param configState 此 session 的有效設定。
-     * @param observer 接收背景工作各環節的 observer；null 時不量測。
+     * @param observer 接收背景工作各環節的 observer。null 時不量測。
      * @return 未附加資料庫的 writer。
      */
     private fun writer(

@@ -91,7 +91,7 @@ import kotlin.uuid.Uuid
  * [MahjongAutoDrawService] 的單元測試類別。
  *
  * 用真正的 [GameFlowCoordinator]（比照 `GameFlowCoordinatorTest` 的既有 Fixtures 寫法）驗證
- * 判斷邏輯：真人且尚未摸牌時會實際摸到一張牌；AI 或已經摸過牌時不會重複摸牌。
+ * 判斷邏輯：真人且尚未摸牌時會實際摸到一張牌。AI 或已經摸過牌時不會重複摸牌。
  */
 class MahjongAutoDrawServiceTest {
 
@@ -305,7 +305,7 @@ class MahjongAutoDrawServiceTest {
         )
 
         /**
-         * 以正式的推進流程推進 [gameId] 並在返回前跑完：推進協程在 [scope] 上立即執行，AI 策略在呼叫端直接計算；推進失敗時讓測試失敗。
+         * 以正式的推進流程推進 [gameId] 並在返回前跑完：推進協程在 [scope] 上立即執行，AI 策略在呼叫端直接計算。推進失敗時讓測試失敗。
          */
         fun advance(scope: CoroutineScope, gameId: Uuid) {
             AutomatedAdvanceManager.forCoordinator(
@@ -323,7 +323,7 @@ class MahjongAutoDrawServiceTest {
         override fun now(): Duration = Duration.ZERO
     }
 
-    /** 建立一場已開局、尚未有任何玩家摸牌的真局；莊家（東家）維持真人。 */
+    /** 建立一場已開局、尚未有任何玩家摸牌的真局。莊家（東家）維持真人。 */
     private suspend fun Fixtures.createStartedGame(dealerIsAi: Boolean = false): Uuid {
         val playerIds = List(4) { Uuid.random() }
         val module = moduleRegistry.getModule(RiichiRuleConfig())
@@ -389,7 +389,7 @@ class MahjongAutoDrawServiceTest {
 
     /**
      * 驗證目前玩家是已進入強制自動操作的真人時，`checkAndAutoDraw` 不會介入，由 `ForcedAutoPlayDriver`
-     * 在自動推進中代打；否則這次摸牌會被 [GameFlowCoordinator] 的強制自動操作守門檢查擋下、靜默失敗。
+     * 在自動推進中代打。否則這次摸牌會被 [GameFlowCoordinator] 的強制自動操作守門檢查擋下、靜默失敗。
      */
     @Test
     fun `test checkAndAutoDraw skips when current player is forced auto play`() = runTest {
@@ -458,7 +458,7 @@ class MahjongAutoDrawServiceTest {
      * 假物件（那邊只驗證編排時機，不驗證轉移本身）。
      *
      * 四位玩家都設成 AI（含房主本人）——這裡只驗證 `Game.hostId` 能不能正確往返、Room 能不能正確
-     * 重建，不需要真人玩家；若房主是唯一的真人玩家，`GameInitializer.initialize` 內部洗牌座位是
+     * 重建，不需要真人玩家。若房主是唯一的真人玩家，`GameInitializer.initialize` 內部洗牌座位是
      * 隨機的，房主可能剛好被排到莊家（東家）座位，自動推進不會替真人行動，測試會在
      * 空牌山的第一次摸牌前卡住、變成間歇性失敗。
      */

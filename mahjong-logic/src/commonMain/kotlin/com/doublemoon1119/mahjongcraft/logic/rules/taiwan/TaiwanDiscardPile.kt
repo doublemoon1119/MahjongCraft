@@ -40,7 +40,7 @@ data class TaiwanDiscardPile(
     /**
      * 標記最後一項紀錄已被取走。
      *
-     * @return 標記後的新 [TaiwanDiscardPile] 實例；若牌河為空則回傳原實例。
+     * @return 標記後的新 [TaiwanDiscardPile] 實例。若牌河為空則回傳原實例。
      */
     override fun takeLast(): TaiwanDiscardPile {
         val last = _entries.lastOrNull() ?: return this

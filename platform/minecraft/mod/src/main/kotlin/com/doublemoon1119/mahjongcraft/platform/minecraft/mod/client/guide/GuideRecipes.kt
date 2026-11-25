@@ -12,7 +12,7 @@ import net.minecraft.world.item.crafting.ShapedRecipe
 /**
  * 一個合成配方在 3×3 材料格中的擺法。
  *
- * @property slots 九個材料格由左到右、由上到下的可用材料；空格為空清單。
+ * @property slots 九個材料格由左到右、由上到下的可用材料。空格為空清單。
  * @property output 成品。
  */
 internal data class GuideRecipe(val slots: List<List<ItemStack>>, val output: ItemStack)
@@ -25,7 +25,7 @@ internal object GuideRecipes {
      * 資料包可以增刪配方，因此每次開啟畫面時重新查詢。
      *
      * @param client 客戶端。
-     * @return 配方；沒有世界或找不到時為空清單。
+     * @return 配方。沒有世界或找不到時為空清單。
      */
     fun find(client: Minecraft): List<GuideRecipe> {
         val world = client.level ?: return emptyList()
@@ -46,7 +46,7 @@ internal object GuideRecipes {
     }
 
     /**
-     * 把配方材料放進 3×3 材料格；有形配方依寬度換行，無形配方由左到右依序放。
+     * 把配方材料放進 3×3 材料格。有形配方依寬度換行，無形配方由左到右依序放。
      *
      * @param ingredients 配方材料。
      * @param width 一列的材料數。

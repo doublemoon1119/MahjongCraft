@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.riichiNextDo
 /**
  * 判斷已知牌面是否為日麻加值牌：帶赤寶牌特徵，或是生效寶牌指示牌的下一張。
  *
- * 只把帶指示牌特徵的牌山牌當成指示牌；其他可見的牌山牌不影響結果。
+ * 只把帶指示牌特徵的牌山牌當成指示牌。其他可見的牌山牌不影響結果。
  *
  * @param face 要判斷的已知牌面。
  * @param wallFaces 讀取者已知的牌山牌面。

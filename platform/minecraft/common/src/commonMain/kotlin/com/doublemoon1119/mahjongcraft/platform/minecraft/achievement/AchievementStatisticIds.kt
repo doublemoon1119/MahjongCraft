@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 /**
  * 各規則通用的玩家統計 ID，以及每個通用成果累加哪些統計。
  *
- * 規則不能登記自己的統計；統計名稱的語系鍵為 `stat.<namespace>.<path>`。
+ * 規則不能登記自己的統計。統計名稱的語系鍵為 `stat.<namespace>.<path>`。
  */
 object AchievementStatisticIds {
     /** 完成對局數。 */
@@ -44,7 +44,7 @@ object AchievementStatisticIds {
     val ALL: List<String> = listOf(MATCHES_COMPLETED, FIRST_PLACES, WINS, SELF_DRAW_WINS, DISCARD_WINS, DEAL_INS, EXHAUSTIVE_DRAWS)
 
     /**
-     * 取得 [achievementIds] 中各成果要累加的統計；同一個統計在一次交易中只累加一次。
+     * 取得 [achievementIds] 中各成果要累加的統計。同一個統計在一次交易中只累加一次。
      *
      * @param achievementIds 同一次交易達成的成果。
      * @return 要累加的統計 ID。

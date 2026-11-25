@@ -124,7 +124,7 @@ class AiCharacterPersistenceIntegrationTest {
         assertContentEquals(bytes, restored.writeData(CompoundTag()).getByteArray(MahjongAuthoritativeSavedData.NBT_KEY_CHARACTERS))
     }
 
-    /** 錯誤 NBT 型別也原樣保留；缺少區段不以空選擇偷偷補上。 */
+    /** 錯誤 NBT 型別也原樣保留。缺少區段不以空選擇偷偷補上。 */
     @Test
     fun `wrong NBT type and absent section are not silently replaced`() {
         val original = MahjongAuthoritativeSavedData.create(codec, testCharacterRegistry()).writeData(CompoundTag())

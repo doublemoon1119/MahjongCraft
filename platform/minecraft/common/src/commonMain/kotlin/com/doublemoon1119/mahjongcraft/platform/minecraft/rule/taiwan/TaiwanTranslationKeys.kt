@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan
 
-/** 台灣麻將專屬文字的 translation key，統一放在 `mahjongcraft.taiwan.` 底下；台種名稱另見 [TaiwanTaiTranslationKeys]。 */
+/** 台灣麻將專屬文字的 translation key，統一放在 `mahjongcraft.taiwan.` 底下。台種名稱另見 [TaiwanTaiTranslationKeys]。 */
 object TaiwanTranslationKeys {
     /** 台灣麻將的規則名稱。 */
     const val RULE_NAME: String = "mahjongcraft.taiwan.rule_name"

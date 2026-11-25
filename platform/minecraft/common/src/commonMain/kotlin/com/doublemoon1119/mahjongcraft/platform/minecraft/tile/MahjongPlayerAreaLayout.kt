@@ -9,7 +9,7 @@ import kotlin.uuid.Uuid
 /**
  * 一位玩家牌區每張牌的最終位置：立牌、摸牌位、副露與移出的牌。
  *
- * 只依桌子位置、座位、規則的桌面牌位配置與牌區內容計算，不涉及動畫與世界物件；呈現端照這份結果擺放與播放動畫。手牌平移、
+ * 只依桌子位置、座位、規則的桌面牌位配置與牌區內容計算，不涉及動畫與世界物件。呈現端照這份結果擺放與播放動畫。手牌平移、
  * 副露與移出牌列都在這裡計算，所有需要手牌位置的呈現都使用 [handShift]，自動測試也用同一份結果檢查牌與牌之間不會重疊。
  */
 object MahjongPlayerAreaLayout {
@@ -101,12 +101,12 @@ object MahjongPlayerAreaLayout {
     }
 
     /**
-     * 立牌與摸牌位整排的平移；需要手牌位置但不需要整個牌區的呈現（例如發牌、胡牌、流局攤牌）用它，與 [compute] 結果一致。
+     * 立牌與摸牌位整排的平移。需要手牌位置但不需要整個牌區的呈現（例如發牌、胡牌、流局攤牌）用它，與 [compute] 結果一致。
      *
      * 摸牌位一律預留，不論目前有沒有摸到的牌，所以摸牌與打牌時手牌不移動，只有立牌張數、副露、移出的牌改變或牌牆讓出空間時才重新平移。
      *
      * @param tileLayout 該規則的桌面牌位配置。
-     * @param wallClearance 從這個座位看出去，牌牆在這一局剩下時間裡可能佔到的範圍；沒有實體牌牆時為 null。
+     * @param wallClearance 從這個座位看出去，牌牆在這一局剩下時間裡可能佔到的範圍。沒有實體牌牆時為 null。
      * @param cornerWidth 桌角物件佔用的寬度。
      * @param melds 依宣告順序排列的副露。
      * @param setAsideTileCount 接在副露後面的移出牌張數。
@@ -150,7 +150,7 @@ object MahjongPlayerAreaLayout {
     }
 
     /**
-     * 桌角副露：從桌角往手牌方向排開，貼齊桌緣；手牌碰到桌角區時往左讓。
+     * 桌角副露：從桌角往手牌方向排開，貼齊桌緣。手牌碰到桌角區時往左讓。
      *
      * @return 以局部座標表示的排法。
      */
@@ -196,7 +196,7 @@ object MahjongPlayerAreaLayout {
     }
 
     /**
-     * 牌牆與手牌之間的副露：先宣告的在右邊，整列對齊立牌（不含摸牌位）的中心，超出可用範圍時往內收；碰到左邊牌牆前先縮小組間縫隙，
+     * 牌牆與手牌之間的副露：先宣告的在右邊，整列對齊立牌（不含摸牌位）的中心，超出可用範圍時往內收。碰到左邊牌牆前先縮小組間縫隙，
      * 仍放不下的部分放到手牌那一列的右手邊貼齊桌緣，手牌往左讓。
      *
      * @return 以局部座標表示的排法。
@@ -304,12 +304,12 @@ object MahjongPlayerAreaLayout {
     /**
      * 一組副露依配置由右到左擺放的每張牌。
      *
-     * 被鳴的牌橫放時依來源方向決定位置；加槓補上的牌依配置疊在橫放牌旁或接在同一列最右邊。
+     * 被鳴的牌橫放時依來源方向決定位置。加槓補上的牌依配置疊在橫放牌旁或接在同一列最右邊。
      *
      * @param meld 副露。
      * @param tileLayout 該規則的桌面牌位配置。
      * @param playerCount 本局玩家人數。
-     * @return 由右到左的擺法；疊放的加槓牌緊接在它所靠的橫放牌之後。
+     * @return 由右到左的擺法。疊放的加槓牌緊接在它所靠的橫放牌之後。
      */
     private fun meldGroup(
         meld: MahjongMeldTileGroup,
@@ -343,7 +343,7 @@ object MahjongPlayerAreaLayout {
 /**
  * 一張牌在牌列中的擺法。
  *
- * @property tileId 牌識別碼；移出的牌在排法階段只用張數，為 null。
+ * @property tileId 牌識別碼。移出的牌在排法階段只用張數，為 null。
  * @property isSideways 是否橫放。
  * @property isAddedBeside 是否為疊在橫放牌旁的加槓牌，不佔用橫向格位。
  */
@@ -366,7 +366,7 @@ private data class PlannedSlot(
 /**
  * 一張牌的局部座標。
  *
- * @property tileId 牌識別碼；移出的牌為 null。
+ * @property tileId 牌識別碼。移出的牌為 null。
  * @property x 局部 X，往玩家右手邊為正。
  * @property z 局部 Z，往玩家方向為正。
  * @property isSideways 是否橫放。

@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentType
 
 /** 台灣麻將玩家攜帶的獨立規則資料。 */
 object TaiwanPlayerComponents {
-    /** 已成立的宣告聽牌；沒有此項表示未宣告。 */
+    /** 已成立的宣告聽牌。沒有此項表示未宣告。 */
     val READY_DECLARATION: ComponentType<TaiwanReadyKind> = ComponentType(
         id = "mahjongcraft:taiwan/player/ready_declaration",
         valueClass = TaiwanReadyKind::class,
@@ -13,7 +13,7 @@ object TaiwanPlayerComponents {
         target = BuiltInComponentOwners.PLAYER,
     )
 
-    /** 碰或明槓別人打出的牌完成大三元或大四喜副露時成立的包牌責任；沒有此項表示沒有包牌。 */
+    /** 碰或明槓別人打出的牌完成大三元或大四喜副露時成立的包牌責任。沒有此項表示沒有包牌。 */
     val PAO_LIABILITY: ComponentType<TaiwanPaoLiability> = ComponentType(
         id = "mahjongcraft:taiwan/player/pao_liability",
         valueClass = TaiwanPaoLiability::class,
@@ -21,7 +21,7 @@ object TaiwanPlayerComponents {
         target = BuiltInComponentOwners.PLAYER,
     )
 
-    /** 放過胡牌後尚未解除的過水；沒有此項表示可以胡牌。 */
+    /** 放過胡牌後尚未解除的過水。沒有此項表示可以胡牌。 */
     val PASSED_WIN: ComponentType<Unit> = ComponentType(
         id = "mahjongcraft:taiwan/player/passed_win",
         valueClass = Unit::class,

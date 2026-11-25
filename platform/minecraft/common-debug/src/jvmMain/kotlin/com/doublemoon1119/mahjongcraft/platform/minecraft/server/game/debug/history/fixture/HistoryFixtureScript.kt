@@ -49,7 +49,7 @@ class HistoryFixtureScript(private val fixture: HistoryFixture) : RoundRandomnes
      * 這一家下一個還沒執行的決定。
      *
      * @param wind 這一家在這一局的自風。
-     * @return 下一個決定；這一局沒有腳本或已經執行完時為 null。
+     * @return 下一個決定。這一局沒有腳本或已經執行完時為 null。
      */
     fun next(wind: Wind): HistoryFixtureAction? = pending[wind]?.firstOrNull()
 

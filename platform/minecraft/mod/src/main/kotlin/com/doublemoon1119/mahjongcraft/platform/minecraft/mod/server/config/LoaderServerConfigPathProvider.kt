@@ -13,7 +13,7 @@ import java.nio.file.Path
  */
 class LoaderServerConfigPathProvider(private val platform: LoaderPlatform) : ServerConfigPathProvider {
     /**
-     * 單人世界使用存檔內設定；專用伺服器使用執行個體共用設定。
+     * 單人世界使用存檔內設定。專用伺服器使用執行個體共用設定。
      *
      * @param server 目前 Minecraft server。
      * @return 設定檔的實際路徑與可供訊息使用的顯示路徑。

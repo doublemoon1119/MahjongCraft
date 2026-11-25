@@ -28,20 +28,20 @@ interface GameSnapshotRepository {
     suspend fun setSnapshot(observerId: Uuid, snapshot: TableStateSnapshot)
 
     /**
-     * 取得指定觀看者可見的規則選擇快照；預設實作回傳 null，表示沒有提供此類快照。
+     * 取得指定觀看者可見的規則選擇快照。預設實作回傳 null，表示沒有提供此類快照。
      *
      * @param gameId 快照所屬遊戲的識別碼。
      * @param observerId 要取得快照的觀看者識別碼。
-     * @return 觀看者可見的規則選擇快照；沒有快照或使用預設實作時為 null。
+     * @return 觀看者可見的規則選擇快照。沒有快照或使用預設實作時為 null。
      */
     suspend fun getRuleDecisionSnapshot(gameId: Uuid, observerId: Uuid): RuleDecisionSnapshot? = null
 
     /**
-     * 設定或清除指定觀看者的規則選擇快照；預設實作不保存資料。
+     * 設定或清除指定觀看者的規則選擇快照。預設實作不保存資料。
      *
      * @param gameId 快照所屬遊戲的識別碼。
      * @param observerId 接收或移除快照的觀看者識別碼。
-     * @param snapshot 要保存的快照；null 表示清除快照。
+     * @param snapshot 要保存的快照。null 表示清除快照。
      */
     suspend fun setRuleDecisionSnapshot(gameId: Uuid, observerId: Uuid, snapshot: RuleDecisionSnapshot?) = Unit
 
@@ -61,7 +61,7 @@ interface GameSnapshotRepository {
      * @param gameId 遊戲的唯一識別碼。
      * @param observerId 觀察者的玩家 Uuid。
      * @param isStillValid 鎖內刪除前確認來源仍屬於這次工作的條件。
-     * @return 條件成立並完成這次移除時為 true；條件不成立時不修改資料並回傳 false。
+     * @return 條件成立並完成這次移除時為 true。條件不成立時不修改資料並回傳 false。
      */
     suspend fun removeSnapshotIf(
         gameId: Uuid,

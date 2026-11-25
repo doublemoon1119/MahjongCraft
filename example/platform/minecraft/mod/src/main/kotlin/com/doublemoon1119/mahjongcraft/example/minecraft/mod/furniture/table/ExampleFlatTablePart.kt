@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.table
 import net.minecraft.util.StringRepresentable
 
 /**
- * 3×3 單層範例桌子中的一格，以世界方向表示相對中央的位置；桌子朝向只影響牌桌布局，不改變各格位置。
+ * 3×3 單層範例桌子中的一格，以世界方向表示相對中央的位置。桌子朝向只影響牌桌布局，不改變各格位置。
  *
  * @property offsetX 相對中央的 x 位移。
  * @property offsetZ 相對中央的 z 位移。

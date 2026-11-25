@@ -127,7 +127,7 @@ class WinRoundContinuationResolverRegistryTest {
      * @param ruleModuleId 所屬規則模組的識別碼。
      * @param priority 解析器的執行優先序。
      * @param calls 依呼叫順序收集解析器識別碼的清單。
-     * @param result 每次呼叫要回傳的指示；null 表示交由後續解析器判定。
+     * @param result 每次呼叫要回傳的指示。null 表示交由後續解析器判定。
      * @return 測試解析器。
      */
     private fun recordingResolver(

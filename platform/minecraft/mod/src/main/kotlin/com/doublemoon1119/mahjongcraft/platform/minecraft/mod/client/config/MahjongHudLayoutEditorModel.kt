@@ -17,35 +17,35 @@ import kotlin.math.roundToInt
  * 可拖曳的 HUD 配置區塊。
  *
  * @property translationKey 區塊名稱翻譯鍵。
- * @property adjustsHorizontally 這個區塊是否可調整水平位置；固定水平置中的動態寬度面板為 `false`，
+ * @property adjustsHorizontally 這個區塊是否可調整水平位置。固定水平置中的動態寬度面板為 `false`，
  * 拖曳時只更新垂直比例。
- * @property hasScenarios 編輯器能否切換這個 HUD 的預覽情境；目前只有操作面板有情境。
+ * @property hasScenarios 編輯器能否切換這個 HUD 的預覽情境。目前只有操作面板有情境。
  */
 internal enum class HudElement(
     val translationKey: String,
     val adjustsHorizontally: Boolean,
     val hasScenarios: Boolean = false,
 ) {
-    /** 操作面板；寬度隨候選動作數量變動，固定水平置中。 */
+    /** 操作面板。寬度隨候選動作數量變動，固定水平置中。 */
     DECISION(
         translationKey = MinecraftClientConfigScreenKeys.HUD_LAYOUT_DECISION_PANEL,
         adjustsHorizontally = false,
         hasScenarios = true,
     ),
 
-    /** 一般倒數與等待提醒；兩軸皆可調整。 */
+    /** 一般倒數與等待提醒。兩軸皆可調整。 */
     COMPACT(
         translationKey = MinecraftClientConfigScreenKeys.HUD_LAYOUT_COMPACT_PROMPT,
         adjustsHorizontally = true,
     ),
 
-    /** 手牌分析；寬度隨分析內容變動，固定水平置中。 */
+    /** 手牌分析。寬度隨分析內容變動，固定水平置中。 */
     ANALYSIS(
         translationKey = MinecraftClientConfigScreenKeys.HUD_LAYOUT_DISCARD_ANALYSIS,
         adjustsHorizontally = false,
     ),
 
-    /** 自動操作狀態；整組共用一個位置，兩軸皆可調整。 */
+    /** 自動操作狀態。整組共用一個位置，兩軸皆可調整。 */
     AUTOMATIC_CONTROL(
         translationKey = MinecraftClientConfigScreenKeys.HUD_LAYOUT_AUTOMATIC_CONTROL_STATUS,
         adjustsHorizontally = true,
@@ -68,7 +68,7 @@ internal enum class HudPreviewVisibility(val translationKey: String) {
 /**
  * 操作面板可切換的代表性預覽情境。
  *
- * 每個情境是一份與正式對局相同格式的範例決策提示；編輯器以它畫出真實的操作面板，預覽尺寸也由實際操作面板的版面
+ * 每個情境是一份與正式對局相同格式的範例決策提示。編輯器以它畫出真實的操作面板，預覽尺寸也由實際操作面板的版面
  * （[DecisionCardLayout]）計算，因此編輯器中的位置與遊戲中面板的位置一致。
  *
  * @property translationKey 情境名稱翻譯鍵。
@@ -125,7 +125,7 @@ internal enum class HudPreviewScenario(
     ;
 
     /**
-     * 這個情境在 [screenWidth] × [screenHeight] 畫面上的操作面板版面；不含標題文字寬度與倒數寬度。
+     * 這個情境在 [screenWidth] × [screenHeight] 畫面上的操作面板版面。不含標題文字寬度與倒數寬度。
      *
      * 編輯器量測到實際文字後的尺寸優先，這裡只在尚未量測時提供預覽尺寸。
      *
@@ -152,12 +152,12 @@ internal enum class HudPreviewScenario(
 private val RIICHI_PREVIEW_TILES: List<String> = listOf("m1", "m4", "m7", "p2", "p5", "p8", "s3", "s6", "s9")
 
 /**
- * 預覽情境的範例決策提示；來自上家捨牌時附上來源玩家，否則是自己摸到 [triggerTileAssetKey]。
+ * 預覽情境的範例決策提示。來自上家捨牌時附上來源玩家，否則是自己摸到 [triggerTileAssetKey]。
  *
  * @param triggerTileAssetKey 觸發決策的牌面素材鍵。
  * @param fromLeftPlayer 是否由左手邊玩家打出觸發牌。
  * @param actions 範例決策動作。
- * @param ruleModuleId 決定動作用語的規則；null 時使用中立用語。
+ * @param ruleModuleId 決定動作用語的規則。null 時使用中立用語。
  * @param triggerPlayerName 打出觸發牌的範例玩家名稱。
  * @return 用於預覽的決策提示 DTO。
  */
@@ -185,7 +185,7 @@ internal fun previewPrompt(
  *
  * @param actionId 動作識別碼。
  * @param previewTileAssetKeys 動作卡顯示的牌面素材鍵。
- * @param claimedTileIndex 被鳴取牌在牌列中的索引；沒有鳴取牌時為 null。
+ * @param claimedTileIndex 被鳴取牌在牌列中的索引。沒有鳴取牌時為 null。
  * @return 用於預覽的動作 DTO。
  */
 internal fun previewAction(
@@ -229,10 +229,10 @@ internal data class MahjongHudPreviewSize(
  * @property selectedElement 目前取得完整預覽與拖曳焦點的 HUD。
  * @property scenario 操作面板目前使用的尺寸預覽情境。
  * @property otherHudVisibility 所有未選取 HUD 共用的預覽方式。
- * @property measuredSizes 各 HUD 以範例內容在目前畫面上量到的實際尺寸；量測需要文字寬高，由編輯器畫面在每次
+ * @property measuredSizes 各 HUD 以範例內容在目前畫面上量到的實際尺寸。量測需要文字寬高，由編輯器畫面在每次
  * 繪製時寫入，尚未量測的 HUD 退回內建預設尺寸。
  * @property controlsManuallyHidden 玩家是否手動隱藏所有編輯器控制項。
- * @property dragging 目前被拖曳的 HUD 區塊；`null` 代表沒有拖曳進行中。
+ * @property dragging 目前被拖曳的 HUD 區塊。`null` 代表沒有拖曳進行中。
  * @property dragOffsetX 拖曳起點相對 HUD 左上角的 X。
  * @property dragOffsetY 拖曳起點相對 HUD 左上角的 Y。
  */
@@ -286,7 +286,7 @@ internal data class MahjongHudLayoutEditorModel(
     }
 
     /**
-     * 取得一個預覽框目前的完整 bounds；不可調整水平位置的區塊固定水平置中。
+     * 取得一個預覽框目前的完整 bounds。不可調整水平位置的區塊固定水平置中。
      *
      * @param element 要取得範圍的 HUD 區塊。
      * @param screenWidth 畫面寬度。
@@ -325,13 +325,13 @@ internal data class MahjongHudLayoutEditorModel(
     }
 
     /**
-     * 找出畫面座標命中的 HUD 區塊；目前選取的區塊優先於其他區塊，而其他區塊只在未被隱藏時可命中。
+     * 找出畫面座標命中的 HUD 區塊。目前選取的區塊優先於其他區塊，而其他區塊只在未被隱藏時可命中。
      *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
      * @param screenWidth 畫面寬度。
      * @param screenHeight 畫面高度。
-     * @return 命中的區塊；沒有命中任何區塊時為 `null`。
+     * @return 命中的區塊。沒有命中任何區塊時為 `null`。
      */
     fun hitTest(
         mouseX: Double,
@@ -385,14 +385,14 @@ internal data class MahjongHudLayoutEditorModel(
     }
 
     /**
-     * 依目前游標位置更新草稿；只寫入該區塊允許調整的軸，且比例本身即受
+     * 依目前游標位置更新草稿。只寫入該區塊允許調整的軸，且比例本身即受
      * [hudRatio] 限制，因此 bounds 永遠不會超出畫面。沒有拖曳進行中時原樣回傳。
      *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
      * @param screenWidth 畫面寬度。
      * @param screenHeight 畫面高度。
-     * @return 更新草稿後的新狀態；沒有拖曳時為原狀態。
+     * @return 更新草稿後的新狀態。沒有拖曳時為原狀態。
      */
     fun dragTo(
         mouseX: Double,
@@ -453,7 +453,7 @@ internal data class MahjongHudLayoutEditorModel(
     fun selectElement(element: HudElement): MahjongHudLayoutEditorModel = copy(selectedElement = element)
 
     /**
-     * 切換操作面板的預覽情境；舊情境量到的操作面板尺寸隨之失效，等待重新量測。
+     * 切換操作面板的預覽情境。舊情境量到的操作面板尺寸隨之失效，等待重新量測。
      *
      * @param scenario 要顯示的預覽情境。
      * @return 更新情境及量測快取後的新模型。
@@ -488,7 +488,7 @@ internal data class MahjongHudLayoutEditorModel(
      */
     fun withControlsHidden(hidden: Boolean): MahjongHudLayoutEditorModel = copy(controlsManuallyHidden = hidden)
 
-    /** 取得指定區塊目前的水平位置比例；不可水平調整的區塊回傳置中比例。 */
+    /** 取得指定區塊目前的水平位置比例。不可水平調整的區塊回傳置中比例。 */
     private fun horizontalRatio(element: HudElement): Double = when (element) {
         HudElement.COMPACT -> draft.compactPromptX
         HudElement.AUTOMATIC_CONTROL -> draft.automaticControlStatusX

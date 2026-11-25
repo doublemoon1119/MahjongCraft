@@ -8,6 +8,6 @@ enum class SettlementExtrasOccasion {
     /** 一般流局時有玩家依規則收下供託。 */
     EXHAUSTIVE_DRAW,
 
-    /** 整場對局結束時處理桌上還沒被收下的供託；不收連莊點數。 */
+    /** 整場對局結束時處理桌上還沒被收下的供託。不收連莊點數。 */
     MATCH_END,
 }

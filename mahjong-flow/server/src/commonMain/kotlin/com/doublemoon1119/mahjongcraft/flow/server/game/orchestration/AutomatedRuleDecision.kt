@@ -9,8 +9,8 @@ import kotlin.uuid.Uuid
  *
  * @property playerId 提交的參與者。
  * @property command 要送出的提交命令。
- * @property clearsForcedAutoPlay 參與者是否為逾時的真人；提交前須先解除他的強制自動操作。
- * @property basis 提交內容所依據的權威遊戲；AI 的提交只應在權威遊戲仍是這個遊戲時套用。
+ * @property clearsForcedAutoPlay 參與者是否為逾時的真人。提交前須先解除他的強制自動操作。
+ * @property basis 提交內容所依據的權威遊戲。AI 的提交只應在權威遊戲仍是這個遊戲時套用。
  */
 data class AutomatedRuleDecision(
     val playerId: Uuid,

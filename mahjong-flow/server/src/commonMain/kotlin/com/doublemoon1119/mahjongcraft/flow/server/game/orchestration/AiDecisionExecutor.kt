@@ -21,23 +21,24 @@ import kotlin.uuid.Uuid
  * 在 AI 專用的調度器上呼叫策略，並限制等待時間與同時存在的策略工作。
  *
  * - 名額：同時存在、尚未真正結束的策略工作最多 [capacity] 個。取得名額後才建立策略工作，建立時立即登記完成回呼，由回呼釋放
- *   名額（完成回呼只會觸發一次）；工作在開始執行前就被取消時本文不會執行，回呼仍會釋放名額。不檢查取消的工作要等本文真正
+ *   名額（完成回呼只會觸發一次）。工作在開始執行前就被取消時本文不會執行，回呼仍會釋放名額。不檢查取消的工作要等本文真正
  *   返回才完成，名額一直占用到那時。
  * - 等待上限：[timeout] 是等待這次結果的上限（含等待名額），不是策略會在這段時間內停止的保證。逾時後要求取消策略工作並改用
- *   固定命令；已在執行、不檢查取消的工作只丟棄結果。
- * - 同一局：同一局同一時間只會有一次策略呼叫在執行。已有呼叫正在正常計算時，這次不決策；先前的呼叫逾時（或等待它的協程被
+ *   固定命令。已在執行、不檢查取消的工作只丟棄結果。
+ * - 同一局：同一局同一時間只會有一次策略呼叫在執行。已有呼叫正在正常計算時，這次不決策。先前的呼叫逾時（或等待它的協程被
  *   取消）但尚未結束時，這次直接使用固定命令，直到那個呼叫結束。
  *
- * 名額與每局記錄都屬於這個實例。跨執行階段共用同一實例時，先前留下的不合作工作仍計入名額，同一局在它結束前使用固定命令。
- * 呼叫端須取消先前階段等待結果的協程，避免提交舊結果。每局記錄由完成回呼依工作識別碼清除，可能在任何執行緒上更新，
- * 以原子操作保護。
+ * - 名額與每局記錄都屬於這個實例。
+ * - 跨執行階段共用同一實例時，先前留下的不合作工作仍計入名額，同一局在它結束前使用固定命令。
+ * - 呼叫端須取消先前階段等待結果的協程，避免提交舊結果。
+ * - 每局記錄由完成回呼依工作識別碼清除，可能在任何執行緒上更新，以原子操作保護。
  *
  * @param dispatcher 執行策略的調度器。
  * @property capacity 同時存在、尚未結束的策略工作上限，必須大於零。
- * @property failurePolicy 判斷策略丟出的失敗能否改用固定結果；無法隔離的失敗原樣往外傳。
+ * @property failurePolicy 判斷策略丟出的失敗能否改用固定結果。無法隔離的失敗原樣往外傳。
  * @property timeout 等待一次決策結果的上限，必須為正值。
  * @property reporter 接收逾時與舊呼叫仍未結束的情況。
- * @property observer 接收每次有結果的決策；不需要量測時為 null。
+ * @property observer 接收每次有結果的決策。不需要量測時為 null。
  * @property timeSource 量測決策延遲的時間來源。
  */
 @OptIn(ExperimentalAtomicApi::class)
@@ -58,10 +59,10 @@ class AiDecisionExecutor(
     /** 尚未真正結束的策略工作名額。 */
     private val permits = Semaphore(capacity)
 
-    /** 執行策略工作的作用域；不隨任何呼叫端取消，工作失敗也不影響其他工作。 */
+    /** 執行策略工作的作用域。不隨任何呼叫端取消，工作失敗也不影響其他工作。 */
     private val workerScope = CoroutineScope(SupervisorJob() + dispatcher)
 
-    /** 尚未真正結束的策略工作數與它自上次讀取峰值以來的最大值；兩者一起以原子操作更新。 */
+    /** 尚未真正結束的策略工作數與它自上次讀取峰值以來的最大值。兩者一起以原子操作更新。 */
     private val strategyCalls = AtomicReference(StrategyCallCounts(unfinished = 0, peak = 0))
 
     /** 目前尚未真正結束的策略工作數，包含逾時後仍在執行的工作。 */
@@ -78,7 +79,7 @@ class AiDecisionExecutor(
         }
     }
 
-    /** 每局目前的策略呼叫；呼叫結束時由完成回呼移除。 */
+    /** 每局目前的策略呼叫。呼叫結束時由完成回呼移除。 */
     private val calls = AtomicReference<Map<Uuid, StrategyCall>>(emptyMap())
 
     /**
@@ -90,7 +91,7 @@ class AiDecisionExecutor(
      * @param strategyKey 玩家的策略 key，只用於回報。
      * @param decide 呼叫策略的計算，在執行策略的調度器上執行。
      * @param fallback 沒有等到策略結果時使用的固定結果，在呼叫端的執行緒上計算。
-     * @return 策略或固定結果；這一局已有策略呼叫正在正常計算時為 null，這次不決策。
+     * @return 策略或固定結果。這一局已有策略呼叫正在正常計算時為 null，這次不決策。
      */
     suspend fun <T : Any> decide(
         gameId: Uuid,
@@ -161,11 +162,11 @@ class AiDecisionExecutor(
     }
 
     /**
-     * 放棄等待策略；未建立工作時清除記錄，否則要求取消並保留記錄直到工作結束。
+     * 放棄等待策略。未建立工作時清除記錄，否則要求取消並保留記錄直到工作結束。
      *
      * @param gameId 對局識別碼。
      * @param call 欲放棄等待的呼叫。
-     * @param work 已建立的策略工作；尚未建立時為 null。
+     * @param work 已建立的策略工作。尚未建立時為 null。
      */
     private fun abandon(gameId: Uuid, call: StrategyCall, work: Deferred<*>?) {
         if (work == null) {
@@ -179,7 +180,7 @@ class AiDecisionExecutor(
     /**
      * 更新尚未真正結束的策略工作數，增加時一併更新峰值。
      *
-     * @param delta 數量增減值；開始工作加一，結束工作減一。
+     * @param delta 數量增減值。開始工作加一，結束工作減一。
      */
     private fun countStrategyCall(delta: Int) {
         while (true) {
@@ -190,7 +191,7 @@ class AiDecisionExecutor(
     }
 
     /**
-     * 清除指定呼叫的記錄；目前記錄已屬於其他呼叫時不做事。
+     * 清除指定呼叫的記錄。目前記錄已屬於其他呼叫時不做事。
      *
      * @param gameId 對局識別碼。
      * @param call 欲清除的呼叫。
@@ -202,7 +203,7 @@ class AiDecisionExecutor(
      *
      * @param gameId 對局識別碼。
      * @param call 預期擁有目前記錄的呼叫。
-     * @param transform 計算新記錄；回傳 null 代表移除，競爭更新時可能重算。
+     * @param transform 計算新記錄。回傳 null 代表移除，競爭更新時可能重算。
      */
     private fun update(gameId: Uuid, call: StrategyCall, transform: (StrategyCall) -> StrategyCall?) {
         while (true) {
@@ -218,7 +219,7 @@ class AiDecisionExecutor(
     /**
      * 一局的一次策略呼叫。
      *
-     * @property id 呼叫的識別；以參考相等比較。
+     * @property id 呼叫的識別。以參考相等比較。
      * @property abandoned 等待結果的呼叫端已放棄等待，但工作尚未結束。
      * @property reported 已回報過這個未結束的呼叫。
      */
@@ -257,7 +258,7 @@ class AiDecisionExecutor(
         /** 預設的等待上限。 */
         val DEFAULT_TIMEOUT: Duration = 5.seconds
 
-        /** 每條 AI 執行緒可同時存在的策略工作數；多出的工作在調度器中排隊，讓執行緒保持忙碌。 */
+        /** 每條 AI 執行緒可同時存在的策略工作數。多出的工作在調度器中排隊，讓執行緒保持忙碌。 */
         const val CAPACITY_PER_THREAD: Int = 2
 
         /**

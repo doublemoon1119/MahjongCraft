@@ -10,7 +10,7 @@ fun interface AiCharacterPreviewProvider {
      *
      * @param world 提供渲染所需的客戶端世界，不授權加入實體或載入區塊。
      * @param character 含完整參數的當場公開描述。
-     * @return 可直接繪製及截取頭像的獨立物件；能力暫時不可用時為 null。
+     * @return 可直接繪製及截取頭像的獨立物件。能力暫時不可用時為 null。
      */
     fun create(world: ClientLevel, character: AiCharacterDefinition): AiCharacterPreviewHandle?
 }

@@ -35,7 +35,7 @@ class AutomaticControlDisplayResolverTest {
         assertEquals(setOf("example:unknown_a", "example:unknown_b"), resolver.warnedUnknownControlIds)
     }
 
-    /** 規則登記了自己的顯示時，該規則的對局使用規則顯示；其他規則使用預設。 */
+    /** 規則登記了自己的顯示時，該規則的對局使用規則顯示。其他規則使用預設。 */
     @Test
     fun `rule displays apply only to their own rule`() {
         val registry = AutomaticControlDisplayRegistryImpl().apply {

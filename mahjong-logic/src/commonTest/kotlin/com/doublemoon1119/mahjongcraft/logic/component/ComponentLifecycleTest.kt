@@ -79,7 +79,7 @@ class ComponentLifecycleTest {
         assertEquals(3000, previous[retained])
     }
 
-    /** 必要初值缺少時拒絕；凍結後也不能補登記。 */
+    /** 必要初值缺少時拒絕。凍結後也不能補登記。 */
     @Test
     fun `required initialization and frozen registrations are enforced`() {
         val registry = registry()
@@ -97,7 +97,7 @@ class ComponentLifecycleTest {
         assertFailsWith<IllegalStateException> { registry.registerLifecycle(definition(reset, ComponentRoundTransition.RESET, 0)) }
     }
 
-    /** 保存的組件只能出現在適用的規則中；要求生命週期的對象不接受沒有登記的組件，牌張不受此限。 */
+    /** 保存的組件只能出現在適用的規則中。要求生命週期的對象不接受沒有登記的組件，牌張不受此限。 */
     @Test
     fun `stored components must belong to the current rule`() {
         val tileValue = ComponentType("test:tile_value", Int::class, { it }, target = BuiltInComponentOwners.TILE)
@@ -161,7 +161,7 @@ class ComponentLifecycleTest {
         }
     }
 
-    /** 追加範圍的組件必須有生命週期；同一份範圍不能重複登記。 */
+    /** 追加範圍的組件必須有生命週期。同一份範圍不能重複登記。 */
     @Test
     fun `lifecycle scope requires a lifecycle and a unique id`() {
         val registry = registry()

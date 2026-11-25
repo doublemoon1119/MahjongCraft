@@ -13,7 +13,7 @@ class ClientDecisionPromptStore {
     var prompt: PlayerDecisionPromptDto? = null
         private set
 
-    /** 每收到一次權威 prompt 更新就遞增的序號，包含內容沒有改變的重送；清除時不歸零。 */
+    /** 每收到一次權威 prompt 更新就遞增的序號，包含內容沒有改變的重送。清除時不歸零。 */
     var updateSequence: Long = 0L
         private set
 
@@ -23,7 +23,7 @@ class ClientDecisionPromptStore {
     /** [tileSelectionDecisionKey] 對應的動作 token，供實體牌 renderer 查詢合法候選牌。 */
     private var tileSelectionActionToken: String? = null
 
-    /** 套用指定遊戲的 prompt；null 表示該決策只有精簡倒數。 */
+    /** 套用指定遊戲的 prompt。null 表示該決策只有精簡倒數。 */
     fun apply(gameId: Uuid, prompt: PlayerDecisionPromptDto?) {
         if (this.prompt?.decisionKey != prompt?.decisionKey) endTileSelection()
         this.gameId = gameId
@@ -48,7 +48,7 @@ class ClientDecisionPromptStore {
     /** 目前是否正在為某個動作選取實體牌。 */
     fun isTileSelectionActive(): Boolean = prompt?.decisionKey == tileSelectionDecisionKey
 
-    /** 目前選牌動作的合法候選牌 ID；未進入選牌模式或找不到對應動作時回傳空清單。 */
+    /** 目前選牌動作的合法候選牌 ID。未進入選牌模式或找不到對應動作時回傳空清單。 */
     fun activeTileSelectionEligibleTileIds(): List<String> {
         val token = tileSelectionActionToken.takeIf { isTileSelectionActive() } ?: return emptyList()
         return prompt?.actions?.firstOrNull { it.token == token }?.tileSelection?.eligibleTileIds.orEmpty()

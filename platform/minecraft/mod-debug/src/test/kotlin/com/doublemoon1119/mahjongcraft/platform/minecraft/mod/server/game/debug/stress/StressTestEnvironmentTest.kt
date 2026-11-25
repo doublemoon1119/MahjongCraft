@@ -39,7 +39,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證壓力測試資料環境依歷史處理方式處理共用權威來源中的對局歷史。 */
 class StressTestEnvironmentTest {
-    /** 寫入模式下，共用同一個權威來源的兩場三人對局都會寫進壓力測試資料庫且沒有遺失；刪除後資料庫檔案消失。 */
+    /** 寫入模式下，共用同一個權威來源的兩場三人對局都會寫進壓力測試資料庫且沒有遺失。刪除後資料庫檔案消失。 */
     @Test
     fun `matches sharing the stress store are archived to the stress database`() = runBlocking {
         val path = databasePath()
@@ -101,7 +101,7 @@ class StressTestEnvironmentTest {
         }
     }
 
-    /** 打完的桌移除後只剩下待處理的歷史；返回的房間不會留在共用權威來源。 */
+    /** 打完的桌移除後只剩下待處理的歷史。返回的房間不會留在共用權威來源。 */
     @Test
     fun `discarding a finished table removes its room`() = runBlocking {
         val environment = assertNotNull(factory().openAt(databasePath(), StressHistoryMode.OFF))
@@ -152,7 +152,7 @@ class StressTestEnvironmentTest {
     /**
      * 輪流推進多場三人對局至結束，待寫事件過多時暫停以等待背景寫入。
      *
-     * 各場以固定種子開局；初級 AI 遇到相同局面做相同選擇，因此結果每次相同。
+     * 各場以固定種子開局。初級 AI 遇到相同局面做相同選擇，因此結果每次相同。
      *
      * @param environment 各場共用的測試資料環境。
      * @param count 要建立並完成的場數。
@@ -177,7 +177,7 @@ class StressTestEnvironmentTest {
         runtimes
     }
 
-    /** @return 新建暫存資料夾中的資料庫路徑；此時尚未建立資料庫檔案。 */
+    /** @return 新建暫存資料夾中的資料庫路徑。此時尚未建立資料庫檔案。 */
     private fun databasePath(): Path = createTempDirectory("mahjongcraft-stress-test-").resolve("stress-test-history.sqlite")
 
     /** @return 使用內建規則、測試排程器與獨立位置索引的環境工廠。 */
@@ -211,7 +211,7 @@ class StressTestEnvironmentTest {
         /** 移除進行中桌子前推進的步數。 */
         const val RUNNING_STEPS = 10
 
-        /** 完整對局使用的固定種子；第 n 場使用此值加 n。 */
+        /** 完整對局使用的固定種子。第 n 場使用此值加 n。 */
         const val MATCH_SEED = 1
     }
 
@@ -220,7 +220,7 @@ class StressTestEnvironmentTest {
      *
      * @param environment 寫入資料庫的壓力測試環境。
      * @param matchIds 要查詢的場次。
-     * @return 已封存的場次；資料庫忙碌時為空。
+     * @return 已封存的場次。資料庫忙碌時為空。
      */
     private suspend fun archivedReplayIds(environment: StressTestEnvironment, matchIds: Set<String>): Set<String> {
         val writer = checkNotNull(environment.historySource).writer

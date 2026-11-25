@@ -314,7 +314,7 @@ class CompactReplayRoundReaderGenuineTest {
         assertEquals(setOf(meld.tiles[1]), meld.faceDownTileIds)
     }
 
-    /** 加槓沿用同一組副露身分；前面多出一組新副露、位置改變後，牌譜中原本那組仍保留相同的副露代碼。 */
+    /** 加槓沿用同一組副露身分。前面多出一組新副露、位置改變後，牌譜中原本那組仍保留相同的副露代碼。 */
     @Test
     fun `replay keeps a meld identity across an added kan when its position shifts`() = runTest {
         val ponTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
@@ -464,7 +464,7 @@ class CompactReplayRoundReaderGenuineTest {
         assertEquals("""{"discards":1}""", after.presentationNotes)
     }
 
-    /** 一次讀取連續幾個位置，與逐一讀取的結果相同；本局交易不足時只讀到最後一筆交易之後。 */
+    /** 一次讀取連續幾個位置，與逐一讀取的結果相同。本局交易不足時只讀到最後一筆交易之後。 */
     @Test
     fun `reader returns consecutive states in one pass`() = runTest {
         val fixture = fixture()
@@ -787,7 +787,7 @@ class CompactReplayRoundReaderGenuineTest {
     /**
      * 連莊時賽程局位不變，Replay 仍以順序號區分每一局，逐局都能讀取並對應到正確的開局內容。
      *
-     * 局結束與下一局開局在同一筆權威交易中；局結束資訊留在結束的那一局，不出現在下一局的開局交易。
+     * 局結束與下一局開局在同一筆權威交易中。局結束資訊留在結束的那一局，不出現在下一局的開局交易。
      */
     @Test
     fun `reader selects each round by order when the dealer repeats`() = runTest {
@@ -866,7 +866,7 @@ class CompactReplayRoundReaderGenuineTest {
      * 建立流局動作與局完成摘要分屬不同交易的正式 Replay 文件。
      *
      * @param scores 流局結算交易寫入的玩家分數，依初始座位排列。
-     * @param intermediateScores 流局結算後、局完成前的額外分數；沒有時為 null。
+     * @param intermediateScores 流局結算後、局完成前的額外分數。沒有時為 null。
      * @return 正式編碼的流局測試 Replay fixture。
      */
     private fun exhaustiveDrawFixture(scores: List<Int>, intermediateScores: List<Int>? = null): Fixture {
@@ -990,7 +990,7 @@ class CompactReplayRoundReaderGenuineTest {
      * 建立包含立直後胡牌、續局分數變化與後續局結算的正式 Replay 文件。
      *
      * @param useWinRuleEffect 是否以 WIN 規則效果取代獨立胡牌結算事實。
-     * @param recordWinSettlement 是否記錄實際胡牌交易；關閉時驗證缺少明細的安全處理。
+     * @param recordWinSettlement 是否記錄實際胡牌交易。關閉時驗證缺少明細的安全處理。
      * @return 正式編碼的測試 Replay fixture。
      */
     private fun continuingWinFixture(useWinRuleEffect: Boolean = false, recordWinSettlement: Boolean = true): Fixture {

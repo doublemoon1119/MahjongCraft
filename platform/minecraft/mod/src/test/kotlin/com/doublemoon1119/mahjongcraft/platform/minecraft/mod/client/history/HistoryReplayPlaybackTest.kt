@@ -47,7 +47,7 @@ class HistoryReplayPlaybackTest {
         assertNull(playback.advance(step = 1, stepCount = STEP_COUNT, now = 4.5.seconds, nextReady = true, marked = false))
     }
 
-    /** 到最後一步自動暫停；在最後一步按播放從頭開始。 */
+    /** 到最後一步自動暫停。在最後一步按播放從頭開始。 */
     @Test
     fun `playback stops at the last step and restarts from the beginning`() {
         val playback = HistoryReplayPlayback()
@@ -59,7 +59,7 @@ class HistoryReplayPlaybackTest {
         assertTrue(playback.playing)
     }
 
-    /** 換步重新計時；捲動列表停止跟隨，播放、換步或換局恢復跟隨，換局會暫停。 */
+    /** 換步重新計時。捲動列表停止跟隨，播放、換步或換局恢復跟隨，換局會暫停。 */
     @Test
     fun `moves restart the timer and restore list following`() {
         val playback = HistoryReplayPlayback()

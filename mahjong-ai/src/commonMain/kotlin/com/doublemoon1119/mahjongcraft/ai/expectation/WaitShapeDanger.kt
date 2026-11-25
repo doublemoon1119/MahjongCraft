@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.PositionView
  * 依聽牌型估計一張牌被已聽牌對手榮和的可能性，供使用一般數牌與字牌的規則共用。
  *
  * 列舉對手可能用這張牌胡的每一種聽牌方式（兩面、坎張、邊張、雙碰、單騎），依評估者看不到的牌張數量加權。
- * 組成某種聽牌所需的牌已經全部看得到時，這種聽牌不列入；兩面聽牌的另一側是對手不能榮和的牌時，
+ * 組成某種聽牌所需的牌已經全部看得到時，這種聽牌不列入。兩面聽牌的另一側是對手不能榮和的牌時，
  * 他也不能以這種聽牌胡，因此也不列入。
  *
  * @property tileKinds 規則使用、會被打出的所有牌種。
@@ -22,7 +22,7 @@ internal class WaitShapeDanger(
      *
      * @param view 評估者可見資訊所構成的局面視角。
      * @param tile 評估者考慮打出的牌。
-     * @param unwinnableTiles 對手依規則不能榮和的牌；呼叫端已排除 [tile] 本身在其中的情況。
+     * @param unwinnableTiles 對手依規則不能榮和的牌。呼叫端已排除 [tile] 本身在其中的情況。
      * @return 介於 0 到 1 的放銃可能性。
      */
     fun estimate(

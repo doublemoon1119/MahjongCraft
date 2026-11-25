@@ -8,7 +8,7 @@ import kotlin.uuid.Uuid
 /**
  * 規則 resolver 產生的強型別特殊本局結果。
  *
- * [settledTableState] 是 resolver 以純函式算出的完整權威結果；Flow 只負責原子寫回，不會再次計分。
+ * [settledTableState] 是 resolver 以純函式算出的完整權威結果。Flow 只負責原子寫回，不會再次計分。
  * [scoreDeltas] 則保留可供呈現與診斷使用的明確差額，並在建立時驗證與桌況前後一致。
  */
 data class ResolvedRoundOutcome(

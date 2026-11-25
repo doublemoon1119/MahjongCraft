@@ -90,14 +90,14 @@ import kotlin.uuid.Uuid
  * 不依賴平台或測試 fixture 的單場真實 Flow 執行環境。
  *
  * 用來以真實流程驗證歷史記錄與封存管線。規則整合一律取自執行環境已完成登記的 [HeadlessHistoryRegistries]，
- * 與正式對局使用同一套登記；權威狀態、快照與事件則全部隔離，不影響正式玩家。
+ * 與正式對局使用同一套登記。權威狀態、快照與事件則全部隔離，不影響正式玩家。
  *
  * @property scenario 生成情境。
  * @property store 隔離權威狀態儲存。
  * @property venueId 場地識別碼。
  * @property gameRepository 隔離對局 repository。
  * @property coordinator 真實流程 coordinator。
- * @property advances 這一局的單局推進；[step] 經它執行，這一局已在推進時略過。
+ * @property advances 這一局的單局推進。[step] 經它執行，這一局已在推進時略過。
  * @property gameId 目前對局識別碼。
  * @property match 場次識別碼。
  */
@@ -119,14 +119,14 @@ class HeadlessFlowHistoryRuntime private constructor(
     override suspend fun matchId(): Uuid = match
 
     /**
-     * 推進一個自動玩家步驟；這一局已在推進時不推進。
+     * 推進一個自動玩家步驟。這一局已在推進時不推進。
      *
      * @return 是否實際推進權威流程。
      */
     override suspend fun step(): Boolean = advances.runExclusive(gameId) { coordinator.advanceAutomatedPlayerStep(gameId) } ?: false
 
     /**
-     * 取得目前對局；對局已移出權威狀態時為 null。
+     * 取得目前對局。對局已移出權威狀態時為 null。
      *
      * @return 目前對局，或對局已移除時的 null。
      */

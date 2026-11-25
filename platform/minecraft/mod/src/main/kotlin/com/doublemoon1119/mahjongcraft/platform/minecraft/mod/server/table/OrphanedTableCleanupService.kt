@@ -41,7 +41,7 @@ class OrphanedTableCleanupService(
     /**
      * 依目前有效設定的 orphan policy 處理已確認缺失的桌子。
      *
-     * @param entry 確認缺失時觀察到的位置索引項目；索引已不再是同一個項目時視為過期請求。
+     * @param entry 確認缺失時觀察到的位置索引項目。索引已不再是同一個項目時視為過期請求。
      * @return 實際採取的清理結果。
      */
     suspend fun cleanupMissing(entry: TableLocationEntry): OrphanedTableCleanupResult = cleanup(
@@ -53,7 +53,7 @@ class OrphanedTableCleanupService(
     /**
      * 玩家政策已允許破壞時，移除該桌子的任何 Room／Game。
      *
-     * @param entry 玩家破壞時觀察到的位置索引項目；索引已不再是同一個項目時視為過期請求。
+     * @param entry 玩家破壞時觀察到的位置索引項目。索引已不再是同一個項目時視為過期請求。
      * @return 實際採取的清理結果。
      */
     suspend fun cleanupPlayerBroken(entry: TableLocationEntry): OrphanedTableCleanupResult = cleanup(

@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue
 
-/** 目錄設定的來源；一般說明不代表任何房間或歷史對局的設定。 */
+/** 目錄設定的來源。一般說明不代表任何房間或歷史對局的設定。 */
 enum class RuleCatalogueConfigSource {
     /** 規則來源提供的預設設定。 */
     GENERAL,

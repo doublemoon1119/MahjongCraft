@@ -169,7 +169,7 @@ class HistoryCommand(
     }
 
     /**
-     * 明示查詢失敗原因；若有同 session 快照則附上舊資料，不假造目前用量。
+     * 明示查詢失敗原因。若有同 session 快照則附上舊資料，不假造目前用量。
      *
      * @param source 原本的命令來源，只於 main dispatcher 呼叫。
      * @param key 安全的本地化原因。

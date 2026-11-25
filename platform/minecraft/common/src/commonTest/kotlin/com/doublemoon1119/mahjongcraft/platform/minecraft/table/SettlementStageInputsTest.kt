@@ -286,7 +286,7 @@ class SettlementStageInputsTest {
         statusId = null,
     )
 
-    /** 只接受 lookup 的測試替身；任何註冊或凍結呼叫都表示測試走錯路徑。 */
+    /** 只接受 lookup 的測試替身。任何註冊或凍結呼叫都表示測試走錯路徑。 */
     private object FakeTileAssetRegistry : MinecraftTileAssetRegistry {
         override val registrationKeys: Set<String> get() = emptySet()
 

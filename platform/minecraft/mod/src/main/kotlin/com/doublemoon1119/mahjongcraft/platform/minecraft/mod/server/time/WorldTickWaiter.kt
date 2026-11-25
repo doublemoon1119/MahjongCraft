@@ -10,7 +10,7 @@ import kotlin.coroutines.resume
 /**
  * 依指定世界的實際遊戲 tick 等待，不把 tick 換算成真實毫秒，也不依賴背景計時器。
  *
- * 每次伺服器 tick 都重新讀取目標世界的 [ServerLevel.getGameTime]；伺服器落後、世界暫停或切換時，等待
+ * 每次伺服器 tick 都重新讀取目標世界的 [ServerLevel.getGameTime]。伺服器落後、世界暫停或切換時，等待
  * 不會誤提前。伺服器停止時所有等待中的協程會被取消。
  */
 class WorldTickWaiter {
@@ -24,7 +24,7 @@ class WorldTickWaiter {
     private var registered = false
 
     /**
-     * 註冊世界 tick 與伺服器停止事件；同一個實例只註冊一次。
+     * 註冊世界 tick 與伺服器停止事件。同一個實例只註冊一次。
      *
      * @param events 登記事件用的伺服器事件來源。
      */
@@ -40,7 +40,7 @@ class WorldTickWaiter {
     /**
      * 等待 [world] 的遊戲時間到達 [targetWorldTime]。
      *
-     * 呼叫端必須在伺服器主執行緒建立等待；tick 回呼同樣在主執行緒執行，因此不會與登記流程交錯。
+     * 呼叫端必須在伺服器主執行緒建立等待。tick 回呼同樣在主執行緒執行，因此不會與登記流程交錯。
      *
      * @param world 要觀察遊戲時間的世界。
      * @param targetWorldTime 要到達的絕對世界 tick。

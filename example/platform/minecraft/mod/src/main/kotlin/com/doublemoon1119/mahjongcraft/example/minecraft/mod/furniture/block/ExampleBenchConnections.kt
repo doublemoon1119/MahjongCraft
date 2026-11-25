@@ -9,7 +9,7 @@ internal object ExampleBenchConnections {
      *
      * @param facing 本格朝向。
      * @param side 鄰格相對本格的方向。
-     * @param neighborFacing 已載入鄰格的長凳朝向；不是長凳或未載入時為 null。
+     * @param neighborFacing 已載入鄰格的長凳朝向。不是長凳或未載入時為 null。
      * @return 鄰格位於左右且同朝向時為 true。
      */
     fun connects(

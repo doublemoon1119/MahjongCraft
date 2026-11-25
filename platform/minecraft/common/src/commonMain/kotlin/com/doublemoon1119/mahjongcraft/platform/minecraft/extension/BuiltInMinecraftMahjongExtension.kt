@@ -65,7 +65,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.blackTextOnRedTil
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.redText
 
 /**
- * MahjongCraft 不屬於任何規則的內建 Minecraft 呈現；所有規則中立的內建登記都寫在這裡。
+ * MahjongCraft 不屬於任何規則的內建 Minecraft 呈現。所有規則中立的內建登記都寫在這裡。
  *
  * [MinecraftMahjongExtensionBootstrap] 在所有 extension 之前登記它，啟動報告將它的登記列為內建來源。
  * 登記方式與其他 extension 相同，不具有覆寫或繞過重複 key 驗證的特權。
@@ -168,7 +168,7 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
     /**
      * 34 種基本牌與未知牌的 asset key 對應的 Unicode「Mahjong Tiles」區塊字元（U+1F000~U+1F02F）。這組字元由
      * `assets/minecraft/font/default.json`（見 `platform/minecraft/common/src/jvmMain/resources`）註冊成自訂 bitmap 字型，
-     * 讓文字內容直接顯示成牌面貼圖；規則專屬牌（例如日麻的赤五）由該規則的 extension 登記同一區塊的字元。
+     * 讓文字內容直接顯示成牌面貼圖。規則專屬牌（例如日麻的赤五）由該規則的 extension 登記同一區塊的字元。
      */
     override fun registerTileEmojis(registry: TileEmojiRegistrar) {
         registry.register(TileEmojiDefinition("east", "🀀"))
@@ -211,16 +211,12 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
     /**
      * 34 種基本牌的牌面角落標籤，供非中文圈玩家開啟輔助標籤時使用。
      *
-     * 內建映射與第三方映射共用 [TileLabelRegistry.register]，不具有覆寫或繞過重複 key 驗證的特權；
-     * [UNKNOWN_TILE_ASSET_KEY] 與尚未提供標籤的牌種一律不註冊，呈現端 [TileLabelRegistry.find]
-     * 回傳 `null` 時不顯示任何標籤。
-     *
-     * 顏色規則：牌面本身印刷成紅色的牌（紅中，以及例如日麻的赤五）角落文字用黑色，其餘一律用紅色；只有右上角
-     * 標籤，左上角固定不顯示。
-     *
-     * 文字內容規則：數牌只顯示點數數字，不額外標示花色字母（花色本身已由牌面材質的餅／條／萬圖案表達）；
-     * 字牌用單一或兩個字母縮寫（東南西北＝E/S/W/N，紅中＝R，發＝G，白＝Wh——避免跟西風的 `W` 混淆特地用
-     * 兩個字母）。
+     * - 內建映射與第三方映射共用 [TileLabelRegistry.register]，不能覆寫或繞過重複 key 驗證。
+     * - [UNKNOWN_TILE_ASSET_KEY] 與尚未提供標籤的牌種一律不註冊。呈現端 [TileLabelRegistry.find] 回傳 `null` 時不顯示標籤。
+     * - 只有右上角標籤，左上角固定不顯示。
+     * - 顏色：牌面本身印成紅色的牌（紅中，以及例如日麻的赤五）用黑字，其餘用紅字。
+     * - 數牌只顯示點數數字，不標花色字母，花色已由牌面的餅／條／萬圖案表達。
+     * - 字牌用字母縮寫：東南西北為 E/S/W/N，紅中為 R，發為 G，白為 Wh。白用兩個字母，避免跟西風的 `W` 混淆。
      */
     override fun registerTileLabels(registry: TileLabelRegistrar) {
         // 萬子
@@ -357,13 +353,13 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
         )
     }
 
-    /** 摸完提示與牌譜槓動作的中立用語；說法不同的規則以同一個文字 ID 覆寫。 */
+    /** 摸完提示與牌譜槓動作的中立用語。說法不同的規則以同一個文字 ID 覆寫。 */
     override fun registerRuleWordings(registry: RuleWordingRegistrar) {
         registry.register(RuleWordingDefaultDefinition(BuiltInRuleWordingIds.WALL_EXHAUSTED, MinecraftMessageKeys.WALL_EXHAUSTED))
         registry.register(RuleWordingDefaultDefinition(BuiltInRuleWordingIds.HISTORY_KAN, MinecraftHistoryScreenKeys.ROUND_ACTION_KAN))
     }
 
-    /** 核心動作的中立預設用語與操作卡順序；說法不同的規則登記同一個動作 ID 即可覆寫，不需要改動呈現程式。 */
+    /** 核心動作的中立預設用語與操作卡順序。說法不同的規則登記同一個動作 ID 即可覆寫，不需要改動呈現程式。 */
     override fun registerGameActionVocabulary(registry: GameActionVocabularyRegistrar) {
         registry.register(
             definition = GameActionVocabularyDefaultDefinition(
@@ -427,5 +423,5 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
     }
 }
 
-/** 包牌付款原因的文字顏色；與分數增減的紅綠色區隔。 */
+/** 包牌付款原因的文字顏色。與分數增減的紅綠色區隔。 */
 private const val PAO_PAYMENT_REASON_COLOR: Int = 0xFFB05C

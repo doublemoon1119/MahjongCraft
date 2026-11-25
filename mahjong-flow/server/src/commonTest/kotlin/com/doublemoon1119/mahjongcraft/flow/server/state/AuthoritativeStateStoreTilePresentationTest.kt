@@ -23,7 +23,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證交易提交時保存的牌張呈現：開局列出所有牌，之後只列出改變的牌，且位於桌況結果之前。 */
 class AuthoritativeStateStoreTilePresentationTest {
-    /** 開局列出全部牌；摸牌只記錄被摸的那張，並排在桌況結果前面。 */
+    /** 開局列出全部牌。摸牌只記錄被摸的那張，並排在桌況結果前面。 */
     @Test
     fun `opening lists every tile and later transactions list only changed tiles`() = runTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true, tilePresentationResolver = WallAndHandResolver)

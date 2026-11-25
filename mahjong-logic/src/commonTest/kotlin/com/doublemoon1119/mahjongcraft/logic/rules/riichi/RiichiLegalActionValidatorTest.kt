@@ -203,7 +203,7 @@ class RiichiLegalActionValidatorTest {
 
     /**
      * 驗證牌山只剩 1 張時，暗槓、加槓與大明槓都不能宣告：嶺上補牌後牌山末端那張會補進王牌區，
-     * 就沒有海底牌可摸；碰不受影響。
+     * 就沒有海底牌可摸。碰不受影響。
      */
     @Test
     fun `test no kan of any type when only one live tile remains`() {
@@ -899,7 +899,7 @@ class RiichiLegalActionValidatorTest {
     }
 
     /**
-     * 無役聽牌在活牌仍剩 14 張時不可因重複扣除王牌而取得河底役；真正摸盡後才可用河底榮和。
+     * 無役聽牌在活牌仍剩 14 張時不可因重複扣除王牌而取得河底役。真正摸盡後才可用河底榮和。
      */
     @Test
     fun `test houtei only grants ron after live wall is exhausted`() {
@@ -1127,7 +1127,7 @@ class RiichiLegalActionValidatorTest {
         assertFalse(actions.any { it is GameAction.Ron })
     }
 
-    /** 手上同種牌有赤五與普通五時，碰有兩個選項，沒用到赤五的排在前面；完全相同的牌只給一個選項。 */
+    /** 手上同種牌有赤五與普通五時，碰有兩個選項，沒用到赤五的排在前面。完全相同的牌只給一個選項。 */
     @Test
     fun `pon offers one option per distinct tile combination`() {
         val redHand = FakeHandFactory.create(tiles = List(3) { Tile.Numeric(Tile.Suit.Dot, 5) } + Tile.Honor.North).withRedFives(Tile.Suit.Dot)

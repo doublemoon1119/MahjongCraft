@@ -10,7 +10,7 @@ import kotlin.uuid.Uuid
  * @property classification 規則中立結果分類。
  * @property beneficiaryPlayerIds 此結果的得利者。
  * @property responsiblePlayerIds 此結果的責任玩家。
- * @property transitionDirective 下一任莊家；指定的玩家必須在本桌。
+ * @property transitionDirective 下一任莊家。指定的玩家必須在本桌。
  * @property settledScoresByPlayerId 本局結算後每位玩家的權威分數。
  */
 data class RoundCompletionSummary(

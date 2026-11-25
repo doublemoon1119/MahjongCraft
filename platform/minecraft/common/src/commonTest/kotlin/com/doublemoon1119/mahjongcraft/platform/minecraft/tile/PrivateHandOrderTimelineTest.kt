@@ -12,7 +12,7 @@ class PrivateHandOrderTimelineTest {
     /** 測試用的牌。 */
     private val tileId = Uuid.parse("00000000-0000-0000-0000-000000000001")
 
-    /** 還沒生效的項目不會提早套用；之後取生效時間不晚於現在的最後一個。 */
+    /** 還沒生效的項目不會提早套用。之後取生效時間不晚於現在的最後一個。 */
     @Test
     fun `entries apply from their effective time`() {
         val timeline = PrivateHandOrderTimeline()
@@ -28,7 +28,7 @@ class PrivateHandOrderTimelineTest {
         assertEquals(filled, timeline.orderAt(25.0), "The latest effective entry stays after older ones are dropped.")
     }
 
-    /** 不依時間順序抵達的項目依生效時間排列；同一時間以後到的為準。 */
+    /** 不依時間順序抵達的項目依生效時間排列。同一時間以後到的為準。 */
     @Test
     fun `entries arriving out of order are placed by time`() {
         val timeline = PrivateHandOrderTimeline()
@@ -43,7 +43,7 @@ class PrivateHandOrderTimelineTest {
         assertEquals(replaced, timeline.orderAt(20.0))
     }
 
-    /** 沒有任何項目時呼叫端改用快照；有項目但還沒生效時不是空的。 */
+    /** 沒有任何項目時呼叫端改用快照。有項目但還沒生效時不是空的。 */
     @Test
     fun `empty only before any entry arrives`() {
         val timeline = PrivateHandOrderTimeline()

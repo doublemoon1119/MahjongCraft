@@ -187,7 +187,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
      * 驗證整局牌牆不存在空間重疊。
      *
      * 牌張寬度為一墩，因此同一面同一層的任兩張牌中心距不得小於一墩。這條不變式涵蓋初次發牌完成後
-     * 與四次槓的每個檢查點；`TileWallPhysicalLayout` 本身只擋完全相同的 placement，帶位移的半墩重疊會通過。
+     * 與四次槓的每個檢查點。`TileWallPhysicalLayout` 本身只擋完全相同的 placement，帶位移的半墩重疊會通過。
      */
     @Test
     fun `no two wall tiles ever overlap in space`() {
@@ -205,11 +205,12 @@ class RiichiPhysicalWallLayoutPolicyTest {
     /**
      * 驗證王牌區與活牌區之間的分界始終存在。
      *
-     * 奇數次槓把一張牌（寬一墩）補進分界，分界因此正好少一墩；偶數次槓把該墩用完、活牌整排後退一墩，
-     * 分界正好回復一墩。任何時點都必須至少留半墩，不得貼齊或重疊。
+     * - 奇數次槓把一張牌（寬一墩）補進分界，分界正好少一墩。
+     * - 偶數次槓把該墩用完、活牌整排後退一墩，分界正好回復一墩。
+     * - 任何時點都必須至少留半墩，不得貼齊或重疊。
      *
-     * 分界的絕對寬度依開門位置而異（活牌末端不一定剛好抵著王牌區），因此這裡驗證的是每次槓造成的變化量
-     * 與下界，不是固定寬度。
+     * 分界的絕對寬度依開門位置而異，因為活牌末端不一定剛好抵著王牌區。因此這裡驗證每次槓造成的變化量與下界，
+     * 不驗證固定寬度。
      */
     @Test
     fun `keeps a visible gap between the dead wall and the live wall`() {
@@ -325,7 +326,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
     /**
      * 模擬開局發牌與四次槓，在每個時點以目前布局及仍在牌牆中的牌呼叫 [check]。
      *
-     * 摸走的牌會同步從布局移除，比照 production 每次 `Draw` transition 的修剪行為；不修剪的話
+     * 摸走的牌會同步從布局移除，比照 production 每次 `Draw` transition 的修剪行為。不修剪的話
      * [resolveTransitionValidated] 會因為布局多出已離開牌牆的牌而拒絕。
      *
      * 第一個檢查點是開局發牌完成後，不是剛建立布局時：初始布局是以「開局發牌已完成」為前提規劃的
@@ -416,7 +417,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
      *
      * @param layout 要檢查的實體布局。
      * @param tableState 提供活牌牆與王牌區牌張。
-     * @return 最近牌張對的空隙寬度；沒有同面配對時為 `null`。
+     * @return 最近牌張對的空隙寬度。沒有同面配對時為 `null`。
      */
     private fun nearestGap(layout: TileWallPhysicalLayout, tableState: TableState): Double? {
         val liveIds = tableState.tileWall.getAllTiles().mapTo(mutableSetOf()) { it.id }
@@ -504,7 +505,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
         /** 四槓流局前最多完成的槓數。 */
         const val KAN_COUNT = 4
 
-        /** 模擬時每摸幾張活牌槓一次；1 代表連續槓。 */
+        /** 模擬時每摸幾張活牌槓一次。1 代表連續槓。 */
         val LIVE_DRAWS_PER_KAN: List<Int> = listOf(1, 2, 4)
 
         /** 四面牌牆。 */

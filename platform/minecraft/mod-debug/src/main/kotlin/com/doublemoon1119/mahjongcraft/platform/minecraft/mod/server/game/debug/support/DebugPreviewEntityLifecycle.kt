@@ -22,7 +22,7 @@ class DebugPreviewEntityLifecycle {
     /**
      * 登記每 tick 一次的清除驅動。
      *
-     * 只由 debug root 在註冊指令樹時呼叫一次；各 command family 不自行重複登記 server tick callback。
+     * 只由 debug root 在註冊指令樹時呼叫一次。各 command family 不自行重複登記 server tick callback。
      *
      * @param events 登記事件用的伺服器事件來源。
      */

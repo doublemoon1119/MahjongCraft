@@ -24,7 +24,7 @@ import net.minecraft.network.chat.Component
  * 本地化欄位和值顯示目前有效設定。跟 server 版本的差別只有一點：這裡是玩家自己的本機設定檔，沒有
  * 權限限制，任何人都能執行。
  *
- * 根節點用共用的 [CLIENT_COMMAND_ROOT]，理由見該常數 KDoc；`config` 子節點在這裡跟 [TileLabelCommand] 的 `label`
+ * 根節點用共用的 [CLIENT_COMMAND_ROOT]，理由見該常數 KDoc。`config` 子節點在這裡跟 [TileLabelCommand] 的 `label`
  * 子節點是各自獨立註冊、共用同一個根節點，跟 server 端 `RoomCommand`／`ServerConfigCommand`
  * 共用 `mahjongcraft` 根節點的既有慣例一致。
  *
@@ -39,7 +39,7 @@ class ClientConfigCommand(
     private val logger = mahjongCraftLogger(ClientConfigCommand::class)
 
     /**
-     * 註冊指令；只能在 client entrypoint 呼叫。
+     * 註冊指令。只能在 client entrypoint 呼叫。
      *
      * @param events 登記用戶端指令的事件來源。
      */
@@ -92,7 +92,7 @@ class ClientConfigCommand(
     }
 
     /**
-     * 顯示目前記憶體內實際生效的本地化設定欄位；完整內容收進單行可 hover 的詳情標籤。
+     * 顯示目前記憶體內實際生效的本地化設定欄位。完整內容收進單行可 hover 的詳情標籤。
      *
      * @return Brigadier 成功值。
      */

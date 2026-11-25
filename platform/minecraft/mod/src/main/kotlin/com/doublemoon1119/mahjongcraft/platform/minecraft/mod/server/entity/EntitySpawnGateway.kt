@@ -7,14 +7,14 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlin.uuid.Uuid
 
 /**
- * Minecraft entity 正式生成的單一入口；在觸碰 world 的 entity index 前確認目前位於 server thread，
+ * Minecraft entity 正式生成的單一入口。在觸碰 world 的 entity index 前確認目前位於 server thread，
  * 並在失敗時保留桌面、entity、執行緒與既有 mutation 的診斷上下文。
  */
 class EntitySpawnGateway {
     /** 記錄生成失敗與識別碼衝突的診斷。 */
     private val logger = mahjongCraftLogger(EntitySpawnGateway::class)
 
-    /** 目前正在生成的實體上下文；為 null 時可開始下一次生成。 */
+    /** 目前正在生成的實體上下文。為 null 時可開始下一次生成。 */
     private val activeSpawn = AtomicReference<SpawnContext?>()
 
     /**
@@ -23,8 +23,8 @@ class EntitySpawnGateway {
      * @param world 目標 server 世界。
      * @param entity 要生成的 entity。
      * @param source 供失敗診斷使用的生成來源識別。
-     * @param tableId 所屬麻將桌；不屬於任何麻將桌的 entity（例如麻將凳的座位）為 null。
-     * @return 世界生成實體的結果；失敗回傳 false 時會記錄警告。
+     * @param tableId 所屬麻將桌。不屬於任何麻將桌的 entity（例如麻將凳的座位）為 null。
+     * @return 世界生成實體的結果。失敗回傳 false 時會記錄警告。
      * @throws IllegalStateException 不在伺服器主執行緒，或存在並行／重入的生成工作。
      */
     fun spawn(world: ServerLevel, entity: Entity, source: String, tableId: Uuid?): Boolean {
@@ -64,7 +64,7 @@ class EntitySpawnGateway {
      * 一次進行中實體生成的診斷資料。
      *
      * @property source 生成來源識別碼。
-     * @property tableId 所屬麻將桌；非牌桌實體為 null。
+     * @property tableId 所屬麻將桌。非牌桌實體為 null。
      * @property entityId 實體的執行期數字識別碼。
      * @property entityUuid 實體 UUID 字串。
      * @property threadName 發起生成的執行緒名稱。

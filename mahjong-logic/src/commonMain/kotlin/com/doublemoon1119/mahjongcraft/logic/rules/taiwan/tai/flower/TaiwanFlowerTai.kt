@@ -11,7 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
  * 計算胡牌時花牌的台：正花每張一台，湊齊四季或四君子的花槓每組一台。
  *
  * @param flowers 已補出的花牌面。
- * @param seatWind 玩家門風；東家對應春與梅，依此類推。
+ * @param seatWind 玩家門風。東家對應春與梅，依此類推。
  * @return 成立的台。
  */
 fun calculateTaiwanFlowerTai(flowers: List<Tile>, seatWind: Wind): List<TaiwanTaiResult> {

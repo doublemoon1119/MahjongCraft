@@ -21,7 +21,7 @@ fun hudCoordinate(ratio: Double, screenSize: Int, elementSize: Int): Int {
  * @param coordinate 元素左上角在該軸的像素座標。
  * @param screenSize 畫面軸向尺寸。
  * @param elementSize 預覽元素軸向尺寸。
- * @return 限制在 0.0 到 1.0 的位置比例；元素沒有移動範圍時為 0.0。
+ * @return 限制在 0.0 到 1.0 的位置比例。元素沒有移動範圍時為 0.0。
  */
 fun hudRatio(coordinate: Int, screenSize: Int, elementSize: Int): Double {
     val travel = (screenSize - elementSize).coerceAtLeast(0)

@@ -43,12 +43,12 @@ internal object HistoryTileGroupLayoutCalculator {
      * 計算可換行的手牌配置，和牌張與立牌之間保留額外間距。
      *
      * @param tiles 依歷史資料保存順序排列的立牌牌索引。
-     * @param winningTile 和牌張牌索引；若沒有則為 null。
+     * @param winningTile 和牌張牌索引。若沒有則為 null。
      * @param maxWidth 單列允許的最大寬度。
      * @param tileWidth 直立牌的寬度。
      * @param tileHeight 直立牌的高度。
      * @param gap 相鄰牌面之間的間距。
-     * @param sidewaysTiles 應橫置顯示的牌索引；預設沒有橫置牌。
+     * @param sidewaysTiles 應橫置顯示的牌索引。預設沒有橫置牌。
      * @return 已換行且包含和牌張的配置。
      */
     fun hand(
@@ -133,10 +133,10 @@ internal object HistoryTileGroupLayoutCalculator {
     /**
      * 計算單一副露配置：所有牌直立、依保存順序排成一列，加槓的四張也排成一列。
      *
-     * 牌譜沒有桌面座位方向，因此不以橫放表示鳴牌來源；來源由呼叫端另外標記。
+     * 牌譜沒有桌面座位方向，因此不以橫放表示鳴牌來源。來源由呼叫端另外標記。
      *
      * @param meld 歷史資料中的副露。
-     * @param maxWidth 單組副露允許的最大寬度；超出時等比例縮小。
+     * @param maxWidth 單組副露允許的最大寬度。超出時等比例縮小。
      * @param tileWidth 直立牌的寬度。
      * @param tileHeight 直立牌的高度。
      * @param gap 相鄰牌面之間的間距。

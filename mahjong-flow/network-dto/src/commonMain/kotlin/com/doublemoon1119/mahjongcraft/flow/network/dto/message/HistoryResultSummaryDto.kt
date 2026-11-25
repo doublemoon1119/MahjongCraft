@@ -7,8 +7,8 @@ import kotlinx.serialization.Serializable
  *
  *
  * @property playerId 玩家 UUID 字串。
- * @property finalScore 終局分數；資料不足時為 null。
- * @property finalRank 依規則模組比較器計算的終局名次；無法計算時為 null。
+ * @property finalScore 終局分數。資料不足時為 null。
+ * @property finalRank 依規則模組比較器計算的終局名次。無法計算時為 null。
  */
 @Serializable
 data class HistoryResultSummaryDto(

@@ -12,7 +12,7 @@ import kotlin.time.Duration
 import kotlin.uuid.Uuid
 
 /**
- * 歷史查詢共用的有界執行流程；各端點保留資料查詢、授權政策與回應內容。
+ * 歷史查詢共用的有界執行流程。各端點保留資料查詢、授權政策與回應內容。
  *
  * @property scope 執行查詢的作用域。
  * @property dispatchers 提供回覆時使用的伺服器主執行緒。
@@ -26,7 +26,7 @@ internal class HistoryQueryExecution(
     private val timeout: Duration,
 ) {
     /**
-     * 取得名額後啟動查詢；沒有名額時依拒絕回覆節流政策回覆。
+     * 取得名額後啟動查詢。沒有名額時依拒絕回覆節流政策回覆。
      *
      * @param R 不可為空的線路回應型別。
      * @param principalId 可信玩家身分。
@@ -34,10 +34,10 @@ internal class HistoryQueryExecution(
      * @param canStart 工作開始前的連線與 session 驗證。
      * @param query 查詢與必要內容裁切，不包含傳送回覆。
      * @param timeoutResponse 建立逾時回應。
-     * @param failureResponse 將一般查詢例外轉為安全回應；不處理取消或致命錯誤。
+     * @param failureResponse 將一般查詢例外轉為安全回應。不處理取消或致命錯誤。
      * @param isCurrentSession 回覆前再次驗證連線與 session。
-     * @param send 主執行緒上的授權重驗與回覆動作；送出失敗不重送。
-     * @return 已啟動的工作；未取得名額時為 null。
+     * @param send 主執行緒上的授權重驗與回覆動作。送出失敗不重送。
+     * @return 已啟動的工作。未取得名額時為 null。
      */
     fun <R : Any> launch(
         principalId: Uuid,
@@ -61,7 +61,7 @@ internal class HistoryQueryExecution(
      * 執行已取得名額的查詢，集中管理逾時、回覆與名額釋放。
      *
      * 查詢失敗可轉為錯誤回應，但連線檢查或傳送本身失敗不得再送第二份回應。
-     * 完成回呼涵蓋工作開始前取消的情況；一次性旗標確保兩條清理路徑只釋放一次。
+     * 完成回呼涵蓋工作開始前取消的情況。一次性旗標確保兩條清理路徑只釋放一次。
      *
      * @param R 不可為空的線路回應型別。
      * @param principalId 可信玩家身分。
@@ -69,9 +69,9 @@ internal class HistoryQueryExecution(
      * @param canStart 工作開始前的連線與 session 驗證。
      * @param query 查詢與必要內容裁切，不包含傳送回覆。
      * @param timeoutResponse 建立逾時回應。
-     * @param failureResponse 將一般查詢例外轉為安全回應；不處理取消或致命錯誤。
+     * @param failureResponse 將一般查詢例外轉為安全回應。不處理取消或致命錯誤。
      * @param isCurrentSession 回覆前再次驗證連線與 session。
-     * @param send 主執行緒上的授權重驗與回覆動作；送出失敗不重送。
+     * @param send 主執行緒上的授權重驗與回覆動作。送出失敗不重送。
      * @return 已啟動的工作。
      */
     fun <R : Any> launchAccepted(

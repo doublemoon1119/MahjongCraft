@@ -10,7 +10,7 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.network.NetworkEvent
 
-/** 以 Forge 的事件頻道實作 [PacketTransport]；封包以原版的自訂資料封包傳送。 */
+/** 以 Forge 的事件頻道實作 [PacketTransport]。封包以原版的自訂資料封包傳送。 */
 object ForgePacketTransport : PacketTransport {
     override fun declareChannel(channelId: ResourceLocation, direction: ChannelDirection) {
         ForgeNetworkChannels.declare(channelId)

@@ -156,7 +156,7 @@ class HistoryArchiveStatusControllerTest {
      * 以測試用 StateFlow 模擬保存狀態傳輸。
      *
      * @property responses 依要求順序回覆的保存狀態。
-     * @property errorCode 回覆附帶的查詢錯誤；null 代表成功。
+     * @property errorCode 回覆附帶的查詢錯誤。null 代表成功。
      */
     private class FakeStatusTransport(
         private val responses: List<HistoryArchiveStatusDto>,

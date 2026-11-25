@@ -5,9 +5,9 @@ import kotlin.uuid.Uuid
 /**
  * 記錄每張桌子的捨牌是否已經落到牌河。
  *
- * 牌局一記下打出的牌，桌況就把它列在牌河，但牌要等排定的動畫時間到了才從手牌飛出去；在那之前它還停在原位。
- * 剛出現在牌河紀錄的牌先記為還沒落定，等到它的位置改變、而且不在移動中，或看過它移動之後停下來，才算落定。
- * 第一次看到一張桌子時，已經在牌河的牌都當作已落定（例如剛進入或重新連線）。
+ * - 牌局一記下打出的牌，桌況就把它列在牌河，但牌要等排定的動畫時間到了才從手牌飛出去，在那之前還停在原位。
+ * - 剛出現在牌河紀錄的牌先記為還沒落定。等到它的位置改變且不在移動中，或看過它移動之後停下來，才算落定。
+ * - 第一次看到一張桌子時（例如剛進入或重新連線），已經在牌河的牌都當作已落定。
  *
  * @param P 牌的位置型別，只用來比較是否相同。
  */
@@ -20,7 +20,7 @@ internal class DiscardSettlementState<P : Any> {
      *
      * @param tableId 桌子。
      * @param discardTileIds 目前在各家牌河紀錄中的牌，包含被鳴走的。
-     * @param positionOf 牌目前的位置；牌不在目前世界中時為 null。
+     * @param positionOf 牌目前的位置。牌不在目前世界中時為 null。
      * @param isMoving 牌是否正在播放移動動畫。
      */
     fun update(
@@ -51,7 +51,7 @@ internal class DiscardSettlementState<P : Any> {
      *
      * @param tableId 桌子。
      * @param tileId 牌。
-     * @return 上次更新時這張牌已在牌河紀錄中、而且已經落定時為 true；桌況在兩次更新之間才列出的牌還沒判斷過，不算落定。
+     * @return 上次更新時這張牌已在牌河紀錄中、而且已經落定時為 true。桌況在兩次更新之間才列出的牌還沒判斷過，不算落定。
      */
     fun isSettled(tableId: Uuid, tileId: Uuid): Boolean = tables[tableId]?.let { tileId in it.known && tileId !in it.pending } == true
 

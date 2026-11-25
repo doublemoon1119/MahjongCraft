@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 
-/** 擴充登記權威狀態保存格式時取得的各類登記介面；編碼、解碼與凍結由 MahjongCraft 進行。 */
+/** 擴充登記權威狀態保存格式時取得的各類登記介面。編碼、解碼與凍結由 MahjongCraft 進行。 */
 interface PersistenceRegistrars {
     /** 規則配置。 */
     val ruleConfigs: PersistenceDtoRegistrar<MahjongRuleConfig>

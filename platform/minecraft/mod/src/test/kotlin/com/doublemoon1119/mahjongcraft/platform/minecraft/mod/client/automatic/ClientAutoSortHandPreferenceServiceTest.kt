@@ -115,7 +115,7 @@ class ClientAutoSortHandPreferenceServiceTest {
         assertEquals(revision, store.revision)
     }
 
-    /** 連續同步失敗只記錄一次警告；重新連線後 RESTORE 成功，下一次失敗會再記錄，重試標記則保留。 */
+    /** 連續同步失敗只記錄一次警告。重新連線後 RESTORE 成功，下一次失敗會再記錄，重試標記則保留。 */
     @Test
     fun `sync failure warning resets after a successful restore`() = withService(sendFailure = IllegalStateException("offline")) { service, sender, store ->
         assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
@@ -138,7 +138,7 @@ class ClientAutoSortHandPreferenceServiceTest {
     /**
      * 建立隔離設定檔與記錄型 sender，並在測試後移除暫存目錄。
      *
-     * @param sendFailure sender 遇到的同步錯誤；未指定時傳送成功。
+     * @param sendFailure sender 遇到的同步錯誤。未指定時傳送成功。
      * @param block 使用建立之服務、sender 與 store 執行測試。
      */
     private fun withService(
@@ -169,7 +169,7 @@ class ClientAutoSortHandPreferenceServiceTest {
     /**
      * 記錄兩種偏好同步語意，並可模擬傳送失敗。
      *
-     * @property failure 模擬的同步傳送錯誤；未指定時傳送成功。
+     * @property failure 模擬的同步傳送錯誤。未指定時傳送成功。
      */
     private class RecordingSender(var failure: RuntimeException?) : ClientAutoSortHandPreferenceSender {
         /** 玩家主動變更紀錄。 */

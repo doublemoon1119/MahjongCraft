@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocab
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 
-/** 擴充登記動作用語時取得的登記介面；查詢與凍結由 MahjongCraft 進行。 */
+/** 擴充登記動作用語時取得的登記介面。查詢與凍結由 MahjongCraft 進行。 */
 interface GameActionVocabularyRegistrar {
     /** 目前已登記組合的穩定 key 快照，格式為 `規則模組 ID/動作 ID`，中立預設以 [GameActionVocabularyRegistry.DEFAULT_KEY] 表示。 */
     val registrationKeys: Set<String>

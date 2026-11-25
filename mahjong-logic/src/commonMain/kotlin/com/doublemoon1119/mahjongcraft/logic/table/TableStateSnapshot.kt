@@ -27,13 +27,13 @@ import kotlin.uuid.Uuid
  * @property comboCount 當前連莊次數
  * @property currentPlayerIndex 當前回合玩家的索引
  * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合。
- * @property physicalWallLayout 目前仍在牌牆中的牌張抽象位置；規則不支援時為 null。
- * @property openingDiceRolls 本局完整擲骰記錄；規則不使用擲骰時為空清單。
+ * @property physicalWallLayout 目前仍在牌牆中的牌張抽象位置。規則不支援時為 null。
+ * @property openingDiceRolls 本局完整擲骰記錄。規則不使用擲骰時為空清單。
  * @property publicTileIds 所有合法觀察者都可讀取牌面的牌張，不包含私人授權。
- * @property publicEvidenceTileIds 由對局事件明確公開過的牌張，例如流局攤開的手牌、宣告的暗槓；不包含規則讓所有人都
+ * @property publicEvidenceTileIds 由對局事件明確公開過的牌張，例如流局攤開的手牌、宣告的暗槓。不包含規則讓所有人都
  *   讀得到牌面的牌。
  * @property tilePoseStates 規則要求的逐張共同姿態，不攜帶原始授權名單。
- * @property latestDiscardTileId 本局最後打出、仍留在牌河的牌；這張牌被鳴走或胡走、本局已經結束，或本局還沒有人打牌時
+ * @property latestDiscardTileId 本局最後打出、仍留在牌河的牌。這張牌被鳴走或胡走、本局已經結束，或本局還沒有人打牌時
  *   為 null。
  */
 data class TableStateSnapshot(
@@ -60,11 +60,11 @@ data class TableStateSnapshot(
 /**
  * 產生一個相對於指定觀察者可見範圍的 [TableState] 不可變快照。
  *
- * 這個低階函式不產生規則組件的公開投影；對外同步或 AI 情境必須再經過
+ * 這個低階函式不產生規則組件的公開投影。對外同步或 AI 情境必須再經過
  * flow 的 visibility policy 套用規則專屬投影，不能直接把這個結果當成觀察者快照。
  *
  * @param visibleHandPlayerIds 可以顯示完整手牌的玩家識別碼集合。
- * @param revealsClosedKanTiles 是否顯示他家暗槓牌面；預設使用本局規則的公開政策。
+ * @param revealsClosedKanTiles 是否顯示他家暗槓牌面。預設使用本局規則的公開政策。
  * @return 依據明確可見範圍產生的桌局快照。
  */
 fun TableState.toSnapshot(

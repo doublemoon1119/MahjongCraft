@@ -42,7 +42,7 @@ internal object RuleHookResultValidator {
     }
 
     /**
-     * 取得規則在一炮多響判定為流局時的流局原因；多家和政策選擇流局的規則必須提供原因。
+     * 取得規則在一炮多響判定為流局時的流局原因。多家和政策選擇流局的規則必須提供原因。
      *
      * @return 規則提供的流局原因。
      * @throws RuleContractViolationException 規則沒有提供原因時。
@@ -54,7 +54,7 @@ internal object RuleHookResultValidator {
         )
 
     /**
-     * 確認移出手牌動作的結果：執行者只從立牌（含摸牌位）移出 [setAsideTile]，並把它接在移出區最後；
+     * 確認移出手牌動作的結果：執行者只從立牌（含摸牌位）移出 [setAsideTile]，並把它接在移出區最後。
      * 執行者另外只多一筆 [action] 的動作紀錄與規則資料變化，其他玩家只有規則狀態可以改變，其餘桌況只有對局組件可以改變。
      *
      * @param before 套用動作前的權威桌況。

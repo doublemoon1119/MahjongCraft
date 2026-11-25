@@ -31,11 +31,11 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
  * @property isRobbingKan 是否為搶槓。
  * @property isRinshanKaihou 是否為嶺上花。
  * @property isFirstTurn 是否為第一巡。用於天和、地和與古役人和的判定。
- * @property isRiichiDeclarationDiscard 榮和的牌是否為放銃者的立直宣言牌；用於古役燕返。
- * @property isDiscardAfterKan 榮和的牌是否為放銃者槓牌並補牌後打出的牌；用於古役槓振。
+ * @property isRiichiDeclarationDiscard 榮和的牌是否為放銃者的立直宣言牌。用於古役燕返。
+ * @property isDiscardAfterKan 榮和的牌是否為放銃者槓牌並補牌後打出的牌。用於古役槓振。
  * @property paoLiability 本局是否已成立包牌責任（大三元／大四喜），若無則為 null。
- * @property nukiDoraTiles 三人麻將中和牌者拔出的北；每張算一張拔北寶牌，也計入寶牌與裏寶牌。
- * @property usesThreePlayerTiles 是否使用沒有二～八萬的三人麻將牌組；決定一萬與九萬的寶牌指示。
+ * @property nukiDoraTiles 三人麻將中和牌者拔出的北。每張算一張拔北寶牌，也計入寶牌與裏寶牌。
+ * @property usesThreePlayerTiles 是否使用沒有二～八萬的三人麻將牌組。決定一萬與九萬的寶牌指示。
  */
 data class RiichiHandValueContext(
     override val hand: Hand,
@@ -67,19 +67,19 @@ data class RiichiHandValueContext(
         /**
          * 依規則設定 [config] 與和牌者的 [declaration] 建立手牌價值上下文。
          *
-         * 規則設定（食斷、三人牌組）與玩家狀態（立直、兩立直、拔出的北、包牌責任）一律在這裡帶入；只有正式結算才知道的
+         * 規則設定（食斷、三人牌組）與玩家狀態（立直、兩立直、拔出的北、包牌責任）一律在這裡帶入。只有正式結算才知道的
          * 和牌情境（一發、裏寶牌、海底、河底、搶槓、嶺上、第一巡、燕返、槓振）一律為否或空，由正式結算另外補上。
          *
          * @param config 建立此上下文時使用的日麻規則配置。
-         * @param declaration 已成立的立直宣告；未立直時為 null。
-         * @param hand 不含和牌張的手牌；門前清依副露是否全為暗槓判定。
+         * @param declaration 已成立的立直宣告。未立直時為 null。
+         * @param hand 不含和牌張的手牌。門前清依副露是否全為暗槓判定。
          * @param winningTile 本次和牌的完整牌值，不借用牌張識別碼。
          * @param isTsumo 是否為自摸。
          * @param roundWind 本局場風。
          * @param seatWind 和牌者自風。
          * @param isDealer 和牌者是否為本局莊家。
          * @param doraIndicators 和牌者看得到的寶牌指示牌。
-         * @param paoLiability 玩家包牌組件的值；沒有時為 null。
+         * @param paoLiability 玩家包牌組件的值。沒有時為 null。
          * @param nukiDoraTiles 玩家北牌區中的牌面。
          * @return 依玩家規則狀態與目前牌況建立的手牌價值上下文。
          */

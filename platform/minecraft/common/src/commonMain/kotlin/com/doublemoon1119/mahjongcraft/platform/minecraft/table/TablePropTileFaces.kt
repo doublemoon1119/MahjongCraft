@@ -13,7 +13,7 @@ fun interface TablePropTileFaces {
      * 取得一張牌的公開牌面。
      *
      * @param tileId 桌況中的牌張識別碼。
-     * @return 所有人都看得到的牌面；牌不在桌況中或還沒公開時為 null。
+     * @return 所有人都看得到的牌面。牌不在桌況中或還沒公開時為 null。
      */
     fun publicFace(tileId: Uuid): TileFaceView?
 }

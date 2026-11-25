@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositor
 import kotlin.uuid.Uuid
 
 /**
- * 房主解除暫時排除；不直接加入成員。
+ * 房主解除暫時排除。不直接加入成員。
  *
  * @property rooms 權威房間。
  * @property snapshots 依觀察者裁切的房間快照。
@@ -22,8 +22,8 @@ class AllowRoomParticipantUseCase(
      *
      * @param roomId 目前房間。
      * @param operatorId 發起操作的房主。
-     * @param previousPlayerId 被排除者上次的成員編號；null 表示解除整份名單。
-     * @return 是否成功；重複解除不會加入或移動任何成員。
+     * @param previousPlayerId 被排除者上次的成員編號。null 表示解除整份名單。
+     * @return 是否成功。重複解除不會加入或移動任何成員。
      */
     suspend operator fun invoke(
         roomId: Uuid,

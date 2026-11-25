@@ -27,7 +27,7 @@ internal class TableLocationValidationQueue<S : Any, W : Any> {
     /** 本次 tick 邊界要再次確認的缺失位置。 */
     private var readyMissingConfirmations = mutableListOf<PendingMissingConfirmation<W>>()
 
-    /** 啟用 [session]；啟動期間已排入的 chunk 工作維持不變。 */
+    /** 啟用 [session]。啟動期間已排入的 chunk 工作維持不變。 */
     fun startSession(session: S) {
         activeSession = session
     }
@@ -51,7 +51,7 @@ internal class TableLocationValidationQueue<S : Any, W : Any> {
     /**
      * 處理上一輪已就緒的工作，再把本輪工作移到下一輪。
      *
-     * 第一次定點查詢缺失時只排入確認；下一個 tick 仍符合 session、chunk、revision 與缺失條件才呼叫
+     * 第一次定點查詢缺失時只排入確認。下一個 tick 仍符合 session、chunk、revision 與缺失條件才呼叫
      * [cleanup]。
      *
      * @param session 目前 tick 所屬的 server session。
@@ -59,7 +59,7 @@ internal class TableLocationValidationQueue<S : Any, W : Any> {
      * @param entriesForChunk 取得該 chunk 的預期位置索引。
      * @param isEntryCurrent 確認索引仍是同一個項目，尚未被移除或重新登記。
      * @param matchesExpectedTable 驗證方塊位置仍有預期桌子。
-     * @param cleanup 第二次確認仍缺失時執行的清理操作；在呼叫端執行緒同步呼叫，不得等待協程鎖。
+     * @param cleanup 第二次確認仍缺失時執行的清理操作。在呼叫端執行緒同步呼叫，不得等待協程鎖。
      */
     fun advance(
         session: S,

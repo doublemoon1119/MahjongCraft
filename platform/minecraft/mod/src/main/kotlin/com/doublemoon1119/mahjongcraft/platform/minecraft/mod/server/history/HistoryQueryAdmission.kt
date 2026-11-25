@@ -4,19 +4,19 @@ import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.uuid.Uuid
 
 /**
- * 每連線的有界查詢准入；完成只解除原權杖，不影響重新連線後的新要求。
+ * 每連線的有界查詢准入。完成只解除原權杖，不影響重新連線後的新要求。
  *
  * @property limits 每次接受或判斷拒絕回覆時讀取目前設定的限制。
- * @property now 供間隔判斷的單調奈秒來源；放在最後以便正式呼叫端只提供設定來源。
+ * @property now 供間隔判斷的單調奈秒來源。放在最後以便正式呼叫端只提供設定來源。
  */
 internal class HistoryQueryAdmission(
     private val limits: () -> HistoryQueryAdmissionLimits = { HistoryQueryAdmissionLimits() },
     private val now: () -> Long = System::nanoTime,
 ) {
-    /** 已接受的要求與上次接受時間；玩家離線時只移除連線索引。 */
+    /** 已接受的要求與上次接受時間。玩家離線時只移除連線索引。 */
     private val entries = mutableMapOf<Uuid, Entry>()
 
-    /** 所有仍可能執行中的工作權杖；不受玩家斷線或重新連線影響。 */
+    /** 所有仍可能執行中的工作權杖。不受玩家斷線或重新連線影響。 */
     private val activeTokens = mutableSetOf<Uuid>()
 
     /** 最近一次向各玩家傳送准入拒絕回覆的時間。 */
@@ -26,7 +26,7 @@ internal class HistoryQueryAdmission(
      * 一個連線的頻率與工作狀態。
      *
      * @property acceptedAt 上次接受要求的單調奈秒。
-     * @property token 目前工作權杖；null 表示已完成。
+     * @property token 目前工作權杖。null 表示已完成。
      */
     private data class Entry(val acceptedAt: Long, var token: Uuid?)
 

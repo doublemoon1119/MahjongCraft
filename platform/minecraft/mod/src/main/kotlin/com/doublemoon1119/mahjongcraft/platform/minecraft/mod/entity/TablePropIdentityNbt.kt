@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftReso
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.Tag
 
-/** 規則物件身分的共用 NBT 讀寫；不改動所屬桌子或其他實體欄位。 */
+/** 規則物件身分的共用 NBT 讀寫。不改動所屬桌子或其他實體欄位。 */
 object TablePropIdentityNbt {
     /** 規則給定的穩定物件 ID。 */
     private const val NBT_KEY_PLACEMENT_ID = "TablePropPlacementId"
@@ -16,7 +16,7 @@ object TablePropIdentityNbt {
      * 還原完整且格式有效的規則物件身分。
      *
      * @param nbt 實體保存資料。
-     * @return 兩個完整命名空間 ID；缺少、型別錯誤或內容無效時為 null，交由同步移除重建。
+     * @return 兩個完整命名空間 ID。缺少、型別錯誤或內容無效時為 null，交由同步移除重建。
      */
     fun read(nbt: CompoundTag): TablePropIdentity? {
         if (!nbt.contains(NBT_KEY_PLACEMENT_ID, Tag.TAG_STRING.toInt()) ||
@@ -31,11 +31,11 @@ object TablePropIdentityNbt {
     }
 
     /**
-     * 保存規則物件身分；自由放置物件沒有身分時移除兩個欄位，不保存半套資料。
+     * 保存規則物件身分。自由放置物件沒有身分時移除兩個欄位，不保存半套資料。
      *
      * @param nbt 接收資料的 NBT compound。
-     * @param placementId 規則物件 ID；自由放置物件為空字串。
-     * @param ruleModuleId 來源規則 ID；自由放置物件為空字串。
+     * @param placementId 規則物件 ID。自由放置物件為空字串。
+     * @param ruleModuleId 來源規則 ID。自由放置物件為空字串。
      */
     fun write(
         nbt: CompoundTag,

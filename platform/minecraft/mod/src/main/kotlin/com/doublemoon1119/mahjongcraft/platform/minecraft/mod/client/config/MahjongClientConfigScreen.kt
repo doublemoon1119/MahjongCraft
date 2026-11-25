@@ -30,7 +30,7 @@ import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 
 /**
- * 原生 MahjongCraft client 設定畫面；分開編輯本機設定與本局自動操作草稿，不接觸房間規則。
+ * 原生 MahjongCraft client 設定畫面。分開編輯本機設定與本局自動操作草稿，不接觸房間規則。
  *
  * @property parent 返回時顯示的上層畫面。
  * @property configStore 本機客戶端設定儲存區。
@@ -116,7 +116,7 @@ class MahjongClientConfigScreen(
     /** 設定畫面不暫停整合伺服器或單人遊戲。 */
     override fun isPauseScreen(): Boolean = false
 
-    /** Esc 在無變更時返回；有未套用草稿時顯示明確的三選項確認畫面。 */
+    /** Esc 在無變更時返回。有未套用草稿時顯示明確的三選項確認畫面。 */
     override fun onClose() {
         if (automaticDraft.state().pending) return
         if (!hasChanges()) {
@@ -256,7 +256,7 @@ class MahjongClientConfigScreen(
     }
 
     /**
-     * 依分類建立目前可見的欄位控制項：開關靠右、寬度固定；沒有對應值的動作佔滿整列。
+     * 依分類建立目前可見的欄位控制項：開關靠右、寬度固定。沒有對應值的動作佔滿整列。
      *
      * @param layout 設定頁版面。
      */
@@ -345,7 +345,7 @@ class MahjongClientConfigScreen(
      * 先保存本機設定，再送出本局草稿並等待配對的伺服器確認。
      *
      * @param closeAfterSave 套用完成後是否關閉畫面。
-     * @return 本機套用完成或已送出本局設定請求時為 true；不代表伺服器已接受請求。
+     * @return 本機套用完成或已送出本局設定請求時為 true。不代表伺服器已接受請求。
      */
     private fun applyDraft(closeAfterSave: Boolean): Boolean {
         if (draftStale || automaticDraft.state().pending) return false
@@ -403,7 +403,7 @@ class MahjongClientConfigScreen(
      * 將 HUD 配置併入完整草稿並透過既有原子保存流程套用。
      *
      * @param layout 欲套用的 HUD 配置。
-     * @return 本機保存與所需同步成功時為 true；失敗時仍保留修改後的草稿。
+     * @return 本機保存與所需同步成功時為 true。失敗時仍保留修改後的草稿。
      */
     internal fun applyHudLayout(layout: MahjongHudLayoutConfig): Boolean {
         if (draftStale || automaticDraft.state().pending) return false
@@ -442,7 +442,7 @@ class MahjongClientConfigScreen(
         undoButton?.tooltip = changes
     }
 
-    /** 復原未套用變更；草稿過期時改以 store 最新權威值為基準。 */
+    /** 復原未套用變更。草稿過期時改以 store 最新權威值為基準。 */
     private fun undoDraft() {
         if (draftStale) {
             baseline = configStore.current
@@ -464,13 +464,13 @@ class MahjongClientConfigScreen(
     private fun differenceText(): Component = clientConfigDifferenceText(baseline, draft, automaticDraft.state(), displayResolver)
 
     /**
-     * 繪製欄位名稱與說明列；放不下時截斷。
+     * 繪製欄位名稱與說明列。放不下時截斷。
      *
      * @param context 畫面繪製環境。
      * @param layout 設定頁版面。
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
-     * @return 游標下被截斷的文字全文；游標不在被截斷的文字上時為 null。
+     * @return 游標下被截斷的文字全文。游標不在被截斷的文字上時為 null。
      */
     private fun renderFieldLabels(context: GuiGraphics, layout: FormScreenLayout, mouseX: Int, mouseY: Int): Component? {
         var hoveredLabel: Component? = null
@@ -540,7 +540,7 @@ class MahjongClientConfigScreen(
     }
 
     /**
-     * 等待確認時的狀態文字；等不到回覆而正在重新同步時改用重新同步文字。
+     * 等待確認時的狀態文字。等不到回覆而正在重新同步時改用重新同步文字。
      *
      * @param requestId 等待中的請求識別碼。
      * @return 狀態文字的翻譯鍵。
@@ -616,7 +616,7 @@ class MahjongClientConfigScreen(
     )
 
     /**
-     * 供 HUD 位置編輯器量測自動操作狀態預覽的項目名稱；本局有權威快照時用實際支援的項目，
+     * 供 HUD 位置編輯器量測自動操作狀態預覽的項目名稱。本局有權威快照時用實際支援的項目，
      * 不在對局中則改用內建項目當樣本，讓玩家在任何時候都能先安排位置。
      */
     private fun automaticControlPreviewLabels(): List<Component> {
@@ -746,7 +746,7 @@ class MahjongClientConfigScreen(
          * 有開啟與關閉兩種狀態的設定。
          *
          * @property name 欄位名稱。
-         * @property description 欄位說明；沒有說明時為 null。
+         * @property description 欄位說明。沒有說明時為 null。
          * @property enabled 讀取目前草稿中的開關狀態。
          * @property toggle 切換開關並更新草稿。
          * @property remote 本局權威狀態過期時是否不可操作。
@@ -820,7 +820,7 @@ private enum class AutomaticControlError(val translationKey: String) {
     UNCONFIRMED(MinecraftClientConfigScreenKeys.AUTOMATIC_UNCONFIRMED),
 }
 
-/** 將伺服器確認結果轉成畫面上的失敗狀態；接受時沒有失敗狀態。 */
+/** 將伺服器確認結果轉成畫面上的失敗狀態。接受時沒有失敗狀態。 */
 private fun ClientAutomaticControlResultKind.toAutomaticControlError(): AutomaticControlError? = when (this) {
     ClientAutomaticControlResultKind.ACCEPTED -> null
     ClientAutomaticControlResultKind.REJECTED -> AutomaticControlError.REJECTED

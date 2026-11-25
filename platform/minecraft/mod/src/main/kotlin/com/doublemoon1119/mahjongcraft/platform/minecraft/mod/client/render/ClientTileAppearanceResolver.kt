@@ -11,7 +11,7 @@ import kotlin.uuid.Uuid
  * 依公開桌況解析牌組外觀，並在桌況暫時清除後保留目前演出的外觀選擇。
  *
  * 這個快取只保存公開的規則外觀，不保存牌種、牌面或實體牌 UUID。新的對局快照抵達時會覆蓋同一桌的
- * 舊值；客戶端連線結束或重新建立時由 [clear] 清除，避免桌子 UUID 在不同世界重用時沿用舊世界外觀。
+ * 舊值。客戶端連線結束或重新建立時由 [clear] 清除，避免桌子 UUID 在不同世界重用時沿用舊世界外觀。
  *
  * @property stateStore 提供每桌公開對局設定。
  * @property moduleRegistry 將公開規則設定解析為規則模組識別碼。
@@ -26,9 +26,9 @@ class ClientTileAppearanceResolver(
     private val appearanceIdsByTable = mutableMapOf<Uuid, String>()
 
     /**
-     * 取得指定桌子的牌組外觀；沒有桌子或公開規則時使用內建預設。
+     * 取得指定桌子的牌組外觀。沒有桌子或公開規則時使用內建預設。
      *
-     * @param tableId 桌子 UUID；沒有桌子上下文時為 `null`。
+     * @param tableId 桌子 UUID。沒有桌子上下文時為 `null`。
      * @return 本次繪製應使用的固定牌組外觀。
      */
     fun resolve(tableId: Uuid?): MinecraftTileSetAppearanceDefinition {
@@ -45,13 +45,13 @@ class ClientTileAppearanceResolver(
             ?: BuiltInMinecraftTileAppearances.DEFAULT
     }
 
-    /** 清除所有桌子的 client-only 外觀快取；應在 JOIN 與 DISCONNECT 時呼叫。 */
+    /** 清除所有桌子的 client-only 外觀快取。應在 JOIN 與 DISCONNECT 時呼叫。 */
     fun clear() {
         appearanceIdsByTable.clear()
     }
 
     /**
-     * 清除指定桌子的公開牌組外觀；普通 snapshot-cleared 不應呼叫此方法，避免中斷仍在播放的展示。
+     * 清除指定桌子的公開牌組外觀。普通 snapshot-cleared 不應呼叫此方法，避免中斷仍在播放的展示。
      *
      * @param tableId 已移除的桌子 UUID。
      */

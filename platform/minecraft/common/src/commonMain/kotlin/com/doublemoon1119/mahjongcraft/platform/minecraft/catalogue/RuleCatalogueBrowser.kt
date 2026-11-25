@@ -11,9 +11,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplay
  *
  * @property catalogues 已完成註冊的目錄來源。
  * @property ruleNames 規則名稱翻譯鍵來源。
- * @param knownRuleIds 設定呈現等來源的已知規則 ID，依登記順序排列；建構時建立獨立快照。
+ * @param knownRuleIds 設定呈現等來源的已知規則 ID，依登記順序排列。建構時建立獨立快照。
  * @property context 開啟時的原規則與設定來源。
- * @param initialCategoryId 開啟時要選擇的分類，例如 [BuiltInRuleCatalogueCategoryIds.BASICS]；所選目錄沒有這個分類或為 null 時選擇全部分類。
+ * @param initialCategoryId 開啟時要選擇的分類，例如 [BuiltInRuleCatalogueCategoryIds.BASICS]。所選目錄沒有這個分類或為 null 時選擇全部分類。
  */
 class RuleCatalogueBrowser(
     private val catalogues: RuleCatalogueRegistry,
@@ -37,7 +37,7 @@ class RuleCatalogueBrowser(
         ids.forEach { id -> NamespacedId.requireValid(id) { "Invalid catalogue rule option ID: $id" } }
     }
 
-    /** 開啟脈絡優先；一般說明優先選擇有目錄的規則，不寫死內建規則。 */
+    /** 開啟脈絡優先。一般說明優先選擇有目錄的規則，不寫死內建規則。 */
     private var selectedRuleId = context.ruleModuleId ?: ruleIds.firstOrNull { it in catalogueRuleIds } ?: ruleIds.firstOrNull()
 
     /** 是否明確選擇一般說明，不以原設定缺失暗示預設設定。 */
@@ -53,11 +53,11 @@ class RuleCatalogueBrowser(
     private var selectedCategoryId: String? = initialCategoryId?.takeIf { it in categoryIds(resolution) }
 
     /**
-     * 切換至已知規則並保留搜尋；切回原規則時恢復原設定。
+     * 切換至已知規則並保留搜尋。切回原規則時恢復原設定。
      * 新目錄也有目前的分類時保留分類，例如各規則共用的「基本玩法」，否則改為全部分類。
      *
      * @param ruleModuleId 已知選項的規則 ID。
-     * @return 是否變更所選規則；未知或相同選項為 false。
+     * @return 是否變更所選規則。未知或相同選項為 false。
      */
     fun selectRule(ruleModuleId: String): Boolean {
         if (ruleModuleId !in ruleIds || ruleModuleId == selectedRuleId) return false
@@ -71,7 +71,7 @@ class RuleCatalogueBrowser(
     }
 
     /**
-     * 明確改為所選規則的一般說明，可在原設定缺失或不支援時使用；新目錄也有目前的分類時保留分類。
+     * 明確改為所選規則的一般說明，可在原設定缺失或不支援時使用。新目錄也有目前的分類時保留分類。
      *
      * @return 是否變更設定來源。
      */
@@ -85,9 +85,9 @@ class RuleCatalogueBrowser(
     }
 
     /**
-     * 在原規則上恢復開啟時的設定來源，包括無法取得設定的狀態；新目錄也有目前的分類時保留分類。
+     * 在原規則上恢復開啟時的設定來源，包括無法取得設定的狀態。新目錄也有目前的分類時保留分類。
      *
-     * @return 是否恢復原設定來源；非原規則或一般說明入口為 false。
+     * @return 是否恢復原設定來源。非原規則或一般說明入口為 false。
      */
     fun restoreOpeningConfig(): Boolean {
         if (selectedRuleId != context.ruleModuleId || context.source == RuleCatalogueConfigSource.GENERAL || !generalExplanation) return false
@@ -101,8 +101,8 @@ class RuleCatalogueBrowser(
     /**
      * 選擇所選目錄的分類，不接受其他規則的分類。
      *
-     * @param categoryId 分類 ID；null 表示全部分類。
-     * @return 是否變更分類；未知或相同分類為 false。
+     * @param categoryId 分類 ID。null 表示全部分類。
+     * @return 是否變更分類。未知或相同分類為 false。
      */
     fun selectCategory(categoryId: String?): Boolean {
         if (categoryId == selectedCategoryId) return false
@@ -125,9 +125,9 @@ class RuleCatalogueBrowser(
     }
 
     /**
-     * 以當前語言取得目錄快照；缺少翻譯時保留鍵與 ID 的搜尋能力。
+     * 以當前語言取得目錄快照。缺少翻譯時保留鍵與 ID 的搜尋能力。
      *
-     * @param translate 翻譯鍵轉為純文字；缺少翻譯時回傳 null 或空白，不依賴平台文字類別。
+     * @param translate 翻譯鍵轉為純文字。缺少翻譯時回傳 null 或空白，不依賴平台文字類別。
      * @return 可供呈現的選項、設定來源、篩選條目與明確內容狀態。
      */
     fun snapshot(translate: (String) -> String?): RuleCatalogueBrowseState {
@@ -163,7 +163,7 @@ class RuleCatalogueBrowser(
     /**
      * 判斷條目是否屬於目前選擇的分類。
      *
-     * 全部分類平常不列只屬於「基本玩法」的條目，因為它們另有自己的頁籤；搜尋時仍包含，讓玩家搜得到基本玩法的說明。
+     * 全部分類平常不列只屬於「基本玩法」的條目，因為它們另有自己的頁籤。搜尋時仍包含，讓玩家搜得到基本玩法的說明。
      *
      * @param entry 條目。
      * @param searching 是否有搜尋文字。
@@ -178,7 +178,7 @@ class RuleCatalogueBrowser(
      * 解析結果中目錄的分類代號。
      *
      * @param resolution 目錄解析結果。
-     * @return 分類代號；沒有可用目錄時為空集合。
+     * @return 分類代號。沒有可用目錄時為空集合。
      */
     private fun categoryIds(resolution: RuleCatalogueResolution?): Set<String> = (resolution as? RuleCatalogueResolution.Available)?.catalogue?.categories.orEmpty().mapTo(mutableSetOf()) { it.id }
 
@@ -187,7 +187,7 @@ class RuleCatalogueBrowser(
      *
      * @param ruleId 欲解析的規則，預設為目前選擇。
      * @param useGeneral 是否採用該規則的一般說明設定，預設為目前來源。
-     * @return 來源的解析結果；沒有規則或原設定缺失時為 null。
+     * @return 來源的解析結果。沒有規則或原設定缺失時為 null。
      */
     private fun resolveSelection(ruleId: String? = selectedRuleId, useGeneral: Boolean = generalExplanation): RuleCatalogueResolution? {
         val id = ruleId ?: return null

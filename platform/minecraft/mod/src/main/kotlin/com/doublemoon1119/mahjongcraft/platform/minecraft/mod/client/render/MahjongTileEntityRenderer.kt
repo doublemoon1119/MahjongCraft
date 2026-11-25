@@ -38,7 +38,7 @@ import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
 /**
- * 使用既有麻將牌 item model 呈現牌張的 client renderer；自由放置與牌局管理中的牌共用同一個 entity
+ * 使用既有麻將牌 item model 呈現牌張的 client renderer。自由放置與牌局管理中的牌共用同一個 entity
  * 類型，牌面來源不同：自由放置直接讀 entity 自身 tracked data，牌局管理中的牌改依 entity UUID
  * （等同 `IdentifiedTile.id`）查詢 [stateStore] 目前收到的可見性快照，完全不看 entity 自身的
  * `tileAssetKey`（該欄位在管理模式下恆為 [UNKNOWN_TILE_ASSET_KEY]，見 [MahjongTileEntity]）。
@@ -187,7 +187,7 @@ class MahjongTileEntityRenderer(
     /**
      * 以同一組公開牌組外觀繪製可見牌或蓋牌。
      *
-     * @param assetKey 可見牌面資產 key；蓋牌時只用來保持呼叫端資料流，不會被讀取。
+     * @param assetKey 可見牌面資產 key。蓋牌時只用來保持呼叫端資料流，不會被讀取。
      * @param appearance 本次繪製使用的公開牌組外觀。
      * @param mode Minecraft item 顯示模式。
      * @param light 世界光照值。
@@ -399,7 +399,7 @@ class MahjongTileEntityRenderer(
     /**
      * 在鳴取牌正上方畫出與決策卡片相同的倒三角形指標。
      *
-     * 列寬以決策卡片的像素描述，依牌寬比例換算成提示的單位，相對於一張牌看起來與介面一致；逐列色塊的
+     * 列寬以決策卡片的像素描述，依牌寬比例換算成提示的單位，相對於一張牌看起來與介面一致。逐列色塊的
      * 階梯狀外觀刻意保留。
      *
      * @param centerX 指標中心 X 座標。
@@ -438,15 +438,15 @@ class MahjongTileEntityRenderer(
      * ItemRenderer 自行解析材質，因此 entity renderer 不提供單一 texture。
      *
      * @param entity 正在繪製的牌張 entity。
-     * @return 方塊材質圖集（原版規定回傳值不可為空）；實際材質由 item model renderer 解析。
+     * @return 方塊材質圖集（原版規定回傳值不可為空）。實際材質由 item model renderer 解析。
      */
     override fun getTextureLocation(entity: MahjongTileEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     /**
-     * 自由放置牌沿用 entity 自身 tracked data；牌局管理中的牌改查 [stateStore]——查不到（不在目前
+     * 自由放置牌沿用 entity 自身 tracked data。牌局管理中的牌改查 [stateStore]——查不到（不在目前
      * 對局範圍）或未對目前觀察者揭露時顯示牌背，查得到就換算成對應正面 asset key。
      *
-     * @return 此觀察者可見的牌面資產 key；無可見快照時為牌背 key。
+     * @return 此觀察者可見的牌面資產 key。無可見快照時為牌背 key。
      */
     private fun MahjongTileEntity.resolvedTileAssetKey(): String {
         if (!managedByGame) return tileAssetKey
@@ -457,19 +457,18 @@ class MahjongTileEntityRenderer(
 
     /**
      * 這張管理中的牌對目前觀察者而言，牌面是否已解析出來、且為規則的加值牌
-     * （[MahjongRuleModule.isBonusTile]，例如日麻寶牌），需要特殊視覺強調。自由放置的牌、或牌面對目前觀察者
-     * 不可見（[stateStore] 查無對應快照）的管理中牌，一律回傳 `false`——不需要另外判斷保密，理由見
-     * 類別 KDoc。
+     * （[MahjongRuleModule.isBonusTile]，例如日麻寶牌），需要特殊視覺強調。
+     *
+     * - 自由放置的牌，或牌面對目前觀察者不可見（[stateStore] 查無對應快照）的管理中牌，一律回傳 `false`。
+     *   不需要另外判斷保密，理由見類別 KDoc。
+     * - 另外要求這張牌目前姿態不是 [MahjongTilePose.FACE_DOWN]，且沒有動畫正在播放（`!entity.animating`）。
+     *   伺服器一算出手牌內容就會同步進快照，但牌在被摸到、翻開之前仍蓋著躺在牌山或發牌動畫途中。
+     *   只看快照會在翻牌前就讓寶牌發光，洩漏是不是寶牌。
+     * - 開局發牌翻牌（`TileAnimationSteps.scheduleDealBatch`）或摸牌動畫播完後，`tilePose` 變成
+     *   [MahjongTilePose.STANDING] 且 `animating` 歸零，光暈才顯示。
+     * - 副露與牌河攤開的 [MahjongTilePose.FACE_UP] 牌一律顯示光暈。
      *
      * @return 目前觀察者是否應看到此牌張的特殊強調效果。
-     *
-     * 額外要求這張牌目前姿態不是 [MahjongTilePose.FACE_DOWN]、且沒有動畫正在播放中
-     * （`!entity.animating`）——伺服器端一算出手牌內容就會同步進快照，這張牌實際被玩家摸到、翻開之前
-     * entity 在畫面上都還蓋牌躺在牌山／發牌動畫途中，如果單純依快照是否解析出牌面就顯示光暈，玩家會在
-     * 開局發牌動畫翻牌之前就先看到寶牌發光，等於還沒翻牌就洩漏是不是寶牌。
-     * 開局發牌動畫翻牌（`TileAnimationSteps.scheduleDealBatch`）／摸牌動畫播完後 `tilePose` 會變成
-     * [MahjongTilePose.STANDING] 且 `animating` 歸零，光暈才會顯示；副露／牌河
-     * 攤開的 [MahjongTilePose.FACE_UP] 牌不受影響，本來就該一貫顯示光暈。
      */
     private fun MahjongTileEntity.isHighlighted(): Boolean {
         if (!managedByGame) return false
@@ -517,12 +516,11 @@ class MahjongTileEntityRenderer(
         /**
          * 翻牌動畫（[MahjongTilePose.FACE_DOWN] ↔ [MahjongTilePose.STANDING]）播放期間的姿態補償位移。
          *
-         * [poseOriginOffset] 只為三個離散姿態定義補償位移，動畫中的姿態旋轉角（[TileMotionAnimationFrame.poseRotationDegrees]）
-         * 則是連續內插的；`entity.tilePose` 只表示終點姿態，整段套用它的補償位移會讓旋轉角與位移對不上，牌會偏移，
-         * 旋轉軸心也不落在牌底。
-         *
-         * 因此依同一個 `progress` 在起訖姿態的補償位移之間線性內插：起訖兩端與靜態渲染完全一致，播放前後不會跳動；
-         * 中間過程不是嚴格的單一軸心剛體旋轉（三個姿態的補償位移各自調校、沒有共用幾何軸心），但觀感接近繞牌底翻起。
+         * - [poseOriginOffset] 只為三個離散姿態定義補償位移，動畫中的姿態旋轉角（[TileMotionAnimationFrame.poseRotationDegrees]）
+         *   則是連續內插的。
+         * - `entity.tilePose` 只表示終點姿態。整段套用它的補償位移會讓旋轉角與位移對不上，牌會偏移，旋轉軸心也不落在牌底。
+         * - 因此依同一個 `progress` 在起訖姿態的補償位移之間線性內插。起訖兩端與靜態渲染一致，播放前後不會跳動。
+         * - 三個姿態的補償位移各自調校、沒有共用幾何軸心，所以中間過程不是嚴格的單一軸心旋轉，但看起來接近繞牌底翻起。
          *
          * @param startRotationDegrees 起始姿態角度。
          * @param endRotationDegrees 結束姿態角度。

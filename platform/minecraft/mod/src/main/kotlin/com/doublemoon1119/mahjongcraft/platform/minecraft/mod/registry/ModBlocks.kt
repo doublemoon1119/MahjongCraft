@@ -22,7 +22,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour
 import net.minecraft.world.level.material.MapColor
 import net.minecraft.world.level.material.PushReaction
 
-/** MahjongCraft 方塊與方塊實體的集中登記點；各項目在 [register] 登記完成後才能讀取。 */
+/** MahjongCraft 方塊與方塊實體的集中登記點。各項目在 [register] 登記完成後才能讀取。 */
 object ModBlocks {
     /** 登記完成後可讀取 [woodenMahjongTable] 的項目。 */
     private lateinit var woodenMahjongTableEntry: RegisteredEntry<Block>

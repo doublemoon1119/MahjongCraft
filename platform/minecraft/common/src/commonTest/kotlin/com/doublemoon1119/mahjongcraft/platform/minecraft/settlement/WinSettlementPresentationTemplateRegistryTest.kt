@@ -80,7 +80,7 @@ class WinSettlementPresentationTemplateRegistryTest {
         assertEquals(listOf("man_1", "man_2", "back", "back", "back"), value.assetKeys)
     }
 
-    /** 不攤牌的贏家沒有手牌欄位，版面可以整行省略；台麻的花牌欄位只在規則提供時存在。 */
+    /** 不攤牌的贏家沒有手牌欄位，版面可以整行省略。台麻的花牌欄位只在規則提供時存在。 */
     @Test
     fun `hidden hand and missing flowers leave their fields absent`() {
         val registry = WinSettlementPresentationTemplateRegistryImpl()
@@ -221,7 +221,7 @@ class WinSettlementPresentationTemplateRegistryTest {
         assertEquals(BuiltInWinSettlementTemplateKeys.GENERIC, registry.findTemplateForRule("custom:rule")?.key)
     }
 
-    /** 日麻詳情欄位登記了格式化器；同一欄位不得重複登記。 */
+    /** 日麻詳情欄位登記了格式化器。同一欄位不得重複登記。 */
     @Test
     fun `riichi detail formatters are registered once per field`() {
         val registry = WinSettlementPresentationTemplateRegistryImpl()

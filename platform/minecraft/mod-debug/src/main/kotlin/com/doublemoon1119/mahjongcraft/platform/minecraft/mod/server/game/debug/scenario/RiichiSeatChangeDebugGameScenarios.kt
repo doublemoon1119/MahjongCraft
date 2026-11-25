@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.scen
  * 開發用和牌者坐莊、每局換位四人日麻的驗收情境。
  *
  * 沿用 [SeatSetupScenario]：呼叫者是莊家、剛摸到牌，座位順序為呼叫者 → 下家 → 對家 → 上家。載入後改用開發用的
- * 和牌者坐莊、每局換位四人日麻；其他四人情境載入後恢復一般四人日麻。
+ * 和牌者坐莊、每局換位四人日麻。其他四人情境載入後恢復一般四人日麻。
  */
 internal object RiichiSeatChangeDebugGameScenarios {
     /** 所有和牌者坐莊、每局換位的驗收情境。 */

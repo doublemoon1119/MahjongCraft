@@ -29,7 +29,7 @@ internal class AiCharacterTracking(
     }
 
     /**
-     * 傳送公開標記；伺服器執行互動時仍重新驗證接管。
+     * 傳送公開標記。伺服器執行互動時仍重新驗證接管。
      *
      * @param entity 被追蹤的實體。
      * @param player 正在追蹤的玩家。

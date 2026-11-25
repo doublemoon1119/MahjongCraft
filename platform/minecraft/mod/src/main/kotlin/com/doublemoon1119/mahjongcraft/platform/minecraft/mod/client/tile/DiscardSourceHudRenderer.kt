@@ -28,7 +28,7 @@ class DiscardSourceHudRenderer(
     private val settlement: ClientDiscardSettlementTracker,
 ) {
     /**
-     * 呼叫端只在沒有開啟畫面、也沒有隱藏 HUD 時呼叫；牌還沒落到牌河或還在移動時不顯示。
+     * 呼叫端只在沒有開啟畫面、也沒有隱藏 HUD 時呼叫。牌還沒落到牌河或還在移動時不顯示。
      *
      * @param context 本幀繪製環境。
      */
@@ -59,10 +59,10 @@ class DiscardSourceHudRenderer(
 }
 
 /**
- * 打出者的說明文字：自己打的牌只說是自己；入座時加上打出者相對自己的位置；旁觀時只有名字。
+ * 打出者的說明文字：自己打的牌只說是自己。入座時加上打出者相對自己的位置。旁觀時只有名字。
  *
- * @param relation 打出者相對觀看者的位置；觀看者沒有入座時為 null。
- * @param discarderName 打出者的顯示名稱；自己打的牌不會取用。
+ * @param relation 打出者相對觀看者的位置。觀看者沒有入座時為 null。
+ * @param discarderName 打出者的顯示名稱。自己打的牌不會取用。
  * @return 可直接顯示的文字。
  */
 internal fun discardSourceText(relation: RelativeDirection?, discarderName: () -> String): Component = when (relation) {

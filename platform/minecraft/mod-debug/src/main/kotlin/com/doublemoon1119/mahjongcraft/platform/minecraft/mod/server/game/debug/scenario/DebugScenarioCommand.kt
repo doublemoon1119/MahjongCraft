@@ -74,7 +74,7 @@ class DebugScenarioCommand(
      * 非同步載入指定情境，完成後回到伺服器主執行緒輸出結果。
      *
      * @param context 指令來源與情境 ID 引數。
-     * @return 成功排程時為成功值；來源不是玩家時為失敗值，不代表情境已載入成功。
+     * @return 成功排程時為成功值。來源不是玩家時為失敗值，不代表情境已載入成功。
      */
     private fun loadScenario(context: CommandContext<CommandSourceStack>): Int = runScenarioCommand(context) { playerId, scenarioId -> loader.load(playerId, scenarioId) }
 
@@ -82,7 +82,7 @@ class DebugScenarioCommand(
      * 非同步重建指定情境的演出內容，檢查實體生成與開局時序。
      *
      * @param context 指令來源、情境 ID 與重建次數。
-     * @return 成功排程時為成功值；來源不是玩家時為失敗值，不代表重建已完成。
+     * @return 成功排程時為成功值。來源不是玩家時為失敗值，不代表重建已完成。
      */
     private fun stressScenario(context: CommandContext<CommandSourceStack>): Int {
         val presentationCount = IntegerArgumentType.getInteger(context, PRESENTATION_COUNT_ARGUMENT)
@@ -94,7 +94,7 @@ class DebugScenarioCommand(
      *
      * @param context 指令來源與情境 ID 引數。
      * @param operation 接收玩家 UUID 與情境 ID 的載入或重建工作。
-     * @return 成功排程時為成功值；來源不是玩家時為失敗值。
+     * @return 成功排程時為成功值。來源不是玩家時為失敗值。
      */
     private fun runScenarioCommand(
         context: CommandContext<CommandSourceStack>,
@@ -132,7 +132,7 @@ class DebugScenarioCommand(
     /**
      * 依情境登錄內容提供 ID 補全。
      *
-     * @param context 指令情境；補全不依賴其中的來源或引數。
+     * @param context 指令情境。補全不依賴其中的來源或引數。
      * @param builder 接收符合目前輸入的建議項目。
      * @return 補全建議的非同步結果。
      */

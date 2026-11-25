@@ -49,7 +49,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證牌譜回放擺出的牌桌與對局中同一份桌況擺出的位置相同。 */
 class HistoryReplayArrangementTest {
-    /** 標準牌河：開局與打出一張牌後，牌譜擺出的每個位置都和對局中相同；攤開手牌只改變手牌。 */
+    /** 標準牌河：開局與打出一張牌後，牌譜擺出的每個位置都和對局中相同。攤開手牌只改變手牌。 */
     @Test
     fun `replay arrangement matches the live table`() = runTest {
         assertMatchesLive(TableTileLayoutProfile.STANDARD)
@@ -71,7 +71,7 @@ class HistoryReplayArrangementTest {
      * 比對開局與打出一張牌後兩份桌況的擺放。
      *
      * @param profile 這次使用的桌面牌位配置。
-     * @param physicalWall 是否有實體牌牆；沒有時兩邊都不使用牌牆格位。
+     * @param physicalWall 是否有實體牌牆。沒有時兩邊都不使用牌牆格位。
      */
     private suspend fun assertMatchesLive(profile: TableTileLayoutProfile, physicalWall: Boolean = true) {
         val module = RiichiRuleModule(RULE_MODULE_ID, RiichiRuleConfig(redDoraCount = 0))

@@ -125,7 +125,7 @@ class TaiwanFlowerWinSimulationTest {
     }
 
     /**
-     * 交換牌面，讓全部花牌恰好落在 [targets]，其餘位置都是一般牌；牌張識別碼與牌牆布局不變。
+     * 交換牌面，讓全部花牌恰好落在 [targets]，其餘位置都是一般牌。牌張識別碼與牌牆布局不變。
      *
      * @param targets 要放花牌的牌張，張數必須等於花牌總數。
      * @return 交換牌面後的桌況。

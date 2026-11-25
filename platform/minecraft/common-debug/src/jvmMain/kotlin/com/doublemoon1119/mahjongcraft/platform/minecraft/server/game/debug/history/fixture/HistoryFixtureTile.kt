@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
  * 測試牌譜指定的一張牌。
  *
  * @property tile 牌面。
- * @property red 是否是赤牌；只有數牌的五可以是赤牌。
+ * @property red 是否是赤牌。只有數牌的五可以是赤牌。
  */
 data class HistoryFixtureTile(val tile: Tile, val red: Boolean = false) {
     init {

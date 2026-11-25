@@ -59,7 +59,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 依序紀錄收到的局間換位座位順序。 */
     private val seatOrderChanges = mutableMapOf<Uuid, MutableList<List<Uuid>>>()
 
-    /** 依對局 Uuid 依序紀錄單獨慶祝呼叫及完整呈現請求所含的慶祝內容；一炮多響可能同一局收到多筆。 */
+    /** 依對局 Uuid 依序紀錄單獨慶祝呼叫及完整呈現請求所含的慶祝內容。一炮多響時同一局可能收到多筆。 */
     private val winCelebrations = mutableMapOf<Uuid, MutableList<WinCelebrationContext>>()
 
     /** 依對局 Uuid 依序紀錄單獨結算呼叫及完整呈現請求所含的結算內容。 */
@@ -155,7 +155,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 讀取所有收到的桌況步驟，依收到順序攤平。 */
     fun getPublishedTableSteps(gameId: Uuid): List<TableStep> = tableStepBatches[gameId].orEmpty().flatten()
 
-    /** 讀取最後一次收到的步驟中最後一步的桌況；沒有收到時為 null。 */
+    /** 讀取最後一次收到的步驟中最後一步的桌況，沒有收到時為 null。 */
     fun getLastPresentedTableState(gameId: Uuid): TableState? = getPublishedTableSteps(gameId).lastOrNull()?.tableState
 
     /** 讀取所有步驟中宣告成立的動作，依發生順序排列。 */
@@ -173,31 +173,31 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 讀取本局全部擲骰呈現記錄。 */
     fun getPublishedOpeningRolls(gameId: Uuid): List<OpeningDiceRoll> = diceRolls[gameId].orEmpty()
 
-    /** 取得指定對局最後一次收到的牌牆結構座標；若無紀錄則回傳 null。 */
+    /** 取得指定對局最後一次收到的牌牆結構座標，沒有紀錄時為 null。 */
     fun getPublishedWallStructure(gameId: Uuid): TileWallPhysicalLayout? = wallStructures[gameId]
 
-    /** 取得指定對局最後一次收到的牌牆組裝格位；若無紀錄則回傳 null。 */
+    /** 取得指定對局最後一次收到的牌牆組裝格位，沒有紀錄時為 null。 */
     fun getPublishedWallAssemblyStructure(gameId: Uuid): Map<Uuid, TileWallPosition>? = wallAssemblyStructures[gameId]
 
-    /** 取得指定對局最後一次收到的牌牆結構隨附桌況資料；若無紀錄則回傳 null。 */
+    /** 取得指定對局最後一次收到的牌牆結構隨附桌況資料，沒有紀錄時為 null。 */
     fun getPublishedWallStructureContext(gameId: Uuid): WallStructureContext? = wallStructureContexts[gameId]
 
-    /** 取得指定對局最後一次收到的開局發牌動畫資料；若無紀錄則回傳 null。 */
+    /** 取得指定對局最後一次收到的開局發牌動畫資料，沒有紀錄時為 null。 */
     fun getPublishedInitialDeal(gameId: Uuid): InitialDealContext? = initialDeals[gameId]
 
     /** 指定對局是否曾經收到過 [clearPlayerTiles]。 */
     fun werePlayerTilesCleared(gameId: Uuid): Boolean = gameId in clearedPlayerTiles
 
-    /** 取得指定對局最後一次收到的開局座位安排；若無紀錄則回傳 null。 */
+    /** 取得指定對局最後一次收到的開局座位安排，沒有紀錄時為 null。 */
     fun getPublishedGameStartedSeating(gameId: Uuid): List<Uuid>? = gameStartedSeatings[gameId]
 
-    /** 取得指定對局依序收到的局間換位座位順序；沒有換位時為空清單。 */
+    /** 取得指定對局依序收到的局間換位座位順序，沒有換位時為空清單。 */
     fun getPublishedSeatOrderChanges(gameId: Uuid): List<List<Uuid>> = seatOrderChanges[gameId].orEmpty().toList()
 
-    /** 取得指定對局收到的全部胡牌慶祝演出呼叫，依呼叫順序排列；若無紀錄則回傳空清單。 */
+    /** 取得指定對局收到的全部胡牌慶祝演出呼叫，依呼叫順序排列，沒有紀錄時為空清單。 */
     fun getPublishedWinCelebrations(gameId: Uuid): List<WinCelebrationContext> = winCelebrations[gameId].orEmpty()
 
-    /** 取得指定對局收到的全部完整胡牌呈現請求，依呼叫順序排列；若無紀錄則回傳空清單。 */
+    /** 取得指定對局收到的全部完整胡牌呈現請求，依呼叫順序排列，沒有紀錄時為空清單。 */
     fun getPublishedWinPresentations(gameId: Uuid): List<WinPresentationRequest> = winPresentations[gameId].orEmpty()
 
     /** 取得每次 [publishWinPresentation] 內部實際包含的段落順序，供驗證 celebration 永遠先於 settlement。 */

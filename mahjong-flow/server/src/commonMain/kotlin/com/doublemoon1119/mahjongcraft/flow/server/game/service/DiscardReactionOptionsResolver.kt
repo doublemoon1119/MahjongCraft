@@ -16,7 +16,7 @@ import kotlin.uuid.Uuid
 /**
  * 以同一份規則 policy 產生捨牌反應選項並驗證提交內容。
  *
- * 這個服務不替每組選牌建立新的識別碼；選牌仍由候選動作的實體牌 ID 表示，提交時再次套用同一個
+ * 這個服務不替每組選牌建立新的識別碼。選牌仍由候選動作的實體牌 ID 表示，提交時再次套用同一個
  * policy 並比對完整動作與選牌，避免查詢結果被當成永久授權。
  */
 internal object DiscardReactionOptionsResolver {
@@ -82,7 +82,7 @@ internal object DiscardReactionOptionsResolver {
      * @param policy 本局規則提供的反應 policy。
      * @param action 玩家提交的動作。
      * @param selectedTileIds 玩家額外選出的實體牌 ID。
-     * @return 對應的候選及其效果；查不到完全相符候選時為 `null`。
+     * @return 對應的候選及其效果。查不到完全相符候選時為 `null`。
      */
     fun resolveSubmission(
         context: DiscardReactionPolicyContext,
@@ -121,7 +121,7 @@ internal object DiscardReactionOptionsResolver {
      * @param discardedTile 目前待反應的實體捨牌。
      * @param action 玩家提交的動作。
      * @param selectedTileIds 玩家額外選出的實體牌 ID。
-     * @return 重新計算後的候選；提交不合法時為 `null`。
+     * @return 重新計算後的候選。提交不合法時為 `null`。
      */
     fun resolveSubmission(
         state: TableState,
@@ -155,11 +155,11 @@ internal object DiscardReactionOptionsResolver {
     }
 
     /**
-     * 規則對這次捨牌回傳的合法反應；已開啟的視窗不允許某位玩家榮和時，去掉他的榮和。
+     * 規則對這次捨牌回傳的合法反應。已開啟的視窗不允許某位玩家榮和時，去掉他的榮和。
      * 只剩過牌時一併去掉，該玩家沒有可做的反應。
      *
      * @param validator 本局規則的合法動作判定器。
-     * @param state 目前權威桌況；有反應視窗時依視窗的榮和名單過濾。
+     * @param state 目前權威桌況。有反應視窗時依視窗的榮和名單過濾。
      * @param playerId 欲反應的玩家。
      * @param discarderId 捨牌玩家。
      * @param discardedTile 目前待反應的實體捨牌。

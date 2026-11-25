@@ -7,7 +7,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證決策計時排程每個 tick 的接線：busy 與推進中略過、逾時去重、全域處理的順序與頻率。 */
 class DecisionTickProcessorTest {
-    /** 全域處理先暫停所有 busy 桌、再判定逾時，請求推進輪到的對局後最後同步倒數；請求不等待推進完成。 */
+    /** 全域處理先暫停所有 busy 桌、再判定逾時，請求推進輪到的對局後最後同步倒數。請求不等待推進完成。 */
     @Test
     fun `global work wraps the advance requests in order`() = runBlocking {
         val fixture = Fixture.registered(cycleTicks = 1, games = games(2))

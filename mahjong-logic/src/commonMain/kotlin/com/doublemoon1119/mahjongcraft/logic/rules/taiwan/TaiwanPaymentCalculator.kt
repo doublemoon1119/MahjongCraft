@@ -7,7 +7,7 @@ import kotlin.uuid.Uuid
 /** 台灣麻將逐筆計算底台、莊家與連莊付款，以及包牌時的付款分配，不修改玩家分數。 */
 object TaiwanPaymentCalculator {
     /**
-     * 計算自摸三家付款或放槍者單獨付款；特殊花胡亦使用相同的付款結構。
+     * 計算自摸三家付款或放槍者單獨付款。特殊花胡亦使用相同的付款結構。
      *
      * @param config 底分與每台分數。
      * @param playerIds 四位玩家的不同識別碼。
@@ -15,7 +15,7 @@ object TaiwanPaymentCalculator {
      * @param dealerId 本局莊家。
      * @param handTai 本次有效手牌或獨立花胡的台數，不含莊家台。
      * @param dealerStreak 目前已連莊次數，初莊為0。
-     * @param discarderId 單獨付款者；自摸或八仙過海為null，七搶一為被搶花者。
+     * @param discarderId 單獨付款者。自摸或八仙過海為null，七搶一為被搶花者。
      * @return 贏家總收入與每位付款者金額。
      */
     fun calculate(
@@ -51,13 +51,13 @@ object TaiwanPaymentCalculator {
      *
      * - 自摸：包牌者付三家的份，每一份照原本付款者計算的莊家台不變。
      * - 包牌者本人放槍：照常由他付。
-     * - 別人放槍：包牌者與放槍者平分；除不盡時包牌者多付一點。
+     * - 別人放槍：包牌者與放槍者平分。除不盡時包牌者多付一點。
      *
      * 包牌者一律標示包牌付款原因。
      *
      * @param settlement [calculate] 算出的一般付款。
      * @param paoPlayerId 包牌者。
-     * @param discarderId 放槍者；自摸為 null。
+     * @param discarderId 放槍者。自摸為 null。
      * @return 改由包牌者負擔後的付款。
      */
     fun withPaoLiability(

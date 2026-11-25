@@ -8,10 +8,9 @@ import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 /**
  * 用於單元測試的模擬牌河實作。
  *
- * 透過繼承 [DiscardEntry] 來定義測試用的捨牌紀錄實體，
- * 並實作 [DiscardPile] 介面以提供紀錄的存取與管理邏輯。
- *
- * [discard]、[takeLast] 都會回傳新實例，不會直接修改原牌河紀錄。
+ * - 繼承 [DiscardEntry] 定義測試用的捨牌紀錄。
+ * - 實作 [DiscardPile] 介面，提供紀錄的存取與管理。
+ * - [discard]、[takeLast] 都回傳新實例，不直接修改原本的牌河紀錄。
  *
  * @property _entries 建立時的牌河紀錄，預設為空列表。
  */

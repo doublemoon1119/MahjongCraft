@@ -8,7 +8,7 @@ import kotlin.reflect.KClass
 
 /**
  * 建立以 [registries] 為動態來源的 `SerializersModule`。模組本身可以早於 extension bootstrap
- * 建立；每次 polymorphic 編解碼都會查詢同一個 registry，因此後續完成的內建與第三方 DTO
+ * 建立。每次 polymorphic 編解碼都會查詢同一個 registry，因此後續完成的內建與第三方 DTO
  * 註冊會立即可見，不必重建 `Json`。
  *
  * @param registries 網路 DTO 的動態註冊表集合。

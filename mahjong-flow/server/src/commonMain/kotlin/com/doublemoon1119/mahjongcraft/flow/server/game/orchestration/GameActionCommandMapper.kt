@@ -10,12 +10,12 @@ class GameActionCommandMapper(
     private val extensionRegistry: ExtensionGameActionCommandFactoryRegistry,
 ) {
     /**
-     * 依玩家目前的操作情境轉換 [action]；無法在該情境執行或選牌資料不合法時回傳 null。
+     * 依玩家目前的操作情境轉換 [action]。無法在該情境執行或選牌資料不合法時回傳 null。
      *
      * @param context 玩家目前的權威操作情境。
      * @param action 已通過規則驗證、欲轉換的動作。
-     * @param selectedTileIds 擴充動作所需的選牌識別碼；未提供時為空清單。
-     * @return 可交由 Flow 執行的命令；無法轉換時為 null。
+     * @param selectedTileIds 擴充動作所需的選牌識別碼。未提供時為空清單。
+     * @return 可交由 Flow 執行的命令。無法轉換時為 null。
      */
     fun toCommand(
         context: PlayerActionContext,
@@ -46,7 +46,7 @@ class GameActionCommandMapper(
         return action.toOwnTurnCommand()
     }
 
-    /** 將自己回合的內建動作轉換成命令；不支援的動作回傳 null。 */
+    /** 將自己回合的內建動作轉換成命令。不支援的動作回傳 null。 */
     private fun GameAction.toOwnTurnCommand(): GameCommand? = when (this) {
         is GameAction.Discard -> GameCommand.Discard(tileId)
         GameAction.Tsumo -> GameCommand.Tsumo

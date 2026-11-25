@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client
 
 /**
- * 由單一入口清除連線暫態資料；新連線不必依賴上一個 DISCONNECT 事件已送達。
+ * 由單一入口清除連線暫態資料。新連線不必依賴上一個 DISCONNECT 事件已送達。
  *
- * 清理動作只涵蓋連線資料，不包含持久化的使用者設定。JOIN 與 DISCONNECT
- * 使用同一份清單，每次呼叫各清理一次。
- * 本物件由客戶端組裝入口集中既有實例的清理動作，不另建立或管理這些服務的 DI 生命週期。
+ * - 清理動作只涵蓋連線資料，不包含持久化的使用者設定。
+ * - JOIN 與 DISCONNECT 使用同一份清單，每次呼叫各清理一次。
+ * - 本物件由客戶端組裝入口集中既有實例的清理動作，不另建立或管理這些服務的 DI 生命週期。
  *
  * @property clearHistoryQueries 清除歷史查詢配對與共用查詢設定。
  * @property clearHistoryArchiveStatus 清除保存狀態查詢配對。
@@ -40,7 +40,7 @@ internal class ClientSessionLifecycleOwner(
     /** 結束連線時清除同一份暫態資料，不影響持久使用者偏好。 */
     fun endSession() = clearTransientState()
 
-    /** 固定清理順序；共用設定由歷史查詢清理一次，其他協調器不重複重設。 */
+    /** 固定清理順序。共用設定由歷史查詢清理一次，其他協調器不重複重設。 */
     private fun clearTransientState() {
         clearHistoryQueries()
         clearHistoryArchiveStatus()

@@ -35,13 +35,14 @@ import org.joml.Vector3f
 import org.koin.core.context.GlobalContext
 
 /**
- * 麻將牌 item 的 runtime renderer；依 NBT 存的 asset key 動態選擇材質，取代固定的 item model
- * predicate override 清單，讓內建與第三方 registry 註冊的牌面都能正確顯示。
+ * 麻將牌 item 的 runtime renderer。依 NBT 存的 asset key 動態選擇材質，不使用固定的 item model predicate override 清單，
+ * 內建與第三方 registry 註冊的牌面都能正確顯示。
  *
- * 所有 asset key（見 `allTileAssetKeys`）透過 [MahjongTileModelLoadingPlugin]
- * 登記為可獨立查詢的已烘焙模型，直接重繪其原始 quad，幾何與 UV 與遷移前完全一致。找不到
- * 已烘焙模型的 asset key，改為手繪與內建模型相同的立方體幾何，正面材質直接綁定 runtime 解析的
- * [ResourceLocation]，不經過 atlas；缺少材質時退回內建 unknown 牌面，不靜默顯示錯誤畫面。
+ * - 所有 asset key（見 `allTileAssetKeys`）透過 [MahjongTileModelLoadingPlugin] 登記為可獨立查詢的已烘焙模型，
+ *   直接重繪其原始 quad，保留模型本身的幾何與 UV。
+ * - 找不到已烘焙模型的 asset key，改為手繪與內建模型相同的立方體幾何。
+ *   正面材質直接綁定 runtime 解析的 [ResourceLocation]，不經過 atlas。
+ * - 缺少材質時退回內建 unknown 牌面，不靜默顯示錯誤畫面。
  */
 object MahjongTileItemRenderer : ItemStackRenderer {
     private val logger = mahjongCraftLogger(MahjongTileItemRenderer::class)
@@ -52,7 +53,7 @@ object MahjongTileItemRenderer : ItemStackRenderer {
     /** vanilla 供已烘焙模型使用的共用材質 atlas，item／block model 的 sprite 皆繪製於此。 */
     private val BLOCK_ATLAS_TEXTURE: ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
-    /** 半透明牌繪製時的縮放倍率；略小於 1，避免貼著桌面的面與桌面重疊閃爍，肉眼看不出大小差異。 */
+    /** 半透明牌繪製時的縮放倍率。略小於 1，避免貼著桌面的面與桌面重疊閃爍，肉眼看不出大小差異。 */
     private const val TRANSLUCENT_TILE_SCALE: Float = 0.995f
 
     override fun render(
@@ -75,7 +76,7 @@ object MahjongTileItemRenderer : ItemStackRenderer {
     }
 
     /**
-     * 以公開牌組外觀繪製一張可見牌；牌的幾何與 display 仍由固定模型模板提供。
+     * 以公開牌組外觀繪製一張可見牌。牌的幾何與 display 仍由固定模型模板提供。
      *
      * @param appearanceId 牌組共用外觀的完整識別碼。
      * @param assetKey 牌面素材 key。
@@ -84,7 +85,7 @@ object MahjongTileItemRenderer : ItemStackRenderer {
      * @param vertexConsumers 頂點緩衝提供者。
      * @param light 世界光照值。
      * @param overlay 覆蓋貼圖座標。
-     * @param alpha 0 到 1 之間的不透明度；小於 1 時以半透明圖層畫出淡化的牌。
+     * @param alpha 0 到 1 之間的不透明度。小於 1 時以半透明圖層畫出淡化的牌。
      */
     fun renderWithAppearance(
         appearanceId: String,
@@ -115,7 +116,7 @@ object MahjongTileItemRenderer : ItemStackRenderer {
     }
 
     /**
-     * 以公開牌組外觀繪製一張未知牌；不會讀取或推導未知牌背後的真實牌種。
+     * 以公開牌組外觀繪製一張未知牌。不會讀取或推導未知牌背後的真實牌種。
      *
      * @param appearanceId 牌組共用外觀的完整識別碼。
      * @param mode Minecraft item 顯示模式。
@@ -162,7 +163,7 @@ object MahjongTileItemRenderer : ItemStackRenderer {
     }
 
     /**
-     * 以公開牌組外觀繪製這張牌時是否使用半透明圖層；與 [renderWithAppearance] 選擇圖層的依據相同。
+     * 以公開牌組外觀繪製這張牌時是否使用半透明圖層。與 [renderWithAppearance] 選擇圖層的依據相同。
      *
      * @param appearanceId 牌組共用外觀的完整識別碼。
      * @param assetKey 牌面素材 key。
@@ -178,8 +179,8 @@ object MahjongTileItemRenderer : ItemStackRenderer {
      *
      * @param registry 牌面素材登記表。
      * @param assetKey 牌面素材 key。
-     * @param appearanceId 規則的牌組外觀識別碼；未指定時為 null。
-     * @return 生效的外觀；兩者都沒有時為 null。
+     * @param appearanceId 規則的牌組外觀識別碼。未指定時為 null。
+     * @return 生效的外觀。兩者都沒有時為 null。
      */
     private fun effectiveAppearance(
         registry: MinecraftTileAssetRegistry,
@@ -189,10 +190,10 @@ object MahjongTileItemRenderer : ItemStackRenderer {
         ?.let(MahjongTileModelLoadingPlugin::effectiveAppearance)
 
     /**
-     * 依牌面 key 與牌組外觀選擇已烘焙或固定幾何 fallback 後繪製牌面；外觀樣式指定牌身時改用該牌身外觀。
+     * 依牌面 key 與牌組外觀選擇已烘焙或固定幾何 fallback 後繪製牌面。外觀樣式指定牌身時改用該牌身外觀。
      *
      * @param assetKey 牌面素材 key。
-     * @param appearanceId 規則的牌組外觀識別碼；未指定且樣式沒有指定牌身時使用原生模型。
+     * @param appearanceId 規則的牌組外觀識別碼。未指定且樣式沒有指定牌身時使用原生模型。
      * @param mode Minecraft item 顯示模式。
      * @param matrices 目前的模型矩陣。
      * @param vertexConsumers 頂點緩衝提供者。
@@ -244,7 +245,7 @@ object MahjongTileItemRenderer : ItemStackRenderer {
     /**
      * 套用 item 模型 transform 並繪製已烘焙模型或動態固定幾何。
      *
-     * @param model 已驗證的牌面模型；缺少時使用 fallback。
+     * @param model 已驗證的牌面模型。缺少時使用 fallback。
      * @param fallbackModel 同牌組的隱藏模型 fallback。
      * @param fallbackTextureId 缺少模型時使用的正面貼圖。
      * @param coverTextureId 缺少模型時使用的牌組共用牌體貼圖。
@@ -254,7 +255,7 @@ object MahjongTileItemRenderer : ItemStackRenderer {
      * @param light 世界光照值。
      * @param overlay 覆蓋貼圖座標。
      * @param assetKey 用於缺少資源警告的素材 key。
-     * @param translucent 是否以半透明方式繪製，牌面從背面也看得到；用於帶半透明貼圖的牌身外觀。
+     * @param translucent 是否以半透明方式繪製，牌面從背面也看得到。用於帶半透明貼圖的牌身外觀。
      * @param alpha 0 到 1 之間的不透明度。
      */
     private fun renderModel(
@@ -311,7 +312,7 @@ object MahjongTileItemRenderer : ItemStackRenderer {
     }
 
     /**
-     * 牌使用的頂點緩衝：一般牌用鏤空圖層；半透明牌用不剔除背面的半透明圖層，讓牌面從背面也看得到；淡化的牌用剔除背面的
+     * 牌使用的頂點緩衝：一般牌用鏤空圖層。半透明牌用不剔除背面的半透明圖層，讓牌面從背面也看得到。淡化的牌用剔除背面的
      * 半透明圖層並把不透明度乘上比例，與原版畫看得見的隱形生物相同。
      *
      * @param vertexConsumers 頂點緩衝提供者。
@@ -330,7 +331,7 @@ object MahjongTileItemRenderer : ItemStackRenderer {
      * 依 asset key 查詢 [MahjongTileModelLoadingPlugin] 登記的已烘焙模型。
      *
      * @param assetKey 要查詢的牌面資產 key。
-     * @return 找到的有效烘焙模型；缺少或為 missing model 時回傳 `null`。
+     * @return 找到的有效烘焙模型。缺少或為 missing model 時回傳 `null`。
      */
     private fun findBakedModel(assetKey: String): BakedModel? {
         val registry = GlobalContext.get().get<MinecraftTileAssetRegistry>()
@@ -341,7 +342,7 @@ object MahjongTileItemRenderer : ItemStackRenderer {
      * 依完整 model ID 查詢已烘焙模型。
      *
      * @param modelId 要查詢的模型 ID。
-     * @return 找到的有效烘焙模型；缺少或為 missing model 時回傳 `null`。
+     * @return 找到的有效烘焙模型。缺少或為 missing model 時回傳 `null`。
      */
     private fun findBakedModel(modelId: ResourceLocation): BakedModel? {
         val model = ClientModels.find(modelId) ?: return null
@@ -383,7 +384,7 @@ object MahjongTileItemRenderer : ItemStackRenderer {
 
     /**
      * 找不到有效的已烘焙模型時，以內建立方體作為回退外觀，正面綁定登記的貼圖。
-     * 其餘五面沿用內建牌體材質圖集；有效自訂模型的各面材質與 UV 則由模型自行定義。
+     * 其餘五面沿用內建牌體材質圖集。有效自訂模型的各面材質與 UV 則由模型自行定義。
      *
      * @param faceTextureId 動態解析的正面貼圖。
      * @param matrices 目前的模型矩陣。
@@ -430,7 +431,7 @@ object MahjongTileItemRenderer : ItemStackRenderer {
      * @property corners 此面的四個頂點。
      * @property normal 此面的法線方向。
      * @property uvRect 此面的 UV 範圍。
-     * @property usesFaceTexture 是否使用正面貼圖；否則使用內建牌體材質圖集。
+     * @property usesFaceTexture 是否使用正面貼圖。否則使用內建牌體材質圖集。
      */
     private class CuboidFace(
         val corners: List<Vector3f>,
@@ -439,7 +440,7 @@ object MahjongTileItemRenderer : ItemStackRenderer {
         val usesFaceTexture: Boolean,
     ) {
         /**
-         * 依頂點索引取得對應 UV；前三個索引對應前三角，其他值使用左下角座標；四角依序對應 uvRect 的 (u0,v0)/(u1,v0)/(u1,v1)/(u0,v1)。
+         * 依頂點索引取得對應 UV。前三個索引對應前三角，其他值使用左下角座標。四角依序對應 uvRect 的 (u0,v0)/(u1,v0)/(u1,v1)/(u0,v1)。
          *
          * @param index 頂點在面內的索引。
          * @return 對應的 U、V 座標。

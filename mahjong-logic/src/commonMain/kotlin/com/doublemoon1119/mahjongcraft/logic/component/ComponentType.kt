@@ -13,9 +13,9 @@ import kotlin.reflect.KClass
  * @property valueClass 組件值的執行期型別。
  * @property copyValue 建立與來源獨立的組件值。
  * @property validateValue 驗證值是否合法，無效時拋出例外。
- * @property mergeValues 合併低層與高層值；未提供時，不同值視為衝突。
+ * @property mergeValues 合併低層與高層值。未提供時，不同值視為衝突。
  * @property target 此組件允許附加的對象。
- * @property mergePeerValues 合併同層來源；未提供時只接受相同值，提供時必須與順序無關。
+ * @property mergePeerValues 合併同層來源。未提供時只接受相同值，提供時必須與順序無關。
  * @property publicMarkers 明確允許公開的標記，預設不產生任何公開資料。
  */
 class ComponentType<T : Any>(

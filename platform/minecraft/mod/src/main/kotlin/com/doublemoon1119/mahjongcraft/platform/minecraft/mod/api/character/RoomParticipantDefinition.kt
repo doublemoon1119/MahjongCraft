@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 
 /**
- * 初始化期間登記的實體參加能力；高優先權先辨識，同分依完整 ID 排序。
+ * 初始化期間登記的實體參加能力。高優先權先辨識，同分依完整 ID 排序。
  *
  * @property id 能力的完整識別碼，不作為實體身分。
  * @property provider 唯讀辨識與授權回呼。

@@ -12,7 +12,7 @@ import kotlin.uuid.Uuid
  *
  * @property id 唯一識別碼，整副牌中不重複。
  * @property tile 該張牌的牌面種類，不含逐張特性。
- * @property components 這張牌的不可變權威組件；搬移時與 UUID、牌面一起保留。
+ * @property components 這張牌的不可變權威組件。搬移時與 UUID、牌面一起保留。
  */
 data class IdentifiedTile(
     val id: Uuid,

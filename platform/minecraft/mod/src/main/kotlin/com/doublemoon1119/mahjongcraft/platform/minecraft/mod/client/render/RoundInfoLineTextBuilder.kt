@@ -34,7 +34,7 @@ class RoundInfoLineTextBuilder(
     private var warnedUnrecognizedArgument = false
 
     /**
-     * 依 [line] 的翻譯定義組成文字；缺少行定義時顯示原始行 ID。
+     * 依 [line] 的翻譯定義組成文字。缺少行定義時顯示原始行 ID。
      *
      * @param line 要顯示的局況資料行。
      * @return 依本機語系組成的文字或原始行 ID。

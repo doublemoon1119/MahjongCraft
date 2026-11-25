@@ -45,7 +45,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 /**
  * 以 Forge 的事件實作 [ClientEvents]。
  *
- * 按鍵、資源重載監聽、畫面疊加層與自訂著色器要在 Forge 的登記事件中加入，因此先保留，事件發生時才登記；世界畫完的時間點由共用的
+ * 按鍵、資源重載監聽、畫面疊加層與自訂著色器要在 Forge 的登記事件中加入，因此先保留，事件發生時才登記。世界畫完的時間點由共用的
  * mixin 經 [WorldRenderFinishedHook] 提供。
  */
 object ForgeClientEvents : ClientEvents {
@@ -119,11 +119,11 @@ object ForgeClientEvents : ClientEvents {
     }
 
     /**
-     * 在按下使用鍵、原版送出任何互動之前轉交準星指向的實體；Forge 的實體互動事件在原版把互動送到伺服器之後才發出，
+     * 在按下使用鍵、原版送出任何互動之前轉交準星指向的實體。Forge 的實體互動事件在原版把互動送到伺服器之後才發出，
      * 取消它攔不住伺服器端的處理。
      *
      * 監聽器的結果不是 pass 時取消這次按鍵：結果會消耗這次操作時只送出「互動實體上某個位置」，伺服器不會因此呼叫實體
-     * 本身的互動；結果要求揮手時揮手。
+     * 本身的互動。結果要求揮手時揮手。
      */
     override fun onClientUseEntity(listener: (LocalPlayer, ClientLevel, InteractionHand, Entity) -> InteractionResult) {
         listen<InputEvent.InteractionKeyMappingTriggered> { event ->
@@ -145,7 +145,7 @@ object ForgeClientEvents : ClientEvents {
         }
     }
 
-    /** Forge 在伺服器與用戶端都會發出這個事件，這裡只轉交用戶端的那一次；監聽器的結果不是 pass 時取消事件並採用該結果。 */
+    /** Forge 在伺服器與用戶端都會發出這個事件，這裡只轉交用戶端的那一次。監聽器的結果不是 pass 時取消事件並採用該結果。 */
     override fun onClientUseItem(listener: (LocalPlayer, ClientLevel, InteractionHand) -> InteractionResultHolder<ItemStack>) {
         listen<PlayerInteractEvent.RightClickItem> { event ->
             val level = event.level as? ClientLevel ?: return@listen
@@ -172,7 +172,7 @@ object ForgeClientEvents : ClientEvents {
         pendingHudBeforeChat += listener
     }
 
-    /** 以畫完方塊實體的階段作為除錯線條之前的時間點；線條寫入用戶端共用的緩衝區，由原版在之後送出。 */
+    /** 以畫完方塊實體的階段作為除錯線條之前的時間點。線條寫入用戶端共用的緩衝區，由原版在之後送出。 */
     override fun onWorldRenderBeforeDebug(listener: (PoseStack, MultiBufferSource, Camera) -> Unit) {
         listen<RenderLevelStageEvent> { event ->
             if (event.stage == RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES) {
@@ -193,7 +193,7 @@ object ForgeClientEvents : ClientEvents {
     override fun registerKeyMapping(mapping: KeyMapping): KeyMapping = mapping.also { pendingKeyMappings += it }
 
     /**
-     * 在 Forge 的遊戲事件匯流排登記監聽器；不接收已被取消的事件。
+     * 在 Forge 的遊戲事件匯流排登記監聽器。不接收已被取消的事件。
      *
      * @param E 事件型別。
      * @param handler 收到事件時的處理。

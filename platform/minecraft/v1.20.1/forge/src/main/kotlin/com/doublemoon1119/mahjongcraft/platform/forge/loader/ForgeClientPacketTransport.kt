@@ -9,7 +9,7 @@ import net.minecraft.resources.ResourceLocation
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.network.NetworkEvent
 
-/** 以 Forge 的事件頻道實作 [ClientPacketTransport]；封包以原版的自訂資料封包傳送。 */
+/** 以 Forge 的事件頻道實作 [ClientPacketTransport]。封包以原版的自訂資料封包傳送。 */
 object ForgeClientPacketTransport : ClientPacketTransport {
     /** 沒有連線時不送出。 */
     override fun sendToServer(channelId: ResourceLocation, buf: FriendlyByteBuf) {
@@ -28,7 +28,7 @@ object ForgeClientPacketTransport : ClientPacketTransport {
  */
 private class ClientPayloadListener(private val receiver: (ClientPacketListener, FriendlyByteBuf) -> Unit) {
     /**
-     * 在網路執行緒上把封包交給 [receiver]；沒有連線時略過。
+     * 在網路執行緒上把封包交給 [receiver]。沒有連線時略過。
      *
      * @param event 伺服器送來的封包。
      */

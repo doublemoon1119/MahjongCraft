@@ -12,7 +12,7 @@ import net.minecraft.stats.Stats
 
 /** 麻將進度條件與通用統計的註冊入口。 */
 object ModAchievements {
-    /** 「麻將成果」進度條件；[register] 交出的登記完成後初始化。 */
+    /** 「麻將成果」進度條件。[register] 交出的登記完成後初始化。 */
     lateinit var mahjongAchievementCriterion: MahjongAchievementCriterion
         private set
 

@@ -31,7 +31,7 @@ class TaiwanLegalActionValidatorTest {
         listOf(1, 2, 3, 4, 5, 6).map { tile(Tile.Suit.Dot, it) } +
         tile(Tile.Suit.Bamboo, 9)
 
-    /** 別家打出聽的牌時可以胡；過水期間不能胡。 */
+    /** 別家打出聽的牌時可以胡。過水期間不能胡。 */
     @Test
     fun `passed win blocks ron until cleared`() {
         val winning = tile(Tile.Suit.Bamboo, 9)
@@ -69,7 +69,7 @@ class TaiwanLegalActionValidatorTest {
         assertTrue(actionsOnDiscard(declared, tile(Tile.Suit.Bamboo, 9)).any { it is GameAction.Ron })
     }
 
-    /** 不能槓上家打出的牌；別家打出時可以明槓。 */
+    /** 不能槓上家打出的牌。別家打出時可以明槓。 */
     @Test
     fun `open kan is not offered on the left player's discard`() {
         val east = List(3) { tile(Tile.Honor.East) }
@@ -96,7 +96,7 @@ class TaiwanLegalActionValidatorTest {
         assertFalse(robbing(GameAction.KanType.CLOSED_KAN).any { it is GameAction.Ron })
     }
 
-    /** 吃牌後不能打出吃進的牌或順子另一頭的牌；碰牌後不能打出同一種牌。 */
+    /** 吃牌後不能打出吃進的牌或順子另一頭的牌。碰牌後不能打出同一種牌。 */
     @Test
     fun `swap calling is forbidden after chi and pon`() {
         val called = tile(Tile.Suit.Character, 3)

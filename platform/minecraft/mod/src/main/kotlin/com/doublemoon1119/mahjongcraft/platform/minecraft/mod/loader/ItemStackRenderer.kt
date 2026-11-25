@@ -5,7 +5,7 @@ import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.world.item.ItemDisplayContext
 import net.minecraft.world.item.ItemStack
 
-/** 以程式繪製的物品；物品模型的 parent 必須是 `builtin/entity`，載入器才會改用這裡繪製。 */
+/** 以程式繪製的物品。物品模型的 parent 必須是 `builtin/entity`，載入器才會改用這裡繪製。 */
 fun interface ItemStackRenderer {
     /**
      * 繪製一個物品。

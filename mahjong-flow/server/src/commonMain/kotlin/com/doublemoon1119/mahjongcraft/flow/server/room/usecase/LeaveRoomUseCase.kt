@@ -32,7 +32,7 @@ class LeaveRoomUseCase(
      *
      * @param roomId 房間 Uuid。
      * @param playerId 欲離開的玩家 Uuid。
-     * @param expectedRoom 自動檢查所依據的房間；有指定時只接受相同狀態。
+     * @param expectedRoom 自動檢查所依據的房間。有指定時只接受相同狀態。
      * @return 離開房間的結果，成功時為 [Unit]，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(

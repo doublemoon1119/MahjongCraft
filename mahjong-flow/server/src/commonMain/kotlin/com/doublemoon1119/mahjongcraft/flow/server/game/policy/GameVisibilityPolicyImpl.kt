@@ -127,7 +127,7 @@ class GameVisibilityPolicyImpl(
     override fun publicTileFaces(tableState: TableState, tileIds: Collection<Uuid>): Map<Uuid, TileFaceView> = readableFaces(tableState, TileReadContext.Public(tableState.winnerPlayerIds()), tileIds)
 
     /**
-     * 以同一份解算結果裁切指定牌張；讀取者看不到的牌不列入結果。
+     * 以同一份解算結果裁切指定牌張。讀取者看不到的牌不列入結果。
      *
      * @param tableState 目前權威桌況。
      * @param reader 已決定的讀取情境。
@@ -149,7 +149,7 @@ class GameVisibilityPolicyImpl(
     }
 
     /**
-     * 解算所有牌區的組件；規則描述無效時依規則契約錯誤處理。
+     * 解算所有牌區的組件。規則描述無效時依規則契約錯誤處理。
      *
      * @param tableState 目前權威桌況。
      * @return 合併後的逐張組件。

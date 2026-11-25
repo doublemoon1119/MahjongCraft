@@ -11,11 +11,14 @@ import kotlin.uuid.Uuid
 /**
  * 決定成員卡片要用哪一種外觀呈現，並收斂各種降級情況。
  *
- * 只回傳決策與需要記錄的警告，不接觸繪製；呼叫端依 [Resolution.appearance] 選擇繪製路徑，並在
- * [Resolution.warning] 非 `null` 時輸出一次記錄。
+ * 只回傳決策與需要記錄的警告，不接觸繪製。呼叫端依 [Resolution.appearance] 選擇繪製路徑，
+ * 並在 [Resolution.warning] 非 `null` 時輸出一次記錄。
  *
- * 三種降級來源：registry 解析失敗（AI 用畫像、真人用玩家模型）、第三方宣告的 actor 預覽沒有對應工廠
- * （改用畫像）。玩家模型在玩家離線時還會再降級一次，但那需要查詢世界中的 entity，由呼叫端處理。
+ * 降級情況：
+ *
+ * - registry 解析失敗：AI 改用畫像，真人改用玩家模型。
+ * - 第三方宣告的 actor 預覽沒有對應工廠：改用畫像。
+ * - 玩家模型在玩家離線時還會再降級一次。這需要查詢世界中的 entity，由呼叫端處理。
  *
  * @property sources 解析成員外觀來源的 registry。
  * @property hasActorPreviewFactory 唯讀確認客戶端是否登記對應工廠，不建立模型。
@@ -66,7 +69,7 @@ internal class RoomMemberAppearanceResolver(
      * 外觀解析結果。
      *
      * @property appearance 要使用的呈現方式。
-     * @property warning 本次需要記錄的警告；相同來源已警告過時為 null。
+     * @property warning 本次需要記錄的警告。相同來源已警告過時為 null。
      * @property actorKey 已登記預覽能力，只有模型預覽結果才提供。
      */
     data class Resolution(
@@ -80,7 +83,7 @@ internal class RoomMemberAppearanceResolver(
         /** 繪製已載入的本人，缺少時使用角色備援。 */
         WorldEntityModel,
 
-        /** 繪製玩家模型；玩家離線時由呼叫端再降級為畫像。 */
+        /** 繪製玩家模型。玩家離線時由呼叫端再降級為畫像。 */
         PlayerModel,
 
         /** 使用已登記工廠的獨立預覽模型，尚未準備好時由呼叫端顯示畫像。 */
@@ -95,7 +98,7 @@ internal class RoomMemberAppearanceResolver(
         /**
          * 外觀來源提供者解析失敗。
          *
-         * @property providerId 失敗的提供者識別碼；無法辨識時使用 registry 的替代識別字。
+         * @property providerId 失敗的提供者識別碼。無法辨識時使用 registry 的替代識別字。
          * @property cause 解析失敗的原始例外。
          */
         data class ProviderFailed(val providerId: String, val cause: Throwable) : Warning

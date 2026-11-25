@@ -76,9 +76,12 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import kotlin.uuid.Uuid
 
 /**
- * 隨 MahjongCraft 發布的台麻 extension；台麻在平台無關層的所有登記都寫在這裡，透過與第三方相同的 [MahjongExtension] 回呼登記。
+ * 隨 MahjongCraft 發布的台麻 extension。
  *
- * 包含規則模組、花牌牌種、規則設定與牌河的網路及存檔格式，以及牌譜牌河格式。
+ * 台麻在平台無關層的所有登記都寫在這裡，透過與第三方相同的 [MahjongExtension] 回呼登記，包含：
+ *
+ * - 規則模組與花牌牌種。
+ * - 規則設定與牌河的網路及存檔格式，以及牌譜牌河格式。
  */
 object BundledTaiwanExtension : MahjongExtension {
     override val id: String = MahjongCraftMetadata.id("taiwan")

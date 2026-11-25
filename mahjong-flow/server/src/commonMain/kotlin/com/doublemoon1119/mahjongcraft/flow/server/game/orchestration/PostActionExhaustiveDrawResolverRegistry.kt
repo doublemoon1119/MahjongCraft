@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 
-/** 可於 bootstrap 登記、完成後凍結的主動觸發途中流局 resolver registry；擴充只透過 [PostActionExhaustiveDrawResolverRegistrar] 登記。 */
+/** 可於 bootstrap 登記、完成後凍結的主動觸發途中流局 resolver registry。擴充只透過 [PostActionExhaustiveDrawResolverRegistrar] 登記。 */
 class PostActionExhaustiveDrawResolverRegistry : PostActionExhaustiveDrawResolverRegistrar {
     /** 尚未凍結的 resolver 集合。 */
     private val resolvers = mutableListOf<PostActionExhaustiveDrawResolver>()
@@ -17,7 +17,7 @@ class PostActionExhaustiveDrawResolverRegistry : PostActionExhaustiveDrawResolve
     override val registrationKeys: Set<String> get() = resolvers.mapTo(mutableSetOf()) { registrationKey(it.ruleModuleId, it.id) }
 
     /**
-     * 登記 resolver；同一規則模組內 ID 不得重複，同一個 ID 可由不同規則模組各自登記。
+     * 登記 resolver。同一規則模組內 ID 不得重複，同一個 ID 可由不同規則模組各自登記。
      *
      * @param resolver 要登記的判定器。
      */
@@ -31,7 +31,7 @@ class PostActionExhaustiveDrawResolverRegistry : PostActionExhaustiveDrawResolve
         resolvers += resolver
     }
 
-    /** 凍結註冊表並依優先序、ID 固定判定順序；重複呼叫不改變結果。 */
+    /** 凍結註冊表並依優先序、ID 固定判定順序。重複呼叫不改變結果。 */
     fun freeze() {
         if (frozen) return
         resolvers.sortWith(compareByDescending<PostActionExhaustiveDrawResolver> { it.priority }.thenBy { registrationKey(it.ruleModuleId, it.id) })
@@ -39,11 +39,11 @@ class PostActionExhaustiveDrawResolverRegistry : PostActionExhaustiveDrawResolve
     }
 
     /**
-     * 依穩定順序回傳第一個成立的流局原因；註冊表必須先凍結。
+     * 依穩定順序回傳第一個成立的流局原因。註冊表必須先凍結。
      *
      * @param context 已完成動作及反應後的權威情境。
      * @param ruleModule 目前對局使用的規則模組。
-     * @return 第一個成立的流局原因；沒有 resolver 成立時為 null。
+     * @return 第一個成立的流局原因。沒有 resolver 成立時為 null。
      */
     fun resolve(context: CompletedGameActionContext, ruleModule: MahjongRuleModule<*>): ExhaustiveDrawReason? {
         check(frozen) { "Post-action exhaustive draw resolver registry must be frozen before use" }

@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.api.event
 /**
  * Minecraft 平台中途終止對局的原因 ID，經由對局結束事件的 `reasonId` 提供給訂閱者。
  *
- * 其他平台或第三方可以提供自己的原因 ID；訂閱者不得將此處常數視為完整列舉。
+ * 其他平台或第三方可以提供自己的原因 ID。訂閱者不得將此處常數視為完整列舉。
  */
 object MinecraftMatchAbortReasonIds {
     /** 找不到參與遊戲的 AI 玩家，且設定要求中止對局。 */

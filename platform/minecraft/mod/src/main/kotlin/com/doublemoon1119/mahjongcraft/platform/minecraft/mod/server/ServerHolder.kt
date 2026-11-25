@@ -26,7 +26,7 @@ class ServerHolder {
         activeSession = ActiveSession(server, Uuid.random())
     }
 
-    /** 清除目前 server；server 停止時呼叫。 */
+    /** 清除目前 server。server 停止時呼叫。 */
     fun clear() {
         activeSession = null
     }
@@ -34,14 +34,14 @@ class ServerHolder {
     /**
      * 取得目前伺服器。
      *
-     * @return 已設定的伺服器；尚未設定或已清除時為 null。
+     * @return 已設定的伺服器。尚未設定或已清除時為 null。
      */
     fun current(): MinecraftServer? = activeSession?.server
 
     /**
      * 取得目前啟動身分，供排程工作拒絕舊世界來源。
      *
-     * @return 目前啟動身分；未啟動或已停止時為 null。
+     * @return 目前啟動身分。未啟動或已停止時為 null。
      */
     fun sessionId(): Uuid? = activeSession?.id
 

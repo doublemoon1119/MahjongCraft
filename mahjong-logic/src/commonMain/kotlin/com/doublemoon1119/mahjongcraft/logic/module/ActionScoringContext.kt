@@ -11,7 +11,7 @@ import kotlin.uuid.Uuid
  * @property tableStateAfterAction 已套用動作本身、尚未補牌的候選桌況。
  * @property actorPlayerId 執行動作的玩家。
  * @property action 已確定成立的動作，例如吃、碰、槓或移出手牌。
- * @property sourcePlayerId 鳴取他家捨牌時被鳴牌的玩家；不是鳴取捨牌的動作為 null。
+ * @property sourcePlayerId 鳴取他家捨牌時被鳴牌的玩家。不是鳴取捨牌的動作為 null。
  */
 data class ActionScoringContext(
     val tableStateBeforeAction: TableState,

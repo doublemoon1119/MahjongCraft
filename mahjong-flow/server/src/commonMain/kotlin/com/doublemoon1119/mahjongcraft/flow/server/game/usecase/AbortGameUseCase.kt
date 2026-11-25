@@ -18,8 +18,9 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdat
 /**
  * 對局無法安全繼續時，原子地中止本場並還原房間，不改分數或補造正常終局。
  *
- * 僅在權威對局仍等於失敗時的快照時提交。重複呼叫或舊背景結果不能移除後來的新場次。
- * 權威資料先完成轉移，再處理呈現與通知；不移除場地或釋放仍屬於該房間的參與關係。
+ * - 只在權威對局仍等於失敗時的快照時提交。重複呼叫或舊背景結果不能移除後來的新場次。
+ * - 權威資料先完成轉移，再處理呈現與通知。
+ * - 不移除場地，也不釋放仍屬於該房間的參與關係。
  *
  * @property store 房間與對局共用的權威交易來源。
  * @property gameSnapshots 清除舊場次的觀察者快照。
@@ -46,7 +47,7 @@ class AbortGameUseCase(
      * @param expectedGame 發現錯誤時的權威對局。
      * @param reasonId 終止原因識別碼。
      * @param diagnostic 僅提供給管理診斷的說明。
-     * @return 本次確實提交中止時為 true；已移除、已正常結束或狀態過期時為 false。
+     * @return 本次確實提交中止時為 true。已移除、已正常結束或狀態過期時為 false。
      */
     override suspend fun abort(expectedGame: Game, reasonId: String, diagnostic: String): Boolean {
         val gameId = expectedGame.id

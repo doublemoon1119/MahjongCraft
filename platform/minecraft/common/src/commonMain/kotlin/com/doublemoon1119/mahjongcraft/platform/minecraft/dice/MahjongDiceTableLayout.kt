@@ -5,15 +5,17 @@ import kotlin.uuid.Uuid
 
 /** 兩款 3×3 麻將桌共用的兩顆／三顆正式骰子位置計算。 */
 object MahjongDiceTableLayout {
-    /** 桌面上有預先驗證擺放位置的骰子數量；規則一次擲出其他數量時無法呈現。 */
+    /** 桌面上有預先驗證擺放位置的骰子數量。規則一次擲出其他數量時無法呈現。 */
     val supportedDiceCounts: Set<Int> = setOf(2, 3)
 
     /**
      * 依桌子 UUID、投擲序號、局部投入側與世界朝向取得安全呈現位置。
      *
-     * 基準 variant 皆由桌子局部南側投入。桌子 UUID 決定四組 variant 的固定排列，投擲序號依序輪替；
-     * 之後先旋轉至 [throwSide]，再依 [tableFacing] 旋轉至世界方向。桌面高度固定為 controller 的
-     * `Y + 1.0`。
+     * 1. 基準 variant 皆由桌子局部南側投入。桌子 UUID 決定四組 variant 的固定排列，投擲序號依序輪替。
+     * 2. 旋轉至 [throwSide]。
+     * 3. 依 [tableFacing] 旋轉至世界方向。
+     *
+     * 桌面高度固定為 controller 的 `Y + 1.0`。
      *
      * @param controllerX 桌子 controller 的方塊 X 座標。
      * @param controllerY 桌子 controller 的方塊 Y 座標。

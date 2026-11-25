@@ -588,7 +588,7 @@ class GameInitializerTest {
      * 以正式組件生命週期完成已建立的開局候選資料。
      *
      * @param initialization 已建立牌山、座位及手牌的候選結果。
-     * @param previous 上一局的權威桌況；第一局為 null。
+     * @param previous 上一局的權威桌況。第一局為 null。
      * @return 已建立或換局轉換組件的桌況。
      */
     private fun initializeComponents(initialization: GameInitializationResult, previous: TableState? = null): TableState {

@@ -12,7 +12,7 @@ import kotlin.test.assertNull
 
 /** 驗證規則用語 registry 的中立用語、規則覆寫與登記限制。 */
 class RuleWordingRegistryImplTest {
-    /** 日麻覆寫自己的說法；台麻、第三方規則與不在對局中時使用中立用語。 */
+    /** 日麻覆寫自己的說法。台麻、第三方規則與不在對局中時使用中立用語。 */
     @Test
     fun `rules override the neutral wording only for their own tables`() {
         val registry = RuleWordingRegistryImpl().apply {
@@ -28,7 +28,7 @@ class RuleWordingRegistryImplTest {
         assertNull(registry.find(BuiltInRuleModuleIds.RIICHI, "example:unregistered"))
     }
 
-    /** 同一段文字的中立用語或同一規則的說法只能登記一次；凍結後拒絕登記。 */
+    /** 同一段文字的中立用語或同一規則的說法只能登記一次。凍結後拒絕登記。 */
     @Test
     fun `duplicate and frozen registrations are rejected`() {
         val registry = RuleWordingRegistryImpl().apply {

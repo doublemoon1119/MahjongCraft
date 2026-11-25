@@ -77,7 +77,7 @@ abstract class AutotestSummaryTask : DefaultTask() {
  *
  * @property label 報告名稱，例如 `minecraft_v1.20.1_fabric client`。
  * @property status 結果：報告的整體結果，或沒有這次的報告時為 `missing`。
- * @property report 報告資料夾；沒有這次的報告時為 null。
+ * @property report 報告資料夾。沒有這次的報告時為 null。
  * @property notes 報告中的提醒事項。
  * @property failures 未通過的步驟與檢查。
  */

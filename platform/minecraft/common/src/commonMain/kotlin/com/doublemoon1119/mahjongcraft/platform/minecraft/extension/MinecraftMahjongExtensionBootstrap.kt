@@ -15,7 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
  * [RuleModuleDisplayNameRegistry]／[TileEmojiRegistry]／[TileLabelRegistry] 及其他 Minecraft 呈現 registry，
  * 完成後統一凍結。
  *
- * 版本與 loader 無關；loader adapter 只負責發現 extension 並呼叫此物件，不自行實作註冊順序或凍結
+ * 版本與 loader 無關。loader adapter 只負責發現 extension 並呼叫此物件，不自行實作註冊順序或凍結
  * 時機。
  */
 object MinecraftMahjongExtensionBootstrap {
@@ -24,9 +24,9 @@ object MinecraftMahjongExtensionBootstrap {
      *
      * 內建規則的映射由 [BundledMinecraftMahjongExtensions] 提供，呼叫端應把它們排在第三方 extension 之前。
      *
-     * @param extensions 依序登記的內建規則與第三方 Minecraft extension；內建規則 extension 應排在第三方之前。
+     * @param extensions 依序登記的內建規則與第三方 Minecraft extension。內建規則 extension 應排在第三方之前。
      * @param registries runtime 實際使用並於成功後凍結的呈現 registries。
-     * @param failurePolicy 判斷登記回呼丟出的失敗能否包成帶擴充識別碼的註冊例外；無法隔離的失敗原樣往外傳。
+     * @param failurePolicy 判斷登記回呼丟出的失敗能否包成帶擴充識別碼的註冊例外。無法隔離的失敗原樣往外傳。
      * @return 依來源分組的所有映射：內建映射在前，接著依 [extensions] 順序排列每個 extension，供呼叫端記錄診斷資訊。
      * @throws MinecraftMahjongExtensionRegistrationException 若任一 extension 註冊失敗。
      */
@@ -61,7 +61,7 @@ object MinecraftMahjongExtensionBootstrap {
      * @param extension 本次要登記的內建或第三方擴充。
      * @param registries 執行回呼時使用的共用 registry 集合。
      * @param registeredExtensionIds 已通過檢查的來源識別碼。
-     * @param failurePolicy 判斷登記回呼丟出的失敗能否包成帶擴充識別碼的註冊例外；無法隔離的失敗原樣往外傳。
+     * @param failurePolicy 判斷登記回呼丟出的失敗能否包成帶擴充識別碼的註冊例外。無法隔離的失敗原樣往外傳。
      */
     private fun register(
         extension: MinecraftMahjongExtension,
@@ -82,7 +82,7 @@ object MinecraftMahjongExtensionBootstrap {
     }
 
     /**
-     * 依固定順序呼叫 [extension] 的所有登記回呼；例外由外層來源驗證流程統一包裝。
+     * 依固定順序呼叫 [extension] 的所有登記回呼。例外由外層來源驗證流程統一包裝。
      *
      * @param extension 正在登記的 extension。
      * @param registries extension 要使用的呈現 registries。

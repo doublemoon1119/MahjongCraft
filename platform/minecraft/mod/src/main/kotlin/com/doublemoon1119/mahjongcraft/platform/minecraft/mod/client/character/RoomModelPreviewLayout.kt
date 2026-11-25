@@ -45,7 +45,7 @@ internal data class RoomModelPreviewLayout(
          * @param area 卡片上畫人物的範圍與放大倍數。
          * @param mouseX 游標水平位置。
          * @param mouseY 游標垂直位置。
-         * @return 模型的展示參數；放大倍數為 1 時與未放大的卡片相同。
+         * @return 模型的展示參數。放大倍數為 1 時與未放大的卡片相同。
          */
         fun forCard(area: RoomFigureArea, mouseX: Int, mouseY: Int): RoomModelPreviewLayout = RoomModelPreviewLayout(
             centerX = area.centerX,

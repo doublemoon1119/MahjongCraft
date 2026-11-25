@@ -27,7 +27,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證 [TaiwanGameAchievementResolver] 從台灣麻將胡牌台種、花牌結果與終局事實判定的成果。 */
 class TaiwanGameAchievementResolverTest {
-    /** 有專屬成果的台種各自取得成果；沒有專屬成果的台種不產生成果。 */
+    /** 有專屬成果的台種各自取得成果。沒有專屬成果的台種不產生成果。 */
     @Test
     fun `tai with their own achievements credit the winner`() {
         val game = taiwanGame()
@@ -93,7 +93,7 @@ class TaiwanGameAchievementResolverTest {
         assertTrue(result.isEmpty())
     }
 
-    /** 正常打完的對局讓每位完成的玩家解鎖台灣麻將頁籤；中途中止不授予。 */
+    /** 正常打完的對局讓每位完成的玩家解鎖台灣麻將頁籤。中途中止不授予。 */
     @Test
     fun `completed matches unlock the tab and aborted matches do not`() {
         val game = taiwanGame()

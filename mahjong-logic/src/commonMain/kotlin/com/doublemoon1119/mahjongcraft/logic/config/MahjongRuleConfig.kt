@@ -24,7 +24,7 @@ interface MahjongRuleConfig {
     /**
      * 依 [gameLength] 原定要打的局數，不含延長局。
      *
-     * 預設為 [GameLength.totalRounds]；每圈局數隨人數改變的規則（例如三人日麻每圈三局）應覆寫成實際局數。
+     * 預設為 [GameLength.totalRounds]。每圈局數隨人數改變的規則（例如三人日麻每圈三局）應覆寫成實際局數。
      */
     val scheduledRoundCount: Int get() = gameLength.totalRounds
 
@@ -52,7 +52,7 @@ interface MahjongRuleConfig {
     /**
      * 是否公開暗槓（[MeldType.ClosedKan]）的牌面給本人以外的觀察者。
      *
-     * 日本麻將等規則暗槓身份仍算公開（僅實際擺放時把兩端牌翻蓋，不影響身份判定）；台灣麻將等規則
+     * 日本麻將等規則暗槓身份仍算公開（僅實際擺放時把兩端牌翻蓋，不影響身份判定）。台灣麻將等規則
      * 暗槓完全不公開，直到自摸或流局才揭露。其他副露種類（吃／碰／明槓／加槓）本身就是公開宣告的
      * 動作，不受此欄位影響，恆為可見。
      */

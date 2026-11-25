@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
 /**
  * 統計剩餘張數時需要扣除的可見牌，不把仍可能摸到的公開牌牆牌扣掉。
  *
- * 玩家區域的可見牌都列入；牌牆中的牌只有在規則公開表明不能摸取時才列入。
+ * 玩家區域的可見牌都列入。牌牆中的牌只有在規則公開表明不能摸取時才列入。
  * 未知牌不參與判斷，也不檢查權威牌牆的隱藏用途。
  *
  * @param interpretation 本局規則對已知牌面與公開用途的解讀方式。

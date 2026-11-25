@@ -88,7 +88,7 @@ internal data class GuideScreenLayout(val frame: FormScreenLayout) : PixelScroll
 
     /** 版面的建立入口與尺寸。 */
     internal companion object {
-        /** 底部按鈕列的格數；返回或關閉固定在最後一格。 */
+        /** 底部按鈕列的格數。返回或關閉固定在最後一格。 */
         const val FOOTER_SLOTS: Int = 4
 
         /** 返回或關閉按鈕在底部按鈕列的位置。 */

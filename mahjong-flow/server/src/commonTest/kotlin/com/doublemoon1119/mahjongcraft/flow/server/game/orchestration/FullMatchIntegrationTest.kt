@@ -31,12 +31,10 @@ import kotlin.uuid.Uuid
  * 整場對局的端對端整合測試：4 位 AI 玩家從開局一路打到整場對局結束（東風戰，4 局 + 可能的連莊），
  * 完全透過 [GameFlowCoordinator] 驅動，不依賴遊戲平台。
  *
- * 目的是驗證編排層本身（[GameFlowCoordinator]/[AiTurnDriver]/連莊過莊自動銜接）撐得住一整場對局，
- * 不會卡住、分數守恆。對局環境使用與 AI 對局模擬共用的 [SimulationRuntime]。
- *
- * 刻意用 [FakeAiStrategy]（見下方）而非 [RandomAiStrategy]：
- * 此測試關心完整對局的流程銜接，而不是策略強弱。固定策略對相同情境給出相同命令，
- * 但初始化的牌山仍是隨機的，不保證每次對局經過相同路徑。
+ * - 驗證編排層本身（[GameFlowCoordinator]／[AiTurnDriver]／連莊過莊自動銜接）撐得住一整場對局，不會卡住、分數守恆。
+ * - 對局環境使用與 AI 對局模擬共用的 [SimulationRuntime]。
+ * - 使用 [FakeAiStrategy]（見下方）而非 [RandomAiStrategy]，因為此測試關心流程銜接，不是策略強弱。
+ *   固定策略對相同情境給出相同命令，但牌山仍是隨機的，不保證每次對局經過相同路徑。
  */
 class FullMatchIntegrationTest {
     /**

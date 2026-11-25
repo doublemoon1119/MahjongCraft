@@ -7,8 +7,8 @@ import kotlin.jvm.JvmSynthetic
  * 一項已成立的規則結果，保留詳情與摘要各自的成立者。
  *
  * @property reasonId 規則結果原因的完整 namespaced ID。
- * @property winDetails 規則提供的公開和牌詳情；不包含隱藏牌或實體牌張識別碼。
- * @property completion 同次提交提供的結算摘要；沒有提供時為 null。
+ * @property winDetails 規則提供的公開和牌詳情。不包含隱藏牌或實體牌張識別碼。
+ * @property completion 同次提交提供的結算摘要。沒有提供時為 null。
  */
 class RuleResultDetail private constructor(
     val reasonId: String,

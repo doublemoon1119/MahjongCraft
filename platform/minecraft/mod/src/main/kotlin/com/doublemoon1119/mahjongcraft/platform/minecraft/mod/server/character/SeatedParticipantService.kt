@@ -118,7 +118,7 @@ internal class SeatedParticipantService(
     /** 防止擴充回呼重入查詢。 */
     private var querying = false
 
-    /** 已回報的能力錯誤；每個能力僅留一份摘要。 */
+    /** 已回報的能力錯誤。每個能力僅留一份摘要。 */
     private val reported = mutableMapOf<String, String>()
 
     /**
@@ -258,7 +258,7 @@ internal class SeatedParticipantService(
     }
 
     /**
-     * 更新房主已能看見的排除實體名稱；未載入、未追蹤或授權失效時保留最後名稱。
+     * 更新房主已能看見的排除實體名稱。未載入、未追蹤或授權失效時保留最後名稱。
      *
      * @param room 本輪仍有效的房間。
      * @param current 目前伺服器 session。
@@ -439,7 +439,7 @@ internal class SeatedParticipantService(
      * 開局前複核外部成員仍在同一個有效席位，未知資料保守拒絕。
      *
      * @param room 即將開局的完整房間。
-     * @return 全部已綁定實體可確認時回傳當下描述；無法確認時為 null。
+     * @return 全部已綁定實體可確認時回傳當下描述。無法確認時為 null。
      */
     fun prepareStart(room: Room): List<AiCharacterParticipantCapture>? {
         val current = server ?: return rejectStart(room, "session_unavailable")
@@ -473,7 +473,7 @@ internal class SeatedParticipantService(
      *
      * @param room 即將開局的房間。
      * @param reason 未通過的檢查。
-     * @param player 涉及的原成員編號；整個房間不可用時為 null。
+     * @param player 涉及的原成員編號。整個房間不可用時為 null。
      * @return 開局複核失敗的結果。
      */
     private fun rejectStart(
@@ -491,7 +491,7 @@ internal class SeatedParticipantService(
     }
 
     /**
-     * 只擷取實體的普通自訂名稱；類型名稱由角色翻譯鍵交給客戶端解析。
+     * 只擷取實體的普通自訂名稱。類型名稱由角色翻譯鍵交給客戶端解析。
      *
      * @param entity 已驗證的世界實體。
      * @param character 提供者的公開角色描述。
@@ -505,7 +505,7 @@ internal class SeatedParticipantService(
     )
 
     /**
-     * 依登記順序辨識並驗證實體與房主的工作授權；失敗不嘗試另一個能力掩蓋。
+     * 依登記順序辨識並驗證實體與房主的工作授權。失敗不嘗試另一個能力掩蓋。
      *
      * @param entity 當下實體。
      * @param hostId 房主。

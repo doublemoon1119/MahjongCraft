@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
 /** [TableCleanupQueue] 的提交順序與失敗隔離測試。 */
 @OptIn(ExperimentalCoroutinesApi::class)
 class TableCleanupQueueTest {
-    /** 提交後立即返回；後一項工作等前一項完成才開始。 */
+    /** 提交後立即返回。後一項工作等前一項完成才開始。 */
     @Test
     fun `tasks run one at a time in submission order`() = runTest {
         val queue = queue()

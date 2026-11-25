@@ -33,10 +33,10 @@ private val WINDS: Set<Tile> = setOf(Tile.Honor.East, Tile.Honor.South, Tile.Hon
 private val DRAGONS: Set<Tile> = setOf(Tile.Honor.Red, Tile.Honor.Green, Tile.Honor.White)
 
 /**
- * 十二落抬 (Shiiaru Raotai)：四組面子全部以吃、碰、明槓或加槓副露，剩下一張單騎和牌；有暗槓時不成立。
+ * 十二落抬 (Shiiaru Raotai)：四組面子全部以吃、碰、明槓或加槓副露，剩下一張單騎和牌。有暗槓時不成立。
  *
  * @param hand 和牌前的手牌，不含和牌張。
- * @return 1 翻；不成立時為 null。
+ * @return 1 翻。不成立時為 null。
  */
 fun calculateRiichiShiiaruRaotai(hand: Hand): RiichiYakuResult? {
     val melds = hand.exposedMelds
@@ -46,11 +46,11 @@ fun calculateRiichiShiiaruRaotai(hand: Hand): RiichiYakuResult? {
 }
 
 /**
- * 五門齊 (Uumen Chii)：和牌形同時含萬子、筒子、索子、風牌與三元牌；七對子也成立。
+ * 五門齊 (Uumen Chii)：和牌形同時含萬子、筒子、索子、風牌與三元牌。七對子也成立。
  *
  * @param hand 和牌前的手牌，不含和牌張。
  * @param winningTile 和牌張。
- * @return 2 翻；不成立時為 null。
+ * @return 2 翻。不成立時為 null。
  */
 fun calculateRiichiUumenChii(hand: Hand, winningTile: Tile): RiichiYakuResult? {
     val tiles = hand.allTiles.map { it.tile } + winningTile
@@ -61,10 +61,10 @@ fun calculateRiichiUumenChii(hand: Hand, winningTile: Tile): RiichiYakuResult? {
 }
 
 /**
- * 三連刻 (Sanrenkou)：同花色數字連續的三組刻子或槓子，例如 333m、444m、555m；四組連續仍只計一次。
+ * 三連刻 (Sanrenkou)：同花色數字連續的三組刻子或槓子，例如 333m、444m、555m。四組連續仍只計一次。
  *
  * @param handStructure 手牌結構。
- * @return 2 翻；不成立時為 null。
+ * @return 2 翻。不成立時為 null。
  */
 fun calculateRiichiSanrenkou(handStructure: RiichiHandStructure): RiichiYakuResult? {
     val standard = handStructure as? RiichiHandStructure.Standard ?: return null
@@ -85,11 +85,11 @@ fun calculateRiichiSanrenkou(handStructure: RiichiHandStructure): RiichiYakuResu
 }
 
 /**
- * 一色三同順 (Isshoku Sanjun)：同花色同數字的三組順子，例如 123m 三組；門前清 3 翻，副露 2 翻。
+ * 一色三同順 (Isshoku Sanjun)：同花色同數字的三組順子，例如 123m 三組。門前清 3 翻，副露 2 翻。
  *
  * @param handStructure 手牌結構。
  * @param isMenzen 是否門前清。
- * @return 依門清與否的翻數；不成立時為 null。
+ * @return 依門清與否的翻數。不成立時為 null。
  */
 fun calculateRiichiIsshokuSanjun(handStructure: RiichiHandStructure, isMenzen: Boolean): RiichiYakuResult? {
     val standard = handStructure as? RiichiHandStructure.Standard ?: return null
@@ -105,7 +105,7 @@ fun calculateRiichiIsshokuSanjun(handStructure: RiichiHandStructure, isMenzen: B
  * @param hand 和牌前的手牌，不含和牌張。
  * @param winningTile 和牌張。
  * @param isMenzen 是否門前清。
- * @return 對應花色的役滿；不成立時為 null。
+ * @return 對應花色的役滿。不成立時為 null。
  */
 fun calculateRiichiWheelYakuman(
     hand: Hand,
@@ -131,7 +131,7 @@ fun calculateRiichiWheelYakuman(
  * 大七星 (Daichisei)：七種字牌各一對的七對子。
  *
  * @param handStructure 手牌結構。
- * @return 雙倍役滿；不成立時為 null。
+ * @return 雙倍役滿。不成立時為 null。
  */
 fun calculateRiichiDaichisei(handStructure: RiichiHandStructure): RiichiYakuResult? {
     val chiitoitsu = handStructure as? RiichiHandStructure.Chiitoitsu ?: return null

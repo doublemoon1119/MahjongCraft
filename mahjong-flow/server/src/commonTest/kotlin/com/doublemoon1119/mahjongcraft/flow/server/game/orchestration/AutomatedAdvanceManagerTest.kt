@@ -21,7 +21,7 @@ class AutomatedAdvanceManagerTest {
     /** 受測對局識別碼。 */
     private val gameId = Uuid.random()
 
-    /** 請求後立即返回，推進在自己的協程中進行；推進期間視為推進中，結束後釋放。 */
+    /** 請求後立即返回，推進在自己的協程中進行。推進期間視為推進中，結束後釋放。 */
     @Test
     fun `a request advances the game without waiting`() = runTest {
         val fixture = Fixture(this)
@@ -107,7 +107,7 @@ class AutomatedAdvanceManagerTest {
         assertFalse(fixture.manager.isAdvancing(gameId))
     }
 
-    /** 逐步推進在推進中的對局略過；逐步推進期間收到的請求在它結束後推進。 */
+    /** 逐步推進在推進中的對局略過。逐步推進期間收到的請求在它結束後推進。 */
     @Test
     fun `exclusive steps skip advancing games and defer requests`() = runTest {
         val fixture = Fixture(this)

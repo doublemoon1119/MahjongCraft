@@ -19,7 +19,7 @@ class MahjongPlayerScoreChangeTest {
         assertNull(changes.shownDeltaFor(1, 15L))
     }
 
-    /** 同一座位同時顯示多筆時加總；加總為 0 時不顯示。 */
+    /** 同一座位同時顯示多筆時加總。加總為 0 時不顯示。 */
     @Test
     fun `overlapping changes for a seat are summed`() {
         val changes = listOf(

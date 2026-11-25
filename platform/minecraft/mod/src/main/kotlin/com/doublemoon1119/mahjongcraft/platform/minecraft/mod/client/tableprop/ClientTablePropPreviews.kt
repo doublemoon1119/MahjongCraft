@@ -13,7 +13,7 @@ import net.minecraft.world.entity.Entity
 import kotlin.coroutines.cancellation.CancellationException
 
 /**
- * 客戶端場景中畫出的桌上物件，例如牌譜回放當時桌上的點棒；工廠只在有界的 tick 工作中執行。
+ * 客戶端場景中畫出的桌上物件，例如牌譜回放當時桌上的點棒。工廠只在有界的 tick 工作中執行。
  *
  * @property registry 客戶端自己的桌上物件預覽登記。
  * @property failures 擴充錯誤的隔離規則。
@@ -36,7 +36,7 @@ internal class ClientTablePropPreviews(
     /** 一次連線內每種物件只回報一次相同錯誤。 */
     private val reported = mutableMapOf<String, String>()
 
-    /** 目前實體所屬世界；切換時清理全部實體。 */
+    /** 目前實體所屬世界。切換時清理全部實體。 */
     private var world: ClientLevel? = null
 
     /** 本機重試時鐘，不依賴世界遊戲時間。 */
@@ -67,12 +67,12 @@ internal class ClientTablePropPreviews(
     }
 
     /**
-     * 取得可放進場景繪製的實體；建立工作在 tick 中排隊執行，失敗後的等待期間不回傳。
+     * 取得可放進場景繪製的實體。建立工作在 tick 中排隊執行，失敗後的等待期間不回傳。
      *
      * 同樣身分與內容的物件共用一個實體，位置與朝向由繪製端決定。
      *
      * @param target 物件的身分、規則與內容。
-     * @return 已建立的實體；排隊中、種類沒有登記或等待重試時為 null。
+     * @return 已建立的實體。排隊中、種類沒有登記或等待重試時為 null。
      */
     fun model(target: TablePropTarget): Entity? {
         if (world == null || registry.find(target.kind) == null) return null
@@ -82,7 +82,7 @@ internal class ClientTablePropPreviews(
     }
 
     /**
-     * 隔離繪製 [model] 實體時種類造成的失敗；同類錯誤僅回報一次，失敗的物件在等待重試期間不再提供實體。
+     * 隔離繪製 [model] 實體時種類造成的失敗。同類錯誤僅回報一次，失敗的物件在等待重試期間不再提供實體。
      *
      * @param target 實體所屬的物件。
      * @param draw 繪製工作。
@@ -142,7 +142,7 @@ internal class ClientTablePropPreviews(
     }
 
     /**
-     * 工廠建立的實體；淘汰時移除。
+     * 工廠建立的實體。淘汰時移除。
      *
      * @property entity 不在世界中的實體。
      */

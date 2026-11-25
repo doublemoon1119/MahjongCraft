@@ -161,7 +161,7 @@ class ChangeAiStrategyUseCaseTest {
     }
 
     /**
-     * 建立登記了本測試用到的策略 key 的 registry；策略本身不會被建立。
+     * 建立登記了本測試用到的策略 key 的 registry。策略本身不會被建立。
      *
      * @return 已凍結的策略 registry。
      */

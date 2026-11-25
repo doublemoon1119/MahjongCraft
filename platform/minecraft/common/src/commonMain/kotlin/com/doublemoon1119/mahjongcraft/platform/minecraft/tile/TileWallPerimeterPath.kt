@@ -7,7 +7,7 @@ import kotlin.math.hypot
  * 產生跨越相對兩面牌牆時沿桌面外緣繞行的路徑。
  *
  * 這個 helper 只接受兩端水平位置位於桌心相對兩側，且朝向相差 180 度的情況。
- * 路徑不會穿越桌面中央；南北兩端會在東側或西側繞行，東西兩端會在北側或南側繞行。
+ * 路徑不會穿越桌面中央。南北兩端會在東側或西側繞行，東西兩端會在北側或南側繞行。
  */
 internal object TileWallPerimeterPath {
     /**
@@ -17,7 +17,7 @@ internal object TileWallPerimeterPath {
      * @param end 路徑終點。
      * @param centerX 桌面中心的 X 座標。
      * @param centerZ 桌面中心的 Z 座標。
-     * @return 包含起點、兩個外側角點與終點的路徑；起訖物件會原樣保留。
+     * @return 包含起點、兩個外側角點與終點的路徑。起訖物件會原樣保留。
      */
     fun oppositeSidePath(
         start: MahjongTileWallPlacement,
@@ -82,7 +82,7 @@ internal object TileWallPerimeterPath {
      * @param end 路徑終點。
      * @param firstCornerX 第一個角點的 X 座標。
      * @param firstCornerZ 第一個角點的 Z 座標。
-     * @param secondCornerXOrZ 南北路徑時第二個角點的 Z 座標；東西路徑時的 X 座標。
+     * @param secondCornerXOrZ 南北路徑時第二個角點的 Z 座標。東西路徑時的 X 座標。
      * @param isNorthSouth 是否為南北兩端繞東西側的路徑。
      * @return 包含起訖點和兩個外側角點的路徑。
      */
@@ -140,7 +140,7 @@ internal object TileWallPerimeterPath {
         hypot(it.second.x - it.first.x, it.second.z - it.first.z)
     }
 
-    /** 將座標相對桌心的位置轉成外側方向；正值與零值使用正側。 */
+    /** 將座標相對桌心的位置轉成外側方向。正值與零值使用正側。 */
     private fun sign(value: Double): Double = when {
         value < 0.0 -> -1.0
         else -> 1.0

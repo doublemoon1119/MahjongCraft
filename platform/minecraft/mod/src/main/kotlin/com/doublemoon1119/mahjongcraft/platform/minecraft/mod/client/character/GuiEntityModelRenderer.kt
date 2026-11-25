@@ -12,10 +12,10 @@ import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.player.Player
 
-/** 房間模型沿用玩家的預覽版面；生物使用原版入口，其他實體使用相同座標方向。 */
+/** 房間模型沿用玩家的預覽版面。生物使用原版入口，其他實體使用相同座標方向。 */
 internal object GuiEntityModelRenderer {
     /**
-     * 依卡片原有基線與游標偏移繪製；暫時展示狀態在成功或失敗時都還原。
+     * 依卡片原有基線與游標偏移繪製。暫時展示狀態在成功或失敗時都還原。
      *
      * @param entity 已載入的本人或獨立預覽模型。
      * @param context GUI 繪製上下文。
@@ -68,7 +68,7 @@ internal object GuiEntityModelRenderer {
     }
 
     /**
-     * 原版生物預覽會暫改朝向；此保護在 renderer 拋錯時也恢復本人。
+     * 原版生物預覽會暫改朝向。此保護在 renderer 拋錯時也恢復本人。
      *
      * @property entity 此次預覽的生物。
      */

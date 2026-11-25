@@ -10,16 +10,17 @@ import com.doublemoon1119.mahjongcraft.logic.tile.component.resolveTileAreas
 import kotlin.random.Random
 
 /**
- * 在正式開局或換局時，依登記規格建立組件；各定義都讀取同一份候選桌況。
+ * 在正式開局或換局時，依登記規格建立組件。各定義都讀取同一份候選桌況。
  *
- * 玩家與對局逐項重建、保留或轉換上一局資料。新牌張保留牌組定義給定的特性，再合併初始組件。
- * 開局時已存在的捨牌紀錄與副露和動作新建的紀錄一樣套用初值並驗證。
- * 不在快照查詢或存檔載入時呼叫，也不執行任何遊戲動作。
+ * - 玩家與對局逐項重建、保留或轉換上一局資料。
+ * - 新牌張保留牌組定義給定的特性，再合併初始組件。
+ * - 開局時已存在的捨牌紀錄與副露，和動作新建的紀錄一樣套用初值並驗證。
+ * - 不在快照查詢或存檔載入時呼叫，也不執行任何遊戲動作。
  *
  * @param ruleModuleId 本局規則的完整識別碼。
  * @param registry 本次執行已完成登記的組件規格。
  * @param random 這一局建立組件初值使用的亂數來源。
- * @param previousTableState 上一局結束時的桌況；第一局為 null。
+ * @param previousTableState 上一局結束時的桌況。第一局為 null。
  * @return 包含已驗證組件的開局結果，牌張身分與牌牆位置保持不變。
  */
 fun GameInitializationResult.initializeRuleComponents(

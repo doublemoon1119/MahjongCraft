@@ -145,9 +145,9 @@ class GameFlowCoordinatorTest {
      *
      * @param winRoundContinuationResolverRegistry 胡牌後是否繼續本局的解析器。
      * @param extraStrategies 另外登記的 AI 策略，以策略 key 索引。
-     * @param ruleDecisionResolvers 規則選擇的解析器；預設沒有任何規則選擇。
+     * @param ruleDecisionResolvers 規則選擇的解析器。預設沒有任何規則選擇。
      * @param extraCommandHandlers 另外登記擴充命令 handler 的方式。
-     * @param ruleModuleDecorator 覆寫測試日麻模組的行為；未提供時使用內建規則註冊。
+     * @param ruleModuleDecorator 覆寫測試日麻模組的行為。未提供時使用內建規則註冊。
      * @property gameRepo 保存測試對局與已提交事實的資料倉庫。
      * @property moduleRegistry 內建規則註冊中心。
      * @property snapshotRepo 記錄同步快照的倉庫。
@@ -505,7 +505,7 @@ class GameFlowCoordinatorTest {
     /**
      * 驗證強制自動操作只鎖住逾時當下那一次決策——[GameFlowCoordinator.driveAutomatedPlayers]
      * 替強制自動操作玩家送出一次自動捨牌後，該玩家必須立刻從
-     * [Game.forcedAutoPlayPlayerIds] 移除，而不是被永久鎖住到對局結束；否則一旦逾時，
+     * [Game.forcedAutoPlayPlayerIds] 移除，而不是被永久鎖住到對局結束。否則一旦逾時，
      * 玩家之後每一次決策都會被伺服器代打，完全拿不回操作權。
      */
     @Test
@@ -641,7 +641,7 @@ class GameFlowCoordinatorTest {
     }
 
     /**
-     * 驗證規則在一般流局結算前開啟選擇時，流局要等視窗關閉才結算；結算只做一次，接著開啟本局結算後的視窗，
+     * 驗證規則在一般流局結算前開啟選擇時，流局要等視窗關閉才結算。結算只做一次，接著開啟本局結算後的視窗，
      * 換局要等那個視窗也關閉。
      */
     @Test
@@ -902,7 +902,7 @@ class GameFlowCoordinatorTest {
 
     /**
      * 驗證四槓散了成立（4 個槓子分屬不同玩家）時，[GameCommand.Discard] 會先正常執行，再由通用
-     * 本局結束流程收斂並開下一局；莊家固定連莊（`comboCount + 1`、莊家方位不變）。
+     * 本局結束流程收斂並開下一局。莊家固定連莊（`comboCount + 1`、莊家方位不變）。
      */
     @Test
     fun `test completed discard is followed by suukan nagare when pending`() = runTest {
@@ -1369,7 +1369,7 @@ class GameFlowCoordinatorTest {
     }
 
     /**
-     * 驗證九種九牌宣告成功一定結束本局，`AdvanceRoundUseCase` 會被銜接；流局呈現把宣告者的手牌當作攤牌證明。
+     * 驗證九種九牌宣告成功一定結束本局，`AdvanceRoundUseCase` 會被銜接。流局呈現把宣告者的手牌當作攤牌證明。
      */
     @Test
     fun `test kyuushu kyuuhai command chains advance round`() = runTest {
@@ -1603,7 +1603,7 @@ class GameFlowCoordinatorTest {
         assertEquals(table, fixtures.gameRepo.getTableState(gameId))
     }
 
-    /** 驗證已保存榮和結算與待換局狀態時，可補完換局且重複恢復不會再次推進；本測試不執行存檔或重啟。 */
+    /** 驗證已保存榮和結算與待換局狀態時，可補完換局且重複恢復不會再次推進。本測試不執行存檔或重啟。 */
     @Test
     fun `test persisted ron settlement resumes round transition after restart`() = runTest {
         val fixtures = Fixtures()
@@ -1993,7 +1993,7 @@ class GameFlowCoordinatorTest {
     /**
      * 驗證對局結束後（[Game.isMatchOver] 成立）再次呼叫 [GameFlowCoordinator.driveAutomatedPlayers]
      * 不會重複觸發流局結算——自動推進必須認得對局已經結束，否則會不斷嘗試對已空的牌山摸牌、不斷重新觸發
-     * `DeclareExhaustiveDrawUseCase`，導致流局點數被重複套用；這支測試模擬「心跳每個 tick 都呼叫一次」的情境，驗證第二次呼叫之後分數
+     * `DeclareExhaustiveDrawUseCase`，導致流局點數被重複套用。這支測試模擬「心跳每個 tick 都呼叫一次」的情境，驗證第二次呼叫之後分數
      * 不會再變動。
      */
     @Test
@@ -2331,7 +2331,7 @@ class GameFlowCoordinatorTest {
      * @property changesGameOnFirstCall 第一次被呼叫時是否改變權威遊戲。
      */
     private class ChangingGameStrategy(private val changesGameOnFirstCall: Boolean) : MahjongAiStrategy {
-        /** 決策期間要改變的權威倉庫；建立 [Fixtures] 後設定。 */
+        /** 決策期間要改變的權威倉庫。建立 [Fixtures] 後設定。 */
         lateinit var gameRepo: FakeGameRepository
 
         /** [decideGameCommand] 的呼叫次數。 */
@@ -2382,7 +2382,7 @@ class GameFlowCoordinatorTest {
     }
 
     /**
-     * 在指定時間點請第一位玩家確認的規則選擇解析器；收齊後不改桌況。
+     * 在指定時間點請第一位玩家確認的規則選擇解析器。收齊後不改桌況。
      *
      * @property timings 要開啟確認的時間點。
      * @property ruleModuleId 對應的規則模組 ID。

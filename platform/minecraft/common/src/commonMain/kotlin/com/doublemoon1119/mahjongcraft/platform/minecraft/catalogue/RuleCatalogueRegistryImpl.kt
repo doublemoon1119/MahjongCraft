@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 
-/** [RuleCatalogueRegistry] 的記憶體實作；registry 不捕捉來源程式錯誤以冒充空目錄。 */
+/** [RuleCatalogueRegistry] 的記憶體實作。registry 不捕捉來源程式錯誤以冒充空目錄。 */
 class RuleCatalogueRegistryImpl : RuleCatalogueRegistry {
     /** 依註冊順序保存來源。 */
     private val providers = linkedMapOf<String, RuleCatalogueProvider>()
@@ -23,7 +23,7 @@ class RuleCatalogueRegistryImpl : RuleCatalogueRegistry {
         providers[provider.ruleModuleId] = provider
     }
 
-    /** 只向指定規則來源解析，保留實際配置與一般說明的區別；一般說明清除條目的不適用原因。 */
+    /** 只向指定規則來源解析，保留實際配置與一般說明的區別。一般說明清除條目的不適用原因。 */
     override fun resolve(ruleModuleId: String, config: MahjongRuleConfig?): RuleCatalogueResolution {
         val provider = providers[ruleModuleId] ?: return RuleCatalogueResolution.MissingProvider
         if (config != null) {

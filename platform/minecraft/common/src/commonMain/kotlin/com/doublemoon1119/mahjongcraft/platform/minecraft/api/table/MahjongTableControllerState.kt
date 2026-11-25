@@ -6,12 +6,15 @@ import kotlin.uuid.Uuid
 /**
  * 麻將桌控制點持有的 MahjongCraft 狀態。
  *
- * 除穩定 [tableId] 外，也保存兩條呈現忙碌時間軸：[presentationBusyUntilGameTime] 是目前所有已排定整桌呈現的
- * 最晚結束絕對遊戲時間；[continuingWinPresentationBusyUntilGameTime] 是中途胡牌演出專用的時間軸，不列入整桌
- * 忙碌判定，讓已完成本局的玩家播放演出時，其他仍在本局中的玩家能照常行動。兩條時間軸各自只會延長，因此同一條上的
- * 多筆演出依序播放；查詢時直接與世界時間比較，不需要每 tick 更新。
+ * 除穩定 [tableId] 外，也保存兩條呈現忙碌時間軸：
  *
- * 實作者只建立這份狀態並在存讀檔時轉交給 MahjongCraft；修改與還原由 MahjongCraft 進行。
+ * - [presentationBusyUntilGameTime] 是目前所有已排定整桌呈現的最晚結束絕對遊戲時間。
+ * - [continuingWinPresentationBusyUntilGameTime] 是中途胡牌演出專用的時間軸，不列入整桌忙碌判定。
+ *   已完成本局的玩家播放演出時，其他仍在本局中的玩家能照常行動。
+ * - 兩條時間軸各自只會延長，因此同一條上的多筆演出依序播放。
+ * - 查詢時直接與世界時間比較，不需要每 tick 更新。
+ *
+ * 實作者只建立這份狀態並在存讀檔時轉交給 MahjongCraft。修改與還原由 MahjongCraft 進行。
  *
  * @param markDirty 狀態改變時通知所屬方塊實體需要存檔的動作，通常是方塊實體標記需要存檔的方法，
  *   例如 Minecraft 方塊實體的 `setChanged`。
@@ -23,11 +26,11 @@ class MahjongTableControllerState(
     var tableId: Uuid = Uuid.random()
         private set
 
-    /** 整桌呈現保持忙碌的最晚絕對遊戲時間；`0` 代表沒有額外桌級呈現等待。 */
+    /** 整桌呈現保持忙碌的最晚絕對遊戲時間。`0` 代表沒有額外桌級呈現等待。 */
     var presentationBusyUntilGameTime: Long = 0L
         private set
 
-    /** 中途胡牌呈現保持忙碌的最晚絕對遊戲時間；`0` 代表沒有中途胡牌演出等待。 */
+    /** 中途胡牌呈現保持忙碌的最晚絕對遊戲時間。`0` 代表沒有中途胡牌演出等待。 */
     var continuingWinPresentationBusyUntilGameTime: Long = 0L
         private set
 
@@ -74,7 +77,7 @@ class MahjongTableControllerState(
     /**
      * 以存檔內容還原狀態，不通知方塊實體存檔。
      *
-     * @param tableId 存檔中的桌子 ID；null 表示存檔沒有可用的 ID，保留目前的 ID。
+     * @param tableId 存檔中的桌子 ID。null 表示存檔沒有可用的 ID，保留目前的 ID。
      * @param presentationBusyUntilGameTime 存檔中的整桌呈現期限。
      * @param continuingWinPresentationBusyUntilGameTime 存檔中的中途胡牌呈現期限。
      */

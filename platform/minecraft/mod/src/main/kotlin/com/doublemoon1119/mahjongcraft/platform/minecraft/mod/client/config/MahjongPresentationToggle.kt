@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClient
  *
  * @property nameKey 開關名稱的翻譯鍵。
  * @property descriptionKey 開關說明的翻譯鍵。
- * @property section 開關列在設定畫面的哪個分頁；同一分頁內依宣告順序排列。
+ * @property section 開關列在設定畫面的哪個分頁。同一分頁內依宣告順序排列。
  * @property read 讀取目前開關值。
  * @property update 寫入新開關值後的顯示設定。
  */

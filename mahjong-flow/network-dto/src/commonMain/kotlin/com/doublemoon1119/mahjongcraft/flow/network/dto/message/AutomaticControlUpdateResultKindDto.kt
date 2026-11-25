@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 /** 本局自動操作更新請求的權威處理結果種類。 */
 @Serializable
 enum class AutomaticControlUpdateResultKindDto {
-    /** 請求已接受；[AutomaticControlUpdateResultDto.snapshot] 為接受後狀態。 */
+    /** 請求已接受。[AutomaticControlUpdateResultDto.snapshot] 為接受後狀態。 */
     ACCEPTED,
 
     /** 提交內容無效或不受目前規則支援。 */

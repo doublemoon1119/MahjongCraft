@@ -95,7 +95,7 @@ class TableTileArrangementTest {
     }
 
     /**
-     * 直接補進立牌的牌依補進順序接在立牌最右邊，摸牌位的牌拿起來放到最右邊；玩家理牌時，這些牌越過其他牌插進該在的位置。
+     * 直接補進立牌的牌依補進順序接在立牌最右邊，摸牌位的牌拿起來放到最右邊。玩家理牌時，這些牌越過其他牌插進該在的位置。
      */
     @Test
     fun `replacement tiles wait at the right end of the hand until it is sorted`() {
@@ -168,7 +168,7 @@ class TableTileArrangementTest {
     )
 
     /** 北向、兩人桌、沒有牌牆投影的擺放輸入。 */
-    /** 沒有實體牌牆時，正面朝上的公開保留牌依保留區順序在桌子中央排成一排，面向莊家；朝下的牌不擺。 */
+    /** 沒有實體牌牆時，正面朝上的公開保留牌依保留區順序在桌子中央排成一排，面向莊家。朝下的牌不擺。 */
     @Test
     fun `wallless face-up reserved tiles line up in the center facing the dealer`() {
         val reserved = List(6) { FakeIdentifiedTileFactory.create(HONORS[it]) }

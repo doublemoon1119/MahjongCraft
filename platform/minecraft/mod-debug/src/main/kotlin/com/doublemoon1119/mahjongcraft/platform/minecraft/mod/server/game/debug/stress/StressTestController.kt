@@ -63,18 +63,27 @@ import kotlin.uuid.toJavaUuid
 /**
  * 以伺服器 tick 驅動的壓力測試。
  *
- * 所有測試對局共用 [StressTestEnvironment] 的權威來源，依 [StressTestPace] 逐 tick 推進。每桌推進的 tick 由與正式排程相同的
- * [GameAdvanceRotation] 決定（位置分配、待推進標記與每 tick 推進上限）；與正式環境相同，每桌在伺服器主執行緒上各自的協程中推進、
- * 不互相等待，AI 策略在背景執行緒上計算，因此每 tick 耗時直接反映正式環境中主執行緒的負擔。歷史依 [StressHistoryMode] 經由同一個
- * 權威來源的待寫佇列交給背景工作處理。新桌每個 tick 最多建立
- * [STRESS_TABLES_CREATED_PER_TICK] 桌，打完或卡住的桌會從權威來源移除。
+ * 推進方式：
  *
- * 開始後先依 [StressRunOptions.warmupSeconds] 暖機：期間維持初始桌數、不列入統計與卡頓判斷。每 tick 都檢查 [StressSafetyValve]，
- * 包括暖機期間：伺服器落後或歷史出問題就停止並保留報告，持續卡頓則在暖機後記下當時的桌數後繼續。不記錄歷史時不檢查
- * 歷史相關的門檻。執行期間每秒在存檔資料夾的時間序列 CSV 追加一列。
+ * - 所有測試對局共用 [StressTestEnvironment] 的權威來源，依 [StressTestPace] 逐 tick 推進。
+ * - 每桌推進的 tick 由與正式排程相同的 [GameAdvanceRotation] 決定：位置分配、待推進標記與每 tick 推進上限。
+ * - 與正式環境相同，每桌在伺服器主執行緒上各自的協程中推進、不互相等待，AI 策略在背景執行緒上計算。
+ *   因此每 tick 耗時直接反映正式環境中主執行緒的負擔。
+ * - 歷史依 [StressHistoryMode] 經由同一個權威來源的待寫佇列交給背景工作處理。
+ * - 新桌每個 tick 最多建立 [STRESS_TABLES_CREATED_PER_TICK] 桌，打完或卡住的桌會從權威來源移除。
  *
- * 單步在主執行緒上的耗時超過 [SLOW_STEP_LOG_THRESHOLD] 時，在 log 記下該步最久的 AI 決策情境；另每秒檢查各桌進行中的 AI 決策，
- * 超過 [STUCK_DECISION_LOG_THRESHOLD] 仍未結束就先記下情境。
+ * 暖機與停止：
+ *
+ * - 開始後先依 [StressRunOptions.warmupSeconds] 暖機，期間維持初始桌數、不列入統計與卡頓判斷。
+ * - 每 tick 都檢查 [StressSafetyValve]，包括暖機期間。伺服器落後或歷史出問題就停止並保留報告。
+ * - 持續卡頓在暖機後記下當時的桌數，然後繼續。
+ * - 不記錄歷史時不檢查歷史相關的門檻。
+ *
+ * 記錄：
+ *
+ * - 執行期間每秒在存檔資料夾的時間序列 CSV 追加一列。
+ * - 單步在主執行緒上的耗時超過 [SLOW_STEP_LOG_THRESHOLD] 時，在 log 記下該步最久的 AI 決策情境。
+ * - 每秒檢查各桌進行中的 AI 決策，超過 [STUCK_DECISION_LOG_THRESHOLD] 仍未結束就先記下情境。
  *
  * @property environments 建立壓力測試資料環境。
  * @property runtimes 在共用權威來源中建立全 AI 對局。
@@ -99,7 +108,7 @@ class StressTestController(
     /** 同時存在、尚未結束的策略工作上限。 */
     private val strategyCapacity = dispatchers.aiDecisionParallelism * AiDecisionExecutor.CAPACITY_PER_THREAD
 
-    /** 各輪共用的 AI 決策執行器與決策結果的分派；上一輪留下的策略工作仍計入下一輪的名額。 */
+    /** 各輪共用的 AI 決策執行器與決策結果的分派。上一輪留下的策略工作仍計入下一輪的名額。 */
     private val sharedDecisions = StressAiDecisions { observer ->
         AiDecisionExecutor(
             dispatcher = dispatchers.aiDecision,
@@ -111,7 +120,7 @@ class StressTestController(
     }
 
     /**
-     * 目前的壓力測試資料環境；尚未開始過、已刪除，或上一輪沒有寫進資料庫時為 null。設定時一併更新對局歷史畫面讀取的
+     * 目前的壓力測試資料環境。尚未開始過、已刪除，或上一輪沒有寫進資料庫時為 null。設定時一併更新對局歷史畫面讀取的
      * 資料來源。
      */
     @Volatile var environment: StressTestEnvironment? = null
@@ -120,7 +129,7 @@ class StressTestController(
             historySource.current = value?.historySource
         }
 
-    /** 執行中的壓力測試；沒有執行時為 null。 */
+    /** 執行中的壓力測試。沒有執行時為 null。 */
     private var run: StressRun? = null
 
     /** 最近一次已停止的報告。 */
@@ -129,7 +138,7 @@ class StressTestController(
     /** 本 tick 開始的時刻。 */
     private var tickStart = TimeSource.Monotonic.markNow()
 
-    /** 本 tick 與上一個 tick 開始的時間差；伺服器啟動後的第一個 tick 為 null。 */
+    /** 本 tick 與上一個 tick 開始的時間差。伺服器啟動後的第一個 tick 為 null。 */
     private var tickInterval: Duration? = null
 
     /** 上一個 tick 的壓力測試工作是否仍在執行。 */
@@ -161,13 +170,13 @@ class StressTestController(
     }
 
     /**
-     * 開始壓力測試；上一輪的壓力測試資料庫會先刪除，寫入模式再重新建立。
+     * 開始壓力測試。上一輪的壓力測試資料庫會先刪除，寫入模式再重新建立。
      *
      * @param server 執行中的伺服器。
      * @param scenarioId 對局情境識別碼。
      * @param mode 桌數安排。
      * @param options 節奏、歷史處理方式、卡頓門檻與暖機秒數。
-     * @param starterId 下指令的玩家；停止時收到報告。null 表示由主控台執行。
+     * @param starterId 下指令的玩家。停止時收到報告。null 表示由主控台執行。
      */
     suspend fun start(
         server: MinecraftServer,
@@ -198,21 +207,21 @@ class StressTestController(
     }
 
     /**
-     * 要求停止執行中的壓力測試；沒有執行中的測試時回傳 false。
+     * 要求停止執行中的壓力測試。沒有執行中的測試時回傳 false。
      *
      * @return 有停止執行中的測試時為 `true`。
      */
     suspend fun stop(): Boolean = stopRun(StressStopReason.REQUESTED) != null
 
     /**
-     * 目前或最近一次的報告；從未執行過時為 null。
+     * 目前或最近一次的報告。從未執行過時為 null。
      *
      * @return 執行中或最近一次停止後的報告。
      */
     fun report(): StressTestReport? = run?.report(running = true, stopReason = null) ?: lastReport
 
     /**
-     * 刪除壓力測試資料庫；測試仍在執行時不刪除。
+     * 刪除壓力測試資料庫。測試仍在執行時不刪除。
      *
      * @return 資料庫已刪除、無資料庫可刪，或因測試執行中而未刪除的結果。
      */
@@ -226,13 +235,13 @@ class StressTestController(
     }
 
     /**
-     * 在存檔資料夾建立這一輪的時間序列 CSV；無法建立時記錄警告並回傳 null。
+     * 在存檔資料夾建立這一輪的時間序列 CSV。無法建立時記錄警告並回傳 null。
      *
      * @param server 用來解析存檔資料夾的伺服器。
      * @param scenario 對局情境。
      * @param pace 每桌推進節奏。
      * @param historyMode 歷史處理方式。
-     * @return 已建立的時間序列檔；建立失敗時為 null。
+     * @return 已建立的時間序列檔。建立失敗時為 null。
      */
     private fun openTimeSeries(
         server: MinecraftServer,
@@ -283,7 +292,7 @@ class StressTestController(
      * 停止執行中的測試並保留報告：剩下的桌從權威來源移除，沒有寫進資料庫的環境一併關閉。沒有執行中的測試時回傳 null。
      *
      * @param reason 停止原因。
-     * @return 停止後的報告；原本沒有執行中的測試時為 null。
+     * @return 停止後的報告。原本沒有執行中的測試時為 null。
      */
     private suspend fun stopRun(reason: StressStopReason): StressTestReport? {
         val current = run ?: return null
@@ -311,7 +320,7 @@ class StressTestController(
      * 把安全閥觸發後的最終報告送給下指令的玩家。
      *
      * @param server 目前執行的伺服器。
-     * @param starterId 下指令玩家的識別碼；主控台執行時為 null。
+     * @param starterId 下指令玩家的識別碼。主控台執行時為 null。
      * @param report 要送出的最終報告。
      */
     private fun notifyStarter(server: MinecraftServer, starterId: Uuid?, report: StressTestReport) {
@@ -320,7 +329,7 @@ class StressTestController(
     }
 
     /**
-     * 一次壓力測試的執行狀態；只在伺服器主執行緒上存取。
+     * 一次壓力測試的執行狀態。只在伺服器主執行緒上存取。
      *
      * 每桌的推進在各自的協程中進行：輪到的桌啟動推進後不等待，上一步還沒結束的桌這一輪略過。AI 策略在
      * [CoroutineDispatchers.aiDecision] 上由各輪共用的 [AiDecisionExecutor] 呼叫（名額規則與正式環境相同），這一輪的對局在建立時
@@ -332,7 +341,7 @@ class StressTestController(
      * @property seed 各桌對局種子的來源。
      * @property environment 共用的權威來源、歷史計時器與歷史背景工作。
      * @property starterId 下指令的玩家。
-     * @property timeSeries 每秒時間序列 CSV；無法建立或寫入失敗後為 null。
+     * @property timeSeries 每秒時間序列 CSV。無法建立或寫入失敗後為 null。
      */
     private inner class StressRun(
         val scenario: HeadlessHistoryScenario,
@@ -343,7 +352,7 @@ class StressTestController(
         val starterId: Uuid?,
         private var timeSeries: StressTimeSeriesFile?,
     ) {
-        /** 已建立的桌數；也是下一桌衍生對局種子使用的順序。 */
+        /** 已建立的桌數。也是下一桌衍生對局種子使用的順序。 */
         private var createdTables = 0L
 
         /** 同時進行中的桌，以場地識別碼索引。 */
@@ -355,19 +364,19 @@ class StressTestController(
         /** 每桌推進節奏。 */
         private val pace = options.pace
 
-        /** 各桌推進的 tick 位置與待推進標記；與正式排程使用相同的政策。 */
+        /** 各桌推進的 tick 位置與待推進標記。與正式排程使用相同的政策。 */
         private val rotation = GameAdvanceRotation(pace.stepIntervalTicks)
 
-        /** 各桌推進協程的父工作；停止時一併取消。 */
+        /** 各桌推進協程的父工作。停止時一併取消。 */
         private val stepJob = SupervisorJob(scope.coroutineContext[Job])
 
-        /** 啟動各桌推進協程的作用域；推進協程在主執行緒上執行的每個片段都會計時。 */
+        /** 啟動各桌推進協程的作用域。推進協程在主執行緒上執行的每個片段都會計時。 */
         private val stepScope = CoroutineScope(scope.coroutineContext + stepJob + SegmentTimingDispatcher(dispatchers.main))
 
         /** 各輪共用的 AI 決策執行器。 */
         private val decisions = sharedDecisions.executor
 
-        /** 接收這一輪對局的 AI 決策結果；登記與取消登記使用同一個實例。 */
+        /** 接收這一輪對局的 AI 決策結果。登記與取消登記使用同一個實例。 */
         private val decisionObserver = AiDecisionObserver(::onDecision)
 
         init {
@@ -396,10 +405,10 @@ class StressTestController(
         /** 卡住而中止的場數。 */
         private var failedMatches = 0
 
-        /** 某一桌推進時發生的未預期錯誤；下一個 tick 據此停止測試。 */
+        /** 某一桌推進時發生的未預期錯誤。下一個 tick 據此停止測試。 */
         private var stepFailure: Exception? = null
 
-        /** 暖機結束的時刻；仍在暖機時為 null。 */
+        /** 暖機結束的時刻。仍在暖機時為 null。 */
         private var measureStart: TimeMark? = null
 
         /** 暖機結束時背景工作已處理的事件數。 */
@@ -468,7 +477,7 @@ class StressTestController(
         /** 最近一段時間的實際 tick 間隔。 */
         private val intervalSamples = RollingSamples(SAMPLE_WINDOW_TICKS)
 
-        /** 上一次的目標桌數；爬坡進入新的階段時據此重設落後量。 */
+        /** 上一次的目標桌數。爬坡進入新的階段時據此重設落後量。 */
         private var lastTargetTables: Int? = null
 
         /** 目前歷史待寫佇列的事件數。 */
@@ -507,7 +516,7 @@ class StressTestController(
         /** 是否已結束暖機。 */
         private val measuring: Boolean get() = measureStart != null
 
-        /** 伺服器前進一個 tick：把輪到的桌標為待推進；上一個 tick 的工作仍在等待時也要標記。 */
+        /** 伺服器前進一個 tick：把輪到的桌標為待推進。上一個 tick 的工作仍在等待時也要標記。 */
         fun onServerTick() = rotation.advanceTick()
 
         /** 補足目標桌數，為輪到的桌啟動推進（不等待），並更新歷史狀態。 */
@@ -543,7 +552,7 @@ class StressTestController(
         }
 
         /**
-         * 推進一桌一步；這一步的統計在它最後一個片段結束時記錄。未預期的錯誤留給下一個 tick 停止測試。
+         * 推進一桌一步。這一步的統計在它最後一個片段結束時記錄。未預期的錯誤留給下一個 tick 停止測試。
          *
          * @param venueId 牌桌場地識別碼。
          * @param table 要推進的牌桌狀態。
@@ -562,7 +571,7 @@ class StressTestController(
         }
 
         /**
-         * 推進一桌一步並記錄；打完或卡住的桌從權威來源移除。
+         * 推進一桌一步並記錄。打完或卡住的桌從權威來源移除。
          *
          * @param venueId 牌桌場地識別碼。
          * @param table 要推進的牌桌狀態。
@@ -586,7 +595,7 @@ class StressTestController(
         }
 
         /**
-         * 推進協程在主執行緒上執行完一個片段：累計到這一步與本 tick；這一步已經結束時記錄它的統計。
+         * 推進協程在主執行緒上執行完一個片段：累計到這一步與本 tick。這一步已經結束時記錄它的統計。
          *
          * @param table 推進的桌。
          * @param duration 這個片段的執行時間。
@@ -617,7 +626,7 @@ class StressTestController(
         }
 
         /**
-         * 記錄這一輪對局的一次有結果的 AI 決策；在等待決策的推進協程（伺服器主執行緒）上呼叫。
+         * 記錄這一輪對局的一次有結果的 AI 決策。在等待決策的推進協程（伺服器主執行緒）上呼叫。
          *
          * @param gameId 對局識別碼。
          * @param outcome 決策結果類型。
@@ -637,7 +646,7 @@ class StressTestController(
             aiLatency.add(latency.toDouble(DurationUnit.MILLISECONDS))
         }
 
-        /** 取消所有推進協程並把剩下的桌從權威來源移除；未結束的對局記為未完成，待寫歷史仍交給背景工作處理。 */
+        /** 取消所有推進協程並把剩下的桌從權威來源移除。未結束的對局記為未完成，待寫歷史仍交給背景工作處理。 */
         suspend fun discardRemainingTables() {
             tablesByGameId.keys.forEach { sharedDecisions.unregister(it, decisionObserver) }
             stepJob.cancel()
@@ -673,7 +682,7 @@ class StressTestController(
             )
         }
 
-        /** 開始每秒檢查各桌進行中的 AI 決策；同一次決策只記錄一次。 */
+        /** 開始每秒檢查各桌進行中的 AI 決策。同一次決策只記錄一次。 */
         fun startDecisionWatch() {
             decisionWatch = scope.launch(dispatchers.main) {
                 val reported = mutableSetOf<OngoingAiDecision>()
@@ -721,7 +730,7 @@ class StressTestController(
          * 記錄本 tick 的處理時間與實際間隔、寫出到期的時間序列，並回傳安全閥的停止原因。
          *
          * @param msptMillis tick 本身的處理時間毫秒數。
-         * @param intervalMillis 與上一個 tick 開始的時間差毫秒數；伺服器啟動後的第一個 tick 為 null。
+         * @param intervalMillis 與上一個 tick 開始的時間差毫秒數。伺服器啟動後的第一個 tick 為 null。
          */
         fun recordTick(msptMillis: Double, intervalMillis: Double?): StressStopReason? {
             stepFailure?.let { error ->
@@ -760,7 +769,7 @@ class StressTestController(
             }
         }
 
-        /** 寫出一列時間序列並開始下一段彙總；寫入失敗時記錄警告並停止寫入時間序列。 */
+        /** 寫出一列時間序列並開始下一段彙總。寫入失敗時記錄警告並停止寫入時間序列。 */
         private fun writeTimeSeriesRow() {
             val written = environment.writerTimer.eventsWritten()
             val gc = GcTotals.read()
@@ -793,7 +802,7 @@ class StressTestController(
             }
         }
 
-        /** 目前應同時進行的桌數；爬坡在暖機結束後才開始加桌，最多 [STRESS_MAX_TABLES] 桌。 */
+        /** 目前應同時進行的桌數。爬坡在暖機結束後才開始加桌，最多 [STRESS_MAX_TABLES] 桌。 */
         private fun targetTables(): Int = when (mode) {
             is StressTestMode.Fixed -> mode.tables
             is StressTestMode.Ramp -> mode.plan.tablesAt(elapsedTicks - warmupTicks).coerceAtMost(STRESS_MAX_TABLES)
@@ -964,7 +973,7 @@ class StressTestController(
              * 加入一個 tick。
              *
              * @param msptMillis tick 本身處理時間毫秒數。
-             * @param intervalMillis 與前一個 tick 的開始時間差毫秒數；第一個 tick 時為 null。
+             * @param intervalMillis 與前一個 tick 的開始時間差毫秒數。第一個 tick 時為 null。
              * @param events 這個 tick 新加入待寫佇列的歷史事件數。
              * @param history 這個 tick 記錄歷史所花的時間。
              * @param strategyCallsPeak 這個 tick 內同時存在的策略工作數峰值。
@@ -1043,7 +1052,7 @@ class StressTestController(
      *
      * @property runtime 對局環境。
      * @property timer 這一桌的分項計時器。
-     * @property gameId 這一桌的對局；建立時已沒有對局為 null。
+     * @property gameId 這一桌的對局。建立時已沒有對局為 null。
      */
     private class StressTable(
         val runtime: HeadlessHistoryMatchRuntime,
@@ -1100,7 +1109,7 @@ class StressTestController(
         /** 時間序列檔名中的開始時間格式。 */
         val TIME_SERIES_TIMESTAMP: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
 
-        /** 由安全閥觸發的停止原因；爬坡模式只在這些情況回報最大可承受桌數。 */
+        /** 由安全閥觸發的停止原因。爬坡模式只在這些情況回報最大可承受桌數。 */
         val VALVE_STOP_REASONS: Set<StressStopReason> = setOf(
             StressStopReason.FALLING_BEHIND,
             StressStopReason.HISTORY_BACKLOG,

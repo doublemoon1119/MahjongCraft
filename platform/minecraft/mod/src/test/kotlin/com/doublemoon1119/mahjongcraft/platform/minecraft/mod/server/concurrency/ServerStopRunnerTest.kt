@@ -37,7 +37,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
-/** [ServerStopRunner] 的關服收尾等待測試；以單一執行緒模擬伺服器主執行緒。 */
+/** [ServerStopRunner] 的關服收尾等待測試。以單一執行緒模擬伺服器主執行緒。 */
 class ServerStopRunnerTest {
     /** 模擬伺服器主執行緒的單一執行緒。 */
     private val executor: ExecutorService = Executors.newSingleThreadExecutor { runnable ->
@@ -174,7 +174,7 @@ class ServerStopRunnerTest {
         assertEquals(listOf("first", "cancelled"), log)
     }
 
-    /** 步驟依清單順序執行；單一步驟失敗只回報該步驟，之後的步驟照常執行。 */
+    /** 步驟依清單順序執行。單一步驟失敗只回報該步驟，之後的步驟照常執行。 */
     @Test
     fun `steps run in order and a failing step does not stop the rest`() {
         val log = mutableListOf<String>()

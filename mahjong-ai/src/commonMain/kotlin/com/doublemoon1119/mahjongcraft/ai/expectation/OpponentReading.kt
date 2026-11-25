@@ -14,10 +14,11 @@ import kotlin.uuid.Uuid
  * 所有規則共用的讀牌：依對手公開的牌河、副露與規則事實，推測一張牌比平常更危險或更安全。
  *
  * 只使用「數字牌有花色與數字」這個共通概念，規則相關的事實一律向 [rules] 查詢，牌面一律先以 [interpretation] 正規化。
- * - 對手很早就打出的數字牌，往一或九那一側的同花色牌比較不會是他在等的牌；離那張牌越近，
+ *
+ * - 對手很早就打出的數字牌，往一或九那一側的同花色牌比較不會是他在等的牌。離那張牌越近，
  *   用到它的聽牌方式越多，因此越安全。
  * - 對手的副露都是同一個花色、牌河裡又幾乎沒有那個花色時，他很可能只收那個花色：
- *   那個花色比較危險、其他花色比較安全；副露有字牌時，字牌也比較危險。
+ *   那個花色比較危險、其他花色比較安全。副露有字牌時，字牌也比較危險。
  * - 對手宣告聽牌時打出的牌，旁邊兩格內的同花色牌比較危險：宣告時常常是拆掉「這張牌加上旁邊的牌」，
  *   留下旁邊的牌等牌。
  * - 會依規則額外加計打點的牌，以及它旁邊兩格內的同花色牌比較危險：對手傾向留下這些牌組成聽牌。
@@ -30,7 +31,7 @@ class OpponentReading(
     private val rules: PositionRules,
 ) {
     /**
-     * 評估者打出 [tile] 時，對 [opponentId] 的危險度相對於平常的倍率；小於 1 表示較安全。
+     * 評估者打出 [tile] 時，對 [opponentId] 的危險度相對於平常的倍率。小於 1 表示較安全。
      *
      * @param view 供規則查詢使用的局面視角。
      * @param opponentId 正在評估的對手。
@@ -51,7 +52,7 @@ class OpponentReading(
     }
 
     /**
-     * 對手很早打出的數字牌讓 [tile] 變安全的倍率；多張早打的牌取最小倍率，不連乘。
+     * 對手很早打出的數字牌讓 [tile] 變安全的倍率。多張早打的牌取最小倍率，不連乘。
      *
      * @param opponent 對手的公開狀態。
      * @param tile 要評估的牌面。
@@ -68,7 +69,7 @@ class OpponentReading(
     }
 
     /**
-     * 對手只收單一花色時 [tile] 的倍率；看不出來時為 1。
+     * 對手只收單一花色時 [tile] 的倍率。看不出來時為 1。
      *
      * @param opponent 對手的公開狀態。
      * @param tile 要評估的牌面。
@@ -84,10 +85,10 @@ class OpponentReading(
     }
 
     /**
-     * 從副露與牌河判斷對手是否只收單一花色；看不出來時為 null。
+     * 從副露與牌河判斷對手是否只收單一花色。看不出來時為 null。
      *
      * @param opponent 對手的公開狀態。
-     * @return 可辨識的染手花色與是否含字牌；無法判斷時為 null。
+     * @return 可辨識的染手花色與是否含字牌。無法判斷時為 null。
      */
     internal fun flushSignal(opponent: MahjongPlayerSnapshot): FlushSignal? {
         val melds = opponent.hand.melds
@@ -102,7 +103,7 @@ class OpponentReading(
     }
 
     /**
-     * [tile] 在 [opponentId] 宣告聽牌時打出的牌旁邊兩格內時的倍率；不在旁邊或對手沒有宣告時為 1。
+     * [tile] 在 [opponentId] 宣告聽牌時打出的牌旁邊兩格內時的倍率。不在旁邊或對手沒有宣告時為 1。
      *
      * @param view 供規則查詢使用的局面視角。
      * @param opponentId 正在評估的對手。
@@ -120,7 +121,7 @@ class OpponentReading(
     }
 
     /**
-     * [tile] 本身或旁邊兩格內的同花色牌會加計打點時的倍率；兩者都符合時取較大的倍率，不連乘。
+     * [tile] 本身或旁邊兩格內的同花色牌會加計打點時的倍率。兩者都符合時取較大的倍率，不連乘。
      *
      * @param view 供規則查詢使用的局面視角。
      * @param tile 要評估的牌面。
@@ -137,7 +138,7 @@ class OpponentReading(
     }
 
     /**
-     * 牌張 [value] 相對於很早打出的 [early] 的倍率；不在往一或九那一側時為 1。
+     * 牌張 [value] 相對於很早打出的 [early] 的倍率。不在往一或九那一側時為 1。
      *
      * @param early 對手很早打出的數字牌。
      * @param value 正在評估的同花色牌張數字。

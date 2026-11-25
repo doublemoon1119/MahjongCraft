@@ -41,7 +41,7 @@ import kotlin.uuid.Uuid
 
 /** 用少量代表資料確認擴充自己的型別可經正式網路與保存註冊表往返。 */
 class ExampleFormatRoundTripTest {
-    /** 缺少範例登記時拒讀原資料，補回相同登記後可直接還原，不需重建資料；攤牌狀態不交付觀察者。 */
+    /** 缺少範例登記時拒讀原資料，補回相同登記後可直接還原，不需重建資料。攤牌狀態不交付觀察者。 */
     @Test
     fun `missing extension registrations reject saved data and restored registrations read it`() {
         val original = emptyPersistenceRegistries()

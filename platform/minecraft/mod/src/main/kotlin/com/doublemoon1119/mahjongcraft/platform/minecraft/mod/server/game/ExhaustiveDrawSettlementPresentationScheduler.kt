@@ -33,7 +33,7 @@ class ExhaustiveDrawSettlementPresentationScheduler(
     private val logger = mahjongCraftLogger(ExhaustiveDrawSettlementPresentationScheduler::class)
 
     /**
-     * 成功生成時回傳固定結束時間；失敗則不隱藏 round info。手牌 entity 找不到的牌不播放動畫，並記錄一筆警告列出各座位缺少的牌。
+     * 成功生成時回傳固定結束時間。失敗則不隱藏 round info。手牌 entity 找不到的牌不播放動畫，並記錄一筆警告列出各座位缺少的牌。
      *
      * @param world 生成舞台與查找牌 entity 的世界。
      * @param tableId 對局所在牌桌識別碼。
@@ -44,7 +44,7 @@ class ExhaustiveDrawSettlementPresentationScheduler(
      * @param waitingTileAssetsBySeat 各座位聽牌等待牌的素材 key。
      * @param revealedTileAssetsById 可公開牌張識別碼到素材 key 的對應。
      * @param handShiftsBySeat 各座位立牌整排往玩家左手邊平移的距離（負值往右手邊）。
-     * @return 舞台固定結束的絕對 game time；未能生成時為 null。
+     * @return 舞台固定結束的絕對 game time。未能生成時為 null。
      */
     fun schedule(
         world: ServerLevel,

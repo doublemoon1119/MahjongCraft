@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 
-/** 日本麻將宣告語音的 Minecraft sound ID；三人日麻沿用同一組。 */
+/** 日本麻將宣告語音的 Minecraft sound ID。三人日麻沿用同一組。 */
 object RiichiGameActionVoiceSoundIds {
     /** 吃牌語音。 */
     const val CHII: String = "mahjongcraft:voice.riichi.chii"

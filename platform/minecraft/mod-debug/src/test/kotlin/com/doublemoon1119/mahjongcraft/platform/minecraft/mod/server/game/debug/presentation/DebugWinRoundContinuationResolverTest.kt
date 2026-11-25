@@ -196,7 +196,7 @@ class DebugWinRoundContinuationResolverTest {
      * 斷言結果是續局 directive，並回傳其內容供後續欄位檢查。
      *
      * @param directive resolver 產生的判定結果。
-     * @return 續局 directive；其他結果會使測試失敗。
+     * @return 續局 directive。其他結果會使測試失敗。
      */
     private fun assertContinueRound(directive: WinRoundDirective?): WinRoundDirective.ContinueRound {
         check(directive is WinRoundDirective.ContinueRound) { "Expected ContinueRound but was $directive" }

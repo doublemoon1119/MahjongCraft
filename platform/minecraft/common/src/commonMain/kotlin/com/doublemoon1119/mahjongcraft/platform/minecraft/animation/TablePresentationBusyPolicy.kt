@@ -12,7 +12,7 @@ object TablePresentationBusyPolicy {
      * 這張牌目前的動畫是否應該讓整桌進入忙碌狀態。
      *
      * @param isAnimating 這張牌是否正在播放動畫。
-     * @param nonBlockingUntilGameTime 「動畫不阻塞全桌」豁免的絕對到期 game time；`0` 代表沒有豁免。
+     * @param nonBlockingUntilGameTime 「動畫不阻塞全桌」豁免的絕對到期 game time。`0` 代表沒有豁免。
      * 中途胡牌（本局在胡牌後仍繼續）會替已完成玩家的真實牌建立這個豁免，讓理牌／倒牌／隱形／恢復
      * 顯示／蓋牌這一串動畫不擋住其他仍在本局中的玩家。
      * @param currentGameTime 目前的絕對 game time。

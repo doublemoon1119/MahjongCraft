@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
  * Minecraft resource identifier（dimension、sound、texture 等）的格式。
  *
  * 目前支援的 Minecraft 版本中，`Identifier` 的 namespace 與 path 允許字元與 [NamespacedId] 相同，因此直接
- * 沿用；Minecraft 規則與 MahjongCraft 的 ID 規則分歧時，只調整此物件。
+ * 沿用。Minecraft 規則與 MahjongCraft 的 ID 規則分歧時，只調整此物件。
  */
 object MinecraftResourceIds {
     /**

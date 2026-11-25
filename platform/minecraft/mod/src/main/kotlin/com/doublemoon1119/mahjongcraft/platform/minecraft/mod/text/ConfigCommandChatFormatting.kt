@@ -296,7 +296,7 @@ fun presentationEntryLines(entries: List<ConfigPresentationEntry>): MutableCompo
  *
  * @param label 標籤顯示文字。
  * @param hoverText 指向標籤時顯示的內容。
- * @param clickEvent 選用的點擊事件；null 時不設定點擊行為。
+ * @param clickEvent 選用的點擊事件。null 時不設定點擊行為。
  * @param color 標籤文字顏色。
  * @return 已套用樣式、hover 與選用點擊行為的文字。
  */

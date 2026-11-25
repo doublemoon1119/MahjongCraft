@@ -16,7 +16,7 @@ import kotlin.test.assertTrue
 
 class TileAssetKeysTest {
 
-    /** 只登記內建 extension 映射並凍結的 registry；供本檔所有測試共用。 */
+    /** 只登記內建 extension 映射並凍結的 registry。供本檔所有測試共用。 */
     private val registry: MinecraftTileAssetRegistry = MinecraftTileAssetRegistryImpl().apply {
         BuiltInMinecraftMahjongExtension.registerTileAssets(this)
         BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
@@ -45,7 +45,7 @@ class TileAssetKeysTest {
         assertEquals("white_dragon", Tile.Honor.White.standardAssetKey())
     }
 
-    /** 帶透明牌特性的已知牌面使用透明版素材；沒有透明版的牌面退回基本牌面的素材。 */
+    /** 帶透明牌特性的已知牌面使用透明版素材。沒有透明版的牌面退回基本牌面的素材。 */
     @Test
     fun `test transparent faces use the transparent style`() {
         val views = ComponentViewSet.EMPTY.with(BuiltInTileComponentViews.TRANSPARENT, Unit)
@@ -57,7 +57,7 @@ class TileAssetKeysTest {
         assertEquals(true, registry.findBodyAppearance("transparent_m1")?.translucent)
     }
 
-    /** 透明牌的平面預覽使用墊了白底的預覽貼圖；沒有另外指定預覽貼圖的牌面沿用牌面貼圖。 */
+    /** 透明牌的平面預覽使用墊了白底的預覽貼圖。沒有另外指定預覽貼圖的牌面沿用牌面貼圖。 */
     @Test
     fun `test flat previews use the dedicated preview texture when registered`() {
         assertEquals(
@@ -67,7 +67,7 @@ class TileAssetKeysTest {
         assertEquals("mahjongcraft:textures/item/mahjong_tile/mahjong_tile_m1.png", tilePreviewTexture("m1", registry).resourceId)
     }
 
-    /** 赤五樣式有登記時使用赤五素材；同一樣式套在沒有登記的牌面上，退回基本牌面的素材。 */
+    /** 赤五樣式有登記時使用赤五素材。同一樣式套在沒有登記的牌面上，退回基本牌面的素材。 */
     @Test
     fun `test face asset key uses a registered style and falls back to the base face`() {
         val redFive = TileFaceView(Tile.Numeric(Tile.Suit.Character, 5), appearanceId = RiichiTileValues.RED_FIVE_APPEARANCE_ID)
@@ -90,7 +90,7 @@ class TileAssetKeysTest {
         assertEquals("flower_chrysanthemum", Tile.Extension(TaiwanTileTypes.CHRYSANTHEMUM).toAssetKey(registry))
     }
 
-    /** 基本牌在前、擴充牌種依登記順序接在後面，最後是 unknown；內建 extension 登記後共 46 個不重複的 key。 */
+    /** 基本牌在前、擴充牌種依登記順序接在後面，最後是 unknown。內建 extension 登記後共 46 個不重複的 key。 */
     @Test
     fun `all tile asset keys list standard tiles, registered tiles, then unknown`() {
         val keys = registry.allTileAssetKeys()
@@ -143,7 +143,7 @@ class TileAssetKeysTest {
         assertEquals("animal_cat", Tile.Extension(thirdPartyId).toAssetKey(thirdPartyRegistry))
     }
 
-    /** 基本牌、未知佔位牌與已登記的擴充牌種都有牌面資源；沒有登記的 key 不算。 */
+    /** 基本牌、未知佔位牌與已登記的擴充牌種都有牌面資源。沒有登記的 key 不算。 */
     @Test
     fun `known asset keys include standard, unknown and registered keys only`() {
         STANDARD_TILE_ASSET_KEYS.forEach { assertTrue(registry.isKnownTileAssetKey(it), it) }

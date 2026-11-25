@@ -36,7 +36,7 @@ interface ModelLoading<T : Any> {
      *
      * @param data 本次重載準備好的資料。
      * @param id 要載入的模型 ID。
-     * @return 這個 ID 的模型；不由這裡提供時為 null，交給其他來源處理。
+     * @return 這個 ID 的模型。不由這裡提供時為 null，交給其他來源處理。
      */
     fun resolveModel(data: T, id: ResourceLocation): UnbakedModel?
 }

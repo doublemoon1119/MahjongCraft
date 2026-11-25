@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.room
 
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 
-/** 不讀取外部狀態的名冊變更檢查；呼叫時可能持有權威鎖。 */
+/** 不讀取外部狀態的名冊變更檢查。呼叫時可能持有權威鎖。 */
 fun interface RoomRosterChangePolicy {
     /**
      * 確認名冊變更符合接入端的額外規則。

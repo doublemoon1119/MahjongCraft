@@ -187,7 +187,7 @@ class TableStateTest {
         assertEquals(players.map { it.seatWind }, advanced.players.map { it.seatWind })
     }
 
-    /** 過莊時依 transition 決定本場數累加或歸零；連莊一律累加。 */
+    /** 過莊時依 transition 決定本場數累加或歸零。連莊一律累加。 */
     @Test
     fun `test round advancement accumulates or resets combo count by transition`() {
         val state = FakeTableStateFactory.create(players = fourPlayers, comboCount = 2)
@@ -208,7 +208,7 @@ class TableStateTest {
         assertEquals(0, reset.comboCount)
     }
 
-    /** 每開一局，本場局序都加一；連莊、過莊都一樣。 */
+    /** 每開一局，本場局序都加一。連莊、過莊都一樣。 */
     @Test
     fun `test round advancement counts every round including repeats`() {
         val state = FakeTableStateFactory.create(players = fourPlayers).copy(roundSerial = 4)
@@ -220,7 +220,7 @@ class TableStateTest {
         assertEquals(5, advanced.roundSerial)
     }
 
-    /** 規則指定的玩家成為下一任莊家；指定外人、指定現任莊家或與局位變化矛盾時拒絕。 */
+    /** 規則指定的玩家成為下一任莊家。指定外人、指定現任莊家或與局位變化矛盾時拒絕。 */
     @Test
     fun `test round advancement passes the deal to the chosen player`() {
         val state = FakeTableStateFactory.create(players = fourPlayers, dealerPlayerId = fourPlayers[0].id)
@@ -237,7 +237,7 @@ class TableStateTest {
         }
     }
 
-    /** 換位依完整的新順序排列下一局的玩家，下一位莊家仍依換位前的座位計算；身分、分數與初始座位不變。 */
+    /** 換位依完整的新順序排列下一局的玩家，下一位莊家仍依換位前的座位計算。身分、分數與初始座位不變。 */
     @Test
     fun `test round advancement applies a complete seat order`() {
         val state = FakeTableStateFactory.create(players = fourPlayers, dealerPlayerId = fourPlayers[0].id)
@@ -321,7 +321,7 @@ class TableStateTest {
         assertEquals(RelativeDirection.Right, state.relativeDirectionOf(players[3].id, players[0].id))
     }
 
-    /** 兩人桌的另一位同時是上家與下家；判定順序讓上家先成立，雙向都回報上家。 */
+    /** 兩人桌的另一位同時是上家與下家。判定順序讓上家先成立，雙向都回報上家。 */
     @Test
     fun `test relativeDirectionOf reports the only opponent of a two player table as the left player`() {
         val state = FakeTableStateFactory.create()

@@ -6,7 +6,7 @@ import kotlin.uuid.Uuid
 /**
  * 同一筆權威提交產生的事件批次。
  *
- * 這個型別不是 [MatchEvent]；它用來保留同一筆提交的邊界，讓訂閱者不會把一筆交易拆成多次處理。
+ * 這個型別不是 [MatchEvent]。它用來保留同一筆提交的邊界，讓訂閱者不會把一筆交易拆成多次處理。
  *
  * @property batchId 此次提交批次的唯一識別碼。
  * @property matchId 場次 UUID。

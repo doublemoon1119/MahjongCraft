@@ -11,7 +11,7 @@ import org.koin.core.module.Module
  */
 interface MahjongCraftDevelopmentEntrypoint {
     /**
-     * 要載入本體 Koin 的模組；擴充登記之前載入，擴充可以取用其中的服務。
+     * 要載入本體 Koin 的模組。擴充登記之前載入，擴充可以取用其中的服務。
      *
      * @return 開發工具的 Koin 模組。
      */

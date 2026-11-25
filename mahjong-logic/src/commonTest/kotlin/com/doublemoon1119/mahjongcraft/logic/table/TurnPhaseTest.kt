@@ -20,7 +20,7 @@ class TurnPhaseTest {
     /** 提供摸牌反應的日麻規則模組。 */
     private val module = RiichiRuleModule(id = "mahjongcraft:riichi", config = RiichiRuleConfig())
 
-    /** 等摸牌與等捨牌時目前玩家手上不能有剛摸的牌；等行動時可以有。 */
+    /** 等摸牌與等捨牌時目前玩家手上不能有剛摸的牌。等行動時可以有。 */
     @Test
     fun `phases without a pending draw reject a drawn tile`() {
         val drawn = FakeIdentifiedTileFactory.create(Tile.Honor.White)
@@ -106,7 +106,7 @@ class TurnPhaseTest {
         assertFailsWith<IllegalArgumentException> { awaiting.drawFromLiveWall(players[1].id) }
     }
 
-    /** 莊家開門摸牌只在莊家等摸牌時發生；莊家已經摸過時不再摸第二張。 */
+    /** 莊家開門摸牌只在莊家等摸牌時發生。莊家已經摸過時不再摸第二張。 */
     @Test
     fun `dealer opening draw happens once while the dealer awaits a draw`() {
         val state = FakeTableStateFactory.create(config = module.config, turnPhase = TurnPhase.AwaitingDraw)

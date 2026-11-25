@@ -9,7 +9,7 @@ fun interface AiCharacterProvider {
      * 框架不改寫第三方角色的命中能力。
      *
      * @param context 本場公開角色資料及固定席位。
-     * @return 可嘗試接管的角色；暫時無法提供時為 null。
+     * @return 可嘗試接管的角色。暫時無法提供時為 null。
      */
     fun acquire(context: AiCharacterContext): AiCharacterHandle?
 }

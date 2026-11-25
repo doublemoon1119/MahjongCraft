@@ -136,7 +136,7 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
         )
     }
 
-    /** 登記台灣麻將的過水與等待牌胡牌資格文字；可以胡牌的狀態改用台麻說法。 */
+    /** 登記台灣麻將的過水與等待牌胡牌資格文字。可以胡牌的狀態改用台麻說法。 */
     override fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistrar) {
         listOf(
             TaiwanDiscardReadinessAnalyzer.StatusIds.PASSED_WIN to TaiwanTranslationKeys.HUD_PASSED_WIN,
@@ -161,7 +161,7 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
         registry.register(PublicPlayerIndicatorDisplayDefinition(TaiwanPublicIndicatorIds.DEALER_STREAK, PublicPlayerIndicatorDisplay(TaiwanTranslationKeys.INDICATOR_DEALER_STREAK)))
     }
 
-    /** 局況資訊：圈風與局數、連莊一次以上時的連莊次數，以及活牌剩餘張數；剩餘張數使用內建的 [BuiltInRoundInfoLineKeys.WALL_REMAINING]。 */
+    /** 局況資訊：圈風與局數、連莊一次以上時的連莊次數，以及活牌剩餘張數。剩餘張數使用內建的 [BuiltInRoundInfoLineKeys.WALL_REMAINING]。 */
     override fun registerRoundInfoPresentations(registry: RoundInfoLineDisplayRegistrar) {
         registry.register(RoundInfoLineDisplayDefinition(TAIWAN_ROUND_TITLE_LINE, RoundInfoLineDisplay(TaiwanTranslationKeys.ROUND_INFO_TITLE)))
         registry.register(RoundInfoLineDisplayDefinition(TAIWAN_DEALER_STREAK_LINE, RoundInfoLineDisplay(TaiwanTranslationKeys.ROUND_INFO_DEALER_STREAK)))
@@ -265,7 +265,7 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
     }
 
     /**
-     * 花牌成對出現：春夏秋冬右上角是紅色中文字、左上角是黑色數字（依春夏秋冬排序，1～4）；梅蘭菊竹右上角是
+     * 花牌成對出現：春夏秋冬右上角是紅色中文字、左上角是黑色數字（依春夏秋冬排序，1～4）。梅蘭菊竹右上角是
      * 紅色數字（依梅蘭菊竹排序，1～4，對應 [TaiwanTileTypes.ALL] 的順序）、左上角是黑色中文字。
      *
      * 花牌標籤一律標記 [TileLabel.forced]＝`true`：八張花牌都是同一個樹形剪影配不同季節配色（見
@@ -348,7 +348,7 @@ internal const val TAIWAN_DEALER_STREAK_LINE: String = "mahjongcraft:taiwan/deal
 private const val DECLARE_READY_ACTION_ORDER: Int = 5
 
 /**
- * 台灣麻將的桌面牌位：牌牆往桌心移動並往左錯開成風車形，副露放在牌牆與手牌之間、全部直立，加槓四張一列，牌河散放在桌子中央；
+ * 台灣麻將的桌面牌位：牌牆往桌心移動並往左錯開成風車形，副露放在牌牆與手牌之間、全部直立，加槓四張一列，牌河散放在桌子中央。
  * 散放的牌河看不出打出順序，所以標示最後打出的牌。
  */
 private val TAIWAN_TABLE_TILE_LAYOUT = TableTileLayoutProfile(

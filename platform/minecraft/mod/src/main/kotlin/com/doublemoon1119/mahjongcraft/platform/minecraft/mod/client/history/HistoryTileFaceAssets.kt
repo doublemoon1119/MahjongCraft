@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import net.minecraft.network.chat.Component
 
 /**
- * 依牌譜回覆的牌面、外觀及特徵取得素材 key；特徵無法解碼時沿用基本牌面與外觀。
+ * 依牌譜回覆的牌面、外觀及特徵取得素材 key。特徵無法解碼時沿用基本牌面與外觀。
  *
  * 呼叫前須先經 [isDisplayableHistoryFace] 驗證。
  *
@@ -28,7 +28,7 @@ internal fun TileFaceViewDto.toHistoryAssetKey(
     .toAssetKey(registry)
 
 /**
- * 依牌譜回覆的牌面與外觀取得本地化牌名，用於滑鼠提示；只讀基本牌面與外觀，不解碼其他特徵。
+ * 依牌譜回覆的牌面與外觀取得本地化牌名，用於滑鼠提示。只讀基本牌面與外觀，不解碼其他特徵。
  *
  * 呼叫前須先經 [isDisplayableHistoryFace] 驗證。
  *

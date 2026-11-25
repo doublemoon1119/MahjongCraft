@@ -146,7 +146,7 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
 /**
- * 將對局呈現請求交給 Minecraft 呈現元件；世界與實體操作在伺服器主執行緒執行。
+ * 將對局呈現請求交給 Minecraft 呈現元件。世界與實體操作在伺服器主執行緒執行。
  *
  * @property characters 世界角色的名冊收斂入口。
  * @property aiDisplayNames 以當場角色描述及房間順序解析 AI 名稱。
@@ -170,7 +170,7 @@ import kotlin.uuid.toJavaUuid
  * @property tableEndListeners 對局結束時通知，清掉只屬於這桌的暫存設定。
  * @property busyTracker 查詢／標記該桌是否呈現動畫播放中，供輸入分派入口與自動操作心跳擋下操作，見
  *   [TablePresentationBusyTracker] KDoc。
- * @property gameRepository 唯讀取得桌況、手牌與副露，建立呈現資料；不透過此元件修改權威狀態。
+ * @property gameRepository 唯讀取得桌況、手牌與副露，建立呈現資料。不透過此元件修改權威狀態。
  * @property componentRegistry 解析所有來源的牌張組件。
  * @property moduleRegistry 解析對局採用的規則模組，取得 [publishWinCelebration] 算牌序需要的 `tileOrder`。
  * @property effectScheduler 胡牌慶祝演出降臨特效（粒子聚合光柱）的排程器。
@@ -183,7 +183,7 @@ import kotlin.uuid.toJavaUuid
  * @property gameActionSoundPresentationRegistry 動作聲音與宣告語音呈現註冊表。
  * @property roundResultSender 在和牌或流局結算當下把前後分數與名次送給入座的真人玩家。
  * @property privateHandOrderSender 把本人手牌排列的時間軸項目送給入座的真人玩家，與牌張動作同時生效。
- * @property scope 承接世界／方塊狀態查詢需要切回伺服器主執行緒的呈現工作；呈現可以捨棄，關服時直接取消。
+ * @property scope 承接世界／方塊狀態查詢需要切回伺服器主執行緒的呈現工作。呈現可以捨棄，關服時直接取消。
  * @property dispatchers 切回伺服器主執行緒用的 dispatcher。
  * @property worldTickWaiter 等待指定世界時間的工具。
  * @property visibilityPolicy 以公共讀取者裁切全桌共用演出的牌面與外觀。
@@ -231,10 +231,10 @@ class ServerThreadGamePresentationPublisher(
     /** 呈現略過、生成失敗與排程狀態的診斷記錄。 */
     private val logger = mahjongCraftLogger(ServerThreadGamePresentationPublisher::class)
 
-    /** 各桌最後一次呈現的桌況與擺放；之後的步驟與它比較。開局發牌時同步記錄起點，擺放在主執行緒算出。 */
+    /** 各桌最後一次呈現的桌況與擺放。之後的步驟與它比較。開局發牌時同步記錄起點，擺放在主執行緒算出。 */
     private val presentedTables = ConcurrentHashMap<Uuid, PresentedTable>()
 
-    /** 各桌尚在排定的初次發牌；之後的步驟等它排定後才開始，才能接在發牌動畫之後。 */
+    /** 各桌尚在排定的初次發牌。之後的步驟等它排定後才開始，才能接在發牌動畫之後。 */
     private val initialDealJobs = ConcurrentHashMap<Uuid, Job>()
 
     /** 依共用契約驗證逐張描述，再取得不含授權名單的姿態。 */
@@ -263,7 +263,7 @@ class ServerThreadGamePresentationPublisher(
     }
 
     /**
-     * 在動作者座位旁排定一次規則登記的動作音效；沒有登記音效的動作不播放。
+     * 在動作者座位旁排定一次規則登記的動作音效。沒有登記音效的動作不播放。
      *
      * @param gameId 對局識別碼。
      * @param resolved 已解析的桌子位置與世界。
@@ -425,8 +425,10 @@ class ServerThreadGamePresentationPublisher(
 
     /**
      * 將骰子呈現排到主執行緒，並把牌牆落地的等待時間加入骰子動畫。
-     * 開局工作透過同批操作識別碼追蹤；排程前先取得忙碌標記，工作結束時釋放。
-     * 找不到桌子或世界時略過並記錄警告；生成失敗交由開局工作處理。
+     *
+     * - 開局工作透過同批操作識別碼追蹤。
+     * - 排程前先取得忙碌標記，工作結束時釋放。
+     * - 找不到桌子或世界時略過並記錄警告。生成失敗交由開局工作處理。
      */
     override fun publishOpeningRolls(
         gameId: Uuid,
@@ -507,7 +509,7 @@ class ServerThreadGamePresentationPublisher(
 
     /**
      * 在主執行緒建立牌牆呈現，並記錄後續擲骰、發牌所需的落地等待時間。
-     * 只有新開局且牌牆呈現成功時，才保留後續開門資料；生成失敗交由開局工作處理。
+     * 只有新開局且牌牆呈現成功時，才保留後續開門資料。生成失敗交由開局工作處理。
      */
     override fun publishWallStructure(
         gameId: Uuid,
@@ -584,7 +586,7 @@ class ServerThreadGamePresentationPublisher(
      * @param state 重排後的桌況，提供牌牆的桌邊對應。
      * @param phases 依序完成的移動階段。
      * @param startGameTime 開始重排的遊戲時間。
-     * @return 重排完成的遊戲時間；牌牆尺寸未知或排程失敗時為 null。
+     * @return 重排完成的遊戲時間。牌牆尺寸未知或排程失敗時為 null。
      */
     private fun presentWallTransition(
         gameId: Uuid,
@@ -629,10 +631,12 @@ class ServerThreadGamePresentationPublisher(
     }
 
     /**
-     * 依序呈現一次交易的步驟，排在這張桌子的呈現時間軸之後；開局發牌還在排定時，等它排完再開始。
+     * 依序呈現一次交易的步驟，排在這張桌子的呈現時間軸之後。開局發牌還在排定時，等它排完再開始。
      *
-     * 每一步與上一次呈現的擺放比較，規劃每張牌的動作並同時開始；桌上物件在這一步開始時依這一步的桌況擺放，宣告音效與點數
-     * 提示在這一步開始時播放，局況與玩家資訊在這一步結束時更新。下一步等這一步的動作都完成才開始。
+     * - 每一步與上一次呈現的擺放比較，規劃每張牌的動作並同時開始。
+     * - 桌上物件在這一步開始時依這一步的桌況擺放。宣告音效與點數提示在這一步開始時播放。
+     * - 局況與玩家資訊在這一步結束時更新。
+     * - 下一步等這一步的動作都完成才開始。
      */
     override fun publishTableSteps(gameId: Uuid, steps: List<TableStep>) {
         if (steps.isEmpty()) return
@@ -831,7 +835,7 @@ class ServerThreadGamePresentationPublisher(
     }
 
     /**
-     * 依最後呈現的桌況重新擺放桌上物件；沒有呈現過時使用目前的權威桌況。供桌子環境改變或桌面中央空出時重新整理使用。
+     * 依最後呈現的桌況重新擺放桌上物件。沒有呈現過時使用目前的權威桌況。供桌子環境改變或桌面中央空出時重新整理使用。
      *
      * @param gameId 桌子識別碼。
      */
@@ -848,7 +852,7 @@ class ServerThreadGamePresentationPublisher(
     }
 
     /**
-     * 在 [gameTime] 執行 [block]；時間已到時立即執行。
+     * 在 [gameTime] 執行 [block]。時間已到時立即執行。
      *
      * @param world 計時使用的世界。
      * @param gameTime 執行的遊戲時間。
@@ -866,7 +870,7 @@ class ServerThreadGamePresentationPublisher(
     }
 
     /**
-     * 桌子目前所在的世界；桌子位置未知時為 null。
+     * 桌子目前所在的世界。桌子位置未知時為 null。
      *
      * @param gameId 桌子識別碼。
      * @return 桌子所在的伺服器世界。
@@ -910,7 +914,7 @@ class ServerThreadGamePresentationPublisher(
         }
     }
 
-    /** 交付局況與玩家資訊；開局擲骰揭示完成後也會使用這個共用路徑。 */
+    /** 交付局況與玩家資訊。開局擲骰揭示完成後也會使用這個共用路徑。 */
     private suspend fun presentRoundAndPlayerInfo(gameId: Uuid, resolved: ResolvedTableContext, tableState: TableState) {
         val ruleModuleId = moduleRegistry.getModule(tableState.config).id
         val lines = roundInfoLineDisplayRegistry.buildLines(ruleModuleId, tableState)
@@ -933,7 +937,7 @@ class ServerThreadGamePresentationPublisher(
     /**
      * 立刻排定初次發牌，將牌牆落地與擲骰的等待時間寫入每張牌的動畫佇列，並把桌子的呈現時間軸延到翻牌結束。
      * 依發牌完成時間銜接牌牆開門，並結束這一批開局工作的登記。桌上物件依 [tableState] 擺放，局況與玩家資訊在擲骰結束時
-     * 更新；之後的步驟從 [tableState] 接續比較，並等這次發牌排定後才開始。
+     * 更新。之後的步驟從 [tableState] 接續比較，並等這次發牌排定後才開始。
      */
     override fun publishInitialDeal(
         gameId: Uuid,
@@ -1084,15 +1088,15 @@ class ServerThreadGamePresentationPublisher(
     }
 
     /**
-     * 讀取贏家目前的權威手牌（[gameRepository]，唯讀，不寫回任何 `TableState`）算出強制理牌重排的目標
-     * 順序（`Hand.organize`，不論贏家原本是否啟用自動整理手牌），委託
-     * [MahjongPlayerAreaPresenter.presentWinCelebration] 排定「重排 → （自摸牌單獨倒下 →）等待 → 立牌一起
-     * 倒下」序列，最後把算出來的「立牌全部倒下完成」絕對 game time 交給 [effectScheduler] 接續排定
-     * 降臨特效——特效鎖定的目標位置固定是 [WinCelebrationRequest.winningTileId] 目前所在座標：自摸時它不併入整理後的手牌，
-     * 而是放在手牌右邊剛摸到的牌的位置；榮和／搶槓時它仍在放銃者的牌河或副露區；不攤牌時它留在原處。
+     * 1. 讀取贏家目前的權威手牌（[gameRepository]，唯讀，不寫回 `TableState`），以 `Hand.organize` 算出理牌後的目標順序。
+     *    不論贏家是否啟用自動整理手牌都會理牌。
+     * 2. 委託 [MahjongPlayerAreaPresenter.presentWinCelebration] 排定重排、（自摸牌單獨倒下、）等待、立牌一起倒下。
+     * 3. 把立牌全部倒下完成的絕對 game time 交給 [effectScheduler]，接續排定降臨特效。
      *
-     * 同一請求包含所有贏家，逐位排定理牌與倒牌，再以最晚的倒牌完成時間排定一次共用特效。
-     * 一炮多響的贏家共用 [WinCelebrationRequest.winningTileId] 指定的和牌張。
+     * - 特效打在 [WinCelebrationRequest.winningTileId] 目前所在座標。自摸時它放在手牌右邊的摸牌位，不併入整理後的手牌。
+     *   榮和／搶槓時它仍在放銃者的牌河或副露區。不攤牌時它留在原處。
+     * - 同一請求包含所有贏家，逐位排定理牌與倒牌，再以最晚的倒牌完成時間排定一次共用特效。
+     * - 一炮多響的贏家共用 [WinCelebrationRequest.winningTileId] 指定的和牌張。
      */
     override fun publishWinCelebration(gameId: Uuid, request: WinCelebrationRequest) {
         publish(gameId, "publishWinCelebration", blocksTable = true) { resolved, state, startAt ->
@@ -1116,7 +1120,7 @@ class ServerThreadGamePresentationPublisher(
      * 阻塞策略（見 [WinPresentationRequest] KDoc）：
      * - `roundContinues == false`：整段獨佔全桌，維持既有行為。
      * - `roundContinues == true`：只有選出的展示定義要求等待（[WinCelebrationShowcaseDefinition.pausesContinuingRound]）
-     *   時，showcase 那一段才延展整桌共用時間軸（暫停玩家／AI／強制自動操作／決策計時器）；一般倒牌特效、
+     *   時，showcase 那一段才延展整桌共用時間軸（暫停玩家／AI／強制自動操作／決策計時器）。一般倒牌特效、
      *   不要求等待的 showcase 與**整個結算面板**都只延展中途胡牌時間軸，不阻塞其他人。
      *
      * `roundContinues == true` 時，整段結束後一律把贏家真實手牌收尾（恢復可見、蓋成牌背）——即使這次
@@ -1158,7 +1162,7 @@ class ServerThreadGamePresentationPublisher(
      * @param gameId 桌子識別碼。
      * @param operation 診斷記錄與忙碌標記使用的操作名稱。
      * @param blocksTable 是否在工作排程至完成期間阻止整桌操作。
-     * @param block 接收桌子情境、最新桌況與最早開始時間的呈現工作；回傳值不由此函式使用。
+     * @param block 接收桌子情境、最新桌況與最早開始時間的呈現工作。回傳值不由此函式使用。
      */
     private fun publish(
         gameId: Uuid,
@@ -1194,14 +1198,16 @@ class ServerThreadGamePresentationPublisher(
     }
 
     /**
-     * 將呈現工作排到主執行緒；同批開局已失敗時，不再執行尚未開始的工作。
-     * 取消向外傳遞；其他失敗會清除開局暫存資料，並標記該批開局失敗。
-     * 沒有開局識別碼時，例外直接交給協程處理。
+     * 將呈現工作排到主執行緒。
+     *
+     * - 同批開局已失敗時，不再執行尚未開始的工作。
+     * - 取消向外傳遞。其他失敗會清除開局暫存資料，並標記該批開局失敗。
+     * - 沒有開局識別碼時，例外直接交給協程處理。
      *
      * @param gameId 桌子識別碼。
      * @param stage 開局階段名稱，用於失敗診斷。
-     * @param openingOperation 所屬開局操作；一般呈現工作可為 null。
-     * @param pendingOperation 需要整桌忙碌標記時使用的操作名稱；null 表示不取得標記。
+     * @param openingOperation 所屬開局操作。一般呈現工作可為 null。
+     * @param pendingOperation 需要整桌忙碌標記時使用的操作名稱。null 表示不取得標記。
      * @param block 要執行的呈現工作。
      */
     private fun launchOpeningStage(
@@ -1287,7 +1293,7 @@ class ServerThreadGamePresentationPublisher(
      * [runCelebration] 的結果。
      *
      * @property endGameTime 整段慶祝演出的結束時間。
-     * @property showcaseEndGameTime 役滿 showcase 的結束時間；沒播 showcase 時為 null。
+     * @property showcaseEndGameTime 役滿 showcase 的結束時間。沒播 showcase 時為 null。
      * @property showcaseHiddenTileIds 實際交接給 showcase 舞台、因而被設成隱形的真實牌（手牌、副露與和牌張）——
      * 收尾時要恢復可見的就是**這一組**，不能拿手牌全集去猜（沒有展示的贏家不會被碰過）。沒播 showcase
      * 時為空集合。
@@ -1299,14 +1305,14 @@ class ServerThreadGamePresentationPublisher(
     )
 
     /**
-     * 依序排定理牌、倒牌、慶祝特效及符合條件的展示；呼叫端負責延展時間軸。
+     * 依序排定理牌、倒牌、慶祝特效及符合條件的展示。呼叫端負責延展時間軸。
      *
      * @param gameId 桌子識別碼。
      * @param resolved 已解析的桌子與世界。
      * @param state 用來取得贏家手牌、牌面與規則的桌況。
      * @param request 贏家、和牌張及展示提示。
      * @param earliestStartGameTime 演出最早可開始的絕對世界遊戲時間。
-     * @return 各段結束時間與展示隱藏的牌；贏家座位無效或未取得倒牌結束時間時為 null。
+     * @return 各段結束時間與展示隱藏的牌。贏家座位無效或未取得倒牌結束時間時為 null。
      */
     private fun runCelebration(
         gameId: Uuid,
@@ -1438,7 +1444,7 @@ class ServerThreadGamePresentationPublisher(
      * @param state 用來查詢牌面資產的桌況。
      * @param request 贏家詳情與分數排行。
      * @param earliestStartGameTime 面板最早可開始的絕對世界遊戲時間。
-     * @return 面板結束時間；排程器未建立面板時為 null。
+     * @return 面板結束時間。排程器未建立面板時為 null。
      */
     private fun runSettlement(
         gameId: Uuid,
@@ -1469,12 +1475,12 @@ class ServerThreadGamePresentationPublisher(
 
     /**
      * 在中途和牌演出結束後，還原展示期間隱藏的真實牌，再將贏家立牌蓋成牌背。
-     * 副露與榮和張不隨立牌蓋牌；收尾動畫不阻塞其他玩家，並寫入各牌的持久化動畫佇列。
+     * 副露與榮和張不隨立牌蓋牌。收尾動畫不阻塞其他玩家，並寫入各牌的持久化動畫佇列。
      *
      * @param resolved 已解析的桌子與世界。
      * @param state 用來取得贏家手牌的桌況。
      * @param request 決定哪些贏家需要收尾的呈現請求。
-     * @param celebration 慶祝演出結果；null 表示沒有展示所隱藏的牌。
+     * @param celebration 慶祝演出結果。null 表示沒有展示所隱藏的牌。
      * @param endGameTime 開始收尾的絕對世界遊戲時間。
      */
     private fun restoreAndConcealWinnerHands(
@@ -1510,7 +1516,7 @@ class ServerThreadGamePresentationPublisher(
      * 依 UUID 查詢桌子所在世界的牌實體。
      *
      * @param tileId 要查詢的實體識別碼。
-     * @return 對應的麻將牌實體；不存在或實體類型不符時為 null。
+     * @return 對應的麻將牌實體。不存在或實體類型不符時為 null。
      */
     private fun ResolvedTableContext.findTile(tileId: Uuid): MahjongTileEntity? = world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity
 
@@ -1518,7 +1524,7 @@ class ServerThreadGamePresentationPublisher(
      * 由維度識別碼查詢目前伺服器的世界。
      *
      * @param location 提供維度識別碼的桌子位置。
-     * @return 對應世界；識別碼無效、沒有伺服器或世界未載入時為 null。
+     * @return 對應世界。識別碼無效、沒有伺服器或世界未載入時為 null。
      */
     private fun resolveWorld(location: TableLocation): ServerLevel? {
         val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null
@@ -1527,7 +1533,7 @@ class ServerThreadGamePresentationPublisher(
     }
 
     /**
-     * 以不代表任何玩家的公共讀取者查詢牌張公開牌面；同一次描述只解析一次桌況，沒有用到時不解析。
+     * 以不代表任何玩家的公共讀取者查詢牌張公開牌面。同一次描述只解析一次桌況，沒有用到時不解析。
      *
      * @param state 描述桌上物件時的桌況。
      * @return 牌張識別碼到公開牌面的查詢。
@@ -1542,7 +1548,7 @@ class ServerThreadGamePresentationPublisher(
      * 查詢桌況所採用規則的桌面物件描述。
      *
      * @param tableState 決定規則模組的桌況。
-     * @return 已登記的描述；規則未登記時為 null。
+     * @return 已登記的描述。規則未登記時為 null。
      */
     private fun describerFor(tableState: TableState): TablePropDescriber? = tablePropDescriberRegistry.find(moduleRegistry.getModule(tableState.config).id)
 
@@ -1550,7 +1556,7 @@ class ServerThreadGamePresentationPublisher(
      * 查詢桌況所採用規則的桌面牌位配置。
      *
      * @param tableState 決定規則模組的桌況。
-     * @return 已登記的配置；規則未登記時為標準配置。
+     * @return 已登記的配置。規則未登記時為標準配置。
      */
     private fun tileLayoutFor(tableState: TableState): TableTileLayoutProfile = tableTileLayoutProfileRegistry.profileFor(moduleRegistry.getModule(tableState.config).id)
 
@@ -1558,7 +1564,7 @@ class ServerThreadGamePresentationPublisher(
      * 本局牌牆第一面的墩數，見 [MahjongTileTableLayout.wallStacksPerSide]。
      *
      * @param tableState 本局權威桌況。
-     * @return 第一面牌牆的墩數；規則沒有牌牆布局時為 null。
+     * @return 第一面牌牆的墩數。規則沒有牌牆布局時為 null。
      */
     private fun wallStacksPerSide(tableState: TableState): Int? = MahjongTileTableLayout.wallStacksPerSide(moduleRegistry.getModule(tableState.config), tableState.playerCount)
 
@@ -1566,12 +1572,12 @@ class ServerThreadGamePresentationPublisher(
      * 牌牆在這一局剩下時間裡可能佔到的範圍，依規則回報的位置建立。
      *
      * @param tableState 本局權威桌況。
-     * @return 讓位範圍；規則沒有牌牆布局時為 null。
+     * @return 讓位範圍。規則沒有牌牆布局時為 null。
      */
     private fun roundWallClearance(tableState: TableState): MahjongTableWallClearance? = wallClearance(tableState, roundWallReach(tableState))
 
     /**
-     * 沒有實體牌牆時，開局就公開的牌（例如寶牌指示牌）在翻完手牌後落到桌子中央；砌牌牆時這些牌由牌牆翻開，不經過這裡。
+     * 沒有實體牌牆時，開局就公開的牌（例如寶牌指示牌）在翻完手牌後落到桌子中央。砌牌牆時這些牌由牌牆翻開，不經過這裡。
      *
      * @param gameId 桌子識別碼。
      * @param resolved 已解析的桌子與世界。
@@ -1606,7 +1612,7 @@ class ServerThreadGamePresentationPublisher(
      * 規則回報牌牆在這一局剩下時間裡可能佔到的位置。
      *
      * @param tableState 本局權威桌況。
-     * @return 牌牆可能佔到的位置；規則沒有牌牆布局或不砌牌牆時為空集合。
+     * @return 牌牆可能佔到的位置。規則沒有牌牆布局或不砌牌牆時為空集合。
      */
     private fun roundWallReach(tableState: TableState): Set<TileWallPlacement> = moduleRegistry.getModule(tableState.config).createPhysicalWallLayoutPolicy()?.roundReach(tableState).orEmpty()
 
@@ -1615,7 +1621,7 @@ class ServerThreadGamePresentationPublisher(
      *
      * @param tableState 本局權威桌況，提供牌牆尺寸與桌邊對應。
      * @param placements 要讓開的牌牆位置。
-     * @return 讓位範圍；規則沒有牌牆布局時為 null。
+     * @return 讓位範圍。規則沒有牌牆布局時為 null。
      */
     private fun wallClearance(
         tableState: TableState,
@@ -1634,7 +1640,7 @@ class ServerThreadGamePresentationPublisher(
      *
      * @param gameId 桌子識別碼。
      * @param tableState 沒有寬度紀錄時，用來查詢規則描述的桌況。
-     * @return 以座位為鍵的寬度；沒有紀錄且沒有桌況時為空集合。
+     * @return 以座位為鍵的寬度。沒有紀錄且沒有桌況時為空集合。
      */
     private fun cornerWidthsBySeat(gameId: Uuid, tableState: TableState?): Map<Int, Double> = (presentedTables[gameId]?.tableState ?: tableState)?.let { state -> describerFor(state).cornerWidthsBySeat(state) }.orEmpty()
 
@@ -1654,7 +1660,7 @@ class ServerThreadGamePresentationPublisher(
      *
      * @param gameId 用來查詢位置並驗證桌子身分的識別碼。
      * @param methodName 寫入診斷記錄的呼叫端名稱。
-     * @return 完整的桌子情境；任何必要資料缺失或身分不符時記錄警告並回傳 null。
+     * @return 完整的桌子情境。任何必要資料缺失或身分不符時記錄警告並回傳 null。
      */
     private fun resolveTableContext(gameId: Uuid, methodName: String): ResolvedTableContext? {
         val location = tableLocationRegistry.get(gameId)?.location
@@ -1695,7 +1701,7 @@ class ServerThreadGamePresentationPublisher(
      * 一張桌子最後一次呈現的結果。
      *
      * @property tableState 呈現的桌況。
-     * @property arrangement 依 [tableState] 算出的擺放；還沒有在主執行緒算出時為 null。
+     * @property arrangement 依 [tableState] 算出的擺放。還沒有在主執行緒算出時為 null。
      */
     private data class PresentedTable(
         val tableState: TableState,

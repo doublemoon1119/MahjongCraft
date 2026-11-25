@@ -11,7 +11,7 @@ import kotlin.test.assertEquals
 
 /** 驗證設定欄位提示框的段落順序、內容與顏色。 */
 class ControlTooltipTest {
-    /** 選項欄位：說明、空行、標題與全部選項、空行、操作提示；目前選項以「▶」標示，不另外重複目前值。 */
+    /** 選項欄位：說明、空行、標題與全部選項、空行、操作提示。目前選項以「▶」標示，不另外重複目前值。 */
     @Test
     fun `option tooltip lists every option and marks the current one`() {
         val tooltip = ControlTooltip.options(
@@ -158,7 +158,7 @@ class ControlTooltipTest {
         assertEquals(MinecraftControlTooltipKeys.RANGE_VALUES, ControlTooltip.rangeText(Component.literal("1"), Component.literal("13")).string)
     }
 
-    /** 提醒為紅色，位於狀態區與操作提示之間；沒有操作提示時不留多餘的空行。 */
+    /** 提醒為紅色，位於狀態區與操作提示之間。沒有操作提示時不留多餘的空行。 */
     @Test
     fun `notice sits between the status and the hints`() {
         val disabled = ControlTooltip.options(
@@ -184,7 +184,7 @@ class ControlTooltipTest {
         assertEquals(ChatFormatting.GRAY, colorOf(tooltip, "Move the HUD elements."))
     }
 
-    /** 只給選項名稱與目前索引時，標出該選項；索引不在範圍內時沒有任何選項被標示。 */
+    /** 只給選項名稱與目前索引時，標出該選項。索引不在範圍內時沒有任何選項被標示。 */
     @Test
     fun `indexed options mark the option at the current index`() {
         val labels = listOf(Component.literal("Any"), Component.literal("Won"), Component.literal("Lost"))

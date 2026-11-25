@@ -68,7 +68,7 @@ class TablePresentationBusyPolicyTest {
     /**
      * 含役滿 showcase 的中途和牌：showcase 期間阻擋全桌，蓋牌動畫期間不阻擋。
      *
-     * showcase 期間由牌桌的 `presentationBusyUntilGameTime` 阻擋操作；牌的動畫豁免則讓 showcase
+     * showcase 期間由牌桌的 `presentationBusyUntilGameTime` 阻擋操作。牌的動畫豁免則讓 showcase
      * 結束後即使蓋牌動畫仍在播放，也不會延長整桌忙碌狀態。本測試以 `tableIsPresenting` 模擬牌桌忙碌檢查。
      */
     @Test
@@ -118,7 +118,7 @@ class TablePresentationBusyPolicyTest {
     }
 
     private companion object {
-        /** 沒有豁免時的欄位值；直接引用生產程式碼的常數，不鏡射字面值。 */
+        /** 沒有豁免時的欄位值。直接引用生產程式碼的常數，不鏡射字面值。 */
         const val NO_EXEMPTION = NonBlockingPresentationLeaseCodec.NO_LEASE
     }
 }

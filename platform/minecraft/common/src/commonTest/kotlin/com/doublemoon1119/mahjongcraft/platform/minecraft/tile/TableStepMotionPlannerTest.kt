@@ -39,7 +39,7 @@ class TableStepMotionPlannerTest {
         assertEquals(TileMotionKind.ARC, kinds[drawn])
     }
 
-    /** 同一排補位時維持前後順序的牌平移；越過其他牌的那一張走弧線，沒有移動的牌不規劃動作。 */
+    /** 同一排補位時維持前後順序的牌平移。越過其他牌的那一張走弧線，沒有移動的牌不規劃動作。 */
     @Test
     fun `row reordering slides the order-preserving tiles and arcs the rest`() {
         val (a, b, c, d) = List(4) { Uuid.random() }
@@ -63,7 +63,7 @@ class TableStepMotionPlannerTest {
         listOf(a, b, c).forEach { assertEquals(TileMotionKind.SLIDE, kinds[it]) }
     }
 
-    /** 位置沒變只改姿態時翻面；位置與姿態都沒變時沒有動作。 */
+    /** 位置沒變只改姿態時翻面。位置與姿態都沒變時沒有動作。 */
     @Test
     fun `pose changes turn in place and unchanged tiles are skipped`() {
         val turned = Uuid.random()
@@ -76,7 +76,7 @@ class TableStepMotionPlannerTest {
         assertEquals(listOf(turned to TileMotionKind.TURN), motions.map { it.tileId to it.kind })
     }
 
-    /** 沒有先前擺放時直接擺放；排除的牌不規劃動作。 */
+    /** 沒有先前擺放時直接擺放。排除的牌不規劃動作。 */
     @Test
     fun `missing previous arrangement places tiles and excluded tiles are skipped`() {
         val placed = Uuid.random()
@@ -121,7 +121,7 @@ class TableStepMotionPlannerTest {
         )
     }
 
-    /** 先離開、再讓位、最後摸進來，三段依序：每一段等前一段最長的動作完成；沒有動作的段落不佔時間。 */
+    /** 先離開、再讓位、最後摸進來，三段依序：每一段等前一段最長的動作完成。沒有動作的段落不佔時間。 */
     @Test
     fun `phases play in order and the step lasts the sum of their longest motions`() {
         val motions = listOf(TileMotionKind.FLIGHT, TileMotionKind.SLIDE, TileMotionKind.ARC, TileMotionKind.DRAW).map(::motion)

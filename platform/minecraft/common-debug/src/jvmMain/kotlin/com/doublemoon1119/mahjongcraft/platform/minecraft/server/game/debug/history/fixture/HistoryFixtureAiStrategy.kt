@@ -147,7 +147,7 @@ class HistoryFixtureAiStrategy(
      * @param context 決策情境。
      * @param type 槓的種類。
      * @param tile 槓的牌面。
-     * @return 槓的命令；此時不能這樣槓時為 null。
+     * @return 槓的命令。此時不能這樣槓時為 null。
      */
     private fun kan(context: AiDecisionContext, type: GameAction.KanType, tile: Tile): GameCommand? {
         val hand = handTiles(context).associate { it.id to it.tile }

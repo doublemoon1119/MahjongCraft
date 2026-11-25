@@ -7,8 +7,8 @@ import kotlin.uuid.Uuid
  *
  * @property playerId 公開花牌的玩家。
  * @property tileId 已移到公開花區的牌張識別碼。
- * @property replacementsDue 這位玩家已公開、尚未補的張數；已補完時為 0。
- * @property resumeRound 繼續補花時所在的輪次，從 1 開始；這位玩家已補完時是下一位玩家所在的輪次。
+ * @property replacementsDue 這位玩家已公開、尚未補的張數。已補完時為 0。
+ * @property resumeRound 繼續補花時所在的輪次，從 1 開始。這位玩家已補完時是下一位玩家所在的輪次。
  */
 data class TaiwanPendingFlowerFollowUp(
     val playerId: Uuid,

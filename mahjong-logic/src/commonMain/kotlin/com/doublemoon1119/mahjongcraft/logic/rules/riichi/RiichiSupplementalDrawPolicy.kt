@@ -10,11 +10,12 @@ import com.doublemoon1119.mahjongcraft.logic.table.drawFromReservedWall
 /** 日本麻將槓後（與三人麻將拔北後）嶺上補牌與死牌區補充 policy。 */
 object RiichiSupplementalDrawPolicy : SupplementalDrawPolicy {
     /**
-     * 解析成功成立的槓與拔北；其他動作不需要補牌。
+     * 解析成功成立的槓與拔北。其他動作不需要補牌。
      *
-     * 每次取走死牌區最前方的嶺上牌，再將活牌尾端補入死牌區末端。補入的牌只用來維持死牌區
-     * 張數，不會成為後續可摸取的嶺上牌。槓與拔北各自最多補牌 [MAX_SUPPLEMENTAL_DRAWS] 次，
-     * 分別記在 [RiichiWallProgress.completedSupplementalDrawCount] 與 [RiichiWallProgress.completedNorthDrawCount]。
+     * - 每次取走死牌區最前方的嶺上牌，再將活牌尾端補入死牌區末端。
+     * - 補入的牌只用來維持死牌區張數，不會成為後續可摸取的嶺上牌。
+     * - 槓與拔北各自最多補牌 [MAX_SUPPLEMENTAL_DRAWS] 次，分別記在
+     *   [RiichiWallProgress.completedSupplementalDrawCount] 與 [RiichiWallProgress.completedNorthDrawCount]。
      */
     override fun resolve(context: SupplementalDrawContext): SupplementalDrawDecision {
         val isPullNorth = context.action == RIICHI_PULL_NORTH_GAME_ACTION

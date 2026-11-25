@@ -7,8 +7,10 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStat
 /**
  * 回放一局時的牌面暫存：保留目前這一步前後一段範圍的牌面，並決定下一次向伺服器要哪幾步。
  *
- * 步數 0 是初始牌面，步數 k 是第 k - 1 筆交易完成後。同一時間只有一次要求在途；優先補目前這一步，
- * 其次是之後的步數，最後才是之前的步數，讓播放與往回一步都不必等待。範圍外的牌面會丟掉，暫存大小固定。
+ * - 步數 0 是初始牌面，步數 k 是第 k - 1 筆交易完成後。
+ * - 同一時間只有一次要求在途。
+ * - 優先補目前這一步，其次是之後的步數，最後才是之前的步數，讓播放與往回一步都不必等待。
+ * - 範圍外的牌面會丟掉，暫存大小固定。
  *
  * @property stepCount 這一局的總步數，等於交易數加一。
  * @property behind 目前這一步之前保留幾步。
@@ -27,7 +29,7 @@ internal class HistoryReplayBuffer(
     /** 已取得的牌面，依步數索引。 */
     private val states = HashMap<Int, HistoryRoundStateDto>()
 
-    /** 在途要求涵蓋的步數；沒有在途要求時為 null。 */
+    /** 在途要求涵蓋的步數。沒有在途要求時為 null。 */
     private var inFlight: IntRange? = null
 
     /** 目前顯示的步數。 */
@@ -38,7 +40,7 @@ internal class HistoryReplayBuffer(
      * 取得某一步的牌面。
      *
      * @param step 步數。
-     * @return 牌面；還沒取得時為 null。
+     * @return 牌面。還沒取得時為 null。
      */
     fun stateAt(step: Int): HistoryRoundStateDto? = states[step]
 
@@ -54,7 +56,7 @@ internal class HistoryReplayBuffer(
     }
 
     /**
-     * 下一次要向伺服器要的範圍；有在途要求或範圍內都已取得時為 null。
+     * 下一次要向伺服器要的範圍。有在途要求或範圍內都已取得時為 null。
      *
      * @return 要求的第一步與數量。
      */

@@ -93,7 +93,7 @@ internal fun stressTestReportMessage(report: StressTestReport): MutableComponent
 }
 
 /**
- * 報告的所有欄位，以一行英文輸出到 log；主控台開始的測試沒有玩家可收報告，也方便比較不同次的結果。
+ * 報告的所有欄位，以一行英文輸出到 log。主控台開始的測試沒有玩家可收報告，也方便比較不同次的結果。
  *
  * @param report 要格式化的測試快照。
  * @return 供記錄與比較的單行英文摘要。
@@ -154,7 +154,7 @@ internal fun stressTestReportLogLine(report: StressTestReport): String = with(re
 /**
  * 一次 AI 出牌決策的情境，以一行英文輸出到 log，用來重現異常緩慢的決策。
  *
- * 牌以數字加花色表示：m 萬子、p 筒子、s 條子；字牌 1z 至 7z 依序為東、南、西、北、白、發、中；看不到的牌為 ?。
+ * 牌以數字加花色表示：m 萬子、p 筒子、s 條子。字牌 1z 至 7z 依序為東、南、西、北、白、發、中。看不到的牌為 ?。
  *
  * @param context 策略取得的決策情境，僅輸出其中可見的牌。
  * @return 回合、座風、手牌、副露與合法動作的單行英文摘要。
@@ -176,7 +176,7 @@ internal fun stressAiDecisionLogText(context: AiDecisionContext): String {
 /**
  * 一張牌的簡寫。
  *
- * @param tile 牌種；null 表示沒有提供或不可見。
+ * @param tile 牌種。null 表示沒有提供或不可見。
  * @return 牌種簡寫、擴充牌 ID，或未知牌符號。
  */
 private fun tileNotation(tile: Tile?): String = when (tile) {
@@ -226,7 +226,7 @@ private fun modeText(mode: StressTestMode): Component = when (mode) {
 }
 
 /**
- * 開始持續卡頓時的桌數；欄位名稱帶有卡頓的毫秒門檻。
+ * 開始持續卡頓時的桌數。欄位名稱帶有卡頓的毫秒門檻。
  *
  * @param report 包含卡頓門檻與首次持續卡頓桌數的報告。
  * @return 包含門檻、桌數或尚未發生提示的欄位。
@@ -307,7 +307,7 @@ private fun paceKey(pace: StressTestPace): String = when (pace) {
  * 單一欄位：灰色欄位名稱加上指定顏色的值。
  *
  * @param key 欄位名稱的翻譯鍵。
- * @param value 顯示的值；使用副本，不修改原文字。
+ * @param value 顯示的值。使用副本，不修改原文字。
  * @param valueColor 值的文字顏色。
  * @return 以換行與項目符號開頭的欄位。
  */
@@ -320,7 +320,7 @@ private fun entry(key: String, value: Component, valueColor: ChatFormatting): Mu
 /**
  * 縮排在上一個欄位下的子欄位。
  *
- * @param name 子欄位名稱；會直接設定此文字的顏色。
+ * @param name 子欄位名稱。會直接設定此文字的顏色。
  * @param value 子欄位值。
  * @return 以換行與縮排項目符號開頭的子欄位。
  */
@@ -333,7 +333,7 @@ private fun subEntry(name: MutableComponent, value: String): MutableComponent = 
 /**
  * 以 [key] 建立帶英文備援的本地化文字。
  *
- * @param key 翻譯鍵；沒有英文備援時也作為備援內容。
+ * @param key 翻譯鍵。沒有英文備援時也作為備援內容。
  * @return 帶英文或鍵名備援的本地化文字。
  */
 private fun stressText(key: String): MutableComponent = Component.translatableWithFallback(key, STRESS_FALLBACKS[key] ?: key)
@@ -368,7 +368,7 @@ private fun formatAverageMax(summary: TimingSummary): String = "${formatMillis(s
  * 各門檻的超時 tick 比例，例如「1.5% / 0.2% / 0.0%」。
  *
  * @param report 包含各門檻超時次數與已量測 tick 數的報告。
- * @return 依門檻順序排列的百分比；未量測時比例為零。
+ * @return 依門檻順序排列的百分比。未量測時比例為零。
  */
 private fun formatSlowTicks(report: StressTestReport): String = report.slowTicks.values.joinToString(" / ") { count ->
     val ratio = if (report.measuredTicks == 0L) 0.0 else count * PERCENT / report.measuredTicks
@@ -385,10 +385,10 @@ private fun formatEvents(report: StressTestReport): String = "${report.eventsPro
     "(${formatMillis(perSecond(report.eventsProduced, report.measuredSeconds))} / ${formatMillis(perSecond(report.eventsWritten, report.measuredSeconds))} /s)"
 
 /**
- * 每秒速率；沒有經過時間時為 0。
+ * 每秒速率。沒有經過時間時為 0。
  *
  * @param count 累計數量。
- * @param seconds 經過秒數；非正值時不計算速率。
+ * @param seconds 經過秒數。非正值時不計算速率。
  * @return 每秒數量，或時間非正值時的零。
  */
 private fun perSecond(count: Long, seconds: Double): Double = if (seconds <= 0.0) 0.0 else count / seconds

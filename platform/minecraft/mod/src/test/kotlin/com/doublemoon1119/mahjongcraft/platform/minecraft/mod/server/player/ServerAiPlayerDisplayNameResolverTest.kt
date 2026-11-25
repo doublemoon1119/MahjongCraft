@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
 
 /** 伺服器名稱依當場快照與原房間順序產生，不在初始化時讀取保存狀態。 */
 class ServerAiPlayerDisplayNameResolverTest {
-    /** 角色快照在實際解析時才讀取；洗牌後仍沿用房間名稱順序。 */
+    /** 角色快照在實際解析時才讀取。洗牌後仍沿用房間名稱順序。 */
     @Test
     fun `resolves lazily with room order instead of shuffled seats`() {
         val table = FakeTableStateFactory.create(players = Wind.entries.map { FakeMahjongPlayerFactory.create(initialSeat = it) })

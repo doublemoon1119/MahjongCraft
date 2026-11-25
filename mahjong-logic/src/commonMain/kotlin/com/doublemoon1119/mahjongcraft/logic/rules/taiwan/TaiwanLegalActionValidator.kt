@@ -15,13 +15,13 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
 /**
- * 台灣麻將的合法動作判定器，只列出鳴牌、槓、胡與宣告聽牌等額外動作；一般捨牌由呼叫端依手牌建立。
+ * 台灣麻將的合法動作判定器，只列出鳴牌、槓、胡與宣告聽牌等額外動作。一般捨牌由呼叫端依手牌建立。
  *
  * - 過水期間不能胡也不能自摸。
- * - 天聽、地聽的時機可以宣告聽牌；其他時機只有開啟報聽時才能宣告。
+ * - 天聽、地聽的時機可以宣告聽牌。其他時機只有開啟報聽時才能宣告。
  * - 宣告聽牌後不能吃、碰、明槓或暗槓，只能用剛摸進來的牌加槓。
- * - 不能槓上家打出的牌；只能搶加槓，不能搶暗槓；別人移出手牌的牌不能胡或鳴。
- * - 最後一張可打出的牌只能胡；槓需要至少還有一張活牌。
+ * - 不能槓上家打出的牌。只能搶加槓，不能搶暗槓。別人移出手牌的牌不能胡或鳴。
+ * - 最後一張可打出的牌只能胡。槓需要至少還有一張活牌。
  *
  * @property config 規則設定。
  */
@@ -131,7 +131,7 @@ class TaiwanLegalActionValidator(private val config: TaiwanRuleConfig) : LegalAc
      * 列出手牌聽的牌。
      *
      * @param hand 不含胡牌張的手牌。
-     * @return 聽的牌；沒有聽牌時為空集合。
+     * @return 聽的牌。沒有聽牌時為空集合。
      */
     internal fun waits(hand: Hand): Set<Tile> = (shantenCalculator.calculate(Hand(tiles = hand.standingTiles, melds = hand.melds)) as? ShantenResult.Tenpai)
         ?.winningTiles
@@ -150,7 +150,7 @@ class TaiwanLegalActionValidator(private val config: TaiwanRuleConfig) : LegalAc
      * 列出手中四張相同牌組成的暗槓。
      *
      * @param handWithIncoming 含剛摸入牌的手牌。
-     * @param incomingTile 剛摸入的牌；組成暗槓時優先作為宣告牌。
+     * @param incomingTile 剛摸入的牌。組成暗槓時優先作為宣告牌。
      * @return 暗槓動作。
      */
     private fun closedKanActions(handWithIncoming: Hand, incomingTile: IdentifiedTile): List<GameAction> = handWithIncoming.standingTiles

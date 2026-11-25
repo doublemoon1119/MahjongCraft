@@ -62,7 +62,7 @@ class AutomaticDecisionEvaluatorTaiwanTest {
      * 建立輪到台麻玩家、剛摸進一張牌且啟用自動打出摸到的牌的對局。
      *
      * @param drawn 剛摸進的牌。
-     * @param pendingRuleDecision 進行中的規則選擇；沒有時為 null。
+     * @param pendingRuleDecision 進行中的規則選擇。沒有時為 null。
      * @return 測試用對局。
      */
     private fun game(

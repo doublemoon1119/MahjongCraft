@@ -4,10 +4,10 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
 
-/** 玩家的權威立直宣告；尚未立直時為 null。 */
+/** 玩家的權威立直宣告。尚未立直時為 null。 */
 val MahjongPlayer.riichiDeclaration: RiichiDeclaration? get() = components[RiichiPlayerComponents.DECLARATION]
 
-/** 已向讀取者公開的立直宣告；沒有時為 null。 */
+/** 已向讀取者公開的立直宣告。沒有時為 null。 */
 val MahjongPlayerSnapshot.riichiDeclaration: RiichiDeclaration? get() = componentViews[RiichiPlayerComponentViews.DECLARATION]
 
 /**

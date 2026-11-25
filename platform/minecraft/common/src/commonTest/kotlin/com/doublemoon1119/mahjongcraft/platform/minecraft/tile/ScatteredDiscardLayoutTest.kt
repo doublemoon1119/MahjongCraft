@@ -22,7 +22,7 @@ import kotlin.uuid.Uuid
 /** 驗證散放牌河的位置表與挑位置：不重疊、不碰牌牆與擲骰區、內建台麻不會疊牌，先打出的牌不會移動。 */
 class ScatteredDiscardLayoutTest {
     /**
-     * 每一張位置表的位置都在牌河範圍內、兩兩不重疊，位置數多於台麻牌河上同時可能存在的牌數；有花牌與沒有花牌的牌桌都檢查。
+     * 每一張位置表的位置都在牌河範圍內、兩兩不重疊，位置數多於台麻牌河上同時可能存在的牌數。有花牌與沒有花牌的牌桌都檢查。
      */
     @Test
     fun `every pattern fits the most discards a taiwan river can hold`() {
@@ -40,7 +40,7 @@ class ScatteredDiscardLayoutTest {
         }
     }
 
-    /** 位置表的每個位置四個角都在牌牆內側，整張牌都在擲骰區之外；角度涵蓋四個方向。 */
+    /** 位置表的每個位置四個角都在牌牆內側，整張牌都在擲骰區之外。角度涵蓋四個方向。 */
     @Test
     fun `patterns keep clear of the walls and the dice area and turn every way`() {
         val wallInnerFace = TAIWAN_WALL_STACKS / 2.0 * (MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING) -
@@ -71,7 +71,7 @@ class ScatteredDiscardLayoutTest {
     }
 
     /**
-     * 一局打到牌河最多的牌數，中間穿插被鳴走的牌：牌河上的牌都在桌面上、互不重疊；有空位時牌落在打牌者那一側。
+     * 一局打到牌河最多的牌數，中間穿插被鳴走的牌：牌河上的牌都在桌面上、互不重疊。有空位時牌落在打牌者那一側。
      */
     @Test
     fun `a full taiwan round never stacks discards`() {

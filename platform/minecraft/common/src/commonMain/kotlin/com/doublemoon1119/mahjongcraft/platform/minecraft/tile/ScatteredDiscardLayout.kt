@@ -12,11 +12,12 @@ import kotlin.uuid.Uuid
 /**
  * 散放牌河的位置，見 [TableDiscardArea.SCATTERED]。座標以桌子為準：X 往南側座位的右手邊為正，Z 往南側座位為正。
  *
- * 每一局從 [PATTERN_SEEDS] 挑一張位置表：位置表事先在牌牆內側、擲骰區之外排滿互不重疊的位置，每個位置有自己的角度。
- * 打出的牌依全桌打牌順序逐張挑一個空位：優先在打牌者那一側的空位中隨機挑，那一側滿了才挑最靠近打牌者的空位。
- * 隨機只取決於位置表種子與這是第幾張捨牌，牌譜回放時能挑到同一個空位。
- * 只有剛打出的牌能被鳴走，下一張打出前就已確定，所以被鳴走的牌讓出的位置可以給之後打出的牌使用；牌河上同時存在的牌
- * 不超過活牌張數加一。一張牌的位置只取決於它自己與比它先打出的牌，之後打出的牌與鳴牌都不會讓它移動。
+ * - 每一局從 [PATTERN_SEEDS] 挑一張位置表。位置表事先在牌牆內側、擲骰區之外排滿互不重疊的位置，每個位置有自己的角度。
+ * - 打出的牌依全桌打牌順序逐張挑一個空位：優先在打牌者那一側的空位中隨機挑，那一側滿了才挑最靠近打牌者的空位。
+ * - 隨機只取決於位置表種子與這是第幾張捨牌，牌譜回放時能挑到同一個空位。
+ * - 只有剛打出的牌能被鳴走，下一張打出前就已確定，所以被鳴走的牌讓出的位置可以給之後打出的牌使用。
+ * - 牌河上同時存在的牌不超過活牌張數加一。
+ * - 一張牌的位置只取決於它自己與比它先打出的牌，之後打出的牌與鳴牌都不會讓它移動。
  */
 internal object ScatteredDiscardLayout {
     /**
@@ -24,8 +25,8 @@ internal object ScatteredDiscardLayout {
      *
      * @param slots 這一局的位置表。
      * @param patternSeed 這一局的位置表種子，與捨牌順序一起決定隨機挑的空位。
-     * @param discards 依打出先後排列的牌、打牌者所在方向的單位向量 (x, z) 與是否已被鳴走；包含被鳴走的牌。
-     * @return 每張牌的位置與角度；位置表沒有空位時疊到上一層，內建規則的牌數不會用完位置表。
+     * @param discards 依打出先後排列的牌、打牌者所在方向的單位向量 (x, z) 與是否已被鳴走。包含被鳴走的牌。
+     * @return 每張牌的位置與角度。位置表沒有空位時疊到上一層，內建規則的牌數不會用完位置表。
      */
     fun assign(slots: List<ScatteredDiscard>, patternSeed: Int, discards: List<ScatterRequest>): Map<Uuid, ScatteredDiscard> {
         val used = BooleanArray(slots.size)
@@ -66,7 +67,7 @@ internal object ScatteredDiscardLayout {
     }
 
     /**
-     * 用 [seed] 排出位置表；同一個種子與範圍只排一次。
+     * 用 [seed] 排出位置表。同一個種子與範圍只排一次。
      *
      * @param seed 種子。
      * @param reach 位置離桌心最遠的距離。
@@ -79,7 +80,7 @@ internal object ScatteredDiscardLayout {
     }
 
     /**
-     * 排出位置表：隨機挑位置與角度，一半的位置貼著已經排好的位置找，讓位置自然聚在一起，也比較不會留下放不進牌的零碎空隙；
+     * 排出位置表：隨機挑位置與角度，一半的位置貼著已經排好的位置找，讓位置自然聚在一起，也比較不會留下放不進牌的零碎空隙。
      * 連續 [GENERATION_PATIENCE] 次都放不下時結束。
      *
      * @param seed 種子。
@@ -185,7 +186,7 @@ internal object ScatteredDiscardLayout {
     }
 
     /**
-     * 牌旋轉後的四個角；牌在角度 `0` 時寬邊沿 X。
+     * 牌旋轉後的四個角。牌在角度 `0` 時寬邊沿 X。
      *
      * @param discard 牌的位置與角度。
      * @param padding 每邊往外加的距離。
@@ -217,7 +218,7 @@ internal object ScatteredDiscardLayout {
      * 桌心到牌上最近一點的距離。
      *
      * @param discard 牌。
-     * @return 距離；桌心在牌上時為 `0`。
+     * @return 距離。桌心在牌上時為 `0`。
      */
     internal fun distanceFromCentre(discard: ScatteredDiscard): Double {
         val angle = discard.angleDegrees * PI / 180.0
@@ -230,7 +231,7 @@ internal object ScatteredDiscardLayout {
     }
 
     /**
-     * 已排出的位置表，依種子與範圍索引。整份換成新的對照表，不修改已發布的內容；同時排出同一張位置表時只是重複計算。
+     * 已排出的位置表，依種子與範圍索引。整份換成新的對照表，不修改已發布的內容。同時排出同一張位置表時只是重複計算。
      */
     @Volatile
     private var patterns: Map<PatternKey, List<ScatteredDiscard>> = emptyMap()
@@ -243,7 +244,7 @@ internal object ScatteredDiscardLayout {
      */
     private data class PatternKey(val seed: Int, val reach: Double)
 
-    /** 每一局從中挑一張位置表的種子；每一張都由測試確認位置數多於內建規則牌河上同時可能存在的牌數。 */
+    /** 每一局從中挑一張位置表的種子。每一張都由測試確認位置數多於內建規則牌河上同時可能存在的牌數。 */
     internal val PATTERN_SEEDS: List<Int> = listOf(12, 29, 58, 136, 164, 221, 291, 296)
 
     /** 排位置表時連續放不下幾次就結束。 */
@@ -270,7 +271,7 @@ internal object ScatteredDiscardLayout {
     /** 補空隙時與鄰居角度相差的最大值。 */
     private const val INFILL_TURN_DEGREES: Double = 8.0
 
-    /** 加上縫隙後牌的半對角線長；兩張牌中心相距超過兩倍時不可能重疊。 */
+    /** 加上縫隙後牌的半對角線長。兩張牌中心相距超過兩倍時不可能重疊。 */
     private val PADDED_HALF_DIAGONAL: Double = hypot(
         x = MahjongTileDimensions.TILE_WIDTH / 2.0 + MahjongTileDimensions.TILE_SMALL_PADDING / 2.0,
         y = MahjongTileDimensions.TILE_HEIGHT / 2.0 + MahjongTileDimensions.TILE_SMALL_PADDING / 2.0,

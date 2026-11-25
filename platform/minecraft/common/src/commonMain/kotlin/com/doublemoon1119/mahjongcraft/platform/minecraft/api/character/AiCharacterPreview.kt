@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
  * 可由客戶端預覽工廠解讀的外觀資料，不包含世界物件或可執行內容。
  *
  * @property capabilityId 預覽能力的完整 namespaced ID。
- * @param parameters 以完整 namespaced ID 為鍵的有界字串參數；建立時複製，不保存任意 NBT。
+ * @param parameters 以完整 namespaced ID 為鍵的有界字串參數。建立時複製，不保存任意 NBT。
  */
 class AiCharacterPreview(
     val capabilityId: String,

@@ -117,7 +117,7 @@ private fun fallbackLabel(key: String): String = when (key) {
 private fun formatSeconds(milliseconds: Long): String = "%.1f".format(Locale.ROOT, milliseconds / 1000.0)
 
 /**
- * 將磁碟用量格式化為安全的 MiB 與 bytes；未知量不以零取代。
+ * 將磁碟用量格式化為安全的 MiB 與 bytes。未知量不以零取代。
  *
  * @param disk 三檔實際磁碟用量，或尚未量測的 null。
  * @return 格式化總量或未知標記。

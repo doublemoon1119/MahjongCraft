@@ -11,7 +11,7 @@ import kotlin.reflect.KClass
  *
  * @param Domain 可由內建或第三方規則模組提供具體實作的領域介面。
  *
- * 擴充只透過 [PersistenceDtoRegistrar] 登記；轉換時把 [converter] 提供的唯讀轉換交給已登記的轉換函式。
+ * 擴充只透過 [PersistenceDtoRegistrar] 登記。轉換時把 [converter] 提供的唯讀轉換交給已登記的轉換函式。
  *
  * @property converter 取得交給轉換函式的唯讀轉換，通常是所屬的整組保存格式 registry。
  */
@@ -91,7 +91,7 @@ class PersistenceDtoRegistry<Domain : Any>(
         if (definition.compactInReplay) compactTypeKeys += definition.typeKey
     }
 
-    /** 凍結註冊表；凍結後不得新增 persistence mapper。 */
+    /** 凍結註冊表。凍結後不得新增 persistence mapper。 */
     fun freeze() {
         frozen = true
     }

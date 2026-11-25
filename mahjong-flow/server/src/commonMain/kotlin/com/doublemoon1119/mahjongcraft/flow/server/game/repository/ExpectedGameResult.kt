@@ -13,6 +13,6 @@ sealed interface ExpectedGameResult<out T> {
      */
     data class Applied<T>(val value: T) : ExpectedGameResult<T>
 
-    /** 寫入前權威遊戲已不是預期的遊戲；命令沒有寫入這一局，並在寫入時被中止。 */
+    /** 寫入前權威遊戲已不是預期的遊戲。命令沒有寫入這一局，並在寫入時被中止。 */
     data object Stale : ExpectedGameResult<Nothing>
 }

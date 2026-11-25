@@ -72,7 +72,7 @@ class EntityMahjongPlayerInfoPresenter(private val serverHolder: ServerHolder, p
      * 依桌子位置的維度 ID 找出已載入的伺服器世界。
      *
      * @param location 桌子位置。
-     * @return 對應世界；無法解析或尚未載入時為 null。
+     * @return 對應世界。無法解析或尚未載入時為 null。
      */
     private fun resolveWorld(location: TableLocation): ServerLevel? {
         val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null
@@ -85,7 +85,7 @@ class EntityMahjongPlayerInfoPresenter(private val serverHolder: ServerHolder, p
      * @param world 要搜尋的伺服器世界。
      * @param tableId 桌子 UUID。
      * @param pos 桌子 controller 方塊位置。
-     * @return 找到的 entity；不存在時為 null。
+     * @return 找到的 entity。不存在時為 null。
      */
     private fun find(world: ServerLevel, tableId: Uuid, pos: BlockPos): MahjongPlayerInfoEntity? = findAll(world, tableId, pos).firstOrNull()
 

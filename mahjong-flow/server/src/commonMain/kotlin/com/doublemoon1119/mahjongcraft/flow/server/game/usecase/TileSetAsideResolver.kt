@@ -16,7 +16,7 @@ import kotlin.uuid.Uuid
 /**
  * 決定一次移出手牌動作的去向：開啟搶和視窗、因一炮多響判定流局，或直接套用並補牌。
  *
- * 玩家自行宣告與摸牌後的自動處理共用這個判定；宣告的合法性由呼叫端先檢查。
+ * 玩家自行宣告與摸牌後的自動處理共用這個判定。宣告的合法性由呼叫端先檢查。
  */
 internal object TileSetAsideResolver {
     /** 一次移出手牌動作的去向。 */
@@ -25,7 +25,7 @@ internal object TileSetAsideResolver {
         val setAsideTile: IdentifiedTile
 
         /**
-         * 其他玩家可以用移出的牌榮和，已開啟搶和視窗；動作暫緩套用。
+         * 其他玩家可以用移出的牌榮和，已開啟搶和視窗。動作暫緩套用。
          *
          * @property tableState 開啟搶和視窗後的權威桌況。
          * @property setAsideTile 這次要移出手牌的牌。
@@ -38,7 +38,7 @@ internal object TileSetAsideResolver {
         ) : Resolution
 
         /**
-         * 多位玩家可以榮和，依一炮多響設定判定流局；這次動作視為未成立。
+         * 多位玩家可以榮和，依一炮多響設定判定流局。這次動作視為未成立。
          *
          * @property tableState 已記錄流局的權威桌況。
          * @property setAsideTile 這次要移出手牌的牌。
@@ -62,7 +62,7 @@ internal object TileSetAsideResolver {
         ) : Resolution
 
         /**
-         * 規則拒絕補牌或回傳無法套用的結果；權威桌況不變。
+         * 規則拒絕補牌或回傳無法套用的結果。權威桌況不變。
          *
          * @property reasonId 完整 namespaced 原因 ID。
          * @property setAsideTile 這次要移出手牌的牌。
@@ -82,7 +82,7 @@ internal object TileSetAsideResolver {
      * @param setAsideTile 規則指定要移出的牌。
      * @param componentRegistry 正式組件定義與純效果來源。
      * @param module 對局採用的規則模組。
-     * @param pendingFollowUpDraws 摸牌後自動處理還沒詢問過規則的牌與來源；開啟搶和視窗時保存在視窗中，放過後繼續詢問。
+     * @param pendingFollowUpDraws 摸牌後自動處理還沒詢問過規則的牌與來源。開啟搶和視窗時保存在視窗中，放過後繼續詢問。
      * @return 這次動作的去向。
      */
     fun resolve(

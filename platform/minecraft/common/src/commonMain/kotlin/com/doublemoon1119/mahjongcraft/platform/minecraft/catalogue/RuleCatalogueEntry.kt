@@ -2,17 +2,17 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 
 /**
- * 單一規則說明；價值與限制以翻譯標籤表示，不假設固定計分單位。
+ * 單一規則說明。價值與限制以翻譯標籤表示，不假設固定計分單位。
  *
  * @property id namespaced 條目識別碼。
  * @property categoryId 主要分類識別碼。
  * @property nameTranslationKey 名稱翻譯鍵。
  * @property descriptionTranslationKey 完整說明翻譯鍵。
  * @property labels 價值、限制或情境標籤。
- * @property unavailableReasonTranslationKey 依實際設定不適用時的原因；null 表示適用，或是沒有實際設定的一般說明。
+ * @property unavailableReasonTranslationKey 依實際設定不適用時的原因。null 表示適用，或是沒有實際設定的一般說明。
  * @property examples 可選的完整手牌或局部示意，不要求存在牌面資產。
- * @property additionalCategoryIds 條目也列在其中的其他分類，例如日麻古役同時屬於翻數分類與古役分類；不含主要分類，不重複。
- * @property adjustableSettingNameKeys 會改變這條說明的房間設定欄位名稱翻譯鍵，依顯示順序排列；沒有時為空集合。
+ * @property additionalCategoryIds 條目也列在其中的其他分類，例如日麻古役同時屬於翻數分類與古役分類。不含主要分類，不重複。
+ * @property adjustableSettingNameKeys 會改變這條說明的房間設定欄位名稱翻譯鍵，依顯示順序排列。沒有時為空集合。
  */
 data class RuleCatalogueEntry(
     val id: String,

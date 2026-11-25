@@ -14,6 +14,6 @@ enum class SeatItemPlacementResult {
     /** 放置成功且角色已入座。 */
     SEATED,
 
-    /** 放置已成功，但角色未能入座；保留放置結果。 */
+    /** 放置已成功，但角色未能入座。保留放置結果。 */
     PLACED_UNSEATED,
 }

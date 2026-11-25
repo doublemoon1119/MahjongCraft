@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroupRole
 
-/** 目錄文字的寬度測量與換行；畫面與測試各自提供實作。 */
+/** 目錄文字的寬度測量與換行。畫面與測試各自提供實作。 */
 internal interface RuleCatalogueTextMetrics {
     /**
      * 測量單行文字寬度。
@@ -41,15 +41,15 @@ internal interface RuleCatalogueTextMetrics {
 /**
  * 範例牌面要使用的圖案。
  *
- * @property assetKey 實際繪製的牌面素材鍵；缺少圖案時為未知牌面。
- * @property missingName 缺少圖案時用於提示的牌種名稱；圖案存在時為 null。
+ * @property assetKey 實際繪製的牌面素材鍵。缺少圖案時為未知牌面。
+ * @property missingName 缺少圖案時用於提示的牌種名稱。圖案存在時為 null。
  */
 internal data class CatalogueTileArt(
     val assetKey: String,
     val missingName: String? = null,
 )
 
-/** 依牌種找出範例牌面圖案；畫面與測試各自提供實作。 */
+/** 依牌種找出範例牌面圖案。畫面與測試各自提供實作。 */
 internal fun interface RuleCatalogueTileArt {
     /**
      * 解析牌面圖案。
@@ -59,7 +59,7 @@ internal fun interface RuleCatalogueTileArt {
      */
     fun resolve(tile: TileFaceView): CatalogueTileArt
 
-    /** 丟棄已解析的結果，下次 [resolve] 重新查詢；沒有快取的來源不需要處理。 */
+    /** 丟棄已解析的結果，下次 [resolve] 重新查詢。沒有快取的來源不需要處理。 */
     fun clearCache() = Unit
 }
 
@@ -71,7 +71,7 @@ internal fun interface RuleCatalogueTileArt {
  * @property y 上界。
  * @property width 文字實際寬度，繪製與命中測試共用。
  * @property color 文字顏色。
- * @property tooltip 指向這一行時顯示的提示；沒有提示時為空集合。
+ * @property tooltip 指向這一行時顯示的提示。沒有提示時為空集合。
  */
 internal data class CatalogueCardLine(
     val text: String,
@@ -87,7 +87,7 @@ internal data class CatalogueCardLine(
  *
  * @property placement 牌面位置。
  * @property assetKey 實際繪製的牌面素材鍵。
- * @property tooltip 缺少圖案時的提示；圖案存在時為空集合。
+ * @property tooltip 缺少圖案時的提示。圖案存在時為空集合。
  */
 internal data class CatalogueCardTile(
     val placement: RuleCatalogueTilePlacement,
@@ -112,9 +112,9 @@ internal data class CatalogueCard(
  * 把目錄條目排成 card：名稱、價值與限制標籤、說明、無法使用的原因，最後是各個範例的標題、情境說明與牌組。
  * 標籤有說明時，游標指到該標籤會顯示說明。
  *
- * 只處理文字與版面，不做任何規則判定；缺少翻譯時顯示翻譯鍵並附提示，缺少牌面圖案時使用未知牌面並附提示。
+ * 只處理文字與版面，不做任何規則判定。缺少翻譯時顯示翻譯鍵並附提示，缺少牌面圖案時使用未知牌面並附提示。
  *
- * @property translate 取得當前語言的翻譯；缺少翻譯時回傳 null。
+ * @property translate 取得當前語言的翻譯。缺少翻譯時回傳 null。
  * @property metrics 文字寬度測量與換行。
  * @property tileArt 範例牌面圖案來源。
  */
@@ -131,7 +131,7 @@ internal class RuleCataloguePresenter(
      */
     fun translation(key: String): String? = translate(key)?.takeIf(String::isNotBlank)
 
-    /** 丟棄牌面圖案的快取；資源重新載入後的畫面重新初始化時呼叫。 */
+    /** 丟棄牌面圖案的快取。資源重新載入後的畫面重新初始化時呼叫。 */
     fun clearResourceCaches() = tileArt.clearCache()
 
     /**
@@ -147,7 +147,7 @@ internal class RuleCataloguePresenter(
      *
      * @param key 含 `%s` 的翻譯鍵。
      * @param argument 參數。
-     * @return 代入參數後的文字；缺少翻譯時為翻譯鍵與參數。
+     * @return 代入參數後的文字。缺少翻譯時為翻譯鍵與參數。
      */
     fun format(key: String, argument: String): String = translation(key)?.replace("%s", argument) ?: "$key: $argument"
 
@@ -202,7 +202,7 @@ internal class RuleCataloguePresenter(
         )
 
         /**
-         * 由左往右排列標籤並以分隔符號隔開，放不下時整個標籤換到下一行；每個標籤各自帶提示。
+         * 由左往右排列標籤並以分隔符號隔開，放不下時整個標籤換到下一行。每個標籤各自帶提示。
          *
          * @param labels 條目標籤。
          */
@@ -318,7 +318,7 @@ internal class RuleCataloguePresenter(
      * @param key 含兩個 `%s` 的翻譯鍵。
      * @param first 第一個參數。
      * @param second 第二個參數。
-     * @return 依序代入參數後的文字；缺少翻譯時為翻譯鍵與參數。
+     * @return 依序代入參數後的文字。缺少翻譯時為翻譯鍵與參數。
      */
     private fun formatTwo(key: String, first: String, second: String): String = translation(key)?.replaceFirst("%s", first)?.replaceFirst("%s", second) ?: "$key: $first, $second"
 
@@ -326,7 +326,7 @@ internal class RuleCataloguePresenter(
      * 缺少翻譯的提示，每個缺少的翻譯鍵一行。
      *
      * @param keys 要檢查的翻譯鍵。
-     * @return 提示的每一行；全部都有翻譯時為空集合。
+     * @return 提示的每一行。全部都有翻譯時為空集合。
      */
     private fun missingTranslations(keys: List<String>): List<String> = keys.filter { translation(it) == null }.map { format(MinecraftRuleCatalogueScreenKeys.MISSING_TRANSLATION, it) }
 
@@ -334,7 +334,7 @@ internal class RuleCataloguePresenter(
      * 缺少翻譯的提示，每個缺少的翻譯鍵一行。
      *
      * @param keys 要檢查的翻譯鍵。
-     * @return 提示的每一行；全部都有翻譯時為空集合。
+     * @return 提示的每一行。全部都有翻譯時為空集合。
      */
     private fun missingTranslations(vararg keys: String): List<String> = missingTranslations(keys = keys.toList())
 
@@ -342,7 +342,7 @@ internal class RuleCataloguePresenter(
      * 標籤的提示：標籤說明，以及缺少翻譯時的提示。
      *
      * @param label 條目標籤。
-     * @return 提示的每一行；沒有提示時為空集合。
+     * @return 提示的每一行。沒有提示時為空集合。
      */
     private fun labelTooltip(label: RuleCatalogueLabel): List<String> = buildList {
         if (translation(label.nameTranslationKey) == null) add(format(MinecraftRuleCatalogueScreenKeys.MISSING_TRANSLATION, label.nameTranslationKey))
@@ -421,7 +421,7 @@ internal fun roleKey(role: RuleCatalogueTileGroupRole): String = when (role) {
  * 取得瀏覽狀態的說明文字鍵。
  *
  * @param status 瀏覽狀態。
- * @return 說明文字鍵；有內容可顯示時為 null。
+ * @return 說明文字鍵。有內容可顯示時為 null。
  */
 internal fun catalogueStatusKey(status: RuleCatalogueBrowseStatus): String? = when (status) {
     RuleCatalogueBrowseStatus.NO_RULES -> MinecraftRuleCatalogueScreenKeys.STATUS_NO_RULES

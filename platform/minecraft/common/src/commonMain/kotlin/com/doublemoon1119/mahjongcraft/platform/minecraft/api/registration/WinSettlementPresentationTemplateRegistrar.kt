@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettleme
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementRuleTemplateBindingDefinition
 
-/** 擴充登記和牌結算版型時取得的登記介面；查詢與凍結由 MahjongCraft 進行。 */
+/** 擴充登記和牌結算版型時取得的登記介面。查詢與凍結由 MahjongCraft 進行。 */
 interface WinSettlementPresentationTemplateRegistrar {
     /** registry 是否已凍結。 */
     val isFrozen: Boolean
@@ -14,14 +14,14 @@ interface WinSettlementPresentationTemplateRegistrar {
     val registrationKeys: Set<String>
 
     /**
-     * 登記胡牌結算模板；重複 key 會失敗。
+     * 登記胡牌結算模板。重複 key 會失敗。
      *
-     * @param template 要登記的模板；registry 會保存其獨立快照。
+     * @param template 要登記的模板。registry 會保存其獨立快照。
      */
     fun register(template: WinSettlementPresentationTemplate)
 
     /**
-     * 登記結算欄位 provider；重複欄位 ID 會失敗。
+     * 登記結算欄位 provider。重複欄位 ID 會失敗。
      *
      * @param definition 欄位 provider 的完整登記描述。
      */

@@ -51,7 +51,7 @@ class GuideScreenController internal constructor(
     private var lastTab = GuideTab.SETUP
 
     /**
-     * 註冊按鍵與 client tick；只能在 client entrypoint 呼叫一次。
+     * 註冊按鍵與 client tick。只能在 client entrypoint 呼叫一次。
      *
      * @param events 登記用戶端事件用的事件來源。
      */
@@ -69,7 +69,7 @@ class GuideScreenController internal constructor(
         events.onClientTickEnd(::tick)
     }
 
-    /** 從指令開啟畫面；延到下一個 client tick，避免指令執行後關閉聊天畫面時一併關掉此畫面。 */
+    /** 從指令開啟畫面。延到下一個 client tick，避免指令執行後關閉聊天畫面時一併關掉此畫面。 */
     fun openFromCommand() {
         openRequested = true
     }
@@ -84,7 +84,7 @@ class GuideScreenController internal constructor(
     }
 
     /**
-     * 開啟指令要求的畫面，並消耗按鍵事件；其他畫面開啟時按鍵不搶占使用者輸入。
+     * 開啟指令要求的畫面，並消耗按鍵事件。其他畫面開啟時按鍵不搶占使用者輸入。
      *
      * @param client 本次 tick 的客戶端。
      */
@@ -102,7 +102,7 @@ class GuideScreenController internal constructor(
      * 開啟畫面。
      *
      * @param client 客戶端。
-     * @param returnScreen 返回時回到的畫面；關回遊戲時為 null。
+     * @param returnScreen 返回時回到的畫面。關回遊戲時為 null。
      */
     private fun open(client: Minecraft, returnScreen: Screen?) {
         client.setScreen(

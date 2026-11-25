@@ -276,7 +276,7 @@ class OrphanedTableCleanupServiceTest {
         assertTrue(fixture.removalNotifier.completed.isEmpty())
     }
 
-    /** 同一個位置只能完成一次通知；第二次清理會因位置已消失而失效。 */
+    /** 同一個位置只能完成一次通知。第二次清理會因位置已消失而失效。 */
     @Test
     fun `test duplicate cleanup notifies only once`() = runTest {
         val fixture = Fixture(OrphanedTablePolicy.REMOVE_ALL)

@@ -17,7 +17,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyPay
 import kotlin.uuid.Uuid
 
 /**
- * 單一桌子的 read-side 快照集合；[ClientMahjongStateStore] 依桌子 UUID 各自保存一份，互不覆蓋。
+ * 單一桌子的 read-side 快照集合。[ClientMahjongStateStore] 依桌子 UUID 各自保存一份，互不覆蓋。
  *
  * @property tableOccupancy 該桌目前的大廳占用狀態。
  * @property roomSnapshot 等待室快照。
@@ -39,8 +39,8 @@ private data class ClientTableState(
     /**
      * 更新 [gameSnapshot] 時一併更新 [gameAiPlayerIds] 並重建 [managedTileSnapshotsByTileId]，三者不會不同步。
      *
-     * @param snapshot 新的對局快照；`null` 代表清除對局資料。
-     * @param aiPlayerIds 由 AI 操控的玩家 UUID；清除快照時會一併清空。
+     * @param snapshot 新的對局快照。`null` 代表清除對局資料。
+     * @param aiPlayerIds 由 AI 操控的玩家 UUID。清除快照時會一併清空。
      * @return 更新後的桌子狀態。
      */
     fun withGameSnapshot(snapshot: TableStateSnapshot?, aiPlayerIds: Set<Uuid> = emptySet()): ClientTableState = copy(
@@ -55,7 +55,7 @@ private data class ClientTableState(
          * 彙整已按讀取者裁切的各區域牌張，依 UUID 建立索引。
          * 牌河、副露及移出牌區直接使用收到的快照，不重新授權或強制公開牌面。
          *
-         * @param snapshot 對局快照；`null` 時回傳空索引。
+         * @param snapshot 對局快照。`null` 時回傳空索引。
          * @return 依牌 entity UUID 索引的管理中牌快照。
          */
         fun buildManagedTileIndex(snapshot: TableStateSnapshot?): Map<Uuid, IdentifiedTileSnapshot> {
@@ -128,7 +128,7 @@ class ClientMahjongStateStore(
     fun gameTableIds(): Set<Uuid> = tables.filterValues { it.gameSnapshot != null }.keys.toSet()
 
     /**
-     * 取得指定桌子目前對局中由 AI 操控的玩家；沒有對局快照時為空集合。
+     * 取得指定桌子目前對局中由 AI 操控的玩家。沒有對局快照時為空集合。
      *
      * @param tableId 桌子 UUID。
      */
@@ -142,7 +142,7 @@ class ClientMahjongStateStore(
     fun handReadinessAnalysis(tableId: Uuid): HandReadinessAnalysisDto? = tables[tableId]?.handReadinessAnalysis
 
     /**
-     * 依管理中麻將牌 entity UUID 查詢指定桌子目前快照中的可見性與牌面；查不到代表這張牌不在目前對局範圍內。
+     * 依管理中麻將牌 entity UUID 查詢指定桌子目前快照中的可見性與牌面。查不到代表這張牌不在目前對局範圍內。
      *
      * @param tableId 桌子 UUID。
      * @param tileEntityId 麻將牌 entity UUID。
@@ -150,7 +150,7 @@ class ClientMahjongStateStore(
     fun findManagedTileSnapshot(tableId: Uuid, tileEntityId: Uuid): IdentifiedTileSnapshot? = tables[tableId]?.managedTileSnapshotsByTileId?.get(tileEntityId)
 
     /**
-     * 找出本地玩家目前真正身處（不是被動旁觀）的桌子 ID；等待室階段看 [RoomSnapshot.isInRoom]，
+     * 找出本地玩家目前真正身處（不是被動旁觀）的桌子 ID。等待室階段看 [RoomSnapshot.isInRoom]，
      * 對局中看玩家是否還在座位名單裡，兩者最多同時只有一個成立。找不到代表玩家目前不在任何房間內。
      *
      * @param localPlayerId 本地玩家 UUID。
@@ -160,7 +160,7 @@ class ClientMahjongStateStore(
     }?.key
 
     /**
-     * 接收帶事件的房間更新並保存其最新快照；同一張桌子不會同時是房間又是對局，一併清掉舊的遊戲快照。
+     * 接收帶事件的房間更新並保存其最新快照。同一張桌子不會同時是房間又是對局，一併清掉舊的遊戲快照。
      *
      * 解散是唯一看事件種類的情況：房間已經不存在，payload 附帶的是解散前的快照，保存它會讓畫面退回
      * 解散前的內容，因此改為清除（[applySnapshotCleared]）。
@@ -185,7 +185,7 @@ class ClientMahjongStateStore(
     }
 
     /**
-     * 保存 RoomScreen 的桌級狀態；等待房間 payload 同時更新其內嵌快照。
+     * 保存 RoomScreen 的桌級狀態。等待房間 payload 同時更新其內嵌快照。
      *
      * @param payload 桌級占用狀態與可選的房間快照。
      */
@@ -223,7 +223,7 @@ class ClientMahjongStateStore(
     }
 
     /**
-     * 保存沒有伴隨房間事件的主動同步快照；同一張桌子不會同時是房間又是對局，一併清掉舊的遊戲快照。
+     * 保存沒有伴隨房間事件的主動同步快照。同一張桌子不會同時是房間又是對局，一併清掉舊的遊戲快照。
      *
      * @param roomId 房間 UUID，須與 [snapshot] 識別碼相同。
      * @param snapshot 最新房間快照。
@@ -239,7 +239,7 @@ class ClientMahjongStateStore(
     }
 
     /**
-     * 清除一張桌子的房間與對局快照；房間與對局都不存在，已保存的大廳狀態改為空桌。
+     * 清除一張桌子的房間與對局快照。房間與對局都不存在，已保存的大廳狀態改為空桌。
      *
      * @param tableId 要清除狀態的桌子 UUID。
      */
@@ -263,7 +263,7 @@ class ClientMahjongStateStore(
     /**
      * 移除一張已不存在的麻將桌及其所有桌級 read-side 狀態。
      *
-     * 與 [applySnapshotCleared] 不同，這裡不保留空桌 occupancy；同一桌子識別碼日後重新出現時，
+     * 與 [applySnapshotCleared] 不同，這裡不保留空桌 occupancy。同一桌子識別碼日後重新出現時，
      * 必須由新的占用或快照 payload 重新建立完整狀態。
      *
      * @param tableId 要移除的桌子 UUID。
@@ -273,13 +273,13 @@ class ClientMahjongStateStore(
     }
 
     /**
-     * 保存沒有伴隨遊戲動作的主動同步快照；[aiPlayerIds] 為該對局由 AI 操控的玩家。
+     * 保存沒有伴隨遊戲動作的主動同步快照。[aiPlayerIds] 為該對局由 AI 操控的玩家。
      *
      * @param gameId 對局／桌子 UUID。
      * @param snapshot 對局狀態快照，識別碼須與 [gameId] 相同。
      * @param aiPlayerIds 由 AI 操控的玩家 UUID。
-     * @param ruleDecision 規則選擇快照；沒有時為 `null`。
-     * @param handReadinessAnalysis 目前手牌分析；沒有時為 `null`。
+     * @param ruleDecision 規則選擇快照。沒有時為 `null`。
+     * @param handReadinessAnalysis 目前手牌分析。沒有時為 `null`。
      */
     fun applyGameSnapshot(
         gameId: Uuid,

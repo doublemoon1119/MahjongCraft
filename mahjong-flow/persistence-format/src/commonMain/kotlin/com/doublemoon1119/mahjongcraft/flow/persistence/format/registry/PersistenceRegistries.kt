@@ -11,7 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 
 /**
- * 權威狀態 persistence codec 使用的所有可擴充 DTO registry；擴充只透過 [PersistenceRegistrars] 登記，編碼、解碼與凍結由 MahjongCraft 使用。
+ * 權威狀態 persistence codec 使用的所有可擴充 DTO registry。擴充只透過 [PersistenceRegistrars] 登記，編碼、解碼與凍結由 MahjongCraft 使用。
  *
  * @property ruleConfigs 規則配置 registry。
  * @property discardPiles 牌河 registry。
@@ -38,7 +38,7 @@ data class PersistenceRegistries(
             addAll(extensionGameActions.replayCompactTypeKeys)
         }
 
-    /** 凍結所有 registry；凍結後不得新增 persistence mapper。 */
+    /** 凍結所有 registry。凍結後不得新增 persistence mapper。 */
     fun freeze() {
         ruleConfigs.freeze()
         discardPiles.freeze()
@@ -49,7 +49,7 @@ data class PersistenceRegistries(
     }
 }
 
-/** 建立尚未登記任何 mapper 的 persistence registries；各規則的 mapper 由該規則的 extension 登記。 */
+/** 建立尚未登記任何 mapper 的 persistence registries。各規則的 mapper 由該規則的 extension 登記。 */
 fun emptyPersistenceRegistries(): PersistenceRegistries {
     lateinit var registries: PersistenceRegistries
     val converter = { registries }

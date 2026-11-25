@@ -6,7 +6,7 @@ import kotlin.test.assertTrue
 
 /** 驗證反覆讀取失敗時只對不同的失敗值記錄。 */
 class DistinctFailureGateTest {
-    /** 同一個失敗值只記錄一次；換成不同的值會再記錄。 */
+    /** 同一個失敗值只記錄一次。換成不同的值會再記錄。 */
     @Test
     fun `same failure is reported once`() {
         val gate = DistinctFailureGate<String>()

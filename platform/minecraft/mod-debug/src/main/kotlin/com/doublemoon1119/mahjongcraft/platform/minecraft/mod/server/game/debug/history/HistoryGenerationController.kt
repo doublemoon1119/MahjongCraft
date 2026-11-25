@@ -116,7 +116,7 @@ class HistoryGenerationController(
      * @param count 要求場數。
      * @param expectedSessionId 要求發出時所屬的存檔 session。
      * @param create 建立一場隔離對局。
-     * @param verify 整場打完、封存之前的額外檢查；失敗時這批以驗證錯誤停止。
+     * @param verify 整場打完、封存之前的額外檢查。失敗時這批以驗證錯誤停止。
      * @return 開始或拒絕的安全原因。
      */
     private suspend fun startBatch(
@@ -321,7 +321,7 @@ class HistoryGenerationController(
     }
 
     /**
-     * 重試忙碌要求，其他管理失敗明確停止；不自行重新開庫。
+     * 重試忙碌要求，其他管理失敗明確停止。不自行重新開庫。
      *
      * @param session 固定存檔 session。
      * @param operation 唯一 writer 的型別化工作。

@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.judgment
 import kotlin.uuid.Uuid
 
 /**
- * 描述某個合法動作在成立前，還需要玩家從立牌中額外選出哪些牌；候選集合由規則模組依動作語意動態算出
+ * 描述某個合法動作在成立前，還需要玩家從立牌中額外選出哪些牌。候選集合由規則模組依動作語意動態算出
  * （例如「打了這張牌之後是否仍然聽牌」）。
  *
  * @property eligibleTileIds 允許被選中的立牌識別碼集合。

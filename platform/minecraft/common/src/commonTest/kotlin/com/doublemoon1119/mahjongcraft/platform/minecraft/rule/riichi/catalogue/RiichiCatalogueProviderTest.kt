@@ -43,7 +43,7 @@ import kotlin.test.assertTrue
 
 /** 驗證日麻目錄覆蓋、配置邊界、範例牌面與既有計算器一致。 */
 class RiichiCatalogueProviderTest {
-    /** 「基本玩法」排在第一個分類；四人日麻 12 條，三人日麻多出拔北共 13 條。 */
+    /** 「基本玩法」排在第一個分類。四人日麻 12 條，三人日麻多出拔北共 13 條。 */
     @Test
     fun `basics come first and differ between four and three players`() {
         val provider = RiichiCatalogueProvider()
@@ -172,7 +172,7 @@ class RiichiCatalogueProviderTest {
         assertEquals(RiichiCatalogueKeys.DRAGON_NAME, default.entries.single { it.id == RiichiCatalogueYaku.Dragon.id }.nameTranslationKey)
     }
 
-    /** 古役條目都帶古役標籤並列在古役分類；未啟用古役時標示未啟用，啟用後不再標示，一般役種不受影響。 */
+    /** 古役條目都帶古役標籤並列在古役分類。未啟用古役時標示未啟用，啟用後不再標示，一般役種不受影響。 */
     @Test
     fun `local yaku entries show whether local yaku are enabled`() {
         val provider = RiichiCatalogueProvider()
@@ -216,7 +216,7 @@ class RiichiCatalogueProviderTest {
         }
     }
 
-    /** 完整範例在明確情境下必須成立目標役，不以其他役或役滿冒充成功；四人與三人日麻的範例都要成立。 */
+    /** 完整範例在明確情境下必須成立目標役，不以其他役或役滿冒充成功。四人與三人日麻的範例都要成立。 */
     @Test
     fun `every complete example produces its target yaku`() {
         listOf(false, true).forEach { usesThreePlayerTiles ->

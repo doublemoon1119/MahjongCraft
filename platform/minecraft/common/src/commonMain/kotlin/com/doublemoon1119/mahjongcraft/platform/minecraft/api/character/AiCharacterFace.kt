@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.api.character
 
-/** 可保存的二維頭像來源；不含玩家皮膚查詢或繪製 callback。 */
+/** 可保存的二維頭像來源。不含玩家皮膚查詢或繪製 callback。 */
 sealed interface AiCharacterFace {
     /**
      * 使用已登記的牌面圖片作為頭像。
@@ -43,7 +43,7 @@ sealed interface AiCharacterFace {
         /** 資源與取圖區域完全相同時相等。 */
         override fun equals(other: Any?): Boolean = other is TextureRegion && resourceId == other.resourceId && u0 == other.u0 && v0 == other.v0 && u1 == other.u1 && v1 == other.v1
 
-        /** 與相等規則一致的雜湊值；正負零視為同一邊界。 */
+        /** 與相等規則一致的雜湊值。正負零視為同一邊界。 */
         override fun hashCode(): Int = listOf(resourceId, u0 + 0f, v0 + 0f, u1 + 0f, v1 + 0f).hashCode()
     }
 }

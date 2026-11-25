@@ -25,7 +25,7 @@ class WorldParticipantPresenceMonitor(
     private val abortHandler: GameAbortHandler,
 ) {
     /**
-     * 依序檢查各場對局；找到第一名不在場的 AI 玩家時，中止該場對局。
+     * 依序檢查各場對局。找到第一名不在場的 AI 玩家時，中止該場對局。
      * 繼續對局政策、已結束的對局與未載入的桌子會略過。
      *
      * @param games 本輪從伺服器讀取的對局。

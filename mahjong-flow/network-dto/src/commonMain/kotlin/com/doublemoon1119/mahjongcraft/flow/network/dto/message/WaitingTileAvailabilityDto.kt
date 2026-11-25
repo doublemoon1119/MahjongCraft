@@ -9,12 +9,12 @@ import kotlinx.serialization.Serializable
  *
  * [winAvailability] 是規則模組自訂的命名字串，比照 [DiscardReadinessAnalysisDto.statusIndicatorId] 的
  * 慣例：[WaitingTileAvailabilityIds.WIN_AVAILABLE] 代表「沒有任何和牌資格上的特殊限制」，這是所有規則模組共通的中立
- * 值；有更細分和牌可用性概念的規則模組（例如日麻的自摸限定、無役、未達最低翻符）另外提供各自的
+ * 值。有更細分和牌可用性概念的規則模組（例如日麻的自摸限定、無役、未達最低翻符）另外提供各自的
  * 命名字串，client 端依 namespaced ID 映射顯示文字，查不到時安全 fallback 顯示原始字串（同
  * [DiscardReadinessAnalysisDto.statusIndicatorId] 與局況／公開玩家指示的
  * 既有慣例）。
  *
- * @property tile 等待的牌種；顯示用的牌面由平台依牌種決定。
+ * @property tile 等待的牌種。顯示用的牌面由平台依牌種決定。
  * @property remainingCount 依玩家可見資訊推算的剩餘張數。
  * @property winAvailability 這張牌的和牌資格。
  */

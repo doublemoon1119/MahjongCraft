@@ -81,7 +81,7 @@ class EntityMahjongRoundInfoPresenter(
      * 由版本無關 dimension ID 取得目前 server session 的世界。
      *
      * @param location 桌子位置。
-     * @return 對應的已載入伺服器世界；無法解析時為 null。
+     * @return 對應的已載入伺服器世界。無法解析時為 null。
      */
     private fun resolveWorld(location: TableLocation): ServerLevel? {
         val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null
@@ -95,7 +95,7 @@ class EntityMahjongRoundInfoPresenter(
      * @param world 要搜尋的伺服器世界。
      * @param tableId 桌子 UUID。
      * @param controllerPos controller 方塊位置。
-     * @return 第一個符合桌子 UUID 的局況顯示 entity；不存在時為 null。
+     * @return 第一個符合桌子 UUID 的局況顯示 entity。不存在時為 null。
      */
     private fun findManagedDisplay(
         world: ServerLevel,

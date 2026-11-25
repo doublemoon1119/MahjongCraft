@@ -5,7 +5,7 @@ enum class OrphanedTablePolicy {
     /** 保留 Room／Game 與位置索引，只記錄可診斷 warning。 */
     KEEP_AND_WARN,
 
-    /** 只移除等待中的 Room；進行中 Game 仍保留。 */
+    /** 只移除等待中的 Room。進行中 Game 仍保留。 */
     REMOVE_WAITING_ROOM,
 
     /** 移除缺失桌子對應的 Room 或 Game。 */

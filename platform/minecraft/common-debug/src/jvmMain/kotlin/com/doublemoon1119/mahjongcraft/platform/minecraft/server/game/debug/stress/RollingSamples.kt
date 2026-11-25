@@ -19,7 +19,7 @@ class RollingSamples(private val capacity: Int) {
     val size: Int get() = values.size
 
     /**
-     * 加入一筆數值；超過容量時捨棄最舊的一筆。
+     * 加入一筆數值。超過容量時捨棄最舊的一筆。
      *
      * @param value 新樣本數值。
      */
@@ -28,17 +28,17 @@ class RollingSamples(private val capacity: Int) {
         values.addLast(value)
     }
 
-    /** 平均值；沒有數值時為 0。 */
+    /** 平均值。沒有數值時為 0。 */
     fun average(): Double = if (values.isEmpty()) 0.0 else values.average()
 
-    /** 最大值；沒有數值時為 0。 */
+    /** 最大值。沒有數值時為 0。 */
     fun max(): Double = values.maxOrNull() ?: 0.0
 
     /**
      * 依向上取整的分位排名取得目前保留樣本的分位數。
      *
-     * @param fraction 分位比例，須介於 0 與 1；例如 0.95 代表 P95。
-     * @return 排序後對應排名的樣本；沒有樣本時為零。
+     * @param fraction 分位比例，須介於 0 與 1。例如 0.95 代表 P95。
+     * @return 排序後對應排名的樣本。沒有樣本時為零。
      * @throws IllegalArgumentException 比例不在有效範圍時拋出。
      */
     fun percentile(fraction: Double): Double {

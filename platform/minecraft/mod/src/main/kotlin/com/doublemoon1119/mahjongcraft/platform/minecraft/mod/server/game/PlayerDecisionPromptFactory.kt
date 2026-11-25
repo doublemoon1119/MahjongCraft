@@ -46,12 +46,12 @@ class PlayerDecisionPromptFactory(
     private val visibilityPolicy: GameVisibilityPolicy,
 ) {
     /**
-     * 建立目前決策的私人 prompt；遊戲或玩家已失效時回傳 null。
+     * 建立目前決策的私人 prompt。遊戲或玩家已失效時回傳 null。
      *
      * @param gameId 對局識別碼。
      * @param playerId prompt 接收玩家識別碼。
      * @param phase 目前決策階段。
-     * @return 只包含該玩家可見資料的 prompt；狀態已失效時為 null。
+     * @return 只包含該玩家可見資料的 prompt。狀態已失效時為 null。
      */
     suspend fun create(gameId: Uuid, playerId: Uuid, phase: PlayerDecisionPhase): PlayerDecisionPromptDto? {
         val game = gameRepository.getGame(gameId) ?: return null
@@ -159,7 +159,7 @@ class PlayerDecisionPromptFactory(
  * @param phase 決策階段。
  * @param ruleDecision 目前受控的規則選擇輸入 prompt。
  * @param reference 用來區分目前決策的參考狀態。
- * @param actionIdentity 目前合法動作候選的穩定識別片段；非自己回合時為 null。
+ * @param actionIdentity 目前合法動作候選的穩定識別片段。非自己回合時為 null。
  * @return 由上述狀態組成的穩定識別字串。
  */
 internal fun buildPlayerDecisionKey(
@@ -189,7 +189,7 @@ private fun decisionIdentityFingerprint(identity: String): String = MessageDiges
  * 將目前合法動作候選轉成不依物件實例或列表順序變化的識別片段。
  *
  * @receiver 目前可提交的完整候選集合。
- * @return 代表候選動作及其選牌限制的固定字串；候選內容相同時結果相同。
+ * @return 代表候選動作及其選牌限制的固定字串。候選內容相同時結果相同。
  */
 internal fun List<GameActionCandidate>.decisionIdentity(): String = asSequence()
     .map { candidate ->
@@ -260,18 +260,18 @@ internal fun RuleDecisionInputSpec.toPrompt(
 }
 
 /**
- * 建立動作完成後的牌組預覽。每張牌都依動作帶的牌 ID 從 [faces] 查出：來源是自己的手牌（含剛摸到的牌）與正在
- * 反應的牌（他家的捨牌，或等待搶和的宣告牌），牌面已依接收玩家的讀取權裁切；移出手牌的動作顯示規則回報要移出的
- * [setAsideTileId]，規則沒有回報時不顯示牌。不依觸發這次決策的牌去推測。
+ * 建立動作完成後的牌組預覽。
  *
- * 卡片預覽一律直立顯示，不套用鳴牌後最終桌面朝向——那是給實際擺上桌的牌用的空間慣例，套在決策卡片上
- * 反而讓玩家要多一拍才能解讀。只有吃才會標出 [ActionTilePreview.claimedTileIndex]（三張牌本身花色/
- * 數值不同，框出來才有辨識意義）；碰跟槓的牌彼此看起來完全一樣，框哪一張都沒有實質資訊，不標記。
+ * - 每張牌都依動作帶的牌 ID 從 [faces] 查出。來源是自己的手牌（含剛摸到的牌），以及正在反應的牌（他家的捨牌，或等待搶和的宣告牌）。
+ *   牌面已依接收玩家的讀取權裁切。
+ * - 移出手牌的動作顯示規則回報要移出的 [setAsideTileId]，規則沒有回報時不顯示牌。不依觸發這次決策的牌去推測。
+ * - 卡片預覽一律直立顯示，不套用鳴牌後的桌面朝向，玩家才能一眼看懂。
+ * - 只有吃標出 [ActionTilePreview.claimedTileIndex]，因為三張牌數值不同，標出來才有意義。碰與槓的牌都一樣，不標記。
  *
  * @param hand 玩家目前的手牌。
  * @param faces 自己的手牌與正在回應的牌經讀取權裁切後的牌面。
  * @param tileOrder 該規則的牌序。
- * @param setAsideTileId 規則指定要移出手牌的牌張；無指定時為 null。
+ * @param setAsideTileId 規則指定要移出手牌的牌張。無指定時為 null。
  * @return 動作完成後的牌面預覽及必要時標示的鳴取牌索引。
  */
 internal fun GameAction.previewTiles(
@@ -297,7 +297,7 @@ internal fun GameAction.previewTiles(
     }
 }
 
-/** 正在反應的那張牌：等待搶和的宣告牌，或等待反應的他家捨牌；不在反應階段時為 null。 */
+/** 正在反應的那張牌：等待搶和的宣告牌，或等待反應的他家捨牌。不在反應階段時為 null。 */
 private fun TableState.reactedTile(): IdentifiedTile? = pendingRobbingReaction?.robbedTile
     ?: pendingReaction?.let { pending ->
         players.firstNotNullOfOrNull { player -> player.discardPile.entries.firstOrNull { it.tile.id == pending.tileId }?.tile }
@@ -307,7 +307,7 @@ private fun TableState.reactedTile(): IdentifiedTile? = pendingRobbingReaction?.
  * 操作 HUD 一組牌面，[claimedTileIndex] 只有吃才會給值。
  *
  * @property tiles 預覽牌面與外觀。
- * @property claimedTileIndex 吃牌時鳴取牌在預覽中的索引；其他動作為 null。
+ * @property claimedTileIndex 吃牌時鳴取牌在預覽中的索引。其他動作為 null。
  */
 internal data class ActionTilePreview(
     val tiles: List<TileFaceView>,
@@ -317,11 +317,11 @@ internal data class ActionTilePreview(
 /**
  * 建立反應 HUD 的來源玩家、相對位置及動作語意。
  *
- * 相對位置沿用 [TableState.relativeDirectionOf]；觸發者是自己（[RelativeDirection.Self]）在反應情境不會
+ * 相對位置沿用 [TableState.relativeDirectionOf]。觸發者是自己（[RelativeDirection.Self]）在反應情境不會
  * 發生，視為沒有觸發者。
  *
  * @param playerId prompt 接收玩家的識別碼。
- * @return 反應觸發者及其相對位置；目前沒有他家反應時為 null。
+ * @return 反應觸發者及其相對位置。目前沒有他家反應時為 null。
  */
 private fun TableState.triggerContext(playerId: Uuid): TriggerContext? {
     val sourceId = pendingReaction?.discarderId ?: pendingRobbingReaction?.declarerId ?: return null

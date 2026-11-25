@@ -12,13 +12,13 @@ import java.time.format.DateTimeFormatter
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
-/** 歷史列表的安全文字格式化工具；未知值一律保留為未知，不補造資料。 */
+/** 歷史列表的安全文字格式化工具。未知值一律保留為未知，不補造資料。 */
 internal object HistoryScreenText {
     /**
-     * 將單場保存狀態轉為畫面提示；已保存狀態不額外佔用列表空間。
+     * 將單場保存狀態轉為畫面提示。已保存狀態不額外佔用列表空間。
      *
      * @param value 目前保存狀態。
-     * @return 應顯示的提示文字；無需提示時為 null。
+     * @return 應顯示的提示文字。無需提示時為 null。
      */
     fun archiveStatus(value: HistoryArchiveStatusView): Component? = when (value) {
         HistoryArchiveStatusView.Idle -> null
@@ -30,7 +30,7 @@ internal object HistoryScreenText {
     /**
      * 將對局起訖時間格式化為精確到秒的本地時間。
      *
-     * @param value Unix epoch 毫秒；null 表示未知。
+     * @param value Unix epoch 毫秒。null 表示未知。
      * @param zone 顯示使用的時區。
      * @return 格式化後的日期時間。
      */
@@ -39,9 +39,9 @@ internal object HistoryScreenText {
     } ?: "—"
 
     /**
-     * 格式化時刻，不含日期；用在日期已寫在別處的地方。
+     * 格式化時刻，不含日期。用在日期已寫在別處的地方。
      *
-     * @param value epoch milliseconds；未知時為 null。
+     * @param value epoch milliseconds。未知時為 null。
      * @param zone 顯示使用的時區。
      * @return 「時:分:秒」或未知佔位。
      */
@@ -50,7 +50,7 @@ internal object HistoryScreenText {
     } ?: "—"
 
     /**
-     * 格式化完整起訖時間的間隔；缺少任一端點或反向時間時保留未知。
+     * 格式化完整起訖時間的間隔。缺少任一端點或反向時間時保留未知。
      *
      * @param start 開始時間的 epoch milliseconds。
      * @param end 結束時間的 epoch milliseconds。
@@ -61,7 +61,7 @@ internal object HistoryScreenText {
     /**
      * 將時長格式化為分秒。
      *
-     * @param value 時長；負值、無限或 null 表示未知。
+     * @param value 時長。負值、無限或 null 表示未知。
      * @return 格式化後的分秒文字。
      */
     fun duration(value: Duration?): String = value?.takeIf { it.isFinite() && !it.isNegative() }?.let {
@@ -96,7 +96,7 @@ internal object HistoryScreenText {
      *
      * @param summary 對局摘要。
      * @param playerId 指定玩家識別碼。
-     * @return 名次與分數；找不到時各自為 null。
+     * @return 名次與分數。找不到時各自為 null。
      */
     fun ownResult(summary: HistoryMatchSummaryDto, playerId: String?): Pair<Int?, Int?> {
         val result = playerId?.let { id -> summary.results.firstOrNull { it.playerId == id } }

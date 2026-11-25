@@ -9,10 +9,9 @@ import kotlin.uuid.Uuid
 /**
  * Minecraft 玩家完成麻將操作後收到的一次性回饋語意。
  *
- * 此模型只描述發生的結果與呈現該結果所需的資料，不攜帶 translation key、重要程度或 chat、title、
- * HUD 等顯示位置。這些資訊會限制不同 Minecraft 版本能採用的呈現能力，因此由各版本 adapter 自行
- * 映射。例如 1.20.1 可以將 [GameAlreadyStarted] 顯示於 chat，未來版本則可針對同一回饋同時顯示新版
- * bar 並播放音效，而 Room／Game 呼叫端不需要改動：
+ * 此模型只描述發生的結果與呈現該結果所需的資料，不攜帶 translation key、重要程度或 chat、title、HUD 等顯示位置。
+ * 這些資訊會限制不同 Minecraft 版本能採用的呈現能力，因此由各版本 adapter 自行映射。
+ * 例如 1.20.1 可以將 [GameAlreadyStarted] 顯示於 chat，未來版本則可同時顯示新版 bar 並播放音效，Room／Game 呼叫端不需要改動：
  *
  * ```kotlin
  * feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameAlreadyStarted)
@@ -27,18 +26,19 @@ import kotlin.uuid.Uuid
  * }
  * ```
  *
- * 持續存在的 HUD 狀態應由 snapshot／client store 驅動；需要玩家回答的動作詢問應使用具備識別碼、
- * 合法動作與逾時資訊的 request／response 協議，兩者都不屬於此一次性回饋模型。
+ * 不屬於此模型的內容：
  *
- * 房間等待室 GUI（`RoomScreen`）與對局操作 HUD 都已完成，原本為了填補它們尚未存在而加上的自動
- * chat 通知（輪到自己、可執行動作、決策倒數）已全部移除。保留下來的回饋都是刻意的一次性訊息：
- *   - 指令明確要求的輸出，例如 [ShowHand]／[ShowGameConfig]。
- *   - 操作被拒絕的原因，例如 [NotYourTurn]／[IllegalGameAction]／[GameJoinFailed]／[KickFailed]。
- *   - 遊戲建立、加入、離開與設定變更的結果，例如 [GameCreated]／[ReadyToggled]／
- *     [AiStrategyChanged]／[GameConfigChanged]。
+ * - 持續存在的 HUD 狀態，由 snapshot／client store 驅動。
+ * - 需要玩家回答的動作詢問，使用具備識別碼、合法動作與逾時資訊的 request／response 協議。
+ * - 輪到自己、可執行動作、決策倒數等狀態，由房間等待室 GUI（`RoomScreen`）與對局操作 HUD 呈現。
  *
- * 捨牌、摸牌這類高頻操作的回饋走 action bar 而非聊天欄，避免洗版；呈現方式由各 Minecraft 版本
- * adapter 自行決定，回饋本身不攜帶 translation key 或顯示 channel。
+ * 回饋都是一次性訊息：
+ *
+ * - 指令明確要求的輸出，例如 [ShowHand]／[ShowGameConfig]。
+ * - 操作被拒絕的原因，例如 [NotYourTurn]／[IllegalGameAction]／[GameJoinFailed]／[KickFailed]。
+ * - 遊戲建立、加入、離開與設定變更的結果，例如 [GameCreated]／[ReadyToggled]／[AiStrategyChanged]／[GameConfigChanged]。
+ *
+ * 捨牌、摸牌這類高頻操作的回饋建議走 action bar 而非聊天欄，避免洗版。實際呈現方式由各 Minecraft 版本 adapter 決定。
  */
 sealed interface MinecraftPlayerFeedback {
     /** 對局已開始，玩家無法中途加入。 */
@@ -47,7 +47,7 @@ sealed interface MinecraftPlayerFeedback {
     /**
      * 已建立麻將遊戲。
      *
-     * @property location 麻將桌所在位置；理論上一定查得到，查不到時（例如位置索引與方塊實體出現
+     * @property location 麻將桌所在位置。理論上一定查得到，查不到時（例如位置索引與方塊實體出現
      *   競態）呈現端會退回不含位置的純文字訊息，不影響「已建立」這件事本身的通知。
      */
     data class GameCreated(val location: TableLocation?) : MinecraftPlayerFeedback
@@ -126,7 +126,7 @@ sealed interface MinecraftPlayerFeedback {
     data object TableNotReachable : MinecraftPlayerFeedback
 
     /**
-     * 部分非 AI 成員（含房主）目前離線或距離桌子太遠，無法開始對局；兩份清單依情況可能同時有內容。
+     * 部分非 AI 成員（含房主）目前離線或距離桌子太遠，無法開始對局。兩份清單依情況可能同時有內容。
      *
      * @property offlinePlayerIds 目前離線的成員 Uuid。
      * @property distantPlayerIds 目前在線、但距離桌子太遠的成員 Uuid。
@@ -185,7 +185,7 @@ sealed interface MinecraftPlayerFeedback {
 
     /**
      * 已變更遊戲設定。呈現端可以將 [oldConfigJson]／[newConfigJson] 解析、轉換成 hover 顯示 TOML、
-     * 點擊複製 JSON 的可互動文字；攜帶已序列化字串而非設定領域物件，是因為序列化需要的
+     * 點擊複製 JSON 的可互動文字。攜帶已序列化字串而非設定領域物件，是因為序列化需要的
      * `NetworkDtoRegistries`／`Json` 屬於 network-dto 層，這個模組不依賴該層。
      *
      * @property oldConfigJson 變更前設定的 JSON 序列化文字。
@@ -204,7 +204,7 @@ sealed interface MinecraftPlayerFeedback {
     data object ChangeGameConfigFailed : MinecraftPlayerFeedback
 
     /**
-     * 顯示所在麻將遊戲目前的設定；呈現端可將 [configJson] 組成可 hover 顯示 TOML、點擊開啟設定編輯
+     * 顯示所在麻將遊戲目前的設定。呈現端可將 [configJson] 組成可 hover 顯示 TOML、點擊開啟設定編輯
      * 畫面的可互動文字。
      *
      * @property configJson 目前設定的 JSON 序列化文字。
@@ -223,7 +223,7 @@ sealed interface MinecraftPlayerFeedback {
     /**
      * 牌已摸完，無法再摸牌。
      *
-     * @property ruleModuleId 這局採用的規則模組 ID，決定牌堆的說法；找不到對局時為 null。
+     * @property ruleModuleId 這局採用的規則模組 ID，決定牌堆的說法。找不到對局時為 null。
      */
     data class WallExhausted(val ruleModuleId: String?) : MinecraftPlayerFeedback
 
@@ -236,7 +236,7 @@ sealed interface MinecraftPlayerFeedback {
     /**
      * 對局因無法安全繼續而提前終止。
      *
-     * @property reasonId 平台提供的終止原因識別碼；呈現端應將未知值降級為通用文字。
+     * @property reasonId 平台提供的終止原因識別碼。呈現端應將未知值降級為通用文字。
      */
     data class MatchAborted(val reasonId: String) : MinecraftPlayerFeedback
 
@@ -251,7 +251,7 @@ sealed interface MinecraftPlayerFeedback {
      *   `discard`）。
      * @property legalActions 目前可執行的特殊動作清單（不含永遠合法的捨牌），
      *   與 [LegalActionValidator] 既有的「空清單不代表
-     *   不能捨牌」慣例一致；每個項目額外帶上該動作涉及的牌面（可能為 null），且與
+     *   不能捨牌」慣例一致。每個項目額外帶上該動作涉及的牌面（可能為 null），且與
      *   `/mahjongcraft game action` 指令 Tab 補全候選項目使用同一份查詢結果、同一個順序。
      */
     data class ShowHand(

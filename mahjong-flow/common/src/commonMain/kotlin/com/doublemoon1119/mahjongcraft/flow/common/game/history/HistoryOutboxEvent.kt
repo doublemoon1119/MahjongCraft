@@ -11,7 +11,7 @@ import kotlin.uuid.Uuid
  * @property sequence 此場次內單調遞增的事件序號，從 1 開始。
  * @property transactionFirstSequence 同一權威交易內第一筆事件的序號。
  * @property occurredAtEpochMillis 事件提交時的 UTC 毫秒時間戳，不用於排序。
- * @property actorPlayerId 發起動作的玩家；系統或規則事件為 null。
+ * @property actorPlayerId 發起動作的玩家。系統或規則事件為 null。
  * @property fact 已提交的權威事實。
  */
 data class HistoryOutboxEvent(

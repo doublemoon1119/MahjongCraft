@@ -102,7 +102,7 @@ class RiichiDiscardReadinessAnalyzerTest {
     }
 
     /**
-     * 驗證等待牌剩餘張數會扣除自己手牌中已持有的張數；沒有振聽因素時 statusIndicatorId 應為 null。
+     * 驗證等待牌剩餘張數會扣除自己手牌中已持有的張數。沒有振聽因素時 statusIndicatorId 應為 null。
      */
     @Test
     fun `test analyze computes waiting tile remaining count and no furiten status`() {

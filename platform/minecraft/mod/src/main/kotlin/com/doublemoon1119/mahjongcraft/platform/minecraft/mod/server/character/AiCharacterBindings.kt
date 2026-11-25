@@ -22,7 +22,7 @@ internal class AiCharacterBindings(
     /** 記錄來源與代理身分，不輸出手牌等私有狀態。 */
     private val logger = mahjongCraftLogger(AiCharacterBindings::class)
 
-    /** 每份代理最近一次失敗摘要；重試時不重複記錄相同問題。 */
+    /** 每份代理最近一次失敗摘要。重試時不重複記錄相同問題。 */
     private val reported = mutableMapOf<AiCharacterBindingKey, String>()
 
     /** 負責唯一接管、session 與所有權的共用核心。 */

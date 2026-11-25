@@ -56,6 +56,6 @@ object TaiwanAchievementIds {
         TaiwanTaiType.SevenFlowers to SEVEN_FLOWERS,
     )
 
-    /** 查詢台種對應的成果；沒有專屬成果的台種回傳 null。 */
+    /** 查詢台種對應的成果。沒有專屬成果的台種回傳 null。 */
     fun forTai(type: TaiwanTaiType): String? = taiAchievements[type]
 }

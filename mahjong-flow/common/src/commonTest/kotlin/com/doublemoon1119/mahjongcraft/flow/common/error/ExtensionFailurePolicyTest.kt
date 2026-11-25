@@ -7,7 +7,7 @@ import kotlin.test.assertTrue
 
 /** [ExtensionFailurePolicy.Default] 的隔離範圍測試。 */
 class ExtensionFailurePolicyTest {
-    /** 一般例外可以隔離；協程取消與錯誤不得隔離。 */
+    /** 一般例外可以隔離。協程取消與錯誤不得隔離。 */
     @Test
     fun `default policy isolates ordinary exceptions only`() {
         val policy = ExtensionFailurePolicy.Default

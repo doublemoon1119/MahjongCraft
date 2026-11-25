@@ -31,7 +31,7 @@ class MatchSettlementPresentationScheduler(
     private val warnedRuleModuleIds = mutableSetOf<String>()
 
     /**
-     * 成功生成時回傳固定結束時間；失敗則不隱藏 round info。
+     * 成功生成時回傳固定結束時間。失敗則不隱藏 round info。
      *
      * @param world 生成舞台的世界。
      * @param tableId 對局所在牌桌識別碼。
@@ -39,7 +39,7 @@ class MatchSettlementPresentationScheduler(
      * @param placement 舞台的世界位置與朝向。
      * @param earliestStartGameTime 舞台可開始的最早絕對 game time。
      * @param request 終局排行舞台顯示資料。
-     * @return 舞台固定結束的絕對 game time；找不到版型或未能生成時為 null。
+     * @return 舞台固定結束的絕對 game time。找不到版型或未能生成時為 null。
      */
     fun schedule(
         world: ServerLevel,

@@ -49,7 +49,7 @@ import kotlin.uuid.Uuid
 /**
  * 驗證流局用例、回合摘要與換局用例會沿用規則模組提供的莊家推進決策。
  *
- * 測試使用委派包裝的日麻規則模組，只覆寫 [MahjongRuleModule.resolveRoundTransition]；
+ * 測試使用委派包裝的日麻規則模組，只覆寫 [MahjongRuleModule.resolveRoundTransition]。
  * 其餘合法動作、流局結算與發牌邏輯仍由日麻模組提供。
  */
 class RoundTransitionFlowTest {
@@ -58,9 +58,9 @@ class RoundTransitionFlowTest {
      * 建立指定下一任莊家與換位的完整流局用例測試環境。
      *
      * @param transitionDirective 依本局結果決定規則回傳的下一任莊家。
-     * @param seatOrder 依本局結算後的桌況決定下一局的座位順序；null 表示規則不換位。
+     * @param seatOrder 依本局結算後的桌況決定下一局的座位順序。null 表示規則不換位。
      * @param stickPotCollectorCount 一般流局時收下供託的玩家數，從第二個座位起算。
-     * @param allocate 規則的供託與連莊點數分配；null 表示沿用預設分配。
+     * @param allocate 規則的供託與連莊點數分配。null 表示沿用預設分配。
      */
     private class Fixtures(
         transitionDirective: (RoundTransitionContext) -> RoundTransitionDirective,

@@ -8,9 +8,9 @@ object MahjongTileItemData {
     /**
      * 讀取並正規化物品儲存的牌面 key。
      *
-     * @param storedKey 儲存的牌面 key；缺少時使用配方預設牌。
+     * @param storedKey 儲存的牌面 key。缺少時使用配方預設牌。
      * @param registry 可辨認有效牌面 key 的 registry。
-     * @return 有效牌面 key；未知名稱轉為未知牌面 key。
+     * @return 有效牌面 key。未知名稱轉為未知牌面 key。
      */
     fun read(storedKey: String?, registry: MinecraftTileAssetRegistry): String = storedKey?.normalizedTileAssetKey(registry) ?: STANDARD_TILE_ASSET_KEYS.first()
 

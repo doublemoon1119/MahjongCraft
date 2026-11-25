@@ -56,7 +56,7 @@ internal object ScreenRendering {
     }
 
     /**
-     * 繪製靠左的標籤；放不下時截斷並加上省略號。
+     * 繪製靠左的標籤。放不下時截斷並加上省略號。
      *
      * @param context 畫面繪製情境。
      * @param textRenderer 文字繪製器。
@@ -67,7 +67,7 @@ internal object ScreenRendering {
      * @param mouseX 游標的水平座標。
      * @param mouseY 游標的垂直座標。
      * @param color 文字顏色。
-     * @return 標籤被截斷且游標停在上面時為標籤全文，供提示框顯示；否則為 null。
+     * @return 標籤被截斷且游標停在上面時為標籤全文，供提示框顯示。否則為 null。
      */
     fun label(
         context: GuiGraphics,
@@ -88,7 +88,7 @@ internal object ScreenRendering {
     }
 
     /**
-     * 在底部按鈕列上方繪製置中的狀態文字；放不下時截斷，游標停在上面時以跑馬燈顯示全文。
+     * 在底部按鈕列上方繪製置中的狀態文字。放不下時截斷，游標停在上面時以跑馬燈顯示全文。
      *
      * @param context 畫面繪製情境。
      * @param textRenderer 文字繪製器。

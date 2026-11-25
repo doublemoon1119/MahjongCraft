@@ -7,7 +7,7 @@ object ExampleActorAuthorization {
     /**
      * 確認保存的放置者就是本次房主。
      *
-     * @param ownerId 人偶放置者；未記錄時為 null。
+     * @param ownerId 人偶放置者。未記錄時為 null。
      * @param hostId 房間房主。
      * @return 只有明確相同的放置者可以接收人偶。
      */

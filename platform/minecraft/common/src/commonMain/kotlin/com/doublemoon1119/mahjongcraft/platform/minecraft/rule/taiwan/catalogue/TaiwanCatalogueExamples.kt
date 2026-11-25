@@ -65,7 +65,7 @@ internal object TaiwanCatalogueExampleKeys {
  * 牌例只協助玩家辨認牌型，不參與權威計台。情境型台種由文字說明，不以一副無法表達先後順序的手牌代替。
  *
  * @param type 要顯示範例的台種。
- * @return 對應台種的完整手牌範例；不需要牌例時為空列表。
+ * @return 對應台種的完整手牌範例。不需要牌例時為空列表。
  */
 internal fun taiwanCatalogueExamples(type: TaiwanTaiType): List<RuleCatalogueExample> = when (type) {
     TaiwanTaiType.ConcealedHand -> listOf(standardHand(TaiwanCatalogueExampleKeys.CONCEALED_HAND))

@@ -19,7 +19,7 @@ object TableInteractionReach {
      * @param tableX 桌子中心方塊的 X。
      * @param tableY 桌子底層的 Y。
      * @param tableZ 桌子中心方塊的 Z。
-     * @return 最近點距離；無效位置回傳無限大。
+     * @return 最近點距離。無效位置回傳無限大。
      */
     fun distance(
         x: Double,

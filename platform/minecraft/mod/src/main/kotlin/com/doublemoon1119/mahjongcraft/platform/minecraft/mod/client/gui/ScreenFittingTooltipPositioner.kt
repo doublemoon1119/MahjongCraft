@@ -46,8 +46,8 @@ internal class ScreenFittingTooltipPositioner(
  * @param preferredY 原本定位方式給出的 y 座標。
  * @param tooltipHeight 提示框內容高度，不含背景邊緣。
  * @param screenHeight 畫面高度。
- * @param elapsed 提示框開始顯示後經過的時間；只在比畫面還高時用來捲動。
- * @return 放得下時為推回畫面內的 [preferredY]；比畫面還高時為從上緣開始、依跑馬燈節奏捲到下緣的位置。
+ * @param elapsed 提示框開始顯示後經過的時間。只在比畫面還高時用來捲動。
+ * @return 放得下時為推回畫面內的 [preferredY]。比畫面還高時為從上緣開始、依跑馬燈節奏捲到下緣的位置。
  */
 internal fun fitTooltipY(
     preferredY: Int,

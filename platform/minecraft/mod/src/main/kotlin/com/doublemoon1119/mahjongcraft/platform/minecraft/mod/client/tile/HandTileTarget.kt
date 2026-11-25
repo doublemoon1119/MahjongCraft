@@ -22,9 +22,9 @@ internal data class HandTileTarget<T>(
  * @param start 射線起點。
  * @param end 射線終點。
  * @param candidates 候選物件及其目前 bounding box。
- * @param occlusionDistanceSquared 遮擋物距離平方；候選在此距離或更遠時視為被遮擋。
+ * @param occlusionDistanceSquared 遮擋物距離平方。候選在此距離或更遠時視為被遮擋。
  * @param maximumDistanceSquared 可接受的最遠命中距離平方。
- * @return 最近的有效候選；沒有命中時回傳 null。
+ * @return 最近的有效候選。沒有命中時回傳 null。
  */
 internal fun <T> findNearestHandTileTarget(
     start: Vec3,

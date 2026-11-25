@@ -49,7 +49,7 @@ import kotlin.uuid.Uuid
  * 這些測試刻意不使用平台玩家集合或測試用對局 fixture，確保生成場次不會污染線上遊戲與房間狀態。
  */
 class HistoryGenerationIntegrationTest {
-    /** 測試用 logger；壓力測試只輸出彙總，不逐事件污染測試 log。 */
+    /** 測試用 logger。壓力測試只輸出彙總，不逐事件污染測試 log。 */
     private val logger = mahjongCraftLogger(HistoryGenerationIntegrationTest::class)
 
     /** 驗證東風戰完整生成超過有界佇列容量後，SQLite replay 仍連續且沒有序號缺口。 */
@@ -310,9 +310,9 @@ class HistoryGenerationIntegrationTest {
     }
 
     /**
-     * 建立包含正式 Flow 與內建 AI 策略的隔離四 AI 對局；以固定種子開局，初級 AI 遇到相同局面做相同選擇，因此結果每次相同。
+     * 建立包含正式 Flow 與內建 AI 策略的隔離四 AI 對局。以固定種子開局，初級 AI 遇到相同局面做相同選擇，因此結果每次相同。
      *
-     * @param seed 決定對局種子的數字；同一個測試需要多場不同對局時傳入不同數字。
+     * @param seed 決定對局種子的數字。同一個測試需要多場不同對局時傳入不同數字。
      * @return 已建立且尚未推進的隔離歷史生成 runtime。
      */
     private suspend fun runtime(seed: Int = MATCH_SEED): HeadlessFlowHistoryRuntime = HeadlessFlowHistoryRuntime.create(

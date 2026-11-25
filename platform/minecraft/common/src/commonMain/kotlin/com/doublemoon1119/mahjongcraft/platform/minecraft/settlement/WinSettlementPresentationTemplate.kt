@@ -8,8 +8,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
  * @property key 模板的唯一 namespaced 識別碼。
  * @property root 模板的宣告式布局樹。
  * @property reveal 模板使用的揭示動畫與音效設定。
- * @property detailFieldLabelKeys 規則詳情欄位 ID 對應的本地化標題 key；未列出的欄位不預設標題。
- * @property winnerTileDetailFields 只列出贏家自己桌前公開牌的詳情欄位，例如贏家已公開的花牌；牌譜在贏家牌組旁已畫出這些牌時不再重複列出。
+ * @property detailFieldLabelKeys 規則詳情欄位 ID 對應的本地化標題 key。未列出的欄位不預設標題。
+ * @property winnerTileDetailFields 只列出贏家自己桌前公開牌的詳情欄位，例如贏家已公開的花牌。牌譜在贏家牌組旁已畫出這些牌時不再重複列出。
  */
 data class WinSettlementPresentationTemplate(
     val key: String,

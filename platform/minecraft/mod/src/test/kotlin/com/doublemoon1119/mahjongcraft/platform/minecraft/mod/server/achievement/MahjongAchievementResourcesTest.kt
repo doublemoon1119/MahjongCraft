@@ -123,7 +123,7 @@ class MahjongAchievementResourcesTest {
         }
     }
 
-    /** 條件 JSON 可以帶限定規則與統計門檻；缺少成果清單時拒絕載入。 */
+    /** 條件 JSON 可以帶限定規則與統計門檻。缺少成果清單時拒絕載入。 */
     @Test
     fun `condition json parses rule and statistic and rejects missing achievements`() {
         val condition = MahjongAchievementCriterion.conditionFromJson(
@@ -141,7 +141,7 @@ class MahjongAchievementResourcesTest {
     /**
      * 以 `mahjongcraft:<相對路徑>` 為鍵載入全部內建進度。
      *
-     * @return 進度識別碼與 JSON 的對照；找不到資源或內容為空時使測試失敗。
+     * @return 進度識別碼與 JSON 的對照。找不到資源或內容為空時使測試失敗。
      */
     private fun loadAdvancements(): Map<String, JsonObject> {
         val root = javaClass.classLoader.getResource(DataPackLayout.ADVANCEMENTS) ?: fail("Missing ${DataPackLayout.ADVANCEMENTS}")
@@ -159,7 +159,7 @@ class MahjongAchievementResourcesTest {
      * 讀取指定語言已提供的翻譯鍵。
      *
      * @param locale 語言資源名稱。
-     * @return 該語言檔的所有翻譯鍵；找不到檔案時使測試失敗。
+     * @return 該語言檔的所有翻譯鍵。找不到檔案時使測試失敗。
      */
     private fun loadTranslations(locale: String): Set<String> {
         val resource = javaClass.classLoader.getResource("assets/mahjongcraft/lang/$locale.json") ?: fail("Missing $locale language file")

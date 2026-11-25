@@ -14,7 +14,7 @@ import net.minecraft.server.level.ServerLevel
 /**
  * 在桌子及其規則物件搜尋範圍的 chunk 都可用後，重新請求桌面物件呈現。
  *
- * 不強制載入 chunk；實體尚未載入時下一個 tick 再試，已移除索引或世界的要求則捨棄。
+ * 不強制載入 chunk。實體尚未載入時下一個 tick 再試，已移除索引或世界的要求則捨棄。
  *
  * @property queue 桌子載入後產生的刷新請求。
  * @property locations 桌子的最後已知位置索引。

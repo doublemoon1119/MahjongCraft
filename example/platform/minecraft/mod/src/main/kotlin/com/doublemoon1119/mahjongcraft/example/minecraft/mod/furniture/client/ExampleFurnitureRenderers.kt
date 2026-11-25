@@ -36,7 +36,7 @@ object ExampleFurnitureRenderers {
 private class ExampleChairSeatRenderer(
     context: EntityRendererProvider.Context,
 ) : EntityRenderer<ExampleChairSeatEntity>(context) {
-    /** 隱形 entity 沒有實際貼圖；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    /** 隱形 entity 沒有實際貼圖。原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
     override fun getTextureLocation(entity: ExampleChairSeatEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 }
 
@@ -76,6 +76,6 @@ private class ExampleCushionRenderer(
         matrices.popPose()
     }
 
-    /** Item renderer 依 model 資源提供外觀；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    /** Item renderer 依 model 資源提供外觀。原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
     override fun getTextureLocation(entity: ExampleCushionEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 }

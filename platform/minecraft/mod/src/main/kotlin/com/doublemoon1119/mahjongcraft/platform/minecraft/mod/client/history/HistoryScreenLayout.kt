@@ -7,11 +7,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.Vertica
 /**
  * 牌譜列表畫面的版面：標題下方的工具列、可捲動的對局卡片區與底部按鈕列。
  *
- * 內容寬度、底部四格與捲軸位置沿用 [HistoryPageFrame]。工具列由左到右為
- * 篩選、「顯示」標籤與紀錄範圍、「排序」標籤與排序欄位、排序方向，重新查詢靠右；內容寬度放不下時改排兩列：
- * 第一列為篩選與重新查詢，第二列為紀錄範圍與排序。
- *
- * 純資料，不依賴任何 Minecraft 型別；文字寬度由呼叫端量好傳入。
+ * - 內容寬度、底部四格與捲軸位置沿用 [HistoryPageFrame]。
+ * - 工具列由左到右為篩選、「顯示」標籤與紀錄範圍、「排序」標籤與排序欄位、排序方向，重新查詢靠右。
+ * - 內容寬度放不下時改排兩列：第一列為篩選與重新查詢，第二列為紀錄範圍與排序。
+ * - 純資料，不依賴任何 Minecraft 型別。文字寬度由呼叫端量好傳入。
  *
  * @property windowWidth 目前視窗寬度。
  * @property windowHeight 目前視窗高度。
@@ -43,7 +42,7 @@ internal data class HistoryScreenLayout(
     /** 篩選按鈕。 */
     val filters: Bounds
 
-    /** 重新查詢按鈕；查詢失敗時的重試按鈕也放在這裡。 */
+    /** 重新查詢按鈕。查詢失敗時的重試按鈕也放在這裡。 */
     val refresh: Bounds
 
     /** 「顯示」標籤的左界。 */
@@ -110,7 +109,7 @@ internal data class HistoryScreenLayout(
     val hasContent: Boolean get() = contentBottom > contentTop
 
     /**
-     * 取得底部按鈕列中一格的範圍：上一頁、筆數範圍、下一頁與關閉；筆數範圍佔一格但不是按鈕。
+     * 取得底部按鈕列中一格的範圍：上一頁、筆數範圍、下一頁與關閉。筆數範圍佔一格但不是按鈕。
      *
      * @param index 由左至右的順序，從 0 開始。
      * @return 這一格的範圍。
@@ -139,7 +138,7 @@ internal data class HistoryScreenLayout(
         get() = frame.scrollbarBounds(top = contentTop, bottom = contentBottom)
 
     /**
-     * 判斷游標是否落在捲軸的命中範圍內；命中範圍比繪製範圍稍寬。
+     * 判斷游標是否落在捲軸的命中範圍內。命中範圍比繪製範圍稍寬。
      *
      * @param mouseX 游標的水平座標。
      * @param mouseY 游標的垂直座標。
@@ -163,7 +162,7 @@ internal data class HistoryScreenLayout(
      * @param mouseY 游標垂直座標。
      * @param scrollOffset 清單的像素捲動偏移。
      * @param heights 每張卡片含間距的完整高度。
-     * @return 指向卡片的索引；沒有可見卡片時為 null。
+     * @return 指向卡片的索引。沒有可見卡片時為 null。
      */
     fun cardIndexAt(mouseX: Double, mouseY: Double, scrollOffset: Double, heights: List<Int>): Int? {
         if (mouseY < contentTop || mouseY >= contentBottom) return null

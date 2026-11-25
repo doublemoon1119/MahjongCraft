@@ -44,8 +44,8 @@ class WinCelebrationShowcaseScheduler(
      * 排程用的單一贏家翼。
      *
      * @property seatIndex 贏家座位。
-     * @property cueIds 規則給的展示理由；由 [WinCelebrationShowcaseRegistry.select] 挑出要播放的定義。
-     * @property cards 展示用的牌，依編隊順序排列：手牌在前，之後依序為各組副露；不含和牌張。
+     * @property cueIds 規則給的展示理由。由 [WinCelebrationShowcaseRegistry.select] 挑出要播放的定義。
+     * @property cards 展示用的牌，依編隊順序排列：手牌在前，之後依序為各組副露。不含和牌張。
      * @property standYaw 起飛前站起來後的朝向，即贏家座位的正面朝向。
      */
     data class Wing(
@@ -59,9 +59,9 @@ class WinCelebrationShowcaseScheduler(
      * 翼中的一張牌。
      *
      * @property tileId 桌上的真實牌。
-     * @property assetKey 牌面素材；蓋著的牌為未知牌，不帶牌面。
+     * @property assetKey 牌面素材。蓋著的牌為未知牌，不帶牌面。
      * @property group 所屬的組：`0` 為手牌，之後依序為各組副露。
-     * @property backAppearanceId 蓋著的牌要畫的牌背外觀，例如暗槓兩端；露出牌面時為 null。
+     * @property backAppearanceId 蓋著的牌要畫的牌背外觀，例如暗槓兩端。露出牌面時為 null。
      */
     data class Card(
         val tileId: Uuid,
@@ -71,7 +71,7 @@ class WinCelebrationShowcaseScheduler(
     )
 
     /**
-     * [cueIds] 是否選得出已登記的展示定義；選不出時這位贏家不播放展示，並對同一組理由記錄一次警告。
+     * [cueIds] 是否選得出已登記的展示定義。選不出時這位贏家不播放展示，並對同一組理由記錄一次警告。
      *
      * @param cueIds 規則給這位贏家的展示理由。
      * @return 可以播放展示時為 `true`。
@@ -94,9 +94,9 @@ class WinCelebrationShowcaseScheduler(
     fun pausesContinuingRound(celebration: WinCelebrationRequest): Boolean = showcaseRegistry.pausesContinuingRound(celebration.winners.map { it.cueIds })
 
     /**
-     * 生成共享舞台；成功時隱藏局況顯示到舞台結束，並讓真實牌在 stage 起點交接為隱形。
+     * 生成共享舞台。成功時隱藏局況顯示到舞台結束，並讓真實牌在 stage 起點交接為隱形。
      *
-     * [wings] 只能包含 [hasShowcase] 為 `true` 的贏家。找不到和牌張、或有贏家一張牌都找不到時不播放；
+     * [wings] 只能包含 [hasShowcase] 為 `true` 的贏家。找不到和牌張、或有贏家一張牌都找不到時不播放。
      * 有牌找不到時記錄一筆警告，列出各座位缺少的牌。
      *
      * @param world 生成舞台與查找真實牌 entity 的世界。
@@ -107,7 +107,7 @@ class WinCelebrationShowcaseScheduler(
      * @param winningTileId 真實胡牌張識別碼。
      * @param winningTileAssetKey 胡牌張在舞台中的牌面素材 key。
      * @param wings 需播放展示的贏家翼。
-     * @return 舞台固定結束的絕對 game time；無法播放或生成時為 null。
+     * @return 舞台固定結束的絕對 game time。無法播放或生成時為 null。
      */
     fun schedule(
         world: ServerLevel,
@@ -193,13 +193,13 @@ class WinCelebrationShowcaseScheduler(
 }
 
 /**
- * 依結算面板的手牌排法排出一翼的牌：手牌在前，之後依鳴牌順序接上各組副露；副露依呈現資料的朝下牌張露出牌背。
+ * 依結算面板的手牌排法排出一翼的牌：手牌在前，之後依鳴牌順序接上各組副露。副露依呈現資料的朝下牌張露出牌背。
  *
  * @param standingTileIds 已排好序的手牌，不含和牌張。
  * @param melds 依鳴牌順序的副露，每組的牌已依面板順序排列。
- * @param assetKeyOf 取得牌面素材；取不到的牌不列入。
+ * @param assetKeyOf 取得牌面素材。取不到的牌不列入。
  * @param backAppearanceOf 依牌面素材取得蓋著時要畫的牌背外觀 ID。
- * @return 依編隊順序排列的牌；蓋著的牌只帶牌背，不帶牌面。
+ * @return 依編隊順序排列的牌。蓋著的牌只帶牌背，不帶牌面。
  */
 fun showcaseWingCards(
     standingTileIds: List<Uuid>,

@@ -48,10 +48,10 @@ internal data class SeatRoundResult(
  * 模擬中偵測到的問題。
  *
  * @property reason 問題的說明。
- * @property round 發生問題的一局；無法判斷時為 null。
- * @property cause 造成問題的例外；沒有例外時為 null。
+ * @property round 發生問題的一局。無法判斷時為 null。
+ * @property cause 造成問題的例外。沒有例外時為 null。
  * @property trace 發生問題前最近的 AI 決策。
- * @property seed 這場對局的數字；以同一個數字與陣容重新呼叫 `MatchSimulator.play` 會重打同一場。
+ * @property seed 這場對局的數字。以同一個數字與陣容重新呼叫 `MatchSimulator.play` 會重打同一場。
  * @property reproducedOnReplay 以同一個數字從頭重打一次時是否再次發生同樣的問題。
  */
 internal data class SimulationFailure(
@@ -88,9 +88,9 @@ internal data class SimulationFailure(
  *
  * @property strategyKeysByPlayer 每位玩家使用的策略。
  * @property rounds 每一局每位玩家的結果，依開局順序排列。
- * @property placementsByPlayer 整場結束時每位玩家的名次，第一名為 1；對局未正常結束時為空。
- * @property failure 偵測到的問題；正常結束時為 null。
- * @property matchEndReasonId 正式流程記錄的終局原因；未正常終局時為 null。
+ * @property placementsByPlayer 整場結束時每位玩家的名次，第一名為 1。對局未正常結束時為空。
+ * @property failure 偵測到的問題。正常結束時為 null。
+ * @property matchEndReasonId 正式流程記錄的終局原因。未正常終局時為 null。
  * @property finalScoresByPlayer 最後一次權威結算的玩家分數，供終局驗證與失敗診斷使用。
  */
 internal data class MatchResult(
@@ -105,12 +105,12 @@ internal data class MatchResult(
 /**
  * 以正式規則與流程讓 AI 打完一整場對局，並檢查：沒有送出不合法命令、流程沒有卡住、點數守恆、對局正常結束。
  *
- * 牌局與隨機出牌策略的選擇都由 `play` 收到的數字決定，同一個數字重現同一場對局。偵測到問題時，以同一個數字從頭重打一次，
- * 記錄問題是否再次出現；失敗描述附上這個數字，之後可直接重打同一場來除錯。
- * 點數守恆以日麻計算：所有玩家的分數加上場上立直棒的點數，等於開局總分。
+ * - 牌局與隨機出牌策略的選擇都由 `play` 收到的數字決定，同一個數字重現同一場對局。
+ * - 偵測到問題時，以同一個數字從頭重打一次，記錄問題是否再次出現。失敗描述附上這個數字，之後可直接重打同一場來除錯。
+ * - 點數守恆以日麻計算：所有玩家的分數加上場上立直棒的點數，等於開局總分。
  *
  * @property config 對局規則設定。
- * @property registerStrategies 在原始策略 registry 登記可用的策略；預設為所有內建策略。
+ * @property registerStrategies 在原始策略 registry 登記可用的策略。預設為所有內建策略。
  */
 internal class MatchSimulator(
     private val config: MahjongRuleConfig,
@@ -123,7 +123,7 @@ internal class MatchSimulator(
     },
 ) {
     /**
-     * 依 [lineup] 的策略讓每位玩家打完一整場；座位由開局流程隨機決定。
+     * 依 [lineup] 的策略讓每位玩家打完一整場。座位由開局流程隨機決定。
      *
      * @param lineup 每位玩家使用的策略 key。
      * @param recorder 累計決策時間與最近決策的紀錄。
@@ -199,7 +199,7 @@ internal class MatchSimulator(
     }
 
     /**
-     * 推進對局直到停止，回傳問題的說明與例外；正常結束時為 null。
+     * 推進對局直到停止，回傳問題的說明與例外。正常結束時為 null。
      *
      * 以伺服器的推進方式推進（見 [SimulationRuntime.driveLikeServer]）。流程停在整場結束之前時，把最後一次 AI 決策的
      * 命令重新送出一次，附上流程拒絕它的原因。
@@ -207,7 +207,7 @@ internal class MatchSimulator(
      * @param runtime 此次模擬使用的流程與倉庫。
      * @param gameId 對局識別碼。
      * @param recorder 決策紀錄器。
-     * @return 停止原因與例外；對局正常結束且點數守恆時為 null。
+     * @return 停止原因與例外。對局正常結束且點數守恆時為 null。
      */
     private suspend fun drive(
         runtime: SimulationRuntime,
@@ -289,7 +289,7 @@ internal class MatchSimulator(
         .toMap()
 
     /**
-     * 建立一個新的對局環境，AI 策略包裝成記錄決策並檢查合法性的版本；隨機出牌策略改用由 [seed] 決定選擇的版本。
+     * 建立一個新的對局環境，AI 策略包裝成記錄決策並檢查合法性的版本。隨機出牌策略改用由 [seed] 決定選擇的版本。
      *
      * @param recorder 決策紀錄器。
      * @param seed 決定隨機出牌選擇的數字。

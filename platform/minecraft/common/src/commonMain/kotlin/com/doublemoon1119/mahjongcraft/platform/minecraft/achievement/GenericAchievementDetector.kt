@@ -9,13 +9,13 @@ import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettledEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.WinMethod
 import kotlin.uuid.Uuid
 
-/** 從已提交事件批次判定各規則都適用的成果；不讀取規則專屬資料。 */
+/** 從已提交事件批次判定各規則都適用的成果。不讀取規則專屬資料。 */
 internal object GenericAchievementDetector {
     /**
      * 判定本次事件批次中各玩家達成的通用成果。
      *
      * @param batch 同一筆權威提交產生的事件批次。
-     * @return 以玩家 UUID 索引的成果 ID；沒有成果的玩家不出現。
+     * @return 以玩家 UUID 索引的成果 ID。沒有成果的玩家不出現。
      */
     fun detect(batch: CommittedMatchEventBatch): Map<Uuid, Set<String>> {
         val achievements = mutableMapOf<Uuid, MutableSet<String>>()

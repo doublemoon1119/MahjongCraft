@@ -279,7 +279,7 @@ class RuleCataloguePresenterTest {
         }
     }
 
-    /** 牌例有小標題時接在範例種類之後；牌組自訂標籤取代角色標題；可調整的房間設定欄位列在說明之後。 */
+    /** 牌例有小標題時接在範例種類之後。牌組自訂標籤取代角色標題。可調整的房間設定欄位列在說明之後。 */
     @Test
     fun `subtitles group labels and adjustable settings are shown`() {
         val texts = mapOf(

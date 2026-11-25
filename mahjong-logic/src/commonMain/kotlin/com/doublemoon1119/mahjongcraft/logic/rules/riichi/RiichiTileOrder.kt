@@ -7,8 +7,9 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileCompone
 
 /**
  * 日本麻將 (Riichi) 標準排序策略。
+ *
  * 排序權重：
- * 1. 數牌依萬、筒、索排序，各花色由一至九；同數值時普通牌在赤寶牌之前。
+ * 1. 數牌依萬、筒、索排序，各花色由一至九。同數值時普通牌在赤寶牌之前。
  * 2. 字牌依東、南、西、北、白、發、中排序。
  * 3. 擴充牌（若存在）排在最後。
  */
@@ -19,7 +20,7 @@ object RiichiTileOrder : TileOrder {
     override fun compare(t1: Tile, t2: Tile): Int = getWeight(t1).compareTo(getWeight(t2))
 
     /**
-     * 計算基本牌面的排序權重；赤寶牌的先後由 [valueOrder] 依特性決定。
+     * 計算基本牌面的排序權重。赤寶牌的先後由 [valueOrder] 依特性決定。
      *
      * @param tile 欲計算權重的麻將牌。
      * @return 權重數值。

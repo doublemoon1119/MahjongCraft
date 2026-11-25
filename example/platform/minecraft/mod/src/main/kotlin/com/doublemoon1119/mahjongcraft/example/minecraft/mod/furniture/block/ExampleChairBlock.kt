@@ -24,7 +24,7 @@ import net.minecraft.world.phys.shapes.CollisionContext
 import net.minecraft.world.phys.shapes.VoxelShape
 
 /**
- * 可直接右鍵坐下的範例方塊椅子；與原版可含水方塊相同，放在水源中會含水。
+ * 可直接右鍵坐下的範例方塊椅子。與原版可含水方塊相同，放在水源中會含水。
  *
  * @param settings Minecraft 方塊設定。
  */

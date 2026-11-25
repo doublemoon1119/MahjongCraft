@@ -12,7 +12,7 @@ import kotlin.uuid.toJavaUuid
 
 /**
  * 可持久化、可由絕對世界時間任意取樣的純視覺 entity 基底。效果種類、目標 entity、隨機 seed 與時間窗
- * 都同時透過 tracked data 同步給 client、透過 NBT 保存；具體 renderer 只需要依 [effectKey] 與
+ * 都同時透過 tracked data 同步給 client、透過 NBT 保存。具體 renderer 只需要依 [effectKey] 與
  * [progress] 選擇視覺公式，不必各自重寫生命週期與重載恢復。
  *
  * @param type 特效實體種類。
@@ -31,7 +31,7 @@ abstract class AnimatedVisualEffectEntity(
     val effectKey: String
         get() = entityData[EFFECT_KEY]
 
-    /** 效果跟隨的目標 entity UUID；資料尚未設定或已損壞時為 `null`。 */
+    /** 效果跟隨的目標 entity UUID。資料尚未設定或已損壞時為 `null`。 */
     val targetEntityId: Uuid?
         get() = entityData[TARGET_ENTITY_ID]
             .takeIf(String::isNotBlank)
@@ -54,7 +54,7 @@ abstract class AnimatedVisualEffectEntity(
     }
 
     /**
-     * 一次設定並同步完整效果描述；只能由伺服器在生成前呼叫。
+     * 一次設定並同步完整效果描述。只能由伺服器在生成前呼叫。
      *
      * @param tableId 效果所屬麻將桌 UUID。
      * @param effectKey 選擇視覺公式的穩定 key。
@@ -93,7 +93,7 @@ abstract class AnimatedVisualEffectEntity(
     }
 
     /**
-     * 將指定畫面時間換算成 `0.0..1.0` 的效果進度；時間窗無效時回傳 `0.0`。
+     * 將指定畫面時間換算成 `0.0..1.0` 的效果進度。時間窗無效時回傳 `0.0`。
      *
      * @param tickDelta 本 tick 的部分經過時間。
      */
@@ -114,7 +114,7 @@ abstract class AnimatedVisualEffectEntity(
     override fun isPickable(): Boolean = false
 
     /**
-     * 伺服器端持續跟隨目標的實際位置，讓排程當下就能生成並保存等待中的效果；兩端到期後都主動移除，
+     * 伺服器端持續跟隨目標的實際位置，讓排程當下就能生成並保存等待中的效果。兩端到期後都主動移除，
      * client 不必等待額外移除封包才停止渲染。
      */
     override fun tick() {
@@ -123,7 +123,7 @@ abstract class AnimatedVisualEffectEntity(
         if (endGameTime > startGameTime && level().gameTime >= endGameTime) discard()
     }
 
-    /** 目標目前已載入時同步其位置；暫時找不到時保留最後位置等待後續 tick。 */
+    /** 目標目前已載入時同步其位置。暫時找不到時保留最後位置等待後續 tick。 */
     private fun followTarget() {
         val serverWorld = level() as? ServerLevel ?: return
         val targetId = targetEntityId ?: return
@@ -152,7 +152,7 @@ abstract class AnimatedVisualEffectEntity(
         readAnimationQueueFromNbt(nbt)
     }
 
-    /** 將效果描述與絕對時間軸寫入世界存檔；位置與 entity UUID 由原版 entity 序列化負責。 */
+    /** 將效果描述與絕對時間軸寫入世界存檔。位置與 entity UUID 由原版 entity 序列化負責。 */
     override fun addAdditionalSaveData(nbt: CompoundTag) {
         ManagedTableNbt.write(nbt, managedTableId)
         nbt.putString(NBT_KEY_EFFECT_KEY, effectKey)

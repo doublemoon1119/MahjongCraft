@@ -11,7 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationValue
 
 /**
- * 建立簡易配對麻將的 Minecraft 設定畫面定義；共用流程欄位由本體 registry 自動附加。
+ * 建立簡易配對麻將的 Minecraft 設定畫面定義。共用流程欄位由本體 registry 自動附加。
  *
  * @return 簡易配對麻將的規則設定畫面定義。
  */

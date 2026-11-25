@@ -72,7 +72,7 @@ class AutomaticControlSnapshotPacketSender(
      * 已完成本人與來源檢查的自動操作交付資料。
      *
      * @property player 仍在本次啟動連線中的收件玩家。
-     * @property snapshot 本人目前的操作集合；終局時為 null。
+     * @property snapshot 本人目前的操作集合。終局時為 null。
      */
     private class PreparedControl(val player: ServerPlayer, val snapshot: AutomaticControlSnapshotDto?)
 }

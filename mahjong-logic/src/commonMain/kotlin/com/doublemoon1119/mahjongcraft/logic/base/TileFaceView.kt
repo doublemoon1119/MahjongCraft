@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewSet
  *
  * @property tile 基本牌面。
  * @property views 經明確投影的特徵，不含原始權威組件或授權名單。
- * @property appearanceId 已允許使用的外觀識別碼；沒有時採用一般外觀。
+ * @property appearanceId 已允許使用的外觀識別碼。沒有時採用一般外觀。
  */
 data class TileFaceView(
     val tile: Tile,

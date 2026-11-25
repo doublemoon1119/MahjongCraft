@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
 /** 共用遊戲模型使用的組件對象定義。 */
 object BuiltInComponentOwners {
-    /** 單張牌；牌值本身帶的特性屬於牌組，不一定登記生命週期。 */
+    /** 單張牌。牌值本身帶的特性屬於牌組，不一定登記生命週期。 */
     val TILE = ComponentOwnerType("mahjongcraft:component_owner/tile", IdentifiedTile::class, requiresLifecycle = false)
 
     /** 一次捨牌紀錄。 */

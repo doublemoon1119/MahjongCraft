@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.history
 import kotlinx.serialization.Serializable
 
 /**
- * 動作提交後的相關索引資料；桌況另由同筆交易結果保存。
+ * 動作提交後的相關索引資料。桌況另由同筆交易結果保存。
  *
  * @property affectedTileIds 動作直接影響的牌 UUID 字串。
  * @property newlyRevealedTileIds 因本次動作新公開的牌 UUID 字串。

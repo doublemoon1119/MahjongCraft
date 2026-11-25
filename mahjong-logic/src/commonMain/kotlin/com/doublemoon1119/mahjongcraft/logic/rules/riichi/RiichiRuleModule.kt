@@ -68,7 +68,7 @@ class RiichiRuleModule(
     override fun createMatchProgressionPolicy(): MatchProgressionPolicy = RiichiMatchProgressionPolicy(config)
 
     /**
-     * 莊家和牌、荒牌流局時莊家聽牌，或發生途中流局時，均由莊家連莊；其餘情況過莊。
+     * 莊家和牌、荒牌流局時莊家聽牌，或發生途中流局時，均由莊家連莊。其餘情況過莊。
      *
      * @param context 本局結算後的完整結果情境。
      * @return 日本麻將本局後的莊家推進決策。
@@ -89,13 +89,13 @@ class RiichiRuleModule(
     /** 建立四人日本麻將的雙骰牌牆開門 policy。 */
     override fun createWallOpeningPolicy(): RiichiWallOpeningPolicy = RiichiWallOpeningPolicy
 
-    /** 砌牌牆時由莊家擲骰決定開門；不砌牌牆時不擲骰，使用固定開門位置切分摸牌序列與王牌。 */
+    /** 砌牌牆時由莊家擲骰決定開門。不砌牌牆時不擲骰，使用固定開門位置切分摸牌序列與王牌。 */
     override fun createRoundOpeningProcedure(playerCount: Int): RoundOpeningProcedure? = if (config.buildsWall) super.createRoundOpeningProcedure(playerCount) else RIICHI_WITHOUT_WALL_OPENING_PROCEDURE
 
     /** 建立四人日本麻將固定 136 張的牌牆布局。 */
     override fun createWallLayout(playerCount: Int): RiichiWallLayout = RiichiWallLayout(config)
 
-    /** 建立日本麻將獨立王牌區與槓後補位所使用的抽象實體布局 policy；不砌牌牆時沒有實體牌牆。 */
+    /** 建立日本麻將獨立王牌區與槓後補位所使用的抽象實體布局 policy。不砌牌牆時沒有實體牌牆。 */
     override fun createPhysicalWallLayoutPolicy(): PhysicalWallLayoutPolicy? = if (config.buildsWall) RiichiPhysicalWallLayoutPolicy(rinshanTileCount = config.rinshanTileCount) else null
 
     /** 建立將日麻赤五解讀為普通五的牌面 policy。 */
@@ -248,7 +248,7 @@ class RiichiRuleModule(
     override fun collectStickPot(tableState: TableState): PointPotCollection = collectRiichiPot(tableState)
 
     /**
-     * 依 [riichiComboBonusPayments] 分攤本場點數；[resolution] 成立包牌時由包牌責任者承擔對應部分。
+     * 依 [riichiComboBonusPayments] 分攤本場點數。[resolution] 成立包牌時由包牌責任者承擔對應部分。
      */
     override fun resolveComboBonusPayments(
         tableState: TableState,
@@ -287,7 +287,7 @@ class RiichiRuleModule(
     )
 
     /**
-     * 判定流局滿貫並計算自摸滿貫式收支；沒有任何人成立時回傳 `null`。
+     * 判定流局滿貫並計算自摸滿貫式收支。沒有任何人成立時回傳 `null`。
      *
      * 成立條件為牌河非空、全部是么九牌且從未被鳴走。此函式不修改桌況，也不收取供託。
      *
@@ -313,7 +313,7 @@ class RiichiRuleModule(
      * 全場尚未有人鳴牌，且全員恰好都打過一張牌（`entries.singleOrNull()` 只有在這個情境下才會
      * 全員非 null），這些第一張捨牌若皆為同一種風牌則成立。
      *
-     * 呼叫端須先處理捨牌反應，確認無鳴牌或和牌結果後再判定；此方法本身不檢查反應狀態。
+     * 呼叫端須先處理捨牌反應，確認無鳴牌或和牌結果後再判定。此方法本身不檢查反應狀態。
      *
      * @param tableStateAfterDiscard 捨牌後的桌況。
      * @return 首次捨牌符合四風連打條件時的原因，否則為 null。
@@ -340,7 +340,7 @@ class RiichiRuleModule(
     }
 
     /**
-     * 四槓散了：逐玩家算出各自的槓子數（明槓/暗槓/加槓皆算）加總得到全場總數，未滿 4 個不成立；
+     * 四槓散了：逐玩家算出各自的槓子數（明槓/暗槓/加槓皆算）加總得到全場總數，未滿 4 個不成立。
      * 達到 4 個（含）以上時，若其中有一位玩家的槓子數就等於全場總數，代表全部槓子都是他一人
      * 達成（該玩家可能正在做四槓子役滿），此時不成立。
      */
@@ -353,12 +353,12 @@ class RiichiRuleModule(
      * 判定玩家是否已宣告立直或雙立直。
      *
      * @param player 待判定玩家。
-     * @return 具有立直狀態時為 true；不是立直玩家狀態時為 false。
+     * @return 具有立直狀態時為 true。不是立直玩家狀態時為 false。
      */
     fun isPlayerInRiichi(player: MahjongPlayer): Boolean = player.riichiDeclaration != null
 
     /**
-     * 立直後只能摸切，因此回傳玩家剛摸入的牌；未立直或尚未摸牌時不額外限制。
+     * 立直後只能摸切，因此回傳玩家剛摸入的牌。未立直或尚未摸牌時不額外限制。
      */
     override fun discardableTileIds(tableState: TableState, player: MahjongPlayer): Set<Uuid>? = RiichiDiscardRestriction.discardableTileIds(player = player, inRiichi = isPlayerInRiichi(player))
 
@@ -371,6 +371,6 @@ class RiichiRuleModule(
      */
     fun getStickPotCount(tableState: TableState): Int = tableState.riichiPotPoints() / RIICHI_STICK_POINTS
 
-    /** 立直中的玩家放過和牌時記錄本局永久振聽；未立直時放過和牌只構成同巡振聽，不做任何變更。 */
+    /** 立直中的玩家放過和牌時記錄本局永久振聽。未立直時放過和牌只構成同巡振聽，不做任何變更。 */
     override fun onPlayerDeclinedWin(player: MahjongPlayer): ComponentPatch = player.riichiPermanentFuritenPatch()
 }

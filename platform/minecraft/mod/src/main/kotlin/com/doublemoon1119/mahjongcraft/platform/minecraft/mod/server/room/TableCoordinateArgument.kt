@@ -5,7 +5,7 @@ import net.minecraft.core.BlockPos
 /**
  * `/mahjongcraft room join|leave` 的桌子座標引數格式：`x_y_z`（例如 `123_64_-456`）。
  *
- * 這個引數永遠由 Tab 補全帶入完整字串，不是給玩家手動輸入座標的自由格式；用底線分隔而非逗號，是
+ * 這個引數永遠由 Tab 補全帶入完整字串，不是給玩家手動輸入座標的自由格式。用底線分隔而非逗號，是
  * 因為 Brigadier 未加引號的字串引數不允許逗號，底線則不受限制，可以維持「一次 Tab 補全整串帶入」。
  */
 internal object TableCoordinateArgument {
@@ -18,7 +18,7 @@ internal object TableCoordinateArgument {
     fun format(pos: BlockPos): String = "${pos.x}_${pos.y}_${pos.z}"
 
     /**
-     * 將 [format] 產生的字串解析回方塊座標；格式不符時回傳 `null`。
+     * 將 [format] 產生的字串解析回方塊座標。格式不符時回傳 `null`。
      *
      * @param raw 要解析的座標字串。
      * @return 三個整數座標皆有效時的方塊位置，否則為 null。

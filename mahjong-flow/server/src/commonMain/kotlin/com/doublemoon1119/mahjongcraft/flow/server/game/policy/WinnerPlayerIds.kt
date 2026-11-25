@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
 /**
- * 本局已和牌的玩家；他們的手牌對所有讀取者公開。
+ * 本局已和牌的玩家。他們的手牌對所有讀取者公開。
  *
  * @return 已和牌玩家的識別碼。
  */

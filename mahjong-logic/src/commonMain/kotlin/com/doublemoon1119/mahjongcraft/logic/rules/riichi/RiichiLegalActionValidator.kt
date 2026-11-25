@@ -27,8 +27,8 @@ import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
  * @property shantenCalculator 向聽數計算器，用於判斷聽牌與胡牌。
  * @property handValueCalculator 手牌役種計算機，用於檢查最低番數限制。
  * @property contextCalculator 手牌役種上下文計算機，用於計算寶牌、海底撈月等資訊。
- * @property allowsChi 是否可以吃；三人麻將不能吃。
- * @property allowsPullNorth 是否可以拔北；只有三人麻將可以。
+ * @property allowsChi 是否可以吃。三人麻將不能吃。
+ * @property allowsPullNorth 是否可以拔北。只有三人麻將可以。
  */
 class RiichiLegalActionValidator(
     private val shantenCalculator: RiichiShantenCalculator,
@@ -41,7 +41,7 @@ class RiichiLegalActionValidator(
     /**
      * 分析一張完整牌型在目前桌況下的榮和與自摸資格。
      *
-     * [player] 的手牌須為尚未加入 [incomingTile] 的待和牌狀態；本方法不套用振聽，振聽仍由呼叫端
+     * [player] 的手牌須為尚未加入 [incomingTile] 的待和牌狀態。本方法不套用振聽，振聽仍由呼叫端
      * 以整組等待牌判斷。
      *
      * @param tableState 判定役種與起胡門檻的目前桌況。
@@ -68,7 +68,7 @@ class RiichiLegalActionValidator(
     /**
      * 判斷在當前遊戲狀態下，指定玩家可以執行的合法動作列表。
      *
-     * @param context 從同一份桌況建立的判定情境；來源牌已經只加入判定手牌一次。
+     * @param context 從同一份桌況建立的判定情境。來源牌已經只加入判定手牌一次。
      * @return 該玩家可以執行的合法動作列表。
      */
     override fun getLegalActions(context: LegalActionContext): List<GameAction> {
@@ -329,7 +329,7 @@ class RiichiLegalActionValidator(
      * @param handTiles 玩家的立牌。
      * @param first 順子需要的第一種牌。
      * @param second 順子需要的第二種牌。
-     * @return 不重複的組合，依 [distinctCallTileChoices] 的順序排列；缺少任一種牌時為空。
+     * @return 不重複的組合，依 [distinctCallTileChoices] 的順序排列。缺少任一種牌時為空。
      */
     private fun chiTileChoices(handTiles: List<IdentifiedTile>, first: Tile, second: Tile): List<List<IdentifiedTile>> {
         val firstCopies = handTiles.filter { it.tile == first }.distinctBy { it.components }
@@ -349,7 +349,7 @@ class RiichiLegalActionValidator(
         .sortedBy { choice -> choice.count { it.components[RiichiTileComponents.RED_DORA] != null } }
 
     /**
-     * 立直宣告需要玩家從立牌中另外指定打哪張牌，候選牌為「打出後手牌仍然聽牌」的立牌；其他日麻動作
+     * 立直宣告需要玩家從立牌中另外指定打哪張牌，候選牌為「打出後手牌仍然聽牌」的立牌。其他日麻動作
      * 在 [getLegalActions] 回傳時已經帶齊所需牌張，不需要額外選牌。
      */
     override fun tileSelectionRequirement(

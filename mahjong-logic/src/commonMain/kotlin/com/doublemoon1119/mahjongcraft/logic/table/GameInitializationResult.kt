@@ -12,8 +12,8 @@ import kotlin.uuid.Uuid
  *
  * @property tableState 已完成洗牌、（若規則支援）擲骰開門、發牌、分數初始化的新權威桌況。
  * @property wallStructure 本次牌牆所有牌（含活牌與王牌）的面／墩／層結構座標，鍵為
- * [IdentifiedTile.id]；規則不支援開門流程時為 `null`。
- * @property initialPhysicalWallLayout 本次完整初始牌牆的抽象實體布局，包含之後會發到手牌的牌張；規則
+ * [IdentifiedTile.id]。規則不支援開門流程時為 `null`。
+ * @property initialPhysicalWallLayout 本次完整初始牌牆的抽象實體布局，包含之後會發到手牌的牌張。規則
  * 不支援牌牆布局時為 null。
  */
 data class GameInitializationResult(

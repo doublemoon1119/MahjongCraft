@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating
 
-/** 座位檢查或入座結果；正常失敗不得留下移動、乘坐關係或多餘實體。 */
+/** 座位檢查或入座結果。正常失敗不得留下移動、乘坐關係或多餘實體。 */
 enum class SeatState {
     /** 目前可嘗試入座，執行前仍需驗證。 */
     AVAILABLE,

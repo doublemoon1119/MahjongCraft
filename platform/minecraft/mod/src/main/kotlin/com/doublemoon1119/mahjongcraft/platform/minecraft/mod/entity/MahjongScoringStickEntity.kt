@@ -39,18 +39,18 @@ class MahjongScoringStickEntity(
         get() = MahjongScoringStickDenomination.fromNameOrDefault(entityData[DENOMINATION])
         set(value) = entityData.set(DENOMINATION, value.name)
 
-    /** 規則桌面物件的穩定 ID；自由放置點棒為空字串。 */
+    /** 規則桌面物件的穩定 ID。自由放置點棒為空字串。 */
     var tablePropPlacementId: String = ""
 
     /** 建立此展示物件的規則模組。 */
     var tablePropRuleModuleId: String = ""
 
-    /** 是否由正式牌局管理；管理中的點棒不接受自由放置互動。 */
+    /** 是否由正式牌局管理。管理中的點棒不接受自由放置互動。 */
     var managedByGame: Boolean
         get() = entityData[MANAGED_BY_GAME]
         set(value) = entityData.set(MANAGED_BY_GAME, value)
 
-    /** 正式牌局所屬麻將桌；自由放置點棒為 null。 */
+    /** 正式牌局所屬麻將桌。自由放置點棒為 null。 */
     var managedTableId: Uuid?
         get() = entityData[MANAGED_TABLE_ID]
             .takeIf(String::isNotBlank)
@@ -70,7 +70,7 @@ class MahjongScoringStickEntity(
     val animationDurationTicks: Int
         get() = entityData[ANIMATION_DURATION_TICKS]
 
-    /** 拋物線最高額外高度；點棒掉落固定為純直落，恆為 `0`。 */
+    /** 拋物線最高額外高度。點棒掉落固定為純直落，恆為 `0`。 */
     val animationArcHeight: Double
         get() = entityData[ANIMATION_ARC_HEIGHT].toDouble()
 
@@ -87,7 +87,7 @@ class MahjongScoringStickEntity(
     }
 
     /**
-     * 這個 entity 物件在記憶體裡第一次被 tick 到的 `level().gameTime`；只在記憶體內，不寫進存檔，理由跟
+     * 這個 entity 物件在記憶體裡第一次被 tick 到的 `level().gameTime`。只在記憶體內，不寫進存檔，理由跟
      * `MahjongDiceEntity.firstTickWorldTime` 完全一致（避免世界重新載入一次補跑大量 tick 時誤判成
      * 早就該消失了）。
      */
@@ -96,7 +96,7 @@ class MahjongScoringStickEntity(
     /**
      * 管理中積棒的 fallback 自動清除——**不是主要清除路徑**。積棒的正常生命週期由
      * `EntityTablePropPresenter` 依桌況差量同步，不再需要的積棒在新物件生成成功後才移除，或由對局結束的
-     * 顯式清除觸發；這裡只是意外情境（伺服器崩潰、對局非正常結束導致沒有機會走到正常清除
+     * 顯式清除觸發。這裡只是意外情境（伺服器崩潰、對局非正常結束導致沒有機會走到正常清除
      * 流程）的保險，門檻抓得遠大於正常一局遊戲時長，不能像 `MahjongDiceEntity` 那樣抓短動畫時長——
      * 積棒沒有「動畫播完」的概念，太短的門檻會在正常對局進行中就把還在使用的積棒清掉。
      */
@@ -122,7 +122,7 @@ class MahjongScoringStickEntity(
     override fun isAttackable(): Boolean = !isRemoved && !managedByGame
 
     /**
-     * 右鍵自由放置點棒時循環面額；管理中的點棒不接受此互動。
+     * 右鍵自由放置點棒時循環面額。管理中的點棒不接受此互動。
      *
      * @param player 進行互動的玩家。
      * @param hand 玩家使用的手。
@@ -135,9 +135,9 @@ class MahjongScoringStickEntity(
     }
 
     /**
-     * 左鍵回收自由放置點棒；創造模式只移除 entity。管理中的點棒不能被回收。
+     * 左鍵回收自由放置點棒。創造模式只移除 entity。管理中的點棒不能被回收。
      *
-     * @param attacker 發起攻擊的 entity；非玩家不會回收點棒。
+     * @param attacker 發起攻擊的 entity。非玩家不會回收點棒。
      */
     override fun skipAttackInteraction(attacker: Entity): Boolean {
         if (managedByGame) return false
@@ -166,7 +166,7 @@ class MahjongScoringStickEntity(
      * 落點，真實座標全程不變，只有 render 端的視覺位移從 [DROP_HEIGHT] 內插回 `0`，手法比照
      * `EntityMahjongTileWallPresenter.startWallDropAnimations` 牌牆掉落動畫（已在最終位置、`startOffsetY`
      * 為正值即可，不需要像寶牌揭示動畫那樣額外 `Teleport` 到半空起點——那是因為寶牌指示牌揭示前已經
-     * 停在牌牆位置，需要先「真的」抬起來才能翻面；積棒是全新生成的 entity，從一開始就能直接以視覺
+     * 停在牌牆位置，需要先「真的」抬起來才能翻面。積棒是全新生成的 entity，從一開始就能直接以視覺
      * 位移表達「從上方落下」，不需要移動真實座標）。
      */
     fun enqueueDropAnimation() {
@@ -232,7 +232,7 @@ class MahjongScoringStickEntity(
         MahjongScoringStickItem.writeDenomination(it, denomination)
     }
 
-    /** 創造模式中鍵複製自由點棒；牌局管理中的點棒不提供物品。 */
+    /** 創造模式中鍵複製自由點棒。牌局管理中的點棒不提供物品。 */
     override fun getPickResult(): ItemStack? = if (managedByGame) null else asItemStack()
 
     /** 初始化 client/server 同步的面額、管理狀態與動畫欄位。 */
@@ -279,7 +279,7 @@ class MahjongScoringStickEntity(
     }
 
     companion object {
-        /** 點棒世界寬度；與 [MahjongScoringStickDimensions] 共用同一組數值來源。 */
+        /** 點棒世界寬度。與 [MahjongScoringStickDimensions] 共用同一組數值來源。 */
         const val STICK_WIDTH = MahjongScoringStickDimensions.STICK_WIDTH.toFloat()
 
         /** 點棒世界高度（厚度）。 */
@@ -305,7 +305,7 @@ class MahjongScoringStickEntity(
         private val MANAGED_BY_GAME: EntityDataAccessor<Boolean> =
             SynchedEntityData.defineId(MahjongScoringStickEntity::class.java, EntityDataSerializers.BOOLEAN)
 
-        /** 同步正式點棒所屬麻將桌 UUID；空字串表示自由放置。 */
+        /** 同步正式點棒所屬麻將桌 UUID。空字串表示自由放置。 */
         private val MANAGED_TABLE_ID: EntityDataAccessor<String> =
             SynchedEntityData.defineId(MahjongScoringStickEntity::class.java, EntityDataSerializers.STRING)
 

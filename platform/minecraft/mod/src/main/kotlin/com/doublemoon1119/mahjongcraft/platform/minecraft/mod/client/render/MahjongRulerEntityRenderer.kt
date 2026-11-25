@@ -61,7 +61,7 @@ class MahjongRulerEntityRenderer(
     override fun getTextureLocation(entity: MahjongRulerEntity): ResourceLocation = TEXTURE
 
     /**
-     * 一次繪製用的長方條；六個面都以外側為正面。
+     * 一次繪製用的長方條。六個面都以外側為正面。
      *
      * @property top 頂面高度。
      * @property halfWidth 與長邊垂直的半寬。

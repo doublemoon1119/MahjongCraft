@@ -96,7 +96,7 @@ class TaiwanRuleModule(
     override fun createMatchProgressionPolicy(): MatchProgressionPolicy = TaiwanMatchProgressionPolicy(config.scheduledRoundCount)
 
     /**
-     * 荒牌流局與途中流局都由莊家連莊；其他結果由莊家是否為得利者決定。
+     * 荒牌流局與途中流局都由莊家連莊。其他結果由莊家是否為得利者決定。
      *
      * @param context 本局結算後的完整結果情境。
      * @return 台灣麻將本局後的莊家推進決策。
@@ -136,11 +136,11 @@ class TaiwanRuleModule(
      */
     override fun createLegalActionValidator(): TaiwanLegalActionValidator = TaiwanLegalActionValidator(config)
 
-    /** 宣告聽牌後只能打出剛摸入的牌；吃碰後依食替限制。 */
+    /** 宣告聽牌後只能打出剛摸入的牌。吃碰後依食替限制。 */
     override fun discardableTileIds(tableState: TableState, player: MahjongPlayer): Set<Uuid>? = TaiwanDiscardRestriction.discardableTileIds(player)
 
     /**
-     * 宣告聽牌並打牌：打出後必須仍聽牌。莊家第一打為天聽；全桌沒有副露時，閒家第一打或莊家第二打為地聽；其他時候為一般宣告，
+     * 宣告聽牌並打牌：打出後必須仍聽牌。莊家第一打為天聽。全桌沒有副露時，閒家第一打或莊家第二打為地聽。其他時候為一般宣告，
      * 只有開啟報聽時才能宣告。
      */
     override fun declarationDiscardPolicy(): DeclarationDiscardPolicy = DeclarationDiscardPolicy { tableState, player, action, discardResult ->
@@ -156,7 +156,7 @@ class TaiwanRuleModule(
         )
     }
 
-    /** 放過胡牌後進入過水；已宣告天聽或地聽時改為一般宣告聽牌。 */
+    /** 放過胡牌後進入過水。已宣告天聽或地聽時改為一般宣告聽牌。 */
     override fun onPlayerDeclinedWin(player: MahjongPlayer): ComponentPatch {
         val declaration = player.components[TaiwanPlayerComponents.READY_DECLARATION]
         val values = ComponentSet.EMPTY.with(TaiwanPlayerComponents.PASSED_WIN, Unit).let { values ->
@@ -233,7 +233,7 @@ class TaiwanRuleModule(
             ?: player.hand.tiles.firstOrNull { TaiwanTileTypes.isFlower(it.tile) }
     }
 
-    /** 將花牌移到公開花區並記錄補花動作；公開證據由共用的移出流程記錄。 */
+    /** 將花牌移到公開花區並記錄補花動作。公開證據由共用的移出流程記錄。 */
     override fun applyTileSetAsideAction(
         tableState: TableState,
         actorPlayerId: Uuid,
@@ -252,13 +252,13 @@ class TaiwanRuleModule(
         }
     }
 
-    /** 自摸由其他三家各付一筆；手牌不成立或未達最低台數時為 null。 */
+    /** 自摸由其他三家各付一筆。手牌不成立或未達最低台數時為 null。 */
     override fun declareTsumo(tableState: TableState, player: MahjongPlayer): WinResolutionResult? {
         val winningTile = player.hand.lastDrawn ?: return null
         return resolveWin(tableState, player.copy(hand = player.hand.copy(lastDrawn = null)), winningTile, discarderId = null, isRobbingKong = false)
     }
 
-    /** 放槍與搶槓由責任者付一筆；手牌不成立或未達最低台數時為 null。 */
+    /** 放槍與搶槓由責任者付一筆。手牌不成立或未達最低台數時為 null。 */
     override fun declareRon(
         tableState: TableState,
         player: MahjongPlayer,
@@ -268,14 +268,14 @@ class TaiwanRuleModule(
     ): WinResolutionResult? = resolveWin(tableState, player, winningTile, discarderId, isRobbingKan)
 
     /**
-     * 計台並計算付款；胡牌成立包牌牌型時改由包牌者負擔。
+     * 計台並計算付款。胡牌成立包牌牌型時改由包牌者負擔。
      *
      * @param tableState 胡牌前的桌況。
      * @param player 手牌不含胡牌張的玩家。
      * @param winningTile 胡牌張。
-     * @param discarderId 單獨付款者；自摸為 null。
+     * @param discarderId 單獨付款者。自摸為 null。
      * @param isRobbingKong 是否搶加槓。
-     * @return 結算結果；不成立時為 null。
+     * @return 結算結果。不成立時為 null。
      */
     private fun resolveWin(
         tableState: TableState,
@@ -306,7 +306,7 @@ class TaiwanRuleModule(
      * @param tableState 胡牌前的桌況。
      * @param player 胡牌的玩家。
      * @param handValue 這次胡牌的計台結果。
-     * @return 包牌者；不適用包牌時為 null。
+     * @return 包牌者。不適用包牌時為 null。
      */
     private fun paoPlayerId(
         tableState: TableState,
@@ -325,7 +325,7 @@ class TaiwanRuleModule(
      */
     override fun collectStickPot(tableState: TableState): PointPotCollection? = null
 
-    /** 荒牌流局不付款；牌牆尚未摸完時為 null。 */
+    /** 荒牌流局不付款。牌牆尚未摸完時為 null。 */
     override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult? {
         if (tableState.tileWall.remainingCount > 0) return null
         return ExhaustiveDrawSettlementResult(
@@ -360,7 +360,7 @@ class TaiwanRuleModule(
     }
 
     /**
-     * 判定全桌是否已合計完成四個槓；同一位玩家完成全部四槓也會成立。
+     * 判定全桌是否已合計完成四個槓。同一位玩家完成全部四槓也會成立。
      *
      * @param tableState 要統計各家槓子的桌況。
      * @return 全桌已有至少四個槓時的流局原因，否則為 null。

@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
  * 一局的開局桌況與目前為止最後一次寫入的桌況。
  *
  * @property start 這一局第一次寫入的權威桌況，可作為重新推進的起點，不包含策略的亂數狀態。
- * @property final 這一局最後一次寫入的權威桌況；換局後即為這一局結束時的桌況。
+ * @property final 這一局最後一次寫入的權威桌況。換局後即為這一局結束時的桌況。
  */
 internal class RecordedRound(val start: TableState) {
     var final: TableState = start

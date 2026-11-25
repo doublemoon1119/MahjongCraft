@@ -12,9 +12,9 @@ import net.minecraft.world.level.Level
 import net.minecraft.world.phys.Vec3
 
 /**
- * 牌體加上短手腳的麻將機器人；只提供世界呈現，沒有尋路、戰鬥或牌局決策。
+ * 牌體加上短手腳的麻將機器人。只提供世界呈現，沒有尋路、戰鬥或牌局決策。
  *
- * 此類型不寫入區塊存檔；角色由權威對局恢復。同步欄位只有公開外觀與視覺動作，不包含遊戲手牌。
+ * 此類型不寫入區塊存檔。角色由權威對局恢復。同步欄位只有公開外觀與視覺動作，不包含遊戲手牌。
  *
  * @param type 原生實體類型。
  * @param world 所屬世界。
@@ -23,12 +23,12 @@ class MahjongBotEntity(
     type: EntityType<out MahjongBotEntity> = ModEntities.mahjongBot,
     world: Level,
 ) : MahjongEntity(type, world) {
-    /** 公開角色牌面；不是任何正式牌張的牌面。 */
+    /** 公開角色牌面。不是任何正式牌張的牌面。 */
     var faceAssetKey: String
         get() = entityData.get(FACE_ASSET)
         set(value) = entityData.set(FACE_ASSET, value)
 
-    /** 目前固定席位的朝向；牌體保持直立並面向桌子。 */
+    /** 目前固定席位的朝向。牌體保持直立並面向桌子。 */
     var seatYaw: Float = 0f
 
     /** 本機收到最近一次揮手時的實體年齡。 */
@@ -79,7 +79,7 @@ class MahjongBotEntity(
     /** 不接受傷害，不讓攻擊改變角色接管或權威對局。 */
     override fun hurt(source: DamageSource, amount: Float): Boolean = false
 
-    /** 可被滑鼠射線命中，供座位物品互動使用；受擊仍不造成傷害。 */
+    /** 可被滑鼠射線命中，供座位物品互動使用。受擊仍不造成傷害。 */
     override fun isPickable(): Boolean = true
 
     /** 不讓推擠改變固定席位。 */

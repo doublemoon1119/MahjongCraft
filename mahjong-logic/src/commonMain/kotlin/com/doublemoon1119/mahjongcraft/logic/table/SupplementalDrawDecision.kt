@@ -12,10 +12,10 @@ sealed interface SupplementalDrawDecision {
     /**
      * 補牌已成功解析。
      *
-     * @property drawnTiles 依摸取順序排列的補牌；最後一張會放入玩家摸牌位置。
+     * @property drawnTiles 依摸取順序排列的補牌。最後一張會放入玩家摸牌位置。
      * @property tileWall 更新後仍可供一般摸牌的牌堆。
-     * @property reservedWallTiles 更新後的權威規則保留牌；實體擺法由另外的 layout policy 決定。
-     * @property tableComponents 本次明確設定或移除的桌況組件；未指定的組件保持原值。
+     * @property reservedWallTiles 更新後的權威規則保留牌。實體擺法由另外的 layout policy 決定。
+     * @property tableComponents 本次明確設定或移除的桌況組件。未指定的組件保持原值。
      */
     data class Completed(
         val drawnTiles: List<IdentifiedTile>,

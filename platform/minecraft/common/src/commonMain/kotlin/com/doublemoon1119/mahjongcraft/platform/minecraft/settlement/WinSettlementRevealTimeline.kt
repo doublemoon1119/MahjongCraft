@@ -11,7 +11,7 @@ object WinSettlementRevealTimeline {
     /**
      * 分數在逐條揭示結束後多少 tick 出現。
      *
-     * 版面若把分數錨在逐條揭示之後，就取它的延遲；分數沒有這樣排時為 0，代表逐條揭示一結束就出現。
+     * 版面若把分數錨在逐條揭示之後，就取它的延遲。分數沒有這樣排時為 0，代表逐條揭示一結束就出現。
      *
      * @param layout 面板的版面設計。
      */
@@ -67,7 +67,7 @@ object WinSettlementRevealTimeline {
         else -> childrenOf(layout).any { child -> containsField(child, fieldId) }
     }
 
-    /** 容器類節點的直接子節點；沒有子節點的類型回傳空清單。 */
+    /** 容器類節點的直接子節點。沒有子節點的類型回傳空清單。 */
     private fun childrenOf(layout: PresentationLayout): List<PresentationLayout> = when (layout) {
         is PresentationLayout.Row -> layout.children
         is PresentationLayout.Column -> layout.children

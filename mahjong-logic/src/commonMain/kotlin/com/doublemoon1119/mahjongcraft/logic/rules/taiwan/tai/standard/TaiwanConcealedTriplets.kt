@@ -8,12 +8,12 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiResult
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
 
 /**
- * 三暗刻、四暗刻與五暗刻：暗槓算暗刻；胡別人打出的牌時，胡牌那組刻子不算暗刻。
+ * 三暗刻、四暗刻與五暗刻：暗槓算暗刻。胡別人打出的牌時，胡牌那組刻子不算暗刻。
  *
  * @param decomposition 這次選用的拆法。
  * @param exposed 已副露的面子。
  * @param isTsumo 是否自摸。
- * @return 三暗刻兩台、四暗刻五台、五暗刻八台；其他情況為 null。
+ * @return 三暗刻兩台、四暗刻五台、五暗刻八台。其他情況為 null。
  */
 fun calculateTaiwanConcealedTriplets(
     decomposition: StandardHandDecomposition,

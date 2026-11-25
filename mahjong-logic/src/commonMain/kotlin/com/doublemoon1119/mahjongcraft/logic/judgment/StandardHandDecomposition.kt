@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
  *
  * @property pair 雀頭的牌面。
  * @property groups 立牌拆出的面子，不含已宣告的副露。
- * @property winningGroupIndex 和牌張完成的面子索引；為null時完成雀頭。
+ * @property winningGroupIndex 和牌張完成的面子索引。為null時完成雀頭。
  */
 data class StandardHandDecomposition(
     val pair: Tile,

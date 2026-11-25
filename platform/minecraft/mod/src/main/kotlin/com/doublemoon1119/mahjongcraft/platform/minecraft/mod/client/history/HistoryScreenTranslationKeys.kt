@@ -81,7 +81,7 @@ internal val HistoryBrowseFailure.translationKey: String
         HistoryBrowseFailure.CLIENT_TIMEOUT -> MinecraftHistoryScreenKeys.FAILURE_CLIENT_TIMEOUT
     }
 
-/** 保存狀態提示的翻譯鍵；已保存不需要提示，為 null。 */
+/** 保存狀態提示的翻譯鍵。已保存不需要提示，為 null。 */
 internal val HistoryArchiveStatusDto.translationKey: String?
     get() = when (this) {
         HistoryArchiveStatusDto.SAVED -> null
@@ -93,7 +93,7 @@ internal val HistoryArchiveStatusDto.translationKey: String?
         HistoryArchiveStatusDto.DENIED -> MinecraftHistoryScreenKeys.ARCHIVE_STATUS_DENIED
     }
 
-/** 文字篩選欄位的用途說明翻譯鍵；規則欄位以選單選擇，沒有文字輸入說明，為 null。 */
+/** 文字篩選欄位的用途說明翻譯鍵。規則欄位以選單選擇，沒有文字輸入說明，為 null。 */
 internal val HistoryBrowseFilterField.inputDescriptionKey: String?
     get() = when (this) {
         HistoryBrowseFilterField.RULE -> null
@@ -105,7 +105,7 @@ internal val HistoryBrowseFilterField.inputDescriptionKey: String?
         HistoryBrowseFilterField.MAX_RANK -> MinecraftHistoryScreenKeys.FILTER_INPUT_DESCRIPTION_MAX_RANK
     }
 
-/** 文字篩選欄位的輸入範例翻譯鍵；規則欄位以選單選擇，沒有輸入範例，為 null。 */
+/** 文字篩選欄位的輸入範例翻譯鍵。規則欄位以選單選擇，沒有輸入範例，為 null。 */
 internal val HistoryBrowseFilterField.inputExampleKey: String?
     get() = when (this) {
         HistoryBrowseFilterField.RULE -> null

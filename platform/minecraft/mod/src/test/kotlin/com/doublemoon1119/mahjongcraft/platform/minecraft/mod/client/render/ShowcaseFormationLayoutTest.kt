@@ -21,7 +21,7 @@ class ShowcaseFormationLayoutTest {
         assertEquals(2.25, layout.wingCenters[0] + layout.wingBounds(0).maxX)
     }
 
-    /** 卡片依 order 往 x 較小的一側排，間距固定；和牌張緊鄰最後一張。 */
+    /** 卡片依 order 往 x 較小的一側排，間距固定。和牌張緊鄰最後一張。 */
     @Test
     fun `lays the cards of a wing out by order`() {
         val layout = layout(listOf(0, 1, 2))
@@ -142,7 +142,7 @@ class ShowcaseFormationLayoutTest {
         }
     }
 
-    /** 手牌與各組副露之間多留組間空隙；和牌張仍緊鄰最後一張，整個編隊（含和牌張）左右對稱。 */
+    /** 手牌與各組副露之間多留組間空隙。和牌張仍緊鄰最後一張，整個編隊（含和牌張）左右對稱。 */
     @Test
     fun `leaves a gap between card groups`() {
         val layout = ShowcaseFormationLayout(

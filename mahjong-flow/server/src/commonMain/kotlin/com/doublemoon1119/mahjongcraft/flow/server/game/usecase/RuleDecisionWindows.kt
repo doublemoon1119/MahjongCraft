@@ -24,19 +24,19 @@ import kotlin.uuid.Uuid
 /**
  * 在權威交易內開啟、推進與關閉規則選擇視窗的共用步驟。
  *
- * 只計算新的 [Game]，不寫入、不發布；呼叫端在同一筆寫入中一起保存，讓「開窗」「關窗並排定接續」都不會因中途當機而遺失。
+ * 只計算新的 [Game]，不寫入、不發布。呼叫端在同一筆寫入中一起保存，讓「開窗」「關窗並排定接續」都不會因中途當機而遺失。
  */
 internal object RuleDecisionWindows {
     /**
      * 開窗或推進後的對局與要記錄的歷史事實。
      *
      * @property game 更新後的對局。
-     * @property historyDrafts 這次要記錄的歷史事實；沒有開啟視窗時為空。
+     * @property historyDrafts 這次要記錄的歷史事實。沒有開啟視窗時為空。
      */
     data class Update(val game: Game, val historyDrafts: List<HistoryEventDraft>)
 
     /**
-     * 在 [timing] 詢問規則要不要開啟選擇視窗；規則不需要時原樣回傳。
+     * 在 [timing] 詢問規則要不要開啟選擇視窗。規則不需要時原樣回傳。
      *
      * @param game 目前沒有開著視窗的對局。
      * @param timing 目前的時間點。
@@ -62,12 +62,13 @@ internal object RuleDecisionWindows {
     }
 
     /**
-     * 套用規則對收齊視窗的處理：寫入效果，再以新的視窗身分開啟下一步；沒有下一步時關閉視窗並排定接續。
+     * 套用規則對收齊視窗的處理：寫入效果，再以新的視窗身分開啟下一步。沒有下一步時關閉視窗並排定接續。
      *
-     * [RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW] 的視窗關閉時排定一般流局結算；其他時間點的接續已由開窗前的流程排定，
-     * 或直接回到一般摸打。[RuleDecisionTiming.ROUND_END] 時本局已結算，規則的處理結果不能改變任何玩家的分數。
-     * 處理結果直接成立和牌時，和牌結果寫入 [Game.ruleDecisionWin]，由結束本局的流程取用。
-     * 處理過程中有玩家整理手牌（[TableStepEvent.HandsSorted]）時，啟用自動理牌的玩家依規則牌序整理權威手牌。
+     * - [RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW] 的視窗關閉時排定一般流局結算。
+     *   其他時間點的接續已由開窗前的流程排定，或直接回到一般摸打。
+     * - [RuleDecisionTiming.ROUND_END] 時本局已結算，規則的處理結果不能改變任何玩家的分數。
+     * - 處理結果直接成立和牌時，和牌結果寫入 [Game.ruleDecisionWin]，由結束本局的流程取用。
+     * - 處理過程中有玩家整理手牌（[TableStepEvent.HandsSorted]）時，啟用自動理牌的玩家依規則牌序整理權威手牌。
      *
      * @param game 開著 [decision] 的對局。
      * @param decision 剛收齊或沒有參與者的視窗。

@@ -468,7 +468,7 @@ class MahjongCraftClientBootstrap(
     }
 
     /**
-     * 載入 client TOML；失敗時 store 會保留程式預設值並記錄詳細錯誤，對稱 [MahjongCraftBootstrap] 的 `initializeServerConfig`。
+     * 載入 client TOML。失敗時 store 會保留程式預設值並記錄詳細錯誤，對稱 [MahjongCraftBootstrap] 的 `initializeServerConfig`。
      *
      * @param configStore client 設定讀取與更新 store。
      */

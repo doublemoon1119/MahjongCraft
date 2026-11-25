@@ -43,7 +43,7 @@ class DebugWinnerDealerRiichiRuleModuleTest {
         config = module.config,
     )
 
-    /** 子家和牌時由和牌者坐莊；多人和牌時取放銃者之後最近的和牌者。 */
+    /** 子家和牌時由和牌者坐莊。多人和牌時取放銃者之後最近的和牌者。 */
     @Test
     fun `a non dealer winner takes the deal`() {
         val single = module.resolveRoundTransition(winContext(setOf(state.players[2].id), discarderId = state.players[0].id))

@@ -14,7 +14,7 @@ import net.minecraft.resources.ResourceLocation
 class MahjongSoundTimelineEntityRenderer(
     context: EntityRendererProvider.Context,
 ) : EntityRenderer<MahjongSoundTimelineEntity>(context) {
-    /** 此 entity 不會繪製材質；回傳固定空材質 ID 以滿足 renderer 契約。 */
+    /** 此 entity 不會繪製材質。回傳固定空材質 ID 以滿足 renderer 契約。 */
     override fun getTextureLocation(entity: MahjongSoundTimelineEntity): ResourceLocation = EMPTY_TEXTURE
 
     /** 固定參數。 */

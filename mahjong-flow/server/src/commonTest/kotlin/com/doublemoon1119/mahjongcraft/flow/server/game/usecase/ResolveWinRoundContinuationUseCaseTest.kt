@@ -215,7 +215,7 @@ class ResolveWinRoundContinuationUseCaseTest {
     }
 
     /**
-     * 呼叫續局判定案例，取得唯一登記的判定器所收到的情境；該判定器固定回傳 null。
+     * 呼叫續局判定案例，取得唯一登記的判定器所收到的情境。該判定器固定回傳 null。
      *
      * @param previousState 和牌結算前的桌況。
      * @param winnerPlayerIds 本次和牌的玩家識別碼。

@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
  * @property outcome 結束狀態。
  * @property integrity 完整性狀態。
  * @property integrityDiagnostic 完整性診斷摘要。
- * @property resultsAvailable 是否保存完整重播資料；不代表已驗證其內容可解碼。
+ * @property resultsAvailable 是否保存完整重播資料。不代表已驗證其內容可解碼。
  * @property participants 參與者摘要。
  * @property roundCount 已知的完成局數。
  * @property results 可取得的終局結果。

@@ -29,7 +29,7 @@ import kotlin.uuid.Uuid
  * @param access 可信任的發起者資訊。
  * @param policy 當前查詢政策。
  * @param scope 要求的查詢範圍。
- * @return 不可執行時的錯誤；可執行時為 null。
+ * @return 不可執行時的錯誤。可執行時為 null。
  */
 private fun validateHistoryAccess(
     access: HistoryQueryAccess,
@@ -46,7 +46,7 @@ private fun validateHistoryAccess(
  * 驗證單局事件查詢的局序號、起點與頁大小。
  *
  * @param request 單局事件查詢要求。
- * @return 不可執行時的錯誤；可執行時為 null。
+ * @return 不可執行時的錯誤。可執行時為 null。
  */
 private fun validateHistoryRoundRequest(request: HistoryRoundEventsRequest): HistoryQueryError? {
     if (request.roundNumber <= 0 ||
@@ -62,7 +62,7 @@ private fun validateHistoryRoundRequest(request: HistoryRoundEventsRequest): His
  * 驗證單局桌況查詢的局序號與局內位置。
  *
  * @param request 單局桌況查詢要求。
- * @return 不可執行時的錯誤；可執行時為 null。
+ * @return 不可執行時的錯誤。可執行時為 null。
  */
 private fun validateHistoryRoundStateRequest(request: HistoryRoundStateRequest): HistoryQueryError? {
     val position = request.position
@@ -79,7 +79,7 @@ private fun validateHistoryRoundStateRequest(request: HistoryRoundStateRequest):
  * 檢查歷史清單要求的範圍、排序限制與游標一致性。
  *
  * @param request 清單查詢要求。
- * @return 不可執行時的錯誤；可執行時為 null。
+ * @return 不可執行時的錯誤。可執行時為 null。
  */
 private fun validateHistoryListRequest(
     request: HistoryListRequest,

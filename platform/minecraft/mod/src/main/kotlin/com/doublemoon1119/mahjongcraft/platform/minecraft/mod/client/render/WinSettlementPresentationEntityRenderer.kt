@@ -80,7 +80,7 @@ class WinSettlementPresentationEntityRenderer(
 ) : EntityRenderer<WinSettlementPresentationEntity>(context) {
     private val textRenderer = context.font
 
-    /** 宣告式版面的量測與配置；文字寬度用本 renderer 的字型量測。 */
+    /** 宣告式版面的量測與配置。文字寬度用本 renderer 的字型量測。 */
     private val layoutSolver = PresentationLayoutSolver(
         templateRegistry = templateRegistry,
         textMeasurer = object : PresentationTextMeasurer {
@@ -90,7 +90,7 @@ class WinSettlementPresentationEntityRenderer(
         },
     )
 
-    /** 目前這次 [render] 呼叫所屬的桌子 ID，[playerName] 解析名稱時查詢用；每次 render 開頭重設。 */
+    /** 目前這次 [render] 呼叫所屬的桌子 ID，[playerName] 解析名稱時查詢用。每次 render 開頭重設。 */
     private var currentTableId: Uuid? = null
 
     override fun render(
@@ -186,7 +186,7 @@ class WinSettlementPresentationEntityRenderer(
     }
 
     /**
-     * 將贏家與結算 entity 的同步資料轉成模板解析用欄位快照；蓋著的牌在這裡換成牌背，不把牌面交給模板。
+     * 將贏家與結算 entity 的同步資料轉成模板解析用欄位快照。蓋著的牌在這裡換成牌背，不把牌面交給模板。
      *
      * @param entity 提供結果類型、排名與揭曉時序的結算 entity。
      * @param appearance 本次結算使用的公開牌組外觀。
@@ -255,7 +255,7 @@ class WinSettlementPresentationEntityRenderer(
      * @param matrices 目前的模型矩陣。
      * @param consumers 提供繪製頂點緩衝。
      * @param appearance 本次結算使用的公開牌組外觀。
-     * @param allocatedWidth 父容器分配的寬度；未提供時使用節點自然寬度。
+     * @param allocatedWidth 父容器分配的寬度。未提供時使用節點自然寬度。
      */
     private fun renderLayout(
         layout: PresentationLayout,
@@ -436,7 +436,7 @@ class WinSettlementPresentationEntityRenderer(
      * @param matrices 目前的模型矩陣。
      * @param consumers 提供繪製頂點緩衝。
      * @param appearance 本次結算使用的公開牌組外觀。
-     * @param allocatedWidth 父容器分配的寬度；未提供時使用子節點自然寬度。
+     * @param allocatedWidth 父容器分配的寬度。未提供時使用子節點自然寬度。
      */
     private fun renderAnimatedLayout(
         layout: PresentationLayout.Animated,
@@ -632,7 +632,7 @@ class WinSettlementPresentationEntityRenderer(
     )
 
     /**
-     * 繪製容器背景與邊框；兩者皆透明時不輸出頂點。
+     * 繪製容器背景與邊框。兩者皆透明時不輸出頂點。
      *
      * @param style 背景、邊框顏色與邊框寬度。
      * @param x 容器左上角 X 座標。
@@ -812,7 +812,7 @@ class WinSettlementPresentationEntityRenderer(
     }
 
     /**
-     * 依排名文字的實際像素寬度量測欄位，包含分數、增減及付款原因；沒有付款原因時省略該欄。
+     * 依排名文字的實際像素寬度量測欄位，包含分數、增減及付款原因。沒有付款原因時省略該欄。
      *
      * @param players 所有排名玩家快照。
      * @return 排名列共用的水平欄位版面。
@@ -841,9 +841,9 @@ class WinSettlementPresentationEntityRenderer(
     }
 
     /**
-     * 將付款原因指示器解析為顯示文字與 ARGB 顏色；沒有有效原因時回傳 `null`。
+     * 將付款原因指示器解析為顯示文字與 ARGB 顏色。沒有有效原因時回傳 `null`。
      *
-     * @return 有效付款原因的文字與 ARGB 顏色；沒有原因或 ID 格式不符時為 `null`。
+     * @return 有效付款原因的文字與 ARGB 顏色。沒有原因或 ID 格式不符時為 `null`。
      */
     private fun WinSettlementRankingSnapshot.paymentReasonText(): Pair<Component, Int>? = paymentReasonId
         ?.takeIf { ':' in it }
@@ -953,7 +953,7 @@ class WinSettlementPresentationEntityRenderer(
      */
     private fun color(rgb: Int, alpha: Float) = WorldPanelRenderer.withAlpha(rgb, alpha)
 
-    /** 繪製不使用單一材質；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    /** 繪製不使用單一材質。原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
     override fun getTextureLocation(entity: WinSettlementPresentationEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     /** 文字相對水平錨點的對齊方式。 */

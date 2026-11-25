@@ -39,6 +39,6 @@ sealed interface RoundInfoArgument {
         }
     }
 
-    /** 僅由解碼器在無法辨識原始參數時產生的佔位值；規則不應自行建立此值。 */
+    /** 僅由解碼器在無法辨識原始參數時產生的佔位值。規則不應自行建立此值。 */
     data object Unrecognized : RoundInfoArgument
 }

@@ -8,8 +8,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
  * @property isRobbingKong 是否搶加槓。
  * @property isReplacementWin 是否為允許胡牌的補牌自摸。
  * @property isLastDraw 是否為最後可摸牌的自摸。
- * @property openingWin 本次成立的天胡、地胡或人胡；一般胡牌為null。
- * @property readyQualification 尚有效的宣告聽牌計台項目：一般宣告聽牌、天聽或地聽；沒有宣告為null。
+ * @property openingWin 本次成立的天胡、地胡或人胡。一般胡牌為null。
+ * @property readyQualification 尚有效的宣告聽牌計台項目：一般宣告聽牌、天聽或地聽。沒有宣告為null。
  */
 data class TaiwanWinSituation(
     val isRobbingKong: Boolean = false,

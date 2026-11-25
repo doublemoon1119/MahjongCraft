@@ -23,7 +23,7 @@ abstract class MinecraftModLibrariesExtension(private val project: Project) {
      *
      * @param configurationName 要加入的設定名稱。
      * @param kinds 要加入的函式庫種類。
-     * @param excludeRuntimeProvided 是否排除執行環境已提供的函式庫，例如載入器附帶的 Kotlin 標準函式庫；附帶函式庫的設定
+     * @param excludeRuntimeProvided 是否排除執行環境已提供的函式庫，例如載入器附帶的 Kotlin 標準函式庫。附帶函式庫的設定
      * 使用，編譯用的設定不使用。
      */
     fun addTo(
@@ -82,12 +82,12 @@ abstract class MinecraftModLibrariesExtension(private val project: Project) {
  * 執行環境已提供、mod 不附帶的一個模組。
  *
  * @property group Maven group。
- * @property module Maven artifact；null 代表整個 group。
+ * @property module Maven artifact。null 代表整個 group。
  */
 internal data class RuntimeProvidedModule(val group: String, val module: String? = null)
 
 /**
- * 依 target 提供的函式庫名稱，列出 mod 不附帶的模組；Minecraft 本身附帶的 SLF4J 一律列入。
+ * 依 target 提供的函式庫名稱，列出 mod 不附帶的模組。Minecraft 本身附帶的 SLF4J 一律列入。
  *
  * @param providedNames target 在 `provided-versions` 列出的名稱。
  * @return 要從附帶函式庫中排除的模組。

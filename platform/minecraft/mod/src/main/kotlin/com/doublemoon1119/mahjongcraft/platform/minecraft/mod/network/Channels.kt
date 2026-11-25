@@ -30,14 +30,14 @@ private const val DEFAULT_MAX_PAYLOAD_BYTES = MAX_PAYLOAD_LENGTH * 3
 
 /**
  * 以相容的字元與位元組上限安全解碼一份 C2S payload。
- * 無效內容直接拒絕；取消例外與致命錯誤維持外傳。UTF-8 讀取沿用原生字串的替換字元語意。
+ * 無效內容直接拒絕。取消例外與致命錯誤維持外傳。UTF-8 讀取沿用原生字串的替換字元語意。
  *
  * @param T 解碼後的線路 DTO 型別。
  * @param buf 僅在接收回呼期間有效的封包 buffer。
  * @param json 線路序列化設定。
  * @param serializer 要求的 DTO 契約。
- * @param maxPayloadBytes 頻道明確指定的 JSON UTF-8 位元組上限；null 使用既有字串上限。
- * @return 成功解碼的結果；拒絕時為 null。結果本身可以合法攜帶 null DTO。
+ * @param maxPayloadBytes 頻道明確指定的 JSON UTF-8 位元組上限。null 使用既有字串上限。
+ * @return 成功解碼的結果。拒絕時為 null。結果本身可以合法攜帶 null DTO。
  */
 internal fun <T> decodeC2SPayload(
     buf: FriendlyByteBuf,
@@ -70,7 +70,7 @@ internal fun <T> decodeC2SPayload(
  * @param buf 僅在接收回呼期間有效的封包 buffer。
  * @param json 線路序列化設定。
  * @param serializer 要求的 DTO 契約。
- * @param maxPayloadBytes 頻道明確指定的 JSON UTF-8 位元組上限；null 使用既有字串上限。
+ * @param maxPayloadBytes 頻道明確指定的 JSON UTF-8 位元組上限。null 使用既有字串上限。
  * @param dispatch 驗證成功後負責排入伺服器主執行緒的函式。
  * @return 是否已將解碼結果交給排程函式。
  */
@@ -94,7 +94,7 @@ internal fun <T> decodeAndDispatchC2S(
  * @param serializer 要求的 DTO 契約。
  * @param maxPayloadBytes JSON 的 UTF-8 位元組上限。
  * @param T 解碼後的線路 DTO 型別。
- * @return 完整且合法的 DTO；拒絕時為 null。
+ * @return 完整且合法的 DTO。拒絕時為 null。
  */
 internal fun <T> decodeBoundedPayload(
     buf: FriendlyByteBuf,
@@ -109,7 +109,7 @@ internal fun <T> decodeBoundedPayload(
  * @param T 傳送的線路 DTO 型別。
  * @param id 模組命名空間內的頻道名稱。
  * @property serializer 線路資料的序列化契約。
- * @property maxPayloadBytes JSON UTF-8 位元組上限；null 保持既有頻道行為。
+ * @property maxPayloadBytes JSON UTF-8 位元組上限。null 保持既有頻道行為。
  */
 class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private val maxPayloadBytes: Int? = null) {
     /** 收送封包使用的頻道識別碼。 */
@@ -118,7 +118,7 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private 
     /** 記錄丟棄過大回應的 logger。 */
     private val logger = mahjongCraftLogger(S2CChannel::class)
 
-    /** 這個頻道是否已以警告記錄過丟棄過大的回應；之後改用 debug，避免洗版。 */
+    /** 這個頻道是否已以警告記錄過丟棄過大的回應。之後改用 debug，避免洗版。 */
     private val oversizedWarned = AtomicBoolean(false)
 
     /**
@@ -137,7 +137,7 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private 
     }
 
     /**
-     * 註冊客戶端接收器；同步讀取 buffer 後交回主執行緒，連線已切換時不套用舊回覆。
+     * 註冊客戶端接收器。同步讀取 buffer 後交回主執行緒，連線已切換時不套用舊回覆。
      *
      * @param json 線路序列化設定。
      * @param handler 主執行緒上的接收處理。
@@ -164,7 +164,7 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private 
     }
 
     /**
-     * 記錄過大回應的診斷；每個頻道第一次以警告記錄，之後改用 debug。
+     * 記錄過大回應的診斷。每個頻道第一次以警告記錄，之後改用 debug。
      *
      * @param bytes 被拒絕內容的位元組數。
      * @param limit 頻道允許的最大位元組數。
@@ -205,7 +205,7 @@ class C2SChannel<T>(
     /** 收送封包使用的頻道識別碼。 */
     val channelId: ResourceLocation = resourceId(MinecraftModMetadata.MOD_ID, id).also { ModPackets.transport.declareChannel(it, ChannelDirection.TO_SERVER) }
 
-    /** 依 `rateLimit` 判斷要求是否接受；由接收端自行准入時為 null。 */
+    /** 依 `rateLimit` 判斷要求是否接受。由接收端自行准入時為 null。 */
     private val limiter: PlayerRequestRateLimiter? = (rateLimit as? C2SRateLimit.PerPlayer)
         ?.let(::PlayerRequestRateLimiter)
         ?.also(limiters::add)
@@ -225,8 +225,8 @@ class C2SChannel<T>(
     }
 
     /**
-     * 註冊伺服器接收器；所有要求都先驗證容量與完整內容，再排入主執行緒。
-     * 無效封包直接丟棄，不呼叫 handler、不回覆或主動斷線；取消例外與致命錯誤外傳。
+     * 註冊伺服器接收器。所有要求都先驗證容量與完整內容，再排入主執行緒。
+     * 無效封包直接丟棄，不呼叫 handler、不回覆或主動斷線。取消例外與致命錯誤外傳。
      *
      * @param json 線路序列化設定。
      * @param handler 伺服器主執行緒上的接收處理。
@@ -252,7 +252,7 @@ class C2SChannel<T>(
         private val limiters = CopyOnWriteArrayList<PlayerRequestRateLimiter>()
 
         /**
-         * 清除玩家在所有頻道的頻率限制紀錄；玩家離線時呼叫。
+         * 清除玩家在所有頻道的頻率限制紀錄。玩家離線時呼叫。
          *
          * @param playerId 離線的玩家。
          */

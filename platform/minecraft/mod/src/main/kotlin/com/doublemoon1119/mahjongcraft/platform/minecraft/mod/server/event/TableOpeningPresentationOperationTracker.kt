@@ -5,12 +5,12 @@ import kotlin.uuid.Uuid
 /**
  * 追蹤同桌同一批開局 presentation 的世代與失敗狀態。
  *
- * Flow 的 publisher 契約刻意不攜帶平台 operation token；[begin] 在收到具有開門動畫的牌牆請求時建立
- * 新世代，後續同步發布的方法以 [getRegisteringTicket] 取得同一張 [Ticket]，直到初次發牌完成註冊後由
- * [finishRegistration] 關閉捕捉窗口。已經捕捉的工作仍可執行；新世代會使舊世代失效。
- *
- * 本類別只負責診斷期的同批 fail-stop，不取代 [TablePresentationBusyTracker]。第一次不可恢復例外會由
- * [fail] 標記，讓同批尚未執行的工作停止碰觸可能已損壞的世界 entity index。
+ * - Flow 的 publisher 契約不攜帶平台 operation token。
+ * - [begin] 在收到具有開門動畫的牌牆請求時建立新世代。新世代會使舊世代失效。
+ * - 後續同步發布的方法以 [getRegisteringTicket] 取得同一張 [Ticket]，直到初次發牌完成註冊後由 [finishRegistration] 關閉捕捉窗口。
+ *   已經捕捉的工作仍可執行。
+ * - 本類別只負責同批開局的 fail-stop，不取代 [TablePresentationBusyTracker]。
+ * - 第一次不可恢復例外由 [fail] 標記，讓同批尚未執行的工作停止碰觸可能已損壞的世界 entity index。
  */
 class TableOpeningPresentationOperationTracker {
     /** 各桌最新開局世代及其第一筆失敗狀態。 */
@@ -39,7 +39,7 @@ class TableOpeningPresentationOperationTracker {
     }
 
     /**
-     * 取得目前仍在同步註冊中的開局批次；一般回合 presentation 回傳 `null`。
+     * 取得目前仍在同步註冊中的開局批次。一般回合 presentation 回傳 `null`。
      *
      * @param tableId 要查詢的桌子。
      * @return 仍在捕捉窗口中的批次，或一般回合時的 null。
@@ -48,7 +48,7 @@ class TableOpeningPresentationOperationTracker {
     fun getRegisteringTicket(tableId: Uuid): Ticket? = openRegistrationByTable[tableId]
 
     /**
-     * 關閉捕捉窗口；已排入 coroutine 的 [ticket] 仍保持有效。
+     * 關閉捕捉窗口。已排入 coroutine 的 [ticket] 仍保持有效。
      *
      * @param ticket 要完成同步註冊的開局批次。
      */
@@ -60,9 +60,9 @@ class TableOpeningPresentationOperationTracker {
     }
 
     /**
-     * 判斷工作是否仍屬最新且尚未失敗的世代；沒有開局 ticket 的一般 presentation 一律可執行。
+     * 判斷工作是否仍屬最新且尚未失敗的世代。沒有開局 ticket 的一般 presentation 一律可執行。
      *
-     * @param ticket 工作捕捉到的批次；一般 presentation 傳 null。
+     * @param ticket 工作捕捉到的批次。一般 presentation 傳 null。
      * @return 沒有批次，或仍屬最新且未失敗批次時為 true。
      */
     @Synchronized
@@ -73,12 +73,12 @@ class TableOpeningPresentationOperationTracker {
     }
 
     /**
-     * 將最新世代標記為失敗；舊世代或已失敗世代不重複改寫第一筆失敗資料。
+     * 將最新世代標記為失敗。舊世代或已失敗世代不重複改寫第一筆失敗資料。
      *
-     * @param ticket 失敗工作捕捉到的批次；一般 presentation 可為 null。
+     * @param ticket 失敗工作捕捉到的批次。一般 presentation 可為 null。
      * @param stage 失敗的呈現階段名稱。
      * @param cause 原始失敗原因。
-     * @param clearCurrentState 僅在目前世代第一次失敗時清除該世代的暫存資料；必須是立即完成的記憶體操作。
+     * @param clearCurrentState 僅在目前世代第一次失敗時清除該世代的暫存資料。必須是立即完成的記憶體操作。
      * @return 包含批次與階段資訊的例外。
      */
     @Synchronized
@@ -129,7 +129,7 @@ class TableOpeningPresentationOperationTracker {
      *
      * @property ticket 此狀態所屬的世代。
      * @property failed 是否已有不可恢復失敗。
-     * @property failedStage 第一個失敗的呈現階段；尚未失敗時為 null。
+     * @property failedStage 第一個失敗的呈現階段。尚未失敗時為 null。
      */
     private data class State(
         val ticket: Ticket,

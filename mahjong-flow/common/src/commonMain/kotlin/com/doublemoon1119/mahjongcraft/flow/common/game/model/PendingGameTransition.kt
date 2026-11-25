@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.model
 /**
  * 呈現結束後尚待完成的權威遊戲流程。
  *
- * 使用 sealed interface 讓後續需要攜帶流程參數時可新增 `data class` 分支；呈現用的役種、
+ * 使用 sealed interface 讓後續需要攜帶流程參數時可新增 `data class` 分支。呈現用的役種、
  * 贏家或展示理由不屬於權威流程參數，不應放在這裡。
  */
 sealed interface PendingGameTransition {

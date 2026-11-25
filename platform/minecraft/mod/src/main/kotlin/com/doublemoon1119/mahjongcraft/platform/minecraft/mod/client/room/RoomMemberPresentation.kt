@@ -21,10 +21,10 @@ internal class RoomMemberPresentation(private val indicatorTextResolver: PublicP
     /**
      * 卡片名稱下方的資訊列。
      *
-     * 第一列是自風，莊家額外加上標記；第二列是分數；其後是規則提供的公開 indicator。
+     * 第一列是自風，莊家額外加上標記。第二列是分數。其後是規則提供的公開 indicator。
      *
      * @param player 要呈現的玩家公開資訊。
-     * @param dealerPlayerId 莊家識別碼；未知時為 null。
+     * @param dealerPlayerId 莊家識別碼。未知時為 null。
      * @return 依顯示順序排列的文字與顏色。
      */
     fun infoRows(player: MahjongPlayerInfoEntry, dealerPlayerId: Uuid?): List<Pair<Component, Int>> = buildList {
@@ -70,12 +70,12 @@ internal class RoomMemberPresentation(private val indicatorTextResolver: PublicP
 /**
  * Player Info entity 尚未同步時，由遊戲快照組出可顯示的玩家清單。
  *
- * 成員名稱交由 [resolvePlayerName] 共用名稱解析器取得；缺少名稱時 AI 依快照順序備援編號，真人保留 `null`。
+ * 成員名稱交由 [resolvePlayerName] 共用名稱解析器取得。缺少名稱時 AI 依快照順序備援編號，真人保留 `null`。
  * 這份降級資料不含規則公開 indicator。
  *
  * @param players 依座位順序排列的玩家快照。
  * @param aiPlayerIds 由 AI 操控的玩家識別碼。
- * @param resolvePlayerName 依成員識別碼與 AI 身分取得名稱；未知時回傳 null。
+ * @param resolvePlayerName 依成員識別碼與 AI 身分取得名稱。未知時回傳 null。
  * @return 保留輸入座位順序的玩家公開資訊。
  */
 internal fun roomMemberEntriesFrom(
@@ -101,7 +101,7 @@ internal fun roomMemberEntriesFrom(
 /**
  * 房間畫面共用的千分位整數格式。
  *
- * 固定使用 [Locale.ROOT]，不隨系統語系改變分隔符號；成員分數與設定 tooltip 的數值範圍都用這一份。
+ * 固定使用 [Locale.ROOT]，不隨系統語系改變分隔符號。成員分數與設定 tooltip 的數值範圍都用這一份。
  *
  * @param number 要格式化的整數。
  * @return 以逗號分隔千分位的整數文字。

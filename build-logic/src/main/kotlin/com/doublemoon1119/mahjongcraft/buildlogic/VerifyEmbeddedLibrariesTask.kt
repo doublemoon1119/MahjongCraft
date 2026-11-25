@@ -16,7 +16,7 @@ import java.util.zip.ZipFile
 /**
  * 驗證 mod JAR 以 jar-in-jar 附帶了執行時需要的每個外部函式庫，而且版本相同。
  *
- * jar-in-jar 只附帶直接宣告的函式庫；函式庫自己依賴的函式庫沒有另外宣告時，執行時才會找不到類別。
+ * jar-in-jar 只附帶直接宣告的函式庫。函式庫自己依賴的函式庫沒有另外宣告時，執行時才會找不到類別。
  */
 abstract class VerifyEmbeddedLibrariesTask : DefaultTask() {
     /** 要檢查的 mod JAR。 */
@@ -57,7 +57,7 @@ internal fun embeddedLibraries(metadataJson: String): Set<String> = METADATA_JSO
  *
  * @param required 執行時需要的函式庫，格式為 `group:artifact:version`。
  * @param embedded 已附帶的函式庫，格式相同。
- * @return 依名稱排序、缺少或版本不同的函式庫；已附帶同名但版本不同時一併寫出附帶的版本。
+ * @return 依名稱排序、缺少或版本不同的函式庫。已附帶同名但版本不同時一併寫出附帶的版本。
  */
 internal fun findMissingEmbeddedLibraries(required: Set<String>, embedded: Set<String>): List<String> {
     val embeddedVersions = embedded.associate { it.substringBeforeLast(':') to it.substringAfterLast(':') }

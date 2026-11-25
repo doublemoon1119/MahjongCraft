@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanGame
 import net.minecraft.core.registries.Registries
 import net.minecraft.sounds.SoundEvent
 
-/** MahjongCraft 內建聲音事件的集中登記點；可直接播放的實例在 [register] 登記完成後才能讀取。 */
+/** MahjongCraft 內建聲音事件的集中登記點。可直接播放的實例在 [register] 登記完成後才能讀取。 */
 object ModSounds {
     /** 登記完成後可讀取 [tileDiscardLand] 的項目。 */
     private lateinit var tileDiscardLandEntry: RegisteredEntry<SoundEvent>
@@ -64,7 +64,7 @@ object ModSounds {
      * 依完整 namespaced ID 建立並登記聲音事件。
      *
      * @param soundId 要登記的聲音事件完整 ID。
-     * @param fixedRange 指定時使用的固定最大可聽距離；省略時使用一般聲音事件範圍。
+     * @param fixedRange 指定時使用的固定最大可聽距離。省略時使用一般聲音事件範圍。
      * @return 登記完成後可讀取事件實例的項目。
      */
     private fun ModRegistrar.registerSound(soundId: String, fixedRange: Float? = null): RegisteredEntry<SoundEvent> {

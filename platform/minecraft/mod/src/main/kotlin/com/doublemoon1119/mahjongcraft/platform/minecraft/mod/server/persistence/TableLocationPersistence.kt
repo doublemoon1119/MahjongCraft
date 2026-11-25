@@ -60,7 +60,7 @@ class TableLocationPersistence(
     }
 
     /**
-     * 讀取既有位置索引；無法讀取時記錄、回報並以空索引取代。
+     * 讀取既有位置索引。無法讀取時記錄、回報並以空索引取代。
      *
      * @param server 要載入桌子位置索引的 Minecraft 伺服器。
      * @return 讀取成功或重新建立的位置 saved data。

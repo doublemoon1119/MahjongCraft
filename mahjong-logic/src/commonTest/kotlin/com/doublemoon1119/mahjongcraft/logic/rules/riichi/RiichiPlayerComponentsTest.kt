@@ -65,7 +65,7 @@ class RiichiPlayerComponentsTest {
         }
     }
 
-    /** 未成立時不建立空責任；換局清除上一局的責任。 */
+    /** 未成立時不建立空責任。換局清除上一局的責任。 */
     @Test
     fun `pao absence is explicit and a new round clears liability`() {
         val registry = registry()

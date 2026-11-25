@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import kotlin.uuid.Uuid
 
-/** [TableStep] 中發生的事；只描述事件本身，呈現方式由呈現端決定。 */
+/** [TableStep] 中發生的事。只描述事件本身，呈現方式由呈現端決定。 */
 sealed interface TableStepEvent {
     /**
      * 玩家宣告的動作成立，例如吃、碰、槓、立直、自摸、榮和或移出手牌。

@@ -30,7 +30,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.util.FormattedCharSequence
 
 /**
- * 可切換規則、分類與搜尋的唯讀規則一覽；上方控制區、分類頁籤與底部按鈕固定，只有中間的條目會捲動。
+ * 可切換規則、分類與搜尋的唯讀規則一覽。上方控制區、分類頁籤與底部按鈕固定，只有中間的條目會捲動。
  *
  * @property browser 規則、分類、搜尋與設定來源的瀏覽狀態。
  * @property presenter 條目 card 的文字與牌例測量。
@@ -45,7 +45,7 @@ internal class RuleCatalogueScreen(
     private val openingContext: RuleCatalogueBrowseContext,
     private val exit: RuleCatalogueExit,
 ) : MahjongScreen(Component.translatable(MinecraftRuleCatalogueScreenKeys.TITLE)) {
-    /** 返回時回到的畫面；直接關回遊戲時為 null。 */
+    /** 返回時回到的畫面。直接關回遊戲時為 null。 */
     internal val returnScreen: Screen? get() = exit.returnScreen
 
     /** 目前的瀏覽快照。 */
@@ -59,7 +59,7 @@ internal class RuleCatalogueScreen(
         sourceLabelWidth = null,
     )
 
-    /** 目前條目的 card；只在內容、語言或尺寸改變時重新測量。 */
+    /** 目前條目的 card。只在內容、語言或尺寸改變時重新測量。 */
     private var cards = emptyList<CatalogueCard>()
 
     /** 全部 card 與間距的總高度。 */
@@ -97,7 +97,7 @@ internal class RuleCatalogueScreen(
     }
 
     /**
-     * 依目前尺寸、語言與資源建立控制項並重新測量內容；保留規則、分類、搜尋與捲動位置。
+     * 依目前尺寸、語言與資源建立控制項並重新測量內容。保留規則、分類、搜尋與捲動位置。
      *
      * 資源重新載入後畫面會重新初始化，因此在這裡丟棄牌面圖案的快取，補上或移除的貼圖立即反映。
      */
@@ -124,7 +124,7 @@ internal class RuleCatalogueScreen(
         scroll.relayout(layout = layout, contentHeight = contentHeight)
     }
 
-    /** 規則選擇器，點擊展開規則清單；只有一個規則時停用。依一般說明顯示時，提示會說明沒有套用對局設定。 */
+    /** 規則選擇器，點擊展開規則清單。只有一個規則時停用。依一般說明顯示時，提示會說明沒有套用對局設定。 */
     private fun addRuleSelector() {
         val options = state.ruleOptions
         val selected = options.firstOrNull { it.ruleModuleId == state.selectedRuleModuleId }
@@ -147,7 +147,7 @@ internal class RuleCatalogueScreen(
         selector.tooltip = Tooltip.create(optionTooltip(descriptionKeys = description, current = name, options = options.map { it.displayName }))
     }
 
-    /** 分類頁籤，「全部分類」排第一；頁籤放不下時可左右捲動，選中的頁籤保持看得見。 */
+    /** 分類頁籤，「全部分類」排第一。頁籤放不下時可左右捲動，選中的頁籤保持看得見。 */
     private fun addCategoryTabs() {
         val options = categoryOptions()
         val selectedIndex = options.indexOfFirst { it.first == state.categoryId }.coerceAtLeast(0)
@@ -216,7 +216,7 @@ internal class RuleCatalogueScreen(
     }
 
     /**
-     * 設定來源選擇器，點擊展開「開啟時的設定」與「一般說明」；只在從房間或歷史開啟時出現，切換到其他規則後停用。
+     * 設定來源選擇器，點擊展開「開啟時的設定」與「一般說明」。只在從房間或歷史開啟時出現，切換到其他規則後停用。
      *
      * @param bounds 選擇器範圍。
      */
@@ -254,7 +254,7 @@ internal class RuleCatalogueScreen(
      * @param descriptionKeys 說明文字的翻譯鍵，每個一行。
      * @param current 目前選項名稱。
      * @param options 所有選項名稱。
-     * @param hints 操作提示；不需要提示時為空。
+     * @param hints 操作提示。不需要提示時為空。
      * @return 提示文字。
      */
     private fun optionTooltip(
@@ -299,7 +299,7 @@ internal class RuleCatalogueScreen(
     }
 
     /**
-     * 搜尋文字改變時重新篩選並回到頂端；不重建輸入框，保留輸入焦點。
+     * 搜尋文字改變時重新篩選並回到頂端。不重建輸入框，保留輸入焦點。
      *
      * @param text 新的搜尋文字。
      */
@@ -318,7 +318,7 @@ internal class RuleCatalogueScreen(
     }
 
     /**
-     * 繪製標題、控制項與可捲動條目；條目的提示在內容裁切結束後才繪製，控制項的提示由原版提示框處理。
+     * 繪製標題、控制項與可捲動條目。條目的提示在內容裁切結束後才繪製，控制項的提示由原版提示框處理。
      *
      * @param context 繪製內容。
      * @param mouseX 游標水平位置。
@@ -349,7 +349,7 @@ internal class RuleCatalogueScreen(
      * @param context 繪製內容。
      * @param mouseX 游標水平位置。
      * @param mouseY 游標垂直位置。
-     * @return 游標指向的文字或牌面提示；沒有時為空集合。
+     * @return 游標指向的文字或牌面提示。沒有時為空集合。
      */
     private fun renderContent(
         context: GuiGraphics,
@@ -436,7 +436,7 @@ internal class RuleCatalogueScreen(
     }
 
     /**
-     * 在捲軸上按下左鍵時開始拖曳；其他位置交給控制項處理。
+     * 在捲軸上按下左鍵時開始拖曳。其他位置交給控制項處理。
      *
      * @param mouseX 游標水平位置。
      * @param mouseY 游標垂直位置。

@@ -15,9 +15,9 @@ import kotlin.time.Duration
 /**
  * 隨單人或專用伺服器啟動週期重新建立工作的應用協程作用域，承接關服前必須完成的權威工作。
  *
- * 關服時以 [shutdown] 等待已開始的工作完成；可以捨棄的背景工作使用 [SessionBackgroundScope]。
- * 未被呼叫端攔截的例外寫入記錄，例如 [MahjongTableGameActionService] 或 [DecisionTimerScheduler]
- * 未自行攔截的失敗；各子工作由 [SupervisorJob] 隔離失敗。
+ * - 關服時以 [shutdown] 等待已開始的工作完成。可以捨棄的背景工作使用 [SessionBackgroundScope]。
+ * - 未被呼叫端攔截的例外寫入記錄，例如 [MahjongTableGameActionService] 或 [DecisionTimerScheduler] 未自行攔截的失敗。
+ * - 各子工作由 [SupervisorJob] 隔離失敗。
  *
  * @param dispatchers 提供預設工作 dispatcher 的平台 dispatcher 集合。
  */
@@ -49,8 +49,9 @@ class ServerLifecycleAppCoroutineScope(
     /**
      * 等待呼叫時的伺服器工作結束，最多等待 [timeout]，之後取消該週期尚未完成的工作。
      *
-     * 僅讀取一次目前情境，不在等待期間持有同步鎖。呼叫端必須先停止啟動新工作；
-     * 此方法不保證拒絕關閉期間新增的子工作。若情境中沒有 [CompletableJob]，直接返回。
+     * - 只讀取一次目前情境，不在等待期間持有同步鎖。
+     * - 呼叫端必須先停止啟動新工作。此方法不保證拒絕關閉期間新增的子工作。
+     * - 情境中沒有 [CompletableJob] 時直接返回。
      *
      * @param timeout 等待工作完成的最長時間。
      */

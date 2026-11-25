@@ -42,7 +42,7 @@ internal object MahjongTableLookup {
      *
      * @param world 查詢的世界。
      * @param controllerPos 控制方塊位置。
-     * @param expectedTableId 預期的桌子 ID；null 時不比對。
+     * @param expectedTableId 預期的桌子 ID。null 時不比對。
      * @return 位置上的方塊實體是控制點且 ID 相符時回傳桌子，否則為 null。
      */
     fun find(
@@ -55,7 +55,7 @@ internal object MahjongTableLookup {
      * 將方塊實體辨識為麻將桌控制點。
      *
      * @param blockEntity 要辨識的方塊實體。
-     * @param expectedTableId 預期的桌子 ID；null 時不比對。
+     * @param expectedTableId 預期的桌子 ID。null 時不比對。
      * @return 方塊實體是控制點且 ID 相符時回傳桌子，否則為 null。
      */
     fun of(

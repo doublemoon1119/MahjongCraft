@@ -102,7 +102,7 @@ class RiichiDiscardReadinessAnalyzer(
      * @param tableState 本次分析使用的權威桌況。
      * @param player 正在分析的玩家。
      * @param visibleTiles 該玩家看得到牌面的每張實體牌。
-     * @param projectPlayer 每個候選捨牌後用來投影玩家狀態的函式；回傳 null 時略過該候選。
+     * @param projectPlayer 每個候選捨牌後用來投影玩家狀態的函式。回傳 null 時略過該候選。
      * @return 各候選捨牌的聽牌分析。
      */
     private fun analyzeWithProjection(
@@ -169,11 +169,11 @@ class RiichiDiscardReadinessAnalyzer(
     }
 
     /**
-     * 目前手牌的振聽狀態；永久振聽優先於捨牌與同巡振聽。
+     * 目前手牌的振聽狀態。永久振聽優先於捨牌與同巡振聽。
      *
      * @param player 欲判定的玩家。
      * @param waits 目前手牌的等待牌。
-     * @return 適用的日麻狀態識別碼；沒有振聽時為 null。
+     * @return 適用的日麻狀態識別碼。沒有振聽時為 null。
      */
     private fun readinessStatus(player: MahjongPlayer, waits: List<Tile>): String? = when {
         player.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null -> PERMANENT_FURITEN
@@ -216,7 +216,7 @@ class RiichiDiscardReadinessAnalyzer(
     /**
      * 這個分析器產生的狀態識別碼。
      *
-     * 用於區分振聽與和牌受限狀態；[WaitingTileAvailabilityIds.WIN_AVAILABLE] 是所有規則共用的中立可和牌識別碼，
+     * 用於區分振聽與和牌受限狀態。[WaitingTileAvailabilityIds.WIN_AVAILABLE] 是所有規則共用的中立可和牌識別碼，
      * 見 [DiscardReadinessAnalysis.statusIndicatorId] 與 [WaitingTileAvailability.winAvailability]。
      */
     object StatusIds {

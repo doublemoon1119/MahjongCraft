@@ -13,7 +13,7 @@ object TaiwanWinSettlementIds {
     /** 合計台數欄位。 */
     val TAI_TOTAL_FIELD: String = MahjongCraftMetadata.id("taiwan/win_settlement/tai_total")
 
-    /** 贏家公開的花牌欄位；特殊花牌和牌不含讓和牌成立的那張。 */
+    /** 贏家公開的花牌欄位。特殊花牌和牌不含讓和牌成立的那張。 */
     val FLOWERS_FIELD: String = MahjongCraftMetadata.id("taiwan/win_settlement/flowers")
 
     /** 讓特殊花牌和牌成立的那張花牌欄位。 */
@@ -25,7 +25,7 @@ object TaiwanWinSettlementIds {
     /** 初莊時的莊家台條目。 */
     val DEALER_ENTRY: String = MahjongCraftMetadata.id("taiwan/tai/dealer")
 
-    /** 連莊時合併莊家、連莊與拉莊的條目；名稱數值是連莊次數。 */
+    /** 連莊時合併莊家、連莊與拉莊的條目。名稱數值是連莊次數。 */
     val DEALER_STREAK_ENTRY: String = MahjongCraftMetadata.id("taiwan/tai/dealer_streak")
 
     /** 連莊次數單位。 */
@@ -86,7 +86,7 @@ object TaiwanWinSettlementIds {
      * 由條目 ID 取得計台項目。
      *
      * @param id 條目 ID。
-     * @return 對應的計台項目；不是計台項目的條目（例如莊家與連莊）時為 null。
+     * @return 對應的計台項目。不是計台項目的條目（例如莊家與連莊）時為 null。
      */
     fun taiType(id: String): TaiwanTaiType? = TAI_BY_ID[id]
 

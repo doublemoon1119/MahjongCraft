@@ -11,7 +11,7 @@ import java.io.File
 /**
  * 阻擋 JSON 型別出現在不該知道序列化格式的模組正式程式碼中。
  *
- * JSON 只屬於存檔格式、網路 DTO 與平台轉接層；規則、AI、Flow 的 common／server／client、擴充 API 與內建擴充
+ * JSON 只屬於存檔格式、網路 DTO 與平台轉接層。規則、AI、Flow 的 common／server／client、擴充 API 與內建擴充
  * 只透過 DTO 與 serializer 描述資料，不得依賴 `kotlinx.serialization.json`。
  */
 abstract class VerifyJsonFormatBoundaryTask : DefaultTask() {
@@ -41,7 +41,7 @@ abstract class VerifyJsonFormatBoundaryTask : DefaultTask() {
 /**
  * 掃描受保護 project 的正式 source set，找出引用 `kotlinx.serialization.json` 的位置。
  *
- * 只檢查名稱以 `Main` 結尾的 source set；測試可以使用 JSON 驗證序列化結果。註解只說明用途、不使用 JSON，因此略過。
+ * 只檢查名稱以 `Main` 結尾的 source set。測試可以使用 JSON 驗證序列化結果。註解只說明用途、不使用 JSON，因此略過。
  *
  * @param root repository 根目錄，用於產生相對路徑。
  * @param projectDirectories 受保護的 project 目錄。

@@ -15,14 +15,14 @@ import kotlin.uuid.Uuid
  */
 object FakeMeldFactory {
     /**
-     * 建立一個測試用的副露；未指定時套用內建副露的設定：整組牌面公開，暗槓兩端朝下，其他種類全部朝上。
+     * 建立一個測試用的副露。沒有指定的欄位套用內建副露的設定：整組牌面公開，暗槓兩端朝下，其他種類全部朝上。
      *
      * @param type 副露種類。
      * @param tiles 組成副露的牌，依展示順序排列。
-     * @param sourceTile 鳴取自他家的牌；吃、碰、明槓與加槓預設為最後一張，其他種類預設為 null。
-     * @param sourceDirection 鳴取來源的相對方位；有 [sourceTile] 時預設為上家，否則為自己。
-     * @param publiclyRevealedTileIds 可讓一般觀察者知道牌面的牌張；預設整組公開。
-     * @param faceDownTileIds 朝下擺放的牌張；預設暗槓兩端朝下，其他種類全部朝上。
+     * @param sourceTile 鳴取自他家的牌。吃、碰、明槓與加槓預設為最後一張，其他種類預設為 null。
+     * @param sourceDirection 鳴取來源的相對方位。有 [sourceTile] 時預設為上家，否則為自己。
+     * @param publiclyRevealedTileIds 可讓一般觀察者知道牌面的牌張，預設整組公開。
+     * @param faceDownTileIds 朝下擺放的牌張，預設暗槓兩端朝下，其他種類全部朝上。
      * @return 測試用的副露。
      */
     fun create(

@@ -79,7 +79,7 @@ class MahjongDiceEntityRenderer(
         matrices.popPose()
     }
 
-    /** ItemRenderer 自行解析材質，因此 entity renderer 不提供單一 texture；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    /** ItemRenderer 自行解析材質，因此 entity renderer 不提供單一 texture。原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
     override fun getTextureLocation(entity: MahjongDiceEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     companion object {

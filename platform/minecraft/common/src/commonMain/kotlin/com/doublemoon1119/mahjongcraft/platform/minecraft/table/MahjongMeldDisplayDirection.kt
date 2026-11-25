@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
  *
  * @param direction 規則層記錄的副露來源方向。
  * @param playerCount 對局玩家人數，只接受二至四人。
- * @return 用於牌面呈現的方向；兩人對局時，所有非自身方向都呈現為對家。
+ * @return 用於牌面呈現的方向。兩人對局時，所有非自身方向都呈現為對家。
  * @throws IllegalArgumentException 當 [playerCount] 不在二至四人範圍內時。
  */
 fun meldDisplayDirection(direction: RelativeDirection, playerCount: Int): RelativeDirection {

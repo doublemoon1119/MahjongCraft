@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 
-/** 內建日麻役滿的胡牌展示理由 ID；逐一明列，不由 [RiichiYakuType] 的名稱推導。 */
+/** 內建日麻役滿的胡牌展示理由 ID。逐一明列，不由 [RiichiYakuType] 的名稱推導。 */
 object RiichiWinCelebrationCueIds {
     /** 每個役滿役種的展示理由 ID。 */
     private val YAKUMAN_CUE_IDS: Map<RiichiYakuType, String> = mapOf(

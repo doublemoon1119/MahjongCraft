@@ -5,6 +5,6 @@ object BuiltInTablePropKinds {
     /** 平放的公開牌面展示副本。 */
     const val FACE_UP_TILE: String = "mahjongcraft:face_up_tile"
 
-    /** 點棒；變體為面額的點數字串，例如 `"1000"`。 */
+    /** 點棒。變體為面額的點數字串，例如 `"1000"`。 */
     const val SCORING_STICK: String = "mahjongcraft:scoring_stick"
 }

@@ -21,7 +21,7 @@ import kotlin.uuid.Uuid
  * 簡易配對麻將的局前換牌流程。
  *
  * 每位玩家從起手牌中選兩張，所有人提交後才一次把牌交給固定座位順序的下一位玩家。
- * 只在 [RuleDecisionTiming.ROUND_START] 開啟；簡易配對規則設定未啟用換牌時，不建立任何選擇步驟。
+ * 只在 [RuleDecisionTiming.ROUND_START] 開啟。簡易配對規則設定未啟用換牌時，不建立任何選擇步驟。
  */
 class ExamplePairingRuleDecisionResolver : RuleDecisionResolver {
     override val ruleModuleId: String = ExamplePairingIds.RULE_MODULE

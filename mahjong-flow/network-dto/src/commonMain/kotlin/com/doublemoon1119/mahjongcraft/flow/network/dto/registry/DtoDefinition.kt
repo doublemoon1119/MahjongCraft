@@ -6,7 +6,7 @@ import kotlin.reflect.KClass
 /**
  * 保存領域與網路 DTO 型別的雙向轉換，以及該 DTO 的序列化器。
  *
- * 轉換函式在 MahjongCraft 實際轉換時才收到 [NetworkDtoConverter]，用來轉換巢狀的可擴充型別；
+ * 轉換函式在 MahjongCraft 實際轉換時才收到 [NetworkDtoConverter]，用來轉換巢狀的可擴充型別。
  * 不需要巢狀轉換時，可以用只接收值的建構子。
  *
  * @param Domain 領域具體型別。

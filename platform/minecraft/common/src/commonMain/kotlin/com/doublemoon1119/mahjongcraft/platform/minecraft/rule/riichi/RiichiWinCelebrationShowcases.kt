@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.ShowcasePalette
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseDefinition
 
-/** 所有日麻役滿展示定義；標題 key 與貼圖都放在日麻專屬的命名下，越前面的役滿優先序越高。 */
+/** 所有日麻役滿展示定義。標題 key 與貼圖都放在日麻專屬的命名下，越前面的役滿優先序越高。 */
 internal fun riichiWinCelebrationShowcases(): List<WinCelebrationShowcaseDefinition> = YAKUMAN_SHOWCASES.mapIndexed { index, showcase ->
     WinCelebrationShowcaseDefinition(
         cueKey = RiichiWinCelebrationCueIds.yakuman(showcase.type),
@@ -17,7 +17,7 @@ internal fun riichiWinCelebrationShowcases(): List<WinCelebrationShowcaseDefinit
 }
 
 /**
- * 一個日麻役滿的展示資料；標題 key 與貼圖逐一寫明，不從役種名稱推導。
+ * 一個日麻役滿的展示資料。標題 key 與貼圖逐一寫明，不從役種名稱推導。
  *
  * @property type 展示的役滿役種。
  * @property titleTranslationKey 展示標題的 translation key。

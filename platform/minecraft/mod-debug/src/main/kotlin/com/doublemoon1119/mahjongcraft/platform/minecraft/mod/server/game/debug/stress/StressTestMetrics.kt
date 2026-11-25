@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.stre
 import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.stress.StressTimeSeriesRow
 import java.util.Locale
 
-/** 時間序列 CSV 的標題列；各環節與歷史記錄欄位為這段期間的總毫秒數，環節欄位順序與 [StressStepStage] 相同。 */
+/** 時間序列 CSV 的標題列。各環節與歷史記錄欄位為這段期間的總毫秒數，環節欄位順序與 [StressStepStage] 相同。 */
 internal val STRESS_TIME_SERIES_HEADER: String = listOf(
     "elapsedSeconds",
     "warmup",

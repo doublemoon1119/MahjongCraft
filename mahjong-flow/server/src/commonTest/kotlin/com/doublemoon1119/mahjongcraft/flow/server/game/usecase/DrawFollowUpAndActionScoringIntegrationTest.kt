@@ -189,7 +189,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         assertEquals(table, fixture.repository.getTableState(fixture.gameId))
     }
 
-    /** 其他玩家可以搶花時開啟搶和視窗並暫停；全員放過後補牌並繼續判斷。 */
+    /** 其他玩家可以搶花時開啟搶和視窗並暫停。全員放過後補牌並繼續判斷。 */
     @Test
     fun `a robbable flower pauses the chain until everyone passes`() = runTest {
         val behavior = TestBehavior(robbingPlayerIds = mutableSetOf())
@@ -223,7 +223,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         )
     }
 
-    /** 槓後補到花時也會自動移出並再補牌；槓的收付可以把點數放進規則的點數池。 */
+    /** 槓後補到花時也會自動移出並再補牌。槓的收付可以把點數放進規則的點數池。 */
     @Test
     fun `a kan replacement flower is replaced and the kan can pay into a pot`() = runTest {
         val behavior = TestBehavior(
@@ -382,7 +382,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         assertEquals(table, fixture.repository.getTableState(fixture.gameId))
     }
 
-    /** 一次補到多張時依摸取順序逐張詢問；前面的花也會移出，最後摸到、留在手上的牌回到摸牌位。 */
+    /** 一次補到多張時依摸取順序逐張詢問。前面的花也會移出，最後摸到、留在手上的牌回到摸牌位。 */
     @Test
     fun `several replacement tiles are asked about in draw order`() = runTest {
         val fixture = Fixture(TestBehavior(replacementCount = 2))
@@ -559,7 +559,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
      * 從依序的步驟找出每次移出花與緊接著補到的牌：宣告花的那一步移入移出區的牌，以及下一步從牌牆或保留區移出的牌。
      *
      * @param steps 一次交易送出的步驟。
-     * @param before 交易之前的桌況，供第一步就是宣告時比較；第一步不是宣告時可省略。
+     * @param before 交易之前的桌況，供第一步就是宣告時比較。第一步不是宣告時可省略。
      * @return 依序排列的（移出的花, 補到的牌）。
      */
     private fun followUps(steps: List<TableStep>, before: TableState? = null): List<Pair<Uuid, Set<Uuid>>> = steps.withIndex()
@@ -584,14 +584,14 @@ class DrawFollowUpAndActionScoringIntegrationTest {
     /**
      * 測試規則的可調整行為。
      *
-     * @property scoring 動作即時收付；null 時不收付。
+     * @property scoring 動作即時收付。null 時不收付。
      * @property robbingPlayerIds 可以搶花的玩家。
      * @property ignoresEmptyWall 摸到花時是否不檢查牌山，直接要求移出。
      * @property setAsideChangesOthers 移出手牌的結果是否違規改動其他玩家。
      * @property hooksSendStalePatch 摸牌與鳴牌後的掛勾是否回傳舊值已過時的變更。
      * @property countsFlowersInTableComponent 移出花牌時是否把已移出的張數寫進桌況組件。
      * @property replacementCount 每次補牌從牌山尾端補的張數。
-     * @property robbableTileIds 可以被搶的花；空集合代表每張花都可以搶。
+     * @property robbableTileIds 可以被搶的花。空集合代表每張花都可以搶。
      * @property robsKans [robbingPlayerIds] 是否也可以搶槓。
      * @property omitsMultiRonAbortiveDrawReason 一炮多響判定流局時是否違規不提供流局原因。
      * @property setsAsideOldestFlower 是否違規移出手上最早的花，而不是摸牌位上的花。
@@ -697,7 +697,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
          * 建立輪到 [drawerId] 摸牌的桌況。
          *
          * @param drawerHand 摸牌玩家的手牌。
-         * @param wall 活牌，依摸牌順序排列；補牌從尾端取。
+         * @param wall 活牌，依摸牌順序排列。補牌從尾端取。
          * @param config 測試規則的配置。
          * @return 測試桌況。
          */
@@ -811,7 +811,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
     /**
      * 摸到花自動移出、從牌山尾端補牌的測試規則，其他行為委派給日麻。
      *
-     * @property delegate 提供測試未覆寫的行為；型別參數只用於已覆寫的 [config]。
+     * @property delegate 提供測試未覆寫的行為。型別參數只用於已覆寫的 [config]。
      * @property behavior 測試規則的行為。
      */
     @Suppress("UNCHECKED_CAST")

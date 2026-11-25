@@ -74,7 +74,7 @@ import kotlin.uuid.toJavaUuid
 /**
  * 牌譜回放畫面：把一局的每一筆交易依序擺成牌桌場景，可以播放、暫停、逐筆前後移動、拖曳進度條與換局。
  *
- * 牌面與事件由瀏覽控制器在背景讀取；本畫面只負責呈現、播放計時與輸入。
+ * 牌面與事件由瀏覽控制器在背景讀取。本畫面只負責呈現、播放計時與輸入。
  *
  * @property session 共用查詢、導航及呈現來源。
  */
@@ -96,10 +96,10 @@ internal class HistoryReplayScreen(
     /** 下拉清單。 */
     private val dropdown = DropdownOverlay()
 
-    /** 視角：觀看的玩家初始座位；自由視角為 null。 */
+    /** 視角：觀看的玩家初始座位。自由視角為 null。 */
     private var viewSeat: Int? = null
 
-    /** 手牌是否面朝上攤開；否則和對局中一樣立著。 */
+    /** 手牌是否面朝上攤開。否則和對局中一樣立著。 */
     private var handsOpen = false
 
     /** 自由視角時玩家拖曳轉動的角度。 */
@@ -129,7 +129,7 @@ internal class HistoryReplayScreen(
     /** 上一幀的游標位置，用來偵測滑鼠移動。 */
     private var lastPointer: Pair<Int, Int>? = null
 
-    /** 控制區目前的不透明度；一般版面固定為 1。 */
+    /** 控制區目前的不透明度。一般版面固定為 1。 */
     private var controlsAlpha = 1f
 
     /** 是否正在拖曳進度條。 */
@@ -150,7 +150,7 @@ internal class HistoryReplayScreen(
     /** 上次建立場景的條件與結果。 */
     private var sceneCache: Pair<SceneKey, GuideScene?>? = null
 
-    /** 真人玩家的模型，依玩家識別碼保留；換世界時重建。 */
+    /** 真人玩家的模型，依玩家識別碼保留。換世界時重建。 */
     private val playerEntities = mutableMapOf<String, LivingEntity>()
 
     /** 依牌譜記下的資料畫出的本局資訊、玩家資訊與桌上物件。 */
@@ -182,10 +182,10 @@ internal class HistoryReplayScreen(
     /** 收起後重新顯示結算卡片的按鈕。 */
     private lateinit var settlementShowButton: RestartableMarqueeButtonWidget
 
-    /** 最近擺好的牌桌，依條件索引；只留動畫前後兩步需要的份量。 */
+    /** 最近擺好的牌桌，依條件索引。只留動畫前後兩步需要的份量。 */
     private val arrangements = LinkedHashMap<ArrangementKey, Map<Int, ArrangedTile>?>()
 
-    /** 正在播放的牌動畫；沒有時為 null。 */
+    /** 正在播放的牌動畫。沒有時為 null。 */
     private var animation: HistoryReplayAnimation? = null
 
     /** 上一幀顯示的局序號與步數。 */
@@ -215,7 +215,7 @@ internal class HistoryReplayScreen(
     /** 開啟可見性子頁的按鈕。 */
     private lateinit var visibilityButton: RestartableMarqueeButtonWidget
 
-    /** 各家人物目前的不透明度，依初始座位；切換顯示方式或轉動鏡頭時往新的值淡入淡出。 */
+    /** 各家人物目前的不透明度，依初始座位。切換顯示方式或轉動鏡頭時往新的值淡入淡出。 */
     private val figureAlpha = mutableMapOf<Int, Float>()
 
     /** 上一幀到這一幀經過的時間，供淡入淡出使用。 */
@@ -295,7 +295,7 @@ internal class HistoryReplayScreen(
         }
     }
 
-    /** 切換全螢幕，重新排版；進入時控制區先顯示，滑鼠一段時間沒動才淡出。 */
+    /** 切換全螢幕，重新排版。進入時控制區先顯示，滑鼠一段時間沒動才淡出。 */
     private fun toggleFullscreen() {
         fullscreen = !fullscreen
         listOpen = false
@@ -382,7 +382,7 @@ internal class HistoryReplayScreen(
     }
 
     /**
-     * 控制區的不透明度：一般版面固定顯示；全螢幕時暫停中、游標在控制區或全螢幕按鈕上、拖曳進度條或清單展開時
+     * 控制區的不透明度：一般版面固定顯示。全螢幕時暫停中、游標在控制區或全螢幕按鈕上、拖曳進度條或清單展開時
      * 一直顯示，否則滑鼠一段時間沒動就淡出。
      *
      * @param now 目前時間。
@@ -411,7 +411,7 @@ internal class HistoryReplayScreen(
     /**
      * 依控制區的不透明度淡化一個顏色。
      *
-     * @param argb 原本的 ARGB 顏色；沒有 alpha 位元時視為不透明。
+     * @param argb 原本的 ARGB 顏色。沒有 alpha 位元時視為不透明。
      * @return 淡化後的 ARGB 顏色。
      */
     private fun faded(argb: Int): Int {
@@ -436,7 +436,7 @@ internal class HistoryReplayScreen(
     /**
      * 更新按鈕的文字、圖示與可用狀態。
      *
-     * @param replay 目前回放；不在回放時為 null。
+     * @param replay 目前回放。不在回放時為 null。
      */
     private fun updateControls(replay: HistoryBrowseReplayState?) {
         // 還不知道總步數時當成沒有步數，所有移動按鈕停用。
@@ -511,7 +511,7 @@ internal class HistoryReplayScreen(
     }
 
     /**
-     * 繪製場景；牌面還沒取得或無法擺牌時改寫說明。
+     * 繪製場景。牌面還沒取得或無法擺牌時改寫說明。
      *
      * @param context 繪製上下文。
      * @param replay 目前回放。
@@ -581,10 +581,10 @@ internal class HistoryReplayScreen(
     }
 
     /**
-     * 依目前牌面、視角與手牌選擇建立場景；牌在動畫中時每一幀依動畫重畫，否則條件相同時沿用上次的結果。
+     * 依目前牌面、視角與手牌選擇建立場景。牌在動畫中時每一幀依動畫重畫，否則條件相同時沿用上次的結果。
      *
      * @param state 目前牌面。
-     * @return 場景；規則設定還沒讀到或牌譜缺少擺牌資料時為 null。
+     * @return 場景。規則設定還沒讀到或牌譜缺少擺牌資料時為 null。
      */
     private fun scene(state: HistoryRoundStateDto): GuideScene? {
         val arranged = arrangement(state) ?: return null
@@ -606,7 +606,7 @@ internal class HistoryReplayScreen(
      * 讓牌發光，條件與顏色與對局中相同：
      *
      * - 最後打出、仍留在牌河的牌：規則開啟這項標示、玩家的顯示設定也開著時，牌落地後持續發光。
-     * - 滑鼠指著的牌與相同的牌：玩家的同種牌提示開著時以呼吸光發亮；看不到牌面的牌不算，拖曳場景時不亮。
+     * - 滑鼠指著的牌與相同的牌：玩家的同種牌提示開著時以呼吸光發亮。看不到牌面的牌不算，拖曳場景時不亮。
      *
      * 動畫播放中只有正在移動的牌不參與，其他牌照常發光，播放時不會每一步閃一下。
      *
@@ -650,7 +650,7 @@ internal class HistoryReplayScreen(
     }
 
     /**
-     * 加上本局資訊與玩家資訊；選某一家視角時不畫那一家的玩家資訊，免得擋住視線。
+     * 加上本局資訊與玩家資訊。選某一家視角時不畫那一家的玩家資訊，免得擋住視線。
      *
      * @param scene 場景。
      * @param state 目前牌面。
@@ -667,8 +667,10 @@ internal class HistoryReplayScreen(
     /**
      * 坐在桌邊的各家，都坐在自己的凳子上面向桌子。
      *
-     * AI 照該場保存的角色外觀畫出：內建機器人用保存的牌面；其他角色用該角色的預覽模型，模型還沒建立、沒有對應的預覽能力或
-     * 繪製失敗時改畫內建機器人。真人玩家以玩家模型畫出。這一步打出牌的玩家在牌的動畫開頭揮一次手。
+     * - AI 照該場保存的角色外觀畫出。內建機器人用保存的牌面。
+     * - 其他角色用該角色的預覽模型。模型還沒建立、沒有對應的預覽能力或繪製失敗時改畫內建機器人。
+     * - 真人玩家以玩家模型畫出。
+     * - 這一步打出牌的玩家在牌的動畫開頭揮一次手。
      *
      * @param state 目前牌面。
      * @return 內建機器人外觀的角色與以原版繪製器畫出的模型。
@@ -808,16 +810,16 @@ internal class HistoryReplayScreen(
      *
      * @param state 目前牌面。
      * @param index 局內牌索引。
-     * @return 素材；看不到牌面時為 null。
+     * @return 素材。看不到牌面時為 null。
      */
     private fun assetKey(state: HistoryRoundStateDto, index: Int): String? = state.tileCatalog.getOrNull(index)?.toHistoryAssetKey(session.tileAssets, session.networkRegistries)
 
     /**
-     * 擺出整桌的牌：手牌依規則排好，依目前的手牌選擇立著或攤開，攤牌的玩家照對局中倒下或蓋下；最近兩份牌面的結果留著，
+     * 擺出整桌的牌：手牌依規則排好，依目前的手牌選擇立著或攤開，攤牌的玩家照對局中倒下或蓋下。最近兩份牌面的結果留著，
      * 動畫的前後兩步不必重算。
      *
      * @param state 牌面。
-     * @return 依局內牌索引的擺放；規則設定還沒讀到或牌譜缺少擺牌資料時為 null。
+     * @return 依局內牌索引的擺放。規則設定還沒讀到或牌譜缺少擺牌資料時為 null。
      */
     private fun arrangement(state: HistoryRoundStateDto): Map<Int, ArrangedTile>? {
         val module = session.ruleModule(state) ?: return null
@@ -869,7 +871,7 @@ internal class HistoryReplayScreen(
     }
 
     /**
-     * 推進牌的動畫：顯示的牌面往後一步時播放這一步的動畫，其他換步直接切換；動畫中播放計時暫停，動畫播完才開始停留。
+     * 推進牌的動畫：顯示的牌面往後一步時播放這一步的動畫，其他換步直接切換。動畫中播放計時暫停，動畫播完才開始停留。
      *
      * @param replay 目前回放。
      * @param now 目前時間。
@@ -901,7 +903,7 @@ internal class HistoryReplayScreen(
      * @param toStep 動畫結束時的步數。
      * @param before 這一步開始時的牌面。
      * @param after 這一步結束時的牌面。
-     * @return 動畫；擺不出牌桌或沒有牌要動時為 null。
+     * @return 動畫。擺不出牌桌或沒有牌要動時為 null。
      */
     private fun startAnimation(roundNumber: Int, toStep: Int, before: HistoryRoundStateDto, after: HistoryRoundStateDto): HistoryReplayAnimation? {
         val from = arrangement(before) ?: return null
@@ -921,7 +923,7 @@ internal class HistoryReplayScreen(
      *
      * @param state 依規則排好手牌的牌面。
      * @param notes 這一步的呈現附註。
-     * @return 依玩家在牌面中的位置；沒有攤牌的玩家不列入。
+     * @return 依玩家在牌面中的位置。沒有攤牌的玩家不列入。
      */
     private fun reveals(state: HistoryRoundStateDto, notes: ReplayTableNotes): Map<Int, HandReveal> {
         val step = when (val position = state.position) {
@@ -935,7 +937,7 @@ internal class HistoryReplayScreen(
      * 牌面所屬那一局目前讀到的交易。
      *
      * @param state 牌面。
-     * @return 依序的交易；回放已經換到別局時為空。
+     * @return 依序的交易。回放已經換到別局時為空。
      */
     private fun transactions(state: HistoryRoundStateDto): List<HistoryReplayTransactionDto> = session.controller.state.value.replay
         ?.takeIf { it.state?.identity == state.identity }
@@ -946,7 +948,7 @@ internal class HistoryReplayScreen(
      *
      * @param before 這一步開始時的牌面。
      * @param after 這一步結束時的牌面。
-     * @return 開始攤牌的手牌；沒有時為空。
+     * @return 開始攤牌的手牌。沒有時為空。
      */
     private fun newReveals(before: HistoryRoundStateDto, after: HistoryRoundStateDto): List<HistoryReplayHandRevealMotion> {
         val sortedBefore = session.replayState(before)
@@ -999,14 +1001,14 @@ internal class HistoryReplayScreen(
     }
 
     /**
-     * 繪製交易列表；跟隨中時讓目前這筆保持可見。
+     * 繪製交易列表。跟隨中時讓目前這筆保持可見。
      *
      * @param context 繪製上下文。
      * @param replay 目前回放。
      * @param rows 整局的交易列。
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
-     * @return 游標指著的交易提示；沒有時為 null。
+     * @return 游標指著的交易提示。沒有時為 null。
      */
     private fun renderList(context: GuiGraphics, replay: HistoryBrowseReplayState?, rows: List<TransactionRow>, mouseX: Int, mouseY: Int): List<Component>? {
         val bounds = layout.list
@@ -1091,7 +1093,7 @@ internal class HistoryReplayScreen(
      * @param rows 整局的交易列。
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
-     * @return 游標指著進度條時那一步的說明；沒有時為 null。
+     * @return 游標指著進度條時那一步的說明。沒有時為 null。
      */
     private fun renderProgress(context: GuiGraphics, replay: HistoryBrowseReplayState?, rows: List<TransactionRow>, mouseX: Int, mouseY: Int): List<Component>? {
         val bounds = layout.progress
@@ -1171,7 +1173,7 @@ internal class HistoryReplayScreen(
     }
 
     /**
-     * 整理整局的交易列；事件頁沒變時沿用上次的結果。
+     * 整理整局的交易列。事件頁沒變時沿用上次的結果。
      *
      * @param replay 目前回放。
      * @return 依交易順序排列的列。
@@ -1200,8 +1202,8 @@ internal class HistoryReplayScreen(
      * 取得某一步那筆交易的標記種類。
      *
      * @param replay 目前回放。
-     * @param step 步數；0 是初始牌面，沒有交易。
-     * @return 標記種類；沒有標記或事件還沒讀到時為 null。
+     * @param step 步數。0 是初始牌面，沒有交易。
+     * @return 標記種類。沒有標記或事件還沒讀到時為 null。
      */
     private fun markerAt(replay: HistoryBrowseReplayState, step: Int): GameActionReplayMarker? = if (step <= 0) null else rows(replay).getOrNull(step - 1)?.marker
 
@@ -1222,8 +1224,8 @@ internal class HistoryReplayScreen(
     /**
      * 視角選擇器顯示的文字。
      *
-     * @param state 目前牌面；還沒取得時為 null。
-     * @param seat 觀看的玩家初始座位；自由視角為 null。
+     * @param state 目前牌面。還沒取得時為 null。
+     * @param seat 觀看的玩家初始座位。自由視角為 null。
      * @return 文字。
      */
     private fun viewText(state: HistoryRoundStateDto?, seat: Int?): Component {
@@ -1260,8 +1262,8 @@ internal class HistoryReplayScreen(
     /**
      * 視角清單的選項：自由，接著依初始座位排列的每一家。
      *
-     * @param state 目前牌面；還沒取得時只有自由。
-     * @return 觀看的玩家初始座位；自由為 null。
+     * @param state 目前牌面。還沒取得時只有自由。
+     * @return 觀看的玩家初始座位。自由為 null。
      */
     private fun viewSeats(state: HistoryRoundStateDto?): List<Int?> = listOf<Int?>(null) + state?.players?.sortedBy { it.initialSeatIndex }?.map { it.initialSeatIndex }.orEmpty()
 
@@ -1340,7 +1342,7 @@ internal class HistoryReplayScreen(
     }
 
     /**
-     * 移到指定步數；播放中會重新計時，交易列表恢復跟隨。
+     * 移到指定步數。播放中會重新計時，交易列表恢復跟隨。
      *
      * @param step 新的步數。
      */
@@ -1444,14 +1446,14 @@ internal class HistoryReplayScreen(
     }
 
     /**
-     * 這一局有結算之後，在場景中間偏下畫出到目前這一步為止最近的一筆結算；預設收起，場景下方放一顆展開的按鈕。牌的動畫
+     * 這一局有結算之後，在場景中間偏下畫出到目前這一步為止最近的一筆結算。預設收起，場景下方放一顆展開的按鈕。牌的動畫
      * 播放中不畫。
      *
      * @param context 繪製上下文。
      * @param replay 目前回放。
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
-     * @return 游標指著的內容提示；沒有時為 null。
+     * @return 游標指著的內容提示。沒有時為 null。
      */
     private fun renderSettlement(context: GuiGraphics, replay: HistoryBrowseReplayState?, mouseX: Int, mouseY: Int): List<Component>? {
         val scene = layout.scene
@@ -1489,7 +1491,7 @@ internal class HistoryReplayScreen(
      *
      * @param identity 初始玩家身分。
      * @param seat 初始座位。
-     * @return 對應的參與者；沒有時為 null。
+     * @return 對應的參與者。沒有時為 null。
      */
     private fun participant(identity: HistoryReplayIdentityDto, seat: Int): HistoryParticipantSummaryDto? {
         val id = identity.players.firstOrNull { it.initialSeatIndex == seat }?.playerId ?: return null
@@ -1497,7 +1499,7 @@ internal class HistoryReplayScreen(
     }
 
     /**
-     * 調整放大倍數；回到原本大小時平移歸零，並讓平移不超出放大後多出來的範圍。
+     * 調整放大倍數。回到原本大小時平移歸零，並讓平移不超出放大後多出來的範圍。
      *
      * @param value 新的放大倍數，超出範圍時夾到最小或最大倍數。
      */
@@ -1602,7 +1604,7 @@ internal class HistoryReplayScreen(
 
     /**
      * 空白鍵播放或暫停，左右方向鍵上一筆、下一筆，Home、End 第一筆、最後一筆，F 切換全螢幕，全螢幕時 Esc 只結束
-     * 全螢幕；先於按鈕焦點處理。
+     * 全螢幕。先於按鈕焦點處理。
      *
      * @param keyCode 按鍵碼。
      * @param scanCode 掃描碼。
@@ -1631,11 +1633,11 @@ internal class HistoryReplayScreen(
     }
 
     /**
-     * 決定場景內容的條件；相同時沿用上次建立的場景。
+     * 決定場景內容的條件。相同時沿用上次建立的場景。
      *
      * @property state 牌面。
      * @property arranged 擺好的牌桌。
-     * @property viewSeat 觀看的玩家初始座位；自由視角為 null。
+     * @property viewSeat 觀看的玩家初始座位。自由視角為 null。
      * @property figures 內建機器人外觀的角色。
      * @property entities 以原版繪製器畫出的模型。
      */
@@ -1648,7 +1650,7 @@ internal class HistoryReplayScreen(
     )
 
     /**
-     * 隔離角色預覽模型的繪製失敗；失敗後該角色在等待重試期間改畫內建機器人。
+     * 隔離角色預覽模型的繪製失敗。失敗後該角色在等待重試期間改畫內建機器人。
      *
      * @property previews 角色預覽模型來源。
      * @property character 模型所屬的外觀。
@@ -1663,12 +1665,12 @@ internal class HistoryReplayScreen(
     }
 
     /**
-     * 決定牌桌擺法的條件；牌面、規則模組與事件頁以同一個物件比對，不逐項比較內容，每一幀查詢時不必走過整份牌面。
+     * 決定牌桌擺法的條件。牌面、規則模組與事件頁以同一個物件比對，不逐項比較內容，每一幀查詢時不必走過整份牌面。
      *
      * @property state 牌面。
      * @property module 規則模組。
      * @property handsOpen 手牌是否面朝上攤開。
-     * @property eventPages 已讀到的事件頁，決定哪些贏家攤牌；不在回放時為 null。
+     * @property eventPages 已讀到的事件頁，決定哪些贏家攤牌。不在回放時為 null。
      */
     private class ArrangementKey(
         val state: HistoryRoundStateDto,
@@ -1700,9 +1702,9 @@ internal class HistoryReplayScreen(
      * 交易列表的一列。
      *
      * @property heading 交易編號與時間。
-     * @property summary 這筆交易做了什麼；沒有內容時為 null。
-     * @property tile 跟在說明後面的牌；沒有時為 null。
-     * @property marker 回放標記種類；不標記時為 null。
+     * @property summary 這筆交易做了什麼。沒有內容時為 null。
+     * @property tile 跟在說明後面的牌。沒有時為 null。
+     * @property marker 回放標記種類。不標記時為 null。
      */
     private data class TransactionRow(
         val heading: Component,
@@ -1782,7 +1784,7 @@ internal class HistoryReplayScreen(
         /** 進度條上下可點擊的額外範圍。 */
         const val PROGRESS_HIT_MARGIN = 3
 
-        /** 還不知道玩家名稱時，模型 profile 使用的名稱；名牌不會畫出，只用來建立模型。 */
+        /** 還不知道玩家名稱時，模型 profile 使用的名稱。名牌不會畫出，只用來建立模型。 */
         const val UNKNOWN_PROFILE_NAME = "player"
 
         /** 一秒的遊戲 tick 數，動畫依此換算時間。 */

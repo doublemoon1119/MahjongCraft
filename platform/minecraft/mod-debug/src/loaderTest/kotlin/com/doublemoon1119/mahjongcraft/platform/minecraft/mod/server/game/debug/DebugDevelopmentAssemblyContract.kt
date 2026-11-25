@@ -58,7 +58,7 @@ import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /**
- * 驗證 debug 服務接上本體的 Koin、擴充登記與開發用接口；各載入器的 debug 模組以自己的服務組合繼承並執行。
+ * 驗證 debug 服務接上本體的 Koin、擴充登記與開發用接口。各載入器的 debug 模組以自己的服務組合繼承並執行。
  *
  * 這份測試只由載入器的 debug 模組編譯：服務組合包含載入器的服務，不使用載入器的模組無法提供。
  */
@@ -272,7 +272,7 @@ abstract class DebugDevelopmentAssemblyContract {
     }
 
     /**
-     * 建立不應被使用的伺服器事件來源；任何登記都會丟出例外。
+     * 建立不應被使用的伺服器事件來源。任何登記都會丟出例外。
      *
      * @return 呼叫任何方法都丟出例外的 [ServerEvents]。
      */

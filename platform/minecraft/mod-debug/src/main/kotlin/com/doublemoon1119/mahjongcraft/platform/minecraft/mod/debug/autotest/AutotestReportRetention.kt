@@ -25,7 +25,7 @@ internal object AutotestReportRetention {
     /**
      * 讀取要保留的報告次數。
      *
-     * @param value 系統屬性的值；沒有設定時為 null。
+     * @param value 系統屬性的值。沒有設定時為 null。
      * @return 要保留的次數。
      * @throws IllegalArgumentException 值不是正整數時拋出。
      */

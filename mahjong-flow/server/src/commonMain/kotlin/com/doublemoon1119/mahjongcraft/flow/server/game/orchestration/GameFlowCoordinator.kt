@@ -42,28 +42,30 @@ import kotlinx.coroutines.sync.Mutex
 import kotlin.uuid.Uuid
 
 /**
- * 在 [GameActionRouter] 之上，自動銜接系統觸發 use case（[DeclareExhaustiveDrawUseCase]、
- * [AdvanceRoundUseCase]）的呼叫時機，讓呼叫端只需要送出玩家的
- * [GameCommand]，不需要自己判斷「這個結果是不是代表本局已經結束、該推進到下一局了」。
+ * 在 [GameActionRouter] 之上，自動銜接系統觸發 use case（[DeclareExhaustiveDrawUseCase]、[AdvanceRoundUseCase]）的呼叫時機。
+ * 呼叫端只需要送出玩家的 [GameCommand]，不需要自己判斷本局是否已經結束、該推進到下一局。
  *
- * 實際的外部整合層應該呼叫這裡，而不是直接呼叫 [GameActionRouter]——
- * 後者只做單純分派，不含這裡的自動銜接邏輯。
+ * 外部整合層應該呼叫這裡，不直接呼叫 [GameActionRouter]。後者只做單純分派，不含這裡的自動銜接邏輯。
  *
- * 三種銜接時機：
+ * 銜接時機：
  * 1. **最終反應後 outcome／一般流局**：任一命令的結果為 [GameError.WallExhausted] 時，先呼叫
- *    [resolvePostReactionRoundOutcomeUseCase]；沒有 extension outcome 成立才呼叫 [declareExhaustiveDrawUseCase]。
+ *    [resolvePostReactionRoundOutcomeUseCase]。沒有 extension outcome 成立才呼叫 [declareExhaustiveDrawUseCase]。
  * 2. **連莊/過莊**：任何造成本局結束的操作完成後，先將 [PendingGameTransition.AdvanceRound]
- *    寫入權威狀態；待呈現結束後，再由 [resumePendingGameTransition] 呼叫 [advanceRoundUseCase]。
+ *    寫入權威狀態。待呈現結束後，再由 [resumePendingGameTransition] 呼叫 [advanceRoundUseCase]。
  *    任一命令成功後，統一從權威桌況的 `actionHistory` 判斷是否已留下胡牌或流局記錄，不依命令型別
  *    猜測規則結果，因此第三方 extension command 也能沿用相同收斂流程。
  *
- * 正常命令拒絕保留原本結果。規則提供的能力無法履行，或後續流程出現契約矛盾時，
- * 中止該場並留下診斷，不以重試、跳過或虛構結算掩蓋失敗。
+ * 失敗處理：
  *
- * 自動操作由 [driveAutomatedPlayers] 透過 [aiTurnDriver] 等驅動：讓所有輪到自己、或有資格回應且尚未回應的
- * AI 玩家依序自動行動，直到沒有任何 AI 需要行動為止——AI 背後沒有真人會主動送出命令，這一步
- * 讓加入房間的 AI 玩家真的能在牌局裡自動出手。它只供 [AutomatedAdvanceManager] 使用，確保同一局同一時間只有一個推進；
- * 其他呼叫端分派命令後向管理器請求推進。
+ * - 正常命令拒絕保留原本結果。
+ * - 規則提供的能力無法履行，或後續流程出現契約矛盾時，中止該場並留下診斷，不以重試、跳過或虛構結算掩蓋失敗。
+ *
+ * 自動操作：
+ *
+ * - [driveAutomatedPlayers] 透過 [aiTurnDriver] 等驅動自動操作。輪到自己、或有資格回應且尚未回應的 AI 玩家依序自動行動，
+ *   直到沒有任何 AI 需要行動。AI 背後沒有真人送出命令，這一步讓 AI 玩家能在牌局裡自動出手。
+ * - 它只供 [AutomatedAdvanceManager] 使用，確保同一局同一時間只有一個推進。
+ * - 其他呼叫端分派命令後向管理器請求推進。
  *
  * @property gameActionRouter 玩家發起命令的路由入口。
  * @property gameRepository 權威對局數據倉庫，用於判斷是否需要銜接。
@@ -72,10 +74,10 @@ import kotlin.uuid.Uuid
  *   詳情解析 registry，用於 [WinSettlementPresentationRequestFactory.createSpecialOutcome]。
  * @property declareExhaustiveDrawUseCase 一般流局結算用例。
  * @property resolvePostReactionRoundOutcomeUseCase 反應完成後解析規則專屬回合結果的用例。
- * @property resolveWinRoundContinuationUseCase 胡牌即時結算完成後，判定本局後續是否結束的用例；
+ * @property resolveWinRoundContinuationUseCase 胡牌即時結算完成後，判定本局後續是否結束的用例。
  *   見 [ResolveWinRoundContinuationUseCase] KDoc。
  * @property advanceRoundUseCase 連莊/過莊/開下一局用例。
- * @property returnToRoomUseCase 對局結束後把場地轉回房間用例；[advanceRoundUseCase] 判定對局結束時
+ * @property returnToRoomUseCase 對局結束後把場地轉回房間用例。[advanceRoundUseCase] 判定對局結束時
  *   會先持久化 [PendingGameTransition.ReturnToRoom]，再於同一次待完成流程收斂中呼叫此用例。
  * @property aiTurnDriver 找出下一個該行動的 AI 玩家與其命令。
  * @property forcedAutoPlayDriver 找出下一個必須由伺服器固定操作的真人玩家與命令。
@@ -84,15 +86,15 @@ import kotlin.uuid.Uuid
  * @property exhaustiveDrawSettlementPresentationService 建立並發布流局結算呈現資料的服務。
  * @property winPresentationHandoff 胡牌 use case 建構好的呈現內容交接點，見 [WinPresentationHandoff]。
  * @property presentationPublisher 發布不依賴特定平台的呈現請求。
- * @property presentationBusyGate 查詢平台是否仍在呈現需要等待的內容；[driveAutomatedPlayers] 與
- *   [resumePendingGameTransition] 都會在推進權威流程前檢查，忙碌時直接返回並留待後續心跳重試；
+ * @property presentationBusyGate 查詢平台是否仍在呈現需要等待的內容。[driveAutomatedPlayers] 與
+ *   [resumePendingGameTransition] 都會在推進權威流程前檢查，忙碌時直接返回並留待後續心跳重試。
  *   實作由平台層提供，理由見 [GamePresentationBusyGate] KDoc。
  * @property ruleDecisionAiDriver 解析下一筆自動規則選擇提交。
  * @property advanceAutomaticRuleDecisionUseCase 收斂無須玩家輸入的規則選擇步驟。
  * @property beginRuleDecisionUseCase 在一般流局結算前與本局結算後開啟規則選擇視窗。
  * @property abortGameUseCase 無法安全繼續時中止原場次並還原房間。
  * @property automaticCommandResolver 從同一份權威桌況取得安全代打命令。
- * @property failurePolicy 判斷流程中擴充失敗是否能隔離；取消與致命錯誤原樣外傳。
+ * @property failurePolicy 判斷流程中擴充失敗是否能隔離。取消與致命錯誤原樣外傳。
  */
 class GameFlowCoordinator(
     private val gameActionRouter: GameActionRouter,
@@ -127,13 +129,13 @@ class GameFlowCoordinator(
      * [AutomatedAdvanceManager] 請求推進，AI／強制自動操作玩家才會接著行動。被拒絕的手動命令（例如強制自動操作中的玩家）
      * 視為完全沒發生過，呼叫端可自行決定是否仍要請求推進。
      *
-     * 已進入強制自動操作（[Game.forcedAutoPlayPlayerIds]）的玩家一律拒絕；自動操作透過
+     * 已進入強制自動操作（[Game.forcedAutoPlayPlayerIds]）的玩家一律拒絕。自動操作透過
      * [submitAutomatedDecision] 提交，不經過此真人請求入口。
      *
      * @param gameId 對局 Uuid。
      * @param playerId 發起操作的玩家 Uuid。
      * @param command 欲執行的操作。
-     * @return 命令結果；規則契約錯誤導致中止時，回傳 [GameError.MatchAborted]。
+     * @return 命令結果。規則契約錯誤導致中止時，回傳 [GameError.MatchAborted]。
      */
     suspend fun dispatch(
         gameId: Uuid,
@@ -154,16 +156,15 @@ class GameFlowCoordinator(
     /**
      * 依序驅動強制自動操作、真人自動設定與 AI，直到目前沒有任何自動決策需要執行。
      *
-     * 每次迭代前後比較權威狀態，沒有可執行操作或進展時便停止。本次推進只屬於原場次，
-     * 同一場地已開新場時不繼續操作；超過 [MAX_ITERATIONS] 仍未收斂時中止原場次並記錄診斷。
-     * 開局、逾時與定期檢查都經 [AutomatedAdvanceManager] 呼叫，沒有真人送出命令時仍能推進。
-     *
-     * 強制自動操作只鎖住逾時當下那一次決策。命令成功後才解除 [Game.forcedAutoPlayPlayerIds] 的標記，
-     * 並校正下一次決策計時；失敗時不提前把操作權交還給玩家。
-     *
-     * 每次迭代開始前都會用 [presentationBusyGate] 確認這場對局目前沒有需要等待的呈現。連莊／過莊可能在
-     * 迴圈中途觸發新一局的開局呈現（[advanceRoundUseCase] 銜接呼叫），逐次檢查讓迴圈在呈現開始後的下一次
-     * 迭代前停下，不在開局呈現結束前驅動新莊家的自動摸牌；等下次心跳或玩家操作再重新呼叫。
+     * - 每次迭代前後比較權威狀態，沒有可執行操作或進展時便停止。
+     * - 本次推進只屬於原場次，同一場地已開新場時不繼續操作。
+     * - 超過 [MAX_ITERATIONS] 仍未收斂時中止原場次並記錄診斷。
+     * - 開局、逾時與定期檢查都經 [AutomatedAdvanceManager] 呼叫，沒有真人送出命令時仍能推進。
+     * - 強制自動操作只鎖住逾時當下那一次決策。命令成功後才解除 [Game.forcedAutoPlayPlayerIds] 的標記，
+     *   並校正下一次決策計時。失敗時不提前把操作權交還給玩家。
+     * - 每次迭代開始前都用 [presentationBusyGate] 確認目前沒有需要等待的呈現。
+     *   連莊／過莊可能在迴圈中途觸發新一局的開局呈現（[advanceRoundUseCase] 銜接呼叫）。
+     *   逐次檢查讓迴圈在呈現開始後停下，不在開局呈現結束前驅動新莊家的自動摸牌，等下次心跳或玩家操作再重新呼叫。
      *
      * @param gameId 欲推進的遊戲。
      */
@@ -183,19 +184,20 @@ class GameFlowCoordinator(
      * 取得場地目前的場次身分，防止舊推進在返回房間後操作新場次。
      *
      * @param gameId 場地識別碼。
-     * @return 目前場次識別碼；沒有對局時為 null。
+     * @return 目前場次識別碼。沒有對局時為 null。
      */
     internal suspend fun currentMatchId(gameId: Uuid): Uuid? = gameRepository.getGame(gameId)?.matchId
 
     /**
      * 推進一次自動操作鏈中的單一步驟。
      *
-     * 單步會依序處理待完成流程、規則選擇、強制自動操作、真人自動設定與 AI 決策；呈現忙碌、沒有
-     * 可執行決策，或命令沒有改變權威 [Game] 時，會立即停止。此方法不會等待下一步，適合由外部
-     * 逐次收集自動操作事件並以背壓控制推進速度；只經 [AutomatedAdvanceManager.runExclusive] 呼叫。
+     * - 依序處理待完成流程、規則選擇、強制自動操作、真人自動設定與 AI 決策。
+     * - 呈現忙碌、沒有可執行決策，或命令沒有改變權威 [Game] 時，立即停止。
+     * - 不會等待下一步，適合由外部逐次收集自動操作事件並以背壓控制推進速度。
+     * - 只經 [AutomatedAdvanceManager.runExclusive] 呼叫。
      *
      * @param gameId 欲推進的遊戲。
-     * @return 權威 [Game] 或其待完成流程確實改變時為 `true`；沒有可推進的工作、呈現忙碌或命令
+     * @return 權威 [Game] 或其待完成流程確實改變時為 `true`。沒有可推進的工作、呈現忙碌或命令
      *   未造成狀態變更時為 `false`。
      */
     internal suspend fun advanceAutomatedPlayerStep(gameId: Uuid): Boolean {
@@ -210,7 +212,7 @@ class GameFlowCoordinator(
     }
 
     /**
-     * 執行一次已受失敗保護的推進；例外由外層依場次身分處理。
+     * 執行一次已受失敗保護的推進。例外由外層依場次身分處理。
      *
      * @param gameId 要推進的場地。
      * @return 權威狀態是否前進。
@@ -270,13 +272,12 @@ class GameFlowCoordinator(
     /**
      * 收斂權威狀態中尚待完成的遊戲流程。
      *
-     * [Game.pendingTransition] 會持久化，因此正常執行期間與 server 重啟後都可由平台心跳重複呼叫
-     * 本方法：根據明確的 [PendingGameTransition] 補做 [advanceRoundUseCase] 或
-     * [returnToRoomUseCase]，不從桌況或呈現實作反推權威意圖。
-     *
-     * 方法只在呈現已經閒置時收斂，不會自行掛起等待，適合每次心跳輪詢。回傳 `true`
-     * 代表偵測到待完成的流程：已執行收斂，或因契約矛盾而中止該場。
-     * 呼叫端這一輪不再驅動自動操作，不對無法執行的同一步無限重試。
+     * - [Game.pendingTransition] 會持久化，因此正常執行期間與 server 重啟後都可由平台心跳重複呼叫本方法。
+     * - 根據明確的 [PendingGameTransition] 補做 [advanceRoundUseCase] 或 [returnToRoomUseCase]，
+     *   不從桌況或呈現實作反推權威意圖。
+     * - 只在呈現已經閒置時收斂，不會自行掛起等待，適合每次心跳輪詢。
+     * - 回傳 `true` 代表偵測到待完成的流程：已執行收斂，或因契約矛盾而中止該場。
+     *   呼叫端這一輪不再驅動自動操作，不對無法執行的同一步無限重試。
      *
      * @param gameId 欲收斂待完成流程的對局。
      * @return 是否偵測到待完成的遊戲流程。
@@ -347,14 +348,14 @@ class GameFlowCoordinator(
     /**
      * 送出依 [expectedGame] 決定的自動命令，只在權威遊戲仍是 [expectedGame] 時套用。
      *
-     * 呈現忙碌時不送出。命令的那一次權威寫入在交易內比對 [expectedGame]（見 [GameRepository.withExpectedGame]）；
+     * 呈現忙碌時不送出。命令的那一次權威寫入在交易內比對 [expectedGame]（見 [GameRepository.withExpectedGame]）。
      * 不符時命令完全沒有執行，也不做系統銜接與計時調整，由下一輪推進重新判斷誰該行動。
      *
      * @param gameId 對局 Uuid。
      * @param playerId 由策略或伺服器代操作的玩家。
      * @param command 自動決定的遊戲命令或規則選擇提交。
      * @param expectedGame 決策所依據的權威遊戲。
-     * @return 命令或一次合法後備的結果；過期、呈現忙碌時為 null；契約矛盾時為中止錯誤。
+     * @return 命令或一次合法後備的結果。過期、呈現忙碌時為 null。契約矛盾時為中止錯誤。
      */
     private suspend fun submitAutomatedDecision(
         gameId: Uuid,
@@ -393,7 +394,7 @@ class GameFlowCoordinator(
      * @param playerId 行動者。
      * @param command 要提交的命令。
      * @param expectedGame 決策依據。
-     * @return 套用結果；過期時為 null。
+     * @return 套用結果。過期時為 null。
      */
     private suspend fun dispatchExpectedCommand(
         gameId: Uuid,
@@ -416,12 +417,12 @@ class GameFlowCoordinator(
     }
 
     /**
-     * 對同一場次的規則矛盾執行中止；正常拒絕與過期結果保持原語意。
+     * 對同一場次的規則矛盾執行中止。正常拒絕與過期結果保持原語意。
      *
      * @param T 用例成功結果型別。
      * @param basis 這次操作開始時的場次。
      * @param block 要保護的命令或系統銜接。
-     * @return 原結果，或已中止錯誤；過期仍為 null。
+     * @return 原結果，或已中止錯誤。過期仍為 null。
      */
     private suspend fun <T> guardProgress(basis: Game, block: suspend () -> Outcome<T, GameError>?): Outcome<T, GameError>? = try {
         val result = block()
@@ -447,7 +448,7 @@ class GameFlowCoordinator(
      *
      * @param basis 失敗操作所屬的原場次。
      * @param failure 原始診斷。
-     * @return 中止錯誤；原場次已不存在時為找不到對局。
+     * @return 中止錯誤。原場次已不存在時為找不到對局。
      */
     private suspend fun abortAfterFailure(basis: Game, failure: Throwable): Outcome.Error<GameError> {
         val current = gameRepository.getGame(basis.id)?.takeIf { it.matchId == basis.matchId }
@@ -470,7 +471,7 @@ class GameFlowCoordinator(
     /**
      * 分派命令與系統銜接完成後，依最終權威桌況調整決策計時器。
      *
-     * 成功命令會將 [playerId] 視為完成一次決策，結算舊 timer；失敗命令只進行狀態校正，不重設該玩家
+     * 成功命令會將 [playerId] 視為完成一次決策，結算舊 timer。失敗命令只進行狀態校正，不重設該玩家
      * 已存在的基本思考時間。機械摸牌成功前沒有 timer，但完成後仍會透過相同流程建立自己回合的新 timer。
      *
      * @param gameId 對局識別碼。
@@ -512,8 +513,8 @@ class GameFlowCoordinator(
      * @param gameId 對局識別碼。
      * @param playerId 發出命令的玩家識別碼。
      * @param command 欲分派的命令。
-     * @param dispatchCommand 實際分派 [command] 的方式；回傳 null 代表命令因過期而沒有執行，此時不做任何系統銜接。
-     * @return 命令的執行結果；[dispatchCommand] 回傳 null 時為 null。
+     * @param dispatchCommand 實際分派 [command] 的方式。回傳 null 代表命令因過期而沒有執行，此時不做任何系統銜接。
+     * @return 命令的執行結果。[dispatchCommand] 回傳 null 時為 null。
      */
     private suspend fun dispatchAndChain(
         gameId: Uuid,
@@ -576,7 +577,7 @@ class GameFlowCoordinator(
     }
 
     /**
-     * 持久化「待進入下一局」意圖後立即返回；真正的 [advanceRoundUseCase] 由平台心跳在呈現結束後
+     * 持久化「待進入下一局」意圖後立即返回。真正的 [advanceRoundUseCase] 由平台心跳在呈現結束後
      * 透過 [resumePendingGameTransition] 收斂。三個呼叫點（一般流局、四槓散了、一般結束本局判斷）
      * 共用這個方法，正常遊玩與 server 重啟恢復走完全相同的路徑。
      *
@@ -592,7 +593,7 @@ class GameFlowCoordinator(
      *
      * @param gameId 對局識別碼。
      * @param previousState 結算前的桌況，用於呈現差異。
-     * @return 結算成功時為成功；規則無法結算時中止對局。
+     * @return 結算成功時為成功。規則無法結算時中止對局。
      * @throws RuleContractViolationException 一般流局結算失敗時。
      */
     private suspend fun settleExhaustiveDraw(gameId: Uuid, previousState: TableState): Outcome<Unit, GameError> {
@@ -652,7 +653,7 @@ class GameFlowCoordinator(
     /**
      * 命令成功執行後，若這次命令讓本局進入「本局已結束」階段，依結束方式銜接後續流程。
      *
-     * 只在階段從其他階段變成「本局已結束」時處理，因此同一次結束不會重複銜接。流局立即結束本局；胡牌才會詢問
+     * 只在階段從其他階段變成「本局已結束」時處理，因此同一次結束不會重複銜接。流局立即結束本局。胡牌才會詢問
      * [resolveWinRoundContinuationUseCase]，只有取得 [WinRoundDirective.EndRound]（含未註冊 resolver 的規則）才銜接
      * [chainAdvanceRound]——[WinRoundDirective.ContinueRound] 的桌況變化（含把階段設回回合中的階段）已經由該用例原子
      * 套用完畢，這裡不需要再做任何事。
@@ -720,7 +721,7 @@ class GameFlowCoordinator(
     }
 
     /**
-     * 為由反應 resolver 直接產生的途中流局補上權威摘要；正式流局 use case 已寫入摘要時不覆蓋。
+     * 為由反應 resolver 直接產生的途中流局補上權威摘要。正式流局 use case 已寫入摘要時不覆蓋。
      *
      * @param gameId 對局識別碼。
      * @param state 以流局結束本局的桌況。

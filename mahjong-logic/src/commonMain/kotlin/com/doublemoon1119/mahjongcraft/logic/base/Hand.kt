@@ -87,7 +87,7 @@ data class Hand(
      * @param tiles 構成該副露的所有牌（包含來自他人的牌與自己手牌中的牌）。
      * @param source 鳴取來源的牌（別家打出的牌）。若為暗槓 [MeldType.ClosedKan]則傳入 null。
      * @param direction 鳴取來源的方位。對於暗槓 [MeldType.ClosedKan]，必須傳入 [RelativeDirection.Self]。
-     * @param publiclyRevealedTileIds 可讓一般觀察者看到牌面的牌張 ID；必須包含來源牌。
+     * @param publiclyRevealedTileIds 可讓一般觀察者看到牌面的牌張 ID。必須包含來源牌。
      * @param faceDownTileIds 需要朝下呈現的牌張 ID。
      * @return 完成鳴牌後的新 [Hand] 實例。
      * @throws IllegalArgumentException 牌張重複、來源牌錯誤或使用了非本人持有的牌時拋出。
@@ -193,7 +193,7 @@ data class Hand(
      * 從手牌（立牌或摸牌）中移除指定 ID 的牌。
      *
      * @param id 欲移除牌的唯一識別碼。
-     * @return 移除該牌後的新 [Hand] 實例；若 ID 不存在，牌列表內容不變。
+     * @return 移除該牌後的新 [Hand] 實例。若 ID 不存在，牌列表內容不變。
      */
     private fun removeFromHand(id: Uuid): Hand = if (lastDrawn?.id == id) {
         copy(lastDrawn = null)

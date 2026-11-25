@@ -43,9 +43,9 @@ import kotlin.uuid.Uuid
  * @property matchId 整場對局的穩定識別碼。
  * @property sequence 該場內由權威 store 指派的單調序號。
  * @property roundNumber 事件發生時的局數。
- * @property occurredAtEpochMillis 事件的 UTC 毫秒時間戳；不決定事件順序。
+ * @property occurredAtEpochMillis 事件的 UTC 毫秒時間戳。不決定事件順序。
  * @property payloadVersion 原始事件 DTO 的格式版本。
- * @property payload 原始事件的版本化 JSON；只保存在伺服器側。
+ * @property payload 原始事件的版本化 JSON。只保存在伺服器側。
  */
 data class PendingHistoryRecord(
     val matchId: String,
@@ -74,13 +74,13 @@ internal data class PendingSequenceSummary(val count: Long, val first: Long, val
  * @property matchId 對局 ID。
  * @property tableId 牌桌 ID。
  * @property ruleId 開局規則模組 ID。
- * @property dimensionId 可證實的牌桌維度；位置登記已不存在時為 null。
+ * @property dimensionId 可證實的牌桌維度。位置登記已不存在時為 null。
  * @property startedAtEpochMillis 開局時間。
  * @property endedAtEpochMillis 終局時間。
  * @property participants 開局座位、玩家 ID 與 AI 策略 key。
  * @property rounds 各局起訖時間。
  * @property replayPayload 已完成並驗證的精簡 Replay JSON。
- * @property participantResults 可取得的最終分數與名次；無法取得時保持空集合。
+ * @property participantResults 可取得的最終分數與名次。無法取得時保持空集合。
  */
 internal data class HistoryArchiveRecord(
     val matchId: String,
@@ -99,8 +99,8 @@ internal data class HistoryArchiveRecord(
  * 單一參與者的封存結果投影。
  *
  * @property seatIndex 參與者的開局座位。
- * @property finalScore 最終分數；規則未提供時為 null。
- * @property finalRank 最終名次；無法依規則比較時為 null。
+ * @property finalScore 最終分數。規則未提供時為 null。
+ * @property finalRank 最終名次。無法依規則比較時為 null。
  */
 internal data class HistoryParticipantResultRecord(
     val seatIndex: Int,
@@ -113,8 +113,8 @@ internal data class HistoryParticipantResultRecord(
  *
  * @property seatIndex 開局座位。
  * @property playerId 玩家 ID。
- * @property aiStrategyId AI 策略 key；真人玩家為 null。
- * @property characterAppearance 當場固定的角色保存描述；沒有角色時為 null。
+ * @property aiStrategyId AI 策略 key。真人玩家為 null。
+ * @property characterAppearance 當場固定的角色保存描述。沒有角色時為 null。
  */
 internal data class HistoryParticipantRecord(
     val seatIndex: Int,
@@ -126,9 +126,9 @@ internal data class HistoryParticipantRecord(
 /**
  * 每局的起訖時間摘要。
  *
- * @property roundNumber 整場實際開局的連續序號，從 1 開始；連莊亦各占一個序號，不等同規則局號。
+ * @property roundNumber 整場實際開局的連續序號，從 1 開始。連莊亦各占一個序號，不等同規則局號。
  * @property startedAtEpochMillis 開局時間。
- * @property endedAtEpochMillis 結束時間；未正常結束時為 null。
+ * @property endedAtEpochMillis 結束時間。未正常結束時為 null。
  */
 internal data class HistoryRoundRecord(val roundNumber: Int, val startedAtEpochMillis: Long, val endedAtEpochMillis: Long?)
 
@@ -161,7 +161,7 @@ internal sealed interface HistoryReplayPayloadRead {
  * @property matchId 已結束對局的穩定識別碼。
  * @property tableId 原本所屬牌桌的識別碼。
  * @property endedAtEpochMillis 權威移除交易的 UTC 毫秒時間。
- * @property completed 移除時整場是否已正常結束；不單獨證明 Replay 完整。
+ * @property completed 移除時整場是否已正常結束。不單獨證明 Replay 完整。
  */
 internal data class HistoryTerminalRecord(
     val matchId: String,
@@ -173,9 +173,9 @@ internal data class HistoryTerminalRecord(
 /**
  * 單一伺服器存檔的 SQLite 歷史資料庫邊界。
  *
- * 此 adapter 的操作會同步進行 JDBC I/O；呼叫端必須在專用 I/O dispatcher 執行。
- * 每筆操作自行取得並關閉連線，資料庫物件不持有長期連線或檔案鎖。連線一律由 SQLite 自己的 [DataSource] 建立，
- * 不經 JDBC 的 driver 查找：有的載入器把 mod 的函式庫放在 JDBC 查找不到的位置。
+ * - 此 adapter 的操作會同步進行 JDBC I/O。呼叫端必須在專用 I/O dispatcher 執行。
+ * - 每筆操作自行取得並關閉連線，資料庫物件不持有長期連線或檔案鎖。
+ * - 連線一律由 SQLite 自己的 [DataSource] 建立，不經 JDBC 的 driver 查找，因為有的載入器把 mod 的函式庫放在 JDBC 查找不到的位置。
  *
  * @property path 資料庫檔案的固定位置。
  * @property database 執行交易的 Exposed 連線設定。
@@ -190,14 +190,14 @@ internal class SqliteHistoryDatabase private constructor(
     private val logger = mahjongCraftLogger(SqliteHistoryDatabase::class)
 
     /**
-     * 同鍵、同內容重送視為成功；同鍵、不同內容拒絕且不覆寫原事件。
+     * 同鍵、同內容重送視為成功。同鍵、不同內容拒絕且不覆寫原事件。
      *
      * @param record 待寫入的歷史事件。
      */
     fun appendPending(record: PendingHistoryRecord) = appendPendingBatch(listOf(record))
 
     /**
-     * 同一批事件在單一 SQLite 交易內提交；任一衝突會使整批回滾。
+     * 同一批事件在單一 SQLite 交易內提交。任一衝突會使整批回滾。
      *
      * @param records 待寫入的歷史事件批次。
      */
@@ -241,7 +241,7 @@ internal class SqliteHistoryDatabase private constructor(
     }
 
     /**
-     * 每場待寫事件的序號彙總；只讀主鍵，不讀取 payload。
+     * 每場待寫事件的序號彙總。只讀主鍵，不讀取 payload。
      *
      * @return 以場次 ID 索引的彙總。
      */
@@ -261,7 +261,7 @@ internal class SqliteHistoryDatabase private constructor(
     }
 
     /**
-     * 一場待寫事件的序號，依序排列；只讀主鍵，不讀取 payload。
+     * 一場待寫事件的序號，依序排列。只讀主鍵，不讀取 payload。
      *
      * @param matchId 場次 ID。
      * @return 由小到大的序號。
@@ -288,7 +288,7 @@ internal class SqliteHistoryDatabase private constructor(
     }
 
     /**
-     * 一場指定序號的待寫事件，依序排列；資料庫沒有的序號不出現在結果中。
+     * 一場指定序號的待寫事件，依序排列。資料庫沒有的序號不出現在結果中。
      *
      * @param matchId 場次 ID。
      * @param sequences 要讀取的序號。
@@ -344,7 +344,7 @@ internal class SqliteHistoryDatabase private constructor(
     }
 
     /**
-     * 保留每場最早缺口；重複對帳不會將缺口推後。
+     * 保留每場最早缺口。重複對帳不會將缺口推後。
      *
      * @param gaps 對局 ID 與最早缺失序號的對照。
      */
@@ -368,7 +368,7 @@ internal class SqliteHistoryDatabase private constructor(
     }
 
     /**
-     * 保存設定停止診斷；相同原因重送視為成功，不覆寫不同原因。
+     * 保存設定停止診斷。相同原因重送視為成功，不覆寫不同原因。
      *
      * @param stops 對局 UUID 字串與穩定停止原因的對照。
      */
@@ -403,7 +403,7 @@ internal class SqliteHistoryDatabase private constructor(
     }
 
     /**
-     * 已封存場次 ID；用於略過其原始事件的缺口推導。
+     * 已封存場次 ID。用於略過其原始事件的缺口推導。
      *
      * @return 已有 Replay 的對局 ID 集合。
      */
@@ -412,11 +412,11 @@ internal class SqliteHistoryDatabase private constructor(
     }
 
     /**
-     * 讀取並解壓單場 Replay；先在資料庫端檢查存放大小，不把超大內容載入 Kotlin 記憶體，解壓在交易結束後進行。
+     * 讀取並解壓單場 Replay。先在資料庫端檢查存放大小，不把超大內容載入 Kotlin 記憶體，解壓在交易結束後進行。
      *
-     * 上限指解壓後的 UTF-8 位元組數；gzip 存放大小不會明顯大於原文，存放大小超過同一上限時直接視為過大。
-     * 無法還原的內容（例如開發期間以未壓縮文字存下的牌譜）只讓該場 Replay 無法讀取並記錄警告；資料列不刪除，其他
-     * 場次不受影響，也沒有自動轉換。
+     * - 上限指解壓後的 UTF-8 位元組數。gzip 存放大小不會明顯大於原文，存放大小超過同一上限時直接視為過大。
+     * - 無法還原的內容（例如以未壓縮文字存下的牌譜）只讓該場 Replay 無法讀取並記錄警告。
+     *   資料列不刪除，其他場次不受影響，也不會自動轉換。
      *
      * @param matchId 欲讀取的對局識別碼。
      * @param maximumBytes 允許載入與解析的解壓後 UTF-8 位元組上限。
@@ -494,13 +494,14 @@ internal class SqliteHistoryDatabase private constructor(
     }
 
     /**
-     * 完成資料表摘要與 Replay 的單一交易；成功後才刪除原始事件。
+     * 完成資料表摘要與 Replay 的單一交易。成功後才刪除原始事件。
      *
-     * Replay 以 [HistoryReplayPayloadCodec] 壓縮後存放，壓縮在交易開始前完成。同場已有 Replay 時比對解壓後的文字，
-     * 不比對壓縮後的位元組；既有內容無法還原或解壓後超過 [HISTORY_REPLAY_QUERY_BYTES] 時視為內容衝突。
+     * - Replay 以 [HistoryReplayPayloadCodec] 壓縮後存放，壓縮在交易開始前完成。
+     * - 同場已有 Replay 時比對解壓後的文字，不比對壓縮後的位元組。
+     * - 既有內容無法還原，或解壓後超過 [HISTORY_REPLAY_QUERY_BYTES] 時，視為內容衝突。
      *
      * @param record 已驗證完整的封存資料。
-     * @return 新封存成功時為 `true`；已清理或相同 Replay 已存在時為 `false`。
+     * @return 新封存成功時為 `true`。已清理或相同 Replay 已存在時為 `false`。
      */
     fun archive(record: HistoryArchiveRecord): Boolean {
         val compressedReplay = HistoryReplayPayloadCodec.compress(record.replayPayload)
@@ -512,7 +513,7 @@ internal class SqliteHistoryDatabase private constructor(
      *
      * @param record 已驗證完整的封存資料。
      * @param compressedReplay [HistoryArchiveRecord.replayPayload] 的存放位元組。
-     * @return 新封存成功時為 `true`；已清理或相同 Replay 已存在時為 `false`。
+     * @return 新封存成功時為 `true`。已清理或相同 Replay 已存在時為 `false`。
      */
     private fun archiveInTransaction(record: HistoryArchiveRecord, compressedReplay: ByteArray): Boolean {
         if (isTombstoned(record.matchId)) return false
@@ -577,7 +578,7 @@ internal class SqliteHistoryDatabase private constructor(
     }
 
     /**
-     * 寫入終局摘要；已清理場次的延遲訊息會被安全忽略。
+     * 寫入終局摘要。已清理場次的延遲訊息會被安全忽略。
      *
      * @param terminals 權威狀態移除交易產生的終端摘要。
      */
@@ -757,7 +758,7 @@ internal class SqliteHistoryDatabase private constructor(
     /**
      * 依已驗證的 Flow 查詢要求讀取安全摘要，不解碼 Replay 內容。
      *
-     * 往前取一頁時以相反順序查詢再反轉，回傳的列一律依顯示順序排列；另以相同篩選條件計算總列數。
+     * 往前取一頁時以相反順序查詢再反轉，回傳的列一律依顯示順序排列。另以相同篩選條件計算總列數。
      *
      * @param query 已完成權限驗證、範圍限制與游標驗證的查詢。
      * @return 有界 keyset 摘要頁。
@@ -878,7 +879,7 @@ internal class SqliteHistoryDatabase private constructor(
         val ascending = query.sortDirection == SqliteHistorySortDirection.ASC
 
         /**
-         * 建立游標一側的條件；讀頁與計算第一筆的位置共用相同的排序比較。
+         * 建立游標一側的條件。讀頁與計算第一筆的位置共用相同的排序比較。
          *
          * @param cursor 排序值及對局 ID。
          * @param before 是否篩選顯示順序中在游標之前的列。
@@ -1030,7 +1031,7 @@ internal class SqliteHistoryDatabase private constructor(
     /**
      * 只讀已授權歷史內容涉及場次的角色描述，供平台回覆附帶外觀。
      *
-     * 呼叫端必須先通過同場歷史查詢；此方法不是公開 UUID／場次探查入口。
+     * 呼叫端必須先通過同場歷史查詢。此方法不是公開 UUID／場次探查入口。
      *
      * @param matchId 已授權的封存場次。
      * @return 最多四位參與者的固定外觀保存文字。
@@ -1083,7 +1084,7 @@ internal class SqliteHistoryDatabase private constructor(
     }
 
     /**
-     * 讀取可供權威 outbox 對帳的清理確認；墓碑 ID 格式錯誤時拒絕啟動對帳。
+     * 讀取可供權威 outbox 對帳的清理確認。墓碑 ID 格式錯誤時拒絕啟動對帳。
      *
      * @return 已提交的清理確認清單。
      */
@@ -1267,7 +1268,7 @@ internal class SqliteHistoryDatabase private constructor(
     }
 
     /**
-     * 判斷場次是否已有清理墓碑；須在同一交易中呼叫。
+     * 判斷場次是否已有清理墓碑。須在同一交易中呼叫。
      *
      * @param matchId 對局識別字串。
      * @return 已存在清理收據時為 `true`。
@@ -1276,19 +1277,19 @@ internal class SqliteHistoryDatabase private constructor(
         .where { HistoryTombstoneTable.matchId eq matchId }.any()
 
     /**
-     * 讀取檔案大小；主資料庫大小未知時不得回報零。
+     * 讀取檔案大小。主資料庫大小未知時不得回報零。
      *
      * @param file 要量測的檔案。
-     * @return 檔案位元組數；無法量測時拋出例外。
+     * @return 檔案位元組數。無法量測時拋出例外。
      */
     private fun fileSize(file: Path): Long = runCatching { Files.size(file) }
         .getOrElse { throw IllegalStateException("History database size is unavailable", it) }
 
     /**
-     * 不存在的 SQLite sidecar 視為零；存在但大小未知時回報錯誤。
+     * 不存在的 SQLite sidecar 視為零。存在但大小未知時回報錯誤。
      *
      * @param file sidecar 檔案路徑。
-     * @return sidecar 位元組數；檔案不存在時為 0。
+     * @return sidecar 位元組數。檔案不存在時為 0。
      */
     private fun sidecarSize(file: Path): Long = if (Files.notExists(file)) 0L else fileSize(file)
 
@@ -1308,7 +1309,7 @@ internal class SqliteHistoryDatabase private constructor(
         /** SQLite 表或資料庫被鎖定的錯誤碼。 */
         private const val SQLITE_LOCKED = 6
 
-        /** 此 SQLite schema 的版本；與 Replay 文件及 Minecraft 權威存檔版本分離。 */
+        /** 此 SQLite schema 的版本。與 Replay 文件及 Minecraft 權威存檔版本分離。 */
         const val SCHEMA_VERSION: Int = 1
 
         /**
