@@ -32,20 +32,19 @@ fun Project.registerAutotestClientTasks(clientTask: String) {
  * [PrepareAutotestServerTask] 準備測試專用的執行目錄。兩段都遵守同時執行數的限制，報告的位置登記給總任務 `autotest` 彙整。
  * 沒有設定 `mahjongcraftAutotest` 時不做任何事。
  *
- * Gradle 屬性 `mahjongcraftAutotestServerPort` 指定起始連接埠，沒有指定時為 25599；每個載入器模組使用起始連接埠加上
- * [portOffset]，一起執行的伺服器不會搶同一個連接埠。
+ * Gradle 屬性 `mahjongcraftAutotestServerPort` 指定起始連接埠，沒有指定時為 25599；每個載入器模組使用起始連接埠加上所屬
+ * target 在整份 catalog 中的位置（[targetIndex]），一起執行的伺服器不會搶同一個連接埠。
  *
  * @param startTask 第一段，也就是一般開發伺服器的執行任務名稱。
  * @param resumeTask 第二段伺服器的執行任務名稱。
- * @param portOffset 這個模組的伺服器連接埠相對於起始連接埠的位移。
- * @throws GradleException `mahjongcraftAutotestServerPort` 不是有效的連接埠時拋出。
+ * @throws GradleException `mahjongcraftAutotestServerPort` 不是有效的連接埠，或模組不只屬於一個 target 時拋出。
  */
-fun Project.registerAutotestServerTasks(startTask: String, resumeTask: String, portOffset: Int) {
+fun Project.registerAutotestServerTasks(startTask: String, resumeTask: String) {
     if (autotestSystemProperties().isEmpty()) return
     val basePort = providers.gradleProperty("mahjongcraftAutotestServerPort").orNull?.let { value ->
         value.toIntOrNull()?.takeIf { it in 1..MAX_PORT } ?: throw GradleException("mahjongcraftAutotestServerPort must be a port number: $value")
     } ?: DEFAULT_AUTOTEST_SERVER_PORT
-    val port = basePort + portOffset
+    val port = basePort + targetIndex()
     if (port > MAX_PORT) throw GradleException("The automated server test port $port is above $MAX_PORT")
     val prepare = tasks.register("prepareAutotestServer", PrepareAutotestServerTask::class.java) {
         group = "verification"

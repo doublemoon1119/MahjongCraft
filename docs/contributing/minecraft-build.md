@@ -165,7 +165,7 @@ Common commands, each followed by what it runs. The sections below explain each 
   Minecraft EULA on your behalf (see [Automated Server Test](#automated-server-test)):
 
   ```shell
-  ./gradlew autotest "-PmahjongcraftTarget=minecraft-v1.20.1-fabric,minecraft-v1.20.1-forge" "-PmahjongcraftAutotest=true"
+  ./gradlew autotest "-PmahjongcraftTarget=minecraft-v1.20.1-fabric,minecraft-v1.20.1-forge,minecraft-v1.21.1-fabric" "-PmahjongcraftAutotest=true"
   ```
 
 - One loader's client and server tests at the same time, with a summary report: select only that target.
@@ -261,8 +261,9 @@ Each kind of run in detail:
   warning, and every report repeats the reminder. Do not run the server test unless you agree to the
   [Minecraft EULA](https://aka.ms/MinecraftEULA). The normal `run/server` is never touched.
 - The same task deletes the previous test world and writes fixed server settings: a flat world with a fixed
-  seed, offline mode, peaceful creative play and port 25599. Pass `-PmahjongcraftAutotestServerPort=<port>`
-  to use another port.
+  seed, offline mode and peaceful creative play. The port is 25599 plus the target's position in the whole
+  target catalog sorted by ID, so `minecraft-v1.20.1-fabric` uses 25599 and `minecraft-v1.20.1-forge` 25600.
+  Pass `-PmahjongcraftAutotestServerPort=<port>` to start from another port.
 - The task starts the server twice. The first run plays at tables and stops in the middle of a match; the
   second run, `runAutotestServerResume`, loads the same world, checks what was restored and finishes the
   matches. Both runs write into the same report under `run/autotest-server/autotest/<start time>/`, which
@@ -274,13 +275,15 @@ Each kind of run in detail:
   example's client tests when `-PmahjongcraftExample=true` is also passed:
 
   ```shell
-  ./gradlew autotest "-PmahjongcraftTarget=minecraft-v1.20.1-fabric,minecraft-v1.20.1-forge" "-PmahjongcraftAutotest=true"
+  ./gradlew autotest "-PmahjongcraftTarget=minecraft-v1.20.1-fabric,minecraft-v1.20.1-forge,minecraft-v1.21.1-fabric" "-PmahjongcraftAutotest=true"
   ```
 
 - At most two games run at the same time; pass `-PmahjongcraftAutotestParallel=<count>` to change it. Each game
   needs a few gigabytes of memory, and every client opens its own window.
-- `-PmahjongcraftAutotestServerPort` sets the first server port; each loader module adds its own offset, so
-  servers that run together never share a port.
+- `-PmahjongcraftAutotestServerPort` sets the first server port; each loader module adds its target's position
+  in the catalog, which does not depend on the selection, so servers that run together never share a port.
+- Targets of different Minecraft versions can run together. With `-PmahjongcraftExample=true`, targets that
+  declare no example modules run without example tests.
 - A failing or crashing target does not stop the others. When every run has ended, the task writes
   `build/reports/autotest/<start time>/summary.md`, which links each report and lists the failed checks, and
   fails if any report did not pass or a run wrote no report. Only reports started during this build count,

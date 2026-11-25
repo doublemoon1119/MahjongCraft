@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.auto
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.PlayerDecisionHudController
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatingSessionFactory
@@ -42,10 +43,14 @@ internal object AutotestTable {
 /**
  * 截兩張牌桌的圖：玩家目前的視角，以及從牌桌前上方俯視整張桌子的固定鏡頭，四家的牌河與副露都在畫面中。
  *
+ * 截圖前等本機玩家收到伺服器目前的操作提示，關掉其他畫面；有等玩家操作時打開操作介面，兩張圖都拍到它。
+ *
  * @param name 截圖名稱；俯視的那張加上 `-overhead`。
  */
 internal suspend fun AutotestContext.tableScreenshots(name: String) {
+    check("The decision prompt reaches the client before $name", waitUntilDecisionSynced(), offeredActions())
     client.setScreen(null)
+    GlobalContext.get().get<PlayerDecisionHudController>().reopen()
     screenshot(name)
     overheadScreenshot("$name-overhead", Vec3.atBottomCenterOf(AutotestTable.POSITION))
 }

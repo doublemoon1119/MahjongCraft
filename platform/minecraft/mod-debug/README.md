@@ -71,6 +71,8 @@ Automated tests run in a fixed environment and act only on explicit conditions:
   being voiced, or a presentation removing its entities.
 - Do not resend an action on a timer. A rejected command or action fails the check; every wait has a time
   limit that also fails the check.
+- Before a table screenshot, wait until the client holds the decision prompt the server would send the player
+  now, and open the decision screen when one is pending, so every screenshot shows the same situation.
 - A fixed number of game ticks is only for choosing when to take a screenshot during an animation.
 
 Steps that need fixed situations create them instead of waiting for them by chance:

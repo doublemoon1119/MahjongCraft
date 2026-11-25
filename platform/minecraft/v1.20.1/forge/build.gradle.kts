@@ -98,7 +98,7 @@ legacyForge {
     }
 }
 registerAutotestClientTasks(clientTask = "runClient")
-registerAutotestServerTasks(startTask = "runServer", resumeTask = "runAutotestServerResume", portOffset = 1)
+registerAutotestServerTasks(startTask = "runServer", resumeTask = "runAutotestServerResume")
 
 dependencies {
     modImplementation(mc1201.kotlinforforge)

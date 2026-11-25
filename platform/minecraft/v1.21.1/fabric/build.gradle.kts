@@ -74,7 +74,7 @@ loom {
     }
 }
 registerAutotestClientTasks(clientTask = "runClient")
-registerAutotestServerTasks(startTask = "runServer", resumeTask = "runAutotestServerResume", portOffset = 0)
+registerAutotestServerTasks(startTask = "runServer", resumeTask = "runAutotestServerResume")
 
 // 一起編譯跨版本共用的 platform/minecraft/fabric；這裡只放 1.21.1 的 Fabric 專屬部分，例如網路傳輸與 mod 的設定檔。
 includeSharedVersionSources()

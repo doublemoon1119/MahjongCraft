@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.auto
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SceneEntityTranslucency
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.DebugDataPackFolders
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.isBlockLootTableMissing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import kotlinx.serialization.json.Json
@@ -11,11 +12,11 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import net.minecraft.core.registries.BuiltInRegistries
-import net.minecraft.core.registries.Registries
-import net.minecraft.tags.TagKey
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.packs.resources.ResourceManager
 
 /**
- * 檢查本 mod 的資源：物品與方塊模型、實體繪製器、配方、進度、方塊戰利品表、物品標籤、聲音與自訂著色器。
+ * 檢查本 mod 的資源：物品與方塊模型、實體繪製器、配方、進度、物品標籤、方塊戰利品表、聲音與自訂著色器。
  *
  * 語言檔的鍵由建置時的檢查負責，這裡不重複。
  */
@@ -69,22 +70,55 @@ internal object AutotestResourcesStep : AutotestStep {
     }
 
     /**
-     * 伺服器載入了本 mod 的配方、進度、方塊戰利品表與物品標籤。
+     * 伺服器載入了本 mod 資料包中的每個配方、進度與物品標籤，以及每個方塊的戰利品表。資料檔讀取失敗時原版只記錄錯誤並略過
+     * 該檔案，所以逐一比對資料包中的檔案與伺服器載入的內容。
      *
      * @param context 步驟環境。
      */
     private fun checkServerData(context: AutotestContext) {
         val server = context.client.singleplayerServer ?: return run { context.check("Integrated server is running", false) }
-        val recipes = server.recipeManager.recipes.filter { it.id.namespace == NAMESPACE }
-        context.check("Recipes are loaded", recipes.isNotEmpty(), "${recipes.size} recipes")
-        val advancements = server.advancements.allAdvancements.filter { it.id.namespace == NAMESPACE }
-        context.check("Advancements are loaded", advancements.isNotEmpty(), "${advancements.size} advancements")
+        val resources = server.resourceManager
+        val loadedRecipes = server.recipeManager.recipes.map { it.id }.toSet()
+        checkDataFiles(context, label = "recipes", files = dataFileIds(resources, DebugDataPackFolders.RECIPES), isLoaded = loadedRecipes::contains)
+        val loadedAdvancements = server.advancements.allAdvancements.map { it.id }.toSet()
+        checkDataFiles(
+            context = context,
+            label = "advancements",
+            files = dataFileIds(resources, DebugDataPackFolders.ADVANCEMENTS),
+            isLoaded = loadedAdvancements::contains,
+        )
+        val loadedTags = BuiltInRegistries.ITEM.tagNames.toList().map { it.location }.toSet()
+        checkDataFiles(context, label = "item tags", files = dataFileIds(resources, DebugDataPackFolders.ITEM_TAGS), isLoaded = loadedTags::contains)
         val blocks = BuiltInRegistries.BLOCK.filter { BuiltInRegistries.BLOCK.getKey(it).namespace == NAMESPACE }
         val withoutLoot = blocks.filter { block -> isBlockLootTableMissing(server, block) }.map { BuiltInRegistries.BLOCK.getKey(it).toString() }
         context.check("All ${blocks.size} blocks have loot tables", withoutLoot.isEmpty(), withoutLoot.joinToString().ifEmpty { null })
-        val dyes = BuiltInRegistries.ITEM.getTag(TagKey.create(Registries.ITEM, resourceId(NAMESPACE, "dyes")))
-        val dyeCount = dyes.map { it.size() }.orElse(0)
-        context.check("Item tag $NAMESPACE:dyes has items", dyeCount > 0, "$dyeCount items")
+    }
+
+    /**
+     * 資料包中本 mod 命名空間下某類資料的檔案，換算成資料的識別碼。
+     *
+     * @param resources 伺服器的資源。
+     * @param folder 這類資料的資料夾。
+     * @return 資料的識別碼。
+     */
+    private fun dataFileIds(resources: ResourceManager, folder: String): List<ResourceLocation> = resources.listResources(folder) { it.namespace == NAMESPACE && it.path.endsWith(JSON_SUFFIX) }.keys
+        .map { resourceId(NAMESPACE, it.path.removePrefix("$folder/").removeSuffix(JSON_SUFFIX)) }
+
+    /**
+     * 檢查某類資料的每個檔案都已載入。
+     *
+     * @param context 步驟環境。
+     * @param label 這類資料在報告中的名稱。
+     * @param files 資料包中的檔案。
+     * @param isLoaded 伺服器是否載入了這筆資料。
+     */
+    private fun checkDataFiles(context: AutotestContext, label: String, files: List<ResourceLocation>, isLoaded: (ResourceLocation) -> Boolean) {
+        val missing = files.filterNot(isLoaded).map(ResourceLocation::toString)
+        context.check(
+            name = "All ${files.size} $label are loaded",
+            passed = files.isNotEmpty() && missing.isEmpty(),
+            detail = missing.joinToString().ifEmpty { null },
+        )
     }
 
     /**
@@ -115,6 +149,9 @@ internal object AutotestResourcesStep : AutotestStep {
 
     /** 本 mod 的命名空間。 */
     private const val NAMESPACE: String = MinecraftModMetadata.MOD_ID
+
+    /** 資料檔的副檔名。 */
+    private const val JSON_SUFFIX: String = ".json"
 
     /** 讀取 `sounds.json` 的 JSON 設定。 */
     private val JSON = Json { ignoreUnknownKeys = true }

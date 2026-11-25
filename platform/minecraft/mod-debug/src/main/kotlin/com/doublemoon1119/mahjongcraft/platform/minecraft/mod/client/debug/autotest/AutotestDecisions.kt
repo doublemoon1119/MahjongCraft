@@ -1,15 +1,18 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.autotest
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionKindDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.ClientDecisionPromptStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network.MahjongChannels
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.PlayerDecisionPromptFactory
 import org.koin.core.context.GlobalContext
 import kotlin.time.Duration.Companion.minutes
 import kotlin.uuid.Uuid
+import kotlin.uuid.toKotlinUuid
 
 /**
  * 伺服器給本機玩家的一個可選動作，以及它所屬的操作提示。
@@ -45,6 +48,26 @@ internal suspend fun AutotestContext.waitForAction(actionId: String): AutotestDe
     }
     return decision
 }
+
+/**
+ * 伺服器目前給本機玩家的操作提示識別碼：伺服器為玩家計時的決策，以及送給玩家時會用的提示。
+ *
+ * @return 操作提示識別碼；伺服器沒有等本機玩家操作時為 null。
+ */
+internal suspend fun AutotestContext.serverDecisionKey(): String? {
+    val tableId = AutotestTable.tableId ?: return null
+    val playerId = client.player?.uuid?.toKotlinUuid() ?: return null
+    val koin = GlobalContext.get()
+    val status = koin.get<GameDecisionTimerManager>().getStatuses(tableId)[playerId] ?: return null
+    return koin.get<PlayerDecisionPromptFactory>().create(tableId, playerId, status.phase)?.decisionKey
+}
+
+/**
+ * 等到本機玩家收到伺服器目前的操作提示；伺服器沒有等本機玩家操作時，等到本機的提示也清掉。
+ *
+ * @return 時限內一致時為 true。
+ */
+internal suspend fun AutotestContext.waitUntilDecisionSynced(): Boolean = waitUntil(DECISION_TIMEOUT) { currentPrompt?.decisionKey == serverDecisionKey() }
 
 /**
  * 以操作介面相同的方式送出動作，並等伺服器換到下一個操作提示，表示已經接受。

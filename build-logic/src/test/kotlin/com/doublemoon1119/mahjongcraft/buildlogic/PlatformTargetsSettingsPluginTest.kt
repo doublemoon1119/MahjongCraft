@@ -189,6 +189,23 @@ class PlatformTargetsSettingsPluginTest {
         assertTrue(result.output.contains(":shared=null"), result.output)
         assertTrue(result.output.contains(":test={kotlin=2.0.0}"), result.output)
         assertTrue(result.output.contains(":test-forge={kotlin=2.1.0}"), result.output)
+        // 只屬於一個 target 的模組取得該 target 依 ID 排序的位置，共用模組沒有位置。
+        val indexes = result.output.lines().single { it.startsWith("indexes=") }
+        listOf(":test=0", ":test-forge=1", ":shared=null", ":example:example-mahjong-extension=null").forEach { entry ->
+            assertTrue(indexes.contains(entry), indexes)
+        }
+    }
+
+    /** target 的位置依整份 catalog 決定，只選後面的 target 時位置不變。 */
+    @Test
+    fun `keeps target indexes independent of the selection`() = withFixture { root ->
+        prepareBuild(root)
+        addSecondTarget(root, javaToolchain = 17)
+
+        val result = runner(root).withArguments("selectedTarget", "-PmahjongcraftTarget=minecraft-test-forge").build()
+
+        val indexes = result.output.lines().single { it.startsWith("indexes=") }
+        assertTrue(indexes.contains(":test-forge=1"), indexes)
     }
 
     /** 清單中的重複、空白項目與和其他 target 並列的 core 都使 Settings 階段失敗。 */
@@ -208,15 +225,18 @@ class PlatformTargetsSettingsPluginTest {
         }
     }
 
-    /** 共用模組所屬的 target 使用不同的 Java 版本時，不能一起選擇。 */
+    /** 共用模組所屬的 target 使用不同的 Java 版本時，以最新的 toolchain 編譯成最舊的 release；各 target 自己的模組不受影響。 */
     @Test
-    fun `rejects shared modules with different java versions`() = withFixture { root ->
+    fun `compiles shared modules for every selected java version`() = withFixture { root ->
         prepareBuild(root)
-        addSecondTarget(root, javaToolchain = 21)
+        addSecondTarget(root, javaToolchain = 21, javaRelease = 21)
 
-        val result = runner(root).withArguments("help", "-PmahjongcraftTarget=minecraft-test,minecraft-test-forge").buildAndFail()
+        val result = runner(root).withArguments("selectedTarget", "-PmahjongcraftTarget=minecraft-test,minecraft-test-forge").build()
 
-        assertTrue(result.output.contains("Module platform/shared belongs to selected targets with different java-toolchain"), result.output)
+        val toolchains = result.output.lines().single { it.startsWith("toolchains=") }
+        val releases = result.output.lines().single { it.startsWith("releases=") }
+        listOf(":shared=21", ":test=17", ":test-forge=21").forEach { assertTrue(toolchains.contains(it), toolchains) }
+        listOf(":shared=17", ":test=17", ":test-forge=21").forEach { assertTrue(releases.contains(it), releases) }
     }
 
     /** 選擇的 target 都沒有範例模組時，啟用範例仍然失敗。 */
@@ -241,8 +261,9 @@ class PlatformTargetsSettingsPluginTest {
      *
      * @param root 測試專案根目錄。
      * @param javaToolchain 第二個 target 的 Java toolchain。
+     * @param javaRelease 第二個 target 的 Java release。
      */
-    private fun addSecondTarget(root: File, javaToolchain: Int) {
+    private fun addSecondTarget(root: File, javaToolchain: Int, javaRelease: Int = 17) {
         root.toPath().resolve("platform/test-forge").createDirectories()
         root.toPath().resolve("platform/shared").createDirectories()
         root.toPath().resolve("example/platform/minecraft/v1.20.1/forge").createDirectories()
@@ -263,7 +284,7 @@ class PlatformTargetsSettingsPluginTest {
                 id = "minecraft-test-forge"
                 platform = "minecraft"
                 java-toolchain = $javaToolchain
-                java-release = 17
+                java-release = $javaRelease
                 modules = ["platform/test-forge", "platform/shared"]
                 example-modules = [
                     "example/mahjong-extension",
@@ -329,7 +350,9 @@ class PlatformTargetsSettingsPluginTest {
                     val extras = gradle.extensions.extraProperties
                     println("selected=" + (extras["mahjongcraft.selectedTargetIds"] as List<*>).joinToString(","))
                     println("toolchains=" + (extras["mahjongcraft.targetJavaToolchain"] as Map<*, *>).toSortedMap(compareBy { it.toString() }))
+                    println("releases=" + (extras["mahjongcraft.targetJavaRelease"] as Map<*, *>).toSortedMap(compareBy { it.toString() }))
                     println("provided=" + (extras["mahjongcraft.targetProvidedVersions"] as Map<*, *>).toSortedMap(compareBy { it.toString() }))
+                    println("indexes=" + (extras["mahjongcraft.targetIndex"] as Map<*, *>).toSortedMap(compareBy { it.toString() }))
                 }
             }
             """.trimIndent() + "\n",
