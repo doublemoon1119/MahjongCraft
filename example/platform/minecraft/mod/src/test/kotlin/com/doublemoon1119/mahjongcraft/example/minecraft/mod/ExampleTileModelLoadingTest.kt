@@ -2,12 +2,12 @@ package com.doublemoon1119.mahjongcraft.example.minecraft.mod
 
 import com.doublemoon1119.mahjongcraft.example.minecraft.ExampleMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.vanilla.resourceId
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.vanilla.testPackResources
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.model.FixedMahjongTileModelPreparedData
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.packs.PackResources
-import net.minecraft.server.packs.PathPackResources
 import net.minecraft.server.packs.resources.Resource
 import net.minecraft.server.packs.resources.ResourceManager
 import java.nio.file.Path
@@ -49,7 +49,7 @@ class ExampleTileModelLoadingTest {
     private class ClasspathResources : ResourceManager {
         override fun getResource(id: ResourceLocation): Optional<Resource> {
             val url = javaClass.classLoader.getResource("assets/${id.namespace}/${id.path}") ?: return Optional.empty()
-            return Optional.of(Resource(PathPackResources("test", Path.of(""), true)) { url.openStream() })
+            return Optional.of(Resource(testPackResources("test", Path.of(""))) { url.openStream() })
         }
 
         override fun getNamespaces(): Set<String> = setOf("mahjongcraft", "mahjongcraft_example")

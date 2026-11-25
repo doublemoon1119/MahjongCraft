@@ -11,11 +11,14 @@ It uses the same compiler, Java and Minecraft version policies as the main proje
 - [Shared Minecraft mod](mod/README.md): loader-independent Minecraft code that is the same for every
   version, such as the game-event chat and furniture behavior that does not depend on how the content is
   registered.
-- [Minecraft 1.20.1 mod](v1.20.1/mod/README.md): the example's own adapters for 1.20.1 and the files each
+- Minecraft version mods, the [Minecraft 1.20.1 mod](v1.20.1/mod/README.md) and the
+  [Minecraft 1.21.1 mod](v1.21.1/mod/README.md): the example's own adapters for each version and the files each
   Minecraft version keeps its own copy of.
-- Version/loader adapters: each one registers the 1.20.1 content in its loader's own way, for
-  example the [Fabric 1.20.1 adapter](v1.20.1/fabric/README.md) and the
-  [Forge 1.20.1 adapter](v1.20.1/forge/README.md).
+- [Shared Fabric example](fabric/README.md): the Fabric entry points and registration, the same for every
+  Minecraft version.
+- Version/loader adapters: each one registers its version's content in its loader's own way, namely the
+  [Fabric 1.20.1 adapter](v1.20.1/fabric/README.md), the [Fabric 1.21.1 adapter](v1.21.1/fabric/README.md)
+  and the [Forge 1.20.1 adapter](v1.20.1/forge/README.md).
 
 The common extension registers the pairing rule, custom tile and Tsumogiri strategy.
 Minecraft presentation adds room settings, hand-reveal and exchange prompts, settlement text,
@@ -27,7 +30,8 @@ printed to online administrators' chat so their supplied fields can be inspected
 
 Choose a supported target and its example loader project. The commands below use the currently
 available Fabric 1.20.1 adapter as an example; other adapters have their own target and task paths,
-such as `minecraft-v1.20.1-forge` and `:example-minecraft_v1.20.1_forge` for the Forge 1.20.1 adapter.
+such as `minecraft-v1.20.1-forge` and `:example-minecraft_v1.20.1_forge` for the Forge 1.20.1 adapter, or
+`minecraft-v1.21.1-fabric` and `:example-minecraft_v1.21.1_fabric` for the Fabric 1.21.1 adapter.
 Run them from the repository root. The flag accepts only `true` or `false`.
 Omitting it is equivalent to `false`; it is not saved by `switchTarget`.
 
@@ -76,11 +80,11 @@ under the example's own resource namespace.
 No example module starts Koin. Extension registration goes through MahjongCraft's public entrypoint.
 Successful compilation alone is not evidence that a rule or another extension capability works.
 
-The loader-specific entries are the Fabric 1.20.1
-[`ExampleMod.kt`](v1.20.1/fabric/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleMod.kt)
-and the Forge 1.20.1
+The loader-specific entries are the Fabric
+[`ExampleMod.kt`](fabric/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleMod.kt), shared by
+every Minecraft version, and the Forge 1.20.1
 [`ExampleMod.kt`](v1.20.1/forge/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/forge/ExampleMod.kt),
-and the observer test shared by the 1.20.1 loaders is
+and the observer test shared by every version and loader is
 [`ExampleGameEventChatTest.kt`](mod/src/test/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/mod/event/ExampleGameEventChatTest.kt).
 The shared Minecraft registration and its test are
 [`ExampleMinecraftMahjongExtension.kt`](common/src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/ExampleMinecraftMahjongExtension.kt)

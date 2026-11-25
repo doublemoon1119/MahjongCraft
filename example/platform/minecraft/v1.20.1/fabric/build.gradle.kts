@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.buildlogic.autotestClientArguments
 import com.doublemoon1119.mahjongcraft.buildlogic.autotestClientEnvironment
 import com.doublemoon1119.mahjongcraft.buildlogic.autotestSystemProperties
 import com.doublemoon1119.mahjongcraft.buildlogic.clientRunDirectory
+import com.doublemoon1119.mahjongcraft.buildlogic.includeSharedVersionSources
 import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.modrinth
 import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestClientTasks
@@ -14,6 +15,9 @@ plugins {
     alias(libs.plugins.mahjongcraft.minecraft.loader)
     alias(libs.plugins.fabric.loom)
 }
+
+// 一起編譯跨版本共用的 example/platform/minecraft/fabric；這裡只放 1.20.1 的 mod 設定與打包測試要比對的版本內容。
+includeSharedVersionSources()
 
 configure<MinecraftModPackagingExtension> {
     modId.set("mahjongcraft_example")

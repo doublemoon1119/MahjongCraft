@@ -59,12 +59,12 @@ class ExampleModPackagingTest {
                 "assets/mahjongcraft_example/models/block/bench_single.json",
                 "assets/mahjongcraft_example/models/item/bench.json",
                 "assets/mahjongcraft_example/models/item/actor.json",
-                "data/mahjongcraft_example/loot_tables/blocks/bench.json",
+                "${ExampleFabricPackaging.BLOCK_LOOT_TABLES}/bench.json",
                 "assets/mahjongcraft_example/blockstates/chair.json",
                 "assets/mahjongcraft_example/models/block/chair.json",
                 "assets/mahjongcraft_example/models/item/chair.json",
                 "assets/mahjongcraft_example/models/item/cushion.json",
-                "data/mahjongcraft_example/loot_tables/blocks/chair.json",
+                "${ExampleFabricPackaging.BLOCK_LOOT_TABLES}/chair.json",
             ).forEach { path -> assertEquals(1, paths.count { it == path }, path) }
             listOf(
                 "com/doublemoon1119/mahjongcraft/logic/",
@@ -123,12 +123,7 @@ class ExampleModPackagingTest {
     /** 確認 Fabric metadata 的執行依賴已注入實際需求，而不是留下模板 placeholder。 */
     private fun assertFabricDependencyRequirements(metadata: JsonObject) {
         val dependencies = metadata.getValue("depends").jsonObject
-        mapOf(
-            "fabricloader" to ">=0.19.0",
-            "fabric" to "*",
-            "minecraft" to "1.20.1",
-            "fabric-language-kotlin" to ">=1.13.14",
-        ).forEach { (id, requirement) ->
+        ExampleFabricPackaging.DEPENDENCY_REQUIREMENTS.forEach { (id, requirement) ->
             assertEquals(requirement, dependencies.getValue(id).jsonPrimitive.content, id)
         }
         assertFalse(

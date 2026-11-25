@@ -16,7 +16,7 @@ order and stop once you have what you need:
 3. The shared code of one Minecraft version, for example the
    [shared Minecraft example](platform/minecraft/mod/README.md): the extension class that
    connects the example to MahjongCraft, and the furniture, tables and actors.
-4. One loader adapter, for example the [Fabric 1.20.1](platform/minecraft/v1.20.1/fabric/README.md)
+4. One loader adapter, for example the [shared Fabric](platform/minecraft/fabric/README.md)
    or [Forge 1.20.1](platform/minecraft/v1.20.1/forge/README.md) adapter: how the loader finds the
    extension and how the content is registered.
 

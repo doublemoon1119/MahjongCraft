@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.example.minecraft.mod.event
 
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.ExampleMinecraftTestBootstrap
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.event.ExampleGameEventChat.administratorRecipients
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.event.ExampleGameEventChat.eventMessage
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.event.ExampleGameEventChat.formatPlayerLabels
@@ -12,6 +13,7 @@ import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.contents.TranslatableContents
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -20,6 +22,12 @@ import kotlin.uuid.Uuid
 
 /** 範例事件聊天觀察器的接收者篩選測試。 */
 class ExampleGameEventChatTest {
+    /** 懸停文字會用到原版登記表。 */
+    @BeforeTest
+    fun bootstrap() {
+        ExampleMinecraftTestBootstrap.ensure()
+    }
+
     /** 事件摘要以 AQUA 色中括號標籤顯示，文字與括號都有相同懸停內容。 */
     @Test
     fun `event summary stays on one line and hover keeps details`() {

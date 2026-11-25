@@ -4,8 +4,11 @@ This library compiles the [shared Minecraft example](../../mod/README.md) agains
 with the example's own 1.20.1 adapters and the files each Minecraft version keeps its own copy of. Its Gradle
 project path is `:example-minecraft_v1.20.1_mod`.
 
-- The `vanilla` package holds the example's 1.20.1 adapters: `resourceId`, `copyBlockProperties` and the base
-  classes for blocks, entities, block entities and tooltip items that the shared code extends.
+- The `vanilla` package holds the example's 1.20.1 adapters: `resourceId`, `copyBlockProperties`,
+  `hasCustomName` and the base classes for blocks, entities, block entities and tooltip items that the shared
+  code extends.
+- The test `vanilla` package holds `testPackResources`, which builds a resource pack with this version's
+  constructor for the shared tests.
 - `ExampleEntityTypes` and `ExampleBlockEntityTypes` create the entity types and the table block entity type
   with the 1.20.1 constructors.
 - The blocks' loot tables live here, because data pack files change their format and folder names between

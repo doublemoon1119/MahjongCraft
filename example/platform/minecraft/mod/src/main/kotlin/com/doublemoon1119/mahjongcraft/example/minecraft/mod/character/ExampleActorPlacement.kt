@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.entity.Ex
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.seating.ExampleChairSeatService
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.seating.ExampleCushionSeatService
 import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.seating.ExampleFurnitureSpace
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.vanilla.hasCustomName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatState
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
@@ -138,7 +139,7 @@ internal object ExampleActorPlacement {
         )
         actor.yHeadRot = yaw
         actor.yBodyRot = yaw
-        if (stack.hasCustomHoverName()) actor.customName = stack.hoverName.copy()
+        if (stack.hasCustomName()) actor.customName = stack.hoverName.copy()
         val body = actor.boundingBox
         if (!ExampleFurnitureSpace.isLoaded(world, body)) return false
         val first = BlockPos.containing(

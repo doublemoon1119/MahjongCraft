@@ -5,11 +5,13 @@ supported Minecraft version: the extension entry classes, the furniture, tables,
 with their entities, items and renderers, the public game-event chat, and the placement, geometry and
 waterlogging rules. The code uses the `com.doublemoon1119.mahjongcraft.example.minecraft.mod` package.
 
-It is not a Gradle project: each version's example mod module, such as the
-[Minecraft 1.20.1 mod example](../v1.20.1/mod/README.md), compiles it together with its own sources against
+It is not a Gradle project: each version's example mod module, the
+[Minecraft 1.20.1 mod example](../v1.20.1/mod/README.md) and the
+[Minecraft 1.21.1 mod example](../v1.21.1/mod/README.md), compiles it together with its own sources against
 vanilla Minecraft only, so using a loader API fails its build. Each loader's example adapter, such as the
-[Fabric 1.20.1 example](../v1.20.1/fabric/README.md) and the [Forge 1.20.1 example](../v1.20.1/forge/README.md),
-compiles these sources together with its own and packages them into one mod.
+[shared Fabric example](../fabric/README.md) built for each version and the
+[Forge 1.20.1 example](../v1.20.1/forge/README.md), compiles these sources together with its own and packages
+them into one mod.
 
 It also lists what the example registers: blocks, items, entity types, the table block entity type,
 the creative tab and the entity renderers. Each loader registers content differently, so the list is

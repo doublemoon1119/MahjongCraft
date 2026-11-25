@@ -7,7 +7,7 @@ provides Kotlin at run time.
 
 What the example registers is listed in the
 [shared Minecraft 1.20.1 example code](../mod/README.md); this module only decides how to register
-it on Forge. The behavior is the same as the [Fabric 1.20.1 example](../fabric/README.md).
+it on Forge. The behavior is the same as the [shared Fabric example](../../fabric/README.md).
 
 ## Registration
 
