@@ -73,7 +73,8 @@ internal class AutotestClientRunner(
      */
     fun register(events: ClientEvents) {
         events.onClientTickEnd { client ->
-            // 執行目錄第一次啟動時，原版先顯示無障礙設定引導；略過它並記下已完成，之後直接到主選單。
+            // Gradle 的自動測試啟動前已寫好選項，不會出現無障礙設定引導；不經過 Gradle 啟動時（例如從 IDE 執行）執行目錄
+            // 第一次啟動仍會顯示，略過它並記下已完成，之後直接到主選單。
             if (!started && client.screen is AccessibilityOnboardingScreen && client.overlay == null) {
                 client.options.onboardAccessibility = false
                 client.options.save()

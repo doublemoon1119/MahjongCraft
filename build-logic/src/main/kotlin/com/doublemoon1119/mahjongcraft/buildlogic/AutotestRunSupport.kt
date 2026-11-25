@@ -12,13 +12,19 @@ import org.gradle.api.tasks.TaskProvider
 abstract class AutotestSlotsService : BuildService<BuildServiceParameters.None>
 
 /**
- * 接上用戶端自動測試：開發用戶端遵守同時執行數的限制，並登記報告的位置給總任務 `autotest` 彙整。沒有設定
- * `mahjongcraftAutotest` 時不做任何事。
+ * 接上用戶端自動測試：開發用戶端啟動前由 [PrepareAutotestClientTask] 寫好啟動時就要生效的選項，遵守同時執行數的限制，並
+ * 登記報告的位置給總任務 `autotest` 彙整。沒有設定 `mahjongcraftAutotest` 時不做任何事。
  *
  * @param clientTask 開發用戶端的執行任務名稱。
  */
 fun Project.registerAutotestClientTasks(clientTask: String) {
     if (autotestSystemProperties().isEmpty()) return
+    val prepare = tasks.register("prepareAutotestClient", PrepareAutotestClientTask::class.java) {
+        group = "verification"
+        description = "Writes the options the automated client test needs from startup."
+        runDirectory.set(layout.projectDirectory.dir(clientRunDirectory()))
+    }
+    tasks.named(clientTask) { dependsOn(prepare) }
     limitAutotestRun(clientTask)
     val module = name
     autotestTarget().configure {

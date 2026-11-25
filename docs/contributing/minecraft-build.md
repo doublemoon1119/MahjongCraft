@@ -232,9 +232,14 @@ Each kind of run in detail:
   read the property, so the packaged mod never runs automated tests.
 - Test runs use their own run directory, `run/autotest-client`, so the test's options and worlds never touch
   the normal development client. The client always signs in as `MahjongTest` with a 1920×1080 window.
-- Once the title screen has loaded, the client skips the first-launch accessibility screen, sets fixed display
-  options (field of view, GUI scale, view bobbing, clouds), deletes the previous test world, creates a flat
-  creative world with a fixed seed, runs the selected steps, writes a report and closes the game. The world
+- Before the client starts, `prepareAutotestClient` writes the options that must hold from startup into the run
+  directory's `options.txt`: the accessibility onboarding counts as seen and the narrator is off, so the first
+  launch neither shows that screen nor reads it aloud through the system's speech, which the null sound output
+  does not cover. Other options keep their previous values.
+- Once the title screen has loaded, the client skips the first-launch accessibility screen if it still appears,
+  for example when launched without Gradle, sets fixed display options (field of view, GUI scale, view
+  bobbing, clouds), deletes the previous test world, creates a flat creative world with a fixed seed, runs the
+  selected steps, writes a report and closes the game. The world
   keeps a fixed time and clear weather, and spawns no mobs. The report lives in the run directory under
   `autotest/<start time>/` as `report.md`, `report.json` and screenshots, and `autotest/latest.txt` names the
   latest folder. Closing the game early still writes a report that marks the unfinished step as aborted.
