@@ -330,13 +330,15 @@ class GameFlowCoordinatorTest {
             clock = clock,
         )
         var abortReason: String? = null
+        var abortDiagnostic: String? = null
         var abortedGame: Game? = null
-        val abortGameHandler = GameAbortHandler { expectedGame, reasonId, _ ->
+        val abortGameHandler = GameAbortHandler { expectedGame, reasonId, diagnostic ->
             val current = gameRepo.getGame(expectedGame.id)
             if (current != expectedGame) {
                 false
             } else {
                 abortReason = reasonId
+                abortDiagnostic = diagnostic
                 abortedGame = expectedGame
                 gameRepo.removeTableState(expectedGame.id)
                 true
@@ -437,6 +439,18 @@ class GameFlowCoordinatorTest {
     ) : MahjongRuleModule<RiichiRuleConfig> by delegate {
         /** 模擬牌牆摸完卻無法結算一般流局。 */
         override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult? = null
+    }
+
+    /**
+     * 保留日麻其餘行為，流局結算時拋出非預期例外。
+     *
+     * @property delegate 提供其餘正常日麻行為的規則模組。
+     */
+    private class ThrowingExhaustiveDrawRuleModule(
+        private val delegate: RiichiRuleModule,
+    ) : MahjongRuleModule<RiichiRuleConfig> by delegate {
+        /** 模擬規則程式在流局結算中出錯。 */
+        override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult = error(THROWING_RULE_MESSAGE)
     }
 
     /**
@@ -816,6 +830,29 @@ class GameFlowCoordinatorTest {
         )
         assertEquals(GameAbortReasonIds.MISSING_DRAW_SETTLEMENT, fixtures.abortReason)
         assertNull(fixtures.gameRepo.getGame(gameId))
+    }
+
+    /** 規則程式本身拋出例外時，以規則執行失敗中止，診斷附上指出出錯位置的完整堆疊。 */
+    @Test
+    fun `test unexpected rule failure aborts with its stack trace in the diagnostic`() = runTest {
+        val fixtures = Fixtures(ruleModuleDecorator = ::ThrowingExhaustiveDrawRuleModule)
+        val playerId = Uuid.random()
+        val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(player),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, playerId, GameCommand.Draw)
+
+        assertEquals(Outcome.Error(GameError.MatchAborted(gameId, GameAbortReasonIds.RULE_EXECUTION_FAILED)), result)
+        val diagnostic = assertNotNull(fixtures.abortDiagnostic)
+        assertTrue(THROWING_RULE_MESSAGE in diagnostic, diagnostic)
+        assertTrue("${ThrowingExhaustiveDrawRuleModule::class.simpleName}.declareExhaustiveDraw" in diagnostic, diagnostic)
     }
 
     // ---- 四槓散了：捨牌後收斂 ----
@@ -2370,7 +2407,7 @@ class GameFlowCoordinatorTest {
         ): RuleDecisionResolution = RuleDecisionResolution(tableState, nextStep = null)
     }
 
-    /** 條件式提交與逾時測試使用的策略識別碼。 */
+    /** 測試使用的策略識別碼與固定訊息。 */
     private companion object {
         /** [ChangingGameStrategy] 的策略 key。 */
         const val CHANGING_STRATEGY_KEY = "test:changing_game"
@@ -2383,6 +2420,9 @@ class GameFlowCoordinatorTest {
 
         /** [FixedRuleDecisionStrategy] 的策略 key。 */
         const val FIXED_RULE_DECISION_STRATEGY_KEY = "test:fixed_rule_decision"
+
+        /** [ThrowingExhaustiveDrawRuleModule] 拋出的例外訊息。 */
+        const val THROWING_RULE_MESSAGE = "exhaustive draw settlement failed"
     }
 }
 

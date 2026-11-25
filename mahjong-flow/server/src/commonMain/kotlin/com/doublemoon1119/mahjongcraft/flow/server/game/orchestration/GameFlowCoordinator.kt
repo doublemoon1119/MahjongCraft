@@ -442,6 +442,8 @@ class GameFlowCoordinator(
     /**
      * 只中止仍屬於原場次的最新已提交狀態，不回滾前一個成功步驟。
      *
+     * 規則契約違反已帶有明確原因，診斷只附訊息；其他例外是規則程式本身出錯，診斷附上完整堆疊，讓管理日誌指出出錯位置。
+     *
      * @param basis 失敗操作所屬的原場次。
      * @param failure 原始診斷。
      * @return 中止錯誤；原場次已不存在時為找不到對局。
@@ -449,8 +451,14 @@ class GameFlowCoordinator(
     private suspend fun abortAfterFailure(basis: Game, failure: Throwable): Outcome.Error<GameError> {
         val current = gameRepository.getGame(basis.id)?.takeIf { it.matchId == basis.matchId }
             ?: return Outcome.Error(GameError.GameNotFound(basis.id))
-        val reasonId = (failure as? RuleContractViolationException)?.reasonId ?: GameAbortReasonIds.RULE_EXECUTION_FAILED
-        val diagnostic = "${moduleRegistry.getModule(current.tableState.config).id}: ${failure::class.simpleName}: ${failure.message.orEmpty()}"
+        val contractViolation = failure as? RuleContractViolationException
+        val reasonId = contractViolation?.reasonId ?: GameAbortReasonIds.RULE_EXECUTION_FAILED
+        val moduleId = moduleRegistry.getModule(current.tableState.config).id
+        val diagnostic = if (contractViolation != null) {
+            "$moduleId: ${failure::class.simpleName}: ${failure.message.orEmpty()}"
+        } else {
+            "$moduleId: ${failure.stackTraceToString()}"
+        }
         return if (abortGameUseCase.abort(current, reasonId, diagnostic)) {
             Outcome.Error(GameError.MatchAborted(basis.id, reasonId))
         } else {
