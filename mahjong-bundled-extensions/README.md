@@ -8,10 +8,10 @@ integration.
 
 ## Responsibilities
 
-- Register four-player and three-player Riichi and the in-progress Taiwanese
-  rule components through the same `MahjongExtension` callbacks that
-  third-party extensions use. Registration does not imply that a rule is
-  feature-complete; see the [logic module's current rule scope](../mahjong-logic/README.md).
+- Register four-player and three-player Riichi and Taiwanese mahjong through
+  the same `MahjongExtension` callbacks that third-party extensions use.
+  Registration does not imply that a rule is feature-complete. See the
+  [logic module's current rule scope](../mahjong-logic/README.md).
 - Cover the platform-independent part of each rule, such as rule modules,
   rule-specific tile types, network and persistence formats, AI and command
   handlers, and settlement resolvers.

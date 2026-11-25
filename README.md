@@ -5,11 +5,11 @@
 	<br>
 </h1>
 
-MahjongCraft is a Kotlin Multiplatform mahjong rules engine and an in-development Minecraft mod.
-The playable platform targets provide four-player and three-player Japanese mahjong on Fabric and Forge
-for Minecraft 1.20.1, backed by reusable logic, flow, AI, persistence, networking, and extension modules.
-Taiwanese rule components are also under development, but their hand-value calculation and settlement
-are not yet implemented.
+MahjongCraft is a Kotlin Multiplatform mahjong library and an in-development Minecraft mod built on
+it. Each mahjong rule is a rule module registered through the extension API. The
+[bundled extensions](mahjong-bundled-extensions/README.md) list the rules that ship with the project,
+and the [Minecraft guide](platform/minecraft/README.md) lists the supported Minecraft versions and
+loaders.
 
 The project is under active development. This documentation describes the code that exists today and
 does not promise future rules, platforms, interfaces, or release schedules.
@@ -30,18 +30,17 @@ does not promise future rules, platforms, interfaces, or release schedules.
 
 ## 🛠️ Building
 
-Run commands from the repository root. Select `core` explicitly to build without a Minecraft adapter,
-regardless of local target settings:
+Run commands from the repository root. Select `core` explicitly to build only the platform-independent
+modules, regardless of local target settings:
 
 ```shell
 ./gradlew build "-PmahjongcraftTarget=core"
 ```
 
-Run a Minecraft build by selecting its target, for example Fabric or Forge for Minecraft 1.20.1:
+Run a Minecraft build by selecting its target, for example Fabric for Minecraft 1.20.1:
 
 ```shell
 ./gradlew build "-PmahjongcraftTarget=minecraft-v1.20.1-fabric"
-./gradlew build "-PmahjongcraftTarget=minecraft-v1.20.1-forge"
 ```
 
 Separate several targets with commas to build them together, for example

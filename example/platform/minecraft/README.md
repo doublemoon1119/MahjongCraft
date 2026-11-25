@@ -96,7 +96,14 @@ checks above or prove every world interaction.
 
 ## Accepted Game Checks
 
-The following integration scenarios have been accepted in game on the current Fabric 1.20.1 adapter.
+Game checks cover these versions and loaders:
+
+- Fabric 1.20.1: the integration scenarios below, and the game checks marked in the
+  [example capability table](../../README.md#what-the-examples-cover).
+- Fabric 1.21.1: the example loads and plays a match.
+- Other versions and loaders: no game checks beyond what their own sections list.
+
+The following integration scenarios have been accepted in game on the Fabric 1.20.1 adapter.
 They do not need repeating solely for documentation or ABI baseline changes:
 
 - Enable the two-tile exchange, select multiple tiles, submit from every player, and confirm the
