@@ -53,6 +53,7 @@ repositories {
 devMods {
     group("shaders", mc1201.bundles.dev.fabric.iris)
     group("modmenu", mc1201.bundles.dev.fabric.modmenu)
+    shaderPack(group = "shaders", pack = mc1201.dev.shader.complementary.reimagined)
 }
 
 loom {

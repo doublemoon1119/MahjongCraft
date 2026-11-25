@@ -32,6 +32,8 @@ mod-menu = "11.0.5"
 # Sodium 使用 Iris 1.8.8 要求的 0.6 版。
 iris = "1.8.8+1.21.1-fabric"
 sodium = "mc1.21.1-0.6.13-fabric"
+# shaders 組合開啟的光影包，Modrinth 上下載最多的光影包；開發執行時從 Modrinth 的 Maven 倉庫取得，不放進版本庫，也不打包。
+complementary-reimagined = "r5.10"
 # Iris 打包在自己 JAR 中的程式庫。Loom 為開發環境轉換模組時會拿掉內嵌的程式庫，改由 Maven 依賴提供，
 # 但 Modrinth 的 Iris 沒有宣告這些依賴，所以 iris 組合另外列出；版本與 Iris 內嵌的一致。
 jcpp = "1.4.14"
@@ -56,6 +58,7 @@ mixinextras-common = { group = "io.github.llamalad7", name = "mixinextras-common
 mod-menu = { group = "maven.modrinth", name = "modmenu", version.ref = "mod-menu" }
 iris = { group = "maven.modrinth", name = "iris", version.ref = "iris" }
 sodium = { group = "maven.modrinth", name = "sodium", version.ref = "sodium" }
+dev-shader-complementary-reimagined = { group = "maven.modrinth", name = "complementary-reimagined", version.ref = "complementary-reimagined" }
 jcpp = { group = "org.anarres", name = "jcpp", version.ref = "jcpp" }
 glsl-transformer = { group = "io.github.douira", name = "glsl-transformer", version.ref = "glsl-transformer" }
 antlr-runtime = { group = "org.antlr", name = "antlr4-runtime", version.ref = "antlr-runtime" }

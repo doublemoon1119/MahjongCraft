@@ -51,6 +51,9 @@ example module declare the same groups:
   The group uses Iris 1.8.8 with Sodium 0.6, not the newer Iris 1.8.14 for 1.21.1: one of 1.8.14's mixins
   names its target method without parameter types, and Fabric Loader's development-run remapping fails on it.
   Installed games do not remap mixins this way, so players can use 1.8.14; check it with the packaged JAR.
+  Under Iris 1.8.8 with Sodium 0.6 and the group's shader pack, the white sides of tiles render black and tile
+  faces disappear; the packaged JAR with Iris 1.8.14 and Sodium 0.8 renders them correctly, so judge shader
+  rendering on 1.21.1 with the packaged JAR.
 - `modmenu`: ModMenu, for checking the mod list entry, whose settings button opens the client settings.
 
 ```shell

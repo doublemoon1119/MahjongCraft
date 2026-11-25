@@ -173,7 +173,7 @@ private const val LOOM_RUNTIME_JAVA_PROPERTY = "fabric.loom.runtimeJavaCompatibi
  */
 private fun Project.configureDevMods() {
     val selected = MinecraftDevMods.parse(providers.gradleProperty(MinecraftDevMods.PROPERTY_NAME).orNull)
-    val devMods = extensions.create("devMods", MinecraftDevModsExtension::class.java, selected, dependencies)
+    val devMods = extensions.create("devMods", MinecraftDevModsExtension::class.java, selected, dependencies, this)
     pluginManager.withPlugin(FABRIC_LOOM_PLUGIN_ID) {
         devMods.configurationName.convention(LOOM_LOCAL_RUNTIME_CONFIGURATION)
     }
