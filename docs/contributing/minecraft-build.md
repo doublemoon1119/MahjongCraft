@@ -47,6 +47,12 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   adapter with the same name in its own test sources.
 - Data pack files whose format or folder name changes between Minecraft versions, such as recipes,
   advancements, loot tables and item tags, stay in each version's mod module.
+- A loader that supports more than one Minecraft version with a continuing API keeps the adapter code that is
+  the same for all of them in a shared folder named after the loader, such as `platform/minecraft/fabric`, which
+  each version's loader module compiles through `includeSharedVersionSources()`, like the shared mod folder. Each
+  version's loader module keeps what differs, such as networking, and the files every version has its own copy
+  of: mod metadata, access wideners, mixin configurations and data pack files. A loader with one supported
+  version keeps everything in its version folder. Forge and NeoForge are separate loaders and share nothing.
 - Loader modules compile the mod module's sources and package its resources together with their own, instead of
   depending on its JAR. That JAR uses Mojang names, while each loader remaps the combined output to its own runtime
   names. The mod module's JAR is never distributed.

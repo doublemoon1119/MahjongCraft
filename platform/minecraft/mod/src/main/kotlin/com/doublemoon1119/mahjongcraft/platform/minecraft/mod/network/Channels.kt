@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ChannelDirection
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModPackets
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
@@ -112,7 +113,7 @@ internal fun <T> decodeBoundedPayload(
  */
 class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private val maxPayloadBytes: Int? = null) {
     /** 收送封包使用的頻道識別碼。 */
-    val channelId: ResourceLocation = resourceId(MinecraftModMetadata.MOD_ID, id).also(ModPackets.transport::declareChannel)
+    val channelId: ResourceLocation = resourceId(MinecraftModMetadata.MOD_ID, id).also { ModPackets.transport.declareChannel(it, ChannelDirection.TO_CLIENT) }
 
     /** 記錄丟棄過大回應的 logger。 */
     private val logger = mahjongCraftLogger(S2CChannel::class)
@@ -178,7 +179,7 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private 
 }
 
 /**
- * 客戶端→伺服器頻道。[registerServerReceiver] 的接收回呼在網路執行緒執行，封包緩衝區在回呼結束後
+ * 客戶端→伺服器頻道。[registerServerReceiver] 的接收回呼依載入器在網路執行緒或伺服器主執行緒執行，封包緩衝區在回呼結束後
  * 可能被釋放，必須同步讀完；解碼後的資料交由伺服器主執行緒上的處理函式接收，玩家身分一律用回呼收到
  * 的 [ServerPlayer] 自己的 UUID，不信任封包內容宣稱的身分。
  *
@@ -200,7 +201,7 @@ class C2SChannel<T>(
     private val logger = mahjongCraftLogger(C2SChannel::class)
 
     /** 收送封包使用的頻道識別碼。 */
-    val channelId: ResourceLocation = resourceId(MinecraftModMetadata.MOD_ID, id).also(ModPackets.transport::declareChannel)
+    val channelId: ResourceLocation = resourceId(MinecraftModMetadata.MOD_ID, id).also { ModPackets.transport.declareChannel(it, ChannelDirection.TO_SERVER) }
 
     /** 依 `rateLimit` 判斷要求是否接受；由接收端自行准入時為 null。 */
     private val limiter: PlayerRequestRateLimiter? = (rateLimit as? C2SRateLimit.PerPlayer)

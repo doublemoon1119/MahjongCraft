@@ -29,7 +29,7 @@ See the [example guide](../../README.md) for commands and development-world isol
 
 ## Mahjong tables
 
-The three tables use the [Fabric table hooks](../../../../../platform/minecraft/v1.20.1/fabric/README.md#mahjong-tables)
+The three tables use the [Fabric table hooks](../../../../../platform/minecraft/fabric/README.md#mahjong-tables)
 without extending MahjongCraft's built-in table. Each controller block entity implements
 `MahjongTableController` and saves its state through MahjongCraft's NBT functions; every block of a
 table implements `MahjongTableStructureBlock`. MahjongCraft finds them without a registration step.

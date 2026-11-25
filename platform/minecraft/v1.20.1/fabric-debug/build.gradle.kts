@@ -1,3 +1,4 @@
+import com.doublemoon1119.mahjongcraft.buildlogic.includeSharedVersionSources
 import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.includeTestSourcesOf
 
@@ -24,9 +25,12 @@ configure<com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtens
     dependencyRequirements.put("fabricLanguageKotlin", mc1201.versions.require.fabric.language.kotlin)
 }
 
+// 一起編譯跨版本共用的 platform/minecraft/fabric-debug；這裡只放 1.20.1 的設定檔。
+includeSharedVersionSources()
+
 // debug 中呼叫 Minecraft 但不用載入器的程式在 :minecraft_v1.20.1_mod-debug 與它一起編譯的跨版本共用
-// platform/minecraft/mod-debug，不需要 Minecraft 的程式、翻譯與材質在 :minecraft_common-debug。本體開發執行只載入這個模組、不帶它的依賴，因此兩者的原始碼與資源都納入本模組，由 Loom 一起
-// 重新映射並打包。
+// platform/minecraft/mod-debug，不需要 Minecraft 的程式、翻譯與材質在 :minecraft_common-debug。本體開發執行只載入這個
+// 模組、不帶它的依賴，因此兩者的原始碼與資源都納入本模組，由 Loom 一起重新映射並打包。
 includeSourcesOf(":minecraft_common-debug", "src/jvmMain")
 includeSourcesOf(":minecraft_v1.20.1_mod-debug")
 // 各載入器共用的 debug 組裝測試；本模組提供 Fabric 的服務組合。

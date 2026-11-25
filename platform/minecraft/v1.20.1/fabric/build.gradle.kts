@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.buildlogic.autotestServerSystemProperties
 import com.doublemoon1119.mahjongcraft.buildlogic.autotestSystemProperties
 import com.doublemoon1119.mahjongcraft.buildlogic.clientRunDirectory
 import com.doublemoon1119.mahjongcraft.buildlogic.includeResourcesOf
+import com.doublemoon1119.mahjongcraft.buildlogic.includeSharedVersionSources
 import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.modrinth
 import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestClientTasks
@@ -74,6 +75,9 @@ loom {
 }
 registerAutotestClientTasks(clientTask = "runClient")
 registerAutotestServerTasks(startTask = "runServer", resumeTask = "runAutotestServerResume", portOffset = 0)
+
+// 一起編譯跨版本共用的 platform/minecraft/fabric；這裡只放 1.20.1 的 Fabric 專屬部分，例如網路傳輸與 mod 的設定檔。
+includeSharedVersionSources()
 
 // 材質、模型與翻譯放在跨版本、跨載入器共用的 :minecraft_common，與本模組的資源一起打包。
 // :minecraft_v1.20.1_mod 與它一起編譯的跨版本共用 platform/minecraft/mod，程式與資源（例如配方）由本模組一起編譯與打包：

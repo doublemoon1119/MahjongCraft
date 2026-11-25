@@ -90,7 +90,8 @@ object FabricClientEvents : ClientEvents {
     override fun onWorldRenderBeforeDebug(listener: (PoseStack, MultiBufferSource, Camera) -> Unit) {
         WorldRenderEvents.BEFORE_DEBUG_RENDER.register { context ->
             val consumers = context.consumers() ?: return@register
-            listener(context.matrixStack(), consumers, context.camera())
+            val matrices = context.matrixStack() ?: return@register
+            listener(matrices, consumers, context.camera())
         }
     }
 

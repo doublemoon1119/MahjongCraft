@@ -10,6 +10,8 @@ modules = [
     "platform/minecraft/common-debug",
     "platform/minecraft/v1.21.1/mod",
     "platform/minecraft/v1.21.1/mod-debug",
+    "platform/minecraft/v1.21.1/fabric",
+    "platform/minecraft/v1.21.1/fabric-debug",
 ]
 example-modules = []
 

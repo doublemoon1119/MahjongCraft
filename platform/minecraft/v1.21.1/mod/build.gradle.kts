@@ -11,10 +11,24 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.moddev)
     alias(libs.plugins.koin.compiler)
+    alias(libs.plugins.mahjongcraft.public.api.abi)
 }
 
 // 一起編譯跨版本共用的 platform/minecraft/mod。
 includeSharedVersionSources()
+
+publicApiAbi {
+    includedNames.addAll(
+        "com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.event.**",
+        "com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.**",
+        "com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.seating.**",
+        "com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.**",
+        "com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.table.**",
+        "com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.tableprop.**",
+        "com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.NativeMahjongExtension",
+        "com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.NativeMahjongClientExtension",
+    )
+}
 
 neoForge {
     // 原版模式：只提供套用 Mojang 名稱的原版 Minecraft，不含任何載入器。

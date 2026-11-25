@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ChannelDirection
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientPacketTransport
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModPackets
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.PacketTransport
@@ -31,13 +32,13 @@ class ChannelTransportTest {
         ModPackets.installClient(clientTransport)
     }
 
-    /** 頻道建立時就向收送方式宣告自己。 */
+    /** 頻道建立時就向收送方式宣告自己與封包的方向。 */
     @Test
     fun `channels declare themselves when created`() {
         val request = C2SChannel(id = "test_request", serializer = String.serializer(), rateLimit = C2SRateLimit.HandledByReceiver)
         val response = S2CChannel(id = "test_response", serializer = String.serializer())
 
-        assertEquals(listOf(request.channelId, response.channelId), transport.declared)
+        assertEquals(listOf(request.channelId to ChannelDirection.TO_SERVER, response.channelId to ChannelDirection.TO_CLIENT), transport.declared)
     }
 
     /** 用戶端送出的要求能被伺服器端的解碼完整還原。 */
@@ -73,11 +74,11 @@ class ChannelTransportTest {
 
     /** 只記錄宣告的頻道；這些測試不經過伺服器端的收送。 */
     private class RecordingPacketTransport : PacketTransport {
-        /** 依宣告順序記錄的頻道。 */
-        val declared = mutableListOf<ResourceLocation>()
+        /** 依宣告順序記錄的頻道與方向。 */
+        val declared = mutableListOf<Pair<ResourceLocation, ChannelDirection>>()
 
-        override fun declareChannel(channelId: ResourceLocation) {
-            declared += channelId
+        override fun declareChannel(channelId: ResourceLocation, direction: ChannelDirection) {
+            declared += channelId to direction
         }
 
         override fun sendToPlayer(player: ServerPlayer, channelId: ResourceLocation, buf: FriendlyByteBuf) = error("Not used in these tests")

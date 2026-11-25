@@ -33,8 +33,8 @@ repositories {
 }
 
 // debug 中呼叫 Minecraft 但不用載入器的程式在 :minecraft_v1.20.1_mod-debug 與它一起編譯的跨版本共用
-// platform/minecraft/mod-debug，不需要 Minecraft 的程式、翻譯與材質在 :minecraft_common-debug。本體的開發執行以本模組的輸出載入 debug 工具，因此兩者的原始碼與資源都納入本模組，由 ModDevGradle
-// 一起轉成 Forge 執行時的名稱。
+// platform/minecraft/mod-debug，不需要 Minecraft 的程式、翻譯與材質在 :minecraft_common-debug。本體的開發執行以本模組的
+// 輸出載入 debug 工具，因此兩者的原始碼與資源都納入本模組，由 ModDevGradle 一起轉成 Forge 執行時的名稱。
 includeSourcesOf(":minecraft_common-debug", "src/jvmMain")
 includeSourcesOf(":minecraft_v1.20.1_mod-debug")
 // 各載入器共用的 debug 組裝測試；本模組提供 Forge 的服務組合。
