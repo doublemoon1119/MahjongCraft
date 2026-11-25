@@ -15,6 +15,9 @@ abstract class AutotestSlotsService : BuildService<BuildServiceParameters.None>
  * 接上用戶端自動測試：開發用戶端啟動前由 [PrepareAutotestClientTask] 寫好啟動時就要生效的選項，遵守同時執行數的限制，並
  * 登記報告的位置給總任務 `autotest` 彙整。沒有設定 `mahjongcraftAutotest` 時不做任何事。
  *
+ * 建置中有這個模組的範例模組時，總任務只跑範例的用戶端測試：範例的用戶端也載入本體並執行同樣的步驟，再多測擴充的內容。
+ * 這個模組的開發用戶端仍可單獨執行自動測試。
+ *
  * @param clientTask 開發用戶端的執行任務名稱。
  */
 fun Project.registerAutotestClientTasks(clientTask: String) {
@@ -26,6 +29,7 @@ fun Project.registerAutotestClientTasks(clientTask: String) {
     }
     tasks.named(clientTask) { dependsOn(prepare) }
     limitAutotestRun(clientTask)
+    if (rootProject.findProject(exampleProjectPath(name)) != null) return
     val module = name
     autotestTarget().configure {
         dependsOn(clientTask)
@@ -117,6 +121,15 @@ private fun Project.autotestSlots(): Provider<AutotestSlotsService> {
         maxParallelUsages.set(parallel)
     }
 }
+
+/**
+ * 載入器模組對應的範例模組專案路徑，與 target catalog 對範例模組的命名相同，例如 `minecraft_v1.21.1_fabric` 對應
+ * `:example-minecraft_v1.21.1_fabric`。
+ *
+ * @param projectName 載入器模組的專案名稱。
+ * @return 範例模組的專案路徑。
+ */
+internal fun exampleProjectPath(projectName: String): String = ":example-$projectName"
 
 /** 每個模組彙整自動測試用的任務名稱。 */
 internal const val AUTOTEST_TARGET_TASK: String = "autotestTarget"

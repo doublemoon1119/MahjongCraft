@@ -174,7 +174,8 @@ Common commands, each followed by what it runs. The sections below explain each 
   ./gradlew autotest "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=true"
   ```
 
-- The same together with the example's client test, which also covers screens that need extension content:
+- The same with the example's client test in place of the loader's own, which also covers screens that need
+  extension content:
 
   ```shell
   ./gradlew autotest "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftExample=true" "-PmahjongcraftAutotest=true"
@@ -279,8 +280,10 @@ Each kind of run in detail:
 
 ### Running Every Target
 
-- The root `autotest` task runs every selected target's client and server tests in one build, and the
-  example's client tests when `-PmahjongcraftExample=true` is also passed:
+- The root `autotest` task runs every selected target's client and server tests in one build. With
+  `-PmahjongcraftExample=true` it runs each example's client test instead of its loader module's own client
+  test: the example client loads the main mod, runs the same steps and also covers the extension's content.
+  A loader module's `runClient` can still run its own client test directly:
 
   ```shell
   ./gradlew autotest "-PmahjongcraftTarget=minecraft-v1.20.1-fabric,minecraft-v1.20.1-forge,minecraft-v1.21.1-fabric" "-PmahjongcraftAutotest=true"
