@@ -600,6 +600,95 @@ class HistoryBrowseRoundControllerTest {
         assertEquals(HistoryBrowseStatus.Loading, controller.state.value.replay?.eventsStatus)
     }
 
+    /** 目前這一步已取得、後面牌面的預先讀取在自動重試後仍失敗：保留目前牌面，顯示預先讀取失敗，手動重試後繼續讀取。 */
+    @Test
+    fun `test replay keeps the current state and offers retry when reading ahead fails`() = runTest {
+        val transport = FakeRoundHistoryTransport()
+        val controller = openReplay(transport)
+        transport.respondStates()
+        runCurrent()
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        transport.respondEvents(roundNumber = 1, start = EVENTS_PAGE, transactionIndexes = (EVENTS_PAGE until TRANSACTION_COUNT).toList(), transactionCount = TRANSACTION_COUNT)
+        runCurrent()
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        val ahead = transport.roundStateRequests.last()
+        assertEquals(HistoryRoundPositionDto.AfterTransaction(HistoryQueryLimits.MAX_ROUND_STATES - 1), ahead.position)
+        listOf(500.milliseconds, 1.seconds, 2.seconds).forEach { wait ->
+            transport.respondStatesError(HistoryQueryErrorCodeDto.BUSY)
+            runCurrent()
+            advanceTimeBy(wait)
+            runCurrent()
+        }
+        transport.respondStatesError(HistoryQueryErrorCodeDto.BUSY)
+        runCurrent()
+
+        val failed = assertNotNull(controller.state.value.replay)
+        assertEquals(HistoryBrowseStatus.Ready, failed.status)
+        assertNotNull(failed.state)
+        assertIs<HistoryBrowseStatus.Failed>(failed.aheadStatus)
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        assertTrue(controller.canRetry())
+
+        assertTrue(controller.retry())
+        runCurrent()
+        assertEquals(ahead.position, transport.roundStateRequests.last().position)
+        assertEquals(HistoryBrowseStatus.Ready, controller.state.value.replay?.aheadStatus)
+        transport.respondStates()
+        runCurrent()
+        assertTrue(controller.isReplayStepReady(HistoryQueryLimits.MAX_ROUND_STATES))
+    }
+
+    /** 回放的規則設定讀取失敗後仍繼續讀牌面；之後的查詢不會蓋掉規則設定的重試，回放畫面可以重試並恢復。 */
+    @Test
+    fun `test replay can retry failed rule settings after reading states`() = runTest {
+        val transport = FakeRoundHistoryTransport()
+        val controller = openRound(transport)
+        transport.respondEvents(roundNumber = 1, start = 0, next = EVENTS_PAGE, transactionCount = TRANSACTION_COUNT)
+        runCurrent()
+        assertTrue(controller.showReplay(0))
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        transport.respondRuleSettingsError(HistoryQueryErrorCodeDto.BUSY)
+        runCurrent()
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        transport.respondStates()
+        runCurrent()
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        assertTrue(controller.replayRuleSettingsFailed())
+        assertEquals(HistoryBrowseStatus.Ready, controller.state.value.replay?.status)
+
+        transport.respondEvents(roundNumber = 1, start = EVENTS_PAGE, transactionIndexes = (EVENTS_PAGE until TRANSACTION_COUNT).toList(), transactionCount = TRANSACTION_COUNT)
+        runCurrent()
+        // 回覆背景預先讀取的牌面，直到不再有新的查詢。
+        var answered = transport.roundStateRequests.size
+        repeat(TRANSACTION_COUNT / HistoryQueryLimits.MAX_ROUND_STATES + 1) {
+            advanceTimeBy(250.milliseconds)
+            runCurrent()
+            if (transport.roundStateRequests.size > answered) {
+                answered = transport.roundStateRequests.size
+                transport.respondStates()
+                runCurrent()
+            }
+        }
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        assertTrue(controller.replayRuleSettingsFailed())
+        assertTrue(controller.canRetry())
+        assertTrue(controller.retry())
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        assertEquals(2, transport.ruleSettingsRequests.size)
+        transport.respondRuleSettings()
+        runCurrent()
+        assertFalse(controller.replayRuleSettingsFailed())
+        assertEquals(HistoryBrowseStatus.Ready, controller.state.value.ruleSettings?.status)
+    }
+
     /** 結束回放回到事件頁，之後才到的回放回覆不會再寫回。 */
     @Test
     fun `test leaving replay discards late states`() = runTest {
@@ -856,6 +945,15 @@ class HistoryBrowseRoundControllerTest {
 
         /** 已送出的規則設定要求識別碼。 */
         val ruleSettingsRequests = mutableListOf<String>()
+
+        /**
+         * 以錯誤回覆最後一筆規則設定要求。
+         *
+         * @param errorCode 伺服器拒絕原因。
+         */
+        fun respondRuleSettingsError(errorCode: HistoryQueryErrorCodeDto) {
+            mutableState.value = ClientHistoryQueryState.RuleSettingsResult(HistoryRuleSettingsResponseDto(ruleSettingsRequests.last(), config = null, errorCode = errorCode))
+        }
 
         /** 回覆最後一筆規則設定要求。 */
         fun respondRuleSettings() {

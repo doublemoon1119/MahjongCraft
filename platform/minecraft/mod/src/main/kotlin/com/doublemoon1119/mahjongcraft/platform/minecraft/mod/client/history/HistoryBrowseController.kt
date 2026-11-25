@@ -82,6 +82,9 @@ internal class HistoryBrowseController(
     /** 回放中的一局；不在回放時為 null。 */
     private var replayRound: HistoryReplayRound? = null
 
+    /** 回放目前這一步之後的牌面預先讀取失敗、自動重試也用完時的狀態；沒有失敗時為 null。 */
+    private var replayAheadFailure: HistoryBrowseStatus.Failed? = null
+
     /** 尚未開始傳送的條件合併／間隔等待。 */
     private var sendJob: Job? = null
 
@@ -137,6 +140,7 @@ internal class HistoryBrowseController(
         if (normalized == state.value.query) return false
         generation++
         replayRound = null
+        replayAheadFailure = null
         mutableState.value = state.value.copy(
             query = normalized,
             page = if (state.value.page != HistoryBrowsePage.FILTERS) HistoryBrowsePage.LIST else state.value.page,
@@ -180,8 +184,20 @@ internal class HistoryBrowseController(
     fun canRetry(): Boolean = available() &&
         active == null &&
         pending == null &&
-        retryIntent?.takeIf { it.generation == generation } != null &&
+        (retryIntent?.takeIf { it.generation == generation } != null || replayRuleSettingsFailed()) &&
         !isRefreshCoolingDown()
+
+    /**
+     * 回放中這場對局的規則設定是否讀取失敗。回放讀取失敗後仍會繼續讀牌面與事件，新的查詢會取代可重試的意圖，所以另外判斷，
+     * 讓回放畫面仍能重試規則設定。
+     *
+     * @return 在回放頁而且這場對局的規則設定讀取失敗時為 true。
+     */
+    fun replayRuleSettingsFailed(): Boolean {
+        if (state.value.page != HistoryBrowsePage.ROUND_REPLAY) return false
+        val settings = state.value.ruleSettings ?: return false
+        return settings.matchId == state.value.summary?.matchId && settings.status is HistoryBrowseStatus.Failed
+    }
 
     /**
      * 判斷單局頁查詢控制項是否可接受新的網路操作。
@@ -501,6 +517,7 @@ internal class HistoryBrowseController(
         if (state.value.page != HistoryBrowsePage.ROUND_EVENTS) return false
         abandonPending()
         replayRound = HistoryReplayRound(roundNumber = round.roundNumber, initialStep = step, transactionCount = round.transactionCount)
+        replayAheadFailure = null
         mutableState.value = state.value.copy(page = HistoryBrowsePage.ROUND_REPLAY)
         publishReplay(HistoryBrowseStatus.Loading)
         requestReplay()
@@ -521,6 +538,7 @@ internal class HistoryBrowseController(
         val retained = state.value.rounds.mapValues { (_, round) -> round.copy(events = null, state = null, eventsStatus = HistoryBrowseStatus.Idle, stateStatus = HistoryBrowseStatus.Idle) }
         val selected = retained[roundNumber] ?: HistoryBrowseRoundState(roundNumber)
         replayRound = HistoryReplayRound(roundNumber = roundNumber, initialStep = 0, transactionCount = selected.transactionCount)
+        replayAheadFailure = null
         mutableState.value = state.value.copy(rounds = retained + (roundNumber to selected), selectedRoundNumber = roundNumber)
         publishReplay(HistoryBrowseStatus.Loading)
         requestReplay()
@@ -565,6 +583,7 @@ internal class HistoryBrowseController(
         if (!available() || state.value.page != HistoryBrowsePage.ROUND_REPLAY) return false
         abandonPending()
         replayRound = null
+        replayAheadFailure = null
         mutableState.value = state.value.copy(page = HistoryBrowsePage.ROUND_EVENTS, replay = null)
         currentRound()?.takeIf { it.events == null }?.let { requestRoundEvents(it.eventStartIndices) }
         return true
@@ -587,6 +606,7 @@ internal class HistoryBrowseController(
                 status = if (current != null) HistoryBrowseStatus.Ready else status,
                 eventPages = round.eventPages,
                 eventsStatus = if (round.eventsComplete) HistoryBrowseStatus.Ready else HistoryBrowseStatus.Loading,
+                aheadStatus = replayAheadFailure ?: HistoryBrowseStatus.Ready,
             ),
         )
     }
@@ -761,6 +781,7 @@ internal class HistoryBrowseController(
             retryIntent = null
         }
         replayRound = null
+        replayAheadFailure = null
         mutableState.value = state.value.copy(page = HistoryBrowsePage.LIST, replay = null)
         return true
     }
@@ -806,6 +827,13 @@ internal class HistoryBrowseController(
      */
     fun retry(): Boolean {
         if (!available() || active != null || pending != null) return false
+        if (replayRuleSettingsFailed()) {
+            // 規則設定標回讀取中，回放的下一項查詢就會重新要求它。
+            replayAutoRetries = 0
+            mutableState.value = state.value.copy(ruleSettings = state.value.ruleSettings?.copy(status = HistoryBrowseStatus.Loading))
+            requestReplay()
+            return true
+        }
         val intent = retryIntent?.takeIf { it.generation == generation } ?: return false
         replayAutoRetries = 0
         when (intent) {
@@ -827,6 +855,7 @@ internal class HistoryBrowseController(
      */
     private fun retryReplay(): Boolean {
         retryIntent = null
+        replayAheadFailure = null
         if (replayRound == null) return false
         publishReplay(HistoryBrowseStatus.Loading)
         requestReplay()
@@ -892,6 +921,7 @@ internal class HistoryBrowseController(
     private fun enqueue(intent: Intent, debounce: Duration) {
         if (!available() || intent.generation != generation) return
         retryIntent = null
+        if (intent is Intent.ReplayStates) replayAheadFailure = null
         pending = null
         sendJob?.cancel()
         if (acceptCachedRound(intent)) return
@@ -1270,7 +1300,15 @@ internal class HistoryBrowseController(
             is Intent.RoundState -> state.value.withRound(intent.roundNumber) { it.copy(stateStatus = status) }
             is Intent.ReplayStates -> {
                 replayRound?.releaseRequest()
-                state.value.replay?.let { replay -> state.value.copy(replay = if (replay.state == null) replay.copy(status = status) else replay) } ?: state.value
+                // 目前這一步已經取得時保留牌面，把失敗記在預先讀取的狀態，畫面才能顯示失敗並重試。
+                state.value.replay?.let { replay ->
+                    if (replay.state == null) {
+                        state.value.copy(replay = replay.copy(status = status))
+                    } else {
+                        replayAheadFailure = status
+                        state.value.copy(replay = replay.copy(aheadStatus = status))
+                    }
+                } ?: state.value
             }
             is Intent.ReplayEvents -> {
                 replayRound?.releaseRequest()

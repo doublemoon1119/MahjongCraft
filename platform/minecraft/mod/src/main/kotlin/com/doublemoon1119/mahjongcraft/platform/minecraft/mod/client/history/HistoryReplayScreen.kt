@@ -502,7 +502,10 @@ internal class HistoryReplayScreen(
         val index = rounds.indexOf(replay?.roundNumber)
         previousRoundButton.active = index > 0
         nextRoundButton.active = index >= 0 && index < rounds.lastIndex
-        val failed = replay?.status is HistoryBrowseStatus.Failed || replay?.eventsStatus is HistoryBrowseStatus.Failed
+        val failed = replay?.status is HistoryBrowseStatus.Failed ||
+            replay?.eventsStatus is HistoryBrowseStatus.Failed ||
+            replay?.aheadStatus is HistoryBrowseStatus.Failed ||
+            session.controller.replayRuleSettingsFailed()
         retryButton.visible = failed
         retryButton.active = failed && session.controller.canRetry()
     }

@@ -193,6 +193,8 @@ internal data class HistoryBrowseState(
  * @property status 目前這一步的讀取狀態。
  * @property eventPages 已取得的事件頁，依交易順序排列。
  * @property eventsStatus 整局事件的讀取狀態；全部取得時為就緒。
+ * @property aheadStatus 目前這一步之後牌面的預先讀取狀態。預先讀取失敗時仍保留目前的牌面，以這個狀態顯示失敗與重試；
+ *   沒有失敗時為就緒。
  */
 internal data class HistoryBrowseReplayState(
     val roundNumber: Int,
@@ -202,4 +204,5 @@ internal data class HistoryBrowseReplayState(
     val status: HistoryBrowseStatus,
     val eventPages: List<HistoryRoundEventsDto>,
     val eventsStatus: HistoryBrowseStatus,
+    val aheadStatus: HistoryBrowseStatus,
 )
