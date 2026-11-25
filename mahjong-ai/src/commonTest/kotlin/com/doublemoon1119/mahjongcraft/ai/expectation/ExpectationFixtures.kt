@@ -88,7 +88,7 @@ internal object ExpectationFixtures {
      * 以 [tiles] 為立牌、[drawn] 為剛摸到的牌建立手牌。
      *
      * @param tiles 手牌中的立牌牌面。
-     * @param drawn 剛摸到的牌面；null 表示沒有摸牌。
+     * @param drawn 剛摸到的牌面。null 表示沒有摸牌。
      * @param melds 已有副露，預設為空。
      * @return 以測試識別碼包裝輸入牌面的手牌。
      */
@@ -127,7 +127,7 @@ internal object ExpectationFixtures {
      * 依座位順序排列的桌況，第一位為莊家。
      *
      * @param liveTiles 牌山中扣除王牌後還能摸的張數。
-     * @param players 依座位順序排列的玩家清單；第一位作為莊家。
+     * @param players 依座位順序排列的玩家清單。第一位作為莊家。
      * @return 以日麻設定與指定牌山建立的桌況。
      */
     fun table(players: List<MahjongPlayer>, liveTiles: Int = 56): TableState = FakeTableStateFactory.create(

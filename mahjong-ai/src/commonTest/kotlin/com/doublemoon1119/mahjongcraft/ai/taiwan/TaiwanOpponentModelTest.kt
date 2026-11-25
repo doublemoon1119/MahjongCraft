@@ -68,7 +68,7 @@ class TaiwanOpponentModelTest {
     }
 
     /**
-     * 建立莊家為東家、評估者為西家的四人桌況；南家打過一張五萬。
+     * 建立莊家為東家、評估者為西家的四人桌況。南家打過一張五萬。
      *
      * @param southComponents 南家的玩家組件。
      * @param southMelds 南家的副露。

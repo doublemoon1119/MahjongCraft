@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import kotlin.reflect.KClass
 
 /**
- * 管理擴充動作型別與 AI handler 的可凍結註冊表；擴充只透過 [ExtensionGameActionAiRegistrar] 登記。
+ * 管理擴充動作型別與 AI handler 的可凍結註冊表。擴充只透過 [ExtensionGameActionAiRegistrar] 登記。
  *
  * @property moduleRegistry 依決策情境的對局設定取得交給 handler 的規則模組。
  */
@@ -56,11 +56,11 @@ class ExtensionGameActionAiRegistry(private val moduleRegistry: MahjongModuleReg
     fun isRegistered(actionClass: KClass<out ExtensionGameAction>): Boolean = actionClass in entries
 
     /**
-     * 以已登記的處理策略轉換擴充動作；未登記此動作型別時回傳空清單。
+     * 以已登記的處理策略轉換擴充動作。未登記此動作型別時回傳空清單。
      *
      * @param action 要轉換的擴充動作。
      * @param context 用來選擇規則模組並建立命令的決策資訊。
-     * @return 處理策略產生的命令候選；不攔截規則查找或處理策略拋出的例外。
+     * @return 處理策略產生的命令候選。不攔截規則查找或處理策略拋出的例外。
      */
     @Suppress("UNCHECKED_CAST")
     fun createCandidates(action: ExtensionGameAction, context: AiDecisionContext): List<ExtensionCommandCandidate> {

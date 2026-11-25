@@ -27,6 +27,6 @@ data class RuleDecisionAiContext(
 /**
  * 依受控輸入產生可重現的預設 AI 提交。
  *
- * @return 由 [RuleDecisionAiContext.inputSpec] 決定的預設提交；不會套用至權威桌況。
+ * @return 由 [RuleDecisionAiContext.inputSpec] 決定的預設提交。不會套用至權威桌況。
  */
 fun RuleDecisionAiContext.defaultSubmission(): RuleDecisionSubmission = inputSpec.defaultSubmission()

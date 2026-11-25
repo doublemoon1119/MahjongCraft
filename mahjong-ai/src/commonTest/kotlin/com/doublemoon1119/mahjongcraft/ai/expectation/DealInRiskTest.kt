@@ -8,7 +8,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證放銃期望損失的彙整方式。 */
 class DealInRiskTest {
-    /** 一位確定聽牌、放銃損失 1000 點的對手；一萬到四萬的危險度依序為 0.1、0.2、0.3、0.4。 */
+    /** 一位確定聽牌、放銃損失 1000 點的對手。一萬到四萬的危險度依序為 0.1、0.2、0.3、0.4。 */
     private val opponentId = Uuid.random()
     private val risk = DealInRisk(
         threats = listOf(OpponentThreat(opponentId = opponentId, readyProbability = 1.0, lossOnDealIn = 1000.0)),

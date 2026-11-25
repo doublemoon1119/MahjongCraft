@@ -11,13 +11,13 @@ import com.doublemoon1119.mahjongcraft.ai.api.registration.MahjongAiStrategyRegi
  */
 interface MahjongAiStrategyRegistry : MahjongAiStrategyRegistrar {
 
-    /** 禁止後續註冊；由啟動流程在所有內建與第三方登記完成後呼叫。 */
+    /** 禁止後續註冊。由啟動流程在所有內建與第三方登記完成後呼叫。 */
     fun freeze()
 
     /**
-     * 解析指定策略；[key] 為 null 或未登記時改用預設策略。
+     * 解析指定策略。[key] 為 null 或未登記時改用預設策略。
      *
-     * @param key 要求的策略識別碼；null 表示使用預設策略。
+     * @param key 要求的策略識別碼。null 表示使用預設策略。
      * @return 對應建構函式產生的策略。
      * @throws NoSuchElementException 要求的策略不存在，且預設策略也尚未登記。
      */

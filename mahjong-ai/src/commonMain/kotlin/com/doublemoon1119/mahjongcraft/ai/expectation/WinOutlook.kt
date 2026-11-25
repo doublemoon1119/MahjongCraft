@@ -23,8 +23,8 @@ internal data class WinOutlook(
  * 一張聽牌的張數與和牌點數。
  *
  * @property count 這張牌的未見張數。
- * @property tsumoValue 自摸這張牌的點數；不能自摸和牌時為 null。
- * @property ronValue 榮和這張牌的點數；不能榮和時為 null。
+ * @property tsumoValue 自摸這張牌的點數。不能自摸和牌時為 null。
+ * @property ronValue 榮和這張牌的點數。不能榮和時為 null。
  */
 internal data class WaitValue(
     val count: Int,
@@ -35,7 +35,7 @@ internal data class WaitValue(
 /**
  * 一手聽牌每一輪的和牌率與平均點數。
  *
- * 每一輪先有自己摸牌與對手捨牌的和牌機會；沒有和牌時，本局以 [DrawOutlook.continuationRate] 的機率進入下一輪。
+ * 每一輪先有自己摸牌與對手捨牌的和牌機會。沒有和牌時，本局以 [DrawOutlook.continuationRate] 的機率進入下一輪。
  *
  * @property tsumoRate 自己每摸一張牌就自摸和牌的機率。
  * @property ronRate 對手每打出一張牌就能榮和的機率。
@@ -96,7 +96,7 @@ internal data class TenpaiProfile(
          *
          * @param waits 每種可自摸／榮和牌面的張數與點數。
          * @param unseenTotal 所有未見牌的總張數。
-         * @return 依未見張數加權計算的聽牌 profile；總數非正時為 [NONE]。
+         * @return 依未見張數加權計算的聽牌 profile。總數非正時為 [NONE]。
          */
         fun of(waits: List<WaitValue>, unseenTotal: Int): TenpaiProfile {
             if (unseenTotal <= 0) return NONE
@@ -141,7 +141,7 @@ internal data class TenpaiOption(
  * 一向聽手牌摸進某種牌後聽牌的一條路線。
  *
  * @property drawProbability 每次摸牌摸到這種牌的機率。
- * @property options 摸進這種牌並打出最佳的牌後，聽牌時可選的打法；每次依剩餘輪數選擇期望值最高者。
+ * @property options 摸進這種牌並打出最佳的牌後，聽牌時可選的打法。每次依剩餘輪數選擇期望值最高者。
  */
 internal data class TenpaiBranch(
     val drawProbability: Double,
@@ -152,7 +152,7 @@ internal data class TenpaiBranch(
      *
      * @param cycles 可進行的輪數。
      * @param outlook 本局剩餘摸牌與對手捨牌機會的估計。
-     * @return 選擇期望值最高選項後的和牌機率與期望值；最佳期望值不大於 0 時為 [WinOutlook.NONE]。
+     * @return 選擇期望值最高選項後的和牌機率與期望值。最佳期望值不大於 0 時為 [WinOutlook.NONE]。
      */
     fun outlook(cycles: Int, outlook: DrawOutlook): WinOutlook = options
         .map { it.outlook(cycles, outlook) }
@@ -188,7 +188,7 @@ internal fun oneShantenOutlook(branches: List<TenpaiBranch>, outlook: DrawOutloo
 /**
  * 兩向聽以上的和牌前景。
  *
- * 從目前的向聽前進一步的機率為 [firstAdvanceRate]，之後每一步為 [laterAdvanceRate]，逐步遞推到聽牌；
+ * 從目前的向聽前進一步的機率為 [firstAdvanceRate]，之後每一步為 [laterAdvanceRate]，逐步遞推到聽牌。
  * 聽牌之後以 [tenpaiProfile] 計算和牌。
  *
  * @param shanten 目前的向聽數。

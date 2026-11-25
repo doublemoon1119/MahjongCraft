@@ -19,10 +19,10 @@ import kotlin.uuid.Uuid
 /**
  * 一手等待摸牌的手牌的評估結果。
  *
- * @property shanten 向聽數；聽牌為 0。
+ * @property shanten 向聽數。聽牌為 0。
  * @property outlook 本局剩餘時間內的和牌前景。
- * @property tenpaiProfile 聽牌時的和牌率與點數；未聽牌時為 null。
- * @property estimatedValuePerWin 兩向聽以上時假設的每次和牌點數；以實際手牌計算打點時為 null。
+ * @property tenpaiProfile 聽牌時的和牌率與點數。未聽牌時為 null。
+ * @property estimatedValuePerWin 兩向聽以上時假設的每次和牌點數。以實際手牌計算打點時為 null。
  */
 internal data class HandAssessment(
     val shanten: Int,
@@ -31,10 +31,10 @@ internal data class HandAssessment(
     val estimatedValuePerWin: Double? = null,
 ) {
     /**
-     * 把兩向聽以上假設的每次和牌點數降到不超過 [valuePerWin]；以實際手牌計算打點的評估不變。
+     * 把兩向聽以上假設的每次和牌點數降到不超過 [valuePerWin]。以實際手牌計算打點的評估不變。
      *
      * @param valuePerWin 允許的每次和牌點數上限。
-     * @return 套用上限後的評估；估值不超過上限或非估算打點時回傳原評估。
+     * @return 套用上限後的評估。估值不超過上限或非估算打點時回傳原評估。
      */
     fun cappedAt(valuePerWin: Double): HandAssessment {
         val estimated = estimatedValuePerWin ?: return this
@@ -60,11 +60,12 @@ internal class HypotheticalView(
 /**
  * 評估等待摸牌的手牌在本局的和牌前景。
  *
- * 聽牌時逐張詢問規則自摸與榮和的點數；一向聽時列舉每種讓手牌聽牌的進張與最佳捨牌；兩向聽以上以有效牌張數遞推。
- * 同一次決策內快取向聽數與點數計算結果。
- *
- * 一向聽列舉聽牌後的點數時，使用列舉起點的假設視角，不另外把之後打出的牌加入牌河，因此不計入那張牌讓自己不能榮和的影響
- * （例如日麻的振聽）。
+ * - 聽牌時逐張詢問規則自摸與榮和的點數。
+ * - 一向聽時列舉每種讓手牌聽牌的進張與最佳捨牌。
+ *   列舉聽牌後的點數時使用列舉起點的假設視角，不把之後打出的牌加入牌河，
+ *   因此不計入那張牌讓自己不能榮和的影響（例如日麻的振聽）。
+ * - 兩向聽以上以有效牌張數遞推。
+ * - 同一次決策內快取向聽數與點數計算結果。
  *
  * @property level 可使用的資訊範圍。
  * @property parameters 估計參數。
@@ -77,7 +78,7 @@ internal class HypotheticalView(
  * @property unseen 評估者眼中的未見牌。
  * @property outlook 本局剩餘的和牌機會。
  * @property placement 點數與名次的換算。
- * @property flatWinPoints 目前手牌的基準打點；[InformationLevel.winValueDetail] 小於 1 時與規則算出的點數依比例混合。
+ * @property flatWinPoints 目前手牌的基準打點。[InformationLevel.winValueDetail] 小於 1 時與規則算出的點數依比例混合。
  */
 internal class HandAssessor(
     private val level: InformationLevel,
@@ -161,10 +162,10 @@ internal class HandAssessor(
     }
 
     /**
-     * [hand] 的向聽數；已和牌為 -1、聽牌為 0。
+     * [hand] 的向聽數。已和牌為 -1、聽牌為 0。
      *
      * @param hand 要查詢的手牌。
-     * @return 向聽數；已和牌為 -1。
+     * @return 向聽數。已和牌為 -1。
      */
     fun shantenOf(hand: Hand): Int = when (val result = shanten(hand)) {
         ShantenResult.Complete -> -1
@@ -252,7 +253,7 @@ internal class HandAssessor(
     }
 
     /**
-     * 宣告 [declarations] 立即付出的點數；和牌時會以打點的一部分收回，因此不換算名次。
+     * 宣告 [declarations] 立即付出的點數。和牌時會以打點的一部分收回，因此不換算名次。
      *
      * @param view 宣告生效前的假設局面。
      * @param declarations 此次新增的規則擴充宣告。
@@ -309,14 +310,14 @@ internal class HandAssessor(
     }
 
     /**
-     * 評估者以 [tile] 和牌的點數；依規則不能以此方式和牌時為 null。
+     * 評估者以 [tile] 和牌的點數。依規則不能以此方式和牌時為 null。
      *
      * @param hand 和牌前的手牌。
      * @param view 和牌時使用的假設局面。
      * @param tile 自摸或榮和的完整牌值。
      * @param isTsumo 是否以自摸方式和牌。
      * @param declarations 假設和牌前已宣告的動作。
-     * @return 依資訊等級調整後的點數價值；規則判定不能和牌時為 null。
+     * @return 依資訊等級調整後的點數價值。規則判定不能和牌時為 null。
      */
     private fun winValue(
         hand: Hand,

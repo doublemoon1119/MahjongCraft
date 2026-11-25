@@ -15,7 +15,7 @@ fun interface ExtensionGameActionAiHandler<A : ExtensionGameAction> {
      * @param action 要轉換的擴充動作。
      * @param context 本次決策可見的桌況與合法動作。
      * @param module 本局使用的規則模組。
-     * @return 可供策略評估的命令候選；沒有候選時為空清單。
+     * @return 可供策略評估的命令候選。沒有候選時為空清單。
      */
     fun createCandidates(
         action: A,

@@ -37,7 +37,7 @@ class ReadingOpponentModelTest {
     private val advanced = registry.create(riichi, ReadingDepth.ADVANCED)
     private val basic = registry.create(riichi, ReadingDepth.BASIC)
 
-    /** 對手立直後，別人打出而他沒有胡的牌完全安全；他自己打過的牌也完全安全。 */
+    /** 對手立直後，別人打出而他沒有胡的牌完全安全。他自己打過的牌也完全安全。 */
     @Test
     fun `tiles the rule excludes from ron are safe`() {
         val self = riichiSeat(Wind.SOUTH, discards = listOf(m(1), m(2), m(3), m(4)))

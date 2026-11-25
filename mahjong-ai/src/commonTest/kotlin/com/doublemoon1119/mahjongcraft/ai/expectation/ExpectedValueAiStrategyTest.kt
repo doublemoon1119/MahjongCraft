@@ -44,7 +44,7 @@ class ExpectedValueAiStrategyTest {
     /** 三個內建等級。 */
     private val allLevels = listOf(InformationLevel.BEGINNER, InformationLevel.INTERMEDIATE, InformationLevel.ADVANCED)
 
-    /** 初級與中級以基本深度讀牌；高級以進階深度讀牌，並且不計後續風險。 */
+    /** 初級與中級以基本深度讀牌。高級以進階深度讀牌，並且不計後續風險。 */
     @Test
     fun `only the advanced level reads at the advanced depth`() {
         assertEquals(ReadingDepth.BASIC, InformationLevel.BEGINNER.readingDepth)
@@ -120,7 +120,7 @@ class ExpectedValueAiStrategyTest {
         assertEquals(GameCommand.Discard(checkNotNull(self.hand.lastDrawn).id), command)
     }
 
-    /** 莊家立直、自己兩向聽時，中級與高級改打現物；初級不防守，照樣打出孤張。 */
+    /** 莊家立直、自己兩向聽時，中級與高級改打現物。初級不防守，照樣打出孤張。 */
     @Test
     fun `against a riichi only the intermediate and advanced levels fold with a distant hand`() = runTest {
         val dealer = player(Wind.EAST, discards = listOf(Tile.Honor.North, Tile.Honor.White, p(7)), riichi = true)
@@ -244,7 +244,7 @@ class ExpectedValueAiStrategyTest {
     }
 
     /**
-     * 三人麻將聽牌時摸到北：拔北與打出北之後的手牌相同，但拔北後多一張拔北寶牌，和牌價值較高；不計防守時兩者沒有其他差別，
+     * 三人麻將聽牌時摸到北：拔北與打出北之後的手牌相同，但拔北後多一張拔北寶牌，和牌價值較高。不計防守時兩者沒有其他差別，
      * 因此拔北的期望值較高。
      */
     @Test
@@ -282,7 +282,7 @@ class ExpectedValueAiStrategyTest {
     }
 
     /**
-     * 有役的聽牌立直後打點較高：打點看得越仔細，立直相對默聽的期望值優勢越大；
+     * 有役的聽牌立直後打點較高：打點看得越仔細，立直相對默聽的期望值優勢越大。
      * 完全不區分打點時立直只剩成本，中間值介於兩者之間。
      */
     @Test
@@ -453,7 +453,7 @@ class ExpectedValueAiStrategyTest {
     }
 
     /**
-     * 莊家已立直時：立直的後續風險折扣越低，立直的期望值越高；假設之後打出最安全的牌時，默聽的後續風險比全部平均小。
+     * 莊家已立直時：立直的後續風險折扣越低，立直的期望值越高。假設之後打出最安全的牌時，默聽的後續風險比全部平均小。
      */
     @Test
     fun `future risk parameters change how risky continuing looks`() {
@@ -487,7 +487,7 @@ class ExpectedValueAiStrategyTest {
         assertTrue(safestDama.expectedValue >= defaultDama.expectedValue, "safest $safestDama default $defaultDama")
     }
 
-    /** 剛好九種么九牌、其他牌也連不起來的手牌和牌機率很低，宣告途中流局；接近聽牌的手牌則繼續。 */
+    /** 剛好九種么九牌、其他牌也連不起來的手牌和牌機率很低，宣告途中流局。接近聽牌的手牌則繼續。 */
     @Test
     fun `an abortive draw is declared only for a hopeless hand`() = runTest {
         val kyuushu = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai)

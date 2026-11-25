@@ -21,7 +21,7 @@ class WinOutlookTest {
         assertTrue(wide.outlook(10, outlook).winProbability > narrow.outlook(10, outlook).winProbability)
     }
 
-    /** 剩餘輪數越多，和牌機率越高；沒有剩餘輪數時不可能和牌。 */
+    /** 剩餘輪數越多，和牌機率越高。沒有剩餘輪數時不可能和牌。 */
     @Test
     fun `more remaining cycles give a higher win probability`() {
         assertTrue(profile.outlook(10, outlook).winProbability > profile.outlook(3, outlook).winProbability)
