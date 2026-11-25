@@ -10,14 +10,17 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollSource
 
 /**
- * 一次產生測試牌譜時的腳本進度：提供每一局的骰子與牌山排列，並依序交出各家的決定。
+ * 一次產生測試牌譜時的腳本進度。
  *
- * 腳本與實際對局不符時記下原因，不中斷對局；產生完畢後由 [verify] 確認整份腳本都照順序執行完。只供單一無頭對局依序使用。
+ * - 提供每一局的骰子與牌山排列，並依序交出各家的決定。
+ * - 腳本與實際對局不符時記下原因，不中斷對局。
+ * - 產生完畢後，由 [verify] 確認整份腳本都照順序執行完。
+ * - 只供單一無頭對局依序使用。
  *
  * @property fixture 這次產生的測試牌譜。
  */
 class HistoryFixtureScript(private val fixture: HistoryFixture) : RoundRandomnessSource {
-    /** 目前這一局在整場中的開局序號；開局前為 -1。 */
+    /** 目前這一局在整場中的開局序號。開局前為 -1。 */
     private var roundOrdinal = -1
 
     /** 目前這一局各家還沒執行的決定。 */

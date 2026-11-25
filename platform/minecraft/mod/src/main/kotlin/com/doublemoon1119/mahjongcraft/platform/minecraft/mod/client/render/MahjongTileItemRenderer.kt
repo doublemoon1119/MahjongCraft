@@ -349,8 +349,10 @@ object MahjongTileItemRenderer : ItemStackRenderer {
     }
 
     /**
-     * 以 vanilla 物品繪製模型 quad 的同一個方法，把已烘焙模型寫入自選圖層，沿用 atlas sprite，不重算幾何。
-     * 光影或效能模組會接手這個方法，補上它們需要的額外頂點資料；直接寫入頂點緩衝則可能缺少這些資料。
+     * 以原版物品繪製模型 quad 的同一個方法，把已烘焙模型寫入自選圖層，沿用 atlas sprite，不重算幾何。
+     *
+     * - 光影或效能模組會接手這個方法，補上它們需要的額外頂點資料。
+     * - 直接寫入頂點緩衝，可能缺少這些資料。
      *
      * @param model 要繪製的烘焙模型。
      * @param matrices 目前的模型矩陣。

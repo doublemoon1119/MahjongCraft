@@ -27,10 +27,10 @@ import net.minecraft.world.entity.Entity
 import kotlin.uuid.Uuid
 
 /**
- * 使用 Minecraft entity 差量同步規則桌面物件；每個物件由 [TablePropKindRegistry] 裡對應的種類
- * 負責生成與辨識。
+ * 使用 Minecraft entity 差量同步規則桌面物件。
  *
- * 內容或幾何無法完整呈現時清除失效顯示並回報，不留下部分成功或過時的規則物件。
+ * - 每個物件由 [TablePropKindRegistry] 裡對應的種類負責生成與辨識。
+ * - 內容或幾何無法完整呈現時，清除失效的顯示並回報，不留下部分成功或過時的物件。
  *
  * @property serverHolder 取得目前伺服器世界。
  * @property spawnGateway 透過平台入口生成桌面物件 entity。

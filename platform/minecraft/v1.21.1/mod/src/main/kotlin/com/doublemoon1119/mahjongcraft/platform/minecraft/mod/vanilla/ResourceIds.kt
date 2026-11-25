@@ -13,7 +13,7 @@ import net.minecraft.resources.ResourceLocation
 fun resourceId(namespace: String, path: String): ResourceLocation = ResourceLocation.fromNamespaceAndPath(namespace, path)
 
 /**
- * 解析 `命名空間:路徑` 形式的資源識別碼；沒有命名空間時為 `minecraft`。
+ * 解析 `命名空間:路徑` 形式的資源識別碼。沒有命名空間時為 `minecraft`。
  *
  * @param id 資源識別碼字串。
  * @return 資源識別碼。

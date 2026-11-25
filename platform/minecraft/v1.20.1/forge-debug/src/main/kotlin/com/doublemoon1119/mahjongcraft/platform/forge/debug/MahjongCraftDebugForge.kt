@@ -10,9 +10,11 @@ import net.minecraftforge.fml.common.Mod
 import org.koin.core.context.GlobalContext
 
 /**
- * debug 模組的 Forge 入口：在用戶端登記用戶端的 debug 指令；開發執行帶自動測試設定時掛上自動測試。
+ * debug 模組的 Forge 入口。
  *
- * 伺服器端的 debug 服務與指令由本體以 `mods.toml` 宣告的開發用入口載入，不經過這裡。
+ * - 在用戶端登記用戶端的 debug 指令。
+ * - 開發執行帶自動測試設定時，掛上自動測試。
+ * - 伺服器端的 debug 服務與指令，由本體以 `mods.toml` 宣告的開發用入口載入，不經過這裡。
  */
 @Mod(DEBUG_MOD_ID)
 object MahjongCraftDebugForge {

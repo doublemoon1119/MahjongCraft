@@ -1,9 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history
 
 /**
- * 供開發工具操作牌譜畫面的入口：每個操作都與玩家點擊對應的按鈕相同，畫面切換照正式的瀏覽流程進行。
+ * 供開發工具操作牌譜畫面的入口。
  *
- * 只在用戶端主執行緒呼叫。沒有開啟牌譜瀏覽，或目前頁面不能這樣切換時，操作回傳 false。
+ * - 每個操作都與玩家點擊對應的按鈕相同，畫面切換照正式的瀏覽流程進行。
+ * - 只在用戶端主執行緒呼叫。
+ * - 沒有開啟牌譜瀏覽，或目前頁面不能這樣切換時，操作回傳 false。
  */
 interface HistoryScreenAutomation {
     /**
@@ -14,14 +16,14 @@ interface HistoryScreenAutomation {
     fun automationSnapshot(): HistoryScreenAutomationSnapshot?
 
     /**
-     * 讓列表顯示所有人的對局，與在篩選條件選擇「全部」相同；需要有查閱全部對局的權限。
+     * 讓列表顯示所有人的對局，與在篩選條件選擇「全部」相同。需要有查閱全部對局的權限。
      *
      * @return 是否已接受並重新查詢。
      */
     fun automationShowAllMatches(): Boolean
 
     /**
-     * 開啟一場對局的摘要；對局必須在列表目前這一頁。
+     * 開啟一場對局的摘要。對局必須在列表目前這一頁。
      *
      * @param matchId 對局識別碼。
      * @return 是否已切換。

@@ -3,7 +3,9 @@ package com.doublemoon1119.mahjongcraft.flow.server.state
 import kotlin.uuid.Uuid
 
 /**
- * 接收權威狀態交易中已隔離、但不能無聲略過的失敗；交易本身照常提交。
+ * 接收權威狀態交易中已隔離、但不能無聲略過的失敗。
+ *
+ * - 回報失敗時，交易本身照常提交。
  */
 interface AuthoritativeStateFailureReporter {
     /**
@@ -23,7 +25,7 @@ interface AuthoritativeStateFailureReporter {
     fun onHistoryTableChangeUnavailable(matchId: Uuid, failure: Throwable)
 
     /**
-     * 提交後通知接收者時，接收者丟出失敗；其他場地與之後的通知照常進行。
+     * 提交後通知接收者時，接收者丟出失敗。其他場地與之後的通知照常進行。
      *
      * @param failure 接收者丟出的失敗。
      */

@@ -26,7 +26,7 @@ class AutotestClientCoverageTest {
     }
 
     /**
-     * 建立含一個載入器模組、可選範例模組的 fixture；兩者都以 `runClient` 執行用戶端自動測試。
+     * 建立含一個載入器模組、可選範例模組的 fixture。兩者都以 `runClient` 執行用戶端自動測試。
      *
      * @param root fixture 根目錄。
      * @param withExample 是否加入範例模組。

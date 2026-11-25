@@ -225,7 +225,7 @@ class PlatformTargetsSettingsPluginTest {
         }
     }
 
-    /** 共用模組所屬的 target 使用不同的 Java 版本時，以最新的 toolchain 編譯成最舊的 release；各 target 自己的模組不受影響。 */
+    /** 共用模組所屬的 target 使用不同的 Java 版本時，以最新的 toolchain 編譯成最舊的 release。各 target 自己的模組不受影響。 */
     @Test
     fun `compiles shared modules for every selected java version`() = withFixture { root ->
         prepareBuild(root)

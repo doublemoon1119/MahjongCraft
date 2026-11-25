@@ -57,13 +57,15 @@ internal object WorldPanelDeferral {
     }
 
     /**
-     * 以鏡頭為原點、鏡頭轉向為座標軸的座標轉換。鏡頭的轉向依 Minecraft 版本放在實體的座標轉換，或繪製狀態的模型檢視矩陣；
-     * 兩者相乘後，不論哪一種都得到完整的轉換。
+     * 以鏡頭為原點、鏡頭轉向為座標軸的座標轉換。
+     *
+     * - 鏡頭的轉向依 Minecraft 版本，放在實體的座標轉換，或繪製狀態的模型檢視矩陣。
+     * - 兩者相乘後，不論哪一種都得到完整的轉換。
      *
      * @param modelView 繪製狀態目前的模型檢視矩陣。
      * @param pose 面板位置的座標轉換。
      * @param normal 面板位置的法向量轉換。
-     * @return 新的座標轉換與法向量轉換；不改動傳入的矩陣。
+     * @return 新的座標轉換與法向量轉換。不改動傳入的矩陣。
      */
     internal fun cameraSpaceTransform(modelView: Matrix4f, pose: Matrix4f, normal: Matrix3f): Pair<Matrix4f, Matrix3f> = Matrix4f(modelView).mul(pose) to Matrix3f().set(modelView).mul(normal)
 

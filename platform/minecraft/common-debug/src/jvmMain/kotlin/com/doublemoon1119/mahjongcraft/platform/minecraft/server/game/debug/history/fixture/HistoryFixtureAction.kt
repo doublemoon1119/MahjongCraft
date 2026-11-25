@@ -3,8 +3,11 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.his
 /**
  * 測試牌譜腳本中的一個決定。
  *
- * 輪到自己時的決定在下一次輪到這家時執行；回應捨牌的決定在下一次可以這樣回應時執行，其餘回應一律放過；回答規則選擇的決定在
- * 規則下一次問這家時執行。
+ * 什麼時候執行：
+ *
+ * - 輪到自己時的決定：下一次輪到這家時。
+ * - 回應捨牌的決定：下一次可以這樣回應時。其餘回應一律放過。
+ * - 回答規則選擇的決定：規則下一次問這家時。
  */
 sealed interface HistoryFixtureAction {
     /** 是否是輪到自己時的決定。 */
@@ -97,7 +100,7 @@ sealed interface HistoryFixtureAction {
         override val ownTurn: Boolean = true
     }
 
-    /** 規則問要不要以花牌和牌時選擇和牌，例如台灣麻將的八仙過海與七搶一；沒有這個決定時一律放棄。 */
+    /** 規則問要不要以花牌和牌時選擇和牌，例如台灣麻將的八仙過海與七搶一。沒有這個決定時一律放棄。 */
     data object AcceptSpecialFlowerWin : HistoryFixtureAction {
         override val ownTurn: Boolean = false
     }

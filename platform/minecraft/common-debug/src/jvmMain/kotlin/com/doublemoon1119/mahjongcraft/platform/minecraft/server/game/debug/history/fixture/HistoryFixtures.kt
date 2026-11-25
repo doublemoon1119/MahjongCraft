@@ -6,9 +6,11 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 /** 內建的測試牌譜，每一份涵蓋幾種要在牌譜與回放中檢查的情況。 */
 object HistoryFixtures {
     /**
-     * 日麻四人東風戰：東家第一巡打出中，北家碰；南家立直後一巡內自摸（一發）。
+     * 日麻四人東風戰：
      *
-     * 南家配牌是一氣通貫的單騎聽牌，摸到九索時立直打出，第四次摸牌摸到一索自摸。
+     * - 東家第一巡打出中，北家碰。
+     * - 南家配牌是一氣通貫的單騎聽牌，摸到九索時立直打出。
+     * - 南家第四次摸牌摸到一索，立直後一巡內自摸（一發）。
      */
     val RIICHI_PON_RIICHI_IPPATSU_TSUMO = HistoryFixture(
         id = "mahjongcraft:riichi/pon_riichi_ippatsu_tsumo",
@@ -35,7 +37,10 @@ object HistoryFixtures {
     )
 
     /**
-     * 日麻四人東風戰：第一局東家第一巡打出九筒，西家以白的刻子單騎榮和；第二局四家都只打出剛摸到的牌，打到流局，莊家聽牌收取罰符。
+     * 日麻四人東風戰：
+     *
+     * - 第一局：東家第一巡打出九筒，西家以白的刻子單騎榮和。
+     * - 第二局：四家都只打出剛摸到的牌，打到流局，莊家聽牌收取罰符。
      */
     val RIICHI_RON_THEN_EXHAUSTIVE_DRAW = HistoryFixture(
         id = "mahjongcraft:riichi/ron_then_exhaustive_draw",
@@ -71,8 +76,10 @@ object HistoryFixtures {
     /**
      * 日麻四人東風戰：同一局依序出現暗槓、碰、吃、加槓與明槓，最後明槓的人摸到嶺上牌自摸（嶺上開花）。
      *
-     * 東家第一巡暗槓九萬，嶺上摸到東打出，北家碰；南家摸到三萬打出，西家吃；北家摸到第四張東加槓，嶺上摸到二索打出，南家以三張
-     * 二索明槓，嶺上摸到七索自摸。
+     * - 東家第一巡暗槓九萬，嶺上摸到東打出，北家碰。
+     * - 南家摸到三萬打出，西家吃。
+     * - 北家摸到第四張東加槓，嶺上摸到二索打出。
+     * - 南家以三張二索明槓，嶺上摸到七索自摸。
      */
     val RIICHI_CALLS_AND_KANS = HistoryFixture(
         id = "mahjongcraft:riichi/calls_and_kans",
@@ -103,10 +110,12 @@ object HistoryFixtures {
     )
 
     /**
-     * 日麻四人東風戰：第一局東家第一巡打出九筒，南家與西家同時榮和（雙響）；第二局莊家第一次摸牌後宣告九種九牌流局；第三局北家
-     * 依序碰東家打出的白、發、中，自摸大三元，打出最後一張三元牌的東家負責全額（包牌）。
+     * 日麻四人東風戰：
      *
-     * 包牌的東家獨自支付役滿而被擊飛，整場在第三局結束。
+     * - 第一局：東家第一巡打出九筒，南家與西家同時榮和（雙響）。
+     * - 第二局：莊家第一次摸牌後宣告九種九牌流局。
+     * - 第三局：北家依序碰東家打出的白、發、中，自摸大三元。打出最後一張三元牌的東家負責全額（包牌），獨自支付役滿而被擊飛，
+     *   整場在這一局結束。
      */
     val RIICHI_DOUBLE_RON_PAO_KYUUSHU = HistoryFixture(
         id = "mahjongcraft:riichi/double_ron_pao_kyuushu",
@@ -163,7 +172,12 @@ object HistoryFixtures {
         ),
     )
 
-    /** 日麻三人東風戰：東家第一巡拔北，嶺上補到的牌打出；南家摸到九萬，以東的刻子單騎自摸，由另外兩家付款。 */
+    /**
+     * 日麻三人東風戰：
+     *
+     * - 東家第一巡拔北，嶺上補到的牌打出。
+     * - 南家摸到九萬，以東的刻子單騎自摸，由另外兩家付款。
+     */
     val THREE_PLAYER_RIICHI_PULL_NORTH_TSUMO = HistoryFixture(
         id = "mahjongcraft:riichi_three_player/pull_north_tsumo",
         scenario = HeadlessHistoryScenario.THREE_PLAYER_RIICHI_EAST,
@@ -185,7 +199,13 @@ object HistoryFixtures {
         ),
     )
 
-    /** 台灣麻將：南家配牌有春，開局補花；南家第一次摸牌摸到夏，再補花一次；西家摸到九索，以白的刻子單騎自摸。 */
+    /**
+     * 台灣麻將：
+     *
+     * - 南家配牌有春，開局補花。
+     * - 南家第一次摸牌摸到夏，再補花一次。
+     * - 西家摸到九索，以白的刻子單騎自摸。
+     */
     private val TAIWAN_FLOWERS_TSUMO_ROUND = HistoryFixtureRound(
         dice = listOf(2, 3, 4),
         hands = mapOf(
@@ -215,10 +235,14 @@ object HistoryFixtures {
     )
 
     /**
-     * 台灣麻將東風圈：第一局補花後閒家自摸，第二局閒家榮和，第三局四家都只打出剛摸到的牌，打到流局並由莊家連莊；之後兩局再由閒家
-     * 自摸與榮和，讓莊家輪完一圈結束整場。
+     * 台灣麻將東風圈：
      *
-     * 台灣麻將流局時莊家連莊，四家都只打出剛摸到的牌無法結束整場，因此每一局都照腳本進行。
+     * - 第一局：補花後閒家自摸。
+     * - 第二局：閒家榮和。
+     * - 第三局：四家都只打出剛摸到的牌，打到流局，莊家連莊。
+     * - 之後兩局：閒家自摸與榮和，讓莊家輪完一圈結束整場。
+     *
+     * 台灣麻將流局時莊家連莊，只打出剛摸到的牌無法結束整場，因此每一局都照腳本進行。
      */
     val TAIWAN_FLOWERS_TSUMO_RON_DRAW = HistoryFixture(
         id = "mahjongcraft:taiwan/flowers_tsumo_ron_draw",
@@ -241,10 +265,13 @@ object HistoryFixtures {
     )
 
     /**
-     * 台灣麻將東風圈：第一局南家自己摸到第八張花牌竹，集滿八張花牌和牌（八仙過海）；第二局西家摸到竹，有七張花牌的南家搶這張
-     * 和牌（七搶一）；之後兩局由閒家自摸與榮和，讓莊家輪完一圈結束整場。
+     * 台灣麻將東風圈：
      *
-     * 台灣麻將流局時莊家連莊，四家都只打出剛摸到的牌無法結束整場，因此每一局都照腳本進行。
+     * - 第一局：南家自己摸到第八張花牌竹，集滿八張花牌和牌（八仙過海）。
+     * - 第二局：西家摸到竹，有七張花牌的南家搶這張和牌（七搶一）。
+     * - 之後兩局：閒家自摸與榮和，讓莊家輪完一圈結束整場。
+     *
+     * 台灣麻將流局時莊家連莊，只打出剛摸到的牌無法結束整場，因此每一局都照腳本進行。
      */
     val TAIWAN_EIGHT_FLOWERS_AND_ROBBING = HistoryFixture(
         id = "mahjongcraft:taiwan/eight_flowers_and_robbing",

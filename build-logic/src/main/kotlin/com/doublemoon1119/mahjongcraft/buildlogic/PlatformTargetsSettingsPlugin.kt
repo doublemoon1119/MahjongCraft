@@ -8,9 +8,9 @@ import org.gradle.api.plugins.ExtensionAware
 /**
  * 在 Settings 階段選擇 core-only 模式，或載入一個以上 catalog 正式平台 target 的模組。
  *
- * 選擇多個 target 時載入它們模組的聯集，例如不同 Minecraft 版本或載入器的 target。每個模組的 Java 版本與執行環境提供的函式庫
- * 依它所屬的 target 決定，並以 Gradle extra 交給模組的 convention；屬於多個 target 的模組以其中最新的 toolchain 編譯成最舊的
- * release。
+ * - 選擇多個 target 時，載入它們模組的聯集，例如不同 Minecraft 版本或載入器的 target。
+ * - 每個模組的 Java 版本與執行環境提供的函式庫，依它所屬的 target 決定，並以 Gradle extra 交給模組的 convention。
+ * - 屬於多個 target 的模組，以其中最新的 toolchain 編譯成最舊的 release。
  */
 class PlatformTargetsSettingsPlugin : Plugin<Settings> {
     /** 解析 target 來源並載入對應平台模組。 */
@@ -115,8 +115,9 @@ class PlatformTargetsSettingsPlugin : Plugin<Settings> {
         const val TARGET_PROVIDED_VERSIONS_EXTRA: String = "mahjongcraft.targetProvidedVersions"
 
         /**
-         * Gradle extra 中依 project path 排列的模組所屬 target 在整份 catalog（依 ID 排序）中的位置的 key；模組屬於多個 target
-         * 時為 null。
+         * Gradle extra 的 key，值是每個模組所屬 target 在整份 catalog（依 ID 排序）中的位置，依 project path 排列。
+         *
+         * - 模組屬於多個 target 時，位置為 null。
          */
         const val TARGET_INDEX_EXTRA: String = "mahjongcraft.targetIndex"
     }

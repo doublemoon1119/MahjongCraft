@@ -24,7 +24,7 @@ internal object AutotestWorld {
     private const val SEED: Long = 1_119L
 
     /**
-     * 刪掉上次留下的測試世界，建立新的世界並開始進入；進入的過程由原版的載入畫面接手。
+     * 刪掉上次留下的測試世界，建立新的世界並開始進入。進入的過程由原版的載入畫面接手。
      *
      * @param client 目前客戶端。
      */
@@ -43,7 +43,7 @@ internal object AutotestWorld {
     }
 
     /**
-     * 存檔並離開測試世界，回到主選單；與暫停選單的「儲存並離開」相同。
+     * 存檔並離開測試世界，回到主選單。與暫停選單的「儲存並離開」相同。
      *
      * @param client 目前客戶端。
      */
@@ -54,7 +54,7 @@ internal object AutotestWorld {
     }
 
     /**
-     * 重新進入測試世界；進入的過程由原版的載入畫面接手。
+     * 重新進入測試世界。進入的過程由原版的載入畫面接手。
      *
      * @param client 目前客戶端。
      */

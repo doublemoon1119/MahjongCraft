@@ -12,9 +12,10 @@ import net.minecraft.server.level.ServerPlayer
  */
 interface PacketTransport {
     /**
-     * 宣告一個頻道；連線時需要事先知道雙方有哪些頻道的載入器在這裡建立頻道。
+     * 宣告一個頻道。連線時需要事先知道雙方有哪些頻道的載入器，在這裡建立頻道。
      *
-     * 每個頻道在收送任何封包之前宣告一次，伺服器與用戶端都會宣告。每個頻道只往一個方向送。
+     * - 每個頻道在收送任何封包之前宣告一次，伺服器與用戶端都會宣告。
+     * - 每個頻道只往一個方向送。
      *
      * @param channelId 頻道識別碼。
      * @param direction 頻道上的封包往哪個方向送。
@@ -33,7 +34,8 @@ interface PacketTransport {
     /**
      * 登記伺服器收到這個頻道的封包時的處理。
      *
-     * [receiver] 依載入器在網路執行緒或伺服器主執行緒上呼叫，封包內容只在呼叫期間有效。
+     * - [receiver] 依載入器在網路執行緒或伺服器主執行緒上呼叫。
+     * - 封包內容只在呼叫期間有效。
      *
      * @param channelId 頻道識別碼。
      * @param receiver 收到伺服器、送出封包的玩家與封包內容。

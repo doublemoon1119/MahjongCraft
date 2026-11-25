@@ -14,9 +14,11 @@ import net.minecraft.world.item.context.UseOnContext
 import net.minecraft.world.level.Level
 
 /**
- * 麻將點棒 item：單一 item 類型代表所有面額，實際面額由物品保存的面額名稱決定，讀寫見 [MahjongScoringStickItemStackData]。
+ * 麻將點棒 item。
  *
- * 非蹲下右鍵循環切換面額；蹲下對方塊右鍵則放置保留目前面額的 [MahjongScoringStickEntity]。
+ * - 單一 item 類型代表所有面額，實際面額由物品保存的面額名稱決定，讀寫見 [MahjongScoringStickItemStackData]。
+ * - 不蹲下右鍵：循環切換面額。
+ * - 蹲下對方塊右鍵：放置保留目前面額的 [MahjongScoringStickEntity]。
  *
  * @param settings 原版物品設定。
  */

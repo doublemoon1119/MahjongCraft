@@ -36,13 +36,12 @@ import net.minecraft.commands.Commands.literal
  * - `room`：[DebugRoomCommand]
  * - `history`：[DebugHistoryCommand]
  *
- * 本類別只保留三項責任：development gating、op 權限，以及各 family 共用的臨時 entity 到期清除驅動
- * （[DebugPreviewEntityLifecycle] 的 tick 登記只在這裡做一次）。
+ * 本類別只負責三件事：
  *
- * 整組指令樹只在 [MinecraftEnvironment.isDevelopment] 為 `true` 時才註冊——正式打包發布的產物裡整棵
- * debug 指令樹根本沒被註冊過，不是「有指令但用權限藏起來」而已。額外再疊一層 op 權限
- * （`hasPermission(2)`）當作雙重保險，避免「不小心用非開發建置跑本地測試伺服器」時被一般玩家
- * 誤用。
+ * - 只在開發環境註冊：整組指令樹只在 [MinecraftEnvironment.isDevelopment] 為 `true` 時註冊。正式打包發布的產物根本沒有這棵
+ *   指令樹，不只是用權限藏起來。
+ * - op 權限：額外要求 `hasPermission(2)` 當作雙重保險，避免不小心用非開發建置跑本地測試伺服器時被一般玩家誤用。
+ * - 臨時 entity 的到期清除：各 family 共用，[DebugPreviewEntityLifecycle] 的 tick 登記只在這裡做一次。
  *
  * @property minecraftEnvironment 查詢目前是否為開發環境，決定整組指令樹要不要註冊。
  * @property scenarioCommand 建立權威對局情境子指令樹。

@@ -29,10 +29,11 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
 /**
- * 使用 Minecraft entity 呈現正式手牌／摸牌位／副露：把牌牆管理中的既有 entity 領走並移動，不重新
- * 生成。合併原本各自獨立的 hand-tiles／meld presenter，理由見
- * [MahjongPlayerAreaPresenter] KDoc——手牌讓開副露／積棒的偏移量，只有在同一次呼叫裡同時拿到立牌、
- * 摸牌、副露、積棒支數四種狀態才算得出來。
+ * 使用 Minecraft entity 呈現正式的手牌、摸牌位與副露。
+ *
+ * - 把牌牆管理中的既有 entity 領走並移動，不重新生成。
+ * - 手牌、摸牌位與副露由同一個 presenter 處理：手牌讓開副露與積棒的偏移量，要同一次呼叫同時拿到立牌、摸牌、副露與積棒支數
+ *   才算得出來，見 [MahjongPlayerAreaPresenter] 的 KDoc。
  *
  * @property spawnGateway 主執行緒實體生成閘道。
  * @property serverHolder 取得目前伺服器世界與既有麻將牌 entity。

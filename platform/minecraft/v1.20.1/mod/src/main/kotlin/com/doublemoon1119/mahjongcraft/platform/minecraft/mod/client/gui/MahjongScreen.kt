@@ -7,9 +7,9 @@ import net.minecraft.network.chat.Component
 /**
  * 本 mod 畫面的共同基底，讓畫面以相同的寫法畫背景、畫元件與處理滾輪。
  *
- * 原版畫面的背景、繪製與滾輪方法在不同 Minecraft 版本有不同的簽章與分工；畫面改用這裡的方法，由這個類別轉接到這個版本
- * 的原版方法。畫面在自己的 `render` 中依序呼叫 [renderScreenBackground]（需要背景時）、畫自己的內容，最後呼叫
- * [renderWidgets]。
+ * - 原版畫面的背景、繪製與滾輪方法，在不同 Minecraft 版本有不同的簽章與分工。畫面改用這裡的方法，由這個類別轉接到這個
+ *   版本的原版方法。
+ * - 畫面在自己的 `render` 中依序呼叫：[renderScreenBackground]（需要背景時）、畫自己的內容、[renderWidgets]。
  *
  * @param title 畫面標題。
  */
@@ -27,9 +27,10 @@ abstract class MahjongScreen(title: Component) : Screen(title) {
     }
 
     /**
-     * 在標題下方到底部按鈕上方之間畫出清單內容區的底：這個版本的原版背景已經是整片深色，清單不另外墊底，這裡不畫任何東西。
+     * 在標題下方到底部按鈕上方之間，畫出清單內容區的底。
      *
-     * 只用在以清單或表單為主的畫面；只有幾個按鈕的畫面與整個畫面就是一個視圖的畫面不畫。
+     * - 這個版本的原版背景已經是整片深色，清單不另外墊底，這裡不畫任何東西。
+     * - 只用在以清單或表單為主的畫面。只有幾個按鈕的畫面，以及整個畫面就是一個視圖的畫面不畫。
      *
      * @param context 繪製環境。
      */
@@ -51,7 +52,7 @@ abstract class MahjongScreen(title: Component) : Screen(title) {
     final override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean = mouseWheelScrolled(mouseX, mouseY, amount)
 
     /**
-     * 滑鼠滾輪垂直捲動；預設交給畫面中的元件處理。
+     * 滑鼠滾輪垂直捲動。預設交給畫面中的元件處理。
      *
      * @param mouseX 滑鼠的水平位置。
      * @param mouseY 滑鼠的垂直位置。

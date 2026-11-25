@@ -7,7 +7,10 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * 牌局進行中存檔離開再重新進入，確認本機玩家仍坐在牌桌對局中，而且本 mod 會存檔的實體數量不變。需要前面步驟開好的牌局。
+ * 牌局進行中存檔離開再重新進入。
+ *
+ * - 確認本機玩家仍坐在牌桌對局中，而且本 mod 會存檔的實體數量不變。
+ * - 需要前面步驟開好的牌局。
  */
 internal object AutotestSaveStep : AutotestStep {
     override val id: String = "save"
@@ -45,7 +48,7 @@ internal object AutotestSaveStep : AutotestStep {
         .eachCount()
         .toSortedMap()
 
-    /** 演出用實體類型名稱的結尾；這些實體只在演出期間存在，不存檔，比對時略過。 */
+    /** 演出用實體類型名稱的結尾。這些實體只在演出期間存在，不存檔，比對時略過。 */
     private const val PRESENTATION_SUFFIX = "_presentation"
 
     /** 等用戶端收到伺服器狀態的最長時間。 */

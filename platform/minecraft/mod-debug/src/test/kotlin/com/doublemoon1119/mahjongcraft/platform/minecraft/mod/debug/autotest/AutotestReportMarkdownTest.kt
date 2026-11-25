@@ -6,7 +6,7 @@ import kotlin.test.assertFalse
 
 /** 驗證自動測試報告轉成 Markdown 的內容。 */
 class AutotestReportMarkdownTest {
-    /** 報告列出整體結果、提醒事項與各步驟，失敗步驟附上未通過的檢查、截圖、聲音與錯誤；略過的步驟只出現在摘要。 */
+    /** 報告列出整體結果、提醒事項與各步驟。失敗步驟附上未通過的檢查、截圖、聲音與錯誤，略過的步驟只出現在摘要。 */
     @Test
     fun `markdown lists the results, failed checks, screenshots, sounds and errors`() {
         val report = AutotestReport(

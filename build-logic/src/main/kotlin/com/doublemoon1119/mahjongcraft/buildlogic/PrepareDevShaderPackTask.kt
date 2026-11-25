@@ -11,10 +11,11 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.work.DisableCachingByDefault
 
 /**
- * 開發用戶端啟動前，把開發用的光影包放進執行目錄並設為使用中：複製到 `shaderpacks`，在 Iris 的設定檔指定這個光影包並開啟
- * 光影。Iris 的其他設定保留上次的值。
+ * 開發用戶端啟動前，把開發用的光影包放進執行目錄並設為使用中。
  *
- * 光影包只在開發執行時使用，從 Gradle 的快取複製，不放進版本庫，也不打包。
+ * - 複製到 `shaderpacks`，在 Iris 的設定檔指定這個光影包並開啟光影。
+ * - Iris 的其他設定保留上次的值。
+ * - 光影包只在開發執行時使用，從 Gradle 的快取複製，不放進版本庫，也不打包。
  *
  * @property runDirectory 用戶端的執行目錄。
  * @property shaderPack 光影包檔案，只有一個。

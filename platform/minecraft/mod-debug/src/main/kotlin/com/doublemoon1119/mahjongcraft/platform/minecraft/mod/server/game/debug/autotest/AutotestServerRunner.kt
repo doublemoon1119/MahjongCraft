@@ -38,14 +38,23 @@ import kotlin.uuid.Uuid
 /**
  * 專用伺服器的自動測試，分兩段在兩次開機中執行。
  *
- * 第一段：機器人玩家照玩家的流程擺三張牌桌（日麻、台麻、三人麻將）、開房並補上 AI；第一場開自動操作打完並確認封存進牌譜，
- * 第二場開局後等日麻桌的機器人決策時間開始倒數，記下各桌的牌局進度後正常關機。第二段：讀回世界，比對牌局進度、房間成員與剩下的
- * 決策時間，機器人重新加入並開自動操作把牌局打完，再正常關機。兩段都檢查關機時間與本 mod 沒有記錄錯誤。
+ * 第一段：
  *
- * 報告寫在伺服器資料夾的 `autotest/<開始時間>/`，第一段寫出後由第二段接著寫進同一份報告；`autotest/latest.txt` 記錄最近一次的
- * 資料夾名稱。
+ * - 機器人玩家照玩家的流程擺三張牌桌（日麻、台麻、三人麻將），開房並補上 AI。
+ * - 第一場開自動操作打完，並確認封存進牌譜。
+ * - 第二場開局後，等日麻桌的機器人決策時間開始倒數，記下各桌的牌局進度後正常關機。
  *
- * 伺服器自動測試不分步驟選擇，開發執行帶自動測試設定時一律執行全部步驟。
+ * 第二段：
+ *
+ * - 讀回世界，比對牌局進度、房間成員與剩下的決策時間。
+ * - 機器人重新加入並開自動操作把牌局打完，再正常關機。
+ *
+ * 其他：
+ *
+ * - 兩段都檢查關機時間，以及本 mod 沒有記錄錯誤。
+ * - 報告寫在伺服器資料夾的 `autotest/<開始時間>/`。第一段寫出後，由第二段接著寫進同一份報告。`autotest/latest.txt` 記錄最近
+ *   一次的資料夾名稱。
+ * - 伺服器自動測試不分步驟選擇，開發執行帶自動測試設定時一律執行全部步驟。
  *
  * @property koin 取得 mod 的服務。
  */
@@ -53,7 +62,7 @@ internal class AutotestServerRunner(private val koin: Koin) {
     /** 記錄自動測試進度的 logger。 */
     private val logger = mahjongCraftLogger(AutotestServerRunner::class)
 
-    /** 這一次開機是第幾段；只有指定了階段才會建立這個執行者。 */
+    /** 這一次開機是第幾段。只有指定了階段才會建立這個執行者。 */
     private val phase = checkNotNull(requestedPhase()) { "The server autotest phase is not set" }
 
     /** 三張牌桌。 */
@@ -83,7 +92,7 @@ internal class AutotestServerRunner(private val koin: Koin) {
     /** 第二段開機時立刻取得的決策時間。 */
     private var restoredDecision: Pair<Duration, Duration>? = null
 
-    /** 要求關機的時間；還沒要求時為 null。 */
+    /** 要求關機的時間，還沒要求時為 null。 */
     private var stopRequestedAt: TimeMark? = null
 
     /**
@@ -157,7 +166,7 @@ internal class AutotestServerRunner(private val koin: Koin) {
     }
 
     /**
-     * 執行一個步驟並記錄結果；步驟拋出的例外記為失敗。
+     * 執行一個步驟並記錄結果。步驟拋出的例外記為失敗。
      *
      * @param id 步驟識別碼。
      * @param body 步驟內容。
@@ -177,7 +186,7 @@ internal class AutotestServerRunner(private val koin: Koin) {
     }
 
     /**
-     * 讓三位機器人玩家加入伺服器，並站到各自牌桌的前方；加入時的出生點是隨機的，可能落在牌桌要放的位置。
+     * 讓三位機器人玩家加入伺服器，並站到各自牌桌的前方。加入時的出生點是隨機的，可能落在牌桌要放的位置。
      *
      * @param server 目前伺服器。
      */
@@ -401,10 +410,12 @@ internal class AutotestServerRunner(private val koin: Koin) {
     /** 伺服器自動測試的階段與系統屬性。 */
     companion object {
         /**
-         * 這次開機指定要跑的階段。只有 `autotestServer` 任務啟動的伺服器會指定階段；其他帶自動測試開關的伺服器，例如範例或
-         * 平常的 `runServer`，不執行伺服器自動測試，避免動到平常的開發世界。
+         * 這次開機指定要跑的階段。
          *
-         * @return [PHASE_START] 或 [PHASE_RESUME]；沒有指定或不是這兩者時為 null。
+         * - 只有 `autotestServer` 任務啟動的伺服器會指定階段。
+         * - 其他帶自動測試開關的伺服器，例如範例或平常的 `runServer`，不執行伺服器自動測試，避免動到平常的開發世界。
+         *
+         * @return [PHASE_START] 或 [PHASE_RESUME]，沒有指定或不是這兩者時為 null。
          */
         fun requestedPhase(): String? = phaseOf(System.getProperty(PHASE_PROPERTY))
 

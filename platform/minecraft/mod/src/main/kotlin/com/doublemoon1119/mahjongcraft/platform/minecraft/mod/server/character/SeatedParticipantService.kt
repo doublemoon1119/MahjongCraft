@@ -373,11 +373,14 @@ internal class SeatedParticipantService(
     }
 
     /**
-     * 按規則已決定的正式名冊準備本次入座，不重新擲骰或重排；先清除上一場留下的角色，避免擋住新席位。
+     * 按規則已決定的正式名冊準備本次入座。
+     *
+     * - 不重新擲骰或重排。
+     * - 先清除上一場留下的角色，避免擋住新席位。
      *
      * @param room 仍在等待的原房間。
      * @param playerIds 本次規則產生的正式座位順序。
-     * @return 可安排並在失敗時恢復的入座操作；資格或席位不可確認時為 null。
+     * @return 可安排並在失敗時恢復的入座操作。資格或席位不可確認時為 null。
      */
     fun startSeating(room: Room, playerIds: List<Uuid>): RoomStartSeating? {
         val current = server ?: return null

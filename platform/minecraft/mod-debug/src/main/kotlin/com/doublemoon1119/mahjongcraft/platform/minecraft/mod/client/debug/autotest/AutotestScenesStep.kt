@@ -13,7 +13,8 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * 在開局的牌桌上依序載入日麻的 debug 場景，以玩家的身分做出場景預期的操作，檢查結果並截圖。
  *
- * 每個場景都等伺服器的對局可以接受操作後才載入，只載入一次；載入被拒即失敗。需要前一個步驟開好的牌局。
+ * - 每個場景都等伺服器的對局可以接受操作後才載入，只載入一次。載入被拒即失敗。
+ * - 需要前一個步驟開好的牌局。
  */
 internal object AutotestScenesStep : AutotestStep {
     override val id: String = "scenes"
@@ -112,7 +113,7 @@ internal object AutotestScenesStep : AutotestStep {
      */
     private class Scenario(val name: String, val play: suspend (AutotestContext) -> Unit)
 
-    /** 等場景載入結果的最長時間；比載入指令自己等牌桌空下來的上限更長，失敗時收到的是指令回報的原因。 */
+    /** 等場景載入結果的最長時間。比載入指令自己等牌桌空下來的上限更長，失敗時收到的是指令回報的原因。 */
     private val LOAD_TIMEOUT = 3.minutes
 
     /** 等聲音被要求播放的最長時間。 */

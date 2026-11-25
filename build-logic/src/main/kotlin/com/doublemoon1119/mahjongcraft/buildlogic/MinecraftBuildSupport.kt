@@ -12,9 +12,11 @@ import java.io.File
 /**
  * 把另一個專案的原始碼與資源一起編譯並打包進這個模組。
  *
- * 用於載入器模組納入版本 mod 模組等原始碼：那些模組的 JAR 使用 Mojang 名稱，各載入器要把它們與自己的程式一起轉成執行時
- * 的名稱。提供原始碼的是 Minecraft 版本資料夾中的模組時（例如 `platform/minecraft/v1.20.1/mod`），跨版本共用的同名資料夾
- * （[sharedVersionDirectory]）中相同位置的原始碼也一併納入。不存在的資料夾會被略過。
+ * - 用於載入器模組納入版本 mod 模組等原始碼。那些模組的 JAR 使用 Mojang 名稱，各載入器要把它們與自己的程式一起轉成執行時
+ *   的名稱。
+ * - 提供原始碼的是 Minecraft 版本資料夾中的模組時（例如 `platform/minecraft/v1.20.1/mod`），跨版本共用的同名資料夾
+ *   （[sharedVersionDirectory]）中相同位置的原始碼也一併納入。
+ * - 不存在的資料夾會被略過。
  *
  * @param projectPath 提供原始碼的專案路徑。
  * @param sourceDirectory 相對於該專案的原始碼資料夾，例如 `src/main` 或 Kotlin 多平台模組的 `src/jvmMain`。
@@ -27,10 +29,10 @@ fun Project.includeSourcesOf(projectPath: String, sourceDirectory: String = "src
 }
 
 /**
- * 把另一個專案中只給其他模組使用的測試原始碼，加入這個模組的測試一起編譯與執行；跨版本共用的同名資料夾中相同位置的測試
- * 也一併納入。
+ * 把另一個專案中只給其他模組使用的測試原始碼，加入這個模組的測試一起編譯與執行。
  *
- * 用於各載入器共用、但需要載入器提供部分內容才能執行的測試；提供原始碼的專案自己不編譯它們。
+ * - 跨版本共用的同名資料夾中相同位置的測試也一併納入。
+ * - 用於各載入器共用、但需要載入器提供部分內容才能執行的測試。提供原始碼的專案自己不編譯它們。
  *
  * @param projectPath 提供測試原始碼的專案路徑。
  * @param sourceDirectory 相對於該專案的 Kotlin 原始碼資料夾。
@@ -45,9 +47,11 @@ fun Project.includeTestSourcesOf(projectPath: String, sourceDirectory: String) {
 }
 
 /**
- * 讓 Minecraft 版本資料夾中的模組一起編譯跨版本共用的原始碼、資源與測試：例如 `platform/minecraft/v1.20.1/mod` 編譯
- * `platform/minecraft/mod` 的 `src/main` 與 `src/test`。共用的資料夾本身不是 Gradle 專案，只能對某個 Minecraft 版本編譯；
- * 兩個版本 API 不同的部分放在各版本自己的資料夾。
+ * 讓 Minecraft 版本資料夾中的模組一起編譯跨版本共用的原始碼、資源與測試。
+ *
+ * - 例如 `platform/minecraft/v1.20.1/mod` 編譯 `platform/minecraft/mod` 的 `src/main` 與 `src/test`。
+ * - 共用的資料夾本身不是 Gradle 專案，只能對某個 Minecraft 版本編譯。
+ * - 兩個版本 API 不同的部分，放在各版本自己的資料夾。
  */
 fun Project.includeSharedVersionSources() {
     val shared = checkNotNull(sharedVersionDirectory(projectDir)) { "$path is not in a Minecraft version folder" }
@@ -92,8 +96,10 @@ private fun Project.addMainSources(directory: File) {
 private val VERSION_DIRECTORY = Regex("""v\d+(\.\d+)+""")
 
 /**
- * `mahjongcraftAutotest` 的值是否開啟自動測試；判定與 debug 模組讀取系統屬性時相同：空白與 `false`（不分大小寫）都是關閉，
- * 其他值是要執行的步驟。
+ * `mahjongcraftAutotest` 的值是否開啟自動測試，判定方式與 debug 模組讀取系統屬性時相同。
+ *
+ * - 沒有設定、空白、`false`（不分大小寫）：關閉。
+ * - 其他值：開啟，值是要執行的步驟。
  *
  * @param value Gradle 屬性的值；沒有設定時為 null。
  * @return 開啟時為 true。
@@ -106,10 +112,10 @@ internal fun isAutotestEnabled(value: String?): Boolean {
 /**
  * 開發執行要傳給遊戲的自動測試系統屬性，由 Gradle 屬性 `mahjongcraftAutotest` 決定。
  *
- * 屬性值原樣傳給 debug 模組，例如 `true` 執行全部步驟、`world,screens` 只執行列出的步驟；另外傳入這個模組的名稱，例如
- * `minecraft_v1.20.1_fabric`，供報告記錄測試的目標。Gradle 屬性 `mahjongcraftAutotestKeep` 指定要保留最近幾次的報告，
- * 沒有指定時由 debug 模組使用預設值。沒有設定 `mahjongcraftAutotest`，或它是空白、`false` 時為空（[isAutotestEnabled]），
- * 開發執行與平常相同。
+ * - `mahjongcraftAutotest` 的值原樣傳給 debug 模組，例如 `true` 執行全部步驟、`world,screens` 只執行列出的步驟。
+ * - 另外傳入這個模組的名稱，例如 `minecraft_v1.20.1_fabric`，供報告記錄測試的目標。
+ * - `mahjongcraftAutotestKeep` 指定保留最近幾次的報告，沒有指定時由 debug 模組使用預設值。
+ * - 自動測試沒有開啟時（[isAutotestEnabled]）為空，開發執行與平常相同。
  *
  * @return 系統屬性名稱與值。
  * @throws GradleException `mahjongcraftAutotestKeep` 不是正整數時拋出。
@@ -124,8 +130,11 @@ fun Project.autotestSystemProperties(): Map<String, String> {
 }
 
 /**
- * 自動測試的開發用戶端要加上的環境變數：讓 Minecraft 使用的音訊庫 OpenAL Soft 使用空輸出，聲音照常載入與播放但聽不到，
- * 也不改動遊戲的音量或輸出裝置設定。沒有設定 `mahjongcraftAutotest` 時為空。
+ * 自動測試的開發用戶端要加上的環境變數。
+ *
+ * - 讓 Minecraft 使用的音訊庫 OpenAL Soft 使用空輸出：聲音照常載入與播放，但聽不到。
+ * - 不改動遊戲的音量或輸出裝置設定。
+ * - 沒有設定 `mahjongcraftAutotest` 時為空。
  *
  * @return 環境變數名稱與值。
  */
@@ -133,8 +142,11 @@ fun Project.autotestClientEnvironment(): Map<String, String> =
     if (autotestSystemProperties().isEmpty()) emptyMap() else mapOf("ALSOFT_DRIVERS" to "null")
 
 /**
- * 自動測試的開發用戶端要加上的程式參數：固定玩家名稱與視窗大小。開發環境的玩家 UUID 由名稱決定，固定後每次測試的玩家、
- * 房主與截圖中的名稱都相同；固定的視窗大小讓每次的截圖可以互相比對。沒有設定 `mahjongcraftAutotest` 時為空。
+ * 自動測試的開發用戶端要加上的程式參數。
+ *
+ * - 固定玩家名稱：開發環境的玩家 UUID 由名稱決定，每次測試的玩家、房主與截圖中的名稱都相同。
+ * - 固定視窗大小：每次的截圖可以互相比對。
+ * - 沒有設定 `mahjongcraftAutotest` 時為空。
  *
  * @return 程式參數。
  */
@@ -145,23 +157,30 @@ fun Project.autotestClientArguments(): List<String> = if (autotestSystemProperti
 }
 
 /**
- * 開發用戶端的執行目錄名稱，相對於模組資料夾。自動測試使用獨立的 `run/autotest-client`，它的設定、世界與報告不會與平常的
- * `run/client` 混在一起。
+ * 開發用戶端的執行目錄名稱，相對於模組資料夾。
+ *
+ * - 平常：`run/client`。
+ * - 自動測試：獨立的 `run/autotest-client`，設定、世界與報告不會與平常的混在一起。
  *
  * @return 執行目錄名稱。
  */
 fun Project.clientRunDirectory(): String = if (autotestSystemProperties().isEmpty()) "run/client" else "run/autotest-client"
 
 /**
- * 開發伺服器的執行目錄名稱，相對於模組資料夾。伺服器自動測試使用獨立的 `run/autotest-server`，測試世界、設定與報告不會與平常的
- * `run/server` 混在一起。
+ * 開發伺服器的執行目錄名稱，相對於模組資料夾。
+ *
+ * - 平常：`run/server`。
+ * - 伺服器自動測試：獨立的 `run/autotest-server`，測試世界、設定與報告不會與平常的混在一起。
  *
  * @return 執行目錄名稱。
  */
 fun Project.serverRunDirectory(): String = if (autotestSystemProperties().isEmpty()) "run/server" else "run/autotest-server"
 
 /**
- * 伺服器自動測試某一段要傳給伺服器的系統屬性：[autotestSystemProperties] 加上這是第幾段。沒有設定 `mahjongcraftAutotest` 時為空。
+ * 伺服器自動測試某一段要傳給伺服器的系統屬性。
+ *
+ * - 內容是 [autotestSystemProperties] 加上這是第幾段。
+ * - 沒有設定 `mahjongcraftAutotest` 時為空。
  *
  * @param phase 第幾段，[AUTOTEST_SERVER_START] 或 [AUTOTEST_SERVER_RESUME]。
  * @return 系統屬性名稱與值。

@@ -641,7 +641,7 @@ class HistoryBrowseRoundControllerTest {
         assertTrue(controller.isReplayStepReady(HistoryQueryLimits.MAX_ROUND_STATES))
     }
 
-    /** 回放的規則設定讀取失敗後仍繼續讀牌面；之後的查詢不會蓋掉規則設定的重試，回放畫面可以重試並恢復。 */
+    /** 回放的規則設定讀取失敗後仍繼續讀牌面。之後的查詢不會蓋掉規則設定的重試，回放畫面可以重試並恢復。 */
     @Test
     fun `test replay can retry failed rule settings after reading states`() = runTest {
         val transport = FakeRoundHistoryTransport()

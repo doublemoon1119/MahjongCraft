@@ -30,8 +30,10 @@ internal object MahjongRulerTint {
     }
 
     /**
-     * 牌尺物品的染色。物品染色以 `0xAARRGGBB` 打包，有的 Minecraft 版本會套用其中的不透明度，所以固定為完全不透明；物品圖示
-     * 不做半透明。
+     * 牌尺物品的染色。
+     *
+     * - 物品染色以 `0xAARRGGBB` 打包，有的 Minecraft 版本會套用其中的不透明度。
+     * - 物品圖示不做半透明，所以固定為完全不透明。
      *
      * @param color 牌尺顏色。
      * @return 以 `0xAARRGGBB` 打包、完全不透明的顏色。

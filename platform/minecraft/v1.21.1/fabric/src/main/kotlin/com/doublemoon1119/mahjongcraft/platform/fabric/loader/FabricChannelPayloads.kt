@@ -11,8 +11,10 @@ import net.minecraft.resources.ResourceLocation
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * 本 mod 每個頻道的封包型別。這個版本的 Fabric API 要求每個頻道先登記成封包型別；封包原樣攜帶共用程式寫好的位元組，
- * 頻道的編碼仍由共用程式負責。
+ * 本 mod 每個頻道的封包型別。
+ *
+ * - 這個版本的 Fabric API 要求每個頻道先登記成封包型別。
+ * - 封包原樣攜帶共用程式寫好的位元組，頻道的編碼仍由共用程式負責。
  */
 internal object FabricChannelPayloads {
     /** 已宣告的頻道與它的封包型別。 */

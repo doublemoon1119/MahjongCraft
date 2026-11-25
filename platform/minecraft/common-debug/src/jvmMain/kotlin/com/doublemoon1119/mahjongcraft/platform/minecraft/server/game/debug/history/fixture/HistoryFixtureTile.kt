@@ -33,8 +33,12 @@ data class HistoryFixtureTile(val tile: Tile, val red: Boolean = false) {
         private val HONORS = listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.North, Tile.Honor.White, Tile.Honor.Green, Tile.Honor.Red)
 
         /**
-         * 解析牌面寫法，例如 `123m 0p 789s 1157z 18f`：數字後面接花色，`m` 萬、`p` 筒、`s` 索、`z` 字牌、`f` 花牌；`0` 是赤五。
-         * 花牌 1～8 依序是春、夏、秋、冬、梅、蘭、菊、竹。空白只用來分隔，不影響順序。
+         * 解析牌面寫法，例如 `123m 0p 789s 1157z 18f`。
+         *
+         * - 數字後面接花色：`m` 萬、`p` 筒、`s` 索、`z` 字牌、`f` 花牌。
+         * - `0` 是赤五。
+         * - 花牌 1～8 依序是春、夏、秋、冬、梅、蘭、菊、竹。
+         * - 空白只用來分隔，不影響順序。
          *
          * @param notation 牌面寫法。
          * @return 依寫法順序排列的牌。

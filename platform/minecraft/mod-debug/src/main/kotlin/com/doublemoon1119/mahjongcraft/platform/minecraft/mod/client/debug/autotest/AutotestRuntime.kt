@@ -6,9 +6,10 @@ import kotlin.time.Duration
 import kotlin.time.TimeSource
 
 /**
- * 自動測試期間 mixin 查詢與回報的共用狀態：是否處於自動測試模式，以及記錄下來的聲音播放要求。
+ * 自動測試期間 mixin 查詢與回報的共用狀態。
  *
- * 自動測試模式從遊戲啟動起就生效，直到遊戲關閉。
+ * - 是否處於自動測試模式。這個模式從遊戲啟動起就生效，直到遊戲關閉。
+ * - 記錄下來的聲音播放要求。
  */
 object AutotestRuntime {
     /** 自動測試開始的時間，用來記錄聲音要求的相對時間。 */
@@ -18,7 +19,11 @@ object AutotestRuntime {
     private val sounds = CopyOnWriteArrayList<AutotestSoundRequest>()
 
     /**
-     * 是否處於自動測試模式；此時忽略滑鼠鍵盤輸入、不鎖定游標、失去焦點不暫停，聲音只記錄不播放。
+     * 是否處於自動測試模式。這個模式下：
+     *
+     * - 忽略滑鼠鍵盤輸入，不鎖定游標。
+     * - 失去焦點不暫停。
+     * - 聲音只記錄不播放。
      *
      * @return 處於自動測試模式時為 true。
      */

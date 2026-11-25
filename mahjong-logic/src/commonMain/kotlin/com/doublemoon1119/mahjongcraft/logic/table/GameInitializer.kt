@@ -34,10 +34,10 @@ object GameInitializer {
      * @param playerIds 參與對局的玩家 Uuid 列表（尚未分配座位，未指定 [seatOrder] 時內部會隨機排序）。
      * @param module 該對局採用的規則模組，提供牌山工廠、牌河實作與規則配置。
      * @param randomness 這一局的座位、牌山與擲骰亂數來源。
-     * @param seatOrder 指定的座位順序，必須剛好包含 [playerIds] 的每位玩家各一次；null 時依 [randomness] 隨機排座。
-     * @return 已完成洗牌、（若規則支援）擲骰開門、發牌、分數初始化的新結果，含權威 [TableState] 與
-     * 供呼叫端處理的牌牆結構資料；完整擲骰記錄保存在回傳桌況的
-     * [TableState.openingDiceRolls]。
+     * @param seatOrder 指定的座位順序，必須剛好包含 [playerIds] 的每位玩家各一次，null 時依 [randomness] 隨機排座。
+     * @return 已完成洗牌、擲骰開門（規則支援時）、發牌與分數初始化的結果：
+     *   - 權威 [TableState]，完整擲骰記錄保存在它的 [TableState.openingDiceRolls]。
+     *   - 供呼叫端處理的牌牆結構資料。
      * @throws IllegalArgumentException 當玩家人數不在該規則允許的範圍內時拋出。
      */
     fun initialize(
@@ -297,10 +297,11 @@ object GameInitializer {
     /**
      * 建立洗牌後的牌山，依開局程序已決定的開門位置排列摸牌順序，並切出規則保留牌。
      *
-     * 此處不擲骰，也不重新決定開門位置。未指定開門位置時直接使用原始洗牌結果，沒有保留牌或布局；
-     * 指定開門位置時規則必須提供牌牆布局，不能默默忽略已決定的結果。
-     * [TileWallLayoutResult.drawOrder] 與 [TileWallLayoutResult.reservedWallTiles] 分開保存，
-     * 回傳的 [OpenedWall.wall] 只包含一般摸牌序列，後續成為 [TableState.tileWall]。
+     * - 不擲骰，也不重新決定開門位置。
+     * - 未指定開門位置時，直接使用原始洗牌結果，沒有保留牌或布局。
+     * - 指定開門位置時，規則必須提供牌牆布局，不能默默忽略已決定的結果。
+     * - [TileWallLayoutResult.drawOrder] 與 [TileWallLayoutResult.reservedWallTiles] 分開保存。回傳的 [OpenedWall.wall] 只包含
+     *   一般摸牌序列，之後成為 [TableState.tileWall]。
      *
      * @param playerCount 本局完整玩家名單的人數。
      * @param wallOpening 開局程序已決定的最終開門位置；未使用開門時為 null。

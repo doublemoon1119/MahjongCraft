@@ -10,8 +10,9 @@ import net.minecraft.world.flag.FeatureFlags
 /**
  * 建立 MahjongCraft 的實體型別。
  *
- * 這些實體都屬於 [MobCategory.MISC]、不會著火、不會自然生成。直接使用原版建構子而不是 [EntityType.Builder]：
- * 後者替可存檔的型別查詢原版的存檔格式轉換資料，模組的實體沒有這份資料，每個型別都會在 log 留下一則錯誤。
+ * - 這些實體都屬於 [MobCategory.MISC]，不會著火，不會自然生成。
+ * - 直接使用原版建構子，不用 [EntityType.Builder]。後者會替可存檔的型別查詢原版的存檔格式轉換資料，模組的實體沒有這份資料，
+ *   每個型別都會在 log 留下一則錯誤。
  */
 object MahjongEntityTypes {
     /** 區塊的邊長，以方塊為單位。 */

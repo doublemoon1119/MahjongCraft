@@ -45,7 +45,7 @@ import kotlin.time.TimeSource
 import kotlin.uuid.Uuid
 
 /**
- * 管理單一存檔的有界歷史生成批次；來源僅在 SQLite 寫入確認後清除事件。
+ * 管理單一存檔的有界歷史生成批次。來源只在 SQLite 寫入確認後清除事件。
  *
  * @property writer 唯一正式 outbox writer 與 session 邊界。
  * @property runtimeFactory 隔離 Flow 組裝入口。
@@ -98,7 +98,7 @@ class HistoryGenerationController(
     }
 
     /**
-     * 驗證政策及 session 後產生一份測試牌譜；整場打完後確認腳本全部照順序執行完。
+     * 驗證政策及 session 後產生一份測試牌譜。整場打完後確認腳本全部照順序執行完。
      *
      * @param fixtureId 測試牌譜的識別碼。
      * @param expectedSessionId 要求發出時所屬的存檔 session。

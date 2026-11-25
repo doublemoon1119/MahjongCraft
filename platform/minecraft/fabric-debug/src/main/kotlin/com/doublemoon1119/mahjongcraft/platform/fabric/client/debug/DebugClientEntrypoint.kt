@@ -8,7 +8,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.Aut
 import net.fabricmc.api.ClientModInitializer
 import org.koin.core.context.GlobalContext
 
-/** debug 模組的客戶端進入點：登記客戶端的 debug 指令；開發執行帶自動測試設定時掛上自動測試。 */
+/**
+ * debug 模組的客戶端進入點。
+ *
+ * - 登記客戶端的 debug 指令。
+ * - 開發執行帶自動測試設定時，掛上自動測試。
+ */
 class DebugClientEntrypoint : ClientModInitializer {
     override fun onInitializeClient() {
         val command = DebugClientCommand(configStore = { GlobalContext.get().get() })

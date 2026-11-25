@@ -15,9 +15,12 @@ import org.koin.plugin.module.dsl.single
 /**
  * Client 與 server graph 共用、與載入器無關的定義。
  *
- * DTO registry、codec 與序列化由其所屬模組提供；此 module 組合共用模組，並提供兩個 graph 都使用同一個實例的服務：
- * 依載入器資訊判斷開發環境的執行環境判定器、啟動訊息使用的執行環境資訊，以及把存檔時略過的歷史事件寫進日誌的回報。
- * 載入器資訊本身由各載入器的模組提供。
+ * - DTO registry、codec 與序列化由所屬的模組提供，這個 module 把它們組合起來。
+ * - 另外提供兩個 graph 共用同一個實例的服務：
+ *   - 依載入器資訊判斷開發環境的執行環境判定器。
+ *   - 啟動訊息使用的執行環境資訊。
+ *   - 把存檔時略過的歷史事件寫進日誌的回報。
+ * - 載入器資訊本身由各載入器的模組提供。
  */
 val modCommonModule = module {
     includes(networkDtoModule, persistenceFormatModule, minecraftCommonModule)

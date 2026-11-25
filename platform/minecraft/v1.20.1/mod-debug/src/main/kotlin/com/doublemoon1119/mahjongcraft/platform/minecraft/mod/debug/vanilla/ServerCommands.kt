@@ -10,7 +10,7 @@ import java.nio.file.Path
  * @param server 目前伺服器。
  * @param source 指令來源。
  * @param command 指令。
- * @return 指令的回傳值；指令執行失敗時為 0。
+ * @return 指令的回傳值，指令執行失敗時為 0。
  */
 fun performCommand(server: MinecraftServer, source: CommandSourceStack, command: String): Int = server.commands.performPrefixedCommand(source, command)
 

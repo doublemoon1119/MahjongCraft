@@ -48,9 +48,9 @@ those parts of the build scripts are not meant to be copied.
 | AI strategy | Tsumogiri strategy | [AI test](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/ai/ExampleTsumogiriAiStrategyTest.kt) |
 | Network and persistence registration | Example-owned DTOs and mappings | [round-trip test](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/ExampleFormatRoundTripTest.kt) |
 | Minecraft presentation | Names, settings, history text and tile assets | [common adapter](platform/minecraft/common/README.md) |
-| Public table props | Saved bonus tiles and custom hand-reveal tokens | [prop checks](platform/minecraft/README.md#bonus-tiles-and-table-props) |
-| Native seating | Block chair and persistent cushion | [Shared mod code](platform/minecraft/mod/README.md) |
-| Public game events | Administrator chat observer | [Shared mod code](platform/minecraft/mod/README.md) |
+| Public table props | Saved bonus tiles and custom hand-reveal tokens | [table prop guide](platform/minecraft/README.md#bonus-tiles-and-table-props) |
+| Native seating | Block chair and persistent cushion | [shared mod code](platform/minecraft/mod/README.md) |
+| Public game events | Administrator chat observer | [shared mod code](platform/minecraft/mod/README.md) |
 | Missing-extension recovery | Keep authoritative data and restore it after reinstall | [recovery procedure](platform/minecraft/README.md#safe-recovery-check) |
 
 The table lists only the capabilities this example uses.

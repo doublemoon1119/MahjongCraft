@@ -183,10 +183,13 @@ private fun ResourceManager.isFixedTileModel(modelId: ResourceLocation, onReadFa
 }
 
 /**
- * 讀取一個模型 JSON 資源；取消仍向外傳遞，一般讀取或解析失敗交由呼叫端回退。
+ * 讀取一個模型 JSON 資源。
+ *
+ * - 取消仍向外傳遞。
+ * - 一般讀取或解析失敗交由呼叫端回退。
  *
  * @param onReadFailure 無法讀取或解析時收到原因。
- * @return 模型 JSON 物件；無法讀取或解析時為 `null`。
+ * @return 模型 JSON 物件，無法讀取或解析時為 `null`。
  */
 private fun Resource.readJson(onReadFailure: (Exception) -> Unit): JsonObject? = try {
     open().use { JsonParser.parseReader(it.reader(StandardCharsets.UTF_8)).asJsonObject }

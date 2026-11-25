@@ -12,10 +12,11 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
 /**
- * 建立 `/mahjongcraft debug room start <seat>`：由房主開局，但指定自己的座位，其他成員依房間原本的順序坐其餘座位。
+ * 建立 `/mahjongcraft debug room start <seat>`：由房主開局，但指定自己的座位。
  *
- * 開局走與房間畫面相同的正式流程，包括開局前的檢查、入座與之後的推進，只把隨機排座換成指定的順序，讓換座位相關的
- * 情況可以固定重現。
+ * - 其他成員依房間原本的順序坐其餘座位。
+ * - 開局走與房間畫面相同的正式流程，包括開局前的檢查、入座與之後的推進。
+ * - 只把隨機排座換成指定的順序，讓換座位相關的情況可以固定重現。
  *
  * @property persistence 查詢呼叫者所在的等待房間。
  * @property roomService 正式的開局入口。
@@ -37,7 +38,10 @@ internal class DebugRoomCommand(
     )
 
     /**
-     * 以指定座位要求開局；房主、準備狀態等檢查由正式開局流程負責，結果以一般的開局回饋通知。
+     * 以指定座位要求開局。
+     *
+     * - 房主、準備狀態等檢查由正式開局流程負責。
+     * - 結果以一般的開局回饋通知。
      *
      * @param source 指令發起來源。
      * @param seat 呼叫者要坐的座位，以開場座位順序的位置表示。

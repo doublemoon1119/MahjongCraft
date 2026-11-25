@@ -26,11 +26,13 @@ fun PlayerInfo.skinTextures(): SkinTextures = SkinTextures(skinLocation, modelNa
 fun defaultSkinTextures(playerId: UUID): SkinTextures = SkinTextures(DefaultPlayerSkin.getDefaultSkin(playerId), DefaultPlayerSkin.getSkinModelName(playerId), null)
 
 /**
- * 透過原版的皮膚管理器非同步載入 profile 的皮膚與披風。回呼可能在其他執行緒執行，需要時由呼叫端切回主執行緒。
+ * 透過原版的皮膚管理器非同步載入 profile 的皮膚與披風。
+ *
+ * - 回呼可能在其他執行緒執行，需要時由呼叫端切回主執行緒。
  *
  * @param profile 已知的玩家 profile。
- * @param onSkin 皮膚載入結束時呼叫，帶入皮膚材質與手臂款式；沒有取得皮膚時材質為 null。
- * @param onCape 取得披風時呼叫；玩家沒有披風時不呼叫。
+ * @param onSkin 皮膚載入結束時呼叫，帶入皮膚材質與手臂款式。沒有取得皮膚時材質為 null。
+ * @param onCape 取得披風時呼叫。玩家沒有披風時不呼叫。
  */
 fun requestSkinTextures(profile: GameProfile, onSkin: (ResourceLocation?, String) -> Unit, onCape: (ResourceLocation) -> Unit) {
     Minecraft.getInstance().skinManager.registerSkins(

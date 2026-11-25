@@ -10,14 +10,14 @@ import net.minecraft.world.level.levelgen.WorldDimensions
 import net.minecraft.world.level.levelgen.WorldOptions
 
 /**
- * 建立新的單人世界並開始進入；進入的過程由原版的載入畫面接手。
+ * 建立新的單人世界並開始進入。進入的過程由原版的載入畫面接手。
  *
  * @param client 目前客戶端。
  * @param levelId 存檔名稱。
  * @param settings 世界設定。
  * @param options 種子等生成選項。
  * @param dimensions 依登記表建立世界的維度。
- * @param returnScreen 建立失敗時回到的畫面；這個版本的原版自行決定，不使用。
+ * @param returnScreen 建立失敗時回到的畫面。這個版本的原版自行決定，不使用。
  */
 @Suppress("UNUSED_PARAMETER")
 fun createFreshWorld(
@@ -32,7 +32,7 @@ fun createFreshWorld(
 }
 
 /**
- * 進入已經存在的單人世界；進入的過程由原版的載入畫面接手。
+ * 進入已經存在的單人世界。進入的過程由原版的載入畫面接手。
  *
  * @param client 目前客戶端。
  * @param levelId 存檔名稱。

@@ -488,7 +488,7 @@ class StartGameUseCaseTest {
         assertEquals(firstTableState, fixtures.gameRepo.getTableState(roomId), "The existing game should be untouched.")
     }
 
-    /** 指定座位順序時照順序入座，不再隨機排座；預檢與直接開局都一樣。 */
+    /** 指定座位順序時照順序入座，不再隨機排座。預檢與直接開局都一樣。 */
     @Test
     fun `specified seat order is used instead of a random one`() = runTest {
         val room = readyRoom()

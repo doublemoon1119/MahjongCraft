@@ -525,19 +525,17 @@ class MahjongTableRoomService internal constructor(
     }
 
     /**
-     * 讓房主在所有人皆已準備完成時開始遊戲。同樣以玩家目前的房間歸屬解析目標房間；座位傳送與其他
-     * 呈現已經由 `StartGameUseCase` 內部觸發，這裡不需要額外處理。
+     * 讓房主在所有人都已準備完成時開始遊戲。
      *
-     * 真正開始之前，會對房間內每一位非 AI 成員（含房主自己）各自檢查是否在線、以及在線的話是否在桌子
-     * 的可互動範圍內（[isPlayerReachable]）；只要有任何一人離線或太遠，就整批擋下開局，並在回饋中列出
-     * 是哪些人——不會只挑呼叫 [start] 的房主自己檢查，否則其他成員仍然可以先在附近按 [ready]、再走遠，
-     * 靠房主開局把自己傳送過去。
-     *
-     * 開局後向 [AutomatedAdvanceManager] 請求推進：推進同時涵蓋第一位是 AI（驅動自動操作）與第一位是真人（推進最後的
-     * 自動摸牌）兩種開局。
+     * - 以玩家目前的房間歸屬解析目標房間。
+     * - 開始之前，對房間內每一位非 AI 成員（含房主自己）檢查：是否在線，以及是否在桌子的可互動範圍內（[isPlayerReachable]）。
+     * - 任何一人離線或太遠，就整批擋下開局，並在回饋中列出是哪些人。不能只檢查房主，否則其他成員可以先在附近按 [ready]、
+     *   再走遠，靠房主開局把自己傳送過去。
+     * - 座位傳送與其他呈現由 `StartGameUseCase` 內部觸發，這裡不需要額外處理。
+     * - 開局後向 [AutomatedAdvanceManager] 請求推進。第一位是 AI 時驅動自動操作，第一位是真人時推進最後的自動摸牌。
      *
      * @param player 發起開始操作的房主。
-     * @param seatOrder 指定開場的座位順序，例如除錯時固定某位玩家的座位；null 時依種子隨機排座。不符合房間成員時拒絕開局。
+     * @param seatOrder 指定開場的座位順序，例如除錯時固定某位玩家的座位。null 時依種子隨機排座，不符合房間成員時拒絕開局。
      */
     fun start(player: ServerPlayer, seatOrder: List<Uuid>? = null) {
         if (dataStatus.rejectIfUnavailable(player)) return

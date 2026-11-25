@@ -4,9 +4,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
 import com.doublemoon1119.mahjongcraft.logic.table.RoundRandomness
 
 /**
- * 每一局開局時取得亂數來源的方式；開局與換局都從這裡取得。
+ * 每一局開局時取得亂數來源的方式，開局與換局都從這裡取得。
  *
- * 正式對局一律由對局種子衍生（[SEEDED]）。固定內容的測試對局可以換成指定的骰子與牌山排列，其餘流程不變。
+ * - 正式對局一律由對局種子衍生（[SEEDED]）。
+ * - 固定內容的測試對局可以換成指定的骰子與牌山排列，其餘流程不變。
  */
 fun interface RoundRandomnessSource {
     /**

@@ -8,7 +8,7 @@ import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 
-/** 以 Fabric API 的網路功能實作 [PacketTransport]；每個頻道登記成 [FabricChannelPayloads] 的封包型別。 */
+/** 以 Fabric API 的網路功能實作 [PacketTransport]。每個頻道登記成 [FabricChannelPayloads] 的封包型別。 */
 object FabricPacketTransport : PacketTransport {
     override fun declareChannel(channelId: ResourceLocation, direction: ChannelDirection) {
         FabricChannelPayloads.declare(channelId, direction)

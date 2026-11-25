@@ -18,11 +18,18 @@ private const val NEOFORM_RUNTIME_MINIMUM_JAVA: Int = 21
 /**
  * 讓 ModDevGradle 準備 Minecraft 的工具使用固定的 Java 工具鏈：目前 target 的 Java 與工具最低需求中較新的版本。
  *
- * 這些工具會反編譯再重新編譯 Minecraft，重新編譯用的是執行工具的 Java。編譯器自動產生的方法（例如 lambda）名稱裡的編號
- * 依 Java 版本而不同：較新的 Java 改為每個方法各自編號，與原版不同，開發執行時修改這類方法的其他模組（例如 Embeddium）
- * 就找不到它們。執行 Gradle 的 Java 可能比 target 新很多，因此不使用它；工具的快取不區分 Java 版本，換版本後要清除快取
- * 才會重新編譯。CI 為每個 target 安裝它的 Java 與 Java 21，並停用自動下載。外掛不是 build-logic 的依賴，因此以類別名稱與
- * 屬性名稱取得它的任務設定。
+ * 為什麼要固定：
+ *
+ * - 這些工具會反編譯再重新編譯 Minecraft，重新編譯用的是執行工具的 Java。
+ * - 編譯器自動產生的方法（例如 lambda）名稱裡的編號依 Java 版本而不同。較新的 Java 改為每個方法各自編號，與原版不同，
+ *   開發執行時修改這類方法的其他模組（例如 Embeddium）就找不到它們。
+ * - 執行 Gradle 的 Java 可能比 target 新很多，因此不使用它。
+ *
+ * 其他須知：
+ *
+ * - 工具的快取不區分 Java 版本，換版本後要清除快取才會重新編譯。
+ * - CI 為每個 target 安裝它的 Java 與 Java 21，並停用自動下載。
+ * - 外掛不是 build-logic 的依賴，因此以類別名稱與屬性名稱取得它的任務設定。
  */
 internal fun Project.useTargetJavaForNeoForm() {
     pluginManager.withPlugin(MODDEV_LEGACY_FORGE_PLUGIN_ID) {

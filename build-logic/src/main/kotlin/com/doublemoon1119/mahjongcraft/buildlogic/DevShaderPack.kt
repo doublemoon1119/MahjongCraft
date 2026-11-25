@@ -6,9 +6,11 @@ import org.gradle.api.artifacts.MinimalExternalModuleDependency
 import org.gradle.api.provider.Provider
 
 /**
- * 開發用戶端啟動前放入並開啟光影包（[PrepareDevShaderPackTask]）。由 [MinecraftDevModsExtension.shaderPack] 在組合被選中時呼叫。
+ * 開發用戶端啟動前放入並開啟光影包（[PrepareDevShaderPackTask]）。
  *
- * @param pack 光影包；以 zip 檔取得。
+ * - 由 [MinecraftDevModsExtension.shaderPack] 在組合被選中時呼叫。
+ *
+ * @param pack 光影包，以 zip 檔取得。
  * @param clientTask 開發用戶端的執行任務名稱。
  */
 internal fun Project.registerDevShaderPack(pack: Provider<MinimalExternalModuleDependency>, clientTask: String = "runClient") {

@@ -11,10 +11,10 @@ import net.minecraft.core.registries.Registries
 import net.minecraft.network.codec.ByteBufCodecs
 import net.minecraft.world.item.ItemStack
 
-/** 麻將牌物品保存牌面名稱的資料元件；[registerItemStackFields] 交出的登記完成後可讀取。 */
+/** 麻將牌物品保存牌面名稱的資料元件。[registerItemStackFields] 交出的登記完成後可讀取。 */
 private lateinit var tileAssetKeyComponent: RegisteredEntry<DataComponentType<String>>
 
-/** 點棒物品保存面額名稱的資料元件；[registerItemStackFields] 交出的登記完成後可讀取。 */
+/** 點棒物品保存面額名稱的資料元件。[registerItemStackFields] 交出的登記完成後可讀取。 */
 private lateinit var scoringStickDenominationComponent: RegisteredEntry<DataComponentType<String>>
 
 /**

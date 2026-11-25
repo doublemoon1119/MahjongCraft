@@ -9,7 +9,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-/** 驗證 1.20.1 自備的混凝土標籤；這個版本的 Fabric 與 Forge 沒有共通的混凝土標籤，配方改用這個標籤。 */
+/** 驗證 1.20.1 自備的混凝土標籤。這個版本的 Fabric 與 Forge 沒有共通的混凝土標籤，配方改用這個標籤。 */
 class ConcreteTagDataFileTest {
     /** 原版的全部混凝土 item ID。 */
     private val concreteIds = setOf(

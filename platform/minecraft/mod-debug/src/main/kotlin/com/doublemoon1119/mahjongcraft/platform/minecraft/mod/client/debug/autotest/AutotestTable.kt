@@ -25,7 +25,7 @@ internal object AutotestTable {
     /** 牌桌的位置。 */
     val POSITION: BlockPos = BlockPos(0, -60, 6)
 
-    /** 開局的牌桌識別碼；還沒開局時為 null。 */
+    /** 開局的牌桌識別碼，還沒開局時為 null。 */
     var tableId: Uuid? = null
 
     /**
@@ -41,11 +41,13 @@ internal object AutotestTable {
 }
 
 /**
- * 截兩張牌桌的圖：玩家目前的視角，以及從牌桌前上方俯視整張桌子的固定鏡頭，四家的牌河與副露都在畫面中。
+ * 截兩張牌桌的圖。
  *
- * 截圖前等本機玩家收到伺服器目前的操作提示，關掉其他畫面；有等玩家操作時打開操作介面，兩張圖都拍到它。
+ * - 一張是玩家目前的視角，另一張從牌桌前上方俯視整張桌子，四家的牌河與副露都在畫面中。
+ * - 截圖前等本機玩家收到伺服器目前的操作提示，並關掉其他畫面。
+ * - 有等玩家操作時打開操作介面，兩張圖都拍到它。
  *
- * @param name 截圖名稱；俯視的那張加上 `-overhead`。
+ * @param name 截圖名稱。俯視的那張加上 `-overhead`。
  */
 internal suspend fun AutotestContext.tableScreenshots(name: String) {
     check("The decision prompt reaches the client before $name", waitUntilDecisionSynced(), offeredActions())
@@ -93,8 +95,10 @@ internal suspend fun AutotestContext.isTableBusy(): Boolean {
 internal suspend fun AutotestContext.waitUntilTableIdle(): Boolean = waitUntil(READY_TIMEOUT) { !isTableBusy() }
 
 /**
- * 伺服器上這張牌桌的對局是否可以接受下一個操作：對局進行中、不在換局或結束的途中，牌桌也沒有在播演出。與 debug 場景載入
- * 檢查的條件相同。
+ * 伺服器上這張牌桌的對局是否可以接受下一個操作，條件與 debug 場景載入時相同：
+ *
+ * - 對局進行中，不在換局或結束的途中。
+ * - 牌桌沒有在播演出。
  *
  * @return 可以接受操作時為 true。
  */
@@ -105,12 +109,12 @@ internal suspend fun AutotestContext.isGameReady(): Boolean {
 }
 
 /**
- * 確保本機玩家坐在開局的牌桌對局中，而且對局可以接受下一個操作；上一場對局已經結束、牌桌回到房間時，以房主身分再開一場。
+ * 確保本機玩家坐在開局的牌桌對局中，而且對局可以接受下一個操作。
  *
- * 再開一場時指定本機玩家換到和上一場不同的座位，固定檢查換座位時新座位沒有被上一場的 AI 擋住。最後檢查本機玩家在自己的座位上，
- * 每位 AI 也都有角色在場。
- *
- * 牌局的進展是隨機的，可能很早就有人和牌而結束，因此需要牌局的步驟在開始前先呼叫。
+ * - 上一場對局已經結束、牌桌回到房間時，以房主身分再開一場。
+ * - 再開一場時，本機玩家換到和上一場不同的座位，藉此檢查新座位沒有被上一場的 AI 擋住。
+ * - 最後檢查本機玩家在自己的座位上，每位 AI 也都有角色在場。
+ * - 牌局的進展是隨機的，可能很早就有人和牌而結束，因此需要牌局的步驟在開始前先呼叫。
  *
  * @return 坐在對局中而且對局可以接受操作時為 true。
  */

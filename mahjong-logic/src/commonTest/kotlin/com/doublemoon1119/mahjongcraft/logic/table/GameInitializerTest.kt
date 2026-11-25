@@ -191,7 +191,7 @@ class GameInitializerTest {
         assertTrue(firstPlayerSeats.toSet().size > 1, "Seat assignment should vary across multiple initializations.")
     }
 
-    /** 指定的牌山排列決定開門後的摸牌順序，開門仍照規則計算；排列換掉牌時拒絕。 */
+    /** 指定的牌山排列決定開門後的摸牌順序，開門仍照規則計算。排列換掉牌時拒絕。 */
     @Test
     fun `wall arrangement decides the opened draw order`() {
         val playerIds = List(4) { Uuid.random() }
@@ -210,7 +210,7 @@ class GameInitializerTest {
         }
     }
 
-    /** 指定座位順序時照順序排座，不受亂數影響；順序與玩家不符時拒絕。 */
+    /** 指定座位順序時照順序排座，不受亂數影響。順序與玩家不符時拒絕。 */
     @Test
     fun `specified seat order replaces the random seating`() {
         val playerIds = List(4) { Uuid.random() }

@@ -179,17 +179,19 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private 
 }
 
 /**
- * 客戶端→伺服器頻道。[registerServerReceiver] 的接收回呼依載入器在網路執行緒或伺服器主執行緒執行，封包緩衝區在回呼結束後
- * 可能被釋放，必須同步讀完；解碼後的資料交由伺服器主執行緒上的處理函式接收，玩家身分一律用回呼收到
- * 的 [ServerPlayer] 自己的 UUID，不信任封包內容宣稱的身分。
+ * 客戶端→伺服器頻道。
  *
- * 每個頻道都必須宣告 [rateLimit]；超過限制的要求在解碼前就被丟棄。
+ * - [registerServerReceiver] 的接收回呼依載入器在網路執行緒或伺服器主執行緒執行。
+ * - 封包緩衝區在回呼結束後可能被釋放，必須同步讀完。
+ * - 解碼後的資料交由伺服器主執行緒上的處理函式接收。
+ * - 玩家身分一律用回呼收到的 [ServerPlayer] 自己的 UUID，不信任封包內容宣稱的身分。
+ * - 每個頻道都必須宣告 [rateLimit]，超過限制的要求在解碼前就被丟棄。
  *
  * @param T 傳送的線路 DTO 型別。
  * @param id 模組命名空間內的頻道名稱。
  * @property serializer 線路資料的序列化契約。
  * @param rateLimit 每位玩家要求的頻率限制。
- * @property maxPayloadBytes 解碼前的 JSON UTF-8 位元組上限；null 使用既有字串字元上限及其最多三倍 UTF-8 位元組相容限制。
+ * @property maxPayloadBytes 解碼前的 JSON UTF-8 位元組上限。null 時使用既有的字串字元上限，以及它最多三倍的 UTF-8 位元組限制。
  */
 class C2SChannel<T>(
     id: String,

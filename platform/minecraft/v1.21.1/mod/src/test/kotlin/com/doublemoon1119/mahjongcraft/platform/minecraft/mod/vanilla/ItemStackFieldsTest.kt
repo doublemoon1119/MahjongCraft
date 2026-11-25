@@ -39,7 +39,7 @@ class ItemStackFieldsTest {
         assertEquals(listOf(resourceId("mahjongcraft:tile"), resourceId("mahjongcraft:denomination")), registeredIds)
     }
 
-    /** 牌面名稱與每種點棒面額都能寫進物品並讀回；沒有寫入時讀到 null。 */
+    /** 牌面名稱與每種點棒面額都能寫進物品並讀回。沒有寫入時讀到 null。 */
     @Test
     fun `values survive a round trip on an item`() {
         val tile = ItemStack(Items.STONE)

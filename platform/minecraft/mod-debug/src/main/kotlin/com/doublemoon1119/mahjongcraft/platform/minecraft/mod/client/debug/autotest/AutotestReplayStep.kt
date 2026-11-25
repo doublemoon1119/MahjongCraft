@@ -14,9 +14,11 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * 產生固定內容的測試牌譜，從牌譜列表依序打開摘要、規則設定、單局事件、牌面與回放，在回放中跳到要檢查的步驟截圖。
+ * 產生固定內容的測試牌譜並檢查牌譜畫面。
  *
- * 每份測試牌譜照腳本產生，內容固定；要看的步驟依回放中的事件種類找出，不寫死第幾步。
+ * - 從牌譜列表依序打開摘要、規則設定、單局事件、牌面與回放，在回放中跳到要檢查的步驟截圖。
+ * - 每份測試牌譜照腳本產生，內容固定。
+ * - 要看的步驟依回放中的事件種類找出，不寫死第幾步。
  */
 internal object AutotestReplayStep : AutotestStep {
     override val id: String = "replay"

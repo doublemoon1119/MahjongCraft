@@ -33,7 +33,7 @@ class AutotestSelectionTest {
         assertFalse(selection.includes("table"))
     }
 
-    /** 列出的步驟中不存在的識別碼依列出的順序回報；執行全部步驟時沒有。 */
+    /** 列出的步驟中不存在的識別碼依列出的順序回報。執行全部步驟時沒有。 */
     @Test
     fun `reports listed steps that do not exist`() {
         val known = listOf("world", "screens", "replay")

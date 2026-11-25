@@ -32,19 +32,23 @@ import com.doublemoon1119.mahjongcraft.logic.tile.component.publicFaceUpWallTile
 import kotlin.uuid.Uuid
 
 /**
- * 依規則的 Match progression 決定終局、連莊或明確下一局位的實例化用例。
+ * 依規則的 Match progression 決定終局、連莊或下一局位置的用例。
  *
- * 呼叫前必須已有 [Game.roundCompletion]；本用例不讀取 `actionHistory` 猜測連莊，也不以固定局數
- * 自行判斷終局。它把結算後桌況、權威結果摘要與規則 comparator 產生的排行交給
- * `MatchProgressionPolicy`，驗證其決策後才原子寫回終局或下一局。
+ * 決定方式：
  *
- * 終局時，本用例把事實與完整 reason ID 寫回 [Game]，
- * 並同步最終桌況快照、廣播 [GameAction.MatchEnded]（帶著最終分數的快照，供呼叫端／客戶端組出排名
- * 呈現）——但不會開新的一局；`TableState` 除了「桌上未被收下的供託依規則分配」這個結算之外
- * 維持呼叫前的樣子不變（見 `MahjongRuleModule.allocateSettlementExtras`）。房間清理（把場地從 Game
- * 轉回 Room）留給呼叫端接著呼叫 `ReturnToRoomUseCase`，不在這裡處理。務必記下 `isMatchOver` 這個事實：
- * `AiTurnDriver`／`ForcedAutoPlayDriver` 都靠它提前跳過已結束的對局，否則牌山已空的桌況會被反覆
- * 嘗試摸牌、反覆觸發流局結算。
+ * - 呼叫前必須已有 [Game.roundCompletion]。
+ * - 不讀取 `actionHistory` 猜測連莊，也不以固定局數自行判斷終局。
+ * - 把結算後桌況、權威結果摘要與規則 comparator 產生的排行交給 `MatchProgressionPolicy`，驗證它的決策後才一次寫回終局或
+ *   下一局。
+ *
+ * 終局時：
+ *
+ * - 把終局事實與完整 reason ID 寫回 [Game]，並記下 `isMatchOver`。`AiTurnDriver` 與 `ForcedAutoPlayDriver` 靠它跳過已結束的
+ *   對局，否則牌山已空的桌況會被反覆摸牌、反覆觸發流局結算。
+ * - 同步最終桌況快照，廣播 [GameAction.MatchEnded]，快照帶著最終分數，供呼叫端與用戶端組出排名呈現。
+ * - 不開新的一局。`TableState` 只依規則分配桌上未收下的供託（見 `MahjongRuleModule.allocateSettlementExtras`），其餘維持呼叫前
+ *   的樣子。
+ * - 不處理房間清理。把場地從 Game 轉回 Room 由呼叫端接著呼叫 `ReturnToRoomUseCase`。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的規則模組。
@@ -54,7 +58,7 @@ import kotlin.uuid.Uuid
  * @property presentationPublisher 對局 in-process 呈現觸發器。
  * @property componentRegistry 正式開局與換局使用的組件建立及保留規格。
  * @property beginRuleDecisionUseCase 新局發牌後啟動規則選擇步驟的 use case。
- * @property failurePolicy 判斷規則失敗能否回報為無法推進；取消與致命錯誤不得轉成一般錯誤。
+ * @property failurePolicy 判斷規則失敗能否回報為無法推進。取消與致命錯誤不得轉成一般錯誤。
  * @property roundRandomnessSource 新一局的亂數來源。
  */
 class AdvanceRoundUseCase(

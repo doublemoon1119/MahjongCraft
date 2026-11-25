@@ -10,14 +10,17 @@ import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.BlockHitResult
 
 /**
- * 範例一般方塊的基底：右鍵互動寫在新版 Minecraft 名稱的 [useWithoutItem]，這個版本的原版互動方法由這個類別轉接。只處理主手的右鍵，與新版
- * 相同；玩家手上的物品要自己處理右鍵時，[useWithoutItem] 回傳 PASS 讓物品接手。
+ * 範例一般方塊的基底。
+ *
+ * - 右鍵互動寫在新版 Minecraft 名稱的 [useWithoutItem]，這個版本的原版互動方法由這個類別轉接。
+ * - 與新版相同，只處理主手的右鍵。
+ * - 玩家手上的物品要自己處理右鍵時，[useWithoutItem] 回傳 PASS 讓物品接手。
  *
  * @param properties 原版方塊設定。
  */
 abstract class ExampleBlock(properties: Properties) : Block(properties) {
     /**
-     * 玩家以主手右鍵這個方塊時的處理；預設不處理。
+     * 玩家以主手右鍵這個方塊時的處理。預設不處理。
      *
      * @param state 方塊狀態。
      * @param world 所在世界。

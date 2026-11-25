@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.auto
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-/** 建立並進入測試世界；其他步驟都在這個世界中執行，因此一律執行。 */
+/** 建立並進入測試世界。其他步驟都在這個世界中執行，因此一律執行。 */
 internal object AutotestEnterWorldStep : AutotestStep {
     override val id: String = "world"
 

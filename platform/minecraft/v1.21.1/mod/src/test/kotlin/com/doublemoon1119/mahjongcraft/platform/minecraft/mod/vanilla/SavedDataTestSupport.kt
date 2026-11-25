@@ -12,10 +12,11 @@ import java.io.InputStream
 import java.nio.file.Path
 
 /**
- * 建立讀寫指定資料夾的存檔資料管理器；本 mod 的資料不引用登記表內容，使用空的登記表。
+ * 建立讀寫指定資料夾的存檔資料管理器。
  *
- * 本 mod 的存檔資料不指定資料修正類型。原版遇到這種資料會出錯，載入器（例如 Fabric API）則直接讀取、不做修正；
- * 這個管理器比照載入器的處理，讓測試反映遊戲中的行為。
+ * - 本 mod 的資料不引用登記表內容，使用空的登記表。
+ * - 本 mod 的存檔資料不指定資料修正類型。原版遇到這種資料會出錯，載入器（例如 Fabric API）則直接讀取、不做修正。
+ * - 這個管理器比照載入器的處理，讓測試反映遊戲中的行為。
  *
  * @param directory 存放資料檔案的資料夾。
  * @param fixer 讀取舊資料時使用的資料修正器。
@@ -39,7 +40,7 @@ fun dimensionDataStorage(directory: Path, fixer: DataFixer): DimensionDataStorag
 private const val SAVED_DATA_EXTENSION = ".dat"
 
 /**
- * 把存檔資料直接寫進指定檔案；本 mod 的資料不引用登記表內容，使用空的登記表。
+ * 把存檔資料直接寫進指定檔案。本 mod 的資料不引用登記表內容，使用空的登記表。
  *
  * @param file 要寫入的檔案。
  */

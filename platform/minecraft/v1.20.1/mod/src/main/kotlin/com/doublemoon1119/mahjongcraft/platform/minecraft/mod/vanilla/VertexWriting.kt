@@ -85,7 +85,7 @@ fun VertexConsumer.setNormal(pose: PoseStack.Pose, x: Float, y: Float, z: Float)
  */
 fun VertexConsumer.setNormal(x: Float, y: Float, z: Float): VertexConsumer = normal(x, y, z)
 
-/** 結束目前的頂點；寫完一個頂點的全部資料後呼叫。 */
+/** 結束目前的頂點。寫完一個頂點的全部資料後呼叫。 */
 fun VertexConsumer.finishVertex() {
     endVertex()
 }

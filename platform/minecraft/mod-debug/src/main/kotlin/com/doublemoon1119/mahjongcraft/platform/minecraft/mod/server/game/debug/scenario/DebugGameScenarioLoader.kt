@@ -33,12 +33,12 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /**
- * 驗證、原子替換並同步 development-only 權威對局情境；載入情境的場次不再產生進度、統計、事件掛勾與歷史紀錄。
+ * 驗證、一次替換並同步只在開發環境使用的權威對局情境。
  *
- * 牌桌正在播演出或對局在換局途中時，等到可以換上情境再載入，等待有上限。
- *
- * 以完整開局呈現的情境（[DebugGameScenarioPresentation.InitialRound]）與正式開局相同，發牌呈現後開啟局首的規則選擇，
- * 例如台灣麻將的補花。
+ * - 載入情境的場次不再產生進度、統計、事件掛勾與歷史紀錄。
+ * - 牌桌正在播演出，或對局在換局途中時，等到可以換上情境再載入，等待有上限。
+ * - 以完整開局呈現的情境（[DebugGameScenarioPresentation.InitialRound]）與正式開局相同：發牌呈現後開啟局首的規則選擇，例如
+ *   台灣麻將的補花。
  *
  * @property minecraftEnvironment 判斷是否允許使用開發情境。
  * @property registry 查詢可載入的情境。
@@ -150,8 +150,10 @@ class DebugGameScenarioLoader(
     }
 
     /**
-     * 等牌桌沒有在播演出、對局也不在換局途中，在同一次權威更新內確認這些條件並換上情境；對局會在等待期間繼續進行，
-     * 所以條件在更新內重新確認，不成立時繼續等。
+     * 等牌桌可以換上情境時換上。
+     *
+     * - 條件：牌桌沒有在播演出，對局也不在換局途中。
+     * - 對局會在等待期間繼續進行，所以在同一次權威更新內重新確認條件再換上，不成立時繼續等。
      *
      * @param tableId 牌桌識別碼。
      * @param playerId 發起指令的玩家識別碼。

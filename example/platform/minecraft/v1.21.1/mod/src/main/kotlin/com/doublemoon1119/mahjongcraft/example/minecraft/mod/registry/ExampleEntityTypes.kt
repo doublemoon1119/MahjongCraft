@@ -10,7 +10,8 @@ import net.minecraft.world.flag.FeatureFlags
 /**
  * 以原版建構子建立範例的實體類型，各載入器都能使用。
  *
- * 不使用原版的 `EntityType.Builder`：它的 `build` 會依 ID 查詢資料修正器，範例的實體沒有資料修正器，開發環境中會因此失敗。
+ * - 不使用原版的 `EntityType.Builder`：它的 `build` 會依 ID 查詢資料修正器。
+ * - 範例的實體沒有資料修正器，用它建立會在開發環境中失敗。
  */
 internal object ExampleEntityTypes {
     /**

@@ -9,9 +9,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.scro
 import org.koin.core.context.GlobalContext
 
 /**
- * 從正式的入口逐一打開本 mod 的獨立畫面：截圖、往下捲動後再截一張，最後以 Esc 的方式關閉並確認回到遊戲畫面。
+ * 從正式的入口逐一打開本 mod 的獨立畫面。
  *
- * 只檢查打開、捲動與關閉時沒有出錯；畫面內容由截圖確認。
+ * - 截圖，往下捲動後再截一張，最後以 Esc 的方式關閉並確認回到遊戲畫面。
+ * - 只檢查打開、捲動與關閉時沒有出錯，畫面內容由截圖確認。
  */
 internal object AutotestScreensStep : AutotestStep {
     override val id: String = "screens"
@@ -30,7 +31,10 @@ internal object AutotestScreensStep : AutotestStep {
     }
 
     /**
-     * 從設定畫面打開 HUD 版面編輯器再返回；改動一個設定後關閉，確認出現未儲存提示，選擇不儲存，設定檔不受影響。
+     * 檢查設定畫面的子畫面與未儲存提示。
+     *
+     * - 從設定畫面打開 HUD 版面編輯器再返回。
+     * - 改動一個設定後關閉，確認出現未儲存提示，選擇不儲存，設定檔不受影響。
      */
     private suspend fun AutotestContext.configSubScreens() {
         GlobalContext.get().get<MahjongClientConfigScreenController>().openFromCommand()

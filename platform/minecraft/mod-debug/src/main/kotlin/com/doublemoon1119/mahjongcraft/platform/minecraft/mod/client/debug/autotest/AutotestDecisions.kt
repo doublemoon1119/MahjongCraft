@@ -22,7 +22,7 @@ import kotlin.uuid.toKotlinUuid
  */
 internal data class AutotestDecision(val prompt: PlayerDecisionPromptDto, val action: PlayerDecisionActionDto)
 
-/** 本機玩家目前的操作提示；沒有等玩家操作時為 null。 */
+/** 本機玩家目前的操作提示，沒有等玩家操作時為 null。 */
 internal val AutotestContext.currentPrompt: PlayerDecisionPromptDto?
     get() = GlobalContext.get().get<ClientDecisionPromptStore>().prompt
 
@@ -63,7 +63,10 @@ internal suspend fun AutotestContext.serverDecisionKey(): String? {
 }
 
 /**
- * 等到本機玩家收到伺服器目前的操作提示；伺服器沒有等本機玩家操作時，等到本機的提示也清掉。
+ * 等到本機玩家的操作提示與伺服器一致。
+ *
+ * - 伺服器在等本機玩家操作時，等到本機收到同一個提示。
+ * - 伺服器沒有等本機玩家操作時，等到本機的提示也清掉。
  *
  * @return 時限內一致時為 true。
  */
@@ -72,7 +75,8 @@ internal suspend fun AutotestContext.waitUntilDecisionSynced(): Boolean = waitUn
 /**
  * 以操作介面相同的方式送出動作，並等伺服器換到下一個操作提示，表示已經接受。
  *
- * 動作需要選牌時，選第一張可選的牌；只有一種選法的情境（例如立直時只有一張牌打出後仍聽牌）結果是確定的。
+ * - 動作需要選牌時，選第一張可選的牌。
+ * - 只有一種選法的情境（例如立直時只有一張牌打出後仍聽牌）結果是確定的。
  *
  * @param decision 要送出的動作。
  * @return 伺服器在時限內接受時為 true。

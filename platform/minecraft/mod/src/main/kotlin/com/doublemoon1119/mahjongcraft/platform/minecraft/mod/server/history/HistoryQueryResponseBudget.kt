@@ -116,13 +116,13 @@ internal fun emptyHistoryListResponse(
 )
 
 /**
- * 將已授權的開局設定編碼為有界回應；缺少網路 codec 不視為玩家要求無效。
+ * 將已授權的開局設定編碼為有界回應。缺少網路 codec 不視為玩家要求無效。
  *
  * @param requestId 回應配對識別碼。
  * @param settings 已從歷史文件讀取的開局設定。
  * @param registries 正式網路 DTO registry。
  * @param json 線路編碼設定。
- * @param onConversionFailed 設定無法轉成網路 DTO 時收到原因；這時回應「無法提供」。
+ * @param onConversionFailed 設定無法轉成網路 DTO 時收到原因，這時回應「無法提供」。
  * @param limit JSON UTF-8 上限。
  * @return 完整設定或不含設定內容的穩定錯誤。
  */

@@ -82,7 +82,7 @@ internal class HistoryBrowseController(
     /** 回放中的一局；不在回放時為 null。 */
     private var replayRound: HistoryReplayRound? = null
 
-    /** 回放目前這一步之後的牌面預先讀取失敗、自動重試也用完時的狀態；沒有失敗時為 null。 */
+    /** 回放目前這一步之後的牌面預先讀取失敗、自動重試也用完時的狀態。沒有失敗時為 null。 */
     private var replayAheadFailure: HistoryBrowseStatus.Failed? = null
 
     /** 尚未開始傳送的條件合併／間隔等待。 */
@@ -188,8 +188,10 @@ internal class HistoryBrowseController(
         !isRefreshCoolingDown()
 
     /**
-     * 回放中這場對局的規則設定是否讀取失敗。回放讀取失敗後仍會繼續讀牌面與事件，新的查詢會取代可重試的意圖，所以另外判斷，
-     * 讓回放畫面仍能重試規則設定。
+     * 回放中這場對局的規則設定是否讀取失敗。
+     *
+     * - 規則設定讀取失敗後，回放仍會繼續讀牌面與事件，新的查詢會取代可重試的意圖。
+     * - 所以另外判斷這個失敗，讓回放畫面仍能重試規則設定。
      *
      * @return 在回放頁而且這場對局的規則設定讀取失敗時為 true。
      */

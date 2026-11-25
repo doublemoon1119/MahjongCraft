@@ -29,15 +29,15 @@ import kotlin.uuid.Uuid
 /**
  * 以同一把互斥鎖管理 Room 與 Game 的共用狀態儲存。
  *
- * 所有變更皆透過 [update] 提交，使 Room → Game 等跨集合操作能在單次交易內完成。變更後的狀態同時
- * 發布到 [state]，供需要在狀態改變時反應的服務訂閱。已保存資料無法讀取時以 [markUnavailable] 拒絕所有寫入，
- * 直到下一次 [load]。
+ * - 所有變更都透過 [update] 提交，Room → Game 等跨集合操作能在單次交易內完成。
+ * - 變更後的狀態同時發布到 [state]，供需要在狀態改變時反應的服務訂閱。
+ * - 已保存資料無法讀取時，以 [markUnavailable] 拒絕所有寫入，直到下一次 [load]。
  *
- * @param historyRecordingEnabled 建立時的新場記錄預設；正式政策由伺服器組合入口套用，與儲存連線無關。
- * @property historyClock 產生歷史事件 UTC 時間戳的時鐘；事件順序仍由序號決定。
- * @property maxPendingHistoryEvents 待寫佇列的容量上限；超出時只保留序號缺口，不阻塞對局。
- * @property historyRecordingObserver 接收每次交易記錄歷史事件的耗時與事件數；null 時不量測。
- * @property tilePresentationResolver 解算每筆交易提交後的牌張呈現；null 時牌譜不含牌張呈現。
+ * @param historyRecordingEnabled 建立時的新場記錄預設。正式政策由伺服器組合入口套用，與儲存連線無關。
+ * @property historyClock 產生歷史事件 UTC 時間戳的時鐘。事件順序仍由序號決定。
+ * @property maxPendingHistoryEvents 待寫佇列的容量上限。超出時只保留序號缺口，不阻塞對局。
+ * @property historyRecordingObserver 接收每次交易記錄歷史事件的耗時與事件數，null 時不量測。
+ * @property tilePresentationResolver 解算每筆交易提交後的牌張呈現，null 時牌譜不含牌張呈現。
  * @property failureReporter 接收交易中已隔離的牌譜記錄與提交通知失敗。
  */
 class AuthoritativeStateStore(

@@ -28,27 +28,35 @@ import kotlin.uuid.toKotlinUuid
  * `/mahjongcraft room` 底下的房間與對局階段玩家指令：`join`、`leave`、`ready`、`start`、
  * `ai add`、`ai strategy`、`kick`、`config`。
  *
- * 右鍵／蹲下右鍵桌子已經是既有的建房／加入／離開互動方式，這裡提供功能相同的指令版本，作為與手勢
- * 並存的另一種操作方式，不是暫時的除錯工具，日後也不會被移除。集中在 `room` 子分類下，是因為對局
- * 階段（出牌、吃碰槓胡）之後也會有自己的一批指令，避免全部擠在 `/mahjongcraft` 根節點下。
+ * 用途：
  *
- * [join]／[leave] 需要玩家明確指定目標桌子（[TableCoordinateArgument]），不會自動選最近的一張；
- * Tab 補全只會列出玩家目前實際可互動範圍內的桌子（[ReachableMahjongTableResolver]），與右鍵桌子
- * 能生效的範圍一致。[ready]／[start]／[addAi]／[changeAiStrategy]／[showConfig] 改用玩家目前的房間
- * 歸屬解析目標房間，不需要玩家自己指定桌子——但 [ready]／[start] 仍然各自要求玩家（及 [start] 額外
- * 檢查的所有房間成員）實際在桌子的可互動範圍內，見 `MahjongTableRoomService.isPlayerReachable`。
+ * - 右鍵、蹲下右鍵桌子是既有的建房、加入、離開方式，這裡提供功能相同的指令版本。
+ * - 它是與手勢並存的正式操作方式，不是暫時的除錯工具。
+ * - 集中在 `room` 底下，是因為對局階段（出牌、吃碰槓胡）之後也會有自己的指令，避免全部擠在 `/mahjongcraft` 根節點。
  *
- * [showConfig] 不帶參數，只負責印出目前設定；訊息裡的可互動文字點擊後會觸發另一個純 client-only
- * 指令（`/mahjongcraft_client room_config screen`，見 [RoomConfigScreenCommand]）
- * 開啟設定編輯畫面，實際送出新設定走的是獨立的網路頻道，不經過這個伺服器指令。
+ * 目標桌子：
  *
- * [kick]、[changeAiStrategy] 的目標引數與 [addAi]／[changeAiStrategy] 的策略引數都用
- * [StringArgumentType.string]（而非 [StringArgumentType.word]），因為策略 key 慣用的命名空間冒號
- * 在未加引號的字串引數中不合法，Tab 補全時改用 [StringArgumentType.escapeIfRequired] 視需要自動加上
- * 引號。補全 AI 候選項目時，打進聊天框的實際文字固定是語言無關的技術代號（見
- * [RoomMemberCandidate.token]），同一個指令不因輸入者的語言而不同；真正依語言顯示的
- * 「AI 玩家 N」文字是透過 [com.mojang.brigadier.suggestion.SuggestionsBuilder.suggest] 的 tooltip
- * 參數（[Component.translatable]）呈現，由客戶端依玩家自己的語言設定解析。
+ * - [join]、[leave] 需要玩家明確指定目標桌子（[TableCoordinateArgument]），不會自動選最近的一張。
+ * - Tab 補全只列出玩家目前可互動範圍內的桌子（[ReachableMahjongTableResolver]），與右鍵桌子能生效的範圍一致。
+ * - [ready]、[start]、[addAi]、[changeAiStrategy]、[showConfig] 改用玩家目前的房間歸屬解析目標房間，不需要指定桌子。
+ * - [ready]、[start] 仍要求玩家實際在桌子的可互動範圍內，[start] 還會檢查所有房間成員，見
+ *   `MahjongTableRoomService.isPlayerReachable`。
+ *
+ * 設定：
+ *
+ * - [showConfig] 不帶參數，只印出目前設定。
+ * - 訊息裡的可互動文字點擊後，觸發用戶端指令 `/mahjongcraft_client room_config screen`（[RoomConfigScreenCommand]），開啟設定
+ *   編輯畫面。
+ * - 實際送出新設定走獨立的網路頻道，不經過這個伺服器指令。
+ *
+ * 引數：
+ *
+ * - [kick]、[changeAiStrategy] 的目標引數，以及 [addAi]、[changeAiStrategy] 的策略引數，都用 [StringArgumentType.string]，
+ *   不用 [StringArgumentType.word]。策略 key 慣用的命名空間冒號，在未加引號的引數中不合法。
+ * - Tab 補全時以 [StringArgumentType.escapeIfRequired] 視需要自動加上引號。
+ * - 補全 AI 候選時，打進聊天框的文字固定是與語言無關的代號（[RoomMemberCandidate.token]），同一個指令不因輸入者的語言而不同。
+ * - 依語言顯示的「AI 玩家 N」放在 [com.mojang.brigadier.suggestion.SuggestionsBuilder.suggest] 的 tooltip
+ *   （[Component.translatable]），由客戶端依玩家的語言解析。
  *
  * @property tableResolver 依玩家可互動範圍找出候選麻將桌。
  * @property memberCandidateResolver 依玩家目前房間列出可踢除或可更換策略的候選成員。

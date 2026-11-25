@@ -26,7 +26,7 @@ internal abstract class MahjongButton(
     narration: CreateNarration,
 ) : Button(x, y, width, height, message, onPress, narration) {
     /**
-     * 畫出按鈕；預設畫原版按鈕。
+     * 畫出按鈕。預設畫原版按鈕。
      *
      * @param context 繪製環境。
      * @param mouseX 滑鼠 X 座標。
@@ -38,7 +38,7 @@ internal abstract class MahjongButton(
     }
 
     /**
-     * 調整原版決定的提示框位置；預設不調整。
+     * 調整原版決定的提示框位置。預設不調整。
      *
      * @param base 原版的提示框定位方式。
      * @return 實際使用的提示框定位方式。

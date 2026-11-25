@@ -15,8 +15,8 @@ import net.minecraft.world.level.GameType
 /**
  * 依玩家目前實際可互動範圍，從 [TableLocationRegistry] 找出可選的麻將桌。
  *
- * 可觸距離取玩家目前與方塊互動的距離（[blockInteractionReach]），旁觀模式視同無限；距離量到整張桌子範圍最近的點，
- * 不是單一控制方塊，與右鍵桌子任何一部分的手勢一致。
+ * - 可觸距離取玩家目前與方塊互動的距離（[blockInteractionReach]），旁觀模式視同無限。
+ * - 距離量到整張桌子範圍最近的點，不是單一控制方塊，與右鍵桌子任何一部分的手勢一致。
  *
  * @property tableLocationRegistry 目前 server session 的桌子位置索引。
  */

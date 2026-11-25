@@ -52,9 +52,10 @@ class HistoryRecordingPersistenceMapper(
     fun decodePendingEvent(event: HistoryOutboxEventPersistenceDto): HistoryOutboxEvent = decodeEvent(event)
 
     /**
-     * 將歷史記錄狀態編成權威存檔 DTO；待寫事件編碼失敗時記錄序號缺口並略過該事件。
+     * 將歷史記錄狀態編成權威存檔 DTO。
      *
-     * 隔離轉移中已接受的事件不採用略過處理；這些事件的編碼錯誤會向呼叫端傳遞。
+     * - 待寫事件編碼失敗時，記錄序號缺口並略過該事件。
+     * - 隔離轉移中已接受的事件不會略過，它們的編碼錯誤會向呼叫端傳遞。
      *
      * @param state 待保存的歷史記錄狀態。
      * @param skippedEventReporter 接收編碼失敗而略過的事件與原因。
@@ -89,9 +90,10 @@ class HistoryRecordingPersistenceMapper(
     }
 
     /**
-     * 還原歷史記錄狀態；待寫事件內容解碼失敗時記錄序號缺口並略過該事件。
+     * 還原歷史記錄狀態。
      *
-     * 此處不會略過無效的場次識別碼或其他狀態欄位；這些資料的解碼錯誤會向呼叫端傳遞。
+     * - 待寫事件內容解碼失敗時，記錄序號缺口並略過該事件。
+     * - 無效的場次識別碼或其他狀態欄位不會略過，它們的解碼錯誤會向呼叫端傳遞。
      *
      * @param dto 待還原的歷史記錄狀態 DTO。
      * @param skippedEventReporter 接收解碼失敗而略過的事件與原因。

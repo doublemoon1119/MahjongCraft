@@ -10,7 +10,7 @@ import java.nio.file.Path
  * @param server 目前伺服器。
  * @param source 指令來源。
  * @param command 指令。
- * @return 指令的回傳值；指令執行失敗時為 0。
+ * @return 指令的回傳值，指令執行失敗時為 0。
  */
 fun performCommand(server: MinecraftServer, source: CommandSourceStack, command: String): Int = run {
     // 這個版本的原版不回傳指令結果，改由指令來源的回呼取得；沒有呼叫回呼時視為失敗。

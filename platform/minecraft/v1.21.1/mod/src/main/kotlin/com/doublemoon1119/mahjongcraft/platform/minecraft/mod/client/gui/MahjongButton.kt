@@ -13,10 +13,11 @@ import net.minecraft.network.chat.Component
 import java.time.Duration
 
 /**
- * 本 mod 按鈕的基底：子類別在 [renderContents] 畫按鈕、在 [adjustTooltipPositioner] 調整提示框的位置，各版本原版決定提示框
- * 位置的方式由這個類別處理。
+ * 本 mod 按鈕的基底。
  *
- * 這個版本的原版把提示框位置的決定藏在按鈕內部，因此提示框由這個類別自己保存，並以與原版相同的條件與延遲交給畫面。
+ * - 子類別在 [renderContents] 畫按鈕，在 [adjustTooltipPositioner] 調整提示框的位置。
+ * - 各版本原版決定提示框位置的方式由這個類別處理。
+ * - 這個版本的原版把提示框位置的決定藏在按鈕內部，因此提示框由這個類別自己保存，並以與原版相同的條件與延遲交給畫面。
  *
  * @param x 按鈕左界。
  * @param y 按鈕上界。
@@ -35,7 +36,7 @@ internal abstract class MahjongButton(
     onPress: OnPress,
     narration: CreateNarration,
 ) : Button(x, y, width, height, message, onPress, narration) {
-    /** 這個按鈕的提示框；沒有時為 null。 */
+    /** 這個按鈕的提示框，沒有時為 null。 */
     private var buttonTooltip: Tooltip? = null
 
     /** 開始指向按鈕後到顯示提示框的延遲。 */
@@ -48,7 +49,7 @@ internal abstract class MahjongButton(
     private var tooltipWantedSinceMillis = 0L
 
     /**
-     * 畫出按鈕；預設畫原版按鈕。
+     * 畫出按鈕。預設畫原版按鈕。
      *
      * @param context 繪製環境。
      * @param mouseX 滑鼠 X 座標。
@@ -60,7 +61,7 @@ internal abstract class MahjongButton(
     }
 
     /**
-     * 調整原版決定的提示框位置；預設不調整。
+     * 調整原版決定的提示框位置。預設不調整。
      *
      * @param base 原版的提示框定位方式。
      * @return 實際使用的提示框定位方式。

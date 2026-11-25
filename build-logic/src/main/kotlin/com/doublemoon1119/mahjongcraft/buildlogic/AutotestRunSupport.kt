@@ -8,15 +8,17 @@ import org.gradle.api.services.BuildServiceParameters
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.TaskProvider
 
-/** 限制同時執行的自動測試遊戲數量；本身不保存任何狀態，只用來讓 Gradle 排隊。 */
+/** 限制同時執行的自動測試遊戲數量。本身不保存狀態，只讓 Gradle 排隊。 */
 abstract class AutotestSlotsService : BuildService<BuildServiceParameters.None>
 
 /**
- * 接上用戶端自動測試：開發用戶端啟動前由 [PrepareAutotestClientTask] 寫好啟動時就要生效的選項，遵守同時執行數的限制，並
- * 登記報告的位置給總任務 `autotest` 彙整。沒有設定 `mahjongcraftAutotest` 時不做任何事。
+ * 接上用戶端自動測試。
  *
- * 建置中有這個模組的範例模組時，總任務只跑範例的用戶端測試：範例的用戶端也載入本體並執行同樣的步驟，再多測擴充的內容。
- * 這個模組的開發用戶端仍可單獨執行自動測試。
+ * - 開發用戶端啟動前，由 [PrepareAutotestClientTask] 寫好啟動時就要生效的選項。
+ * - 遵守同時執行數的限制，並把報告位置登記給總任務 `autotest` 彙整。
+ * - 建置中有這個模組的範例模組時，總任務只跑範例的用戶端：範例也載入本體、執行同樣的步驟，再多測擴充的內容。
+ * - 這個模組的開發用戶端仍可單獨執行自動測試。
+ * - 沒有設定 `mahjongcraftAutotest` 時不做任何事。
  *
  * @param clientTask 開發用戶端的執行任務名稱。
  */
@@ -38,12 +40,14 @@ fun Project.registerAutotestClientTasks(clientTask: String) {
 }
 
 /**
- * 接上伺服器自動測試的任務：`autotestServer` 先執行一般的開發伺服器（第一段），再執行讀回世界的第二段伺服器；第一段開機前由
- * [PrepareAutotestServerTask] 準備測試專用的執行目錄。兩段都遵守同時執行數的限制，報告的位置登記給總任務 `autotest` 彙整。
- * 沒有設定 `mahjongcraftAutotest` 時不做任何事。
+ * 接上伺服器自動測試的任務 `autotestServer`。
  *
- * Gradle 屬性 `mahjongcraftAutotestServerPort` 指定起始連接埠，沒有指定時為 25599；每個載入器模組使用起始連接埠加上所屬
- * target 在整份 catalog 中的位置（[targetIndex]），一起執行的伺服器不會搶同一個連接埠。
+ * - 先執行一般的開發伺服器（第一段），再執行讀回世界的第二段伺服器。
+ * - 第一段開機前，由 [PrepareAutotestServerTask] 準備測試專用的執行目錄。
+ * - 兩段都遵守同時執行數的限制，報告位置登記給總任務 `autotest` 彙整。
+ * - 連接埠：Gradle 屬性 `mahjongcraftAutotestServerPort` 指定起始值，預設 25599。每個載入器模組再加上所屬 target 在整份
+ *   catalog 中的位置（[targetIndex]），一起執行的伺服器不會搶同一個連接埠。
+ * - 沒有設定 `mahjongcraftAutotest` 時不做任何事。
  *
  * @param startTask 第一段，也就是一般開發伺服器的執行任務名稱。
  * @param resumeTask 第二段伺服器的執行任務名稱。
@@ -79,8 +83,10 @@ fun Project.registerAutotestServerTasks(startTask: String, resumeTask: String) {
 }
 
 /**
- * 讓一個遊戲執行任務遵守同時執行數的限制，並在總任務開始之後才執行；遊戲以非零代碼結束時不中斷建置，由總報告記為沒有報告，
- * 其他目標照常執行。
+ * 讓一個遊戲執行任務排進自動測試。
+ *
+ * - 遵守同時執行數的限制，並在總任務開始之後才執行。
+ * - 遊戲以非零代碼結束時不中斷建置：總報告記為沒有報告，其他目標照常執行。
  *
  * @param taskName 遊戲執行任務名稱。
  */
@@ -108,7 +114,9 @@ private fun Project.autotestTarget(): TaskProvider<AutotestTargetTask> = if (AUT
 }
 
 /**
- * 整個建置共用的同時執行數限制。Gradle 屬性 `mahjongcraftAutotestParallel` 指定同時執行的遊戲數量，沒有指定時為 2。
+ * 整個建置共用的同時執行數限制。
+ *
+ * - 數量由 Gradle 屬性 `mahjongcraftAutotestParallel` 指定，預設 2。
  *
  * @return 共用的限制服務。
  * @throws GradleException `mahjongcraftAutotestParallel` 不是正整數時拋出。

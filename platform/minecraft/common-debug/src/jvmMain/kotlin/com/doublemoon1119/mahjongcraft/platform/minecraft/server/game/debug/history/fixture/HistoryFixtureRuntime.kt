@@ -10,7 +10,10 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.Headl
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 
 /**
- * 產生測試牌譜的無頭對局；對局本身與一般產生的牌譜相同，另外提供腳本是否照順序執行完的檢查。
+ * 產生測試牌譜的無頭對局。
+ *
+ * - 對局本身與一般產生的牌譜相同。
+ * - 另外提供檢查：腳本是否照順序執行完。
  *
  * @property runtime 實際的無頭對局。
  * @property script 這次產生的腳本進度。

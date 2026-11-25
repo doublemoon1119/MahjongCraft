@@ -8,9 +8,11 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * 依序觸發和牌、結算等演出的 debug 預覽，播到固定的畫面時從上方對準預覽截圖，等每個預覽播完、清掉自己的實體後才觸發下一個。
+ * 依序觸發和牌、結算等演出的 debug 預覽並截圖。
  *
- * 預覽不屬於任何牌局，在還沒有牌局的世界中執行，世界中本 mod 的實體只會因為預覽而增減。
+ * - 播到固定的畫面時，從上方對準預覽截圖。
+ * - 等每個預覽播完、清掉自己的實體後，才觸發下一個。
+ * - 預覽不屬於任何牌局，在還沒有牌局的世界中執行，所以世界中本 mod 的實體只會因為預覽而增減。
  */
 internal object AutotestPresentationsStep : AutotestStep {
     override val id: String = "presentations"

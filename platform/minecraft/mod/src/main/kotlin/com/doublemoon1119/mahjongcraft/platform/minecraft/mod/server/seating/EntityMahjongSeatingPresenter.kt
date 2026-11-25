@@ -21,9 +21,10 @@ internal class EntityMahjongSeatingPresenter(
     private val characters: AiCharacterBindings,
 ) : MahjongSeatingPresenter {
     /**
-     * 依完整席位順序解析玩家或角色，不把離線或暫時沒有角色的 AI 擠到其他席位。
+     * 依完整席位順序解析玩家或角色。
      *
-     * 入座前先清除上一場留下的角色，玩家換到的新席位不會被已結束場次的角色擋住。
+     * - 不把離線或暫時沒有角色的 AI 擠到其他席位。
+     * - 入座前先清除上一場留下的角色，玩家換到的新席位不會被已結束場次的角色擋住。
      */
     override fun present(tableId: Uuid, seatedPlayerIds: List<Uuid>) {
         characters.releaseStale()

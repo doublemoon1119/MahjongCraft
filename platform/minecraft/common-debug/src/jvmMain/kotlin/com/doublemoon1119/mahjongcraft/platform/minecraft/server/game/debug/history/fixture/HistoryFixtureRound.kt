@@ -7,11 +7,11 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
  *
  * 配牌、摸牌與保留牌只寫出需要的部分，其餘位置由同一副牌中剩下的牌依原本的洗牌順序補上。
  *
- * @property dice 開局程序依序擲出的骰子點數；每次擲骰依序取用需要的顆數。
+ * @property dice 開局程序依序擲出的骰子點數。每次擲骰依序取用需要的顆數。
  * @property hands 各家的配牌，以自風區分。
  * @property draws 配牌之後依序從牌山摸到的牌，不分是哪一家摸的。
  * @property reserved 保留牌區中指定位置的牌，位置與規則的保留牌順序相同，例如日麻王牌的嶺上牌與寶牌指示牌。
- * @property steps 依序執行的決定；沒寫到的時候輪到自己就打出剛摸到的牌，回應一律放過。
+ * @property steps 依序執行的決定。沒寫到的時候，輪到自己就打出剛摸到的牌，回應一律放過。
  */
 data class HistoryFixtureRound(
     val dice: List<Int>,

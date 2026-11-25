@@ -10,9 +10,10 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
 /**
- * 替本機玩家開啟自動操作，讓這一局在沒有人操作的情況下打到結束，截圖並檢查摸打牌的聲音。需要前面步驟開好的牌局。
+ * 替本機玩家開啟自動操作，讓這一局在沒有人操作的情況下打到結束，截圖並檢查摸打牌的聲音。
  *
- * 四家都自動操作時，每一局一定以和牌或流局結束。
+ * - 需要前面步驟開好的牌局。
+ * - 四家都自動操作時，每一局一定以和牌或流局結束。
  */
 internal object AutotestPlayStep : AutotestStep {
     override val id: String = "play"

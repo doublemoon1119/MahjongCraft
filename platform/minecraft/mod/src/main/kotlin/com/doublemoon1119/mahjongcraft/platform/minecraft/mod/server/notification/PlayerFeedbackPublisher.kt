@@ -34,10 +34,10 @@ import kotlin.uuid.Uuid
 /**
  * 使用 Minecraft 呈現一次性玩家回饋。
  *
- * 目前所有回饋均轉成本地化 chat 訊息。每個 exhaustive `when` 分支可執行零到多個版本特有效果，
- * 不要求回饋與 translation key 一對一。若其他版本能使用新的 bar、title、音效或多種效果並行，
- * 可以在自己的實作中重新解釋同一個 [MinecraftPlayerFeedback]，不必讓共用模型列出所有版本 UI API
- * 的聯集。
+ * - 目前所有回饋都轉成本地化的聊天訊息。
+ * - 每個 `when` 分支可執行零到多個版本特有的效果，不要求回饋與 translation key 一對一。
+ * - 其他版本能使用新的 bar、title、音效或多種效果並行時，可以在自己的實作中重新解釋同一個 [MinecraftPlayerFeedback]，
+ *   不必讓共用模型列出所有版本 UI API 的聯集。
  *
  * @property serverHolder 目前伺服器與有效收件玩家。
  * @property playerIdentities 真人最後已知普通名稱來源。

@@ -34,10 +34,10 @@ import kotlin.uuid.toKotlinUuid
  * @property position 牌桌控制方塊的位置。
  */
 internal class AutotestServerTable(val rule: String, val botName: String, val position: BlockPos) {
-    /** 牌桌識別碼；放好牌桌之前為 null。 */
+    /** 牌桌識別碼，放好牌桌之前為 null。 */
     var tableId: Uuid? = null
 
-    /** 機器人站在牌桌前方的位置；不在任何一張測試牌桌的範圍內，所以機器人不會擋住放牌桌。 */
+    /** 機器人站在牌桌前方的位置。不在任何一張測試牌桌的範圍內，所以機器人不會擋住放牌桌。 */
     val standingPosition: Vec3
         get() = Vec3(position.x + 0.5, position.y.toDouble(), position.z - 2.5)
 
@@ -146,7 +146,10 @@ internal class AutotestServerTable(val rule: String, val botName: String, val po
         suspend fun isWaitingRoom(koin: Koin, tableId: Uuid): Boolean = koin.get<RoomRepository>().getRoom(tableId) != null && koin.get<GameRepository>().getGame(tableId) == null
 
         /**
-         * 牌局進度的摘要：局位、莊家、輪到誰、牌山張數、捨牌順序，以及各家的分數、捨牌張數與手牌；重新讀回後應該完全相同。
+         * 牌局進度的摘要，重新讀回後應該完全相同。
+         *
+         * - 局位、莊家、輪到誰、牌山張數、捨牌順序。
+         * - 各家的分數、捨牌張數與手牌。
          *
          * @param game 牌局。
          * @return 摘要文字。

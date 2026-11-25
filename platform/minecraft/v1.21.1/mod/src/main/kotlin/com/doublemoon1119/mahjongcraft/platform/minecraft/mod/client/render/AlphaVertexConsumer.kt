@@ -4,7 +4,10 @@ import com.mojang.blaze3d.vertex.VertexConsumer
 import kotlin.math.roundToInt
 
 /**
- * 把每個頂點的不透明度乘上固定比例後交給原本的緩衝，其他資料原樣傳遞；搭配半透明圖層畫出淡化的模型。
+ * 把每個頂點的不透明度乘上固定比例後交給原本的緩衝。
+ *
+ * - 其他資料原樣傳遞。
+ * - 搭配半透明圖層畫出淡化的模型。
  *
  * @property delegate 原本的頂點緩衝。
  * @property alpha 0 到 1 之間的不透明度比例。

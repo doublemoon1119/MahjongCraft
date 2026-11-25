@@ -26,7 +26,7 @@ class LangKeyUsageTest {
         assertEquals(listOf("item.mahjongcraft.missing"), unusedLangKeys(keys, literals, "mahjongcraft"))
     }
 
-    /** 依標籤 ID 組成的標籤名稱，只要完整標籤 ID 出現即可；path 中的 `/` 在 key 裡寫成 `.`。 */
+    /** 依標籤 ID 組成的標籤名稱，只要完整標籤 ID 出現就算有使用。path 中的 `/` 在 key 裡寫成 `.`。 */
     @Test
     fun `tag names accept the full tag id`() {
         val keys = listOf(

@@ -17,7 +17,8 @@ interface ClientPacketTransport {
     /**
      * 登記用戶端收到這個頻道的封包時的處理。
      *
-     * [receiver] 依載入器在網路執行緒或用戶端主執行緒上呼叫，封包內容只在呼叫期間有效。
+     * - [receiver] 依載入器在網路執行緒或用戶端主執行緒上呼叫。
+     * - 封包內容只在呼叫期間有效。
      *
      * @param channelId 頻道識別碼。
      * @param receiver 收到送來封包的連線與封包內容。

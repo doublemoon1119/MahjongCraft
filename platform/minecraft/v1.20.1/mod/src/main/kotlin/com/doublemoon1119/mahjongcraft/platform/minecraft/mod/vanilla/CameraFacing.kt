@@ -11,7 +11,7 @@ import org.joml.Quaternionf
 fun EntityRenderDispatcher.cameraFacingRotation(): Quaternionf = cameraFacingRotation(cameraOrientation())
 
 /**
- * 暫時指定面向鏡頭的轉向，之後 [cameraFacingRotation] 回傳它；用於畫面中的場景。
+ * 暫時指定面向鏡頭的轉向，之後 [cameraFacingRotation] 回傳它。用於畫面中的場景。
  *
  * @param rotation 面向鏡頭的轉向。
  */

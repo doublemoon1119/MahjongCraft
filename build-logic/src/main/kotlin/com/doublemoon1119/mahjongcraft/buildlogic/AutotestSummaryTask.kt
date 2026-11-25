@@ -20,10 +20,12 @@ import org.gradle.work.DisableCachingByDefault
 import java.io.File
 
 /**
- * 總任務 `autotest` 的總報告：讀取這次執行期間各目標寫出的最新報告，彙整成一份 Markdown，任何報告不是通過或沒有報告時讓建置失敗。
+ * 總任務 `autotest` 的總報告。
  *
- * 只採用在 [startFile] 記下的時間之後開始的報告，舊的報告記為沒有報告。總報告寫在 [outputRoot] 底下以開始時間命名的資料夾，
- * 只保留最近 [keep] 份。
+ * - 讀取這次執行期間各目標寫出的最新報告，彙整成一份 Markdown。
+ * - 只採用在 [startFile] 記下的時間之後開始的報告，較舊的記為沒有報告。
+ * - 任何報告不是通過，或沒有報告時，讓建置失敗。
+ * - 總報告寫在 [outputRoot] 底下以開始時間命名的資料夾，只保留最近 [keep] 份。
  *
  * @property reportRoots 報告名稱對報告根資料夾（裡面有 `latest.txt`）的絕對路徑。
  * @property startFile 總任務開始時記下開始時間的檔案。
@@ -44,7 +46,7 @@ abstract class AutotestSummaryTask : DefaultTask() {
     @get:Internal
     abstract val keep: Property<Int>
 
-    /** 寫出總報告；有任何報告不是通過或沒有報告時讓建置失敗。 */
+    /** 寫出總報告。有任何報告不是通過，或沒有報告時，讓建置失敗。 */
     @TaskAction
     fun summarize() {
         val startedAt = startFile.get().asFile.readText().trim()
@@ -104,7 +106,7 @@ internal object AutotestSummary {
     fun isReportFolder(name: String): Boolean = FOLDER_NAME.matches(name)
 
     /**
-     * 讀取一個目標最新的報告；不是在 [startedAt] 之後開始的報告當作沒有報告。
+     * 讀取一個目標最新的報告。不是在 [startedAt] 之後開始的報告，當作沒有報告。
      *
      * @param label 報告名稱。
      * @param root 報告根資料夾，裡面有 `latest.txt`。

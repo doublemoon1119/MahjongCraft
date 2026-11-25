@@ -71,7 +71,7 @@ class MahjongAchievementCriterion : SimpleCriterionTrigger<MahjongAchievementCri
         val statisticId: Optional<String>,
         val atLeast: Optional<Int>,
     ) {
-        /** 轉成條件內容；有統計 ID 卻沒有門檻、或內容不合法時拋出例外。 */
+        /** 轉成條件內容。有統計 ID 卻沒有門檻，或內容不合法時拋出例外。 */
         fun toCondition(): AchievementCondition = AchievementCondition(
             achievementIds = achievementIds.toCollection(linkedSetOf()),
             ruleModuleId = ruleModuleId.orElse(null),
@@ -137,7 +137,7 @@ class MahjongAchievementCriterion : SimpleCriterionTrigger<MahjongAchievementCri
         }
 
         /**
-         * 解析條件 JSON；欄位缺漏或格式錯誤時拋出例外，讓原版載入流程略過該進度並記錄原因。
+         * 解析條件 JSON。欄位缺漏或格式錯誤時拋出例外，讓原版載入流程略過該進度並記錄原因。
          *
          * @param obj 進度 JSON 的 `conditions` 物件。
          * @return 條件內容。

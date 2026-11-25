@@ -9,8 +9,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.T
 /**
  * 第三方 mod 登記直接使用 Minecraft 實體、方塊等原生內容的整合契約，例如需要自己的 entity 才能呈現的規則桌面物件種類。
  *
- * 發現方式與 `MinecraftMahjongExtension` 相同：同一個類別同時實作 `MahjongExtension` 與這個介面即可，
- * 載入器找出的 `MahjongExtension` 中，篩選出有實作這個介面的部分。
+ * 發現方式與 `MinecraftMahjongExtension` 相同：
+ *
+ * - 同一個類別同時實作 `MahjongExtension` 與這個介面即可。
+ * - 從載入器找出的 `MahjongExtension` 中，篩選出有實作這個介面的部分。
  */
 interface NativeMahjongExtension {
     /**

@@ -10,7 +10,7 @@ import net.minecraft.world.level.levelgen.WorldDimensions
 import net.minecraft.world.level.levelgen.WorldOptions
 
 /**
- * 建立新的單人世界並開始進入；進入的過程由原版的載入畫面接手。
+ * 建立新的單人世界並開始進入。進入的過程由原版的載入畫面接手。
  *
  * @param client 目前客戶端。
  * @param levelId 存檔名稱。
@@ -31,7 +31,7 @@ fun createFreshWorld(
 }
 
 /**
- * 進入已經存在的單人世界；進入的過程由原版的載入畫面接手。
+ * 進入已經存在的單人世界。進入的過程由原版的載入畫面接手。
  *
  * @param client 目前客戶端。
  * @param levelId 存檔名稱。

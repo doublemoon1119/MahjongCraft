@@ -6,7 +6,7 @@ import net.minecraft.client.multiplayer.ClientPacketListener
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.resources.ResourceLocation
 
-/** 以 Fabric API 的用戶端網路功能實作 [ClientPacketTransport]；封包型別由 [FabricChannelPayloads] 登記。 */
+/** 以 Fabric API 的用戶端網路功能實作 [ClientPacketTransport]。封包型別由 [FabricChannelPayloads] 登記。 */
 object FabricClientPacketTransport : ClientPacketTransport {
     override fun sendToServer(channelId: ResourceLocation, buf: FriendlyByteBuf) {
         ClientPlayNetworking.send(FabricChannelPayloads.wrap(channelId, buf))

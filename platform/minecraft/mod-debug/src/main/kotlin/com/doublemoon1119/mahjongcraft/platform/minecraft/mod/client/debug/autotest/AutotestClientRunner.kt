@@ -29,12 +29,13 @@ import kotlin.time.TimeSource
 /**
  * 用戶端自動測試的執行者：遊戲到主選單後依序執行各步驟，寫出報告並關閉遊戲。
  *
- * 報告寫在遊戲資料夾的 `autotest/<開始時間>/`，包含 `report.md`、`report.json` 與截圖；`autotest/latest.txt` 記錄最近一次的
- * 資料夾名稱。只保留最近幾次的報告（[AutotestReportRetention]），更舊的在開始時刪掉。遊戲在測試途中被關閉時，仍寫出報告，
- * 未完成的步驟記為中止。
+ * - 報告寫在遊戲資料夾的 `autotest/<開始時間>/`，包含 `report.md`、`report.json` 與截圖。
+ * - `autotest/latest.txt` 記錄最近一次的資料夾名稱。
+ * - 只保留最近幾次的報告（[AutotestReportRetention]），更舊的在開始時刪掉。
+ * - 遊戲在測試途中被關閉時，仍寫出報告，未完成的步驟記為中止。
  *
  * @property selection 要執行的步驟。
- * @property steps 全部步驟，依執行順序；第一個步驟建立並進入測試世界，一律執行。
+ * @property steps 全部步驟，依執行順序。第一個步驟建立並進入測試世界，一律執行。
  */
 internal class AutotestClientRunner(
     private val selection: AutotestSelection,
@@ -49,7 +50,7 @@ internal class AutotestClientRunner(
     /** 已完成的步驟結果。 */
     private val results = mutableListOf<AutotestStepResult>()
 
-    /** 正在執行的步驟；沒有時為 null。 */
+    /** 正在執行的步驟，沒有時為 null。 */
     @Volatile
     private var running: String? = null
 
@@ -67,7 +68,10 @@ internal class AutotestClientRunner(
     private lateinit var outputDirectory: Path
 
     /**
-     * 掛上用戶端事件；遊戲第一次到主選單、而且啟動時的資源載入已經結束時開始執行。第一次啟動的無障礙設定引導會被略過。
+     * 掛上用戶端事件。
+     *
+     * - 遊戲第一次到主選單、而且啟動時的資源載入已經結束時，開始執行。
+     * - 第一次啟動的無障礙設定引導會被略過。
      *
      * @param events 登記用戶端事件用的事件來源。
      */
@@ -115,7 +119,7 @@ internal class AutotestClientRunner(
     }
 
     /**
-     * 列出了不存在的步驟時的失敗結果，例如拼錯名稱；否則測試只執行進入世界就回報通過。
+     * 列出了不存在的步驟時的失敗結果，例如拼錯名稱。不檢查的話，測試只會執行進入世界就回報通過。
      *
      * @return 失敗結果；列出的步驟都存在時為 null。
      */
@@ -135,8 +139,10 @@ internal class AutotestClientRunner(
     }
 
     /**
-     * 固定影響截圖的畫面設定：視野、介面縮放，並關掉視角搖晃、雲與新手教學提示。自動測試使用獨立的執行目錄，設定存在那裡，
-     * 不影響平常的開發執行。
+     * 固定影響截圖的畫面設定。
+     *
+     * - 固定視野、介面縮放，並關掉視角搖晃、雲與新手教學提示。
+     * - 設定存在自動測試獨立的執行目錄，不影響平常的開發執行。
      *
      * @param client 目前客戶端。
      */
@@ -153,7 +159,7 @@ internal class AutotestClientRunner(
     }
 
     /**
-     * 執行一個步驟並記錄結果；步驟拋出的例外記為失敗，不中斷之後的步驟。
+     * 執行一個步驟並記錄結果。步驟拋出的例外記為失敗，不中斷之後的步驟。
      *
      * @param client 目前客戶端。
      * @param step 要執行的步驟。
@@ -180,7 +186,7 @@ internal class AutotestClientRunner(
     }
 
     /**
-     * 寫出報告；只寫一次。
+     * 寫出報告，只寫一次。
      *
      * @param aborted 是否因遊戲在測試途中關閉而寫出。
      */

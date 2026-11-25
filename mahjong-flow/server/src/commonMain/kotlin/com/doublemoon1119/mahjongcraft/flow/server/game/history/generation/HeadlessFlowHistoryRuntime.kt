@@ -139,12 +139,12 @@ class HeadlessFlowHistoryRuntime private constructor(
          *
          * @param scenario 對局規則與場長情境。
          * @param registries 執行環境已完成登記的規則整合。
-         * @param store 承載這場對局的權威來源；多場對局可共用同一個來源，如同正式伺服器上同時進行的多桌。
-         * @param stepTimer 累計 AI 視角快照、策略思考與快照同步耗時，以及過期 AI 決策數的計時器；null 時不量測。歷史記錄耗時由
-         *   [store] 自己的觀察者量測。
+         * @param store 承載這場對局的權威來源。多場對局可共用同一個來源，如同正式伺服器上同時進行的多桌。
+         * @param stepTimer 累計 AI 視角快照、策略思考與快照同步耗時，以及過期 AI 決策數的計時器，null 時不量測。
+         *   歷史記錄耗時由 [store] 自己的觀察者量測。
          * @param decisionExecutor 呼叫 AI 策略的執行器，由呼叫端決定排程方式與擴充失敗判斷。
-         * @param matchSeed 指定對局種子以重現同一場對局；null 時以安全亂數產生。
-         * @param roundRandomnessSource 每一局的亂數來源；固定內容的對局可指定骰子與牌山排列。
+         * @param matchSeed 指定對局種子以重現同一場對局，null 時以安全亂數產生。
+         * @param roundRandomnessSource 每一局的亂數來源。固定內容的對局可指定骰子與牌山排列。
          * @param aiStrategyKey 每個座位使用的 AI 策略，必須已登記在 [registries] 的策略登記中。
          * @return 已開局且可逐步推進的 runtime。
          */

@@ -7,9 +7,10 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
 /**
- * 自動測試報告的保留規則：只保留最近幾次的報告資料夾，更舊的刪掉。
+ * 自動測試報告的保留規則。
  *
- * 只處理報告根目錄底下、名稱符合報告時間格式的資料夾；其他檔案與資料夾不動。
+ * - 只保留最近幾次的報告資料夾，更舊的刪掉。
+ * - 只處理報告根目錄底下、名稱符合報告時間格式的資料夾，其他檔案與資料夾不動。
  */
 internal object AutotestReportRetention {
     /** 開發執行以這個系統屬性傳入要保留的報告次數。 */

@@ -18,11 +18,12 @@ import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 
 /**
- * 使用 Minecraft entity 呈現多選選牌確認面板。跟 [EntityMahjongRoundInfoPresenter] 不同，這裡
- * 一次要生成／清除一整組 [MahjongTileTableLayout.TILE_SELECTION_CONFIRM_SEGMENT_COUNT] 個 entity
- * （見 `MahjongTileSelectionConfirmEntity` 類別 KDoc「多個 instance 拼湊」的設計），所以每次 [present]
- * 一律先清掉這位玩家既有的整組、再重新生成一組全新的，不採用「找到既有的就更新」模式——這個決策目前
- * 只在多選選牌開始時觸發一次，不會頻繁呼叫，重新生成的成本可以忽略。
+ * 使用 Minecraft entity 呈現多選選牌確認面板。
+ *
+ * - 一組面板由 [MahjongTileTableLayout.TILE_SELECTION_CONFIRM_SEGMENT_COUNT] 個 entity 拼成，見
+ *   `MahjongTileSelectionConfirmEntity` 的 KDoc。
+ * - 與 [EntityMahjongRoundInfoPresenter] 不同，每次 [present] 一律先清掉這位玩家既有的整組，再生成一組全新的，不找既有的來更新。
+ * - 這個呈現只在多選選牌開始時觸發一次，不會頻繁呼叫，重新生成的成本可以忽略。
  *
  * @property serverHolder 取得目前伺服器世界。
  * @property spawnGateway 透過平台入口生成面板 entity。

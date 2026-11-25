@@ -4,8 +4,10 @@ import com.mojang.serialization.MapCodec
 import net.minecraft.world.level.block.Block
 
 /**
- * 本 mod 一般方塊的基底：右鍵互動覆寫原版的 `useWithoutItem`，原版只在主手右鍵時呼叫。各版本專屬的要求（例如方塊 codec）由
- * 這個類別處理。
+ * 本 mod 一般方塊的基底。
+ *
+ * - 右鍵互動覆寫原版的 `useWithoutItem`，原版只在主手右鍵時呼叫它。
+ * - 各版本專屬的要求（例如方塊 codec）由這個類別處理。
  *
  * @param properties 原版方塊設定。
  */

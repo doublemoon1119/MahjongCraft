@@ -8,11 +8,11 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.work.DisableCachingByDefault
 
 /**
- * 伺服器自動測試第一段開機前，準備測試專用的執行目錄：刪掉上次的測試世界，寫入固定的伺服器設定，並代執行者同意 Minecraft
- * EULA。
+ * 伺服器自動測試第一段開機前，準備測試專用的執行目錄。
  *
- * 只在帶 `mahjongcraftAutotest` 的伺服器自動測試前執行，只動測試專用的執行目錄；平常的 `run/server` 不受影響。寫入 EULA
- * 同意時一律在建置輸出印出警告，讓每位執行測試的人都知道這件事。
+ * - 刪掉上次的測試世界，寫入固定的伺服器設定，並代執行者同意 Minecraft EULA。
+ * - 只在帶 `mahjongcraftAutotest` 的伺服器自動測試前執行，只動測試專用的執行目錄，平常的 `run/server` 不受影響。
+ * - 寫入 EULA 同意時，一律在建置輸出印出警告，讓每位執行測試的人都知道。
  *
  * @property runDirectory 伺服器自動測試的執行目錄。
  * @property port 伺服器使用的連接埠。

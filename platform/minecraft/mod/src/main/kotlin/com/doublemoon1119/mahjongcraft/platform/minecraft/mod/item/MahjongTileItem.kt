@@ -18,10 +18,11 @@ import net.minecraft.world.level.Level
 import org.koin.core.context.GlobalContext
 
 /**
- * 麻將牌 item：單一 item 類型代表所有牌面，實際牌面由物品保存的牌面名稱決定（對應 [allTileAssetKeys]），讀寫見
- * [MahjongTileItemStackData]。
+ * 麻將牌 item。
  *
- * 非蹲下右鍵循環切換牌面；蹲下對方塊右鍵則放置保留目前牌面的 [MahjongTileEntity]。
+ * - 單一 item 類型代表所有牌面，實際牌面由物品保存的牌面名稱決定（對應 [allTileAssetKeys]），讀寫見 [MahjongTileItemStackData]。
+ * - 不蹲下右鍵：循環切換牌面。
+ * - 蹲下對方塊右鍵：放置保留目前牌面的 [MahjongTileEntity]。
  *
  * @param settings 原版物品設定。
  */

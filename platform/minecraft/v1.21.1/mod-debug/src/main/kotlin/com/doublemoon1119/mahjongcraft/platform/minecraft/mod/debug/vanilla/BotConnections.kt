@@ -21,7 +21,8 @@ fun newServerPlayer(server: MinecraftServer, profile: GameProfile): ServerPlayer
 /**
  * 經原版的玩家加入流程讓玩家進入伺服器。需要在伺服器主執行緒上呼叫。
  *
- * 真人玩家在加入前先經過設定階段；機器人沒有用戶端，直接以初次加入的連線資料進入遊戲階段。
+ * - 真人玩家在加入前先經過設定階段。
+ * - 機器人沒有用戶端，直接以初次加入的連線資料進入遊戲階段。
  *
  * @param server 目前伺服器。
  * @param connection 玩家的連線。
@@ -32,7 +33,7 @@ fun placeNewPlayer(server: MinecraftServer, connection: Connection, player: Serv
 }
 
 /**
- * 送往玩家的封包是連線確認時，代替用戶端回覆；其他封包不處理。
+ * 送往玩家的封包是連線確認時，代替用戶端回覆。其他封包不處理。
  *
  * @param player 這條連線的玩家。
  * @param packet 送往玩家的封包。

@@ -11,7 +11,8 @@ import java.util.concurrent.CopyOnWriteArrayList
 /**
  * 記下本 mod 在自動測試期間寫出的錯誤紀錄，讓報告檢查伺服器沒有記錄任何錯誤。
  *
- * 只收集名稱以本 mod 開頭的 logger 寫出的 ERROR 以上的紀錄；紀錄照常寫進伺服器的 log。
+ * - 只收集名稱以本 mod 開頭的 logger 寫出的 ERROR 以上的紀錄。
+ * - 紀錄照常寫進伺服器的 log。
  */
 internal object AutotestErrorLog {
     /** 收集到的錯誤，依發生順序，每筆是 logger 名稱與訊息。 */
@@ -20,7 +21,7 @@ internal object AutotestErrorLog {
     /** 是否已經掛上收集器。 */
     private var installed = false
 
-    /** 掛上收集器；只掛一次。 */
+    /** 掛上收集器，只掛一次。 */
     @Synchronized
     fun install() {
         if (installed) return

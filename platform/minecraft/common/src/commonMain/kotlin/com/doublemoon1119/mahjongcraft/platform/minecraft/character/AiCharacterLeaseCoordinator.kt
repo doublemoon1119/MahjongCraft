@@ -159,7 +159,7 @@ class AiCharacterLeaseCoordinator<R>(
     }
 
     /**
-     * 只保留目前權威對局中的 AI 角色；同一張桌子上一場的角色也會清除。
+     * 只保留目前權威對局中的 AI 角色。同一張桌子上一場的角色也會清除。
      *
      * @param games 目前全部的權威對局。
      * @return 這些對局應有的角色身分。

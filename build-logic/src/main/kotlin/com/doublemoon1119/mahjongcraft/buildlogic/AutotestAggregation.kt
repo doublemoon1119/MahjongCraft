@@ -3,12 +3,13 @@ package com.doublemoon1119.mahjongcraft.buildlogic
 import org.gradle.api.Project
 
 /**
- * 在根專案登記總任務 `autotest`：在同一次建置中執行所選目標全部模組的自動測試（[AutotestTargetTask]），同時執行的遊戲數量受
- * `mahjongcraftAutotestParallel` 限制，全部結束後由 [AutotestSummaryTask] 寫出總報告。沒有設定 `mahjongcraftAutotest` 時不做
- * 任何事。
+ * 在根專案登記總任務 `autotest`。
  *
- * 總報告寫在 `build/reports/autotest/<開始時間>/summary.md`，只保留最近幾份；保留份數與各目標的報告相同，由
- * `mahjongcraftAutotestKeep` 指定，沒有指定時為 10。
+ * - 在同一次建置中執行所選目標全部模組的自動測試（[AutotestTargetTask]）。
+ * - 同時執行的遊戲數量受 `mahjongcraftAutotestParallel` 限制。
+ * - 全部結束後由 [AutotestSummaryTask] 寫出總報告，位置是 `build/reports/autotest/<開始時間>/summary.md`。
+ * - 總報告只保留最近幾份，份數與各目標的報告相同，由 `mahjongcraftAutotestKeep` 指定，預設 10。
+ * - 沒有設定 `mahjongcraftAutotest` 時不做任何事。
  */
 fun Project.registerAutotestAggregate() {
     if (autotestSystemProperties().isEmpty()) return

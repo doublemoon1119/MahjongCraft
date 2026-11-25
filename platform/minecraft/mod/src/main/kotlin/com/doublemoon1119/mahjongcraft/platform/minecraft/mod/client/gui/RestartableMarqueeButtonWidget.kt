@@ -119,7 +119,10 @@ internal class RestartableMarqueeButtonWidget private constructor(
     }
 
     /**
-     * 繪製按鈕文字；文字過寬時截斷並加上省略號，游標停留期間改為播放跑馬燈。
+     * 繪製按鈕文字。
+     *
+     * - 文字過寬時截斷並加上省略號。
+     * - 游標停留期間改為播放跑馬燈。
      *
      * @param context 本幀繪製環境。
      * @param text 欲繪製的文字。

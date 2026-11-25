@@ -28,8 +28,11 @@ import kotlin.uuid.Uuid
 /**
  * 開始遊戲的實例化用例。
  *
- * 負責將一個已準備完成的房間轉換為進行中的對局：驗證房間狀態、初始化桌況、
- * 在 [AuthoritativeStateStore] 的單次交易內把識別碼從 Room 移至 Game，並同步快照與廣播開局事件。
+ * 把一個已準備完成的房間轉換為進行中的對局：
+ *
+ * - 驗證房間狀態、初始化桌況。
+ * - 在 [AuthoritativeStateStore] 的單次交易內把識別碼從 Room 移到 Game。
+ * - 同步快照並廣播開局事件。
  *
  * @property authoritativeStateStore Room 與 Game 共用的權威狀態儲存。
  * @property moduleRegistry 麻將規則模組註冊中心，用於依房間配置解析對應的規則模組。
@@ -57,13 +60,16 @@ class StartGameUseCase(
      *
      * @param roomId 欲開始的房間 Uuid（開局後將同時作為對局的 Uuid）。
      * @param operatorId 發起開局請求的玩家 Uuid，須為房主。
-     * @param expectedRoom 接入端預檢的房間；有提供時拒絕預檢後的任何房間變更。
+     * @param expectedRoom 接入端預檢的房間。有提供時，拒絕預檢後的任何房間變更。
      * @param requireImmediateCommit 有外部預檢時只允許立即取得交易鎖，忙碌則拒絕本次開局。
-     * @param preparedStart 預先建立的正式排位；只可用在其原房間，提交時再次確認房間未變。
-     * @param matchSeed 指定這場對局的種子，供重現對局使用；null 時以安全亂數產生。有 [preparedStart] 時種子已決定，
-     *   不可再指定。
-     * @param seatOrder 指定開場的座位順序，例如除錯時固定某位玩家的座位；null 時依種子隨機排座。必須剛好包含房間的每位玩家
-     *   各一次，否則拒絕開局。有 [preparedStart] 時座位已決定，不可再指定。
+     * @param preparedStart 預先建立的正式排位。只可用在原本的房間，提交時再次確認房間未變。
+     * @param matchSeed 指定這場對局的種子，供重現對局使用：
+     *   - null 時以安全亂數產生。
+     *   - 有 [preparedStart] 時種子已決定，不可再指定。
+     * @param seatOrder 指定開場的座位順序，例如除錯時固定某位玩家的座位：
+     *   - null 時依種子隨機排座。
+     *   - 必須剛好包含房間的每位玩家各一次，否則拒絕開局。
+     *   - 有 [preparedStart] 時座位已決定，不可再指定。
      * @return 開局結果，成功時包含對局 Uuid（等同 [roomId]），失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
@@ -235,12 +241,12 @@ class StartGameUseCase(
     }
 
     /**
-     * 預先驗證房主與房間條件，再產生本次正式排位；不提交或發布副作用。
+     * 預先驗證房主與房間條件，再產生本次正式排位。不提交，也不發布任何副作用。
      *
      * @param room 目前預檢的完整房間。
      * @param operatorId 提出開局的操作者。
-     * @param matchSeed 這場對局的種子；預設以安全亂數產生。
-     * @param seatOrder 指定開場的座位順序；null 時依種子隨機排座。不符合房間成員時拒絕開局。
+     * @param matchSeed 這場對局的種子，預設以安全亂數產生。
+     * @param seatOrder 指定開場的座位順序，null 時依種子隨機排座。不符合房間成員時拒絕開局。
      * @return 已驗證的預備開局資料，或既有房間拒絕原因。
      */
     fun prepare(

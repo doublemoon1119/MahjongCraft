@@ -8,7 +8,7 @@ import net.minecraft.resources.ResourceLocation
 /**
  * 登記一個進度觸發器，讓進度檔可以用 [id] 引用它。
  *
- * 這個版本的觸發器寫入原版共用的觸發器表，因此在登記完成後才建立並寫入。
+ * - 這個版本的觸發器寫入原版共用的觸發器表，因此在登記完成後才建立並寫入。
  *
  * @param T 觸發器型別。
  * @param registrar 寫入登記表的方式。
