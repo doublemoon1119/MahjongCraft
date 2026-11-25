@@ -38,23 +38,25 @@ internal data class DecisionCard(
 /**
  * 操作介面的版面幾何。
  *
- * 卡片排成固定單列並在寬度不足時水平捲動；面板與觸發牌構成一個整體群組，群組的垂直位置由玩家在 HUD 編輯器
- * 調整的比例決定。倒數畫在面板標題列左側、與標題文字同一列（見 [headerTextTop]），與右側的跳過按鈕相對；卡片說明固定在面板外緣、對齊被指著的卡片，
- * 不覆蓋任何卡片。
+ * - 卡片排成固定單列，寬度不足時水平捲動。
+ * - 面板與觸發牌構成一個整體群組，垂直位置由玩家在 HUD 編輯器調整的比例決定。
+ * - 倒數畫在面板標題列左側、與標題文字同一列（見 [headerTextTop]），與右側的跳過按鈕相對。
+ * - 卡片說明固定在面板外緣、對齊被指著的卡片，不覆蓋任何卡片。
  *
- * 這個類別不依賴 `Screen` 或 `GuiGraphics`：畫面尺寸、玩家設定的位置比例，以及需要實際量測的文字寬度
- * （面板標題、觸發文字換行結果與倒數）全部由呼叫端傳入。捲動量是每幀變動的輸入，因此由需要它的方法接收，不進
- * 建構子。
+ * 這個類別不依賴 `Screen` 或 `GuiGraphics`：
+ *
+ * - 畫面尺寸、玩家設定的位置比例，以及需要量測的文字寬度（面板標題、觸發文字換行結果與倒數）都由呼叫端傳入。
+ * - 捲動量每幀變動，由需要它的方法接收，不進建構子。
  *
  * @property screenWidth 目前 GUI scaled 畫面寬度。
  * @property screenHeight 目前 GUI scaled 畫面高度。
- * @property cards 由左至右的卡片特徵；空清單時仍保留一列最小高度。
+ * @property cards 由左至右的卡片特徵。空清單時仍保留一列最小高度。
  * @property headerTextWidth 面板標題的實際像素寬度。
- * @property triggerLineCount 觸發文字換行後的行數；沒有觸發文字時為 0。
- * @property triggerTextWidth 觸發文字最寬一行的像素寬度；沒有觸發文字時為 0。
+ * @property triggerLineCount 觸發文字換行後的行數。沒有觸發文字時為 0。
+ * @property triggerTextWidth 觸發文字最寬一行的像素寬度。沒有觸發文字時為 0。
  * @property hasTriggerTile 是否有觸發牌需要在主面板上方保留空間。
  * @property panelRatioY 玩家設定的操作群組垂直位置比例。
- * @property timerWidth 標題列左側為倒數保留的寬度；呼叫端傳入本次決策出現過的最大倒數寬度，讓面板不隨秒數縮放。
+ * @property timerWidth 標題列左側為倒數保留的寬度。呼叫端傳入本次決策出現過的最大倒數寬度，讓面板不隨秒數縮放。
  */
 internal data class DecisionCardLayout(
     val screenWidth: Int,
@@ -68,7 +70,7 @@ internal data class DecisionCardLayout(
     val timerWidth: Int,
 ) {
     /**
-     * 單一卡片的寬度；預覽牌不多時維持緊湊，牌多時優先橫向擴張到畫面允許的上限。
+     * 單一卡片的寬度。預覽牌不多時維持緊湊，牌多時優先橫向擴張到畫面允許的上限。
      *
      * @param card 要計算寬度的卡片特徵。
      * @return 卡片寬度。
@@ -88,7 +90,7 @@ internal data class DecisionCardLayout(
     }
 
     /**
-     * 單一卡片的高度；預覽牌只有在卡片寬度不足時才換行。
+     * 單一卡片的高度。預覽牌只有在卡片寬度不足時才換行。
      *
      * @param card 要計算高度的卡片特徵。
      * @return 卡片高度。
@@ -180,7 +182,7 @@ internal data class DecisionCardLayout(
     val maximumScroll: Double
         get() = scroll.maximumScroll
 
-    /** 面板寬度；內容可容納時收合，溢出時使用整個安全畫面寬度。 */
+    /** 面板寬度。內容可容納時收合，溢出時使用整個安全畫面寬度。 */
     val panelWidth: Int
         get() {
             val cardsWidth = contentWidth + PANEL_PADDING * 2
@@ -188,7 +190,7 @@ internal data class DecisionCardLayout(
             return maxOf(cardsWidth, headerWidth).coerceAtMost((screenWidth - SCREEN_MARGIN * 2).coerceAtLeast(1))
         }
 
-    /** 標題列兩側各自保留的寬度，左側放倒數、右側放跳過按鈕；標題置中於兩者之間。 */
+    /** 標題列兩側各自保留的寬度，左側放倒數、右側放跳過按鈕。標題置中於兩者之間。 */
     val headerSideWidth: Int
         get() = maxOf(HEADER_SIDE_WIDTH, timerWidth)
 
@@ -200,7 +202,7 @@ internal data class DecisionCardLayout(
     val panelRight: Int
         get() = (screenWidth + panelWidth) / 2
 
-    /** 面板高度；選項數量只增加內容寬度，不增加高度。 */
+    /** 面板高度。選項數量只增加內容寬度，不增加高度。 */
     val panelHeight: Int
         get() = PANEL_PADDING * 2 + HEADER_HEIGHT + rowHeight + if (hasOverflow) SCROLLBAR_GAP + SCROLLBAR_HEIGHT else 0
 
@@ -225,7 +227,7 @@ internal data class DecisionCardLayout(
         get() = panelTop + panelHeight
 
     /**
-     * 標題文字的上緣；在 header 的按鈕高度內垂直置中。
+     * 標題文字的上緣。在 header 的按鈕高度內垂直置中。
      *
      * @param fontHeight 字型高度。
      * @return 標題文字上緣座標。
@@ -270,7 +272,7 @@ internal data class DecisionCardLayout(
         )
 
     /**
-     * 全部卡片排成單列後的版位；內容未溢出時置中，溢出時套用捲動 offset。
+     * 全部卡片排成單列後的版位。內容未溢出時置中，溢出時套用捲動 offset。
      *
      * @param scroll 目前水平捲動量。
      * @return 依內容順序排列的卡片範圍。
@@ -297,11 +299,11 @@ internal data class DecisionCardLayout(
     )
 
     /**
-     * 卡片內預覽牌由左至右、由上而下的座標；每一列各自水平置中。
+     * 卡片內預覽牌由左至右、由上而下的座標。每一列各自水平置中。
      *
      * @param placement 卡片範圍。
-     * @param tileCount 預覽牌數量；小於等於零時回傳空清單。
-     * @param card 已量測文字行數的卡片；null 時只保留預覽牌與按鈕的間距。
+     * @param tileCount 預覽牌數量。小於等於零時回傳空清單。
+     * @param card 已量測文字行數的卡片。null 時只保留預覽牌與按鈕的間距。
      * @return 各張預覽牌的畫面範圍。
      */
     fun previewTilePlacements(placement: DecisionBounds, tileCount: Int, card: DecisionCard? = null): List<DecisionBounds> {
@@ -378,8 +380,8 @@ internal data class DecisionCardLayout(
     /**
      * 卡片說明 tooltip 內容區的左上角，[width]、[height] 為內容區尺寸（不含 tooltip 外框）。
      *
-     * 水平對齊 [card] 的中心，垂直放在面板上緣外側；上方放不下時改放面板下緣外側。兩個方向都會限制在畫面內，
-     * 當畫面空間足夠時，說明會留在卡片列外側；空間不足時仍以留在畫面內為優先。
+     * - 水平對齊 [card] 的中心，垂直放在面板上緣外側。上方放不下時改放面板下緣外側。
+     * - 兩個方向都會限制在畫面內。畫面空間足夠時，說明留在卡片列外側。空間不足時以留在畫面內為優先。
      *
      * @param card 被指向的卡片範圍。
      * @param width tooltip 內容寬度，不含外框。
@@ -397,7 +399,7 @@ internal data class DecisionCardLayout(
         )
     }
 
-    /** 觸發牌面板的版位；高度只由觸發文字行數決定。 */
+    /** 觸發牌面板的版位。高度只由觸發文字行數決定。 */
     val triggerPanelBounds: DecisionBounds
         get() {
             val width = maxOf(PREVIEW_TILE_WIDTH, triggerTextWidth) + TRIGGER_PADDING * 2

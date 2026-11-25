@@ -30,12 +30,12 @@ internal data class HistoryCleanupPreview(
  * 已完成或部分完成的管理清理結果。
  *
  * @property removedMatches 此次工作已確認提交的場數。
- * @property diskBefore 執行前大小；量測失敗時為 null。
- * @property diskAfter 執行後大小；量測失敗時為 null。
+ * @property diskBefore 執行前大小。量測失敗時為 null。
+ * @property diskAfter 執行後大小。量測失敗時為 null。
  * @property storageAvailable 儲存端是否可接受新增資料。
- * @property recoveryBusy 是否因 SQLite 連線占用延後回收；尚未完成檢查時為 null。
- * @property incrementalSupported 是否支援漸進回收；尚未檢查時為 null。
- * @property completed 是否走完維護流程；回收延後及容量不足另由對應欄位表示。
+ * @property recoveryBusy 是否因 SQLite 連線占用延後回收。尚未完成檢查時為 null。
+ * @property incrementalSupported 是否支援漸進回收。尚未檢查時為 null。
+ * @property completed 是否走完維護流程。回收延後及容量不足另由對應欄位表示。
  */
 data class HistoryCleanupReport(
     val removedMatches: Long,

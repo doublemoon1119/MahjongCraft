@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import kotlin.uuid.Uuid
 
-/** 判斷本機排列的手牌何時交回共享呈現；倒牌與攤牌動畫由共享呈現播放。 */
+/** 判斷本機排列的手牌何時交回共享呈現。倒牌與攤牌動畫由共享呈現播放。 */
 object LocalHandRelease {
     /**
      * 手牌的主人已完成，或整副手牌已翻成正面或作為結算證據公開時，交回共享呈現。

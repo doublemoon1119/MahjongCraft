@@ -34,7 +34,7 @@ import kotlin.math.roundToInt
 /**
  * 所有 2D HUD、GUI 與面板牌面共用的材質及角落標籤 renderer。
  *
- * 呼叫端只決定位置、尺寸與方向；完整 UV、未知材質 fallback、`tile-labels-enabled`、forced label
+ * 呼叫端只決定位置、尺寸與方向。完整 UV、未知材質 fallback、`tile-labels-enabled`、forced label
  * 及標籤顏色均集中於此，避免不同 showcase 各自形成不一致的牌面。
  *
  * @property tileLabelRegistry 提供牌面角落標籤定義。
@@ -47,7 +47,7 @@ class MahjongTileFaceRenderer(
     private val clientConfigStore: MahjongClientConfigStore,
 ) {
     /**
-     * 在 GUI 座標系繪製一張完整牌面；橫置時回傳實際佔用寬高。
+     * 在 GUI 座標系繪製一張完整牌面。橫置時回傳實際佔用寬高。
      *
      * @param context GUI 繪製上下文。
      * @param assetKey 牌面資產 key。
@@ -55,7 +55,7 @@ class MahjongTileFaceRenderer(
      * @param y 牌面左上角 Y 座標。
      * @param width 直立牌面的寬度。
      * @param height 直立牌面的高度。
-     * @param orientation 牌面朝向；預設直立。
+     * @param orientation 牌面朝向。預設直立。
      * @param appearance 公開規則指定的牌組外觀，不依隱藏牌種選擇。
      */
     fun renderGui(
@@ -194,7 +194,7 @@ class MahjongTileFaceRenderer(
     }
 
     /**
-     * 在世界面板牌面的指定角落繪製標籤；縮放與邊距依實際牌面高寬換算，與 [renderModelLabel] 使用相同比例。
+     * 在世界面板牌面的指定角落繪製標籤。縮放與邊距依實際牌面高寬換算，與 [renderModelLabel] 使用相同比例。
      *
      * @param label 標籤內容與顏色。
      * @param left 牌面左緣。
@@ -286,7 +286,7 @@ class MahjongTileFaceRenderer(
     }
 
     /**
-     * 在 GUI 牌面的指定角落繪製標籤；縮放與邊距按牌面實際尺寸換算，與世界中的麻將牌保持相同比例（見 [renderModelLabel]）。
+     * 在 GUI 牌面的指定角落繪製標籤。縮放與邊距按牌面實際尺寸換算，與世界中的麻將牌保持相同比例（見 [renderModelLabel]）。
      *
      * @param context GUI 繪製上下文。
      * @param label 標籤內容與顏色。
@@ -375,7 +375,7 @@ class MahjongTileFaceRenderer(
     private data class TileLabelMetrics(val scale: Float, val marginX: Float, val marginY: Float)
 
     /**
-     * 解析牌面預覽；指定資源不存在時使用同牌組的未知牌正面，整組無效時使用內建外觀。
+     * 解析牌面預覽。指定資源不存在時使用同牌組的未知牌正面，整組無效時使用內建外觀。
      *
      * @param assetKey 請求的牌面資產 key。
      * @param appearance 公開規則指定的牌組外觀。
@@ -398,7 +398,7 @@ class MahjongTileFaceRenderer(
     }
 
     private companion object {
-        /** 將正規化 UV 換算為原版繪圖 API 的參考刻度；不限制實際貼圖解析度。 */
+        /** 將正規化 UV 換算為原版繪圖 API 的參考刻度。不限制實際貼圖解析度。 */
         const val UV_DRAW_SCALE = 1024
 
         const val LABEL_Z = 10.0

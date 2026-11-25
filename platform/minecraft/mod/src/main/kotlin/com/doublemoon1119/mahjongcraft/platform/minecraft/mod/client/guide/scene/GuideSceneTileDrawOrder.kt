@@ -14,9 +14,9 @@ internal object GuideSceneTileDrawOrder {
      * 把牌分成先畫的不透明牌與後畫的半透明牌。
      *
      * @param tiles 場景中的牌。
-     * @param sceneToScreen 場景座標換算成畫面座標的矩陣；畫面座標的 Z 越大越靠近觀看者。
+     * @param sceneToScreen 場景座標換算成畫面座標的矩陣。畫面座標的 Z 越大越靠近觀看者。
      * @param isTranslucent 判斷一張牌是否以半透明方式繪製。
-     * @return 不透明牌維持原順序；半透明牌依牌底中心由遠到近排列。
+     * @return 不透明牌維持原順序。半透明牌依牌底中心由遠到近排列。
      */
     fun split(
         tiles: List<GuideSceneTile>,

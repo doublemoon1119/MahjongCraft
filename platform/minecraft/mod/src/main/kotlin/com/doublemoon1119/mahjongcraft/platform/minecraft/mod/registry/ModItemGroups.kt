@@ -15,7 +15,7 @@ object ModItemGroups {
     /**
      * 登記以一萬麻將牌為圖示、收納目前可取得物品與方塊的主要物品分類。
      *
-     * @param registrar 寫入登記表的方式；物品與方塊必須已交給同一個 [registrar] 登記。
+     * @param registrar 寫入登記表的方式。物品與方塊必須已交給同一個 [registrar] 登記。
      */
     fun register(registrar: ModRegistrar) {
         registrar.register(

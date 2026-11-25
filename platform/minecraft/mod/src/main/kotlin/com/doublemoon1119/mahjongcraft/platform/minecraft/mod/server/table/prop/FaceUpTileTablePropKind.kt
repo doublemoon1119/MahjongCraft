@@ -13,7 +13,7 @@ import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 
 /**
- * 公開牌面展示種類；副本不具有正式牌張身分或互動能力。
+ * 公開牌面展示種類。副本不具有正式牌張身分或互動能力。
  *
  * 牌面依組件的公開效果選擇素材，與同樣牌面的正式牌張一致。
  *

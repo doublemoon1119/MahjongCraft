@@ -17,7 +17,7 @@ sealed interface MinecraftServerConfigUpdateResult {
      * 檔案讀取、TOML 解碼或驗證失敗，runtime 仍保留先前設定。
      *
      * @property message 可提供給管理員的診斷訊息。
-     * @property cause 原始例外；只供 log 保留詳細資訊。
+     * @property cause 原始例外。只供 log 保留詳細資訊。
      */
     data class Failure(
         val message: String,

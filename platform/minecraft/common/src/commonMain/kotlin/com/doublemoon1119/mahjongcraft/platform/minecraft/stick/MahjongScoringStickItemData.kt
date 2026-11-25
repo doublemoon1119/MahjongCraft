@@ -6,7 +6,7 @@ object MahjongScoringStickItemData {
     const val DENOMINATION_KEY: String = "denomination"
 
     /**
-     * 讀取面額名稱；缺少或無效時使用百分棒。
+     * 讀取面額名稱。缺少或無效時使用百分棒。
      *
      * @param storedName 儲存的面額名稱。
      * @return 解析後的面額。

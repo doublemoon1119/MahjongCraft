@@ -12,12 +12,12 @@ const val UNKNOWN_TILE_ASSET_KEY = "unknown"
 /**
  * 將 [Tile] 轉換成 Minecraft 牌面資源映射使用的素材識別字串。
  *
- * 數牌格式為 `{花色字母}{數值}`；字牌則各自對應到固定的英文名稱（例如 `east`、`white_dragon`）。
+ * 數牌格式為 `{花色字母}{數值}`。字牌則各自對應到固定的英文名稱（例如 `east`、`white_dragon`）。
  * 外觀樣式（例如赤五）不在這裡處理，改用 [TileFaceView.toAssetKey]。
  *
- * @param registry 保存 [Tile.Extension] 對應 asset key 的 runtime registry；內建與第三方牌種共用
+ * @param registry 保存 [Tile.Extension] 對應 asset key 的 runtime registry。內建與第三方牌種共用
  * 同一份查詢流程。無法解析的 Extension ID 會回退至 [UNKNOWN_TILE_ASSET_KEY]，讓物品與 entity 使用
- * 相同的佔位外觀；此 fallback 不會改寫權威狀態保存的原始牌種 ID。
+ * 相同的佔位外觀。此 fallback 不會改寫權威狀態保存的原始牌種 ID。
  * @return 對應的 Minecraft 素材 key。
  */
 fun Tile.toAssetKey(registry: MinecraftTileAssetRegistry): String = when (this) {
@@ -27,14 +27,14 @@ fun Tile.toAssetKey(registry: MinecraftTileAssetRegistry): String = when (this) 
 }
 
 /**
- * 數牌固定使用的素材 key，格式為 `{花色字母}{數值}`；不需要 registry，可在登記期間使用。
+ * 數牌固定使用的素材 key，格式為 `{花色字母}{數值}`。不需要 registry，可在登記期間使用。
  *
  * @return 對應的 Minecraft 素材 key。
  */
 fun Tile.Numeric.standardAssetKey(): String = "${suit.assetPrefix}$value"
 
 /**
- * 字牌固定使用的素材 key，例如 `east`、`white_dragon`；不需要 registry，可在登記期間使用。
+ * 字牌固定使用的素材 key，例如 `east`、`white_dragon`。不需要 registry，可在登記期間使用。
  *
  * @return 對應的 Minecraft 素材 key。
  */
@@ -73,7 +73,7 @@ private val Tile.Suit.assetPrefix: Char
     }
 
 /**
- * 34 種基本牌的素材識別字串，依萬子、餅子、條子的 1～9 與東南西北、中發白排列；不屬於任何規則。
+ * 34 種基本牌的素材識別字串，依萬子、餅子、條子的 1～9 與東南西北、中發白排列。不屬於任何規則。
  */
 val STANDARD_TILE_ASSET_KEYS: List<String> = buildList {
     for (suit in Tile.Suit.entries) {
@@ -85,9 +85,9 @@ val STANDARD_TILE_ASSET_KEYS: List<String> = buildList {
 /**
  * 所有應有牌面資源映射的素材識別字串，順序固定：[STANDARD_TILE_ASSET_KEYS]、這個 registry 依登記順序的
  * 擴充牌種，最後是 [UNKNOWN_TILE_ASSET_KEY] 佔位牌。各 loader adapter 依此清單註冊模型、建立渲染用物品，
- * 並作為循環換牌的順序；擴充牌種可在登記描述中提供自訂資源，省略時沿用內建資源路徑。
+ * 並作為循環換牌的順序。擴充牌種可在登記描述中提供自訂資源，省略時沿用內建資源路徑。
  *
- * @throws IllegalStateException registry 尚未凍結時拋出；擴充牌種要等所有 extension 登記完成才確定。
+ * @throws IllegalStateException registry 尚未凍結時拋出。擴充牌種要等所有 extension 登記完成才確定。
  * @receiver 已凍結的牌資產 registry。
  * @return 內建、已登記擴充與未知牌 key 的固定順序清單。
  */
@@ -110,7 +110,7 @@ fun MinecraftTileAssetRegistry.allTileAssetKeys(): List<String> {
 fun MinecraftTileAssetRegistry.isKnownTileAssetKey(assetKey: String): Boolean = assetKey in STANDARD_TILE_ASSET_KEYS || assetKey == UNKNOWN_TILE_ASSET_KEY || isRegisteredAssetKey(assetKey)
 
 /**
- * 將外部讀取的素材 key 正規化；[MinecraftTileAssetRegistry.isKnownTileAssetKey] 認得的 key 保持不變，
+ * 將外部讀取的素材 key 正規化。[MinecraftTileAssetRegistry.isKnownTileAssetKey] 認得的 key 保持不變，
  * 其餘一律回退至 [UNKNOWN_TILE_ASSET_KEY]。
  *
  * @param registry 用來確認擴充 key 是否已登記的 registry。

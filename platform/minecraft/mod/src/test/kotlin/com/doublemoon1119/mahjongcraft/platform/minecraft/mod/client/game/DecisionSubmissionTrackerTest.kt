@@ -117,7 +117,7 @@ class DecisionSubmissionTrackerTest {
         assertFalse(tracker.isPending())
     }
 
-    /** 接受後若合法動作集合改變，新的權威決策鍵仍能解除舊提交；晚到的舊確認不影響新提交。 */
+    /** 接受後若合法動作集合改變，新的權威決策鍵仍能解除舊提交。晚到的舊確認不影響新提交。 */
     @Test
     fun `test accepted submission unlocks when authoritative candidate set changes`() {
         tracker.begin("game", "old-candidates", "submission")

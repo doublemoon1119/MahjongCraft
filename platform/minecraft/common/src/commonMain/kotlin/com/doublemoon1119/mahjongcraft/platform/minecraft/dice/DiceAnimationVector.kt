@@ -18,7 +18,7 @@ data class DiceAnimationVector(
     val length: Double
         get() = sqrt(x * x + y * y + z * z)
 
-    /** 將向量正規化；零向量固定回傳 X 軸單位向量。 */
+    /** 將向量正規化。零向量固定回傳 X 軸單位向量。 */
     fun normalized(): DiceAnimationVector = if (length == 0.0) {
         UNIT_X
     } else {

@@ -28,7 +28,7 @@ internal class HistoryQuerySettingsPublisher(
     private var job: Job? = null
 
     /**
-     * 啟動目前 session 的 collector；重複啟動會先停止舊 collector。
+     * 啟動目前 session 的 collector。重複啟動會先停止舊 collector。
      *
      * @param publish 發布單一查詢間隔的動作。
      */

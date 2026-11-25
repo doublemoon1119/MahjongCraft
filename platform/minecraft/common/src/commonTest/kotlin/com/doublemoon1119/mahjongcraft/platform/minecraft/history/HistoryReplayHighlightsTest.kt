@@ -7,7 +7,7 @@ import kotlin.test.assertNull
 
 /** 驗證牌譜回放的最新捨牌與相同牌的判斷。 */
 class HistoryReplayHighlightsTest {
-    /** 最後打出、仍在牌河的牌發光；被鳴走、局已結束或還沒有人打牌時沒有。 */
+    /** 最後打出、仍在牌河的牌發光。被鳴走、局已結束或還沒有人打牌時沒有。 */
     @Test
     fun `latest discard stays only while it is in the river`() {
         val river = listOf(discard(3), discard(7))

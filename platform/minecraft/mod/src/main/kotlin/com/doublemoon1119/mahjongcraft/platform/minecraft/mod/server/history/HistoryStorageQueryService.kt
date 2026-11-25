@@ -20,7 +20,7 @@ internal class HistoryStorageQueryService(
      *
      * @param database 同一 session 的已驗證資料庫。
      * @param policy 此次固定的保留政策。
-     * @return 完整快照；讀取失敗時拋出例外，不假造零用量。
+     * @return 完整快照。讀取失敗時拋出例外，不假造零用量。
      */
     suspend fun read(database: SqliteHistoryDatabase, policy: HistoryRetentionPolicy): HistoryStorageSnapshot {
         val statistics = database.readStatistics()

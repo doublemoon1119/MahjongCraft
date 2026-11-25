@@ -13,14 +13,14 @@ object AnimationQueueDriver {
      * @param C 自訂狀態型別。
      * @param queue 目前尚未完成的動畫步驟。
      * @param currentState 沒有排定自訂狀態時採用的目前值。
-     * @return 最後一筆自訂狀態；沒有時為 currentState。
+     * @return 最後一筆自訂狀態。沒有時為 currentState。
      */
     fun <C> finalCustomState(queue: List<AnimationStep<C>>, currentState: C): C = queue.fold(currentState) { state, step ->
         if (step is AnimationStep.Custom) step.step else state
     }
 
     /**
-     * 把 [steps] 附加至 [queue]，並把相鄰的 [AnimationStep.WaitUntil] 合併成較晚的絕對時間；等待之間若有
+     * 把 [steps] 附加至 [queue]，並把相鄰的 [AnimationStep.WaitUntil] 合併成較晚的絕對時間。等待之間若有
      * 任何實際動作就維持原序，避免改變不同動畫階段的時間語意。
      *
      * @param C 實體專屬自訂步驟的資料型別。
@@ -49,15 +49,15 @@ object AnimationQueueDriver {
     /**
      * 依 [currentGameTime] 推進 [queue]：到期的 [AnimationStep.PlaySound] 不受結構型 step 阻擋，其他瞬間
      * step（[AnimationStep.Teleport]／[AnimationStep.SetInvisible]／[AnimationStep.Custom]）連續處理到下一個
-     * 計時 step 為止；計時 step（[AnimationStep.WaitUntil]／[AnimationStep.PlayMotion]）未到期就停在原地，
+     * 計時 step 為止。計時 step（[AnimationStep.WaitUntil]／[AnimationStep.PlayMotion]）未到期就停在原地，
      * 等下一次呼叫再檢查。[AnimationStep.WaitUntil]
-     * 本身就攜帶絕對到期時間，不需要 [activeStepEndGameTime] 追蹤；[activeStepEndGameTime] 只用來記錄
+     * 本身就攜帶絕對到期時間，不需要 [activeStepEndGameTime] 追蹤。[activeStepEndGameTime] 只用來記錄
      * [AnimationStep.PlayMotion] 是不是剛開始（讓呼叫端只在啟動當下同步一次 render 用欄位），存的是
      * 絕對 game time，跨存讀檔正確恢復。
      *
      * @param C 實體專屬自訂步驟的資料型別。
      * @param queue 目前待處理的步驟。
-     * @param activeStepEndGameTime 已開始播放之動作的絕對結束時間；沒有進行中的動作時為 null。
+     * @param activeStepEndGameTime 已開始播放之動作的絕對結束時間。沒有進行中的動作時為 null。
      * @param currentGameTime 目前的絕對 game time。
      * @return 套用步驟及剩餘佇列的快照。
      */

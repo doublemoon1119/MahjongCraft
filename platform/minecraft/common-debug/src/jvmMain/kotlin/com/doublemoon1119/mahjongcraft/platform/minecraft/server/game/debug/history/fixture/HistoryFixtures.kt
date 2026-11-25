@@ -309,7 +309,7 @@ object HistoryFixtures {
      * 依識別碼找測試牌譜。
      *
      * @param id 測試牌譜的識別碼。
-     * @return 測試牌譜；沒有這個識別碼時為 null。
+     * @return 測試牌譜。沒有這個識別碼時為 null。
      */
     fun find(id: String): HistoryFixture? = ALL.firstOrNull { it.id == id }
 

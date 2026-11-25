@@ -10,7 +10,7 @@ import java.util.concurrent.Executor
 /**
  * 在 Forge 載入模型時套用登記的 [ModelLoading]。
  *
- * Forge 登記額外模型時呼叫 [prepare] 準備本次重載的資料；原版讀取模型時，Forge 專用的 mixin 先以 [resolve] 詢問有沒有
+ * Forge 登記額外模型時呼叫 [prepare] 準備本次重載的資料。原版讀取模型時，Forge 專用的 mixin 先以 [resolve] 詢問有沒有
  * 程式提供的模型，沒有才照原版讀取模型檔。
  */
 object ForgeModelLoadings {
@@ -44,10 +44,10 @@ object ForgeModelLoadings {
     }
 
     /**
-     * 取得程式為某個 ID 提供的未烘焙模型；只由 Forge 專用的 mixin 在原版讀取模型時呼叫。
+     * 取得程式為某個 ID 提供的未烘焙模型。只由 Forge 專用的 mixin 在原版讀取模型時呼叫。
      *
      * @param id 模型 ID。
-     * @return 程式提供的模型；沒有時為 null，照原版讀取模型檔。
+     * @return 程式提供的模型。沒有時為 null，照原版讀取模型檔。
      */
     @JvmStatic
     fun resolve(id: ResourceLocation): UnbakedModel? = prepared.firstNotNullOfOrNull { it.resolve(id) }
@@ -82,7 +82,7 @@ private class PreparedModelLoading<T : Any>(private val loading: ModelLoading<T>
      * 取得程式為某個 ID 提供的未烘焙模型。
      *
      * @param id 模型 ID。
-     * @return 程式提供的模型；沒有時為 null。
+     * @return 程式提供的模型。沒有時為 null。
      */
     fun resolve(id: ResourceLocation): UnbakedModel? = loading.resolveModel(data, id)
 }

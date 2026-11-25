@@ -5,7 +5,7 @@ import net.minecraft.client.gui.GuiGraphics
 /**
  * 用像素直接繪製的小圖示：選擇器箭頭、目前選項的打勾，以及 [PixelIcon] 列出的按鈕圖示。
  *
- * 不使用文字符號，圖示的大小與粗細因此固定，不受目前語言或資源包使用的字型影響；筆畫粗細與遊戲文字相近，
+ * 不使用文字符號，圖示的大小與粗細因此固定，不受目前語言或資源包使用的字型影響。筆畫粗細與遊戲文字相近，
  * 並和文字一樣在右下方帶一像素的陰影。
  */
 internal object PixelIcons {
@@ -30,7 +30,7 @@ internal object PixelIcons {
      * @param context 畫面繪製情境。
      * @param x 箭頭左界。
      * @param y 箭頭上界。
-     * @param pointsUp 箭頭是否向上；否則向下。
+     * @param pointsUp 箭頭是否向上。否則向下。
      * @param color 不含透明度的 RGB 顏色。
      */
     fun arrow(context: GuiGraphics, x: Int, y: Int, pointsUp: Boolean, color: Int) {

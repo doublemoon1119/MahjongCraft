@@ -10,7 +10,7 @@ import kotlin.uuid.Uuid
 /** 將已驗證的牌牆世界路徑編譯為各牌共用 phase barrier 的持久化動畫步驟。 */
 object TileWallTransitionAnimationCompiler {
     /**
-     * 依 [startGameTime] 編譯完整 [plan]；[initialPoses] 必須涵蓋所有會移動的牌。
+     * 依 [startGameTime] 編譯完整 [plan]。[initialPoses] 必須涵蓋所有會移動的牌。
      * 任一姿態缺失時先拒絕整批輸入，不回傳部分排程。
      *
      * @param plan 已驗證的牌牆移動階段。

@@ -21,7 +21,7 @@ import kotlin.uuid.Uuid
 
 /** 保留服務的 SQL、權威保護名單與政策發布整合測試。 */
 class HistoryRetentionServiceTest {
-    /** 新完成資料先保存，再依場數移除最舊紀錄；preview 不寫入 tombstone。 */
+    /** 新完成資料先保存，再依場數移除最舊紀錄。preview 不寫入 tombstone。 */
     @Test
     fun `test preview is read only and run retains newest completed match`() = runBlocking {
         val database = database()
@@ -57,7 +57,7 @@ class HistoryRetentionServiceTest {
         assertEquals(game, store.getGame(game.id))
     }
 
-    /** 只有受保護資料時容量暫停不刪除 Game；提高限制後解除暫停。 */
+    /** 只有受保護資料時容量暫停不刪除 Game。提高限制後解除暫停。 */
     @Test
     fun `test protected data pauses recording and recovers after limit increase`() = runBlocking {
         val game = Game(FakeTableStateFactory.create(), GameFlowConfig())

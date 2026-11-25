@@ -4,19 +4,21 @@ import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 
 /**
- * 一個規則模組提供的設定呈現定義；registry 登記時會自動附加共用流程分類與欄位。
- * 規則只需要提供自己的分類與欄位；共用流程分類與欄位的保留 ID 見 [GameConfigPresentationRegistry]，
- * 不可由規則重複宣告。規則名稱由 RuleModuleDisplayNameRegistry 提供。
+ * 一個規則模組提供的設定呈現定義。
+ *
+ * - registry 登記時會自動附加共用流程分類與欄位，規則只需要提供自己的分類與欄位。
+ * - 共用流程分類與欄位的保留 ID 見 [GameConfigPresentationRegistry]，不可由規則重複宣告。
+ * - 規則名稱由 RuleModuleDisplayNameRegistry 提供。
  *
  * @property ruleModuleId 規則模組的 Namespaced ID。
  * @property descriptionTranslationKey 設定描述翻譯鍵。
- * @property selectable 是否可在房間畫面選取；可選規則必須能在麻將桌上呈現（[RulePresentationRequirements]），
+ * @property selectable 是否可在房間畫面選取。可選規則必須能在麻將桌上呈現（[RulePresentationRequirements]），
  *   伺服器只接受可選規則的房間設定。
  * @property unavailableReasonTranslationKey 不可選取時顯示的原因翻譯鍵。
  * @property defaultRuleConfig 建立預設規則設定。
  * @property categories 規則提供的設定分類。
  * @property fields 規則提供的設定欄位。
- * @property variants 規則提供的玩法，依顯示順序排列；標準玩法自動提供，不需要列出。每個玩法都指定同一組識別欄位；
+ * @property variants 規則提供的玩法，依顯示順序排列。標準玩法自動提供，不需要列出。每個玩法都指定同一組識別欄位。
  *   識別欄位與鎖定欄位都只能是本規則宣告的可編輯欄位，值必須是該欄位編輯器能產生的值，且識別欄位不可同時是
  *   鎖定欄位。
  */

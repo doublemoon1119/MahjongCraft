@@ -27,7 +27,7 @@ fun PlayerDecisionPhaseDto.toDomain(): PlayerDecisionPhase = when (this) {
  * [status] 為 null 表示玩家已失去該遊戲的決策權，客戶端必須停止顯示舊倒數。
  *
  * @property gameId 計時狀態所屬遊戲的 UUID 字串。
- * @property status 目前有效的計時狀態；停止計時時為 null。
+ * @property status 目前有效的計時狀態。停止計時時為 null。
  */
 @Serializable
 data class DecisionTimerUpdatePayloadDto(

@@ -25,7 +25,7 @@ class RoomMemberCandidateResolver(
      * 列出 [playerId] 目前所在房間內，除房主外的所有候選成員。
      *
      * @param playerId 用來解析目前房間的玩家 UUID。
-     * @return 房間候選成員；玩家沒有房間或房間不存在時為空清單。
+     * @return 房間候選成員。玩家沒有房間或房間不存在時為空清單。
      */
     suspend fun listCandidates(playerId: Uuid): List<RoomMemberCandidate> {
         val tableId = membershipRepository.getVenueId(playerId) ?: return emptyList()
@@ -62,7 +62,7 @@ class RoomMemberCandidateResolver(
      *
      * @param playerId 用來解析目前房間的玩家 UUID。
      * @param token 指令輸入的完整候選 token。
-     * @return 相符的成員 UUID；找不到時為 null。
+     * @return 相符的成員 UUID。找不到時為 null。
      */
     suspend fun resolve(playerId: Uuid, token: String): Uuid? = listCandidates(playerId)
         .firstOrNull { it.token == token }

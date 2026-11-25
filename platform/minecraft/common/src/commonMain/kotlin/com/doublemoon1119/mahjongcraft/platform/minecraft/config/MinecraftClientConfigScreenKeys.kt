@@ -237,7 +237,7 @@ object MinecraftClientConfigScreenKeys {
     /** 預覽情境按鈕的說明。 */
     const val HUD_LAYOUT_SELECTOR_SCENARIO_DESCRIPTION: String = "mahjongcraft.hud_layout.selector.scenario.description"
 
-    /** 選取的 HUD 沒有情境時，預覽情境按鈕停用的原因；參數為 HUD 名稱。 */
+    /** 選取的 HUD 沒有情境時，預覽情境按鈕停用的原因。參數為 HUD 名稱。 */
     const val HUD_LAYOUT_SELECTOR_SCENARIO_UNAVAILABLE: String = "mahjongcraft.hud_layout.selector.scenario.unavailable"
 
     /** 隱藏 editor 控制項按鈕。 */

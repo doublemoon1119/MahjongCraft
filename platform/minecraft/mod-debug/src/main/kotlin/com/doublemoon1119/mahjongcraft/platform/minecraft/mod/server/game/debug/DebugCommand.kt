@@ -75,7 +75,7 @@ class DebugCommand internal constructor(
     private val seatedParticipantCommand: DebugSeatedParticipantCommand,
 ) {
     /**
-     * 註冊整組 debug 指令樹；只有開發環境才真的呼叫 `dispatcher.register`，見類別 KDoc。
+     * 註冊整組 debug 指令樹。只有開發環境才真的呼叫 `dispatcher.register`，見類別 KDoc。
      *
      * @param events 提供指令登記時機的伺服器事件來源。
      */

@@ -26,7 +26,7 @@ class AiCharacterLeaseCoordinatorTest {
         coordinator.startSession()
     }
 
-    /** 索引只回傳目前有效的接管；失效與停止都不保留舊身分。 */
+    /** 索引只回傳目前有效的接管。失效與停止都不保留舊身分。 */
     @Test
     fun `entity index rejects invalid and stopped leases`() {
         val key = key()

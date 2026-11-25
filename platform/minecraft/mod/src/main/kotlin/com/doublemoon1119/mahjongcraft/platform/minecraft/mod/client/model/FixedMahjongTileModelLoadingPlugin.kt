@@ -9,7 +9,7 @@ import java.util.concurrent.Executor
 /**
  * 在每次資源重載時準備並註冊固定牌模型的材質變體。
  *
- * 資源存在性與模板相容性在 model loader 開始前驗證；resolver 只交付已驗證的變體，
+ * 資源存在性與模板相容性在 model loader 開始前驗證。resolver 只交付已驗證的變體，
  * 因此不會在每幀或烘焙期間讀取資源檔案。
  */
 object FixedMahjongTileModelLoadingPlugin {

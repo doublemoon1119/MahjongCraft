@@ -15,7 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanGame
  * 台灣麻將「基本玩法」分類的條目：牌與手牌、和牌條件、花牌與補花、鳴牌與食替、過水、聽牌宣告、台數與付款、賽程與連莊、
  * 流局與一炮多響。包牌沿用付款規則分類的條目，同時列在這個分類的最後。
  *
- * 說明一律用通用說法，可調整的數值寫標準值並列出房間設定欄位；只有條目是否適用依設定判斷。
+ * 說明一律用通用說法，可調整的數值寫標準值並列出房間設定欄位。只有條目是否適用依設定判斷。
  *
  * @param config 房間設定或一般說明使用的設定。
  * @return 依顯示順序排列的條目。
@@ -140,7 +140,7 @@ internal object TaiwanCatalogueBasicsKeys {
  * 條目的牌例。
  *
  * @param basic 條目。
- * @return 牌例；沒有時為空集合。
+ * @return 牌例。沒有時為空集合。
  */
 private fun taiwanBasicExamples(basic: TaiwanCatalogueBasic): List<RuleCatalogueExample> = when (basic) {
     TaiwanCatalogueBasic.Winning -> listOf(
@@ -182,7 +182,7 @@ private fun taiwanBasicExamples(basic: TaiwanCatalogueBasic): List<RuleCatalogue
  *
  * @param role 牌組語意。
  * @param notation 牌的簡寫。
- * @param label 牌組上方標籤的翻譯鍵；null 時使用語意的標籤。
+ * @param label 牌組上方標籤的翻譯鍵。null 時使用語意的標籤。
  * @return 牌組。
  */
 private fun group(role: RuleCatalogueTileGroupRole, notation: String, label: String? = null): RuleCatalogueTileGroup = RuleCatalogueTileGroup(role = role, tiles = catalogueTiles(notation), labelTranslationKey = label)

@@ -107,7 +107,7 @@ class AiCharacterSnapshotSender internal constructor(
         sent[key] = content
     }
 
-    /** 交付快取的容量限制；淘汰只會使之後重新同步，不影響授權。 */
+    /** 交付快取的容量限制。淘汰只會使之後重新同步，不影響授權。 */
     private companion object {
         /** 不隨累積拜訪的桌子數量無限成長。 */
         const val MAX_SENT_ENTRIES: Int = 4096

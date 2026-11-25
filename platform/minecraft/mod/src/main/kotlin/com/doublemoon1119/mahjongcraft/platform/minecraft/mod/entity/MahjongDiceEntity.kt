@@ -30,17 +30,17 @@ class MahjongDiceEntity(
     type: EntityType<out MahjongDiceEntity> = ModEntities.mahjongDice,
     world: Level,
 ) : AnimatedMahjongEntity<Nothing>(type, world) {
-    /** 目前朝上的點數；非法 tracked value 使用一點。 */
+    /** 目前朝上的點數。非法 tracked value 使用一點。 */
     var point: MahjongDicePoint
         get() = MahjongDicePoint.fromValueOrDefault(entityData[POINT])
         set(value) = entityData.set(POINT, value.value)
 
-    /** 是否由正式牌局管理；管理中的骰子不接受測試互動。 */
+    /** 是否由正式牌局管理。管理中的骰子不接受測試互動。 */
     var managedByGame: Boolean
         get() = entityData[MANAGED_BY_GAME]
         set(value) = entityData.set(MANAGED_BY_GAME, value)
 
-    /** 正式骰子所屬麻將桌；自由放置骰子為 null。 */
+    /** 正式骰子所屬麻將桌。自由放置骰子為 null。 */
     var managedTableId: Uuid?
         get() = entityData[MANAGED_TABLE_ID]
             .takeIf(String::isNotBlank)
@@ -91,7 +91,7 @@ class MahjongDiceEntity(
         return if (level().isClientSide) InteractionResult.SUCCESS else InteractionResult.CONSUME
     }
 
-    /** 左鍵回收自由放置骰子；創造模式只移除 entity。 */
+    /** 左鍵回收自由放置骰子。創造模式只移除 entity。 */
     override fun skipAttackInteraction(attacker: Entity): Boolean {
         val player = attacker as? Player ?: return false
         if (managedByGame || rolling) return false
@@ -104,21 +104,20 @@ class MahjongDiceEntity(
     }
 
     /**
-     * 啟動一次已由伺服器決定結果的投擲動畫；[startDelayTicks] 是這次投擲該延遲多久才真正開始播放
-     * （例如等牌牆掉落動畫播完），以動畫佇列的 [AnimationStep.WaitUntil] 表達，呼叫端不另外延遲呼叫這個
-     * 方法；這段延遲隨佇列持久化，撐得過伺服器重啟，理由見 [AnimatedMahjongEntity] KDoc。
-     * [sharedViewingEndGameTime] 可讓同一次投擲中不同 stagger 的骰子維持到相同絕對截止時間；未提供時
-     * 沿用單顆骰子的自然截止時間。
+     * 啟動一次已由伺服器決定結果的投擲動畫。
      *
-     * 動畫播完後額外接一段 [DiceRollAnimationSpec.EXTRA_VIEWING_TICKS] 的等待，讓佇列（[isAnimating]）
-     * 在點數落定後繼續維持「還在忙」一小段時間，給玩家看清楚點數的緩衝。這段緩衝掛在骰子自己的佇列
-     * 尾端；佇列播完（含這段緩衝）也正是 [tick] 判斷該自我 [discard] 的時機點，見該方法 KDoc。
+     * - [startDelayTicks] 是開始播放前的延遲（例如等牌牆掉落動畫播完），以動畫佇列的 [AnimationStep.WaitUntil] 表達，
+     *   呼叫端不另外延遲呼叫。這段延遲隨佇列持久化，撐得過伺服器重啟，見 [AnimatedMahjongEntity] KDoc。
+     * - [sharedViewingEndGameTime] 讓同一次投擲中不同 stagger 的骰子維持到相同絕對截止時間。未提供時沿用單顆骰子的自然截止時間。
+     * - 動畫播完後在骰子自己的佇列尾端接一段 [DiceRollAnimationSpec.EXTRA_VIEWING_TICKS] 的等待。
+     *   點數落定後佇列（[isAnimating]）仍維持忙碌一小段時間，讓玩家看清楚點數。
+     * - 佇列播完（含這段緩衝）時，[tick] 讓骰子自我 [discard]，見該方法 KDoc。
      *
      * @param finalPoint 伺服器決定的最終朝上點數。
      * @param seed 重建確定性動畫所用的亂數種子。
      * @param startDelayTicks 動畫開始前等待的 tick 數。
      * @param startOffset 玩家手部附近起點相對最終落點的位移。
-     * @param sharedViewingEndGameTime 可選的共用絕對觀看截止時間；未提供時使用單顆骰子的自然截止時間。
+     * @param sharedViewingEndGameTime 可選的共用絕對觀看截止時間。未提供時使用單顆骰子的自然截止時間。
      */
     fun startRoll(
         finalPoint: MahjongDicePoint,
@@ -208,7 +207,7 @@ class MahjongDiceEntity(
      * [AnimatedMahjongEntity.isAnimating]（佇列是否還有東西）判斷，不需要另外自己計算「該存在多久」。
      *
      * 骰子立刻生成，「等牌牆掉落動畫播完」這段等待是佇列最前面的 `AnimationStep.WaitUntil` step（見
-     * [startRoll]），所以生成時間點不等於動畫開始播放的時間點；不能從生成那一刻起算固定 tick 數，否則
+     * [startRoll]），所以生成時間點不等於動畫開始播放的時間點。不能從生成那一刻起算固定 tick 數，否則
      * 等待會被算進存在時間，動畫（含尾端觀看緩衝）還沒播完就消失。以佇列是否還有東西判斷沒有這個落差，
      * 也沿用佇列跨世界重新載入的持久化，不必另外處理重新載入時一次補跑大量 tick 的情況。
      */
@@ -293,7 +292,7 @@ class MahjongDiceEntity(
         private val MANAGED_BY_GAME: EntityDataAccessor<Boolean> =
             SynchedEntityData.defineId(MahjongDiceEntity::class.java, EntityDataSerializers.BOOLEAN)
 
-        /** 同步正式骰子所屬麻將桌 UUID；空字串表示自由放置。 */
+        /** 同步正式骰子所屬麻將桌 UUID。空字串表示自由放置。 */
         private val MANAGED_TABLE_ID: EntityDataAccessor<String> =
             SynchedEntityData.defineId(MahjongDiceEntity::class.java, EntityDataSerializers.STRING)
 

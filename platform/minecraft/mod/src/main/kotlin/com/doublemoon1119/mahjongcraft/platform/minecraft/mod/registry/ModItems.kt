@@ -14,7 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerColo
 import net.minecraft.core.registries.Registries
 import net.minecraft.world.item.Item
 
-/** MahjongCraft 一般物品的集中登記點；各物品在 [register] 登記完成後才能讀取。 */
+/** MahjongCraft 一般物品的集中登記點。各物品在 [register] 登記完成後才能讀取。 */
 object ModItems {
     /** 登記完成後可讀取 [MAHJONG_DICE] 的項目。 */
     private lateinit var mahjongDiceEntry: RegisteredEntry<Item>

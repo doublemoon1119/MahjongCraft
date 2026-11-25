@@ -17,7 +17,7 @@ interface MahjongTableStructureBlock {
      * @param world 方塊所在的世界。
      * @param pos 此方塊的位置。
      * @param state 此方塊目前的狀態。
-     * @return 控制方塊位置；此方塊目前不屬於任何桌子時為 null。
+     * @return 控制方塊位置。此方塊目前不屬於任何桌子時為 null。
      */
     fun mahjongTableControllerPos(
         world: BlockGetter,

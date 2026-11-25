@@ -10,9 +10,9 @@ object MahjongDiceRollTimeline {
     /**
      * 依骰子數量建立連續的擲骰區段。
      *
-     * @param diceCounts 按照規則程序排列的每輪骰子數量；空清單代表沒有擲骰呈現。
+     * @param diceCounts 按照規則程序排列的每輪骰子數量。空清單代表沒有擲骰呈現。
      * @param initialDelayTicks 第一輪開始前要保留的前置 tick 數，例如牌牆落地動畫。
-     * @return 每輪的開始與結束相對 tick；順序與 [diceCounts] 相同。
+     * @return 每輪的開始與結束相對 tick。順序與 [diceCounts] 相同。
      * @throws IllegalArgumentException 前置等待為負數，或某輪使用未支援的骰子數量。
      */
     fun segments(

@@ -9,12 +9,12 @@ object SettlementRankingSettledEffect {
     const val DURATION_TICKS = 14.0
 
     /**
-     * 只為名次確實改變的列產生效果；時間軸外回傳無效果狀態。
+     * 只為名次確實改變的列產生效果。時間軸外回傳無效果狀態。
      *
      * @param elapsed 目前演出經過的 tick。
      * @param settledTick 名次落定效果的起始 tick。
      * @param rankChanged 該列名次是否有變化。
-     * @return 此時間點各項縮放、透明度與掃光進度；不活動時為 [State.NONE]。
+     * @return 此時間點各項縮放、透明度與掃光進度。不活動時為 [State.NONE]。
      */
     fun resolve(elapsed: Double, settledTick: Double, rankChanged: Boolean): State {
         if (!rankChanged) return State.NONE

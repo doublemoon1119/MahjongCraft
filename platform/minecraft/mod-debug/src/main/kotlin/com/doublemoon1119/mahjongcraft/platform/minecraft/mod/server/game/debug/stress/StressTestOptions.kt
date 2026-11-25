@@ -6,10 +6,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.stre
 import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.stress.StressTestPace
 
 /**
- * 解析指令中「名稱 值」成對的選項文字，例如 `history off warmup 30`；空白文字得到 [StressRunOptions.DEFAULT]。
+ * 解析指令中「名稱 值」成對的選項文字，例如 `history off warmup 30`。空白文字得到 [StressRunOptions.DEFAULT]。
  *
  * @param text 選項文字。
- * @return 解析結果；有多個錯誤時回報第一個。
+ * @return 解析結果。有多個錯誤時回報第一個。
  */
 fun parseStressRunOptions(text: String): StressOptionsParseResult {
     val tokens = text.trim().split(WHITESPACE).filter(String::isNotEmpty)
@@ -52,11 +52,11 @@ fun stressOptionSuggestions(text: String): Pair<Int, List<String>> {
 }
 
 /**
- * 套用一個選項的值；值無效時回傳 null。
+ * 套用一個選項的值。值無效時回傳 null。
  *
  * @param option 要更新的選項。
  * @param value 輸入的選項值。
- * @return 更新後的設定；值無效時為 null。
+ * @return 更新後的設定。值無效時為 null。
  */
 private fun StressRunOptions.with(option: StressOption, value: String): StressRunOptions? = when (option) {
     StressOption.PACE -> StressTestPace.entries.firstOrNull { it.commandName == value }?.let { copy(pace = it) }
@@ -67,10 +67,10 @@ private fun StressRunOptions.with(option: StressOption, value: String): StressRu
 }
 
 /**
- * 解析成 [option] 範圍內的整數；不是整數或超出範圍時回傳 null。
+ * 解析成 [option] 範圍內的整數。不是整數或超出範圍時回傳 null。
  *
  * @param option 提供合法整數範圍的選項。
- * @return 範圍內的整數；輸入不是整數或超出範圍時為 null。
+ * @return 範圍內的整數。輸入不是整數或超出範圍時為 null。
  */
 private fun String.toBoundedInt(option: StressOption): Int? = toIntOrNull()?.takeIf { it in requireNotNull(option.range) }
 

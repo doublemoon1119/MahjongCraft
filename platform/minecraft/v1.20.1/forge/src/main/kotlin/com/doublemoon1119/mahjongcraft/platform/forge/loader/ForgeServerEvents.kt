@@ -109,7 +109,7 @@ object ForgeServerEvents : ServerEvents {
         listen<PlayerEvent.StopTracking> { event -> (event.entity as? ServerPlayer)?.let { listener(event.target, it) } }
     }
 
-    /** 監聽器回傳 false 時取消事件；已被取消的破壞不會再詢問。 */
+    /** 監聽器回傳 false 時取消事件。已被取消的破壞不會再詢問。 */
     override fun onBeforePlayerBreakBlock(listener: (ServerLevel, ServerPlayer, BlockPos, BlockState) -> Boolean) {
         listen<BlockEvent.BreakEvent> { event ->
             val level = event.level as? ServerLevel ?: return@listen
@@ -127,7 +127,7 @@ object ForgeServerEvents : ServerEvents {
     }
 
     /**
-     * 只轉交伺服器端那一次；監聽器回傳 [InteractionResult.PASS] 以外的結果時取消事件並採用該結果。
+     * 只轉交伺服器端那一次。監聽器回傳 [InteractionResult.PASS] 以外的結果時取消事件並採用該結果。
      *
      * 玩家互動實體本身與互動實體上某個位置都會轉交：用戶端監聽器處理了互動時只送出後者。
      */
@@ -158,7 +158,7 @@ object ForgeServerEvents : ServerEvents {
     }
 
     /**
-     * 通知實體已加入伺服器世界；只由 mixin 在原版開始追蹤實體之後呼叫。
+     * 通知實體已加入伺服器世界。只由 mixin 在原版開始追蹤實體之後呼叫。
      *
      * @param entity 加入的實體。
      * @param level 實體所在的世界。
@@ -169,7 +169,7 @@ object ForgeServerEvents : ServerEvents {
     }
 
     /**
-     * 通知方塊實體已放進伺服器世界的區塊；只由 mixin 在區塊記錄方塊實體之後呼叫。
+     * 通知方塊實體已放進伺服器世界的區塊。只由 mixin 在區塊記錄方塊實體之後呼叫。
      *
      * @param blockEntity 載入的方塊實體。
      * @param level 方塊實體所在的世界。
@@ -180,13 +180,13 @@ object ForgeServerEvents : ServerEvents {
     }
 
     /**
-     * 通知玩家已破壞方塊；只由 mixin 在方塊確實被移除之後呼叫。
+     * 通知玩家已破壞方塊。只由 mixin 在方塊確實被移除之後呼叫。
      *
      * @param level 方塊所在的世界。
      * @param player 破壞方塊的玩家。
      * @param pos 方塊位置。
      * @param state 破壞前的方塊狀態。
-     * @param blockEntity 破壞前的方塊實體；沒有時為 null。
+     * @param blockEntity 破壞前的方塊實體。沒有時為 null。
      */
     @JvmStatic
     fun fireAfterPlayerBreakBlock(level: ServerLevel, player: ServerPlayer, pos: BlockPos, state: BlockState, blockEntity: BlockEntity?) {
@@ -194,7 +194,7 @@ object ForgeServerEvents : ServerEvents {
     }
 
     /**
-     * 在 Forge 的遊戲事件匯流排登記監聽器；不接收已被取消的事件。
+     * 在 Forge 的遊戲事件匯流排登記監聽器。不接收已被取消的事件。
      *
      * @param E 事件型別。
      * @param handler 收到事件時的處理。

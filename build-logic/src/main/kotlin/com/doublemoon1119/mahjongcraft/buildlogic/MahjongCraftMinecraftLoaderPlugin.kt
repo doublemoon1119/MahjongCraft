@@ -83,11 +83,12 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
 }
 
 /**
- * 把這個模組交付給玩家的 JAR 接到 root 的 [CI_ARTIFACTS_TASK_NAME]；[MinecraftModPackagingExtension.distributable] 為否時不接。
+ * 把這個模組交付給玩家的 JAR 接到 root 的 [CI_ARTIFACTS_TASK_NAME]。[MinecraftModPackagingExtension.distributable] 為否時不接。
  *
- * 交付的是轉成執行時名稱後的 JAR：Fabric Loom 模組的 `remapJar`、ModDevGradle 舊版 Forge 模組的 `reobfJar`，都沒有時是
- * `jar`。這些模組的 `jar` 使用開發時的名稱，不能交給玩家。root 沒有套用 target 管理外掛時（例如只建置部分專案的測試建置）
- * 不做任何事。
+ * - 交付的是轉成執行時名稱後的 JAR：Fabric Loom 模組的 `remapJar`、ModDevGradle 舊版 Forge 模組的 `reobfJar`，
+ *   都沒有時是 `jar`。
+ * - 上述模組的 `jar` 使用開發時的名稱，不能交給玩家。
+ * - root 沒有套用 target 管理外掛時（例如只建置部分專案的測試建置）不做任何事。
  *
  * @param packaging 這個模組的打包設定。
  */
@@ -108,11 +109,11 @@ private fun Project.contributeCiArtifact(packaging: MinecraftModPackagingExtensi
     }
 }
 
-/** 可交付 JAR 的任務名稱，依優先順序排列；最後的 `jar` 一定存在。 */
+/** 可交付 JAR 的任務名稱，依優先順序排列。最後的 `jar` 一定存在。 */
 private val DISTRIBUTED_JAR_TASK_NAMES: List<String> = listOf("remapJar", "reobfJar", "jar")
 
 /**
- * 模組目錄的名稱，例如 `platform/minecraft/v1.20.1/fabric` 的 `fabric`；作為產物名稱的一部分，也是
+ * 模組目錄的名稱，例如 `platform/minecraft/v1.20.1/fabric` 的 `fabric`。作為產物名稱的一部分，也是
  * [MinecraftModPackagingExtension.loader] 的預設值。
  *
  * @return 模組目錄的名稱。
@@ -127,13 +128,13 @@ private fun Project.platformLoader(): String = projectDir.name
 private fun Project.platformMinecraftVersion(): String = projectDir.parentFile.name.removePrefix("v")
 
 /**
- * [BUILD_METADATA_PROPERTY] 指定的建置資訊，例如 CI 傳入的 commit 編號；格式不符 SemVer 建置資訊時建置失敗。
+ * [BUILD_METADATA_PROPERTY] 指定的建置資訊，例如 CI 傳入的 commit 編號。格式不符 SemVer 建置資訊時建置失敗。
  *
- * 模組 metadata 的版本固定寫成 `<專案版本>+<Minecraft 版本>-<載入器>`，有建置資訊時再接 `.<建置資訊>`；產出的檔名已含
- * 載入器與 Minecraft 版本，只在專案版本後接 `+<建置資訊>`。`+` 之後依 SemVer 不影響版本比較，專案版本與各模組的版本
- * 政策都不變。
+ * - 模組 metadata 的版本固定寫成 `<專案版本>+<Minecraft 版本>-<載入器>`，有建置資訊時再接 `.<建置資訊>`。
+ * - 產出的檔名已含載入器與 Minecraft 版本，只在專案版本後接 `+<建置資訊>`。
+ * - 依 SemVer，`+` 之後不影響版本比較，專案版本與各模組的版本政策都不變。
  *
- * @return 建置資訊；沒有指定時為空。
+ * @return 建置資訊。沒有指定時為空。
  */
 private fun Project.buildMetadata(): Provider<Optional<String>> {
     val property = providers.gradleProperty(BUILD_METADATA_PROPERTY)
@@ -157,7 +158,7 @@ private val BUILD_METADATA_PATTERN = Regex("[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*")
 /**
  * 讓 Fabric Loom 依目標的 Java 版本決定 Minecraft 的執行函式庫。
  *
- * Loom 預設以執行 Gradle 的 Java 判斷，Gradle 跑在 Java 19 以上時會把 LWJGL 換成較新的版本；開發執行實際使用目標的
+ * Loom 預設以執行 Gradle 的 Java 判斷，Gradle 跑在 Java 19 以上時會把 LWJGL 換成較新的版本。開發執行實際使用目標的
  * Java 工具鏈，換掉後會與玩家的環境不同，例如 Sodium 會拒絕啟動。已經手動指定時不覆寫。
  */
 private fun Project.alignLoomRuntimeJava() {
@@ -197,9 +198,9 @@ private const val MODDEV_REMAPPED_RUNTIME_CONFIGURATION = "modRuntimeOnly"
 private const val LOOM_LOCAL_RUNTIME_CONFIGURATION = "modLocalRuntime"
 
 /**
- * 讓這個模組的 Fabric Loom 重新映射任務使用整個建置共用的單一名額；其他任務照常並行。
+ * 讓這個模組的 Fabric Loom 重新映射任務使用整個建置共用的單一名額。其他任務照常並行。
  *
- * 以任務名稱比對，build-logic 不需要依賴 Loom；沒有套用 Loom 的 loader 模組不受影響。
+ * 以任務名稱比對，build-logic 不需要依賴 Loom。沒有套用 Loom 的 loader 模組不受影響。
  */
 private fun Project.serializeRemapTasks() {
     val remapSerialization = gradle.sharedServices.registerIfAbsent(

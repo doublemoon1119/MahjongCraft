@@ -13,7 +13,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.Screen
 
 /**
- * 開啟規則一覽：一般說明延後到下一個客戶端 tick 開啟，避免指令執行後關閉聊天畫面時蓋掉新畫面；房間與歷史畫面立即切換。
+ * 開啟規則一覽：一般說明延後到下一個客戶端 tick 開啟，避免指令執行後關閉聊天畫面時蓋掉新畫面。房間與歷史畫面立即切換。
  *
  * @property catalogueRegistry 規則目錄來源。
  * @property ruleNames 規則名稱來源。
@@ -35,7 +35,7 @@ class RuleCatalogueScreenController internal constructor(
     private var registered = false
 
     /**
-     * 註冊延後開啟事件；只能由 client entrypoint 呼叫一次。
+     * 註冊延後開啟事件。只能由 client entrypoint 呼叫一次。
      *
      * @param events 登記用戶端事件用的事件來源。
      */
@@ -64,7 +64,7 @@ class RuleCatalogueScreenController internal constructor(
      * 立即開啟一般說明的規則一覽並選擇指定分類，返回時回到 [returnScreen]。
      *
      * @param returnScreen 開啟規則一覽的畫面。
-     * @param categoryId 開啟時要選擇的分類，例如 [BuiltInRuleCatalogueCategoryIds.BASICS]；所選規則沒有這個分類或為 null 時選擇全部分類。
+     * @param categoryId 開啟時要選擇的分類，例如 [BuiltInRuleCatalogueCategoryIds.BASICS]。所選規則沒有這個分類或為 null 時選擇全部分類。
      */
     fun openFrom(returnScreen: Screen, categoryId: String?) {
         Minecraft.getInstance().setScreen(
@@ -81,7 +81,7 @@ class RuleCatalogueScreenController internal constructor(
      *
      * @param context 開啟時的規則與設定來源。
      * @param exit 關閉後回到哪裡，以及開啟來源是否仍然有效。
-     * @param initialCategoryId 開啟時要選擇的分類；null 時選擇全部分類。
+     * @param initialCategoryId 開啟時要選擇的分類。null 時選擇全部分類。
      * @return 規則一覽畫面。
      */
     internal fun createScreen(

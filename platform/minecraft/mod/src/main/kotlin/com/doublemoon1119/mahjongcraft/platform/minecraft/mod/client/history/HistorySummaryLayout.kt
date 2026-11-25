@@ -90,7 +90,7 @@ internal data class HistorySummaryLayout(
      * @param contentHeight 內容總高度。
      * @param scrollOffset 目前捲動偏移。
      * @param mouseY 按下時的游標垂直座標。
-     * @return 滑塊內的連續座標偏移；點擊軌道空白處時使用滑塊中央。
+     * @return 滑塊內的連續座標偏移。點擊軌道空白處時使用滑塊中央。
      */
     fun grabOffset(contentHeight: Int, scrollOffset: Double, mouseY: Double): Double {
         val bar = scrollbar(contentHeight, scrollOffset)
@@ -127,7 +127,7 @@ internal data class HistorySummaryLayout(
     /** 版面建立入口。 */
     companion object {
         /**
-         * 依畫面尺寸建立版面；內容從標題下方開始。
+         * 依畫面尺寸建立版面。內容從標題下方開始。
          *
          * @param width 畫面寬度。
          * @param height 畫面高度。

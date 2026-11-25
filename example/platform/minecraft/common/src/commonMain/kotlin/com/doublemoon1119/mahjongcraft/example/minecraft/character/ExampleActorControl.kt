@@ -36,7 +36,7 @@ class ExampleActorControl<S : Any>(
     }
 
     /**
-     * 只恢復相同 handle 的狀態；重複或過期釋放不影響別人。
+     * 只恢復相同 handle 的狀態。重複或過期釋放不影響別人。
      *
      * @param owner 要結束的 handle。
      */

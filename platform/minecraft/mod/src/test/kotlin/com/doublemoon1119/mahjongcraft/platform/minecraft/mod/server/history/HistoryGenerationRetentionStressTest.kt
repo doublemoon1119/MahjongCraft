@@ -69,7 +69,7 @@ class HistoryGenerationRetentionStressTest {
     }
 
     /**
-     * 取得並驗證百場壓力測試資料庫；未提供路徑時略過需要既有資料的測試。
+     * 取得並驗證百場壓力測試資料庫。未提供路徑時略過需要既有資料的測試。
      *
      * @return 僅供複製的既有資料庫路徑，或環境變數未設定時的 null。
      */
@@ -97,8 +97,8 @@ class HistoryGenerationRetentionStressTest {
      * 建立使用正式 persistence registry 與 SQLite 邊界的 writer。
      *
      * @param store writer 使用的權威待寫狀態。
-     * @param maxMatches 覆蓋測試用的場數上限；null 使用預設值。
-     * @param maxDiskMiB 覆蓋測試用的磁碟上限；null 使用預設值。
+     * @param maxMatches 覆蓋測試用的場數上限。null 使用預設值。
+     * @param maxDiskMiB 覆蓋測試用的磁碟上限。null 使用預設值。
      * @return 尚未附加資料庫的歷史 writer。
      */
     private fun writer(

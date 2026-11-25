@@ -11,7 +11,7 @@ import kotlin.uuid.Uuid
 /**
  * 將可重建桌況的回覆與桌子移除通知序列化到伺服器主執行緒。
  *
- * 準備內容可能掛起，因此送出前再次檢查 session 與位置條目身分；最後檢查與送出不可掛起。
+ * 準備內容可能掛起，因此送出前再次檢查 session 與位置條目身分。最後檢查與送出不可掛起。
  * 移除請求只登記記憶體標記，不等待交付鎖，避免主執行緒清理入口互相等待。
  *
  * @property dispatchers 伺服器主執行緒排程器。
@@ -25,14 +25,14 @@ class TableStateDelivery(
     /** 保護最後來源檢查及所有桌況封包交付，不與權威交易鎖共用。 */
     private val mutex = Mutex()
 
-    /** 已開始移除的原來源；新條目即使 revision 相同也不會被舊標記阻擋。 */
+    /** 已開始移除的原來源。新條目即使 revision 相同也不會被舊標記阻擋。 */
     private val removals = AtomicReference<Map<Uuid, TableStateTicket>>(emptyMap())
 
     /**
      * 取得工作建立時的來源，不存取原生世界物件。
      *
      * @param tableId 工作對應的桌子。
-     * @return 有效來源票據；桌子或 session 不存在時為 null。
+     * @return 有效來源票據。桌子或 session 不存在時為 null。
      */
     fun capture(tableId: Uuid): TableStateTicket? {
         val sessionId = environment.sessionId ?: return null
@@ -80,10 +80,10 @@ class TableStateDelivery(
         !environment.hasAuthoritativeState(ticket.tableId)
 
     /**
-     * 在主執行緒序列準備並送出回覆；來源在等待或準備期間消失時略過。
+     * 在主執行緒序列準備並送出回覆。來源在等待或準備期間消失時略過。
      *
      * @param ticket 呼叫端在工作建立時捕捉的來源。
-     * @param prepare 可掛起的內容準備；沒有可交付內容時回傳 null。
+     * @param prepare 可掛起的內容準備。沒有可交付內容時回傳 null。
      * @param send 最後來源檢查後立即執行的送出動作，不得掛起。
      * @return 內容已交付時為 true。
      */
@@ -132,7 +132,7 @@ class TableStateDelivery(
      *
      * @param tableId 失效來源的桌子。
      * @param requestId 本次失效請求的唯一識別碼。
-     * @return 符合請求身分的票據；已釋放或已取代時為 null。
+     * @return 符合請求身分的票據。已釋放或已取代時為 null。
      */
     fun removalTicket(tableId: Uuid, requestId: Uuid): TableStateTicket? = removals.load()[tableId]?.takeIf { it.requestId == requestId }
 

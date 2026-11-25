@@ -11,7 +11,7 @@ import kotlinx.serialization.json.JsonElement
 /**
  * 將具型別的局況資訊編碼，供 entity tracking 與 NBT 持久化使用。
  *
- * 每個參數都有必填的 `kind`、`value` 與 `tile` 欄位，不使用的欄位填入 null；牌資料使用 [TileDto]。
+ * 每個參數都有必填的 `kind`、`value` 與 `tile` 欄位，不使用的欄位填入 null。牌資料使用 [TileDto]。
  * 各參數獨立解碼，未知種類、資料損壞或訊息 ID 格式無效時，以 [RoundInfoArgument.Unrecognized] 保留原位置。
  */
 object RoundInfoLineCodec {
@@ -36,7 +36,7 @@ object RoundInfoLineCodec {
     )
 
     /**
-     * 將 JSON 解碼為局況顯示行；格式無效時回傳空清單，無法辨識的參數保留為佔位值。
+     * 將 JSON 解碼為局況顯示行。格式無效時回傳空清單，無法辨識的參數保留為佔位值。
      *
      * @param encoded 要解碼的 JSON 字串。
      * @return 成功還原的局況顯示行。
@@ -58,7 +58,7 @@ private data class EncodedLine(
     val args: List<JsonElement>,
 ) {
     /**
-     * 還原局況顯示行；個別參數無法解碼時以佔位值保留原位置。
+     * 還原局況顯示行。個別參數無法解碼時以佔位值保留原位置。
      *
      * @param json 局況資料使用的 JSON 編解碼器。
      * @return 保留參數順序的局況顯示行。
@@ -76,8 +76,8 @@ private data class EncodedLine(
  * JSON 中單一局況顯示參數的型別化表示。
  *
  * @property kind 參數的型別標記。
- * @property value 參數的文字編碼值；不使用時為 null。
- * @property tile 參數的牌 DTO；不使用時為 null。
+ * @property value 參數的文字編碼值。不使用時為 null。
+ * @property tile 參數的牌 DTO。不使用時為 null。
  */
 @Serializable
 private data class EncodedArgument(
@@ -85,7 +85,7 @@ private data class EncodedArgument(
     val value: String?,
     val tile: TileDto?,
 ) {
-    /** 依型別標記還原局況參數；無法辨識或資料無效時回傳佔位值。 */
+    /** 依型別標記還原局況參數。無法辨識或資料無效時回傳佔位值。 */
     fun toDomain(): RoundInfoArgument = when (kind) {
         "number" -> value?.toIntOrNull()?.let(RoundInfoArgument::Number) ?: RoundInfoArgument.Unrecognized
         "wind" -> value?.let { runCatching { RoundInfoArgument.WindValue(Wind.valueOf(it)) }.getOrNull() }

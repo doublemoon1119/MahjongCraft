@@ -30,7 +30,7 @@ class TaiwanDebugGameScenariosTest {
     private val registry = DebugGameScenarioRegistry()
     private val validator = DebugGameScenarioValidator(scenarioModuleRegistry)
 
-    /** 莊家先摸開門牌，再逐輪補花：莊家兩輪共三張、下家與上家各一張；之後下家摸到的花補到的又是花。 */
+    /** 莊家先摸開門牌，再逐輪補花：莊家兩輪共三張、下家與上家各一張。之後下家摸到的花補到的又是花。 */
     @Test
     fun `flower replacement scenario chains opening and mid-game replacements`() {
         val (state) = build("mahjongcraft:taiwan/debug/flower_replacement")
@@ -46,7 +46,7 @@ class TaiwanDebugGameScenariosTest {
         assertTrue(TaiwanTileTypes.isFlower(opened.tableState.reservedWallTiles.first().tile))
     }
 
-    /** 呼叫者當莊家、起手一張花；摸開門牌後補一次花就結束，補到的牌與開門牌都不是花，其他人沒有花。 */
+    /** 呼叫者當莊家、起手一張花。摸開門牌後補一次花就結束，補到的牌與開門牌都不是花，其他人沒有花。 */
     @Test
     fun `dealer flower scenario makes the invoker the dealer with one opening flower`() {
         val (state, invokerId) = build("mahjongcraft:taiwan/debug/dealer_flower")
@@ -93,7 +93,7 @@ class TaiwanDebugGameScenariosTest {
         assertIs<TaiwanFlowerFlow.Result.Completed>(TaiwanFlowerFlow.process(state, openingOrder(state)))
     }
 
-    /** 呼叫者剛摸到牌；活牌只剩一張花，其餘七張花已在花區；下家摸到那張花後沒有牌可以補。 */
+    /** 呼叫者剛摸到牌。活牌只剩一張花，其餘七張花已在花區。下家摸到那張花後沒有牌可以補。 */
     @Test
     fun `last tile flower scenario leaves one flower and no replacement`() {
         val (state, invokerId) = build("mahjongcraft:taiwan/debug/last_tile_flower")
@@ -113,7 +113,7 @@ class TaiwanDebugGameScenariosTest {
         assertIs<TaiwanFlowerFlow.Result.Exhausted>(TaiwanFlowerFlow.process(drawn, listOf(drawer.id)))
     }
 
-    /** 上家剛打出白，呼叫者已碰發、中；碰白後上家成為大三元的包牌者，活牌最前端交錯排著一、四萬，花在活牌尾端。 */
+    /** 上家剛打出白，呼叫者已碰發、中。碰白後上家成為大三元的包牌者，活牌最前端交錯排著一、四萬，花在活牌尾端。 */
     @Test
     fun `pao scenario lets the invoker pon the third dragon from the upstream player`() {
         val (state, invokerId) = build("mahjongcraft:taiwan/debug/before_pao_pon")
@@ -145,7 +145,7 @@ class TaiwanDebugGameScenariosTest {
         assertEquals(TaiwanPaoLiability(TaiwanPaoHand.BIG_DRAGONS, direction), liability)
     }
 
-    /** 副露擁擠情境：呼叫者有三組明槓、一組碰與八張花，可以碰上家打出的白；全桌不到四個槓，其他人不能碰或胡。 */
+    /** 副露擁擠情境：呼叫者有三組明槓、一組碰與八張花，可以碰上家打出的白。全桌不到四個槓，其他人不能碰或胡。 */
     @Test
     fun `crowded melds scenario offers a fifth meld without four kongs`() {
         val (state, invokerId) = build("mahjongcraft:taiwan/debug/crowded_melds")
@@ -202,7 +202,7 @@ class TaiwanDebugGameScenariosTest {
      * 座位花區的花牌張數。
      *
      * @param state 桌況。
-     * @param seatIndex 座位索引；超過人數時繞回。
+     * @param seatIndex 座位索引。超過人數時繞回。
      * @return 花牌張數。
      */
     private fun flowerCount(state: TableState, seatIndex: Int): Int = state.players[seatIndex % PLAYERS].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles?.size ?: 0

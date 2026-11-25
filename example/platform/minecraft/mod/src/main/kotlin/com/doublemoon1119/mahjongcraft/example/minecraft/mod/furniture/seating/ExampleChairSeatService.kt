@@ -17,7 +17,7 @@ import net.minecraft.world.phys.AABB
 /** 範例椅子與長凳手動右鍵、建立人偶及座位 provider 共用的入座服務。 */
 class ExampleChairSeatService {
     /**
-     * 清理自家空支撐後建立新支撐並入座；已有乘客時拒絕，入座失敗則恢復乘坐者。
+     * 清理自家空支撐後建立新支撐並入座。已有乘客時拒絕，入座失敗則恢復乘坐者。
      *
      * @param world 椅子所在的伺服器世界。
      * @param pos 範例椅子或長凳的方塊位置。

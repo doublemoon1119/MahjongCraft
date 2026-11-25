@@ -16,7 +16,7 @@ class DebugGameScenarioRegistry {
      * 取得指定識別碼的情境。
      *
      * @param id 情境的完整識別碼。
-     * @return 已登記的情境；未知識別碼為 null。
+     * @return 已登記的情境。未知識別碼為 null。
      */
     fun get(id: String): DebugGameScenario? = scenariosById[id]
 

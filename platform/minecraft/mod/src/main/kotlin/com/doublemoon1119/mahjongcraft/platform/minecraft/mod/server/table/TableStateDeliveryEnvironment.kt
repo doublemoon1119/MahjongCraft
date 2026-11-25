@@ -4,19 +4,19 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEnt
 import kotlin.uuid.Uuid
 
 /**
- * 提供桌級交付使用的目前來源身分；唯讀查詢不會建立或修改權威狀態。
+ * 提供桌級交付使用的目前來源身分。唯讀查詢不會建立或修改權威狀態。
  *
- * session 與位置條目查詢必須讀取已發布的不可變資料；追蹤觀察者只在伺服器主執行緒查詢。
+ * session 與位置條目查詢必須讀取已發布的不可變資料。追蹤觀察者只在伺服器主執行緒查詢。
  */
 interface TableStateDeliveryEnvironment {
-    /** 目前伺服器這次啟動的身分；未啟動時為 null。 */
+    /** 目前伺服器這次啟動的身分。未啟動時為 null。 */
     val sessionId: Uuid?
 
     /**
      * 取得目前桌子位置條目，物件身分代表這次位置來源。
      *
      * @param tableId 要查詢的桌子。
-     * @return 目前位置條目；已移除時為 null。
+     * @return 目前位置條目。已移除時為 null。
      */
     fun locationEntry(tableId: Uuid): TableLocationEntry?
 

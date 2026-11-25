@@ -35,7 +35,7 @@ class GameConfigTextFormatter(
     private val networkRegistries: NetworkDtoRegistries,
 ) {
     /**
-     * 顯示完整設定；無法解碼時安全退回原始 JSON，無 schema 時列出規則 ID。
+     * 顯示完整設定。無法解碼時安全退回原始 JSON，無 schema 時列出規則 ID。
      *
      * @param configJson 網路格式的遊戲設定 JSON。
      * @return 本地化的完整設定文字。
@@ -44,11 +44,11 @@ class GameConfigTextFormatter(
         .fold(::full, { Component.literal(configJson) })
 
     /**
-     * 只顯示實際改變的欄位；規則模組不同時只列出新舊規則名稱。
+     * 只顯示實際改變的欄位。規則模組不同時只列出新舊規則名稱。
      *
      * @param oldConfigJson 變更前的遊戲設定 JSON。
      * @param newConfigJson 變更後的遊戲設定 JSON。
-     * @return 本地化差異文字；解碼失敗時回傳新設定原始 JSON。
+     * @return 本地化差異文字。解碼失敗時回傳新設定原始 JSON。
      */
     fun changes(oldConfigJson: String, newConfigJson: String): MutableComponent = runCatching {
         val old = decode(oldConfigJson)

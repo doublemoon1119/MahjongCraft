@@ -19,7 +19,7 @@ import thedarkcolour.kotlinforforge.forge.MOD_BUS
 /**
  * 範例 mod 的 Forge 啟動入口，不建立第二份 MahjongCraft 依賴注入容器。
  *
- * 範例內容在共用程式中列出，這裡交給 Forge 的登記事件寫入，並接上生物屬性與互動事件；擴充由 `mods.toml` 宣告，交給本體發現。
+ * 範例內容在共用程式中列出，這裡交給 Forge 的登記事件寫入，並接上生物屬性與互動事件。擴充由 `mods.toml` 宣告，交給本體發現。
  */
 @Mod(ExampleExtensionIds.MOD_ID)
 object ExampleMod {
@@ -43,7 +43,7 @@ object ExampleMod {
     }
 
     /**
-     * 拿人偶物品對坐墊按右鍵時讓人偶坐上坐墊，並取消原本的互動；其他互動不處理。
+     * 拿人偶物品對坐墊按右鍵時讓人偶坐上坐墊，並取消原本的互動。其他互動不處理。
      *
      * @param event 玩家對實體的互動。
      */

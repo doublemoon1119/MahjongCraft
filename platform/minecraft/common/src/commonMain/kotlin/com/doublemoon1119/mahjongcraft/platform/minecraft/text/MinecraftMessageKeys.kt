@@ -127,7 +127,7 @@ object MinecraftMessageKeys {
      */
     const val AI_STRATEGY_CHANGED = "mahjongcraft.message.ai_strategy_changed"
 
-    /** 指定的新策略與目前策略相同，操作仍成功（冪等）；依序帶序號與策略顯示名稱兩個參數（各一個 `%s`）。 */
+    /** 指定的新策略與目前策略相同，操作仍成功（冪等）。依序帶序號與策略顯示名稱兩個參數（各一個 `%s`）。 */
     const val AI_STRATEGY_UNCHANGED = "mahjongcraft.message.ai_strategy_unchanged"
 
     /** 目標玩家不是 AI，無法更換策略。 */
@@ -142,7 +142,7 @@ object MinecraftMessageKeys {
     /** `kick` 指令補全中 AI 候選項目的提示文字，依序帶序號與策略顯示名稱兩個參數（各一個 `%s`）。 */
     const val KICK_CANDIDATE_AI_LABEL = "mahjongcraft.message.kick_candidate_ai_label"
 
-    /** 內建隨機出牌 AI 策略的顯示名稱；未登記顯示名稱的策略使用其識別字串。 */
+    /** 內建隨機出牌 AI 策略的顯示名稱。未登記顯示名稱的策略使用其識別字串。 */
     const val AI_STRATEGY_RANDOM = "mahjongcraft.message.ai_strategy_random"
 
     /** 內建初級 AI 策略的顯示名稱，用途同 [AI_STRATEGY_RANDOM]。 */
@@ -160,7 +160,7 @@ object MinecraftMessageKeys {
      */
     const val GAME_CONFIG_CHANGED = "mahjongcraft.message.game_config_changed"
 
-    /** 提供的新設定與目前設定相同，操作仍成功（冪等）；帶一個目前設定的可互動文字參數（`%s`）。 */
+    /** 提供的新設定與目前設定相同，操作仍成功（冪等）。帶一個目前設定的可互動文字參數（`%s`）。 */
     const val GAME_CONFIG_UNCHANGED = "mahjongcraft.message.game_config_unchanged"
 
     /** 變更遊戲設定失敗。 */
@@ -170,7 +170,7 @@ object MinecraftMessageKeys {
     const val GAME_CONFIG_LABEL = "mahjongcraft.message.game_config_label"
 
     /**
-     * 顯示所在麻將遊戲目前設定，帶一個可互動文字參數（一個 `%s`，見 [GAME_CONFIG_LABEL]）；點擊該文字
+     * 顯示所在麻將遊戲目前設定，帶一個可互動文字參數（一個 `%s`，見 [GAME_CONFIG_LABEL]）。點擊該文字
      * 會開啟設定編輯畫面。
      */
     const val SHOW_GAME_CONFIG = "mahjongcraft.message.show_game_config"
@@ -453,19 +453,19 @@ object MinecraftMessageKeys {
     /** 角色資料無法讀取，已保留原區段並停用角色修改。 */
     const val DATA_PROBLEM_AI_CHARACTERS = "mahjongcraft.message.data_problem_ai_characters"
 
-    /** 可能缺少提供某型別的擴充；參數為擴充的命名空間。 */
+    /** 可能缺少提供某型別的擴充。參數為擴充的命名空間。 */
     const val DATA_CAUSE_MISSING_EXTENSION = "mahjongcraft.message.data_cause_missing_extension"
 
-    /** 資料由較新版本保存；參數為資料版本與目前支援的版本。 */
+    /** 資料由較新版本保存。參數為資料版本與目前支援的版本。 */
     const val DATA_CAUSE_NEWER_FORMAT = "mahjongcraft.message.data_cause_newer_format"
 
     /** 無法判斷原因。 */
     const val DATA_CAUSE_UNREADABLE = "mahjongcraft.message.data_cause_unreadable"
 
-    /** 無法讀取的檔案路徑；參數為相對於世界資料夾的路徑。 */
+    /** 無法讀取的檔案路徑。參數為相對於世界資料夾的路徑。 */
     const val DATA_FILE = "mahjongcraft.message.data_file"
 
-    /** 無法讀取且未被變更的檔案路徑；參數為相對於世界資料夾的路徑。 */
+    /** 無法讀取且未被變更的檔案路徑。參數為相對於世界資料夾的路徑。 */
     const val DATA_FILE_UNCHANGED = "mahjongcraft.message.data_file_unchanged"
 
     /** 指向檔案路徑時說明點擊可複製。 */
@@ -474,7 +474,7 @@ object MinecraftMessageKeys {
     /** 指向後顯示原因細節的標籤文字。 */
     const val DATA_DETAIL_LABEL = "mahjongcraft.message.data_detail_label"
 
-    /** 缺少擴充時的原因細節；參數為存檔中的型別識別碼。 */
+    /** 缺少擴充時的原因細節。參數為存檔中的型別識別碼。 */
     const val DATA_CAUSE_MISSING_EXTENSION_DETAIL = "mahjongcraft.message.data_cause_missing_extension_detail"
 
     /** 無法判斷原因時，接在錯誤摘要後的可能原因說明。 */

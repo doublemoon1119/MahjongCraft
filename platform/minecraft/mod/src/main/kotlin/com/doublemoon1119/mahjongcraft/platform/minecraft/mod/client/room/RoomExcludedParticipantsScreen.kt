@@ -26,7 +26,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /**
- * 房主管理暫時排除者的可搜尋清單；只送解除請求，更新以伺服器快照為準。
+ * 房主管理暫時排除者的可搜尋清單。只送解除請求，更新以伺服器快照為準。
  *
  * @property parent 關閉後返回的房間畫面。
  * @property readRoom 目前已授權的房間快照。
@@ -57,13 +57,13 @@ internal class RoomExcludedParticipantsScreen(
     /** 依目前顯示名稱篩選的名單。 */
     private var filtered = emptyList<Uuid>()
 
-    /** 已解析的名稱；等待解除確認時保留，直到名單移除或請求逾時。 */
+    /** 已解析的名稱。等待解除確認時保留，直到名單移除或請求逾時。 */
     private var labels = emptyMap<Uuid, String>()
 
     /** 名稱以外的身分資訊，不猜測未公開的實體。 */
     private var identities = emptyMap<Uuid, ExcludedParticipantIdentity>()
 
-    /** 個別操作的等待期限；收到權威更新或逾時後才解除等待。 */
+    /** 個別操作的等待期限。收到權威更新或逾時後才解除等待。 */
     private val pending = mutableMapOf<Uuid, Duration>()
 
     /** 只保留畫面可見列的解除按鈕。 */
@@ -156,7 +156,7 @@ internal class RoomExcludedParticipantsScreen(
         if (::clearAll.isInitialized) clearAll.active = entries.isNotEmpty() && pending.isEmpty()
     }
 
-    /** 全部解除不受搜尋文字限制；確認後仍由伺服器檢查權限與最新名單。 */
+    /** 全部解除不受搜尋文字限制。確認後仍由伺服器檢查權限與最新名單。 */
     private fun confirmClearAll() {
         val confirmation = object : ConfirmScreen(
             { accepted ->
@@ -295,7 +295,7 @@ internal class RoomExcludedParticipantsScreen(
         /** 解除按鈕與列右緣的距離。 */
         const val ROW_BUTTON_INSET: Int = 4
 
-        /** 底部按鈕列的格數；完成固定在最右一格。 */
+        /** 底部按鈕列的格數。完成固定在最右一格。 */
         const val FOOTER_SLOTS: Int = 4
 
         /** 只解除本地等待，不假裝伺服器已成功。 */

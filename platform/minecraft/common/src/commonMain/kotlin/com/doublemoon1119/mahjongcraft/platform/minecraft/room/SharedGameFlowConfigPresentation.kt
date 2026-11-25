@@ -12,7 +12,7 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * 各規則共用的出牌時間、觀戰設定，以及由規則選擇流程提供的選用規則選擇時間。
  *
- * 登記規則時統一加入出牌時間與觀戰欄位；只有規則選擇流程提供預設時間的規則，才加入規則選擇時間欄位。
+ * 登記規則時統一加入出牌時間與觀戰欄位。只有規則選擇流程提供預設時間的規則，才加入規則選擇時間欄位。
  * 規則作者不需要另寫共用欄位，也不會因為設定欄位而自動產生遊戲操作。
  */
 internal object SharedGameFlowConfigPresentation {
@@ -26,7 +26,7 @@ internal object SharedGameFlowConfigPresentation {
      * 將保留的流程分類與欄位附加到規則呈現定義。
      *
      * @param definition 規則提供的原始設定呈現定義。
-     * @param ruleDecisionConfig 規則選擇流程提供的預設設定；沒有時不加入規則選擇時間欄位。
+     * @param ruleDecisionConfig 規則選擇流程提供的預設設定。沒有時不加入規則選擇時間欄位。
      * @return 包含共用流程分類與欄位的標準化定義。
      */
     fun normalize(

@@ -47,7 +47,7 @@ class ExamplePairingRoundOpeningProcedure(
     }
 
     /**
-     * 建立兩顆骰子的要求；骰子結果由共用執行器產生。
+     * 建立兩顆骰子的要求。骰子結果由共用執行器產生。
      *
      * @param playerId 實際擲骰者。
      * @return 下一輪要求。

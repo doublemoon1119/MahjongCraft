@@ -17,7 +17,7 @@ internal class GuideTooltipPlacement(
     private val anchorBottom: Int,
 ) : ClientTooltipPositioner {
     /**
-     * 計算提示框文字區左上角的位置；提示框背景比文字區四周多出 [TOOLTIP_BACKGROUND_MARGIN]。
+     * 計算提示框文字區左上角的位置。提示框背景比文字區四周多出 [TOOLTIP_BACKGROUND_MARGIN]。
      *
      * @param screenWidth 畫面寬度。
      * @param screenHeight 畫面高度。

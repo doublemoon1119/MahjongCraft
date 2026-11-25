@@ -35,7 +35,7 @@ class MahjongCraftExtensionsTest {
     @AfterTest
     fun tearDown() = stopKoin()
 
-    /** 同一批 discovery 只讀一次；三層依序回呼，無新增登記的來源只合併為一筆空分類。 */
+    /** 同一批 discovery 只讀一次。三層依序回呼，無新增登記的來源只合併為一筆空分類。 */
     @Test
     fun `bootstrap materializes discovery once and merges no op sources across layers`() {
         val koin = startKoin {
@@ -61,7 +61,7 @@ class MahjongCraftExtensionsTest {
         assertTrue(registries.seatProviderRegistry.isFrozen)
     }
 
-    /** 原生整合回呼失敗會中止；先前層已凍結但原生整合層不凍結，不承諾回滾或重新初始化。 */
+    /** 原生整合回呼失敗會中止。先前層已凍結但原生整合層不凍結，不承諾回滾或重新初始化。 */
     @Test
     fun `later layer failure aborts bootstrap without rolling back earlier layers`() {
         val koin = startKoin {
@@ -124,7 +124,7 @@ class MahjongCraftExtensionsTest {
      * 同時參與三層、但不新增項目的測試擴充。
      *
      * @property calls 依執行順序記錄回呼。
-     * @property seatFailure 座位回呼應拋出的例外；為 null 時正常完成。
+     * @property seatFailure 座位回呼應拋出的例外。為 null 時正常完成。
      */
     private class RecordingExtension(
         private val calls: MutableList<String>,

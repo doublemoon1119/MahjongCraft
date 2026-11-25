@@ -20,10 +20,12 @@ import net.minecraft.server.level.ServerPlayer
 import kotlin.uuid.Uuid
 
 /**
- * [GameEventPublisher] 的 Minecraft 實作。呼叫端（各 use case）在呼叫 `publish` 前已經把最新快照寫進
- * [gameSnapshotRepository]，這裡只需要讀出來組 DTO 送出，不用重新呼叫任何 sync use case。
- * 目標玩家不在線或沒有可見快照時不送出；後續同步可取得最新狀態，但不補發這次動作事件。
- * 對局結束時，場次參與者與記錄決策在交付前依已發布的權威狀態記下一次，不受個別封包是否送出影響。
+ * [GameEventPublisher] 的 Minecraft 實作。
+ *
+ * - 呼叫端（各 use case）在呼叫 `publish` 前已經把最新快照寫進 [gameSnapshotRepository]。
+ *   這裡只讀出來組 DTO 送出，不重新呼叫任何 sync use case。
+ * - 目標玩家不在線或沒有可見快照時不送出。後續同步可取得最新狀態，但不補發這次動作事件。
+ * - 對局結束時，場次參與者與記錄決策在交付前依已發布的權威狀態記下一次，不受個別封包是否送出影響。
  *
  * @property gameSnapshotRepository 玩家可見的對局快照來源。
  * @property tableStateDelivery 統一檢查桌子來源並序列化桌況封包交付的邊界。
@@ -56,7 +58,7 @@ class GameEventPublisherImpl(
      * 對局結束時記下場次參與者與記錄決策，讓客戶端收到結束事件後即可查詢保存狀態。
      *
      * @param gameId 結束的對局。
-     * @param action 本次發布的動作；不是對局結束時不做事。
+     * @param action 本次發布的動作。不是對局結束時不做事。
      */
     private fun rememberEndedMatch(gameId: Uuid, action: GameAction) {
         if (action !is GameAction.MatchEnded) return

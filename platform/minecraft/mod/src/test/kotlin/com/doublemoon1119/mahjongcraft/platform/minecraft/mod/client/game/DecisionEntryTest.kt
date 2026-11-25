@@ -152,7 +152,7 @@ class DecisionEntryTest {
         assertEquals("mahjongcraft.hud.action.confirm", translationKeyOf(entries.single()))
     }
 
-    /** 單選的規則選擇每個選項各一張卡，並保留原順序；選項附帶的牌顯示在那個選項的卡上，代表跳過的選項不佔卡片。 */
+    /** 單選的規則選擇每個選項各一張卡，並保留原順序。選項附帶的牌顯示在那個選項的卡上，代表跳過的選項不佔卡片。 */
     @Test
     fun `builds one card per rule decision option`() {
         val entries = decisionEntriesFrom(
@@ -222,7 +222,7 @@ class DecisionEntryTest {
     }
 
     /**
-     * 取出卡片標題的翻譯 key；未知 ID 保留原始字串。
+     * 取出卡片標題的翻譯 key。未知 ID 保留原始字串。
      *
      * @param entry 要讀取標題的卡片。
      * @return 翻譯鍵或未知動作的原始標籤。

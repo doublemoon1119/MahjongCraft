@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.A
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.TablePropPreviewRegistrar
 
 /**
- * 獨立的客戶端擴充入口；由載入器另外找出（Fabric 為 `mahjongcraft:client_extension` entrypoint），不由伺服器掃描。
+ * 獨立的客戶端擴充入口。由載入器另外找出（Fabric 為 `mahjongcraft:client_extension` entrypoint），不由伺服器掃描。
  * 需要原生客戶端類別的工廠留在此入口，不能放入共用或伺服器的擴充初始化。
  */
 interface NativeMahjongClientExtension {
@@ -19,7 +19,7 @@ interface NativeMahjongClientExtension {
     fun registerCharacterPreviews(registry: AiCharacterPreviewRegistrar)
 
     /**
-     * 登記此客戶端可畫出的桌上物件，例如牌譜回放中當時桌上的物件；沒有登記的種類在客戶端場景中不畫。
+     * 登記此客戶端可畫出的桌上物件，例如牌譜回放中當時桌上的物件。沒有登記的種類在客戶端場景中不畫。
      *
      * @param registry 初始化期間的寫入入口。
      */

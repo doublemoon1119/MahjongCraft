@@ -26,7 +26,7 @@ import org.joml.Quaternionf
  */
 internal class NativeCharacterPreviewRenderer(private val registry: ClientAiCharacterPreviewRegistry) {
     /**
-     * 由公開參數建立獨立備援；違約返回本人時不呼叫可能影響本人的 close。
+     * 由公開參數建立獨立備援。違約返回本人時不呼叫可能影響本人的 close。
      *
      * @param world 目前客戶端世界。
      * @param character 提供者自行解讀的公開外觀描述。
@@ -57,7 +57,7 @@ internal class NativeCharacterPreviewRenderer(private val registry: ClientAiChar
      *
      * @param world 目前連線的客戶端世界。
      * @param character 當場已保存的公開描述。
-     * @return 共用一張圖片的完整與頭像來源；能力不可用時為 null。
+     * @return 共用一張圖片的完整與頭像來源。能力不可用時為 null。
      */
     fun capture(world: ClientLevel, character: AiCharacterDefinition): CharacterPreviewImage? {
         val client = Minecraft.getInstance()

@@ -17,7 +17,7 @@ internal object TableSpaceObstructionScanner {
      *
      * @param world 桌子所在世界。
      * @param controllerPos 控制方塊位置。
-     * @return 擋住的格子，依 [MahjongTableSpace.playSpaceHorizontalOffsets] 的順序；擺牌層有區塊未載入時為 null。
+     * @return 擋住的格子，依 [MahjongTableSpace.playSpaceHorizontalOffsets] 的順序。擺牌層有區塊未載入時為 null。
      */
     fun obstructedCells(
         world: ServerLevel,

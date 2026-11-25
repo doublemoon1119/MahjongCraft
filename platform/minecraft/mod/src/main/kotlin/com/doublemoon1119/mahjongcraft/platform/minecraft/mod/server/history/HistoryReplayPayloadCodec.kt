@@ -12,7 +12,7 @@ import java.util.zip.GZIPOutputStream
 /**
  * `history_replay.payload` 的存放編碼：Replay JSON 的 UTF-8 位元組以 gzip（預設壓縮等級）壓縮後存成 BLOB。
  *
- * 解壓以串流進行並累計輸出大小，超過上限立即停止；不採信 gzip 尾端記錄的原始長度，也不依該長度預先配置緩衝區。
+ * 解壓以串流進行並累計輸出大小，超過上限立即停止。不採信 gzip 尾端記錄的原始長度，也不依該長度預先配置緩衝區。
  */
 internal object HistoryReplayPayloadCodec {
     /** 每次自解壓串流讀取的位元組數。 */
@@ -35,7 +35,7 @@ internal object HistoryReplayPayloadCodec {
      *
      * @param stored 資料庫中的存放位元組。
      * @param maximumBytes 解壓後 UTF-8 位元組上限。
-     * @return 還原的文字；解壓後超過上限時為 [HistoryReplayPayloadRead.TooLarge]；不是完整 gzip 資料、CRC 不符或不是
+     * @return 還原的文字。解壓後超過上限時為 [HistoryReplayPayloadRead.TooLarge]。不是完整 gzip 資料、CRC 不符或不是
      *   有效 UTF-8 時為 [HistoryReplayPayloadRead.Unreadable]。
      */
     fun decompress(stored: ByteArray, maximumBytes: Int): HistoryReplayPayloadRead {

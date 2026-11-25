@@ -8,7 +8,7 @@ import kotlin.uuid.Uuid
  *
  * @param tableId 同一份權威封套內的房間。
  * @param observerId 已通過場地交付授權的收件者。
- * @return 房主可讀的精簡描述；其他觀察者或對局一律為空。
+ * @return 房主可讀的精簡描述。其他觀察者或對局一律為空。
  */
 fun AiCharacterStateSnapshot.excludedAppearancesFor(tableId: Uuid, observerId: Uuid): Map<Uuid, AiCharacterSnapshot> {
     val room = authoritative.rooms[tableId] ?: return emptyMap()

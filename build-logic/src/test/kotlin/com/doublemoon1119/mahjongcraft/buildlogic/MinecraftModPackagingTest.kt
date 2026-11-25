@@ -10,7 +10,7 @@ import kotlin.test.assertTrue
 
 /** 以 Gradle TestKit 驗證 Minecraft loader module 的 metadata 與產物隔離。 */
 class MinecraftModPackagingTest {
-    /** 未覆寫時沿用 root mod 的 ID、名稱、說明、圖示與 archive 名稱；版本在 `+` 之後標示 Minecraft 版本與載入器。 */
+    /** 未覆寫時沿用 root mod 的 ID、名稱、說明、圖示與 archive 名稱。版本在 `+` 之後標示 Minecraft 版本與載入器。 */
     @Test
     fun `defaults preserve formal mod packaging`() = withFixture { root ->
         prepareFixture(root)
@@ -63,7 +63,7 @@ class MinecraftModPackagingTest {
         assertTrue(result.output.contains("Invalid -PmahjongcraftBuildMetadata value"), result.output)
     }
 
-    /** CI 只收集交付給玩家的模組 JAR；標示為非成品的模組（例如範例）不收集。 */
+    /** CI 只收集交付給玩家的模組 JAR。標示為非成品的模組（例如範例）不收集。 */
     @Test
     fun `ci artifacts contain only distributable mods`() = withFixture { root ->
         prepareFixture(root)
@@ -177,7 +177,7 @@ class MinecraftModPackagingTest {
         assertTrue(second.output.contains("Configuration cache entry reused"), second.output)
     }
 
-    /** Loom 依目標的 Java 工具鏈決定執行函式庫；手動指定的值不被覆寫。 */
+    /** Loom 依目標的 Java 工具鏈決定執行函式庫。手動指定的值不被覆寫。 */
     @Test
     fun `loom runtime java follows the target toolchain unless set`() = withFixture { root ->
         prepareFixture(root)

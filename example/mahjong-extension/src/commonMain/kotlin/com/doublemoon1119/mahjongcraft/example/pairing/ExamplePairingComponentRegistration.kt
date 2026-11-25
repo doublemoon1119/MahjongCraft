@@ -11,7 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.tile.component.TileFaceAccess
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 
 /**
- * 登記範例組件的建立、換局、攤牌與公開牌面效果；加分牌與攤牌狀態只供伺服器使用，不交付觀察者。
+ * 登記範例組件的建立、換局、攤牌與公開牌面效果。加分牌與攤牌狀態只供伺服器使用，不交付觀察者。
  *
  * @param registry 本次執行尚未凍結的組件登記。
  */

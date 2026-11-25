@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating
 
 /**
- * 固定席位來源；解析時不移動乘坐者、不生成座位、不強制載入區塊。
+ * 固定席位來源。解析時不移動乘坐者、不生成座位、不強制載入區塊。
  *
  * @param W 原生世界型別。
  * @param R 原生乘坐者型別。

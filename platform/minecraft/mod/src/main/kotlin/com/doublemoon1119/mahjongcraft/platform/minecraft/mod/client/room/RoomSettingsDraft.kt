@@ -17,7 +17,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresent
  * 權威設定在編輯途中變動時的判定見 [onAuthoritativeChanged]。
  */
 internal class RoomSettingsDraft {
-    /** 目前編輯中的設定；尚未進入設定頁或房間已清空時為 `null`。 */
+    /** 目前編輯中的設定。尚未進入設定頁或房間已清空時為 `null`。 */
     var config: GameConfig? = null
         private set
 
@@ -50,7 +50,7 @@ internal class RoomSettingsDraft {
     /**
      * 判斷草稿與權威設定是否不同。
      *
-     * @param authoritative 目前權威設定；未知時為 null。
+     * @param authoritative 目前權威設定。未知時為 null。
      * @return 草稿與權威設定都存在且內容不同時為 true。
      */
     fun hasUnsavedChanges(authoritative: GameConfig?): Boolean {
@@ -59,7 +59,7 @@ internal class RoomSettingsDraft {
     }
 
     /**
-     * 草稿規則的人數上限是否少於房間目前的 [roomPlayerCount] 人（含 AI）；此時伺服器會拒絕套用。
+     * 草稿規則的人數上限是否少於房間目前的 [roomPlayerCount] 人（含 AI）。此時伺服器會拒絕套用。
      * 人數不足不算：之後還能補人，開始對局時另有檢查。
      *
      * @param roomPlayerCount 房間目前人數，包含 AI。
@@ -104,7 +104,7 @@ internal class RoomSettingsDraft {
     fun canDone(roomPlayerCount: Int): Boolean = !isStale && !hasInvalidFields && !exceedsPlayerLimit(roomPlayerCount)
 
     /**
-     * 進入設定頁時建立草稿；草稿與起始權威值都存在時不覆蓋。
+     * 進入設定頁時建立草稿。草稿與起始權威值都存在時不覆蓋。
      *
      * @param authoritative 用來建立草稿的權威設定。
      */
@@ -119,7 +119,7 @@ internal class RoomSettingsDraft {
      *
      * updater 拋出例外代表該值不合法，欄位標記為無效且草稿不變。
      *
-     * @param field 要更新的欄位；沒有 updater 時不處理。
+     * @param field 要更新的欄位。沒有 updater 時不處理。
      * @param value 欄位的新值。
      */
     fun updateField(field: GameConfigFieldDefinition, value: GameConfigPresentationValue) {
@@ -132,11 +132,11 @@ internal class RoomSettingsDraft {
     /**
      * 以外部整理過的完整設定取代草稿內容。
      *
-     * 只用於設定欄位變更後重新整理依規則而定的共用流程欄位，不會重設權威基準或驗證狀態；若欄位因規則設定
+     * 只用於設定欄位變更後重新整理依規則而定的共用流程欄位，不會重設權威基準或驗證狀態。若欄位因規則設定
      * 改變而消失，也會移除該欄位留下的無效標記，避免不可見的欄位阻擋送出。
      *
      * @param updated 整理後的草稿設定。
-     * @param availableFieldIds 目前呈現中的欄位識別碼；省略時保留所有驗證標記。
+     * @param availableFieldIds 目前呈現中的欄位識別碼。省略時保留所有驗證標記。
      */
     fun replaceConfig(updated: GameConfig, availableFieldIds: Set<String>? = null) {
         if (config != null) {
@@ -146,7 +146,7 @@ internal class RoomSettingsDraft {
     }
 
     /**
-     * 以套用玩法後的設定取代草稿內容，並清除玩法所設定欄位的無效標記；其他欄位的驗證狀態不變。
+     * 以套用玩法後的設定取代草稿內容，並清除玩法所設定欄位的無效標記。其他欄位的驗證狀態不變。
      *
      * @param updated 套用玩法後的草稿設定。
      * @param variantFieldIds 玩法設定的欄位識別碼。
@@ -166,8 +166,8 @@ internal class RoomSettingsDraft {
      *
      * @param field 要驗證的欄位。
      * @param editor 整數輸入的範圍與可空規格。
-     * @param raw 尚未轉換的輸入文字；可空欄位允許空字串。
-     * @return 是否通過；未通過時呼叫端不應再呼叫 [applyNumericInput]。
+     * @param raw 尚未轉換的輸入文字。可空欄位允許空字串。
+     * @return 是否通過。未通過時呼叫端不應再呼叫 [applyNumericInput]。
      */
     fun markNumericInput(
         field: GameConfigFieldDefinition,
@@ -183,7 +183,7 @@ internal class RoomSettingsDraft {
     /**
      * 在 [markNumericInput] 通過後套用 updater 並更新驗證狀態。
      *
-     * @param field 要更新的欄位；沒有 updater 時不處理。
+     * @param field 要更新的欄位。沒有 updater 時不處理。
      * @param raw 已通過輸入驗證的文字。
      */
     fun applyNumericInput(field: GameConfigFieldDefinition, raw: String) {
@@ -196,7 +196,7 @@ internal class RoomSettingsDraft {
     }
 
     /**
-     * 重設為指定設定並清除無效欄位標記；不改變起始權威值與過期旗標。
+     * 重設為指定設定並清除無效欄位標記。不改變起始權威值與過期旗標。
      *
      * @param config 要採用的草稿設定。
      */
@@ -218,15 +218,15 @@ internal class RoomSettingsDraft {
         isReturningToRoomAfterApply = false
     }
 
-    /** 標記收到權威回覆後要返回房間頁；本方法不負責送出草稿。 */
+    /** 標記收到權威回覆後要返回房間頁。本方法不負責送出草稿。 */
     fun markReturnToRoomAfterApply() {
         isReturningToRoomAfterApply = true
     }
 
     /**
-     * 採用呼叫端已確認的權威回覆並清除待返回狀態；本方法不比對草稿是否一致。
+     * 採用呼叫端已確認的權威回覆並清除待返回狀態。本方法不比對草稿是否一致。
      *
-     * @param authoritative 要採用的權威設定；null 會清除草稿與起始權威值。
+     * @param authoritative 要採用的權威設定。null 會清除草稿與起始權威值。
      */
     fun adoptAuthoritative(authoritative: GameConfig?) {
         config = authoritative
@@ -240,11 +240,11 @@ internal class RoomSettingsDraft {
      * 供呼叫端準備規則預設值時使用，讓「重設為預設值」與 [canReset] 的比較對象跟草稿內容適用同一組約束。
      *
      * @param config 要套用一致性約束的設定。
-     * @return 關閉旁觀時也隱藏旁觀者手牌的設定；其他設定保持不變。
+     * @return 關閉旁觀時也隱藏旁觀者手牌的設定。其他設定保持不變。
      */
     fun normalized(config: GameConfig): GameConfig = config.withConsistentSpectatorVisibility()
 
-    /** 房間清空時丟棄草稿、起始權威值與無效欄位；過期與待返回旗標不在此重設。 */
+    /** 房間清空時丟棄草稿、起始權威值與無效欄位。過期與待返回旗標不在此重設。 */
     fun clear() {
         config = null
         authoritativeAtStart = null
@@ -255,7 +255,7 @@ internal class RoomSettingsDraft {
      * 處理編輯途中權威設定變動。
      *
      * 只有「草稿還停在草稿建立當下的權威值」（使用者尚未編輯）或「草稿剛好等於新的權威值」（其他人改成
-     * 與草稿相同的內容）兩種情況可以直接採用新值；其餘情況代表草稿與權威同時被改動，標記為過期並取消
+     * 與草稿相同的內容）兩種情況可以直接採用新值。其餘情況代表草稿與權威同時被改動，標記為過期並取消
      * 待返回狀態，交由使用者決定要放棄還是重新編輯。
      *
      * @param authoritative 新收到的權威設定。
@@ -292,7 +292,7 @@ internal class RoomSettingsDraft {
      * 套用 updater 結果：成功時更新草稿並保持一致性，失敗時標記欄位無效。
      *
      * @param fieldId 被更新的欄位識別碼。
-     * @param updated 更新成功的設定；null 代表失敗。
+     * @param updated 更新成功的設定。null 代表失敗。
      */
     private fun applyFieldResult(fieldId: String, updated: GameConfig?) {
         markFieldValidity(fieldId, updated != null)
@@ -316,7 +316,7 @@ internal class RoomSettingsDraft {
         /**
          * 已採用新的權威設定。
          *
-         * @property returnToRoom 採用前是否正在等待套用後返回房間；由呼叫端執行返回。
+         * @property returnToRoom 採用前是否正在等待套用後返回房間。由呼叫端執行返回。
          */
         data class Adopted(val returnToRoom: Boolean) : Outcome
 

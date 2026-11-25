@@ -12,16 +12,17 @@ import net.minecraft.server.level.ServerPlayer
 /**
  * 記錄目前 server session 中無法讀取的麻將資料，並決定麻將功能是否可用與如何通知玩家。
  *
- * 只有 [MahjongDataSource.AUTHORITATIVE_STATE] 無法讀取時停用麻將功能；其餘來源各自降級，麻將照常可用。
- * 一般玩家在試圖使用麻將功能時從動作列收到簡短提示；管理員與單人世界擁有者進入世界時另收到詳細資訊。
- * session 開始與結束時由 [clear] 清除。
+ * - 只有 [MahjongDataSource.AUTHORITATIVE_STATE] 無法讀取時停用麻將功能。其餘來源各自降級，麻將照常可用。
+ * - 一般玩家在試圖使用麻將功能時，從動作列收到簡短提示。
+ * - 管理員與單人世界擁有者進入世界時，另收到詳細資訊。
+ * - session 開始與結束時由 [clear] 清除。
  */
 class MahjongDataStatus {
     /** 目前 session 中無法讀取的資料，依回報順序排列。 */
     @Volatile var problems: List<MahjongDataProblem> = emptyList()
         private set
 
-    /** 麻將功能目前是否可用；房間、對局與待寫牌譜無法讀取時為 false。 */
+    /** 麻將功能目前是否可用。房間、對局與待寫牌譜無法讀取時為 false。 */
     val isMahjongAvailable: Boolean
         get() = problems.none { it.source == MahjongDataSource.AUTHORITATIVE_STATE }
 
@@ -84,8 +85,9 @@ internal fun receivesDetailedNotice(hasAdminPermission: Boolean, isHost: Boolean
 /**
  * 依序建立詳細資訊：標題，以及每份資料的影響、檔案、原因與恢復建議。
  *
- * 每行只說明一件事；檔案路徑可點擊複製，錯誤摘要等細節放在指向 `[詳情]` 時顯示，避免長字串使訊息換行。
- * 只有房間、對局與待寫牌譜附上移走檔案的最後手段；其他來源使用各自的降級說明，不建議移走整份權威存檔。
+ * - 每行只說明一件事。
+ * - 檔案路徑可點擊複製。錯誤摘要等細節在指向 `[詳情]` 時顯示，避免長字串使訊息換行。
+ * - 只有房間、對局與待寫牌譜附上移走檔案的最後手段。其他來源使用各自的降級說明，不建議移走整份權威存檔。
  *
  * @param problems 無法讀取的資料。
  * @return 由客戶端依語系組字的訊息行。
@@ -115,7 +117,7 @@ private fun problemKey(source: MahjongDataSource): String = when (source) {
 }
 
 /**
- * 建立檔案路徑行；路徑可點擊複製。
+ * 建立檔案路徑行。路徑可點擊複製。
  *
  * @param file 相對於世界資料夾的檔案路徑。
  * @param unchanged 是否註明檔案未被變更。
@@ -132,7 +134,7 @@ private fun fileLine(file: String, unchanged: Boolean): MutableComponent {
 }
 
 /**
- * 建立說明讀取失敗原因的訊息；需要的細節放在 `[詳情]` 的提示中。
+ * 建立說明讀取失敗原因的訊息。需要的細節放在 `[詳情]` 的提示中。
  *
  * @param cause 原因分類。
  * @return 原因訊息。

@@ -11,7 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.StandardWin
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplate
 
-/** 日麻的胡牌結算版面：日麻完整模板與日麻專屬欄位；流局滿貫也使用完整模板。 */
+/** 日麻的胡牌結算版面：日麻完整模板與日麻專屬欄位。流局滿貫也使用完整模板。 */
 internal object RiichiWinSettlementTemplates {
     /** 日麻完整模板的 key。 */
     val RIICHI_KEY: String = MahjongCraftMetadata.id("riichi/win_settlement")

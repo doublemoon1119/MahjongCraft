@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
  * 判定與佇列移除語意。世界時間與實際清除動作由 [DebugPreviewEntityLifecycle] 綁定。
  */
 class DebugPreviewCleanupQueue {
-    /** 尚未到期的清除排程；跨執行緒的 server tick 與指令執行緒共用，因此使用併發佇列。 */
+    /** 尚未到期的清除排程。跨執行緒的 server tick 與指令執行緒共用，因此使用併發佇列。 */
     private val tasks = ConcurrentLinkedQueue<Task>()
 
     /** 目前尚未到期的排程數量。 */
@@ -35,7 +35,7 @@ class DebugPreviewCleanupQueue {
         )
     }
 
-    /** 清除所有已到期的工作並將它們移出佇列；未到期的工作保持原狀等待下一次檢查。 */
+    /** 清除所有已到期的工作並將它們移出佇列。未到期的工作保持原狀等待下一次檢查。 */
     fun discardExpired() {
         val iterator = tasks.iterator()
         while (iterator.hasNext()) {

@@ -55,7 +55,7 @@ class ModSoundResourceTest {
      * 尋找指定的連續位元組序列。
      *
      * @param subsequence 要尋找的位元組序列。
-     * @return 第一個符合的起點；找不到時為 `-1`。
+     * @return 第一個符合的起點。找不到時為 `-1`。
      */
     private fun ByteArray.findSubsequence(subsequence: ByteArray): Int = indices.firstOrNull { startIndex ->
         startIndex + subsequence.size <= size && subsequence.indices.all { index -> this[startIndex + index] == subsequence[index] }

@@ -13,7 +13,7 @@ object ExamplePairingComponents {
         target = BuiltInComponentOwners.TABLE,
     )
 
-    /** 本局已攤牌；未附加此項即表示尚未攤牌。 */
+    /** 本局已攤牌。未附加此項即表示尚未攤牌。 */
     val HAND_REVEALED = ComponentType(
         id = ExamplePairingComponentIds.HAND_REVEALED,
         valueClass = Unit::class,
@@ -21,7 +21,7 @@ object ExamplePairingComponents {
         target = BuiltInComponentOwners.PLAYER,
     )
 
-    /** 牌組建立時決定的公開牌面標記；帶有此項的牌所有人都看得到牌面。 */
+    /** 牌組建立時決定的公開牌面標記。帶有此項的牌所有人都看得到牌面。 */
     val PUBLIC_FACE = ComponentType(
         id = ExamplePairingComponentIds.PUBLIC_FACE,
         valueClass = Unit::class,

@@ -51,7 +51,7 @@ internal sealed interface HistoryCardRow {
      * 開頭帶玩家的一列牌，例如補花紀錄中「• 頭像 AI 3：」後接移出的花牌。
      *
      * @property label 牌前面的玩家名稱。
-     * @property participant 玩家頭像來源；沒有對應玩家時為 null。
+     * @property participant 玩家頭像來源。沒有對應玩家時為 null。
      * @property tiles 保留順序與重複的牌張。
      * @property bulletIndent 相對卡片左側的項目符號縮排。
      * @property portraitIndent 相對卡片左側的頭像縮排。

@@ -32,7 +32,7 @@ class MahjongTableControllerStateTest {
         assertFalse(state.isPresentingContinuingWin(40L))
     }
 
-    /** 還原會套用存檔內容且不通知存檔；沒有可用 ID 時保留目前的 ID。 */
+    /** 還原會套用存檔內容且不通知存檔。沒有可用 ID 時保留目前的 ID。 */
     @Test
     fun `restore applies saved values without marking dirty`() {
         var dirtyCount = 0

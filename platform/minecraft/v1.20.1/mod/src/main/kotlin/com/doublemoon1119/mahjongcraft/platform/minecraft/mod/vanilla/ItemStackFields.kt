@@ -18,7 +18,7 @@ fun registerItemStackFields(registrar: ModRegistrar) = Unit
 /**
  * 麻將牌物品保存的牌面名稱。
  *
- * @return 保存的名稱；沒有保存或資料型別不對時為 null。
+ * @return 保存的名稱。沒有保存或資料型別不對時為 null。
  */
 fun ItemStack.storedTileAssetKey(): String? = readItemString(tag, MahjongTileItemData.TILE_KEY)
 
@@ -34,7 +34,7 @@ fun ItemStack.storeTileAssetKey(assetKey: String) {
 /**
  * 點棒物品保存的面額名稱。
  *
- * @return 保存的名稱；沒有保存或資料型別不對時為 null。
+ * @return 保存的名稱。沒有保存或資料型別不對時為 null。
  */
 fun ItemStack.storedScoringStickDenomination(): String? = readItemString(tag, MahjongScoringStickItemData.DENOMINATION_KEY)
 
@@ -50,9 +50,9 @@ fun ItemStack.storeScoringStickDenomination(denomination: String) {
 /**
  * 讀取物品 NBT 中的文字欄位。
  *
- * @param nbt 物品 NBT；沒有資料時為 null。
+ * @param nbt 物品 NBT。沒有資料時為 null。
  * @param key 欄位名稱。
- * @return 欄位的文字；欄位不存在或不是文字時為 null。
+ * @return 欄位的文字。欄位不存在或不是文字時為 null。
  */
 internal fun readItemString(nbt: CompoundTag?, key: String): String? = nbt?.takeIf { it.contains(key, Tag.TAG_STRING.toInt()) }?.getString(key)
 

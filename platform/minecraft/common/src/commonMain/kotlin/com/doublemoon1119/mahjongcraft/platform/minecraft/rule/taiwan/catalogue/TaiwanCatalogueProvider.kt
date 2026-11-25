@@ -25,7 +25,7 @@ class TaiwanCatalogueProvider : RuleCatalogueProvider {
      * 依台灣麻將設定建立圖鑑。
      *
      * @param config 房間或一般說明使用的規則設定。
-     * @return 台灣麻將圖鑑；設定型別不符時為 null。
+     * @return 台灣麻將圖鑑。設定型別不符時為 null。
      */
     override fun catalogue(config: MahjongRuleConfig): RuleCatalogue? {
         if (config !is TaiwanRuleConfig) return null
@@ -65,7 +65,7 @@ private val FLOWER_TAI: Set<TaiwanTaiType> = setOf(
     TaiwanTaiType.SevenFlowers,
 )
 
-/** 建立包牌條目，同時列在「基本玩法」分類的最後；未開啟包牌時保留條目並標示原因。 */
+/** 建立包牌條目，同時列在「基本玩法」分類的最後。未開啟包牌時保留條目並標示原因。 */
 private fun taiwanCataloguePaoEntry(config: TaiwanRuleConfig): RuleCatalogueEntry = RuleCatalogueEntry(
     id = TaiwanCatalogueKeys.PAO_ID,
     categoryId = TaiwanCatalogueCategory.Payment.id,
@@ -76,7 +76,7 @@ private fun taiwanCataloguePaoEntry(config: TaiwanRuleConfig): RuleCatalogueEntr
     adjustableSettingNameKeys = listOf(TaiwanGameConfigTranslationKeys.PAO_LIABILITY),
 )
 
-/** 建立一般流局與途中流局條目；停用的流局保留條目並標示原因。 */
+/** 建立一般流局與途中流局條目。停用的流局保留條目並標示原因。 */
 private fun taiwanCatalogueSpecialEntries(config: TaiwanRuleConfig): List<RuleCatalogueEntry> = TaiwanCatalogueSpecial.entries.map { definition ->
     RuleCatalogueEntry(
         id = definition.id,

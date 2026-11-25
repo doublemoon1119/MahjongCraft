@@ -13,7 +13,7 @@ import kotlin.test.assertNotNull
 
 /** 驗證可宣告不聽情境的排列。 */
 class RiichiRuleDecisionDebugGameScenariosTest {
-    /** 活牌只剩三張東；流局時呼叫者與下家可以宣告不聽，已立直的對家與不聽的上家不參與。 */
+    /** 活牌只剩三張東。流局時呼叫者與下家可以宣告不聽，已立直的對家與不聽的上家不參與。 */
     @Test
     fun `noten declaration scenario reaches an exhaustive draw with two players to choose`() {
         val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi/debug/noten_declaration_exhaustive_draw")!!.build(createRiichiScenarioContext())

@@ -5,10 +5,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationSte
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
 
 /**
- * 不經過牌實體，直接算出一張牌依動畫步驟播放到某一刻的樣子；牌譜回放的場景用它播放和對局中相同的步驟。
+ * 不經過牌實體，直接算出一張牌依動畫步驟播放到某一刻的樣子。牌譜回放的場景用它播放和對局中相同的步驟。
  *
- * 步驟的時間語意與牌實體的動畫佇列相同：等待步驟等到指定時刻；動作步驟從前一個步驟完成的時刻開始，播完才往下走；
- * 瞬間步驟（瞬移、姿態、隱形）在輪到時立即生效。
+ * 步驟的時間語意與牌實體的動畫佇列相同：
+ *
+ * - 等待步驟等到指定時刻。
+ * - 動作步驟從前一個步驟完成的時刻開始，播完才往下走。
+ * - 瞬間步驟（瞬移、姿態、隱形）在輪到時立即生效。
  */
 object TileAnimationSampler {
     /**
@@ -65,7 +68,7 @@ object TileAnimationSampler {
      * 步驟全部播完的時刻。
      *
      * @param steps 依序播放的步驟。
-     * @return 最後一個等待或動作結束的時刻；沒有計時步驟時為負無限大。
+     * @return 最後一個等待或動作結束的時刻。沒有計時步驟時為負無限大。
      */
     fun endTime(steps: List<AnimationStep<TilePose>>): Double {
         var cursor = Double.NEGATIVE_INFINITY

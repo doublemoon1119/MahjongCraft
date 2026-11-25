@@ -5,7 +5,7 @@ import net.minecraft.nbt.CompoundTag
 import net.minecraft.world.entity.decoration.ArmorStand
 
 /**
- * 一次接管前的原生姿態；保存時寫回原姿態，重開後不留下暫時動畫或重力設定。
+ * 一次接管前的原生姿態。保存時寫回原姿態，重開後不留下暫時動畫或重力設定。
  *
  * @property head 頭部角度。
  * @property body 身體角度。

@@ -18,7 +18,7 @@ class AchievementConditionTest {
         assertFalse(condition.matches(achievements(BuiltInAchievementIds.WIN, BuiltInAchievementIds.DISCARD_WIN)) { 0 })
     }
 
-    /** 多個成果必須在同一次觸發中全部成立；例如兩個役滿同時成立的組合進度。 */
+    /** 多個成果必須在同一次觸發中全部成立。例如兩個役滿同時成立的組合進度。 */
     @Test
     fun `combined achievements require every achievement in the same trigger`() {
         val combined = AchievementCondition(setOf("mahjongcraft:riichi/yakuman/chinroutou", "mahjongcraft:riichi/yakuman/suuankou_tanki"))
@@ -49,7 +49,7 @@ class AchievementConditionTest {
         assertFalse(condition.matches(win) { statisticId -> if (statisticId == AchievementStatisticIds.WINS) 99 else 0 })
     }
 
-    /** 每個通用成果累加對應的統計；沒有統計的成果不累加。 */
+    /** 每個通用成果累加對應的統計。沒有統計的成果不累加。 */
     @Test
     fun `generic achievements map to their statistics`() {
         assertEquals(

@@ -28,7 +28,7 @@ import kotlin.uuid.Uuid
 /**
  * 將公開遊戲事件以單行摘要與滑鼠懸停詳情提供給目前在線的管理員。
  *
- * 觀察器只讀取事件欄位，不查詢權威對局或歷史資料；每次回呼都重新驗證事件情境所屬的伺服器。
+ * 觀察器只讀取事件欄位，不查詢權威對局或歷史資料。每次回呼都重新驗證事件情境所屬的伺服器。
  *
  * 事件訂閱由範例模組的主初始化流程呼叫一次。沒有權限等級 2 的在線玩家時，不發送任何訊息。
  */
@@ -36,7 +36,7 @@ object ExampleGameEventChat {
     /** 此程序是否已完成事件訂閱。 */
     private var registered = false
 
-    /** 註冊三種事件的聊天觀察器；重複呼叫不會重複註冊。 */
+    /** 註冊三種事件的聊天觀察器。重複呼叫不會重複註冊。 */
     fun register() {
         if (registered) return
         MahjongCraftEvents.MATCH_STARTED.register(MatchStartedListener(::onMatchStarted))
@@ -140,7 +140,7 @@ object ExampleGameEventChat {
      * 建立所有事件共用的識別資料文字。
      *
      * @param event 公開遊戲事件。
-     * @param tableLocation 事件產生時保存的桌子位置；沒有位置時為 null。
+     * @param tableLocation 事件產生時保存的桌子位置。沒有位置時為 null。
      * @param title 事件標題的翻譯鍵。
      * @return 包含共通事件欄位的聊天文字。
      */
@@ -160,7 +160,7 @@ object ExampleGameEventChat {
      * @param matchId 場次識別碼。
      * @param venueId 場地識別碼。
      * @param ruleModuleId 規則模組識別碼。
-     * @param tableLocation 事件產生時保存的桌子位置；沒有位置時為 null。
+     * @param tableLocation 事件產生時保存的桌子位置。沒有位置時為 null。
      * @param title 事件標題的翻譯鍵。
      * @return 包含共通事件欄位的聊天文字。
      */
@@ -203,7 +203,7 @@ object ExampleGameEventChat {
      */
     internal fun <T> administratorRecipients(onlinePlayers: List<T>, hasPermission: (T) -> Boolean): List<T> = onlinePlayers.filter(hasPermission)
 
-    /** 建立桌子位置文字；沒有位置時交由翻譯鍵顯示未知。 */
+    /** 建立桌子位置文字。沒有位置時交由翻譯鍵顯示未知。 */
     internal fun locationText(location: TableLocation?): Component = location?.let { Component.literal(formatTableLocation(it)) }
         ?: Component.translatable(ExampleEventMessageKeys.UNKNOWN_LOCATION)
 
@@ -219,7 +219,7 @@ object ExampleGameEventChat {
      * @param id 事件提供的玩家 UUID。
      * @param isAi 是否由 AI 操控。
      * @param initialSeatIndex 起始座位。
-     * @param name 當前名稱；未提供時顯示 UUID。
+     * @param name 當前名稱。未提供時顯示 UUID。
      * @return 帶齊四個參數的玩家翻譯文字。
      */
     internal fun playerValue(id: Uuid, isAi: Boolean, initialSeatIndex: Int, name: Component? = null): MutableComponent = Component.translatable(
@@ -248,7 +248,7 @@ object ExampleGameEventChat {
      * @param currentScore 結算後分數。
      * @param previousRank 結算前名次。
      * @param currentRank 結算後名次。
-     * @param name 顯示名稱；沒有名稱時使用玩家 UUID。
+     * @param name 顯示名稱。沒有名稱時使用玩家 UUID。
      * @return 帶有完整結算欄位的翻譯文字。
      */
     internal fun scoreChangeValue(
@@ -284,7 +284,7 @@ object ExampleGameEventChat {
      * @param isAi 是否由 AI 操控。
      * @param score 最終分數。
      * @param rank 最終名次。
-     * @param name 顯示名稱；沒有名稱時使用玩家 UUID。
+     * @param name 顯示名稱。沒有名稱時使用玩家 UUID。
      * @return 帶有完整排名欄位的翻譯文字。
      */
     internal fun standingValue(
@@ -311,7 +311,7 @@ object ExampleGameEventChat {
     /** 依 UUID 穩定排序玩家，找不到名稱時由呼叫端提供 UUID 文字。 */
     internal fun formatPlayerLabels(ids: Set<Uuid>, nameFor: (Uuid) -> String): List<String> = ids.sortedBy(Uuid::toString).map { id -> "${nameFor(id)} ($id)" }
 
-    /** 取得在線玩家名稱；離線玩家及 AI 使用 UUID。 */
+    /** 取得在線玩家名稱。離線玩家及 AI 使用 UUID。 */
     private fun playerName(server: MinecraftServer, id: Uuid): Component {
         val player: ServerPlayer? = server.playerList.getPlayer(UUID.fromString(id.toString()))
         return player?.displayName?.copy() ?: Component.literal(id.toString())

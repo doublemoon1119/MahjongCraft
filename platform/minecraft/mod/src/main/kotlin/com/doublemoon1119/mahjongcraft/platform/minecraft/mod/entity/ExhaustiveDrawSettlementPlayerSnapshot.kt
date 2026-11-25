@@ -11,7 +11,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity
  * @property currentScore 結算後分數。
  * @property previousRank 結算前名次。
  * @property currentRank 結算後名次。
- * @property statusId 流局狀態識別碼；沒有狀態時為 null。
+ * @property statusId 流局狀態識別碼。沒有狀態時為 null。
  * @property revealedHandTileIds 公開手牌的牌實體識別碼。
  * @property revealedHandAssetKeys 公開手牌的牌面資源識別碼。
  * @property waitingTileAssetKeys 等待牌的牌面資源識別碼。

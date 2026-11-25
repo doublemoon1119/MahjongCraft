@@ -27,7 +27,7 @@ import net.minecraft.network.chat.Component
 import org.lwjgl.glfw.GLFW
 
 /**
- * 顯示牌譜對局開局時的規則設定；版面與房間設定頁相同，以分類頁籤切換，每一列左邊是欄位名稱、右邊是設定值，
+ * 顯示牌譜對局開局時的規則設定。版面與房間設定頁相同，以分類頁籤切換，每一列左邊是欄位名稱、右邊是設定值，
  * 所有欄位都不能修改。
  *
  * @property session 共用歷史瀏覽 session。
@@ -44,7 +44,7 @@ internal class HistoryRuleSettingsScreen(
     /** 捲軸拖曳時游標相對滑塊上界的偏移。 */
     private var grabOffset = 0.0
 
-    /** 目前選中的分類；尚未選擇時為 null，改用第一個分類。 */
+    /** 目前選中的分類。尚未選擇時為 null，改用第一個分類。 */
     private var selectedCategoryId: String? = null
 
     /** 分類頁籤列向左捲動的像素數。 */
@@ -59,7 +59,7 @@ internal class HistoryRuleSettingsScreen(
     /** 上一次成功解析的呈現資料。 */
     private var resolved: ResolvedGameConfigPresentation? = null
 
-    /** 建立頁籤時使用的呈現資料；設定載入或改變後重新建立頁籤。 */
+    /** 建立頁籤時使用的呈現資料。設定載入或改變後重新建立頁籤。 */
     private var builtFor: ResolvedGameConfigPresentation? = null
 
     /** 失敗時可重新查詢的按鈕。 */
@@ -71,7 +71,7 @@ internal class HistoryRuleSettingsScreen(
     /** 上一次建立規則一覽脈絡時的開局設定與摘要規則，避免每個 render tick 重新解碼。 */
     private var catalogueContextKey: Pair<GameConfigDto?, String?>? = null
 
-    /** 依保存設定建立的規則一覽脈絡；沒有可用規則時為 null。 */
+    /** 依保存設定建立的規則一覽脈絡。沒有可用規則時為 null。 */
     private var catalogueContext: RuleCatalogueBrowseContext? = null
 
     /** 目前畫面的版面。 */
@@ -106,7 +106,7 @@ internal class HistoryRuleSettingsScreen(
     }
 
     /**
-     * 建立分類頁籤；設定尚未載入或沒有呈現定義時不建立。
+     * 建立分類頁籤。設定尚未載入或沒有呈現定義時不建立。
      *
      * @param layout 目前版面。
      */
@@ -162,7 +162,7 @@ internal class HistoryRuleSettingsScreen(
         scroll = tabScroll,
     )
 
-    /** 目前分類的欄位；設定尚未載入或沒有呈現定義時為空。 */
+    /** 目前分類的欄位。設定尚未載入或沒有呈現定義時為空。 */
     private fun currentFields(): List<GameConfigFieldDefinition> {
         val definition = builtFor?.definition ?: return emptyList()
         val categoryId = definition.categories.firstOrNull { it.id == selectedCategoryId }?.id ?: definition.categories.firstOrNull()?.id
@@ -172,7 +172,7 @@ internal class HistoryRuleSettingsScreen(
     /** 最多可捲動的欄位數。 */
     private fun maximumScroll(): Int = (currentFields().size - layout.visibleFieldCount).coerceAtLeast(0)
 
-    /** 已載入的設定解析後的呈現資料；尚未載入或無法解析時為 null。 */
+    /** 已載入的設定解析後的呈現資料。尚未載入或無法解析時為 null。 */
     private fun presentation(): ResolvedGameConfigPresentation? {
         val ruleSettings = session.controller.state.value.ruleSettings
         if (ruleSettings?.status != HistoryBrowseStatus.Ready) return null
@@ -180,10 +180,10 @@ internal class HistoryRuleSettingsScreen(
     }
 
     /**
-     * 依保存的開局設定建立規則一覽脈絡並快取；設定解不出時改用摘要記錄的規則。
+     * 依保存的開局設定建立規則一覽脈絡並快取。設定解不出時改用摘要記錄的規則。
      *
      * @param configDto 歷史伺服器回傳的開局設定，尚未取得時為 null。
-     * @return 規則一覽脈絡；沒有可用規則時為 null。
+     * @return 規則一覽脈絡。沒有可用規則時為 null。
      */
     private fun ruleCatalogueContext(configDto: GameConfigDto?): RuleCatalogueBrowseContext? {
         val summaryRuleModuleId = session.controller.state.value.summary?.detail?.summary?.ruleId
@@ -204,7 +204,7 @@ internal class HistoryRuleSettingsScreen(
      * 解析規則設定並快取結果，避免每個 render tick 重建規則設定。
      *
      * @param configDto 歷史伺服器回傳的開局設定，尚未取得時為 null。
-     * @return 本地可解析的規則呈現；缺少 codec 或呈現註冊時為 null。
+     * @return 本地可解析的規則呈現。缺少 codec 或呈現註冊時為 null。
      */
     private fun resolvedConfig(configDto: GameConfigDto?): ResolvedGameConfigPresentation? {
         if (configDto !== resolvedDto) {
@@ -336,7 +336,7 @@ internal class HistoryRuleSettingsScreen(
     }
 
     /**
-     * 繪製頁籤上方的規則名稱、玩法、規則識別碼與唯讀說明；規則沒有登記玩法時不顯示玩法。
+     * 繪製頁籤上方的規則名稱、玩法、規則識別碼與唯讀說明。規則沒有登記玩法時不顯示玩法。
      *
      * @param context 繪製上下文。
      * @param layout 目前版面。
@@ -376,7 +376,7 @@ internal class HistoryRuleSettingsScreen(
      * @param layout 目前版面。
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
-     * @return 游標所指欄位的提示；沒有時為 null。
+     * @return 游標所指欄位的提示。沒有時為 null。
      */
     private fun renderFields(context: GuiGraphics, layout: FormScreenLayout, mouseX: Int, mouseY: Int): List<Component>? {
         val presentation = builtFor ?: return null
@@ -408,7 +408,7 @@ internal class HistoryRuleSettingsScreen(
      * 建立欄位提示：說明，選項欄位再列出全部選項並標出開局時的設定。
      *
      * @param field 欄位定義。
-     * @param value 開局時的設定值；無法取得時為 null。
+     * @param value 開局時的設定值。無法取得時為 null。
      * @return 提示的每一行。
      */
     private fun fieldTooltip(field: GameConfigFieldDefinition, value: GameConfigPresentationValue?): List<Component> {

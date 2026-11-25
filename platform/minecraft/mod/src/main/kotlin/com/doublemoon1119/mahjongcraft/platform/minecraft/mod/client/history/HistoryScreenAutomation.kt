@@ -11,7 +11,7 @@ interface HistoryScreenAutomation {
     /**
      * 目前牌譜瀏覽的狀態。
      *
-     * @return 狀態；沒有開啟牌譜瀏覽時為 null。
+     * @return 狀態。沒有開啟牌譜瀏覽時為 null。
      */
     fun automationSnapshot(): HistoryScreenAutomationSnapshot?
 
@@ -55,7 +55,7 @@ interface HistoryScreenAutomation {
     /**
      * 從單局事件開啟某一刻的牌面。
      *
-     * @param transactionIndex 這一筆交易完成後的牌面；null 是這一局的初始牌面。
+     * @param transactionIndex 這一筆交易完成後的牌面。null 是這一局的初始牌面。
      * @return 是否已切換。
      */
     fun automationOpenRoundState(transactionIndex: Int?): Boolean

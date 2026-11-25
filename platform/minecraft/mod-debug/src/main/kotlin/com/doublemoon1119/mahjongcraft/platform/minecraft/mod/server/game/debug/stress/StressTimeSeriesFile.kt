@@ -8,7 +8,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 /**
- * 寫進存檔資料夾的每秒時間序列 CSV；每列寫入後立即 flush，伺服器中途結束也保留已寫的部分。
+ * 寫進存檔資料夾的每秒時間序列 CSV。每列寫入後立即 flush，伺服器中途結束也保留已寫的部分。
  *
  * @property path 檔案位置。
  * @property scenarioId 對局情境識別碼，寫在每一列。
@@ -37,7 +37,7 @@ class StressTimeSeriesFile private constructor(
         /**
          * 建立新檔並寫入標題列。
          *
-         * @param path 檔案位置；上層資料夾不存在時一併建立。
+         * @param path 檔案位置。上層資料夾不存在時一併建立。
          * @param scenarioId 對局情境識別碼。
          * @param pace 推進節奏。
          * @param historyMode 歷史處理方式。

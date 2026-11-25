@@ -9,12 +9,11 @@ import kotlin.uuid.Uuid
  *
  * 每次呼叫提供立牌、摸牌與副露的完整狀態，使實作能一併計算彼此及角落物件之間所需的空間。
  *
- * 三者裡每一張牌的 UUID 都跟牌牆結構座標裡的同一張牌完全相同——這副牌本來就是從牌牆摸出來分給
- * 玩家、或由玩家鳴牌鳴來的，不是另外複製出一批新牌。實作因此不建立新 entity，而是找到
- * [MahjongTileWallPresenter] 已經生成好的既有 entity，直接改標記、改姿態、移動位置，比照
- * [MahjongTileWallPresenter] 的 best-effort 慣例。
- *
- * 規則桌面物件的 entity 由 [TablePropPresenter] 管理；手牌平移由呼叫端以 [MahjongPlayerAreaLayout] 算好放進呈現資料。
+ * - 三者裡每一張牌的 UUID 都跟牌牆結構座標裡的同一張牌相同，因為這些牌是從牌牆摸來或鳴來的，不是另外複製的新牌。
+ * - 實作因此不建立新 entity，而是找到 [MahjongTileWallPresenter] 已經生成的既有 entity，直接改標記、改姿態、移動位置。
+ *   比照 [MahjongTileWallPresenter] 的 best-effort 慣例。
+ * - 規則桌面物件的 entity 由 [TablePropPresenter] 管理。
+ * - 手牌平移由呼叫端以 [MahjongPlayerAreaLayout] 算好放進呈現資料。
  */
 interface MahjongPlayerAreaPresenter {
     /**
@@ -35,7 +34,7 @@ interface MahjongPlayerAreaPresenter {
      * 「立牌全部倒下完成」絕對 game time，供呼叫端接續排定特效開始時機、並延長胡的那張牌的動畫佇列
      * （`TablePresentationBusyTracker` 忙碌窗口），理由見 [MahjongWinCelebrationResult] KDoc。
      *
-     * 不建立新 entity，只移動既有 entity；姿態轉換一律透過既有動畫步驟表達，不直接
+     * 不建立新 entity，只移動既有 entity。姿態轉換一律透過既有動畫步驟表達，不直接
      * 賦值姿態欄位。
      *
      * @param presentation 胡牌慶祝演出所需的呈現資料。

@@ -25,7 +25,7 @@ internal object MahjongBotArmAnimation {
     private const val DEGREES_PER_RADIAN = (180.0 / PI).toFloat()
 
     /**
-     * 原版右臂的水平轉向；只旋轉手臂，不扭動牌身。
+     * 原版右臂的水平轉向。只旋轉手臂，不扭動牌身。
      *
      * @param progress 本次揮手進度。
      * @return 手臂水平角度，無有效動作時為零。
@@ -50,7 +50,7 @@ internal object MahjongBotArmAnimation {
      * 使用原版手臂的四次方緩動與平視補償，配合水平轉向及內收。
      *
      * @param progress 本次揮手進度。
-     * @return 向前揮動的角度；動作之外或無效進度回傳零。
+     * @return 向前揮動的角度。動作之外或無效進度回傳零。
      */
     fun swingDegrees(progress: Float): Float {
         if (!progress.isFinite() || progress <= 0f || progress >= 1f) return 0f

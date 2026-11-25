@@ -174,7 +174,7 @@ class DecisionCardLayoutTest {
         assertEquals(400 - DecisionCardLayout.SCREEN_MARGIN * 2, layout.panelWidth)
     }
 
-    /** 面板水平置中；寬度為奇數時左右留白最多差一個像素。 */
+    /** 面板水平置中。寬度為奇數時左右留白最多差一個像素。 */
     @Test
     fun `centres the panel horizontally`() {
         val layout = layout(cardCount = 2, previewTileCount = 0, screenWidth = 640)
@@ -230,7 +230,7 @@ class DecisionCardLayoutTest {
         assertEquals(layout.screenHeight, layout.panelBottom)
     }
 
-    /** 群組只包含觸發區與主面板；倒數畫在標題列內，不另外佔用高度。 */
+    /** 群組只包含觸發區與主面板。倒數畫在標題列內，不另外佔用高度。 */
     @Test
     fun `sizes the group from the trigger area and the panel only`() {
         val layout = layout(cardCount = 2, hasTriggerTile = true, triggerLineCount = 1, triggerTextWidth = 80)

@@ -14,7 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
  * @property isEditable 欄位是否可編輯。
  * @property isEnabled 依目前草稿決定欄位是否可操作。
  * @property read 從設定讀取欄位值。
- * @property update 以欄位值更新設定；可編輯欄位必須提供。
+ * @property update 以欄位值更新設定。可編輯欄位必須提供。
  */
 data class GameConfigFieldDefinition(
     val id: String,

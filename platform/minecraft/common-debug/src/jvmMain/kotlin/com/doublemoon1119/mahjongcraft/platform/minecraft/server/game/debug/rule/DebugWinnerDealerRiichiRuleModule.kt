@@ -14,9 +14,11 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
  * 只在開發環境登記的四人日麻變體：子家和牌時由和牌者坐莊，每局結束後所有玩家往下一個座位輪換一格，其餘規則與
  * [RiichiRuleModule] 相同。
  *
- * 用來在遊戲內驗證規則指定下一任莊家與局間換位的流程與呈現。多人和牌時取放銃者之後最近的和牌者；
- * 莊家和牌或其他結果沿用日麻的連莊與過莊。除了這兩項以外的成員都交給以 [DebugWinnerDealerRiichiRuleConfig.base]
- * 建立的四人日麻模組。
+ * 用來在遊戲內驗證規則指定下一任莊家與局間換位的流程與呈現。
+ *
+ * - 多人和牌時取放銃者之後最近的和牌者。
+ * - 莊家和牌或其他結果沿用日麻的連莊與過莊。
+ * - 除了這兩項以外的成員都交給以 [DebugWinnerDealerRiichiRuleConfig.base] 建立的四人日麻模組。
  *
  * @property id 規則模組 ID。
  * @property config 開發用規則配置。

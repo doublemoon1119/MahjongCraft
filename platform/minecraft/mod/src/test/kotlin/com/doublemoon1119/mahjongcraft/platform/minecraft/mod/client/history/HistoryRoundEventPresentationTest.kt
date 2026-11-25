@@ -427,7 +427,7 @@ class HistoryRoundEventPresentationTest {
         assertEquals("test.spell", fact.text.string)
     }
 
-    /** 局首換牌依輪次列出標題，每位玩家一列移出的牌；標題使用規則登記的用語。 */
+    /** 局首換牌依輪次列出標題，每位玩家一列移出的牌。標題使用規則登記的用語。 */
     @Test
     fun `opening replacement rounds list each player's tiles under the rule's wording`() {
         val presenter = replacementPresenter()
@@ -453,7 +453,7 @@ class HistoryRoundEventPresentationTest {
         assertEquals(listOf(catalog.take(2), catalog.drop(2)), presented.seatLines.map { it.tiles })
     }
 
-    /** 牌局中的換牌只顯示用語不帶輪次；規則沒有登記用語時使用中立的「換牌」。 */
+    /** 牌局中的換牌只顯示用語不帶輪次。規則沒有登記用語時使用中立的「換牌」。 */
     @Test
     fun `mid game replacements show only the wording and fall back to neutral wording`() {
         val presenter = replacementPresenter()
@@ -469,7 +469,7 @@ class HistoryRoundEventPresentationTest {
         assertEquals(MinecraftHistoryScreenKeys.ROUND_REPLACEMENT, presenter.present(events(fact, tileCatalog = catalog), "test:other").transactions.single().facts.single().text.string)
     }
 
-    /** 換牌紀錄已說明結果的規則選擇步驟：開始改顯示「開始補花」，自動完成不再列出，即使開始記在較早的交易；每筆交易都保留。 */
+    /** 換牌紀錄已說明結果的規則選擇步驟：開始改顯示「開始補花」，自動完成不再列出，即使開始記在較早的交易。每筆交易都保留。 */
     @Test
     fun `replacement records replace the bookkeeping of their rule decision step`() {
         val started = ruleDecision(HistoryFactTypeKeys.RULE_DECISION_STARTED, stepIndex = 0)
@@ -496,7 +496,7 @@ class HistoryRoundEventPresentationTest {
         assertEquals(emptyList(), presentation.transactions[3].facts, "A transaction recorded without facts is still listed.")
     }
 
-    /** 玩家的選擇以動作用語顯示在玩家名下；選了代表跳過的選項時顯示跳過。該步驟的開始與其他事實同在一筆交易時不再另列，單獨一筆時保留一般文字。 */
+    /** 玩家的選擇以動作用語顯示在玩家名下。選了代表跳過的選項時顯示跳過。該步驟的開始與其他事實同在一筆交易時不再另列，單獨一筆時保留一般文字。 */
     @Test
     fun `player choices use action wording and replace the step start`() {
         val presenter = replacementPresenter()
@@ -642,7 +642,7 @@ class HistoryRoundEventPresentationTest {
         assertEquals(listOf("test.special", "test.registered_draw", MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER), names)
     }
 
-    /** 登記了結算身分用語的流局原因使用該用語；沒有登記的原因只顯示得分者的通用「受益」。 */
+    /** 登記了結算身分用語的流局原因使用該用語。沒有登記的原因只顯示得分者的通用「受益」。 */
     @Test
     fun `normal draw status matches settlement panel without changing extension labels`() {
         val presenter = presenter()

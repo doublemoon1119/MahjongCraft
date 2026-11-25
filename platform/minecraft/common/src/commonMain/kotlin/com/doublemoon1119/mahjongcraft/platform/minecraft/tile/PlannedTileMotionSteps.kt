@@ -7,15 +7,18 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.MahjongAnima
 import kotlin.uuid.Uuid
 
 /**
- * 把一個規劃好的牌動作展開成依序播放的動畫步驟；對局中的牌實體與牌譜回放的場景播放同一份步驟。
+ * 把一個規劃好的牌動作展開成依序播放的動畫步驟。對局中的牌實體與牌譜回放的場景播放同一份步驟。
  *
- * 摸牌抬起後隱形移到新位置再落下；拋物線與弧線是一段連續可見的飛行；平移沒有弧線；翻面只轉姿態。落地時依目的區域播放
- * 對應的落桌聲：牌河為捨牌聲，副露與移出區為副露聲，從牌牆摸到立牌或摸牌位為摸牌聲。起點使用規劃的位置與姿態，
- * 不讀牌目前的位置，所以前面還有動畫在排隊時也會從那些動畫結束的位置接著動。
+ * - 摸牌：抬起後隱形移到新位置再落下。
+ * - 拋物線與弧線：一段連續可見的飛行。
+ * - 平移：沒有弧線。
+ * - 翻面：只轉姿態。
+ * - 落地聲依目的區域：牌河為捨牌聲，副露與移出區為副露聲，從牌牆摸到立牌或摸牌位為摸牌聲。
+ * - 起點使用規劃的位置與姿態，不讀牌目前的位置。前面還有動畫在排隊時，也會從那些動畫結束的位置接著動。
  */
 object PlannedTileMotionSteps {
     /**
-     * 展開同一步的所有動作：先離開、再讓位、最後從牌牆摸進來，後一段等前一段完成；一起落到同一排的牌只播一次落地聲。
+     * 展開同一步的所有動作：先離開、再讓位、最後從牌牆摸進來，後一段等前一段完成。一起落到同一排的牌只播一次落地聲。
      *
      * @param motions 同一步規劃好的動作。
      * @param startGameTime 這一步開始的絕對遊戲 tick。
@@ -35,8 +38,8 @@ object PlannedTileMotionSteps {
      *
      * @param motion 規劃好的動作。
      * @param startGameTime 動作開始的絕對遊戲 tick。
-     * @param playLandingSound 是否播放落地聲；同一組一起落地的牌只需要其中一張播放。
-     * @return 依序播放的步驟；自訂步驟是牌的姿態。
+     * @param playLandingSound 是否播放落地聲。同一組一起落地的牌只需要其中一張播放。
+     * @return 依序播放的步驟。自訂步驟是牌的姿態。
      */
     fun steps(motion: PlannedTileMotion, startGameTime: Long, playLandingSound: Boolean = true): List<AnimationStep<TilePose>> {
         val to = motion.to
@@ -119,11 +122,11 @@ object PlannedTileMotionSteps {
     }
 
     /**
-     * 依動作與目的區域選擇落地聲；同一排內的平移、弧線、翻面與直接擺放沒有落地聲。
+     * 依動作與目的區域選擇落地聲。同一排內的平移、弧線、翻面與直接擺放沒有落地聲。
      *
      * @param motion 規劃好的動作。
      * @param gameTime 落地的絕對遊戲 tick。
-     * @return 落地聲；不需要時為 null。
+     * @return 落地聲。不需要時為 null。
      */
     private fun landingSound(motion: PlannedTileMotion, gameTime: Long): AnimationStep.PlaySound? = when (motion.kind) {
         TileMotionKind.DRAW, TileMotionKind.DROP -> sound(MahjongAnimationSounds.DRAW_TILE_LAND, DRAW_LAND_VOLUME, DRAW_LAND_PITCH, gameTime)

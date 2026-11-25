@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
  * @property sessionId 這次載入的伺服器身分。
  * @property revision 來源的單調版本。
  * @property tableId 桌子識別碼。
- * @property matchId 對局場次；等待房間為 null。
+ * @property matchId 對局場次。等待房間為 null。
  * @property available 外觀保存資料是否可用。
  * @property players 這份完整名冊的角色描述。
  * @property excludedPlayers 只有房主可讀的已排除角色頭像及名稱，不含模型參數。

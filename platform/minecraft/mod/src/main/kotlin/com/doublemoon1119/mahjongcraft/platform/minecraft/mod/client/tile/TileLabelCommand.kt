@@ -33,7 +33,7 @@ class TileLabelCommand(
     private val configStore: MahjongClientConfigStore,
 ) : ClientCommand {
     /**
-     * 註冊指令；只能在 client entrypoint 呼叫。
+     * 註冊指令。只能在 client entrypoint 呼叫。
      *
      * @param events 登記用戶端指令的事件來源。
      */

@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.character
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterLimits
 
-/** 保存不可變角色描述的登記表；相同 ID 不得覆寫。 */
+/** 保存不可變角色描述的登記表。相同 ID 不得覆寫。 */
 class AiCharacterRegistryImpl : AiCharacterRegistry {
     /** 按完整 ID 索引的描述。 */
     private val entries = mutableMapOf<String, AiCharacterDefinition>()

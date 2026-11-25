@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.network
 
 /**
- * 客戶端為配對回覆而附上的識別字串規則；伺服器會在回覆中原樣送回這些字串，因此一律限制長度。
+ * 客戶端為配對回覆而附上的識別字串規則。伺服器會在回覆中原樣送回這些字串，因此一律限制長度。
  */
 internal object ClientRequestIds {
     /** 識別字串的長度上限。 */

@@ -11,12 +11,12 @@ import net.minecraft.client.gui.screens.Screen
 /**
  * 依歷史對局保存的設定建立規則一覽的開啟脈絡。
  *
- * 設定能在本地解出時使用它的規則與設定；解不出時改用摘要記錄的規則，設定標為無法取得，由玩家自行選擇一般說明。
+ * 設定能在本地解出時使用它的規則與設定。解不出時改用摘要記錄的規則，設定標為無法取得，由玩家自行選擇一般說明。
  *
- * @param decodedRuleModuleId 由保存設定解出的規則；解不出時為 null。
- * @param decodedRuleConfig 由保存設定解出的規則設定；解不出時為 null。
- * @param summaryRuleModuleId 對局摘要記錄的規則；沒有摘要時為 null。
- * @return 開啟脈絡；兩者都沒有合法規則時為 null。
+ * @param decodedRuleModuleId 由保存設定解出的規則。解不出時為 null。
+ * @param decodedRuleConfig 由保存設定解出的規則設定。解不出時為 null。
+ * @param summaryRuleModuleId 對局摘要記錄的規則。沒有摘要時為 null。
+ * @return 開啟脈絡。兩者都沒有合法規則時為 null。
  */
 internal fun historyRuleCatalogueContext(
     decodedRuleModuleId: String?,
@@ -37,7 +37,7 @@ internal fun historyRuleCatalogueContext(
 /**
  * 從歷史規則設定頁開啟的規則一覽：經由瀏覽 session 返回同一個規則設定頁，保留捲動位置。
  *
- * 規則一覽被其他原因移除時照常結束瀏覽；瀏覽在規則一覽開著時結束，規則一覽關回遊戲。
+ * 規則一覽被其他原因移除時照常結束瀏覽。瀏覽在規則一覽開著時結束，規則一覽關回遊戲。
  *
  * @property session 開啟規則一覽的歷史瀏覽。
  * @property settings 返回時回到的規則設定頁。

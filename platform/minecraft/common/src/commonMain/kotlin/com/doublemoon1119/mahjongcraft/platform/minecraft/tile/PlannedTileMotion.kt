@@ -8,11 +8,11 @@ import kotlin.uuid.Uuid
  *
  * @property tileId 牌的識別碼。
  * @property kind 動作種類。
- * @property fromRow 這一步開始時所在的那一排；[TileMotionKind.PLACE] 或 [TileMotionKind.DROP] 時為 null。
+ * @property fromRow 這一步開始時所在的那一排。[TileMotionKind.PLACE] 或 [TileMotionKind.DROP] 時為 null。
  * @property toRow 這一步結束時所在的那一排。
- * @property from 這一步開始時的位置；[TileMotionKind.PLACE] 或 [TileMotionKind.DROP] 時為 null。
+ * @property from 這一步開始時的位置。[TileMotionKind.PLACE] 或 [TileMotionKind.DROP] 時為 null。
  * @property to 這一步結束時的位置。
- * @property fromPose 這一步開始時的姿態；[TileMotionKind.PLACE] 或 [TileMotionKind.DROP] 時為 null。
+ * @property fromPose 這一步開始時的姿態。[TileMotionKind.PLACE] 或 [TileMotionKind.DROP] 時為 null。
  * @property toPose 這一步結束時的姿態。
  */
 data class PlannedTileMotion(

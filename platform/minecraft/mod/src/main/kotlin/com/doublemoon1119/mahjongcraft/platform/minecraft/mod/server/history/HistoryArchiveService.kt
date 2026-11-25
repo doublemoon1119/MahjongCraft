@@ -51,11 +51,11 @@ internal class HistoryArchiveService(
     /** 最近一次對帳中已警告過的孤兒場次，避免重複記錄同一問題。 */
     private var warnedOrphanMatchIds: Set<String> = emptySet()
 
-    /** 上一次對帳已記錄過的待寫事件問題（場次與序號）；問題持續存在時不重複記錄。 */
+    /** 上一次對帳已記錄過的待寫事件問題（場次與序號）。問題持續存在時不重複記錄。 */
     private var reportedEventProblems: Set<Pair<String, Long>> = emptySet()
 
     /**
-     * 本次資料庫連線中，每場已解碼驗證且確認從 1 起連續的最高序號；只用來省略重複解碼，不影響完整性判定。
+     * 本次資料庫連線中，每場已解碼驗證且確認從 1 起連續的最高序號。只用來省略重複解碼，不影響完整性判定。
      *
      * 每次開啟資料庫時清空（[beginConnection]），因此每次連線的第一次對帳一定完整解碼。
      */
@@ -76,11 +76,17 @@ internal class HistoryArchiveService(
     }
 
     /**
-     * 對帳權威待寫佇列與 SQLite 的待寫事件，保留可證實的最早缺口；不從最高序號推導中間一定連續。
+     * 對帳權威待寫佇列與 SQLite 的待寫事件，保留可證實的最早缺口。不從最高序號推導中間一定連續。
      *
-     * 每次都完整判定四件事：payload 能否解碼、序號缺口、資料庫序號超過權威存檔的孤兒事件，以及待寫佇列與資料庫重疊的
-     * 序號內容是否衝突。資料庫的序號達到權威存檔的下一個序號就是孤兒（存檔回溯），不論待寫佇列是否還有事件；資料庫已有
-     * 終局紀錄、且權威狀態已不再記錄其序號的場次是已結束的場次，不判為孤兒，權威狀態仍記錄序號時則照樣判定。序號與重疊判定只讀主鍵或重疊的那幾筆；payload 解碼則略過本次連線已驗證過、從 1 起連續的事件。
+     * 每次都完整判定四件事：
+     *
+     * 1. payload 能否解碼。略過本次連線已驗證過、從 1 起連續的事件。
+     * 2. 序號缺口。
+     * 3. 孤兒事件：資料庫的序號達到權威存檔的下一個序號（存檔回溯），不論待寫佇列是否還有事件。
+     *    資料庫已有終局紀錄、且權威狀態已不再記錄其序號的場次是已結束的場次，不判為孤兒。權威狀態仍記錄序號時照樣判定。
+     * 4. 待寫佇列與資料庫重疊的序號內容是否衝突。
+     *
+     * 序號與重疊判定只讀主鍵或重疊的那幾筆。
      *
      * @param database 目前連線的資料庫。
      * @param recording 權威狀態中的歷史記錄狀態。
@@ -168,9 +174,9 @@ internal class HistoryArchiveService(
     }
 
     /**
-     * 解碼驗證一場尚未驗證過的待寫事件；無法解碼的事件記為缺口並禁止寫入該場。
+     * 解碼驗證一場尚未驗證過的待寫事件。無法解碼的事件記為缺口並禁止寫入該場。
      *
-     * 只讀取高於已驗證序號的事件；全部成功且從 1 起連續時推進已驗證的序號，否則移除該場的已驗證紀錄，下次重新完整解碼。
+     * 只讀取高於已驗證序號的事件。全部成功且從 1 起連續時推進已驗證的序號，否則移除該場的已驗證紀錄，下次重新完整解碼。
      *
      * @param database 目前連線的資料庫。
      * @param matchId 場次識別字串。
@@ -205,11 +211,11 @@ internal class HistoryArchiveService(
     }
 
     /**
-     * 將已返回房間且無待寫事件的完整對局封存；單場失敗不阻止其他場次。
+     * 將已返回房間且無待寫事件的完整對局封存。單場失敗不阻止其他場次。
      *
      * @param database 目前連線的資料庫。
      * @param snapshot 權威狀態。
-     * @param scanAllPending 為 true 時讀出資料庫所有待寫事件找出可封存的場次，用於開啟資料庫時；為 false 時只讀取已有
+     * @param scanAllPending 為 true 時讀出資料庫所有待寫事件找出可封存的場次，用於開啟資料庫時。為 false 時只讀取已有
      *   終局紀錄（權威狀態或資料庫）的場次，用於連線期間。兩者的封存條件相同。
      * @param onArchived 接收每一場完成的封存。
      * @return 封存的場數。
@@ -365,7 +371,7 @@ internal sealed interface StagedHistoryEventComparison {
 }
 
 /**
- * 把待寫事件編碼後與資料庫中的內容比對；編碼失敗與內容不同分開回報。
+ * 把待寫事件編碼後與資料庫中的內容比對。編碼失敗與內容不同分開回報。
  *
  * @param persistedPayload 資料庫中同一序號的內容。
  * @param encode 編碼待寫事件。
@@ -381,16 +387,16 @@ internal fun compareStagedHistoryEvent(persistedPayload: String, encode: () -> S
 }
 
 /**
- * 由資料庫事件與待寫佇列事件的序號聯集，推出一場的最早缺口；待寫事件可能剛好補足資料庫的缺口。
+ * 由資料庫事件與待寫佇列事件的序號聯集，推出一場的最早缺口。待寫事件可能剛好補足資料庫的缺口。
  *
- * 彙總已證明資料庫序號正好是 1..最大序號時，不需要逐一列出資料庫序號；否則由 [persistedSequences] 提供完整清單。缺口
- * 判定涵蓋到權威存檔已指派的最後一個序號為止。
+ * - 彙總已證明資料庫序號正好是 1..最大序號時，不需要逐一列出資料庫序號。否則由 [persistedSequences] 提供完整清單。
+ * - 缺口判定涵蓋到權威存檔已指派的最後一個序號為止。
  *
- * @param summary 資料庫序號彙總；資料庫沒有這場的事件時為 null。
- * @param persistedSequences 資料庫序號清單；[summary] 已證明從 1 起連續時為 null。
+ * @param summary 資料庫序號彙總。資料庫沒有這場的事件時為 null。
+ * @param persistedSequences 資料庫序號清單。[summary] 已證明從 1 起連續時為 null。
  * @param stagedSequences 待寫佇列中的序號。
  * @param nextSequence 權威存檔的下一個序號。
- * @return 最早缺少的序號；沒有缺口時為 null。
+ * @return 最早缺少的序號。沒有缺口時為 null。
  */
 internal fun firstMissingSequence(
     summary: PendingSequenceSummary?,

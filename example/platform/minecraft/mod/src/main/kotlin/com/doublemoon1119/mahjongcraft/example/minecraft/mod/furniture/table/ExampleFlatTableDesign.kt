@@ -4,9 +4,9 @@ import net.minecraft.world.phys.shapes.Shapes
 import net.minecraft.world.phys.shapes.VoxelShape
 
 /**
- * 3×3 單層範例桌子的外觀款式；兩種款式的結構相同，只有每一格的形狀不同，與方塊模型一致。
+ * 3×3 單層範例桌子的外觀款式。兩種款式的結構相同，只有每一格的形狀不同，與方塊模型一致。
  *
- * 轉角的形狀以西北角為基準描述，其他轉角依所在位置鏡像；桌面頂端在方塊頂端，擺牌層因此是上方一整層空氣。
+ * 轉角的形狀以西北角為基準描述，其他轉角依所在位置鏡像。桌面頂端在方塊頂端，擺牌層因此是上方一整層空氣。
  */
 enum class ExampleFlatTableDesign {
     /** 方形桌面、四個轉角各有一支桌腳的矮桌。 */
@@ -16,7 +16,7 @@ enum class ExampleFlatTableDesign {
         override fun centerBoxes(): List<Box> = listOf(TABLETOP)
     },
 
-    /** 轉角削成圓弧、中央有底座的圓桌；底座在桌面以下，不進入擺牌層。 */
+    /** 轉角削成圓弧、中央有底座的圓桌。底座在桌面以下，不進入擺牌層。 */
     ROUND {
         override fun northWestCornerBoxes(): List<Box> = listOf(
             Box(8, 13, 3, 16, 16, 16),

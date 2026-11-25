@@ -8,7 +8,7 @@ import kotlin.math.sin
 /**
  * 役滿 showcase 隨時間變化的曲線。
  *
- * 所有函式只吃經過的 tick 數（或已換算好的進度），回傳縮放、可見度或位移；不碰 entity 或繪製。
+ * 所有函式只吃經過的 tick 數（或已換算好的進度），回傳縮放、可見度或位移。不碰 entity 或繪製。
  */
 object ShowcaseTimelineCurves {
     /** 鞘翅與煙火開始具現的 tick。 */
@@ -47,7 +47,7 @@ object ShowcaseTimelineCurves {
     ): Double = start + (end - start) * progress
 
     /**
-     * 兩端斜率為 0 的平滑曲線；輸入應在 0..1。
+     * 兩端斜率為 0 的平滑曲線。輸入應在 0..1。
      *
      * @param value 輸入進度。
      * @return 平滑後的進度值。
@@ -55,7 +55,7 @@ object ShowcaseTimelineCurves {
     fun smoothStep(value: Double): Double = value * value * (3.0 - 2.0 * value)
 
     /**
-     * 起步快、收尾慢的二次曲線；輸入應在 0..1。
+     * 起步快、收尾慢的二次曲線。輸入應在 0..1。
      *
      * @param value 輸入進度。
      * @return ease-out 後的進度值。
@@ -101,7 +101,7 @@ object ShowcaseTimelineCurves {
     )
 
     /**
-     * 和牌張的垂直晃動；和牌張本體與接觸波紋共用這一個來源。
+     * 和牌張的垂直晃動。和牌張本體與接觸波紋共用這一個來源。
      *
      * @param elapsed 已經過的 tick。
      * @param fade 晃動振幅使用的淡出比例。
@@ -115,7 +115,7 @@ object ShowcaseTimelineCurves {
     /**
      * 距離最近一次晃動最低點的 tick 數。
      *
-     * 範圍為半個週期的正負值：負值表示正在下降、尚未到達最低點；正值表示已過最低點、正在上升。
+     * 範圍為半個週期的正負值：負值表示正在下降、尚未到達最低點。正值表示已過最低點、正在上升。
      *
      * @param elapsed 已經過的 tick。
      * @return 距離最近最低點的 tick 數。

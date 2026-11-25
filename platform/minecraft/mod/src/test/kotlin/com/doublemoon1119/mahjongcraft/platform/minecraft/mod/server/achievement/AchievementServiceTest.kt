@@ -317,7 +317,7 @@ class AchievementServiceTest {
     /**
      * 記錄成果授予內容，並可模擬指定玩家授予失敗。
      *
-     * @property failingPlayerId 授予時拋出例外的玩家；null 表示皆成功。
+     * @property failingPlayerId 授予時拋出例外的玩家。null 表示皆成功。
      */
     private class RecordingGateway(private val failingPlayerId: Uuid? = null) : AchievementGrantGateway {
         /** 成功接收的成果，依授予順序排列。 */

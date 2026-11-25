@@ -102,7 +102,7 @@ class PlatformTargetsSettingsPlugin : Plugin<Settings> {
     }
 
     companion object {
-        /** Gradle extra 中選擇的 target ID 清單的 key；core 時只有 `core`。 */
+        /** Gradle extra 中選擇的 target ID 清單的 key。core 時只有 `core`。 */
         const val SELECTED_TARGET_IDS_EXTRA: String = "mahjongcraft.selectedTargetIds"
 
         /** Gradle extra 中依 project path 排列的 target toolchain 的 key。 */

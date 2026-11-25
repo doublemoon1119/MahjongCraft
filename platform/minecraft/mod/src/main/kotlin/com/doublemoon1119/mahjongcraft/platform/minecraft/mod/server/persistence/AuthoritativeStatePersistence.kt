@@ -112,7 +112,7 @@ class AuthoritativeStatePersistence(
         }
     }
 
-    /** 取得同一版本的牌局與角色快照；沒有有效 session 時為 null。 */
+    /** 取得同一版本的牌局與角色快照。沒有有效 session 時為 null。 */
     fun characterSnapshot(): AiCharacterStateSnapshot? = savedData?.characterSnapshot()
 
     /**
@@ -122,7 +122,7 @@ class AuthoritativeStatePersistence(
      * @param validate 取得執行權後立即重新驗證來源、席位與公開描述。
      * @param rejected 預檢失效的結果。
      * @param action 不等待權威鎖的加入操作。
-     * @return 加入操作的結果；沒有保存 session 時拒絕。
+     * @return 加入操作的結果。沒有保存 session 時拒絕。
      */
     internal suspend fun <T> withParticipant(
         capture: AiCharacterParticipantCapture,
@@ -179,7 +179,7 @@ class AuthoritativeStatePersistence(
         false
     }
 
-    /** 停止 dirty 轉送；Minecraft 仍持有 state，會在既有世界保存流程中寫入磁碟。 */
+    /** 停止 dirty 轉送。Minecraft 仍持有 state，會在既有世界保存流程中寫入磁碟。 */
     suspend fun detach() {
         store.setDirtyListener {}
         savedData = null
@@ -187,10 +187,10 @@ class AuthoritativeStatePersistence(
     }
 
     /**
-     * 載入權威狀態；無法讀取時不中斷伺服器啟動，改為停用本次 session 的麻將功能。
+     * 載入權威狀態。無法讀取時不中斷伺服器啟動，改為停用本次 session 的麻將功能。
      *
      * @param server 要載入權威狀態的 Minecraft 伺服器。
-     * @return 成功接上時為 true；無法讀取、已停用麻將功能時為 false。
+     * @return 成功接上時為 true。無法讀取、已停用麻將功能時為 false。
      */
     suspend fun attachOrDisable(server: MinecraftServer): Boolean = attachAuthoritativeStateOrDisable(
         attach = { attach(server) },
@@ -203,10 +203,11 @@ class AuthoritativeStatePersistence(
 }
 
 /**
- * 接上權威狀態；無法讀取時拒絕之後的所有寫入並回報，讓世界照常進入、只停用麻將功能。
+ * 接上權威狀態。無法讀取時拒絕之後的所有寫入並回報，讓世界照常進入、只停用麻將功能。
  *
- * 失敗時 [attach] 已清除本次建立的記憶體並保留原檔；之後的寫入若建立在清空的狀態上，會與原始資料衝突，
- * 因此由 [markUnavailable] 一律拒絕。取消與致命錯誤照常往外傳。
+ * - 失敗時 [attach] 已清除本次建立的記憶體並保留原檔。
+ * - 之後的寫入若建立在清空的狀態上會與原始資料衝突，因此由 [markUnavailable] 一律拒絕。
+ * - 取消與致命錯誤照常往外傳。
  *
  * @param attach 載入並接上權威狀態。
  * @param markUnavailable 拒絕之後所有權威狀態寫入。

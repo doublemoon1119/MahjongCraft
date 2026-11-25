@@ -15,7 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigOption
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationDefinition
 
-/** 台麻設定畫面的 schema；共用流程欄位由 registry 登記時附加。 */
+/** 台麻設定畫面的 schema。共用流程欄位由 registry 登記時附加。 */
 internal fun taiwanGameConfigPresentation(): GameConfigPresentationDefinition = GameConfigPresentationDefinition(
     ruleModuleId = BuiltInRuleModuleIds.TAIWAN,
     descriptionTranslationKey = TaiwanGameConfigTranslationKeys.DESCRIPTION,
@@ -154,7 +154,7 @@ private fun GameConfig.withTaiwan(transform: TaiwanRuleConfig.() -> TaiwanRuleCo
 private fun GameConfig.withTaiwanScore(transform: TaiwanScoreConfig.() -> TaiwanScoreConfig): GameConfig = withTaiwan { copy(scoreConfig = scoreConfig.transform()) }
 
 /**
- * 建立台麻多響欄位的選項；台麻不以多響作為流局。
+ * 建立台麻多響欄位的選項。台麻不以多響作為流局。
  *
  * @param nearestWinnerId 最近順位優先選項的完整 ID。
  * @param allWinnersId 全部成立選項的完整 ID。

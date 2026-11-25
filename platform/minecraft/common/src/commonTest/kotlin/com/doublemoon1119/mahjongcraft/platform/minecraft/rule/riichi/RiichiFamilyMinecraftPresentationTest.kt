@@ -18,7 +18,7 @@ import kotlin.test.assertTrue
 
 /** 驗證日麻呈現可以綁定到任意規則模組 ID。 */
 class RiichiFamilyMinecraftPresentationTest {
-    /** 立直與九種九牌一定登記；拔北只在規則可以拔北時登記。 */
+    /** 立直與九種九牌一定登記。拔北只在規則可以拔北時登記。 */
     @Test
     fun `pull north wording is registered only when the rule allows it`() {
         val registry = GameActionVocabularyRegistryImpl().apply {

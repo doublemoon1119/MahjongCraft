@@ -30,7 +30,7 @@ fun registerItemStackFields(registrar: ModRegistrar) {
 /**
  * 麻將牌物品保存的牌面名稱。
  *
- * @return 保存的名稱；沒有保存時為 null。
+ * @return 保存的名稱。沒有保存時為 null。
  */
 fun ItemStack.storedTileAssetKey(): String? = get(tileAssetKeyComponent.get())
 
@@ -46,7 +46,7 @@ fun ItemStack.storeTileAssetKey(assetKey: String) {
 /**
  * 點棒物品保存的面額名稱。
  *
- * @return 保存的名稱；沒有保存時為 null。
+ * @return 保存的名稱。沒有保存時為 null。
  */
 fun ItemStack.storedScoringStickDenomination(): String? = get(scoringStickDenominationComponent.get())
 

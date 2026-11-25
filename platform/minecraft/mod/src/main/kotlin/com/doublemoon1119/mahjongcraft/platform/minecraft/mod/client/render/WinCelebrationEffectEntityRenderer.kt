@@ -22,7 +22,7 @@ class WinCelebrationEffectEntityRenderer(
     /** 特效本身的畫法。 */
     private val geometry = WinCelebrationEffectGeometry(TridentModel(context.bakeLayer(ModelLayers.TRIDENT)))
 
-    /** 依同步的絕對時間畫出特效；不是胡牌特效或不在播放時間內時不畫。 */
+    /** 依同步的絕對時間畫出特效。不是胡牌特效或不在播放時間內時不畫。 */
     override fun render(
         entity: WinCelebrationEffectEntity,
         yaw: Float,
@@ -42,6 +42,6 @@ class WinCelebrationEffectEntityRenderer(
         )
     }
 
-    /** 純色線段不使用材質；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    /** 純色線段不使用材質。原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
     override fun getTextureLocation(entity: WinCelebrationEffectEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 }

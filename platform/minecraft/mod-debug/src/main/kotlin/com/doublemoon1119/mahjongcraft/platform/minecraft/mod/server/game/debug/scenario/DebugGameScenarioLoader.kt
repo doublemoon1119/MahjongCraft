@@ -83,7 +83,7 @@ class DebugGameScenarioLoader(
      *
      * @param playerId 發起指令的玩家識別碼。
      * @param scenarioId 已登記的開發情境識別碼。
-     * @return 載入成功或拒絕原因；呈現失敗時權威替換可能已完成，不會回復原局面。
+     * @return 載入成功或拒絕原因。呈現失敗時權威替換可能已完成，不會回復原局面。
      */
     suspend fun load(playerId: Uuid, scenarioId: String): DebugGameScenarioLoadResult = loadAndRepeatPresentation(playerId, scenarioId, presentationCount = 1)
 
@@ -93,7 +93,7 @@ class DebugGameScenarioLoader(
      * @param playerId 發起指令的玩家識別碼。
      * @param scenarioId 已登記的開發情境識別碼。
      * @param presentationCount 重建呈現的次數，必須為正數。
-     * @return 載入成功或拒絕原因；失敗不保證權威狀態尚未變更。
+     * @return 載入成功或拒絕原因。失敗不保證權威狀態尚未變更。
      * @throws IllegalArgumentException 次數不是正數時拋出。
      */
     suspend fun stress(playerId: Uuid, scenarioId: String, presentationCount: Int): DebugGameScenarioLoadResult {
@@ -107,7 +107,7 @@ class DebugGameScenarioLoader(
      * @param playerId 發起指令的玩家識別碼。
      * @param scenarioId 已登記的情境識別碼。
      * @param presentationCount 要重建的呈現次數。
-     * @return 載入成功或拒絕原因；對局排除標記與已提交狀態不因後續失敗回復。
+     * @return 載入成功或拒絕原因。對局排除標記與已提交狀態不因後續失敗回復。
      */
     private suspend fun loadAndRepeatPresentation(
         playerId: Uuid,
@@ -184,7 +184,7 @@ class DebugGameScenarioLoader(
     }
 
     /**
-     * 讓流程設定符合情境載入後的規則；例如規則需要玩家選擇時補上規則選擇時間，不需要時清除。
+     * 讓流程設定符合情境載入後的規則。例如規則需要玩家選擇時補上規則選擇時間，不需要時清除。
      *
      * @receiver 情境建立的結果。
      * @return 流程設定已整理的結果。

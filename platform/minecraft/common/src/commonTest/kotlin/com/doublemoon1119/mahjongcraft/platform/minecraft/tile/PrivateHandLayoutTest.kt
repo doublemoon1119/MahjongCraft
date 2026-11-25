@@ -118,7 +118,7 @@ class PrivateHandLayoutTest {
     }
 
     /**
-     * 打出立牌中的牌：離開時那一格先空著，其餘牌與摸牌位不動，打出的牌跟著共享動畫離開；讓位時其餘牌補位，摸到的牌以弧線
+     * 打出立牌中的牌：離開時那一格先空著，其餘牌與摸牌位不動，打出的牌跟著共享動畫離開。讓位時其餘牌補位，摸到的牌以弧線
      * 插入並往前進方向傾斜。
      */
     @Test
@@ -147,7 +147,7 @@ class PrivateHandLayoutTest {
         assertEquals(held.getValue(firstId), inserting.getValue(firstId))
     }
 
-    /** 這一步才從牌牆進來的牌先佔格位、不顯示在手牌；落下時才接管，飛進自己的格位。 */
+    /** 這一步才從牌牆進來的牌先佔格位、不顯示在手牌。落下時才接管，飛進自己的格位。 */
     @Test
     fun `tile still in the wall reserves its slot until it lands`() {
         val layout = PrivateHandLayout()
@@ -168,7 +168,7 @@ class PrivateHandLayoutTest {
         assertEquals(transform(-0.5).position.x, landed.getValue(replacementId).position.x, 0.000001)
     }
 
-    /** 直接補進立牌、還沒理過的牌在本人排列中接在最右邊，與其他人看到的位置相同；理牌時才越過其他牌插進本人順序。 */
+    /** 直接補進立牌、還沒理過的牌在本人排列中接在最右邊，與其他人看到的位置相同。理牌時才越過其他牌插進本人順序。 */
     @Test
     fun `unsorted replacement stays at the right end until the hand is sorted`() {
         val layout = PrivateHandLayout()
@@ -217,7 +217,7 @@ class PrivateHandLayoutTest {
     }
 
     /**
-     * 原本的牌先換到加牌後的位置、本人排列下一刻才多一張牌時，本人整排的兩端仍與共享擺放一致；
+     * 原本的牌先換到加牌後的位置、本人排列下一刻才多一張牌時，本人整排的兩端仍與共享擺放一致。
      * 先換好的位置已記成上次的位置，不能因此判斷牌排沒動而沿用舊中心。
      */
     @Test
@@ -1014,7 +1014,7 @@ class PrivateHandLayoutTest {
         }
 
         /**
-         * 確認留下的立牌與嶺上牌最後顯示在伺服器讓位後的位置；沒有被私人布局接管的牌以共享位置顯示。
+         * 確認留下的立牌與嶺上牌最後顯示在伺服器讓位後的位置。沒有被私人布局接管的牌以共享位置顯示。
          *
          * @param frame 私人布局最後一幀。
          */
@@ -1029,7 +1029,7 @@ class PrivateHandLayoutTest {
         }
 
         /**
-         * 確認留下的立牌顯示在伺服器讓位後的位置；沒有被私人布局接管時以共享位置顯示。
+         * 確認留下的立牌顯示在伺服器讓位後的位置。沒有被私人布局接管時以共享位置顯示。
          *
          * @param frame 私人布局最後一幀。
          */
@@ -1048,7 +1048,7 @@ class PrivateHandLayoutTest {
          * 依伺服器的擺法算出立牌與摸牌位的共享終點。
          *
          * @param standing 立牌。
-         * @param drawnId 摸牌位的牌；沒有時為 null。
+         * @param drawnId 摸牌位的牌。沒有時為 null。
          * @param melds 用來算讓位的副露。
          * @return 各牌的原生輸入。
          */

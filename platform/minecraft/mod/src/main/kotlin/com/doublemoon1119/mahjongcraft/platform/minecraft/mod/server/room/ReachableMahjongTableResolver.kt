@@ -50,11 +50,11 @@ class ReachableMahjongTableResolver(
     }
 
     /**
-     * 解析玩家指定的座標；桌子不存在或超出可互動範圍時回傳 `null`。
+     * 解析玩家指定的座標。桌子不存在或超出可互動範圍時回傳 `null`。
      *
      * @param player 執行互動的玩家。
      * @param pos 指定的 controller 方塊座標。
-     * @return 符合位置與距離條件的桌子；否則為 null。
+     * @return 符合位置與距離條件的桌子。否則為 null。
      */
     internal fun resolve(player: ServerPlayer, pos: BlockPos): LocatedMahjongTable? {
         val table = MahjongTableLookup.find(player.serverLevel(), pos) ?: return null
@@ -89,7 +89,7 @@ class ReachableMahjongTableResolver(
  * 依遊戲模式決定選桌時的可觸距離：旁觀模式不限距離，其他模式使用玩家與方塊互動的距離。
  *
  * @param gameType 玩家目前的遊戲模式。
- * @param blockReach 取得玩家與方塊互動的距離；旁觀模式不呼叫。
+ * @param blockReach 取得玩家與方塊互動的距離。旁觀模式不呼叫。
  * @return 可觸距離（方塊數）。
  */
 internal fun tableReachDistance(gameType: GameType, blockReach: () -> Double): Double = if (gameType == GameType.SPECTATOR) Double.MAX_VALUE else blockReach()

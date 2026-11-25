@@ -50,7 +50,7 @@ import kotlin.uuid.toJavaUuid
  * @property tileAssetRegistry 提供 AI 牌面頭像使用的完整 namespace 與路徑映射。
  * @property profiles 真人普通名稱與原生皮膚材質的共用解析器。
  * @property characters 此連線已授權的角色外觀，不查詢世界實體。
- * @property previews 直接模型與頭像備援；明確 FACE 可用時不額外截圖。
+ * @property previews 直接模型與頭像備援。明確 FACE 可用時不額外截圖。
  */
 class PlayerPortraitRenderer internal constructor(
     private val sources: PlayerPortraitSourceRegistry,
@@ -78,7 +78,7 @@ class PlayerPortraitRenderer internal constructor(
      * 將角色公開頭像轉成既有繪製來源，不另建一套 FACE renderer。
      *
      * @param snapshot 已授權的當場描述。
-     * @return 已擷取頭像；缺少時由既有來源與未知牌備援。
+     * @return 已擷取頭像。缺少時由既有來源與未知牌備援。
      */
     private fun characterPortrait(snapshot: AiCharacterSnapshot?): ResolvedPlayerPortraitSource? {
         snapshot ?: return null
@@ -130,10 +130,10 @@ class PlayerPortraitRenderer internal constructor(
     fun hasCharacterPreview(id: String): Boolean = previews.hasFactory(id)
 
     /**
-     * 以實際角色描述繪製選定的房間預覽；能力與描述不符時由頭像備援。
+     * 以實際角色描述繪製選定的房間預覽。能力與描述不符時由頭像備援。
      *
      * @param snapshot 已授權的完整角色描述。
-     * @param id 選定的備援能力；優先使用本人時可為 null。
+     * @param id 選定的備援能力。優先使用本人時可為 null。
      * @param context GUI 繪製來源。
      * @param area 卡片上畫人物的範圍與放大倍數。
      * @param mouseX 游標水平座標。
@@ -147,8 +147,8 @@ class PlayerPortraitRenderer internal constructor(
     }
 
     /**
-     * 將宣告式頭像來源繪製於世界空間的正方形 slot；牌面保持 3:4 比例並水平置中。
-     * 一般來源失敗時使用內建頭像；取消例外與致命錯誤直接外傳。
+     * 將宣告式頭像來源繪製於世界空間的正方形 slot。牌面保持 3:4 比例並水平置中。
+     * 一般來源失敗時使用內建頭像。取消例外與致命錯誤直接外傳。
      *
      * @param playerId 頭像所屬玩家 ID。
      * @param isAi 玩家是否為 AI，影響內建 fallback。
@@ -186,7 +186,7 @@ class PlayerPortraitRenderer internal constructor(
     }
 
     /**
-     * 將同一 portrait source 繪製於 GUI；提供者失敗時使用內建來源。
+     * 將同一 portrait source 繪製於 GUI。提供者失敗時使用內建來源。
      * 取消例外與致命錯誤直接外傳，不繼續繪製內建頭像。
      *
      * @param playerId 玩家識別碼。
@@ -221,7 +221,7 @@ class PlayerPortraitRenderer internal constructor(
     }
 
     /**
-     * 繪製房主可讀的排除者頭像；缺少角色資料時使用原有備援，不建立模型。
+     * 繪製房主可讀的排除者頭像。缺少角色資料時使用原有備援，不建立模型。
      *
      * @param tableId 已授權的等待房間。
      * @param playerId 被排除者上次的成員編號。
@@ -442,7 +442,7 @@ class PlayerPortraitRenderer internal constructor(
     }
 
     /**
-     * 解析牌面貼圖，並快取結果；資源不存在時使用 unknown 牌面。
+     * 解析牌面貼圖，並快取結果。資源不存在時使用 unknown 牌面。
      *
      * @param assetKey 牌面資產 key。
      * @return 可用的貼圖識別碼。
@@ -473,7 +473,7 @@ class PlayerPortraitRenderer internal constructor(
         /** 牌面貼圖相對於頭像 slot 的寬高比例。 */
         const val TILE_ASPECT_RATIO = 0.75f
 
-        /** 皮膚帽子層往觀看者方向的深度位移；局部深度越小越靠前，避免與臉部底層重疊閃爍。 */
+        /** 皮膚帽子層往觀看者方向的深度位移。局部深度越小越靠前，避免與臉部底層重疊閃爍。 */
         const val HAT_LAYER_DEPTH = 0.01f
     }
 }
@@ -481,7 +481,7 @@ class PlayerPortraitRenderer internal constructor(
 /**
  * 執行可使用內建外觀降級的呈現操作。
  *
- * 外觀提供者或繪製操作的一般例外會以失敗結果回傳；協程取消與致命錯誤則維持原樣向外傳遞。
+ * 外觀提供者或繪製操作的一般例外會以失敗結果回傳。協程取消與致命錯誤則維持原樣向外傳遞。
  *
  * @param T 操作的回傳型別。
  * @param operation 要執行的外觀解析或繪製操作。
@@ -498,17 +498,18 @@ internal inline fun <T> runPresentationAttempt(operation: () -> T): Result<T> = 
 /**
  * 執行頭像來源解析與繪製，並在可恢復的來源失敗時使用內建來源重試。
  *
- * 解析失敗時會繪製內建來源，但不會再嘗試第二次；已解析的第三方來源繪製失敗時會再繪製一次內建來源。
- * 兩個失敗回呼只接收一般例外；取消與致命錯誤會由呈現邊界直接向外傳遞。
+ * - 解析失敗時繪製內建來源，但不會再嘗試第二次。
+ * - 已解析的第三方來源繪製失敗時，再繪製一次內建來源。
+ * - 兩個失敗回呼只接收一般例外。取消與致命錯誤由呈現邊界直接向外傳遞。
  *
  * @param T 繪製操作的回傳型別。
  * @param resolved 外觀來源解析結果。
  * @param fallbackSource 解析或繪製失敗時使用的內建來源。
  * @param onResolutionFailure 回報一般解析失敗的函式。
  * @param onDrawFailure 回報一般繪製失敗的函式。
- * @param modelFallback 只有來源不可用時才查詢的模型圖片；沒有模型時仍使用內建備援。
+ * @param modelFallback 只有來源不可用時才查詢的模型圖片。沒有模型時仍使用內建備援。
  * @param draw 使用指定來源進行繪製的函式。
- * @return 首次繪製或 fallback 繪製的結果；首次繪製失敗且沒有第三方來源時為 `null`。
+ * @return 首次繪製或 fallback 繪製的結果。首次繪製失敗且沒有第三方來源時為 `null`。
  */
 internal inline fun <T> renderPortraitWithFallback(
     resolved: Result<ResolvedPlayerPortraitSource?>,

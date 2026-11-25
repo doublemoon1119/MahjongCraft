@@ -11,7 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RoundSettled
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RuleResultsResolvedListener
 
 /**
- * 平台橋接使用的事件訂閱點集合；預設建立獨立端點，不改變全域註冊狀態。
+ * 平台橋接使用的事件訂閱點集合。預設建立獨立端點，不改變全域註冊狀態。
  *
  * @property matchStarted 對局開始訂閱點。
  * @property roundSettled 一局結算訂閱點。

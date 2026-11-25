@@ -44,7 +44,7 @@ class HistoryTileSetAsideDisplayRegistryTest {
         assertFailsWith<IllegalStateException> { registry.register(HistoryTileAreaDisplayDefinition("example:late", "test.late")) }
     }
 
-    /** 三人日麻的北牌區有自己的標題；台灣麻將的花牌區與補花用語也由規則登記。 */
+    /** 三人日麻的北牌區有自己的標題。台灣麻將的花牌區與補花用語也由規則登記。 */
     @Test
     fun `bundled rules register their tile areas and replacement wording`() {
         val registry = HistoryTileSetAsideDisplayRegistryImpl().apply {

@@ -23,7 +23,7 @@ internal data class AutotestSelection(val everything: Boolean, val stepIds: Set<
      * 列出的步驟中不存在的識別碼，例如拼錯的名稱。
      *
      * @param knownStepIds 這次執行全部步驟的識別碼。
-     * @return 不存在的識別碼，依列出的順序；執行全部步驟時為空。
+     * @return 不存在的識別碼，依列出的順序。執行全部步驟時為空。
      */
     fun unknownStepIds(knownStepIds: Collection<String>): List<String> = if (everything) emptyList() else stepIds.filterNot(knownStepIds::contains)
 
@@ -35,8 +35,8 @@ internal data class AutotestSelection(val everything: Boolean, val stepIds: Set<
         /**
          * 解析屬性值。
          *
-         * @param value 系統屬性的值；不存在時為 null。
-         * @return 自動測試的選擇；不執行自動測試時為 null。
+         * @param value 系統屬性的值。不存在時為 null。
+         * @return 自動測試的選擇。不執行自動測試時為 null。
          */
         fun parse(value: String?): AutotestSelection? {
             val trimmed = value?.trim().orEmpty()

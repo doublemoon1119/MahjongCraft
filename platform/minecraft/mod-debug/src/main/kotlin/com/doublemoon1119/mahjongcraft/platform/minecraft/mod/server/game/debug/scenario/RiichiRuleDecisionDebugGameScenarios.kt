@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.scen
  * 開發用可宣告不聽四人日麻的驗收情境。
  *
  * 沿用 [SeatSetupScenario]：呼叫者是莊家、剛摸到牌，座位順序為呼叫者 → 下家 → 對家 → 上家。載入後改用開發用的
- * 可宣告不聽四人日麻；其他四人情境載入後恢復一般四人日麻。
+ * 可宣告不聽四人日麻。其他四人情境載入後恢復一般四人日麻。
  */
 internal object RiichiRuleDecisionDebugGameScenarios {
     /** 所有可宣告不聽的驗收情境。 */

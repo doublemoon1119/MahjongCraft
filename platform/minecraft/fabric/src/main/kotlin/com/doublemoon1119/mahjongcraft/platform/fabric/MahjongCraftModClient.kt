@@ -19,7 +19,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import net.fabricmc.api.ClientModInitializer
 import org.koin.core.context.GlobalContext
 
-/** Fabric client 初始化入口；安裝 Fabric 實作、登記預覽擴充後交給 [MahjongCraftClientBootstrap]。 */
+/** Fabric client 初始化入口。安裝 Fabric 實作、登記預覽擴充後交給 [MahjongCraftClientBootstrap]。 */
 class MahjongCraftModClient : ClientModInitializer {
     /** Fabric client 初始化的記錄器。 */
     private val logger = mahjongCraftLogger(MahjongCraftModClient::class)

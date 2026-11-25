@@ -62,7 +62,7 @@ import kotlin.time.TimeSource
  * @property clientConfig 玩家的顯示設定，例如牌桌場景的最新捨牌與同種牌提示。
  * @param dispatcher 客戶端主執行緒排程。
  * @property parent 關閉後返回的原畫面，指令入口為 null。
- * @param initialMatchId 聊天入口指定的對局；null 表示一般列表。
+ * @param initialMatchId 聊天入口指定的對局。null 表示一般列表。
  * @property onClosed 通知開啟控制器解除此 session。
  * @param requestGate 同一 client 連線共用的歷史查詢送出 gate。
  */
@@ -117,10 +117,10 @@ internal class HistoryBrowseSession(
     /** 上次解析的規則設定，避免每幀重複解碼。 */
     private var moduleConfig: GameConfigDto? = null
 
-    /** 由 [moduleConfig] 取得的規則模組；設定缺少、無法解碼或沒有安裝時為 null。 */
+    /** 由 [moduleConfig] 取得的規則模組。設定缺少、無法解碼或沒有安裝時為 null。 */
     private var cachedModule: MahjongRuleModule<*>? = null
 
-    /** 最近排好手牌的回放桌況；同一份桌況與牌序不重複排序。 */
+    /** 最近排好手牌的回放桌況。同一份桌況與牌序不重複排序。 */
     private val sortedStates = LinkedHashMap<SortedStateKey, HistoryRoundStateDto>()
 
     /**
@@ -143,7 +143,7 @@ internal class HistoryBrowseSession(
     }
 
     /**
-     * 取得玩家顯示偏好鍵；沒有 UUID 的 AI 使用穩定初始座位。
+     * 取得玩家顯示偏好鍵。沒有 UUID 的 AI 使用穩定初始座位。
      *
      * @param state 同場歷史身分。
      * @param seat 玩家初始座位。
@@ -165,7 +165,7 @@ internal class HistoryBrowseSession(
     }
 
     /**
-     * 回放用的桌況：每一家立著的手牌都依該場規則的牌序排好，最近摸的牌仍獨立放在摸牌位；規則牌序還不能用時照原本順序。
+     * 回放用的桌況：每一家立著的手牌都依該場規則的牌序排好，最近摸的牌仍獨立放在摸牌位。規則牌序還不能用時照原本順序。
      *
      * @param state 目前歷史桌況與牌目錄。
      * @return 手牌排好的桌況。
@@ -191,7 +191,7 @@ internal class HistoryBrowseSession(
     /**
      * 這台電腦是否裝有某場對局使用的規則，例如只裝在伺服器上的第三方規則不算。
      *
-     * @param ruleId 規則模組識別碼；摘要沒有記錄時為 null。
+     * @param ruleId 規則模組識別碼。摘要沒有記錄時為 null。
      * @return 裝有該規則或無從判斷時為 true。
      */
     fun ruleInstalled(ruleId: String?): Boolean = ruleId == null || ruleId in moduleRegistry.getAllModuleIds()
@@ -200,7 +200,7 @@ internal class HistoryBrowseSession(
      * 取得這場對局的規則模組，供牌桌場景擺牌。
      *
      * @param state 目前歷史桌況。
-     * @return 規則模組；規則設定還沒讀到或無法解碼時為 null。
+     * @return 規則模組。規則設定還沒讀到或無法解碼時為 null。
      */
     fun ruleModule(state: HistoryRoundStateDto): MahjongRuleModule<*>? {
         val config = controller.state.value.ruleSettings?.takeIf { it.matchId == state.identity.matchId }?.config
@@ -222,8 +222,8 @@ internal class HistoryBrowseSession(
     /**
      * 依當前查詢摘要的公開規則取得牌組外觀，不使用牌目錄或手牌推測規則。
      *
-     * @param matchId 要顯示的對局；未指定時使用當前摘要。
-     * @return 該場的公開外觀；摘要不符或缺少規則時使用內建預設。
+     * @param matchId 要顯示的對局。未指定時使用當前摘要。
+     * @return 該場的公開外觀。摘要不符或缺少規則時使用內建預設。
      */
     fun tileAppearance(matchId: String? = null): MinecraftTileSetAppearanceDefinition {
         val summary = controller.state.value.summary?.detail?.summary
@@ -240,7 +240,7 @@ internal class HistoryBrowseSession(
     /** 此 session 目前擁有的畫面。 */
     private var screen: Screen? = null
 
-    /** 聊天入口指定的對局；不改變目前查詢條件。 */
+    /** 聊天入口指定的對局。不改變目前查詢條件。 */
     private var requestedMatchId: String? = initialMatchId
 
     /** 已對本次封存完成通知觸發的列表重新整理。 */
@@ -262,7 +262,7 @@ internal class HistoryBrowseSession(
     /**
      * 將目前瀏覽切換至指定結算對局，保留使用者已套用的篩選及排序。
      *
-     * @param matchId 欲優先查找的對局 UUID；null 表示只開啟一般列表。
+     * @param matchId 欲優先查找的對局 UUID。null 表示只開啟一般列表。
      */
     fun openMatchResult(matchId: String?) {
         if (closed) return
@@ -330,7 +330,7 @@ internal class HistoryBrowseSession(
         return true
     }
 
-    /** 回放的播放狀態；同一次瀏覽中換局或重開回放時沿用速度。 */
+    /** 回放的播放狀態。同一次瀏覽中換局或重開回放時沿用速度。 */
     val replayPlayback = HistoryReplayPlayback()
 
     /**
@@ -369,14 +369,14 @@ internal class HistoryBrowseSession(
         return true
     }
 
-    /** 瀏覽是否仍在進行；結束後不再接受導航。 */
+    /** 瀏覽是否仍在進行。結束後不再接受導航。 */
     val isOpen: Boolean get() = !closed
 
     /** 回放場景各項顯示的設定，在這次瀏覽中沿用。 */
     val replayVisibility = HistoryReplayVisibility()
 
     /**
-     * 從回放畫面開啟可見性子頁；回放畫面保留原狀，完成後回到它。
+     * 從回放畫面開啟可見性子頁。回放畫面保留原狀，完成後回到它。
      *
      * @param replay 目前的回放畫面。
      * @param context 回放場景的座位與視角。
@@ -389,7 +389,7 @@ internal class HistoryBrowseSession(
     }
 
     /**
-     * 從可見性子頁回到原回放畫面；瀏覽已結束時關回遊戲。
+     * 從可見性子頁回到原回放畫面。瀏覽已結束時關回遊戲。
      *
      * @param replay 開啟可見性子頁的回放畫面。
      */
@@ -402,7 +402,7 @@ internal class HistoryBrowseSession(
     }
 
     /**
-     * 從規則設定頁開啟規則一覽；切換期間不結束瀏覽，規則一覽成為此瀏覽目前的畫面。
+     * 從規則設定頁開啟規則一覽。切換期間不結束瀏覽，規則一覽成為此瀏覽目前的畫面。
      *
      * @param settings 目前顯示的規則設定頁。
      * @param context 規則與歷史對局設定。
@@ -415,7 +415,7 @@ internal class HistoryBrowseSession(
     }
 
     /**
-     * 從規則一覽返回原規則設定頁，保留其捲動位置；瀏覽已結束時關回遊戲。
+     * 從規則一覽返回原規則設定頁，保留其捲動位置。瀏覽已結束時關回遊戲。
      *
      * @param settings 開啟規則一覽的規則設定頁。
      */
@@ -449,7 +449,7 @@ internal class HistoryBrowseSession(
         }
     }
 
-    /** 關閉整個瀏覽時是否回到開啟它的畫面；從指令、快捷鍵或聊天開啟時直接回到遊戲。 */
+    /** 關閉整個瀏覽時是否回到開啟它的畫面。從指令、快捷鍵或聊天開啟時直接回到遊戲。 */
     val returnsToScreen: Boolean get() = parent != null
 
     /** 關閉整個瀏覽並返回開啟它的畫面或遊戲。 */
@@ -468,7 +468,7 @@ internal class HistoryBrowseSession(
         if (!navigating && removed === screen) dispose()
     }
 
-    /** 補查牌序所需規則、監看指定對局的封存狀態並在保存後刷新；原連線失效時關閉，不返回舊世界畫面。 */
+    /** 補查牌序所需規則、監看指定對局的封存狀態並在保存後刷新。原連線失效時關閉，不返回舊世界畫面。 */
     fun tick() {
         controller.ensureRoundStateRuleSettings()
         val matchId = requestedMatchId.takeIf { controller.state.value.page == HistoryBrowsePage.LIST }
@@ -524,7 +524,7 @@ internal class HistoryBrowseSession(
 private const val SORTED_STATE_CACHE_SIZE = 4
 
 /**
- * 排好手牌的桌況快取鍵；桌況與牌序以同一個物件比對，不逐項比較內容。
+ * 排好手牌的桌況快取鍵。桌況與牌序以同一個物件比對，不逐項比較內容。
  *
  * @property state 原本的桌況。
  * @property order 規則牌序。

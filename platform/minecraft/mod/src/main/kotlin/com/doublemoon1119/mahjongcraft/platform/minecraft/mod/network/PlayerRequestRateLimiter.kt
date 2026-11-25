@@ -4,7 +4,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
 
 /**
- * 依 [C2SRateLimit.PerPlayer] 決定每位玩家的要求是否接受；可由網路執行緒同時呼叫。
+ * 依 [C2SRateLimit.PerPlayer] 決定每位玩家的要求是否接受。可由網路執行緒同時呼叫。
  *
  * 被丟棄的要求每位玩家每個恢復間隔最多回報一次需要記錄，避免被丟棄的要求灌爆 log。
  *
@@ -20,7 +20,7 @@ internal class PlayerRequestRateLimiter(
      *
      * @property tokens 目前可用的名額。
      * @property refilledAt 上次計算恢復名額的時間。
-     * @property dropReportedAt 上次回報丟棄需要記錄的時間；尚未回報時為 null。
+     * @property dropReportedAt 上次回報丟棄需要記錄的時間。尚未回報時為 null。
      */
     private class Bucket(var tokens: Int, var refilledAt: Long, var dropReportedAt: Long?)
 
@@ -73,7 +73,7 @@ internal class PlayerRequestRateLimiter(
         /**
          * 要求超過頻率限制而被丟棄。
          *
-         * @property shouldLog 這次丟棄是否需要記錄；同一位玩家每個恢復間隔最多一次。
+         * @property shouldLog 這次丟棄是否需要記錄。同一位玩家每個恢復間隔最多一次。
          */
         data class Dropped(val shouldLog: Boolean) : Result
     }

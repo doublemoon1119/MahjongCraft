@@ -53,7 +53,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證 [RiichiGameAchievementResolver] 從日麻胡牌詳情與終局事實判定的成果。 */
 class RiichiGameAchievementResolverTest {
-    /** 役種包含立直時取得立直後和牌；一般役種不產生役滿成果。 */
+    /** 役種包含立直時取得立直後和牌。一般役種不產生役滿成果。 */
     @Test
     fun `riichi in the yaku list credits a riichi win`() {
         val game = riichiGame()
@@ -238,7 +238,7 @@ class RiichiGameAchievementResolverTest {
         assertEquals(mapOf(achiever.id to setOf(RiichiAchievementIds.NAGASHI_MANGAN)), result)
     }
 
-    /** 東一局被擊飛：點數低於門檻的玩家取得擊飛與東一局擊飛，−30000 以下另外取得大差距擊飛；其他人只完成對局。 */
+    /** 東一局被擊飛：點數低於門檻的玩家取得擊飛與東一局擊飛，−30000 以下另外取得大差距擊飛。其他人只完成對局。 */
     @Test
     fun `bust in east one credits the busted player`() {
         val game = riichiGame(prevalentWind = Wind.EAST, roundNumber = 1, comboCount = 1)
@@ -281,7 +281,7 @@ class RiichiGameAchievementResolverTest {
         assertTrue(result.isEmpty())
     }
 
-    /** 流局滿貫只接受規則結果事件；詳情、受益者摘要和多個結果都能合併。 */
+    /** 流局滿貫只接受規則結果事件。詳情、受益者摘要和多個結果都能合併。 */
     @Test
     fun `nagashi mangan uses rule results details and beneficiaries`() {
         val game = riichiGame()
@@ -390,7 +390,7 @@ class RiichiGameAchievementResolverTest {
         )
     }
 
-    /** 擊飛門檻的邊界依嚴格小於判定；終局資料與目前桌況不一致時不憑空增加擊飛。 */
+    /** 擊飛門檻的邊界依嚴格小於判定。終局資料與目前桌況不一致時不憑空增加擊飛。 */
     @Test
     fun `bust threshold boundaries use final public markers`() {
         val game = riichiGame()
@@ -427,7 +427,7 @@ class RiichiGameAchievementResolverTest {
         assertEquals(mapOf(winner.id to setOf(RiichiAchievementIds.NAGASHI_MANGAN)), result)
     }
 
-    /** 完成名單不由全體玩家補齊；擊飛使用提交分數並保留大差距門檻的含等號判定。 */
+    /** 完成名單不由全體玩家補齊。擊飛使用提交分數並保留大差距門檻的含等號判定。 */
     @Test
     fun `partial completion and far bust boundaries retain exact committed scores`() {
         val game = riichiGame()
@@ -440,7 +440,7 @@ class RiichiGameAchievementResolverTest {
         }
     }
 
-    /** 沒有擊飛設定時不授予擊飛；負數門檻仍只接受嚴格低於門檻的分數。 */
+    /** 沒有擊飛設定時不授予擊飛。負數門檻仍只接受嚴格低於門檻的分數。 */
     @Test
     fun `disabled and negative bust thresholds preserve the old rule`() {
         listOf<Int?>(null, -100).forEach { threshold ->
@@ -508,7 +508,7 @@ class RiichiGameAchievementResolverTest {
     /**
      * 建立可覆寫牌局進度與莊家狀態的四人日麻測試對局。
      *
-     * @param firstPlayerComponents 東家規則狀態；未提供時使用預設狀態。
+     * @param firstPlayerComponents 東家規則狀態。未提供時使用預設狀態。
      * @param prevalentWind 場風。
      * @param roundNumber 場風內局數。
      * @param comboCount 本場數。
@@ -531,7 +531,7 @@ class RiichiGameAchievementResolverTest {
      * 以指定規則設定與牌局進度建立四人測試對局。
      *
      * @param config 對局規則設定。
-     * @param firstPlayerComponents 東家規則狀態；其他玩家使用測試工廠預設值。
+     * @param firstPlayerComponents 東家規則狀態。其他玩家使用測試工廠預設值。
      * @param prevalentWind 場風。
      * @param roundNumber 場風內局數。
      * @param comboCount 本場數。

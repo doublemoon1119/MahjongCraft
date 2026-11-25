@@ -4,8 +4,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.str
  * 一組耗時的統計結果。
  *
  * @property count 筆數。
- * @property averageMillis 平均毫秒數；沒有資料時為 0。
- * @property maxMillis 最大毫秒數；沒有資料時為 0。
+ * @property averageMillis 平均毫秒數。沒有資料時為 0。
+ * @property maxMillis 最大毫秒數。沒有資料時為 0。
  * @property totalMillis 總毫秒數。
  */
 data class TimingSummary(

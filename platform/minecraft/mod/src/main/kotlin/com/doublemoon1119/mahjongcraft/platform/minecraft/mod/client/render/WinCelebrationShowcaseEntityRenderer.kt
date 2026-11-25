@@ -342,7 +342,7 @@ class WinCelebrationShowcaseEntityRenderer(
     }
 
     /**
-     * 在共享舞台中央繪製權威和牌快照；缺少快照時於起飛後只繪製一張本地視覺代理。
+     * 在共享舞台中央繪製權威和牌快照。缺少快照時於起飛後只繪製一張本地視覺代理。
      *
      * @param entity 提供和牌快照、時間與世界資訊的 showcase entity。
      * @param formation 最終牌組版面。
@@ -439,7 +439,7 @@ class WinCelebrationShowcaseEntityRenderer(
      *
      * @param entity 提供演出 seed 與世界資訊的 showcase entity。
      * @param card 要繪製的卡片快照。
-     * @param wingIndex 所屬翼索引；合成和牌張使用保留值。
+     * @param wingIndex 所屬翼索引。合成和牌張使用保留值。
      * @param elapsed 演出已經過的 tick。
      * @param fadeStart 開始淡出的 tick。
      * @param billboardRotation 面板朝向觀看者的旋轉。
@@ -594,7 +594,7 @@ class WinCelebrationShowcaseEntityRenderer(
     }
 
     /**
-     * 繪製貼在牌背的原版鞘翅，並依時間軸調整展開；抵達且完成 billboard 後才收攏、縮小並淡出。
+     * 繪製貼在牌背的原版鞘翅，並依時間軸調整展開。抵達且完成 billboard 後才收攏、縮小並淡出。
      *
      * @param elapsed 演出已經過的 tick。
      * @param matrices 目前的模型矩陣。
@@ -706,7 +706,7 @@ class WinCelebrationShowcaseEntityRenderer(
     }
 
     /**
-     * 依時間展開牌張起飛時逐環向外擴散的水平波紋；最後一環在牌完成轉正時淡出。
+     * 依時間展開牌張起飛時逐環向外擴散的水平波紋。最後一環在牌完成轉正時淡出。
      *
      * @param elapsed 演出已經過的 tick。
      * @param matrices 目前的模型矩陣。
@@ -953,7 +953,7 @@ class WinCelebrationShowcaseEntityRenderer(
     }
 
     /**
-     * 計算牌張離開桌心的起始方向；通常沿桌心至自身的放射方向，位置退化時以原始 yaw 備援。
+     * 計算牌張離開桌心的起始方向。通常沿桌心至自身的放射方向，位置退化時以原始 yaw 備援。
      *
      * @param startX 牌張起始 X 座標。
      * @param startZ 牌張起始 Z 座標。
@@ -986,7 +986,7 @@ class WinCelebrationShowcaseEntityRenderer(
     private fun standingRotation(yaw: Float): Quaternionf = Quaternionf().rotateY(Math.toRadians((-yaw + 180.0f).toDouble()).toFloat())
 
     /**
-     * 取數個過去位置構成彎曲的短尾跡；核心靠近牌最亮，尾端逐步淡出。
+     * 取數個過去位置構成彎曲的短尾跡。核心靠近牌最亮，尾端逐步淡出。
      *
      * @param entity 提供演出 seed 的 showcase entity。
      * @param card 牌張起始快照。
@@ -1244,10 +1244,10 @@ class WinCelebrationShowcaseEntityRenderer(
     }
 
     /**
-     * 繪製展示牌：露出牌面時使用公開牌組外觀，蓋著時使用卡片指定的牌背外觀；蓋牌不會攜帶真實牌種。
+     * 繪製展示牌：露出牌面時使用公開牌組外觀，蓋著時使用卡片指定的牌背外觀。蓋牌不會攜帶真實牌種。
      *
-     * @param assetKey 可見牌面資產 key；蓋牌時不會讀取。
-     * @param backAppearanceId 蓋著時的牌背外觀；露出牌面時為 null。
+     * @param assetKey 可見牌面資產 key。蓋牌時不會讀取。
+     * @param backAppearanceId 蓋著時的牌背外觀。露出牌面時為 null。
      * @param appearance 本次展示使用的公開牌組外觀。
      * @param mode Minecraft item 顯示模式。
      * @param light 世界光照值。
@@ -1285,7 +1285,7 @@ class WinCelebrationShowcaseEntityRenderer(
         }
     }
 
-    /** 繪製不使用單一材質；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    /** 繪製不使用單一材質。原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
     override fun getTextureLocation(entity: WinCelebrationShowcaseEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     /**

@@ -5,8 +5,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ButtonR
 /**
  * HUD 位置編輯器的工具列與底部按鈕列版面，與原版 widget 完全分離。
  *
- * 工具列有四個控制項：HUD、預覽情境、其他 HUD 的顯示方式與隱藏控制項，每個控制項上方留一行標籤。寬度足夠時四個排成
- * 一列；不夠時改成兩欄兩列，底部四顆按鈕也同樣改成兩欄兩列，離開畫面的按鈕都在右下角。編輯器橫跨整個視窗，不限制內容寬度。
+ * - 工具列有四個控制項：HUD、預覽情境、其他 HUD 的顯示方式與隱藏控制項。每個控制項上方留一行標籤。
+ * - 寬度足夠時四個排成一列。不夠時改成兩欄兩列，底部四顆按鈕也同樣改成兩欄兩列。
+ * - 離開畫面的按鈕都在右下角。
+ * - 編輯器橫跨整個視窗，不限制內容寬度。
  *
  * @property screenWidth 目前 GUI scaled 畫面寬度。
  * @property screenHeight 目前 GUI scaled 畫面高度。
@@ -60,7 +62,7 @@ internal data class MahjongHudToolbarLayout(
     fun captionY(index: Int): Int = control(index).y - CAPTION_HEIGHT + 1
 
     /**
-     * 取得底部按鈕的範圍；兩列時前兩顆在上、後兩顆在下。
+     * 取得底部按鈕的範圍。兩列時前兩顆在上、後兩顆在下。
      *
      * @param index 按鈕順序，與設定頁底部按鈕相同。
      * @return 按鈕的範圍。

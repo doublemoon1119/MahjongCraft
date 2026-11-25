@@ -40,7 +40,7 @@ class SeatingSessionFactory internal constructor(
      *
      * @param tableId 對局桌子 UUID。
      * @param seatedPlayerIds 依座位順序排列的玩家 UUID。
-     * @return 這次入座的選擇資料；桌子不存在、區塊未載入或不是麻將桌時為 null。
+     * @return 這次入座的選擇資料。桌子不存在、區塊未載入或不是麻將桌時為 null。
      */
     fun prepare(tableId: Uuid, seatedPlayerIds: List<Uuid>): SeatingSession? = prepareLayout(tableId, MahjongTableSeatLayout.forPlayerCount(seatedPlayerIds.size))
 
@@ -48,7 +48,7 @@ class SeatingSessionFactory internal constructor(
      * 取得本桌四個標準等待席位，不把等待位置當成正式名冊順序。
      *
      * @param tableId 桌子 UUID。
-     * @return 已載入的四側席位；桌子或區塊不可用時為 null。
+     * @return 已載入的四側席位。桌子或區塊不可用時為 null。
      */
     fun prepareTable(tableId: Uuid): SeatingSession? = prepareLayout(tableId, MahjongTableSeatLayout.FOUR_PLAYER)
 
@@ -105,7 +105,7 @@ class SeatingSessionFactory internal constructor(
      * 由版本無關 dimension ID 取得目前 server session 的世界。
      *
      * @param location 含 dimension ID 的桌子位置。
-     * @return 對應的已載入伺服器世界；無法解析時為 null。
+     * @return 對應的已載入伺服器世界。無法解析時為 null。
      */
     private fun resolveWorld(location: TableLocation): ServerLevel? {
         val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null

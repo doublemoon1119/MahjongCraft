@@ -25,7 +25,7 @@ abstract class MinecraftDevModsExtension @Inject constructor(
     private val dependencyHandler: DependencyHandler,
     private val project: Project,
 ) {
-    /** 選中的組合要加入的設定名稱；Fabric Loom 模組預設為只在開發執行時載入的 `modLocalRuntime`。 */
+    /** 選中的組合要加入的設定名稱。Fabric Loom 模組預設為只在開發執行時載入的 `modLocalRuntime`。 */
     abstract val configurationName: Property<String>
 
     /** 已宣告的組合名稱，依宣告順序。 */
@@ -36,7 +36,7 @@ abstract class MinecraftDevModsExtension @Inject constructor(
         get() = declared
 
     /**
-     * 宣告一個組合；開關選中這個組合時立刻加入它的模組，讓載入器外掛在處理開發依賴前就看得到。
+     * 宣告一個組合。開關選中這個組合時立刻加入它的模組，讓載入器外掛在處理開發依賴前就看得到。
      *
      * @param name 組合名稱，只用小寫英文字母、數字與連字號。
      * @param dependencies 組合包含的模組，可以是依賴座標字串或版本目錄的項目。
@@ -80,8 +80,8 @@ internal object MinecraftDevMods {
     /**
      * 解析開關的值。
      *
-     * @param value 以逗號分隔的組合名稱；沒有給時為 null。
-     * @return 去掉空白與重複後的組合名稱；沒有給或只有空白時為空。
+     * @param value 以逗號分隔的組合名稱。沒有給時為 null。
+     * @return 去掉空白與重複後的組合名稱。沒有給或只有空白時為空。
      */
     fun parse(value: String?): Set<String> = value.orEmpty()
         .split(',')
@@ -105,7 +105,7 @@ internal object MinecraftDevMods {
     /**
      * 確認選擇的組合都已宣告。
      *
-     * 開關對整個建置有效；沒有宣告任何組合的專案沒有可選的開發用模組，直接略過開關。
+     * 開關對整個建置有效。沒有宣告任何組合的專案沒有可選的開發用模組，直接略過開關。
      *
      * @param projectPath 專案路徑，寫進錯誤訊息。
      * @param selected 開關選擇的組合名稱。

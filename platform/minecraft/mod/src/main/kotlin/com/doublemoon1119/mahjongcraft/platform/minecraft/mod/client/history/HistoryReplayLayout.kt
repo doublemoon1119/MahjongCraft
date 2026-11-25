@@ -6,9 +6,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.Vertica
 /**
  * 牌譜回放畫面的版面。
  *
- * 寬視窗：左邊是場景與下緣的交易說明，右欄上方是視角與手牌選擇器、下方是交易列表；場景下方是進度條與播放控制列，
- * 最底下是四格按鈕。窄視窗：場景佔滿寬度，選擇器疊在場景左上角，交易列表由標題列旁的按鈕叫出、疊在場景右側。
- * 全螢幕：場景佔滿整個視窗，進度條與播放控制列疊在場景底部，交易說明與其他控制項不顯示。
+ * - 寬視窗：左邊是場景與下緣的交易說明，右欄上方是視角與手牌選擇器、下方是交易列表。
+ *   場景下方是進度條與播放控制列，最底下是四格按鈕。
+ * - 窄視窗：場景佔滿寬度，選擇器疊在場景左上角，交易列表由標題列旁的按鈕叫出、疊在場景右側。
+ * - 全螢幕：場景佔滿整個視窗，進度條與播放控制列疊在場景底部，交易說明與其他控制項不顯示。
  *
  * @property fullscreen 是否為全螢幕版面。
  * @property wide 是否為寬視窗版面。
@@ -18,15 +19,15 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.Vertica
  * @property handSelector 手牌選擇器。
  * @property visibilityButton 開啟可見性子頁的按鈕。
  * @property selectorLabelWidth 選擇器左側標籤的寬度。
- * @property list 交易列表範圍，不含捲軸；窄視窗為疊在場景上的範圍。
+ * @property list 交易列表範圍，不含捲軸。窄視窗為疊在場景上的範圍。
  * @property listScrollbarX 交易列表捲軸的左界。
- * @property listToggle 窄視窗叫出交易列表的按鈕；寬視窗為 null。
+ * @property listToggle 窄視窗叫出交易列表的按鈕。寬視窗為 null。
  * @property progress 進度條範圍。
  * @property controls 播放控制列的範圍。
  * @property footerTop 底部四格按鈕的上界。
  * @property speedSelectorWidth 速度選擇器的寬度。
  * @property fullscreenToggle 場景右上角切換全螢幕的按鈕。
- * @property controlBar 全螢幕時疊在場景底部、包住進度條與播放控制列的範圍；一般版面為 null。
+ * @property controlBar 全螢幕時疊在場景底部、包住進度條與播放控制列的範圍。一般版面為 null。
  */
 internal data class HistoryReplayLayout(
     val fullscreen: Boolean,
@@ -75,7 +76,7 @@ internal data class HistoryReplayLayout(
     )
 
     /**
-     * 一顆播放控制按鈕的寬度；播放鍵較寬。
+     * 一顆播放控制按鈕的寬度。播放鍵較寬。
      *
      * @param index 由左至右的第幾顆。
      * @return 寬度。
@@ -152,7 +153,7 @@ internal data class HistoryReplayLayout(
         )
 
         /**
-         * 全螢幕版面：場景佔滿整個視窗，進度條與播放控制列疊在場景底部；不顯示交易說明。
+         * 全螢幕版面：場景佔滿整個視窗，進度條與播放控制列疊在場景底部。不顯示交易說明。
          *
          * @param width 視窗寬度。
          * @param height 視窗高度。

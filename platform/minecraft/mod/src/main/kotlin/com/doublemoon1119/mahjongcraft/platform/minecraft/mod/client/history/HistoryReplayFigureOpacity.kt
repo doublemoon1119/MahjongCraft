@@ -25,9 +25,9 @@ internal object HistoryReplayFigureOpacity {
      * 一家人物應有的不透明度。
      *
      * @param visibility 這一家的顯示方式。
-     * @param viewed 是否為目前視角所在的那一家；這一家一律不畫。
+     * @param viewed 是否為目前視角所在的那一家。這一家一律不畫。
      * @param seatYaw 座位面向桌子的朝向。
-     * @param cameraYaw 場景鏡頭的水平角度；選某一家視角時等於那一家的座位朝向轉半圈。
+     * @param cameraYaw 場景鏡頭的水平角度。選某一家視角時等於那一家的座位朝向轉半圈。
      * @return 0 到 1 之間的不透明度，0 表示不畫。
      */
     fun target(visibility: HistoryReplayVisibilityOption, viewed: Boolean, seatYaw: Float, cameraYaw: Float): Float = when {

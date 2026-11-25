@@ -9,10 +9,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeat
 /**
  * 已解析的邏輯牌牆面與桌子局部側面的對應，不依玩家人數推算牌牆面數。
  *
- * 固定桌邊基準的 `0`、`1`、`2`、`3` 分別是局部南、東、北、西；莊家基準則由莊家實際桌邊起算。
+ * 固定桌邊基準的 `0`、`1`、`2`、`3` 分別是局部南、東、北、西。莊家基準則由莊家實際桌邊起算。
  * 所有方向最後仍隨桌子朝向轉成世界方向，不是世界固定南北。
  *
- * @param sides 各邏輯面的桌邊；由建立入口複製與驗證。
+ * @param sides 各邏輯面的桌邊。由建立入口複製與驗證。
  */
 class MahjongTileWallSideLayout private constructor(private val sides: List<MahjongTableSide>) {
     /** 這份配置包含的牌牆面數。 */
@@ -43,7 +43,7 @@ class MahjongTileWallSideLayout private constructor(private val sides: List<Mahj
          * @param module 規則模組。
          * @param playerCount 玩家人數。
          * @param dealerSeatIndex 莊家座位。
-         * @return 桌邊對應；規則沒有牌牆配置時為 null。
+         * @return 桌邊對應。規則沒有牌牆配置時為 null。
          */
         fun forRule(module: MahjongRuleModule<*>, playerCount: Int, dealerSeatIndex: Int): MahjongTileWallSideLayout? {
             val arrangement = module.createWallLayout(playerCount)?.sideArrangement(dealerSeatIndex) ?: return null

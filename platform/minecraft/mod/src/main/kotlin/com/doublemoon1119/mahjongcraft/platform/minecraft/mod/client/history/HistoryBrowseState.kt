@@ -39,7 +39,7 @@ internal sealed interface HistoryBrowseStatus {
     /** 正在等待排程或回應。 */
     data object Loading : HistoryBrowseStatus
 
-    /** 已取得成功結果；資料集合可以為空。 */
+    /** 已取得成功結果。資料集合可以為空。 */
     data object Ready : HistoryBrowseStatus
 
     /**
@@ -104,13 +104,13 @@ internal fun HistoryQueryErrorCodeDto.toBrowseFailure(): HistoryBrowseFailure = 
 }
 
 /**
- * 最近成功列表與其導航位置；失敗時仍保留原頁資訊，不把新頁視為已完成。
+ * 最近成功列表與其導航位置。失敗時仍保留原頁資訊，不把新頁視為已完成。
  *
  * @property entries 最近成功取得的安全摘要。
- * @property firstEntryIndex 此頁第一筆資料的 1-based 位置；空頁為 0。
+ * @property firstEntryIndex 此頁第一筆資料的 1-based 位置。空頁為 0。
  * @property totalCount 符合條件的對局總數。
- * @property nextCursor 最近成功回應提供的下一頁游標；沒有下一頁時為 null。
- * @property previousCursor 最近成功回應提供的上一頁游標；沒有上一頁時為 null。
+ * @property nextCursor 最近成功回應提供的下一頁游標。沒有下一頁時為 null。
+ * @property previousCursor 最近成功回應提供的上一頁游標。沒有上一頁時為 null。
  * @property status 目前列表查詢結果。
  * @property scrollOffset 返回列表時保留的非負捲動位置。
  * @property selectedMatchId 最近選取的列表對局。
@@ -130,7 +130,7 @@ internal data class HistoryBrowseListState(
  * 已選對局的摘要載入結果。
  *
  * @property matchId 正在查閱的對局識別碼。
- * @property detail 最近成功取得的同場摘要；失敗不偽造內容。
+ * @property detail 最近成功取得的同場摘要。失敗不偽造內容。
  * @property status 目前摘要查詢結果。
  * @property scrollOffset 返回摘要頁時保留的非負捲動位置。
  */
@@ -165,9 +165,9 @@ internal data class HistoryBrowseRuleSettingsState(
  * @property closed 最外層瀏覽已關閉或原 session 已失效，不再接受操作。
  * @property allowAll 最近一次已配對伺服器回應是否允許查閱全部對局。
  * @property allowStressTest 最近一次已配對伺服器回應是否允許查閱壓力測試資料。
- * @property rounds 各局獨立保存的導航位置；僅選取局保留呈現資料，其他局保留游標與捲動位置。
+ * @property rounds 各局獨立保存的導航位置。僅選取局保留呈現資料，其他局保留游標與捲動位置。
  * @property selectedRoundNumber 目前選取的局序號。
- * @property replay 目前回放的位置與牌面；不在回放時為 null。
+ * @property replay 目前回放的位置與牌面。不在回放時為 null。
  */
 internal data class HistoryBrowseState(
     val query: HistoryBrowseQuery = HistoryBrowseQuery(),

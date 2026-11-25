@@ -44,7 +44,7 @@ internal class AutotestContext(
      *
      * @param name 檢查內容。
      * @param passed 是否通過。
-     * @param detail 補充說明；沒有時為 null。
+     * @param detail 補充說明。沒有時為 null。
      * @return [passed]。
      */
     fun check(name: String, passed: Boolean, detail: String? = null): Boolean {

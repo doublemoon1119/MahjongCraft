@@ -14,7 +14,7 @@ import java.util.zip.ZipInputStream
 /**
  * 驗證 mod JAR 與它以 jar-in-jar 附帶的 JAR 之間沒有同名套件。
  *
- * Forge 以 Java 模組系統載入 mod 與附帶的函式庫，同一個套件出現在兩個 JAR 時拒絕啟動；這個檢查在建置時就找出這種情況。
+ * Forge 以 Java 模組系統載入 mod 與附帶的函式庫，同一個套件出現在兩個 JAR 時拒絕啟動。這個檢查在建置時就找出這種情況。
  */
 abstract class VerifyNoSplitPackagesTask : DefaultTask() {
     /** 要檢查的 mod JAR。 */
@@ -39,7 +39,7 @@ abstract class VerifyNoSplitPackagesTask : DefaultTask() {
  * 找出 mod JAR 與 `META-INF/jarjar/` 下各 JAR 之間重複的套件。
  *
  * @param modJar 要檢查的 mod JAR。
- * @return 每個重複套件對應的 JAR 名稱，mod 本身以 `<mod>` 表示；沒有重複時為空。
+ * @return 每個重複套件對應的 JAR 名稱，mod 本身以 `<mod>` 表示。沒有重複時為空。
  */
 internal fun findSplitPackages(modJar: File): Map<String, List<String>> {
     val owners = sortedMapOf<String, MutableList<String>>()
@@ -56,7 +56,7 @@ internal fun findSplitPackages(modJar: File): Map<String, List<String>> {
 }
 
 /**
- * 取得 JAR 中含有類別的套件；`META-INF` 下的多版本類別不算。
+ * 取得 JAR 中含有類別的套件。`META-INF` 下的多版本類別不算。
  *
  * @param entryNames JAR 中的路徑。
  * @return 以 `.` 分隔的套件名稱。

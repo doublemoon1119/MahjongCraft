@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
  * 內建規則設定畫面共用的規則／分數分類與欄位建構函式。
  * 流程分類與欄位由 [SharedGameFlowConfigPresentation] 統一附加，不由各規則自行建立。
  *
- * 每個欄位都明確寫出完整 ID 與翻譯鍵；建構函式不從名稱組出 ID 或翻譯鍵。
+ * 每個欄位都明確寫出完整 ID 與翻譯鍵。建構函式不從名稱組出 ID 或翻譯鍵。
  */
 internal object BuiltInGameConfigFields {
     /** 規則分類。 */
@@ -22,7 +22,7 @@ internal object BuiltInGameConfigFields {
     const val SCORE_NAME_KEY = "mahjongcraft.room.config.category.score"
 
     /**
-     * 內建規則提供的規則與分數分類，依畫面順序排列；流程分類由 registry 統一附加。
+     * 內建規則提供的規則與分數分類，依畫面順序排列。流程分類由 registry 統一附加。
      *
      * @return 內建規則提供的分類定義。
      */
@@ -96,14 +96,14 @@ internal object BuiltInGameConfigFields {
     )
 
     /**
-     * 建立可編輯的單選欄位；選項 ID、翻譯鍵與設定值都由 [options] 明確對應。
+     * 建立可編輯的單選欄位。選項 ID、翻譯鍵與設定值都由 [options] 明確對應。
      *
      * @param T 選項對應的設定值型別。
      * @param id 欄位的完整 namespaced ID。
      * @param category 欄位所屬分類 ID。
      * @param nameKey 欄位名稱的翻譯鍵。
      * @param descriptionKey 欄位說明的翻譯鍵。
-     * @param options 依畫面順序排列的選項；設定值不可重複。
+     * @param options 依畫面順序排列的選項。設定值不可重複。
      * @param read 從遊戲設定讀取目前設定值的函式。
      * @param update 將新設定值寫回遊戲設定的函式。
      * @return 使用單選編輯器的欄位定義。

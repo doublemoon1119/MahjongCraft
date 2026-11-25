@@ -161,7 +161,7 @@ object TileWallMotionPathPlanner {
         stacksPerSide + placement.position.stack + placement.offset.alongWallStacks
 
     /**
-     * 將 [coordinate] 展開到最接近 [reference] 的同一圈表示；[stackCount] 是整圈牌牆的墩數。
+     * 將 [coordinate] 展開到最接近 [reference] 的同一圈表示。[stackCount] 是整圈牌牆的墩數。
      *
      * @param reference 用來選擇同圈表示的參考座標。
      * @param coordinate 原始環狀座標。
@@ -177,7 +177,7 @@ object TileWallMotionPathPlanner {
     }
 
     /**
-     * 列出起訖座標經過的牆角格；每一面最後一墩到下一面第一墩之間的完整單位區間視為牆角。
+     * 列出起訖座標經過的牆角格。每一面最後一墩到下一面第一墩之間的完整單位區間視為牆角。
      *
      * @param start 起始環狀座標。
      * @param end 結束環狀座標。

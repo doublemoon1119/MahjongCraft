@@ -64,14 +64,17 @@ import kotlin.uuid.toKotlinUuid
 /**
  * 建立 `/mahjongcraft debug` 底下的玩家決策互動預覽子指令：`decision_hud` 與 `rule decision`。
  *
- * `decision_hud` 只把固定的 prompt DTO 與計時器狀態直接送給呼叫者的 client，不建立任何對局、也不經過
- * coordinator；需要分析面板的情境會在玩家眼前生成一張臨時牌當作分析目標，由
- * [DebugPreviewEntityLifecycle] 在預覽時間結束後清除。每位測試者最後一次預覽使用的虛擬 game ID 保存在
- * [debugDecisionGameIds]，讓 `clear` 只停止同一位測試者自己那份 client state。
+ * `decision_hud`：
  *
- * `rule decision` 相反：它直接寫入真實牌桌的 pending rule decision 狀態，再呼叫
- * [GameDecisionAvailabilityService.reconcile] 並同步結果，讓計時器、逾時與強制 fallback 都走正式路徑，
- * 因此要求呼叫者已入座。這是開發專用的權威狀態注入，只在 development build 註冊。
+ * - 只把固定的 prompt DTO 與計時器狀態直接送給呼叫者的 client，不建立對局、也不經過 coordinator。
+ * - 需要分析面板的情境會在玩家眼前生成一張臨時牌當作分析目標，由 [DebugPreviewEntityLifecycle] 在預覽時間結束後清除。
+ * - 每位測試者最後一次預覽使用的虛擬 game ID 保存在 [debugDecisionGameIds]，讓 `clear` 只停止同一位測試者自己的 client state。
+ *
+ * `rule decision`：
+ *
+ * - 直接寫入真實牌桌的 pending rule decision 狀態，再呼叫 [GameDecisionAvailabilityService.reconcile] 並同步結果。
+ *   計時器、逾時與強制 fallback 都走正式路徑，因此要求呼叫者已入座。
+ * - 這是開發專用的權威狀態注入，只在 development build 註冊。
  *
  * @property gameRepository 讀寫 rule decision 測試情境所需的牌桌狀態。
  * @property gameFlowCoordinator 送出 rule decision 的正式指令。
@@ -101,7 +104,7 @@ class DebugDecisionCommand(
 
     /**
      * 建立涵蓋操作、立直、分析及 rule decision 的 HUD 預覽指令：各預覽依規則分組放在 [DecisionHudRuleGroup] 的 literal
-     * 底下，`clear` 不分規則；literal 節點同時提供完整 tab 補全。
+     * 底下，`clear` 不分規則。literal 節點同時提供完整 tab 補全。
      */
     fun buildDecisionHudCommand(): LiteralArgumentBuilder<CommandSourceStack> = DecisionHudRuleGroup.entries.fold(
         initial = literal(DECISION_HUD_SUBCOMMAND).then(literal(CLEAR_ARGUMENT).executes { clearDecisionHud(it.source) }),
@@ -264,7 +267,7 @@ class DebugDecisionCommand(
     }
 
     /**
-     * 只補全執行者目前可選的手牌 UUID；已輸入的 UUID 不重複建議，達到最大張數後停止補全。
+     * 只補全執行者目前可選的手牌 UUID。已輸入的 UUID 不重複建議，達到最大張數後停止補全。
      *
      * @param context Brigadier 指令內容。
      * @param builder 補全結果建構器。
@@ -329,7 +332,7 @@ class DebugDecisionCommand(
     }
 
     /**
-     * 建立指定形狀的測試 rule decision state；[minCount]／[maxCount] 只用在 [RuleDecisionPreview.TILES]，
+     * 建立指定形狀的測試 rule decision state。[minCount]／[maxCount] 只用在 [RuleDecisionPreview.TILES]，
      * 預設維持既有的 3/3（省略引數時的既有行為不變），可調高 `maxCount` 端對端測試多選確認面板
      * （選中發光→確認面板→送出）走真正的 `SubmitRuleDecision` 流程與呼叫者真實手牌，不需要真正的
      * 地區麻將規則就先湊出一個 `maxCount > 1` 的情境。
@@ -342,8 +345,8 @@ class DebugDecisionCommand(
      *
      * @param source 執行指令的玩家來源。
      * @param preview 要建立的 rule decision 輸入種類。
-     * @param minCount 選牌情境允許的最少張數；其他情境忽略。
-     * @param maxCount 選牌情境允許的最多張數；其他情境忽略。
+     * @param minCount 選牌情境允許的最少張數。其他情境忽略。
+     * @param maxCount 選牌情境允許的最多張數。其他情境忽略。
      * @return Brigadier 指令結果碼。
      */
     private fun startRuleDecision(source: CommandSourceStack, preview: RuleDecisionPreview, minCount: Int = 3, maxCount: Int = 3): Int = playerTableScope.runSuspending(source) { tableId, playerId ->
@@ -428,7 +431,7 @@ class DebugDecisionCommand(
      * @property commandName 子指令名稱。
      * @property phase 預覽所處的決策階段。
      * @property isDiscardAnalysis 是否附帶捨牌分析資料。
-     * @property selfDrawTileAssetKey 自己回合「摸到這張牌」情境的觸發牌資產鍵；例如計時器情境不給值。
+     * @property selfDrawTileAssetKey 自己回合「摸到這張牌」情境的觸發牌資產鍵。例如計時器情境不給值。
      * @property ruleGroup 預覽所屬的規則分組，決定指令路徑與動作用語、振聽用語查詢用的規則模組。
      */
     internal enum class DecisionHudPreview(
@@ -475,7 +478,7 @@ class DebugDecisionCommand(
          * 建立此情境的提示 DTO。
          *
          * @param decisionKey 此次預覽的識別鍵。
-         * @param analysisTileId 分析情境使用的臨時牌 UUID；不需要分析時為 null。
+         * @param analysisTileId 分析情境使用的臨時牌 UUID。不需要分析時為 null。
          * @return 包含動作或 rule decision 選項的提示。
          */
         fun prompt(decisionKey: String, analysisTileId: String?): PlayerDecisionPromptDto = PlayerDecisionPromptDto(
@@ -498,7 +501,7 @@ class DebugDecisionCommand(
         /**
          * 建立此固定情境要顯示的動作候選與選牌需求。
          *
-         * @return 此情境的 HUD 動作清單；不展示動作時為空集合。
+         * @return 此情境的 HUD 動作清單。不展示動作時為空集合。
          */
         private fun actions(): List<PlayerDecisionActionDto> {
             fun action(tokenName: String, actionId: String, tiles: List<String>, claimedIndex: Int? = null) = PlayerDecisionActionDto(
@@ -584,7 +587,7 @@ class DebugDecisionCommand(
         /**
          * 取得此情境使用的 rule decision prompt。
          *
-         * @return 確認、選項或選牌 prompt；非 rule decision 情境時為 null。
+         * @return 確認、選項或選牌 prompt。非 rule decision 情境時為 null。
          */
         private fun ruleDecision(): RuleDecisionPromptDto? = when (this) {
             DECISION_CONFIRM -> RuleDecisionPromptDto.Confirmation

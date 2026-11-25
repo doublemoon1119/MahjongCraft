@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  *
  * @property tableId 桌子 UUID 字串。
  * @property dimensionId 桌子所在維度的識別碼。
- * @property cells 被擋住的格子，最多為擺牌層的 9 格；空清單表示已經沒有擋住，客戶端清除該桌的標示。
+ * @property cells 被擋住的格子，最多為擺牌層的 9 格。空清單表示已經沒有擋住，客戶端清除該桌的標示。
  */
 @Serializable
 data class TableSpaceObstructionPayloadDto(

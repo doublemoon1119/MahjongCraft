@@ -41,7 +41,7 @@ internal data class HistoryBrowseQuery(
     /**
      * 將查詢條件轉成指定游標與方向的線路請求。
      *
-     * @param cursor 回覆提供的不透明游標；沒有游標時從第一筆或最後一筆開始。
+     * @param cursor 回覆提供的不透明游標。沒有游標時從第一筆或最後一筆開始。
      * @param direction 從游標往哪一邊取一頁。
      * @return 使用固定頁大小及空配對識別碼的歷史清單請求。
      */
@@ -57,6 +57,6 @@ internal data class HistoryBrowseQuery(
     )
 }
 
-/** 是否查詢不限玩家本人的全部對局；全部對局與壓力測試資料都沒有個人名次與個人分數。 */
+/** 是否查詢不限玩家本人的全部對局。全部對局與壓力測試資料都沒有個人名次與個人分數。 */
 internal val HistoryQueryScopeDto.coversAllMatches: Boolean
     get() = this != HistoryQueryScopeDto.OWN

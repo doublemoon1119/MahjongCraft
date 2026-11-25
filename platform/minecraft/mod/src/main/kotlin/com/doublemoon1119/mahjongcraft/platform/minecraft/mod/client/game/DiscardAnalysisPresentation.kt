@@ -16,7 +16,7 @@ import net.minecraft.network.chat.Component
  * @property tile 等待的牌種。
  * @property countText 剩餘張數文字。
  * @property countColor 剩餘張數的顏色，張數越少越醒目。
- * @property availabilityText 這張牌專屬的和牌資格文字；整份分析共用同一種資格時為 `null`，改由狀態列呈現。
+ * @property availabilityText 這張牌專屬的和牌資格文字。整份分析共用同一種資格時為 `null`，改由狀態列呈現。
  */
 internal data class DiscardAnalysisCell(
     val tile: TileDto,
@@ -28,7 +28,7 @@ internal data class DiscardAnalysisCell(
 /**
  * 捨牌分析面板的內容。
  *
- * @property statusTexts 面板頂端的狀態列；分析本身的狀態指示與整份分析共用的和牌資格各佔一行。
+ * @property statusTexts 面板頂端的狀態列。分析本身的狀態指示與整份分析共用的和牌資格各佔一行。
  * @property cells 每張等待牌一格。
  * @property hasAvailabilityRow 是否有任何一格需要額外一行和牌資格文字，決定格子高度。
  */
@@ -43,7 +43,7 @@ internal sealed interface HandAnalysisSelection {
     /**
      * 捨出指定牌張後的預測分析。
      *
-     * @property ruleModuleId 分析所屬規則；未提供時為 null。
+     * @property ruleModuleId 分析所屬規則。未提供時為 null。
      * @property analysis 捨牌後的權威分析。
      */
     data class AfterDiscard(
@@ -63,10 +63,10 @@ internal sealed interface HandAnalysisSelection {
  * 優先選用指向牌張的合法捨牌預測，否則使用目前手牌分析。
  *
  * @param prompt 最新權威決策提示。
- * @param activeActionToken 正在選牌的動作令牌；未選牌時為 null。
+ * @param activeActionToken 正在選牌的動作令牌。未選牌時為 null。
  * @param pointedTileId 游標指向的牌張識別碼。
  * @param currentAnalysis 目前手牌的權威分析。
- * @return 可用的分析來源；兩種來源都不存在時為 null。
+ * @return 可用的分析來源。兩種來源都不存在時為 null。
  */
 internal fun selectHandAnalysis(
     prompt: PlayerDecisionPromptDto?,
@@ -88,7 +88,7 @@ internal fun selectHandAnalysis(
 /**
  * 由權威分析組出面板內容。
  *
- * 全部等待牌共用同一種非預設和牌資格時，該資格提升到狀態列只講一次；資格不一致時改為逐格標示，只標非
+ * 全部等待牌共用同一種非預設和牌資格時，該資格提升到狀態列只講一次。資格不一致時改為逐格標示，只標非
  * 預設的那幾張。[WaitingTileAvailabilityIds.WIN_AVAILABLE] 代表沒有特殊限制，任何情況都不顯示。
  *
  * @param texts 規則用語解析器。
@@ -125,7 +125,7 @@ internal fun handAnalysisContent(
  * @param texts 規則用語解析器。
  * @param ruleModuleId 分析所屬規則。
  * @param waitingTiles 等待牌與可用張數。
- * @param statusIndicatorId 整體分析狀態識別碼；沒有狀態時為 null。
+ * @param statusIndicatorId 整體分析狀態識別碼。沒有狀態時為 null。
  * @return 等待牌格、資格文字與共用狀態列。
  */
 private fun readinessAnalysisContent(
@@ -214,7 +214,7 @@ internal data class DiscardAnalysisLayout(
     val gridWidth: Int
         get() = columns * cellWidth
 
-    /** 面板寬度；狀態列比格子區寬時由狀態列決定，文字才不會超出背景。 */
+    /** 面板寬度。狀態列比格子區寬時由狀態列決定，文字才不會超出背景。 */
     val panelWidth: Int
         get() = PADDING * 2 + maxOf(gridWidth, widestStatusTextWidth)
 
@@ -234,7 +234,7 @@ internal data class DiscardAnalysisLayout(
     val panelCenterX: Int
         get() = panelLeft + panelWidth / 2
 
-    /** 格子區左界；狀態列撐寬面板時格子仍維持置中。 */
+    /** 格子區左界。狀態列撐寬面板時格子仍維持置中。 */
     val gridLeft: Int
         get() = panelLeft + (panelWidth - gridWidth) / 2
 
@@ -246,7 +246,7 @@ internal data class DiscardAnalysisLayout(
      */
     fun statusTextTop(index: Int): Int = panelTop + PADDING + index * STATUS_TEXT_HEIGHT
 
-    /** 狀態列與格子之間分隔線的上緣；沒有狀態列時不繪製分隔線。 */
+    /** 狀態列與格子之間分隔線的上緣。沒有狀態列時不繪製分隔線。 */
     val dividerTop: Int
         get() = panelTop + PADDING + statusLineCount * STATUS_TEXT_HEIGHT + STATUS_DIVIDER_GAP
 

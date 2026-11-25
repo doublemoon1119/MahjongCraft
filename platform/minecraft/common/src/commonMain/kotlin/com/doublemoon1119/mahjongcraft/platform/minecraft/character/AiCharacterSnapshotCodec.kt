@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.character
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-/** 單一角色開局描述的保存格式；歷史封存不依賴目前世界或角色登記內容。 */
+/** 單一角色開局描述的保存格式。歷史封存不依賴目前世界或角色登記內容。 */
 class AiCharacterSnapshotCodec {
     /** 與線路設定分離的嚴格保存格式。 */
     private val format = Json {
@@ -25,7 +25,7 @@ class AiCharacterSnapshotCodec {
      * 依保存內容還原角色，不以目前登記預設覆寫。
      *
      * @param encoded 已保存的文字。
-     * @return 當場描述；內容無效時拋出例外，由外觀消費端降級。
+     * @return 當場描述。內容無效時拋出例外，由外觀消費端降級。
      */
     fun decode(encoded: String): AiCharacterSnapshot {
         require(encoded.length <= MAX_CHARACTERS) { "Saved character appearance is too large" }

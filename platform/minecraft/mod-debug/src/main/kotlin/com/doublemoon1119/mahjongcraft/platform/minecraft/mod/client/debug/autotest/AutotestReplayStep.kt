@@ -68,7 +68,7 @@ internal object AutotestReplayStep : AutotestStep {
      * 產生一份測試牌譜並等它封存完成。
      *
      * @param fixture 測試牌譜。
-     * @return 封存的對局識別碼；失敗時為 null。
+     * @return 封存的對局識別碼。失敗時為 null。
      */
     private suspend fun AutotestContext.generate(fixture: HistoryFixture): String? {
         if (!runCheckedCommand("mahjongcraft debug history fixture ${fixture.id}")) return null
@@ -168,7 +168,7 @@ internal object AutotestReplayStep : AutotestStep {
      * 等牌譜瀏覽切換到指定頁面並載入完成。
      *
      * @param page 頁面。
-     * @return 載入完成時的狀態；逾時或查詢失敗時為 null。
+     * @return 載入完成時的狀態。逾時或查詢失敗時為 null。
      */
     private suspend fun AutotestContext.waitForPage(page: HistoryScreenAutomationPage): HistoryScreenAutomationSnapshot? {
         waitUntil(LOAD_TIMEOUT) { automation().automationSnapshot()?.let { it.page == page && (!it.loading || it.failed) } == true }

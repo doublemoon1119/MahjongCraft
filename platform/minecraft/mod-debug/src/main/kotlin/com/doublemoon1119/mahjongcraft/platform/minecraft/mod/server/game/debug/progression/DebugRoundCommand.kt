@@ -120,7 +120,7 @@ class DebugRoundCommand(
         /** 可設定的最小本場數。 */
         const val MIN_COMBO_COUNT: Int = 0
 
-        /** 可設定的最大本場數；足以涵蓋積棒疊到多層的呈現驗收。 */
+        /** 可設定的最大本場數。足以涵蓋積棒疊到多層的呈現驗收。 */
         const val MAX_COMBO_COUNT: Int = 99
     }
 }

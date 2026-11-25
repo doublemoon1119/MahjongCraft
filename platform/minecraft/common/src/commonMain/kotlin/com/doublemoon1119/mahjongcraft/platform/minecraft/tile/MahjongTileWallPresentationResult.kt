@@ -8,7 +8,7 @@ enum class MahjongTileWallPresentationResult {
     /** 指定 dimension、controller 或桌子 UUID 與目前世界不一致。 */
     TABLE_NOT_FOUND,
 
-    /** 其中一張牌無法加入世界；已回滾本次建立的牌。 */
+    /** 其中一張牌無法加入世界。已回滾本次建立的牌。 */
     SPAWN_FAILED,
 
     /** 開門、布局同步或翻面需要的既有管理中牌 entity 不存在。 */

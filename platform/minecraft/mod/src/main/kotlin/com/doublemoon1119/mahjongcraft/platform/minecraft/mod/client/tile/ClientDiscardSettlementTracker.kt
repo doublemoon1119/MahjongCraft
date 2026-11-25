@@ -9,7 +9,7 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
 /**
- * 逐 client tick 追蹤各桌的捨牌是否已經落到牌河，見 [DiscardSettlementState]；捨牌的標示與說明只在牌落定後顯示。
+ * 逐 client tick 追蹤各桌的捨牌是否已經落到牌河，見 [DiscardSettlementState]。捨牌的標示與說明只在牌落定後顯示。
  *
  * @property stateStore 玩家看得到的桌況。
  */
@@ -20,7 +20,7 @@ class ClientDiscardSettlementTracker(
     private val state = DiscardSettlementState<Vec3>()
 
     /**
-     * 註冊 client tick 更新；要在讀取落定狀態的功能之前註冊。
+     * 註冊 client tick 更新。要在讀取落定狀態的功能之前註冊。
      *
      * @param events 登記用戶端事件用的事件來源。
      */

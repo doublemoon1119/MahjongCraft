@@ -51,7 +51,7 @@ internal class RegistrationQueue<K : Any, I : Any> {
         afterRegistrationActions += action
     }
 
-    /** 依加入順序執行全部項目寫入後的工作；每個工作只執行一次。 */
+    /** 依加入順序執行全部項目寫入後的工作。每個工作只執行一次。 */
     fun runAfterRegistration() {
         val actions = synchronized(this) { afterRegistrationActions.toList().also { afterRegistrationActions.clear() } }
         actions.forEach { it() }

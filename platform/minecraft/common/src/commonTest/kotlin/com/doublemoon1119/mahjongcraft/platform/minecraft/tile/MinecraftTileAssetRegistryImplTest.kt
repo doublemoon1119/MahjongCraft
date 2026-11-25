@@ -226,7 +226,7 @@ class MinecraftTileAssetRegistryImplTest {
         assertFalse(registry.isFrozen)
     }
 
-    /** 外觀樣式可以指定牌身外觀；沒有指定的樣式素材不改變牌身。 */
+    /** 外觀樣式可以指定牌身外觀。沒有指定的樣式素材不改變牌身。 */
     @Test
     fun `style body appearance is resolved by asset key`() {
         val registry = MinecraftTileAssetRegistryImpl()
@@ -262,7 +262,7 @@ class MinecraftTileAssetRegistryImplTest {
         assertEquals(rule, registry.backAppearance(UNKNOWN_TILE_ASSET_KEY, rule))
     }
 
-    /** 樣式素材沒有自己的標籤或 emoji 時沿用基本牌面的；有自己的時使用自己的。 */
+    /** 樣式素材沒有自己的標籤或 emoji 時沿用基本牌面的。有自己的時使用自己的。 */
     @Test
     fun `style asset without its own label or emoji uses the base face`() {
         val registry = MinecraftTileAssetRegistryImpl()

@@ -564,7 +564,7 @@ class SqliteHistoryQueryTest {
      * @param id 對局 ID。
      * @param seat 座位索引。
      * @param playerId 玩家 UUID 字串。
-     * @param aiStrategyId AI 策略 ID；真人玩家為 null。
+     * @param aiStrategyId AI 策略 ID。真人玩家為 null。
      */
     private fun insertParticipant(
         path: Path,

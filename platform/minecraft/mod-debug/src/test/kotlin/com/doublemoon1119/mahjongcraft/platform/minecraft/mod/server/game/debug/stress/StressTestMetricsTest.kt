@@ -16,7 +16,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 /** 驗證壓力測試的耗時累計、背景工作計時與時間序列 CSV。 */
 class StressTestMetricsTest {
-    /** 累計器回報筆數、平均、最大與總毫秒數；沒有資料時全為 0。 */
+    /** 累計器回報筆數、平均、最大與總毫秒數。沒有資料時全為 0。 */
     @Test
     fun `timing accumulator summarizes durations`() {
         val accumulator = TimingAccumulator()

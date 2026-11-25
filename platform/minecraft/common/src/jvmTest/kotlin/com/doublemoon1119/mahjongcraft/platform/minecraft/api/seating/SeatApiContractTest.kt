@@ -87,7 +87,7 @@ class SeatApiContractTest {
         assertEquals(seat, request.seat)
     }
 
-    /** 座位與身分依值比較，雜湊值隨之一致；子座位不同就是不同座位。 */
+    /** 座位與身分依值比較，雜湊值隨之一致。子座位不同就是不同座位。 */
     @Test
     fun `seat values compare by content`() {
         assertEquals(SeatGeometry(1.0, 64.0, 2.0, 90.0f), SeatGeometry(1.0, 64.0, 2.0, 90.0f))
@@ -130,7 +130,7 @@ class SeatApiContractTest {
     /**
      * 固定席位請求只由 MahjongCraft 建立，第三方無法透過建構子建立。
      *
-     * 內部建立入口呼叫私有建構子時，Kotlin 會產生帶 `DefaultConstructorMarker` 的合成建構子；合成成員無法從 Java
+     * 內部建立入口呼叫私有建構子時，Kotlin 會產生帶 `DefaultConstructorMarker` 的合成建構子。合成成員無法從 Java
      * 原始碼呼叫，因此只檢查非合成的建構子。
      */
     @Test

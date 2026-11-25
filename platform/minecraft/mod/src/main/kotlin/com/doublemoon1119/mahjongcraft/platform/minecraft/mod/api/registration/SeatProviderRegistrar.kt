@@ -7,7 +7,7 @@ import net.minecraft.world.entity.Entity
 /**
  * 擴充登記原生座位 provider 時取得的登記介面。
  *
- * 擴充只能登記與查看登記狀態；凍結與取得 provider 由 MahjongCraft 在擴充初始化完成後進行。
+ * 擴充只能登記與查看登記狀態。凍結與取得 provider 由 MahjongCraft 在擴充初始化完成後進行。
  */
 interface SeatProviderRegistrar {
     /** 目前已登記的 provider 識別碼快照。 */

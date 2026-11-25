@@ -11,10 +11,10 @@ import kotlin.uuid.Uuid
  * @property players 依座位排列的玩家牌區。
  * @property wallTileIds 牌牆的牌，依牌序排列。
  * @property reservedTileIds 保留區的牌，依牌序排列。
- * @property wallPlacements 牌牆與保留區的牌在實體牌牆中的格位；規則沒有實體牌牆時為 null。
+ * @property wallPlacements 牌牆與保留區的牌在實體牌牆中的格位。規則沒有實體牌牆時為 null。
  * @property dealerIndex 莊家座位。
  * @property discardOrder 全桌依打出先後排列的捨牌，包含已被鳴走的牌。
- * @property scatterPatternSeed 散放牌河這一局使用的位置表種子；牌河不散放時不使用。
+ * @property scatterPatternSeed 散放牌河這一局使用的位置表種子。牌河不散放時不使用。
  */
 data class TableArrangementState(
     val players: List<Player>,
@@ -30,11 +30,11 @@ data class TableArrangementState(
      *
      * @property id 玩家識別碼，用來區分各家的牌列。
      * @property standingTileIds 立牌，依目前順序排列。
-     * @property drawnTileId 摸牌位的牌；沒有時為 null。
+     * @property drawnTileId 摸牌位的牌。沒有時為 null。
      * @property melds 副露，依宣告順序排列。
      * @property setAsideTiles 移出手牌的牌與所屬區域識別碼，依區域與放入順序排列。
      * @property discards 牌河，依打出順序排列，包含已被鳴走的牌。
-     * @property sidewaysMarkedTileId 牌河中要橫放的牌；沒有時為 null。
+     * @property sidewaysMarkedTileId 牌河中要橫放的牌。沒有時為 null。
      */
     data class Player(
         val id: Uuid,
@@ -58,7 +58,7 @@ data class TableArrangementState(
      * 牌河中的一張牌。
      *
      * @property tileId 牌。
-     * @property isTaken 是否已被鳴走；鳴走的牌不擺在牌河，但散放位置仍依它計算。
+     * @property isTaken 是否已被鳴走。鳴走的牌不擺在牌河，但散放位置仍依它計算。
      */
     data class Discard(val tileId: Uuid, val isTaken: Boolean)
 }

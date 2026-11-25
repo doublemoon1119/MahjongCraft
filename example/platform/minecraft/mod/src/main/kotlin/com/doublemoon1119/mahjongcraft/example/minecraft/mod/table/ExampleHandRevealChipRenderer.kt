@@ -47,6 +47,6 @@ class ExampleHandRevealChipRenderer(
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
     }
 
-    /** 方塊 renderer 會自行選取材質；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    /** 方塊 renderer 會自行選取材質。原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
     override fun getTextureLocation(entity: ExampleHandRevealChipEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 }

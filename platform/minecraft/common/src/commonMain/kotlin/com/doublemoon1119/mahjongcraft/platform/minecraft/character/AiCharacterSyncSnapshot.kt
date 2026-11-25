@@ -13,10 +13,10 @@ import kotlin.uuid.Uuid
  * @property tableId 所屬桌子。
  * @property isAvailable 是否允許使用已保存的角色資料。
  * @param catalogue 可選角色目錄。
- * @param players 該桌 AI 的角色描述；空集合可清除已離開的成員。
- * @property matchId 本份資料對應的場次；等待房間為 null。
+ * @param players 該桌 AI 的角色描述。空集合可清除已離開的成員。
+ * @property matchId 本份資料對應的場次。等待房間為 null。
  * @param excludedPlayers 只有房主可讀的已排除角色顯示資料。
- * @param worldEntityIds 目前收件者正追蹤的成員實體 UUID；只供即時預覽，不保存或提供給歷史。
+ * @param worldEntityIds 目前收件者正追蹤的成員實體 UUID。只供即時預覽，不保存或提供給歷史。
  */
 class AiCharacterSyncSnapshot(
     val sessionId: Uuid,

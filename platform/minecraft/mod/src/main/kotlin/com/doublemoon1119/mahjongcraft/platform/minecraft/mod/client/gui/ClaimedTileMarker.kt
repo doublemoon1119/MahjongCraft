@@ -9,7 +9,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui
  * 只有吃會用到：碰與槓的牌面彼此完全相同，標記沒有辨識意義。
  */
 object ClaimedTileMarker {
-    /** 由上而下每列的寬度，以決策卡片的像素為單位；皆為奇數以確保左右對稱。 */
+    /** 由上而下每列的寬度，以決策卡片的像素為單位。皆為奇數以確保左右對稱。 */
     val ROW_WIDTHS: IntArray = intArrayOf(9, 7, 5, 3, 1)
 
     /** 指標的紅色 ARGB 色值。 */

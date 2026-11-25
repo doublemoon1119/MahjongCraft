@@ -92,7 +92,7 @@ class AutomaticControlUpdateServiceTest {
         assertEquals("test failure", reported?.message)
     }
 
-    /** 正常結果原樣回傳；協程取消與無法隔離的失敗原樣往外傳。 */
+    /** 正常結果原樣回傳。協程取消與無法隔離的失敗原樣往外傳。 */
     @Test
     fun `test normal results pass through and fatal failures are rethrown`() = runTest {
         val accepted = UpdatePlayerAutomaticControlsResult.Accepted(snapshot, changed = false)

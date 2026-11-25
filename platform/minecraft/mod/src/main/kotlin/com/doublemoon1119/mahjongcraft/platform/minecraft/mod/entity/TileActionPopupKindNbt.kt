@@ -21,7 +21,7 @@ internal object TileActionPopupKindNbt {
      *
      * @param nbt 含提示種類欄位的 NBT compound。
      * @param key 欄位名稱。
-     * @return 欄位中的有效提示種類；欄位缺少、型別錯誤或名稱未知時為 [TileActionPopupKind.NONE]。
+     * @return 欄位中的有效提示種類。欄位缺少、型別錯誤或名稱未知時為 [TileActionPopupKind.NONE]。
      */
     fun read(nbt: CompoundTag, key: String): TileActionPopupKind = when {
         nbt.contains(key, Tag.TAG_STRING.toInt()) -> TileActionPopupKind.fromNameOrDefault(nbt.getString(key))

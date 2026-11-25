@@ -82,7 +82,7 @@ class MahjongLobbyInfoEntityRenderer(
         }
     }
 
-    /** 繪製不使用單一材質；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    /** 繪製不使用單一材質。原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
     override fun getTextureLocation(entity: MahjongLobbyInfoEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     private companion object {

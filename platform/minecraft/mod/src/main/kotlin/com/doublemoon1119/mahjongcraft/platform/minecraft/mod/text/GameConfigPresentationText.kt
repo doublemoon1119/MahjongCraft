@@ -9,7 +9,7 @@ import net.minecraft.network.chat.Component
  * 將 RoomScreen 與 `/mahjongcraft room config` 共用的設定值轉成本地化文字。
  *
  * @param value 要顯示的設定值。
- * @param editor 選項呈現定義；未提供選項翻譯鍵時會顯示完整選項 ID。
+ * @param editor 選項呈現定義。未提供選項翻譯鍵時會顯示完整選項 ID。
  * @return 對應設定值的 Minecraft 文字。
  */
 fun gameConfigPresentationText(

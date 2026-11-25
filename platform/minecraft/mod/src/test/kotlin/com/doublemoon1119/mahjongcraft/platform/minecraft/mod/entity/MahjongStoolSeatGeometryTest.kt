@@ -8,7 +8,7 @@ import kotlin.test.assertTrue
 
 /** 驗證 [MahjongStoolSeatGeometry] 的坐姿高度與下座順序。 */
 class MahjongStoolSeatGeometryTest {
-    /** 座位頂端與凳面齊平並嵌在凳子裡；乘客的屁股底面貼齊凳面。 */
+    /** 座位頂端與凳面齊平並嵌在凳子裡。乘客的屁股底面貼齊凳面。 */
     @Test
     fun `the seat sits inside the stool and the passenger bottom meets the seat top`() {
         MahjongStoolDesign.entries.forEach { design ->
@@ -21,7 +21,7 @@ class MahjongStoolSeatGeometryTest {
         }
     }
 
-    /** 坐在凳子上的玩家，眼睛約在桌面上方 0.6 格；桌面固定在凳子所在高度往上 1 格。 */
+    /** 坐在凳子上的玩家，眼睛約在桌面上方 0.6 格。桌面固定在凳子所在高度往上 1 格。 */
     @Test
     fun `a seated player looks down on the table from a comfortable height`() {
         MahjongStoolDesign.entries.forEach { design ->

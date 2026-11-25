@@ -9,7 +9,7 @@ import kotlin.test.assertNotEquals
 
 /** 驗證牌譜回放的胡牌特效打在哪幾張牌上。 */
 class HistoryReplayWinEffectsTest {
-    /** 每次胡牌只在自己那一步放特效，不論有沒有攤牌；同一步共用的和牌張只放一次。 */
+    /** 每次胡牌只在自己那一步放特效，不論有沒有攤牌。同一步共用的和牌張只放一次。 */
     @Test
     fun `each win plays on its own step and winning tile`() {
         val transactions = listOf(

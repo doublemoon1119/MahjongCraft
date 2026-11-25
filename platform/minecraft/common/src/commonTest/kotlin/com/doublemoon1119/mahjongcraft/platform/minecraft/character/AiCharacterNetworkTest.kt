@@ -35,7 +35,7 @@ class AiCharacterNetworkTest {
         assertFailsWith<IllegalArgumentException> { payload.copy(players = emptyList()).toSnapshot() }
     }
 
-    /** 同一個本人不能出現在多個成員欄位；補充同步也必須依序更新與清除。 */
+    /** 同一個本人不能出現在多個成員欄位。補充同步也必須依序更新與清除。 */
     @Test
     fun `live references reject duplicate actors and clear with current state`() {
         val player = Uuid.random()

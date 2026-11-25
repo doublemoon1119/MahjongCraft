@@ -28,7 +28,7 @@ import kotlin.uuid.Uuid
 
 /** 經正式可見性政策與網路格式實際編碼後，其他人收到的資料不含私人組件或隱藏牌的牌面與外觀。 */
 class EncodedSnapshotPrivacyTest {
-    /** 他家的永久振聽、赤五外觀與手牌牌面都不出現在編碼後的資料；本人仍收得到自己的資料。 */
+    /** 他家的永久振聽、赤五外觀與手牌牌面都不出現在編碼後的資料。本人仍收得到自己的資料。 */
     @Test
     fun `encoded snapshot for another player omits private components and hidden faces`() {
         val registries = bundledCoreExtensionRegistries()

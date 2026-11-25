@@ -10,7 +10,7 @@ import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 /**
  * 為明確指定範圍的模組啟用 Kotlin 公開 API 的 ABI 檢查。
  *
- * 每個套用此 convention 的模組都必須在 `publicApiAbi` 列出要保證的型別；
+ * 每個套用此 convention 的模組都必須在 `publicApiAbi` 列出要保證的型別。
  * 外掛不會把所有 `api` 套件自動視為穩定介面。
  */
 class PublicApiAbiPlugin : Plugin<Project> {

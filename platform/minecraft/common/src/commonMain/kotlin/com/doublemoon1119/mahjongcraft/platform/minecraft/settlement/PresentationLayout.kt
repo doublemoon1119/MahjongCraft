@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
-/** 受控的宣告式布局樹；不暴露 Minecraft renderer callback。 */
+/** 受控的宣告式布局樹。不暴露 Minecraft renderer callback。 */
 sealed interface PresentationLayout {
     /**
      * 文字節點。
@@ -224,7 +224,7 @@ sealed interface PresentationLayout {
     ) : PresentationLayout
 
     /**
-     * 可精確重建既有視覺的疊放容器；座標相對於內容區左上角。
+     * 可精確重建既有視覺的疊放容器。座標相對於內容區左上角。
      *
      * @property children 定位子節點。
      * @property width 容器寬度。

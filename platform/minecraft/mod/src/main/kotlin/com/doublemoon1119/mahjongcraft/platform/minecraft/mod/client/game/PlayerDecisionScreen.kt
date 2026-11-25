@@ -17,7 +17,7 @@ import net.minecraft.network.chat.Component
 /**
  * 透明且不暫停遊戲的權威操作選擇介面。
  *
- * 內容由 [decisionPanelContent] 組出、版面幾何由 [DecisionCardLayout] 計算、面板由 [drawDecisionPanel] 畫出；
+ * 內容由 [decisionPanelContent] 組出、版面幾何由 [DecisionCardLayout] 計算、面板由 [drawDecisionPanel] 畫出。
  * 本類別只負責建立 widget、分派滑鼠輸入、畫出按鈕、倒數與卡片說明，並把點擊意圖接回 [PlayerDecisionHudController]。
  *
  * @property prompt 此畫面呈現的權威決策提示。
@@ -45,13 +45,13 @@ internal class PlayerDecisionScreen(
     /** 目前操作卡片的水平捲動量。 */
     private var horizontalScroll = 0.0
 
-    /** 是否已完成畫面開啟時的預設捲動位置；resize 造成的重建不應覆蓋玩家已手動調整的位置。 */
+    /** 是否已完成畫面開啟時的預設捲動位置。resize 造成的重建不應覆蓋玩家已手動調整的位置。 */
     private var horizontalScrollInitialized = false
 
     /** 是否正在拖曳 scrollbar thumb。 */
     private var draggingScrollbar = false
 
-    /** 本次決策出現過的最大倒數寬度；只增不減，讓標題列與面板寬度不隨秒數位數變化。 */
+    /** 本次決策出現過的最大倒數寬度。只增不減，讓標題列與面板寬度不隨秒數位數變化。 */
     private var reservedTimerWidth = 0
 
     /** 開始拖曳時的游標水平座標。 */
@@ -115,12 +115,12 @@ internal class PlayerDecisionScreen(
         }
     }
 
-    /** 規則選擇中代表跳過的選項；沒有時為 null。 */
+    /** 規則選擇中代表跳過的選項。沒有時為 null。 */
     private val rulePassOptionId: String?
         get() = (prompt.ruleDecision as? RuleDecisionPromptDto.SingleChoice)?.passOptionId
 
     /**
-     * 規則選擇的跳過提交規則指定的跳過選項；他家捨牌與搶和視窗的跳過提交正式 Pass，自己回合的跳過改為進入普通實體出牌模式。
+     * 規則選擇的跳過提交規則指定的跳過選項。他家捨牌與搶和視窗的跳過提交正式 Pass，自己回合的跳過改為進入普通實體出牌模式。
      */
     private fun onSkipClicked() {
         val pass = prompt.actions.firstOrNull { it.actionId == PASS_ACTION_ID }
@@ -161,7 +161,7 @@ internal class PlayerDecisionScreen(
         return super.mouseWheelScrolled(mouseX, mouseY, amount)
     }
 
-    /** Scrollbar thumb 可直接點擊或開始拖曳；卡片按鈕只在裁切 viewport 內接收輸入。 */
+    /** Scrollbar thumb 可直接點擊或開始拖曳。卡片按鈕只在裁切 viewport 內接收輸入。 */
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
         val layout = layout()
         if (
@@ -296,7 +296,7 @@ internal class PlayerDecisionScreen(
         context.pose().popPose()
     }
 
-    /** 目前畫面寬度下的面板內容；觸發文字依畫面寬度換行。 */
+    /** 目前畫面寬度下的面板內容。觸發文字依畫面寬度換行。 */
     private fun panelContent(): DecisionPanelContent = decisionPanelContent(
         prompt = prompt,
         texts = controller.decisionTexts,
@@ -328,7 +328,7 @@ internal class PlayerDecisionScreen(
     )
 
     /**
-     * 使用完整牌面 UV 等比例縮放預覽牌；卡片預覽一律直立，不套用鳴牌後最終桌面朝向。
+     * 使用完整牌面 UV 等比例縮放預覽牌。卡片預覽一律直立，不套用鳴牌後最終桌面朝向。
      *
      * @param context 本幀繪製環境。
      * @param assetKey 牌面素材識別碼。

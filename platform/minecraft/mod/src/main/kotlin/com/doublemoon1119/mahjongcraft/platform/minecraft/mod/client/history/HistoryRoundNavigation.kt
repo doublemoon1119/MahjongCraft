@@ -20,7 +20,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStat
  * @property eventScrollOffset 事件頁捲動位置。
  * @property stateScrollOffset 桌況捲動位置。
  * @property lastTransactionIndex 已明確確認的最後交易索引。
- * @property transactionCount 伺服器回報的本局交易總數；尚未取得事件頁時為 null。
+ * @property transactionCount 伺服器回報的本局交易總數。尚未取得事件頁時為 null。
  */
 internal data class HistoryBrowseRoundState(
     val roundNumber: Int,
@@ -42,12 +42,12 @@ internal data class HistoryBrowseRoundState(
      * 判斷交易是否存在：索引小於伺服器回報的交易總數。
      *
      * @param index 交易索引。
-     * @return 存在時為 true；尚未取得總數時為 false。
+     * @return 存在時為 true。尚未取得總數時為 false。
      */
     fun hasTransaction(index: Int): Boolean = transactionCount?.let { index in 0 until it } == true
 }
 
-/** 歷史局導航的純資料操作；不替呼叫端推測不存在的交易。 */
+/** 歷史局導航的純資料操作。不替呼叫端推測不存在的交易。 */
 internal object HistoryRoundNavigation {
     /**
      * 記錄已通過驗證的事件頁與本局交易總數。
@@ -91,7 +91,7 @@ internal object HistoryRoundNavigation {
      *
      * @param transactionCount 本局交易總數。
      * @param pageSize 每頁交易數。
-     * @return 由第一頁到最後一頁的起點；沒有交易時只有第一頁。
+     * @return 由第一頁到最後一頁的起點。沒有交易時只有第一頁。
      */
     fun lastPageStarts(transactionCount: Int, pageSize: Int = EVENTS_PAGE_SIZE): List<Int> {
         require(pageSize > 0) { "Page size must be positive" }

@@ -30,10 +30,12 @@ import kotlin.uuid.Uuid
 /**
  * 將已提交的規則中立事實投影為 Minecraft 平台事件，並在交易釋放後依序交付。
  *
- * 事件投影只建立平台事件資料，不直接呼叫第三方；所有監聽者都經由排入平台佇列的工作呼叫。
- * [startSession] 與 [stopSession] 用來捨棄伺服器切換時尚未交付的舊事件。
- * 生命週期操作與交付在同一主執行緒執行；提交通知由 store 在鎖內依序呼叫，解鎖通知允許亂序。
- * 排程失敗時保留佇列，後續通知再嘗試排程；session 結束時捨棄尚未交付的事件，不補發。
+ * - 事件投影只建立平台事件資料，不直接呼叫第三方。所有監聽者都經由排入平台佇列的工作呼叫。
+ * - [startSession] 與 [stopSession] 用來捨棄伺服器切換時尚未交付的舊事件。
+ * - 生命週期操作與交付在同一主執行緒執行。
+ * - 提交通知由 store 在鎖內依序呼叫，解鎖通知允許亂序。
+ * - 排程失敗時保留佇列，後續通知再嘗試排程。
+ * - session 結束時捨棄尚未交付的事件，不補發。
  *
  * @property projector 將提交事實投影為公開事件的元件。
  * @property scheduler 保證將交付工作排入平台主執行緒佇列的元件。
@@ -42,7 +44,7 @@ import kotlin.uuid.Uuid
  * @property matchStarted 對局開始訂閱點。
  * @property roundSettled 一局結算訂閱點。
  * @property matchEnded 對局結束訂閱點。
- * @property failurePolicy 判斷監聽者、排程器或回報器丟出的失敗能否隔離；無法隔離的失敗原樣往外傳。
+ * @property failurePolicy 判斷監聽者、排程器或回報器丟出的失敗能否隔離。無法隔離的失敗原樣往外傳。
  * @property actionsPerformed 已成立動作訂閱點。
  * @property roundCompleted 本局完成訂閱點。
  * @property eventBatchCommitted 交易事件批次訂閱點。
@@ -67,7 +69,7 @@ class GameEventDelivery(
     private val state = AtomicReference(DeliveryState(sessionId = null, releasedSequence = Long.MIN_VALUE))
 
     /**
-     * 開始新的伺服器 session，鎖定使用中的訂閱點並捨棄舊佇列；訂閱鎖定不隨 session 結束解除。
+     * 開始新的伺服器 session，鎖定使用中的訂閱點並捨棄舊佇列。訂閱鎖定不隨 session 結束解除。
      *
      * @return 新 session 的 UUID，供交易通知與事件情境驗證使用。
      */
@@ -85,7 +87,7 @@ class GameEventDelivery(
     }
 
     /**
-     * 結束指定 session；較舊 session 的排程工作不會再交付事件。
+     * 結束指定 session。較舊 session 的排程工作不會再交付事件。
      *
      * @param sessionId 欲結束的 session。
      */
@@ -99,7 +101,7 @@ class GameEventDelivery(
      * @param sessionId 接收者建立時擷取的 session。
      * @param sequence store 在交易內配置的遞增提交序號。
      * @param facts 同一交易中單一場地的事實。
-     * @param onBatchDelivered 解鎖後接收同一公開批次的內建處理；可持有服務與 session 檢查，不保留對局或事實。
+     * @param onBatchDelivered 解鎖後接收同一公開批次的內建處理。可持有服務與 session 檢查，不保留對局或事實。
      */
     fun onCommitted(
         sessionId: Uuid,
@@ -131,7 +133,7 @@ class GameEventDelivery(
      * 標示指定交易已釋放權威交易鎖，並安排所有已可交付事件。
      *
      * @param sessionId 通知所屬 session。
-     * @param sequence 已釋放交易鎖的提交序號；亂序通知不會使水位倒退。
+     * @param sequence 已釋放交易鎖的提交序號。亂序通知不會使水位倒退。
      */
     fun onReleased(sessionId: Uuid, sequence: Long) {
         while (true) {
@@ -219,7 +221,7 @@ class GameEventDelivery(
      * 原子移出已解鎖事件，或在沒有可交付事件時解除排程旗標。
      *
      * @param sessionId 此工作所屬 session。
-     * @return 可交付事件；session 失效或沒有可交付事件時為 null。
+     * @return 可交付事件。session 失效或沒有可交付事件時為 null。
      */
     private fun takeReady(sessionId: Uuid): List<PendingBatch>? {
         while (true) {
@@ -297,14 +299,14 @@ class GameEventDelivery(
     }
 
     /**
-     * 逐一隔離監聽者失敗；生命週期切換後不再交付舊事件。
+     * 逐一隔離監聽者失敗。生命週期切換後不再交付舊事件。
      *
      * 交付不在協程中執行，監聽者丟出的取消例外不代表交付被取消，與可以隔離的失敗一樣只略過該監聽者。
      *
      * @param L 監聽者型別。
      * @param pending 當次事件。
      * @param listeners 訂閱者快照。
-     * @param event 正在交付的個別事件；批次監聽者為 null，改用批次診斷。
+     * @param event 正在交付的個別事件。批次監聽者為 null，改用批次診斷。
      * @param invoke 單一監聽者呼叫。
      */
     private fun <L : Any> notify(
@@ -363,7 +365,7 @@ class GameEventDelivery(
     /**
      * 不可變的 session 交付狀態。
      *
-     * @property sessionId 有效 session；未啟動時為 null。
+     * @property sessionId 有效 session。未啟動時為 null。
      * @property releasedSequence 已解鎖的最大序號。
      * @property events 依提交順序排列的待交付事件。
      * @property deliveryActive 是否已有排程或執行中的交付工作。

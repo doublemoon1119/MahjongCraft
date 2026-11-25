@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.tile.TileCompositionEntry
  *
  * @property playerCount 本局完整玩家人數。
  * @property wallTileValues 加入牌山的一萬至八萬點數，每種四張。
- * @property publicFacesEnabled 是否讓每種點數的前三張帶公開牌面標記；第四張（含倒置一萬）保持普通。
+ * @property publicFacesEnabled 是否讓每種點數的前三張帶公開牌面標記。第四張（含倒置一萬）保持普通。
  */
 class ExamplePairingWallFactory(
     private val playerCount: Int,

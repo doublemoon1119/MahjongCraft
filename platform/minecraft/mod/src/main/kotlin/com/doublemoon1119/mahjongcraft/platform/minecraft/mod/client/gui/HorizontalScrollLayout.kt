@@ -18,7 +18,7 @@ internal data class HorizontalScrollThumb(
 }
 
 /**
- * 連續像素的水平捲動幾何；統一 thumb 大小與位置、拖曳與滾輪的換算。
+ * 連續像素的水平捲動幾何。統一 thumb 大小與位置、拖曳與滾輪的換算。
  *
  * 跟 [ScrollState]／[ScrollbarLayout] 是兩套不同模型：那一套是垂直、以項目 index 為單位一次捲一列，
  * 這一套是水平、以像素連續捲動，兩者的邊界與抓取點語意都不同，因此不共用。
@@ -34,7 +34,7 @@ internal data class HorizontalScrollLayout(
     val contentWidth: Int,
     val minimumThumbWidth: Int,
 ) {
-    /** 最大捲動量；內容沒有超出可見寬度時為零。 */
+    /** 最大捲動量。內容沒有超出可見寬度時為零。 */
     val maximumScroll: Double = (contentWidth - viewportWidth).coerceAtLeast(0).toDouble()
 
     /**
@@ -43,7 +43,7 @@ internal data class HorizontalScrollLayout(
      * 高 GUI scale 搭配小解析度時 [viewportWidth] 可能比 [minimumThumbWidth] 還窄，此時最小寬度本身必須
      * 先讓給可見寬度，否則下界會大於上界。
      *
-     * @param scroll 目前水平捲動量，應介於 0 與 [maximumScroll] 之間；此方法不限制輸入範圍。
+     * @param scroll 目前水平捲動量，應介於 0 與 [maximumScroll] 之間。此方法不限制輸入範圍。
      * @return 滑塊左右邊界。
      */
     fun thumb(scroll: Double): HorizontalScrollThumb {
@@ -76,7 +76,7 @@ internal data class HorizontalScrollLayout(
      * 依拖曳的游標位移計算新的捲動量。
      *
      * @param startScroll 拖曳開始時的捲動量。
-     * @param pointerDelta 游標相對拖曳起點的水平位移；正值向右。
+     * @param pointerDelta 游標相對拖曳起點的水平位移。正值向右。
      * @return 限制在合法範圍內的新捲動量。
      */
     fun scrollFromDrag(startScroll: Double, pointerDelta: Double): Double {
@@ -88,7 +88,7 @@ internal data class HorizontalScrollLayout(
      * 依滾輪量與畫面指定的步進距離計算新的捲動量。
      *
      * @param currentScroll 目前捲動量。
-     * @param amount 滾輪位移；正值減少捲動量。
+     * @param amount 滾輪位移。正值減少捲動量。
      * @param step 每單位滾輪位移對應的像素距離。
      * @return 限制在合法範圍內的新捲動量。
      */

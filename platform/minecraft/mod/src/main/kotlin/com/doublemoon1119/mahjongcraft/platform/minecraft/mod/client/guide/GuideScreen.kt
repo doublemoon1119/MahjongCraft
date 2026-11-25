@@ -52,7 +52,7 @@ import kotlin.uuid.toKotlinUuid
  * @property tileNames 牌名的查詢來源。
  * @property tileAssets 牌面素材鍵的查詢來源。
  * @property openAction 以此畫面為返回目標開啟按鈕對應的畫面。
- * @property returnScreen 返回時回到的畫面；直接關回遊戲時為 null。
+ * @property returnScreen 返回時回到的畫面。直接關回遊戲時為 null。
  * @property tab 目前的頁籤。
  * @property onTabChanged 切換頁籤後通知開啟入口，下次開啟時從同一頁開始。
  */
@@ -66,7 +66,7 @@ internal class GuideScreen(
     private var tab: GuideTab,
     private val onTabChanged: (GuideTab) -> Unit,
 ) : MahjongScreen(Component.translatable(MinecraftGuideScreenKeys.TITLE)) {
-    /** 目前頁籤的區塊；切換頁籤時重新建立。 */
+    /** 目前頁籤的區塊。切換頁籤時重新建立。 */
     private var blocks: List<GuideBlock> = GuidePages.blocks(tab, viewer())
 
     /** 目前的畫面版面。 */
@@ -78,13 +78,13 @@ internal class GuideScreen(
     /** 內容捲動與捲軸拖曳。 */
     private val scroll = PixelScrollState()
 
-    /** 畫示意場景；畫面移除時釋放。 */
+    /** 畫示意場景。畫面移除時釋放。 */
     private val sceneRenderer = GuideSceneRenderer()
 
     /** 各場景被拖曳轉動的水平角度，以場景在 [GuideContentLayout.elements] 中的位置為鍵。 */
     private val yawOffsets = mutableMapOf<Int, Float>()
 
-    /** 正在拖曳轉動的場景；沒有拖曳時為 null。 */
+    /** 正在拖曳轉動的場景。沒有拖曳時為 null。 */
     private var draggingScene: Int? = null
 
     /** 麻將桌與麻將凳的合成配方，開啟畫面時查詢。 */
@@ -187,7 +187,7 @@ internal class GuideScreen(
     }
 
     /**
-     * 加入隨內容捲動的按鈕；按鈕只在內容區內可點，由畫面在內容裁切內繪製。
+     * 加入隨內容捲動的按鈕。按鈕只在內容區內可點，由畫面在內容裁切內繪製。
      *
      * @param label 按鈕文字。
      * @param x 內容座標中的左界。
@@ -252,7 +252,7 @@ internal class GuideScreen(
     }
 
     /**
-     * 繪製標題、頁籤、內容與捲軸；內容的提示在內容裁切結束後才繪製。
+     * 繪製標題、頁籤、內容與捲軸。內容的提示在內容裁切結束後才繪製。
      *
      * @param context 繪製內容。
      * @param mouseX 游標水平位置。
@@ -290,7 +290,7 @@ internal class GuideScreen(
      * @param mouseX 游標水平位置。
      * @param mouseY 游標垂直位置。
      * @param delta 畫面更新比例。
-     * @return 游標指向的場景區塊或配方物品的提示；沒有時為 null。
+     * @return 游標指向的場景區塊或配方物品的提示。沒有時為 null。
      */
     private fun renderContent(
         context: GuiGraphics,
@@ -390,15 +390,15 @@ internal class GuideScreen(
     }
 
     /**
-     * 繪製合成配方輪播：原版工作台介面圖、標題、材料、成品、成品名稱與頁碼；同一格有多種材料時每秒輪流顯示。
+     * 繪製合成配方輪播：原版工作台介面圖、標題、材料、成品、成品名稱與頁碼。同一格有多種材料時每秒輪流顯示。
      *
      * @param context 繪製內容。
      * @param recipe 輪播的位置。
      * @param originX 內容原點的水平位置。
      * @param originY 內容原點套用捲動後的垂直位置。
-     * @param mouseX 游標水平位置；不在內容區時在範圍外。
-     * @param mouseY 游標垂直位置；不在內容區時在範圍外。
-     * @return 游標指向的物品提示；沒有時為 null。
+     * @param mouseX 游標水平位置。不在內容區時在範圍外。
+     * @param mouseY 游標垂直位置。不在內容區時在範圍外。
+     * @return 游標指向的物品提示。沒有時為 null。
      */
     private fun renderRecipe(
         context: GuiGraphics,
@@ -452,10 +452,10 @@ internal class GuideScreen(
     }
 
     /**
-     * 在介面圖的格子裡繪製物品；游標指著時與原版一樣蓋上半透明的白色。
+     * 在介面圖的格子裡繪製物品。游標指著時與原版一樣蓋上半透明的白色。
      *
      * @param context 繪製內容。
-     * @param stack 物品；空格為 null。
+     * @param stack 物品。空格為 null。
      * @param x 物品左界。
      * @param y 物品上界。
      * @param mouseX 游標水平位置。
@@ -481,7 +481,7 @@ internal class GuideScreen(
     }
 
     /**
-     * 場景區塊的提示：第一行是名稱，其餘是灰色的說明；每行最寬為畫面寬度的一部分，超過時換行。
+     * 場景區塊的提示：第一行是名稱，其餘是灰色的說明。每行最寬為畫面寬度的一部分，超過時換行。
      *
      * @param region 游標指著的區塊。
      * @return 提示的各行。

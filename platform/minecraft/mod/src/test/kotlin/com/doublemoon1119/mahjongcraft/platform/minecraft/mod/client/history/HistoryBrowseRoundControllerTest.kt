@@ -487,7 +487,7 @@ class HistoryBrowseRoundControllerTest {
         assertEquals(HistoryQueryLimits.MAX_ROUND_STATES, second.count)
     }
 
-    /** 移到已取得的步數立即顯示且不另外查詢；跳到沒取得的步數時，還沒送出的預先讀取改從該步開始要。 */
+    /** 移到已取得的步數立即顯示且不另外查詢。跳到沒取得的步數時，還沒送出的預先讀取改從該步開始要。 */
     @Test
     fun `test replay moves use received states and request missing steps`() = runTest {
         val transport = FakeRoundHistoryTransport()
@@ -522,7 +522,7 @@ class HistoryBrowseRoundControllerTest {
         assertEquals(HistoryBrowseStatus.Ready, controller.state.value.replay?.status)
     }
 
-    /** 暫時失敗先自動重試同一段三次（0.5、1、2 秒後），都失敗才顯示失敗；手動重試再要同一段。 */
+    /** 暫時失敗先自動重試同一段三次（0.5、1、2 秒後），都失敗才顯示失敗。手動重試再要同一段。 */
     @Test
     fun `test replay retries temporary failures before showing them`() = runTest {
         val transport = FakeRoundHistoryTransport()
@@ -706,7 +706,7 @@ class HistoryBrowseRoundControllerTest {
         assertFalse(controller.replayTo(1))
     }
 
-    /** 還不知道交易總數時，等原本在途的事件頁回來後先要第一頁事件，知道後才從指定步數要牌面；不在事件頁時不接受回放。 */
+    /** 還不知道交易總數時，等原本在途的事件頁回來後先要第一頁事件，知道後才從指定步數要牌面。不在事件頁時不接受回放。 */
     @Test
     fun `test replay without a known count reads the first event page first`() = runTest {
         val transport = FakeRoundHistoryTransport()
@@ -736,7 +736,7 @@ class HistoryBrowseRoundControllerTest {
         assertEquals(HistoryRoundPositionDto.AfterTransaction(2), transport.roundStateRequests.single().position)
     }
 
-    /** 回放換局停在新一局的初始牌面；返回事件頁時讀取新一局的事件頁。 */
+    /** 回放換局停在新一局的初始牌面。返回事件頁時讀取新一局的事件頁。 */
     @Test
     fun `test replay changes round and returns to the new round events`() = runTest {
         val transport = FakeRoundHistoryTransport()
@@ -840,8 +840,8 @@ class HistoryBrowseRoundControllerTest {
      * @param roundNumber 局序號。
      * @param indexes 此頁交易索引。
      * @param next 下一頁起始交易索引。
-     * @param tileCatalog 本頁的牌面目錄；每筆交易都宣告到目錄的全部牌。
-     * @param transactionCount 本局交易總數；預設為剛好涵蓋本頁與下一頁起點。
+     * @param tileCatalog 本頁的牌面目錄。每筆交易都宣告到目錄的全部牌。
+     * @param transactionCount 本局交易總數。預設為剛好涵蓋本頁與下一頁起點。
      * @return 事件頁 DTO。
      */
     private fun events(
@@ -1027,9 +1027,9 @@ class HistoryBrowseRoundControllerTest {
          * @param roundNumber 局序號。
          * @param start 事件頁起點。
          * @param next 下一頁起點。
-         * @param transactionIndexes 此頁交易索引；null 時依起點與下一頁推導。
+         * @param transactionIndexes 此頁交易索引。null 時依起點與下一頁推導。
          * @param tileCatalog 此頁的牌面目錄。
-         * @param transactionCount 本局交易總數；null 時剛好涵蓋本頁與下一頁起點。
+         * @param transactionCount 本局交易總數。null 時剛好涵蓋本頁與下一頁起點。
          */
         fun respondEvents(
             requestId: String = roundEventsRequests.last().requestId,

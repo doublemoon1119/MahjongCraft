@@ -22,7 +22,7 @@ interface HistoryQueryTransport {
     /**
      * 傳送歷史清單要求。
      *
-     * @param request 查詢條件；傳輸實作會產生唯一配對識別碼。
+     * @param request 查詢條件。傳輸實作會產生唯一配對識別碼。
      * @return 此次要求的配對識別碼。
      */
     fun queryList(request: HistoryListRequestDto): String
@@ -30,7 +30,7 @@ interface HistoryQueryTransport {
     /**
      * 傳送單場摘要要求。
      *
-     * @param request 目標對局與查閱範圍；傳輸實作會產生唯一配對識別碼。
+     * @param request 目標對局與查閱範圍。傳輸實作會產生唯一配對識別碼。
      * @return 此次要求的配對識別碼。
      */
     fun querySummary(request: HistorySummaryRequestDto): String

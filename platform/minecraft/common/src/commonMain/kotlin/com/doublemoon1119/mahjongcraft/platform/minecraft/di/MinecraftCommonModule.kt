@@ -70,7 +70,7 @@ import org.koin.plugin.module.dsl.single
  * Minecraft loader 與版本無關、client／server 共用的 Koin 定義。
  *
  * [MinecraftPresentationRegistries] 把同一份 presentation registry 組成 bootstrap 註冊及凍結使用的集合，不建立第二份實例。
- * server 專用狀態由 [minecraftServerModule] 提供；共用名稱來源直接由本模組綁定，原生文字轉換留在對應平台 adapter，
+ * server 專用狀態由 [minecraftServerModule] 提供。共用名稱來源直接由本模組綁定，原生文字轉換留在對應平台 adapter，
  * 不為純委派另外建立 loader registry。
  */
 val minecraftCommonModule = module {

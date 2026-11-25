@@ -34,10 +34,10 @@ object HistoryReplayArrangement {
      * @param notes 牌譜保存的擺放附註。
      * @param module 這場對局的規則模組，提供牌牆的墩數與桌邊對應。
      * @param tileLayout 規則的桌面牌位配置。
-     * @param openHands 是否把每一家的手牌面朝上攤開，與結算攤牌用同一套擺法；否則照保存的姿態。
+     * @param openHands 是否把每一家的手牌面朝上攤開，與結算攤牌用同一套擺法。否則照保存的姿態。
      * @param handPoses 取代上述姿態的手牌姿態，依局內牌索引，例如胡牌倒牌與流局蓋牌。
      * @param sidewaysMarker 牌河標記是否代表橫放。
-     * @return 依局內牌索引排列的擺放；沒有桌面位置的牌（例如沒有實體牌牆時的牌牆牌）不列入。
+     * @return 依局內牌索引排列的擺放。沒有桌面位置的牌（例如沒有實體牌牆時的牌牆牌）不列入。
      */
     fun arrange(
         state: HistoryRoundStateDto,
@@ -129,7 +129,7 @@ object HistoryReplayArrangement {
      * @param dealerIndex 莊家在桌況玩家清單中的位置。
      * @param notes 牌譜保存的擺放附註。
      * @param sidewaysMarker 牌河標記是否代表橫放。
-     * @return 擺牌用桌況；玩家依桌況中的順序排列，與對局中相同。
+     * @return 擺牌用桌況。玩家依桌況中的順序排列，與對局中相同。
      */
     private fun arrangementState(
         state: HistoryRoundStateDto,

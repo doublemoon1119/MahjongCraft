@@ -48,13 +48,13 @@ internal class HistoryRoundStateScreen(
     /** 牌牆是否展開。 */
     private var wallExpanded = false
 
-    /** 上一個畫面游標指向的牌；被鳴的牌與被鳴走的空位依此一起蓋上強調色層。 */
+    /** 上一個畫面游標指向的牌。被鳴的牌與被鳴走的空位依此一起蓋上強調色層。 */
     private var linkedTile: Int? = null
 
     /** 前後及重試控制項。 */
     private val queryButtons = mutableListOf<Button>()
 
-    /** 各玩家手牌順序的切換按鈕，依開局座位建立；隨內容捲動，由本畫面在內容裁切範圍內繪製。 */
+    /** 各玩家手牌順序的切換按鈕，依開局座位建立。隨內容捲動，由本畫面在內容裁切範圍內繪製。 */
     private val sortButtons = mutableMapOf<Int, RestartableMarqueeButtonWidget>()
 
     /** 只在牌面讀取失敗時顯示的重試控制項。 */
@@ -106,10 +106,10 @@ internal class HistoryRoundStateScreen(
     }
 
     /**
-     * 取得玩家手牌順序的切換按鈕；同一位玩家重複使用同一顆按鈕。
+     * 取得玩家手牌順序的切換按鈕。同一位玩家重複使用同一顆按鈕。
      *
      * @param seat 開局座位。
-     * @return 按鈕；文字、位置與提示由繪製時決定。
+     * @return 按鈕。文字、位置與提示由繪製時決定。
      */
     private fun sortButton(seat: Int): RestartableMarqueeButtonWidget = sortButtons.getOrPut(seat) {
         addWidget(
@@ -143,7 +143,7 @@ internal class HistoryRoundStateScreen(
     }
 
     /**
-     * 繪製經驗證桌況；載入／錯誤期間不把上一筆資料冒充新位置。
+     * 繪製經驗證桌況。載入／錯誤期間不把上一筆資料冒充新位置。
      *
      * @param context 繪製上下文。
      * @param mouseX 游標水平座標。
@@ -652,7 +652,7 @@ internal class HistoryRoundStateScreen(
          * @property seat 玩家初始座位，用於個別保存手牌排序狀態。
          * @property rows 玩家標頭、手牌、副露、和牌明細與牌河列。
          * @property height 卡片總高度。
-         * @property scoreChange 本局結算的分數變化；增加時加上綠色外框、減少時加上紅色外框，沒有變化或尚未結算時不加。
+         * @property scoreChange 本局結算的分數變化。增加時加上綠色外框、減少時加上紅色外框，沒有變化或尚未結算時不加。
          */
         data class PlayerCard(
             val seat: Int,
@@ -665,7 +665,7 @@ internal class HistoryRoundStateScreen(
          * 可單獨切換一位玩家手牌排序的標題列。
          *
          * @property seat 玩家座位。
-         * @property label 同列顯示的手牌標題；標題移至上一列時為 null。
+         * @property label 同列顯示的手牌標題。標題移至上一列時為 null。
          * @property action 顯示目前排列方式的可點擊文字。
          * @property tooltip 點擊後的目標排序模式說明。
          * @property inset 內容區到標題列左側的縮排。

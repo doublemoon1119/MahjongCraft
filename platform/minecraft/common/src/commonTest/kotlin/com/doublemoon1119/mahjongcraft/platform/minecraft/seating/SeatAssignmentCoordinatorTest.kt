@@ -62,7 +62,7 @@ class SeatAssignmentCoordinatorTest {
         assertEquals(0, target.trySitCalls)
     }
 
-    /** 提供者聲稱坐下但沒有乘坐關係時不承認；真實乘坐則可唯讀確認。 */
+    /** 提供者聲稱坐下但沒有乘坐關係時不承認。真實乘坐則可唯讀確認。 */
     @Test
     fun `seat only preview requires actual mounted state`() {
         val target = FakeTarget("seat", state = SeatState.SEATED)
@@ -445,7 +445,7 @@ class SeatAssignmentCoordinatorTest {
         }
     }
 
-    /** 判斷規則接受隔離的錯誤（例如 JVM 的類別連結錯誤）會被回報並改為入座失敗；不接受的錯誤原樣往外傳。 */
+    /** 判斷規則接受隔離的錯誤（例如 JVM 的類別連結錯誤）會被回報並改為入座失敗。不接受的錯誤原樣往外傳。 */
     @Test
     fun `provider errors follow the failure policy`() {
         val rider = FakeRider()

@@ -20,7 +20,7 @@ class TabStripLayoutTest {
         assertEquals(12 + 456, strip.right)
     }
 
-    /** 放不下時平均縮窄，最窄 60；縮窄後整排仍在頁籤列範圍內。 */
+    /** 放不下時平均縮窄，最窄 60。縮窄後整排仍在頁籤列範圍內。 */
     @Test
     fun `tabs shrink evenly down to the minimum width`() {
         val strip = TabStripLayout(left = 18, width = 284, top = 77, tabCount = 4)
@@ -46,7 +46,7 @@ class TabStripLayoutTest {
         assertEquals(0, strip.copy(scroll = -40).effectiveScroll)
     }
 
-    /** 選中的頁籤高 21 並向上突出，其他頁籤高 18；兩者底邊都貼著底線。 */
+    /** 選中的頁籤高 21 並向上突出，其他頁籤高 18。兩者底邊都貼著底線。 */
     @Test
     fun `selected tab is taller and both kinds end at the line`() {
         val strip = TabStripLayout(left = 12, width = 456, top = 77, tabCount = 3)
@@ -60,7 +60,7 @@ class TabStripLayoutTest {
         assertEquals(strip.lineY, strip.tabY(selected = false) + strip.tabHeight(selected = false))
     }
 
-    /** 選中的頁籤被捲出範圍時，捲動到剛好完整顯示；已完整顯示時不動。 */
+    /** 選中的頁籤被捲出範圍時，捲動到剛好完整顯示。已完整顯示時不動。 */
     @Test
     fun `reveals a tab that is scrolled out of view`() {
         val strip = TabStripLayout(left = 18, width = 284, top = 77, tabCount = 6)

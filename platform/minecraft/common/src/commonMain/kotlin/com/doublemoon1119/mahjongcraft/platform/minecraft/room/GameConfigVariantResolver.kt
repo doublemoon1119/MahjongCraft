@@ -19,10 +19,10 @@ object GameConfigVariantResolver {
     fun options(definition: GameConfigPresentationDefinition): List<GameConfigVariantDefinition> = listOf(standard(definition)) + definition.variants
 
     /**
-     * 取得規則的識別欄位；這些欄位不顯示在設定頁。
+     * 取得規則的識別欄位。這些欄位不顯示在設定頁。
      *
      * @param definition 規則的設定呈現定義。
-     * @return 欄位 ID；規則沒有登記任何玩法時為空。
+     * @return 欄位 ID。規則沒有登記任何玩法時為空。
      */
     fun identifyingFieldIds(definition: GameConfigPresentationDefinition): Set<String> = definition.variants.firstOrNull()?.identifyingValues?.keys.orEmpty()
 
@@ -38,7 +38,7 @@ object GameConfigVariantResolver {
      * 判斷設定目前的玩法。
      *
      * @param definition 規則的設定呈現定義。
-     * @param config 要判斷的設定；必須通過 [isConsistent]。
+     * @param config 要判斷的設定。必須通過 [isConsistent]。
      * @return 識別欄位符合的玩法。
      * @throws IllegalStateException 識別欄位不符合任何玩法時拋出。
      */
@@ -79,7 +79,7 @@ object GameConfigVariantResolver {
     fun lockedField(definition: GameConfigPresentationDefinition, config: GameConfig, fieldId: String): GameConfigLockedField? = current(definition, config).lockedFields[fieldId]
 
     /**
-     * 把玩法套用到設定上：識別欄位與這個玩法的鎖定欄位改成玩法指定的值；原本的玩法鎖定、新玩法不鎖定的欄位
+     * 把玩法套用到設定上：識別欄位與這個玩法的鎖定欄位改成玩法指定的值。原本的玩法鎖定、新玩法不鎖定的欄位
      * 還原為規則預設值，因為那個值是原本的玩法強制的，不是玩家選的。其他設定維持原值。
      *
      * @param definition 規則的設定呈現定義。
@@ -118,11 +118,11 @@ object GameConfigVariantResolver {
     }
 
     /**
-     * 找出識別欄位符合的玩法；供顯示紀錄等不能假設設定已通過審查的場合使用。
+     * 找出識別欄位符合的玩法。供顯示紀錄等不能假設設定已通過審查的場合使用。
      *
      * @param definition 規則的設定呈現定義。
      * @param config 要判斷的設定。
-     * @return 符合的玩法；不符合任何玩法時為 null。
+     * @return 符合的玩法。不符合任何玩法時為 null。
      */
     fun find(definition: GameConfigPresentationDefinition, config: GameConfig): GameConfigVariantDefinition? {
         val fieldIds = identifyingFieldIds(definition)
@@ -134,7 +134,7 @@ object GameConfigVariantResolver {
      * 建立規則自動提供的標準玩法：識別欄位全部取規則預設值，沒有鎖定欄位。
      *
      * @param definition 規則的設定呈現定義。
-     * @return 標準玩法；規則沒有登記任何玩法時不指定任何欄位。
+     * @return 標準玩法。規則沒有登記任何玩法時不指定任何欄位。
      */
     private fun standard(definition: GameConfigPresentationDefinition): GameConfigVariantDefinition {
         val fieldIds = identifyingFieldIds(definition)

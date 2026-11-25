@@ -49,7 +49,7 @@ class AutomaticControlStatusHudRenderer(
     }
 
     /**
-     * 在指定比例位置繪製狀態列；HUD 位置編輯器的預覽也使用這裡。
+     * 在指定比例位置繪製狀態列。HUD 位置編輯器的預覽也使用這裡。
      *
      * @param context 本次 GUI 繪製環境。
      * @param rows 依顯示順序排列的控制項狀態。

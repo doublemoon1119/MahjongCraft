@@ -5,7 +5,7 @@ import kotlin.uuid.Uuid
 /**
  * 保存單次 server save 的麻將桌最後已知位置，並提供依 chunk 查詢的記憶體索引。
  *
- * 變更與 chunk 索引查詢必須由 Minecraft server thread 呼叫；[snapshot] 與 [get] 讀取
+ * 變更與 chunk 索引查詢必須由 Minecraft server thread 呼叫。[snapshot] 與 [get] 讀取
  * 不可變 map 的已發布版本，可供歷史 I/O 工作取得位置摘要。
  */
 class TableLocationRegistry {
@@ -22,7 +22,7 @@ class TableLocationRegistry {
      * 取得指定桌子的目前位置資料。
      *
      * @param tableId 麻將桌 UUID。
-     * @return 目前位置與 revision；未登記時為 `null`。
+     * @return 目前位置與 revision。未登記時為 `null`。
      */
     fun get(tableId: Uuid): TableLocationEntry? = entriesByTableId[tableId]
 
@@ -54,7 +54,7 @@ class TableLocationRegistry {
     /**
      * 載入已保存資料並重建反向索引，不觸發 dirty callback。
      *
-     * @param entries 從存檔還原的位置資料；桌子 UUID 必須唯一。
+     * @param entries 從存檔還原的位置資料。桌子 UUID 必須唯一。
      */
     fun load(entries: Collection<TableLocationEntry>) {
         require(entries.map(TableLocationEntry::tableId).distinct().size == entries.size) {
@@ -67,7 +67,7 @@ class TableLocationRegistry {
     /**
      * 登記或修正桌子位置。
      *
-     * 相同位置不改變 revision 或 dirty 狀態；位置改變時 revision 遞增。
+     * 相同位置不改變 revision 或 dirty 狀態。位置改變時 revision 遞增。
      *
      * @param tableId 麻將桌 UUID。
      * @param location 新確認的位置。
@@ -88,7 +88,7 @@ class TableLocationRegistry {
      * 只有 revision 仍符合延遲工作的預期時才移除位置。
      *
      * @param tableId 麻將桌 UUID。
-     * @param expectedRevision 延遲工作預期的 revision；`null` 表示不比對版本。
+     * @param expectedRevision 延遲工作預期的 revision。`null` 表示不比對版本。
      * @return 確實移除資料時為 `true`。
      */
     fun remove(tableId: Uuid, expectedRevision: Long? = null): Boolean {

@@ -40,7 +40,7 @@ class WinSettlementRevealTimelineTest {
      * 從內建模板註冊表取得模板根版面。
      *
      * @param key 模板識別碼。
-     * @return 該模板的根版面；模板不存在時失敗。
+     * @return 該模板的根版面。模板不存在時失敗。
      */
     private fun builtInLayout(key: String): PresentationLayout {
         val registry = WinSettlementPresentationTemplateRegistryImpl().apply { registerBundledWinSettlementTemplates() }
@@ -78,7 +78,7 @@ class WinSettlementRevealTimelineTest {
         assertEquals(0, WinSettlementRevealTimeline.scoreRevealDelayTicks(layout))
     }
 
-    /** 分數以外、排在逐條揭示之後的每一行都列出，由早到晚；這位贏家沒有的那一行不列入。 */
+    /** 分數以外、排在逐條揭示之後的每一行都列出，由早到晚。這位贏家沒有的那一行不列入。 */
     @Test
     fun `lines after the entries are listed only when present`() {
         val otherId = PresentationFieldId("mahjongcraft:test_other")
@@ -119,7 +119,7 @@ class WinSettlementRevealTimelineTest {
         assertEquals(listOf(0), WinSettlementRevealTimeline.lineRevealDelaysTicks(layout, setOf(yakumanTotalId)))
     }
 
-    /** 通用模板沿用共用骨架的分數節奏；沒有資料的摘要不會多出一行。 */
+    /** 通用模板沿用共用骨架的分數節奏。沒有資料的摘要不會多出一行。 */
     @Test
     fun `the generic template follows the shared score rhythm`() {
         val layout = builtInLayout(BuiltInWinSettlementTemplateKeys.GENERIC)

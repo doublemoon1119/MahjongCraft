@@ -52,7 +52,7 @@ class RiichiMeldDebugGameScenariosTest {
         }
     }
 
-    /** 剛摸到的白可以加槓；第一張嶺上牌八筒可以暗槓；第二張嶺上牌九萬可以自摸。 */
+    /** 剛摸到的白可以加槓。第一張嶺上牌八筒可以暗槓。第二張嶺上牌九萬可以自摸。 */
     @Test
     fun `meld showcase chains an added kan and a closed kan into a replacement tsumo`() {
         val state = build()

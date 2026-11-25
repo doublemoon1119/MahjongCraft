@@ -109,7 +109,7 @@ class TileWallMotionPathPlannerTest {
      *
      * @param start 起點 placement。
      * @param end 終點 placement。
-     * @param facing 桌面朝向；預設朝北。
+     * @param facing 桌面朝向。預設朝北。
      * @return planner 成功產生的路徑。
      */
     private fun completedPath(

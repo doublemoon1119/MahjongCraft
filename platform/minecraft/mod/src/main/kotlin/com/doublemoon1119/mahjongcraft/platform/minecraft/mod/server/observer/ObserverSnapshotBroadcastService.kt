@@ -10,12 +10,11 @@ import kotlinx.coroutines.launch
  * 驅動 [ObserverSnapshotBroadcaster]：server session 期間訂閱權威狀態，並在每次 tick 結束時檢查觀察者
  * 變化。
  *
- * 訂閱負責「內容變了」，tick 檢查負責「觀察者變了」；兩者都進入同一條推送流程，內容與上次相同時不會
- * 送出任何封包。推送在 [CoroutineDispatchers.main]（伺服器 tick 佇列）上執行，觀察者查詢需要讀取世界
- * 狀態，本來就只能在該執行緒進行。[broadcastInProgress] 只是避免 tick 比推送本身更快時堆積重複的
- * 工作，實際的互斥由 [ObserverSnapshotBroadcaster] 自己負責。
+ * - 訂閱處理內容變化，tick 檢查處理觀察者變化。兩者都進入同一條推送流程，內容與上次相同時不送出封包。
+ * - 推送在 [CoroutineDispatchers.main]（伺服器 tick 佇列）上執行，因為觀察者查詢需要讀取世界狀態。
+ * - [broadcastInProgress] 只避免 tick 比推送更快時堆積重複工作。實際的互斥由 [ObserverSnapshotBroadcaster] 負責。
  *
- * @property scope 執行 session 觀察與推送工作的背景作用域；關服時直接取消，不等待推送完成。
+ * @property scope 執行 session 觀察與推送工作的背景作用域。關服時直接取消，不等待推送完成。
  * @property dispatchers 提供伺服器主執行緒排程器。
  * @property broadcaster 訂閱狀態並推送觀察者快照的共用服務。
  */
@@ -46,7 +45,7 @@ class ObserverSnapshotBroadcastService(
         }
     }
 
-    /** 開始訂閱權威狀態；協程隨 server session 的作用域一起結束。 */
+    /** 開始訂閱權威狀態。協程隨 server session 的作用域一起結束。 */
     fun startSession() {
         scope.launch(dispatchers.main) { broadcaster.observeState() }
     }

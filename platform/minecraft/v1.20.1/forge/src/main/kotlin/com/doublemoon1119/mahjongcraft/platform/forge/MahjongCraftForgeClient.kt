@@ -30,7 +30,7 @@ import net.minecraftforge.fml.ModLoadingContext
 import org.koin.core.context.GlobalContext
 
 /**
- * Forge 用戶端的初始化；只在用戶端由 [MahjongCraftForge] 呼叫。
+ * Forge 用戶端的初始化。只在用戶端由 [MahjongCraftForge] 呼叫。
  *
  * 用戶端啟動流程會讀取已登記的物品與實體，Forge 卻在 mod 建構之後才寫入登記表，因此流程延到 Forge 第一個用戶端登記事件
  * 才執行：這時登記表已經寫好，而按鍵、實體繪製器、物品顏色、資源重載監聽與畫面疊加層都還沒登記。
@@ -63,7 +63,7 @@ internal object MahjongCraftForgeClient {
         ).forEach { eventType -> startOn(modBus, eventType, registrar) }
     }
 
-    /** 模組清單中本 mod 的「設定」按鈕開啟客戶端設定，返回時回到模組清單；設定畫面在按下時才取得。 */
+    /** 模組清單中本 mod 的「設定」按鈕開啟客戶端設定，返回時回到模組清單。設定畫面在按下時才取得。 */
     private fun registerConfigScreen() {
         ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory::class.java) {
             ConfigScreenHandler.ConfigScreenFactory { _, parent -> GlobalContext.get().get<MahjongClientConfigScreenController>().screen(parent) }
@@ -71,7 +71,7 @@ internal object MahjongCraftForgeClient {
     }
 
     /**
-     * 在指定的登記事件發生時執行用戶端啟動流程；只執行一次。
+     * 在指定的登記事件發生時執行用戶端啟動流程。只執行一次。
      *
      * @param E 登記事件的型別。
      * @param modBus 本 mod 的事件匯流排。

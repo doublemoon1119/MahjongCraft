@@ -7,16 +7,20 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
  * - 兩翼：兩翼左右分開，和牌張在正中央的間隙中。
  * - 三翼：和牌張在中央那一翼手牌的 x 較小一側。
  *
- * 同一翼中卡片依組別分段，組與組之間多留 [ShowcaseFormationMetrics.groupGap]。承載和牌張的那一翼會把和牌張
- * 算進自身寬度，因此相鄰翼不會與和牌張重疊。沒有卡片的翼仍保留一張卡片的寬度。只處理數字，不碰 entity 或繪製。
+ * 其他規則：
+ *
+ * - 同一翼中卡片依組別分段，組與組之間多留 [ShowcaseFormationMetrics.groupGap]。
+ * - 承載和牌張的那一翼把和牌張算進自身寬度，相鄰翼因此不會與和牌張重疊。
+ * - 沒有卡片的翼仍保留一張卡片的寬度。
+ * - 只處理數字，不碰 entity 或繪製。
  *
  * @property wingCardOrders 各翼卡片的 [ShowcaseCardSlot.Hand.order]，外層順序即翼的索引。
- * @param includesWinningTile 歸位順序是否包含和牌張；和牌張的位置 [winningTileX] 不受影響。
+ * @param includesWinningTile 歸位順序是否包含和牌張。和牌張的位置 [winningTileX] 不受影響。
  * @property metrics 尺寸參數。
  * @property wingCenters 各翼中心的 X 座標，依翼索引排列。
  * @property winningTileX 和牌張在編隊中的 X 座標。
  * @property returnOrder 爆炸後各牌張依序歸位的順序。
- * @param wingCardGroups 與 [wingCardOrders] 一一對應的組別；組別依 order 遞增且不遞減，省略時全部同一組。
+ * @param wingCardGroups 與 [wingCardOrders] 一一對應的組別。組別依 order 遞增且不遞減，省略時全部同一組。
  */
 class ShowcaseFormationLayout(
     private val wingCardOrders: List<List<Int>>,
@@ -40,9 +44,9 @@ class ShowcaseFormationLayout(
     }
 
     /**
-     * 爆炸後飛回編隊的順序：x 較大的先動；x 相同時和牌張排在後面。
+     * 爆炸後飛回編隊的順序：x 較大的先動。x 相同時和牌張排在後面。
      *
-     * 每張卡片各佔一個順位，同一翼中重複的 order 也不合併；包含每張手牌及（若納入）和牌張。
+     * 每張卡片各佔一個順位，同一翼中重複的 order 也不合併。包含每張手牌及（若納入）和牌張。
      */
     val returnOrder: List<ShowcaseCardSlot> = buildList {
         wingCardOrders.forEachIndexed { wingIndex, orders ->
@@ -80,7 +84,7 @@ class ShowcaseFormationLayout(
     }
 
     /**
-     * 兩翼時各自往外讓出中央間隙；其他翼數則依序並排後整體置中。
+     * 兩翼時各自往外讓出中央間隙。其他翼數則依序並排後整體置中。
      *
      * @return 各翼中心的水平座標。
      */
@@ -120,7 +124,7 @@ class ShowcaseFormationLayout(
     private fun offsetInWing(wingIndex: Int, order: Int): Double = order * metrics.cardSpacing + ((groupByOrder[wingIndex][order] ?: 0) - firstGroup(wingIndex)) * metrics.groupGap
 
     /**
-     * 一翼第一張到最後一張卡片中心的距離；沒有卡片的翼為 0。
+     * 一翼第一張到最後一張卡片中心的距離。沒有卡片的翼為 0。
      *
      * @param wingIndex 要查詢的翼索引。
      * @return 該翼卡片中心跨度。
@@ -137,12 +141,12 @@ class ShowcaseFormationLayout(
      * 一翼中最小的組別。
      *
      * @param wingIndex 要查詢的翼索引。
-     * @return 該翼最小組別編號；沒有組別時為 0。
+     * @return 該翼最小組別編號。沒有組別時為 0。
      */
     private fun firstGroup(wingIndex: Int): Int = groupByOrder[wingIndex].values.minOrNull() ?: 0
 
     /**
-     * 一翼是否承載和牌張；只由翼數決定。
+     * 一翼是否承載和牌張。只由翼數決定。
      *
      * @param wingIndex 要查詢的翼索引。
      * @return 此翼依目前翼數配置承載和牌張時為 `true`。

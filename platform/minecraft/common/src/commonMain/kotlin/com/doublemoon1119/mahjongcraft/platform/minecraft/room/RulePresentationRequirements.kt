@@ -8,17 +8,19 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableL
 /**
  * 規則要在 Minecraft 麻將桌上進行對局必須滿足的條件。
  *
- * 規則必須提供摸牌順序與開局程序。實體牌牆布局可省略，牌會在進入桌面區域時出現。若開局程序使用擲骰，每一輪的骰子數量必須是
- * 桌上能擺放的數量（[MahjongDiceTableLayout.supportedDiceCounts]）。只有設定呈現標為可選、且滿足這些條件的規則，
- * 才能用於房間設定與開局。
+ * - 規則必須提供摸牌順序與開局程序。
+ * - 實體牌牆布局可省略，牌會在進入桌面區域時出現。
+ * - 開局程序使用擲骰時，每一輪的骰子數量必須是桌上能擺放的數量（[MahjongDiceTableLayout.supportedDiceCounts]）。
+ *
+ * 只有設定呈現標為可選、且滿足這些條件的規則，才能用於房間設定與開局。
  */
 object RulePresentationRequirements {
     /**
      * 找出規則模組無法在麻將桌上呈現的原因。
      *
      * @param module 要檢查的規則模組。
-     * @param playerCount 本局完整玩家名單的人數；為 null 時檢查規則宣告的所有支援人數。
-     * @return 不符合的原因；符合所有條件時為 null。
+     * @param playerCount 本局完整玩家名單的人數。為 null 時檢查規則宣告的所有支援人數。
+     * @return 不符合的原因。符合所有條件時為 null。
      */
     fun unmetRequirement(module: MahjongRuleModule<*>, playerCount: Int? = null): String? {
         if (playerCount != null && playerCount !in 2..4) {
@@ -62,7 +64,7 @@ object RulePresentationRequirements {
      * @param ruleConfig 房間設定使用的規則設定。
      * @param presentations 已凍結的設定呈現 registry。
      * @param moduleRegistry 已凍結的規則模組 registry。
-     * @param playerCount 本局完整玩家名單的人數；為 null 時檢查規則宣告的所有支援人數。
+     * @param playerCount 本局完整玩家名單的人數。為 null 時檢查規則宣告的所有支援人數。
      * @return 可以使用時為 true。
      */
     fun isPlayable(
@@ -78,7 +80,7 @@ object RulePresentationRequirements {
     /**
      * 啟動時檢查每個可選規則：以預設設定建立的規則模組 ID 必須與設定呈現相同，且能在麻將桌上呈現。
      *
-     * 不可選的設定呈現不檢查；它們無法用於房間設定與開局。
+     * 不可選的設定呈現不檢查。它們無法用於房間設定與開局。
      *
      * @param presentations 已完成登記的設定呈現 registry。
      * @param moduleRegistry 已完成登記的規則模組 registry。

@@ -319,7 +319,7 @@ class DecisionTileSelectionStateTest {
      * 取出已消化互動所附帶的最終選擇。
      *
      * @param outcome 牌張切換或確認結果。
-     * @return 已送出的最終選擇；若尚未符合送出條件則為 `null`。
+     * @return 已送出的最終選擇。若尚未符合送出條件則為 `null`。
      */
     private fun consumedSelection(outcome: DecisionTileSelectionState.Outcome) = assertIs<DecisionTileSelectionState.Outcome.Consumed>(outcome).selection
 

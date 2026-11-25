@@ -33,7 +33,7 @@ internal data class VehicleSeatSnapshot(
     val vehicle: Entity?,
 )
 
-/** 原生站立檢查與違約回復；不強制載入區塊，只在局間換位時讓玩家離開本桌的座位，不卸除其他載具。 */
+/** 原生站立檢查與違約回復。不強制載入區塊，只在局間換位時讓玩家離開本桌的座位，不卸除其他載具。 */
 internal class VehicleSeatEnvironment : SeatEnvironment<ServerLevel, Entity, VehicleSeatSnapshot> {
     /** 複製乘坐者目前的世界、位置與載具，不保留可變的位置物件。 */
     override fun snapshot(rider: Entity): VehicleSeatSnapshot = VehicleSeatSnapshot(
@@ -83,14 +83,14 @@ internal class VehicleSeatEnvironment : SeatEnvironment<ServerLevel, Entity, Veh
         geometry: SeatGeometry,
     ): Boolean = rider.level() === world && rider.distanceToSqr(geometry.x, geometry.y, geometry.z) <= POSITION_EPSILON
 
-    /** 從本桌的座位上起身；乘坐者已確認坐在本桌某個座位上。 */
+    /** 從本桌的座位上起身。乘坐者已確認坐在本桌某個座位上。 */
     override fun leaveSeat(rider: Entity) {
         val vehicle = rider.vehicle
         rider.stopRiding()
         if (vehicle is MahjongStoolSeatEntity && !vehicle.isVehicle) vehicle.discard()
     }
 
-    /** 不干預載具；僅在目前位置不安全且原位置仍安全時嘗試回復。 */
+    /** 不干預載具。僅在目前位置不安全且原位置仍安全時嘗試回復。 */
     override fun recover(rider: Entity, snapshot: VehicleSeatSnapshot) {
         if (unchanged(rider, snapshot) || rider.isPassenger || snapshot.vehicle != null) return
         val currentWorld = rider.level() as? ServerLevel ?: return
@@ -144,7 +144,7 @@ internal class VehicleSeatEnvironment : SeatEnvironment<ServerLevel, Entity, Veh
     }
 
     /**
-     * 執行已驗證的移動；非玩家實體只支援同世界，跨世界代理交由其生命週期處理。
+     * 執行已驗證的移動。非玩家實體只支援同世界，跨世界代理交由其生命週期處理。
      *
      * @param world 目標世界。
      * @param rider 乘坐者。

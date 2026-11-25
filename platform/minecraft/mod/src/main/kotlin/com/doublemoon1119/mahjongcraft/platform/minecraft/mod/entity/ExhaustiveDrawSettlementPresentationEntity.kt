@@ -11,7 +11,7 @@ import net.minecraft.world.level.Level
 import kotlin.uuid.Uuid
 
 /**
- * 統一流局結算舞台。Entity 只同步起訖關鍵影格；client 依絕對遊戲時間重建分數與排行動畫。
+ * 統一流局結算舞台。Entity 只同步起訖關鍵影格。client 依絕對遊戲時間重建分數與排行動畫。
  *
  * @param type 流局結算實體種類。
  * @param world 實體所屬世界。
@@ -40,7 +40,7 @@ class ExhaustiveDrawSettlementPresentationEntity(
     val players: List<ExhaustiveDrawSettlementPlayerSnapshot>
         get() = decodePlayers(entityData[PLAYERS])
 
-    /** 是否需要先呈現實際等待牌；單純的流局宣告不占用獨立階段。 */
+    /** 是否需要先呈現實際等待牌。單純的流局宣告不占用獨立階段。 */
     val hasInformationPhase: Boolean get() = players.any { it.waitingTileAssetKeys.isNotEmpty() }
 
     init {
@@ -229,7 +229,7 @@ class ExhaustiveDrawSettlementPresentationEntity(
         /**
          * 依玩家列 index 計算逐列出現時間，renderer 與 server 音效共用。
          *
-         * @param index 玩家列索引；負值按 0 計算。
+         * @param index 玩家列索引。負值按 0 計算。
          * @param hasInformationPhase 是否先顯示等待牌資訊階段。
          */
         fun rowRevealTick(index: Int, hasInformationPhase: Boolean): Long = (if (hasInformationPhase) 110L else 50L) +
@@ -249,7 +249,7 @@ class ExhaustiveDrawSettlementPresentationEntity(
         /**
          * 依公開資訊列 index 計算逐列出現時間。
          *
-         * @param index 公開資訊列索引；負值按 0 計算。
+         * @param index 公開資訊列索引。負值按 0 計算。
          */
         fun informationRowRevealTick(index: Int): Long = INFORMATION_ROW_REVEAL_START_TICK +
             index.coerceAtLeast(0) * INFORMATION_ROW_REVEAL_INTERVAL_TICKS

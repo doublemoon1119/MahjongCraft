@@ -10,9 +10,11 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 /**
  * 只在開發環境登記的四人日麻變體：沒有立直的聽牌玩家可以在一般流局結算前宣告不聽，其餘規則與 [RiichiRuleModule] 相同。
  *
- * 用來在遊戲內驗證一般流局結算前與本局結算後的規則選擇。宣告不聽記錄為 [DebugDeclareNotenAction]；一般流局結算時，
- * 有這個動作的玩家不公開手牌、照不聽支付罰符。其餘成員都交給以 [DebugNotenDeclarationRiichiRuleConfig.base] 建立的
- * 四人日麻模組。
+ * 用來在遊戲內驗證一般流局結算前與本局結算後的規則選擇。
+ *
+ * - 宣告不聽記錄為 [DebugDeclareNotenAction]。
+ * - 一般流局結算時，有這個動作的玩家不公開手牌、照不聽支付罰符。
+ * - 其餘成員都交給以 [DebugNotenDeclarationRiichiRuleConfig.base] 建立的四人日麻模組。
  *
  * @property id 規則模組 ID。
  * @property config 開發用規則配置。

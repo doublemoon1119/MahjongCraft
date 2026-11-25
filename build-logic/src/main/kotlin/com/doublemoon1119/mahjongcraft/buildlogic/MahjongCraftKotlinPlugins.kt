@@ -56,7 +56,7 @@ private fun Project.configureKtlint() {
  *
  * detekt 不掛到 `check`，`build` 不會執行它。detekt 為每個 JVM compilation 建立帶型別解析的任務
  * （KMP 為 `detektMainJvm`／`detektTestJvm`，Kotlin JVM 為 `detektMain`／`detektTest`），
- * [DETEKT_ALL_TASK_NAME] 彙整這些任務；外掛預設掛到 `check` 的 `detekt` 任務與各 source set 的
+ * [DETEKT_ALL_TASK_NAME] 彙整這些任務。外掛預設掛到 `check` 的 `detekt` 任務與各 source set 的
  * `detekt*SourceSet` 任務不做型別解析，需要型別資訊的規則在其中不會執行，因此不納入彙整並從 `check` 移除。
  */
 private fun Project.configureDetekt() {
@@ -82,7 +82,7 @@ private fun Project.configureDetekt() {
 /** 共用 detekt 設定檔相對於 root project 的路徑。 */
 private const val DETEKT_CONFIG_PATH: String = "config/detekt/detekt.yml"
 
-/** included build 提供的開發工具規則；只加入 detekt 外掛 classpath，不進入正式模組依賴。 */
+/** included build 提供的開發工具規則。只加入 detekt 外掛 classpath，不進入正式模組依賴。 */
 private const val DETEKT_RULES_COORDINATES: String =
     "com.doublemoon1119.mahjongcraft.buildlogic:mahjongcraft-detekt-rules:0.0.0-dev"
 

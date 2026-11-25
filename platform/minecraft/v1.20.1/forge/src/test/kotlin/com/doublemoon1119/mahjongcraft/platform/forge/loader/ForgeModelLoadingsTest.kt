@@ -14,7 +14,7 @@ import kotlin.test.assertSame
 
 /** 驗證模型載入在每次重載時準備資料，並只為準備好的 ID 提供模型。 */
 class ForgeModelLoadingsTest {
-    /** 準備後交出要額外載入的模型，並為這次準備的 ID 提供模型；其他 ID 交回原版。 */
+    /** 準備後交出要額外載入的模型，並為這次準備的 ID 提供模型。其他 ID 交回原版。 */
     @Test
     fun `prepares each reload and resolves only prepared models`() {
         val first = BlockModel.fromString("{}")

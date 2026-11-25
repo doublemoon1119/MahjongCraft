@@ -28,8 +28,8 @@ internal object ForgeModPropertyClasses {
      *
      * @param modId 宣告的 mod，用於錯誤訊息。
      * @param property 屬性名稱，用於錯誤訊息。
-     * @param value 屬性值；沒有宣告時為 null。
-     * @return 宣告的類別名稱；沒有宣告時為空。
+     * @param value 屬性值。沒有宣告時為 null。
+     * @return 宣告的類別名稱。沒有宣告時為空。
      * @throws IllegalStateException 屬性值不是字串或字串陣列。
      */
     internal fun classNames(modId: String, property: String, value: Any?): List<String> = when (value) {

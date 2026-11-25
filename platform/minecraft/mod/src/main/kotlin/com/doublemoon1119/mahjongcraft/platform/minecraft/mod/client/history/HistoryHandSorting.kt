@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 /**
  * 保存歷史牌面中各玩家的手牌排序偏好，並提供不修改來源資料的排序結果。
  *
- * 排序偏好以對局識別碼與玩家識別碼共同索引，預設為規則排序；因此同一玩家切換排序不會影響
+ * 排序偏好以對局識別碼與玩家識別碼共同索引，預設為規則排序。因此同一玩家切換排序不會影響
  * 其他玩家，也不會把某場對局的顯示狀態帶到另一場對局。
  */
 internal class HistoryHandSorting {
@@ -42,11 +42,11 @@ internal class HistoryHandSorting {
      * 依規則排序手牌立牌，並保留最近摸牌的獨立欄位語意。
      *
      * 從 [HistoryReplayPlayerStateDto.handTiles] 排除 [HistoryReplayPlayerStateDto.lastDrawn] 的實體索引，使最近摸牌保留為獨立顯示。
-     * 相同牌面的不同實體依來源順序穩定排序；目錄中找不到的索引排在有效牌之後。
+     * 相同牌面的不同實體依來源順序穩定排序。目錄中找不到的索引排在有效牌之後。
      *
      * @param player 已驗證的玩家桌況。
      * @param catalog 同一筆歷史桌況的牌面目錄。
-     * @param order 規則提供的牌面排序策略；為 null 時保留原本順序。
+     * @param order 規則提供的牌面排序策略。為 null 時保留原本順序。
      * @return 不修改原始 DTO 的立牌索引列表。
      */
     fun orderedTiles(
@@ -70,12 +70,12 @@ internal class HistoryHandSorting {
     }
 
     /**
-     * 把玩家立著的手牌依規則排好，最近摸的牌不變；不使用排序偏好，例如牌譜回放一律排好。
+     * 把玩家立著的手牌依規則排好，最近摸的牌不變。不使用排序偏好，例如牌譜回放一律排好。
      *
      * @param player 已驗證的玩家桌況。
      * @param catalog 同一筆歷史桌況的牌面目錄。
      * @param order 規則提供的牌面排序策略。
-     * @return 手牌排好的玩家桌況；最近摸的牌原本也列在手牌中時，排在最後。
+     * @return 手牌排好的玩家桌況。最近摸的牌原本也列在手牌中時，排在最後。
      */
     fun sortedPlayer(
         player: HistoryReplayPlayerStateDto,

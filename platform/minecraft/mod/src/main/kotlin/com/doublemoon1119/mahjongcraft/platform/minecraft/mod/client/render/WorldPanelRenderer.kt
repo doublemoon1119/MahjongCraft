@@ -77,7 +77,7 @@ object WorldPanelRenderer {
     }
 
     /**
-     * 雙面面板在目前的座標轉換下，觀看者是否在正面那一側；不是時只畫轉了半圈的背面。
+     * 雙面面板在目前的座標轉換下，觀看者是否在正面那一側。不是時只畫轉了半圈的背面。
      *
      * @param matrices 面板正面的座標轉換。
      * @return 在正面那一側時為 true。
@@ -85,7 +85,7 @@ object WorldPanelRenderer {
     fun facesViewer(matrices: PoseStack): Boolean = PanelFacing.facesViewer(matrices.last().pose(), RenderSystem.getProjectionMatrix())
 
     /**
-     * 依實際字型像素寬度截斷並補 `...`；寬度連省略號都容納不了時仍保留省略號。
+     * 依實際字型像素寬度截斷並補 `...`。寬度連省略號都容納不了時仍保留省略號。
      *
      * @param renderer 測量文字寬度的繪製器。
      * @param value 原始文字。
@@ -102,17 +102,17 @@ object WorldPanelRenderer {
      * 將 RGB 顏色與指定透明度組成 ARGB 顏色，取代輸入原有的透明度。
      *
      * @param rgb 使用低 24 位元的 RGB 顏色。
-     * @param alpha 透明度；限制在 0 到 1 後換算成 8 位元。
+     * @param alpha 透明度。限制在 0 到 1 後換算成 8 位元。
      * @return 組合後的 ARGB 顏色。
      */
     fun withAlpha(rgb: Int, alpha: Float): Int = ((alpha.coerceIn(0f, 1f) * 255).roundToInt() shl 24) or (rgb and 0xFFFFFF)
 
     /**
-     * 計算淡入、持續顯示與淡出三階段的透明度；區間外完全透明。
+     * 計算淡入、持續顯示與淡出三階段的透明度。區間外完全透明。
      *
      * @param value 目前進度。
      * @param inStart 淡入起點。
-     * @param inEnd 淡入終點；呼叫端須確保各端點依序排列。
+     * @param inEnd 淡入終點。呼叫端須確保各端點依序排列。
      * @param outStart 淡出起點。
      * @param outEnd 淡出終點，抵達時完全透明。
      * @return 各階段線性插值的透明度。

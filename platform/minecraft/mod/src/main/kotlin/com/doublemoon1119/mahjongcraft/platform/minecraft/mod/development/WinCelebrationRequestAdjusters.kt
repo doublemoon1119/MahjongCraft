@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequ
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.uuid.Uuid
 
-/** 登記的 [WinCelebrationRequestAdjuster]；沒有登記時演出請求保持不變。 */
+/** 登記的 [WinCelebrationRequestAdjuster]。沒有登記時演出請求保持不變。 */
 class WinCelebrationRequestAdjusters {
     /** 依登記順序套用的調整。 */
     private val adjusters = CopyOnWriteArrayList<WinCelebrationRequestAdjuster>()
@@ -19,7 +19,7 @@ class WinCelebrationRequestAdjusters {
     }
 
     /**
-     * 依登記順序套用所有調整；必須在判斷演出是否暫停整桌操作之前套用，讓兩者依據同一份請求。
+     * 依登記順序套用所有調整。必須在判斷演出是否暫停整桌操作之前套用，讓兩者依據同一份請求。
      *
      * @param tableId 演出所屬的牌桌。
      * @param request 原始的演出請求。

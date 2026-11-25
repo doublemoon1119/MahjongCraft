@@ -83,7 +83,7 @@ import kotlin.uuid.toKotlinUuid
 /**
  * 與載入器無關的 mod 初始化流程：註冊內容、掛上伺服器事件、網路接收器與指令。
  *
- * 載入器進入點先安裝自己的收送方式、啟動 Koin 並完成擴充登記，再呼叫 [initialize]；
+ * 載入器進入點先安裝自己的收送方式、啟動 Koin 並完成擴充登記，再呼叫 [initialize]。
  * 擴充登記必須早於這裡的內容註冊，擴充提供的座位等內容才能被本體使用。
  *
  * @property koin 目前執行環境的依賴容器。
@@ -101,7 +101,7 @@ class MahjongCraftBootstrap(
     /**
      * 註冊所有內容並掛上伺服器事件。
      *
-     * @param developmentTools 開發環境找到的開發工具；正式環境為空。
+     * @param developmentTools 開發環境找到的開發工具。正式環境為空。
      */
     fun initialize(developmentTools: List<MahjongCraftDevelopmentEntrypoint>) {
         ModItems.register(registrar)
@@ -279,7 +279,7 @@ class MahjongCraftBootstrap(
     }
 
     /**
-     * 載入 server TOML；失敗時 manager 會保留程式預設值並記錄詳細錯誤。
+     * 載入 server TOML。失敗時 manager 會保留程式預設值並記錄詳細錯誤。
      *
      * @param configManager 伺服器設定載入器與持久化管理器。
      * @param mahjongTileCollisionService 將設定套用至已載入麻將牌的服務。
@@ -374,7 +374,7 @@ class MahjongCraftBootstrap(
     }
 
     /**
-     * 接收本局自動操作集合更新，只使用連線玩家身分並回覆可配對的權威結果；也接收等不到回覆時的重新同步要求。
+     * 接收本局自動操作集合更新，只使用連線玩家身分並回覆可配對的權威結果。也接收等不到回覆時的重新同步要求。
      */
     private fun registerAutomaticControlUpdateReceiver() {
         val json = koin.get<NetworkJson>()

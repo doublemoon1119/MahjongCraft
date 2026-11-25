@@ -18,7 +18,7 @@ object TableTileArrangement {
      * 計算整桌每張牌的擺放。
      *
      * @param input 桌子位置與桌況。
-     * @return 依牌識別碼索引的擺放；沒有實體牌牆時，牌牆與保留區只含排在桌子中央的公開牌。
+     * @return 依牌識別碼索引的擺放。沒有實體牌牆時，牌牆與保留區只含排在桌子中央的公開牌。
      */
     fun arrange(input: TableTileArrangementInput): Map<Uuid, ArrangedTile> {
         val state = input.table
@@ -126,10 +126,10 @@ object TableTileArrangement {
     }
 
     /**
-     * 牌牆與保留區每張牌的擺放；實體牌牆格位依 [TableTileArrangementInput.wallProjection] 投影到桌上。
+     * 牌牆與保留區每張牌的擺放。實體牌牆格位依 [TableTileArrangementInput.wallProjection] 投影到桌上。
      *
      * 沒有實體牌牆時，只擺正面朝上的公開牌（例如日麻的寶牌指示牌）：依牌山與保留區的順序在桌子中央排成一排，
-     * 牌面朝向莊家；其他牌還沒有桌面位置。
+     * 牌面朝向莊家。其他牌還沒有桌面位置。
      *
      * @param input 桌子位置與桌況。
      * @return 牌牆與保留區有桌面位置的牌。
@@ -157,7 +157,7 @@ object TableTileArrangement {
      *
      * @param input 桌子位置與桌況。
      * @param wall 牌山與保留區依順序排列的牌與所屬區域。
-     * @return 中央一排的牌；沒有正面朝上的公開牌時為空清單。
+     * @return 中央一排的牌。沒有正面朝上的公開牌時為空清單。
      */
     private fun centerRowTiles(input: TableTileArrangementInput, wall: List<Pair<Uuid, TileRegion>>): List<ArrangedTile> {
         val faceUp = wall.filter { (tileId, _) -> tileId in input.faceUpWallTileIds }

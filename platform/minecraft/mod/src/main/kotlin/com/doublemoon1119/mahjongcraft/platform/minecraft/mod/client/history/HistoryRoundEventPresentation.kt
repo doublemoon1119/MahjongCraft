@@ -42,7 +42,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActi
 /**
  * 將已驗證的單局歷史 DTO 轉成畫面可直接使用的事件呈現模型。
  *
- * 這個 presenter 只負責把安全 DTO 映射成文字、玩家座位與牌面參照；不重新判定規則，也不改變事件順序。
+ * 這個 presenter 只負責把安全 DTO 映射成文字、玩家座位與牌面參照。不重新判定規則，也不改變事件順序。
  *
  * @property actionVocabulary 動作 ID 的規則專屬顯示名稱來源。
  * @property exhaustiveDrawReasons 流局原因 ID 的顯示名稱與玩家結算身分用語來源。
@@ -67,19 +67,19 @@ internal class HistoryRoundEventPresenter(
      *
      * @param ruleId 對局摘要中的規則模組 ID。
      * @param transactions 依發生順序排列的牌譜交易。
-     * @return 與 [transactions] 一一對應的標記種類；不需要標記時為 null。
+     * @return 與 [transactions] 一一對應的標記種類。不需要標記時為 null。
      */
     fun replayMarkers(ruleId: String?, transactions: List<HistoryReplayTransactionDto>): List<GameActionReplayMarker?> = markerClassifier.markersOf(ruleId, transactions)
 
     /**
      * 將單局事件轉換為保留原始順序的呈現模型。
      *
-     * 規則選擇步驟的結果已由換牌紀錄說明時，步驟的開始改用換牌用語（例如「開始補花」），自動完成不再列出；
+     * 規則選擇步驟的結果已由換牌紀錄說明時，步驟的開始改用換牌用語（例如「開始補花」），自動完成不再列出。
      * 已由玩家的選擇說明時，步驟的開始與自動完成都不再列出。省略後交易沒有任何內容時，保留原本的事實，
      * 讓每筆交易都有內容、交易編號維持連續。
      *
      * @param events 已通過客戶端驗證的單局事件資料。
-     * @param ruleId 對局摘要中的規則模組 ID；未提供時使用中立預設用語。
+     * @param ruleId 對局摘要中的規則模組 ID。未提供時使用中立預設用語。
      * @return 可交給單局畫面分頁與卡片 renderer 使用的呈現模型。
      */
     fun present(events: HistoryRoundEventsDto, ruleId: String?): HistoryRoundPresentation {
@@ -129,11 +129,11 @@ internal class HistoryRoundEventPresenter(
     /**
      * 玩家提交的選擇以動作或選項名稱顯示時使用的翻譯 key。
      *
-     * 選了代表跳過的選項時使用規則的跳過用語；其他選項依序查動作用語與規則選擇選項名稱。
+     * 選了代表跳過的選項時使用規則的跳過用語。其他選項依序查動作用語與規則選擇選項名稱。
      *
      * @param ruleId 對局規則模組 ID。
      * @param fact 規則選擇事實。
-     * @return 翻譯 key；不是玩家選擇或查無名稱時為 null。
+     * @return 翻譯 key。不是玩家選擇或查無名稱時為 null。
      */
     private fun choiceLabelKey(ruleId: String?, fact: HistoryReplayFactDto.RuleDecision): String? {
         if (fact.typeKey != HistoryFactTypeKeys.RULE_DECISION_SUBMITTED || fact.actorSeat == null) return null
@@ -146,7 +146,7 @@ internal class HistoryRoundEventPresenter(
      * 會產生換牌紀錄的規則選擇步驟開始時的文字。
      *
      * @param ruleId 對局規則模組 ID。
-     * @return 例如「開始補花」；規則沒有登記用語時為「開始換牌」。
+     * @return 例如「開始補花」。規則沒有登記用語時為「開始換牌」。
      */
     private fun replacementStartText(ruleId: String?): Component = Component.translatable(MinecraftHistoryScreenKeys.ROUND_REPLACEMENT_STARTED, replacementName(ruleId))
 
@@ -154,12 +154,12 @@ internal class HistoryRoundEventPresenter(
      * 規則登記的換牌用語。
      *
      * @param ruleId 對局規則模組 ID。
-     * @return 例如「補花」；規則沒有登記時為中立的「換牌」。
+     * @return 例如「補花」。規則沒有登記時為中立的「換牌」。
      */
     private fun replacementName(ruleId: String?): Component = Component.translatable(setAsideDisplays.findReplacementName(ruleId) ?: MinecraftHistoryScreenKeys.ROUND_REPLACEMENT)
 
     /**
-     * 換牌紀錄的標題；局首逐輪換牌帶輪次，牌局中的換牌只顯示用語。
+     * 換牌紀錄的標題。局首逐輪換牌帶輪次，牌局中的換牌只顯示用語。
      *
      * @param fact 一輪換牌結果。
      * @param ruleId 對局規則模組 ID。
@@ -176,7 +176,7 @@ internal class HistoryRoundEventPresenter(
      * @param tileCatalog 目前回覆可解析的牌目錄。
      * @param identitySeats 對局身份中的所有座位索引。
      * @param ruleId 對局規則模組 ID。
-     * @param replacementSteps 結果由換牌紀錄說明的規則選擇步驟；這些步驟的開始改用換牌用語。
+     * @param replacementSteps 結果由換牌紀錄說明的規則選擇步驟。這些步驟的開始改用換牌用語。
      * @return 單一事實的呈現資料。
      */
     private fun HistoryReplayFactDto.present(
@@ -321,7 +321,7 @@ internal class HistoryRoundEventPresenter(
         ).distinct()
 
     /**
-     * 內建流程事實的玩家用語；未知擴充只使用通用文字。
+     * 內建流程事實的玩家用語。未知擴充只使用通用文字。
      *
      * @param typeKey 保存的事實種類。
      * @return 不包含格式 ID 的玩家用語。
@@ -340,7 +340,7 @@ internal class HistoryRoundEventPresenter(
      * 依記錄種類描述規則選擇狀態，不將尚未開始推進的事件誤判為準備完成。
      *
      * @param typeKey 保存的規則選擇事實種類。
-     * @param nextStepId 自動處理後的下一步識別碼；開始／提交事實不以此欄位推斷完成。
+     * @param nextStepId 自動處理後的下一步識別碼。開始／提交事實不以此欄位推斷完成。
      * @return 本地化規則選擇狀態。
      */
     private fun ruleDecisionText(typeKey: String, nextStepId: String?): Component = Component.translatable(
@@ -383,12 +383,12 @@ internal class HistoryRoundEventPresenter(
     ).withStyle { it.withColor(scoreChangeColor(change)) }
 
     /**
-     * 解析已保存的玩家結算身分；流局原因有登記結算身分用語時（例如日麻一般荒牌流局的聽牌與未聽）使用該用語，
+     * 解析已保存的玩家結算身分。流局原因有登記結算身分用語時（例如日麻一般荒牌流局的聽牌與未聽）使用該用語，
      * 否則得分的玩家顯示通用的「受益」。
      *
      * @param outcome 本次結算呈現資料。
      * @param row 玩家結算列。
-     * @return 可翻譯的身分文字；沒有身分時為 null。
+     * @return 可翻譯的身分文字。沒有身分時為 null。
      */
     fun settlementStatusText(outcome: HistoryOutcomePresentation, row: HistoryOutcomeRowPresentation): Component? {
         val labels = outcome.reasonId
@@ -416,10 +416,10 @@ internal class HistoryRoundEventPresenter(
     }
 
     /**
-     * 將規則提供的詳情語意值轉為文字列；顯示文字由該欄位登記的格式化器決定。
+     * 將規則提供的詳情語意值轉為文字列。顯示文字由該欄位登記的格式化器決定。
      *
      * @param fieldId 已驗證的明細欄位識別碼。
-     * @param value 保存且已驗證的數值或條目資料；牌面詳情由牌面 renderer 處理。
+     * @param value 保存且已驗證的數值或條目資料。牌面詳情由牌面 renderer 處理。
      * @param templates 正式結算模板註冊表。
      * @return 依保存順序排列的文字列。
      */
@@ -458,21 +458,21 @@ internal class HistoryRoundEventPresenter(
     /**
      * 依對局規則使用的模板取得欄位標題，不推測未知規則的欄位語意。
      *
-     * @param ruleId 對局規則模組 ID；未知時為 null。
+     * @param ruleId 對局規則模組 ID。未知時為 null。
      * @param fieldId 已驗證的明細欄位識別碼。
      * @param templates 正式結算模板註冊表。
-     * @return 本地化標題；沒有對應模板或標題時為 null。
+     * @return 本地化標題。沒有對應模板或標題時為 null。
      */
     fun detailLabel(ruleId: String?, fieldId: String, templates: WinSettlementPresentationTemplateRegistry): Component? = ruleId
         ?.let(templates::findTemplateForRule)?.detailFieldLabelKeys?.get(PresentationFieldId(fieldId))?.let(Component::translatable)
 
     /**
-     * 欄位是否只列出贏家自己桌前的公開牌；牌譜已在贏家牌組旁畫出這些牌時不再重複列出。
+     * 欄位是否只列出贏家自己桌前的公開牌。牌譜已在贏家牌組旁畫出這些牌時不再重複列出。
      *
-     * @param ruleId 對局規則模組 ID；未知時為 null。
+     * @param ruleId 對局規則模組 ID。未知時為 null。
      * @param fieldId 已驗證的明細欄位識別碼。
      * @param templates 正式結算模板註冊表。
-     * @return 對應模板宣告此欄位時為 true；沒有對應模板時為 false。
+     * @return 對應模板宣告此欄位時為 true。沒有對應模板時為 false。
      */
     fun isWinnerTileDetailField(ruleId: String?, fieldId: String, templates: WinSettlementPresentationTemplateRegistry): Boolean = ruleId
         ?.let(templates::findTemplateForRule)?.winnerTileDetailFields?.contains(PresentationFieldId(fieldId)) == true
@@ -481,11 +481,11 @@ internal class HistoryRoundEventPresenter(
     private fun HistoryWinDetailQuantityDto.toQuantity(): WinSettlementQuantity = WinSettlementQuantity(unitId, amount)
 
     /**
-     * 將動作 ID 解析成規則化顯示文字；未知 ID 使用通用玩家用語。
+     * 將動作 ID 解析成規則化顯示文字。未知 ID 使用通用玩家用語。
      *
      * @param ruleId 對局規則模組 ID。
      * @param actionType 保存格式中的動作種類。
-     * @param extensionTypeId 擴充動作 ID；一般動作為 null。
+     * @param extensionTypeId 擴充動作 ID。一般動作為 null。
      * @return 動作顯示文字。
      */
     private fun actionText(ruleId: String?, actionType: String, extensionTypeId: String?): Component {
@@ -530,7 +530,7 @@ internal class HistoryRoundEventPresenter(
     }
 
     /**
-     * 依 DTO 的索引取得牌種；驗證外的索引不會讓呈現流程崩潰。
+     * 依 DTO 的索引取得牌種。驗證外的索引不會讓呈現流程崩潰。
      *
      * @param tileCatalog 目前回覆可解析的牌目錄。
      * @param indexes 牌目錄索引，保留原始順序與重複。
@@ -542,7 +542,7 @@ internal class HistoryRoundEventPresenter(
      * 將保存格式的短動作名稱映射為呈現 registry 使用的穩定內建 ID。
      *
      * @param actionType 保存格式中的動作種類。
-     * @param extensionTypeId 擴充動作 ID；一般動作為 null。
+     * @param extensionTypeId 擴充動作 ID。一般動作為 null。
      * @return registry 使用的動作 ID。
      */
     private fun normalizeActionId(actionType: String, extensionTypeId: String?): String = when (actionType) {
@@ -566,7 +566,7 @@ internal class HistoryRoundEventPresenter(
  * @property ruleId 對局摘要中的規則模組 ID。
  * @property roundNumber 局序號。
  * @property transactions 保留交易順序的呈現資料。
- * @property nextTransactionIndex 下一頁交易索引；null 表示已到末端。
+ * @property nextTransactionIndex 下一頁交易索引。null 表示已到末端。
  */
 internal data class HistoryRoundPresentation(
     val ruleId: String?,
@@ -597,10 +597,10 @@ internal data class HistoryTransactionPresentation(
  * @property actorSeat 可取得時的發起玩家座位。
  * @property directTiles 直接涉及的牌種，保留重複項目與原始順序。
  * @property revealedTiles 新公開的牌種，保留重複項目與原始順序。
- * @property outcome 結算資料；沒有結算事實或保存結果為 null 時為 null。
+ * @property outcome 結算資料。沒有結算事實或保存結果為 null 時為 null。
  * @property identifiers 僅供 tooltip 顯示的原始識別碼。
- * @property scoreChanges 動作即時收付的各座位點數增減，依座位排序；不是收付事實時為空。
- * @property seatLines 依玩家列出的牌，例如一輪補花中各玩家移出的花牌；沒有時為空。
+ * @property scoreChanges 動作即時收付的各座位點數增減，依座位排序。不是收付事實時為空。
+ * @property seatLines 依玩家列出的牌，例如一輪補花中各玩家移出的花牌。沒有時為空。
  * @property source 畫面需要更多保存資料（例如和牌者手牌）時查閱的原始事實。
  */
 internal data class HistoryFactPresentation(
@@ -644,10 +644,10 @@ private data class RuleDecisionStepKey(
  *
  * @property reasonId 原始結算原因 ID。
  * @property reasonText 結算原因顯示文字。
- * @property classification 保存的結算分類；缺少時為 null。
- * @property transitionDirective 保存的下一任莊家類型 ID；缺少時為 null。
- * @property nextDealerSeat 規則指定的下一任莊家座位；其他類型或缺少時為 null。
- * @property rows 身分與結算涉及的玩家列；缺少分數時仍保留玩家及角色資訊。
+ * @property classification 保存的結算分類。缺少時為 null。
+ * @property transitionDirective 保存的下一任莊家類型 ID。缺少時為 null。
+ * @property nextDealerSeat 規則指定的下一任莊家座位。其他類型或缺少時為 null。
+ * @property rows 身分與結算涉及的玩家列。缺少分數時仍保留玩家及角色資訊。
  * @property hasEarlierWinSettlement 同局先前已有獨立和牌結算記錄，不將後續摘要誤標為缺少明細。
  */
 internal data class HistoryOutcomePresentation(
@@ -664,9 +664,9 @@ internal data class HistoryOutcomePresentation(
  * 單一玩家的結算呈現資料。
  *
  * @property seatIndex 玩家座位。
- * @property score 結算後的絕對分數；沒有保存該玩家分數時為 null。
- * @property scoreChange 該筆交易的權威分數差；缺少可信的前後資料時為 null。
- * @property detailFields 該玩家已保存的和牌明細；缺少時為空，不重新計分。
+ * @property score 結算後的絕對分數。沒有保存該玩家分數時為 null。
+ * @property scoreChange 該筆交易的權威分數差。缺少可信的前後資料時為 null。
+ * @property detailFields 該玩家已保存的和牌明細。缺少時為空，不重新計分。
  * @property beneficiary 是否屬於結算受益玩家。
  * @property responsible 是否屬於結算責任玩家。
  */

@@ -56,7 +56,7 @@ class MahjongPlayerInfoEntityRenderer(
     }
 
     /**
-     * 繪製指定座位的資訊面板；例如教學畫面的示意場景不畫鏡頭所在座位、會擋住視線的那一面。
+     * 繪製指定座位的資訊面板。例如教學畫面的示意場景不畫鏡頭所在座位、會擋住視線的那一面。
      *
      * @param entity 提供公開玩家資訊的實體。
      * @param matrices 目前模型矩陣，原點在桌子中心。
@@ -120,7 +120,7 @@ class MahjongPlayerInfoEntityRenderer(
      *
      * @param player 要顯示的座位資訊。
      * @param isDealer 該玩家是否為莊家。
-     * @param shownDelta 正在顯示的分數增減；沒有時為 null。
+     * @param shownDelta 正在顯示的分數增減。沒有時為 null。
      * @param width 所有玩家共用的面板寬度。
      * @param light 世界光照值。
      * @param matrices 目前的模型矩陣。
@@ -182,7 +182,7 @@ class MahjongPlayerInfoEntityRenderer(
      * 依名稱、分數與指示器文字量測所有玩家共用的面板寬度。
      *
      * @param players 本桌公開的玩家資訊。
-     * @param dealerPlayerId 莊家玩家 ID；若與某位玩家相符，量測時預留莊家標記空間。
+     * @param dealerPlayerId 莊家玩家 ID。若與某位玩家相符，量測時預留莊家標記空間。
      * @param names 同一次繪製已解析的本地名稱。
      * @return 介於最小與最大寬度之間的共用面板寬度。
      */
@@ -225,7 +225,7 @@ class MahjongPlayerInfoEntityRenderer(
      * 依桌面朝向將座位側別旋轉指定的四方位步數。
      *
      * @param side 未旋轉的桌面側別。
-     * @param steps 順時針索引位移；會依四個方位取餘數。
+     * @param steps 順時針索引位移。會依四個方位取餘數。
      * @return 旋轉後的桌面側別。
      */
     private fun rotateSide(side: MahjongTableSide, steps: Int): MahjongTableSide {
@@ -259,7 +259,7 @@ class MahjongPlayerInfoEntityRenderer(
         MahjongTableSide.WEST -> 90f
     }
 
-    /** 繪製不使用單一材質；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    /** 繪製不使用單一材質。原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
     override fun getTextureLocation(entity: MahjongPlayerInfoEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     private companion object {

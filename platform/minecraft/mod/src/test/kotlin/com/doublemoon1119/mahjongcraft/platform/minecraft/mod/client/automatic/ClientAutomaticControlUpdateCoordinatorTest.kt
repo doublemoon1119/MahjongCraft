@@ -245,7 +245,7 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         assertEquals(ClientAutomaticControlResultKind.STALE, fixture.coordinator.takeCompletion(request.requestId)?.result)
     }
 
-    /** 重新同步期間晚到的較舊快照不結束等待；之後收到的回應以最新權威狀態判斷，完成結果附上同一份狀態。 */
+    /** 重新同步期間晚到的較舊快照不結束等待。之後收到的回應以最新權威狀態判斷，完成結果附上同一份狀態。 */
     @Test
     fun `older snapshot during resync is ignored and the response is judged by the latest authority`() {
         val fixture = fixture()
@@ -322,7 +322,7 @@ class ClientAutomaticControlUpdateCoordinatorTest {
     /**
      * 建立隔離的 coordinator 與記錄型 sender。
      *
-     * @param sendFailure 模擬的同步傳送錯誤；未指定時傳送成功。
+     * @param sendFailure 模擬的同步傳送錯誤。未指定時傳送成功。
      * @return coordinator 與其 sender 的測試 fixture。
      */
     private fun fixture(sendFailure: RuntimeException? = null): Fixture {
@@ -403,7 +403,7 @@ class ClientAutomaticControlUpdateCoordinatorTest {
     /**
      * 記錄請求並可模擬同步傳送失敗。
      *
-     * @property failure 模擬的同步傳送錯誤；未指定時傳送成功。
+     * @property failure 模擬的同步傳送錯誤。未指定時傳送成功。
      */
     private class RecordingSender(private val failure: RuntimeException?) : ClientAutomaticControlRequestSender {
         /** 已成功交給 sender 的請求。 */

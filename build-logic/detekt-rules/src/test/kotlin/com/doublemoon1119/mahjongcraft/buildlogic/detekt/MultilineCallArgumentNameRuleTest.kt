@@ -84,7 +84,7 @@ class MultilineCallArgumentNameRuleTest {
         assertEquals(emptyList(), findings)
     }
 
-    /** 條件檢查函式的條件與 `error` 的訊息不回報；其他標準函式照常回報。 */
+    /** 條件檢查函式的條件與 `error` 的訊息不回報。其他標準函式照常回報。 */
     @Test
     fun `ignores condition checks but reports other standard functions`() {
         val findings = MultilineCallArgumentNameRule().lintWithContext(

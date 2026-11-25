@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.Vertica
 
 /**
  * 多選畫面的版面，與設定頁的表單相同：標題下方一行已選數量，接著一列一個選項，名稱靠左、勾選方塊靠右，
- * 底部四顆按鈕。內容寬度與邊距沿用 [FormScreenLayout]；視窗窄時選項仍維持一列，不改成標籤在上。
+ * 底部四顆按鈕。內容寬度與邊距沿用 [FormScreenLayout]。視窗窄時選項仍維持一列，不改成標籤在上。
  *
  * @property windowWidth 視窗寬度。
  * @property windowHeight 視窗高度。
@@ -92,7 +92,7 @@ internal data class MultiChoiceLayout(
     fun rowTop(visibleIndex: Int): Int = rowsTop + visibleIndex * rowHeight
 
     /**
-     * 取得可見列的底色範圍；上下延伸到相鄰列的中間，也是整列可點擊的範圍。
+     * 取得可見列的底色範圍。上下延伸到相鄰列的中間，也是整列可點擊的範圍。
      *
      * @param visibleIndex 列在可見範圍內的順序，從 0 開始。
      * @return 底色與點擊範圍。
@@ -107,7 +107,7 @@ internal data class MultiChoiceLayout(
      *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
-     * @return 選項在完整清單中的索引；游標不在選項列時為 null。
+     * @return 選項在完整清單中的索引。游標不在選項列時為 null。
      */
     fun optionAt(mouseX: Double, mouseY: Double): Int? {
         val first = rowArea(0)
@@ -118,7 +118,7 @@ internal data class MultiChoiceLayout(
     }
 
     /**
-     * 判斷游標是否指向可捲動清單的捲軸；命中範圍比繪製範圍稍寬。
+     * 判斷游標是否指向可捲動清單的捲軸。命中範圍比繪製範圍稍寬。
      *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。

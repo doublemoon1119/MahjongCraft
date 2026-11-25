@@ -28,7 +28,7 @@ import org.koin.core.context.GlobalContext
  */
 class MahjongTileItem(settings: Properties) : Item(settings) {
     /**
-     * 非蹲下右鍵空氣時切換牌面；蹲下時交由方塊互動入口判斷是否放置。
+     * 非蹲下右鍵空氣時切換牌面。蹲下時交由方塊互動入口判斷是否放置。
      *
      * @param world 互動所在世界。
      * @param user 使用物品的玩家。
@@ -42,7 +42,7 @@ class MahjongTileItem(settings: Properties) : Item(settings) {
     }
 
     /**
-     * 非蹲下右鍵方塊切換牌面；蹲下時在命中點放置直立麻將牌 entity。
+     * 非蹲下右鍵方塊切換牌面。蹲下時在命中點放置直立麻將牌 entity。
      *
      * @param context 方塊互動位置、玩家及物品堆疊。
      */
@@ -72,7 +72,7 @@ class MahjongTileItem(settings: Properties) : Item(settings) {
 
     companion object {
         /**
-         * 讀取並正規化 item 保存的牌面；缺失值使用配方預設 `m1`，非法值回退為 `unknown`。
+         * 讀取並正規化 item 保存的牌面。缺失值使用配方預設 `m1`，非法值回退為 `unknown`。
          *
          * @param stack 要讀取的麻將牌物品堆疊。
          * @return 正規化後的牌面 asset key。
@@ -88,7 +88,7 @@ class MahjongTileItem(settings: Properties) : Item(settings) {
         fun writeTileAssetKey(stack: ItemStack, assetKey: String) = MahjongTileItemStackData.write(stack, assetKey)
 
         /**
-         * 將 item 循環至下一個牌面；無自訂資料的配方產物以目前顯示的 `m1` 為起點。
+         * 將 item 循環至下一個牌面。無自訂資料的配方產物以目前顯示的 `m1` 為起點。
          *
          * @param stack 要更新的麻將牌物品堆疊。
          */

@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatState
  *
  * @property identity 實際驗證的來源。
  * @property seatState 已複核乘坐關係及位置的席位狀態。
- * @property appearance 當下已確認資格的外觀；無法確認時為 null。
+ * @property appearance 當下已確認資格的外觀。無法確認時為 null。
  */
 data class SeatedParticipantObservation(
     val identity: RoomParticipantIdentity,

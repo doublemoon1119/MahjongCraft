@@ -5,7 +5,7 @@ object TableOverlayVisibility {
     /**
      * 判斷指定時間是否仍須隱藏。
      *
-     * @param hiddenUntilGameTime 隱藏截止時間；最小值表示未隱藏，最大值表示隱藏到移除。
+     * @param hiddenUntilGameTime 隱藏截止時間。最小值表示未隱藏，最大值表示隱藏到移除。
      * @param gameTime 目前的遊戲時間。
      * @return 尚未到期或設定為隱藏到移除時為 true。
      */

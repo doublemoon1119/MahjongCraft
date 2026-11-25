@@ -17,7 +17,7 @@ internal object AiCharacterActivationDiagnostics {
     private val logger = mahjongCraftLogger(AiCharacterActivationDiagnostics::class)
 
     /**
-     * 記錄指定位置附近的方塊、實體、站立碰撞及腳下支撐；未載入區塊時只記錄範圍。
+     * 記錄指定位置附近的方塊、實體、站立碰撞及腳下支撐。未載入區塊時只記錄範圍。
      *
      * @param world 預檢使用的伺服器世界。
      * @param rider 尚未加入世界的角色。

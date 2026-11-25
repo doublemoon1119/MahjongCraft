@@ -4,7 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/** 驗證 HUD 預覽框文字的截斷規則；寬度以固定字寬模擬，不依賴實際字型。 */
+/** 驗證 HUD 預覽框文字的截斷規則。寬度以固定字寬模擬，不依賴實際字型。 */
 class MahjongHudPreviewTextTest {
     /** 每個字元固定寬度的假量測，讓斷言可以直接以字數表示寬度。 */
     private val widthOf: (String) -> Int = { it.length * CHARACTER_WIDTH }

@@ -17,7 +17,7 @@ import kotlin.uuid.Uuid
 /**
  * 在和牌或流局結算當下，把結算前後的分數與名次送給入座的真人玩家。
  *
- * 數值取自結算呈現請求的 [ScoreRankingPresentation]，由伺服器依結算前後的權威狀態決定；client 不需要比對自己保存的快照。
+ * 數值取自結算呈現請求的 [ScoreRankingPresentation]，由伺服器依結算前後的權威狀態決定。client 不需要比對自己保存的快照。
  *
  * @property serverHolder 查找目前有效的收件玩家。
  * @property stateStore 查詢對局目前的規則設定。
@@ -63,7 +63,7 @@ class RoundResultSender(
     )
 
     /**
-     * 組成結算結果並送給 [ranking] 中的真人玩家；對局已不存在時不送出。
+     * 組成結算結果並送給 [ranking] 中的真人玩家。對局已不存在時不送出。
      *
      * @param gameId 對局 UUID。
      * @param outcomeId 和牌結果或流局原因 ID。

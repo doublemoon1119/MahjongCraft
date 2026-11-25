@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * 供 showcase 標題圖片使用的無方向光透明層。
  *
- * 使用原版 position-color-texture-lightmap shader 保留光影模組相容性；該 shader 不讀取法線，
+ * 使用原版 position-color-texture-lightmap shader 保留光影模組相容性。該 shader 不讀取法線，
  * 並由 full-bright 頂點資料保持圖片原色。透明混合與深度寫入同時開啟，避免稍後繪製的雲層穿透標題。
  */
 internal object WinCelebrationTitleRenderType {

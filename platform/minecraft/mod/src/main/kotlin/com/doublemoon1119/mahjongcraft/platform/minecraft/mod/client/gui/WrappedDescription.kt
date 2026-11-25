@@ -29,7 +29,7 @@ internal fun Font.wrapDescription(text: Component, width: Int): List<FormattedTe
  * @param width 說明寬度。
  * @param color 文字顏色。
  * @param marquee 末行的跑馬燈進度。
- * @param subject 目前要捲動顯示的項目；沒有時為 null。
+ * @param subject 目前要捲動顯示的項目。沒有時為 null。
  */
 internal fun drawWrappedDescription(
     context: GuiGraphics,

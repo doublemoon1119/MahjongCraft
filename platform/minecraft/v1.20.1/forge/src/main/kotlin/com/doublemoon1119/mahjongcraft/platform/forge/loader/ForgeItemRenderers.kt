@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap
  * 以程式繪製的物品。
  *
  * Forge 只向物品自己的類別詢問繪製方式，因此由 Forge 專用的 mixin 替這類物品加上 Forge 要的方法，並在其中交出
- * [clientExtensions]；繪製時才依物品找出登記的繪製方式。
+ * [clientExtensions]。繪製時才依物品找出登記的繪製方式。
  */
 object ForgeItemRenderers {
     /** 依物品登記的繪製方式。 */
@@ -35,12 +35,12 @@ object ForgeItemRenderers {
      * 取得物品登記的繪製方式。
      *
      * @param item 要繪製的物品。
-     * @return 登記的繪製方式；沒有時為 null。
+     * @return 登記的繪製方式。沒有時為 null。
      */
     internal fun find(item: Item): ItemStackRenderer? = renderers[item]
 
     /**
-     * 交給 Forge 的物品繪製設定；只由 Forge 專用的 mixin 在物品建立時取用。
+     * 交給 Forge 的物品繪製設定。只由 Forge 專用的 mixin 在物品建立時取用。
      *
      * @return 以登記的繪製方式繪製物品的設定。
      */

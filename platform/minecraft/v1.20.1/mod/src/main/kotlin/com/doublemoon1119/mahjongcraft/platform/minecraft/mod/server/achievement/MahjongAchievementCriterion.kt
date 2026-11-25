@@ -39,7 +39,7 @@ class MahjongAchievementCriterion : SimpleCriterionTrigger<MahjongAchievementCri
      *
      * @param player 達成成果的在線玩家。
      * @param achievements 同一次交易中這位玩家達成的成果。
-     * @param statisticValue 取得玩家目前統計值；應已包含這次交易累加的部分。
+     * @param statisticValue 取得玩家目前統計值。應已包含這次交易累加的部分。
      */
     fun trigger(
         player: ServerPlayer,
@@ -87,7 +87,7 @@ class MahjongAchievementCriterion : SimpleCriterionTrigger<MahjongAchievementCri
         private const val AT_LEAST = "at_least"
 
         /**
-         * 解析條件 JSON；欄位缺漏或格式錯誤時拋出例外，讓原版載入流程略過該進度並記錄原因。
+         * 解析條件 JSON。欄位缺漏或格式錯誤時拋出例外，讓原版載入流程略過該進度並記錄原因。
          *
          * @param obj 進度 JSON 的 `conditions` 物件。
          * @return 條件內容。

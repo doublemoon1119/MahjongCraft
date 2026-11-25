@@ -64,7 +64,7 @@ class DebugWinShowcaseOverrideTest {
         assertSame(original, override.applyTo(tableId, original))
     }
 
-    /** 清除未用掉的武裝；對局結束／桌子被破壞時就是走這條路徑。 */
+    /** 清除未用掉的武裝。對局結束／桌子被破壞時就是走這條路徑。 */
     @Test
     fun `clearing removes an unused arming`() {
         override.arm(tableId, CUE_KEY)

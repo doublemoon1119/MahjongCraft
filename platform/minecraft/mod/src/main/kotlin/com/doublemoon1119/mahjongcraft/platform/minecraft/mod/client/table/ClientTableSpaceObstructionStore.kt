@@ -9,7 +9,7 @@ import kotlin.uuid.Uuid
 /**
  * 保存伺服器告知的、等待開局桌子被擋住的擺牌格，只在主執行緒存取。
  *
- * 供世界中的紅色線框與房間畫面的開始按鈕使用；伺服器在真正開局前仍會再檢查一次。
+ * 供世界中的紅色線框與房間畫面的開始按鈕使用。伺服器在真正開局前仍會再檢查一次。
  */
 class ClientTableSpaceObstructionStore {
     /** 每張桌子目前被擋住的格子與所在維度。 */
@@ -18,11 +18,11 @@ class ClientTableSpaceObstructionStore {
     /** 記錄忽略的標示。 */
     private val logger = mahjongCraftLogger(ClientTableSpaceObstructionStore::class)
 
-    /** 是否已記錄過忽略的標示；之後同樣的情況不再記錄。 */
+    /** 是否已記錄過忽略的標示。之後同樣的情況不再記錄。 */
     private var reportedIgnoredPayload = false
 
     /**
-     * 套用伺服器送來的標示；格子為空時清除該桌，格子數超過擺牌層或桌子 ID 無效時忽略。
+     * 套用伺服器送來的標示。格子為空時清除該桌，格子數超過擺牌層或桌子 ID 無效時忽略。
      *
      * @param payload 伺服器送來的標示。
      */

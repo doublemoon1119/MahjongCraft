@@ -39,7 +39,7 @@ class TaiwanCatalogueProviderTest {
         assertTrue(ids.all { it.startsWith("mahjongcraft:taiwan/catalogue/") }, ids.toString())
     }
 
-    /** 「基本玩法」排在第一個分類，依序列出各條目，包牌接在最後；不使用花牌時花牌條目標示原因。 */
+    /** 「基本玩法」排在第一個分類，依序列出各條目，包牌接在最後。不使用花牌時花牌條目標示原因。 */
     @Test
     fun `basics come first and end with liability payment`() {
         val catalogue = assertNotNull(TaiwanCatalogueProvider().catalogue(TaiwanRuleConfig()))
@@ -102,7 +102,7 @@ class TaiwanCatalogueProviderTest {
         assertNull(enabled.entries.single { it.id == TaiwanCatalogueKeys.PAO_ID }.unavailableReasonTranslationKey)
     }
 
-    /** 每個計台項目都有牌面範例；一般牌型與情境使用完整十六張手牌加一張和牌。 */
+    /** 每個計台項目都有牌面範例。一般牌型與情境使用完整十六張手牌加一張和牌。 */
     @Test
     fun `every tai entry provides a suitable example`() {
         val catalogue = assertNotNull(TaiwanCatalogueProvider().catalogue(TaiwanRuleConfig()))

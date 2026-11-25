@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 
 /**
- * 牌譜回放場景中一項東西的顯示方式；人物可選全部四種，遊戲面板與桌上物件只用顯示與隱藏。
+ * 牌譜回放場景中一項東西的顯示方式。人物可選全部四種，遊戲面板與桌上物件只用顯示與隱藏。
  *
  * @property translationKey 選項名稱的翻譯鍵。
  */

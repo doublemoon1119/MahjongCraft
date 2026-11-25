@@ -57,7 +57,7 @@ class DebugAnimationCommand(
     private val layoutFactory: DebugVirtualTableLayoutFactory,
     private val entityLifecycle: DebugPreviewEntityLifecycle,
 ) {
-    /** 建立 `dice` 子指令；省略參數時使用 [DEFAULT_DEBUG_DICE_COUNT]。 */
+    /** 建立 `dice` 子指令。省略參數時使用 [DEFAULT_DEBUG_DICE_COUNT]。 */
     fun buildDiceCommand(): LiteralArgumentBuilder<CommandSourceStack> = literal(DICE_SUBCOMMAND)
         .executes { ctx -> previewDice(ctx.source, DEFAULT_DEBUG_DICE_COUNT) }
         .then(literal(TWO_DICE_ARGUMENT).executes { ctx -> previewDice(ctx.source, 2) })
@@ -172,12 +172,12 @@ class DebugAnimationCommand(
 
     /**
      * `deal`：依標準日麻初始手牌張數，在正式牌牆座標臨時生成蓋牌，重播開局發牌
-     * 動畫（起飛→落下→翻牌）飛到手牌列；不模擬多座位/多批次，全部視為單一批次、單一座位，理由見
+     * 動畫（起飛→落下→翻牌）飛到手牌列。不模擬多座位/多批次，全部視為單一批次、單一座位，理由見
      * [TileAnimationSteps.scheduleDealBatch] KDoc——它本身只吃單張牌與絕對時刻，不需要真正的多座位
      * 協調也能正確播放同一段動畫。
      *
      * @param source 執行指令的玩家來源。
-     * @param tileArg 可選的牌面資產引數；省略時使用支援元件的預設值。
+     * @param tileArg 可選的牌面資產引數。省略時使用支援元件的預設值。
      * @return Brigadier 指令結果碼。
      */
     private fun previewDeal(source: CommandSourceStack, tileArg: String?): Int {
@@ -228,7 +228,7 @@ class DebugAnimationCommand(
      * 摸牌位。
      *
      * @param source 執行指令的玩家來源。
-     * @param tileArg 可選的牌面資產引數；省略時使用支援元件的預設值。
+     * @param tileArg 可選的牌面資產引數。省略時使用支援元件的預設值。
      * @return Brigadier 指令結果碼。
      */
     private fun previewDraw(source: CommandSourceStack, tileArg: String?): Int {
@@ -260,7 +260,7 @@ class DebugAnimationCommand(
      * `discard`：臨時生成一張手牌位置的立牌，重播捨牌動畫（連續可見拋物線飛行）飛到模擬牌河位置。
      *
      * @param source 執行指令的玩家來源。
-     * @param tileArg 可選的牌面資產引數；省略時使用支援元件的預設值。
+     * @param tileArg 可選的牌面資產引數。省略時使用支援元件的預設值。
      * @return Brigadier 指令結果碼。
      */
     private fun previewDiscard(source: CommandSourceStack, tileArg: String?): Int {
@@ -292,7 +292,7 @@ class DebugAnimationCommand(
      *
      * @param source 執行指令的玩家來源。
      * @param type 要預覽的副露種類。
-     * @param tileArg 可選的牌面資產引數；省略時使用支援元件的預設值。
+     * @param tileArg 可選的牌面資產引數。省略時使用支援元件的預設值。
      * @return Brigadier 指令結果碼。
      */
     private fun previewMeld(source: CommandSourceStack, type: MeldType, tileArg: String?): Int {
@@ -376,7 +376,7 @@ class DebugAnimationCommand(
      * 真正對局中湊出一次加槓才會觸發，加這個子指令讓它可以獨立重播測試。
      *
      * @param source 執行指令的玩家來源。
-     * @param tileArg 可選的牌面資產引數；省略時使用支援元件的預設值。
+     * @param tileArg 可選的牌面資產引數。省略時使用支援元件的預設值。
      * @return Brigadier 指令結果碼。
      */
     private fun previewAddedKanMeld(source: CommandSourceStack, tileArg: String?): Int {

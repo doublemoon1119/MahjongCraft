@@ -5,7 +5,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui
  *
  * @property width 圖示寬度。
  * @property height 圖示高度。
- * @property rows 每一列的像素範圍：起點與長度，由上到下；一列可以有多段。
+ * @property rows 每一列的像素範圍：起點與長度，由上到下。一列可以有多段。
  */
 internal enum class PixelIcon(
     val width: Int,

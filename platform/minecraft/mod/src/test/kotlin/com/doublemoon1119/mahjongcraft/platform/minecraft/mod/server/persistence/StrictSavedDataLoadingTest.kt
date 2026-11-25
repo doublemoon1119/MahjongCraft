@@ -38,7 +38,7 @@ class StrictSavedDataLoadingTest {
         assertEquals("new-world", loadSavedDataStrict(second, directory.resolve(FILE_NAME), KEY, ::decode) { error("Saved data must not use the create function") }.value)
     }
 
-    /** 原版吞掉解碼例外後，嚴格入口仍拒絕建立空資料；後續 save 不改寫原始位元組。 */
+    /** 原版吞掉解碼例外後，嚴格入口仍拒絕建立空資料。後續 save 不改寫原始位元組。 */
     @Test
     fun `decode failure cannot register or save an empty replacement`() = withManager { directory, manager ->
         val file = directory.resolve(FILE_NAME)

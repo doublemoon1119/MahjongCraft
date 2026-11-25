@@ -86,7 +86,7 @@ class TileMotionAnimationTest {
 
     /**
      * `arcHeight = 0` 時位移不套用拋物線，但仍套用 ease-out（1 減去「1 減 progress」的平方）——先快後慢
-     * 的觀感，見 [TileMotionAnimation.frame] 的內部註解；時間過半（`progress = 0.5`）時實際位移比純
+     * 的觀感，見 [TileMotionAnimation.frame] 的內部註解。時間過半（`progress = 0.5`）時實際位移比純
      * 線性內插（0.5）更接近終點（`0.25`），因為前半段已經跑掉大半段距離，後半段才開始減速。
      */
     @Test
@@ -131,7 +131,7 @@ class TileMotionAnimationTest {
         const val ABSOLUTE_TOLERANCE_FLOAT: Float = 1e-4f
     }
 
-    /** 「提起、橫移、放下」先往上提再橫移，最後放下；途中往前進方向傾斜，結束時回正。 */
+    /** 「提起、橫移、放下」先往上提再橫移，最後放下。途中往前進方向傾斜，結束時回正。 */
     @Test
     fun `lift carry lower rises before moving sideways and leans toward the travel direction`() {
         val spec = TileMotionAnimationSpec(

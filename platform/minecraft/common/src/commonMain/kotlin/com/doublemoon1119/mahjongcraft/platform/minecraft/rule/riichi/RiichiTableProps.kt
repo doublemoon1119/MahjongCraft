@@ -59,7 +59,7 @@ object RiichiTableProps : TablePropDescriber {
     }
 
     /**
-     * 只有莊家角落有棒子（積棒加延續供託）；每排最多 [STICKS_PER_ROW] 根，排滿往上疊一層不加寬，所以寬度只隨
+     * 只有莊家角落有棒子（積棒加延續供託）。每排最多 [STICKS_PER_ROW] 根，排滿往上疊一層不加寬，所以寬度只隨
      * 支數成長到一整排為止。
      */
     override fun cornerWidth(tableState: TableState, seatIndex: Int): Double {
@@ -92,7 +92,7 @@ object RiichiTableProps : TablePropDescriber {
     )
 
     /**
-     * 角落那一疊的第 [stackIndex] 根：從副露角落往手牌方向排，每排最多 [STICKS_PER_ROW] 根，排滿往上疊一層；
+     * 角落那一疊的第 [stackIndex] 根：從副露角落往手牌方向排，每排最多 [STICKS_PER_ROW] 根，排滿往上疊一層。
      * 棒子橫放，長邊朝桌子中心。
      */
     private fun cornerStick(seatIndex: Int, stackIndex: Int, variant: String): TablePropPlacement {

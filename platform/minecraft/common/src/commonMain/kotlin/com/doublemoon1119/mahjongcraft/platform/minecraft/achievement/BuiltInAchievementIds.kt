@@ -31,6 +31,6 @@ object BuiltInAchievementIds {
     /** 打出的牌同時被三家胡。 */
     val TRIPLE_DEAL_IN: String = MahjongCraftMetadata.id("triple_deal_in")
 
-    /** 牌山摸完、沒有人胡牌的流局；不含規則提早喊停的途中流局。 */
+    /** 牌山摸完、沒有人胡牌的流局。不含規則提早喊停的途中流局。 */
     val EXHAUSTIVE_DRAW: String = MahjongCraftMetadata.id("exhaustive_draw")
 }

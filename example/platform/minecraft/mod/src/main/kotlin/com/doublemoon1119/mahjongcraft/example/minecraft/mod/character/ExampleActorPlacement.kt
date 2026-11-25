@@ -19,7 +19,7 @@ import kotlin.uuid.toKotlinUuid
 /** 放置新的人偶，不替換已有參與者，也不修改 MahjongCraft 的房間。 */
 internal object ExampleActorPlacement {
     /**
-     * 在指定方塊建立人偶；命中範例方塊座位時立即走既有入座服務。
+     * 在指定方塊建立人偶。命中範例方塊座位時立即走既有入座服務。
      *
      * @param world 建立世界。
      * @param player 使用物品的放置者。

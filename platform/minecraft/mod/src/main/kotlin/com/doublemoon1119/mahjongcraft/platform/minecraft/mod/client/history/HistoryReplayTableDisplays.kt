@@ -17,19 +17,19 @@ import net.minecraft.network.chat.Component
 import kotlin.uuid.Uuid
 
 /**
- * 牌譜回放場景中依牌譜記下的資料畫出的本局資訊、玩家資訊與桌上物件；回放牌桌的基準方塊在原點、朝北。
+ * 牌譜回放場景中依牌譜記下的資料畫出的本局資訊、玩家資訊與桌上物件。回放牌桌的基準方塊在原點、朝北。
  *
  * @property session 牌譜瀏覽的共用資料。
  */
 internal class HistoryReplayTableDisplays(private val session: HistoryBrowseSession) {
-    /** 最近一次讀取的呈現附註；同一份文字不重複解析。 */
+    /** 最近一次讀取的呈現附註。同一份文字不重複解析。 */
     private var notesCache: Pair<String?, ReplayTableNotes?>? = null
 
     /**
      * 讀取這一步的呈現附註。
      *
      * @param state 牌面。
-     * @return 呈現附註；沒有或無法解析時為 null。
+     * @return 呈現附註。沒有或無法解析時為 null。
      */
     fun notes(state: HistoryRoundStateDto): ReplayTableNotes? {
         val text = state.presentationNotes
@@ -40,7 +40,7 @@ internal class HistoryReplayTableDisplays(private val session: HistoryBrowseSess
     }
 
     /**
-     * 這一步桌上的物件，位置與對局中相同；客戶端沒有登記的種類、還沒建立好的物件不畫。
+     * 這一步桌上的物件，位置與對局中相同。客戶端沒有登記的種類、還沒建立好的物件不畫。
      *
      * @param state 牌面。
      * @param arranged 擺好的牌桌。
@@ -77,7 +77,7 @@ internal class HistoryReplayTableDisplays(private val session: HistoryBrowseSess
      * 桌子中央上方的本局資訊。
      *
      * @param state 牌面。
-     * @return 本局資訊；設定為不畫或牌譜沒有記下內容時為 null。
+     * @return 本局資訊。設定為不畫或牌譜沒有記下內容時為 null。
      */
     fun roundInfo(state: HistoryRoundStateDto): GuideSceneRoundInfo? {
         if (!session.replayVisibility.roundInfo) return null
@@ -87,12 +87,12 @@ internal class HistoryReplayTableDisplays(private val session: HistoryBrowseSess
     }
 
     /**
-     * 各家後上方的玩家資訊：分數與風位取自這一步的牌面，公開標記取自牌譜記下的資料；只畫設定為顯示的座位。
+     * 各家後上方的玩家資訊：分數與風位取自這一步的牌面，公開標記取自牌譜記下的資料。只畫設定為顯示的座位。
      *
      * @param state 牌面。
-     * @param hiddenSeat 一律不畫面板的座位，例如鏡頭所在的座位；沒有時為 null。
+     * @param hiddenSeat 一律不畫面板的座位，例如鏡頭所在的座位。沒有時為 null。
      * @param name 依初始座位取得玩家名稱。
-     * @return 玩家資訊；沒有要畫的座位時為 null。
+     * @return 玩家資訊。沒有要畫的座位時為 null。
      */
     fun playerInfo(state: HistoryRoundStateDto, hiddenSeat: Int?, name: (Int) -> Component): GuideScenePlayerInfo? {
         val shownSeats = state.players.indices.filter { index ->
@@ -125,7 +125,7 @@ internal class HistoryReplayTableDisplays(private val session: HistoryBrowseSess
     }
 
     /**
-     * 隔離桌上物件的繪製失敗；失敗後該物件在等待重試期間不畫。
+     * 隔離桌上物件的繪製失敗。失敗後該物件在等待重試期間不畫。
      *
      * @property previews 桌上物件的實體來源。
      * @property target 實體所屬的物件。

@@ -312,7 +312,7 @@ class MahjongHudLayoutEditorModelTest {
         assertTrue(size.height <= 8)
     }
 
-    /** 其他 HUD 預設隱藏，隱藏時不得攔截拖曳點擊；切成外框後才可被選取。 */
+    /** 其他 HUD 預設隱藏，隱藏時不得攔截拖曳點擊。切成外框後才可被選取。 */
     @Test
     fun `hidden huds cannot be picked up until outline preview is enabled`() {
         assertEquals(HudPreviewVisibility.HIDDEN, model().otherHudVisibility)
@@ -413,7 +413,7 @@ class MahjongHudLayoutEditorModelTest {
         assertTrue(dragging.endDrag().controlsVisible)
     }
 
-    /** 未變更時套用與復原不可用；拖曳後兩者才啟用，套用後回到未變更狀態。 */
+    /** 未變更時套用與復原不可用。拖曳後兩者才啟用，套用後回到未變更狀態。 */
     @Test
     fun `apply and undo track unsaved changes across a full edit cycle`() {
         val initial = model()

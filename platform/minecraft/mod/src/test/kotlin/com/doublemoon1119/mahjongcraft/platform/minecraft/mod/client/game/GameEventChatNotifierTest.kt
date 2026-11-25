@@ -31,7 +31,7 @@ import kotlin.test.assertNull
 import kotlin.uuid.Uuid
 
 /**
- * [buildRoundResultChatMessage]／[buildMatchResultChatMessage] 的單元測試；只涵蓋不需要真正 Minecraft client 執行環境的分支，
+ * [buildRoundResultChatMessage]／[buildMatchResultChatMessage] 的單元測試。只涵蓋不需要真正 Minecraft client 執行環境的分支，
  * 真人玩家名稱解析需要 `Minecraft.getInstance()`，留給實機驗證。
  */
 class GameEventChatNotifierTest {
@@ -49,7 +49,7 @@ class GameEventChatNotifierTest {
     /** 測試流局原因用的顯示名稱 registry。 */
     private val exhaustiveDrawReasonDisplayNameRegistry = ExhaustiveDrawReasonDisplayNameRegistryImpl()
 
-    /** 對局結束排名使用的規則模組；沒有覆寫排名比較器，預設實作與規則無關。 */
+    /** 對局結束排名使用的規則模組。沒有覆寫排名比較器，預設實作與規則無關。 */
     private val module = RiichiRuleModule(id = "riichi", config = RiichiRuleConfig())
 
     /** 每位玩家一行，前後分數與名次原樣使用伺服器的值，依結算後名次排列，分數沒變的玩家也列出。 */
@@ -70,7 +70,7 @@ class GameEventChatNotifierTest {
         assertEquals(listOf("3", "4", "↓", "25000", "19000"), lines[3].args.drop(1).map { it.toString() })
     }
 
-    /** 本局結束時以本局結束為標題；和牌後本局繼續時改以和牌為標題。 */
+    /** 本局結束時以本局結束為標題。和牌後本局繼續時改以和牌為標題。 */
     @Test
     fun `a continuing win is titled as a win instead of a round end`() {
         assertEquals(MinecraftMessageKeys.ROUND_RESULT_BROADCAST, buildMessage(result(BuiltInRoundOutcomeIds.TSUMO)).titleKey())
@@ -120,7 +120,7 @@ class GameEventChatNotifierTest {
     )
 
     /**
-     * 建立一筆結算結果；沒指定玩家時為兩名分數不變的 AI。
+     * 建立一筆結算結果。沒指定玩家時為兩名分數不變的 AI。
      *
      * @param outcomeId 結算結果識別碼。
      * @param kind 結算種類。
@@ -175,7 +175,7 @@ class GameEventChatNotifierTest {
      * 訊息標題的翻譯鍵。
      *
      * @receiver 待讀取標題的訊息。
-     * @return 標題的 translation key；非翻譯文字時為 `null`。
+     * @return 標題的 translation key。非翻譯文字時為 `null`。
      */
     private fun Component.titleKey(): String? = (contents as? TranslatableContents)?.key
 
@@ -191,7 +191,7 @@ class GameEventChatNotifierTest {
      * 標題中結算結果文字的翻譯鍵。
      *
      * @receiver 結算訊息。
-     * @return 結果文字的 translation key；非翻譯文字時為 `null`。
+     * @return 結果文字的 translation key。非翻譯文字時為 `null`。
      */
     private fun Component.outcomeKey(): String? = (outcomeArgument().contents as? TranslatableContents)?.key
 
@@ -210,7 +210,7 @@ class GameEventChatNotifierTest {
      * 取得簡短 round-result 訊息的 hover 詳情。
      *
      * @receiver 要搜尋 hover 的文字。
-     * @return 直接或巢狀 hover 的內容；未找到時為 `null`。
+     * @return 直接或巢狀 hover 的內容。未找到時為 `null`。
      */
     private fun Component.hoverDetails(): Component? = style.hoverEvent?.getValue(HoverEvent.Action.SHOW_TEXT)
         ?: siblings.firstNotNullOfOrNull { it.hoverDetails() }
@@ -302,7 +302,7 @@ class GameEventChatNotifierTest {
      * 建立指定分數的測試對局快照。
      *
      * @param scores 玩家分數，順序對應玩家 ID。
-     * @param ids 玩家 ID；未指定時為每位玩家產生隨機 ID。
+     * @param ids 玩家 ID。未指定時為每位玩家產生隨機 ID。
      * @return 隱藏手牌與留置牌皆為空的快照。
      */
     private fun fakeSnapshot(

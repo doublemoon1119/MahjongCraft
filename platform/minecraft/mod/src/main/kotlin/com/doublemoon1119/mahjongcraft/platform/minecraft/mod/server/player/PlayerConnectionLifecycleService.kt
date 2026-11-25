@@ -26,7 +26,7 @@ import kotlin.uuid.Uuid
  * 重連時取消逾時離開，以及重連時重建該玩家的快照。
  *
  * @property scope 執行斷線處理與快照重建工作的伺服器 coroutine scope。
- * @property timeoutScope 等待斷線逾時的背景作用域；關服時直接取消，不等待倒數結束。
+ * @property timeoutScope 等待斷線逾時的背景作用域。關服時直接取消，不等待倒數結束。
  * @property configState 提供斷線玩家處理政策的設定狀態。
  * @property membershipRepository 查詢玩家所屬麻將桌。
  * @property roomRepository 讀取等待室狀態。
@@ -60,7 +60,7 @@ class PlayerConnectionLifecycleService(
     private val pendingLeaveJobsLock = Any()
 
     /**
-     * 玩家重連時取消尚未到期的離線離開工作；快照重建改由客戶端主動請求，見 [onSnapshotRequested]。
+     * 玩家重連時取消尚未到期的離線離開工作。快照重建改由客戶端主動請求，見 [onSnapshotRequested]。
      *
      * @param playerId 重連玩家 UUID。
      */
@@ -70,7 +70,7 @@ class PlayerConnectionLifecycleService(
     }
 
     /**
-     * 取消玩家尚未到期的逾時離開工作；重連與斷線都需要這個動作，見 [onConnected]／[onDisconnected]。
+     * 取消玩家尚未到期的逾時離開工作。重連與斷線都需要這個動作，見 [onConnected]／[onDisconnected]。
      *
      * @param playerId 要取消延遲離開工作的玩家 UUID。
      */
@@ -85,12 +85,12 @@ class PlayerConnectionLifecycleService(
     /**
      * 客戶端主動請求重建一份快照時呼叫（`mahjongcraft:request_snapshot` C2S 頻道）。
      *
-     * 客戶端重新登入後沒有任何既有快照——牌局管理的麻將牌 entity 在收到快照前恆定顯示
-     * [UNKNOWN_TILE_ASSET_KEY] 占位貼圖（見 `MahjongTileEntity` KDoc）。由客戶端在「剛加入、還沒收到
-     * 任何快照」時主動送出請求，伺服器依當下查得到的狀態重建；不在玩家加入事件
-     * 當下猜測時機，因為那一刻 membership／對局查詢可能還沒就緒，手牌會一直停在 unknown，直到下一次
-     * 遊戲事件（例如右鍵桌子觸發 [MahjongTableRoomService.interact]）才補上。畫面資料本身由觀察者推送
-     * 送達，這裡只確保倉庫內容是最新的。
+     * - 客戶端重新登入後沒有任何既有快照。牌局管理的麻將牌 entity 在收到快照前顯示 [UNKNOWN_TILE_ASSET_KEY] 占位貼圖，
+     *   見 `MahjongTileEntity` KDoc。
+     * - 由客戶端在剛加入、還沒收到任何快照時主動送出請求，伺服器依當下查得到的狀態重建。
+     * - 不在玩家加入事件當下重建。那一刻 membership／對局查詢可能還沒就緒，手牌會停在 unknown，
+     *   直到下一次遊戲事件（例如右鍵桌子觸發 [MahjongTableRoomService.interact]）才補上。
+     * - 畫面資料由觀察者推送送達，這裡只確保倉庫內容是最新的。
      *
      * @param playerId 要重建快照的玩家 UUID。
      */
@@ -99,7 +99,7 @@ class PlayerConnectionLifecycleService(
     }
 
     /**
-     * 重新送出玩家目前的自動操作狀態；玩家不在對局中時送出清除，讓等待回覆的客戶端都能收到結果。
+     * 重新送出玩家目前的自動操作狀態。玩家不在對局中時送出清除，讓等待回覆的客戶端都能收到結果。
      *
      * @param playerId 要求重新送出的玩家 UUID。
      */
@@ -117,7 +117,7 @@ class PlayerConnectionLifecycleService(
     /**
      * 依玩家目前的房間歸屬重建他的對局或房間快照——沒有歸屬時代表玩家不在任何桌子上，略過。
      *
-     * 只寫入快照倉庫，讓重連後的事件仍帶得出正確內容；把資料送到客戶端是觀察者推送的職責。
+     * 只寫入快照倉庫，讓重連後的事件仍帶得出正確內容。把資料送到客戶端是觀察者推送的職責。
      *
      * @param playerId 要重建快照的玩家 UUID。
      */
@@ -181,7 +181,7 @@ class PlayerConnectionLifecycleService(
     }
 
     /**
-     * 僅讓仍處於等待室的玩家離開；進行中的對局一律保留座位。
+     * 僅讓仍處於等待室的玩家離開。進行中的對局一律保留座位。
      *
      * @param playerId 要處理離開的玩家 UUID。
      */

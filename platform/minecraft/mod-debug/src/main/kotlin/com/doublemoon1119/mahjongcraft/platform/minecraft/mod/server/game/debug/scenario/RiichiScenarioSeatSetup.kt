@@ -44,12 +44,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.scen
 /**
  * 一個座位的情境設定。
  *
- * @property standingTiles 指定的立牌；不足的張數以牌種互異的填充牌補齊。
+ * @property standingTiles 指定的立牌。不足的張數以牌種互異的填充牌補齊。
  * @property pons 已碰出的副露，每組三張同種牌，最後一張是從指定方向鳴取的牌。
- * @property drawnTile 剛摸到、尚未打出的牌；只有呼叫者使用。
+ * @property drawnTile 剛摸到、尚未打出的牌。只有呼叫者使用。
  * @property discards 預先打出的牌。
  * @property riichiTile 不為 null 時，這張牌作為立直宣告牌打出，玩家處於立直狀態。
- * @property strategyKey 對手使用的腳本 AI；呼叫者不使用。
+ * @property strategyKey 對手使用的腳本 AI。呼叫者不使用。
  */
 internal data class SeatSpec(
     val standingTiles: List<Tile> = emptyList(),
@@ -74,21 +74,22 @@ internal data class ScenarioPon(
 /**
  * 依座位設定與活牌最前端順序建立的日麻情境，四人與三人日麻都適用。
  *
- * 呼叫者為莊家，座位順序為呼叫者 → 下家 → 對家 → 上家（三人日麻沒有對家），情境從呼叫者剛摸牌、準備捨牌開始。
- * 其他家必須是 AI，載入後改用 [DebugScriptedAiStrategy]，依 [liveWallFront] 排定的順序摸牌並立即打出，因此接下來
- * 腳本會依各座位的策略設定處理反應與自身回合。
+ * - 呼叫者為莊家，座位順序為呼叫者 → 下家 → 對家 → 上家（三人日麻沒有對家）。
+ * - 情境從呼叫者剛摸牌、準備捨牌開始。
+ * - 其他家必須是 AI，載入後改用 [DebugScriptedAiStrategy]，依 [liveWallFront] 排定的順序摸牌並立即打出。
+ *   反應與自身回合依各座位的策略設定處理。
  *
  * @property id 完整的 namespaced 情境 ID。
  * @property invoker 呼叫者的座位設定。
  * @property downstream 下家的座位設定。
- * @property across 對家的座位設定；三人日麻沒有對家，必須維持預設值。
+ * @property across 對家的座位設定。三人日麻沒有對家，必須維持預設值。
  * @property upstream 上家的座位設定。
  * @property liveWallFront 活牌最前端的排定牌種順序，決定載入後每一次摸牌。
- * @property waitingTiles 驗收用的和牌張；除了 [deadWallFront] 指定的牌以外，這些牌種不會被放進王牌區，避免成為
+ * @property waitingTiles 驗收用的和牌張。除了 [deadWallFront] 指定的牌以外，這些牌種不會被放進王牌區，避免成為
  *   寶牌指示牌或嶺上牌。
  * @property multiRonPolicy 不為 null 時覆寫這一桌的一炮多響設定，其餘設定一律沿用。
- * @property deadWallFront 王牌最前端的排定牌種順序，也就是之後槓或拔北時依序補到的牌；其餘王牌照常補齊。
- * @property playerCount 情境適用的人數；只能在這個人數的桌子載入。
+ * @property deadWallFront 王牌最前端的排定牌種順序，也就是之後槓或拔北時依序補到的牌。其餘王牌照常補齊。
+ * @property playerCount 情境適用的人數。只能在這個人數的桌子載入。
  * @property liveWallIsFrontOnly 為 true 時活牌只剩 [liveWallFront]，其餘的牌當作先前各家打出的牌，從呼叫者開始輪流
  *   接在各家預先捨牌之後，讓牌局在幾次摸牌後流局。
  * @property rule 情境載入後使用的規則模組。
@@ -271,7 +272,7 @@ internal data class SeatTiles(
      * 以牌種互異的填充牌補齊立牌，並從可用牌中移除填充牌。
      *
      * @param spec 用於計算副露已占張數的座位設定。
-     * @param availableTiles 尚未分配的實體牌；選出的填充牌會從此清單移除。
+     * @param availableTiles 尚未分配的實體牌。選出的填充牌會從此清單移除。
      * @return 補齊立牌後的座位牌組。
      */
     fun withFillers(spec: SeatSpec, availableTiles: MutableList<IdentifiedTile>): SeatTiles {
@@ -281,9 +282,9 @@ internal data class SeatTiles(
 }
 
 /**
- * 取出座位設定指定的牌；填充牌在所有指定牌取出後才補上。
+ * 取出座位設定指定的牌。填充牌在所有指定牌取出後才補上。
  *
- * @param availableTiles 尚未分配的實體牌；指定牌會從此清單移除。
+ * @param availableTiles 尚未分配的實體牌。指定牌會從此清單移除。
  * @return 尚未補上填充牌的座位牌組。
  */
 internal fun SeatSpec.takeExplicitTiles(availableTiles: MutableList<IdentifiedTile>): SeatTiles = SeatTiles(
@@ -307,7 +308,7 @@ internal fun SeatSpec.takeExplicitTiles(availableTiles: MutableList<IdentifiedTi
 /**
  * 依清單順序選取不屬於排除牌種的實體牌，並從原清單移除。
  *
- * @param tiles 尚未分配的實體牌；選取成功後會移除所選項目。
+ * @param tiles 尚未分配的實體牌。選取成功後會移除所選項目。
  * @param count 要取出的張數，須為非負值。
  * @param excludedTiles 不可選取的牌種。
  * @return 依原清單順序選出的牌。

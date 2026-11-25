@@ -15,22 +15,21 @@ import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 
 /**
- * MahjongCraft client 設定的檔案存取，只存在單機／client 環境，跟 server 端設定（[ServerConfigManager]）完全
- * 分開存放（不同檔案），互不影響；缺少檔案時的建立方式是同一套機制——原樣複製打包在 resources 裡、
- * 帶完整註解的 template（`client-config-default.toml`），不是用 codec 從程式預設值重新編碼，這樣
- * 使用者第一次打開檔案就能看到功能說明，不用回頭查文件或程式碼。
+ * MahjongCraft client 設定的檔案存取，只存在單機／client 環境。
  *
- * `/mahjongcraft_client config reload|show`（見 [ClientConfigCommand]）跟
- * server 端 `/mahjongcraft config reload|show`（見 [ServerConfigCommand]）效果
- * 完全對稱：[load] 回傳跟 `MinecraftServerConfigUpdateResult` 結構相同的 [MahjongClientConfigUpdateResult]，
- * 失敗時 runtime 仍保留先前設定（不會被清成程式預設值），[formattedCurrentToml] 對應
- * `ServerConfigManager.formattedCurrentToml`，差別只在這裡沒有權限限制（玩家自己本機的設定，
- * 任何人都能執行）。
+ * - 與 server 端設定（[ServerConfigManager]）分開存放在不同檔案，互不影響。
+ * - 缺少檔案時，原樣複製打包在 resources 裡、帶完整註解的 template（`client-config-default.toml`），
+ *   不用 codec 從程式預設值重新編碼。使用者第一次打開檔案就能看到功能說明。
+ * - `/mahjongcraft_client config reload|show`（見 [ClientConfigCommand]）與 server 端
+ *   `/mahjongcraft config reload|show`（見 [ServerConfigCommand]）對稱：
+ *   - [load] 回傳與 `MinecraftServerConfigUpdateResult` 結構相同的 [MahjongClientConfigUpdateResult]。
+ *     失敗時 runtime 保留先前設定，不會被清成程式預設值。
+ *   - [formattedCurrentToml] 對應 `ServerConfigManager.formattedCurrentToml`。
+ *   - 這裡沒有權限限制，因為是玩家自己本機的設定。
+ * - 與 server 設定不同，client 設定可由指令與 GUI 更新。[save] 在同目錄建立暫存檔並原子替換，
+ *   只更新受控欄位的值，保留模板註解與人工排版。
  *
- * 跟 server 設定不同的是：client 設定可由指令與 GUI 更新。[save] 會在同目錄建立暫存檔並原子替換，
- * 同時只更新受控欄位的值，保留模板註解與人工排版。
- *
- * @property resolvePath 取得設定檔位置；正式環境由載入器的設定檔資料夾決定，測試使用隔離路徑。
+ * @property resolvePath 取得設定檔位置。正式環境由載入器的設定檔資料夾決定，測試使用隔離路徑。
  */
 class MahjongClientConfigStore private constructor(private val resolvePath: () -> Path) {
     /**
@@ -60,7 +59,7 @@ class MahjongClientConfigStore private constructor(private val resolvePath: () -
     /** [path] 不含主機目錄資訊、可供指令輸出的邏輯路徑，理由同 server 設定的 `displayPath`。 */
     val displayPath: String = "<Minecraft instance>/config/${MinecraftModMetadata.MOD_ID}/client.toml"
 
-    /** 目前有效設定；首次載入前為預設值，載入或保存失敗時保留前一份有效設定。 */
+    /** 目前有效設定。首次載入前為預設值，載入或保存失敗時保留前一份有效設定。 */
     var current: MahjongClientConfigState = MahjongClientConfigState()
         private set
 
@@ -69,7 +68,7 @@ class MahjongClientConfigStore private constructor(private val resolvePath: () -
         private set
 
     /**
-     * 從磁碟載入設定；檔案不存在時先原樣複製帶註解的 template，再讀取剛建立的檔案。複製、讀取或解析
+     * 從磁碟載入設定。檔案不存在時先原樣複製帶註解的 template，再讀取剛建立的檔案。複製、讀取或解析
      * 失敗時保留（不覆寫）記憶體內目前的有效設定，也不覆寫已存在但格式錯誤的檔案，理由同 server 設定
      * 的 `MinecraftServerConfigManager.load`。
      *
@@ -101,7 +100,7 @@ class MahjongClientConfigStore private constructor(private val resolvePath: () -
     fun formattedCurrentToml(): String = toml.encodeToString(current)
 
     /**
-     * 切換牌面角落輔助標籤開關並立即寫回磁碟；只替換檔案裡 `tile-labels-enabled` 那一行的值，其餘
+     * 切換牌面角落輔助標籤開關並立即寫回磁碟。只替換檔案裡 `tile-labels-enabled` 那一行的值，其餘
      * 內容（含註解）原樣保留。寫入失敗時磁碟與記憶體內的有效設定都維持原值。
      *
      * @param enabled 是否啟用牌面輔助標籤。
@@ -110,7 +109,7 @@ class MahjongClientConfigStore private constructor(private val resolvePath: () -
     fun setTileLabelsEnabled(enabled: Boolean): MahjongClientConfigUpdateResult = save(current.copy(tileLabelsEnabled = enabled))
 
     /**
-     * 切換自動整理手牌開關並立即寫回磁碟，手法同 [setTileLabelsEnabled]；呼叫端（`HandSortCommand`）
+     * 切換自動整理手牌開關並立即寫回磁碟，手法同 [setTileLabelsEnabled]。呼叫端（`HandSortCommand`）
      * 除了呼叫這個方法，還要另外把偏好同步給伺服器——這裡只負責 client 本機持久化。
      *
      * @param enabled 是否啟用自動整理手牌。
@@ -119,7 +118,7 @@ class MahjongClientConfigStore private constructor(private val resolvePath: () -
     fun setAutoSortHandEnabled(enabled: Boolean): MahjongClientConfigUpdateResult = save(current.copy(autoSortHandEnabled = enabled))
 
     /**
-     * 原子保存完整受控草稿；成功替換磁碟檔案後才更新 runtime 設定與 [revision]。
+     * 原子保存完整受控草稿。成功替換磁碟檔案後才更新 runtime 設定與 [revision]。
      * 已知欄位只替換等號右側，因此保留模板註解、空行及欄位順序。
      *
      * @param config 要保存的完整設定草稿。
@@ -213,7 +212,7 @@ class MahjongClientConfigStore private constructor(private val resolvePath: () -
     /**
      * 在設定檔缺少時原樣複製打包的帶註解範本。
      *
-     * @return 本次建立檔案時為 true；檔案原已存在時為 false。
+     * @return 本次建立檔案時為 true。檔案原已存在時為 false。
      * @throws IllegalStateException 找不到打包的範本資源時。
      * @throws java.io.IOException 建立目錄或複製檔案失敗時。
      */

@@ -5,15 +5,15 @@ import kotlin.uuid.Uuid
 /**
  * 把對局的自動推進分散到一個週期內的各個 tick，避免所有對局擠在同一個 tick 推進。
  *
- * 每局固定分到週期中的一個位置，新對局分到目前對局最少的位置；每個 tick 把分到這個位置的對局標為待推進，再依標記先後
- * 取出一批推進。每局最多只有一次待推進，不累積補跑次數；每 tick 最多取出「進行中對局數 ÷ 週期（無條件進位）＋ 1」局，
- * 正常負載下每局每個週期推進一次，處理工作延後時待推進的對局依序逐步消化，不以突發補跑追回節奏。
+ * - 每局固定分到週期中的一個位置，新對局分到目前對局最少的位置。
+ * - 每個 tick 把分到這個位置的對局標為待推進，再依標記先後取出一批推進。
+ * - 每局最多只有一次待推進，不累積補跑次數。
+ * - 每 tick 最多取出「進行中對局數 ÷ 週期（無條件進位）＋ 1」局。正常負載下每局每個週期推進一次。
+ *   處理工作延後時，待推進的對局依序逐步消化，不以突發補跑追回節奏。
+ * - 另外記錄全域處理（例如決策逾時與倒數同步）的時機。距離上次全域處理滿一個週期時到期，由呼叫端在處理後回報完成。
+ * - 只在同一個執行緒上依序使用。
  *
- * 另外記錄全域處理（例如決策逾時與倒數同步）的時機：距離上次全域處理滿一個週期時到期，由呼叫端在處理後回報完成。
- *
- * 只在同一個執行緒上依序使用。
- *
- * @property cycleTicks 一個週期的 tick 數；每局在一個週期內推進一次。
+ * @property cycleTicks 一個週期的 tick 數。每局在一個週期內推進一次。
  */
 class GameAdvanceRotation(private val cycleTicks: Int) {
     init {
@@ -63,7 +63,7 @@ class GameAdvanceRotation(private val cycleTicks: Int) {
         }
     }
 
-    /** 前進一個 tick：把分到下一個位置的對局標為待推進；已待推進的對局保留原本的順序。 */
+    /** 前進一個 tick：把分到下一個位置的對局標為待推進。已待推進的對局保留原本的順序。 */
     fun advanceTick() {
         slot = (slot + 1) % cycleTicks
         due += gamesBySlot[slot]
@@ -73,7 +73,7 @@ class GameAdvanceRotation(private val cycleTicks: Int) {
     /**
      * 取出這個 tick 要推進的一批對局，依標記先後，最多「對局數 ÷ 週期（無條件進位）＋ 1」局。
      *
-     * @return 要推進的對局；取出的對局不再待推進。
+     * @return 要推進的對局。取出的對局不再待推進。
      */
     fun takeDue(): List<Uuid> {
         val budget = (gameCount + cycleTicks - 1) / cycleTicks + 1

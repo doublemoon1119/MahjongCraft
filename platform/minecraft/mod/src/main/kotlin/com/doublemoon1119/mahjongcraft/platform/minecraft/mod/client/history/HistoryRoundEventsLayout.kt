@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.Vertica
 /**
  * 單局事件與局面畫面的版面：標題下方的固定區、捲動的卡片區與底部四格。
  *
- * 內容寬度、底部四格與捲軸位置沿用 [HistoryPageFrame]；卡片橫跨內容寬度。
+ * 內容寬度、底部四格與捲軸位置沿用 [HistoryPageFrame]。卡片橫跨內容寬度。
  *
  * @property frame 內容寬度、底部四格與捲軸位置。
  * @property contentTop 捲動內容上界。

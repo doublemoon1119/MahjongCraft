@@ -24,11 +24,11 @@ class ClientPlayerDisplayNameResolver(
 ) {
     /**
      * 以房間持久化 AI 順序為優先，沒有房間資料時才退回目前遊戲快照順序。[tableId] 為 `null`（呼叫端一時
-     * 拿不到管理中的桌子 ID）時，可用已授權成員索引解析角色名稱；AI 順序退回空清單。
+     * 拿不到管理中的桌子 ID）時，可用已授權成員索引解析角色名稱。AI 順序退回空清單。
      *
-     * @param tableId 目前桌子的 UUID；null 時只查已授權角色索引，不查房間或對局快照。
+     * @param tableId 目前桌子的 UUID。null 時只查已授權角色索引，不查房間或對局快照。
      * @param playerId 欲解析名稱的玩家 UUID 字串。
-     * @param isAiHint 呼叫端已知的 AI 身分；null 時由桌況推導。
+     * @param isAiHint 呼叫端已知的 AI 身分。null 時由桌況推導。
      * @return AI 座位名稱、已快取真人名稱或未知玩家文字。
      */
     fun resolve(tableId: Uuid?, playerId: String, isAiHint: Boolean? = null): String {
@@ -50,7 +50,7 @@ class ClientPlayerDisplayNameResolver(
     /**
      * 決策面板上觸發動作的玩家名稱：在本地玩家所坐的桌子內解析，由桌況判斷是否為 AI，例如名稱需要本地翻譯的 AI 角色。
      *
-     * @param localPlayerId 本地玩家 UUID；不在遊戲中時為 null。
+     * @param localPlayerId 本地玩家 UUID。不在遊戲中時為 null。
      * @param playerId 觸發動作的玩家 UUID 字串。
      * @return AI 座位名稱、已快取真人名稱或未知玩家文字。
      */
@@ -74,10 +74,10 @@ class ClientPlayerDisplayNameResolver(
     }
 
     /**
-     * 普通自訂名稱優先；其他角色使用本地翻譯，內建預設角色保留 AI 編號。
+     * 普通自訂名稱優先。其他角色使用本地翻譯，內建預設角色保留 AI 編號。
      *
      * @param snapshot 已授權的角色描述。
-     * @return 名稱；缺少可顯示資料時由呼叫端使用 AI 編號。
+     * @return 名稱。缺少可顯示資料時由呼叫端使用 AI 編號。
      */
     private fun characterName(snapshot: AiCharacterSnapshot?): String? {
         snapshot?.displayName?.let { return it }
@@ -95,7 +95,7 @@ class ClientPlayerDisplayNameResolver(
     /**
      * 依桌況資料優先順序取得房間內 AI 的座位排列。
      *
-     * @param tableId 目前桌子的 UUID；null 時回傳空清單。
+     * @param tableId 目前桌子的 UUID。null 時回傳空清單。
      * @return 目前可用的有序 AI UUID 清單。
      */
     private fun orderedAiPlayerIds(tableId: Uuid?): List<Uuid> {

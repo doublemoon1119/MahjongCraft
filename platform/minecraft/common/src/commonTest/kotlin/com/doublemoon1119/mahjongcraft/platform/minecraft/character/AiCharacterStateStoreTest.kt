@@ -55,7 +55,7 @@ class AiCharacterStateStoreTest {
         update(AuthoritativeStateSnapshot(rooms = mapOf(room.id to room)))
     }
 
-    /** 排除後保留辨識資料，只有房主可讀；解除後清理，不公開模型能力。 */
+    /** 排除後保留辨識資料，只有房主可讀。解除後清理，不公開模型能力。 */
     @Test
     fun `excluded appearance survives saving and is visible only to the host`() {
         val state = store()
@@ -253,7 +253,7 @@ class AiCharacterStateStoreTest {
         assertEquals(before, store.snapshot())
     }
 
-    /** 舊桌房間移除後釋放來源認領；新桌房間不繼承舊房間的身分或排除名單。 */
+    /** 舊桌房間移除後釋放來源認領。新桌房間不繼承舊房間的身分或排除名單。 */
     @Test
     fun `removing a room releases participant claims before another room is created`() {
         val store = store()

@@ -9,7 +9,7 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
 /**
- * 將原生角色包成可測試的接管協定；角色及所有權在建立時固定。
+ * 將原生角色包成可測試的接管協定。角色及所有權在建立時固定。
  *
  * @property rider 已驗證角色。
  * @property world 接管時的世界，不跨世界追蹤或重新生成借用角色。
@@ -26,7 +26,7 @@ internal class NativeAiCharacterLease(
 ) : AiCharacterLease<AiCharacterActor> {
     override val entityId: Uuid = rider.entity.uuid.toKotlinUuid()
 
-    /** 接管前的載具；框架只解除自己後來建立的乘坐關係。 */
+    /** 接管前的載具。框架只解除自己後來建立的乘坐關係。 */
     private val originalVehicle = rider.entity.vehicle
 
     override fun isValid(): Boolean {

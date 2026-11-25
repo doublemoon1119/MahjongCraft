@@ -16,7 +16,7 @@ import net.minecraft.world.level.chunk.LevelChunk
 /**
  * 載入器提供的伺服器端事件。
  *
- * 每個方法登記一個監聽器，登記後一直有效；監聽器都在伺服器主執行緒上呼叫，只會收到伺服器端的世界與玩家。
+ * 每個方法登記一個監聽器，登記後一直有效。監聽器都在伺服器主執行緒上呼叫，只會收到伺服器端的世界與玩家。
  * 各載入器各自實作，把自己的事件轉成這裡的呼叫。
  */
 interface ServerEvents {
@@ -63,7 +63,7 @@ interface ServerEvents {
     fun onPlayerJoin(listener: (ServerPlayer) -> Unit)
 
     /**
-     * 玩家離線時；玩家的連線物件仍是離線前的那一個。
+     * 玩家離線時。玩家的連線物件仍是離線前的那一個。
      *
      * @param listener 收到離線的玩家。
      */
@@ -119,7 +119,7 @@ interface ServerEvents {
     fun onStopTracking(listener: (Entity, ServerPlayer) -> Unit)
 
     /**
-     * 玩家破壞方塊之前；任一監聽器回傳 `false` 就取消這次破壞。
+     * 玩家破壞方塊之前。任一監聽器回傳 `false` 就取消這次破壞。
      *
      * @param listener 收到世界、玩家、位置與方塊狀態，回傳是否允許破壞。
      */
@@ -133,14 +133,14 @@ interface ServerEvents {
     fun onAfterPlayerBreakBlock(listener: (ServerLevel, ServerPlayer, BlockPos, BlockState, BlockEntity?) -> Unit)
 
     /**
-     * 伺服器建立指令表時；每次重新載入資料包等需要重建指令表時都會再呼叫。
+     * 伺服器建立指令表時。每次重新載入資料包等需要重建指令表時都會再呼叫。
      *
      * @param listener 收到要登記指令的指令分派器。
      */
     fun onRegisterCommands(listener: (CommandDispatcher<CommandSourceStack>) -> Unit)
 
     /**
-     * 玩家對實體按下使用鍵時；回傳 [InteractionResult.PASS] 交給其他處理，其他結果代表已處理並結束這次互動。
+     * 玩家對實體按下使用鍵時。回傳 [InteractionResult.PASS] 交給其他處理，其他結果代表已處理並結束這次互動。
      *
      * @param listener 收到玩家、世界、使用的手與被點擊的實體，回傳處理結果。
      */

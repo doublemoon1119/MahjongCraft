@@ -40,7 +40,7 @@ data class TablePropTarget(
         yawDistance(yaw, other.yaw) <= YAW_EPSILON
 
     private companion object {
-        /** 世界座標比對容差；足以吸收 entity 座標的浮點往返誤差，又不會混淆相鄰落點。 */
+        /** 世界座標比對容差。足以吸收 entity 座標的浮點往返誤差，又不會混淆相鄰落點。 */
         const val POSITION_EPSILON: Double = 1.0e-4
 
         /** 水平朝向比對容差（度）。 */

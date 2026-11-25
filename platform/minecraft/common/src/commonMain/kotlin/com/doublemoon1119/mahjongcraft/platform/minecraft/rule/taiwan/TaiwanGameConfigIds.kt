@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan
 
-/** 台灣麻將房間設定欄位與選項的完整 ID；選項放在所屬欄位的路徑底下。 */
+/** 台灣麻將房間設定欄位與選項的完整 ID。選項放在所屬欄位的路徑底下。 */
 internal object TaiwanGameConfigIds {
     /** 賽程長度欄位。 */
     const val GAME_LENGTH: String = "mahjongcraft:taiwan/config/game_length"

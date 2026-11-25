@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.api.event.CommittedMatchEventBatch
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import kotlin.uuid.Uuid
 
-/** [GameAchievementResolverRegistry] 的記憶體實作；不捕捉判定的程式錯誤。 */
+/** [GameAchievementResolverRegistry] 的記憶體實作。不捕捉判定的程式錯誤。 */
 class GameAchievementResolverRegistryImpl : GameAchievementResolverRegistry {
     /** 依註冊順序保存判定。 */
     private val resolvers = linkedMapOf<String, GameAchievementResolver>()

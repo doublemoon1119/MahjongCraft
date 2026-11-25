@@ -15,7 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutPr
 import kotlin.uuid.Uuid
 
 /**
- * 虛擬桌的正式布局呼叫參數；不對應任何實際 controller block 或對局狀態。
+ * 虛擬桌的正式布局呼叫參數。不對應任何實際 controller block 或對局狀態。
  *
  * 所有格位一律轉呼叫正式的 [MahjongTileTableLayout]，debug 預覽與正式對局因此共用同一份幾何規則。
  * 由 [DebugVirtualTableLayoutFactory] 依呼叫者所在座標建立。
@@ -211,7 +211,7 @@ data class DebugVirtualTableLayout(
      * 單一組副露的格位與橫置鳴取牌的游標位移。
      *
      * @property placements 這組副露由桌角往手牌方向的格位。
-     * @property sidewaysAlongOffset 橫置鳴取牌沿排列方向距離桌角的位移；沒有橫置牌時為 `0.0`。
+     * @property sidewaysAlongOffset 橫置鳴取牌沿排列方向距離桌角的位移。沒有橫置牌時為 `0.0`。
      */
     private data class SingleMeldPlacements(
         val placements: List<MahjongTileWallPlacement>,

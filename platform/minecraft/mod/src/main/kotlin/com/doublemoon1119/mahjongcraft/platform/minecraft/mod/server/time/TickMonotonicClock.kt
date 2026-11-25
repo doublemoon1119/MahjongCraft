@@ -26,7 +26,7 @@ class TickMonotonicClock : MonotonicClock {
     private val pendingTasksLock = Any()
 
     /**
-     * 註冊 tick 事件；只增不減，跨對局／跨桌共用同一個遞增計數，符合 [MonotonicClock] 只能同一
+     * 註冊 tick 事件。只增不減，跨對局／跨桌共用同一個遞增計數，符合 [MonotonicClock] 只能同一
      * session 內比較的約定。每個 tick 順便觸發到期的 [scheduleAfter] 工作。
      *
      * @param events 登記事件用的伺服器事件來源。
@@ -44,9 +44,9 @@ class TickMonotonicClock : MonotonicClock {
     override fun now(): Duration = TICK_DURATION * elapsedTicks.toDouble()
 
     /**
-     * 排定 [block] 在 [delay] 之後（依 tick 無條件進位）於下個到期 tick 執行；回傳可取消的 handle。
+     * 排定 [block] 在 [delay] 之後（依 tick 無條件進位）於下個到期 tick 執行。回傳可取消的 handle。
      *
-     * @param delay 延遲時間；換算成 tick 時向上取整，不足一個 tick 的正值等到下一個 tick。
+     * @param delay 延遲時間。換算成 tick 時向上取整，不足一個 tick 的正值等到下一個 tick。
      * @param block 到期時於 server tick 回呼的工作。
      * @return 可移除尚未執行工作的取消 handle。
      */

@@ -47,7 +47,7 @@ fun examplePairingCatalogue(): RuleCatalogueProvider = object : RuleCataloguePro
 /**
  * 配對麻將「基本玩法」的條目：牌與手牌、和牌條件、開局前交換牌、加分牌與付款、攤牌、流局與對局結束、公開牌面。
  *
- * 說明用通用說法，可調整的數值寫標準值並列出房間設定欄位；房間沒有開啟的選項保留條目並寫出原因。
+ * 說明用通用說法，可調整的數值寫標準值並列出房間設定欄位。房間沒有開啟的選項保留條目並寫出原因。
  *
  * @param config 房間設定或一般說明使用的設定。
  * @return 依顯示順序排列的條目。
@@ -105,7 +105,7 @@ private fun examplePairingBasics(config: ExamplePairingRuleConfig): List<RuleCat
  * @param name 名稱翻譯鍵。
  * @param description 說明翻譯鍵。
  * @param settings 可在房間設定調整的欄位名稱翻譯鍵。
- * @param unavailable 不適用的原因翻譯鍵；適用時為 null。
+ * @param unavailable 不適用的原因翻譯鍵。適用時為 null。
  * @param examples 牌例。
  * @return 條目。
  */

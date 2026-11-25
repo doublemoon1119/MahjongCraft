@@ -34,7 +34,7 @@ class HoverExpandedTextTest {
         assertEquals("Reload failed [Details] file is missing", message.withHoverTextExpanded().string)
     }
 
-    /** 多行提示從下一行縮排列出；第一行重複標籤前的文字時略過。 */
+    /** 多行提示從下一行縮排列出。第一行重複標籤前的文字時略過。 */
     @Test
     fun `lists a multi line hover below its label without a repeated title`() {
         val hover = Component.literal("Mahjong Table").append(Component.literal("\nBreak policy: owner")).append(Component.literal("\nOrphans: keep"))

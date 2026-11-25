@@ -22,7 +22,7 @@ internal class SessionCoroutineContext(
     @Volatile
     private var context: CoroutineContext = newContext()
 
-    /** 目前 server session 的情境；每次取用都讀取最新值，避免永久持有已取消的 Job。 */
+    /** 目前 server session 的情境。每次取用都讀取最新值，避免永久持有已取消的 Job。 */
     val current: CoroutineContext
         get() = context
 

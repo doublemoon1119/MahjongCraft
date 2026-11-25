@@ -130,14 +130,14 @@ class HistoryScreenController internal constructor(
     /**
      * 開啟歷史列表，關閉時回到 [returnScreen]。
      *
-     * @param returnScreen 開啟歷史列表的畫面；開啟前已被其他畫面取代時不開啟。
+     * @param returnScreen 開啟歷史列表的畫面。開啟前已被其他畫面取代時不開啟。
      */
     fun openFrom(returnScreen: Screen) = requestOpen(returnScreen)
 
     /**
-     * 從結算排名聊天入口開啟歷史列表；無效或缺少對局識別碼時仍開啟一般列表。
+     * 從結算排名聊天入口開啟歷史列表。無效或缺少對局識別碼時仍開啟一般列表。
      *
-     * @param matchId 欲優先查找的對局 UUID；無效值會被忽略。
+     * @param matchId 欲優先查找的對局 UUID。無效值會被忽略。
      */
     fun openFromMatchResult(matchId: String?) {
         val validatedMatchId = matchId?.let { runCatching { Uuid.parse(it).toString() }.getOrNull() }
@@ -151,8 +151,8 @@ class HistoryScreenController internal constructor(
     /**
      * 接受目前連線的一項開啟意圖，不在輸入 callback 內替換 Screen。
      *
-     * @param parent 關閉後返回的畫面；指令、快捷鍵與聊天入口為 null。
-     * @param matchId 已驗證的對局識別碼；一般列表為 null。
+     * @param parent 關閉後返回的畫面。指令、快捷鍵與聊天入口為 null。
+     * @param matchId 已驗證的對局識別碼。一般列表為 null。
      */
     private fun requestOpen(parent: Screen?, matchId: String? = null) {
         val client = Minecraft.getInstance()
@@ -280,7 +280,7 @@ class HistoryScreenController internal constructor(
  * @property parent 返回畫面。
  * @property connection 執行指令時的網路 handler 身分。
  * @property revision 執行指令時的工作階段版本。
- * @property matchId 聊天入口指定的對局 UUID；一般入口為 null。
+ * @property matchId 聊天入口指定的對局 UUID。一般入口為 null。
  */
 internal data class OpenRequest(val parent: Screen?, val connection: Any, val revision: Long, val matchId: String? = null) {
     /**

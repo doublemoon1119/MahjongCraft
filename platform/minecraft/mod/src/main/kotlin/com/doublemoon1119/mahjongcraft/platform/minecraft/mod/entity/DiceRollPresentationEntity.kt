@@ -12,7 +12,7 @@ import net.minecraft.world.phys.AABB
 import kotlin.uuid.Uuid
 
 /**
- * 一次正式擲骰的聚合結果舞台；client 依絕對時間與最終點數繪製 3D 結果面板。
+ * 一次正式擲骰的聚合結果舞台。client 依絕對時間與最終點數繪製 3D 結果面板。
  *
  * @param type Minecraft entity 類型。
  * @param world 實體所屬世界。
@@ -21,7 +21,7 @@ class DiceRollPresentationEntity(
     type: EntityType<out DiceRollPresentationEntity> = ModEntities.diceRollPresentation,
     world: Level,
 ) : MahjongEntity(type, world) {
-    /** 所屬麻將桌；未完成設定或資料損壞時為 `null`。 */
+    /** 所屬麻將桌。未完成設定或資料損壞時為 `null`。 */
     val managedTableId: Uuid?
         get() = entityData[TABLE_ID].takeIf(String::isNotBlank)?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
 

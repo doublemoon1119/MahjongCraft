@@ -290,7 +290,7 @@ private fun historyCleanupReportEntries(report: HistoryCleanupReport): List<Conf
 /**
  * 將三態結果轉為本地化文字，未知不當作否。
  *
- * @param value 結果；null 表示尚未取得。
+ * @param value 結果。null 表示尚未取得。
  * @return 是、否或未知的文字。
  */
 private fun booleanText(value: Boolean?): Component = Component.translatable(
@@ -326,18 +326,18 @@ private fun formatMiB(bytes: Long): String = "%.2f MiB".format(Locale.ROOT, byte
 private fun formatBytes(bytes: Long): String = "${formatMiB(bytes)} ($bytes bytes)"
 
 /**
- * 計算前後磁碟大小的有號差值；正值表示增加。
+ * 計算前後磁碟大小的有號差值。正值表示增加。
  *
  * @param before 執行前用量，可能尚未量得。
  * @param after 執行後用量，可能量測失敗。
- * @return 差值；缺少量測時為 null。
+ * @return 差值。缺少量測時為 null。
  */
 private fun netDiskChange(before: HistoryDiskUsage?, after: HistoryDiskUsage?): Long? = if (before == null || after == null) null else after.totalBytes - before.totalBytes
 
 /**
  * 將有號磁碟差值格式化，不掩蓋 WAL 造成的增長。
  *
- * @param value 有號差值；null 為未知。
+ * @param value 有號差值。null 為未知。
  * @return 有號的大小文字或未知符號。
  */
 private fun formatSignedBytes(value: Long?): String = value?.let { "${if (it >= 0) "+" else ""}${formatBytes(it)}" } ?: "—"

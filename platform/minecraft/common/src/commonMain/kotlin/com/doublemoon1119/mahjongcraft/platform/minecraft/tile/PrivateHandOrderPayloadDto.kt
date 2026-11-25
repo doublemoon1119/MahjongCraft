@@ -7,8 +7,8 @@ import kotlinx.serialization.Serializable
  *
  * @property tableId 桌子的 UUID 字串。
  * @property effectiveGameTime 開始生效的遊戲時間。
- * @property standingTileIds 立牌順序的 UUID 字串；null 是保留格位的空格。
- * @property drawnTileId 摸牌位的牌；沒有時為 null。
+ * @property standingTileIds 立牌順序的 UUID 字串。null 是保留格位的空格。
+ * @property drawnTileId 摸牌位的牌。沒有時為 null。
  * @property unsortedTileIds 還沒理過、其他人看到接在立牌最右邊的牌，依其他人看到的順序排列。
  */
 @Serializable

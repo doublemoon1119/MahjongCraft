@@ -29,7 +29,7 @@ internal val AutotestContext.currentPrompt: PlayerDecisionPromptDto?
 /**
  * 目前操作提示中可選的動作，供檢查失敗時說明。
  *
- * @return 動作識別碼，以逗號分隔；沒有操作提示時說明沒有。
+ * @return 動作識別碼，以逗號分隔。沒有操作提示時說明沒有。
  */
 internal fun AutotestContext.offeredActions(): String = currentPrompt?.actions?.joinToString { it.actionId } ?: "No decision prompt"
 
@@ -37,7 +37,7 @@ internal fun AutotestContext.offeredActions(): String = currentPrompt?.actions?.
  * 等到伺服器給本機玩家指定的動作。
  *
  * @param actionId 動作識別碼，例如 `mahjongcraft:riichi/declare_riichi`。
- * @return 動作與它的操作提示；時限內沒有出現時為 null。
+ * @return 動作與它的操作提示。時限內沒有出現時為 null。
  */
 internal suspend fun AutotestContext.waitForAction(actionId: String): AutotestDecision? {
     var decision: AutotestDecision? = null
@@ -52,7 +52,7 @@ internal suspend fun AutotestContext.waitForAction(actionId: String): AutotestDe
 /**
  * 伺服器目前給本機玩家的操作提示識別碼：伺服器為玩家計時的決策，以及送給玩家時會用的提示。
  *
- * @return 操作提示識別碼；伺服器沒有等本機玩家操作時為 null。
+ * @return 操作提示識別碼。伺服器沒有等本機玩家操作時為 null。
  */
 internal suspend fun AutotestContext.serverDecisionKey(): String? {
     val tableId = AutotestTable.tableId ?: return null

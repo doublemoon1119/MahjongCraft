@@ -8,17 +8,17 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * 麻將歷史資料記錄與封存設定。
  *
- * @property enabled 是否啟用歷史資料記錄；停用會永久停止目前記錄，重新啟用只會記錄之後的新牌局。
+ * @property enabled 是否啟用歷史資料記錄。停用會永久停止目前記錄，重新啟用只會記錄之後的新牌局。
  * @property includeAiMatches 是否記錄含有任一 AI 座位的牌局。
- * @property includeInterruptedMatches 是否保留已確認無法接續的中止或部分紀錄；正常關服後可接續的對局不算中止。
- * @property queryEnabled 是否允許玩家與管理員查詢已保存的歷史資料；停用時所有查詢都會被拒絕，但不影響記錄政策。
- * @property allowAdminQuery 是否允許具備管理員權限的使用者查詢全部已保存歷史；停用時管理員仍可查詢自己的對局。
- * @property queryMinimumInterval 同一玩家接受兩次歷史查詢之間的最短間隔；重新載入只影響新查詢，不會取消已接受的查詢，且不得設為零以停用防護。
- * @property queryMaxOutstanding 全伺服器已接受但尚未完成回覆的歷史查詢工作上限，並非資料庫並行數；達到上限時新查詢會被拒絕，降低上限不取消已接受工作，且不得設為零以停用防護。
- * @property queryRejectionReplyInterval 同一玩家收到准入限速或工作額滿拒絕回覆之間的最短間隔；不限制已接受工作的查詢結果，重新載入只影響後續拒絕回覆，且不得設為零以停用防護。
- * @property maxMatches 最多保留的已結束對局數；新對局先保存，再清除最舊的已結束對局，0 表示不限制場數，進行中對局不計入。
- * @property retention 已結束對局自結束 UTC 時間起的保留期限；獨立於場數限制，到期即清理，零表示不按天數清理，不代表立即到期。
- * @property maxDiskMiB 資料庫主檔及 WAL／SHM 附屬檔的磁碟上限，必須為正 MiB；容量不足時停止新增並標記缺口，不阻擋對局。
+ * @property includeInterruptedMatches 是否保留已確認無法接續的中止或部分紀錄。正常關服後可接續的對局不算中止。
+ * @property queryEnabled 是否允許玩家與管理員查詢已保存的歷史資料。停用時所有查詢都會被拒絕，但不影響記錄政策。
+ * @property allowAdminQuery 是否允許具備管理員權限的使用者查詢全部已保存歷史。停用時管理員仍可查詢自己的對局。
+ * @property queryMinimumInterval 同一玩家接受兩次歷史查詢之間的最短間隔。重新載入只影響新查詢，不會取消已接受的查詢，且不得設為零以停用防護。
+ * @property queryMaxOutstanding 全伺服器已接受但尚未完成回覆的歷史查詢工作上限，並非資料庫並行數。達到上限時新查詢會被拒絕，降低上限不取消已接受工作，且不得設為零以停用防護。
+ * @property queryRejectionReplyInterval 同一玩家收到准入限速或工作額滿拒絕回覆之間的最短間隔。不限制已接受工作的查詢結果，重新載入只影響後續拒絕回覆，且不得設為零以停用防護。
+ * @property maxMatches 最多保留的已結束對局數。新對局先保存，再清除最舊的已結束對局，0 表示不限制場數，進行中對局不計入。
+ * @property retention 已結束對局自結束 UTC 時間起的保留期限。獨立於場數限制，到期即清理，零表示不按天數清理，不代表立即到期。
+ * @property maxDiskMiB 資料庫主檔及 WAL／SHM 附屬檔的磁碟上限，必須為正 MiB。容量不足時停止新增並標記缺口，不阻擋對局。
  */
 data class MinecraftHistoryConfig(
     val enabled: Boolean = DEFAULT_ENABLED,
@@ -129,7 +129,7 @@ data class MinecraftHistoryConfig(
         /** 歷史查詢拒絕回覆間隔允許的最大值。 */
         val MAX_QUERY_REJECTION_REPLY_INTERVAL: Duration = 10.seconds
 
-        /** 保留期限允許的最小值；零表示不按天數清理。 */
+        /** 保留期限允許的最小值。零表示不按天數清理。 */
         val MIN_RETENTION: Duration = Duration.ZERO
 
         /** 保留期限允許的最大值，對應設定檔整數天數的上限。 */

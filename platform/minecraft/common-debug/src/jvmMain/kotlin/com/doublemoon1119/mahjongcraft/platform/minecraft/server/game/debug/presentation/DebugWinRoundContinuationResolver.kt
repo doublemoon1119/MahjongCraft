@@ -9,9 +9,11 @@ import kotlin.uuid.Uuid
 
 /**
  * 開發環境用的和牌後續局判定器，不改變既有和牌分數。
- * 將本次新贏家標記為完成；未完成玩家少於兩位時結束本局，
- * 否則由放銃者（自摸時為贏家）之後第一位未完成玩家繼續行動。
- * 未開啟桌級模式時不提供判定；只在開發環境註冊，優先級低於正式規則判定器。
+ *
+ * - 將本次新贏家標記為完成。
+ * - 未完成玩家少於兩位時結束本局。否則由放銃者（自摸時為贏家）之後第一位未完成玩家繼續行動。
+ * - 未開啟桌級模式時不提供判定。
+ * - 只在開發環境註冊，優先級低於正式規則判定器。
  *
  * @property ruleModuleId 此實例服務的規則模組識別碼。
  * @property state 各桌採用的開發模式。
@@ -20,7 +22,7 @@ class DebugWinRoundContinuationResolver(
     override val ruleModuleId: String,
     private val state: DebugWinRoundContinuationState,
 ) : WinRoundContinuationResolver {
-    /** 每個規則各登記一個實例；registry 以規則 ID 加上這個 ID 判斷重複，因此 ID 不必再帶規則。 */
+    /** 每個規則各登記一個實例。registry 以規則 ID 加上這個 ID 判斷重複，因此 ID 不必再帶規則。 */
     override val id: String = MahjongCraftMetadata.id("debug/continuing_win")
 
     /** 排在所有真實規則 resolver 之後，開啟時也不會蓋掉規則本身的判定。 */
@@ -50,7 +52,7 @@ class DebugWinRoundContinuationResolver(
      * @param context 已完成結算的對局情境。
      * @param referenceId 起算的玩家識別碼。
      * @param finishedAfter 本次結算後所有已完成的玩家。
-     * @return 下一位仍在局中的玩家；起算玩家不存在或全員完成時為 null。
+     * @return 下一位仍在局中的玩家。起算玩家不存在或全員完成時為 null。
      */
     private fun nextActiveAfter(
         context: WinRoundContinuationContext,

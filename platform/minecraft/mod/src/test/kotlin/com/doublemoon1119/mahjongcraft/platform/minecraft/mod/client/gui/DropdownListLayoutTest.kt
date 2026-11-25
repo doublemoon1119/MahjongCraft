@@ -140,7 +140,7 @@ class DropdownListLayoutTest {
         assertEquals(52 - DropdownListLayout.WINDOW_MARGIN, layout.bottom)
     }
 
-    /** 游標位置換算成完整清單中的選項索引，計入捲動位置；外框與底部說明不算選項。 */
+    /** 游標位置換算成完整清單中的選項索引，計入捲動位置。外框與底部說明不算選項。 */
     @Test
     fun `pointer maps to the option under it`() {
         val layout = DropdownListLayout(

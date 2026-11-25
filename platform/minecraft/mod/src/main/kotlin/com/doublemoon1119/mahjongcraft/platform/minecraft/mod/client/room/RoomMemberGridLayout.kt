@@ -8,12 +8,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.Vertica
 /**
  * 房間成員頁的版面：成員卡片 grid、底部按鈕列上方的狀態列與底部按鈕列。
  *
- * 內容寬度與設定頁相同，最多 [FormScreenLayout.MAX_CONTENT_WIDTH] 並置中；卡片在內容寬度內置中排列，列數超出可見
- * 範圍時以內容右側邊距內的捲軸捲動。只有一列卡片時，卡片依可用高度放大並上下置中；兩列以上以固定列高為上限；短視窗優先縮小人物範圍。
- * 卡片內的名稱與下方各行從卡片底端往上算，人物畫在名稱上方。等待室與進行中對局共用同一套換欄規則、放大規則與
- * 捲動機制。進行中對局的卡片內另有一段資訊清單，放不下時捲軸畫在該卡片內，每張卡片各自捲動。
- *
- * 純資料，不依賴任何 Minecraft 型別；視窗尺寸、玩家數與捲動位置都由呼叫端傳入。
+ * - 內容寬度與設定頁相同，最多 [FormScreenLayout.MAX_CONTENT_WIDTH] 並置中。
+ * - 卡片在內容寬度內置中排列。列數超出可見範圍時，以內容右側邊距內的捲軸捲動。
+ * - 只有一列卡片時，卡片依可用高度放大並上下置中。兩列以上以固定列高為上限。短視窗優先縮小人物範圍。
+ * - 卡片內的名稱與下方各行從卡片底端往上算，人物畫在名稱上方。
+ * - 等待室與進行中對局共用同一套換欄規則、放大規則與捲動機制。
+ * - 進行中對局的卡片內另有一段資訊清單，放不下時捲軸畫在該卡片內，每張卡片各自捲動。
+ * - 純資料，不依賴任何 Minecraft 型別。視窗尺寸、玩家數與捲動位置都由呼叫端傳入。
  *
  * @property windowWidth 目前視窗寬度。
  * @property windowHeight 目前視窗高度。
@@ -38,7 +39,7 @@ internal data class RoomMemberGridLayout(
     /** 排版時至少視為一位玩家，避免空清單算出零欄。 */
     private val effectiveCount: Int = playerCount.coerceAtLeast(1)
 
-    /** 目前欄數；依內容寬度決定。 */
+    /** 目前欄數。依內容寬度決定。 */
     val columns: Int = minOf(effectiveCount, (frame.contentWidth / CARD_MIN_WIDTH).coerceAtLeast(1))
 
     /** 單張卡片寬度。 */
@@ -94,19 +95,19 @@ internal data class RoomMemberGridLayout(
         minimumThumbHeight = VerticalScrollbar.MINIMUM_THUMB_HEIGHT,
     )
 
-    /** 目前螢幕上實際看得到的列範圍；捲動超出視窗的列不參與繪製與命中判定。 */
+    /** 目前螢幕上實際看得到的列範圍。捲動超出視窗的列不參與繪製與命中判定。 */
     val visibleGridRows: IntRange = firstVisibleRow until firstVisibleRow + visibleRows
 
-    /** 第一個可見列的頂端；只有一列時整列在可用高度內上下置中。 */
+    /** 第一個可見列的頂端。只有一列時整列在可用高度內上下置中。 */
     private val firstRowTop: Int = if (rows == 1) CARD_TOP + ((availableHeight - cardHeight) / 2).coerceAtLeast(0) else CARD_TOP
 
-    /** 卡片內資訊清單一次能顯示幾行；卡片放大時行數跟著增加。 */
+    /** 卡片內資訊清單一次能顯示幾行。卡片放大時行數跟著增加。 */
     val visibleInfoRows: Int = (((CARD_HEIGHT - INFO_OFFSET) * cardScale.coerceAtLeast(1f) - INFO_BOTTOM_PADDING) / INFO_ROW_HEIGHT).toInt().coerceAtLeast(1)
 
     /** 資訊清單區從頂端到卡片底端的高度。 */
     private val infoAreaHeight: Int = visibleInfoRows * INFO_ROW_HEIGHT + INFO_BOTTOM_PADDING
 
-    /** 底部四格按鈕列；離開畫面的按鈕在最右一格。 */
+    /** 底部四格按鈕列。離開畫面的按鈕在最右一格。 */
     val footer: ButtonRowLayout = frame.footer(buttonCount = FOOTER_SLOTS)
 
     /**
@@ -142,7 +143,7 @@ internal data class RoomMemberGridLayout(
     fun infoTop(row: Int): Int = cardBottom(row) - infoAreaHeight
 
     /**
-     * 計算等待室卡片狀態列的起點，例如遊戲建立者、準備狀態或 AI 策略選擇器；與卡片底端保持固定距離。
+     * 計算等待室卡片狀態列的起點，例如遊戲建立者、準備狀態或 AI 策略選擇器。與卡片底端保持固定距離。
      *
      * @param row 從零開始的完整清單列索引。
      * @return 狀態列頂端的 Y 座標。
@@ -169,7 +170,7 @@ internal data class RoomMemberGridLayout(
      * 計算資訊清單的最大合法捲動位置。
      *
      * @param totalInfoRows 完整資訊清單的行數。
-     * @return 最大首行索引；內容未超出可見範圍時為零。
+     * @return 最大首行索引。內容未超出可見範圍時為零。
      */
     fun maximumInfoScroll(totalInfoRows: Int): Int = (totalInfoRows - visibleInfoRows).coerceAtLeast(0)
 
@@ -213,7 +214,7 @@ internal data class RoomMemberGridLayout(
      *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
-     * @return 成員在完整清單中的順序；不在任何可見卡片上時為 null。
+     * @return 成員在完整清單中的順序。不在任何可見卡片上時為 null。
      */
     fun cardIndexAt(mouseX: Double, mouseY: Double): Int? {
         if (!isOverGrid(mouseX, mouseY)) return null
@@ -237,7 +238,7 @@ internal data class RoomMemberGridLayout(
     }
 
     /**
-     * 判斷游標是否落在指定卡片的資訊捲軸上；命中範圍比繪製範圍稍寬。
+     * 判斷游標是否落在指定卡片的資訊捲軸上。命中範圍比繪製範圍稍寬。
      *
      * @param index 成員在完整清單中的順序。
      * @param mouseX 游標水平座標。
@@ -252,7 +253,7 @@ internal data class RoomMemberGridLayout(
     }
 
     /**
-     * 判斷游標是否落在成員卡片捲軸的命中範圍內；內容未超出可見範圍時回傳 false。
+     * 判斷游標是否落在成員卡片捲軸的命中範圍內。內容未超出可見範圍時回傳 false。
      *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。

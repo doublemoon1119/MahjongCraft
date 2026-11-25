@@ -23,7 +23,7 @@ import net.minecraft.commands.Commands.literal
  *
  * 每個情境以呼叫者目前牌桌的玩家身分建立一份只存在於記憶體的 [MatchProgressionContext]——替換分數、
  * 對局長度與局位後交給正式的 [RiichiMatchProgressionPolicy]，把它的決策直接回報給呼叫者。牌桌本身的
- * 權威狀態不會被此指令修改；本類別只使用 [GameRepository] 的查詢方法建立預覽。
+ * 權威狀態不會被此指令修改。本類別只使用 [GameRepository] 的查詢方法建立預覽。
  *
  * @property gameRepository 讀取呼叫者目前牌桌的狀態作為情境基礎。
  * @property playerTableScope 解析呼叫者目前入座的桌子。
@@ -33,7 +33,7 @@ class DebugProgressionCommand(
     private val playerTableScope: DebugPlayerTableScope,
 ) {
     /**
-     * 建立不修改權威對局、只預覽終局推進決策的指令樹；日麻的情境放在 `riichi` 底下。
+     * 建立不修改權威對局、只預覽終局推進決策的指令樹。日麻的情境放在 `riichi` 底下。
      *
      * @return 包含各預覽情境的指令節點。
      */

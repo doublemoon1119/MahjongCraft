@@ -120,7 +120,7 @@ private val MINECRAFT_LANG_DIRECTORIES: List<String> = listOf(
     "example/platform/minecraft/common/src/jvmMain/resources/assets/mahjongcraft_example/lang",
 )
 
-/** 正式程式碼不得使用 JSON 型別的 project；序列化格式只屬於存檔、網路 DTO 與平台轉接層。 */
+/** 正式程式碼不得使用 JSON 型別的 project。序列化格式只屬於存檔、網路 DTO 與平台轉接層。 */
 private val JSON_FREE_PROJECT_PATHS: Set<String> = setOf(
     ":mahjong-logic",
     ":mahjong-ai",
@@ -147,7 +147,7 @@ private val RELEASE_TRAIN_VERSION_NAMES: List<String> = listOf(
  *
  * @param project 提供 root version catalog 的 project。
  * @param names 要讀取的版本名稱。
- * @return 以版本名稱為 key 的版本；catalog 沒有的名稱不在其中。
+ * @return 以版本名稱為 key 的版本。catalog 沒有的名稱不在其中。
  */
 private fun catalogVersionsOf(project: Project, names: Set<String>): Map<String, String> {
     val catalog = project.extensions.getByType(VersionCatalogsExtension::class.java).named("libs")
@@ -166,10 +166,10 @@ private fun releaseTrainVersions(project: Project): Map<String, String> {
 }
 
 /**
- * 取得目錄中的所有語系檔並依檔名排序；模組未載入時目錄仍在磁碟上，不受目前 target 選擇影響。
+ * 取得目錄中的所有語系檔並依檔名排序。模組未載入時目錄仍在磁碟上，不受目前 target 選擇影響。
  *
  * @param dir 要搜尋語系檔的目錄。
- * @return 依檔名排序的 JSON 語系檔；目錄不存在時為空清單。
+ * @return 依檔名排序的 JSON 語系檔。目錄不存在時為空清單。
  */
 internal fun minecraftLangFiles(dir: File): List<File> {
     if (!dir.isDirectory) return emptyList()
@@ -192,9 +192,10 @@ internal fun isLangFileSorted(text: String): Boolean = text.withLfLineEndings() 
 /**
  * 將語系檔內容依 key 字典序重排。
  *
- * 每個條目固定佔一整行（`  "key": "value",`），排序只搬動整行，不解析或改寫 value 內容與跳脫字元。
- * 純文字轉換，不特定於任何平台的語系檔格式。輸入可以是 CRLF 或 LF 換行，輸出一律使用 LF。
- * 呼叫端需提供符合上述格式的內容；此函式只檢查首尾行與結尾換行，不驗證每筆條目或 JSON 語法。
+ * - 每個條目固定佔一整行（`  "key": "value",`）。排序只搬動整行，不解析或改寫 value 內容與跳脫字元。
+ * - 純文字轉換，不特定於任何平台的語系檔格式。
+ * - 輸入可以是 CRLF 或 LF 換行，輸出一律使用 LF。
+ * - 呼叫端需提供符合上述格式的內容。此函式只檢查首尾行與結尾換行，不驗證每筆條目或 JSON 語法。
  *
  * @param original 要排序的語系檔內容。
  * @return 依 key 字典序排列且使用 LF 換行的內容。

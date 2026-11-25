@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.character
 
-/** 角色切換的權威檢查結果；拒絕時不修改任何選擇。 */
+/** 角色切換的權威檢查結果。拒絕時不修改任何選擇。 */
 enum class AiCharacterSelectionResult {
     /** 選擇已更新，或原本就是同一角色。 */
     ACCEPTED,

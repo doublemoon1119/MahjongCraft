@@ -58,7 +58,7 @@ class PlayerPortraitSourceRegistryTest {
         assertFailsWith<IllegalArgumentException> { PlayerPortraitSource.TextureRegion("test:texture", 0f, 0f, 2f, 1f) }
     }
 
-    /** 判斷規則接受隔離的錯誤包成帶 provider ID 的例外交給呼叫端降級；不接受的錯誤原樣往外傳。 */
+    /** 判斷規則接受隔離的錯誤包成帶 provider ID 的例外交給呼叫端降級。不接受的錯誤原樣往外傳。 */
     @Test
     fun `provider errors follow the failure policy`() {
         val isolated = PlayerPortraitSourceRegistryImpl(ExtensionFailurePolicy { it is IsolatableTestError || ExtensionFailurePolicy.Default.isIsolatable(it) })

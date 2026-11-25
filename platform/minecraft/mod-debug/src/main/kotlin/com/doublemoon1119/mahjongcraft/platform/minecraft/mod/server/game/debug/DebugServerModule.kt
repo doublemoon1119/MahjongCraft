@@ -34,7 +34,7 @@ import org.koin.dsl.binds
 import org.koin.dsl.module
 import org.koin.plugin.module.dsl.single
 
-/** debug 工具的伺服器服務；開發環境載入本體的 Koin，依賴本體 [modServerModule] 提供的服務。 */
+/** debug 工具的伺服器服務。開發環境載入本體的 Koin，依賴本體 [modServerModule] 提供的服務。 */
 val debugServerModule: Module = module {
     single<DebugSeatedParticipantCommand>()
     single<DebugCommand>()

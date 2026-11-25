@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui
 /**
  * 內容區的像素捲動與捲軸拖曳狀態，例如規則一覽與「如何開始」的內容區。
  *
- * 拖曳開始後即使游標離開捲軸也持續跟隨，直到放開左鍵；所有偏移都限制在可捲動範圍內。
+ * 拖曳開始後即使游標離開捲軸也持續跟隨，直到放開左鍵。所有偏移都限制在可捲動範圍內。
  */
 internal class PixelScrollState {
     /** 目前內容的像素偏移。 */

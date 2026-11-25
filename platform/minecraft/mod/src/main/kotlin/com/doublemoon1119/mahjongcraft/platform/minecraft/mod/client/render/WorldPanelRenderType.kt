@@ -9,7 +9,7 @@ import net.minecraft.client.renderer.RenderType
  * 世界面板的半透明純色底色。
  *
  * 只做深度測試、不寫入深度：面板由 [WorldPanelDeferral] 等整個世界畫完才畫，後方的實體、半透明方塊與雲都已經畫好，
- * 能透過底色看到；前方的東西照常擋住面板。
+ * 能透過底色看到。前方的東西照常擋住面板。
  */
 internal object WorldPanelRenderType {
     /** 面板底色的四邊形使用的繪製圖層。 */

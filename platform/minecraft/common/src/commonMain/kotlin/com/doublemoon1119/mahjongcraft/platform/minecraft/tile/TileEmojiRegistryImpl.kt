@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 /**
  * [TileEmojiRegistry] 的預設記憶體實作。
  *
- * 建構時不預先加入任何映射；內建與第三方 emoji 使用相同的 [register] 流程，並由外層組裝完成後呼叫
+ * 建構時不預先加入任何映射。內建與第三方 emoji 使用相同的 [register] 流程，並由外層組裝完成後呼叫
  * [freeze]。runtime single 由 Koin 管理。
  */
 class TileEmojiRegistryImpl : TileEmojiRegistry {

@@ -11,19 +11,19 @@ import net.minecraft.world.entity.EntityType
 
 /** 範例家具 entity type 的集中註冊點。 */
 object ExampleFurnitureEntities {
-    /** 方塊座位共用的隱形支撐；有乘客時隨原生資料保存，空座自行清理。 */
+    /** 方塊座位共用的隱形支撐。有乘客時隨原生資料保存，空座自行清理。 */
     lateinit var chairSeat: EntityType<ExampleChairSeatEntity>
         private set
 
     /** 確認範例 entity type 是否已完成原生註冊。 */
     fun isRegistered(): Boolean = ::chairSeat.isInitialized && ::cushion.isInitialized
 
-    /** 可保存的坐墊 entity；寫入登記表後可用。 */
+    /** 可保存的坐墊 entity。寫入登記表後可用。 */
     lateinit var cushion: EntityType<ExampleCushionEntity>
         private set
 
     /**
-     * 登記範例家具的兩種 entity type；兩者都不會自然生成。
+     * 登記範例家具的兩種 entity type。兩者都不會自然生成。
      *
      * @param registrar 載入器的登記方式。
      */

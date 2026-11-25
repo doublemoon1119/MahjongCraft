@@ -27,7 +27,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.util.FormattedCharSequence
 
 /**
- * 歷史對局分頁列表；查詢生命週期由共用瀏覽 session 管理。
+ * 歷史對局分頁列表。查詢生命週期由共用瀏覽 session 管理。
  *
  * @property session 此畫面所屬的共用瀏覽 session。
  */

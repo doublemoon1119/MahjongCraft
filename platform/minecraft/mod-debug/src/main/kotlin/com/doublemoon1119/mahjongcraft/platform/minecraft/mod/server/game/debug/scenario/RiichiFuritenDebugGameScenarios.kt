@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.scen
 /**
  * 振聽驗收用的日麻 debug 情境。
  *
- * 全部沿用 [SeatSetupScenario] 的座位設定與排定摸打；呼叫者預先有兩張捨牌，牌局因此不在第一巡，
+ * 全部沿用 [SeatSetupScenario] 的座位設定與排定摸打。呼叫者預先有兩張捨牌，牌局因此不在第一巡，
  * 不會觸發第一巡相關的役與流局。
  */
 object RiichiFuritenDebugGameScenarios {
@@ -117,7 +117,7 @@ private val TANYAO_ONLY_ON_FOUR_WAIT: List<Tile> = listOf(
     Tile.Numeric(Tile.Suit.Bamboo, 6),
 )
 
-/** 二三萬、四五六筒、七八九筒、中中、二二條、北：尚未聽牌；碰中並打出北後聽一、四萬。 */
+/** 二三萬、四五六筒、七八九筒、中中、二二條、北：尚未聽牌。碰中並打出北後聽一、四萬。 */
 private val RED_DRAGON_PAIR_BEFORE_CALL: List<Tile> = listOf(
     Tile.Numeric(Tile.Suit.Character, 2),
     Tile.Numeric(Tile.Suit.Character, 3),

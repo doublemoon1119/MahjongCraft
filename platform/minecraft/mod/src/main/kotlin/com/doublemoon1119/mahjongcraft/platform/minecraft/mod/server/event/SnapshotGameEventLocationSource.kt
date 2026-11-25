@@ -14,7 +14,7 @@ internal class SnapshotGameEventLocationSource(
     private val locations: TableLocationRegistry,
 ) : GameEventLocationSource {
     /**
-     * 只讀取記憶體索引，不接觸世界或阻塞；此方法可在權威 store 交易鎖內由背景執行緒呼叫。
+     * 只讀取記憶體索引，不接觸世界或阻塞。此方法可在權威 store 交易鎖內由背景執行緒呼叫。
      *
      * @param venueId 事件所屬場地 UUID。
      * @return 已知桌子位置，或尚未登記時的 null。

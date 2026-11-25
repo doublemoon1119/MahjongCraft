@@ -22,7 +22,7 @@ import net.minecraft.world.phys.AABB
 /**
  * 放在方塊上的牌尺，純裝飾，不參與牌局。
  *
- * 剛放下時平放，蹲下右鍵在平放與豎放之間切換。碰撞範圍依朝向與擺法貼齊整支牌尺，不會擋住旁邊的牌；左鍵收回並掉落
+ * 剛放下時平放，蹲下右鍵在平放與豎放之間切換。碰撞範圍依朝向與擺法貼齊整支牌尺，不會擋住旁邊的牌。左鍵收回並掉落
  * 同色牌尺，創造模式只移除。
  *
  * @param type Minecraft entity 類型。
@@ -37,7 +37,7 @@ class MahjongRulerEntity(
         get() = MahjongRulerColor.fromNameOrDefault(entityData[COLOR])
         set(value) = entityData.set(COLOR, value.name)
 
-    /** 牌尺的擺法；改變時一併更新碰撞範圍。 */
+    /** 牌尺的擺法。改變時一併更新碰撞範圍。 */
     var posture: MahjongRulerPosture
         get() = MahjongRulerPosture.fromNameOrDefault(entityData[POSTURE])
         set(value) = entityData.set(POSTURE, value.name)
@@ -94,7 +94,7 @@ class MahjongRulerEntity(
     override fun isAttackable(): Boolean = !isRemoved
 
     /**
-     * 蹲下右鍵在平放與豎放之間切換；沒有蹲下時不做任何事。
+     * 蹲下右鍵在平放與豎放之間切換。沒有蹲下時不做任何事。
      *
      * @param player 進行互動的玩家。
      * @param hand 玩家使用的手。
@@ -107,9 +107,9 @@ class MahjongRulerEntity(
     }
 
     /**
-     * 左鍵收回牌尺；創造模式只移除實體，其他模式掉落同色牌尺。
+     * 左鍵收回牌尺。創造模式只移除實體，其他模式掉落同色牌尺。
      *
-     * @param attacker 發起攻擊的 entity；非玩家不會收回牌尺。
+     * @param attacker 發起攻擊的 entity。非玩家不會收回牌尺。
      */
     override fun skipAttackInteraction(attacker: Entity): Boolean {
         val player = attacker as? Player ?: return false

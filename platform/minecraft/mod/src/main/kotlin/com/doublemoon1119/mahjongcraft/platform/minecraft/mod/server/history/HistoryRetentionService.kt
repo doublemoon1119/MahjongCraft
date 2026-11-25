@@ -35,7 +35,7 @@ internal class HistoryRetentionService(
     private val clock: Clock = Clock.System,
 ) {
     /**
-     * 取得唯讀 preview；不執行 checkpoint 或資料刪除。
+     * 取得唯讀 preview。不執行 checkpoint 或資料刪除。
      *
      * @param database 已驗證的同一 session 資料庫。
      * @param policy 有效政策快照。
@@ -53,7 +53,7 @@ internal class HistoryRetentionService(
      *
      * @param database 目前 session 的資料庫。
      * @param policy coordinator 固定的有效政策。
-     * @param onCommitted 每次 SQL 刪除已提交後的場數通知；不得阻塞或重入儲存端。
+     * @param onCommitted 每次 SQL 刪除已提交後的場數通知。不得阻塞或重入儲存端。
      * @return 實際刪除與磁碟回收結果。
      */
     suspend fun run(database: SqliteHistoryDatabase, policy: HistoryRetentionPolicy, onCommitted: (Int) -> Unit = {}): HistoryCleanupResult {
@@ -75,7 +75,7 @@ internal class HistoryRetentionService(
     }
 
     /**
-     * 刪除前再取得保護名單；SQL 提交後才清理可移除的權威 metadata。
+     * 刪除前再取得保護名單。SQL 提交後才清理可移除的權威 metadata。
      *
      * @param database 同一維護工作的資料庫。
      * @param removals 此批 ID 與清理原因。
@@ -95,7 +95,7 @@ internal class HistoryRetentionService(
     }
 
     /**
-     * 可接續對局與尚待寫事件的聯集；終止證據不會覆蓋此保護。
+     * 可接續對局與尚待寫事件的聯集。終止證據不會覆蓋此保護。
      *
      * @return 清理時必須保護的對局識別字串。
      */

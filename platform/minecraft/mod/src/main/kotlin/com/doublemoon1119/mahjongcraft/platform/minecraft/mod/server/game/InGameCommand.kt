@@ -26,16 +26,13 @@ import kotlin.uuid.toKotlinUuid
 /**
  * `/mahjongcraft game` 底下的對局階段玩家指令：`hand`、`discard`、`action`。
  *
- * 集中在 `game` 子分類、獨立於 `room`（見 `RoomCommand` KDoc 早就預告的分工）——`room` 專屬
- * 房間等待階段，這裡專屬進行中的對局。摸牌不開放指令（全自動觸發，見 [MahjongTableGameActionService]
- * KDoc）；碰／吃／槓／胡／自摸／過統一透過 `action` 一個指令處理，候選項目由
- * [GameActionCandidateResolver] 依目前搶槓／回應捨牌／自己回合的情境動態算出，玩家不需要自己組
- * 動作內容。
- *
- * `discard`／`action` 的候選 token 直接是可讀的牌面／動作簡寫（見
- * [GameActionCandidateResolver] KDoc），不需要 tooltip 也看得懂要打什麼；第三方牌種的候選 token 可能
- * 帶命名空間冒號，因此引數用 [StringArgumentType.string]（而非 [StringArgumentType.word]）並在補全時
- * 用 [StringArgumentType.escapeIfRequired]，比照 `RoomCommand` 策略引數的既有慣例。
+ * - `room` 專屬房間等待階段，`game` 專屬進行中的對局，見 `RoomCommand` KDoc。
+ * - 摸牌不開放指令，由伺服器自動觸發，見 [MahjongTableGameActionService] KDoc。
+ * - 碰／吃／槓／胡／自摸／過統一透過 `action` 一個指令處理。候選項目由 [GameActionCandidateResolver]
+ *   依目前搶槓、回應捨牌或自己回合的情境算出，玩家不需要自己組動作內容。
+ * - `discard`／`action` 的候選 token 是可讀的牌面或動作簡寫（見 [GameActionCandidateResolver] KDoc），不看 tooltip 也懂。
+ * - 第三方牌種的候選 token 可能帶命名空間冒號，因此引數用 [StringArgumentType.string]（而非 [StringArgumentType.word]），
+ *   補全時用 [StringArgumentType.escapeIfRequired]，與 `RoomCommand` 策略引數相同。
  *
  * @property candidateResolver 依玩家目前桌況列出手牌／合法動作候選項目。
  * @property gameActionService 實際執行對局動作的服務。
@@ -297,7 +294,7 @@ class InGameCommand(
     private companion object {
         /**
          * 手牌引數名稱（`discard` 使用）。值是 [GameActionCandidateResolver] 依玩家當下
-         * 手牌動態算出的 candidate token，對應一張實體牌；跟 `DebugCommand` 的 `tile`
+         * 手牌動態算出的 candidate token，對應一張實體牌。跟 `DebugCommand` 的 `tile`
          * 引數（全域固定的素材 asset key，與任何玩家手牌無關）是兩個不同概念，不應合併實作。
          */
         const val TILE_ARGUMENT: String = "tile"

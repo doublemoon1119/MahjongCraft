@@ -64,7 +64,7 @@ class DebugHistoryCommand(
      * 開始一批有界歷史生成工作。
      *
      * @param context Brigadier 指令內容。
-     * @return 指令已接受的結果碼；實際工作於協程中執行。
+     * @return 指令已接受的結果碼。實際工作於協程中執行。
      */
     private fun generate(context: CommandContext<CommandSourceStack>): Int {
         val scenario = ResourceLocationArgument.getId(context, SCENARIO_ARGUMENT).toString()
@@ -76,7 +76,7 @@ class DebugHistoryCommand(
      * 產生一份固定內容的測試牌譜。
      *
      * @param context Brigadier 指令內容。
-     * @return 指令已接受的結果碼；實際工作於協程中執行。
+     * @return 指令已接受的結果碼。實際工作於協程中執行。
      */
     private fun fixture(context: CommandContext<CommandSourceStack>): Int {
         val fixture = ResourceLocationArgument.getId(context, FIXTURE_ARGUMENT).toString()
@@ -88,7 +88,7 @@ class DebugHistoryCommand(
      *
      * @param source 指令來源。
      * @param start 以 session 開始工作。
-     * @return 指令已接受的結果碼；實際工作於協程中執行。
+     * @return 指令已接受的結果碼。實際工作於協程中執行。
      */
     private fun startAndReply(source: CommandSourceStack, start: suspend (Uuid) -> HistoryGenerationStartResult): Int {
         val session = writer.currentSessionId

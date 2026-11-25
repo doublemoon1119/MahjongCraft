@@ -83,7 +83,7 @@ class AiCharacterManager internal constructor(
     private val recentDiscards = mutableMapOf<Uuid, AiCharacterDiscardLook>()
 
     /**
-     * 登記 tick 及卸載回呼；只執行目前 session 的工作。
+     * 登記 tick 及卸載回呼。只執行目前 session 的工作。
      *
      * @param events 登記事件用的伺服器事件來源。
      */
@@ -111,7 +111,7 @@ class AiCharacterManager internal constructor(
     }
 
     /**
-     * 開始本次原生 session；由之後的收斂恢復已載入桌子，不補發遊戲事件。
+     * 開始本次原生 session。由之後的收斂恢復已載入桌子，不補發遊戲事件。
      *
      * @param server 已完成資料與世界索引還原的伺服器。
      */
@@ -133,9 +133,9 @@ class AiCharacterManager internal constructor(
     }
 
     /**
-     * 開局或換位呈現前立即對齊名冊；自有代理共用入座，借用角色只接收指定席位，不自動拉回。
+     * 開局或換位呈現前立即對齊名冊。自有代理共用入座，借用角色只接收指定席位，不自動拉回。
      *
-     * @param tableId 只對齊指定桌子；null 表示所有權威桌子。
+     * @param tableId 只對齊指定桌子。null 表示所有權威桌子。
      */
     fun reconcile(tableId: Uuid? = null) {
         val server = activeServer ?: return
@@ -307,7 +307,7 @@ class AiCharacterManager internal constructor(
     }
 
     /**
-     * 局間換位或恢復時只安排自有代理；借用角色接收新席位後自行處理，真人位置不變。
+     * 局間換位或恢復時只安排自有代理。借用角色接收新席位後自行處理，真人位置不變。
      *
      * @param game 目前權威對局。
      * @param roster 完整席位名冊。
@@ -351,7 +351,7 @@ class AiCharacterManager internal constructor(
     /**
      * 主要看各自手牌實際的位置，錯開短暫轉看公開捨牌及目前行動者的時機。
      *
-     * @param game 目前權威對局；只用手牌的牌張身分找出桌上的位置，不讀取牌面或待決選擇。
+     * @param game 目前權威對局。只用手牌的牌張身分找出桌上的位置，不讀取牌面或待決選擇。
      * @param seating 已載入的席位世界。
      * @param roster 完整席位名冊。
      */
@@ -452,7 +452,7 @@ class AiCharacterManager internal constructor(
     }
 
     /**
-     * 一次已成立捨牌的回饋；目標必須來自牌河配置，不能使用飛行前的私人手牌位置。
+     * 一次已成立捨牌的回饋。目標必須來自牌河配置，不能使用飛行前的私人手牌位置。
      *
      * @param tableId 桌子 UUID。
      * @param seatIndex 已成立動作的公開席位。

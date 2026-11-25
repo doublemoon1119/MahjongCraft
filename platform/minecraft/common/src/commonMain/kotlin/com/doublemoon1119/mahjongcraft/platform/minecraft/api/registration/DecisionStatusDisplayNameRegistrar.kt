@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 
-/** 擴充登記決策狀態名稱時取得的登記介面；查詢與凍結由 MahjongCraft 進行。 */
+/** 擴充登記決策狀態名稱時取得的登記介面。查詢與凍結由 MahjongCraft 進行。 */
 interface DecisionStatusDisplayNameRegistrar {
     /** 目前已登記組合的穩定 key 快照，格式為 `規則模組 ID/狀態 ID`，中立預設以 [DecisionStatusDisplayNameRegistry.DEFAULT_KEY] 表示。 */
     val registrationKeys: Set<String>

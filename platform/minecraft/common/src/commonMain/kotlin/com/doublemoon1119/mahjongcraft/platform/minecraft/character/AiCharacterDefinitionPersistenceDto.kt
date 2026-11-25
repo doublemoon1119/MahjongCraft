@@ -25,7 +25,7 @@ internal data class AiCharacterDefinitionPersistenceDto(
  *
  * @property kind 來源種類。
  * @property resource 素材鍵或貼圖 ID。
- * @property region 貼圖區域；牌面來源為 null。
+ * @property region 貼圖區域。牌面來源為 null。
  */
 @Serializable
 internal data class AiCharacterFacePersistenceDto(

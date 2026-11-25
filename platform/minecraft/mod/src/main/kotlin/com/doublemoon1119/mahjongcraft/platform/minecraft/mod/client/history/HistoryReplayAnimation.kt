@@ -30,7 +30,7 @@ import kotlin.uuid.Uuid
  * @param before 這一步開始時的擺放，依局內牌索引。
  * @param after 這一步結束時的擺放，依局內牌索引。
  * @param reveals 這一步開始攤牌的手牌。
- * @property winningTiles 這一步要放胡牌特效的和牌張，依局內牌索引；沒有時為空。
+ * @property winningTiles 這一步要放胡牌特效的和牌張，依局內牌索引。沒有時為空。
  */
 internal class HistoryReplayAnimation(
     val roundNumber: Int,
@@ -43,7 +43,7 @@ internal class HistoryReplayAnimation(
     /** 有動作的牌依序播放的步驟，依局內牌索引。 */
     private val tileSteps: Map<Int, List<AnimationStep<TilePose>>>
 
-    /** 胡牌特效開始的 tick；這一步沒有特效時為 null。 */
+    /** 胡牌特效開始的 tick。這一步沒有特效時為 null。 */
     private val winEffectStart: Long?
 
     /** 胡牌特效的聲音。 */
@@ -52,7 +52,7 @@ internal class HistoryReplayAnimation(
     /** 這一步打出牌、要揮手的玩家，以回放擺牌的玩家識別碼表示。 */
     private val swingingPlayers: Set<Uuid>
 
-    /** 整步播完需要的 tick；有人揮手時至少等揮手做完。 */
+    /** 整步播完需要的 tick。有人揮手時至少等揮手做完。 */
     val durationTicks: Double
 
     /** 已經播放的 tick。 */
@@ -87,7 +87,7 @@ internal class HistoryReplayAnimation(
      * 某一家目前的揮手進度。
      *
      * @param initialSeatIndex 玩家的初始座位。
-     * @return 揮手中為 0 到 1 之間的進度；沒有揮手或已經做完時為 0。
+     * @return 揮手中為 0 到 1 之間的進度。沒有揮手或已經做完時為 0。
      */
     fun swingProgress(initialSeatIndex: Int): Float {
         if (HistoryReplayArrangement.playerId(initialSeatIndex) !in swingingPlayers) return 0f
@@ -99,7 +99,7 @@ internal class HistoryReplayAnimation(
     val finished: Boolean
         get() = elapsedTicks >= durationTicks
 
-    /** 這一步有動作的牌，依局內牌索引；與對局中相同，動畫播放中這些牌不參與發光。 */
+    /** 這一步有動作的牌，依局內牌索引。與對局中相同，動畫播放中這些牌不參與發光。 */
     val movingTiles: Set<Int>
         get() = tileSteps.keys
 
@@ -119,7 +119,7 @@ internal class HistoryReplayAnimation(
     /**
      * 胡牌特效在目前這一刻的進度。
      *
-     * @return 每張和牌張的特效；還沒開始或已經結束時為空。
+     * @return 每張和牌張的特效。還沒開始或已經結束時為空。
      */
     fun winEffects(): List<HistoryReplayWinEffectFrame> {
         val start = winEffectStart ?: return emptyList()
@@ -133,7 +133,7 @@ internal class HistoryReplayAnimation(
     /**
      * 有動作的牌在目前這一刻的樣子。
      *
-     * @return 依局內牌索引的樣子；沒有動作的牌不列入，維持結束時的擺放。
+     * @return 依局內牌索引的樣子。沒有動作的牌不列入，維持結束時的擺放。
      */
     fun samples(): Map<Int, TileAnimationSample> = tileSteps.mapValues { (index, steps) ->
         val start = before[index]

@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftReso
 
 /**
  * 描述動畫佇列裡的一個步驟。[WaitUntil]／[Teleport]／[SetInvisible]／[PlayMotion] 是所有動畫實體共用的
- * 最小集合；[Custom] 讓個別實體類型（例如麻將牌的姿態切換）附加自己專屬的瞬間動作，用型別 [C]
+ * 最小集合。[Custom] 讓個別實體類型（例如麻將牌的姿態切換）附加自己專屬的瞬間動作，用型別 [C]
  * 承載，不透過 lambda 表達——lambda 無法序列化進世界存檔，而佇列本身要能完整持久化／還原正是這個
  * 型別存在的前提，理由見驅動佇列的抽象基底類別 KDoc。
  *
@@ -18,7 +18,7 @@ sealed interface AnimationStep<out C> {
     /**
      * 等待絕對遊戲時間 [gameTime]，到期後即可繼續處理後續步驟。
      *
-     * 使用絕對時間，讓多個實體共用同一目標時刻；前面的動畫延遲不會重新起算等待時間。
+     * 使用絕對時間，讓多個實體共用同一目標時刻。前面的動畫延遲不會重新起算等待時間。
      *
      * @property gameTime 等待到的絕對遊戲時間。
      */
@@ -42,7 +42,7 @@ sealed interface AnimationStep<out C> {
     data class SetInvisible(val invisible: Boolean) : AnimationStep<Nothing>
 
     /**
-     * 在 entity 目前的世界座標播放一次聲音。[soundId] 必須是完整 namespaced ID；
+     * 在 entity 目前的世界座標播放一次聲音。[soundId] 必須是完整 namespaced ID。
      * [playAtGameTime] 是預定播放的絕對 server game time，[expiresAtGameTime] 是允許播放的最後時間，
      * 避免 chunk 長時間卸載後補播已過期事件。聲音 cue 不阻塞同一佇列中的運動 step。
      *
@@ -71,12 +71,13 @@ sealed interface AnimationStep<out C> {
     }
 
     /**
-     * 播放一段既有的運動動畫（起飛／落下等視覺位移）：真實座標不受影響，只驅動 render 端的位移／姿態內插；[durationTicks] 到期前這個 step
-     * 會讓佇列停在原地，不處理後續 step。
+     * 播放一段既有的運動動畫（起飛／落下等視覺位移）。
      *
-     * [easeRotation] 為 false 時姿態旋轉採線性內插；為 true 時採用與位移相同的漸慢曲線。
-     * [startYawOffsetDegrees] 是畫面起點相對 entity 真實終點 yaw 的角差；它與位移一起套用 ease-out 並
-     * 收斂到零。預設為零，因此既有不需要水平轉向的動畫完全不受影響。
+     * - 真實座標不受影響，只驅動 render 端的位移／姿態內插。
+     * - [durationTicks] 到期前這個 step 會讓佇列停在原地，不處理後續 step。
+     * - [easeRotation] 為 false 時姿態旋轉採線性內插，為 true 時採用與位移相同的漸慢曲線。
+     * - [startYawOffsetDegrees] 是畫面起點相對 entity 真實終點 yaw 的角差，與位移一起套用 ease-out 並收斂到零。
+     *   預設為零，不需要水平轉向的動畫不受影響。
      *
      * @property durationTicks 運動動畫持續的 tick 數。
      * @property arcHeight 位移弧線的高度。
@@ -85,12 +86,12 @@ sealed interface AnimationStep<out C> {
      * @property startOffsetZ 起始畫面位置相對實體位置的 Z 偏移。
      * @property startPoseRotationDegrees 起始姿態旋轉角度。
      * @property endPoseRotationDegrees 結束姿態旋轉角度。
-     * @property easeRotation 是否讓姿態旋轉套用 ease-out；預設為 false。
+     * @property easeRotation 是否讓姿態旋轉套用 ease-out。預設為 false。
      * @property startYawOffsetDegrees 起始畫面朝向相對實體終點朝向的角差。
-     * @property liftCarryLower 是否走「提起、橫移、放下」的路線：先往上提到 [arcHeight]，平著橫移，再放下；為 false 時走
+     * @property liftCarryLower 是否走「提起、橫移、放下」的路線：先往上提到 [arcHeight]，平著橫移，再放下。為 false 時走
      * 對稱拋物線。
      * @property leanDegrees 「提起、橫移、放下」途中往前進方向傾斜的角度：提起時倒向前進方向，橫移時維持，放下時先轉成
-     * 前角朝下再回正；預設不傾斜。
+     * 前角朝下再回正。預設不傾斜。
      */
     data class PlayMotion(
         val durationTicks: Int,

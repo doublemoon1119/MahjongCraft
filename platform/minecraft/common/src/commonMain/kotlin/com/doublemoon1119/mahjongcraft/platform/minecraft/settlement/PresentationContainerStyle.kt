@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
 /**
- * 可選容器外觀；預設完全透明且沒有框線或 padding。
+ * 可選容器外觀。預設完全透明且沒有框線或 padding。
  *
  * @property backgroundArgb 背景 ARGB。
  * @property borderArgb 邊框 ARGB。

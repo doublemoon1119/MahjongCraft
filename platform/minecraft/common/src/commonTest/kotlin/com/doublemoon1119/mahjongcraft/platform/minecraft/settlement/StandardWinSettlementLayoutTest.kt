@@ -121,7 +121,7 @@ class StandardWinSettlementLayoutTest {
         assertEquals(listOf(EntryEmphasis.HIGHLIGHTED, EntryEmphasis.NORMAL, EntryEmphasis.NORMAL), entries.map { it.emphasis })
     }
 
-    /** 連莊條目名稱帶連莊次數；只適用部分付款者時改用對應樣式，即使台數達到強調門檻也一樣。 */
+    /** 連莊條目名稱帶連莊次數。只適用部分付款者時改用對應樣式，即使台數達到強調門檻也一樣。 */
     @Test
     fun `dealer streak entry carries its count and conditional style`() {
         val entry = TaiwanWinSettlementDetailTexts.taiText.entries(

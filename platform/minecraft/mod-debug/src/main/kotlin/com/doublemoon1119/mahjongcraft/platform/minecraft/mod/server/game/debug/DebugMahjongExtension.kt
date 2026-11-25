@@ -71,14 +71,16 @@ import org.koin.core.context.GlobalContext
 /**
  * 只在開發環境登記的 debug 整合，讓 debug 指令與情境需要的流程能在遊戲內驗證。
  *
- * 內建規則沒有自己的規則選擇流程時，補上 debug 用的規則選擇；另外登記可切換的胡牌後本局繼續流程、
- * debug 情境對手使用的腳本 AI 與決策文字卡的預覽用語。開發用的 [DebugAutoNorthRiichiRuleModule]、
- * [DebugWinnerDealerRiichiRuleModule] 與 [DebugNotenDeclarationRiichiRuleModule] 也在這裡登記，分別沿用三人與四人日麻的
- * 途中流局、結算與 Minecraft 呈現；它們沒有房間設定畫面，只能透過 debug 情境載入。
- * [DebugNotenDeclarationRiichiRuleModule] 另外使用自己的規則選擇流程 [DebugNotenDeclarationRuleDecisionResolver]。
- * 只有開發執行會載入 debug 模組，正式環境沒有這個 extension。
+ * 登記內容：
  *
- * 由 debug 模組的擴充進入點建立，此時本體已載入 debug 服務，狀態從全域的 Koin 取得。
+ * - 內建規則沒有自己的規則選擇流程時，補上 debug 用的規則選擇。
+ * - 可切換的胡牌後本局繼續流程、debug 情境對手使用的腳本 AI，以及決策文字卡的預覽用語。
+ * - 開發用的 [DebugAutoNorthRiichiRuleModule]、[DebugWinnerDealerRiichiRuleModule] 與 [DebugNotenDeclarationRiichiRuleModule]。
+ *   它們分別沿用三人與四人日麻的途中流局、結算與 Minecraft 呈現，沒有房間設定畫面，只能透過 debug 情境載入。
+ * - [DebugNotenDeclarationRiichiRuleModule] 另外使用自己的規則選擇流程 [DebugNotenDeclarationRuleDecisionResolver]。
+ *
+ * 只有開發執行會載入 debug 模組，正式環境沒有這個 extension。由 debug 模組的擴充進入點建立，
+ * 此時本體已載入 debug 服務，狀態從全域的 Koin 取得。
  *
  * @property winRoundContinuationState debug 指令切換胡牌後本局繼續流程時共用的狀態。
  */

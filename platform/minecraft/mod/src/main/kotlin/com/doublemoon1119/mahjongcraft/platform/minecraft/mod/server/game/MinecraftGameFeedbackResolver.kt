@@ -9,7 +9,7 @@ internal object MinecraftGameFeedbackResolver {
      * 將對局操作的 [error] 轉成可呈現的回饋。
      *
      * @param error 對局命令回傳的錯誤種類。
-     * @param ruleModuleId 這局採用的規則模組 ID；找不到對局時為 null。
+     * @param ruleModuleId 這局採用的規則模組 ID。找不到對局時為 null。
      * @return 對應的玩家回饋，不包含具體呈現方式。
      */
     fun actionError(error: GameError, ruleModuleId: String?): MinecraftPlayerFeedback = when (error) {

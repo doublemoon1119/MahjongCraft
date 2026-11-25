@@ -25,7 +25,7 @@ internal class LoggingGameEventDeliveryReporter : GameEventDeliveryReporter {
      * 記錄單一第三方事件監聽者失敗。
      *
      * @param event 交付中的事件。
-     * @param listener 失敗的監聽者；以類別名稱辨識它來自哪個擴充。
+     * @param listener 失敗的監聽者。以類別名稱辨識它來自哪個擴充。
      * @param cause 監聽者拋出的例外。
      */
     override fun listenerFailed(

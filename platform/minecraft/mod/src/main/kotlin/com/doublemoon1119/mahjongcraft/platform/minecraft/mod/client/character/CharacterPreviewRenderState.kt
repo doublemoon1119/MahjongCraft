@@ -11,7 +11,7 @@ import org.lwjgl.opengl.GL13
 import org.lwjgl.opengl.GL14
 import org.lwjgl.opengl.GL30
 
-/** 模型預覽的圖形狀態快照；外部 renderer 失敗也由 finally 還原。 */
+/** 模型預覽的圖形狀態快照。外部 renderer 失敗也由 finally 還原。 */
 internal class CharacterPreviewRenderState : AutoCloseable {
     /** 目前實體繪製器。 */
     private val dispatcher = Minecraft.getInstance().entityRenderDispatcher
@@ -91,7 +91,7 @@ internal class CharacterPreviewRenderState : AutoCloseable {
         GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D)
     }
 
-    /** 保留呼叫端原有的座標系；離屏圖片自行設定原點。 */
+    /** 保留呼叫端原有的座標系。離屏圖片自行設定原點。 */
     private val modelView = ModelViewScope(push = ModelViewMatrix::push, pop = ModelViewMatrix::pop)
 
     init {
@@ -130,7 +130,7 @@ internal class CharacterPreviewRenderState : AutoCloseable {
     /**
      * 保留呼叫端的矩陣，並在正常或例外結束時恢復。
      *
-     * @param push 保存目前的矩陣；建立時呼叫一次。
+     * @param push 保存目前的矩陣。建立時呼叫一次。
      * @property pop 還原 [push] 保存的矩陣。
      */
     internal class ModelViewScope(push: () -> Unit, private val pop: () -> Unit) : AutoCloseable {

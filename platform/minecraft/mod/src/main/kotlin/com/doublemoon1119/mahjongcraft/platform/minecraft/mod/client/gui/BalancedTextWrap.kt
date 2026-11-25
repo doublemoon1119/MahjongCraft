@@ -25,9 +25,9 @@ internal fun balancedWrapWidth(maximumWidth: Int, lineCount: (Int) -> Int): Int 
 }
 
 /**
- * 以 [balancedWrapWidth] 找到的寬度換行；行數與一般換行相同，但各行長度較平均。
+ * 以 [balancedWrapWidth] 找到的寬度換行。行數與一般換行相同，但各行長度較平均。
  *
- * @param text 要換行的文字；文字內的換行字元照常斷行。
+ * @param text 要換行的文字。文字內的換行字元照常斷行。
  * @param maximumWidth 允許的最大換行寬度。
  * @return 換行後的每一行。
  */

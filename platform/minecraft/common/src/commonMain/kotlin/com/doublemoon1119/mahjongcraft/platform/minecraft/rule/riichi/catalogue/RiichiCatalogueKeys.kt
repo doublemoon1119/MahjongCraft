@@ -34,7 +34,7 @@ internal enum class RiichiCatalogueCategory(
     /** double_yakuman 說明分類。 */
     DoubleYakuman(MahjongCraftMetadata.id("riichi/catalogue/category/double_yakuman"), "mahjongcraft.riichi.rule_catalogue.category.double_yakuman"),
 
-    /** 古役說明分類；古役條目同時列在對應翻數的分類。 */
+    /** 古役說明分類。古役條目同時列在對應翻數的分類。 */
     Local(MahjongCraftMetadata.id("riichi/catalogue/category/local"), "mahjongcraft.riichi.rule_catalogue.category.local"),
 
     /** bonus 說明分類。 */
@@ -124,8 +124,8 @@ internal object RiichiCatalogueKeys {
  * @property descriptionKey 條目說明的翻譯鍵。
  * @property category 所屬說明分類。
  * @property valueKey 門清價值或加算標籤。
- * @property conditionKey 副露價值或門清限制標籤；null 表示沒有額外標籤。
- * @property coveredTypes 條目說明的全部役種；規則相同的多個役種（例如白、發、中三種役牌）合併成一個條目。
+ * @property conditionKey 副露價值或門清限制標籤。null 表示沒有額外標籤。
+ * @property coveredTypes 條目說明的全部役種。規則相同的多個役種（例如白、發、中三種役牌）合併成一個條目。
  */
 internal enum class RiichiCatalogueYaku(
     val type: RiichiYakuType,
@@ -331,7 +331,7 @@ internal enum class RiichiCatalogueYaku(
  * 非一般役種的特殊結算及途中流局說明識別碼。
  *
  * @property id namespaced 條目識別碼。
- * @property nameKey 條目名稱的翻譯鍵；流局滿貫沿用結算名稱。
+ * @property nameKey 條目名稱的翻譯鍵。流局滿貫沿用結算名稱。
  * @property descriptionKey 條目說明的翻譯鍵。
  */
 internal enum class RiichiCatalogueSpecial(

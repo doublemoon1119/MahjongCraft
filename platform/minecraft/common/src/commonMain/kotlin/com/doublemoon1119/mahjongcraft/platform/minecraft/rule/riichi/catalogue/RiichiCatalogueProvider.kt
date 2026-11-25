@@ -33,7 +33,7 @@ class RiichiCatalogueProvider(
     override fun defaultRuleConfig(): MahjongRuleConfig = defaultConfig()
 
     /**
-     * 依日麻配置調整說明條件；不支援其他規則配置。
+     * 依日麻配置調整說明條件。不支援其他規則配置。
      *
      * @param config 已知配置或一般說明配置。
      * @return 日麻目錄，或配置型別不匹配時的 null。
@@ -72,12 +72,12 @@ class RiichiCatalogueProvider(
     }
 
     private companion object {
-        /** 一定要用到二～八萬才能成立的役種；三人日麻的牌組沒有這些牌。 */
+        /** 一定要用到二～八萬才能成立的役種。三人日麻的牌組沒有這些牌。 */
         val MIDDLE_CHARACTER_YAKU: Set<RiichiYakuType> = setOf(RiichiYakuType.SanshokuDoujun, RiichiYakuType.Daisuurin)
     }
 }
 
-/** 建立不經一般手牌役種判定的特殊結算與途中流局說明；三人日麻沒有四風連打與四家立直。 */
+/** 建立不經一般手牌役種判定的特殊結算與途中流局說明。三人日麻沒有四風連打與四家立直。 */
 private fun riichiCatalogueSpecialEntries(config: RiichiFamilyRuleConfig): List<RuleCatalogueEntry> = RiichiCatalogueSpecial.entries
     .filter { definition ->
         !config.usesThreePlayerTiles || (definition != RiichiCatalogueSpecial.SuufonRenda && definition != RiichiCatalogueSpecial.SuuchaRiichi)

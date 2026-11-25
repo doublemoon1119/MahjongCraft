@@ -14,14 +14,14 @@ import kotlin.uuid.Uuid
  * @property tableFacing 桌子在世界中的朝向。
  * @property seatLayout 座位與桌邊的對應。
  * @property table 要擺放的桌況。
- * @property tileLayout 該規則的桌面牌位配置；有實體牌牆時必須與 [wallProjection] 的配置相同。
- * @property cornerWidthBySeat 各座位副露角落被桌上物件占用的寬度；沒有列出的座位為 0。
- * @property handPoseStates 立牌與摸牌位的牌各自的姿態；沒有列出的牌直立。
- * @property wallProjection 牌牆格位投影到這張桌子的方式；沒有實體牌牆時為 null，牌牆的牌只有正面朝上的公開牌排在桌子中央。
- * @property wallClearance 牌牆在這一局剩下時間裡可能佔到的範圍，各座位的牌列依此讓開牌牆；沒有實體牌牆時為 null。
+ * @property tileLayout 該規則的桌面牌位配置。有實體牌牆時必須與 [wallProjection] 的配置相同。
+ * @property cornerWidthBySeat 各座位副露角落被桌上物件占用的寬度。沒有列出的座位為 0。
+ * @property handPoseStates 立牌與摸牌位的牌各自的姿態。沒有列出的牌直立。
+ * @property wallProjection 牌牆格位投影到這張桌子的方式。沒有實體牌牆時為 null，牌牆的牌只有正面朝上的公開牌排在桌子中央。
+ * @property wallClearance 牌牆在這一局剩下時間裡可能佔到的範圍，各座位的牌列依此讓開牌牆。沒有實體牌牆時為 null。
  * @property faceUpWallTileIds 牌牆與保留區中正面朝上的公開牌。
  * @property unsortedTileIds 直接補進立牌、還沒理過的牌，依補進的順序排列。
- * @property standingOrderPublic 立牌順序是否可以公開，例如牌譜回放；為 true 時直立的牌也照桌況中的立牌順序排列。
+ * @property standingOrderPublic 立牌順序是否可以公開，例如牌譜回放。為 true 時直立的牌也照桌況中的立牌順序排列。
  */
 data class TableTileArrangementInput(
     val controllerX: Int,

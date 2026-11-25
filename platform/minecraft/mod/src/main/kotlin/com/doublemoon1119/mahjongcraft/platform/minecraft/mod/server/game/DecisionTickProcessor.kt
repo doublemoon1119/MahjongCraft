@@ -5,8 +5,8 @@ import kotlin.uuid.Uuid
 /**
  * 決策計時排程每個 tick 的處理，與載入器的 tick 事件和具體服務分開，讓接線可以單獨測試。
  *
- * 每個 tick 先由 [advanceTick] 把輪到的對局標為待推進；[process] 則依序執行：
- * 1. 全域處理到期時，先對所有對局暫停 busy 桌並重新計時，再判定逾時並為受影響的對局請求推進；這些對局清除待推進標記。
+ * 每個 tick 先由 [advanceTick] 把輪到的對局標為待推進。[process] 則依序執行：
+ * 1. 全域處理到期時，先對所有對局暫停 busy 桌並重新計時，再判定逾時並為受影響的對局請求推進。這些對局清除待推進標記。
  * 2. 為這個 tick 取出的對局請求推進：呈現播放中或已在推進中的略過，留待下一次輪到它。只請求、不等待推進完成，
  *    推進的內容（補完待完成流程、驅動自動操作、自動摸牌）由推進本身決定。
  * 3. 全域處理到期時，最後同步所有倒數並回報全域處理完成。
@@ -33,7 +33,7 @@ internal class DecisionTickProcessor(
     private val requestAdvance: (Uuid) -> Unit,
     private val synchronizeAll: suspend () -> Unit,
 ) {
-    /** 伺服器前進一個 tick；上一個 tick 的處理仍在進行時也要呼叫，讓輪到的對局標為待推進。 */
+    /** 伺服器前進一個 tick。上一個 tick 的處理仍在進行時也要呼叫，讓輪到的對局標為待推進。 */
     fun advanceTick() = rotation.advanceTick()
 
     /** 執行這個 tick 的處理。 */

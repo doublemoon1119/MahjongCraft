@@ -61,7 +61,7 @@ class RoundInfoLineDisplayRegistryTest {
         )
     }
 
-    /** 未註冊的規則沒有局況行；第三方 provider 可自行決定行與順序。 */
+    /** 未註冊的規則沒有局況行。第三方 provider 可自行決定行與順序。 */
     @Test
     fun `custom and missing providers are independent of riichi`() {
         val state = FakeTableStateFactory.create()

@@ -32,7 +32,7 @@ class RoomSettingsDraftTest {
         assertTrue(draft.canDone(FULL_ROOM))
     }
 
-    /** 草稿換成人數上限較少的規則、房間人數超過上限時，Apply 與 Done 停用；人數沒有超過時照常可用。 */
+    /** 草稿換成人數上限較少的規則、房間人數超過上限時，Apply 與 Done 停用。人數沒有超過時照常可用。 */
     @Test
     fun `blocks apply and done while the room has more players than the drafted rule allows`() {
         val draft = RoomSettingsDraft()

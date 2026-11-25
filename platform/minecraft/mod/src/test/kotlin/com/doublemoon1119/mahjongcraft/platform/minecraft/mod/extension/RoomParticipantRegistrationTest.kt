@@ -15,7 +15,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證既有實體能力的登記邊界與伺服器查詢值的 Java 可見性。 */
 class RoomParticipantRegistrationTest {
-    /** 登記不辨識實體，極端優先權也保持穩定排序；凍結後拒絕寫入。 */
+    /** 登記不辨識實體，極端優先權也保持穩定排序。凍結後拒絕寫入。 */
     @Test
     fun `participant providers register lazily with deterministic priority and freeze`() {
         val registry = RoomParticipantRegistry()

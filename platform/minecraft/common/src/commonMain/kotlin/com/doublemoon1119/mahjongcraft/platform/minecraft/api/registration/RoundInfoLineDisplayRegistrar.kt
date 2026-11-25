@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineProviderDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoMessageDefinition
 
-/** 擴充登記局況資訊行時取得的登記介面；查詢與凍結由 MahjongCraft 進行。 */
+/** 擴充登記局況資訊行時取得的登記介面。查詢與凍結由 MahjongCraft 進行。 */
 interface RoundInfoLineDisplayRegistrar {
     /** 目前已登記局況資訊 key 的快照。 */
     val registrationKeys: Set<String>

@@ -115,7 +115,7 @@ class PlayerDecisionPreviewTilesTest {
     }
 
     /**
-     * 以本人可讀的手牌與正在回應的牌建立預覽；測試牌張的牌面全部可讀，外觀取自牌張組件。
+     * 以本人可讀的手牌與正在回應的牌建立預覽。測試牌張的牌面全部可讀，外觀取自牌張組件。
      *
      * @param hand 玩家手牌。
      * @param reactedTile 正在回應的牌。

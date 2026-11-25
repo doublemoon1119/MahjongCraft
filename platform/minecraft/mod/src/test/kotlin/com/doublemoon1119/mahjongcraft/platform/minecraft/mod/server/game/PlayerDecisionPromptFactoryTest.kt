@@ -22,7 +22,7 @@ class PlayerDecisionPromptFactoryTest {
     /** 宣告前後維持相同的摸牌識別碼。 */
     private val drawnTileId = Uuid.random()
 
-    /** 選項展示的牌依接收玩家看得到的牌面顯示，不限於自己的手牌；看不到的牌不顯示。 */
+    /** 選項展示的牌依接收玩家看得到的牌面顯示，不限於自己的手牌。看不到的牌不顯示。 */
     @Test
     fun `choice previews show the tiles the player can see`() {
         val (shown, hidden) = List(2) { Uuid.random() }

@@ -6,7 +6,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * 物件旋轉後的保守占用盒；Y 是物件底部，水平位置是中心。
+ * 物件旋轉後的保守占用盒。Y 是物件底部，水平位置是中心。
  *
  * @property minX 左側邊界。
  * @property maxX 右側邊界。
@@ -24,7 +24,7 @@ internal data class TablePropBounds(
     val maxZ: Double,
 ) {
     /**
-     * 檢查實體範圍是否重疊；上下或左右恰好相接不算重疊。
+     * 檢查實體範圍是否重疊。上下或左右恰好相接不算重疊。
      *
      * @param other 要比較的占用盒。
      * @return 三個方向皆有實際重疊時為 true。
@@ -40,7 +40,7 @@ internal data class TablePropBounds(
      * 水平方向各邊外擴指定留白，用來檢查兩個物件之間是否保有最小間距。
      *
      * @param margin 每一邊外擴的距離。
-     * @return 外擴後的占用盒；垂直範圍不變。
+     * @return 外擴後的占用盒。垂直範圍不變。
      */
     fun expandedHorizontally(margin: Double): TablePropBounds = copy(
         minX = minX - margin,

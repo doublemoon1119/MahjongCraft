@@ -5,7 +5,7 @@ import kotlin.math.roundToInt
 /**
  * 房間成員卡片上畫人物的範圍：卡片左右界、卡片頂端、腳底基線與卡片放大倍數。
  *
- * 模型與頭像都依同一個放大倍數變大，但不會超出卡片寬度或卡片頂端；放大倍數為 1 時與未放大的卡片相同。
+ * 模型與頭像都依同一個放大倍數變大，但不會超出卡片寬度或卡片頂端。放大倍數為 1 時與未放大的卡片相同。
  *
  * @property left 卡片左界。
  * @property top 卡片頂端。
@@ -35,7 +35,7 @@ internal data class RoomFigureArea(
     private val baseModelScale: Int = (width / 3).coerceIn(MINIMUM_MODEL_SCALE, MAXIMUM_MODEL_SCALE)
 
     /**
-     * 模型的每單位繪製比例：未放大比例乘上縮放倍數，再限制模型在卡片寬度與卡片頂端之內；放不下任何模型時為 0。
+     * 模型的每單位繪製比例：未放大比例乘上縮放倍數，再限制模型在卡片寬度與卡片頂端之內。放不下任何模型時為 0。
      */
     val modelScale: Int = minOf((baseModelScale * scale).roundToInt(), (minOf(maximumFigureWidth, maximumFigureHeight) / MODEL_EXTENT).toInt())
         .coerceAtLeast(0)
@@ -46,7 +46,7 @@ internal data class RoomFigureArea(
     /** 頭像與腳底基線的距離。 */
     private val portraitGap: Int = (PORTRAIT_FEET_GAP * scale).roundToInt()
 
-    /** 頭像邊長：未放大邊長乘上縮放倍數，再限制在卡片寬度與卡片頂端之內；放不下頭像時為 0。 */
+    /** 頭像邊長：未放大邊長乘上縮放倍數，再限制在卡片寬度與卡片頂端之內。放不下頭像時為 0。 */
     val portraitSize: Int = minOf((basePortraitSize * scale).roundToInt(), maximumFigureWidth, maximumFigureHeight - portraitGap)
         .coerceAtLeast(0)
 
@@ -66,7 +66,7 @@ internal data class RoomFigureArea(
         /** 人物頂端與卡片頂端至少保留的距離。 */
         private const val FIGURE_TOP_MARGIN = 4
 
-        /** 模型在畫面上佔用的最大長度，以方塊為單位；非玩家模型的最長邊也縮放到這個長度以內。 */
+        /** 模型在畫面上佔用的最大長度，以方塊為單位。非玩家模型的最長邊也縮放到這個長度以內。 */
         const val MODEL_EXTENT = 1.8f
 
         /** 未放大時的最小模型比例。 */

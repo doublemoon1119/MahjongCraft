@@ -5,12 +5,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ShadowPassP
 import net.irisshaders.iris.api.v0.IrisApi
 
 /**
- * 以 Iris 的 API 實作 [ShadowPassProbe]；只對 Iris 的 API 編譯、不打包，沒有安裝 Iris 時一律為否。
+ * 以 Iris 的 API 實作 [ShadowPassProbe]。只對 Iris 的 API 編譯、不打包，沒有安裝 Iris 時一律為否。
  *
  * @property platform 判斷是否安裝了 Iris。
  */
 class IrisShadowPassProbe(private val platform: LoaderPlatform) : ShadowPassProbe {
-    /** 遊戲中是否安裝了 Iris；第一次查詢時向載入器確認。 */
+    /** 遊戲中是否安裝了 Iris。第一次查詢時向載入器確認。 */
     private val irisLoaded: Boolean by lazy { platform.isModLoaded(IRIS_MOD_ID) }
 
     override fun active(): Boolean = irisLoaded && IrisShadowPass.active()

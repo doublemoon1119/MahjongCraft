@@ -11,7 +11,7 @@ import kotlin.uuid.Uuid
  */
 fun interface GameEventLocationSource {
     /**
-     * 依場地 UUID 取得位置；找不到時回傳 `null`。
+     * 依場地 UUID 取得位置。找不到時回傳 `null`。
      *
      * @param venueId 要查詢位置的場地 UUID。
      * @return 場地目前的位置，或找不到時的 `null`。

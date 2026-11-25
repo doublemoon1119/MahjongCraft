@@ -14,7 +14,7 @@ import net.minecraft.resources.ResourceLocation
 class MahjongStoolSeatEntityRenderer(
     context: EntityRendererProvider.Context,
 ) : EntityRenderer<MahjongStoolSeatEntity>(context) {
-    /** 座位不會繪製材質；回傳固定空材質 ID 以滿足 renderer 契約。 */
+    /** 座位不會繪製材質。回傳固定空材質 ID 以滿足 renderer 契約。 */
     override fun getTextureLocation(entity: MahjongStoolSeatEntity): ResourceLocation = EMPTY_TEXTURE
 
     /** 固定參數。 */

@@ -6,10 +6,10 @@ import kotlin.time.Duration
 /**
  * 一批隔離對局的生成及正式保存進度，不包含玩家或牌面資料。
  *
- * @property scenarioId 此批選用的場長情境；牌局沿用正式隨機初始化。
+ * @property scenarioId 此批選用的場長情境。牌局沿用正式隨機初始化。
  * @property requested 要求生成的完整場數。
  * @property generated 已由 Flow 完整完成的場數。
- * @property archived 已證實封存的場數；後續被清理仍保留此成功事實。
+ * @property archived 已證實封存的場數。後續被清理仍保留此成功事實。
  * @property pruned 已由 tombstone 證實清理的場數。
  * @property pending 尚未確認封存或清理的場數。
  * @property failed 生成或保存失敗的場數。
@@ -17,8 +17,8 @@ import kotlin.time.Duration
  * @property cancelRequested 是否要求目前場結束後停止。
  * @property failure 發生停止或失敗時的安全分類，不包含原始例外。
  * @property elapsed 已經過的單調時間。
- * @property diskBefore 生成前的實際主檔及附屬檔大小；未知時為 null。
- * @property diskAfter 最後成功查詢的實際磁碟大小；未知時為 null。
+ * @property diskBefore 生成前的實際主檔及附屬檔大小。未知時為 null。
+ * @property diskAfter 最後成功查詢的實際磁碟大小。未知時為 null。
  * @property replayBytes 已確認的批次 Replay 存放位元組（壓縮後）合計，不是磁碟釋放量。
  * @property largestReplayBytes 已確認的最大單場 Replay 存放位元組數（壓縮後）。
  * @property replaySampleCount 已量得 Replay payload 大小的場數，作為平均值的分母。

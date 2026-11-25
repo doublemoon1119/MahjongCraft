@@ -64,7 +64,7 @@ import kotlin.uuid.Uuid
 /**
  * 以範例擴充自己的 registry 建立一條最小對局流程，確認攤牌、摸打、流局、終局與保存資料可串接。
  *
- * 測試不載入任何內建規則，也不建立完整伺服器模擬器；只使用正式的權威 store 與公開 use case。
+ * 測試不載入任何內建規則，也不建立完整伺服器模擬器。只使用正式的權威 store 與公開 use case。
  */
 class ExamplePairingPublicApiIntegrationTest {
 

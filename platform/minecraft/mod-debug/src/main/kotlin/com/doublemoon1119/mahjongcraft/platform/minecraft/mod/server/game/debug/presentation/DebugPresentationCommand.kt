@@ -86,13 +86,15 @@ import kotlin.uuid.toKotlinUuid
  * `exhaustive_draw_settlement`、`win_settlement`、`match_settlement`、`continuing_win` 與
  * `win_showcase_override`。
  *
- * 所有預覽都走正式的 presenter 與 scheduler，只是改用臨時生成、不掛在任何桌子／對局底下的 entity 與
- * 取樣資料，因此呼叫者不需要真的坐在桌邊或身處進行中的對局。`continuing_win` 與
- * `win_showcase_override` 例外：它們改寫的是本桌下一次胡牌的判定與演出覆寫狀態，因此要求呼叫者已入座。
+ * - 預覽都走正式的 presenter 與 scheduler，只是改用臨時生成、不屬於任何桌子或對局的 entity 與取樣資料。
+ *   呼叫者因此不需要坐在桌邊或身處進行中的對局。
+ * - `continuing_win` 與 `win_showcase_override` 例外。它們改寫本桌下一次胡牌的判定與演出覆寫狀態，因此要求呼叫者已入座。
  *
- * 臨時 entity 的清除時機刻意不統一：`win` 把清除掛在 [WinCelebrationEffectScheduler] 的
- * `onComplete`，讓臨時牌與特效 entity 同刻消失並共用它的取消路徑；`showcase` 在 stage 同步保存完牌面與
- * 起始位置後立即 discard；只有結算預覽走 [DebugPreviewEntityLifecycle] 的到期佇列。
+ * 臨時 entity 的清除時機依預覽而不同：
+ *
+ * - `win` 把清除掛在 [WinCelebrationEffectScheduler] 的 `onComplete`，讓臨時牌與特效 entity 同時消失並共用它的取消路徑。
+ * - `showcase` 在 stage 同步保存完牌面與起始位置後立即 discard。
+ * - 結算預覽走 [DebugPreviewEntityLifecycle] 的到期佇列。
  *
  * @property debugWinRoundContinuationState 保存本桌胡牌後本局繼續的判定覆寫模式，不是莊家連莊設定。
  * @property debugWinShowcaseOverride 保存本桌下一次胡牌演出的 cue 覆寫。
@@ -367,7 +369,7 @@ class DebugPresentationCommand(
     ) { source, cue -> armWinShowcaseOverride(source, cue) }
 
     /**
-     * 設定發起者已入座桌子的胡牌後流程覆寫模式；不生成預覽實體，也不影響其他桌。
+     * 設定發起者已入座桌子的胡牌後流程覆寫模式。不生成預覽實體，也不影響其他桌。
      *
      * @param source 指令發起來源。
      * @param mode 本桌要採用的中途胡牌模式。
@@ -399,7 +401,7 @@ class DebugPresentationCommand(
      * 呈現用的 cue，動不到權威役種、番數、分數或結算結果。
      *
      * @param source 指令發起來源。
-     * @param cueKey 展示理由識別碼；null 時使用預設演出。
+     * @param cueKey 展示理由識別碼。null 時使用預設演出。
      * @return 指令執行狀態碼。
      */
     private fun armWinShowcaseOverride(source: CommandSourceStack, cueKey: String?): Int = playerTableScope.runOnMain(source) { tableId ->
@@ -508,7 +510,7 @@ class DebugPresentationCommand(
     }
 
     /**
-     * 補全此預覽工具允許的副露組數；上限涵蓋五組副露的版面驗證，不代表標準日麻規則上限。
+     * 補全此預覽工具允許的副露組數。上限涵蓋五組副露的版面驗證，不代表標準日麻規則上限。
      *
      * @param context 指令情境，目前不參與候選篩選。
      * @param builder 接收組數候選的補全建構器。
@@ -701,7 +703,7 @@ class DebugPresentationCommand(
      * @param source 指令發起來源。
      * @param phase 要跳轉的固定階段名稱。
      * @param cue 展示理由識別碼。
-     * @return 指令執行狀態碼；未知階段會失敗。
+     * @return 指令執行狀態碼。未知階段會失敗。
      */
     private fun previewShowcasePhase(source: CommandSourceStack, phase: String, cue: String): Int {
         val initialElapsedTicks = when (phase.lowercase()) {
@@ -717,7 +719,7 @@ class DebugPresentationCommand(
     }
 
     /**
-     * 使用正式持久化舞台預覽流局排行榜；分數與牌面是示意資料，不執行規則結算。
+     * 使用正式持久化舞台預覽流局排行榜。分數與牌面是示意資料，不執行規則結算。
      *
      * @param source 指令發起來源。
      * @param reasonId 流局原因識別碼。
@@ -923,7 +925,7 @@ class DebugPresentationCommand(
     }
 
     /**
-     * 使用正式排程器預覽胡牌結算與排行；役種、手牌與分數皆為版面測試資料，不保證構成合法和牌。
+     * 使用正式排程器預覽胡牌結算與排行。役種、手牌與分數皆為版面測試資料，不保證構成合法和牌。
      *
      * @param source 指令發起來源。
      * @param preview 要呈現的結算情境。
@@ -1087,7 +1089,7 @@ class DebugPresentationCommand(
     }
 
     /**
-     * 使用正式排程器預覽台灣麻將的胡牌結算；手牌、花牌與分數皆為版面測試資料，不保證構成合法和牌。特殊花牌和牌不攤牌，
+     * 使用正式排程器預覽台灣麻將的胡牌結算。手牌、花牌與分數皆為版面測試資料，不保證構成合法和牌。特殊花牌和牌不攤牌，
      * 沒有手牌列。
      *
      * @param source 指令發起來源。
@@ -1215,11 +1217,11 @@ class DebugPresentationCommand(
     }
 
     /**
-     * 以臨時牌預覽理牌、倒牌與胡牌特效。自摸另生成獨立和牌張，榮和則在牌河位置生成和牌張；特效結束後清除臨時實體。
+     * 以臨時牌預覽理牌、倒牌與胡牌特效。自摸另生成獨立和牌張，榮和則在牌河位置生成和牌張。特效結束後清除臨時實體。
      *
      * @param source 指令發起來源。
      * @param isTsumo 是否採用自摸時間線。
-     * @param tileArg 牌面素材引數；null 時由預覽工具選用預設值。
+     * @param tileArg 牌面素材引數。null 時由預覽工具選用預設值。
      * @return 指令執行狀態碼。
      */
     private fun previewWin(source: CommandSourceStack, isTsumo: Boolean, tileArg: String?): Int {
@@ -1472,13 +1474,13 @@ class DebugPresentationCommand(
 }
 
 /**
- * 將 debug 指令提供的 cue 展開成指定贏家數量；單一 cue 套用至所有贏家，多個 cue 則依序對應，
+ * 將 debug 指令提供的 cue 展開成指定贏家數量。單一 cue 套用至所有贏家，多個 cue 則依序對應，
  * 未提供的尾端位置使用 [defaultCue]。
  *
  * @param supplied 指令提供的展示理由清單。
  * @param winnerCount 要產生的贏家數，須為非負值。
  * @param defaultCue 未提供展示理由時的替代值。
- * @return 長度等於贏家數的展示理由清單；多餘輸入忽略。
+ * @return 長度等於贏家數的展示理由清單。多餘輸入忽略。
  * @throws IllegalArgumentException 贏家數為負值時拋出。
  */
 internal fun expandShowcaseCues(
@@ -1492,7 +1494,7 @@ internal fun expandShowcaseCues(
 }
 
 /**
- * 依目前輸入內容建立完整 showcase cue key 候選；逗號清單只替換最後一段。
+ * 依目前輸入內容建立完整 showcase cue key 候選。逗號清單只替換最後一段。
  *
  * @param remaining 尚未完成的引數文字。
  * @param cueKeys 可供選擇的展示理由識別碼。

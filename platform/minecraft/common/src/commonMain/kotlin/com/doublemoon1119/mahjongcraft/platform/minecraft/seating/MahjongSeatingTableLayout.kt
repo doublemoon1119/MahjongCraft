@@ -22,13 +22,13 @@ private data class SeatVector(val x: Double, val z: Double)
 /**
  * 麻將桌標準座位的座標計算。
  *
- * 整張桌子的實體結構固定是寬 3、深 3、高 2 的方塊範圍，controller 位於正中央下方；標準座位位於
- * 桌子側邊中點，離中心固定 [SEAT_DISTANCE] 格。座位 index 對應 [TableState.players] 的座位順序；這個順序只在
- * 規則要求局間換位時改變，換位後平台依新順序重新入座。自風由規則 policy 每局重新指派，因此這裡的座位 index
- * 必須跟規則層的玩家座位 index 一一對應，順序不能任意調整。
- *
- * 旋轉合成與 [MahjongTileTableLayout.handPlacement] 使用同一套桌子世界朝向慣例，確保玩家座位與同一
- * seatIndex 的手牌位置使用一致的方位。
+ * - 整張桌子固定是寬 3、深 3、高 2 的方塊範圍，controller 位於正中央下方。
+ * - 標準座位位於桌子側邊中點，離中心固定 [SEAT_DISTANCE] 格。
+ * - 座位 index 對應 [TableState.players] 的座位順序，必須跟規則層的玩家座位 index 一一對應，順序不能任意調整。
+ *   自風由規則 policy 每局重新指派。
+ * - 這個順序只在規則要求局間換位時改變，換位後平台依新順序重新入座。
+ * - 旋轉合成與 [MahjongTileTableLayout.handPlacement] 使用同一套桌子世界朝向慣例，
+ *   玩家座位與同一 seatIndex 的手牌位置方位一致。
  */
 object MahjongSeatingTableLayout {
     /**
@@ -69,7 +69,7 @@ object MahjongSeatingTableLayout {
      * @param controllerY controller 的世界 Y 座標。
      * @param controllerZ controller 的世界 Z 座標。
      * @param tableFacing 麻將桌的世界朝向。
-     * @return 依座位 index 排列的標準座位；腳底與 controller 同高。
+     * @return 依座位 index 排列的標準座位。腳底與 controller 同高。
      */
     fun seatPlacements(
         layout: MahjongTableSeatLayout,

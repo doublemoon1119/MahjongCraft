@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
 /**
  * 把本人手牌排列的時間軸項目送給坐在桌上的真人玩家，每位玩家只收到自己的牌張識別碼。
  *
- * @property serverHolder 查找目前有效的收件玩家；AI 座位找不到玩家，不會送出。
+ * @property serverHolder 查找目前有效的收件玩家。AI 座位找不到玩家，不會送出。
  * @property json 線路序列化設定。
  */
 class PrivateHandOrderSender(
@@ -25,8 +25,8 @@ class PrivateHandOrderSender(
      * 送出一步的項目，時間點對齊這一步的牌張動作。
      *
      * @param tableId 桌子識別碼。
-     * @param before 這一步開始時的桌況；之前沒有呈現過時為 null。
-     * @param beforeArrangement [before] 的共享擺放；還沒有擺放時為 null。
+     * @param before 這一步開始時的桌況。之前沒有呈現過時為 null。
+     * @param beforeArrangement [before] 的共享擺放。還沒有擺放時為 null。
      * @param after 這一步之後的桌況。
      * @param afterArrangement [after] 的共享擺放。
      * @param departAt 離開動作開始的遊戲時間。
@@ -54,7 +54,7 @@ class PrivateHandOrderSender(
     }
 
     /**
-     * 送出開局發牌的項目：發牌開始時沒有本人排列，由共享呈現發牌；翻牌開始時換成發完的排列。
+     * 送出開局發牌的項目：發牌開始時沒有本人排列，由共享呈現發牌。翻牌開始時換成發完的排列。
      *
      * @param tableId 桌子識別碼。
      * @param state 發完牌的桌況。

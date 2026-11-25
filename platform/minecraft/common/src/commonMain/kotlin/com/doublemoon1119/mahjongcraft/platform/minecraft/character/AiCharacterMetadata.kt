@@ -8,7 +8,7 @@ import kotlin.uuid.Uuid
  *
  * @param selections 依桌子、AI UUID 索引的目前角色 ID。
  * @param matches 依場次、AI UUID 索引的固定開局描述。
- * @param participants 關聯成員及房間暫時排除者的描述；後者只供房主辨識。
+ * @param participants 關聯成員及房間暫時排除者的描述。後者只供房主辨識。
  */
 class AiCharacterMetadata(
     selections: Map<Uuid, Map<Uuid, String>>,

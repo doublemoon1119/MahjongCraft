@@ -13,9 +13,9 @@ import kotlin.uuid.Uuid
 /**
  * 集中管理本局自動操作更新的 request、pending 與 ACK 配對。
  *
- * 這個服務不預測自動操作是否會執行；已確認狀態仍以 [ClientAutomaticControlStateStore] 為唯一來源。
- * 送出後超過 [CONFIRMATION_TIMEOUT] 沒有收到回覆時，要求伺服器重新送出一次權威快照，依快照判斷請求有沒有生效；
- * 重新同步再等 [RESYNC_LIMIT] 仍沒有快照時結束等待並回報無法確認，不重複要求。
+ * - 這個服務不預測自動操作是否會執行。已確認狀態以 [ClientAutomaticControlStateStore] 為唯一來源。
+ * - 送出後超過 [CONFIRMATION_TIMEOUT] 沒有收到回覆時，要求伺服器重新送出一次權威快照，依快照判斷請求有沒有生效。
+ * - 重新同步再等 [RESYNC_LIMIT] 仍沒有快照時，結束等待並回報無法確認，不重複要求。
  *
  * @property stateStore 本局自動操作權威狀態儲存。
  * @property requestSender 本局更新與重新同步請求傳送器。
@@ -29,13 +29,13 @@ class ClientAutomaticControlUpdateCoordinator(
     /** 記錄要求送不出去的 logger。 */
     private val logger = mahjongCraftLogger(ClientAutomaticControlUpdateCoordinator::class)
 
-    /** 配對成功的完成事件序號；清除對局狀態時不歸零。 */
+    /** 配對成功的完成事件序號。清除對局狀態時不歸零。 */
     private var completionSequence = 0L
 
     /** 依完成順序保存、可由請求識別碼取出的有限結果集合。 */
     private val completions = linkedMapOf<String, ClientAutomaticControlCompletion>()
 
-    /** 目前待處理請求的等待狀態；與 store 的待處理請求識別碼不同時視為不存在。 */
+    /** 目前待處理請求的等待狀態。與 store 的待處理請求識別碼不同時視為不存在。 */
     private var wait: PendingWait? = null
 
     /** 目前已確認的個人權威快照。 */
@@ -58,7 +58,7 @@ class ClientAutomaticControlUpdateCoordinator(
      * 只有通過本地快照與支援集合驗證的請求才會被保存為 pending 並送出。
      *
      * @param enabledControlIds 本人本局要啟用的完整控制項集合。
-     * @return 請求送出或本機驗證失敗的結果；送出不代表伺服器已接受。
+     * @return 請求送出或本機驗證失敗的結果。送出不代表伺服器已接受。
      */
     fun submit(enabledControlIds: Set<String>): ClientAutomaticControlSubmitResult {
         if (stateStore.pendingRequest() != null) return ClientAutomaticControlSubmitResult.Pending
@@ -90,11 +90,16 @@ class ClientAutomaticControlUpdateCoordinator(
     }
 
     /**
-     * 套用伺服器發布的個人權威快照；正在重新同步時，用來判斷待處理請求有沒有生效。
+     * 套用伺服器發布的個人權威快照。正在重新同步時，用來判斷待處理請求有沒有生效。
      *
-     * 只有同一局、版本不低於目前已知狀態的快照才算重新同步的回應，版本相同代表狀態沒有改變；較舊的快照不結束等待。
-     * 判斷依據是套用後的最新權威狀態：版本沒有前進代表請求沒有生效；版本前進且內容與請求相同代表請求已生效；
-     * 版本前進但內容不同代表已被其他變更取代。
+     * - 只有同一局、版本不低於目前已知狀態的快照才算重新同步的回應。版本相同代表狀態沒有改變。
+     * - 較舊的快照不結束等待。
+     *
+     * 依套用後的最新權威狀態判斷：
+     *
+     * - 版本沒有前進：請求沒有生效。
+     * - 版本前進且內容與請求相同：請求已生效。
+     * - 版本前進但內容不同：已被其他變更取代。
      *
      * @param snapshot 收到的權威快照。
      * @return 狀態儲存接受快照時為 true。
@@ -123,7 +128,7 @@ class ClientAutomaticControlUpdateCoordinator(
     /**
      * 配對並套用 server 更新結果。
      *
-     * 回傳值表示結果是否屬於目前 pending request；無關或延遲結果不會建立 completion。
+     * 回傳值表示結果是否屬於目前 pending request。無關或延遲結果不會建立 completion。
      *
      * @param result 收到的伺服器更新結果。
      * @return 結果與待處理請求配對並已保存完成事件時為 true。
@@ -163,7 +168,7 @@ class ClientAutomaticControlUpdateCoordinator(
      * 取出並移除指定請求的完成結果。
      *
      * @param requestId 要取出的請求識別碼。
-     * @return 保存的完成結果；尚未完成、已被取出或已超過保留上限時為 null。
+     * @return 保存的完成結果。尚未完成、已被取出或已超過保留上限時為 null。
      */
     fun takeCompletion(requestId: String): ClientAutomaticControlCompletion? = completions.remove(requestId)
 
@@ -175,7 +180,7 @@ class ClientAutomaticControlUpdateCoordinator(
     }
 
     /**
-     * 清除指定桌子的自動操作狀態；其他桌子的待確認要求與完成結果不受影響。
+     * 清除指定桌子的自動操作狀態。其他桌子的待確認要求與完成結果不受影響。
      *
      * @param tableId 已移除的桌子／對局 UUID。
      */
@@ -217,7 +222,7 @@ class ClientAutomaticControlUpdateCoordinator(
         }
     }
 
-    /** 屬於目前待處理請求的等待狀態；待處理請求已被清除或取代時為 null。 */
+    /** 屬於目前待處理請求的等待狀態。待處理請求已被清除或取代時為 null。 */
     private fun currentWait(): PendingWait? = wait?.takeIf { it.requestId == stateStore.pendingRequest()?.requestId }
 
     /**
@@ -225,7 +230,7 @@ class ClientAutomaticControlUpdateCoordinator(
      *
      * @property requestId 等待中的請求識別碼。
      * @property submittedAt 送出時的客戶端時間。
-     * @property resyncRequestedAt 要求重新同步時的客戶端時間；尚未要求時為 null。
+     * @property resyncRequestedAt 要求重新同步時的客戶端時間。尚未要求時為 null。
      */
     private class PendingWait(
         val requestId: String,
@@ -237,10 +242,10 @@ class ClientAutomaticControlUpdateCoordinator(
         /** 防止已離開的提交者未取回結果時無限制累積。 */
         const val MAX_RETAINED_COMPLETIONS = 16
 
-        /** 送出後等待回覆的時間；超過後要求重新同步。 */
+        /** 送出後等待回覆的時間。超過後要求重新同步。 */
         val CONFIRMATION_TIMEOUT = 10.seconds
 
-        /** 要求重新同步後等待快照的時間；超過後結束等待並回報無法確認。 */
+        /** 要求重新同步後等待快照的時間。超過後結束等待並回報無法確認。 */
         val RESYNC_LIMIT = 10.seconds
     }
 }

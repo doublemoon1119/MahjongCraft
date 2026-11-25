@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatGeomet
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
 
 /**
- * 協調元件使用的原生安全操作；不提供權威牌局寫入。
+ * 協調元件使用的原生安全操作。不提供權威牌局寫入。
  *
  * @param W 世界型別。
  * @param R 乘坐者型別。
@@ -42,7 +42,7 @@ interface SeatEnvironment<W, R, S> {
      * @param world 目標世界。
      * @param rider 乘坐者。
      * @param request 固定席位。
-     * @return 能保證站立安全時為 true；未提供預檢的平台回傳 false。
+     * @return 能保證站立安全時為 true。未提供預檢的平台回傳 false。
      */
     fun canStand(
         world: W,
@@ -51,7 +51,7 @@ interface SeatEnvironment<W, R, S> {
     ): Boolean = false
 
     /**
-     * 嘗試安全站到固定席位，檢查支撐、身體、實體及區塊；失敗不移動。
+     * 嘗試安全站到固定席位，檢查支撐、身體、實體及區塊。失敗不移動。
      *
      * @param world 目標世界。
      * @param rider 乘坐者。
@@ -79,7 +79,7 @@ interface SeatEnvironment<W, R, S> {
     ): Boolean
 
     /**
-     * 讓乘坐者離開本桌的席位，供局間換位讓出位置；只在已確認乘坐者坐在本桌某個席位上時呼叫。
+     * 讓乘坐者離開本桌的席位，供局間換位讓出位置。只在已確認乘坐者坐在本桌某個席位上時呼叫。
      *
      * @param rider 乘坐者。
      */

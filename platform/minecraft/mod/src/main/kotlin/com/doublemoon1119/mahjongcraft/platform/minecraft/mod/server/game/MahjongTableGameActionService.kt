@@ -40,21 +40,19 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
 /**
- * 把 Minecraft 玩家的對局階段操作（出牌／立直／吃碰槓胡過／九種九牌）路由到既有的
- * [GameFlowCoordinator]。
- * 比照 [MahjongTableRoomService] 的既有風格：直接呼叫 use case／coordinator。客戶端只能送出伺服器目前 prompt
- * 列出的候選，沒有直接送出對局命令的頻道。
+ * 把 Minecraft 玩家的對局階段操作（出牌／立直／吃碰槓胡過／九種九牌）路由到 [GameFlowCoordinator]。
  *
- * 摸牌（[GameCommand.Draw]）不在這裡開放——已經由 [MahjongAutoDrawService]／`AiTurnDriver` 全自動
- * 觸發，玩家不需要、也不能手動摸牌。
+ * - 比照 [MahjongTableRoomService]，直接呼叫 use case／coordinator。
+ * - 客戶端只能送出伺服器目前 prompt 列出的候選，沒有直接送出對局命令的頻道。
+ * - 摸牌（[GameCommand.Draw]）不在這裡開放，由 [MahjongAutoDrawService]／`AiTurnDriver` 自動觸發，玩家不能手動摸牌。
  *
  * @property scope 承接指令觸發的 suspend 呼叫。
  * @property gameRepository 權威對局數據倉庫，用於解析手牌／桌況。
  * @property membershipRepository 玩家目前桌子（房間／對局共用同一個 Uuid）的歸屬查詢。
  * @property gameFlowCoordinator 對局命令的分派與自動銜接入口。
  * @property advanceManager 命令分派後請求推進 AI／強制自動操作玩家，推進的最後會補做真人玩家的自動摸牌。
- * @property candidateResolver 查詢目前合法動作清單，供 [showHand] 使用；跟 `action` 指令 Tab 補全共用
- *   同一份查詢，確保手牌畫面顯示的候選跟玩家實際能輸入的候選一致。
+ * @property candidateResolver 查詢目前合法動作清單，供 [showHand] 使用。與 `action` 指令 Tab 補全共用同一份查詢，
+ *   手牌畫面顯示的候選與玩家實際能輸入的候選一致。
  * @property feedbackPublisher 操作結果的一次性回饋。
  * @property busyTracker 查詢該桌是否正在播放呈現動畫（例如擲骰），播放期間擋下玩家操作，避免畫面出現
  *   跟動畫不一致的桌況。
@@ -65,7 +63,7 @@ import kotlin.uuid.toKotlinUuid
  * @property promptFactory 從權威狀態建立私人操作 prompt。
  * @property moduleRegistry 依對局設定解析規則模組。
  * @property json 決策提交回覆使用的序列化設定。
- * @property failurePolicy 判斷命令執行中丟出的失敗能否記錄後回覆拒絕；協程取消與無法隔離的失敗原樣往外傳。
+ * @property failurePolicy 判斷命令執行中丟出的失敗能否記錄後回覆拒絕。協程取消與無法隔離的失敗原樣往外傳。
  * @property dataStatus 麻將資料無法讀取時拒絕操作並提示玩家。
  * @property visibilityPolicy 依本人的讀取權裁切手牌與副露牌面。
  */
@@ -92,7 +90,7 @@ class MahjongTableGameActionService(
     private val logger = mahjongCraftLogger(MahjongTableGameActionService::class)
 
     /**
-     * 處理實體手牌右鍵；立直等「宣告 + 選牌」動作由操作 HUD 端在進入選牌模式後直接送出
+     * 處理實體手牌右鍵。立直等「宣告 + 選牌」動作由操作 HUD 端在進入選牌模式後直接送出
      * [PlayerDecisionSelectionKindDto.ACTION]（見 [select]），不會經過這裡，故一律視為一般捨牌。
      *
      * @param player 執行互動的玩家。
@@ -199,11 +197,11 @@ class MahjongTableGameActionService(
     }
 
     /**
-     * 解析並驗證 selection 所指向的目前權威 prompt；任一項已失效時回傳 null。
+     * 解析並驗證 selection 所指向的目前權威 prompt。任一項已失效時回傳 null。
      *
      * @param playerId 提交選擇的玩家識別碼。
      * @param selection 待驗證的選擇。
-     * @return 當前有效的 prompt 與對局；已過期或無效時為 null。
+     * @return 當前有效的 prompt 與對局。已過期或無效時為 null。
      */
     private suspend fun resolveSelectionPrompt(
         playerId: Uuid,
@@ -230,7 +228,7 @@ class MahjongTableGameActionService(
      *
      * @property gameId prompt 所屬對局識別碼。
      * @property prompt 目前權威 prompt。
-     * @property ruleDecisionWindowId prompt 屬於規則選擇時，它對應的視窗；其他決策為 null。
+     * @property ruleDecisionWindowId prompt 屬於規則選擇時，它對應的視窗。其他決策為 null。
      */
     private data class ResolvedSelectionPrompt(
         val gameId: Uuid,
@@ -239,7 +237,7 @@ class MahjongTableGameActionService(
     )
 
     /**
-     * 驗證開始多選的呈現意圖；此訊號不屬於最終提交，因此不回傳 submission ACK。
+     * 驗證開始多選的呈現意圖。此訊號不屬於最終提交，因此不回傳 submission ACK。
      *
      * @param gameId 對局識別碼。
      * @param playerId 玩家識別碼。
@@ -261,7 +259,7 @@ class MahjongTableGameActionService(
     }
 
     /**
-     * 每一筆最終提交都回傳處理結果；空 ID 也會原樣回覆，讓無效 client 封包得到確定結果。
+     * 每一筆最終提交都回傳處理結果。空 ID 也會原樣回覆，讓無效 client 封包得到確定結果。
      *
      * @param player 收到提交結果的玩家。
      * @param selection 原始提交資料，回覆沿用其中的識別欄位。
@@ -392,7 +390,7 @@ class MahjongTableGameActionService(
     }
 
     /**
-     * 分派動作並驅動後續流程；實體捨牌本身已提供明確回饋，因此不再額外傳送成功聊天訊息。
+     * 分派動作並驅動後續流程。實體捨牌本身已提供明確回饋，因此不再額外傳送成功聊天訊息。
      *
      * @param gameId 對局識別碼。
      * @param playerId 發出命令的玩家識別碼。
@@ -438,10 +436,10 @@ class MahjongTableGameActionService(
     }
 
     /**
-     * 以玩家目前的房間歸屬解析目標對局；不在任何桌子或桌況不是對局時發布 [MinecraftPlayerFeedback.PlayerNotInGame] 並回傳 null。
+     * 以玩家目前的房間歸屬解析目標對局。不在任何桌子或桌況不是對局時發布 [MinecraftPlayerFeedback.PlayerNotInGame] 並回傳 null。
      *
      * @param playerId 玩家識別碼。
-     * @return 對局識別碼；玩家未在對局桌上時為 null。
+     * @return 對局識別碼。玩家未在對局桌上時為 null。
      */
     private suspend fun resolveGameId(playerId: Uuid): Uuid? {
         val tableId = membershipRepository.getVenueId(playerId)

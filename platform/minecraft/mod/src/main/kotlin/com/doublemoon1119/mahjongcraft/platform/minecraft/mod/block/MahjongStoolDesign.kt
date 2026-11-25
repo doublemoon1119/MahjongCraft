@@ -32,7 +32,7 @@ enum class MahjongStoolDesign(
         Shapes.or(shape, cuboid.toVoxelShape())
     }
 
-    /** 凳面相對方塊底部的高度，以方塊為單位；坐下時乘客的屁股底面貼齊此高度。 */
+    /** 凳面相對方塊底部的高度，以方塊為單位。坐下時乘客的屁股底面貼齊此高度。 */
     val seatHeight: Double = cuboids.maxOf(MahjongStoolCuboid::maxY) / MahjongStoolCuboid.MODEL_SIZE
 
     /** 將北向 [shape] 旋轉為指定水平朝向。 */

@@ -29,7 +29,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTableProp
 import net.minecraft.core.registries.Registries
 import net.minecraft.world.entity.EntityType
 
-/** MahjongCraft 實體型別的集中登記點；各型別在 [register] 登記完成後才能讀取。 */
+/** MahjongCraft 實體型別的集中登記點。各型別在 [register] 登記完成後才能讀取。 */
 object ModEntities {
     /** 登記完成後可讀取 [mahjongSoundTimeline] 的項目。 */
     private lateinit var mahjongSoundTimelineEntry: RegisteredEntry<EntityType<MahjongSoundTimelineEntity>>
@@ -153,12 +153,12 @@ object ModEntities {
     /** 登記完成後可讀取 [mahjongBot] 的項目。 */
     private lateinit var mahjongBotEntry: RegisteredEntry<EntityType<MahjongBotEntity>>
 
-    /** 不寫入區塊存檔的麻將機器人；由角色生命週期恢復。 */
+    /** 不寫入區塊存檔的麻將機器人。由角色生命週期恢復。 */
     val mahjongBot: EntityType<MahjongBotEntity>
         get() = mahjongBotEntry.get()
 
     /**
-     * 登記骰子、牌張、點棒、牌尺、座位與各種呈現實體的類型；皆不自然生成。
+     * 登記骰子、牌張、點棒、牌尺、座位與各種呈現實體的類型。皆不自然生成。
      *
      * @param registrar 寫入登記表的方式。
      */

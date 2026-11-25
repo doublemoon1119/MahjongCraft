@@ -161,7 +161,7 @@ private suspend fun AutotestContext.startNextMatchAtAnotherSeat(tableId: Uuid): 
  * 伺服器上本機玩家與自己座位的水平距離。
  *
  * @param tableId 牌桌識別碼。
- * @return 水平距離；不在對局中或座位無法解析時為 null。
+ * @return 水平距離。不在對局中或座位無法解析時為 null。
  */
 private suspend fun AutotestContext.seatDistance(tableId: Uuid): Double? {
     val playerId = checkNotNull(client.player).uuid

@@ -64,10 +64,10 @@ class ReplayTableNotesRecorder(
     }
 
     /**
-     * 流局結束時各座位的手牌是否公開，與對局中的流局演出相同；本局先胡牌退場的座位不列出。
+     * 流局結束時各座位的手牌是否公開，與對局中的流局演出相同。本局先胡牌退場的座位不列出。
      *
      * @param state 權威桌況。
-     * @return 依座位的公開與否；不是流局結束的桌況為空。
+     * @return 依座位的公開與否。不是流局結束的桌況為空。
      */
     private fun drawHandReveals(state: TableState): Map<Int, Boolean> {
         if ((state.turnPhase as? TurnPhase.RoundOver)?.conclusion !is RoundConclusion.ExhaustiveDraw) return emptyMap()
@@ -82,7 +82,7 @@ class ReplayTableNotesRecorder(
      *
      * @param state 權威桌況。
      * @param module 這場對局的規則模組。
-     * @return 依牌 UUID 查詢公開牌面；還沒公開的牌為 null。
+     * @return 依牌 UUID 查詢公開牌面。還沒公開的牌為 null。
      */
     private fun publicTileFaces(state: TableState, module: MahjongRuleModule<*>): TablePropTileFaces {
         val resolved by lazy { module.resolveTileComponents(state, componentRegistry).associateBy { it.area.tile.id } }

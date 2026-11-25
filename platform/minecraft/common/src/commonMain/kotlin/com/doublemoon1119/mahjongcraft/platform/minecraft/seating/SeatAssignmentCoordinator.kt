@@ -11,16 +11,16 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.abs
 
 /**
- * 單次開局共用的固定席位協調器；不搜尋替代位置，不以站立覆蓋已占用座位。
- * 無法確認提供者的占用狀態時停止該乘坐者的自動處理，避免把未知狀態當作空位；其他乘坐者仍可繼續。
+ * 單次開局共用的固定席位協調器。不搜尋替代位置，不以站立覆蓋已占用座位。
+ * 無法確認提供者的占用狀態時停止該乘坐者的自動處理，避免把未知狀態當作空位。其他乘坐者仍可繼續。
  *
  * @param W 原生世界型別。
  * @param R 原生乘坐者型別。
  * @param S 原位置快照型別。
  * @property providers 已依優先權排序的來源。
  * @property environment 平台安全操作。
- * @property failurePolicy 判斷提供者丟出的失敗能否隔離；無法隔離的失敗原樣往外傳。
- * @property report 提供者失敗的診斷；傳入提供者 ID、乘坐者與例外。
+ * @property failurePolicy 判斷提供者丟出的失敗能否隔離。無法隔離的失敗原樣往外傳。
+ * @property report 提供者失敗的診斷。傳入提供者 ID、乘坐者與例外。
  */
 class SeatAssignmentCoordinator<W, R, S>(
     private val providers: List<RegisteredSeatProvider<W, R>>,
@@ -32,7 +32,7 @@ class SeatAssignmentCoordinator<W, R, S>(
     private val claimed = mutableSetOf<SeatIdentity>()
 
     /**
-     * 解析並入座；本元件需由平台在主執行緒依席位順序呼叫。
+     * 解析並入座。本元件需由平台在主執行緒依席位順序呼叫。
      *
      * @param world 目標世界。
      * @param rider 乘坐者。
@@ -97,7 +97,7 @@ class SeatAssignmentCoordinator<W, R, S>(
     /**
      * 不入座、不移動，只回報目前可用的腳底位置。
      *
-     * 與正式入座共用來源、占用及幾何檢查；執行時仍須重新驗證，不能把預檢當作座位預約。
+     * 與正式入座共用來源、占用及幾何檢查。執行時仍須重新驗證，不能把預檢當作座位預約。
      *
      * @param world 目標世界。
      * @param rider 乘坐者，可為尚未加入世界的自有角色。
@@ -141,7 +141,7 @@ class SeatAssignmentCoordinator<W, R, S>(
      * @param world 目標世界。
      * @param rider 要驗證的乘坐者。
      * @param request 固定席位。
-     * @return 可用或已由本人乘坐的座位幾何；未知、占用或失敗時為 null。
+     * @return 可用或已由本人乘坐的座位幾何。未知、占用或失敗時為 null。
      */
     fun previewSeat(
         world: W,
@@ -155,7 +155,7 @@ class SeatAssignmentCoordinator<W, R, S>(
      * @param world 目標世界。
      * @param rider 要檢查的乘坐者。
      * @param request 固定席位。
-     * @return 本次狀態；來源違約或拋錯時為 FAILED，不能據此移除既有參與者。
+     * @return 本次狀態。來源違約或拋錯時為 FAILED，不能據此移除既有參與者。
      */
     fun inspectSeat(
         world: W,
@@ -256,14 +256,14 @@ class SeatAssignmentCoordinator<W, R, S>(
     /**
      * 開局或局間換位時讓整桌入座：先讓正坐在本桌其他席位上的乘坐者站起來，全部站起後再依座位順序入座。
      *
-     * 已坐在自己席位上的乘坐者不動；坐在本桌席位以外載具上的乘坐者不強制拉下來，入座結果照常回報
+     * 已坐在自己席位上的乘坐者不動。坐在本桌席位以外載具上的乘坐者不強制拉下來，入座結果照常回報
      * [SeatAssignmentResult.RIDING]。本元件需由平台在主執行緒呼叫。
      *
      * @param world 目標世界。
-     * @param riders 依座位 index 排列的乘坐者；沒有可移動的實體（例如 AI 或離線玩家）時為 null。
+     * @param riders 依座位 index 排列的乘坐者。沒有可移動的實體（例如 AI 或離線玩家）時為 null。
      * @param requests 本桌所有固定席位，依座位 index 排列，數量與 [riders] 相同。
-     * @param tableRequests 本桌所有等待席位，用來辨識可離開的本桌載具；預設為正式席位。
-     * @return 依座位 index 排列的入座結果；沒有乘坐者的座位為 null。
+     * @param tableRequests 本桌所有等待席位，用來辨識可離開的本桌載具。預設為正式席位。
+     * @return 依座位 index 排列的入座結果。沒有乘坐者的座位為 null。
      */
     fun seatAll(
         world: W,
@@ -277,7 +277,7 @@ class SeatAssignmentCoordinator<W, R, S>(
     }
 
     /**
-     * 乘坐者正坐在本桌 [keepRequest] 以外的席位上時讓他站起來；查不到或坐在其他東西上時不動。
+     * 乘坐者正坐在本桌 [keepRequest] 以外的席位上時讓他站起來。查不到或坐在其他東西上時不動。
      *
      * @param world 目標世界。
      * @param rider 乘坐者。

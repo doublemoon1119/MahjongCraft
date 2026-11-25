@@ -21,11 +21,11 @@ import net.minecraft.world.item.ItemStack
 /**
  * 載入器提供的用戶端事件。
  *
- * 只在用戶端使用；除非另有說明，監聽器都在用戶端主執行緒上呼叫。各載入器各自實作，把自己的事件轉成這裡的呼叫。
+ * 只在用戶端使用。除非另有說明，監聽器都在用戶端主執行緒上呼叫。各載入器各自實作，把自己的事件轉成這裡的呼叫。
  */
 interface ClientEvents {
     /**
-     * 登記一個用戶端指令；載入器建立用戶端指令表時加入。
+     * 登記一個用戶端指令。載入器建立用戶端指令表時加入。
      *
      * @param command 要登記的指令。
      */
@@ -60,14 +60,14 @@ interface ClientEvents {
     fun onClientEntityUnload(listener: (Entity, ClientLevel) -> Unit)
 
     /**
-     * 用戶端玩家對實體按下使用鍵時；回傳 [InteractionResult.PASS] 交給其他處理，其他結果代表已處理並結束這次互動。
+     * 用戶端玩家對實體按下使用鍵時。回傳 [InteractionResult.PASS] 交給其他處理，其他結果代表已處理並結束這次互動。
      *
      * @param listener 收到玩家、世界、使用的手與被點擊的實體，回傳處理結果。
      */
     fun onClientUseEntity(listener: (LocalPlayer, ClientLevel, InteractionHand, Entity) -> InteractionResult)
 
     /**
-     * 用戶端玩家對空氣使用手上的物品時；回傳 pass 交給其他處理，其他結果代表已處理並結束這次互動。
+     * 用戶端玩家對空氣使用手上的物品時。回傳 pass 交給其他處理，其他結果代表已處理並結束這次互動。
      *
      * @param listener 收到玩家、世界與使用的手，回傳處理結果與使用後的物品。
      */
@@ -81,7 +81,7 @@ interface ClientEvents {
     fun onWorldRenderStart(listener: () -> Unit)
 
     /**
-     * 每一幀整個世界畫完、手上物品與介面還沒畫時；光影模組的陰影與後製也已完成，之後畫的東西不會再被加上光影。
+     * 每一幀整個世界畫完、手上物品與介面還沒畫時。光影模組的陰影與後製也已完成，之後畫的東西不會再被加上光影。
      *
      * 原版沒有這個時間點的事件，由共用的 mixin 經 [WorldRenderFinishedHook] 提供。
      *
@@ -90,9 +90,9 @@ interface ClientEvents {
     fun onWorldRenderFinished(listener: () -> Unit)
 
     /**
-     * 每一幀遊戲畫面畫聊天欄之前，可以把 HUD 畫在聊天欄下面；介面隱藏時是否呼叫由載入器決定，處理本身仍須自行檢查。
+     * 每一幀遊戲畫面畫聊天欄之前，可以把 HUD 畫在聊天欄下面。介面隱藏時是否呼叫由載入器決定，處理本身仍須自行檢查。
      *
-     * 原版沒有這個時間點的事件；以原版 `Gui.render` 繪製遊戲畫面的載入器經 [HudBeforeChatHook] 提供，其他載入器以自己的
+     * 原版沒有這個時間點的事件。以原版 `Gui.render` 繪製遊戲畫面的載入器經 [HudBeforeChatHook] 提供，其他載入器以自己的
      * 畫面分層提供同一個時間點。
      *
      * @param listener 收到本幀繪製環境的處理。
@@ -107,7 +107,7 @@ interface ClientEvents {
     fun onWorldRenderBeforeDebug(listener: (PoseStack, MultiBufferSource, Camera) -> Unit)
 
     /**
-     * 用戶端資源重新載入時；在資源載入流程中呼叫，不一定在用戶端主執行緒上。
+     * 用戶端資源重新載入時。在資源載入流程中呼叫，不一定在用戶端主執行緒上。
      *
      * @param id 這個處理的識別碼。
      * @param listener 收到重新載入後的資源管理器。
@@ -115,7 +115,7 @@ interface ClientEvents {
     fun onClientResourceReload(id: ResourceLocation, listener: (ResourceManager) -> Unit)
 
     /**
-     * 登記一個自訂核心著色器；每次用戶端資源重新載入、原版重新建立著色器時都會重新建立並交給 [onLoaded]。
+     * 登記一個自訂核心著色器。每次用戶端資源重新載入、原版重新建立著色器時都會重新建立並交給 [onLoaded]。
      *
      * 著色器設定檔位於 `assets/<命名空間>/shaders/core/<路徑>.json`，其中的頂點與片段程式可以用帶命名空間的名稱指定。
      *

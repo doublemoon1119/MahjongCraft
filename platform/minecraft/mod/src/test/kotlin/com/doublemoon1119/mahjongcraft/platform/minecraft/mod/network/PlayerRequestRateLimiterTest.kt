@@ -17,7 +17,7 @@ class PlayerRequestRateLimiterTest {
     private val player = Uuid.random()
     private val otherPlayer = Uuid.random()
 
-    /** 超過連續上限的要求被丟棄；其他玩家的名額不受影響。 */
+    /** 超過連續上限的要求被丟棄。其他玩家的名額不受影響。 */
     @Test
     fun `requests beyond the burst are dropped per player`() {
         assertEquals(PlayerRequestRateLimiter.Result.Accepted, limiter.tryAcquire(player))

@@ -44,7 +44,7 @@ class WinSettlementPresentationScheduler(
     private val actionVocabularyRegistry: GameActionVocabularyRegistry,
 ) {
     /**
-     * 排程並生成結算舞台；成功時依內容隱藏桌面 overlay 至舞台交接完成。
+     * 排程並生成結算舞台。成功時依內容隱藏桌面 overlay 至舞台交接完成。
      *
      * @param world 生成舞台的世界。
      * @param tableId 對局所在牌桌識別碼。
@@ -53,7 +53,7 @@ class WinSettlementPresentationScheduler(
      * @param earliestStartGameTime 舞台可開始的最早絕對 game time。
      * @param request 胡牌結算舞台顯示資料。
      * @param tileAssetsById 牌張識別碼到可顯示素材 key 的對應。
-     * @return 舞台固定結束的絕對 game time；未能生成時為 null。
+     * @return 舞台固定結束的絕對 game time。未能生成時為 null。
      */
     fun schedule(
         world: ServerLevel,

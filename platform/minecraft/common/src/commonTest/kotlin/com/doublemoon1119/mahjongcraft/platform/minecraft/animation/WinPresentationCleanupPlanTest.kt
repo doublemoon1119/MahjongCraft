@@ -53,7 +53,7 @@ class WinPresentationCleanupPlanTest {
 
     /**
      * 恢復可見只針對 showcase **實際**交接出去的那一組（可能包含留在放銃者牌河的榮和胡牌張），不是
-     * 拿手牌全集去猜；而那張榮和胡牌張不屬於贏家立牌，因此不會被蓋牌。
+     * 拿手牌全集去猜。而那張榮和胡牌張不屬於贏家立牌，因此不會被蓋牌。
      */
     @Test
     fun `visibility is restored for exactly the tiles the showcase borrowed`() {
@@ -106,7 +106,7 @@ class WinPresentationCleanupPlanTest {
      *
      * @param type 副露種類。
      * @param size 副露張數。
-     * @param sourceDirection 鳴取來源；自家方向代表沒有來源牌。
+     * @param sourceDirection 鳴取來源。自家方向代表沒有來源牌。
      * @return 由測試牌組成的副露。
      */
     private fun meld(

@@ -12,8 +12,8 @@ import org.lwjgl.glfw.GLFW
  * 選擇器展開清單中的一個選項。
  *
  * @property label 選項名稱。
- * @property description 游標停在這個選項上時，清單底部顯示的說明；沒有說明時為 null。
- * @property unavailableReason 不可選的原因；可選時為 null。不可選的選項留在原本的位置，以紅字附上原因。
+ * @property description 游標停在這個選項上時，清單底部顯示的說明。沒有說明時為 null。
+ * @property unavailableReason 不可選的原因。可選時為 null。不可選的選項留在原本的位置，以紅字附上原因。
  */
 internal data class DropdownOption(
     val label: Component,
@@ -24,17 +24,28 @@ internal data class DropdownOption(
 /**
  * 一個畫面同時最多展開一份的選擇器清單。
  *
- * 清單通常在選擇器下方展開，下方空間不足時改往上方展開。清單展開期間畫面上其他元件不可操作。使用清單的畫面要做五件事：建立元件時呼叫 [close]；繪製其他內容時
- * 以 [pointer] 取代游標座標，清單展開時略過底層元件的提示框，並在最後呼叫 [render]；`mouseClicked`、`mouseScrolled`、`keyPressed` 先交給這裡，
- * 回傳 true 就不再往下處理；清單展開時（[isOpen]）不處理拖曳與文字輸入。點選
- * 可選的選項、點清單以外的地方或按 Esc 都會收合；選項太多時以滾輪或方向鍵在清單內捲動。選項名稱放不下時截斷，
- * 游標或方向鍵停留在上面時以跑馬燈顯示全名。
+ * 行為：
+ *
+ * - 清單通常在選擇器下方展開，下方空間不足時改往上方展開。
+ * - 清單展開期間畫面上其他元件不可操作。
+ * - 點選可選的選項、點清單以外的地方或按 Esc 都會收合。
+ * - 選項太多時以滾輪或方向鍵在清單內捲動。
+ * - 選項名稱放不下時截斷，游標或方向鍵停留在上面時以跑馬燈顯示全名。
+ *
+ * 使用清單的畫面要做的事：
+ *
+ * 1. 建立元件時呼叫 [close]。
+ * 2. 繪製其他內容時以 [pointer] 取代游標座標。
+ * 3. 清單展開時略過底層元件的提示框。
+ * 4. 最後呼叫 [render]。
+ * 5. `mouseClicked`、`mouseScrolled`、`keyPressed` 先交給這裡，回傳 true 就不再往下處理。
+ *    清單展開時（[isOpen]）不處理拖曳與文字輸入。
  */
 internal class DropdownOverlay {
-    /** 目前展開的清單；沒有展開時為 null。 */
+    /** 目前展開的清單。沒有展開時為 null。 */
     private var open: OpenList? = null
 
-    /** 上一幀的游標水平座標；游標移動後才改用游標停留的選項取代方向鍵選擇。 */
+    /** 上一幀的游標水平座標。游標移動後才改用游標停留的選項取代方向鍵選擇。 */
     private var lastMouseX: Int? = null
 
     /** 上一幀的游標垂直座標。 */
@@ -65,9 +76,9 @@ internal class DropdownOverlay {
      * 展開或收合選擇器的清單：同一個選擇器的清單已展開時收合，否則改為展開它的清單。
      *
      * @param key 選擇器的識別值，畫面重建後仍須相同。
-     * @param anchor 選擇器按鈕；清單出現在它的正下方並與它同寬。
+     * @param anchor 選擇器按鈕。清單出現在它的正下方並與它同寬。
      * @param options 依顯示順序排列的選項。
-     * @param selectedIndex 目前選項的索引；沒有任何選項符合時為 null。
+     * @param selectedIndex 目前選項的索引。沒有任何選項符合時為 null。
      * @param onSelect 玩家選定可選的選項時，以其索引呼叫。
      */
     fun toggle(
@@ -100,7 +111,7 @@ internal class DropdownOverlay {
     }
 
     /**
-     * 繪製展開的清單；沒有清單展開時不繪製。
+     * 繪製展開的清單。沒有清單展開時不繪製。
      *
      * @param context 畫面繪製情境。
      * @param textRenderer 文字繪製器。
@@ -186,7 +197,7 @@ internal class DropdownOverlay {
     }
 
     /**
-     * 處理滑鼠點擊；清單展開時一律攔下點擊，不讓底下的元件收到。
+     * 處理滑鼠點擊。清單展開時一律攔下點擊，不讓底下的元件收到。
      *
      * @param textRenderer 文字繪製器。
      * @param windowHeight 視窗高度。
@@ -208,11 +219,11 @@ internal class DropdownOverlay {
     }
 
     /**
-     * 處理滾輪；清單展開時一律攔下滾輪，選項超出可見範圍時在清單內捲動。
+     * 處理滾輪。清單展開時一律攔下滾輪，選項超出可見範圍時在清單內捲動。
      *
      * @param textRenderer 文字繪製器。
      * @param windowHeight 視窗高度。
-     * @param amount 滾輪位移；負值向後看後面的選項。
+     * @param amount 滾輪位移。負值向後看後面的選項。
      * @return 清單展開中時為 true。
      */
     fun mouseScrolled(textRenderer: Font, windowHeight: Int, amount: Double): Boolean {
@@ -223,7 +234,7 @@ internal class DropdownOverlay {
     }
 
     /**
-     * 處理鍵盤；清單展開時一律攔下按鍵。Esc 收合，上下方向鍵移動停留的選項，Enter 或空白鍵選定。
+     * 處理鍵盤。清單展開時一律攔下按鍵。Esc 收合，上下方向鍵移動停留的選項，Enter 或空白鍵選定。
      *
      * @param textRenderer 文字繪製器。
      * @param windowHeight 視窗高度。
@@ -252,7 +263,7 @@ internal class DropdownOverlay {
     }
 
     /**
-     * 選定選項並收合清單；不可選的選項不處理。
+     * 選定選項並收合清單。不可選的選項不處理。
      *
      * @param list 展開中的清單。
      * @param index 選項索引。
@@ -269,7 +280,7 @@ internal class DropdownOverlay {
      *
      * @param list 展開中的清單。
      * @param textRenderer 文字繪製器。
-     * @return 依選項順序排列的說明行；沒有說明的選項為空清單。
+     * @return 依選項順序排列的說明行。沒有說明的選項為空清單。
      */
     private fun footnotes(list: OpenList, textRenderer: Font): List<List<FormattedText>> = list.options.map { option ->
         option.description?.let { textRenderer.wrapDescription(it, footnoteWidth(list)) }.orEmpty()
@@ -279,7 +290,7 @@ internal class DropdownOverlay {
     private fun footnoteWidth(list: OpenList): Int = (list.width - DropdownListLayout.BORDER * 2 - TEXT_PADDING * 2).coerceAtLeast(1)
 
     /**
-     * 建立清單版面；底部說明區的高度取所有選項中最高的說明，停留的選項改變時清單大小不變。
+     * 建立清單版面。底部說明區的高度取所有選項中最高的說明，停留的選項改變時清單大小不變。
      *
      * @param list 展開中的清單。
      * @param footnotes 每個選項換行後的說明。
@@ -313,13 +324,13 @@ internal class DropdownOverlay {
      * @property anchorBottom 選擇器按鈕的下界。
      * @property width 選擇器按鈕的寬度。
      * @property options 依顯示順序排列的選項。
-     * @property selectedIndex 目前選項的索引；沒有任何選項符合時為 null。
+     * @property selectedIndex 目前選項的索引。沒有任何選項符合時為 null。
      * @property highlightedIndex 游標或方向鍵停留的選項索引。
      * @property onSelect 玩家選定選項時的回呼。
      * @property scrollIndex 第一個可見選項的索引。
      * @property keyboardHighlight 是否由方向鍵移到目前的選項。
      * @property footnoteMarquee 說明末行的跑馬燈進度。
-     * @property labelMarquees 每個選項名稱的跑馬燈進度；游標或方向鍵停留在放不下的名稱上時捲動顯示全名。
+     * @property labelMarquees 每個選項名稱的跑馬燈進度。游標或方向鍵停留在放不下的名稱上時捲動顯示全名。
      */
     private class OpenList(
         val key: Any,

@@ -23,9 +23,9 @@ data class WinPresentationCleanupPlan(
          * 規劃收尾動畫。
          *
          * @param winnerHands 本次胡牌的贏家手牌。
-         * @param showcaseHiddenTileIds 役滿 showcase **實際**交接給舞台代理、因而被設成隱形的真實牌；
+         * @param showcaseHiddenTileIds 役滿 showcase **實際**交接給舞台代理、因而被設成隱形的真實牌。
          * 沒播 showcase 時傳空集合。恢復可見刻意只針對這一組，不拿手牌全集去猜。
-         * @return 蓋牌範圍取贏家的 [Hand.standingTiles]，不含副露；恢復可見的範圍沿用指定的隱藏牌集合。
+         * @return 蓋牌範圍取贏家的 [Hand.standingTiles]，不含副露。恢復可見的範圍沿用指定的隱藏牌集合。
          */
         fun of(
             winnerHands: Collection<Hand>,

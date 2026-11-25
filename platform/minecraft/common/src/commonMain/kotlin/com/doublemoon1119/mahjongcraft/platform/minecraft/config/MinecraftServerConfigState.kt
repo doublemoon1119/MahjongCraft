@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * 保存目前 server runtime 最後一份通過驗證的 [MinecraftServerConfig]。
  *
- * 初始化及指令重載由 server thread 發布；背景服務只讀取不可變且具可見性的設定快照。
+ * 初始化及指令重載由 server thread 發布。背景服務只讀取不可變且具可見性的設定快照。
  *
  * @param initialConfig 啟動時已驗證的設定快照。
  */

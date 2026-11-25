@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
  */
 interface MahjongRoundInfoPresenter {
     /**
-     * 在指定桌面呈現目前局況；找不到既有 entity 時建立一個。
+     * 在指定桌面呈現目前局況。找不到既有 entity 時建立一個。
      *
      * @param presentation 已由伺服器決定的桌面局況資料。
      * @return 局況顯示呈現結果。

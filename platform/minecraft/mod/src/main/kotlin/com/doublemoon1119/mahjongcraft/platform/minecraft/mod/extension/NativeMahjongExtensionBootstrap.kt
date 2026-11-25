@@ -12,8 +12,8 @@ internal object NativeMahjongExtensionBootstrap {
      * @param extensions 依序執行登記回呼的原生整合 extension。
      * @param registries extension 使用並於成功後凍結的原生整合 registry 集合。
      * @param builtIn 不屬於任何規則的內建原生整合 extension。
-     * @param failurePolicy 判斷登記回呼丟出的失敗能否包成帶擴充識別碼的註冊例外；無法隔離的失敗原樣往外傳。
-     * @return 依來源分組的登記資訊；內建登記的來源識別碼為 null。
+     * @param failurePolicy 判斷登記回呼丟出的失敗能否包成帶擴充識別碼的註冊例外。無法隔離的失敗原樣往外傳。
+     * @return 依來源分組的登記資訊。內建登記的來源識別碼為 null。
      * @throws NativeMahjongExtensionRegistrationException 若任一 extension 登記失敗。
      */
     fun registerAndFreeze(
@@ -42,7 +42,7 @@ internal object NativeMahjongExtensionBootstrap {
      * @param extension 要執行登記回呼的 extension。
      * @param registries 提供給 extension 回呼使用的原生整合 registry 集合。
      * @param registeredExtensionIds 已使用的 extension 識別碼集合。
-     * @param failurePolicy 判斷登記回呼丟出的失敗能否包成帶擴充識別碼的註冊例外；無法隔離的失敗原樣往外傳。
+     * @param failurePolicy 判斷登記回呼丟出的失敗能否包成帶擴充識別碼的註冊例外。無法隔離的失敗原樣往外傳。
      */
     private fun registerCallbacks(
         extension: NativeMahjongExtension,

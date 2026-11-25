@@ -24,7 +24,7 @@ internal suspend fun AutotestContext.waitForScreen(className: String): Boolean =
 /**
  * 按下目前畫面中文字含有指定翻譯鍵的第一個可按的按鈕，與玩家點擊相同。
  *
- * @param key 按鈕文字的翻譯鍵；文字由多段組成時，其中一段使用這個翻譯鍵也算。
+ * @param key 按鈕文字的翻譯鍵。文字由多段組成時，其中一段使用這個翻譯鍵也算。
  * @return 找到並按下時為 true。
  */
 internal fun AutotestContext.pressButton(key: String): Boolean {
@@ -48,7 +48,7 @@ internal fun AutotestContext.pressButtonShowing(text: String): Boolean {
 /**
  * 目前畫面中的全部按鈕，包含清單、分頁等容器中的按鈕，依畫面中的順序排列。
  *
- * @return 按鈕；沒有畫面時為空。
+ * @return 按鈕。沒有畫面時為空。
  */
 internal fun AutotestContext.screenButtons(): List<AbstractButton> = client.screen?.let(::buttonsIn).orEmpty()
 

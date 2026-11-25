@@ -35,9 +35,10 @@ import kotlin.uuid.toKotlinUuid
 /**
  * 在每幀開始時讀取原生牌張資料，為渲染與命中建立同一份本機手牌布局。
  *
- * 本人的手牌排列取自伺服器送來的時間軸，與共享呈現的牌張動作同時生效；快照的手牌是交易結束時的結果，只在還沒收到
- * 時間軸時使用。別人的手牌有看得到牌面的立牌時，看得到的牌排在左邊並依規則牌序排列，見 [ObservedHandOrder]；
- * 本人所坐的桌子與旁觀的桌子都適用。
+ * - 本人的手牌排列取自伺服器送來的時間軸，與共享呈現的牌張動作同時生效。
+ * - 快照的手牌是交易結束時的結果，只在還沒收到時間軸時使用。
+ * - 別人的手牌有看得到牌面的立牌時，看得到的牌排在左邊並依規則牌序排列，見 [ObservedHandOrder]。
+ * - 本人所坐的桌子與旁觀的桌子都適用。
  *
  * @property stateStore 已按本人視角裁切的對局快照。
  * @property moduleRegistry 取得各桌規則牌序。
@@ -49,13 +50,13 @@ class ClientHandTileLayoutController(
     /** 每一家由本機排列的手牌各自的連續布局，以桌子與玩家索引。 */
     private val slots = mutableMapOf<SlotKey, Slot>()
 
-    /** 本幀絕對顯示位置；讀取時不再重新計算或改變過渡。 */
+    /** 本幀絕對顯示位置。讀取時不再重新計算或改變過渡。 */
     private var frame: Map<Uuid, TileDisplayTransform> = emptyMap()
 
     /** 最近建立布局的世界實例，避免不同連線共用同一個時間值。 */
     private var world: ClientLevel? = null
 
-    /** 各桌的本人手牌排列時間軸；跨回合保留，由伺服器在發牌開始時送出空排列來結束上一局。 */
+    /** 各桌的本人手牌排列時間軸。跨回合保留，由伺服器在發牌開始時送出空排列來結束上一局。 */
     private val timelines = mutableMapOf<Uuid, PrivateHandOrderTimeline>()
 
     /** 最近一次解析牌序的規則設定與結果，同一桌的設定在對局中不變。 */
@@ -127,7 +128,7 @@ class ClientHandTileLayoutController(
     }
 
     /**
-     * 本人手牌的排列：依時間軸生效；還沒收到任何項目（例如剛重新連線）時才用快照的權威手牌。
+     * 本人手牌的排列：依時間軸生效。還沒收到任何項目（例如剛重新連線）時才用快照的權威手牌。
      *
      * @param tableId 本人所坐的桌子。
      * @param player 本人的玩家快照。
@@ -148,7 +149,7 @@ class ClientHandTileLayoutController(
     }
 
     /**
-     * 取得這一家的布局；換回合（包含連莊）時清除上一輪的暫存。
+     * 取得這一家的布局。換回合（包含連莊）時清除上一輪的暫存。
      *
      * @param key 桌子與玩家。
      * @param snapshot 桌況快照。
@@ -163,7 +164,7 @@ class ClientHandTileLayoutController(
     }
 
     /**
-     * 解析該桌規則的牌序；未註冊的規則不排列。
+     * 解析該桌規則的牌序。未註冊的規則不排列。
      *
      * @param config 該桌規則設定。
      * @return 規則牌序，或無法解析時為 null。
@@ -204,15 +205,15 @@ class ClientHandTileLayoutController(
     )
 
     /**
-     * 讀取本幀已計算的顯示結果；沒有接管時由原版共享動畫繪製。
+     * 讀取本幀已計算的顯示結果。沒有接管時由原版共享動畫繪製。
      *
      * @param entity 要繪製或選取的牌張。
-     * @return 本幀絕對位置與姿態；不是本機排列的牌時為 null。
+     * @return 本幀絕對位置與姿態。不是本機排列的牌時為 null。
      */
     fun display(entity: MahjongTileEntity): TileDisplayTransform? = if (entity.level() === world) frame[entity.uuid.toKotlinUuid()] else null
 
     /**
-     * 依本人看見的位置與翻轉角建立包圍盒；未接管的牌保留原生結果。
+     * 依本人看見的位置與翻轉角建立包圍盒。未接管的牌保留原生結果。
      *
      * @param entity 要進行視線選取或裁切的牌張。
      * @return 本幀顯示位置的保守包圍盒。
@@ -271,7 +272,7 @@ class ClientHandTileLayoutController(
         clear()
     }
 
-    /** 清除世界與所有布局的過渡，不保留上一輪的牌位；時間軸保留，本人排列仍依它生效。 */
+    /** 清除世界與所有布局的過渡，不保留上一輪的牌位。時間軸保留，本人排列仍依它生效。 */
     fun clear() {
         slots.values.forEach { it.layout.clear() }
         slots.clear()

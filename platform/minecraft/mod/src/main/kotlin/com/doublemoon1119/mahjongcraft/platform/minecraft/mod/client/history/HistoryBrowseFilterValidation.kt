@@ -15,9 +15,9 @@ import kotlin.uuid.Uuid
 /**
  * 歷史瀏覽表單的文字篩選輸入。
  *
- * @property ruleId 規則模組的 namespaced ID；空白值表示不限制規則。
- * @property playerName 玩家名稱包含文字；空白值表示不限制玩家名稱。
- * @property matchId 欲精確比對的完整對局 UUID；空白值表示不限。
+ * @property ruleId 規則模組的 namespaced ID。空白值表示不限制規則。
+ * @property playerName 玩家名稱包含文字。空白值表示不限制玩家名稱。
+ * @property matchId 欲精確比對的完整對局 UUID。空白值表示不限。
  * @property outcome 對局結果篩選。
  * @property integrity 對局完整性篩選。
  * @property ai AI 座位篩選。
@@ -112,7 +112,7 @@ internal object HistoryBrowseFilterValidation {
      *
      * @param input 使用者輸入的文字篩選條件。
      * @param zone 日期文字所使用的時區。
-     * @param scope 查詢的資料範圍；全部對局不套用名次欄位。
+     * @param scope 查詢的資料範圍。全部對局不套用名次欄位。
      * @return 通過驗證的 DTO，或每個失敗欄位的穩定錯誤。
      */
     fun parse(

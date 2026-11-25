@@ -40,7 +40,7 @@ class HistoryReplayMarkerClassifierTest {
         assertNull(classify(BuiltInRuleModuleIds.RIICHI, action(HistoryActionTypeKeys.DRAW), action(HistoryActionTypeKeys.DISCARD)))
     }
 
-    /** 立直與聽牌宣告是宣告；拔北與補花把牌亮到旁邊再補摸，算鳴牌；沒有登記的動作不標。 */
+    /** 立直與聽牌宣告是宣告。拔北與補花把牌亮到旁邊再補摸，算鳴牌。沒有登記的動作不標。 */
     @Test
     fun `rule actions use the marker their rule registered`() {
         assertEquals(GameActionReplayMarker.DECLARATION, classify(BuiltInRuleModuleIds.RIICHI, extension(RiichiGameAction.Riichi.id)))
@@ -174,7 +174,7 @@ class HistoryReplayMarkerClassifierTest {
      * 建立一次等待回應的裁定結果。
      *
      * @param actionType 成立的動作種類。
-     * @param seat 成立動作的玩家座位；沒有單一玩家時為 null。
+     * @param seat 成立動作的玩家座位。沒有單一玩家時為 null。
      * @return 裁定結果事實。
      */
     private fun resolution(actionType: String, seat: Int?): HistoryReplayFactDto = HistoryReplayFactDto.Reaction(

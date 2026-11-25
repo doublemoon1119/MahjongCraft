@@ -17,7 +17,7 @@ internal object ClientAiSeatInteraction {
     /** 辨識物品失敗時記錄提供者，不讓回呼破壞輸入流程。 */
     private val logger = mahjongCraftLogger(ClientAiSeatInteraction::class)
 
-    /** 是否已記錄過格式錯誤的目標；之後同樣的錯誤不再記錄。只在主執行緒存取。 */
+    /** 是否已記錄過格式錯誤的目標。之後同樣的錯誤不再記錄。只在主執行緒存取。 */
     private var reportedInvalidTarget = false
 
     /**

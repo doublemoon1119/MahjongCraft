@@ -29,7 +29,7 @@ import kotlin.time.TimeSource
 /**
  * 顯示單場牌譜的基本資訊、排名與各局列表。
  *
- * 基本資訊為名稱與值兩欄對齊，對局 ID 旁有複製按鈕、規則旁有查看規則設定的按鈕；每局一列，點整列開啟該局紀錄。
+ * 基本資訊為名稱與值兩欄對齊，對局 ID 旁有複製按鈕、規則旁有查看規則設定的按鈕。每局一列，點整列開啟該局紀錄。
  *
  * @property session 共用歷史瀏覽 session。
  */
@@ -51,13 +51,13 @@ internal class HistorySummaryScreen(
     /** 重試按鈕。 */
     private var retryButton: Button? = null
 
-    /** 對局 ID 旁的複製按鈕；隨內容捲動，由本畫面在內容裁切範圍內繪製。 */
+    /** 對局 ID 旁的複製按鈕。隨內容捲動，由本畫面在內容裁切範圍內繪製。 */
     private lateinit var copyButton: RestartableMarqueeButtonWidget
 
-    /** 規則旁查看規則設定的按鈕；隨內容捲動，由本畫面在內容裁切範圍內繪製。 */
+    /** 規則旁查看規則設定的按鈕。隨內容捲動，由本畫面在內容裁切範圍內繪製。 */
     private lateinit var ruleSettingsButton: RestartableMarqueeButtonWidget
 
-    /** 各局列的局數欄寬度；建立列時依實際文字更新。 */
+    /** 各局列的局數欄寬度。建立列時依實際文字更新。 */
     private var roundLabelWidth = 0
 
     /** 複製成功提示的單調時間起點。 */
@@ -88,7 +88,7 @@ internal class HistorySummaryScreen(
     }
 
     /**
-     * 建立列上的小按鈕；寬度依文字決定，位置由 [placeContentButtons] 決定。不加入畫面元件，由本畫面在內容裁切範圍內繪製與處理點擊。
+     * 建立列上的小按鈕。寬度依文字決定，位置由 [placeContentButtons] 決定。不加入畫面元件，由本畫面在內容裁切範圍內繪製與處理點擊。
      *
      * @param label 按鈕文字。
      * @param action 按下後的行為。
@@ -297,7 +297,7 @@ internal class HistorySummaryScreen(
      * @param top 捲動後的列上界。
      * @param keyWidth 名稱欄寬度。
      * @param hovered 游標是否在這一列上。
-     * @return 游標所指時的提示；沒有時為 null。
+     * @return 游標所指時的提示。沒有時為 null。
      */
     private fun renderField(context: GuiGraphics, row: FieldRow, top: Int, keyWidth: Int, hovered: Boolean): List<Component>? {
         stripe(top, row.height).renderIfStriped(context, row.stripeIndex)
@@ -339,7 +339,7 @@ internal class HistorySummaryScreen(
      * @param rankWidth 名次欄寬度。
      * @param hovered 游標是否在這一列上。
      * @param mouseX 游標水平座標。
-     * @return 名稱被截斷且游標停在名稱上時的完整名稱；沒有時為 null。
+     * @return 名稱被截斷且游標停在名稱上時的完整名稱。沒有時為 null。
      */
     private fun renderParticipant(context: GuiGraphics, row: ParticipantRow, top: Int, rankWidth: Int, hovered: Boolean, mouseX: Int): List<Component>? {
         stripe(top, row.height).renderIfStriped(context, row.stripeIndex)
@@ -357,7 +357,7 @@ internal class HistorySummaryScreen(
     }
 
     /**
-     * 繪製一局的列：卡片底色，游標停留時加亮並加白框；右端畫進入箭頭。
+     * 繪製一局的列：卡片底色，游標停留時加亮並加白框。右端畫進入箭頭。
      *
      * @param context 繪製上下文。
      * @param row 要繪製的列。
@@ -378,7 +378,7 @@ internal class HistorySummaryScreen(
     }
 
     /**
-     * 將對局 ID 與規則兩列的按鈕放到列的右端；所在列捲出內容區時隱藏。
+     * 將對局 ID 與規則兩列的按鈕放到列的右端。所在列捲出內容區時隱藏。
      *
      * @param detail 權威摘要。
      */
@@ -400,8 +400,8 @@ internal class HistorySummaryScreen(
     /**
      * 取得列上的按鈕。
      *
-     * @param action 列的按鈕種類；沒有按鈕時為 null。
-     * @return 對應的按鈕；沒有按鈕時為 null。
+     * @param action 列的按鈕種類。沒有按鈕時為 null。
+     * @return 對應的按鈕。沒有按鈕時為 null。
      */
     private fun actionButton(action: FieldAction?): RestartableMarqueeButtonWidget? = when (action) {
         FieldAction.COPY_MATCH_ID -> copyButton
@@ -440,7 +440,7 @@ internal class HistorySummaryScreen(
         }
 
         /**
-         * 加入一段標題；不是第一段時上方先留白。
+         * 加入一段標題。不是第一段時上方先留白。
          *
          * @param key 標題翻譯鍵。
          */
@@ -543,7 +543,7 @@ internal class HistorySummaryScreen(
     /**
      * 計算摘要總高度，與繪製的列保持一致。
      *
-     * @param detail 成功摘要；null 表示尚無內容。
+     * @param detail 成功摘要。null 表示尚無內容。
      * @return 總像素高度。
      */
     private fun contentHeight(detail: HistoryMatchDetailDto?): Int = detail?.let { rows(it).lastOrNull()?.let { row -> row.top + row.height } } ?: 0
@@ -607,8 +607,8 @@ internal class HistorySummaryScreen(
      *
      * @property keyId 名稱翻譯鍵。
      * @property value 值。
-     * @property tooltip 游標停在這一列上時的提示；沒有時值被截斷才顯示完整值。
-     * @property action 列右端的按鈕；沒有時為 null。
+     * @property tooltip 游標停在這一列上時的提示。沒有時值被截斷才顯示完整值。
+     * @property action 列右端的按鈕。沒有時為 null。
      */
     private data class FieldContent(
         val keyId: String,
@@ -617,7 +617,7 @@ internal class HistorySummaryScreen(
         val action: FieldAction? = null,
     )
 
-    /** 摘要內容的一列；上界相對內容區頂端，尚未套用捲動。 */
+    /** 摘要內容的一列。上界相對內容區頂端，尚未套用捲動。 */
     private sealed interface SummaryRow {
         /** 列上界。 */
         val top: Int
@@ -675,7 +675,7 @@ internal class HistorySummaryScreen(
      * @property rank 名次或未知佔位。
      * @property name 共用來源解析的名稱。
      * @property score 分數或未知佔位。
-     * @property nameColor 名稱顏色；自己的名稱另外上色。
+     * @property nameColor 名稱顏色。自己的名稱另外上色。
      */
     private data class ParticipantRow(
         override val top: Int,

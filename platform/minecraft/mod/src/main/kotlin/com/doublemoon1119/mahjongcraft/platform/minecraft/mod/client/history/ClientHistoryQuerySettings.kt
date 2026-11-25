@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlin.time.Duration
 
-/** 保存目前伺服器公布的歷史查詢間隔；斷線後不沿用上一個伺服器的設定。 */
+/** 保存目前伺服器公布的歷史查詢間隔。斷線後不沿用上一個伺服器的設定。 */
 class ClientHistoryQuerySettings {
     /** 主執行緒更新的有效查詢間隔。 */
     private val mutableMinimumInterval = MutableStateFlow(MinecraftHistoryConfig.DEFAULT_QUERY_MINIMUM_INTERVAL)

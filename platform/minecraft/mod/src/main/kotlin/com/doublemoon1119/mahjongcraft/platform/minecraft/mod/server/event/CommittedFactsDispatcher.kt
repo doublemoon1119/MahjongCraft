@@ -49,7 +49,7 @@ class CommittedFactsDispatcher(
     /** 記錄個別接收端失敗而不阻斷另一端的診斷 logger。 */
     private val logger = mahjongCraftLogger(CommittedFactsDispatcher::class)
 
-    /** 目前有效 server session；舊 listener 即使稍後回呼也會被此身份檢查拒絕。 */
+    /** 目前有效 server session。舊 listener 即使稍後回呼也會被此身份檢查拒絕。 */
     private val activeSession = AtomicReference<Session?>(null)
 
     /**
@@ -65,11 +65,11 @@ class CommittedFactsDispatcher(
     }
 
     /**
-     * 供正式環境與 JVM 測試共用的啟動入口；測試可提供非 Minecraft 的排程器。
+     * 供正式環境與 JVM 測試共用的啟動入口。測試可提供非 Minecraft 的排程器。
      *
      * @param scheduler 將交付工作排入主執行緒的排程器。
-     * @param serverProvider 目前 session 對應的 server；省略時不安裝 server 情境轉換綁定。
-     * @param subscriptions 本次橋接使用的訂閱點；正式環境使用全域端點，測試可提供獨立集合。
+     * @param serverProvider 目前 session 對應的 server。省略時不安裝 server 情境轉換綁定。
+     * @param subscriptions 本次橋接使用的訂閱點。正式環境使用全域端點，測試可提供獨立集合。
      */
     internal fun startSession(
         scheduler: GameEventScheduler,

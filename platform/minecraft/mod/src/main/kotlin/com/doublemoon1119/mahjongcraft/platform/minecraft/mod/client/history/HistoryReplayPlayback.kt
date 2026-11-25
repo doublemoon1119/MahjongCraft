@@ -6,8 +6,9 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * 回放的播放狀態：播放或暫停、速度、每一步停多久，以及交易列表是否跟著目前這一步。
  *
- * 不保存步數與牌面；畫面每一幀把目前步數交給 [advance]，收到新的步數時再交給讀取端移動。
- * 有標記的交易（副露、宣告、和牌）停兩倍時間；下一步牌面還沒到時原地等待，不跳過。
+ * - 不保存步數與牌面。畫面每一幀把目前步數交給 [advance]，收到新的步數時再交給讀取端移動。
+ * - 有標記的交易（副露、宣告、和牌）停兩倍時間。
+ * - 下一步牌面還沒到時原地等待，不跳過。
  */
 internal class HistoryReplayPlayback {
     /** 是否正在播放。 */
@@ -25,7 +26,7 @@ internal class HistoryReplayPlayback {
     private var stepStartedAt: Duration = Duration.ZERO
 
     /**
-     * 開始播放；已在最後一步時從頭開始。
+     * 開始播放。已在最後一步時從頭開始。
      *
      * @param step 目前步數。
      * @param stepCount 這一局的總步數。
@@ -45,7 +46,7 @@ internal class HistoryReplayPlayback {
     }
 
     /**
-     * 玩家換到別的步數（上一筆、下一筆、第一筆、最後一筆、點列表或拖進度條）；播放中會重新計時，列表恢復跟隨。
+     * 玩家換到別的步數（上一筆、下一筆、第一筆、最後一筆、點列表或拖進度條）。播放中會重新計時，列表恢復跟隨。
      *
      * @param now 目前時間。
      */
@@ -75,14 +76,14 @@ internal class HistoryReplayPlayback {
     }
 
     /**
-     * 播放中時間到了就前進一步；到最後一步時自動暫停。
+     * 播放中時間到了就前進一步。到最後一步時自動暫停。
      *
      * @param step 目前步數。
      * @param stepCount 這一局的總步數。
      * @param now 目前時間。
      * @param nextReady 下一步的牌面是否已經取得。
      * @param marked 目前這一步的交易是否有回放標記。
-     * @return 要前進到的步數；還不用前進時為 null。
+     * @return 要前進到的步數。還不用前進時為 null。
      */
     fun advance(step: Int, stepCount: Int, now: Duration, nextReady: Boolean, marked: Boolean): Int? {
         if (!playing) return null

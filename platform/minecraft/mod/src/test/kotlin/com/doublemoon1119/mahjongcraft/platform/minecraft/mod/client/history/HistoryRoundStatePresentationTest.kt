@@ -57,7 +57,7 @@ class HistoryRoundStatePresentationTest {
         assertEquals(listOf(1, 0, 2), ron?.placements?.map { it.tile })
     }
 
-    /** 贏家卡片的手牌把和牌張分開；榮和的和牌張不在手牌中，取自和牌描述。 */
+    /** 贏家卡片的手牌把和牌張分開。榮和的和牌張不在手牌中，取自和牌描述。 */
     @Test
     fun `card hand separates the winning tile for tsumo and ron winners`() {
         val tsumoPlayer = player(handTiles = listOf(1, 0), lastDrawn = 2)
@@ -111,7 +111,7 @@ class HistoryRoundStatePresentationTest {
         assertEquals(listOf(0), layout.placements.map { it.tile })
     }
 
-    /** 和牌手牌只含立牌與和牌張；副露另外以一列呈現，記下被鳴的牌來自哪個座位與加槓補上的牌。 */
+    /** 和牌手牌只含立牌與和牌張。副露另外以一列呈現，記下被鳴的牌來自哪個座位與加槓補上的牌。 */
     @Test
     fun `winning hand leaves melds to a separate row with sources and added kan tiles`() {
         val addedKan = HistoryReplayMeldDto(
@@ -144,7 +144,7 @@ class HistoryRoundStatePresentationTest {
         assertNull(HistoryRoundStatePresenter.exposedTiles(state, state.players[0], 300f))
     }
 
-    /** 副露與移出牌區排在同一列，副露在前；空的移出牌區不列入。 */
+    /** 副露與移出牌區排在同一列，副露在前。空的移出牌區不列入。 */
     @Test
     fun `exposed tiles put melds and set aside areas on one row`() {
         val pon = HistoryReplayMeldDto(
@@ -234,7 +234,7 @@ class HistoryRoundStatePresentationTest {
      * 建立單一贏家明細。
      *
      * @param seat 贏家座位索引。
-     * @param hand 已保存的和牌手牌描述；null 表示缺少描述。
+     * @param hand 已保存的和牌手牌描述。null 表示缺少描述。
      * @return 贏家詳情 DTO。
      */
     private fun winner(seat: Int, hand: HistoryReplayWinningHandDto?) = HistoryWinnerDetailsDto(seat, emptyList(), hand)
@@ -259,7 +259,7 @@ class HistoryRoundStatePresentationTest {
      * 建立包含指定玩家的歷史桌況。
      *
      * @param players 玩家桌況列表。
-     * @param winners 本局贏家詳情；null 表示沒有結算。
+     * @param winners 本局贏家詳情。null 表示沒有結算。
      * @return 歷史桌況 DTO。
      */
     private fun state(

@@ -9,8 +9,9 @@ import kotlin.coroutines.CoroutineContext
 /**
  * 目前 server session 中可以隨時捨棄的背景工作，例如狀態訂閱、呈現動畫與斷線倒數。
  *
- * 關服時先取消這裡的工作，不等待它們完成；它們不會自行結束或依賴遊戲 tick 前進，等待只會拖慢關服。
- * 需要在關服前完成的權威工作使用 [ServerLifecycleAppCoroutineScope]。各子工作由 [SupervisorJob] 隔離失敗。
+ * - 關服時先取消這裡的工作，不等待它們完成。它們不會自行結束或依賴遊戲 tick 前進，等待只會拖慢關服。
+ * - 需要在關服前完成的權威工作使用 [ServerLifecycleAppCoroutineScope]。
+ * - 各子工作由 [SupervisorJob] 隔離失敗。
  *
  * @param dispatchers 提供預設工作 dispatcher 的平台 dispatcher 集合。
  */

@@ -11,7 +11,7 @@ import net.minecraftforge.registries.DeferredRegister
 /**
  * 以 Forge 的 [DeferredRegister] 實作 [ExampleRegistrar]：交出的物件在 Forge 輪到該登記表時才建立並寫入，寫入後交回。
  *
- * 每個登記表各用一個 [DeferredRegister]，依第一次登記的順序建立；全部交出後以 [attach] 接上本 mod 的事件匯流排。
+ * 每個登記表各用一個 [DeferredRegister]，依第一次登記的順序建立。全部交出後以 [attach] 接上本 mod 的事件匯流排。
  *
  * @property modId 登記的物件所屬的 mod，也是每個物件 ID 必須使用的命名空間。
  */
@@ -19,7 +19,7 @@ class ForgeExampleRegistrar(private val modId: String) : ExampleRegistrar {
     /** 各登記表的延後登記器。 */
     private val registers = linkedMapOf<ResourceKey<*>, DeferredRegister<*>>()
 
-    /** 是否已接上事件匯流排；接上後不能再登記。 */
+    /** 是否已接上事件匯流排。接上後不能再登記。 */
     private var attached = false
 
     override fun <T : Any> register(registry: ResourceKey<out Registry<in T>>, id: ResourceLocation, factory: () -> T, onRegistered: (T) -> Unit) {

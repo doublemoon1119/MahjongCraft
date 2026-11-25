@@ -11,7 +11,7 @@ import kotlin.uuid.Uuid
  * 測試可直接切換 session、桌子來源、位置索引與追蹤中的玩家，重現清理和延遲工作之間的競態。
  *
  * @property locations 測試用的桌子位置索引。
- * @property sessionId 目前 server session 的識別碼；設為 null 代表尚未啟動。
+ * @property sessionId 目前 server session 的識別碼。設為 null 代表尚未啟動。
  * @property sourceExists 權威桌子來源是否仍存在。
  * @property trackingObserverIds 清理前捕捉到的追蹤玩家。
  */

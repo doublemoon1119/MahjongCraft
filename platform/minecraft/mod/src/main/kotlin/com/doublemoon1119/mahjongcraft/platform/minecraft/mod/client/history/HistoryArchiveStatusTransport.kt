@@ -148,7 +148,7 @@ internal class ClientHistoryArchiveStatusCoordinator(
     }
 }
 
-/** 保存目前要求識別碼與對局識別碼；完成回覆時只比對要求識別碼，不另比對對局。 */
+/** 保存目前要求識別碼與對局識別碼。完成回覆時只比對要求識別碼，不另比對對局。 */
 internal class HistoryArchiveStatusCorrelation {
     /** 目前有效的要求與對局識別碼配對。 */
     private var active: Pair<String, String>? = null
@@ -203,7 +203,7 @@ internal interface HistoryArchiveStatusSender {
     fun send(request: HistoryArchiveStatusRequestDto)
 }
 
-/** Screen 可觀察的保存狀態；不把伺服器內部錯誤暴露給呈現層。 */
+/** Screen 可觀察的保存狀態。不把伺服器內部錯誤暴露給呈現層。 */
 internal sealed interface HistoryArchiveStatusView {
     /** 尚未指定對局。 */
     data object Idle : HistoryArchiveStatusView

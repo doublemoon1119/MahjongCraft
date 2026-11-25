@@ -146,13 +146,11 @@ class TableLocationValidationService(
     /**
      * 第二次確認仍缺失後套用 orphan cleanup。
      *
-     * 這條路徑（chunk 重新載入後驗證失敗，例如伺服器崩潰重啟後桌子方塊本身出問題）跟
-     * [TableLifecycleService.onBlockReplaced] 是兩條獨立的桌子消失偵測管道，但都代表同一件事：
-     * 這張桌子的 3D 呈現不該再存在。因此清除順序完全比照 `onBlockReplaced`——先清掉骰子／牌牆／手牌區
-     * （含摸牌位／副露）／規則桌面物件／牌河這幾個 presenter 管理的 entity，再清權威 Room／Game 狀態；只清權威
-     * 狀態會讓已經生成的管理中麻將牌 entity 變成沒有任何權威資料支撐的孤兒，永遠留在世界存檔裡。
-     *
-     * presenter 清除在主執行緒當場完成；權威清理排入 [cleanupQueue] 後立即返回，不在主執行緒等待權威狀態的鎖。
+     * - 這條路徑（chunk 重新載入後驗證失敗，例如伺服器崩潰重啟後桌子方塊本身出問題）與
+     *   [TableLifecycleService.onBlockReplaced] 是兩條獨立的桌子消失偵測，都代表這張桌子的 3D 呈現不該再存在。
+     * - 清除順序比照 `onBlockReplaced`：先清掉 presenter 管理的 entity（骰子、牌牆、手牌區含摸牌位與副露、規則桌面物件、牌河），
+     *   再清權威 Room／Game 狀態。只清權威狀態會讓已經生成的麻將牌 entity 失去權威資料，永遠留在世界存檔裡。
+     * - presenter 清除在主執行緒當場完成。權威清理排入 [cleanupQueue] 後立即返回，不在主執行緒等待權威狀態的鎖。
      *
      * @param entry 第二次確認後仍缺失的位置索引項目。
      */
@@ -191,7 +189,7 @@ class TableLocationValidationService(
         world.chunkSource.hasChunk(chunkX, chunkZ)
 
     /**
-     * 定點確認位置上是 UUID 符合索引的麻將桌控制點；內建桌另外確認整個結構完整。
+     * 定點確認位置上是 UUID 符合索引的麻將桌控制點。內建桌另外確認整個結構完整。
      *
      * @param world 預期桌子所在世界。
      * @param entry 位置索引中的桌子 UUID 與座標。

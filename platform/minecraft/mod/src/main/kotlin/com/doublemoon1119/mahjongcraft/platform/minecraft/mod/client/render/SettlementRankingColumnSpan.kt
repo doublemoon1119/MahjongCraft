@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
 /**
- * 一欄在面板座標中的水平範圍；面板以 x = 0 為中心。
+ * 一欄在面板座標中的水平範圍。面板以 x = 0 為中心。
  *
  * @property left 左緣。
  * @property width 寬度。

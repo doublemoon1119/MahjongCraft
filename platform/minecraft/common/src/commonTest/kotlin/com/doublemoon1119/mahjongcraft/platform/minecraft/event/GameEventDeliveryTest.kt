@@ -150,7 +150,7 @@ class GameEventDeliveryTest {
         assertEquals(1, received)
     }
 
-    /** 標記解析失敗保留公開事件，但略過整筆內建成果；後續正常交易恢復授予。 */
+    /** 標記解析失敗保留公開事件，但略過整筆內建成果。後續正常交易恢復授予。 */
     @Test
     fun `marker failure suppresses only built in processing for that batch`() {
         var fail = true
@@ -275,7 +275,7 @@ class GameEventDeliveryTest {
         assertFalse(delivery.belongsToSession(contexts.first(), session))
     }
 
-    /** 一筆交易的個別事件先依序交付，最後才交付同一批次；批次保留相同事件物件。 */
+    /** 一筆交易的個別事件先依序交付，最後才交付同一批次。批次保留相同事件物件。 */
     @Test
     fun `batch is delivered after its events in one transaction`() {
         val scheduler = ManualScheduler()
@@ -491,7 +491,7 @@ class GameEventDeliveryTest {
         assertTrue(reporter.batchFailures.isEmpty())
     }
 
-    /** 監聽者丟出取消例外時與一般失敗一樣只略過該監聽者；交付不在協程中，不代表交付被取消。 */
+    /** 監聽者丟出取消例外時與一般失敗一樣只略過該監聽者。交付不在協程中，不代表交付被取消。 */
     @Test
     fun `listener cancellation is isolated like an ordinary failure`() {
         val scheduler = ManualScheduler()
@@ -512,7 +512,7 @@ class GameEventDeliveryTest {
         assertEquals(1, reporter.listenerFailures)
     }
 
-    /** 判斷規則接受的錯誤被隔離；不接受的錯誤原樣往外傳，之後的事件仍會重新排程交付。 */
+    /** 判斷規則接受的錯誤被隔離。不接受的錯誤原樣往外傳，之後的事件仍會重新排程交付。 */
     @Test
     fun `listener errors follow the failure policy`() {
         val scheduler = ManualScheduler()
@@ -872,7 +872,7 @@ class GameEventDeliveryTest {
             tasks += task
         }
 
-        /** 執行一個已排程工作；若佇列為空則拋出檢查例外。 */
+        /** 執行一個已排程工作。若佇列為空則拋出檢查例外。 */
         fun runNext() {
             check(tasks.isNotEmpty())
             tasks.removeFirst().invoke()

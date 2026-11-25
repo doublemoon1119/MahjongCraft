@@ -38,7 +38,7 @@ fun AiCharacterSnapshot.toNetworkDto(playerId: String): AiCharacterSnapshotNetwo
 fun AiCharacterSnapshotNetworkDto.toCharacterSnapshot(): AiCharacterSnapshot = AiCharacterSnapshot(characterId, definition?.toDomain(), displayName)
 
 /**
- * 驗證有界描述後建立客戶端快照；不補上未傳送的登記預設。
+ * 驗證有界描述後建立客戶端快照。不補上未傳送的登記預設。
  *
  * @return 已驗證的角色資料。
  */

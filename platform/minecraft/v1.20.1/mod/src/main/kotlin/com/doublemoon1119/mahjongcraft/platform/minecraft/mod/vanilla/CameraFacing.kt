@@ -6,7 +6,7 @@ import org.joml.Quaternionf
 /**
  * 面向鏡頭的轉向：套用後以 `(-s, -s, s)` 縮放的平面，正面朝向鏡頭、文字由左至右。
  *
- * @return 新的轉向；之後改動它不影響繪製器。
+ * @return 新的轉向。之後改動它不影響繪製器。
  */
 fun EntityRenderDispatcher.cameraFacingRotation(): Quaternionf = cameraFacingRotation(cameraOrientation())
 
@@ -23,7 +23,7 @@ fun EntityRenderDispatcher.overrideCameraFacingRotation(rotation: Quaternionf) {
  * 原版鏡頭轉向對應的面向鏡頭轉向。
  *
  * @param orientation 原版的鏡頭轉向。
- * @return 新的面向鏡頭轉向；不改動傳入的轉向。
+ * @return 新的面向鏡頭轉向。不改動傳入的轉向。
  */
 internal fun cameraFacingRotation(orientation: Quaternionf): Quaternionf = Quaternionf(orientation)
 
@@ -31,6 +31,6 @@ internal fun cameraFacingRotation(orientation: Quaternionf): Quaternionf = Quate
  * 面向鏡頭轉向對應的原版鏡頭轉向。
  *
  * @param facing 面向鏡頭的轉向。
- * @return 新的原版鏡頭轉向；不改動傳入的轉向。
+ * @return 新的原版鏡頭轉向。不改動傳入的轉向。
  */
 internal fun cameraOrientationFacing(facing: Quaternionf): Quaternionf = Quaternionf(facing)

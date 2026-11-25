@@ -77,7 +77,7 @@ class DebugNotenDeclarationRiichiRuleModuleTest {
     }
 
     /**
-     * 十三張萬子立牌 1112345678999m；加入任一種萬子都能和牌。
+     * 十三張萬子立牌 1112345678999m。加入任一種萬子都能和牌。
      *
      * @return 聽牌的手牌。
      */

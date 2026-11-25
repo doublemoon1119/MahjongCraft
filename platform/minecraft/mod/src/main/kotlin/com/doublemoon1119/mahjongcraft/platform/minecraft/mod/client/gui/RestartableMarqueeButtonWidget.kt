@@ -10,7 +10,7 @@ import kotlin.time.Duration
 /**
  * 文字過寬時捲動，並在游標每次重新進入後從頭播放的按鈕。
  *
- * 提示框超出畫面上下緣時推回畫面內；比畫面還高時上下捲動，游標重新進入或重新取得焦點後從頂端開始。
+ * 提示框超出畫面上下緣時推回畫面內。比畫面還高時上下捲動，游標重新進入或重新取得焦點後從頂端開始。
  *
  * 可另外設定五種外觀與操作：標示選中狀態的白色外框、展開清單用的選擇器箭頭、取代文字的像素圖示、不繪製文字
  * （文字只供旁白），以及讓右鍵也觸發動作（供循環切換按鈕往回選）。
@@ -33,7 +33,7 @@ internal class RestartableMarqueeButtonWidget private constructor(
     /** 是否以白色外框標示選中狀態。 */
     var outlined: Boolean = false
 
-    /** 作為選擇器時回報清單是否展開；不是選擇器時為 null。展開時顯示向上箭頭與白色外框。 */
+    /** 作為選擇器時回報清單是否展開。不是選擇器時為 null。展開時顯示向上箭頭與白色外框。 */
     var selectorExpanded: (() -> Boolean)? = null
 
     /** 捲動內容中額外限制滑鼠可點擊的區域。 */
@@ -42,10 +42,10 @@ internal class RestartableMarqueeButtonWidget private constructor(
     /** 右鍵點擊是否也觸發按鈕動作。 */
     var pressesOnSecondaryClick: Boolean = false
 
-    /** 取代按鈕文字置中繪製的圖示；設定後按鈕文字只供旁白使用。沒有圖示時為 null。 */
+    /** 取代按鈕文字置中繪製的圖示。設定後按鈕文字只供旁白使用。沒有圖示時為 null。 */
     var icon: PixelIcon? = null
 
-    /** 是否在按鈕上繪製文字；關閉時按鈕文字只供旁白使用，例如沒有勾選時是空方塊的勾選方塊。 */
+    /** 是否在按鈕上繪製文字。關閉時按鈕文字只供旁白使用，例如沒有勾選時是空方塊的勾選方塊。 */
     var showsMessage: Boolean = true
 
     /** 上一幀游標是否位於按鈕上，用於偵測重新進入。 */
@@ -96,7 +96,7 @@ internal class RestartableMarqueeButtonWidget private constructor(
      * 在按鈕右端繪製選擇器箭頭。
      *
      * @param context 本幀繪製環境。
-     * @param expanded 清單是否展開；展開時箭頭向上。
+     * @param expanded 清單是否展開。展開時箭頭向上。
      */
     private fun renderSelectorArrow(context: GuiGraphics, expanded: Boolean) {
         PixelIcons.arrow(
@@ -159,7 +159,7 @@ internal class RestartableMarqueeButtonWidget private constructor(
     )
 
     /**
-     * 設定按鈕的位置與尺寸；預設位於原點，寬 150、高 20。
+     * 設定按鈕的位置與尺寸。預設位於原點，寬 150、高 20。
      *
      * @property message 按鈕文字。
      * @property onPress 按下按鈕時執行的動作。
@@ -184,7 +184,7 @@ internal class RestartableMarqueeButtonWidget private constructor(
         private var pressesOnSecondaryClick = false
 
         /**
-         * 讓右鍵點擊也觸發按鈕動作；用於循環切換按鈕（右鍵選擇上一項）與開關。
+         * 讓右鍵點擊也觸發按鈕動作。用於循環切換按鈕（右鍵選擇上一項）與開關。
          *
          * @return 此建構器，供串接設定。
          */

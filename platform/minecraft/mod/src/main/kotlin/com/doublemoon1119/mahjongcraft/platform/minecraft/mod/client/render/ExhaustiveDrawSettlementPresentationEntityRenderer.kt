@@ -54,7 +54,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     private val textRenderer = context.font
     private val warnedUnknownReasonIds = mutableSetOf<String>()
 
-    /** 目前這次 [render] 呼叫所屬的桌子 ID，[resolvePlayerName] 解析名稱時查詢用；每次 render 開頭重設。 */
+    /** 目前這次 [render] 呼叫所屬的桌子 ID，[resolvePlayerName] 解析名稱時查詢用。每次 render 開頭重設。 */
     private var currentTableId: KotlinUuid? = null
 
     override fun render(
@@ -480,7 +480,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     }
 
     /**
-     * 保證原版最多 16 字元的玩家名稱完整顯示；非標準長名稱以 `...` 收尾。
+     * 保證原版最多 16 字元的玩家名稱完整顯示。非標準長名稱以 `...` 收尾。
      *
      * @param name 玩家顯示名稱。
      * @return 符合名稱欄寬度的文字。
@@ -507,11 +507,11 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     }
 
     /**
-     * 中央排行榜只顯示語意狀態；等待牌由手牌上方的獨立牌面面板承擔。
+     * 中央排行榜只顯示語意狀態。等待牌由手牌上方的獨立牌面面板承擔。
      *
      * @param reasonId 流局原因的完整識別碼。
      * @param player 玩家結算資料。
-     * @return 已知狀態的翻譯文字；沒有對應狀態時為 null。
+     * @return 已知狀態的翻譯文字。沒有對應狀態時為 null。
      */
     private fun settlementStatusText(reasonId: String, player: ExhaustiveDrawSettlementPlayerSnapshot): Component? = exhaustiveDrawSettlementStatusTranslationKey(reasonId, player.statusId, reasonDisplayNames)
         ?.let(Component::translatable)
@@ -542,7 +542,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     }
 
     /**
-     * 取得第一階段值得列出的玩家；未聽者已由桌上的蓋牌清楚表達，不重複占用面板。
+     * 取得第一階段值得列出的玩家。未聽者已由桌上的蓋牌清楚表達，不重複占用面板。
      *
      * @param players 本局所有玩家的保存結算資料。
      * @return 有等待牌需要公開資訊列的玩家。
@@ -577,7 +577,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     }
 
     /**
-     * 依所有起訖數值及本地化狀態的實際像素寬度建立穩定欄位；動畫中途不會改變面板尺寸。
+     * 依所有起訖數值及本地化狀態的實際像素寬度建立穩定欄位。動畫中途不會改變面板尺寸。
      *
      * @param reasonId 流局原因的完整識別碼。
      * @param players 本局所有玩家的保存結算資料。
@@ -646,7 +646,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
      */
     private fun withAlpha(rgb: Int, alpha: Float): Int = WorldPanelRenderer.withAlpha(rgb, alpha)
 
-    /** 繪製不使用單一材質；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    /** 繪製不使用單一材質。原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
     override fun getTextureLocation(entity: ExhaustiveDrawSettlementPresentationEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     /** 文字相對水平錨點的對齊方式。 */

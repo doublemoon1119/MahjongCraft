@@ -23,7 +23,7 @@ import kotlin.test.assertEquals
 
 /** 驗證規則一覽的牌面圖案快取與資源重新載入。 */
 class ResourceCatalogueTileArtTest {
-    /** 清除快取前沿用第一次的查詢結果；清除後重新查詢，補上的貼圖立即生效。 */
+    /** 清除快取前沿用第一次的查詢結果。清除後重新查詢，補上的貼圖立即生效。 */
     @Test
     fun `picks up textures added after the cache is cleared`() {
         val resources = ToggleResourceManager()

@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.automatic
 
-/** 內建自動操作在清單中的排列順序；規則覆寫顯示時沿用同一個順序。 */
+/** 內建自動操作在清單中的排列順序。規則覆寫顯示時沿用同一個順序。 */
 object BuiltInAutomaticControlDisplayOrders {
     /** 自動理牌。 */
     const val AUTO_SORT_HAND: Int = 0

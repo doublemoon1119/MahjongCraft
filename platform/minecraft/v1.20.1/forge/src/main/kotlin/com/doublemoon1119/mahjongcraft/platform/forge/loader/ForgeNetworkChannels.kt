@@ -11,14 +11,14 @@ import java.util.concurrent.ConcurrentHashMap
  * 頻道接受沒有安裝本 mod 的對方，因此未安裝本 mod 的玩家也能進入伺服器，只是收不到本 mod 的封包。
  */
 internal object ForgeNetworkChannels {
-    /** 頻道的協定版本；雙方都安裝本 mod 時必須相同。 */
+    /** 頻道的協定版本。雙方都安裝本 mod 時必須相同。 */
     private const val PROTOCOL_VERSION = "1"
 
     /** 已建立的頻道。 */
     private val channels = ConcurrentHashMap<ResourceLocation, EventNetworkChannel>()
 
     /**
-     * 建立頻道；同一個頻道只建立一次。
+     * 建立頻道。同一個頻道只建立一次。
      *
      * @param channelId 頻道識別碼。
      */

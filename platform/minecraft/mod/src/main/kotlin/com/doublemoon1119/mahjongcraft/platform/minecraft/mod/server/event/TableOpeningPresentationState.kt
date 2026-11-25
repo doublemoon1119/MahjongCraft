@@ -10,12 +10,12 @@ import kotlin.uuid.Uuid
 /**
  * 每張桌子開局呈現途中的暫存資料。
  *
- * 開局的四個階段——牌牆生成掉落、擲骰、發牌、開門——由呼叫端分四次發布，但後面的階段需要前面階段算出的
- * 數字才能把自己的動畫延後到正確的時刻。呼叫端應先記錄牌牆資料，再發布擲骰與發牌；
- * 新開局的後續階段會等待牌牆成功建立後交付開始時間；失敗或清理會取消等待，不自行猜測起點。
- *
- * 保存識別碼、呈現資料與開始時間的等待結果，不碰世界、entity 或 scheduler。同一張桌子的各階段可能在不同
- * 執行緒排入，因此以 [ConcurrentHashMap] 保存。
+ * - 開局的四個階段（牌牆生成掉落、擲骰、發牌、開門）由呼叫端分四次發布。
+ *   後面的階段需要前面階段算出的數字，才能把動畫延後到正確的時刻。
+ * - 呼叫端應先記錄牌牆資料，再發布擲骰與發牌。
+ * - 新開局的後續階段等待牌牆成功建立後交付開始時間。失敗或清理會取消等待，不自行猜測起點。
+ * - 只保存識別碼、呈現資料與開始時間的等待結果，不碰世界、entity 或 scheduler。
+ * - 同一張桌子的各階段可能在不同執行緒排入，因此以 [ConcurrentHashMap] 保存。
  */
 internal class TableOpeningPresentationState {
     /** 每張桌子最近一次牌牆生成掉落動畫的總時長（ticks）。 */
@@ -36,7 +36,7 @@ internal class TableOpeningPresentationState {
     /**
      * 開始新一局的牌牆：記錄本局的動畫時長，並丟棄上一局尚未播出的開門資料。
      *
-     * 每局覆寫上一局的資料；多個欄位分別更新，不構成跨欄位的原子快照。
+     * 每局覆寫上一局的資料。多個欄位分別更新，不構成跨欄位的原子快照。
      *
      * @param gameId 桌子／對局識別碼。
      * @param wallDropTicks 牌牆掉落動畫時長。
@@ -64,7 +64,7 @@ internal class TableOpeningPresentationState {
      * 等待本批牌牆成功建立，取得動畫共同的世界 tick 起點。
      *
      * @param gameId 桌子／對局識別碼。
-     * @return 本批開始時間；沒有建立新開局批次時為 null。
+     * @return 本批開始時間。沒有建立新開局批次時為 null。
      * @throws CancellationException 等待期間該批次被清除、取代或伺服器停止。
      */
     suspend fun awaitWallStartGameTime(gameId: Uuid): Long? = wallStartGameTimeByTable[gameId]?.await()
@@ -89,7 +89,7 @@ internal class TableOpeningPresentationState {
     }
 
     /**
-     * 取出並消費本局的開門資料；沒有要播開門時為 `null`。開門一局只播一次。
+     * 取出並消費本局的開門資料。沒有要播開門時為 `null`。開門一局只播一次。
      *
      * @param gameId 桌子／對局識別碼。
      * @return 待播放的開門資料，或沒有資料時的 null。
@@ -99,7 +99,7 @@ internal class TableOpeningPresentationState {
     /**
      * 牌牆生成掉落動畫的總時長（ticks），供擲骰與發牌把自己的動畫延後到牌牆完全落地。
      *
-     * 沒有紀錄時為 `0`——例如規則沒有牌牆，或呼叫端沒有先發布牌牆結構；那種情況下動畫不需要延後。
+     * 沒有紀錄時為 `0`——例如規則沒有牌牆，或呼叫端沒有先發布牌牆結構。那種情況下動畫不需要延後。
      *
      * @param gameId 桌子／對局識別碼。
      * @return 記錄的掉落動畫時長，沒有資料時為 0。
@@ -111,7 +111,7 @@ internal class TableOpeningPresentationState {
      *
      * @param gameId 桌子／對局識別碼。
      * @param rollIndex 本局擲骰程序中的零基底輪次。
-     * @return 同桌本批次內唯一且穩定的序號；沒有新開局批次時為 null。
+     * @return 同桌本批次內唯一且穩定的序號。沒有新開局批次時為 null。
      */
     fun openingRollSequence(gameId: Uuid, rollIndex: Int): Long? = openingRollSequenceByTable[gameId]?.computeIfAbsent(rollIndex) {
         nextOpeningSequence.getAndIncrement()

@@ -35,11 +35,13 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * 管理一個 client 歷史瀏覽 session 的查詢、分頁與導航，不訂閱資料庫變更。
  *
- * 所有操作與注入的作用域必須使用同一 client 執行緒。切換子頁不關閉此物件，只有最外層關閉或 session 失效才取消。
- * 最多一項在途查詢及一項最新待送意圖；舊回應可以解除在途工作，但不能覆蓋已改變的條件。
+ * - 所有操作與注入的作用域必須使用同一 client 執行緒。
+ * - 切換子頁不關閉此物件，只有最外層關閉或 session 失效才取消。
+ * - 最多一項在途查詢及一項最新待送意圖。
+ * - 舊回應可以解除在途工作，但不能覆蓋已改變的條件。
  *
  * @property transport 有 requestId 配對及 session 失效通知的查詢傳輸。
- * @param parentScope 提供 client 排程的父作用域；關閉只取消本瀏覽自己的子作用域。
+ * @param parentScope 提供 client 排程的父作用域。關閉只取消本瀏覽自己的子作用域。
  * @property json 含已登記擴充網路格式的編碼，用來估算快取內容大小。
  * @property now 判斷間隔的單調時間來源，不使用可被調整的日曆時鐘。
  * @property beforeDetailQuery 在詳細資料傳送前等待同 session 的其他唯讀查詢釋放配額。
@@ -64,7 +66,7 @@ internal class HistoryBrowseController(
     /** 從有效條件及導航意圖產生的世代。 */
     private var generation = 0L
 
-    /** 是否已要求首次列表；子頁重建不重送。 */
+    /** 是否已要求首次列表。子頁重建不重送。 */
     private var opened = false
 
     /** 最後一次開始傳送的單調時間。 */
@@ -79,7 +81,7 @@ internal class HistoryBrowseController(
     /** 最近失敗且仍可重試的同一查詢。 */
     private var retryIntent: Intent? = null
 
-    /** 回放中的一局；不在回放時為 null。 */
+    /** 回放中的一局。不在回放時為 null。 */
     private var replayRound: HistoryReplayRound? = null
 
     /** 回放目前這一步之後的牌面預先讀取失敗、自動重試也用完時的狀態。沒有失敗時為 null。 */
@@ -94,7 +96,7 @@ internal class HistoryBrowseController(
     /** 回放暫時失敗後等待自動重試的工作。 */
     private var autoRetryJob: Job? = null
 
-    /** 回放連續暫時失敗後已自動重試的次數；任何查詢成功或手動重試時歸零。 */
+    /** 回放連續暫時失敗後已自動重試的次數。任何查詢成功或手動重試時歸零。 */
     private var replayAutoRetries = 0
 
     /** 查詢失敗原因的診斷紀錄，不含牌局內容。 */
@@ -120,7 +122,7 @@ internal class HistoryBrowseController(
         }
     }
 
-    /** 首次開啟時查詢第一頁；已開啟或已關閉時不重送。 */
+    /** 首次開啟時查詢第一頁。已開啟或已關閉時不重送。 */
     fun open() {
         if (opened || !available()) return
         opened = true
@@ -129,9 +131,9 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 套用有效查詢條件；快速修改合併為最後一次，並重設分頁。
+     * 套用有效查詢條件。快速修改合併為最後一次，並重設分頁。
      *
-     * @param query 已通過輸入驗證的查詢條件；ALL 的個人欄位仍在此正規化。
+     * @param query 已通過輸入驗證的查詢條件。ALL 的個人欄位仍在此正規化。
      * @return 是否改變有效條件。
      */
     fun updateQuery(query: HistoryBrowseQuery): Boolean {
@@ -152,7 +154,7 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 保留有效條件重新查詢第一頁；載入中不重複刷新。
+     * 保留有效條件重新查詢第一頁。載入中不重複刷新。
      *
      * @return 是否接受刷新。
      */
@@ -204,7 +206,7 @@ internal class HistoryBrowseController(
     /**
      * 判斷單局頁查詢控制項是否可接受新的網路操作。
      *
-     * 純快取導航仍由既有意圖排程處理；呈現端在在途、待送或冷卻期間停用查詢按鈕。
+     * 純快取導航仍由既有意圖排程處理。呈現端在在途、待送或冷卻期間停用查詢按鈕。
      *
      * @return 目前位於單局頁、沒有其他查詢且未處於冷卻期時為 true。
      */
@@ -217,7 +219,7 @@ internal class HistoryBrowseController(
     /**
      * 確保牌面狀態頁已排程取得同一對局的規則設定。
      *
-     * 牌面狀態頁不因背景補查而離開目前頁面；已載入、載入中、失敗或屬於其他對局的結果
+     * 牌面狀態頁不因背景補查而離開目前頁面。已載入、載入中、失敗或屬於其他對局的結果
      * 都不會被自動覆寫，也不會因失敗而自動重試。
      *
      * @return 是否已接受新的規則設定查詢。
@@ -246,9 +248,9 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 查詢下一頁；失敗時保留目前頁。
+     * 查詢下一頁。失敗時保留目前頁。
      *
-     * @return 是否接受下一頁查詢；沒有下一頁時為 false。
+     * @return 是否接受下一頁查詢。沒有下一頁時為 false。
      */
     fun nextPage(): Boolean {
         if (!canNavigateList()) return false
@@ -259,9 +261,9 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 查詢上一頁；失敗時保留目前頁。
+     * 查詢上一頁。失敗時保留目前頁。
      *
-     * @return 是否接受上一頁查詢；沒有上一頁時為 false。
+     * @return 是否接受上一頁查詢。沒有上一頁時為 false。
      */
     fun previousPage(): Boolean {
         if (!canNavigateList()) return false
@@ -274,7 +276,7 @@ internal class HistoryBrowseController(
     /**
      * 跳到第一頁。
      *
-     * @return 是否接受查詢；已在第一頁時為 false。
+     * @return 是否接受查詢。已在第一頁時為 false。
      */
     fun firstPage(): Boolean {
         if (!canNavigateList() || state.value.list.previousCursor == null) return false
@@ -285,7 +287,7 @@ internal class HistoryBrowseController(
     /**
      * 跳到最後一頁。
      *
-     * @return 是否接受查詢；已在最後一頁時為 false。
+     * @return 是否接受查詢。已在最後一頁時為 false。
      */
     fun lastPage(): Boolean {
         if (!canNavigateList() || state.value.list.nextCursor == null) return false
@@ -305,7 +307,7 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 開啟最近成功列表中的對局摘要；相同成功摘要可直接使用快取。
+     * 開啟最近成功列表中的對局摘要。相同成功摘要可直接使用快取。
      *
      * @param matchId 列表中已公開的對局識別碼。
      * @return 是否接受摘要導航。
@@ -328,7 +330,7 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 開啟目前摘要對應的歷史規則設定；成功結果會保留於本瀏覽 session。
+     * 開啟目前摘要對應的歷史規則設定。成功結果會保留於本瀏覽 session。
      *
      * @return 是否接受規則設定導航。
      */
@@ -401,7 +403,7 @@ internal class HistoryBrowseController(
     /**
      * 跳到第一個事件頁。
      *
-     * @return 是否接受查詢；已在第一頁時為 false。
+     * @return 是否接受查詢。已在第一頁時為 false。
      */
     fun firstRoundPage(): Boolean {
         val round = currentRound() ?: return false
@@ -412,9 +414,9 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 跳到最後一個事件頁；需要已知本局交易總數。
+     * 跳到最後一個事件頁。需要已知本局交易總數。
      *
-     * @return 是否接受查詢；已在最後一頁或尚未取得總數時為 false。
+     * @return 是否接受查詢。已在最後一頁或尚未取得總數時為 false。
      */
     fun lastRoundPage(): Boolean {
         val round = currentRound() ?: return false
@@ -455,7 +457,7 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 前往已知的下一筆；未讀頁由同一意圖先確認交易再查牌面。
+     * 前往已知的下一筆。未讀頁由同一意圖先確認交易再查牌面。
      *
      * @return 是否接受前進。
      */
@@ -464,7 +466,7 @@ internal class HistoryBrowseController(
     /**
      * 跳到開局牌面。
      *
-     * @return 是否接受查詢；已在開局時為 false。
+     * @return 是否接受查詢。已在開局時為 false。
      */
     fun firstRoundState(): Boolean {
         val round = currentRound() ?: return false
@@ -474,9 +476,9 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 跳到最後一筆交易之後的牌面；需要已知本局交易總數。
+     * 跳到最後一筆交易之後的牌面。需要已知本局交易總數。
      *
-     * @return 是否接受查詢；已在最後一筆或尚未取得總數時為 false。
+     * @return 是否接受查詢。已在最後一筆或尚未取得總數時為 false。
      */
     fun lastRoundState(): Boolean {
         val round = currentRound() ?: return false
@@ -509,7 +511,7 @@ internal class HistoryBrowseController(
     fun previousRoundState(): Boolean = navigateRoundState(-1)
 
     /**
-     * 從事件頁開始回放目前局，停在指定步數；整局事件在背景讀完。
+     * 從事件頁開始回放目前局，停在指定步數。整局事件在背景讀完。
      *
      * @param step 開始的步數：0 是初始牌面，k 是第 k - 1 筆交易完成後。
      * @return 是否接受回放。
@@ -548,7 +550,7 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 回放移到指定步數；牌面已取得時立即顯示，否則讀取，並預先讀取後面的步數。
+     * 回放移到指定步數。牌面已取得時立即顯示，否則讀取，並預先讀取後面的步數。
      *
      * @param step 新的步數，超出範圍時夾到第一步或最後一步。
      * @return 是否接受移動。
@@ -577,7 +579,7 @@ internal class HistoryBrowseController(
     fun isReplayStepReady(step: Int): Boolean = replayRound?.stateAt(step) != null
 
     /**
-     * 結束回放，回到目前局的事件列表；換過局時重新讀取該局的事件頁。
+     * 結束回放，回到目前局的事件列表。換過局時重新讀取該局的事件頁。
      *
      * @return 是否接受返回。
      */
@@ -592,7 +594,7 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 更新回放快照；目前這一步的牌面已取得時為就緒，否則沿用指定狀態。
+     * 更新回放快照。目前這一步的牌面已取得時為就緒，否則沿用指定狀態。
      *
      * @param status 目前這一步還沒取得時的讀取狀態。
      */
@@ -614,9 +616,9 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 沒有其他查詢在途或待送時，向伺服器要回放缺少的下一項；快取裡已有的事件頁直接收下。
+     * 沒有其他查詢在途或待送時，向伺服器要回放缺少的下一項。快取裡已有的事件頁直接收下。
      *
-     * 擺牌需要規則設定，還沒有這場對局的規則設定時先要規則設定；載入中卻沒有在途查詢代表先前的查詢已因換局等操作作廢，
+     * 擺牌需要規則設定，還沒有這場對局的規則設定時先要規則設定。載入中卻沒有在途查詢代表先前的查詢已因換局等操作作廢，
      * 重新要一次。
      */
     private fun requestReplay() {
@@ -762,7 +764,7 @@ internal class HistoryBrowseController(
      *
      * @param roundNumber 局序號。
      * @param transform 不變資料轉換。
-     * @return 更新後快照；不存在的局不建立。
+     * @return 更新後快照。不存在的局不建立。
      */
     private fun HistoryBrowseState.withRound(roundNumber: Int, transform: (HistoryBrowseRoundState) -> HistoryBrowseRoundState): HistoryBrowseState {
         val round = rounds[roundNumber] ?: return this
@@ -770,7 +772,7 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 返回保留的列表，不重新查詢；尚未完成的摘要不得覆蓋列表。
+     * 返回保留的列表，不重新查詢。尚未完成的摘要不得覆蓋列表。
      *
      * @return 是否接受返回。
      */
@@ -810,7 +812,7 @@ internal class HistoryBrowseController(
      * 保留目前列表的呈現位置，不改變查詢條件。
      *
      * @param scrollOffset 有限且非負的捲動位置。
-     * @param selectedMatchId 列表中的選取對局；null 表示清除選取。
+     * @param selectedMatchId 列表中的選取對局。null 表示清除選取。
      * @return 是否接受位置更新。
      */
     fun rememberListPosition(scrollOffset: Double, selectedMatchId: String? = state.value.list.selectedMatchId): Boolean {
@@ -821,9 +823,12 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 接受仍屬於目前條件的手動重試；冷卻期間沿用有界排程，不提前傳送。
-     * 列表、摘要與局內頁面不自動重試；回放的暫時失敗先由控制器自動重試，次數用完才顯示失敗。
-     * 呈現端以 [canRetry] 控制立即重試的可用狀態。
+     * 接受仍屬於目前條件的手動重試。
+     *
+     * - 冷卻期間沿用有界排程，不提前傳送。
+     * - 列表、摘要與局內頁面不自動重試。
+     * - 回放的暫時失敗先由控制器自動重試，次數用完才顯示失敗。
+     * - 呈現端以 [canRetry] 控制立即重試的可用狀態。
      *
      * @return 是否接受重試。
      */
@@ -864,7 +869,7 @@ internal class HistoryBrowseController(
         return true
     }
 
-    /** 關閉最外層瀏覽並清除快取；不取消父作用域或伺服器 SQLite 工作。 */
+    /** 關閉最外層瀏覽並清除快取。不取消父作用域或伺服器 SQLite 工作。 */
     fun close() {
         if (state.value.closed) return
         stop()
@@ -894,7 +899,7 @@ internal class HistoryBrowseController(
     /**
      * 清除舊條件的列表及摘要並準備第一頁。
      *
-     * @param debounce 條件合併等待；刷新為零。
+     * @param debounce 條件合併等待。刷新為零。
      */
     private fun requestFirstPage(debounce: Duration) {
         roundCache.clear()
@@ -903,9 +908,9 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 準備指定分頁；成功前不修改目前頁。
+     * 準備指定分頁。成功前不修改目前頁。
      *
-     * @param cursor 回覆提供的游標；沒有游標時從第一筆或最後一筆開始。
+     * @param cursor 回覆提供的游標。沒有游標時從第一筆或最後一筆開始。
      * @param direction 從游標往哪一邊取一頁。
      */
     private fun requestList(cursor: String?, direction: HistoryPageDirectionDto) {
@@ -946,7 +951,7 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 送出唯一查詢並啟動有界等待；傳輸的同步失敗也會即時處理。
+     * 送出唯一查詢並啟動有界等待。傳輸的同步失敗也會即時處理。
      *
      * @param intent 仍有效的最新待送意圖。
      */
@@ -980,7 +985,7 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 接收仍對應唯一在途工作的結果；舊條件只解除工作，不更新內容。
+     * 接收仍對應唯一在途工作的結果。舊條件只解除工作，不更新內容。
      *
      * @param result 傳輸配對後的狀態。
      */
@@ -1026,7 +1031,7 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 成功時才提交頁次及堆疊；空集合是有效結果。
+     * 成功時才提交頁次及堆疊。空集合是有效結果。
      *
      * @param response 已配對的列表回應。
      */
@@ -1063,7 +1068,7 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 接受同場摘要；無內容的成功封套視為無法取得，不偽造摘要。
+     * 接受同場摘要。無內容的成功封套視為無法取得，不偽造摘要。
      *
      * @param response 已配對的摘要回應。
      * @param intent 本次已選對局。
@@ -1082,7 +1087,7 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 接受同場規則設定；缺少設定內容視為無法取得。
+     * 接受同場規則設定。缺少設定內容視為無法取得。
      *
      * @param response 已配對的規則設定回應。
      * @param intent 本次對局規則設定查詢。
@@ -1138,7 +1143,7 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 收下回放的連續牌面，更新目前這一步；之後的預先讀取由 [finish] 接著排程。
+     * 收下回放的連續牌面，更新目前這一步。之後的預先讀取由 [finish] 接著排程。
      *
      * @param response 已配對的牌面回覆。
      * @param intent 原始回放意圖。
@@ -1156,7 +1161,7 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 收下回放的一頁事件並放進快取；之後的讀取由 [finish] 接著排程。
+     * 收下回放的一頁事件並放進快取。之後的讀取由 [finish] 接著排程。
      *
      * @param response 已配對的事件頁回覆。
      * @param intent 原始回放意圖。
@@ -1322,7 +1327,7 @@ internal class HistoryBrowseController(
         }
     }
 
-    /** 解除唯一工作；不是失敗重試，只送出使用者另外提出的最新意圖；回放中且沒有失敗時接著預先讀取。 */
+    /** 解除唯一工作。不是失敗重試，只送出使用者另外提出的最新意圖。回放中且沒有失敗時接著預先讀取。 */
     private fun finish() {
         timeoutJob?.cancel()
         timeoutJob = null
@@ -1362,7 +1367,7 @@ internal class HistoryBrowseController(
          *
          * @property generation 提出意圖時的條件世代。
          * @property query 有效且正規化的查詢條件。
-         * @property cursor 回覆提供的游標；沒有游標時從第一筆或最後一筆開始。
+         * @property cursor 回覆提供的游標。沒有游標時從第一筆或最後一筆開始。
          * @property direction 從游標往哪一邊取一頁。
          */
         data class ListQuery(
@@ -1484,7 +1489,7 @@ internal class HistoryBrowseController(
             val start: Int,
         ) : Intent {
             /**
-             * 建立本次查詢封套；頁大小與事件頁相同，兩者共用快取。
+             * 建立本次查詢封套。頁大小與事件頁相同，兩者共用快取。
              *
              * @param requestId 傳輸配對鍵。
              * @return 事件頁要求。
@@ -1520,7 +1525,7 @@ internal class HistoryBrowseController(
             HistoryBrowseFailure.SEND_FAILED,
         )
 
-        /** 回放連續暫時失敗後各次自動重試前的等待；用完後才顯示失敗。 */
+        /** 回放連續暫時失敗後各次自動重試前的等待。用完後才顯示失敗。 */
         val REPLAY_RETRY_DELAYS: List<Duration> = listOf(500.milliseconds, 1.seconds, 2.seconds)
     }
 }

@@ -20,8 +20,8 @@ internal object MarqueeTiming {
      * 取得目前的位移。
      *
      * @param elapsed 從開始顯示起經過的時間。
-     * @param overflow 超出可視範圍的像素數；不大於 0 時不移動。
-     * @return 超出寬度為正時，回傳介於 0 與 [overflow] 之間的位移；否則為 0。
+     * @param overflow 超出可視範圍的像素數。不大於 0 時不移動。
+     * @return 超出寬度為正時，回傳介於 0 與 [overflow] 之間的位移。否則為 0。
      */
     fun offset(elapsed: Duration, overflow: Int): Int {
         if (overflow <= 0 || elapsed <= START_PAUSE) return 0

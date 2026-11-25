@@ -77,7 +77,7 @@ class MahjongTableLocationsSavedData private constructor(
          * 版本欄位缺少、型別不符或不是目前版本時整份略過，因為無法確定欄位的語意是否相同。
          *
          * @param nbt Minecraft 讀出的持久化 NBT。
-         * @return 還原完成的位置索引；格式版本無效時為空索引。
+         * @return 還原完成的位置索引。格式版本無效時為空索引。
          */
         fun fromNbt(nbt: CompoundTag): MahjongTableLocationsSavedData {
             if (nbt.contains(NBT_KEY_VERSION) && !nbt.contains(NBT_KEY_VERSION, Tag.TAG_INT.toInt())) {

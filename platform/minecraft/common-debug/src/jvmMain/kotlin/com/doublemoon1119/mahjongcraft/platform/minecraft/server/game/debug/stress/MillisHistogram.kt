@@ -5,7 +5,7 @@ import kotlin.math.ceil
 /**
  * 以固定刻度累計毫秒數的直方圖：記憶體用量固定，可統計長時間量測中全部數值的分位數。
  *
- * 分位數以落點那一格的上緣回報（不超過實際最大值），誤差最多 [resolutionMillis]；超過 [limitMillis] 的數值歸入最後一格，
+ * 分位數以落點那一格的上緣回報（不超過實際最大值），誤差最多 [resolutionMillis]。超過 [limitMillis] 的數值歸入最後一格，
  * 分位數落在最後一格時回報實際最大值。
  *
  * @property resolutionMillis 每格的寬度毫秒數。
@@ -20,7 +20,7 @@ class MillisHistogram(
         require(limitMillis >= resolutionMillis) { "Histogram limit must be at least one resolution step" }
     }
 
-    /** 每格的筆數；最後一格收容超過上限的數值。 */
+    /** 每格的筆數。最後一格收容超過上限的數值。 */
     private val counts = LongArray(ceil(limitMillis / resolutionMillis).toInt() + 1)
 
     /** 累計的筆數。 */
@@ -34,7 +34,7 @@ class MillisHistogram(
     private var maxMillis = 0.0
 
     /**
-     * 加入一筆毫秒數；負值視為零。
+     * 加入一筆毫秒數。負值視為零。
      *
      * @param millis 量得的有限毫秒數。
      */
@@ -46,17 +46,17 @@ class MillisHistogram(
         maxMillis = maxOf(maxMillis, value)
     }
 
-    /** 平均值；沒有數值時為 0。 */
+    /** 平均值。沒有數值時為 0。 */
     fun average(): Double = if (count == 0L) 0.0 else totalMillis / count
 
-    /** 最大值；沒有數值時為 0。 */
+    /** 最大值。沒有數值時為 0。 */
     fun max(): Double = maxMillis
 
     /**
      * 依向上取整的分位排名取得直方圖格子的上緣，最後一格改回報實際最大值。
      *
-     * @param fraction 分位比例，須介於 0 與 1；例如 0.99 代表 P99。
-     * @return 對應格子的近似毫秒數，不超過實際最大值；沒有樣本時為零。
+     * @param fraction 分位比例，須介於 0 與 1。例如 0.99 代表 P99。
+     * @return 對應格子的近似毫秒數，不超過實際最大值。沒有樣本時為零。
      * @throws IllegalArgumentException 比例不在有效範圍時拋出。
      */
     fun percentile(fraction: Double): Double {

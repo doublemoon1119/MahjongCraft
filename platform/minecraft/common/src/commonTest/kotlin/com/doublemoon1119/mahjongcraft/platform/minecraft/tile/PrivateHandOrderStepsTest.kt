@@ -55,7 +55,7 @@ class PrivateHandOrderStepsTest {
         assertEquals(listOf(PrivateHandOrderEntry(effectiveAt = 10L, order = order(listOf(a, b), drawnId = null))), entries)
     }
 
-    /** 沒有牌離開時只有讓位時的項目；排列沒變時不送。 */
+    /** 沒有牌離開時只有讓位時的項目。排列沒變時不送。 */
     @Test
     fun `steps without departures send at most the new order`() {
         val drawing = PrivateHandOrderSteps.of(before = order(listOf(a, b), drawnId = null), after = order(listOf(a, b), drawnId = d), departAt = 0L, makeRoomAt = 0L)
@@ -67,7 +67,7 @@ class PrivateHandOrderStepsTest {
         assertEquals(listOf(PrivateHandOrderEntry(effectiveAt = 5L, order = order(listOf(a, b), drawnId = null))), first)
     }
 
-    /** 本人排列取自手牌順序與摸牌位；還沒理過的牌只取自己立牌中的，依共享位置排列。 */
+    /** 本人排列取自手牌順序與摸牌位。還沒理過的牌只取自己立牌中的，依共享位置排列。 */
     @Test
     fun `order of a hand keeps its own unsorted tiles in shared order`() {
         val (first, second, third) = List(3) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, it + 1)) }

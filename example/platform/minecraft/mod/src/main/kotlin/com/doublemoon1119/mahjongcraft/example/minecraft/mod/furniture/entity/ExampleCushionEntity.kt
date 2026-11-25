@@ -19,7 +19,7 @@ import net.minecraft.world.level.GameRules
 import net.minecraft.world.level.Level
 
 /**
- * 範例可保存坐墊；entity 本身就是第三方座位目標。
+ * 範例可保存坐墊。entity 本身就是第三方座位目標。
  *
  * @param type Minecraft entity 類型。
  * @param world 實體所屬世界。
@@ -41,7 +41,7 @@ class ExampleCushionEntity(
     /** 即使坐墊不參與碰撞，也允許玩家用準星選取它來互動。 */
     override fun isPickable(): Boolean = !isRemoved
 
-    /** 右鍵坐下；潛行右鍵不移除家具。 */
+    /** 右鍵坐下。潛行右鍵不移除家具。 */
     override fun interact(player: Player, hand: InteractionHand): InteractionResult {
         if (player.isShiftKeyDown) return InteractionResult.PASS
         if (level().isClientSide) return InteractionResult.SUCCESS
@@ -54,8 +54,8 @@ class ExampleCushionEntity(
      * 玩家直接左鍵攻擊時拆除空坐墊，不接受投射物或其他傷害代替拆除。
      *
      * @param source 傷害來源，須為可修改此位置的玩家直接攻擊。
-     * @param amount 傷害量；拆除不依傷害量累積。
-     * @return 完成拆除時為 true；有人乘坐或權限不足時為 false。
+     * @param amount 傷害量。拆除不依傷害量累積。
+     * @return 完成拆除時為 true。有人乘坐或權限不足時為 false。
      */
     override fun hurt(source: DamageSource, amount: Float): Boolean {
         val serverWorld = level() as? ServerLevel ?: return false
@@ -67,7 +67,7 @@ class ExampleCushionEntity(
         return true
     }
 
-    /** 每秒檢查一次支撐表面；失去支撐時讓乘客下座並移除坐墊。 */
+    /** 每秒檢查一次支撐表面。失去支撐時讓乘客下座並移除坐墊。 */
     override fun tick() {
         super.tick()
         val serverWorld = level() as? ServerLevel ?: return
@@ -88,10 +88,10 @@ class ExampleCushionEntity(
         if (dropItem && level().gameRules.getBoolean(GameRules.RULE_DOENTITYDROPS)) spawnAtLocation(ItemStack(ExampleFurnitureItems.cushion))
     }
 
-    /** 坐墊 entity 沒有額外的持久化欄位；UUID 與位置由原版保存。 */
+    /** 坐墊 entity 沒有額外的持久化欄位。UUID 與位置由原版保存。 */
     override fun readAdditionalSaveData(nbt: CompoundTag) = Unit
 
-    /** 坐墊 entity 沒有額外的持久化欄位；UUID 與位置由原版保存。 */
+    /** 坐墊 entity 沒有額外的持久化欄位。UUID 與位置由原版保存。 */
     override fun addAdditionalSaveData(nbt: CompoundTag) = Unit
 
     /** 依坐姿高度定位乘客，使坐姿模型落在坐墊表面。 */

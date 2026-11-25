@@ -7,12 +7,12 @@ import net.minecraft.client.renderer.RenderType
 import net.minecraft.resources.ResourceLocation
 import java.util.concurrent.ConcurrentHashMap
 
-/** 中央結算面板的牌面材質層；正常測試並寫入深度，與排行榜背景採相同的世界空間規則。 */
+/** 中央結算面板的牌面材質層。正常測試並寫入深度，與排行榜背景採相同的世界空間規則。 */
 internal object ExhaustiveDrawSettlementTileFaceRenderType {
     private val layers = ConcurrentHashMap<ResourceLocation, RenderType>()
 
     /**
-     * 取得指定牌面材質的 full-bright 半透明層；同一材質只建立一次。
+     * 取得指定牌面材質的 full-bright 半透明層。同一材質只建立一次。
      *
      * @param texture 牌面貼圖識別碼。
      * @return 對應貼圖的 render layer。

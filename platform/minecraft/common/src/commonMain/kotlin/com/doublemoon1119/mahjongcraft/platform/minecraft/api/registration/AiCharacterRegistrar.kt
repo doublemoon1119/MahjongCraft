@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
 
-/** 擴充登記角色時取得的介面；查詢與凍結由 MahjongCraft 管理。 */
+/** 擴充登記角色時取得的介面。查詢與凍結由 MahjongCraft 管理。 */
 interface AiCharacterRegistrar {
     /** 目前登記的角色 ID 快照。 */
     val registrationKeys: Set<String>

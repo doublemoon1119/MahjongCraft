@@ -28,7 +28,7 @@ internal sealed interface HistoryRoundValidationResult<out T> {
     data class Success<T>(val value: T) : HistoryRoundValidationResult<T>
 
     /**
-     * 伺服器以穩定錯誤碼拒絕要求；這不是格式錯誤。
+     * 伺服器以穩定錯誤碼拒絕要求。這不是格式錯誤。
      *
      * @property code 伺服器提供的穩定錯誤碼。
      */
@@ -69,7 +69,7 @@ internal enum class HistoryRoundValidationError {
 /**
  * 驗證單局事件與桌況回覆，避免過期或偽造內容直接進入呈現層。
  *
- * 未知的 replay fact 會被視為可保留的 opaque 內容；只有上下文、牌索引與座位索引
+ * 未知的 replay fact 會被視為可保留的 opaque 內容。只有上下文、牌索引與座位索引
  * 無法驗證時才拒絕整個回覆。
  */
 internal object HistoryRoundResponseValidator {
@@ -134,7 +134,7 @@ internal object HistoryRoundResponseValidator {
      *
      * @param request 原本送出的桌況要求。
      * @param state 回覆中的一份桌況。
-     * @return 拒絕原因；可安全使用時為 null。
+     * @return 拒絕原因。可安全使用時為 null。
      */
     private fun validateStateContent(request: HistoryRoundStateRequestDto, state: HistoryRoundStateDto): HistoryRoundValidationResult.Invalid? {
         if (state.roundNumber != request.roundNumber || !validIdentity(state.identity, request.matchId)) {
@@ -272,7 +272,7 @@ internal object HistoryRoundResponseValidator {
     }
 
     /**
-     * 驗證交易總數與本頁內容一致：總數涵蓋本頁每一筆交易；有下一頁時下一筆在總數內，沒有下一頁時本頁剛好到最後一筆。
+     * 驗證交易總數與本頁內容一致：總數涵蓋本頁每一筆交易。有下一頁時下一筆在總數內，沒有下一頁時本頁剛好到最後一筆。
      *
      * @param events 待驗證的事件頁，交易索引已確認連續。
      * @param startIndex 要求的起始交易索引。
@@ -289,7 +289,7 @@ internal object HistoryRoundResponseValidator {
     }
 
     /**
-     * 驗證對局與玩家的身份識別碼；座位集合另行驗證。
+     * 驗證對局與玩家的身份識別碼。座位集合另行驗證。
      *
      * @param identity 回覆中的 Replay 身份。
      * @param expectedMatchId 要求中的對局識別碼。
@@ -321,7 +321,7 @@ internal object HistoryRoundResponseValidator {
      * @param outcome 局結算結果。
      * @param seats 有效座位集合。
      * @param tileCatalogSize 回覆牌目錄大小。
-     * @param declaredTileCount 該交易宣告的牌數量；桌況回覆沒有交易限制時為 null。
+     * @param declaredTileCount 該交易宣告的牌數量。桌況回覆沒有交易限制時為 null。
      * @return 引用與詳情內容均有效時為 true。
      */
     private fun validOutcome(
@@ -349,7 +349,7 @@ internal object HistoryRoundResponseValidator {
      *
      * @param winner 贏家詳情。
      * @param tileCatalogSize 回覆牌目錄大小。
-     * @param declaredTileCount 該交易宣告的牌數量；桌況回覆沒有交易限制時為 null。
+     * @param declaredTileCount 該交易宣告的牌數量。桌況回覆沒有交易限制時為 null。
      * @return 詳情格式與參照均有效時為 true。
      */
     private fun validWinnerDetails(

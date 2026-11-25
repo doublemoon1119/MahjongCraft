@@ -79,7 +79,7 @@ class ExampleBenchBlock(settings: Properties) :
         pos = context.clickedPos,
     )
 
-    /** 排程固定範圍的鄰格檢查；原生排程會隨區塊保存及恢復。 */
+    /** 排程固定範圍的鄰格檢查。原生排程會隨區塊保存及恢復。 */
     @Suppress("OVERRIDE_DEPRECATION")
     override fun onPlace(
         state: BlockState,
@@ -168,7 +168,7 @@ class ExampleBenchBlock(settings: Properties) :
         return InteractionResult.sidedSuccess(world.isClientSide)
     }
 
-    /** 拆除本格立即釋放本格支撐；連接狀態更新不影響乘客。 */
+    /** 拆除本格立即釋放本格支撐。連接狀態更新不影響乘客。 */
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onRemove(
         state: BlockState,

@@ -38,7 +38,7 @@ class RuleCatalogueRegistryTest {
         assertFalse(result.usesDefaultConfig)
     }
 
-    /** 不適用原因只在有實際設定時保留；一般說明沒有實際設定可對照，不帶原因。 */
+    /** 不適用原因只在有實際設定時保留。一般說明沒有實際設定可對照，不帶原因。 */
     @Test
     fun `unavailable reasons appear only with an actual config`() {
         val registry = RuleCatalogueRegistryImpl()
@@ -99,7 +99,7 @@ class RuleCatalogueRegistryTest {
 }
 
 /**
- * 測試用非日麻來源；配置型別檢查由來源掌握。
+ * 測試用非日麻來源。配置型別檢查由來源掌握。
  *
  * @property ruleModuleId 第三方規則識別碼。
  */

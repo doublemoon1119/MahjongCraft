@@ -24,7 +24,7 @@ import kotlin.uuid.Uuid
  * - [ObserverSnapshot.OfGame]：[MahjongChannels.gameSnapshot]。
  * - `null`：[MahjongChannels.snapshotCleared]，清除玩家手上的內容。
  *
- * 所有可重建桌況的 payload 都經過桌級交付邊界；若桌子來源已失效，不會再重建舊狀態。
+ * 所有可重建桌況的 payload 都經過桌級交付邊界。若桌子來源已失效，不會再重建舊狀態。
  *
  * @property serverHolder 目前伺服器與有效收件玩家。
  * @property tableStateDelivery 統一檢查桌子來源並序列化桌況封包交付的邊界。

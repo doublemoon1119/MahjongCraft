@@ -16,9 +16,10 @@ private const val KOIN_COMPILER_EXTENSION_NAME: String = "koinCompiler"
 /**
  * 決定套用 Koin 編譯外掛的模組是否每次建置都重新檢查完整的依賴關係。
  *
- * 外掛發現模組含有 Koin 的啟動點時，會讓編譯任務永遠不算最新，每次建置都重新編譯並檢查整張依賴關係，以抓到其他模組改了
- * 登記內容、卻沒有改公開介面的情況。這個檢查預設只在 CI 執行；本機以 [KOIN_STRICT_SAFETY_PROPERTY] 開啟，例如提交前的完整
- * 驗證。關閉時，模組自己重新編譯仍會檢查依賴關係。
+ * - 外掛發現模組含有 Koin 的啟動點時，會讓編譯任務永遠不算最新，每次建置都重新編譯並檢查整張依賴關係。
+ *   這樣能抓到其他模組改了登記內容、卻沒有改公開介面的情況。
+ * - 這個檢查預設只在 CI 執行。本機以 [KOIN_STRICT_SAFETY_PROPERTY] 開啟，例如提交前的完整驗證。
+ * - 關閉時，模組自己重新編譯仍會檢查依賴關係。
  *
  * 外掛不是 build-logic 的依賴，因此以設定名稱與屬性名稱取得它的設定。
  */
@@ -49,9 +50,9 @@ private fun Any.booleanProperty(getter: String): Property<Boolean> = javaClass.g
 /**
  * 解析是否執行 Koin 完整依賴檢查。
  *
- * @param property [KOIN_STRICT_SAFETY_PROPERTY] 的值；沒有指定時為 null。
- * @param ci 環境變數 `CI` 的值；不在 CI 中時為 null。
- * @return 有指定 property 時依它決定；沒有指定時只在 CI 中執行。
+ * @param property [KOIN_STRICT_SAFETY_PROPERTY] 的值。沒有指定時為 null。
+ * @param ci 環境變數 `CI` 的值。不在 CI 中時為 null。
+ * @return 有指定 property 時依它決定。沒有指定時只在 CI 中執行。
  * @throws GradleException property 不是 `true` 或 `false`。
  */
 internal fun koinStrictSafetyEnabled(property: String?, ci: String?): Boolean = when (property) {

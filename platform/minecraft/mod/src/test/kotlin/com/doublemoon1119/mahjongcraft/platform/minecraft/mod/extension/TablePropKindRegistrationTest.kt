@@ -96,7 +96,7 @@ class TablePropKindRegistrationTest {
         override fun registerTablePropKinds(registry: TablePropKindRegistrar) = kinds.forEach(registry::register)
     }
 
-    /** 內建點棒種類先登記，第三方種類接在後面，完成後凍結；回傳值依來源分組。 */
+    /** 內建點棒種類先登記，第三方種類接在後面，完成後凍結。回傳值依來源分組。 */
     @Test
     fun `built-in kind registers first and third-party kinds follow before freeze`() {
         val registry = TablePropKindRegistryImpl()

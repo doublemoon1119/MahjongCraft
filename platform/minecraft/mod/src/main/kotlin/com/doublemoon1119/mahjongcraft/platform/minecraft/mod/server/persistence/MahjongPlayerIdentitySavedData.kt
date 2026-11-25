@@ -29,7 +29,7 @@ class MahjongPlayerIdentitySavedData private constructor(
      * 取得指定 UUID 的最後已知名稱。
      *
      * @param playerId 玩家 UUID。
-     * @return 最後已知普通名稱；尚未記錄時為 null。
+     * @return 最後已知普通名稱。尚未記錄時為 null。
      */
     fun nameOf(playerId: UUID): String? = names[playerId]
 
@@ -80,10 +80,10 @@ class MahjongPlayerIdentitySavedData private constructor(
         fun create(): MahjongPlayerIdentitySavedData = MahjongPlayerIdentitySavedData(emptyMap())
 
         /**
-         * 從可重建 NBT 索引載入玩家名稱；單筆錯誤不影響世界載入。
+         * 從可重建 NBT 索引載入玩家名稱。單筆錯誤不影響世界載入。
          *
          * @param nbt Minecraft 讀出的身分索引 NBT。
-         * @return 載入完成的身分索引；格式錯誤時回傳空索引。
+         * @return 載入完成的身分索引。格式錯誤時回傳空索引。
          */
         fun fromNbt(nbt: CompoundTag): MahjongPlayerIdentitySavedData {
             if (!nbt.contains(NBT_KEY_VERSION, Tag.TAG_INT.toInt())) {

@@ -28,7 +28,7 @@ internal object RoomConfigIntegerControl {
     /**
      * 判斷整數欄位是否仍有更低的合法狀態。
      *
-     * @param current 目前數值；null 代表未設定。
+     * @param current 目前數值。null 代表未設定。
      * @param editor 整數欄位的範圍與可空規格。
      * @return 可再減少數值或切換成未設定時為 true。
      */
@@ -44,7 +44,7 @@ internal object RoomConfigIntegerControl {
     /**
      * 判斷整數欄位是否仍有更高的合法狀態。
      *
-     * @param current 目前數值；null 代表未設定。
+     * @param current 目前數值。null 代表未設定。
      * @param editor 整數欄位的範圍規格。
      * @return 未設定或尚未達最大值時為 true。
      */
@@ -56,10 +56,10 @@ internal object RoomConfigIntegerControl {
     /**
      * 計算按下減號後的新值。
      *
-     * @param current 目前數值；null 代表未設定。
+     * @param current 目前數值。null 代表未設定。
      * @param editor 整數欄位的步長、範圍與可空規格。
      * @param shiftHeld 是否使用 Shift 加速調整。
-     * @return 新值；已經是最小值且欄位可為 null 時回傳 `null` 代表清成未設定，目前已是 `null` 時
+     * @return 新值。已經是最小值且欄位可為 null 時回傳 `null` 代表清成未設定，目前已是 `null` 時
      *   維持 `null`。
      */
     fun decrement(
@@ -75,10 +75,10 @@ internal object RoomConfigIntegerControl {
     /**
      * 計算按下加號後的新值。
      *
-     * @param current 目前數值；null 代表未設定。
+     * @param current 目前數值。null 代表未設定。
      * @param editor 整數欄位的步長與範圍規格。
      * @param shiftHeld 是否使用 Shift 加速調整。
-     * @return 新值；目前為 `null` 時回到 [GameConfigEditorSpec.IntegerInput.minimum]。
+     * @return 新值。目前為 `null` 時回到 [GameConfigEditorSpec.IntegerInput.minimum]。
      */
     fun increment(
         current: Int?,

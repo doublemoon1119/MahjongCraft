@@ -26,7 +26,7 @@ internal sealed interface CompactDecisionHudContent {
      * 進行中選牌的進度提示。
      *
      * @property progress 已選張數與可選範圍。
-     * @property description 選牌所屬動作的說明；規則選擇或沒有說明的動作為 `null`。
+     * @property description 選牌所屬動作的說明。規則選擇或沒有說明的動作為 `null`。
      */
     data class TileSelection(
         val progress: DecisionTileSelectionState.Progress,
@@ -40,14 +40,14 @@ internal sealed interface CompactDecisionHudContent {
 /**
  * 決定精簡 HUD 要顯示什麼。
  *
- * 進行中的選牌進度優先；沒有選牌但玩家把仍然有效的互動式操作介面收起來時顯示重開提醒。玩家已明確進入
+ * 進行中的選牌進度優先。沒有選牌但玩家把仍然有效的互動式操作介面收起來時顯示重開提醒。玩家已明確進入
  * 任何一種實體牌操作模式（[isPhysicalSelectionActive]）就不再提醒重開——那是刻意收起畫面去點實體牌，
  * 不是忘記。
  *
- * @param prompt 目前權威決策提示；沒有提示時為 null。
+ * @param prompt 目前權威決策提示。沒有提示時為 null。
  * @param dismissedDecisionKey 玩家已收起的操作介面所屬決策鍵。
  * @param isPhysicalSelectionActive 是否正在透過實體牌選牌。
- * @param tileSelectionProgress 進行中的選牌進度；未選牌時為 null。
+ * @param tileSelectionProgress 進行中的選牌進度。未選牌時為 null。
  * @param tileSelectionDescription 選牌動作的補充說明。
  * @return 選牌進度、重開提醒或僅顯示倒數。
  */
@@ -97,8 +97,8 @@ internal fun tileSelectionDetailText(progress: DecisionTileSelectionState.Progre
  * @property ratioX 玩家設定的水平位置比例。
  * @property ratioY 玩家設定的垂直位置比例。
  * @property expanded 是否要為倒數上方的提示文字保留空間。
- * @property descriptionLineCount 標題與細節文字之間的說明行數；只在 [expanded] 時保留空間。
- * @property contentWidth 文字量測後所需的群組寬度；預設使用標準寬度。
+ * @property descriptionLineCount 標題與細節文字之間的說明行數。只在 [expanded] 時保留空間。
+ * @property contentWidth 文字量測後所需的群組寬度。預設使用標準寬度。
  */
 internal data class CompactDecisionHudLayout(
     val screenWidth: Int,

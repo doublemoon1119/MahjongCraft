@@ -8,8 +8,8 @@ import kotlin.time.Instant
  * 與記錄資格分離的歷史保留政策。
  *
  * @property includeInterruptedMatches 是否保留已確認不可接續的部分紀錄。
- * @property maxMatches 已結束紀錄的場數上限；0 為不限。
- * @property retentionDuration 保留期限；零為不按天數清理。
+ * @property maxMatches 已結束紀錄的場數上限。0 為不限。
+ * @property retentionDuration 保留期限。零為不按天數清理。
  * @property maxDiskBytes 主檔與附屬檔的磁碟管理上限。
  */
 data class HistoryRetentionPolicy(
@@ -32,7 +32,7 @@ data class HistoryRetentionPolicy(
  * @property startedAtEpochMillis 開局 UTC 時間。
  * @property endedAtEpochMillis 結束或確認終止 UTC 時間。
  * @property interrupted 是否為部分或中止紀錄，而非完整 Replay。
- * @property logicalBytes 事件的 UTF-8 大小或 Replay 壓縮後的存放大小；不等於可回收的磁碟量。
+ * @property logicalBytes 事件的 UTF-8 大小或 Replay 壓縮後的存放大小。不等於可回收的磁碟量。
  */
 internal data class HistoryRetentionCandidate(
     val matchId: String,
@@ -58,7 +58,7 @@ internal enum class HistoryCleanupReason {
 }
 
 /**
- * 唯讀評估結果；執行時仍須重新確認保護名單。
+ * 唯讀評估結果。執行時仍須重新確認保護名單。
  *
  * @property evaluatedAt 評估時刻。
  * @property policy 評估使用的不可變有效政策。
@@ -85,7 +85,7 @@ fun MinecraftHistoryConfig.retentionPolicy(): HistoryRetentionPolicy = HistoryRe
 )
 
 /**
- * 以相同純函式評估 preview 與實際清理；不存取資料庫或修改權威狀態。
+ * 以相同純函式評估 preview 與實際清理。不存取資料庫或修改權威狀態。
  *
  * @param candidates 已確認終止或完整封存的候選。
  * @param protectedMatchIds 可接續或待確認場次，不得加入刪除名單。

@@ -7,7 +7,7 @@ import kotlin.coroutines.cancellation.CancellationException
 /**
  * [RoomMemberAppearanceSourceRegistry] 的記憶體實作。
  *
- * @property failurePolicy 判斷 provider 丟出的失敗能否包成 [RoomMemberAppearanceSourceProviderException] 交給呼叫端降級；
+ * @property failurePolicy 判斷 provider 丟出的失敗能否包成 [RoomMemberAppearanceSourceProviderException] 交給呼叫端降級。
  * 無法隔離的失敗原樣往外傳。
  */
 class RoomMemberAppearanceSourceRegistryImpl(

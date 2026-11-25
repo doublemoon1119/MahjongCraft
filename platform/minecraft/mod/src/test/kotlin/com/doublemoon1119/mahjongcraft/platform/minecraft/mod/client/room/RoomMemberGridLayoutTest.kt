@@ -18,7 +18,7 @@ class RoomMemberGridLayoutTest {
         assertEquals(1, grid.rows)
     }
 
-    /** 玩家數超過內容寬度時換列，欄數由內容寬度決定；內容寬度最多 456 並置中。 */
+    /** 玩家數超過內容寬度時換列，欄數由內容寬度決定。內容寬度最多 456 並置中。 */
     @Test
     fun `wraps to more rows once the content width is used up`() {
         val grid = grid(width = 640, playerCount = 20)
@@ -239,7 +239,7 @@ class RoomMemberGridLayoutTest {
     }
 
     /**
-     * 建立測試用版面；未指定的輸入使用不影響該測試的預設值。
+     * 建立測試用版面。未指定的輸入使用不影響該測試的預設值。
      *
      * @param width 視窗寬度。
      * @param height 視窗高度。

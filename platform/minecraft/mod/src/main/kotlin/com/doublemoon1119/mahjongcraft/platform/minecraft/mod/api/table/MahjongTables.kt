@@ -23,20 +23,20 @@ object MahjongTables {
     /** 記錄桌子找不到控制點等異常狀況。 */
     private val logger = mahjongCraftLogger(MahjongTables::class)
 
-    /** MahjongCraft 初始化時提供的服務；初始化前為 null。 */
+    /** MahjongCraft 初始化時提供的服務。初始化前為 null。 */
     @Volatile
     private var services: Services? = null
 
     /**
-     * 右鍵桌子任何一格時呼叫，開啟房間畫面；取代方塊 `use` 的內容。
+     * 右鍵桌子任何一格時呼叫，開啟房間畫面。取代方塊 `use` 的內容。
      *
-     * 客戶端一律回傳成功，讓手部動作正常顯示；伺服器依 [MahjongTableStructureBlock] 找到控制點後開啟畫面。
+     * 客戶端一律回傳成功，讓手部動作正常顯示。伺服器依 [MahjongTableStructureBlock] 找到控制點後開啟畫面。
      *
      * @param world 方塊所在世界。
      * @param pos 被右鍵的方塊位置。
      * @param state 被右鍵的方塊狀態。
      * @param player 右鍵的玩家。
-     * @return 開啟房間畫面或在客戶端時為成功；方塊不屬於可用的桌子時為失敗。
+     * @return 開啟房間畫面或在客戶端時為成功。方塊不屬於可用的桌子時為失敗。
      */
     fun interact(
         world: Level,
@@ -61,7 +61,7 @@ object MahjongTables {
     /**
      * 控制方塊被取代或拆除時呼叫，清理這張桌子的整局呈現並交由 MahjongCraft 處理其房間或對局。
      *
-     * 必須在控制方塊的方塊實體仍存在時呼叫，例如方塊 `onRemove` 中呼叫 `super` 之前；同一次移除只呼叫一次。
+     * 必須在控制方塊的方塊實體仍存在時呼叫，例如方塊 `onRemove` 中呼叫 `super` 之前。同一次移除只呼叫一次。
      * 客戶端呼叫不做任何事。
      *
      * @param world 控制方塊所在世界。
@@ -84,7 +84,7 @@ object MahjongTables {
      * 列出必須保持空著的擺牌層：控制方塊上方一格、以其為中心的 3×3。
      *
      * 牌、牌牆、骰子、桌面物件與選牌確認都在這一層。桌子自己的方塊可以進入這一層（例如桌緣），含水時也一樣，
-     * 但不能擋住擺牌；其他方塊或流體會讓等待中的房間無法開局。
+     * 但不能擋住擺牌。其他方塊或流體會讓等待中的房間無法開局。
      *
      * @param controllerPos 控制方塊位置。
      * @return 擺牌層的 9 個方塊位置。
@@ -104,7 +104,7 @@ object MahjongTables {
         services = Services(roomService, tableLifecycleService)
     }
 
-    /** @return 已提供的服務；MahjongCraft 尚未初始化時拋出例外。 */
+    /** @return 已提供的服務。MahjongCraft 尚未初始化時拋出例外。 */
     private fun requireServices(): Services = checkNotNull(services) { "MahjongCraft has not initialized its table services yet" }
 
     /**

@@ -10,10 +10,10 @@ import net.minecraft.network.chat.MutableComponent
  *
  * - 說明：灰色。
  * - 狀態區：選項欄位列出全部選項，目前選項為綠色並以「▶」標示，其他可選的選項為白色，不可選的選項
- *   為紅色並附上原因；數值欄位顯示金色標題與範圍；開啟其他畫面編輯的按鈕顯示金色標題與目前內容。
+ *   為紅色並附上原因。數值欄位顯示金色標題與範圍。開啟其他畫面編輯的按鈕顯示金色標題與目前內容。
  *   目前值不另外重複一行。
  * - 提醒：紅色，例如欄位被其他設定停用。
- * - 操作提示：灰色，寫玩家要做的動作與結果；提到畫面上的按鈕時用方括號標出按鈕上的字。
+ * - 操作提示：灰色，寫玩家要做的動作與結果。提到畫面上的按鈕時用方括號標出按鈕上的字。
  */
 internal object ControlTooltip {
     /** 目前選項行首的標示。 */
@@ -26,8 +26,8 @@ internal object ControlTooltip {
      * 提示框選項清單中的一個選項。
      *
      * @property label 選項名稱。
-     * @property current 是否為目前選項；多選欄位可以有多個。
-     * @property unavailableReason 不可選的原因；可選時為 null。
+     * @property current 是否為目前選項。多選欄位可以有多個。
+     * @property unavailableReason 不可選的原因。可選時為 null。
      */
     data class Option(
         val label: Component,
@@ -38,11 +38,11 @@ internal object ControlTooltip {
     /**
      * 建立選項、開關與多選欄位的提示框。
      *
-     * @param description 欄位說明；沒有說明時為 null。
+     * @param description 欄位說明。沒有說明時為 null。
      * @param options 依顯示順序排列的全部選項。
-     * @param hints 操作提示；不需要提示時為空。
+     * @param hints 操作提示。不需要提示時為空。
      * @param title 選項清單的標題。
-     * @param notice 提醒文字；沒有提醒時為 null。
+     * @param notice 提醒文字。沒有提醒時為 null。
      * @return 以換行分隔各行的提示文字。
      */
     fun options(
@@ -56,10 +56,10 @@ internal object ControlTooltip {
     /**
      * 建立只需要標出目前是第幾個選項的提示框，用於全部選項都可選的循環按鈕。
      *
-     * @param description 控制項說明；沒有說明時為 null。
+     * @param description 控制項說明。沒有說明時為 null。
      * @param labels 依顯示順序排列的全部選項名稱。
-     * @param currentIndex 目前選項的索引；沒有目前選項時為負值。
-     * @param hints 操作提示；不需要提示時為空。
+     * @param currentIndex 目前選項的索引。沒有目前選項時為負值。
+     * @param hints 操作提示。不需要提示時為空。
      * @return 以換行分隔各行的提示文字。
      */
     fun options(
@@ -74,14 +74,14 @@ internal object ControlTooltip {
     )
 
     /**
-     * 建立選項提示框的每一行，供逐行繪製提示框的畫面使用；內容與 [options] 相同。
+     * 建立選項提示框的每一行，供逐行繪製提示框的畫面使用。內容與 [options] 相同。
      *
-     * @param description 控制項說明；沒有說明時為 null。
+     * @param description 控制項說明。沒有說明時為 null。
      * @param options 依顯示順序排列的全部選項。
-     * @param hints 操作提示；不需要提示時為空。
+     * @param hints 操作提示。不需要提示時為空。
      * @param title 選項清單的標題。
-     * @param notice 提醒文字；沒有提醒時為 null。
-     * @return 提示框的每一行；段落之間以空行分隔。
+     * @param notice 提醒文字。沒有提醒時為 null。
+     * @return 提示框的每一行。段落之間以空行分隔。
      */
     fun optionLines(
         description: Component?,
@@ -99,10 +99,10 @@ internal object ControlTooltip {
     /**
      * 建立數值欄位的提示框。
      *
-     * @param description 欄位說明；沒有說明時為 null。
+     * @param description 欄位說明。沒有說明時為 null。
      * @param range 以 [rangeText] 建立的範圍文字。
-     * @param hints 操作提示；不需要提示時為空。
-     * @param notice 提醒文字；沒有提醒時為 null。
+     * @param hints 操作提示。不需要提示時為空。
+     * @param notice 提醒文字。沒有提醒時為 null。
      * @return 以換行分隔各行的提示文字。
      */
     fun range(
@@ -121,10 +121,10 @@ internal object ControlTooltip {
     /**
      * 建立列出目前內容的提示框，用於開啟其他畫面編輯多項內容的按鈕，例如列出已套用的篩選條件。
      *
-     * @param description 按鈕說明；沒有說明時為 null。
+     * @param description 按鈕說明。沒有說明時為 null。
      * @param title 內容清單的標題。
      * @param lines 內容清單的每一行，以白色縮排列出。
-     * @param hints 操作提示；不需要提示時為空。
+     * @param hints 操作提示。不需要提示時為空。
      * @return 以換行分隔各行的提示文字。
      */
     fun list(
@@ -142,7 +142,7 @@ internal object ControlTooltip {
      * 建立只有說明的提示框，用於沒有對應值的動作按鈕。
      *
      * @param description 按鈕說明。
-     * @param notice 紅字提醒，例如按鈕停用的原因；沒有時為 null。
+     * @param notice 紅字提醒，例如按鈕停用的原因。沒有時為 null。
      * @return 灰色的說明文字，以及紅字提醒。
      */
     fun description(description: Component, notice: Component? = null): Component {
@@ -155,7 +155,7 @@ internal object ControlTooltip {
      *
      * @param minimum 最小值。
      * @param maximum 最大值。
-     * @param unsetLabel 欄位可以不設定時，不設定狀態的名稱；必須設定數值時為 null。
+     * @param unsetLabel 欄位可以不設定時，不設定狀態的名稱。必須設定數值時為 null。
      * @return 範圍文字，例如「1 – 13」或「不限制, 1000 – 100000」。
      */
     fun rangeText(minimum: Component, maximum: Component, unsetLabel: Component? = null): Component = if (unsetLabel == null) {
@@ -175,9 +175,9 @@ internal object ControlTooltip {
      *
      * @param step 每次點擊的調整量。
      * @param shiftStep 按住 Shift 時每次點擊的調整量。
-     * @param minimum 最小值；只在欄位可以不設定時使用。
-     * @param unsetLabel 欄位可以不設定時，不設定狀態的名稱；必須設定數值時為 null。
-     * @return 加減按鈕、按住 Shift、直接輸入的提示；欄位可以不設定時再加一行改為不設定的方法。
+     * @param minimum 最小值。只在欄位可以不設定時使用。
+     * @param unsetLabel 欄位可以不設定時，不設定狀態的名稱。必須設定數值時為 null。
+     * @return 加減按鈕、按住 Shift、直接輸入的提示。欄位可以不設定時再加一行改為不設定的方法。
      */
     fun integerHints(step: Component, shiftStep: Component, minimum: Component, unsetLabel: Component? = null): List<Component> = buildList {
         add(hint(Component.translatable(MinecraftControlTooltipKeys.HINT_STEP, step)))
@@ -215,9 +215,9 @@ internal object ControlTooltip {
     /**
      * 將各段落排成提示框的每一行，段落之間空一行，沒有內容的段落省略。
      *
-     * @param description 說明；沒有時為 null。
+     * @param description 說明。沒有時為 null。
      * @param status 狀態區的每一行。
-     * @param notice 提醒；沒有時為 null。
+     * @param notice 提醒。沒有時為 null。
      * @param hints 操作提示的每一行。
      * @return 提示框的每一行。
      */

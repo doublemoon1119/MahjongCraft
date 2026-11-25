@@ -20,7 +20,7 @@ class ExampleNativeMahjongExtension :
     ExampleMinecraftMahjongExtension(),
     NativeMahjongExtension {
     /**
-     * 登記椅子與坐墊的解析能力；此時不讀取原生家具或世界。
+     * 登記椅子與坐墊的解析能力。此時不讀取原生家具或世界。
      *
      * @param registry 本體提供的座位 registry。
      */

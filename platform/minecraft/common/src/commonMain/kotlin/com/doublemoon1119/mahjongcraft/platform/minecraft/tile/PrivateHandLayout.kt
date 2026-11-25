@@ -13,9 +13,10 @@ import kotlin.uuid.Uuid
 /**
  * 保留本人每張牌實際顯示的位置，將私人理牌與共享蓋牌的換位分開。
  *
- * 本人排列由呼叫端依時間軸提供，與共享呈現的牌張動作同時生效；這裡只負責把排列轉成每張牌的位置與過渡。
- * 每次更新產生一份新的不可變結果；原生讀取、渲染與命中由平台接線處理。
- * 換世界、換桌局或換回合時，呼叫端必須使用 [clear] 清除上一輪暫存。
+ * - 本人排列由呼叫端依時間軸提供，與共享呈現的牌張動作同時生效。這裡只負責把排列轉成每張牌的位置與過渡。
+ * - 每次更新產生一份新的不可變結果。
+ * - 原生讀取、渲染與命中由平台接線處理。
+ * - 換世界、換桌局或換回合時，呼叫端必須使用 [clear] 清除上一輪暫存。
  */
 class PrivateHandLayout {
     /** 只有已接管的本人牌張才有項目，離手交接結束後立即移除。 */
@@ -27,10 +28,10 @@ class PrivateHandLayout {
     /** 已確認的固定牌排幾何，不跟隨不同步抵達的單張換位封包抖動。 */
     private var row: Row? = null
 
-    /** 目前的牌排是否只由部分立牌推算；之後所有立牌排成等距連續的一列時直接改用兩端的中點。 */
+    /** 目前的牌排是否只由部分立牌推算。之後所有立牌排成等距連續的一列時直接改用兩端的中點。 */
     private var rowProvisional = false
 
-    /** 最後確認牌排時的原生終點；未對齊的中間封包不能覆蓋這份基準。 */
+    /** 最後確認牌排時的原生終點。未對齊的中間封包不能覆蓋這份基準。 */
     private var previousTargets = emptyMap<Uuid, TileDisplayTransform>()
 
     /** 已經顯示過的本人牌張，重新接管時不能當成首次進場瞬間定位。 */
@@ -42,7 +43,7 @@ class PrivateHandLayout {
     /** 上一次還沒理過、接在最右邊的牌。 */
     private var lastUnsortedIds = emptyList<Uuid>()
 
-    /** 上一次在本人摸牌位上的牌；它加入立牌時以插入動作越過其他牌。 */
+    /** 上一次在本人摸牌位上的牌。它加入立牌時以插入動作越過其他牌。 */
     private var lastDrawnId: Uuid? = null
 
     /** 依本人順序換位時會越過其他牌、下次換到新格位時要以弧線越過的牌。 */
@@ -55,12 +56,12 @@ class PrivateHandLayout {
      * 更新本人布局，不因某張牌動畫中或資料缺少而取消其他牌的排序。
      *
      * @param time 本幀世界時間，包含部分 tick。
-     * @param standingOrder 本人完整立牌順序；null 是保留格位的空格，缺少原生資料的 ID 仍保留格位。
-     * @param drawnId 獨立摸牌位的牌；沒有時為 null。
+     * @param standingOrder 本人完整立牌順序。null 是保留格位的空格，缺少原生資料的 ID 仍保留格位。
+     * @param drawnId 獨立摸牌位的牌。沒有時為 null。
      * @param inputs 目前已追蹤的共享牌張資料，以真實牌張 ID 索引。
-     * @param releaseHand 和牌或完整攤牌時，立即交回共享呈現，不另外補間私人牌位；倒牌動畫由共享呈現播放。
+     * @param releaseHand 和牌或完整攤牌時，立即交回共享呈現，不另外補間私人牌位。倒牌動畫由共享呈現播放。
      * @param releaseTileIds 立即交回共享呈現的個別牌張，不使用缺少封包時的短暫保留機制。
-     * @param unsortedIds 還沒理過、共享呈現接在立牌最右邊的牌，依共享呈現的順序排列；用來對照共享位置推算牌排。
+     * @param unsortedIds 還沒理過、共享呈現接在立牌最右邊的牌，依共享呈現的順序排列。用來對照共享位置推算牌排。
      * @return 本幀由私人布局接管的最終絕對位置與姿態。
      */
     fun update(
@@ -236,7 +237,7 @@ class PrivateHandLayout {
     }
 
     /**
-     * 從已同步的立牌終點核對牌排中心；不以移動中的距離猜牌寬。
+     * 從已同步的立牌終點核對牌排中心。不以移動中的距離猜牌寬。
      *
      * 牌排中心改變時，至少要有一張牌的原生位置跟上次確認時不同，或整手都是沒有上次位置的新牌，才採用新中心。
      *
@@ -304,7 +305,7 @@ class PrivateHandLayout {
      *
      * @param publicOrder 完整公開立牌順序。
      * @param inputs 本幀原生資料。
-     * @return 牌排；有牌還沒立起、缺少資料，或位置不是等距連續的一列時為 null。
+     * @return 牌排。有牌還沒立起、缺少資料，或位置不是等距連續的一列時為 null。
      */
     private fun extentRow(
         publicOrder: List<Uuid>,
@@ -338,7 +339,7 @@ class PrivateHandLayout {
     }
 
     /**
-     * 固定尺寸牌排的中心與方向；只有所有可用終點都一致時才更新。
+     * 固定尺寸牌排的中心與方向。只有所有可用終點都一致時才更新。
      *
      * @property center 包含角落讓位偏移的牌排中心。
      * @property yaw 立牌的共享朝向。
@@ -383,7 +384,7 @@ class PrivateHandLayout {
      *
      * @param previous 上一次的本人立牌順序。
      * @param current 這一次的本人立牌順序。
-     * @param previousDrawnId 上一次在摸牌位上的牌；沒有時為 null。
+     * @param previousDrawnId 上一次在摸牌位上的牌。沒有時為 null。
      * @return 會越過其他牌的牌。
      */
     private fun crossingTiles(previous: List<Uuid>, current: List<Uuid>, previousDrawnId: Uuid?): Set<Uuid> {
@@ -400,7 +401,7 @@ class PrivateHandLayout {
     }
 
     /**
-     * 已開始的世界動畫只銜接剩餘時間；沒有可用動畫時使用短補位時間。
+     * 已開始的世界動畫只銜接剩餘時間。沒有可用動畫時使用短補位時間。
      *
      * @param input 該牌的共享動畫資料。
      * @param now 當下顯示時間。
@@ -411,7 +412,7 @@ class PrivateHandLayout {
     } ?: REORDER_TICKS
 
     /**
-     * 單張牌目前的布局與過渡；起點永遠是中斷當刻已顯示的絕對位置。
+     * 單張牌目前的布局與過渡。起點永遠是中斷當刻已顯示的絕對位置。
      *
      * @property target 這段過渡的終點。
      * @property input 上一幀原生資料，用於辨識動畫與終點變更。
@@ -434,7 +435,7 @@ class PrivateHandLayout {
         /** 本段開始時間。 */
         private var startedAt = Double.NEGATIVE_INFINITY
 
-        /** 本段動畫參數；靜止時為 null。 */
+        /** 本段動畫參數。靜止時為 null。 */
         private var spec: TileMotionAnimationSpec? = null
 
         /**
@@ -444,7 +445,7 @@ class PrivateHandLayout {
          * @param to 新的顯示終點。
          * @param now 本次過渡開始時間。
          * @param ticks 過渡時長。
-         * @param spec 沿用的路線、弧線高度、傾斜與旋轉曲線；為 null 時沒有弧線，直接平移。
+         * @param spec 沿用的路線、弧線高度、傾斜與旋轉曲線。為 null 時沒有弧線，直接平移。
          */
         fun move(
             from: TileDisplayTransform,
@@ -519,7 +520,7 @@ class PrivateHandLayout {
         /** 一般理牌與補位時間，沿用牌張預設動畫長度。 */
         const val REORDER_TICKS = TileMotionAnimationSpec.DEFAULT_DURATION_TICKS
 
-        /** 本人立牌越過其他牌時的路線與傾斜，與共享呈現的同排弧線相同；時長與起訖姿態由每次移動決定。 */
+        /** 本人立牌越過其他牌時的路線與傾斜，與共享呈現的同排弧線相同。時長與起訖姿態由每次移動決定。 */
         val ROW_ARC_SPEC = TileMotionAnimationSpec(
             durationTicks = MahjongTileTableLayout.ROW_ARC_DURATION_TICKS,
             arcHeight = MahjongTileTableLayout.ROW_ARC_HEIGHT,

@@ -17,7 +17,7 @@ private const val NBT_KEY_PRESENTATION_BUSY_UNTIL_GAME_TIME: String = "Presentat
 private const val NBT_KEY_CONTINUING_WIN_PRESENTATION_BUSY_UNTIL_GAME_TIME: String = "ContinuingWinPresentationBusyUntilGameTime"
 
 /**
- * 從方塊實體 NBT 還原麻將桌狀態；桌子 ID 損壞或缺失時保留目前的 ID。方塊實體在自己的 `readNbt` 中呼叫。
+ * 從方塊實體 NBT 還原麻將桌狀態。桌子 ID 損壞或缺失時保留目前的 ID。方塊實體在自己的 `readNbt` 中呼叫。
  *
  * @param nbt 方塊實體讀檔時取得的 NBT。
  */
@@ -32,7 +32,7 @@ fun MahjongTableControllerState.readNbt(nbt: CompoundTag) {
 }
 
 /**
- * 把麻將桌狀態寫入方塊實體 NBT；欄位名稱與格式由 MahjongCraft 決定。方塊實體在自己的 `writeNbt` 中呼叫。
+ * 把麻將桌狀態寫入方塊實體 NBT。欄位名稱與格式由 MahjongCraft 決定。方塊實體在自己的 `writeNbt` 中呼叫。
  *
  * @param nbt 方塊實體存檔時接收欄位的 NBT。
  */

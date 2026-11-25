@@ -37,9 +37,9 @@ enum class MahjongTableDesign {
     }
 
     /**
-     * 取得指定 part 與朝向的選取形狀；目前與碰撞形狀相同。
+     * 取得指定 part 與朝向的選取形狀。目前與碰撞形狀相同。
      *
-     * 上層中央沒有靜態模型，因此不提供選取框；該位置的互動與拆除由正下方的 controller 承接。
+     * 上層中央沒有靜態模型，因此不提供選取框。該位置的互動與拆除由正下方的 controller 承接。
      * 空間仍由不可替換的 part 佔用，其他方塊無法放入。
      *
      * @param part 結構中的方塊位置。
@@ -50,7 +50,7 @@ enum class MahjongTableDesign {
     fun outlineShape(part: MahjongTablePart, facing: Direction): VoxelShape = collisionShape(part, facing)
 
     /**
-     * 取得上層桌緣碰撞；中央保留空間沒有碰撞。
+     * 取得上層桌緣碰撞。中央保留空間沒有碰撞。
      *
      * @param part 要量測的上層結構位置。
      * @return 上層桌緣的 voxel shape。

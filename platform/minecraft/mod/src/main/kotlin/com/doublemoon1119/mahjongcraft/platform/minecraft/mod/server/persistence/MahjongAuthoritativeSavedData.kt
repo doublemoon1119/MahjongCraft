@@ -25,10 +25,10 @@ import kotlin.uuid.Uuid
  *
  * @property codec 權威牌局 codec。
  * @param initialSnapshot 已載入的牌局。
- * @param characters 已驗證的角色資料；無法讀取時為 null。
+ * @param characters 已驗證的角色資料。無法讀取時為 null。
  * @param registry 已登記的角色描述。
  * @property originalCharacterData 讀取失敗時須原樣保留的區段。
- * @property characterDataFailure 角色區段的讀取失敗；不代表牌局區段無法讀取。
+ * @property characterDataFailure 角色區段的讀取失敗。不代表牌局區段無法讀取。
  */
 class MahjongAuthoritativeSavedData private constructor(
     private val codec: AuthoritativeStatePersistenceCodec,
@@ -50,7 +50,7 @@ class MahjongAuthoritativeSavedData private constructor(
     /** 同時保存權威與角色資料的單一來源。 */
     private val characterState = AiCharacterStateStore(registry, ::setDirty).apply { restore(initialSnapshot, characters) }
 
-    /** 目前的權威牌局；與角色快照共用同一保存封套。 */
+    /** 目前的權威牌局。與角色快照共用同一保存封套。 */
     val snapshot: AuthoritativeStateSnapshot get() = characterState.snapshot().authoritative
 
     /** 讀取一次完整保存封套，供歷史與角色同步取得同一版本。 */
@@ -75,7 +75,7 @@ class MahjongAuthoritativeSavedData private constructor(
     /**
      * 以同一個開局交易凍結全部已預檢的角色，結束後清除暫態描述。
      *
-     * @param captures 同一次預檢的角色描述；沒有外部成員時可為空。
+     * @param captures 同一次預檢的角色描述。沒有外部成員時可為空。
      * @param validate 取得同桌執行權後重新確認資格與描述，不得掛起或修改世界。
      * @param rejected 預檢過期時的拒絕結果。
      * @param action 會立即嘗試權威交易的開局操作。
@@ -111,7 +111,7 @@ class MahjongAuthoritativeSavedData private constructor(
      *
      * @param authoritative 同一交易目前的完整狀態。
      * @param capture 已在世界執行緒驗證的描述。
-     * @return 已刷新時為 true；同一房間已有擷取時為 false，下輪再試。
+     * @return 已刷新時為 true。同一房間已有擷取時為 false，下輪再試。
      */
     internal fun refreshParticipant(authoritative: AuthoritativeStateSnapshot, capture: AiCharacterParticipantCapture): Boolean = participantCaptureScopes.tryWithScope(capture.roomInstanceId) {
         characterState.prepareParticipant(capture)
@@ -151,7 +151,7 @@ class MahjongAuthoritativeSavedData private constructor(
     ): AiCharacterSelectionResult = characterState.select(authoritative, tableId, playerId, operatorId, characterId)
 
     /**
-     * 將同一封套內的牌局與角色一起保存；無法讀取的角色區段保持原樣。
+     * 將同一封套內的牌局與角色一起保存。無法讀取的角色區段保持原樣。
      *
      * @param nbt 世界提供的保存容器。
      * @return 寫入後的容器。
@@ -204,7 +204,7 @@ class MahjongAuthoritativeSavedData private constructor(
         )
 
         /**
-         * 讀取世界資料；牌局失敗時拒絕載入，角色失敗時只隔離角色區段。
+         * 讀取世界資料。牌局失敗時拒絕載入，角色失敗時只隔離角色區段。
          *
          * @param nbt 已存在的世界資料。
          * @param codec 權威牌局 codec。

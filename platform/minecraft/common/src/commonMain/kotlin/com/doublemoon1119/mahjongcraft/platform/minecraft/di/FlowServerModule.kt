@@ -99,11 +99,13 @@ import org.koin.plugin.module.dsl.single
 /**
  * 平台為 `:mahjong-flow-server` 組裝的 Koin 定義。
  *
- * 各 registry 的內容由 extension bootstrap 登記。`:mahjong-ai` 刻意不依賴 Koin（比照 `:mahjong-logic` 維持框架無關），其 registry
- * 在這裡明確建立：AI 策略 registry 在未知或未指定策略時退回初級，內建策略由 extension bootstrap 登記；對手模型 registry 在規則
- * 沒有登記時使用不具規則知識的對手模型。AI 決策執行器的容量依 runtime 平行度計算，同時存在的策略工作上限為 AI 執行緒數的
- * [AiDecisionExecutor.CAPACITY_PER_THREAD] 倍；單局推進管理器以 [AutomatedAdvanceManager.forCoordinator] 將協調器組成推進
- * callback，在目前執行階段的作用域與權威狀態調度器上推進遊戲。
+ * 各 registry 的內容由 extension bootstrap 登記。`:mahjong-ai` 比照 `:mahjong-logic` 不依賴 Koin，其 registry 在這裡明確建立：
+ *
+ * - AI 策略 registry 在未知或未指定策略時退回初級。內建策略由 extension bootstrap 登記。
+ * - 對手模型 registry 在規則沒有登記時使用不具規則知識的對手模型。
+ * - AI 決策執行器的容量依 runtime 平行度計算，同時存在的策略工作上限為 AI 執行緒數的 [AiDecisionExecutor.CAPACITY_PER_THREAD] 倍。
+ * - 單局推進管理器以 [AutomatedAdvanceManager.forCoordinator] 將協調器組成推進 callback，
+ *   在目前執行階段的作用域與權威狀態調度器上推進遊戲。
  */
 val flowServerModule = module {
     includes(flowCommonModule)

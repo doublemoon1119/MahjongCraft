@@ -16,7 +16,7 @@ import kotlin.uuid.Uuid
 /** 擷取按房間隔離，取消等待不會釋放別人的工作。 */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ParticipantCaptureScopesTest {
-    /** 同桌不能重入；不同桌不受等待中的發布影響。 */
+    /** 同桌不能重入。不同桌不受等待中的發布影響。 */
     @Test
     fun `same room waits while another room can proceed`() = runTest {
         val scopes = ParticipantCaptureScopes()

@@ -17,7 +17,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableL
 /**
  * 描述簡易配對麻將本局中央展示的加分牌。
  *
- * 展示內容直接來自本局已保存的加分牌組件，不會重新抽選；加分牌面向本局莊家的實際席位，換莊後更新朝向。
+ * 展示內容直接來自本局已保存的加分牌組件，不會重新抽選。加分牌面向本局莊家的實際席位，換莊後更新朝向。
  */
 object ExamplePairingTableProps : TablePropDescriber {
     override fun describe(tableState: TableState, tileFaces: TablePropTileFaces): List<TablePropPlacement> {

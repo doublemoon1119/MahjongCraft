@@ -4,10 +4,9 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui
  * 由分類頁籤（可省略）、一列列欄位與底部按鈕列組成的畫面版面，例如設定頁：標題、頁面切換、選擇器列、分類頁籤、
  * 欄位區與底部按鈕列由上到下的位置。
  *
- * 視窗寬度低於 [COMPACT_MIN_WIDTH] 時改用窄版：欄位的標籤在上、控制項在下並佔滿內容寬度，規則列改為
- * 兩欄並排。內容寬度最多 [MAX_CONTENT_WIDTH] 並水平置中，所有區塊共用同一組左右邊界。
- *
- * 純資料，不依賴任何 Minecraft 型別；文字寬度由呼叫端量好傳入。
+ * - 視窗寬度低於 [COMPACT_MIN_WIDTH] 時改用窄版：欄位的標籤在上、控制項在下並佔滿內容寬度，規則列改為兩欄並排。
+ * - 內容寬度最多 [MAX_CONTENT_WIDTH] 並水平置中，所有區塊共用同一組左右邊界。
+ * - 純資料，不依賴任何 Minecraft 型別。文字寬度由呼叫端量好傳入。
  *
  * @property windowWidth 目前視窗寬度。
  * @property windowHeight 目前視窗高度。
@@ -15,8 +14,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui
  * @property hasRuleRow 分類頁籤上方是否有規則列。
  * @property ruleLabelWidth 規則列「規則」標籤的文字寬度。
  * @property variantLabelWidth 規則列「玩法」標籤的文字寬度。
- * @property hasTabs 欄位區上方是否有分類頁籤；沒有時欄位區緊接在上一個區塊下方。
- * @property headerHeight 分類頁籤上方保留給說明文字的高度，從 [headerTop] 開始；不需要時為 0。
+ * @property hasTabs 欄位區上方是否有分類頁籤。沒有時欄位區緊接在上一個區塊下方。
+ * @property headerHeight 分類頁籤上方保留給說明文字的高度，從 [headerTop] 開始。不需要時為 0。
  */
 internal data class FormScreenLayout(
     val windowWidth: Int,
@@ -42,7 +41,7 @@ internal data class FormScreenLayout(
     /** 內容右界。 */
     val contentRight: Int = contentLeft + contentWidth
 
-    /** 規則列；畫面沒有規則列時為 null。 */
+    /** 規則列。畫面沒有規則列時為 null。 */
     val ruleRow: SelectorRowLayout? = if (hasRuleRow) {
         SelectorRowLayout(
             top = if (hasPageSwitch) PAGE_SWITCH_Y + BUTTON_HEIGHT + SECTION_GAP else TITLE_BOTTOM,
@@ -56,7 +55,7 @@ internal data class FormScreenLayout(
         null
     }
 
-    /** 說明文字區上界；說明文字區之後接著分類頁籤列。 */
+    /** 說明文字區上界。說明文字區之後接著分類頁籤列。 */
     val headerTop: Int = when {
         ruleRow != null -> ruleRow.dividerY + 1 + RULE_DIVIDER_GAP
         hasPageSwitch -> PAGE_SWITCH_Y + BUTTON_HEIGHT + SECTION_GAP
@@ -92,7 +91,7 @@ internal data class FormScreenLayout(
      *
      * @param rowHeight 相鄰列的間距。
      * @param controlHeight 單列實際需要的高度。
-     * @return 完整可見列數；不夠一列時為 0。
+     * @return 完整可見列數。不夠一列時為 0。
      */
     fun completeRowCount(rowHeight: Int, controlHeight: Int): Int {
         val remaining = fieldsBottom - fieldsTop - controlHeight
@@ -120,14 +119,14 @@ internal data class FormScreenLayout(
     /** 數值欄位加號按鈕的左界。 */
     val integerPlusX: Int = controlLeft + controlWidth - INTEGER_BUTTON_WIDTH
 
-    /** 欄位捲軸的左界；捲軸畫在內容右側的邊距內，不佔用控制項的寬度。 */
+    /** 欄位捲軸的左界。捲軸畫在內容右側的邊距內，不佔用控制項的寬度。 */
     val scrollbarLeft: Int = contentRight + SCROLLBAR_GAP
 
     /**
      * 建立橫跨內容寬度的底部按鈕列。
      *
      * @param buttonCount 按鈕數量。
-     * @return 等寬排成一列的按鈕位置；內容寬度連最小按鈕都放不下時，按鈕列會超出內容寬度。
+     * @return 等寬排成一列的按鈕位置。內容寬度連最小按鈕都放不下時，按鈕列會超出內容寬度。
      */
     fun footer(buttonCount: Int): ButtonRowLayout = ButtonRowLayout(
         left = contentLeft,
@@ -144,7 +143,7 @@ internal data class FormScreenLayout(
     fun fieldRowTop(visibleIndex: Int): Int = fieldsTop + visibleIndex * fieldRowHeight
 
     /**
-     * 取得欄位列的隔列底色範圍：上下各延伸到相鄰列的中間，相鄰兩列的底色剛好銜接；左右比內容寬一點，不碰到捲軸。
+     * 取得欄位列的隔列底色範圍：上下各延伸到相鄰列的中間，相鄰兩列的底色剛好銜接。左右比內容寬一點，不碰到捲軸。
      *
      * @param visibleIndex 欄位在可見範圍內的順序，從 0 開始。
      * @return 底色的左、上、右、下界。
@@ -187,7 +186,7 @@ internal data class FormScreenLayout(
     )
 
     /**
-     * 判斷游標是否落在欄位捲軸的命中範圍內；命中範圍比繪製範圍稍寬，不判斷內容是否需要捲動。
+     * 判斷游標是否落在欄位捲軸的命中範圍內。命中範圍比繪製範圍稍寬，不判斷內容是否需要捲動。
      *
      * @param mouseX 游標的水平座標。
      * @param mouseY 游標的垂直座標。
@@ -277,7 +276,7 @@ internal data class FormScreenLayout(
         /** 內容右界與欄位捲軸之間的水平間距。 */
         const val SCROLLBAR_GAP: Int = 4
 
-        /** 隔列底色左右超出內容範圍的寬度；必須小於 [SCROLLBAR_GAP]。 */
+        /** 隔列底色左右超出內容範圍的寬度。必須小於 [SCROLLBAR_GAP]。 */
         const val STRIPE_INSET: Int = 3
 
         /** 欄位捲軸左右各加寬的命中範圍。 */
@@ -288,7 +287,7 @@ internal data class FormScreenLayout(
 /**
  * 規則列的版面：規則選擇器、規則一覽按鈕與玩法選擇器。
  *
- * 寬版排成一列，規則靠左、玩法靠右；窄版分成兩欄，標籤在上、選擇器在下並佔滿欄寬。
+ * 寬版排成一列，規則靠左、玩法靠右。窄版分成兩欄，標籤在上、選擇器在下並佔滿欄寬。
  *
  * @property top 規則列上界。
  * @property contentLeft 內容左界。
@@ -308,7 +307,7 @@ internal data class SelectorRowLayout(
     /** 窄版每一欄的寬度。 */
     private val columnWidth: Int = (contentWidth - COLUMN_GAP) / 2
 
-    /** 兩個選擇器共用的寬度；寬版放不下時兩者一起縮窄。 */
+    /** 兩個選擇器共用的寬度。寬版放不下時兩者一起縮窄。 */
     val selectorWidth: Int = if (compact) {
         columnWidth
     } else {

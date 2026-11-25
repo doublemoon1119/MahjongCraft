@@ -24,10 +24,10 @@ internal object MahjongScoringStickDenominationNbt {
     }
 
     /**
-     * 讀取面額；缺少名稱或名稱無效時使用百分棒。
+     * 讀取面額。缺少名稱或名稱無效時使用百分棒。
      *
      * @param nbt 含面額欄位的 NBT compound。
-     * @return 欄位中的有效面額；欄位不存在或名稱無效時為百分棒。
+     * @return 欄位中的有效面額。欄位不存在或名稱無效時為百分棒。
      */
     fun read(nbt: CompoundTag): MahjongScoringStickDenomination = when {
         nbt.contains(NBT_KEY_DENOMINATION, Tag.TAG_STRING.toInt()) ->

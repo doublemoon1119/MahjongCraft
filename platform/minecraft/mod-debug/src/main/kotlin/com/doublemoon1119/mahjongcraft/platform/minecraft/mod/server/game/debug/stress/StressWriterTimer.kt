@@ -7,9 +7,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.stre
 import kotlin.time.Duration
 
 /**
- * 累計歷史背景工作各環節耗時與已處理事件數；背景執行緒寫入，伺服器主執行緒讀取。
+ * 累計歷史背景工作各環節耗時與已處理事件數。背景執行緒寫入，伺服器主執行緒讀取。
  *
- * 環節統計可在暖機結束時 [resetStages]；已處理事件數只增不減，呼叫端自行記下基準值計算差額。
+ * 環節統計可在暖機結束時 [resetStages]。已處理事件數只增不減，呼叫端自行記下基準值計算差額。
  */
 class StressWriterTimer : HistoryWriterObserver {
     /** 保護所有欄位的鎖。 */

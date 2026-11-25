@@ -100,7 +100,7 @@ class GameConfigPresentationRegistryTest {
         )
     }
 
-    /** 第三方不可自行宣告保留的流程分類或欄位；錯誤訊息會指出規則與衝突 ID。 */
+    /** 第三方不可自行宣告保留的流程分類或欄位。錯誤訊息會指出規則與衝突 ID。 */
     @Test
     fun `reserved flow category and fields are rejected with their owner`() {
         val categoryConflict = minimalDefinition().copy(
@@ -213,7 +213,7 @@ class GameConfigPresentationRegistryTest {
         )
     }
 
-    /** 規則專屬欄位與選項的 ID 放在規則路徑底下，翻譯鍵放在規則名稱底下；共用流程欄位不受影響。 */
+    /** 規則專屬欄位與選項的 ID 放在規則路徑底下，翻譯鍵放在規則名稱底下。共用流程欄位不受影響。 */
     @Test
     fun `built-in rule fields live under their rule path`() {
         val registry = builtInRegistry()

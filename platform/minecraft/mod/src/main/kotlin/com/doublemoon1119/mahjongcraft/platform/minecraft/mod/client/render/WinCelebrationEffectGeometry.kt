@@ -21,14 +21,14 @@ import kotlin.math.exp
 import kotlin.math.sin
 
 /**
- * 胡牌特效的畫法：附魔三叉戟落在胡牌張上並晃動，接著小型帶狀閃電擊中它，再有短暫環繞的電弧與錯時擴張的波紋；所有幾何
+ * 胡牌特效的畫法：附魔三叉戟落在胡牌張上並晃動，接著小型帶狀閃電擊中它，再有短暫環繞的電弧與錯時擴張的波紋。所有幾何
  * 皆保持牌面中央淨空。原點是胡牌張的位置，對局中的特效實體與牌譜回放共用。
  *
- * @property tridentModel 原版三叉戟實體模型；直接使用其明確座標，讓戟尖能穩定對準胡牌張。
+ * @property tridentModel 原版三叉戟實體模型。直接使用其明確座標，讓戟尖能穩定對準胡牌張。
  */
 class WinCelebrationEffectGeometry(private val tridentModel: TridentModel) {
     /**
-     * 畫出特效在某一刻的樣子；還沒開始或已經結束時不畫。
+     * 畫出特效在某一刻的樣子。還沒開始或已經結束時不畫。
      *
      * @param elapsedTicks 從特效開始經過的 tick，可以有小數。
      * @param seed 決定三叉戟角度與閃電形狀的隨機種子。
@@ -182,7 +182,7 @@ class WinCelebrationEffectGeometry(private val tridentModel: TridentModel) {
     }
 
     /**
-     * 由持久化 seed 與離散形狀編號產生相連的閃電節點；底端固定命中胡牌張中央。
+     * 由持久化 seed 與離散形狀編號產生相連的閃電節點。底端固定命中胡牌張中央。
      *
      * @param seed 決定節點偏移的持久化 seed。
      * @param shapeIndex 目前使用的離散閃電形狀索引。
@@ -470,7 +470,7 @@ class WinCelebrationEffectGeometry(private val tridentModel: TridentModel) {
     }
 
     /**
-     * 依序展開一圈波紋；每個後續圓環稍晚出現、略暗且高度錯開，模擬水滴擴散。
+     * 依序展開一圈波紋。每個後續圓環稍晚出現、略暗且高度錯開，模擬水滴擴散。
      *
      * @param buffer 接收頂點的閃電緩衝。
      * @param positionMatrix 局部座標轉換矩陣。

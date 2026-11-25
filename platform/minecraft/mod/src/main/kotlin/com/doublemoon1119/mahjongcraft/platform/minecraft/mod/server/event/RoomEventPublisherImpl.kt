@@ -22,7 +22,7 @@ import net.minecraft.server.level.ServerPlayer
 import kotlin.uuid.Uuid
 
 /**
- * 將房間事件與收件玩家可見的最新快照組成封包；沒有快照或玩家不在線時不送出。
+ * 將房間事件與收件玩家可見的最新快照組成封包。沒有快照或玩家不在線時不送出。
  *
  * @property roomSnapshotRepository 玩家可見的房間快照來源。
  * @property tableStateDelivery 統一檢查桌子來源並序列化桌況封包交付的邊界。

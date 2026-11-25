@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character
 
 /**
- * 單執行緒、有界且可清理的資源快取；缺少值只排隊，不在繪製中執行模型工廠。
+ * 單執行緒、有界且可清理的資源快取。缺少值只排隊，不在繪製中執行模型工廠。
  *
  * @param K 包含完整外觀與資源世代的鍵。
  * @param V 可釋放的資源。
@@ -38,7 +38,7 @@ internal class CharacterPreviewCache<K, V : AutoCloseable>(private val capacity:
     }
 
     /**
-     * 一次只處理一個待載入鍵；載入失敗不留下半成品。
+     * 一次只處理一個待載入鍵。載入失敗不留下半成品。
      *
      * @param load 由呼叫端處理例外與備援的載入函式。
      */

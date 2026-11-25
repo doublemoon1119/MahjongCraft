@@ -61,7 +61,7 @@ class HistoryRoundResponseValidatorTest {
         assertIs<HistoryRoundValidationResult.Success<*>>(HistoryRoundResponseValidator.validateEvents(request, response))
     }
 
-    /** 交易總數必須涵蓋本頁與下一頁起點；沒有下一頁時本頁剛好到最後一筆。 */
+    /** 交易總數必須涵蓋本頁與下一頁起點。沒有下一頁時本頁剛好到最後一筆。 */
     @Test
     fun `test transaction count must match the page`() {
         val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
@@ -397,7 +397,7 @@ class HistoryRoundResponseValidatorTest {
         )
     }
 
-    /** 多名贏家可共享外部和牌張參照；每位贏家的手牌自身仍須有效。 */
+    /** 多名贏家可共享外部和牌張參照。每位贏家的手牌自身仍須有效。 */
     @Test
     fun `test multiple winners may share external winning tile`() {
         val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
@@ -614,7 +614,7 @@ class HistoryRoundResponseValidatorTest {
         assertIs<HistoryRoundValidationResult.Success<*>>(HistoryRoundResponseValidator.validateStates(request, response))
     }
 
-    /** 副露不允許重複實體索引；來源牌、朝下的牌與公開牌面的牌都必須屬於該副露。 */
+    /** 副露不允許重複實體索引。來源牌、朝下的牌與公開牌面的牌都必須屬於該副露。 */
     @Test
     fun `test malformed meld membership is rejected`() {
         val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial, count = 1)
@@ -652,7 +652,7 @@ class HistoryRoundResponseValidatorTest {
      * 建立含一張實體牌及未知安全事實的事件頁。
      *
      * @param tileIndex 事實直接涉及的牌索引。
-     * @param fact 要驗證的事實；預設為未知安全事實。
+     * @param fact 要驗證的事實。預設為未知安全事實。
      * @return 待驗證的事件資料。
      */
     private fun events(

@@ -36,7 +36,7 @@ class DiceRollPresentationEntityRenderer(
     /** 共用原版文字 renderer。 */
     private val textRenderer = context.font
 
-    /** 依絕對遊戲時間繪製結果面板；結果尚未揭示或已結束時不渲染。 */
+    /** 依絕對遊戲時間繪製結果面板。結果尚未揭示或已結束時不渲染。 */
     override fun render(
         entity: DiceRollPresentationEntity,
         yaw: Float,
@@ -207,7 +207,7 @@ class DiceRollPresentationEntityRenderer(
      */
     private fun panelWidth(diceCount: Int): Float = HORIZONTAL_PADDING * 2f + DICE_PIXEL_SIZE + (diceCount - 1) * DICE_CENTER_GAP
 
-    /** ItemRenderer 自行解析材質，因此 entity renderer 不提供單一 texture；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    /** ItemRenderer 自行解析材質，因此 entity renderer 不提供單一 texture。原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
     override fun getTextureLocation(entity: DiceRollPresentationEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     companion object {

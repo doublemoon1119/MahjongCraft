@@ -8,7 +8,7 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
- * 由 server tick 與起點偏移產生可重建牌張運動路徑的純計算器；跟 [DiceRollAnimation] 不同，牌張運動
+ * 由 server tick 與起點偏移產生可重建牌張運動路徑的純計算器。跟 [DiceRollAnimation] 不同，牌張運動
  * 不需要隨機物理，同一組輸入永遠算出同一個 frame，不需要吃 seed。
  *
  * @property spec 此動畫使用的時間與幅度參數。
@@ -77,7 +77,7 @@ class TileMotionAnimation(
      *
      * @param progress 動畫進度。
      * @param startOffset 起點相對於終點的位移，前進方向與它相反。
-     * @return 這一刻的傾斜；沒有設定傾斜或沒有水平移動時為 [TileLean.NONE]。
+     * @return 這一刻的傾斜。沒有設定傾斜或沒有水平移動時為 [TileLean.NONE]。
      */
     private fun lean(progress: Double, startOffset: DiceAnimationVector): TileLean {
         if (!spec.liftCarryLower || spec.leanDegrees == 0.0f) return TileLean.NONE
@@ -100,7 +100,7 @@ class TileMotionAnimation(
     }
 
     /**
-     * 0 到 1 之間先慢後快再慢的曲線；超出範圍時固定在兩端。
+     * 0 到 1 之間先慢後快再慢的曲線。超出範圍時固定在兩端。
      *
      * @param value 輸入進度。
      * @return 平滑後的進度。
@@ -115,10 +115,10 @@ class TileMotionAnimation(
         /** 提起到最高點的進度。 */
         const val LIFT_END: Double = 0.18
 
-        /** 開始橫移的進度；在提到最高點之前開始，讓轉角圓滑。 */
+        /** 開始橫移的進度。在提到最高點之前開始，讓轉角圓滑。 */
         const val CARRY_START: Double = 0.12
 
-        /** 橫移完成的進度；在開始放下之後才完成，讓轉角圓滑。 */
+        /** 橫移完成的進度。在開始放下之後才完成，讓轉角圓滑。 */
         const val CARRY_END: Double = 0.82
 
         /** 開始放下的進度。 */

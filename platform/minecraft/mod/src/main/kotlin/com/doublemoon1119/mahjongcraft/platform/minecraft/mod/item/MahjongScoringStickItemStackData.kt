@@ -12,7 +12,7 @@ object MahjongScoringStickItemStackData {
      * 缺少面額、無效名稱或錯誤型別時使用百分棒。
      *
      * @param stack 要讀取的點棒物品堆疊。
-     * @return 堆疊保存的有效面額；缺失或無效資料時為百分棒。
+     * @return 堆疊保存的有效面額。缺失或無效資料時為百分棒。
      */
     fun read(stack: ItemStack): MahjongScoringStickDenomination = MahjongScoringStickItemData.read(stack.storedScoringStickDenomination())
 

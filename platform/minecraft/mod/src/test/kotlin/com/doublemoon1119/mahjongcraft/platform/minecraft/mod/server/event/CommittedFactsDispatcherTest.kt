@@ -55,7 +55,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證橋接將背景提交交給主執行緒佇列，並隔離舊 session。 */
 class CommittedFactsDispatcherTest {
-    /** 背景交易提交的三種事件都排入佇列，交付時可重新查詢權威狀態；舊 session 事件會被捨棄。 */
+    /** 背景交易提交的三種事件都排入佇列，交付時可重新查詢權威狀態。舊 session 事件會被捨棄。 */
     @Test
     fun `background commits are queued and stale session events are discarded`() = verifyBridgeSession()
 
@@ -65,7 +65,7 @@ class CommittedFactsDispatcherTest {
         repeat(2) { verifyBridgeSession() }
     }
 
-    /** 建立獨立訂閱點並驗證完整橋接流程；離開時關閉 session 與背景執行器。 */
+    /** 建立獨立訂閱點並驗證完整橋接流程。離開時關閉 session 與背景執行器。 */
     private fun verifyBridgeSession() = runBlocking {
         val store = AuthoritativeStateStore()
         val repository = componentValidatedGameRepository(store)
@@ -302,7 +302,7 @@ class CommittedFactsDispatcherTest {
     }
 
     /**
-     * 建立測試用成果服務；事件橋接測試只驗證事件交付，不驗證成果內容。
+     * 建立測試用成果服務。事件橋接測試只驗證事件交付，不驗證成果內容。
      *
      * @param gateway 接收成果授予的測試 gateway。
      * @return 測試用成果服務。

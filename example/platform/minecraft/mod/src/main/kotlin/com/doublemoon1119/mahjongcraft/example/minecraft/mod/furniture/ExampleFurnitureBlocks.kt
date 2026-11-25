@@ -16,11 +16,11 @@ import net.minecraft.world.level.block.state.BlockState
 
 /** 範例家具方塊與對應物品的集中註冊點。 */
 object ExampleFurnitureBlocks {
-    /** 範例方塊椅子；寫入登記表後可用。 */
+    /** 範例方塊椅子。寫入登記表後可用。 */
     lateinit var chair: Block
         private set
 
-    /** 每格一席的可延長長凳；寫入登記表後可用。 */
+    /** 每格一席的可延長長凳。寫入登記表後可用。 */
     lateinit var bench: Block
         private set
 
@@ -31,7 +31,7 @@ object ExampleFurnitureBlocks {
     fun isRegistered(): Boolean = ::chair.isInitialized && ::bench.isInitialized
 
     /**
-     * 登記椅子、長凳與對應物品；座位保持實心，不被水流沖走。
+     * 登記椅子、長凳與對應物品。座位保持實心，不被水流沖走。
      *
      * @param registrar 載入器的登記方式。
      */

@@ -14,7 +14,7 @@ import kotlin.math.max
  * 回放的結算卡片，疊在場景中間偏下，內容與事件頁的結算相同：顯示這一局到目前這一步為止最近的一筆結算，例如胡牌後的
  * 後續處理那一步仍顯示剛才的胡牌結算。
  *
- * 預設收起，由玩家展開；展開後換步仍保持展開，換局時回到收起。內容放不下時可用滾輪或拖動捲軸捲動。
+ * 預設收起，由玩家展開。展開後換步仍保持展開，換局時回到收起。內容放不下時可用滾輪或拖動捲軸捲動。
  *
  * @property session 規則與事件的來源。
  * @property textRenderer 文字繪製器。
@@ -36,10 +36,10 @@ internal class HistoryReplaySettlementCard(
     /** 卡片是否收起。 */
     var collapsed = true
 
-    /** 目前顯示的局序號與結算所在的交易索引；換局時收起，換一筆結算時捲回頂端。 */
+    /** 目前顯示的局序號與結算所在的交易索引。換局時收起，換一筆結算時捲回頂端。 */
     private var shownSettlement: Pair<Int, Int>? = null
 
-    /** 上一次畫出的捲軸位置與幾何；沒有捲軸時為 null。 */
+    /** 上一次畫出的捲軸位置與幾何。沒有捲軸時為 null。 */
     private var scrollbar: Pair<Int, ScrollbarLayout>? = null
 
     /** 是否正在拖動捲軸。 */
@@ -54,7 +54,7 @@ internal class HistoryReplaySettlementCard(
     /** 已排好的內容，依局序號、步數與寬度。 */
     private var cache: Pair<Triple<Int, Int, Int>, List<HistoryCardRow>>? = null
 
-    /** 上一次畫出的範圍；沒有畫出時為 null。 */
+    /** 上一次畫出的範圍。沒有畫出時為 null。 */
     var bounds: HistoryScreenLayout.Bounds? = null
         private set
 
@@ -67,7 +67,7 @@ internal class HistoryReplaySettlementCard(
     fun available(replay: HistoryBrowseReplayState?): Boolean = replay != null && latestSettlementIndex(replay) != null
 
     /**
-     * 畫出卡片；還沒有結算或已收起時不畫。
+     * 畫出卡片。還沒有結算或已收起時不畫。
      *
      * @param context 繪製上下文。
      * @param scene 場景範圍。
@@ -75,7 +75,7 @@ internal class HistoryReplaySettlementCard(
      * @param replay 目前回放。
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
-     * @return 游標指著的內容提示；沒有時為 null。
+     * @return 游標指著的內容提示。沒有時為 null。
      */
     fun render(context: GuiGraphics, scene: HistoryScreenLayout.Bounds, bottom: Int, replay: HistoryBrowseReplayState?, mouseX: Int, mouseY: Int): List<Component>? {
         bounds = null
@@ -199,7 +199,7 @@ internal class HistoryReplaySettlementCard(
      * 到目前這一步為止最近一筆帶結算的交易。
      *
      * @param replay 目前回放。
-     * @return 交易索引；還沒有結算時為 null。
+     * @return 交易索引。還沒有結算時為 null。
      */
     private fun latestSettlementIndex(replay: HistoryBrowseReplayState): Int? = replay.eventPages
         .flatMap { it.transactions }
@@ -216,7 +216,7 @@ internal class HistoryReplaySettlementCard(
      *
      * @param replay 目前回放。
      * @param index 交易索引。
-     * @return 呈現內容與保存原文；沒有時為空。
+     * @return 呈現內容與保存原文。沒有時為空。
      */
     private fun outcomeFacts(replay: HistoryBrowseReplayState, index: Int): List<HistoryFactPresentation> {
         val page = replay.eventPages.firstOrNull { page -> page.transactions.any { it.index == index } } ?: return emptyList()
@@ -230,7 +230,7 @@ internal class HistoryReplaySettlementCard(
      * @param replay 目前回放。
      * @param index 結算所在的交易索引。
      * @param contentWidth 內容寬度。
-     * @return 各列；沒有結算時為空。
+     * @return 各列。沒有結算時為空。
      */
     private fun rows(replay: HistoryBrowseReplayState, index: Int, contentWidth: Int): List<HistoryCardRow> {
         val key = Triple(replay.roundNumber, index, contentWidth)

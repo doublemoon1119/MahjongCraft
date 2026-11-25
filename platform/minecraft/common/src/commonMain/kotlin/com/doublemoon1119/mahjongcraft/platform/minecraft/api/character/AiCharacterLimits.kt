@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.api.character
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 
-/** 角色描述的資料大小限制；登記、存讀檔與同步使用相同邊界。 */
+/** 角色描述的資料大小限制。登記、存讀檔與同步使用相同邊界。 */
 object AiCharacterLimits {
     /** 角色、能力與資源識別碼的最長字元數。 */
     const val MAX_ID_LENGTH: Int = 256

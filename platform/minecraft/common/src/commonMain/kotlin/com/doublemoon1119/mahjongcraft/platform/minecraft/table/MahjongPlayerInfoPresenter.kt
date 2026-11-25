@@ -20,7 +20,7 @@ interface MahjongPlayerInfoPresenter {
     ): MahjongPlayerInfoPresentationResult
 
     /**
-     * 延長玩家公開資訊的隱藏期限；找不到 entity 時安全忽略。
+     * 延長玩家公開資訊的隱藏期限。找不到 entity 時安全忽略。
      *
      * @param tableId 麻將桌 UUID。
      * @param tableLocation 麻將桌目前位置。
@@ -29,7 +29,7 @@ interface MahjongPlayerInfoPresenter {
     fun hideUntil(tableId: Uuid, tableLocation: TableLocation, gameTime: Long)
 
     /**
-     * 在玩家資訊上短暫顯示分數增減；已結束顯示的舊紀錄一併移除。找不到 entity 時安全忽略。
+     * 在玩家資訊上短暫顯示分數增減。已結束顯示的舊紀錄一併移除。找不到 entity 時安全忽略。
      *
      * @param tableId 麻將桌 UUID。
      * @param tableLocation 麻將桌目前位置。

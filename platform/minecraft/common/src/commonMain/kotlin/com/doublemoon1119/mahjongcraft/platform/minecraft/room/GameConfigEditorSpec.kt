@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 /** 設定欄位可使用的受控編輯器種類。 */
 sealed interface GameConfigEditorSpec {
     /**
-     * 判斷欄位值是否為此編輯器能產生的值；房間畫面驗證輸入與伺服器驗證送來的設定共用此判斷。
+     * 判斷欄位值是否為此編輯器能產生的值。房間畫面驗證輸入與伺服器驗證送來的設定共用此判斷。
      *
      * 整數只檢查範圍與可否為空，不檢查步長，因為玩家可以直接輸入數字。
      *
@@ -27,7 +27,7 @@ sealed interface GameConfigEditorSpec {
     /** 布林切換編輯器。 */
     data object BooleanToggle : GameConfigEditorSpec
 
-    /** 從固定選項中選取的編輯器；單選與多選共用選項清單與選項文字查詢。 */
+    /** 從固定選項中選取的編輯器。單選與多選共用選項清單與選項文字查詢。 */
     sealed interface ChoiceEditor : GameConfigEditorSpec {
         /** 可選的完整 Namespaced ID，順序也是顯示順序。 */
         val optionIds: List<String>
@@ -36,7 +36,7 @@ sealed interface GameConfigEditorSpec {
          * 取得選項的翻譯鍵。
          *
          * @param optionId 選項 ID。
-         * @return 已登記的翻譯鍵；未登記時為 null。
+         * @return 已登記的翻譯鍵。未登記時為 null。
          */
         fun translationKeyFor(optionId: String): String?
     }
@@ -67,7 +67,7 @@ sealed interface GameConfigEditorSpec {
      * 單一選項編輯器。
      *
      * @property optionIds 可選的完整 Namespaced ID。
-     * @property optionTranslationKeys 各選項 ID 對應的翻譯鍵；未提供時由呈現層顯示完整 ID。
+     * @property optionTranslationKeys 各選項 ID 對應的翻譯鍵。未提供時由呈現層顯示完整 ID。
      */
     data class SingleChoice(
         override val optionIds: List<String>,
@@ -94,8 +94,8 @@ sealed interface GameConfigEditorSpec {
      * @property optionIds 可選的完整 Namespaced ID，順序也是顯示順序。
      * @property minimumCount 至少要選取的項目數量。
      * @property maximumCount 最多可選取的項目數量。
-     * @property optionTranslationKeys 各選項 ID 對應的翻譯鍵；未提供時由呈現層顯示完整 ID。
-     * @property optionDescriptionTranslationKeys 各選項 ID 對應的補充說明翻譯鍵；未提供時不顯示說明。
+     * @property optionTranslationKeys 各選項 ID 對應的翻譯鍵。未提供時由呈現層顯示完整 ID。
+     * @property optionDescriptionTranslationKeys 各選項 ID 對應的補充說明翻譯鍵。未提供時不顯示說明。
      */
     data class MultiChoice(
         override val optionIds: List<String>,
@@ -127,7 +127,7 @@ sealed interface GameConfigEditorSpec {
 
         override fun translationKeyFor(optionId: String): String? = optionTranslationKeys[optionId]
 
-        /** 取得選項的補充說明翻譯鍵；未登記時回傳 null。 */
+        /** 取得選項的補充說明翻譯鍵。未登記時回傳 null。 */
         fun descriptionTranslationKeyFor(optionId: String): String? = optionDescriptionTranslationKeys[optionId]
     }
 }

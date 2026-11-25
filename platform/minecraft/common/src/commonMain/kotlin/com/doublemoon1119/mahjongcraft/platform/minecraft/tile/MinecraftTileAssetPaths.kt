@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 /**
  * 依 asset key 取得材質資源相對路徑（相對 `assets/<namespace>/`）。
  *
- * 這是內建資源的相對路徑慣例；第三方可透過 [MinecraftTileResources] 指定自己的完整資源 ID。
+ * 這是內建資源的相對路徑慣例。第三方可透過 [MinecraftTileResources] 指定自己的完整資源 ID。
  *
  * @param assetKey 素材登記使用的穩定 key。
  * @return 材質資源相對路徑。
@@ -21,7 +21,7 @@ fun tileTextureAssetPath(assetKey: String): String = "textures/item/mahjong_tile
 fun tileModelAssetPath(assetKey: String): String = "item/mahjong_tile/mahjong_tile_$assetKey"
 
 /**
- * 取得牌面貼圖的完整資源 ID；已登記牌種使用其明確資源，其他 key 沿用內建資源路徑。
+ * 取得牌面貼圖的完整資源 ID。已登記牌種使用其明確資源，其他 key 沿用內建資源路徑。
  *
  * @param assetKey 素材登記使用的穩定 key。
  * @param registry 用來查詢第三方資源映射的 registry。
@@ -32,7 +32,7 @@ fun tileTextureResourceId(assetKey: String, registry: MinecraftTileAssetRegistry
 }
 
 /**
- * 取得牌面模型的完整資源 ID；已登記牌種使用其明確資源，其他 key 沿用內建資源路徑。
+ * 取得牌面模型的完整資源 ID。已登記牌種使用其明確資源，其他 key 沿用內建資源路徑。
  *
  * @param assetKey 素材登記使用的穩定 key。
  * @param registry 用來查詢第三方資源映射的 registry。

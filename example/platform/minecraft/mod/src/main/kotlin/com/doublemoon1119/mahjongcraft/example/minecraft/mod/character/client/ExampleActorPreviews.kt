@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCh
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterPreviewProvider
 import net.minecraft.world.entity.Entity
 
-/** 只從公開描述建立獨立人偶；不搜尋世界本人、不加入世界或執行 tick。 */
+/** 只從公開描述建立獨立人偶。不搜尋世界本人、不加入世界或執行 tick。 */
 internal object ExampleActorPreviews {
     /** 本人不可用及歷史畫面共用的模型備援。 */
     val PROVIDER: AiCharacterPreviewProvider = AiCharacterPreviewProvider { world, _ ->

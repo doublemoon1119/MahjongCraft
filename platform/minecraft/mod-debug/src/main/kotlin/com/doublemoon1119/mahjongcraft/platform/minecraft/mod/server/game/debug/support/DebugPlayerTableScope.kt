@@ -20,7 +20,7 @@ import kotlin.uuid.toKotlinUuid
  * 執行緒不同，呼叫端必須依自己的需求選擇：
  *
  * - [runOnMain] 的動作在 main thread 執行，適合只讀寫程序內 debug 狀態、不呼叫 suspend service 的指令。
- * - [runSuspending] 的動作在協程中執行，適合需要呼叫 suspend flow service 的指令；只有最後送出回饋才回到
+ * - [runSuspending] 的動作在協程中執行，適合需要呼叫 suspend flow service 的指令。只有最後送出回饋才回到
  *   main thread。
  *
  * 兩者都立即回傳 Brigadier 結果碼，實際訊息稍後才非同步送出。
@@ -47,7 +47,7 @@ class DebugPlayerTableScope(
      *
      * @param source 指令呼叫來源。
      * @param action 以牌桌識別碼產生回饋文字的動作。
-     * @return Brigadier 命令成功或失敗代碼；玩家查詢與動作在背景協程執行。
+     * @return Brigadier 命令成功或失敗代碼。玩家查詢與動作在背景協程執行。
      */
     fun runOnMain(source: CommandSourceStack, action: (tableId: Uuid) -> String): Int {
         val player = requirePlayer(source) ?: return COMMAND_FAILURE
@@ -70,7 +70,7 @@ class DebugPlayerTableScope(
      *
      * @param source 指令呼叫來源。
      * @param action 以牌桌與玩家識別碼執行掛起動作並產生回饋文字。
-     * @return Brigadier 命令成功或失敗代碼；查詢與動作在背景協程執行。
+     * @return Brigadier 命令成功或失敗代碼。查詢與動作在背景協程執行。
      */
     fun runSuspending(
         source: CommandSourceStack,
@@ -109,10 +109,10 @@ class DebugPlayerTableScope(
     }
 
     /**
-     * 取得執行指令的玩家；由非玩家執行時回報錯誤並回傳 `null`。
+     * 取得執行指令的玩家。由非玩家執行時回報錯誤並回傳 `null`。
      *
      * @param source 指令呼叫來源。
-     * @return 指令來源中的玩家；非玩家來源時為 null。
+     * @return 指令來源中的玩家。非玩家來源時為 null。
      */
     private fun requirePlayer(source: CommandSourceStack) = source.player ?: run {
         source.sendFailure(Component.literal("This debug subcommand must be run by a player seated at a table"))

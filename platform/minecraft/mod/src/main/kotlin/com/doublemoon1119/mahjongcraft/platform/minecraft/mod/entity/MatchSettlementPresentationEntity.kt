@@ -13,7 +13,7 @@ import net.minecraft.world.level.Level
 import kotlin.uuid.Uuid
 
 /**
- * 終局排行榜舞台；client 只依絕對時間與權威快照重建揭曉動畫。
+ * 終局排行榜舞台。client 只依絕對時間與權威快照重建揭曉動畫。
  *
  * @param type 終局結算實體種類。
  * @param world 實體所屬世界。
@@ -237,7 +237,7 @@ class MatchSettlementPresentationEntity(
         /**
          * 依揭曉序列 index 計算列的揭曉起點。
          *
-         * @param index 揭曉序列中的列索引；負值按 0 計算。
+         * @param index 揭曉序列中的列索引。負值按 0 計算。
          * @param revealInterval 相鄰列揭曉起點的 tick 間隔。
          * @return 此列相對舞台開始的揭曉 tick。
          */
@@ -282,7 +282,7 @@ class MatchSettlementPresentationEntity(
          * 從 tracker 分隔字串還原有效的玩家快照列。
          *
          * @param encoded 玩家快照的編碼字串。
-         * @return 可解析的玩家快照；欄位數錯誤或座位索引、分數、順位無效的列會略過。
+         * @return 可解析的玩家快照。欄位數錯誤或座位索引、分數、順位無效的列會略過。
          */
         private fun decodePlayers(encoded: String): List<MatchSettlementPlayerSnapshot> = encoded.split(ROW_SEPARATOR).mapNotNull { row ->
             val fields = row.split(FIELD_SEPARATOR)

@@ -8,7 +8,7 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.network.chat.Component
 
 /**
- * 畫出牌譜卡片中的文字、牌列與和牌手牌；交易標題與讀取按鈕這類帶按鈕的列由各畫面自己畫。
+ * 畫出牌譜卡片中的文字、牌列與和牌手牌。交易標題與讀取按鈕這類帶按鈕的列由各畫面自己畫。
  *
  * @property session 頭像、牌面外觀與牌名的來源。
  * @property textRenderer 文字繪製器。
@@ -33,7 +33,7 @@ internal class HistoryCardRowRenderer(
      * @param hovered 游標是否在卡片上。
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
-     * @return 游標指著這一列時的提示；沒有時為 null。
+     * @return 游標指著這一列時的提示。沒有時為 null。
      */
     fun render(
         context: GuiGraphics,
@@ -84,7 +84,7 @@ internal class HistoryCardRowRenderer(
      * @param hovered 游標是否在卡片上。
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
-     * @return 游標指著這張牌時的提示；沒有時為 null。
+     * @return 游標指著這張牌時的提示。沒有時為 null。
      */
     private fun tile(context: GuiGraphics, tile: TileFaceViewDto, x: Int, y: Int, hovered: Boolean, mouseX: Int, mouseY: Int): List<Component>? {
         val asset = tile.toHistoryAssetKey(registry = tileAssetRegistry, registries = session.networkRegistries)
@@ -96,7 +96,7 @@ internal class HistoryCardRowRenderer(
     /**
      * 頭像查詢所用的對局。
      *
-     * @return 對局識別碼；沒有摘要時為 null。
+     * @return 對局識別碼。沒有摘要時為 null。
      */
     private fun matchId(): String? = session.controller.state.value.summary?.detail?.summary?.matchId
 

@@ -15,7 +15,7 @@ object TrackingPlayers {
      * 實體是玩家時，結果不一定包含玩家自己。
      *
      * @param entity 伺服器世界中的實體。
-     * @return 看得到實體的玩家；實體不在追蹤範圍時為空。
+     * @return 看得到實體的玩家。實體不在追蹤範圍時為空。
      * @throws IllegalArgumentException 實體不在伺服器世界。
      */
     fun of(entity: Entity): Set<ServerPlayer> {

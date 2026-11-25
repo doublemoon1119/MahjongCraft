@@ -12,10 +12,10 @@ class ClientAutomaticControlCommandService(
     private val autoSortHandPreferenceService: ClientAutoSortHandPreferenceService,
     private val updateCoordinator: ClientAutomaticControlUpdateCoordinator,
 ) {
-    /** 目前對局的規則模組 ID，決定控制項用語；沒有本局快照時為 null。 */
+    /** 目前對局的規則模組 ID，決定控制項用語。沒有本局快照時為 null。 */
     fun ruleModuleId(): String? = updateCoordinator.snapshot()?.ruleModuleId
 
-    /** 目前可供補全的控制 ID；永久自動理牌固定存在。 */
+    /** 目前可供補全的控制 ID。永久自動理牌固定存在。 */
     fun availableControlIds(): Set<String> = buildSet {
         add(BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND)
         addAll(updateCoordinator.snapshot()?.supportedControlIds.orEmpty())
@@ -26,7 +26,7 @@ class ClientAutomaticControlCommandService(
      *
      * @param controlId 要更新的控制項識別碼。
      * @param mode 明確開關或反轉目前狀態的模式。
-     * @return 本機保存或本局請求送出結果；本局提交仍須等待伺服器確認。
+     * @return 本機保存或本局請求送出結果。本局提交仍須等待伺服器確認。
      */
     fun execute(controlId: String, mode: AutomaticControlCommandMode): ClientAutomaticControlCommandResult {
         if (controlId == BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND) {
@@ -63,7 +63,7 @@ class ClientAutomaticControlCommandService(
      *
      * @param requestId 要取出的請求識別碼。
      * @param controlId 要從回覆快照查詢的控制項識別碼。
-     * @return 該請求的完成結果；尚無回覆或已被取出時為 null。
+     * @return 該請求的完成結果。尚無回覆或已被取出時為 null。
      */
     fun takeCompletion(requestId: String, controlId: String): ClientAutomaticControlCommandCompletion? {
         val completion = updateCoordinator.takeCompletion(requestId) ?: return null

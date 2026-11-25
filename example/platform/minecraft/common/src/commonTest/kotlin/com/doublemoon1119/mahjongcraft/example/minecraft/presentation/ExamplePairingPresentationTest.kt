@@ -88,7 +88,7 @@ class ExamplePairingPresentationTest {
         assertEquals(null, provider.catalogue(RiichiRuleConfig()))
     }
 
-    /** 「基本玩法」排在第一個分類；沒有開啟換牌或公開牌面時，對應條目保留並寫出原因。 */
+    /** 「基本玩法」排在第一個分類。沒有開啟換牌或公開牌面時，對應條目保留並寫出原因。 */
     @Test
     fun `catalogue offers pairing basics`() {
         val provider = examplePairingCatalogue()

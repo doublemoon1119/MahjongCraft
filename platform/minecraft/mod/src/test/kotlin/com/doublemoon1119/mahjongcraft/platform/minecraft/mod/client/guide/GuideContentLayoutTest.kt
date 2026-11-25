@@ -175,7 +175,7 @@ class GuideContentLayoutTest {
         assertEquals(100, layout.height)
     }
 
-    /** 按鈕依文字加寬但不窄於下限；範例面板使用量測出的高度。 */
+    /** 按鈕依文字加寬但不窄於下限。範例面板使用量測出的高度。 */
     @Test
     fun `buttons and panels use their measured sizes`() {
         val button = measure(GuideBlock.Button(Component.literal("Open"), GuideAction.HISTORY)).elements.single() as GuideElement.ActionButton

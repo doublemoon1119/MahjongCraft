@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
  */
 interface MinecraftPlayerFeedbackPublisher {
     /**
-     * 將 [feedback] 呈現給 [playerId]；玩家不在線時可略過。
+     * 將 [feedback] 呈現給 [playerId]。玩家不在線時可略過。
      *
      * 各 Minecraft 版本可依自身能力決定呈現方式，建議遵守以下語意：
      *
@@ -24,7 +24,7 @@ interface MinecraftPlayerFeedbackPublisher {
      * - Title／subtitle 適合遊戲階段轉換，或需要立即取得玩家注意力的事件。
      * - HUD 適合持續狀態，應由 snapshot／client store 驅動，不應依賴一次性 [feedback] 維持狀態。
      *
-     * 同一回饋可以依版本需求觸發零到多個文字、視覺或聲音效果；實作應避免在多個位置重複顯示
+     * 同一回饋可以依版本需求觸發零到多個文字、視覺或聲音效果。實作應避免在多個位置重複顯示
      * 相同文字，除非該重複具有明確用途。
      *
      * @param playerId 接收回饋的玩家 UUID。

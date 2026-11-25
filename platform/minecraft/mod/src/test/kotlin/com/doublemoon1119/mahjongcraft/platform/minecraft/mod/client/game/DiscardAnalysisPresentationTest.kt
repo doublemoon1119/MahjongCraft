@@ -179,7 +179,7 @@ class DiscardAnalysisPresentationTest {
         assertEquals(narrow.panelWidth + 3 * 20, wide.panelWidth)
     }
 
-    /** 面板水平置中；寬度為奇數時左右留白最多差一個像素。 */
+    /** 面板水平置中。寬度為奇數時左右留白最多差一個像素。 */
     @Test
     fun `centres the panel horizontally`() {
         val layout = layout(cellCount = 3, screenWidth = 640)
@@ -282,7 +282,7 @@ class DiscardAnalysisPresentationTest {
      * 建立測試用的分析。
      *
      * @param waiting 等待牌與各自的和牌資格。
-     * @param statusIndicatorId 分析狀態指示 ID；未指定時不顯示狀態。
+     * @param statusIndicatorId 分析狀態指示 ID。未指定時不顯示狀態。
      * @return 指定捨牌 ID 與分析內容的 DTO。
      */
     private fun analysisOf(vararg waiting: WaitingTileAvailabilityDto, statusIndicatorId: String? = null) = DiscardReadinessAnalysisDto(

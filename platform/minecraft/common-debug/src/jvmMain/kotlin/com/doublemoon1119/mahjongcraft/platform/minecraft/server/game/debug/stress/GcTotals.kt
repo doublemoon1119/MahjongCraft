@@ -6,7 +6,7 @@ import java.lang.management.ManagementFactory
  * JVM 記憶體回收的累計次數與耗時。
  *
  * @property count 回收次數。
- * @property millis 各 JVM 回收器回報的累計回收耗時毫秒數總和；不等同應用程式停止執行的精確時間。
+ * @property millis 各 JVM 回收器回報的累計回收耗時毫秒數總和。不等同應用程式停止執行的精確時間。
  */
 data class GcTotals(
     val count: Long,
@@ -20,7 +20,7 @@ data class GcTotals(
      */
     operator fun minus(other: GcTotals): GcTotals = GcTotals(count - other.count, millis - other.millis)
     companion object {
-        /** 讀取目前所有回收器的累計值；回收器不提供數值時視為 0。 */
+        /** 讀取目前所有回收器的累計值。回收器不提供數值時視為 0。 */
         fun read(): GcTotals = ManagementFactory.getGarbageCollectorMXBeans().fold(GcTotals(0, 0)) { totals, bean ->
             GcTotals(totals.count + bean.collectionCount.coerceAtLeast(0), totals.millis + bean.collectionTime.coerceAtLeast(0))
         }

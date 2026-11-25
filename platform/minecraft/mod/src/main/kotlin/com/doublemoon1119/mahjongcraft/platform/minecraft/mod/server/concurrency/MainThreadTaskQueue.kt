@@ -16,7 +16,7 @@ class MainThreadTaskQueue : MainThreadDrain {
     /** 尚未執行的工作，依排入順序執行。 */
     private val tasks = ConcurrentLinkedQueue<Runnable>()
 
-    /** 正在 [drainUntil] 中等待工作的執行緒；有新工作時喚醒它。 */
+    /** 正在 [drainUntil] 中等待工作的執行緒。有新工作時喚醒它。 */
     @Volatile
     private var drainingThread: Thread? = null
 
@@ -31,7 +31,7 @@ class MainThreadTaskQueue : MainThreadDrain {
     }
 
     /**
-     * 執行呼叫當下已排入的工作；執行期間新排入的工作留給之後的處理，避免持續排入的工作佔住主執行緒。
+     * 執行呼叫當下已排入的工作。執行期間新排入的工作留給之後的處理，避免持續排入的工作佔住主執行緒。
      *
      * @return 執行的工作數。
      */
@@ -64,7 +64,7 @@ class MainThreadTaskQueue : MainThreadDrain {
 
     /** [MAX_IDLE_WAIT] 所在的伴生物件。 */
     private companion object {
-        /** 沒有工作時單次等待的上限；完成條件可能在沒有新工作時改變，需要定期重新檢查。 */
+        /** 沒有工作時單次等待的上限。完成條件可能在沒有新工作時改變，需要定期重新檢查。 */
         val MAX_IDLE_WAIT: Duration = 10.milliseconds
     }
 }

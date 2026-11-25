@@ -84,11 +84,11 @@ internal object ExampleCushionPlacement {
     /**
      * 查詢底面下方已載入方塊的外形，供放置與存續檢查使用。
      *
-     * 不載入區塊；鄰接區塊尚未載入時不判定家具失去支撐。
+     * 不載入區塊。鄰接區塊尚未載入時不判定家具失去支撐。
      *
      * @param world 坐墊所在的伺服器世界。
      * @param cushion 坐墊包圍盒。
-     * @return 是否有支撐；所需區塊未載入時為 null。
+     * @return 是否有支撐。所需區塊未載入時為 null。
      */
     fun hasSupport(world: ServerLevel, cushion: AABB): Boolean? {
         val minimum = BlockPos.containing(cushion.minX, cushion.minY - SURFACE_EPSILON, cushion.minZ)

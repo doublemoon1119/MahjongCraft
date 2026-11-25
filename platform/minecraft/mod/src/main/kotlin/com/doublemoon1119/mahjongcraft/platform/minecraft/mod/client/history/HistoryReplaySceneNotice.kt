@@ -8,10 +8,10 @@ internal object HistoryReplaySceneNotice {
      * 選出說明：先看規則有沒有安裝與讀取，再看牌譜資料與擺牌結果。
      *
      * @param ruleInstalled 這台電腦是否裝有這場對局的規則。
-     * @param rulesStatus 這場對局規則設定的讀取狀態；還沒開始讀取時為 null。
+     * @param rulesStatus 這場對局規則設定的讀取狀態。還沒開始讀取時為 null。
      * @param moduleResolved 是否已由規則設定取得規則模組。
      * @param hasNotes 牌面是否附有擺牌附註。
-     * @return 說明的翻譯鍵；規則設定還在讀取時為讀取中。
+     * @return 說明的翻譯鍵。規則設定還在讀取時為讀取中。
      */
     fun key(
         ruleInstalled: Boolean,

@@ -17,7 +17,7 @@ internal interface GuideMeasurer {
     fun width(text: Component): Int
 
     /**
-     * 文字在指定寬度內換行後的行數；換行字元一定換行。
+     * 文字在指定寬度內換行後的行數。換行字元一定換行。
      *
      * @param text 文字。
      * @param width 可用寬度。
@@ -43,7 +43,7 @@ internal interface GuideMeasurer {
     fun decisionPanelHeight(prompt: PlayerDecisionPromptDto, width: Int): Int
 }
 
-/** 「如何開始」內容區中已決定位置的一個元素；座標以內容區左上角為原點，未套用捲動。 */
+/** 「如何開始」內容區中已決定位置的一個元素。座標以內容區左上角為原點，未套用捲動。 */
 internal sealed interface GuideElement {
     /** 上界。 */
     val y: Int
@@ -57,7 +57,7 @@ internal sealed interface GuideElement {
      * @property text 文字。
      * @property x 左界。
      * @property y 上界。
-     * @property width 換行寬度；置中時為置中的範圍。
+     * @property width 換行寬度。置中時為置中的範圍。
      * @property lineCount 換行後的行數。
      * @property style 文字樣式。
      * @property centered 是否每行水平置中。
@@ -369,8 +369,8 @@ internal data class GuideContentLayout(val elements: List<GuideElement>, val hei
          * @param blocks 由上而下的區塊。
          * @param width 內容區寬度。
          * @param measurer 文字與面板量測。
-         * @param hasRecipes 是否找得到合成配方；找不到時配方區塊不佔空間。
-         * @param viewportHeight 內容區可見的高度；場景連同說明不超過這個高度，捲到場景時能看到整個場景。
+         * @param hasRecipes 是否找得到合成配方。找不到時配方區塊不佔空間。
+         * @param viewportHeight 內容區可見的高度。場景連同說明不超過這個高度，捲到場景時能看到整個場景。
          * @return 排好的版面。
          */
         fun measure(
@@ -415,7 +415,7 @@ internal data class GuideContentLayout(val elements: List<GuideElement>, val hei
          * @param left 左界。
          * @param top 第一個區塊的上界。
          * @param width 可用寬度。
-         * @return 最後一個區塊的下界；沒有佔空間的區塊時為 [top]。
+         * @return 最後一個區塊的下界。沒有佔空間的區塊時為 [top]。
          */
         fun blocks(
             blocks: List<GuideBlock>,
@@ -447,7 +447,7 @@ internal data class GuideContentLayout(val elements: List<GuideElement>, val hei
          * @param left 左界。
          * @param top 上界。
          * @param width 可用寬度。
-         * @return 區塊下界；不佔空間時為 [top]。
+         * @return 區塊下界。不佔空間時為 [top]。
          */
         private fun block(
             block: GuideBlock,
@@ -553,7 +553,7 @@ internal data class GuideContentLayout(val elements: List<GuideElement>, val hei
         }
 
         /**
-         * 排示意場景與下方置中的說明；高度依寬度比例並限制在上下限內，再縮到場景連同說明放得進可見高度。
+         * 排示意場景與下方置中的說明。高度依寬度比例並限制在上下限內，再縮到場景連同說明放得進可見高度。
          *
          * @param block 場景區塊。
          * @param left 左界。
@@ -627,7 +627,7 @@ internal data class GuideContentLayout(val elements: List<GuideElement>, val hei
 
         /**
          * 排一列牌：項目由左到右排列，放不下時換行，符號跟著後面的項目一起換行。
-         * 每一行分成標籤帶、牌面帶與牌名帶，只有用到的帶才佔高度；符號與強調文字在牌面帶垂直置中。
+         * 每一行分成標籤帶、牌面帶與牌名帶，只有用到的帶才佔高度。符號與強調文字在牌面帶垂直置中。
          *
          * @param items 項目。
          * @param left 左界。
@@ -650,7 +650,7 @@ internal data class GuideContentLayout(val elements: List<GuideElement>, val hei
         }
 
         /**
-         * 把項目分成數行；符號與後一個項目視為一體，不會留在行尾。
+         * 把項目分成數行。符號與後一個項目視為一體，不會留在行尾。
          *
          * @param items 項目。
          * @param width 可用寬度。

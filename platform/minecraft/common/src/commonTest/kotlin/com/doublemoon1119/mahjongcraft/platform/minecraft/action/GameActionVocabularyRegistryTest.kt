@@ -71,7 +71,7 @@ class GameActionVocabularyRegistryTest {
         assertEquals("mahjongcraft.hud.action.ron", registry.find(BuiltInRuleModuleIds.RIICHI, BuiltInGameActionIds.RON)?.labelKey)
     }
 
-    /** 日麻登記自己的立直，排在核心動作之後；別的規則查不到它。 */
+    /** 日麻登記自己的立直，排在核心動作之後。別的規則查不到它。 */
     @Test
     fun `riichi registers its own actions after the built-in ones`() {
         val registry = GameActionVocabularyRegistryImpl().apply {

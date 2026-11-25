@@ -32,9 +32,10 @@ import kotlin.uuid.Uuid
 /**
  * 台灣麻將的驗收情境，四人桌適用。
  *
- * 所有情境都以正式初始化流程發牌，再交換指定牌張的牌面，讓花牌或指定的牌落在需要的位置；牌張識別碼、牌牆結構與
- * 實體座標都沿用正式初始化的結果。座位與莊家沿用這一桌目前的座位與莊家。載入後改用台灣麻將；這一桌原本是台灣麻將時
- * 沿用它的設定。
+ * - 所有情境都以正式初始化流程發牌，再交換指定牌張的牌面，讓花牌或指定的牌落在需要的位置。
+ * - 牌張識別碼、牌牆結構與實體座標都沿用正式初始化的結果。
+ * - 座位與莊家沿用這一桌目前的座位與莊家。
+ * - 載入後改用台灣麻將。這一桌原本是台灣麻將時沿用它的設定。
  */
 internal object TaiwanDebugGameScenarios {
     /** 所有台灣麻將驗收情境。 */
@@ -83,10 +84,10 @@ internal object TaiwanDebugGameScenarios {
 }
 
 /**
- * 以正式初始化流程發牌、交換牌面後播放完整開局的台灣麻將情境；載入後與正式開局相同，接著處理局首補花。
+ * 以正式初始化流程發牌、交換牌面後播放完整開局的台灣麻將情境。載入後與正式開局相同，接著處理局首補花。
  *
  * @property id 完整的 namespaced 情境 ID。
- * @property invokerDeals 是否由呼叫者當莊家；否則沿用這一桌目前的莊家。
+ * @property invokerDeals 是否由呼叫者當莊家。否則沿用這一桌目前的莊家。
  * @property faces 依發牌後的桌況與呼叫者座位，列出要放到各牌張的牌面。
  */
 private class TaiwanOpeningScenario(
@@ -129,7 +130,7 @@ private class TaiwanOpeningScenario(
 /**
  * 尾牌補花流局：活牌只剩一張花，其餘活牌當作先前各家打出的牌與已補出的花。
  *
- * 呼叫者剛摸到牌；呼叫者打出一張牌後，下家摸到最後一張活牌是花，已經沒有牌可以補，本局流局。另外七張花已在各家的
+ * 呼叫者剛摸到牌。呼叫者打出一張牌後，下家摸到最後一張活牌是花，已經沒有牌可以補，本局流局。另外七張花已在各家的
  * 花區。
  */
 private object TaiwanLastTileFlowerScenario : DebugGameScenario {
@@ -185,10 +186,12 @@ private object TaiwanLastTileFlowerScenario : DebugGameScenario {
 /**
  * 包牌：呼叫者已碰出發、中兩組，上家剛打出白，呼叫者碰白就以第三組三元牌副露湊齊大三元，上家成為包牌者。
  *
- * 呼叫者的立牌為白白、二三萬、五五筒、六七八條與一張北；碰白後打出北即聽一、四萬。活牌最前端交錯排著四萬與一萬：
- * 其他三家摸到後打出即可胡牌（上家打出為包牌者本人放槍，其他兩家打出為平分），輪到呼叫者時第一張即可自摸（包牌
- * 自摸）。其他三家的立牌固定為 [PAO_OPPONENT_HAND]：沒有對子，不含三元牌、北與一、四萬，無法聽牌，也無法碰呼叫者
- * 打出的牌。八張花都在活牌尾端。載入後開啟包牌選項；這一桌原本是台灣麻將時沿用其餘設定。
+ * - 呼叫者的立牌為白白、二三萬、五五筒、六七八條與一張北。碰白後打出北即聽一、四萬。
+ * - 活牌最前端交錯排著四萬與一萬。其他三家摸到後打出即可胡牌：上家打出為包牌者本人放槍，其他兩家打出為平分。
+ *   輪到呼叫者時第一張即可自摸（包牌自摸）。
+ * - 其他三家的立牌固定為 [PAO_OPPONENT_HAND]：沒有對子，不含三元牌、北與一、四萬，無法聽牌，也無法碰呼叫者打出的牌。
+ * - 八張花都在活牌尾端。
+ * - 載入後開啟包牌選項。這一桌原本是台灣麻將時沿用其餘設定。
  */
 private object TaiwanBeforePaoPonScenario : DebugGameScenario {
     override val id: String = "mahjongcraft:taiwan/debug/before_pao_pon"
@@ -280,9 +283,10 @@ private object TaiwanBeforePaoPonScenario : DebugGameScenario {
 /**
  * 副露與花牌多到副露那一列放不下：呼叫者已有三組明槓、一組碰與八張花，副露列放不下的部分移到手牌那一列的右手邊。
  *
- * 呼叫者的明槓依序是一萬、四筒、二條，被鳴的牌分別來自上家、對家、下家，碰的是紅中；立牌是兩張白、四條與六條。上家剛打出
- * 第三張白，呼叫者可以碰白成為第五組副露。全桌只有三個槓，不會觸發四槓流局；碰不需要從牌尾補牌。其他三家的立牌固定為
- * [PAO_OPPONENT_HAND]，不會碰或胡。
+ * - 呼叫者的明槓依序是一萬、四筒、二條，被鳴的牌分別來自上家、對家、下家。碰的是紅中。
+ * - 立牌是兩張白、四條與六條。上家剛打出第三張白，呼叫者可以碰白成為第五組副露。
+ * - 全桌只有三個槓，不會觸發四槓流局。碰不需要從牌尾補牌。
+ * - 其他三家的立牌固定為 [PAO_OPPONENT_HAND]，不會碰或胡。
  */
 private object TaiwanCrowdedMeldsScenario : DebugGameScenario {
     override val id: String = "mahjongcraft:taiwan/debug/crowded_melds"
@@ -417,7 +421,7 @@ private fun TableState.seatOf(playerId: Uuid): Int = players.indexOfFirst { it.i
 }
 
 /**
- * 情境載入後使用的台灣麻將規則；這一桌原本是台灣麻將時沿用它的設定。
+ * 情境載入後使用的台灣麻將規則。這一桌原本是台灣麻將時沿用它的設定。
  *
  * @param currentGame 目前同桌的權威遊戲。
  * @return 台灣麻將規則模組。
@@ -441,7 +445,7 @@ private fun flowerFaces(targets: List<IdentifiedTile>): List<Pair<Uuid, Tile>> {
 }
 
 /**
- * 取得座位的全部手牌，包含摸牌位；座位索引超過人數時繞回。
+ * 取得座位的全部手牌，包含摸牌位。座位索引超過人數時繞回。
  *
  * @param seatIndex 座位索引。
  * @return 該座位的手牌。
@@ -452,7 +456,7 @@ private fun TableState.handTilesOf(seatIndex: Int): List<IdentifiedTile> {
 }
 
 /**
- * 把指定牌面放到指定牌張，與目前持有那個牌面、尚未指定的牌張交換牌面；牌張識別碼與位置不變。
+ * 把指定牌面放到指定牌張，與目前持有那個牌面、尚未指定的牌張交換牌面。牌張識別碼與位置不變。
  *
  * @param assignments 牌張與要放上的牌面，依序處理。
  * @return 交換牌面後的桌況。
@@ -543,10 +547,10 @@ private val PAO_OPPONENT_HAND: List<Tile> = listOf(
     Tile.Honor.West,
 )
 
-/** 副露擁擠情境的明槓組數；全桌合計四個槓會流局。 */
+/** 副露擁擠情境的明槓組數。全桌合計四個槓會流局。 */
 private const val CROWDED_KONG_COUNT: Int = 3
 
-/** 副露擁擠情境呼叫者副露的牌面：一萬、四筒、二條各一組明槓，再一組碰紅中；都不在 [PAO_OPPONENT_HAND] 中。 */
+/** 副露擁擠情境呼叫者副露的牌面：一萬、四筒、二條各一組明槓，再一組碰紅中。都不在 [PAO_OPPONENT_HAND] 中。 */
 private val CROWDED_MELD_FACES: List<Tile> = listOf(
     Tile.Numeric(Tile.Suit.Character, 1),
     Tile.Numeric(Tile.Suit.Dot, 4),

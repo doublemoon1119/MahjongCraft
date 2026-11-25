@@ -47,7 +47,7 @@ class WinCelebrationShowcaseRegistryTest {
         assertFailsWith<IllegalArgumentException> { definition(durationTicks = 241) }
     }
 
-    /** 多個展示理由時挑優先序最高的已登記定義；內建順序與役滿倍數一致。 */
+    /** 多個展示理由時挑優先序最高的已登記定義。內建順序與役滿倍數一致。 */
     @Test
     fun `selects highest priority registered definition`() {
         val registry = WinCelebrationShowcaseRegistryImpl().apply { BundledRiichiMinecraftExtension.registerWinCelebrationShowcases(this) }
@@ -75,7 +75,7 @@ class WinCelebrationShowcaseRegistryTest {
         assertEquals(true, registry.cueKeys.all { it.startsWith("mahjongcraft:riichi/yakuman/") })
     }
 
-    /** 沒有指定時，展示會讓仍在本局中的玩家等它播完；內建展示全部維持等待。 */
+    /** 沒有指定時，展示會讓仍在本局中的玩家等它播完。內建展示全部維持等待。 */
     @Test
     fun `pauses continuing round by default`() {
         val registry = WinCelebrationShowcaseRegistryImpl().apply { BundledRiichiMinecraftExtension.registerWinCelebrationShowcases(this) }
@@ -84,7 +84,7 @@ class WinCelebrationShowcaseRegistryTest {
         assertEquals(true, registry.pausesContinuingRound(listOf(listOf("mahjongcraft:riichi/yakuman/daisangen"))))
     }
 
-    /** 只有不要求等待的展示時不暫停；任何一位贏家的展示要求等待時就暫停。 */
+    /** 只有不要求等待的展示時不暫停。任何一位贏家的展示要求等待時就暫停。 */
     @Test
     fun `pauses continuing round when any selected definition requires it`() {
         val registry = WinCelebrationShowcaseRegistryImpl().apply {

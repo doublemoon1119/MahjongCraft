@@ -47,7 +47,7 @@ class SeatingSession internal constructor(
     fun assign(rider: Entity, request: SeatRequest): SeatAssignmentResult = coordinator.assign(world, rider, request)
 
     /**
-     * 入座不成功時提示玩家原因；成功入座或安全站立時不提示。
+     * 入座不成功時提示玩家原因。成功入座或安全站立時不提示。
      *
      * @param player 入座的玩家。
      * @param result 入座結果。

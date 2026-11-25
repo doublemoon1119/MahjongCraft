@@ -10,7 +10,7 @@ object ManagedTableNbt {
      * 讀取桌子 UUID。
      *
      * @param nbt 含桌子 UUID 欄位的 NBT compound。
-     * @return 有效 UUID；欄位缺少、型別錯誤或內容無效時為 `null`。
+     * @return 有效 UUID。欄位缺少、型別錯誤或內容無效時為 `null`。
      */
     fun read(nbt: CompoundTag): Uuid? {
         if (!nbt.contains(NBT_KEY_MANAGED_TABLE_ID, Tag.TAG_STRING.toInt())) return null
@@ -25,7 +25,7 @@ object ManagedTableNbt {
      * 寫入或清除桌子 UUID。
      *
      * @param nbt 寫入目標 NBT compound。
-     * @param tableId 所屬桌子 UUID；`null` 會移除欄位。
+     * @param tableId 所屬桌子 UUID。`null` 會移除欄位。
      */
     fun write(nbt: CompoundTag, tableId: Uuid?) {
         if (tableId == null) {

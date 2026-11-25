@@ -11,7 +11,7 @@ import net.minecraft.client.Minecraft
 import kotlin.uuid.toKotlinUuid
 
 /**
- * 逐 client tick 讓每桌最後打出、仍留在牌河的那張牌外框發光；規則的 [TableTileLayoutProfile.highlightsLatestDiscard]
+ * 逐 client tick 讓每桌最後打出、仍留在牌河的那張牌外框發光。規則的 [TableTileLayoutProfile.highlightsLatestDiscard]
  * 與玩家的顯示設定都開著才顯示，牌還沒落到牌河或還在移動時不亮。
  */
 class LatestDiscardHighlightController(
@@ -55,7 +55,7 @@ class LatestDiscardHighlightController(
             .forEach { tile -> tile.setLatestDiscardHighlight(HIGHLIGHT_COLOR) }
     }
 
-    /** 外框顏色；其他畫面重現最新捨牌標示時共用。 */
+    /** 外框顏色。其他畫面重現最新捨牌標示時共用。 */
     internal companion object {
         /** 最新捨牌的外框色彩：固定不閃爍的珊瑚紅，與準星同種牌提示的青色、金色呼吸光區隔。 */
         const val HIGHLIGHT_COLOR: Int = 0xFF6B4A

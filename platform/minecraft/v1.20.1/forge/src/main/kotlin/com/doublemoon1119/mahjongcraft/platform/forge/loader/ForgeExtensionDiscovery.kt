@@ -13,7 +13,7 @@ internal object ForgeExtensionDiscovery {
     const val CLIENT_PROPERTY: String = "${MinecraftModMetadata.MOD_ID}:client_extension"
 
     /**
-     * 找出第三方擴充；同一個類別可同時實作各層擴充介面，只需宣告一次。
+     * 找出第三方擴充。同一個類別可同時實作各層擴充介面，只需宣告一次。
      *
      * @return 依 Forge 的 mod 順序排列的擴充。
      */

@@ -7,8 +7,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.Vertica
 /**
  * 牌譜各頁共用的外框：內容寬度、底部四格與捲軸位置。
  *
- * 內容寬度最多 [FormScreenLayout.MAX_CONTENT_WIDTH] 並水平置中，左右邊距與設定類畫面相同；底部四格橫跨內容寬度，
- * 最右一格放離開畫面的按鈕；捲軸畫在內容右側的邊距內。
+ * 內容寬度最多 [FormScreenLayout.MAX_CONTENT_WIDTH] 並水平置中，左右邊距與設定類畫面相同。底部四格橫跨內容寬度，
+ * 最右一格放離開畫面的按鈕。捲軸畫在內容右側的邊距內。
  *
  * @property windowWidth 目前視窗寬度。
  * @property windowHeight 目前視窗高度。
@@ -44,7 +44,7 @@ internal data class HistoryPageFrame(
     /**
      * 取得底部按鈕列中一格的範圍。
      *
-     * @param index 由左至右的順序，從 0 開始；最右一格是 [LAST_SLOT]。
+     * @param index 由左至右的順序，從 0 開始。最右一格是 [LAST_SLOT]。
      * @return 這一格的範圍。
      */
     fun footerSlot(index: Int): HistoryScreenLayout.Bounds = HistoryScreenLayout.Bounds(
@@ -69,7 +69,7 @@ internal data class HistoryPageFrame(
     )
 
     /**
-     * 判斷游標是否落在捲軸的命中範圍內；命中範圍比繪製範圍稍寬。
+     * 判斷游標是否落在捲軸的命中範圍內。命中範圍比繪製範圍稍寬。
      *
      * @param mouseX 游標的水平座標。
      * @param mouseY 游標的垂直座標。

@@ -18,7 +18,7 @@ import java.io.File
  * - Minecraft 依標籤 ID 自動組成的標籤名稱（`tag.<種類>.<namespace>.<path>`）：完整標籤 ID 出現。
  */
 abstract class VerifyMinecraftLangKeysUsedTask : DefaultTask() {
-    /** repository 根目錄；在其下搜尋正式原始碼與資源。 */
+    /** repository 根目錄。在其下搜尋正式原始碼與資源。 */
     @get:Internal
     abstract val rootDirectory: DirectoryProperty
 
@@ -98,7 +98,7 @@ internal fun stringLiterals(text: String): Set<String> = STRING_LITERAL.findAll(
 private val STRING_LITERAL: Regex = Regex("\"((?:[^\"\\\\\\n]|\\\\.)*)\"")
 
 /**
- * 取出語系檔的所有 key；語系檔每個條目固定佔一行。
+ * 取出語系檔的所有 key。語系檔每個條目固定佔一行。
  *
  * @param text 語系檔內容。
  * @return 依出現順序排列的 key。

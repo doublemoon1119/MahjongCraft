@@ -32,13 +32,13 @@ object RiichiAchievementIds {
     /** 累計役滿，總番數 14 番以上。 */
     val COUNTED_YAKUMAN_OVER: String = MahjongCraftMetadata.id("riichi/counted_yakuman_over")
 
-    /** 和出任一自然役滿；不含累計役滿。 */
+    /** 和出任一自然役滿。不含累計役滿。 */
     val YAKUMAN: String = MahjongCraftMetadata.id("riichi/yakuman")
 
-    /** 和出任一雙倍役滿役種；兩個一般役滿疊加不算。 */
+    /** 和出任一雙倍役滿役種。兩個一般役滿疊加不算。 */
     val DOUBLE_YAKUMAN: String = MahjongCraftMetadata.id("riichi/double_yakuman")
 
-    /** 同一次和牌有兩個以上役滿役種；雙倍役滿役種算一種。 */
+    /** 同一次和牌有兩個以上役滿役種。雙倍役滿役種算一種。 */
     val MULTIPLE_YAKUMAN: String = MahjongCraftMetadata.id("riichi/multiple_yakuman")
 
     /** 「被大差距擊飛」的點數門檻：最終點數不高於此值。 */
@@ -74,7 +74,7 @@ object RiichiAchievementIds {
     val doubleYakumanTypes: Set<RiichiYakuType> get() = DOUBLE_YAKUMAN_IDS.keys
 
     /**
-     * 取得 [type] 的役滿成果 ID；不是役滿役種時回傳 null。
+     * 取得 [type] 的役滿成果 ID。不是役滿役種時回傳 null。
      *
      * @param type 日麻役種。
      * @return 成果 ID，或 null。

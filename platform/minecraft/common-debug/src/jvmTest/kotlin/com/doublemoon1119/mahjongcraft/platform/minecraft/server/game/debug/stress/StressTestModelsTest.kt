@@ -21,7 +21,7 @@ class StressTestModelsTest {
         assertEquals(16, plan.tablesAt(1_800))
     }
 
-    /** 安全閥觸發時，最大可承受桌數是前一個階段；第一個階段就觸發時為 0。 */
+    /** 安全閥觸發時，最大可承受桌數是前一個階段。第一個階段就觸發時為 0。 */
     @Test
     fun `ramp reports the last fully sustained stage`() {
         val plan = StressRampPlan(initialTables = 4, stepTables = 4, intervalTicks = 600)
@@ -42,7 +42,7 @@ class StressTestModelsTest {
         }
     }
 
-    /** 連續兩個不重疊視窗的平均間隔都超過門檻才停止；只有一個視窗變慢不停止。 */
+    /** 連續兩個不重疊視窗的平均間隔都超過門檻才停止。只有一個視窗變慢不停止。 */
     @Test
     fun `sustained slow windows stop the test`() {
         val thresholds = StressSafetyThresholds(windowTicks = 4, stutterTicks = 1, fallingBehindAverageMillis = 55.0, maxLagMillis = 1_000_000.0)
@@ -55,7 +55,7 @@ class StressTestModelsTest {
         assertEquals(StressStopReason.FALLING_BEHIND, valve.recordTick(60.0, countStutter = true))
     }
 
-    /** 落後量在伺服器追上時下降，不會降到負值；進入新的爬坡階段時重設。 */
+    /** 落後量在伺服器追上時下降，不會降到負值。進入新的爬坡階段時重設。 */
     @Test
     fun `lag recovers when the server catches up`() {
         val valve = StressSafetyValve(StressSafetyThresholds(maxLagMillis = 1_000_000.0))
@@ -91,7 +91,7 @@ class StressTestModelsTest {
         assertTrue(valve.stuttering)
     }
 
-    /** 間隔尖峰在最近一段時間內達門檻次數才算持續卡頓；偶發的單次尖峰不算，舊的卡頓離開視窗後解除。 */
+    /** 間隔尖峰在最近一段時間內達門檻次數才算持續卡頓。偶發的單次尖峰不算，舊的卡頓離開視窗後解除。 */
     @Test
     fun `stutter needs repeated interval spikes within the window`() {
         val valve = StressSafetyValve(StressSafetyThresholds(stutterLimitMillis = 100.0, windowTicks = 4, stutterTicks = 2, maxLagMillis = 1_000_000.0))

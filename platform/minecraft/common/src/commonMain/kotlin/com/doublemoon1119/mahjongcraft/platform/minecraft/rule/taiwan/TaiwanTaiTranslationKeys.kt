@@ -60,7 +60,7 @@ object TaiwanTaiTranslationKeys {
      * 取得胡牌詳情台種條目的名稱 key。
      *
      * @param entryId [TaiwanWinSettlementIds] 定義的計台項目、莊家或連莊條目 ID。
-     * @return 名稱 key；不是台灣麻將台種條目時為 null。
+     * @return 名稱 key。不是台灣麻將台種條目時為 null。
      */
     fun keyForEntry(entryId: String): String? = when (entryId) {
         TaiwanWinSettlementIds.DEALER_ENTRY -> DEALER

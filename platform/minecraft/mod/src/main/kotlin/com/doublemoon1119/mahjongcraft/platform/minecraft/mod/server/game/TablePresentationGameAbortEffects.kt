@@ -32,7 +32,7 @@ import kotlin.uuid.Uuid
 /**
  * 清理對局中止後仍在執行的桌級呈現，並通知原本可見這場對局的玩家。
  *
- * 權威房間與對局已由 [GameAbortEffects] 的呼叫端處理；本類別只清理指定桌子的衍生呈現，
+ * 權威房間與對局已由 [GameAbortEffects] 的呼叫端處理。本類別只清理指定桌子的衍生呈現，
  * 不會刪除桌子、位置索引或其他桌子的工作。
  *
  * @property store 供主執行緒確認房間仍是同一份中止後狀態。
@@ -134,7 +134,7 @@ class TablePresentationGameAbortEffects(
         }
     }
 
-    /** 清除附近仍由該桌管理的暫時實體；桌子已消失時也允許移除舊呈現。 */
+    /** 清除附近仍由該桌管理的暫時實體。桌子已消失時也允許移除舊呈現。 */
     private fun clearPresentation(server: MinecraftServer, tableId: Uuid, location: TableLocation) {
         val dimension = ResourceLocation.tryParse(location.dimensionId)
         if (dimension == null) {

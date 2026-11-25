@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPl
  * 摸牌位／副露／牌河等一般回合更新都在改既有牌的位置，不是生成新 entity，因此不能直接呼叫
  * `Entity.moveTo`：那個方法只改真實座標，不會排定 `AnimatedMahjongEntity` 內建的
  * 延遲全量定位封包重播（見 [AnimatedMahjongEntity.resyncTrackerIfDue] KDoc 的完整說明），如果剛好有
- * client 在座標改變的極短暫窗口內開始追蹤這張牌，畫面會永久停在一個偏移過的錯誤位置，變成幽靈牌；
+ * client 在座標改變的極短暫窗口內開始追蹤這張牌，畫面會永久停在一個偏移過的錯誤位置，變成幽靈牌。
  * 自動理牌一次搬動多張牌、或 AI 連續回合快速觸發多次呈現更新時特別容易發生。
  *
  * 因此排一個 [AnimationStep.Teleport] 瞬間 step：[AnimatedMahjongEntity] 處理 `Teleport` 時會呼叫

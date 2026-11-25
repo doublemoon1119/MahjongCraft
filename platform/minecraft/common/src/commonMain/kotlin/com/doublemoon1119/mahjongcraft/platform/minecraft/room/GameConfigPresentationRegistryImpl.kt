@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 /**
  * [GameConfigPresentationRegistry] 的記憶體實作。
  *
- * @property ruleDecisionResolvers 核心註冊的規則選擇解析器；依當前規則設定決定是否需要規則選擇時間欄位。
+ * @property ruleDecisionResolvers 核心註冊的規則選擇解析器。依當前規則設定決定是否需要規則選擇時間欄位。
  */
 class GameConfigPresentationRegistryImpl(
     private val ruleDecisionResolvers: RuleDecisionResolverRegistry,

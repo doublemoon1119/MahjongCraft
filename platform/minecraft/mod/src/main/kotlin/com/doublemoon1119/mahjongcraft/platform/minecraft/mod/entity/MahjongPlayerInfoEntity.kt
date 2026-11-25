@@ -38,7 +38,7 @@ class MahjongPlayerInfoEntity(
     /** 同一份解不出來的玩家資料只記錄一次警告。 */
     private val unreadablePlayers = DistinctFailureGate<String>()
 
-    /** 同步的玩家快照；資料解不出來時視為沒有玩家，並對同一份資料記錄一次警告（不含資料內容）。 */
+    /** 同步的玩家快照。資料解不出來時視為沒有玩家，並對同一份資料記錄一次警告（不含資料內容）。 */
     var players: List<MahjongPlayerInfoEntry>
         get() {
             val raw = entityData[PLAYERS]
@@ -55,24 +55,24 @@ class MahjongPlayerInfoEntity(
         }
         set(value) = entityData.set(PLAYERS, JSON.encodeToString(value.map(PlayerEntryDto::fromDomain)))
 
-    /** 短暫顯示中的分數增減；只供呈現，不寫入存檔，資料解不出來時視為沒有。 */
+    /** 短暫顯示中的分數增減。只供呈現，不寫入存檔，資料解不出來時視為沒有。 */
     var scoreChanges: List<MahjongPlayerScoreChange>
         get() = runCatching { JSON.decodeFromString<List<ScoreChangeDto>>(entityData[SCORE_CHANGES]) }
             .getOrDefault(emptyList())
             .mapNotNull(ScoreChangeDto::toDomain)
         set(value) = entityData.set(SCORE_CHANGES, JSON.encodeToString(value.map(ScoreChangeDto::fromDomain)))
 
-    /** 莊家玩家 UUID；資料未設定或損壞時為 `null`。 */
+    /** 莊家玩家 UUID。資料未設定或損壞時為 `null`。 */
     var dealerPlayerId: Uuid?
         get() = entityData[DEALER_PLAYER_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
         set(value) = entityData.set(DEALER_PLAYER_ID, value?.toString().orEmpty())
 
-    /** 觀看此桌時的座位方向；未知值使用北向預設。 */
+    /** 觀看此桌時的座位方向。未知值使用北向預設。 */
     var tableFacing: MahjongTableFacing
         get() = mahjongTableFacingFromNameOrDefault(entityData[TABLE_FACING])
         set(value) = entityData.set(TABLE_FACING, value.name)
 
-    /** 所屬麻將桌；尚未指派或資料損壞時為 `null`。 */
+    /** 所屬麻將桌。尚未指派或資料損壞時為 `null`。 */
     var managedTableId: Uuid?
         get() = entityData[MANAGED_TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
         private set(value) = entityData.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
@@ -80,7 +80,7 @@ class MahjongPlayerInfoEntity(
     /** 所屬桌子的控制方塊位置，用來定期檢查此資訊 entity 是否仍有效。 */
     private var controllerPos: BlockPos? = null
 
-    /** 目前隱藏租約的絕對結束時間；`Long.MIN_VALUE` 表示沒有隱藏租約。 */
+    /** 目前隱藏租約的絕對結束時間。`Long.MIN_VALUE` 表示沒有隱藏租約。 */
     private var hiddenUntilGameTime: Long = Long.MIN_VALUE
 
     init {
@@ -102,7 +102,7 @@ class MahjongPlayerInfoEntity(
     /**
      * 將玩家公開資訊隱藏至指定絕對遊戲時間。
      *
-     * @param gameTime 隱藏租約結束的 server game time；不晚於現有期限時不改變期限。
+     * @param gameTime 隱藏租約結束的 server game time。不晚於現有期限時不改變期限。
      */
     fun hideUntil(gameTime: Long) {
         check(!level().isClientSide) { "Player info visibility lease must be changed by the server" }
@@ -179,7 +179,7 @@ class MahjongPlayerInfoEntity(
         writeAnimationQueueToNbt(nbt)
     }
 
-    /** 依已保存的期限設定伺服器隱藏狀態；每個伺服器 tick 與期限變更時套用，是隱藏狀態的唯一來源。 */
+    /** 依已保存的期限設定伺服器隱藏狀態。每個伺服器 tick 與期限變更時套用，是隱藏狀態的唯一來源。 */
     private fun applyVisibility() {
         if (!level().isClientSide) isInvisible = TableOverlayVisibility.isHidden(hiddenUntilGameTime, level().gameTime)
     }
@@ -221,9 +221,9 @@ internal data class ScoreChangeDto(
     val endGameTime: Long,
 ) {
     /**
-     * 還原領域資料；數值不合法時略過該筆。
+     * 還原領域資料。數值不合法時略過該筆。
      *
-     * @return 有效的分數增減；資料無效時為 `null`。
+     * @return 有效的分數增減。資料無效時為 `null`。
      */
     fun toDomain(): MahjongPlayerScoreChange? = runCatching { MahjongPlayerScoreChange(seatIndex, delta, startGameTime, endGameTime) }.getOrNull()
 
@@ -242,7 +242,7 @@ internal data class ScoreChangeDto(
  * 供 tracked data 序列化玩家公開快照的內部 DTO。
  *
  * @property playerId 玩家 UUID 的文字形式。
- * @property playerName 玩家顯示名稱；沒有名稱時為 `null`。
+ * @property playerName 玩家顯示名稱。沒有名稱時為 `null`。
  * @property isAi 玩家是否由 AI 操控。
  * @property seatIndex 玩家座位索引。
  * @property seatWind 座位風的名稱。
@@ -260,9 +260,9 @@ internal data class PlayerEntryDto(
     val indicators: List<IndicatorDto>,
 ) {
     /**
-     * 將此序列化條目還原為領域資料；未知座位風位或 UUID 無效時略過該筆，避免錯誤資料被當成其他玩家。
+     * 將此序列化條目還原為領域資料。未知座位風位或 UUID 無效時略過該筆，避免錯誤資料被當成其他玩家。
      *
-     * @return 有效的玩家公開資料；資料無效時為 `null`。
+     * @return 有效的玩家公開資料。資料無效時為 `null`。
      */
     fun toDomain(): MahjongPlayerInfoEntry? {
         val wind = Wind.entries.firstOrNull { it.name == seatWind } ?: return null
@@ -304,12 +304,12 @@ internal data class PlayerEntryDto(
  *
  * @property id 指示器識別碼。
  * @property kind 指示器種類標記。
- * @property value 數值或選項內容；marker 類型不帶值。
+ * @property value 數值或選項內容。marker 類型不帶值。
  */
 @Serializable
 internal data class IndicatorDto(val id: String, val kind: String, val value: String?) {
     /**
-     * 還原領域指示器值；未知種類按無值 marker 處理，count／option 缺值則視為格式錯誤。
+     * 還原領域指示器值。未知種類按無值 marker 處理，count／option 缺值則視為格式錯誤。
      *
      * @return 還原的公開玩家指示器。
      */

@@ -27,12 +27,12 @@ class HistoryParticipantPresentationResolver(
      *
      * @param playerId AI 識別碼。
      * @param matchId 歷史場次。
-     * @return 保存的外觀；沒有時為 null。
+     * @return 保存的外觀。沒有時為 null。
      */
     fun character(playerId: Uuid, matchId: String?): AiCharacterSnapshot? = matchId?.let(::parseUuid)?.let { characters.history(it, playerId) }
 
     /**
-     * 取得參與者顯示名稱；profile 不在快取時使用穩定的未知玩家翻譯文字。
+     * 取得參與者顯示名稱。profile 不在快取時使用穩定的未知玩家翻譯文字。
      *
      * @param participant 欲顯示的參與者。
      * @param participants 該場參與者，用於依座位計算 AI 名稱。
@@ -46,7 +46,7 @@ class HistoryParticipantPresentationResolver(
     }
 
     /**
-     * 將參與者頭像繪製於 GUI；未知真人使用 Minecraft 原生 default skin，AI 維持既有牌面 fallback。
+     * 將參與者頭像繪製於 GUI。未知真人使用 Minecraft 原生 default skin，AI 維持既有牌面 fallback。
      *
      * @param participant 欲顯示的參與者。
      * @param context 畫面繪製上下文。
@@ -74,7 +74,7 @@ class HistoryParticipantPresentationResolver(
      * 安全解析伺服器回傳的參與者識別碼。
      *
      * @param value UUID 字串。
-     * @return 有效 UUID；格式錯誤時為 null。
+     * @return 有效 UUID。格式錯誤時為 null。
      */
     private fun parseUuid(value: String): Uuid? = runCatching { Uuid.parse(value) }.getOrNull()
 

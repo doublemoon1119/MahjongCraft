@@ -42,7 +42,7 @@ class ServerConfigManager(
     /** 記錄設定檔建立、載入與失敗原因。 */
     private val logger = mahjongCraftLogger(ServerConfigManager::class)
 
-    /** 目前 server session 的設定位置；未啟動 server 時為 `null`。 */
+    /** 目前 server session 的設定位置。未啟動 server 時為 `null`。 */
     private var location: ServerConfigLocation? = null
 
     /** 目前 server config TOML 的完整路徑。 */
@@ -61,7 +61,7 @@ class ServerConfigManager(
      * 綁定 [server] 的設定位置、重設前一個 session 的值並載入設定。
      *
      * @param server 目前 Minecraft server。
-     * @return 設定初始化結果；載入失敗時保留程式預設值。
+     * @return 設定初始化結果。載入失敗時保留程式預設值。
      */
     fun attach(server: MinecraftServer): MinecraftServerConfigUpdateResult = attach(pathProvider.get(server))
 
@@ -75,7 +75,7 @@ class ServerConfigManager(
      * 綁定明確位置，供平台測試驗證不依賴 Minecraft server 實例的檔案行為。
      *
      * @param location 此 server session 的 config 檔案位置。
-     * @return 設定初始化結果；載入失敗時保留程式預設值。
+     * @return 設定初始化結果。載入失敗時保留程式預設值。
      */
     internal fun attach(location: ServerConfigLocation): MinecraftServerConfigUpdateResult {
         this.location = location
@@ -84,7 +84,7 @@ class ServerConfigManager(
     }
 
     /**
-     * 初始化設定檔；缺少檔案時先建立帶註解的預設 template。
+     * 初始化設定檔。缺少檔案時先建立帶註解的預設 template。
      *
      * 失敗時保留 [MinecraftServerConfigState] 的程式預設值，且不覆寫損壞檔案。
      *
@@ -104,9 +104,9 @@ class ServerConfigManager(
     }
 
     /**
-     * 重新讀取並原子發布完整設定與記錄政策；檔案錯誤不修改有效值。
+     * 重新讀取並原子發布完整設定與記錄政策。檔案錯誤不修改有效值。
      *
-     * @return 更新後設定或載入失敗原因；協程取消仍向外傳遞。
+     * @return 更新後設定或載入失敗原因。協程取消仍向外傳遞。
      * @throws IllegalStateException 呼叫時尚未綁定伺服器設定位置。
      */
     suspend fun reload(): MinecraftServerConfigUpdateResult = reloadMutex.withLock {
@@ -158,7 +158,7 @@ class ServerConfigManager(
     /**
      * 在設定檔缺少時原樣複製隨模組提供的預設範本。
      *
-     * @return 已建立檔案時為 true；檔案原已存在時為 false。
+     * @return 已建立檔案時為 true。檔案原已存在時為 false。
      * @throws IllegalStateException 找不到打包的預設範本。
      * @throws java.io.IOException 建立目錄或複製檔案失敗。
      */

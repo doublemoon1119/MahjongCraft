@@ -107,7 +107,7 @@ class PublicApiAbiPluginTest {
      * 建立帶有 JVM Kotlin 外掛與公開 API convention 的 TestKit fixture。
      *
      * @param root fixture 根目錄。
-     * @param publicApiConfiguration 明確指定範圍的 Gradle 設定；空字串代表未設定。
+     * @param publicApiConfiguration 明確指定範圍的 Gradle 設定。空字串代表未設定。
      */
     private fun writeJvmFixture(
         root: File,

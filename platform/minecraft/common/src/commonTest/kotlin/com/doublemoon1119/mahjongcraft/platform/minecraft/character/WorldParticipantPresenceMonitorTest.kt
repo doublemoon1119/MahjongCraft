@@ -63,7 +63,7 @@ class WorldParticipantPresenceMonitorTest {
         ).reconcile(listOf(game()))
     }
 
-    /** 玩家、內建自有代理與其他來源不套用世界實體政策；仍存在的離座者也不缺席。 */
+    /** 玩家、內建自有代理與其他來源不套用世界實體政策。仍存在的離座者也不缺席。 */
     @Test
     fun `present actors and non world sources never abort`() = runTest {
         val game = game()

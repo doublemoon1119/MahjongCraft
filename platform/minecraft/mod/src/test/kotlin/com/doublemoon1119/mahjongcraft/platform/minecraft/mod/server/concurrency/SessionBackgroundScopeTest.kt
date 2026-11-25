@@ -11,7 +11,7 @@ import kotlin.test.assertTrue
 
 /** [SessionBackgroundScope] 的 session 生命週期測試。 */
 class SessionBackgroundScopeTest {
-    /** 取消時立即取消常駐的背景工作，不等待它們結束；新 session 換成可用的新 Job。 */
+    /** 取消時立即取消常駐的背景工作，不等待它們結束。新 session 換成可用的新 Job。 */
     @Test
     fun `cancel stops long-running background work and a new session starts fresh`() {
         val scope = SessionBackgroundScope(TestCoroutineDispatchers(default = Dispatchers.Unconfined))

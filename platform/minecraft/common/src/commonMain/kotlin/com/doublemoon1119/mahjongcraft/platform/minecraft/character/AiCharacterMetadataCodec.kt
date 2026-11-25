@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
 
-/** 角色保存資料的固定格式；不使用網路 JSON 設定，也不依賴目前登記的 provider。 */
+/** 角色保存資料的固定格式。不使用網路 JSON 設定，也不依賴目前登記的 provider。 */
 class AiCharacterMetadataCodec {
     /** 嚴格保存所有欄位，包括可空欄位。 */
     private val format = Json {

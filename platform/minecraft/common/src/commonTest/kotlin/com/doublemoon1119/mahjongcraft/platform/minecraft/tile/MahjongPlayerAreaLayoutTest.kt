@@ -48,7 +48,7 @@ class MahjongPlayerAreaLayoutTest {
         assertEquals(hidden.standing.map { it.placement }, public.standing.map { it.placement })
     }
 
-    /** 已攤牌的立牌遵循傳入牌序，關閉排序時不自作主張重排；摸牌位不加入立牌列。 */
+    /** 已攤牌的立牌遵循傳入牌序，關閉排序時不自作主張重排。摸牌位不加入立牌列。 */
     @Test
     fun `face up hand respects both supplied sorted and manual orders`() {
         val ids = listOf(
@@ -91,7 +91,7 @@ class MahjongPlayerAreaLayoutTest {
         }
     }
 
-    /** 手牌讓開桌角區時，連同一律預留的摸牌位剛好讓到保留的縫隙，不會讓得太少或太多；不需要讓開時維持置中。 */
+    /** 手牌讓開桌角區時，連同一律預留的摸牌位剛好讓到保留的縫隙，不會讓得太少或太多。不需要讓開時維持置中。 */
     @Test
     fun `yielding hand keeps exactly the corner gap`() {
         forEachLayout { input, layout ->
@@ -123,7 +123,7 @@ class MahjongPlayerAreaLayoutTest {
     }
 
     /**
-     * 台麻的副露放在牌牆與手牌之間：各種副露、花牌張數、摸牌位與手牌是否推倒下，牌區內的牌彼此不重疊，也不碰到任何一面牌牆；
+     * 台麻的副露放在牌牆與手牌之間：各種副露、花牌張數、摸牌位與手牌是否推倒下，牌區內的牌彼此不重疊，也不碰到任何一面牌牆。
      * 副露那一列放不下的牌移到手牌那一列的右手邊，手牌往左讓。
      */
     @Test
@@ -497,7 +497,7 @@ class MahjongPlayerAreaLayoutTest {
         val minZ: Double,
         val maxZ: Double,
     ) {
-        /** @return 兩塊範圍是否重疊超過容許誤差；只碰到邊不算重疊。 */
+        /** @return 兩塊範圍是否重疊超過容許誤差。只碰到邊不算重疊。 */
         fun overlaps(other: Footprint): Boolean = minX < other.maxX - EPSILON &&
             other.minX < maxX - EPSILON &&
             minZ < other.maxZ - EPSILON &&
@@ -536,7 +536,7 @@ class MahjongPlayerAreaLayoutTest {
      * @property tileCount 牌張數。
      */
     private data class MeldSpec(val type: MeldType, val direction: RelativeDirection, val tileCount: Int) {
-        /** @return 依規格建立的副露；暗槓兩端蓋牌，其餘以第三張為鳴取的牌。 */
+        /** @return 依規格建立的副露。暗槓兩端蓋牌，其餘以第三張為鳴取的牌。 */
         fun create(): MahjongMeldTileGroup {
             val tiles = List(tileCount) { Uuid.random() }
             return MahjongMeldTileGroup(
@@ -578,7 +578,7 @@ class MahjongPlayerAreaLayoutTest {
         /** 台麻有花牌時每面牌牆的墩數。 */
         const val TAIWAN_WALL_STACKS: Int = 18
 
-        /** 台麻測試的副露順序，最多五組；第一種全是槓。 */
+        /** 台麻測試的副露順序，最多五組。第一種全是槓。 */
         val TAIWAN_MELD_PATTERNS: List<List<MeldSpec>> = listOf(
             List(5) { index -> if (index % 2 == 0) MeldSpec(MeldType.AddedKan, RelativeDirection.Right, 4) else MeldSpec(MeldType.OpenKan, RelativeDirection.Across, 4) },
             listOf(
@@ -590,7 +590,7 @@ class MahjongPlayerAreaLayoutTest {
             ),
         )
 
-        /** 測試的副露順序；每種順序依序取前幾組。 */
+        /** 測試的副露順序。每種順序依序取前幾組。 */
         val MELD_PATTERNS: List<List<MeldSpec>> = listOf(
             listOf(
                 MeldSpec(MeldType.Pon, RelativeDirection.Left, 3),

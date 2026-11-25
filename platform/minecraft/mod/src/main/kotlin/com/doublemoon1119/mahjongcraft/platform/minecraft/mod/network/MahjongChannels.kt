@@ -154,7 +154,7 @@ object MahjongChannels {
     )
 
     /**
-     * 玩家重新加入世界時恢復伺服器記憶體中的自動理牌偏好；這個同步不得移動或翻起任何手牌。
+     * 玩家重新加入世界時恢復伺服器記憶體中的自動理牌偏好。這個同步不得移動或翻起任何手牌。
      */
     val restoreAutoSortHand = C2SChannel(
         id = "restore_auto_sort_hand",
@@ -224,7 +224,7 @@ object MahjongChannels {
      */
     val snapshotCleared = S2CChannel("snapshot_cleared", SnapshotClearedPayloadDto.serializer())
 
-    /** 等待開局的桌子被擋住的擺牌格，送給該房間的成員；格子為空時清除該桌的標示。 */
+    /** 等待開局的桌子被擋住的擺牌格，送給該房間的成員。格子為空時清除該桌的標示。 */
     val tableSpaceObstruction = S2CChannel("table_space_obstruction", TableSpaceObstructionPayloadDto.serializer())
 
     /** 桌子確實移除後清除整個桌級狀態，不等同普通快照清除。 */
@@ -236,7 +236,7 @@ object MahjongChannels {
         serializer = AutomaticControlUpdateResultDto.serializer(),
     )
 
-    /** 同步目前自動操作集合；`null` 表示清除。 */
+    /** 同步目前自動操作集合。`null` 表示清除。 */
     val automaticControlSnapshot = S2CChannel(
         id = "automatic_control_snapshot",
         serializer = AutomaticControlSnapshotDto.serializer().nullable,

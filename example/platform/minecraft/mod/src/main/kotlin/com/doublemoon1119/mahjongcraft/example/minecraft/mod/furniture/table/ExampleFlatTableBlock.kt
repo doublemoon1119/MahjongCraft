@@ -82,7 +82,7 @@ class ExampleFlatTableBlock(
         hit: BlockHitResult,
     ): InteractionResult = MahjongTables.interact(world, pos, state, player)
 
-    /** 9 個位置都可替換、而且沒有實體擋住時才允許放置；放在水源中的中央格含水。 */
+    /** 9 個位置都可替換、而且沒有實體擋住時才允許放置。放在水源中的中央格含水。 */
     override fun getStateForPlacement(context: BlockPlaceContext): BlockState? {
         val centerPos = context.clickedPos
         val facing = context.horizontalDirection.opposite
@@ -96,7 +96,7 @@ class ExampleFlatTableBlock(
             .waterloggedAt(context.level, centerPos)
     }
 
-    /** 中央格放置後擺好其餘 8 格，各自依原位置決定是否含水；中途失敗時移除這次擺上的格子。 */
+    /** 中央格放置後擺好其餘 8 格，各自依原位置決定是否含水。中途失敗時移除這次擺上的格子。 */
     override fun setPlacedBy(
         world: Level,
         pos: BlockPos,
@@ -126,7 +126,7 @@ class ExampleFlatTableBlock(
     }
 
     /**
-     * 清理一次整張桌子並移除仍存在的其餘格子；被移除的格子不掉落物品，含水的格子留下水。
+     * 清理一次整張桌子並移除仍存在的其餘格子。被移除的格子不掉落物品，含水的格子留下水。
      *
      * @param world 桌子所在世界。
      * @param pos 被取代那一格的位置。

@@ -192,7 +192,7 @@ class HistoryArchiveServiceTest {
         assertTrue(decoded.all { it.isNotEmpty() })
     }
 
-    /** 終局事件仍留在 Game 時不能提前封存；返回房間後可以原子封存。 */
+    /** 終局事件仍留在 Game 時不能提前封存。返回房間後可以原子封存。 */
     @Test
     fun `archive waits for return to room and removes pending only after replay is saved`() {
         val tableId = Uuid.random()
@@ -380,7 +380,7 @@ class HistoryArchiveServiceTest {
         assertSame(failure, assertIs<StagedHistoryEventComparison.EncodingFailed>(comparison).error)
     }
 
-    /** 彙總值相同的兩種序號，推出不同的最早缺口；彙總證明連續時只檢查尾端。 */
+    /** 彙總值相同的兩種序號，推出不同的最早缺口。彙總證明連續時只檢查尾端。 */
     @Test
     fun `earliest gap follows the actual sequences`() {
         val summary = PendingSequenceSummary(count = 4, first = 1, last = 7)
@@ -401,7 +401,7 @@ class HistoryArchiveServiceTest {
         assertEquals(null, firstMissingSequence(summary, listOf(1L, 2L, 4L), listOf(3L), nextSequence = 5))
     }
 
-    /** 同一次連線中已驗證的事件不再解碼；重新開啟資料庫後完整解碼，因此之後才損壞的內容在下一次連線被發現。 */
+    /** 同一次連線中已驗證的事件不再解碼。重新開啟資料庫後完整解碼，因此之後才損壞的內容在下一次連線被發現。 */
     @Test
     fun `validated events are decoded again only on a new connection`() {
         val fixture = ArchiveFixture("mahjongcraft-history-incremental-")
@@ -436,7 +436,7 @@ class HistoryArchiveServiceTest {
         assertEquals(setOf(fixture.matchId.toString()), fixture.service.blockedMatchIds)
     }
 
-    /** 連線期間只封存已有終局紀錄的場次；開啟資料庫時的完整掃描則找出所有可封存的場次。 */
+    /** 連線期間只封存已有終局紀錄的場次。開啟資料庫時的完整掃描則找出所有可封存的場次。 */
     @Test
     fun `incremental archiving reads only ended matches`() {
         val fixture = ArchiveFixture("mahjongcraft-history-ended-")

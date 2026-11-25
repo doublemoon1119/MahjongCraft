@@ -37,7 +37,7 @@ class MahjongTileNameTextTest {
         assertEquals(emptyList(), name.siblings)
     }
 
-    /** 帶外觀樣式的牌面使用樣式名稱，例如赤五；樣式沒有名稱時使用基本牌面的名稱。 */
+    /** 帶外觀樣式的牌面使用樣式名稱，例如赤五。樣式沒有名稱時使用基本牌面的名稱。 */
     @Test
     fun `appearance names take precedence over the base tile name`() {
         val redFive = TileFaceView(Tile.Numeric(Tile.Suit.Dot, 5), appearanceId = RiichiTileValues.RED_FIVE_APPEARANCE_ID).toNameText(displayNames)

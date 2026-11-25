@@ -8,7 +8,7 @@ import kotlin.uuid.Uuid
  * 近期已結束場次的最小查詢身分證據，不保存牌局內容。
  *
  * @property participantIds 已結束場次的參與者 UUID。
- * @property decision 已固定的歷史記錄決策；缺少證據時為 null，不猜測排除原因。
+ * @property decision 已固定的歷史記錄決策。缺少證據時為 null，不猜測排除原因。
  */
 internal data class RecentHistoryMatchEvidence(
     val participantIds: Set<Uuid>,
@@ -35,7 +35,7 @@ internal data class HistoryArchiveStatusEvidence(
 /**
  * 權威記錄狀態與 SQLite 證據的安全對外判定。
  *
- * @param decision 權威狀態保存的該場記錄決策；若已被清理則可為 null。
+ * @param decision 權威狀態保存的該場記錄決策。若已被清理則可為 null。
  * @param pendingOutbox 是否仍有權威待寫事件或進行中的轉移。
  * @param queryEnabled 目前伺服器是否允許歷史查詢。
  * @param authorized 呼叫者是否有權查詢該場。

@@ -207,7 +207,7 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
         )
     }
 
-    /** 日麻完整模板綁定日麻規則；標題與胡牌者摘要涵蓋流局滿貫，役種、翻符與役滿倍數直接顯示規則提供的內容，寶牌與裏寶牌指示牌固定顯示五個位置。 */
+    /** 日麻完整模板綁定日麻規則。標題與胡牌者摘要涵蓋流局滿貫，役種、翻符與役滿倍數直接顯示規則提供的內容，寶牌與裏寶牌指示牌固定顯示五個位置。 */
     override fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistrar) {
         registry.register(RiichiWinSettlementTemplates.RIICHI)
         RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerWinSettlementTemplate(registry, ruleModuleId) }
@@ -263,7 +263,7 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
         registry.register(threePlayerRiichiGameConfigPresentation())
     }
 
-    /** 宣告語音依動作 ID 對應；三人日麻沿用同一組，另有拔北語音。 */
+    /** 宣告語音依動作 ID 對應。三人日麻沿用同一組，另有拔北語音。 */
     override fun registerGameActionSounds(registry: GameActionSoundPresentationRegistrar) {
         RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerGameActionSounds(registry, ruleModuleId) }
         registry.register(
@@ -290,7 +290,7 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
         }
     }
 
-    /** 日麻把「打出剛摸到的牌」稱為摸切，覆寫這個自動操作的名稱；說明與排列順序沿用預設。 */
+    /** 日麻把「打出剛摸到的牌」稱為摸切，覆寫這個自動操作的名稱。說明與排列順序沿用預設。 */
     override fun registerAutomaticControlDisplays(registry: AutomaticControlDisplayRegistrar) {
         RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId ->
             registry.register(
@@ -307,7 +307,7 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
         }
     }
 
-    /** 立直與九種九牌接在核心動作（自摸為 4）之後；三人日麻另有拔北。 */
+    /** 立直與九種九牌接在核心動作（自摸為 4）之後。三人日麻另有拔北。 */
     override fun registerGameActionVocabulary(registry: GameActionVocabularyRegistrar) {
         RiichiFamilyMinecraftPresentation.registerGameActionVocabulary(registry, BuiltInRuleModuleIds.RIICHI, includesPullNorth = false)
         RiichiFamilyMinecraftPresentation.registerGameActionVocabulary(registry, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, includesPullNorth = true)

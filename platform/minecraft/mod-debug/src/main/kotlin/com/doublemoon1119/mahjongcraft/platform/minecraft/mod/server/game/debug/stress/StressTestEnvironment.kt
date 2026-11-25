@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
  *
  * @property store 所有測試對局共用的權威來源。
  * @property historyMode 歷史處理方式。
- * @property historyTimer [store] 的歷史記錄觀察者，累計歷史記錄耗時與新加入待寫佇列的事件數；各桌的其他環節由各桌自己的計時器累計。
+ * @property historyTimer [store] 的歷史記錄觀察者，累計歷史記錄耗時與新加入待寫佇列的事件數。各桌的其他環節由各桌自己的計時器累計。
  * @property writerTimer 累計歷史背景工作各環節耗時與已處理事件數。
  * @property sink 處理待寫佇列的背景工作。
  */
@@ -25,7 +25,7 @@ class StressTestEnvironment internal constructor(
     val writerTimer: StressWriterTimer,
     private val sink: StressHistorySink,
 ) {
-    /** 對局歷史畫面讀取壓力測試紀錄的資料來源；只有寫進資料庫的模式才有。 */
+    /** 對局歷史畫面讀取壓力測試紀錄的資料來源。只有寫進資料庫的模式才有。 */
     val historySource: HistoryDataSource? = (sink as? StressHistorySink.Database)?.let { HistoryDataSource(it.writer, store) }
 
     /**
@@ -35,7 +35,7 @@ class StressTestEnvironment internal constructor(
      */
     suspend fun historyFailed(): Boolean = sink.failed()
 
-    /** 停止背景工作；有資料庫時一併刪除資料庫及其附屬檔案。 */
+    /** 停止背景工作。有資料庫時一併刪除資料庫及其附屬檔案。 */
     suspend fun closeAndDelete() = sink.close()
 }
 

@@ -3,18 +3,20 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui
 /**
  * 選擇器展開清單的版面：清單與按鈕同寬，每個選項一列，底部可附一段說明。
  *
- * 清單通常在按鈕正下方；下方放不下完整清單、而上方空間比下方大時，改在按鈕正上方展開，例如畫面底部的選擇器。
- * 選擇的那一側仍放不下時只顯示放得下的幾列，其餘在清單內捲動。純資料，不依賴任何 Minecraft 型別。
+ * - 清單通常在按鈕正下方。
+ * - 下方放不下完整清單、而上方空間比下方大時，改在按鈕正上方展開，例如畫面底部的選擇器。
+ * - 選擇的那一側仍放不下時只顯示放得下的幾列，其餘在清單內捲動。
+ * - 純資料，不依賴任何 Minecraft 型別。
  *
  * @property anchorLeft 選擇器按鈕的左界。
  * @property anchorTop 選擇器按鈕的上界。
  * @property anchorBottom 選擇器按鈕的下界。
  * @property width 選擇器按鈕的寬度。
  * @property optionCount 選項數量。
- * @property footnoteHeight 底部說明文字的高度；沒有說明時為 0。
+ * @property footnoteHeight 底部說明文字的高度。沒有說明時為 0。
  * @property windowHeight 視窗高度。
  * @property footnoteLineHeight 說明的單行高度，即文字繪製器的字高。
- * @property scrollIndex 第一個可見選項的索引；超出合法範圍的部分不採用。
+ * @property scrollIndex 第一個可見選項的索引。超出合法範圍的部分不採用。
  */
 internal data class DropdownListLayout(
     val anchorLeft: Int,
@@ -132,7 +134,7 @@ internal data class DropdownListLayout(
      *
      * @param mouseX 游標的水平座標。
      * @param mouseY 游標的垂直座標。
-     * @return 選項在完整清單中的索引；游標不在任何選項上時為 null。
+     * @return 選項在完整清單中的索引。游標不在任何選項上時為 null。
      */
     fun optionIndexAt(mouseX: Double, mouseY: Double): Int? {
         val optionRight = if (maximumScroll > 0) scrollbarLeft else right - BORDER

@@ -15,7 +15,7 @@ import org.gradle.api.tasks.TaskAction
 /**
  * 寫出 CI 要逐一驗證的目標矩陣：內建的 `core` 加上目錄中的每個平台目標。
  *
- * 檔案是 GitHub Actions 矩陣可直接讀取的 JSON；目錄新增目標時，CI 自動多驗證一格。
+ * 檔案是 GitHub Actions 矩陣可直接讀取的 JSON。目錄新增目標時，CI 自動多驗證一格。
  */
 abstract class WriteCiTargetMatrixTask : DefaultTask() {
     /** repository 根目錄。 */

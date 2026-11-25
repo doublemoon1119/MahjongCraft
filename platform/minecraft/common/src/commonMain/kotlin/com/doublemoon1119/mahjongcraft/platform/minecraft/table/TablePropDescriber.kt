@@ -14,19 +14,20 @@ fun interface TablePropDescriber {
      *
      * @param tableState 目前的權威桌況。
      * @param tileFaces 查詢桌況中牌張的公開牌面，用來展示牌張副本。
-     * @return 桌上應有的全部物件；沒有任何物件時為空清單。
+     * @return 桌上應有的全部物件。沒有任何物件時為空清單。
      */
     fun describe(tableState: TableState, tileFaces: TablePropTileFaces): List<TablePropPlacement>
 
     /**
      * 這個座位的副露角落被自己描述的物件佔用的寬度（單位：方塊），沿副露往手牌排列的方向量測。
      *
-     * 副露從角落往手牌方向排開時會先讓開這段寬度，手牌也以此避開角落。預設不佔用。寬度可以在一局中改變，例如規則在局中把點數
-     * 放進桌角的點數池；平台會讓已擺好的牌區一起讓開，再擺上變多的物件。
+     * - 副露從角落往手牌方向排開時會先讓開這段寬度，手牌也以此避開角落。
+     * - 預設不佔用。
+     * - 寬度可以在一局中改變，例如規則在局中把點數放進桌角的點數池。平台會讓已擺好的牌區一起讓開，再擺上變多的物件。
      *
      * @param tableState 目前的權威桌況。
      * @param seatIndex 座位，即 `TableState.players` 的 index。
-     * @return 這種物件佔用的角落寬度；預設為 `0.0`。
+     * @return 這種物件佔用的角落寬度。預設為 `0.0`。
      */
     fun cornerWidth(tableState: TableState, seatIndex: Int): Double = 0.0
 }

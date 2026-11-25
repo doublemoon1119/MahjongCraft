@@ -21,7 +21,7 @@ import kotlin.uuid.Uuid
 /**
  * 內建日麻的專屬成果判定。
  *
- * 役種與番數讀取日麻胡牌詳情欄位（[RiichiWinSettlementIds]）；立直與一發讀取和牌公開狀態標記。
+ * 役種與番數讀取日麻胡牌詳情欄位（[RiichiWinSettlementIds]）。立直與一發讀取和牌公開狀態標記。
  * 四人與三人日麻共用同一批成果。
  *
  * @property ruleModuleId 套用的日麻系列規則模組。
@@ -101,7 +101,7 @@ class RiichiGameAchievementResolver(
         }
     }
 
-    /** 被擊飛玩家的成果；最終點數未低於擊飛門檻的玩家沒有成果。 */
+    /** 被擊飛玩家的成果。最終點數未低於擊飛門檻的玩家沒有成果。 */
     private fun bustAchievements(score: Int, event: MatchEndedEvent): List<String> = buildList {
         add(RiichiAchievementIds.BUSTED)
         if (score <= RiichiAchievementIds.FAR_BUST_SCORE) add(RiichiAchievementIds.BUSTED_FAR)
@@ -111,16 +111,16 @@ class RiichiGameAchievementResolver(
         }
     }
 
-    /** 詳情中的役種；無法辨識的條目略過。 */
+    /** 詳情中的役種。無法辨識的條目略過。 */
     private fun RoundWinDetail.yakuTypes(): List<RiichiYakuType> = detailFields
         .filter { it.id == RiichiWinSettlementIds.YAKU_FIELD }
         .flatMap { it.entries.orEmpty() }
         .mapNotNull { entry -> RiichiWinSettlementIds.yakuType(entry.id) }
 
     /**
-     * 詳情中的役滿役種與倍數，古役役滿也包含在內；沒有個別進度的役種只計入役滿、雙倍役滿與複合役滿進度。
+     * 詳情中的役滿役種與倍數，古役役滿也包含在內。沒有個別進度的役種只計入役滿、雙倍役滿與複合役滿進度。
      *
-     * @return 役滿役種對應的役滿倍數；無法辨識的條目略過。
+     * @return 役滿役種對應的役滿倍數。無法辨識的條目略過。
      */
     private fun RoundWinDetail.yakumanMultipliers(): Map<RiichiYakuType, Int> = detailFields
         .filter { it.id == RiichiWinSettlementIds.YAKU_FIELD }
@@ -129,7 +129,7 @@ class RiichiGameAchievementResolver(
         .mapNotNull { entry -> RiichiWinSettlementIds.yakuType(entry.id)?.let { it to checkNotNull(entry.quantity).amount } }
         .toMap()
 
-    /** 非役滿和牌的總番數；沒有翻符欄位時為 null。 */
+    /** 非役滿和牌的總番數。沒有翻符欄位時為 null。 */
     private fun RoundWinDetail.totalHan(): Int? = detailFields
         .firstOrNull { it.id == RiichiWinSettlementIds.HAN_FU_FIELD }
         ?.quantities?.firstOrNull { it.unitId == RiichiWinSettlementIds.HAN }?.amount

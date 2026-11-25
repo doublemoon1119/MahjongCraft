@@ -32,7 +32,7 @@ internal enum class GuideTab(val titleKey: String) {
 /**
  * 「如何開始」各頁的內容。
  *
- * 場景在建立時描述一次，之後只交給繪製器；文字一律使用翻譯鍵，繪製時才依目前語言解析。
+ * 場景在建立時描述一次，之後只交給繪製器。文字一律使用翻譯鍵，繪製時才依目前語言解析。
  */
 internal object GuidePages {
     /**
@@ -469,7 +469,7 @@ internal object GuidePages {
     /** 輪流摸打範例打出北之後的手牌。 */
     private val ROUND_TENPAI_HAND: List<Tile> = WIN_SEQUENCE_DOTS + WIN_SEQUENCE_BAMBOOS + WIN_TRIPLET + listOf(m(2), m(3)) + WIN_PAIR
 
-    /** 別人打牌時的範例面板：上家打出五索，可以吃、碰、槓、和或跳過；文字不依任何規則。 */
+    /** 別人打牌時的範例面板：上家打出五索，可以吃、碰、槓、和或跳過。文字不依任何規則。 */
     private val CALL_PROMPT = previewPrompt(
         triggerTileAssetKey = "s5",
         fromLeftPlayer = true,

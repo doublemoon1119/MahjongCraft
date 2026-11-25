@@ -49,7 +49,7 @@ class MatchSettlementPresentationEntityRenderer(
     private val textRenderer = context.font
     private val warnedUnknownTemplateKeys = mutableSetOf<String>()
 
-    /** 目前這次 [render] 呼叫所屬的桌子 ID，[resolvePlayerName] 解析名稱時查詢用；每次 render 開頭重設。 */
+    /** 目前這次 [render] 呼叫所屬的桌子 ID，[resolvePlayerName] 解析名稱時查詢用。每次 render 開頭重設。 */
     private var currentTableId: Uuid? = null
 
     override fun render(
@@ -101,7 +101,7 @@ class MatchSettlementPresentationEntityRenderer(
     }
 
     /**
-     * 在固定頒獎位置繪製玩家；第一名居中並使用較大的 FACE 與冠軍資訊框。
+     * 在固定頒獎位置繪製玩家。第一名居中並使用較大的 FACE 與冠軍資訊框。
      *
      * @param player 要繪製的最終排名玩家。
      * @param layout 依玩家數量量測的頒獎版面。
@@ -332,10 +332,10 @@ class MatchSettlementPresentationEntityRenderer(
     }
 
     /**
-     * 解析模板；未知 key 去重警告後使用內建 fallback。
+     * 解析模板。未知 key 去重警告後使用內建 fallback。
      *
      * @param key entity 同步的模板 key。
-     * @return 找到的模板或內建 fallback；fallback 也不存在時為 `null`。
+     * @return 找到的模板或內建 fallback。fallback 也不存在時為 `null`。
      */
     private fun resolveTemplate(key: String): MatchSettlementPresentationTemplate? = templates.find(key) ?: run {
         if (warnedUnknownTemplateKeys.add(key)) logger.warn("Unknown match settlement template on client: {}", key)
@@ -442,7 +442,7 @@ class MatchSettlementPresentationEntityRenderer(
      */
     private fun withAlpha(rgb: Int, alpha: Float): Int = WorldPanelRenderer.withAlpha(rgb, alpha)
 
-    /** 繪製不使用單一材質；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    /** 繪製不使用單一材質。原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
     override fun getTextureLocation(entity: MatchSettlementPresentationEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     private enum class Alignment { LEFT, CENTER, RIGHT }

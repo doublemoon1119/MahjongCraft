@@ -42,12 +42,12 @@ internal class HistoryTileGroupRenderer(
      * @param y 群組上界。
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
-     * @param taken 已被取走的牌索引對應取走它的說明；保留原槽位但不再畫牌面。
-     * @param markers 牌張公開標記，僅用於提示與強調，不重新判斷規則；有標記的牌在左上角加折角。
-     * @param notes 牌張的額外說明，例如副露被鳴的牌來自哪位玩家；有說明的牌依說明種類在左上角加折角並列在提示中。
-     * @param linkedTile 要一起強調的牌索引；只有被鳴走的空位與副露中被鳴的牌會蓋上強調色層。
+     * @param taken 已被取走的牌索引對應取走它的說明。保留原槽位但不再畫牌面。
+     * @param markers 牌張公開標記，僅用於提示與強調，不重新判斷規則。有標記的牌在左上角加折角。
+     * @param notes 牌張的額外說明，例如副露被鳴的牌來自哪位玩家。有說明的牌依說明種類在左上角加折角並列在提示中。
+     * @param linkedTile 要一起強調的牌索引。只有被鳴走的空位與副露中被鳴的牌會蓋上強調色層。
      * @param appearance 該場公開規則指定的牌組外觀。
-     * @param showCatalogIndex 是否顯示局內牌索引；獨立展示牌面必須設為 false。
+     * @param showCatalogIndex 是否顯示局內牌索引。獨立展示牌面必須設為 false。
      * @return 游標指向的牌與其提示，或 null。
      */
     fun render(
@@ -149,7 +149,7 @@ internal class HistoryTileGroupRenderer(
         /** 被鳴走空位的折角：與副露中被鳴的牌同色，透明度與空位外框一致。 */
         const val TAKEN_FOLD_COLOR = 0x80FFB13B.toInt()
 
-        /** 游標指向被鳴的牌或被鳴走的空位時，兩端一起蓋上的半透明色層；色調與被鳴的牌的折角相同。 */
+        /** 游標指向被鳴的牌或被鳴走的空位時，兩端一起蓋上的半透明色層。色調與被鳴的牌的折角相同。 */
         const val LINK_TINT_COLOR = 0x66FFB13B.toInt()
 
         /** 牌河公開標記的折角顏色。 */
@@ -170,11 +170,11 @@ internal class HistoryTileGroupRenderer(
 }
 
 /**
- * 牌譜中一張牌的滑鼠提示：牌名在前，其次是被誰鳴走、牌河公開標記與副露說明；設定開啟時最前面加上局內牌索引。
+ * 牌譜中一張牌的滑鼠提示：牌名在前，其次是被誰鳴走、牌河公開標記與副露說明。設定開啟時最前面加上局內牌索引。
  *
  * @param name 本地化牌名。
- * @param catalogIndex 局內牌索引；不顯示時為 null。
- * @param takenBy 這張牌被鳴走的說明；沒有被鳴走時為 null。
+ * @param catalogIndex 局內牌索引。不顯示時為 null。
+ * @param takenBy 這張牌被鳴走的說明。沒有被鳴走時為 null。
  * @param markerLabels 牌河公開標記與副露說明的文字，依顯示順序排列。
  * @return 依序顯示的提示文字。
  */
@@ -194,7 +194,7 @@ internal fun historyTileTooltip(
  * 這張牌是否要蓋上鳴牌連動的強調色層：游標指向的牌是被鳴走的空位或副露中被鳴的牌時，同一張牌的兩端一起強調。
  *
  * @param tile 這個位置的局內牌索引。
- * @param linkedTile 游標指向的牌索引；沒有時為 null。
+ * @param linkedTile 游標指向的牌索引。沒有時為 null。
  * @param isTaken 這個位置是否為被鳴走的空位。
  * @param notes 這個位置的牌張說明。
  * @return 需要強調時為 true。
@@ -209,7 +209,7 @@ internal fun isLinkedClaimHighlight(
 /**
  * 游標指向的牌。
  *
- * @property tile 局內牌索引；獨立展示牌面時為列內位置。
+ * @property tile 局內牌索引。獨立展示牌面時為列內位置。
  * @property tooltip 這張牌的滑鼠提示。
  */
 internal data class HistoryTileHit(val tile: Int, val tooltip: List<Component>)

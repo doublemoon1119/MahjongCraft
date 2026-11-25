@@ -94,7 +94,7 @@ class DebugAutoNorthRiichiRuleModuleTest {
         assertEquals(1000, state.components[RiichiTableComponents.POT_POINTS])
     }
 
-    /** 明槓由放槓者付 1000 點，暗槓與加槓由另外兩家各付 500 點；碰不收付。 */
+    /** 明槓由放槓者付 1000 點，暗槓與加槓由另外兩家各付 500 點。碰不收付。 */
     @Test
     fun `kans pay the declarer and other calls do not score`() {
         val state = scenarioState("mahjongcraft:riichi_three_player/debug/auto_north_riichi_kan_payments")
@@ -151,9 +151,9 @@ class DebugAutoNorthRiichiRuleModuleTest {
         .tableState
 
     /**
-     * 以目前玩家摸到 [drawnTile] 的桌況詢問自動處理；判斷不需要實體牌牆擺法，因此一併清除。
+     * 以目前玩家摸到 [drawnTile] 的桌況詢問自動處理。判斷不需要實體牌牆擺法，因此一併清除。
      *
-     * @param drawnTile 摸到的牌；會從活牌中移除，並取代目前玩家摸牌位上的牌。
+     * @param drawnTile 摸到的牌。會從活牌中移除，並取代目前玩家摸牌位上的牌。
      * @return 自動處理的決策。
      */
     private fun TableState.followUpAfterDrawing(drawnTile: IdentifiedTile): DrawFollowUpDecision {
@@ -180,7 +180,7 @@ class DebugAutoNorthRiichiRuleModuleTest {
      *
      * @param actorPlayerId 執行動作的玩家。
      * @param action 已成立的動作。
-     * @param sourcePlayerId 被鳴牌的玩家；不是鳴取捨牌時為 null。
+     * @param sourcePlayerId 被鳴牌的玩家。不是鳴取捨牌時為 null。
      * @return 收付 policy 的輸入。
      */
     private fun TableState.scoringContext(

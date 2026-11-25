@@ -5,7 +5,7 @@ import kotlin.uuid.Uuid
 /**
  * 決定每次檢查後要把哪些擺牌層標示送給哪些玩家。
  *
- * 每張桌子記住最後一次送出的標示與收件玩家：內容改變時送給所有收件玩家，否則只送給新加入的玩家；
+ * 每張桌子記住最後一次送出的標示與收件玩家：內容改變時送給所有收件玩家，否則只送給新加入的玩家。
  * 不再收件的玩家收到清除。沒有擋住、也從未送過標示的桌子不送任何東西。
  */
 class TableSpaceObstructionSync {
@@ -55,7 +55,7 @@ class TableSpaceObstructionSync {
      * 清除一張桌子的標示，對最後一次收到標示的玩家送出清除。
      *
      * @param tableId 桌子 UUID。
-     * @return 這次要送出的清除；從未送過標示時為空。
+     * @return 這次要送出的清除。從未送過標示時為空。
      */
     fun clear(tableId: Uuid): List<TableSpaceObstructionDelivery> {
         val previous = published.remove(tableId) ?: return emptyList()
@@ -63,7 +63,7 @@ class TableSpaceObstructionSync {
         return previous.recipientIds.map { TableSpaceObstructionDelivery(it, cleared) }
     }
 
-    /** 忘記所有已送出的標示，例如伺服器 session 結束時；客戶端斷線時自行清除。 */
+    /** 忘記所有已送出的標示，例如伺服器 session 結束時。客戶端斷線時自行清除。 */
     fun reset() {
         published.clear()
     }

@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 /**
  * 描述標準麻將桌上，依玩家席位 index 對應的桌面側面。
  *
- * 這個布局只描述玩家席位，不描述牌牆或規則的回合順序。兩人時玩家面對面；三人與四人時沿用
+ * 這個布局只描述玩家席位，不描述牌牆或規則的回合順序。兩人時玩家面對面。三人與四人時沿用
  * 標準桌面順序。桌子在世界中的朝向由使用端另外處理。
  *
  * @property playerCount 此布局支援的玩家人數。

@@ -327,8 +327,8 @@ internal class AutotestServerRunner(private val koin: Koin) {
     /**
      * 三張牌桌由機器人照玩家流程開局，等牌局都開始。
      *
-     * @param botsAsDealers 為 true 時各桌的機器人坐莊家位置，其他人照房間順序；為 false 時全部照種子排座。
-     * @return 各規則的牌局；有牌桌沒有開局時為 null。
+     * @param botsAsDealers 為 true 時各桌的機器人坐莊家位置，其他人照房間順序。為 false 時全部照種子排座。
+     * @return 各規則的牌局。有牌桌沒有開局時為 null。
      */
     private suspend fun AutotestServerContext.startMatches(botsAsDealers: Boolean = false): Map<String, Game>? {
         val gameRepository = koin.get<GameRepository>()
@@ -402,7 +402,7 @@ internal class AutotestServerRunner(private val koin: Koin) {
     /**
      * 讀第一段記下的狀態。
      *
-     * @return 記下的狀態；沒有時為 null。
+     * @return 記下的狀態。沒有時為 null。
      */
     private fun readRecord(): AutotestServerRestartRecord? = outputDirectory.resolve(RESTART_JSON).takeIf(Files::exists)
         ?.let { JSON.decodeFromString(AutotestServerRestartRecord.serializer(), Files.readString(it)) }
@@ -422,8 +422,8 @@ internal class AutotestServerRunner(private val koin: Koin) {
         /**
          * 解析階段屬性的值。
          *
-         * @param value 系統屬性的值；沒有設定時為 null。
-         * @return [PHASE_START] 或 [PHASE_RESUME]；其他值為 null。
+         * @param value 系統屬性的值。沒有設定時為 null。
+         * @return [PHASE_START] 或 [PHASE_RESUME]。其他值為 null。
          */
         internal fun phaseOf(value: String?): String? = value?.trim()?.takeIf { it == PHASE_START || it == PHASE_RESUME }
 
@@ -471,7 +471,7 @@ internal class AutotestServerRunner(private val koin: Koin) {
          * @param status 結果。
          * @param duration 耗時。
          * @param context 步驟的檢查。
-         * @param error 使步驟中斷的錯誤；沒有時為 null。
+         * @param error 使步驟中斷的錯誤。沒有時為 null。
          * @return 步驟結果。
          */
         fun result(id: String, status: AutotestStatus, duration: Duration, context: AutotestServerContext, error: Throwable?) = AutotestStepResult(

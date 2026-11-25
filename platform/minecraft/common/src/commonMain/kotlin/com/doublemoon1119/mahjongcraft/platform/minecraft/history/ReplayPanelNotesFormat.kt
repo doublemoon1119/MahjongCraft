@@ -24,7 +24,7 @@ import kotlinx.serialization.json.intOrNull
  * 牌譜呈現附註中玩家公開標記與桌上物件的精簡寫法：以短陣列代替具名物件，讓每筆交易之間的差異儘量小。
  *
  * - 公開標記：`{"座位": [[id], [id, "c", 次數], [id, "o", 選項]]}`。
- * - 桌上物件：`[id, kind, 內容, 位置]`；內容為 `["v", 變體]` 或 `["t", 牌面]`，位置為
+ * - 桌上物件：`[id, kind, 內容, 位置]`。內容為 `["v", 變體]` 或 `["t", 牌面]`，位置為
  *   `["s", 座位, 錨點, x, y, z, 朝向偏移]` 或 `["c", 順序, 朝向]`。
  */
 internal object ReplayPanelNotesFormat {
@@ -72,7 +72,7 @@ internal object ReplayPanelNotesFormat {
      * 讀取各座位的公開標記。
      *
      * @param element 保存的 JSON。
-     * @return 各座位的公開標記；格式不符時為 null。
+     * @return 各座位的公開標記。格式不符時為 null。
      */
     fun decodeIndicators(element: JsonElement): Map<Int, List<PublicPlayerIndicator>>? {
         val root = element as? JsonObject ?: return null
@@ -87,7 +87,7 @@ internal object ReplayPanelNotesFormat {
      * 讀取一個公開標記。
      *
      * @param element 保存的 JSON。
-     * @return 公開標記；格式不符時為 null。
+     * @return 公開標記。格式不符時為 null。
      */
     private fun decodeIndicator(element: JsonElement): PublicPlayerIndicator? {
         val parts = element as? JsonArray ?: return null
@@ -146,7 +146,7 @@ internal object ReplayPanelNotesFormat {
      *
      * @param element 保存的 JSON。
      * @param registries 讀取牌面所用的網路資料登記。
-     * @return 桌上物件；格式不符時為 null。
+     * @return 桌上物件。格式不符時為 null。
      */
     fun decodeProp(element: JsonElement, registries: NetworkDtoRegistries): TablePropPlacement? {
         val parts = (element as? JsonArray)?.takeIf { it.size == PROP_PARTS } ?: return null
@@ -162,7 +162,7 @@ internal object ReplayPanelNotesFormat {
      *
      * @param element 保存的 JSON。
      * @param registries 讀取牌面所用的網路資料登記。
-     * @return 內容；格式不符時為 null。
+     * @return 內容。格式不符時為 null。
      */
     private fun decodeContent(element: JsonElement, registries: NetworkDtoRegistries): TablePropContent? {
         val parts = (element as? JsonArray)?.takeIf { it.size == 2 } ?: return null
@@ -179,7 +179,7 @@ internal object ReplayPanelNotesFormat {
      * 讀取桌上物件的位置。
      *
      * @param element 保存的 JSON。
-     * @return 位置；格式不符時為 null。
+     * @return 位置。格式不符時為 null。
      */
     private fun decodeLocation(element: JsonElement): TablePropLocation? {
         val parts = element as? JsonArray ?: return null
@@ -202,7 +202,7 @@ internal object ReplayPanelNotesFormat {
      * 讀取字串。
      *
      * @param value 待讀取的值。
-     * @return 字串；不是字串時為 null。
+     * @return 字串。不是字串時為 null。
      */
     private fun string(value: JsonElement?): String? = (value as? JsonPrimitive)?.takeIf { it.isString }?.content
 
@@ -210,7 +210,7 @@ internal object ReplayPanelNotesFormat {
      * 讀取整數。
      *
      * @param value 待讀取的值。
-     * @return 整數；不是整數時為 null。
+     * @return 整數。不是整數時為 null。
      */
     private fun integer(value: JsonElement): Int? = (value as? JsonPrimitive)?.takeUnless { it.isString }?.intOrNull
 
@@ -218,7 +218,7 @@ internal object ReplayPanelNotesFormat {
      * 讀取數字。
      *
      * @param value 待讀取的值。
-     * @return 有限的數字；不是數字時為 null。
+     * @return 有限的數字。不是數字時為 null。
      */
     private fun number(value: JsonElement): Double? = (value as? JsonPrimitive)?.takeUnless { it.isString }?.doubleOrNull?.takeIf { it.isFinite() }
 

@@ -54,7 +54,7 @@ internal class AutotestServerTable(val rule: String, val botName: String, val po
      * 與玩家相同地手持麻將桌對地面使用，放下牌桌並記下牌桌識別碼。
      *
      * @param bot 機器人玩家。
-     * @return 放好時的牌桌識別碼；沒有放好時為 null。
+     * @return 放好時的牌桌識別碼。沒有放好時為 null。
      */
     fun place(bot: ServerPlayer): Uuid? {
         approach(bot)

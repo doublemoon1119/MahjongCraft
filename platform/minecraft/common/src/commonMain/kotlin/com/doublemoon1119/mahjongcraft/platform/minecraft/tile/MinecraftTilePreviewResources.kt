@@ -20,7 +20,7 @@ private const val COVER_V1: Float = 4f / 16f
  *
  * @param assetKey 可見牌面 key、未知牌 key 或平面牌背 token。
  * @param registry 提供可見牌面的資源映射。
- * @param appearance 公開規則決定的牌組外觀；無上下文時使用內建預設。
+ * @param appearance 公開規則決定的牌組外觀。無上下文時使用內建預設。
  * @return 正面、無圖案正面或牌背預覽的貼圖與固定 UV 範圍。
  */
 fun tilePreviewTexture(

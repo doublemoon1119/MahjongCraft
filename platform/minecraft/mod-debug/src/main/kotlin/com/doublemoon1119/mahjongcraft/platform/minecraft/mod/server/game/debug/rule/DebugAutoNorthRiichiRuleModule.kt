@@ -22,7 +22,7 @@ internal class DebugAutoNorthRiichiRuleModule(
     override val id: String,
     override val config: DebugAutoNorthRiichiRuleConfig,
 ) : RiichiFamilyRuleModule<DebugAutoNorthRiichiRuleConfig> by threePlayerRiichiDelegate(id, config) {
-    /** 摸到北時自動拔北；不能拔北時以一般流局結束本局。 */
+    /** 摸到北時自動拔北。不能拔北時以一般流局結束本局。 */
     override fun createDrawFollowUpPolicy(): DrawFollowUpPolicy = DebugAutoNorthDrawFollowUpPolicy(createLegalActionValidator())
 
     /** 拔北付進供託，槓牌由放槓者或另外兩家付給開槓者。 */

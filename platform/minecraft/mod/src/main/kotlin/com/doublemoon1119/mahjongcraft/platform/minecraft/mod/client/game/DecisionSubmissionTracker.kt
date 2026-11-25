@@ -27,7 +27,7 @@ internal class DecisionSubmissionTracker(
      * @param gameId 提交所屬的遊戲識別碼。
      * @param decisionKey 權威決策的配對鍵。
      * @param submissionId 本次提交的識別碼。
-     * @return 已開始追蹤時為 true；已有等待中的提交時為 false。
+     * @return 已開始追蹤時為 true。已有等待中的提交時為 false。
      */
     fun begin(gameId: String, decisionKey: String, submissionId: String): Boolean {
         if (pending != null) return false
@@ -65,10 +65,10 @@ internal class DecisionSubmissionTracker(
     }
 
     /**
-     * 權威決策消失或配對鍵改變時清除舊提交；同鍵更新不會提早解鎖，只記錄收到更新的時間。
+     * 權威決策消失或配對鍵改變時清除舊提交。同鍵更新不會提早解鎖，只記錄收到更新的時間。
      *
-     * @param decisionKey 最新權威決策的配對鍵；沒有決策時為 null。
-     * @param updateSequence 權威決策的更新序號；每收到一次更新就遞增。
+     * @param decisionKey 最新權威決策的配對鍵。沒有決策時為 null。
+     * @param updateSequence 權威決策的更新序號。每收到一次更新就遞增。
      */
     fun applyAuthoritativeDecision(decisionKey: String?, updateSequence: Long) {
         val current = pending ?: return
@@ -85,7 +85,7 @@ internal class DecisionSubmissionTracker(
     /**
      * 檢查沒有收到 ACK 的提交是否已經等太久。
      *
-     * 等待超過 [CONFIRMATION_TIMEOUT] 後，若最近 [RECENT_UPDATE_WINDOW] 內仍收到同一決策的更新就解除鎖定；
+     * 等待超過 [CONFIRMATION_TIMEOUT] 後，若最近 [RECENT_UPDATE_WINDOW] 內仍收到同一決策的更新就解除鎖定。
      * 收不到任何更新時先回報正在重新同步，再等 [RESYNC_LIMIT] 後一律解除，不無限等待。
      *
      * @return 這次檢查對提交鎖的影響。
@@ -131,8 +131,8 @@ internal class DecisionSubmissionTracker(
      * @property submissionId 本次提交的識別碼。
      * @property submittedAt 送出時的客戶端時間。
      * @property acknowledged 是否已收到接受或過期的 ACK。
-     * @property lastSeenUpdateSequence 最近看到的權威決策更新序號；尚未看到時為 null。
-     * @property lastUpdateReceivedAt 送出後最近一次收到同一決策更新的時間；尚未收到時為 null。
+     * @property lastSeenUpdateSequence 最近看到的權威決策更新序號。尚未看到時為 null。
+     * @property lastUpdateReceivedAt 送出後最近一次收到同一決策更新的時間。尚未收到時為 null。
      * @property resyncReported 是否已回報正在重新同步。
      */
     private class PendingSubmission(
@@ -147,10 +147,10 @@ internal class DecisionSubmissionTracker(
     )
 
     internal companion object {
-        /** 送出後等待 ACK 的時間；超過後才開始依權威更新判斷能否重試。 */
+        /** 送出後等待 ACK 的時間。超過後才開始依權威更新判斷能否重試。 */
         val CONFIRMATION_TIMEOUT = 10.seconds
 
-        /** 判斷伺服器仍在等待這位玩家時，同一決策更新必須在多久之內收到；伺服器約每秒重送一次。 */
+        /** 判斷伺服器仍在等待這位玩家時，同一決策更新必須在多久之內收到。伺服器約每秒重送一次。 */
         val RECENT_UPDATE_WINDOW = 2.seconds
 
         /** 收不到任何權威更新時，逾時後再等待多久就解除鎖定。 */
@@ -175,7 +175,7 @@ internal enum class TimeoutEffect {
     /** 沒有變化。 */
     NONE,
 
-    /** 尚未收到確認，正在等待權威更新判斷能否重試；每筆提交只回報一次。 */
+    /** 尚未收到確認，正在等待權威更新判斷能否重試。每筆提交只回報一次。 */
     RESYNCING,
 
     /** 沒有收到確認，已解除鎖定讓玩家重新選擇。 */

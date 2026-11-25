@@ -61,7 +61,7 @@ class ForgeModRegistrar : ModRegistrar {
  * @property id 項目在登記表中的 ID，用於錯誤訊息。
  */
 private class ForgeRegisteredEntry<T : Any>(private val id: ResourceLocation) : RegisteredEntry<T> {
-    /** 寫入登記表的物件；寫入前為 null。 */
+    /** 寫入登記表的物件。寫入前為 null。 */
     @Volatile
     private var value: T? = null
 

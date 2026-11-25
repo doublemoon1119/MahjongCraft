@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.time
 import kotlinx.coroutines.DisposableHandle
 
 /**
- * 依鍵值與絕對 tick 管理等待項目；每個項目只會被完成、取消或移除一次。
+ * 依鍵值與絕對 tick 管理等待項目。每個項目只會被完成、取消或移除一次。
  *
  * @param K 各自擁有時鐘與生命週期的對象型別。
  */
@@ -39,7 +39,7 @@ internal class WorldTickWaitQueue<K> {
      *
      * @param key 擁有時鐘的對象。
      * @param currentTick 目前的絕對 tick。
-     * @return 本次取得的完成動作；同一筆等待不會再被其他呼叫取出。
+     * @return 本次取得的完成動作。同一筆等待不會再被其他呼叫取出。
      */
     fun pollReady(key: K, currentTick: Long): List<() -> Unit> = synchronized(lock) {
         entries.toList()
@@ -62,7 +62,7 @@ internal class WorldTickWaitQueue<K> {
     }
 
     /**
-     * 一筆獨立等待；即使欄位完全相同，也不能取代另一筆等待的身分。
+     * 一筆獨立等待。即使欄位完全相同，也不能取代另一筆等待的身分。
      *
      * @property key 擁有時鐘的對象。
      * @property targetTick 目標絕對 tick。

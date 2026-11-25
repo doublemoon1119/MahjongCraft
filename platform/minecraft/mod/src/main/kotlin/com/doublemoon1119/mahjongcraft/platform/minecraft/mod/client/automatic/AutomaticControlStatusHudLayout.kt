@@ -5,9 +5,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.hudC
 import kotlin.math.ceil
 
 /**
- * 一列在未縮放面板內的位置；`rowIndex == null` 表示剩餘項目數。
+ * 一列在未縮放面板內的位置。`rowIndex == null` 表示剩餘項目數。
  *
- * @property rowIndex 對應的可見狀態列索引；摘要列為 `null`。
+ * @property rowIndex 對應的可見狀態列索引。摘要列為 `null`。
  * @property x 未縮放面板中的 X 座標。
  * @property y 未縮放面板中的 Y 座標。
  */
@@ -46,7 +46,7 @@ internal data class AutomaticControlStatusHudLayout(
  * @param ratioX 面板水平錨點比例。
  * @param ratioY 面板垂直錨點比例。
  * @param summaryWidth 依隱藏項目數量計算摘要列寬度的函式。
- * @return 面板佈局；沒有列或畫面尺寸無效時為 null。
+ * @return 面板佈局。沒有列或畫面尺寸無效時為 null。
  */
 internal fun automaticControlStatusHudLayout(
     rowWidths: List<Int>,
