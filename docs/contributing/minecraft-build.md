@@ -144,6 +144,11 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   `configurationName` to its equivalent.
 - When several targets are selected, one switch applies to all of them, so a loader that needs no mods for
   a group declares it empty, as Forge does for `modmenu` because its own mod list has a settings button.
+- A group that loads a shader mod can also name a shader pack with `shaderPack(group = ..., pack = ...)`.
+  When the group is selected, the client run puts the pack in its `shaderpacks` folder and writes the shader
+  mod's settings to turn it on before the game starts, so manual runs and automated tests both run with
+  shaders. The pack is a catalog entry, such as one from the Modrinth Maven repository, and is never
+  bundled.
 - Groups hold runtime mods only. Product code must not depend on them. An integration that compiles
   against another mod's API, such as a ModMenu settings entry point, declares that API as compile-only and
   keeps the other mod optional in its metadata; the group only supplies the mod for development runs.

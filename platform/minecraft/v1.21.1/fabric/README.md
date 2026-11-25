@@ -46,14 +46,12 @@ example module declare the same groups:
 
 - `shaders`: Sodium and Iris, for checking rendering with and without a shader pack. Loom drops the libraries
   a mod bundles in its own JAR and expects them as Maven dependencies, which Iris on Modrinth does not
-  declare, so the group also lists the libraries Iris bundles, at the versions it bundles. Shader packs are
-  not part of the repository; put one in `run/client/shaderpacks` and select it in the game's video settings.
+  declare, so the group also lists the libraries Iris bundles, at the versions it bundles. The group also
+  puts the Complementary Reimagined shader pack in `run/client/shaderpacks` and turns it on before the client
+  starts, so manual runs and automated tests both run with shaders.
   The group uses Iris 1.8.8 with Sodium 0.6, not the newer Iris 1.8.14 for 1.21.1: one of 1.8.14's mixins
   names its target method without parameter types, and Fabric Loader's development-run remapping fails on it.
   Installed games do not remap mixins this way, so players can use 1.8.14; check it with the packaged JAR.
-  Under Iris 1.8.8 with Sodium 0.6 and the group's shader pack, the white sides of tiles render black and tile
-  faces disappear; the packaged JAR with Iris 1.8.14 and Sodium 0.8 renders them correctly, so judge shader
-  rendering on 1.21.1 with the packaged JAR.
 - `modmenu`: ModMenu, for checking the mod list entry, whose settings button opens the client settings.
 
 ```shell

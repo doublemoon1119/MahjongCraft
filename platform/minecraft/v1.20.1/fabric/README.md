@@ -45,8 +45,9 @@ example module declare the same groups:
 
 - `shaders`: Sodium and Iris, for checking rendering with and without a shader pack. Loom drops the libraries
   a mod bundles in its own JAR and expects them as Maven dependencies, which Iris on Modrinth does not
-  declare, so the group also lists the libraries Iris bundles, at the versions it bundles. Shader packs are
-  not part of the repository; put one in `run/client/shaderpacks` and select it in the game's video settings.
+  declare, so the group also lists the libraries Iris bundles, at the versions it bundles. The group also
+  puts the Complementary Reimagined shader pack in `run/client/shaderpacks` and turns it on before the client
+  starts, so manual runs and automated tests both run with shaders.
 - `modmenu`: ModMenu, for checking the mod list entry, whose settings button opens the client settings.
 
 ```shell

@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ItemStackRe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.putBulkData
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setLight
@@ -29,7 +28,6 @@ import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.client.renderer.RenderType
 import net.minecraft.client.resources.model.BakedModel
 import net.minecraft.resources.ResourceLocation
-import net.minecraft.util.RandomSource
 import net.minecraft.world.inventory.InventoryMenu
 import net.minecraft.world.item.ItemDisplayContext
 import net.minecraft.world.item.ItemStack
@@ -50,9 +48,6 @@ object MahjongTileItemRenderer : ItemStackRenderer {
 
     /** 已回報缺少材質警告的 asset key，避免同一個 key 每幀重複記錄。 */
     private val reportedMissingTextureKeys = mutableSetOf<String>()
-
-    /** 取得已烘焙模型使用的固定隨機來源；此模型沒有隨機變體，種子值本身不影響外觀。 */
-    private val quadRandom = RandomSource.create(42L)
 
     /** vanilla 供已烘焙模型使用的共用材質 atlas，item／block model 的 sprite 皆繪製於此。 */
     private val BLOCK_ATLAS_TEXTURE: ResourceLocation = InventoryMenu.BLOCK_ATLAS
@@ -354,7 +349,8 @@ object MahjongTileItemRenderer : ItemStackRenderer {
     }
 
     /**
-     * 直接重繪已烘焙模型的原始 quad，沿用 atlas sprite，不重算幾何。
+     * 以 vanilla 物品繪製模型 quad 的同一個方法，把已烘焙模型寫入自選圖層，沿用 atlas sprite，不重算幾何。
+     * 光影或效能模組會接手這個方法，補上它們需要的額外頂點資料；直接寫入頂點緩衝則可能缺少這些資料。
      *
      * @param model 要繪製的烘焙模型。
      * @param matrices 目前的模型矩陣。
@@ -373,11 +369,14 @@ object MahjongTileItemRenderer : ItemStackRenderer {
         translucent: Boolean = false,
         alpha: Float = 1f,
     ) {
-        val buffer = tileBuffer(vertexConsumers, BLOCK_ATLAS_TEXTURE, translucent, alpha)
-        val entry = matrices.last()
-        model.getQuads(null, null, quadRandom).forEach { quad ->
-            buffer.putBulkData(entry, quad, 1.0f, 1.0f, 1.0f, 1.0f, light, overlay)
-        }
+        Minecraft.getInstance().itemRenderer.renderModelLists(
+            model,
+            ItemStack.EMPTY,
+            light,
+            overlay,
+            matrices,
+            tileBuffer(vertexConsumers, BLOCK_ATLAS_TEXTURE, translucent, alpha),
+        )
     }
 
     /**

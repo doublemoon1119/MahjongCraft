@@ -4,7 +4,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla
 
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
-import net.minecraft.client.renderer.block.model.BakedQuad
 import org.joml.Matrix4f
 
 // 這個版本的原版已有同名方法，呼叫時一律使用原版方法；這裡的同名宣告只讓共用程式碼的 import 能夠解析。
@@ -36,17 +35,3 @@ fun VertexConsumer.setNormal(x: Float, y: Float, z: Float): VertexConsumer = set
 /** 結束目前的頂點。這個版本寫入下一個頂點時自動結束前一個，不需要額外動作。 */
 @Suppress("UnusedReceiverParameter")
 fun VertexConsumer.finishVertex() = Unit
-
-/** 把一個已烘焙的模型面整批寫入。 */
-fun VertexConsumer.putBulkData(
-    pose: PoseStack.Pose,
-    quad: BakedQuad,
-    red: Float,
-    green: Float,
-    blue: Float,
-    alpha: Float,
-    light: Int,
-    overlay: Int,
-) {
-    putBulkData(pose, quad, red, green, blue, alpha, light, overlay)
-}
