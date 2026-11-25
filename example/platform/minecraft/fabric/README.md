@@ -59,8 +59,7 @@ Furniture and seating behavior is covered by focused tests such as
 [`ExampleCushionPlacementTest.kt`](../mod/src/test/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/mod/ExampleCushionPlacementTest.kt),
 [`ExampleFurnitureSeatRulesTest.kt`](../common/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/ExampleFurnitureSeatRulesTest.kt),
 and [`ExampleGameEventChatTest.kt`](../mod/src/test/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/mod/event/ExampleGameEventChatTest.kt).
-These tests exercise decision and geometry seams. Native world rendering still needs the manual checks
-in the parent guide; the Fabric 1.20.1 packaged dedicated-server startup has passed its smoke check.
+These tests exercise decision and geometry seams.
 
 ## World actors and seat integration
 

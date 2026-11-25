@@ -53,7 +53,7 @@ alone do not establish supported releases.
 `build` compiles, tests, packages, and runs the configured checks for the selected modules;
 detekt is a separate command. See [CONTRIBUTING.md](CONTRIBUTING.md) for toolchain policy,
 target-selection precedence, conventions, and the complete verification workflow.
-KMP module structure does not mean every Kotlin target is currently configured or validated.
+The Kotlin Multiplatform modules currently declare only the JVM target.
 
 ## 📄 License
 

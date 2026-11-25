@@ -108,12 +108,12 @@
 - Verify both example-enabled and default builds. Test the actual remapped JAR contents, not just
   compilation, and keep configuration cache enabled. See the
   [Minecraft example guide](../../example/platform/minecraft/README.md) for run commands.
-- Keep example documentation actionable: link to the public registration entry point and the focused
-  tests, state which checks are automated or manual, and do not describe a missing-mod world test as
-  complete until the packaged-instance recovery steps have actually been run.
-- In shared guides, present version/loader-specific commands and paths as examples, and name the
-  adapter actually verified. Do not imply that checking one adapter verifies other versions or loaders.
-  An adapter's own guide can describe its implementation directly.
+- Keep example documentation actionable: describe what the example does and how to use it, and link to
+  the public registration entry point and the focused tests.
+- Documentation describes behavior and usage for its readers. It does not record verification
+  progress, such as which checks passed, are pending or were run on which adapter.
+- In shared guides, present version/loader-specific commands and paths as examples. An adapter's own
+  guide can describe its implementation directly.
 
 ## Continuous Integration
 

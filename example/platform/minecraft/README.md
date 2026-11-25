@@ -47,12 +47,15 @@ Their worlds, configuration and logs stay under the adapter directory
 Example runs must remain separate from the product loader's development worlds and classpath.
 Enabling the example flag does not add the example to the product loader's own run tasks.
 
+Every example adapter also runs the automated client test, which plays the main mod's steps and the
+example's extension content in game.
+
 ## Safe Recovery Check
 
 Use a disposable world and keep a full backup after a normal exit. Do not use the main development
 world for removal tests.
 
-The missing-extension recovery scenario is still a manual check, not an automated guarantee:
+Follow these steps to check that a world keeps its MahjongCraft data while the example is missing:
 
 1. Start with the same product and example versions. Create an active pairing match on the bundled
    table and stools, and record its venue ID, match ID, settings and scores.
@@ -94,31 +97,7 @@ The Fabric 1.20.1 packaged dedicated-server startup smoke test has already passe
 It does not establish support for other adapters or replace the manual
 checks above or prove every world interaction.
 
-## Accepted Game Checks
-
-Game checks cover these versions and loaders:
-
-- Fabric 1.20.1: the integration scenarios below, and the game checks marked in the
-  [example capability table](../../README.md#what-the-examples-cover).
-- Fabric 1.21.1: the example loads and plays a match.
-- Other versions and loaders: no game checks beyond what their own sections list.
-
-The following integration scenarios have been accepted in game on the Fabric 1.20.1 adapter.
-They do not need repeating solely for documentation or ABI baseline changes:
-
-- Enable the two-tile exchange, select multiple tiles, submit from every player, and confirm the
-  simultaneous exchange leaves no duplicate, stale or replayed tile before normal draw and discard.
-- Check two-player facing seats and the multi-roll opening.
-- Run one short combination for each of these pairings: example rule with bundled AI, bundled rule with
-  example AI, and example rule with example AI. A complete match or stress run is not required.
-
-The separate missing-extension recovery procedure above has not been verified at world level.
-It is not a reason to repeat these accepted gameplay checks.
-
-## Furniture and Event Checks
-
-The behavior below describes the current Fabric 1.20.1 implementation. Use it as a reference when
-adding another version/loader adapter, and verify that adapter separately.
+## Furniture and Events
 
 The **MahjongCraft Example** creative tab contains the chair, placeable cushion, bench, actor item and three tables.
 Place a chair, bench or cushion at a standard table seat. Right-click to sit; game-start seating uses the public seat
@@ -220,9 +199,7 @@ MahjongCraft's own spawned bots are recreated by its character manager and do no
 | Seat variety | Block chair, local-connection bench and persistent cushion |
 | Cleanup | Token-scoped restoration, repeated release and partial preparation failure |
 
-Registration and focused tests are automated. Native interaction, appearance, exclusions and reloads
-still need the in-game checks for the adapter being tested. Registering the owned and FACE-only test
-descriptions does not make them selectable in a normal room or prove their full in-game lifecycle.
+Registering the owned and FACE-only test descriptions does not make them selectable in a normal room.
 Removing the example mod can remove its native actors and furniture; reinstalling it does not restore
 native content that Minecraft already discarded. Use a disposable world for missing-mod checks.
 
@@ -249,7 +226,7 @@ native kind, entity and renderer belong entirely to the example. The Minecraft 1
 them in
 [`ExampleNativeMahjongExtension`](mod/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/mod/ExampleNativeMahjongExtension.kt).
 
-After building, check the following in a disposable example world:
+To see these props in game, use a disposable example world:
 
 1. Start with two selected ranks, then with all eight. Count the displayed bonus tiles.
 2. Check that the bonus tiles face the dealer, including after the next round changes dealers.
@@ -258,6 +235,3 @@ After building, check the following in a disposable example world:
 4. Self-draw and compare the displayed bonus ranks with the extra points. Repeated copies count once.
 5. Leave and reopen an active match. Its bonus ranks and scores must stay the same.
 6. Finish a round or remove the table. Its old props must not remain or reappear later.
-
-These are new prop checks; their game acceptance is pending. The previously accepted seating,
-exchange, opening and event checks above remain separate.

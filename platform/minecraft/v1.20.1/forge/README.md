@@ -10,7 +10,7 @@ Its Gradle project path is `:minecraft_v1.20.1_forge`, its code uses the
 `com.doublemoon1119.mahjongcraft.platform.forge` package, and it belongs to the
 `minecraft-v1.20.1-forge` target.
 
-## Status
+## Overview
 
 The server and client sides are implemented, including the config screen opened from Forge's mod list,
 and development runs load the [debug tools](../forge-debug/README.md). The mod JAR is distributable: CI
