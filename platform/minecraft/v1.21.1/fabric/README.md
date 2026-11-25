@@ -48,6 +48,9 @@ example module declare the same groups:
   a mod bundles in its own JAR and expects them as Maven dependencies, which Iris on Modrinth does not
   declare, so the group also lists the libraries Iris bundles, at the versions it bundles. Shader packs are
   not part of the repository; put one in `run/client/shaderpacks` and select it in the game's video settings.
+  The group uses Iris 1.8.8 with Sodium 0.6, not the newer Iris 1.8.14 for 1.21.1: one of 1.8.14's mixins
+  names its target method without parameter types, and Fabric Loader's development-run remapping fails on it.
+  Installed games do not remap mixins this way, so players can use 1.8.14; check it with the packaged JAR.
 - `modmenu`: ModMenu, for checking the mod list entry, whose settings button opens the client settings.
 
 ```shell

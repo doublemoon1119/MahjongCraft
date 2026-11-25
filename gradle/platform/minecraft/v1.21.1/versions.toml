@@ -26,12 +26,16 @@ mixinextras = "0.5.4"
 # 開發執行時可選載入的相容測試模組（-PmahjongcraftDevMods），從 Modrinth 的 Maven 倉庫取得；
 # ModMenu 同時是 ModMenu 整合的編譯依賴，但不打包。
 mod-menu = "11.0.5"
-iris = "1.8.14-beta.1+1.21.1-fabric"
-sodium = "mc1.21.1-0.8.13-fabric"
+# Iris 使用 1.8.8，而不是給 1.21.1 的較新版 1.8.14-beta.1。
+# 原因：1.8.14 有一個 mixin 只寫了目標方法的名稱，沒寫參數型別；開發執行時 Fabric Loader 處理這個 mixin 會當掉。
+# 這只影響開發執行，玩家正式安裝 1.8.14 沒有問題。
+# Sodium 使用 Iris 1.8.8 要求的 0.6 版。
+iris = "1.8.8+1.21.1-fabric"
+sodium = "mc1.21.1-0.6.13-fabric"
 # Iris 打包在自己 JAR 中的程式庫。Loom 為開發環境轉換模組時會拿掉內嵌的程式庫，改由 Maven 依賴提供，
 # 但 Modrinth 的 Iris 沒有宣告這些依賴，所以 iris 組合另外列出；版本與 Iris 內嵌的一致。
 jcpp = "1.4.14"
-glsl-transformer = "3.0.0-pre3"
+glsl-transformer = "2.0.1"
 antlr-runtime = "4.13.1"
 
 [libraries]
