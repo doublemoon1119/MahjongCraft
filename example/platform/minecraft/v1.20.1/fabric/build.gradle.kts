@@ -74,8 +74,8 @@ loom {
             autotestSystemProperties().forEach { (name, value) -> vmArg("-D$name=$value") }
         }
         named("server") {
+            // 範例沒有伺服器自動測試，伺服器不帶自動測試開關，平常的開發世界不受影響。
             runDirectory.set(layout.projectDirectory.dir("run/server"))
-            autotestSystemProperties().forEach { (name, value) -> vmArg("-D$name=$value") }
         }
     }
 }

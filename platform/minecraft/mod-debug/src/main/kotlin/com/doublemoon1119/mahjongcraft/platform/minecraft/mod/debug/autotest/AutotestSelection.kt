@@ -4,7 +4,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest
  * 自動測試要執行哪些步驟，由開發執行的系統屬性 [PROPERTY] 決定。
  *
  * 屬性不存在、為空或為 `false` 時不執行自動測試；為 `true` 或 `all` 時執行全部步驟；其他值是以逗號分隔的步驟識別碼，
- * 只執行列出的步驟。
+ * 只執行列出的步驟；列出不存在的步驟時，自動測試記為失敗。
  *
  * @property everything 是否執行全部步驟。
  * @property stepIds 只執行的步驟識別碼；[everything] 為 true 時不使用。
@@ -17,6 +17,14 @@ internal data class AutotestSelection(val everything: Boolean, val stepIds: Set<
      * @return 要執行時為 true。
      */
     fun includes(stepId: String): Boolean = everything || stepId in stepIds
+
+    /**
+     * 列出的步驟中不存在的識別碼，例如拼錯的名稱。
+     *
+     * @param knownStepIds 這次執行全部步驟的識別碼。
+     * @return 不存在的識別碼，依列出的順序；執行全部步驟時為空。
+     */
+    fun unknownStepIds(knownStepIds: Collection<String>): List<String> = if (everything) emptyList() else stepIds.filterNot(knownStepIds::contains)
 
     /** 由系統屬性解析自動測試的選擇。 */
     companion object {

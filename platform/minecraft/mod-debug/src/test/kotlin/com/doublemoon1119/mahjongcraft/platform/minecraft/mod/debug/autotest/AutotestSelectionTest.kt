@@ -32,4 +32,14 @@ class AutotestSelectionTest {
         assertTrue(selection!!.includes("screens"))
         assertFalse(selection.includes("table"))
     }
+
+    /** 列出的步驟中不存在的識別碼依列出的順序回報；執行全部步驟時沒有。 */
+    @Test
+    fun `reports listed steps that do not exist`() {
+        val known = listOf("world", "screens", "replay")
+
+        assertEquals(listOf("repla", "tabel"), AutotestSelection.parse("screens,repla,tabel")?.unknownStepIds(known))
+        assertEquals(emptyList(), AutotestSelection.parse("world,replay")?.unknownStepIds(known))
+        assertEquals(emptyList(), AutotestSelection.parse("true")?.unknownStepIds(known))
+    }
 }

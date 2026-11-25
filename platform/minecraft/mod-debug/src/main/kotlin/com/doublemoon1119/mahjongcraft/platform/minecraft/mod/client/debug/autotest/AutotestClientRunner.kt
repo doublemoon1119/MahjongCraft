@@ -104,6 +104,7 @@ internal class AutotestClientRunner(
         Runtime.getRuntime().addShutdownHook(Thread({ writeReport(aborted = true) }, "MahjongCraft autotest report"))
         logger.info("Autotest started; report folder {}", outputDirectory)
         CoroutineScope(SupervisorJob() + (client as Executor).asCoroutineDispatcher()).launch {
+            unknownSelection()?.let(results::add)
             steps.forEachIndexed { index, step ->
                 if (index == 0 || selection.includes(step.id)) runStep(client, step) else results += skipped(step.id)
             }
@@ -111,6 +112,26 @@ internal class AutotestClientRunner(
             logger.info("Autotest finished; closing the game")
             client.stop()
         }
+    }
+
+    /**
+     * 列出了不存在的步驟時的失敗結果，例如拼錯名稱；否則測試只執行進入世界就回報通過。
+     *
+     * @return 失敗結果；列出的步驟都存在時為 null。
+     */
+    private fun unknownSelection(): AutotestStepResult? {
+        val known = steps.map(AutotestStep::id)
+        val unknown = selection.unknownStepIds(known).ifEmpty { return null }
+        logger.error("Autotest steps {} do not exist; known steps are {}", unknown, known)
+        return AutotestStepResult(
+            id = SELECTION_STEP_ID,
+            status = AutotestStatus.FAILED,
+            durationMillis = 0,
+            checks = listOf(AutotestCheck("All selected steps exist", passed = false, detail = "Unknown: ${unknown.joinToString()}; known: ${known.joinToString()}")),
+            screenshots = emptyList(),
+            sounds = emptyList(),
+            error = null,
+        )
     }
 
     /**
@@ -186,6 +207,9 @@ internal class AutotestClientRunner(
     }
 
     private companion object {
+        /** 列出不存在的步驟時，報告中記錄失敗的那一項的識別碼。 */
+        const val SELECTION_STEP_ID = "selection"
+
         /** 開發執行以這個系統屬性傳入測試的目標。 */
         const val TARGET_PROPERTY = "mahjongcraft.autotest.target"
 

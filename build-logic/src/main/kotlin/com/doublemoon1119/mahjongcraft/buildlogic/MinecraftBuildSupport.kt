@@ -92,17 +92,30 @@ private fun Project.addMainSources(directory: File) {
 private val VERSION_DIRECTORY = Regex("""v\d+(\.\d+)+""")
 
 /**
+ * `mahjongcraftAutotest` 的值是否開啟自動測試；判定與 debug 模組讀取系統屬性時相同：空白與 `false`（不分大小寫）都是關閉，
+ * 其他值是要執行的步驟。
+ *
+ * @param value Gradle 屬性的值；沒有設定時為 null。
+ * @return 開啟時為 true。
+ */
+internal fun isAutotestEnabled(value: String?): Boolean {
+    val trimmed = value?.trim().orEmpty()
+    return trimmed.isNotEmpty() && !trimmed.equals("false", ignoreCase = true)
+}
+
+/**
  * 開發執行要傳給遊戲的自動測試系統屬性，由 Gradle 屬性 `mahjongcraftAutotest` 決定。
  *
  * 屬性值原樣傳給 debug 模組，例如 `true` 執行全部步驟、`world,screens` 只執行列出的步驟；另外傳入這個模組的名稱，例如
  * `minecraft_v1.20.1_fabric`，供報告記錄測試的目標。Gradle 屬性 `mahjongcraftAutotestKeep` 指定要保留最近幾次的報告，
- * 沒有指定時由 debug 模組使用預設值。沒有設定 `mahjongcraftAutotest` 時為空，開發執行與平常相同。
+ * 沒有指定時由 debug 模組使用預設值。沒有設定 `mahjongcraftAutotest`，或它是空白、`false` 時為空（[isAutotestEnabled]），
+ * 開發執行與平常相同。
  *
  * @return 系統屬性名稱與值。
  * @throws GradleException `mahjongcraftAutotestKeep` 不是正整數時拋出。
  */
 fun Project.autotestSystemProperties(): Map<String, String> {
-    val selection = providers.gradleProperty("mahjongcraftAutotest").orNull?.takeIf(String::isNotBlank) ?: return emptyMap()
+    val selection = providers.gradleProperty("mahjongcraftAutotest").orNull?.takeIf(::isAutotestEnabled) ?: return emptyMap()
     val keep = providers.gradleProperty("mahjongcraftAutotestKeep").orNull?.let { value ->
         value.toIntOrNull()?.takeIf { it >= 1 } ?: throw GradleException("mahjongcraftAutotestKeep must be a positive integer: $value")
     }

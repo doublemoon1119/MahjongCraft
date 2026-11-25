@@ -192,7 +192,8 @@ Common commands, each followed by what it runs. The sections below explain each 
   ./gradlew :minecraft_v1.20.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=true"
   ```
 
-- Only some client steps, listed by id; the step that enters the test world always runs:
+- Only some client steps, listed by id; the step that enters the test world always runs, and an id that names
+  no step fails the test:
 
   ```shell
   ./gradlew :minecraft_v1.20.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=table,replay"
@@ -269,6 +270,8 @@ Each kind of run in detail:
   seed, offline mode and peaceful creative play. The port is 25599 plus the target's position in the whole
   target catalog sorted by ID, so `minecraft-v1.20.1-fabric` uses 25599 and `minecraft-v1.20.1-forge` 25600.
   Pass `-PmahjongcraftAutotestServerPort=<port>` to start from another port.
+- Only the `autotestServer` task runs the server test: it tells each server which of its two runs it is. Other
+  servers started with the switch, such as an example's `runServer`, start as usual and run no test.
 - The task starts the server twice. The first run plays at tables and stops in the middle of a match; the
   second run, `runAutotestServerResume`, loads the same world, checks what was restored and finishes the
   matches. Both runs write into the same report under `run/autotest-server/autotest/<start time>/`, which

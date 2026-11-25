@@ -53,8 +53,8 @@ internal class AutotestServerRunner(private val koin: Koin) {
     /** 記錄自動測試進度的 logger。 */
     private val logger = mahjongCraftLogger(AutotestServerRunner::class)
 
-    /** 這一次開機是第幾段。 */
-    private val phase = System.getProperty(PHASE_PROPERTY) ?: PHASE_START
+    /** 這一次開機是第幾段；只有指定了階段才會建立這個執行者。 */
+    private val phase = checkNotNull(requestedPhase()) { "The server autotest phase is not set" }
 
     /** 三張牌桌。 */
     private val tables = AutotestServerTable.all()
@@ -394,43 +394,60 @@ internal class AutotestServerRunner(private val koin: Koin) {
     private fun readRecord(): AutotestServerRestartRecord? = outputDirectory.resolve(RESTART_JSON).takeIf(Files::exists)
         ?.let { JSON.decodeFromString(AutotestServerRestartRecord.serializer(), Files.readString(it)) }
 
-    private companion object {
+    /** 伺服器自動測試的階段與系統屬性。 */
+    companion object {
+        /**
+         * 這次開機指定要跑的階段。只有 `autotestServer` 任務啟動的伺服器會指定階段；其他帶自動測試開關的伺服器，例如範例或
+         * 平常的 `runServer`，不執行伺服器自動測試，避免動到平常的開發世界。
+         *
+         * @return [PHASE_START] 或 [PHASE_RESUME]；沒有指定或不是這兩者時為 null。
+         */
+        fun requestedPhase(): String? = phaseOf(System.getProperty(PHASE_PROPERTY))
+
+        /**
+         * 解析階段屬性的值。
+         *
+         * @param value 系統屬性的值；沒有設定時為 null。
+         * @return [PHASE_START] 或 [PHASE_RESUME]；其他值為 null。
+         */
+        internal fun phaseOf(value: String?): String? = value?.trim()?.takeIf { it == PHASE_START || it == PHASE_RESUME }
+
         /** 開發執行以這個系統屬性傳入第幾段。 */
-        const val PHASE_PROPERTY = "mahjongcraft.autotest.serverPhase"
+        private const val PHASE_PROPERTY = "mahjongcraft.autotest.serverPhase"
 
         /** 第一段。 */
-        const val PHASE_START = "start"
+        private const val PHASE_START = "start"
 
         /** 第二段。 */
-        const val PHASE_RESUME = "resume"
+        private const val PHASE_RESUME = "resume"
 
         /** 開發執行以這個系統屬性傳入測試的目標。 */
-        const val TARGET_PROPERTY = "mahjongcraft.autotest.target"
+        private const val TARGET_PROPERTY = "mahjongcraft.autotest.target"
 
         /** 報告的 JSON 檔名。 */
-        const val REPORT_JSON = "report.json"
+        private const val REPORT_JSON = "report.json"
 
         /** 第一段記下狀態的檔名。 */
-        const val RESTART_JSON = "restart.json"
+        private const val RESTART_JSON = "restart.json"
 
         /** 報告中提醒執行者測試代為同意了 Minecraft EULA。 */
-        const val EULA_NOTE = "This test accepted the Minecraft EULA (https://aka.ms/MinecraftEULA) on behalf of whoever ran it, " +
+        private const val EULA_NOTE = "This test accepted the Minecraft EULA (https://aka.ms/MinecraftEULA) on behalf of whoever ran it, " +
             "in this server's run directory"
 
         /** 報告的 JSON 格式。 */
-        val JSON = Json { prettyPrint = true }
+        private val JSON = Json { prettyPrint = true }
 
         /** 等伺服器處理房間操作的最長時間。 */
-        val SYNC_TIMEOUT = 30.seconds
+        private val SYNC_TIMEOUT = 30.seconds
 
         /** 等一場打完或等到指定狀態的最長時間。 */
-        val MATCH_TIMEOUT = 15.minutes
+        private val MATCH_TIMEOUT = 15.minutes
 
         /** 關機應該在這段時間內完成。 */
-        val STOP_LIMIT = 20.seconds
+        private val STOP_LIMIT = 20.seconds
 
         /** 讀回的決策時間與關機前記下的時間可以相差的範圍。 */
-        val TIME_TOLERANCE = 5.seconds
+        private val TIME_TOLERANCE = 5.seconds
 
         /**
          * 一個步驟的結果。
