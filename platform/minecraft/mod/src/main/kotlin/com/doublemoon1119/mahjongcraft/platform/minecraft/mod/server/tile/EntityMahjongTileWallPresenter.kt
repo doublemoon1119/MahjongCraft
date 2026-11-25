@@ -1,0 +1,569 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.tile
+
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.MahjongAnimationSounds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableLookup
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.AnimatedMahjongEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTileEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTilePose
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.ServerHolder
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.entity.EntitySpawnGateway
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallOpeningPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentationResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallProjectionContext
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTransitionPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTransitionResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationSpec
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionDecision
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionPlanner
+import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.Registries
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.phys.AABB
+import kotlin.uuid.Uuid
+import kotlin.uuid.toJavaUuid
+import kotlin.uuid.toKotlinUuid
+
+/**
+ * 使用 Minecraft entity 呈現並替換指定麻將桌的正式牌牆。
+ *
+ * @property serverHolder 取得目前伺服器工作階段及已載入世界。
+ * @property spawnGateway 將新牌 entity 加入指定伺服器世界。
+ */
+class EntityMahjongTileWallPresenter(
+    private val serverHolder: ServerHolder,
+    private val spawnGateway: EntitySpawnGateway,
+) : MahjongTileWallPresenter {
+    private val logger = mahjongCraftLogger(EntityMahjongTileWallPresenter::class)
+
+    /**
+     * 驗證 controller 後先建立新牌；全部成功才移除同桌舊牌。[MahjongTileWallPresentation.finalLayout]
+     * 為空（例如對局結束）時，跳過建立步驟直接視為成功，等同只清除舊牌——重用同一段替換邏輯，不需要
+     * 另外開一個清除專用的呼叫路徑。
+     *
+     * 每張新牌 entity 的 UUID 在加入世界前直接設為對應 [IdentifiedTile.id]，
+     * 沿用 [MahjongTileEntity] 既有 KDoc 早已寫下的設計意圖——此時 entity 尚未加入 world 的 UUID
+     * 索引，是唯一安全能覆寫 UUID 的時機點；`level.addFreshEntity` 之後才變更會與世界既有索引不一致。
+     *
+     * [MahjongTileWallPresentation.animateOpening] 啟用時，所有牌只依
+     * [MahjongTileWallPresentation.assemblyStructure] 生成；初次發牌與手牌翻起完成後，呼叫端再以
+     * [presentOpening] 把開門整理接到同一條持久化時間線。停用開門時代表恢復既有桌況，直接使用最終
+     * 布局與權威公開姿態。
+     *
+     * 這裡查詢並清除的「舊牌」不限定牌牆自己管理的牌，而是這張桌子目前所有管理中的麻將牌 entity
+     * （含已經被 [EntityMahjongPlayerAreaPresenter] 領走、目前呈現成手牌的那些）——因為每一局重新洗牌都會產生全新的 `IdentifiedTile.id`，
+     * 跟上一局完全無關，所以只要牌牆重新生成（代表新的一局開始），上一局不管是牌牆、王牌還是手牌的舊 entity
+     * 全部都已經沒有意義，應該整批清空，不需要區分「這張舊牌上一局屬於哪個呈現子系統」再各自分開
+     * 清理。這也是本方法是這條開局呈現鏈裡第一個被呼叫的原因：由它負責一次把整張桌子清乾淨，之後
+     * 手牌 presenter 只需要專心「領走這局的新牌」，不用再自己額外清理上一局的殘留。
+     *
+     * @param presentation 此次要呈現的牌牆資料與布局。
+     * @return 桌子有效且替換成功時為 `PRESENTED`，否則回報桌子或生成錯誤。
+     */
+    override fun present(presentation: MahjongTileWallPresentation): MahjongTileWallPresentationResult {
+        val world = resolveWorld(presentation.tableLocation) ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
+        val controllerPos = presentation.tableLocation.toBlockPos()
+        val table = MahjongTableLookup.find(world, controllerPos, presentation.tableId)
+            ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
+        if (table.facing != presentation.tableFacing) {
+            return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
+        }
+
+        val stacksPerSide = presentation.assemblyStructure.values
+            .filter { position -> position.side == 0 }
+            .maxOfOrNull { position -> position.stack + 1 } ?: 0
+        require(presentation.assemblyStructure.isEmpty() || MahjongTileTableLayout.wallSideCount(presentation.assemblyStructure.values) == presentation.sideLayout.sideCount) {
+            "Wall structure and side arrangement must contain the same sides"
+        }
+        val oldTiles = findManagedTiles(world, presentation.tableId, controllerPos)
+        val restoresFinalStateImmediately = !presentation.animateOpening
+        require(presentation.assemblyStructure.keys == presentation.finalLayout.placements.keys) {
+            "Assembly structure and final layout must contain the same tiles"
+        }
+        val newTiles = presentation.finalLayout.placements.map { (tileId, finalPlacement) ->
+            val assemblyPosition = requireNotNull(presentation.assemblyStructure[tileId])
+            val placement = MahjongTileTableLayout.wallPlacement(
+                controllerX = controllerPos.x,
+                controllerY = controllerPos.y,
+                controllerZ = controllerPos.z,
+                tableFacing = presentation.tableFacing,
+                sideLayout = presentation.sideLayout,
+                tileLayout = presentation.tileLayout,
+                stacksPerSide = stacksPerSide,
+                placement = if (restoresFinalStateImmediately) finalPlacement else TileWallPlacement(assemblyPosition),
+            )
+            assemblyPosition to MahjongTileEntity(world = world).apply {
+                setUUID(tileId.toJavaUuid())
+                moveTo(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+                tilePose = if (restoresFinalStateImmediately && tileId in presentation.revealedTileIds) {
+                    MahjongTilePose.FACE_UP
+                } else {
+                    MahjongTilePose.FACE_DOWN
+                }
+                assignToTable(presentation.tableId)
+            }
+        }
+        val spawnedTiles = mutableListOf<MahjongTileEntity>()
+        newTiles.forEach { (_, tile) ->
+            if (!spawnGateway.spawn(world, tile, "tile-wall", presentation.tableId)) {
+                spawnedTiles.forEach(MahjongTileEntity::discard)
+                return MahjongTileWallPresentationResult.SPAWN_FAILED
+            }
+            spawnedTiles += tile
+        }
+        oldTiles.forEach(MahjongTileEntity::discard)
+        table.blockEntity.setChanged()
+        if (newTiles.isNotEmpty()) {
+            startWallDropAnimations(world, newTiles)
+        }
+        return MahjongTileWallPresentationResult.PRESENTED
+    }
+
+    /**
+     * 驗證既有牌牆後，把保留牌整理與初始公開牌翻面原子排入各牌 entity 的持久化佇列。
+     *
+     * @param presentation 包含牌牆、公開牌、開始 tick 與桌子位置的呈現要求。
+     * @return 排程成功或找不到桌子、牌、有效路徑時的結果。
+     */
+    override fun presentOpening(
+        presentation: MahjongTileWallOpeningPresentation,
+    ): MahjongTileWallPresentationResult {
+        val request = presentation.wallPresentation
+        val world = resolveWorld(request.tableLocation) ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
+        val controllerPos = request.tableLocation.toBlockPos()
+        val table = MahjongTableLookup.find(world, controllerPos, request.tableId)
+            ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
+        if (table.facing != request.tableFacing) {
+            return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
+        }
+        val decision = TileWallTransitionMotionPlanner.planOpening(
+            context = request.projectionContext(controllerPos),
+            assemblyStructure = request.assemblyStructure,
+            finalLayout = request.finalLayout,
+        )
+        val plan = (decision as? TileWallTransitionMotionDecision.Completed)?.plan
+            ?: return MahjongTileWallPresentationResult.INVALID_PATH
+        val requiredIds = plan.phases.flatMapTo(mutableSetOf()) { phase -> phase.motions.map { it.tileId } } +
+            request.revealedTileIds
+        val tilesById = findManagedTiles(world, request.tableId, controllerPos)
+            .associateBy { tile -> tile.uuid.toKotlinUuid() }
+        if (!tilesById.keys.containsAll(requiredIds)) return MahjongTileWallPresentationResult.TILE_NOT_FOUND
+
+        val stepsByTile = TileWallTransitionAnimationCompiler.compile(
+            plan = plan,
+            startGameTime = presentation.startGameTime,
+            initialPoses = requiredIds.associateWith { MahjongTilePose.FACE_DOWN },
+        ).mapValues { (_, steps) -> steps.toMutableList() }.toMutableMap()
+        val revealGameTime = presentation.startGameTime + plan.durationTicks
+        var revealSoundScheduled = false
+        request.revealedTileIds.forEach { tileId ->
+            val placement = request.finalLayout.placements.getValue(tileId)
+            val worldPlacement = MahjongTileTableLayout.wallPlacement(
+                controllerX = controllerPos.x,
+                controllerY = controllerPos.y,
+                controllerZ = controllerPos.z,
+                tableFacing = request.tableFacing,
+                sideLayout = request.sideLayout,
+                tileLayout = request.tileLayout,
+                stacksPerSide = request.projectionContext(controllerPos).stacksPerSide,
+                placement = placement,
+            )
+            val steps = stepsByTile.getOrPut(tileId) { mutableListOf() }
+            steps += AnimationStep.WaitUntil(revealGameTime)
+            steps += revealFlipAnimationSteps(
+                x = worldPlacement.x,
+                y = worldPlacement.y,
+                z = worldPlacement.z,
+                yaw = worldPlacement.yaw,
+                soundGameTime = if (revealSoundScheduled) null else revealGameTime + REVEAL_LIFT_DURATION_TICKS,
+            )
+            revealSoundScheduled = true
+        }
+        stepsByTile.forEach { (tileId, steps) -> tilesById.getValue(tileId).enqueueAll(steps) }
+        return MahjongTileWallPresentationResult.PRESENTED
+    }
+
+    /**
+     * 將完整 transition 預先解析後，原子附加到同桌既有牌張的持久化佇列。
+     *
+     * @param presentation 包含移動階段、牌姿態與開始 tick 的轉場要求。
+     * @return 排程成功或桌子、牌、路徑驗證失敗的結果。
+     */
+    override fun presentTransition(
+        presentation: MahjongTileWallTransitionPresentation,
+    ): MahjongTileWallTransitionResult {
+        val world = resolveWorld(presentation.tableLocation) ?: return MahjongTileWallTransitionResult.TABLE_NOT_FOUND
+        val controllerPos = presentation.tableLocation.toBlockPos()
+        val table = MahjongTableLookup.find(world, controllerPos, presentation.tableId)
+            ?: return MahjongTileWallTransitionResult.TABLE_NOT_FOUND
+        if (table.facing != presentation.tableFacing) {
+            return MahjongTileWallTransitionResult.TABLE_NOT_FOUND
+        }
+        val context = presentation.projectionContext(controllerPos)
+        val decision = TileWallTransitionMotionPlanner.plan(context, presentation.phases)
+        val plan = (decision as? TileWallTransitionMotionDecision.Completed)?.plan
+            ?: return MahjongTileWallTransitionResult.INVALID_PATH
+        val tileIds = presentation.phases.flatMapTo(mutableSetOf()) { phase -> phase.moves.map { it.tileId } }
+        val tilesById = findManagedTiles(world, presentation.tableId, controllerPos)
+            .associateBy { tile -> tile.uuid.toKotlinUuid() }
+        if (!tilesById.keys.containsAll(tileIds)) return MahjongTileWallTransitionResult.TILE_NOT_FOUND
+
+        val stepsByTile = TileWallTransitionAnimationCompiler.compile(
+            plan = plan,
+            startGameTime = presentation.startGameTime,
+            initialPoses = tileIds.associateWith { tileId -> tilesById.getValue(tileId).tilePose },
+        )
+        stepsByTile.forEach { (tileId, steps) -> tilesById.getValue(tileId).enqueueAll(steps) }
+        return MahjongTileWallTransitionResult.PRESENTED
+    }
+
+    /**
+     * 將同桌既有牌牆 entity 同步至新的權威布局；此方法不建立、移除或清除任何 entity。
+     *
+     * @param tableId 麻將桌 UUID。
+     * @param tableLocation 麻將桌目前位置。
+     * @param context 牌牆格位投影資料。
+     * @param layout 權威牌牆布局。
+     * @param revealedTileIds 目前應翻面的牌張 UUID。
+     * @return 同步結果。
+     */
+    override fun synchronizeLayout(
+        tableId: Uuid,
+        tableLocation: TableLocation,
+        context: MahjongTileWallProjectionContext,
+        layout: TileWallPhysicalLayout,
+        revealedTileIds: Set<Uuid>,
+    ): MahjongTileWallPresentationResult {
+        val world = resolveWorld(tableLocation) ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
+        val controllerPos = tableLocation.toBlockPos()
+        val table = MahjongTableLookup.find(world, controllerPos, tableId)
+            ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
+        if (table.facing != context.tableFacing) {
+            return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
+        }
+
+        val tilesById = findManagedTiles(world, tableId, controllerPos)
+            .associateBy { tile -> tile.uuid.toKotlinUuid() }
+        if (!tilesById.keys.containsAll(layout.placements.keys)) {
+            return MahjongTileWallPresentationResult.TILE_NOT_FOUND
+        }
+
+        val worldPlacements = layout.placements.mapValues { (_, placement) -> context.project(placement) }
+        worldPlacements.forEach { (tileId, worldPlacement) ->
+            val tile = tilesById.getValue(tileId)
+            tile.assignToTable(tableId)
+            tile.tilePose = if (tileId in revealedTileIds) MahjongTilePose.FACE_UP else MahjongTilePose.FACE_DOWN
+            tile.teleportExistingManagedTile(worldPlacement)
+        }
+        return MahjongTileWallPresentationResult.PRESENTED
+    }
+
+    /**
+     * 每面牌牆同時由玩家右側（[TileWallPosition.stack] 為 `0`，見 [MahjongTileTableLayout.wallPlacement]
+     * KDoc）至左側依序半空生成掉落，形成波浪感——`stack` 越大延遲越久開始掉落，四面牌牆各自獨立套用
+     * 同一套延遲公式（[MahjongTileTableLayout.WAVE_STEP_TICKS]）、同時開始，天然同步成波浪；`layer`
+     * 不影響延遲，同一墩兩層一起落下。牌張本身已經 `moveTo` 到掉落終點，這裡只需要
+     * 疊加半空起點的動畫，起訖姿態相同（[MahjongTilePose.FACE_DOWN]），只有位置在動。「延遲到期前先
+     * 隱形」用 [AnimationStep.SetInvisible] 表達，不是像過去那樣提前把動畫起點設在未來、靠 renderer
+     * 端另外判斷「還沒到期」來隱藏——理由見 [AnimatedMahjongEntity] KDoc。
+     *
+     * 本方法只排牌牆由半空落桌的動畫；開門整理與初始公開牌翻面由 [presentOpening] 在初次發牌及四家
+     * 手牌翻起後另行排入。[MahjongTileWallPresentation.animateOpening] 為 `false` 時代表 recovery 或
+     * 靜態同步，牌牆會直接在最終座標與權威公開姿態生成，不重播已過去的開門或翻面動畫。
+     *
+     * @param world 牌牆所在的伺服器世界。
+     * @param tilesWithPosition 每張牌的牌牆位置與 entity 配對。
+     */
+    private fun startWallDropAnimations(
+        world: ServerLevel,
+        tilesWithPosition: List<Pair<TileWallPosition, MahjongTileEntity>>,
+    ) {
+        tilesWithPosition.forEach { (position, tile) ->
+            val startDelayTicks = MahjongTileTableLayout.wallDropStartDelayTicks(position.stack)
+            val initialPose = tile.tilePose
+            val steps = mutableListOf<AnimationStep<MahjongTilePose>>(
+                AnimationStep.SetInvisible(true),
+                AnimationStep.WaitUntil(world.gameTime + startDelayTicks),
+                AnimationStep.SetInvisible(false),
+                AnimationStep.PlayMotion(
+                    durationTicks = TileMotionAnimationSpec.DEFAULT_DURATION_TICKS,
+                    arcHeight = 0.0,
+                    startOffsetX = 0.0,
+                    startOffsetY = WALL_DROP_HEIGHT,
+                    startOffsetZ = 0.0,
+                    startPoseRotationDegrees = initialPose.rotationDegrees,
+                    endPoseRotationDegrees = initialPose.rotationDegrees,
+                ),
+            )
+            if (position.layer == WALL_STACK_SOUND_LAYER) {
+                val landingGameTime = world.gameTime + startDelayTicks + TileMotionAnimationSpec.DEFAULT_DURATION_TICKS
+                steps += wallStackLandingSound(landingGameTime)
+            }
+            tile.enqueueAll(steps)
+        }
+    }
+
+    /**
+     * 建立此牌牆請求使用的抽象 placement 世界投影資料。
+     *
+     * @param controllerPos 桌子 controller 的方塊座標。
+     * @return 包含此桌座標、朝向與牌牆尺寸的投影 context。
+     */
+    private fun MahjongTileWallPresentation.projectionContext(controllerPos: BlockPos): MahjongTileWallProjectionContext = MahjongTileWallProjectionContext(
+        controllerX = controllerPos.x,
+        controllerY = controllerPos.y,
+        controllerZ = controllerPos.z,
+        tableFacing = tableFacing,
+        sideLayout = sideLayout,
+        tileLayout = tileLayout,
+        stacksPerSide = assemblyStructure.values
+            .filter { position -> position.side == 0 }
+            .maxOf { position -> position.stack + 1 },
+    )
+
+    /**
+     * 建立此 transition 請求使用的抽象 placement 世界投影資料。
+     *
+     * @param controllerPos 桌子 controller 的方塊座標。
+     * @return 包含此桌座標、朝向與牌牆尺寸的投影 context。
+     */
+    private fun MahjongTileWallTransitionPresentation.projectionContext(
+        controllerPos: BlockPos,
+    ): MahjongTileWallProjectionContext = MahjongTileWallProjectionContext(
+        controllerX = controllerPos.x,
+        controllerY = controllerPos.y,
+        controllerZ = controllerPos.z,
+        tableFacing = tableFacing,
+        sideLayout = sideLayout,
+        tileLayout = tileLayout,
+        stacksPerSide = stacksPerSide,
+    )
+
+    /**
+     * 建立一墩牌牆落桌時的小音量聲音 step；同墩只由上層牌播放一次。
+     *
+     * @param gameTime 預定落桌音效的絕對遊戲 tick。
+     * @return 帶播放與過期時刻的落桌音效步驟。
+     */
+    private fun wallStackLandingSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(
+        soundId = MahjongAnimationSounds.WALL_STACK_LAND,
+        volume = 0.3f,
+        pitch = 0.9f,
+        playAtGameTime = gameTime,
+        expiresAtGameTime = gameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
+    )
+
+    /**
+     * 建立只在牌牆上的牌正式開始翻面時有效的提示聲音 step。
+     *
+     * @param gameTime 預定播放提示聲的絕對遊戲 tick。
+     * @return 帶播放與過期時刻的提示音效步驟。
+     */
+    private fun wallRevealSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(
+        soundId = MahjongAnimationSounds.WALL_REVEAL,
+        volume = 0.7f,
+        pitch = 1.0f,
+        playAtGameTime = gameTime,
+        expiresAtGameTime = gameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
+    )
+
+    /**
+     * 牌牆上的牌翻面公開的「起飛→翻面→落下」步驟：牌原地（[x]／[z]／[yaw] 不變）往上抬起，在半空中
+     * 把姿態從 [MahjongTilePose.FACE_DOWN] 轉成 [MahjongTilePose.FACE_UP]（180 度旋轉插值，不是瞬間
+     * 換面——[MahjongTilePose.rotationDegrees] 這兩個姿態剛好相差 180 度），再落回原位，手法完全比照
+     * `EntityMahjongPlayerAreaPresenter` 開局發牌的起飛/翻牌/落下動畫。跟開局發牌不同的是這裡真實座標
+     * 全程只有 Y 在變、[x]／[z] 從頭到尾不變（牌本來就已經在開門後的正確位置，不需要像發牌那樣額外
+     * 傳送到不同的水平位置），因此不需要隱形／傳送到新座標那個轉場技巧。
+     *
+     * 翻面這段的 [AnimationStep.PlayMotion.easeRotation] 傳 `true`：旋轉本身也套用跟位移相同的
+     * ease-out 曲線，不是預設的純線性——遊戲內驗證過純線性旋轉在銜接下一個 step（落下）時，旋轉會
+     * 毫無預兆地瞬間停住，跟位移早已有的減速收尾比起來明顯生硬；套用同一條曲線後兩者收尾節奏一致，
+     * 翻面本身也有先快後慢的自然感，不是等速旋轉。這是刻意只在這個呼叫點加上的行為，不影響開局發牌
+     * 翻牌／摸牌換面等其他既有呼叫點的線性旋轉手感，見 [AnimationStep.PlayMotion.easeRotation] KDoc。
+     *
+     * @param x 動畫往返的世界 X 座標。
+     * @param y 動畫往返的起始世界 Y 座標。
+     * @param z 動畫往返的世界 Z 座標。
+     * @param yaw 動畫期間維持的水平朝向。
+     * @param soundGameTime 選用提示聲的絕對播放 tick；null 時不加聲音步驟。
+     * @return 起飛、翻面與落下的持久化動畫步驟。
+     */
+    private fun revealFlipAnimationSteps(
+        x: Double,
+        y: Double,
+        z: Double,
+        yaw: Float,
+        soundGameTime: Long?,
+    ): List<AnimationStep<MahjongTilePose>> {
+        val peakY = y + REVEAL_LIFT_HEIGHT
+        return buildList {
+            add(AnimationStep.Teleport(x, peakY, z, yaw))
+            add(
+                element = AnimationStep.PlayMotion(
+                    durationTicks = REVEAL_LIFT_DURATION_TICKS,
+                    arcHeight = 0.0,
+                    startOffsetX = 0.0,
+                    startOffsetY = y - peakY,
+                    startOffsetZ = 0.0,
+                    startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+                    endPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+                ),
+            )
+            if (soundGameTime != null) add(wallRevealSound(soundGameTime))
+            add(AnimationStep.Custom(MahjongTilePose.FACE_UP))
+            add(
+                element = AnimationStep.PlayMotion(
+                    durationTicks = REVEAL_FLIP_DURATION_TICKS,
+                    arcHeight = 0.0,
+                    startOffsetX = 0.0,
+                    startOffsetY = 0.0,
+                    startOffsetZ = 0.0,
+                    startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+                    endPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
+                    easeRotation = true,
+                ),
+            )
+            add(AnimationStep.Teleport(x, y, z, yaw))
+            add(
+                element = AnimationStep.PlayMotion(
+                    durationTicks = REVEAL_DROP_DURATION_TICKS,
+                    arcHeight = 0.0,
+                    startOffsetX = 0.0,
+                    startOffsetY = peakY - y,
+                    startOffsetZ = 0.0,
+                    startPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
+                    endPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
+                ),
+            )
+        }
+    }
+
+    /**
+     * 排定 [revealedTileIds] 對應的既有管理中牌播放「起飛→翻面→落下」動畫（見
+     * [revealFlipAnimationSteps]），公開成正面朝上；找不到對應 entity（例如桌子已被拆掉、或這局已經
+     * 結束）的牌直接跳過，回傳結果只用來讓呼叫端記 log，不影響已成功排定的牌。牌目前的實際座標
+     * （`tile.x`／`tile.y`／`tile.z`／`tile.yaw`）就是動畫的起訖點，不需要重新查詢牌牆結構座標——這張
+     * 牌本來就已經在開門後的正確位置，手法同開局發牌動畫（`TileAnimationSteps.scheduleDealBatch`）
+     * 讀取 entity 自身座標的既有慣例。同一次呼叫裡的牌全部立刻起飛，不需要額外的共用等待時刻：這裡
+     * 是同步方法、一個 tick 內跑完整個迴圈，[net.minecraft.server.level.ServerLevel.getGameTime] 對每張牌
+     * 而言都是同一個值，天然同步。
+     *
+     * @param tableId 牌所屬桌子的 UUID。
+     * @param tableLocation 桌子 controller 的版本無關位置。
+     * @param revealedTileIds 要翻面的管理中牌 UUID。
+     * @return 桌子有效時回報呈現結果；世界未載入時回報 `TABLE_NOT_FOUND`。
+     */
+    override fun revealReservedWallTiles(tableId: Uuid, tableLocation: TableLocation, revealedTileIds: Set<Uuid>): MahjongTileWallPresentationResult {
+        val world = resolveWorld(tableLocation) ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
+        val controllerPos = tableLocation.toBlockPos()
+        val managedTiles = findManagedTiles(world, tableId, controllerPos)
+            .filter { tile -> tile.uuid.toKotlinUuid() in revealedTileIds }
+            .associateBy { tile -> tile.uuid.toKotlinUuid() }
+        managedTiles.values.forEachIndexed { index, tile ->
+            val soundGameTime = if (index == 0) world.gameTime + REVEAL_LIFT_DURATION_TICKS else null
+            tile.enqueueAll(revealFlipAnimationSteps(tile.x, tile.y, tile.z, tile.yRot, soundGameTime))
+        }
+        val missingTileCount = revealedTileIds.size - managedTiles.size
+        if (missingTileCount > 0) {
+            logger.warn(
+                "Revealing reserved wall tiles on table {} skipped {} tile(s) whose entities are missing",
+                tableId,
+                missingTileCount,
+            )
+        }
+        return MahjongTileWallPresentationResult.PRESENTED
+    }
+
+    /**
+     * 清除指定 controller 周圍且 table UUID 相符的所有正式管理中麻將牌（含手牌），理由同 [present] KDoc。
+     *
+     * @param tableId 要清除牌張所屬的桌子 UUID。
+     * @param tableLocation 桌子 controller 的版本無關位置。
+     * @return 實際移除的牌 entity 數；世界未載入時為 0。
+     */
+    override fun clear(tableId: Uuid, tableLocation: TableLocation): Int {
+        val world = resolveWorld(tableLocation) ?: return 0
+        val tiles = findManagedTiles(world, tableId, tableLocation.toBlockPos())
+        tiles.forEach(MahjongTileEntity::discard)
+        return tiles.size
+    }
+
+    /**
+     * 由版本無關 dimension ID 取得目前 server session 的世界。
+     *
+     * @param location 要解析世界的桌子位置。
+     * @return 對應的已載入伺服器世界；ID 無效或未載入時為 null。
+     */
+    private fun resolveWorld(location: TableLocation): ServerLevel? {
+        val identifier = ResourceLocation.tryParse(location.dimensionId) ?: return null
+        val worldKey = ResourceKey.create(Registries.DIMENSION, identifier)
+        return serverHolder.current()?.getLevel(worldKey)
+    }
+
+    /**
+     * 只查詢桌子結構附近並以同步 UUID 精確篩選，避免掃描整個 dimension。不篩選角色——同一張桌子
+     * 目前所有管理中的麻將牌（不管是牌牆、王牌還是已經被領走的手牌）都在查詢範圍內，理由見 [present]
+     * KDoc。
+     *
+     * @param world 桌子所在的伺服器世界。
+     * @param tableId 要比對的桌子 UUID。
+     * @param controllerPos 桌子 controller 座標。
+     * @return 搜尋範圍內由該桌管理的牌 entity。
+     */
+    private fun findManagedTiles(
+        world: ServerLevel,
+        tableId: Uuid,
+        controllerPos: BlockPos,
+    ): List<MahjongTileEntity> = world.getEntitiesOfClass(
+        MahjongTileEntity::class.java,
+        AABB(controllerPos).inflate(TILE_SEARCH_HORIZONTAL, TILE_SEARCH_VERTICAL, TILE_SEARCH_HORIZONTAL),
+    ) { tile -> tile.managedTableId == tableId }
+
+    /**
+     * 將版本無關 table location 轉回 Minecraft 方塊座標。
+     *
+     * @return 對應的 Minecraft 方塊座標。
+     */
+    private fun TableLocation.toBlockPos(): BlockPos = BlockPos(x, y, z)
+
+    /** 正式牌牆建立與查詢使用的固定參數。 */
+    private companion object {
+        /** controller 周圍查詢正式牌牆用牌的水平半徑。 */
+        const val TILE_SEARCH_HORIZONTAL: Double = 2.0
+
+        /** controller 周圍查詢正式牌牆用牌的垂直半徑。 */
+        const val TILE_SEARCH_VERTICAL: Double = 2.0
+
+        /** 牌牆生成掉落動畫的半空起點高度，相對掉落終點的世界 Y 偏移。 */
+        const val WALL_DROP_HEIGHT: Double = 0.8
+
+        /** 每墩負責播放落桌聲音的牌牆層數。 */
+        private const val WALL_STACK_SOUND_LAYER: Int = 1
+
+        /** 牌牆上的牌翻面動畫的起飛高度，理由同 [WALL_DROP_HEIGHT]。 */
+        const val REVEAL_LIFT_HEIGHT: Double = 0.4
+
+        /**
+         * 牌牆上的牌翻面動畫起飛階段的時長；比其他牌張動畫的對應時長長，因為這段動畫沒有其他牌同時
+         * 播放分散注意力，需要單獨看得清楚，遊戲內比對後從最初的 4 調到現在的值。
+         */
+        const val REVEAL_LIFT_DURATION_TICKS: Int = 8
+
+        /** 牌牆上的牌翻面動畫本身（[MahjongTilePose.FACE_DOWN] 轉 [MahjongTilePose.FACE_UP]）的時長，理由同 [REVEAL_LIFT_DURATION_TICKS]。 */
+        const val REVEAL_FLIP_DURATION_TICKS: Int = 8
+
+        /** 牌牆上的牌翻面動畫落下階段的時長，理由同 [REVEAL_LIFT_DURATION_TICKS]。 */
+        const val REVEAL_DROP_DURATION_TICKS: Int = 8
+    }
+}

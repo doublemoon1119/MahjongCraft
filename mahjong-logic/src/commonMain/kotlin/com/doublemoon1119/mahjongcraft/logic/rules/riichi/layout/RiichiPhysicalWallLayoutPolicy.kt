@@ -35,7 +35,7 @@ class RiichiPhysicalWallLayoutPolicy(
         }
     }
 
-    /** 日麻王牌布局使用的共用保留區引擎。 */
+    /** 日麻王牌布局共用的保留區布局規則。 */
     private val delegate = ReplenishingReservedWallPhysicalLayoutPolicy(
         maximumSupplementalDrawCount = rinshanTileCount,
         initialShape = ReservedWallInitialShape.SPLIT_FIRST_TWO,

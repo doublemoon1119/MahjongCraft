@@ -11,7 +11,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-/** 驗證兩款麻將凳的 blockstate、模型、物品模型與掉落表資源。 */
+/** 驗證兩款麻將凳的 blockstate、模型與物品模型資源。 */
 class MahjongStoolResourceFilesTest {
     /** 木製款模型 cuboids，順序與碰撞 profile 相同。 */
     private val woodenCuboids = listOf(
@@ -87,46 +87,6 @@ class MahjongStoolResourceFilesTest {
         }
     }
 
-    /** 驗證兩款掉落表各自只掉落一個對應 BlockItem。 */
-    @Test
-    fun `stool loot tables drop their matching block items`() {
-        listOf("wooden", "plastic").forEach { style ->
-            val id = "${style}_mahjong_stool"
-            val lootTable = loadJson("/data/mahjongcraft/loot_tables/blocks/$id.json")
-            val entry = lootTable.getValue("pools").jsonArray.single().jsonObject
-                .getValue("entries").jsonArray.single().jsonObject
-
-            assertEquals("mahjongcraft:$id", entry.getValue("name").jsonPrimitive.content)
-        }
-    }
-
-    /** 驗證木製款接受任意木製半磚與柵欄，並一次產出兩張凳子。 */
-    @Test
-    fun `wooden stool recipe uses vanilla wooden material tags`() {
-        val recipe = loadJson("/data/mahjongcraft/recipes/wooden_mahjong_stool.json")
-
-        assertEquals("minecraft:crafting_shaped", recipe.getValue("type").jsonPrimitive.content)
-        assertEquals(listOf("SSS", "F F"), recipe.getValue("pattern").jsonArray.map { it.jsonPrimitive.content })
-        assertEquals("minecraft:wooden_slabs", recipe.keyEntry("S").getValue("tag").jsonPrimitive.content)
-        assertEquals("minecraft:wooden_fences", recipe.keyEntry("F").getValue("tag").jsonPrimitive.content)
-        assertEquals("mahjongcraft:wooden_mahjong_stool", recipe.resultItem())
-        assertEquals(2, recipe.resultCount())
-    }
-
-    /** 驗證塑膠款可由紅色染料與鷹架任意擺放合成。 */
-    @Test
-    fun `plastic stool recipe combines red dye and scaffolding`() {
-        val recipe = loadJson("/data/mahjongcraft/recipes/plastic_mahjong_stool.json")
-        val ingredients = recipe.getValue("ingredients").jsonArray.mapTo(mutableSetOf()) { ingredient ->
-            ingredient.jsonObject.getValue("item").jsonPrimitive.content
-        }
-
-        assertEquals("minecraft:crafting_shapeless", recipe.getValue("type").jsonPrimitive.content)
-        assertEquals(setOf("minecraft:red_dye", "minecraft:scaffolding"), ingredients)
-        assertEquals("mahjongcraft:plastic_mahjong_stool", recipe.resultItem())
-        assertEquals(1, recipe.resultCount())
-    }
-
     /**
      * 讀取模型的指定材質路徑。
      *
@@ -144,31 +104,6 @@ class MahjongStoolResourceFilesTest {
      */
     private fun JsonObject.rotation(variant: String): Int = getValue(variant).jsonObject
         .getValue("y").jsonPrimitive.content.toInt()
-
-    /**
-     * 讀取有形配方指定符號的 ingredient。
-     *
-     * @param symbol 配方 key 中的符號。
-     * @return 對應的 ingredient JSON object。
-     */
-    private fun JsonObject.keyEntry(symbol: String): JsonObject = getValue("key").jsonObject
-        .getValue(symbol).jsonObject
-
-    /**
-     * 讀取配方輸出的物品 ID。
-     *
-     * @return recipe result 中的 item ID。
-     */
-    private fun JsonObject.resultItem(): String = getValue("result").jsonObject
-        .getValue("item").jsonPrimitive.content
-
-    /**
-     * 讀取配方輸出的物品數量。
-     *
-     * @return recipe result 中的物品數量。
-     */
-    private fun JsonObject.resultCount(): Int = getValue("result").jsonObject
-        .getValue("count").jsonPrimitive.content.toInt()
 
     /**
      * 將 block model elements 轉成可直接比對的 cuboids。

@@ -191,6 +191,51 @@ class GameInitializerTest {
         assertTrue(firstPlayerSeats.toSet().size > 1, "Seat assignment should vary across multiple initializations.")
     }
 
+    /** 指定的牌山排列決定開門後的摸牌順序，開門仍照規則計算。排列換掉牌時拒絕。 */
+    @Test
+    fun `wall arrangement decides the opened draw order`() {
+        val playerIds = List(4) { Uuid.random() }
+        var expectedFirstTile: Uuid? = null
+        val reversed = TileWallArrangement { shuffled, open ->
+            shuffled.reversed().also { arranged -> expectedFirstTile = open(arranged).drawOrder.first().id }
+        }
+        val base = testRoundRandomness()
+        val randomness = RoundRandomness(base.seatOrder, base.wall, base.dice, base.components, wallArrangement = reversed)
+        val table = GameInitializer.initialize(Uuid.random(), playerIds, module, randomness = randomness).tableState
+        val dealer = table.players[table.currentPlayerIndex]
+        assertTrue(expectedFirstTile in dealer.hand.tiles.map { it.id }, "The dealer must receive the first opened tile")
+        val replaced = TileWallArrangement { shuffled, _ -> shuffled.drop(1) + shuffled.first().copy(id = Uuid.random()) }
+        assertFailsWith<IllegalArgumentException> {
+            GameInitializer.initialize(Uuid.random(), playerIds, module, randomness = RoundRandomness(base.seatOrder, base.wall, base.dice, base.components, wallArrangement = replaced))
+        }
+    }
+
+    /** 指定座位順序時照順序排座，不受亂數影響。順序與玩家不符時拒絕。 */
+    @Test
+    fun `specified seat order replaces the random seating`() {
+        val playerIds = List(4) { Uuid.random() }
+        val seatOrder = listOf(playerIds[2], playerIds[0], playerIds[3], playerIds[1])
+        repeat(5) { seed ->
+            val table = GameInitializer.initialize(
+                id = Uuid.random(),
+                playerIds = playerIds,
+                module = module,
+                randomness = testRoundRandomness(seed),
+                seatOrder = seatOrder,
+            ).tableState
+            assertEquals(seatOrder, table.players.map { it.id })
+        }
+        assertFailsWith<IllegalArgumentException> {
+            GameInitializer.initialize(
+                id = Uuid.random(),
+                playerIds = playerIds,
+                module = module,
+                randomness = testRoundRandomness(),
+                seatOrder = playerIds.drop(1) + Uuid.random(),
+            )
+        }
+    }
+
     /**
      * 驗證玩家人數不在規則允許範圍內時會拋出例外。
      */

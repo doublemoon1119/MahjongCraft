@@ -1,0 +1,130 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
+
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongRoundInfoEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.cameraFacingRotation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
+import com.mojang.blaze3d.vertex.PoseStack
+import net.minecraft.client.gui.Font
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.entity.EntityRenderer
+import net.minecraft.client.renderer.entity.EntityRendererProvider
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.inventory.InventoryMenu
+
+/**
+ * 將桌面中央的局況資訊畫成面向攝影機的文字面板。
+ *
+ * [MahjongRoundInfoEntity.lines] 只提供局況行 ID 與帶型別的參數。每行交給 [RoundInfoLineTextBuilder] 組成文字，
+ * 再由用戶端依自己的語系顯示；牌名、牌面 emoji 與規則訊息都透過各自的 registry 查詢。
+ * 未登記的行 ID 直接顯示原始 ID，不會讓整行消失。
+ *
+ * 繪製方式沿用原版實體名牌的座標方向：套用攝影機旋轉、以 `(-scale, -scale, scale)` 縮放，並使用
+ * [Font.DisplayMode.NORMAL] 畫在半空中。
+ *
+ * @param context Minecraft renderer factory 提供的 client context。
+ * @property configStore 提供局況面板可見性設定。
+ * @param roundInfoLineDisplayRegistry 將同步的 line key 解析為本地化顯示定義。
+ * @param tileDisplayNameRegistry 將擴充牌種轉成名稱翻譯。
+ * @param tileAssetRegistry 將牌種轉成素材 key。
+ * @param tileEmojiRegistry 將素材 key 轉成牌面 emoji。
+ */
+class MahjongRoundInfoEntityRenderer(
+    context: EntityRendererProvider.Context,
+    private val configStore: MahjongClientConfigStore,
+    roundInfoLineDisplayRegistry: RoundInfoLineDisplayRegistry,
+    tileDisplayNameRegistry: TileDisplayNameRegistry,
+    tileAssetRegistry: MinecraftTileAssetRegistry,
+    tileEmojiRegistry: TileEmojiRegistry,
+) : EntityRenderer<MahjongRoundInfoEntity>(context) {
+    /** 共用 Vanilla text renderer，畫法比照 [MahjongTileEntityRenderer]。 */
+    private val textRenderer = context.font
+
+    /** 局況文字參數診斷記錄器。 */
+    private val logger = mahjongCraftLogger(MahjongRoundInfoEntityRenderer::class)
+
+    /** 局況資料列文字組合器。 */
+    private val lineTextBuilder = RoundInfoLineTextBuilder(
+        roundInfoLineDisplayRegistry = roundInfoLineDisplayRegistry,
+        tileDisplayNameRegistry = tileDisplayNameRegistry,
+        tileAssetRegistry = tileAssetRegistry,
+        tileEmojiRegistry = tileEmojiRegistry,
+    ) { message -> logger.warn(message) }
+
+    override fun render(
+        entity: MahjongRoundInfoEntity,
+        yaw: Float,
+        tickDelta: Float,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
+        light: Int,
+    ) {
+        if (!configStore.current.presentationVisibility.roundInfoEnabled) return
+        if (entity.isInvisible) return
+        super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
+        val lines = entity.lines.map(lineTextBuilder::buildLineText)
+
+        WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
+            panelMatrices.pushPose()
+            panelMatrices.mulPose(entityRenderDispatcher.cameraFacingRotation())
+            panelMatrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
+            val lineHeight = textRenderer.lineHeight + LINE_SPACING
+            val totalHeight = lineHeight * lines.size
+            val maxWidth = lines.maxOfOrNull(textRenderer::width) ?: 0
+            WorldPanelRenderer.drawBackground(
+                left = -maxWidth / 2f - PANEL_PADDING,
+                top = -totalHeight / 2f - PANEL_PADDING,
+                right = maxWidth / 2f + PANEL_PADDING,
+                bottom = totalHeight / 2f + PANEL_PADDING,
+                color = BACKGROUND_COLOR,
+                z = 0f,
+                matrices = panelMatrices,
+                consumers = panelConsumers,
+            )
+            lines.forEachIndexed { index, line ->
+                val width = textRenderer.width(line)
+                val x = -width / 2.0f
+                val y = -totalHeight / 2.0f + index * lineHeight
+                WorldPanelRenderer.drawText(
+                    renderer = textRenderer,
+                    text = line,
+                    x = x,
+                    y = y,
+                    color = TEXT_COLOR,
+                    z = TEXT_Z,
+                    light = light,
+                    matrices = panelMatrices,
+                    consumers = panelConsumers,
+                )
+            }
+            panelMatrices.popPose()
+        }
+    }
+
+    /** 純文字顯示，不提供單一 texture；原版規定回傳值不可為空，因此回傳方塊材質圖集。 */
+    override fun getTextureLocation(entity: MahjongRoundInfoEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
+
+    companion object {
+        /** 文字縮放。 */
+        private const val TEXT_SCALE: Float = 0.025f
+
+        /** 相鄰兩行文字之間的額外間距（像素，縮放前）。 */
+        private const val LINE_SPACING: Int = 2
+
+        /** 單一背景四周的像素 padding。 */
+        private const val PANEL_PADDING: Float = 5f
+
+        /** 文字顏色，不透明白色。 */
+        private const val TEXT_COLOR: Int = 0xFFFFFFFF.toInt()
+
+        /** 文字相對背景向觀看者方向移動的距離，避免兩者位於同一深度而閃爍。 */
+        private const val TEXT_Z: Float = -0.02f
+
+        /** 文字背景色板，半透明黑底，比照 vanilla 名牌背景慣例，提升可讀性。 */
+        private const val BACKGROUND_COLOR: Int = 0xB01A2232.toInt()
+    }
+}

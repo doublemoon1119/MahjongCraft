@@ -1,15 +1,25 @@
+import com.doublemoon1119.mahjongcraft.buildlogic.AUTOTEST_SERVER_RESUME
+import com.doublemoon1119.mahjongcraft.buildlogic.AUTOTEST_SERVER_START
 import com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModLibraryKind
 import com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtension
 import com.doublemoon1119.mahjongcraft.buildlogic.StripModuleInfo
 import com.doublemoon1119.mahjongcraft.buildlogic.UnpackLibraryJars
 import com.doublemoon1119.mahjongcraft.buildlogic.VerifyEmbeddedLibrariesTask
 import com.doublemoon1119.mahjongcraft.buildlogic.VerifyNoSplitPackagesTask
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestClientArguments
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestClientEnvironment
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestServerSystemProperties
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestSystemProperties
+import com.doublemoon1119.mahjongcraft.buildlogic.clientRunDirectory
 import com.doublemoon1119.mahjongcraft.buildlogic.hideForgeDeprecationsOfVanillaApis
 import com.doublemoon1119.mahjongcraft.buildlogic.includeResourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.kotlinForForge
 import com.doublemoon1119.mahjongcraft.buildlogic.minecraftModAccessTransformer
 import com.doublemoon1119.mahjongcraft.buildlogic.modrinth
+import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestClientTasks
+import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestServerTasks
+import com.doublemoon1119.mahjongcraft.buildlogic.serverRunDirectory
 import net.neoforged.moddevgradle.tasks.JarJar
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 
@@ -48,7 +58,8 @@ devMods {
 }
 
 // 材質、模型與翻譯放在跨版本、跨載入器共用的 :minecraft_common，與本模組的資源一起打包。
-// :minecraft_v1.20.1_mod 的程式與資源由本模組一起編譯與打包（同 Fabric），由 ModDevGradle 一起轉成 Forge 執行時的名稱。
+// :minecraft_v1.20.1_mod 與它一起編譯的跨版本共用 platform/minecraft/mod，程式與資源由本模組一起編譯與打包：mod 模組自己
+// 的 JAR 使用 Mojang 名稱，因此不直接依賴它的 JAR，而是把原始碼納入本模組，由 ModDevGradle 一起轉成 Forge 執行時的名稱。
 includeResourcesOf(":minecraft_common", "src/jvmMain")
 includeSourcesOf(":minecraft_v1.20.1_mod")
 
@@ -63,15 +74,31 @@ legacyForge {
     runs {
         create("client") {
             client()
-            gameDirectory.set(layout.projectDirectory.dir("run/client"))
+            gameDirectory.set(layout.projectDirectory.dir(clientRunDirectory()))
+            // -PmahjongcraftAutotest 時，debug 模組在遊戲啟動後自動執行測試並關閉遊戲。
+            autotestSystemProperties().forEach { (name, value) -> systemProperty(name, value) }
+            autotestClientEnvironment().forEach { (name, value) -> environment(name, value) }
+            autotestClientArguments().forEach(::programArgument)
         }
         create("server") {
             server()
-            gameDirectory.set(layout.projectDirectory.dir("run/server"))
+            gameDirectory.set(layout.projectDirectory.dir(serverRunDirectory()))
+            // -PmahjongcraftAutotest 時是伺服器自動測試的第一段：開局、打到一半後關機。
+            autotestServerSystemProperties(AUTOTEST_SERVER_START).forEach { (name, value) -> systemProperty(name, value) }
+            programArgument("--nogui")
+        }
+        // 伺服器自動測試的第二段：讀回第一段留下的世界；只由 autotestServer 任務接在第一段之後執行。
+        create("autotestServerResume") {
+            server()
+            disableIdeRun()
+            gameDirectory.set(layout.projectDirectory.dir(serverRunDirectory()))
+            autotestServerSystemProperties(AUTOTEST_SERVER_RESUME).forEach { (name, value) -> systemProperty(name, value) }
             programArgument("--nogui")
         }
     }
 }
+registerAutotestClientTasks(clientTask = "runClient")
+registerAutotestServerTasks(startTask = "runServer", resumeTask = "runAutotestServerResume")
 
 dependencies {
     modImplementation(mc1201.kotlinforforge)
@@ -127,6 +154,8 @@ mixin {
     add(sourceSets.main.get(), "mahjongcraft.refmap.json")
     config(forgeMixinConfig)
     config(sharedMixinConfig)
+    // debug 模組的自動測試 mixin；只有開發執行會載入 debug 模組，正式 JAR 的 MixinConfigs 不含它。
+    config("mahjongcraft.debug.mixins.json")
 }
 
 tasks.jar {

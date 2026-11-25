@@ -40,6 +40,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.failOnSkippedHistoryEvent
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -56,7 +57,7 @@ class HistoryRecordingPersistenceDtoTest {
         val terminal = HistoryRecordingTerminal(42L, true, Uuid.random())
         val state = HistoryRecordingState(terminalByMatchId = mapOf(matchId to terminal))
         val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
-        assertEquals(state, mapper.decode(mapper.encode(state)))
+        assertEquals(state, mapper.decode(mapper.encode(state, failOnSkippedHistoryEvent), failOnSkippedHistoryEvent))
     }
 
     /** 終局 metadata 的場地 UUID 無法解析時必須拒絕資料。 */
@@ -74,7 +75,7 @@ class HistoryRecordingPersistenceDtoTest {
             formatVersion = HistoryRecordingPersistenceDto.FORMAT_VERSION,
         )
         val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
-        assertFailsWith<IllegalArgumentException> { mapper.decode(dto) }
+        assertFailsWith<IllegalArgumentException> { mapper.decode(dto, failOnSkippedHistoryEvent) }
     }
 
     /** 交易差異經 JSON 與 DTO 往返後，保留分數及公開結果的新增、清空、未變更語意。 */
@@ -118,11 +119,17 @@ class HistoryRecordingPersistenceDtoTest {
                     event.copy(fact = HistoryFact.TableChanged(HistoryTableResult.Change(variant)))
                 },
             )
-            val dto = mapper.encode(variantState)
+            val dto = mapper.encode(variantState, failOnSkippedHistoryEvent)
             val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), dto)
 
             assertTrue(!encoded.contains("resultingState"))
-            assertEquals(variantState, mapper.decode(Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded)))
+            assertEquals(
+                expected = variantState,
+                actual = mapper.decode(
+                    dto = Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded),
+                    skippedEventReporter = failOnSkippedHistoryEvent,
+                ),
+            )
         }
     }
 
@@ -158,9 +165,15 @@ class HistoryRecordingPersistenceDtoTest {
             ),
         )
         val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
-        val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), mapper.encode(state))
+        val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), mapper.encode(state, failOnSkippedHistoryEvent))
 
-        assertEquals(state, mapper.decode(Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded)))
+        assertEquals(
+            expected = state,
+            actual = mapper.decode(
+                dto = Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded),
+                skippedEventReporter = failOnSkippedHistoryEvent,
+            ),
+        )
     }
 
     /** 開局擲骰事實在歷史 outbox 的 JSON 往返後保留完整逐輪資料。 */
@@ -185,7 +198,7 @@ class HistoryRecordingPersistenceDtoTest {
         )
         val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
 
-        assertEquals(state, mapper.decode(mapper.encode(state)))
+        assertEquals(state, mapper.decode(mapper.encode(state, failOnSkippedHistoryEvent), failOnSkippedHistoryEvent))
     }
 
     /** 牌張呈現變化保留外觀、公開特徵、姿態與知道牌面的讀取者。 */
@@ -223,7 +236,7 @@ class HistoryRecordingPersistenceDtoTest {
         )
         val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
 
-        assertEquals(state, mapper.decode(mapper.encode(state)))
+        assertEquals(state, mapper.decode(mapper.encode(state, failOnSkippedHistoryEvent), failOnSkippedHistoryEvent))
     }
 
     /** 規則選擇的開始、提交、自動完成與換牌事實在 JSON 往返後保留開啟視窗的時間點與內容。 */
@@ -269,7 +282,7 @@ class HistoryRecordingPersistenceDtoTest {
         )
         val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
 
-        assertEquals(state, mapper.decode(mapper.encode(state)))
+        assertEquals(state, mapper.decode(mapper.encode(state, failOnSkippedHistoryEvent), failOnSkippedHistoryEvent))
     }
 
     /** 動作即時收付事實在 JSON 與 DTO 往返後保留動作、各玩家增減與點數池數量。 */
@@ -296,9 +309,15 @@ class HistoryRecordingPersistenceDtoTest {
             ),
         )
         val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
-        val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), mapper.encode(state))
+        val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), mapper.encode(state, failOnSkippedHistoryEvent))
 
-        assertEquals(state, mapper.decode(Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded)))
+        assertEquals(
+            expected = state,
+            actual = mapper.decode(
+                dto = Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded),
+                skippedEventReporter = failOnSkippedHistoryEvent,
+            ),
+        )
     }
 
     /** 中止事實的原因識別碼在 JSON 與 DTO 往返後保持不變。 */
@@ -319,9 +338,15 @@ class HistoryRecordingPersistenceDtoTest {
             ),
         )
         val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
-        val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), mapper.encode(state))
+        val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), mapper.encode(state, failOnSkippedHistoryEvent))
 
-        assertEquals(state, mapper.decode(Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded)))
+        assertEquals(
+            expected = state,
+            actual = mapper.decode(
+                dto = Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded),
+                skippedEventReporter = failOnSkippedHistoryEvent,
+            ),
+        )
     }
 
     /** 即使版本為預設值，也必須明確輸出歷史格式版本。 */
@@ -353,7 +378,7 @@ class HistoryRecordingPersistenceDtoTest {
         )
         val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
 
-        assertEquals(state, mapper.decode(mapper.encode(state)))
+        assertEquals(state, mapper.decode(mapper.encode(state, failOnSkippedHistoryEvent), failOnSkippedHistoryEvent))
     }
 
     /** 驗證所有歷史記錄決策均以穩定列舉名稱往返持久化。 */
@@ -365,7 +390,7 @@ class HistoryRecordingPersistenceDtoTest {
         val state = HistoryRecordingState(decisionsByMatchId = decisionsByMatchId)
         val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
 
-        assertEquals(state, mapper.decode(mapper.encode(state)))
+        assertEquals(state, mapper.decode(mapper.encode(state, failOnSkippedHistoryEvent), failOnSkippedHistoryEvent))
     }
 
     /** 未知的歷史記錄決策名稱必須拒絕載入，避免錯誤地視為可記錄。 */
@@ -383,7 +408,7 @@ class HistoryRecordingPersistenceDtoTest {
         )
 
         assertFailsWith<IllegalArgumentException> {
-            HistoryRecordingPersistenceMapper(bundledPersistenceRegistries()).decode(dto)
+            HistoryRecordingPersistenceMapper(bundledPersistenceRegistries()).decode(dto, failOnSkippedHistoryEvent)
         }
     }
 
@@ -423,10 +448,14 @@ class HistoryRecordingPersistenceDtoTest {
             formatVersion = HistoryRecordingPersistenceDto.FORMAT_VERSION,
         )
 
-        val decoded = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries()).decode(dto)
+        val skipped = mutableListOf<Pair<Uuid, Long>>()
+        val decoded = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries()).decode(dto) { skippedMatchId, sequence, _ ->
+            skipped += skippedMatchId to sequence
+        }
 
         assertEquals(listOf(2L), decoded.pendingEvents.map { it.sequence })
         assertEquals(1L, decoded.firstMissingSequenceByMatchId.getValue(matchId))
+        assertEquals(listOf(matchId to 1L), skipped)
     }
 
     /** 胡牌詳情的文字、條目與牌參照均可完整往返。 */
@@ -476,6 +505,6 @@ class HistoryRecordingPersistenceDtoTest {
             ),
         )
         val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
-        assertEquals(state, mapper.decode(mapper.encode(state)))
+        assertEquals(state, mapper.decode(mapper.encode(state, failOnSkippedHistoryEvent), failOnSkippedHistoryEvent))
     }
 }

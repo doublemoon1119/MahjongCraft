@@ -1675,5 +1675,7 @@
   "subtitles.mahjongcraft.voice.taiwan.pon": "ポンを宣言",
   "subtitles.mahjongcraft.voice.taiwan.ready": "聴牌宣言",
   "subtitles.mahjongcraft.voice.taiwan.tsumo": "ツモを宣言",
-  "subtitles.mahjongcraft.win.lightning": "雷が落ちる"
+  "subtitles.mahjongcraft.win.lightning": "雷が落ちる",
+  "tag.item.mahjongcraft.mahjong_rulers": "牌尺",
+  "tag.item.mahjongcraft.mahjong_tiles": "麻雀牌"
 }

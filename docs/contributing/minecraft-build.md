@@ -18,20 +18,47 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   without applying them, so every module loads the same plugin classes. Modules that apply different plugin
   sets would otherwise load Loom in separate class loaders, and Loom fails when it reaches another project, for
   example while an IDE sync creates `genSources` tasks. Declare a new loader's plugins there as well.
-- ModDevGradle's tools that prepare Minecraft default to a Java version the plugin chooses. The version mod and
-  loader conventions run them on the Java running Gradle instead, so no extra JDK is installed or downloaded;
-  CI disables toolchain downloads.
+- ModDevGradle's tools that prepare Minecraft decompile and recompile it with the Java they run on. The version
+  mod and loader conventions run them on the target's toolchain, or on Java 21 when the target is older, since
+  the tools need at least Java 21. A newer Java names compiler-generated methods such as lambdas differently from
+  vanilla, and development runs with mods that change those methods, such as Embeddium, then fail. The tools'
+  cache does not record the Java version, so after changing it delete `~/.gradle/caches/neoformruntime` to
+  recompile. CI installs each target's JDK and JDK 21 and disables toolchain downloads.
 
 ## Version Mod Modules
 
 - Each Minecraft version has one mod module, such as `platform/minecraft/v1.20.1/mod`, for the code and resources
-  that call that Minecraft version but no loader API. Its build applies the ModDevGradle legacy plugin in vanilla
-  mode, so it compiles and tests against vanilla Minecraft with Mojang names and fails when code uses a loader API.
+  that call that Minecraft version but no loader API. Its build applies ModDevGradle in vanilla mode, the legacy
+  plugin for 1.20.1 and the regular plugin from 1.21.1, so it compiles and tests against vanilla Minecraft with
+  Mojang names and fails when code uses a loader API.
+- Code, resources and tests that are the same for every supported Minecraft version live once in
+  `platform/minecraft/mod`, which is a plain folder, not a Gradle project. Each version's mod module compiles it
+  with its own sources through `includeSharedVersionSources()`, so the shared code is compiled and tested once
+  per version. Where Minecraft versions differ, the shared code calls an adapter or extends a base class that
+  each version's mod module provides with the same name, mostly in the `vanilla` package.
+- Adapters use the newer Minecraft name when the newer version has a method that does the same thing: the older
+  version's adapter is an extension function with that name. The shared code imports these functions, so the
+  newer version declares the same names as extensions that only call the vanilla member, with
+  `EXTENSION_SHADOWED_BY_MEMBER` suppressed; calls still resolve to the member. Differences without such a
+  method get a neutral name that describes what the adapter does. Before using a newer name, check that the
+  older version has no method with that name and a different purpose.
+- Shared tests follow the same rule: where a test needs a Minecraft call that differs by version, such as
+  creating saved data storage or locating a data pack folder, each version's mod module provides a test-only
+  adapter with the same name in its own test sources.
+- Data pack files whose format or folder name changes between Minecraft versions, such as recipes,
+  advancements, loot tables and item tags, stay in each version's mod module.
+- A loader that supports more than one Minecraft version with a continuing API keeps the adapter code that is
+  the same for all of them in a shared folder named after the loader, such as `platform/minecraft/fabric`, which
+  each version's loader module compiles through `includeSharedVersionSources()`, like the shared mod folder. Each
+  version's loader module keeps what differs, such as networking, and the files every version has its own copy
+  of: mod metadata, access wideners, mixin configurations and data pack files. A loader with one supported
+  version keeps everything in its version folder. Forge and NeoForge are separate loaders and share nothing.
 - Loader modules compile the mod module's sources and package its resources together with their own, instead of
   depending on its JAR. That JAR uses Mojang names, while each loader remaps the combined output to its own runtime
   names. The mod module's JAR is never distributed.
 - Loader modules call `includeSourcesOf` from build-logic to compile another project's sources and resources with
-  their own, and `includeResourcesOf` to package only its resources, such as the textures and translations in
+  their own, and for a module in a Minecraft version folder also the matching shared folder.
+  `includeResourcesOf` packages only another project's resources, such as the textures and translations in
   `:minecraft_common`. `includeTestSourcesOf` adds a test folder that only loader modules compile, such as
   the debug assembly test shared by the loader debug modules.
 - Modules that use the version mod module's access transformer, such as Forge modules, debug modules and the
@@ -117,6 +144,11 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   `configurationName` to its equivalent.
 - When several targets are selected, one switch applies to all of them, so a loader that needs no mods for
   a group declares it empty, as Forge does for `modmenu` because its own mod list has a settings button.
+- A group that loads a shader mod can also name a shader pack with `shaderPack(group = ..., pack = ...)`.
+  When the group is selected, the client run puts the pack in its `shaderpacks` folder and writes the shader
+  mod's settings to turn it on before the game starts, so manual runs and automated tests both run with
+  shaders. The pack is a catalog entry, such as one from the Modrinth Maven repository, and is never
+  bundled.
 - Groups hold runtime mods only. Product code must not depend on them. An integration that compiles
   against another mod's API, such as a ModMenu settings entry point, declares that API as compile-only and
   keeps the other mod optional in its metadata; the group only supplies the mod for development runs.
@@ -129,3 +161,146 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   unless a build sets it explicitly.
 - A group name means the same kind of environment on every target, but each target chooses the actual mods.
   The groups a target declares, and how to use them, belong in that loader module's README.
+
+## Automated Test Runs
+
+Common commands, each followed by what it runs. The sections below explain each kind of run.
+
+- Every selected target's client and server tests, with a summary report; the server tests accept the
+  Minecraft EULA on your behalf (see [Automated Server Test](#automated-server-test)):
+
+  ```shell
+  ./gradlew autotest "-PmahjongcraftTarget=minecraft-v1.20.1-fabric,minecraft-v1.20.1-forge,minecraft-v1.21.1-fabric" "-PmahjongcraftAutotest=true"
+  ```
+
+- One loader's client and server tests at the same time, with a summary report: select only that target.
+
+  ```shell
+  ./gradlew autotest "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=true"
+  ```
+
+- The same with the example's client test in place of the loader's own, which also covers screens that need
+  extension content:
+
+  ```shell
+  ./gradlew autotest "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftExample=true" "-PmahjongcraftAutotest=true"
+  ```
+
+- One module's tests without a summary report; failed checks do not fail the build:
+
+  ```shell
+  ./gradlew :minecraft_v1.20.1_fabric:autotestTarget "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=true"
+  ```
+
+- Only the client test, every step:
+
+  ```shell
+  ./gradlew :minecraft_v1.20.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=true"
+  ```
+
+- Only some client steps, listed by id; the step that enters the test world always runs, and an id that names
+  no step fails the test:
+
+  ```shell
+  ./gradlew :minecraft_v1.20.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=table,replay"
+  ```
+
+- Only the server test, both of its runs:
+
+  ```shell
+  ./gradlew :minecraft_v1.20.1_fabric:autotestServer "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=true"
+  ```
+
+- Options that combine with any of the above:
+  - `-PmahjongcraftAutotestParallel=<count>`: how many games run at once.
+  - `-PmahjongcraftAutotestKeep=<count>`: how many reports to keep.
+  - `-PmahjongcraftAutotestServerPort=<port>`: the first server port.
+
+Each kind of run in detail:
+
+- Development clients can test themselves without anyone at the keyboard. Pass the steps to run, or `true`
+  for all of them:
+
+  ```shell
+  ./gradlew :minecraft_v1.20.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=true"
+  ```
+
+- The example's loader modules take the same switch and also load the debug module, so the same steps run with
+  the example extension installed; build them with `-PmahjongcraftExample=true`:
+
+  ```shell
+  ./gradlew :example-minecraft_v1.20.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftExample=true" "-PmahjongcraftAutotest=true"
+  ```
+
+  Some checks need an extension's content, such as the multi-choice settings screen, which no built-in rule
+  uses. A run without that content records the check as skipped.
+- The loader modules pass the switch to their runs as the `mahjongcraft.autotest` system property, together
+  with the module name for the report. Without the switch, development runs stay unchanged. The debug tools
+  read the property, so the packaged mod never runs automated tests.
+- Test runs use their own run directory, `run/autotest-client`, so the test's options and worlds never touch
+  the normal development client. The client always signs in as `MahjongTest` with a 1920×1080 window.
+- Before the client starts, `prepareAutotestClient` writes the options that must hold from startup into the run
+  directory's `options.txt`: the accessibility onboarding counts as seen and the narrator is off, so the first
+  launch neither shows that screen nor reads it aloud through the system's speech, which the null sound output
+  does not cover. Other options keep their previous values.
+- Once the title screen has loaded, the client skips the first-launch accessibility screen if it still appears,
+  for example when launched without Gradle, sets fixed display options (field of view, GUI scale, view
+  bobbing, clouds), deletes the previous test world, creates a flat creative world with a fixed seed, runs the
+  selected steps, writes a report and closes the game. The world
+  keeps a fixed time and clear weather, and spawns no mobs. The report lives in the run directory under
+  `autotest/<start time>/` as `report.md`, `report.json` and screenshots, and `autotest/latest.txt` names the
+  latest folder. Closing the game early still writes a report that marks the unfinished step as aborted.
+- Each run keeps only the latest 10 report folders and deletes older ones when it starts. Pass
+  `-PmahjongcraftAutotestKeep=<count>` to keep a different number. Only folders named with the report time
+  format are deleted; anything else under `autotest/` stays.
+- While a test runs, the game ignores mouse and keyboard input, leaves the cursor free and keeps running without
+  focus. Its client run sets `ALSOFT_DRIVERS=null`, so OpenAL Soft loads and plays sounds into a null output that
+  nobody hears; the test records each sound request in the report. Do not minimise the window: Minecraft stops
+  drawing while minimised.
+- The steps and the input and sound handling live in the
+  [shared Minecraft mod debug tools](../../platform/minecraft/mod-debug/README.md).
+
+### Automated Server Test
+
+- The dedicated server has its own automated test, run by the `autotestServer` task with the same switch:
+
+  ```shell
+  ./gradlew :minecraft_v1.20.1_fabric:autotestServer "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=true"
+  ```
+
+- **The test accepts the Minecraft EULA on your behalf.** Before the first server starts,
+  `prepareAutotestServer` writes `eula=true` to the test's own `run/autotest-server/eula.txt` and prints a
+  warning, and every report repeats the reminder. Do not run the server test unless you agree to the
+  [Minecraft EULA](https://aka.ms/MinecraftEULA). The normal `run/server` is never touched.
+- The same task deletes the previous test world and writes fixed server settings: a flat world with a fixed
+  seed, offline mode and peaceful creative play. The port is 25599 plus the target's position in the whole
+  target catalog sorted by ID, so `minecraft-v1.20.1-fabric` uses 25599 and `minecraft-v1.20.1-forge` 25600.
+  Pass `-PmahjongcraftAutotestServerPort=<port>` to start from another port.
+- Only the `autotestServer` task runs the server test: it tells each server which of its two runs it is. Other
+  servers started with the switch, such as an example's `runServer`, start as usual and run no test.
+- The task starts the server twice. The first run plays at tables and stops in the middle of a match; the
+  second run, `runAutotestServerResume`, loads the same world, checks what was restored and finishes the
+  matches. Both runs write into the same report under `run/autotest-server/autotest/<start time>/`, which
+  keeps the latest reports like the client test.
+
+### Running Every Target
+
+- The root `autotest` task runs every selected target's client and server tests in one build. With
+  `-PmahjongcraftExample=true` it runs each example's client test instead of its loader module's own client
+  test: the example client loads the main mod, runs the same steps and also covers the extension's content.
+  A loader module's `runClient` can still run its own client test directly:
+
+  ```shell
+  ./gradlew autotest "-PmahjongcraftTarget=minecraft-v1.20.1-fabric,minecraft-v1.20.1-forge,minecraft-v1.21.1-fabric" "-PmahjongcraftAutotest=true"
+  ```
+
+- At most two games run at the same time; pass `-PmahjongcraftAutotestParallel=<count>` to change it. Each game
+  needs a few gigabytes of memory, and every client opens its own window.
+- `-PmahjongcraftAutotestServerPort` sets the first server port; each loader module adds its target's position
+  in the catalog, which does not depend on the selection, so servers that run together never share a port.
+- Targets of different Minecraft versions can run together. With `-PmahjongcraftExample=true`, targets that
+  declare no example modules run without example tests.
+- A failing or crashing target does not stop the others. When every run has ended, the task writes
+  `build/reports/autotest/<start time>/summary.md`, which links each report and lists the failed checks, and
+  fails if any report did not pass or a run wrote no report. Only reports started during this build count,
+  and the latest summaries are kept like the reports.

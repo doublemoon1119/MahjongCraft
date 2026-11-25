@@ -8,11 +8,10 @@
 
 - Model tiles, hands, melds, walls, players, table state, and reactions.
 - Define rule-module contracts and registries.
-- Implement the currently available Japanese rule logic and the foundational,
-  still-in-progress Taiwanese rule components.
+- Implement the Japanese and Taiwanese rule logic.
 - Calculate legal actions and shanten, and provide rule-specific hand-value,
-  scoring, and round-result contracts where implemented. Taiwanese hand-value
-  and settlement calculation is not implemented yet.
+  scoring, and round-result contracts, including Taiwanese tai calculation
+  and settlement.
 
 ## Round Openings
 

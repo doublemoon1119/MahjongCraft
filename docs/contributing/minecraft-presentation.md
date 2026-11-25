@@ -131,7 +131,7 @@ rules come from collisions that only showed up in game, so check them even when 
   that ID. An argument it cannot understand is preserved in its position as `?`, with one warning. A malformed
   JSON document still decodes to an empty list.
 - See the [pairing example registration](../../example/platform/minecraft/common/src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/presentation/ExamplePairingRoundInfo.kt),
-  the [Minecraft 1.20.1 parameter builder test](../../platform/minecraft/v1.20.1/mod/src/test/kotlin/com/doublemoon1119/mahjongcraft/platform/minecraft/mod/client/render/RoundInfoLineTextBuilderTest.kt)
+  the [Minecraft mod parameter builder test](../../platform/minecraft/mod/src/test/kotlin/com/doublemoon1119/mahjongcraft/platform/minecraft/mod/client/render/RoundInfoLineTextBuilderTest.kt)
   and the [example provider test](../../example/platform/minecraft/common/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/presentation/ExamplePairingPresentationTest.kt).
 
 ## Tile Appearance Styles
@@ -429,7 +429,7 @@ readable replay unusable. The client keeps historical descriptions separate from
 For local development, `/mahjongcraft debug seated_participant` creates an ordinary armor stand at
 an available furniture seat that keeps existing occupants in place in the command user's waiting room. It does not insert a room member:
 normal discovery must do that. This command and its borrowed-actor adapter belong to the development-only
-[debug tools module](../../platform/minecraft/v1.20.1/mod-debug/README.md) and require operator permission. They are a small contract check, not a
+[debug tools](../../platform/minecraft/mod-debug/README.md) and require operator permission. They are a small contract check, not a
 replacement for testing another mod's ownership, behavior restoration and furniture integration.
 
 ### Providing a world character
@@ -540,6 +540,10 @@ attempt does not fall through to another provider.
 - Use the vanilla translucent background by default. A part of the content that needs to stand apart
   from what is behind it may have its own backing, such as the decision panel over the world during a
   match or a table scene drawn in a screen. Do not cover the whole screen with an overlay.
+- Screens built around lists or forms call `MahjongScreen.renderContentBackground` after the background. On
+  Minecraft versions whose menus blur the world, it draws vanilla's list backing and separators between the
+  title and the footer, as vanilla lists do; on older versions it draws nothing. Screens with only a few
+  buttons, confirmations and screens that are one view, such as the round replay, do not call it.
 - Mark the current page, or a selector whose list is open, with the white outline
   (`RestartableMarqueeButtonWidget.outlined`). Keep the disabled look for buttons that cannot be pressed;
   it does not mean "you are here".

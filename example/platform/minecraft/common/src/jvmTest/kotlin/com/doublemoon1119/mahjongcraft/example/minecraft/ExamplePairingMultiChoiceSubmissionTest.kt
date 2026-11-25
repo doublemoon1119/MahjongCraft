@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomConfigSubmission
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.failOnSkippedHistoryEvent
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import kotlinx.coroutines.test.runTest
@@ -74,7 +75,11 @@ class ExamplePairingMultiChoiceSubmissionTest {
         val updated = assertNotNull(rooms.getRoom(room.id))
         assertEquals(selectedIds, (field.read(updated.gameConfig) as GameConfigPresentationValue.MultiChoiceValue).optionIds)
         val persistence = emptyPersistenceRegistries().apply(extension::registerPersistenceDtos).apply { freeze() }
-        val codec = AuthoritativeStatePersistenceCodec(persistence, componentValidator = AuthoritativeComponentValidator { error("This fixture only saves rooms") })
+        val codec = AuthoritativeStatePersistenceCodec(
+            registries = persistence,
+            componentValidator = AuthoritativeComponentValidator { error("This fixture only saves rooms") },
+            skippedHistoryEventReporter = failOnSkippedHistoryEvent,
+        )
         val restored = codec.decode(codec.encode(listOf(updated), emptyList())).rooms.values.single()
         assertEquals(updated, restored)
         assertEquals(selectedIds, (field.read(restored.gameConfig) as GameConfigPresentationValue.MultiChoiceValue).optionIds)

@@ -13,8 +13,8 @@ sub-packages such as `server.game.debug.stress` and `config.debug`.
 ## Boundaries
 
 Code here may not use Minecraft or any loader. Debug code that calls Minecraft belongs in the
-version's debug module, for example [Minecraft 1.20.1 mod debug tools](../v1.20.1/mod-debug/README.md),
-and loader entrypoints belong in the loader's debug module.
+[shared Minecraft mod debug tools](../mod-debug/README.md), or in a version's mod debug module when it differs
+between Minecraft versions, and loader entrypoints belong in the loader's debug module.
 
 Its packages do not overlap with [minecraft-common](../common/README.md): some loaders refuse two JARs
 that contain the same package.

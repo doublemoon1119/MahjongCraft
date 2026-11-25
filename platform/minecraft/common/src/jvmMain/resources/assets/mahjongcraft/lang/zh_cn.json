@@ -1675,5 +1675,7 @@
   "subtitles.mahjongcraft.voice.taiwan.pon": "宣告碰牌",
   "subtitles.mahjongcraft.voice.taiwan.ready": "宣告听牌",
   "subtitles.mahjongcraft.voice.taiwan.tsumo": "宣告自摸",
-  "subtitles.mahjongcraft.win.lightning": "闪电击落"
+  "subtitles.mahjongcraft.win.lightning": "闪电击落",
+  "tag.item.mahjongcraft.mahjong_rulers": "牌尺",
+  "tag.item.mahjongcraft.mahjong_tiles": "麻将牌"
 }

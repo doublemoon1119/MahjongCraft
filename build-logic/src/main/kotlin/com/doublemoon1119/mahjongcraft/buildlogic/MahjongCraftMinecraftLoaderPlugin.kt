@@ -14,9 +14,13 @@ import java.util.Optional
 import java.util.concurrent.Callable
 
 /**
- * 套用 Minecraft loader module 的 target Java、archive 與 metadata 政策，讓整個建置的重新映射任務排隊執行，並提供
- * 開發執行時可選載入的模組組合與 mod 要附帶的函式庫清單；測試的工作目錄放在 build 目錄中。ModDevGradle 準備 Minecraft 的
- * 工具改用執行 Gradle 的 Java。
+ * Minecraft 載入器模組的共用建置設定。
+ *
+ * - 套用 target 的 Java、archive 與 metadata 政策。
+ * - 讓整個建置的重新映射任務排隊執行。
+ * - 提供開發執行時可選載入的模組組合，以及 mod 要附帶的函式庫清單。
+ * - 測試的工作目錄放在 build 目錄中。
+ * - ModDevGradle 準備 Minecraft 的工具改用目前 target 的 Java。
  */
 class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
     /** 套用 JVM convention 並設定 loader-specific build 行為。 */
@@ -74,7 +78,7 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
         serializeRemapTasks()
         alignLoomRuntimeJava()
         configureDevMods()
-        useGradleJavaForNeoForm()
+        useTargetJavaForNeoForm()
     }
 }
 
@@ -166,14 +170,15 @@ private fun Project.alignLoomRuntimeJava() {
 private const val LOOM_RUNTIME_JAVA_PROPERTY = "fabric.loom.runtimeJavaCompatibilityVersion"
 
 /**
- * 建立開發執行時可選載入模組的 `devMods` 擴充；專案有宣告組合時，開關選中卻沒有宣告的組合在專案設定完成後報錯。
+ * 建立開發執行時可選載入模組的 `devMods` 擴充。
  *
- * Fabric Loom 模組預設把選中的組合加入只在開發執行時載入的 `modLocalRuntime`；ModDevGradle 舊版 Forge 模組預設加入
- * `modRuntimeOnly`，模組先轉成開發時的名稱，只在執行時使用、不打包。
+ * - 專案有宣告組合時，開關選中卻沒有宣告的組合，在專案設定完成後報錯。
+ * - Fabric Loom 模組預設把選中的組合加入只在開發執行時載入的 `modLocalRuntime`。
+ * - ModDevGradle 舊版 Forge 模組預設加入 `modRuntimeOnly`：模組先轉成開發時的名稱，只在執行時使用、不打包。
  */
 private fun Project.configureDevMods() {
     val selected = MinecraftDevMods.parse(providers.gradleProperty(MinecraftDevMods.PROPERTY_NAME).orNull)
-    val devMods = extensions.create("devMods", MinecraftDevModsExtension::class.java, selected, dependencies)
+    val devMods = extensions.create("devMods", MinecraftDevModsExtension::class.java, selected, dependencies, this)
     pluginManager.withPlugin(FABRIC_LOOM_PLUGIN_ID) {
         devMods.configurationName.convention(LOOM_LOCAL_RUNTIME_CONFIGURATION)
     }

@@ -1,8 +1,10 @@
+import com.doublemoon1119.mahjongcraft.buildlogic.includeSharedVersionSources
 import com.doublemoon1119.mahjongcraft.buildlogic.minecraftModAccessTransformer
 
-// 開發專用 debug 工具中呼叫 Minecraft 1.20.1、但不使用任何載入器的部分：debug 指令、情境、壓力測試與歷史生成。
+// 開發專用 debug 工具中呼叫 Minecraft 1.20.1、但不使用任何載入器的部分：debug 指令、情境、壓力測試、歷史生成與自動測試。
 // 由各載入器的 debug 模組一起編譯與打包；這個模組自己只對原版 Minecraft 編譯與測試，確認其中的程式不依賴載入器，
-// 產出的 JAR 不發布。
+// 產出的 JAR 不發布。各 Minecraft 版本相同的程式與測試放在跨版本共用的 platform/minecraft/mod-debug，這裡只放 1.20.1
+// 專屬的部分，例如自動測試的 mixin 與 debug 的版本轉接。
 
 plugins {
     alias(libs.plugins.mahjongcraft.minecraft.mod)
@@ -11,6 +13,9 @@ plugins {
     alias(libs.plugins.moddev.legacyforge)
     alias(libs.plugins.koin.compiler)
 }
+
+// 一起編譯跨版本共用的 platform/minecraft/mod-debug。
+includeSharedVersionSources()
 
 legacyForge {
     // 原版模式：只提供套用 Mojang 名稱的原版 Minecraft，不含任何載入器。
@@ -33,6 +38,8 @@ tasks.withType<Test>().configureEach {
 dependencies {
     implementation(project(":minecraft_v1.20.1_mod"))
     implementation(project(":minecraft_common-debug"))
+    // 自動測試的 mixin 只對註解編譯；各載入器在執行時提供 Mixin。
+    compileOnly(mc1201.mixin)
     // 本體附帶的專案模組與函式庫，與載入器模組相同的共用清單。
     minecraftModLibraries.addTo("implementation")
     implementation(libs.kotlinx.coroutines)

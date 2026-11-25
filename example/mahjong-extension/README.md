@@ -2,7 +2,7 @@
 
 This Kotlin Multiplatform library shows how an extension can use MahjongCraft's
 public callbacks without importing Minecraft, a loader, or dependency injection.
-The example currently verifies its JVM target; other runtimes are not claimed.
+The example declares only the JVM target.
 
 `ExampleMahjongExtension` is the entry point used by the platform adapter. It
 registers the rule, data codecs, action, AI strategy and rule decision

@@ -1,7 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.character
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterOwnership
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -196,6 +199,30 @@ class AiCharacterLeaseCoordinatorTest {
         assertEquals(0, kept.releases)
         assertEquals(1, removed.discards)
         assertEquals(setOf(keptKey), coordinator.keys())
+    }
+
+    /** 同一張桌子開了新的一場時，同一位 AI 在上一場的角色立即清除，新一場的角色保留。 */
+    @Test
+    fun `retaining games removes the previous match at the same table`() {
+        val table = FakeTableStateFactory.create()
+        val ids = table.players.map { it.id }
+        val game = Game(
+            tableState = table,
+            flowConfig = GameFlowConfig(),
+            roomPlayerIds = ids,
+            aiPlayerStrategyKeys = ids.drop(1).associateWith { "example:ai" },
+        )
+        val currentKey = AiCharacterBindingKey(game.id, game.matchId, ids[1])
+        val previousKey = AiCharacterBindingKey(game.id, Uuid.random(), ids[1])
+        val current = FakeLease()
+        val previous = FakeLease()
+        coordinator.ensure(currentKey, { current }) { true }
+        coordinator.ensure(previousKey, { previous }) { true }
+        val expected = coordinator.retainGames(listOf(game))
+        assertEquals(ids.drop(1).map { AiCharacterBindingKey(game.id, game.matchId, it) }.toSet(), expected)
+        assertEquals(setOf(currentKey), coordinator.keys())
+        assertEquals(0, current.releases)
+        assertEquals(1, previous.discards)
     }
 
     /** 區塊卸載或角色已移除時不回傳失效代理，借用角色仍由原系統管理。 */

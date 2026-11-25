@@ -10,51 +10,50 @@ The example is split into layers, from the most general to the most specific. Re
 order and stop once you have what you need:
 
 1. [Platform-independent extension](mahjong-extension/README.md): the rule, AI strategy and settings,
-   with no Minecraft code.
-2. [Minecraft common](platform/minecraft/common/README.md): presentation shared by every Minecraft
-   version and loader.
-3. The shared code of one Minecraft version, for example the
-   [Minecraft 1.20.1 example](platform/minecraft/v1.20.1/mod/README.md): the extension class that
-   connects the example to MahjongCraft, and the furniture, tables and actors.
-4. One loader adapter, for example the [Fabric 1.20.1](platform/minecraft/v1.20.1/fabric/README.md)
-   or [Forge 1.20.1](platform/minecraft/v1.20.1/forge/README.md) adapter: how the loader finds the
-   extension and how the content is registered.
+   with no platform code.
+2. A platform adapter. Minecraft is currently the only platform; its
+   [example guide](platform/minecraft/README.md) describes the layers in more detail:
+   1. [Minecraft common](platform/minecraft/common/README.md): presentation shared by every Minecraft
+      version and loader.
+   2. The [shared Minecraft example](platform/minecraft/mod/README.md): the extension class that
+      connects the example to MahjongCraft, and the furniture, tables and actors.
+   3. One loader adapter, for example the [shared Fabric](platform/minecraft/fabric/README.md)
+      or [Forge 1.20.1](platform/minecraft/v1.20.1/forge/README.md) adapter: how the loader finds the
+      extension and how the content is registered.
 
-Connecting a mod to MahjongCraft takes two things: an extension class that implements the extension
-interfaces, and its declaration in the loader's mod metadata. Blocks, items and entities are
-registered the usual way for that loader; MahjongCraft does not require a particular registration
-style. The example passes its registration through its own `ExampleRegistrar` only so that both
-loaders share one list of content. A mod for a single loader does not need it.
+In Minecraft, connecting a mod to MahjongCraft takes two things:
+
+- An extension class that implements the extension interfaces.
+- Its declaration in the loader's mod metadata.
+
+Blocks, items and entities are registered the usual way for that loader. MahjongCraft does not
+require a particular registration style. The example passes its registration through its own
+`ExampleRegistrar` only so that both loaders share one list of content. A mod for a single loader
+does not need it.
 
 The example's build scripts depend on MahjongCraft's projects in this repository, and their
 development runs are set up for that. A separate mod depends on a MahjongCraft release instead, so
 those parts of the build scripts are not meant to be copied.
 
-The [Minecraft adapter guide](platform/minecraft/README.md) explains how to build the example and
-run it in a game.
-
 ## What the examples cover
 
-| Capability | Example | Evidence | Status |
-| --- | --- | --- | --- |
-| Rule, tile wall and tile interpretation | Pairing Mahjong and inverted 1-man | [pairing tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/pairing) | Automated |
-| Multi-choice room setting | Selected ranks build the actual wall | [submission and save test](platform/minecraft/common/src/jvmTest/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/ExamplePairingMultiChoiceSubmissionTest.kt) | Automated checks; game check pending |
-| Multi-roll opening | Temporary dealer, final dealer and wall opening | [opening tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/pairing/ExamplePairingRoundOpeningProcedureTest.kt) | Automated |
-| Optional rule decision | Two-tile exchange | [rule decision tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/decision) | Automated and game-tested |
-| Extension action and command | Once-per-round hand reveal | [action tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/action) | Automated |
-| Tile component and style body | Optional public tile faces | [pairing tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/pairing/ExamplePairingRuleCoreTest.kt) | Automated; game check pending |
-| AI strategy | Tsumogiri strategy | [AI test](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/ai/ExampleTsumogiriAiStrategyTest.kt) | Automated |
-| Network and persistence registration | Example-owned DTOs and mappings | [round-trip test](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/ExampleFormatRoundTripTest.kt) | Automated |
-| Minecraft presentation | Names, settings, history text and tile assets | [common adapter](platform/minecraft/common/README.md) | Automated and game-tested |
-| Public table props | Saved bonus tiles and custom hand-reveal tokens | [prop checks](platform/minecraft/README.md#bonus-tiles-and-table-props) | Automated; game check pending |
-| Native seating | Block chair and persistent cushion | [1.20.1 mod code](platform/minecraft/v1.20.1/mod/README.md) | Game-tested; ABI baseline established |
-| Public game events | Administrator chat observer | [1.20.1 mod code](platform/minecraft/v1.20.1/mod/README.md) | Game-tested |
-| Missing-extension recovery | Keep authoritative data and restore it after reinstall | [recovery procedure](platform/minecraft/README.md#safe-recovery-check) | Manual check pending |
+| Capability | Example | Where to look |
+| --- | --- | --- |
+| Rule, tile wall and tile interpretation | Pairing Mahjong and inverted 1-man | [pairing tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/pairing) |
+| Multi-choice room setting | Selected ranks build the actual wall | [submission and save test](platform/minecraft/common/src/jvmTest/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/ExamplePairingMultiChoiceSubmissionTest.kt) |
+| Multi-roll opening | Temporary dealer, final dealer and wall opening | [opening tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/pairing/ExamplePairingRoundOpeningProcedureTest.kt) |
+| Optional rule decision | Two-tile exchange | [rule decision tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/decision) |
+| Extension action and command | Once-per-round hand reveal | [action tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/action) |
+| Tile component and style body | Optional public tile faces | [pairing tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/pairing/ExamplePairingRuleCoreTest.kt) |
+| AI strategy | Tsumogiri strategy | [AI test](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/ai/ExampleTsumogiriAiStrategyTest.kt) |
+| Network and persistence registration | Example-owned DTOs and mappings | [round-trip test](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/ExampleFormatRoundTripTest.kt) |
+| Minecraft presentation | Names, settings, history text and tile assets | [common adapter](platform/minecraft/common/README.md) |
+| Public table props | Saved bonus tiles and custom hand-reveal tokens | [table prop guide](platform/minecraft/README.md#bonus-tiles-and-table-props) |
+| Native seating | Block chair and persistent cushion | [shared mod code](platform/minecraft/mod/README.md) |
+| Public game events | Administrator chat observer | [shared mod code](platform/minecraft/mod/README.md) |
+| Missing-extension recovery | Keep authoritative data and restore it after reinstall | [recovery procedure](platform/minecraft/README.md#safe-recovery-check) |
 
-Minecraft game checks in this table currently refer to the Fabric 1.20.1
-adapter. They do not establish coverage for another version or loader.
-The table is deliberately limited to capabilities this example actually uses.
-A successful compile is not evidence that every extension point works.
+The table lists only the capabilities this example uses.
 
 The pairing example also demonstrates rule-owned public table props. At the start of each
 round it selects one fewer bonus kind than the number of kinds in the configured wall. The
@@ -78,12 +77,13 @@ These limits describe the example, not a restriction on the public API.
 
 ## Build commands
 
-Build from the repository root with the example switch and the desired target.
-For example, the Fabric 1.20.1 target uses:
+Build from the repository root with the example switch and a platform target. The `core` target has
+no example modules, so the platform-independent extension is built together with a platform adapter.
+For example, with the Fabric 1.20.1 target:
 
 ```shell
 ./gradlew build "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" -PmahjongcraftExample=true
 ```
 
-The [Minecraft guide](platform/minecraft/README.md) contains isolated client
-and server run commands, packaging checks and the safe missing-mod procedure.
+The [Minecraft example guide](platform/minecraft/README.md) lists the other targets and contains the
+client and server run commands, packaging checks and the safe missing-mod procedure.

@@ -144,6 +144,16 @@ internal fun Project.isolateTestRunDirectory() {
     }
 }
 
+/**
+ * 讀取 Settings plugin 為這個模組發布的 target 位置：所屬 target 在整份 catalog 依 ID 排序後的位置，不受這次選了哪些 target
+ * 影響。
+ *
+ * @return 從 0 開始的位置。
+ * @throws GradleException 模組屬於多個 target，沒有單一位置。
+ */
+internal fun Project.targetIndex(): Int = targetSetting<Int?>(PlatformTargetsSettingsPlugin.TARGET_INDEX_EXTRA)
+    ?: throw GradleException("$path belongs to several platform targets and has no single target index")
+
 /** 讀取 Settings plugin 為這個模組發布的 target Java release。 */
 internal fun Project.targetJavaRelease(): Int = targetSetting<Int>(PlatformTargetsSettingsPlugin.TARGET_JAVA_RELEASE_EXTRA)
 

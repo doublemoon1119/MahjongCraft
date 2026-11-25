@@ -1,9 +1,11 @@
+import com.doublemoon1119.mahjongcraft.buildlogic.includeSharedVersionSources
+
 // Minecraft 1.20.1 中與載入器無關的程式與資源，由各載入器模組一起編譯；這個模組自己只對原版 Minecraft 編譯與測試，
 // 確認其中的程式不依賴任何載入器，產出的 JAR 不發布。
 //
-// `data/mahjongcraft/recipes` 放在這裡，不放在跨版本共用的 :minecraft_common：配方 JSON 的 `result` 欄位格式會隨
-// Minecraft 版本改變（1.20.1 用 `item`，1.21 起改用 `id`），新增版本時在該版本自己的 mod 模組另外維護一份。
-// 模型、材質、語言檔目前沒有隨版本改變，維持放在 :minecraft_common。
+// 各 Minecraft 版本相同的程式、資源與測試放在跨版本共用的 platform/minecraft/mod，這個模組一起編譯；這裡只放 1.20.1
+// 的轉接與版本專屬的檔案。資料包（配方、進度、戰利品表、物品標籤）的格式與資料夾名稱會隨 Minecraft 版本改變，放在這裡，
+// 新增版本時在該版本自己的 mod 模組另外維護一份。模型、材質、語言檔沒有隨版本改變，放在 :minecraft_common。
 
 plugins {
     alias(libs.plugins.mahjongcraft.minecraft.mod)
@@ -12,6 +14,9 @@ plugins {
     alias(libs.plugins.koin.compiler)
     alias(libs.plugins.mahjongcraft.public.api.abi)
 }
+
+// 一起編譯跨版本共用的 platform/minecraft/mod。
+includeSharedVersionSources()
 
 publicApiAbi {
     includedNames.addAll(

@@ -27,7 +27,11 @@ class HistoryResultProjectorTest {
     fun `test equal scores use rule comparator tie break`() {
         val table = tableWithScores(1000, 1000)
         val players = table.players
-        val result = HistoryResultProjector.project(events(table, players.associate { it.id to it.score }), riichiRegistry())
+        val result = HistoryResultProjector.project(
+            events = events(table, players.associate { it.id to it.score }),
+            moduleRegistry = riichiRegistry(),
+            onRankingFailed = ::failOnRankingFailure,
+        )
         assertEquals(1, result.first { it.playerId == players[0].id }.finalRank)
         assertEquals(2, result.first { it.playerId == players[1].id }.finalRank)
     }
@@ -37,18 +41,28 @@ class HistoryResultProjectorTest {
     fun `test custom comparator controls final rank`() {
         val table = tableWithScores(1000, 2000)
         val players = table.players
-        val result = HistoryResultProjector.project(events(table, players.associate { it.id to it.score }), reverseRegistry())
+        val result = HistoryResultProjector.project(
+            events = events(table, players.associate { it.id to it.score }),
+            moduleRegistry = reverseRegistry(),
+            onRankingFailed = ::failOnRankingFailure,
+        )
         assertEquals(1, result.first { it.playerId == players[0].id }.finalRank)
         assertEquals(2, result.first { it.playerId == players[1].id }.finalRank)
     }
 
-    /** 驗證規則模組未知時不產生未經授權的名次。 */
+    /** 驗證規則模組未知時不產生未經授權的名次，並回報無法排名的原因。 */
     @Test
     fun `test unknown module leaves ranks unknown`() {
         val table = tableWithScores(1000, 2000)
         val players = table.players
-        val result = HistoryResultProjector.project(events(table, players.associate { it.id to it.score }), MahjongModuleRegistryImpl())
+        val failures = mutableListOf<Throwable>()
+        val result = HistoryResultProjector.project(
+            events = events(table, players.associate { it.id to it.score }),
+            moduleRegistry = MahjongModuleRegistryImpl(),
+            onRankingFailed = failures::add,
+        )
         assertTrue(result.all { it.finalRank == null }, "Unknown rule modules must not guess ranks")
+        assertEquals(1, failures.size)
         assertEquals(1000, result.first { it.playerId == players[0].id }.finalScore)
     }
 
@@ -65,6 +79,7 @@ class HistoryResultProjectorTest {
                 event(matchId, 3, HistoryFact.MatchCompleted("test:completed", second.players.associate { it.id to it.score })),
             ),
             moduleRegistry = riichiRegistry(),
+            onRankingFailed = ::failOnRankingFailure,
         )
         assertEquals(3000, result.first { it.playerId == second.players[0].id }.finalScore)
     }
@@ -73,7 +88,11 @@ class HistoryResultProjectorTest {
     @Test
     fun `test missing final score stays unknown`() {
         val table = tableWithScores(1000, 2000)
-        val result = HistoryResultProjector.project(events(table, mapOf(table.players[0].id to 1000)), riichiRegistry())
+        val result = HistoryResultProjector.project(
+            events = events(table, mapOf(table.players[0].id to 1000)),
+            moduleRegistry = riichiRegistry(),
+            onRankingFailed = ::failOnRankingFailure,
+        )
         assertNull(result.first { it.playerId == table.players[1].id }.finalScore)
         assertNull(result.first { it.playerId == table.players[1].id }.finalRank)
     }
@@ -81,7 +100,7 @@ class HistoryResultProjectorTest {
     /** 驗證缺少終局事件時不產生投影。 */
     @Test
     fun `test missing match completion returns empty projection`() {
-        assertEquals(emptyList(), HistoryResultProjector.project(emptyList(), MahjongModuleRegistryImpl()))
+        assertEquals(emptyList(), HistoryResultProjector.project(emptyList(), MahjongModuleRegistryImpl(), ::failOnRankingFailure))
     }
 
     /**
@@ -166,4 +185,11 @@ class HistoryResultProjectorTest {
         /** 依分數升序排列。 */
         override fun compareForMatchRanking(): Comparator<RankablePlayer> = compareBy { it.score }
     }
+
+    /**
+     * 名次應該算得出來的測試，收到排名失敗時直接讓測試失敗。
+     *
+     * @param failure 排名時丟出的失敗。
+     */
+    private fun failOnRankingFailure(failure: Throwable): Nothing = throw AssertionError("Ranking failed unexpectedly", failure)
 }

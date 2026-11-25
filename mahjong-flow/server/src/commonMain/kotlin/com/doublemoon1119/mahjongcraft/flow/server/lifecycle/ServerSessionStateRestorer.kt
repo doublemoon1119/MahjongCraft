@@ -40,11 +40,11 @@ class ServerSessionStateRestorer(
     /**
      * 依 [state] 完整取代目前的衍生狀態。
      *
-     * 同一玩家若出現在不同場地，會保留各場地權威狀態與觀察者快照，但暫不建立該玩家的
-     * 場地歸屬，交由玩家首次互動選擇場地。
+     * - 同一玩家出現在不同場地時，保留各場地的權威狀態與觀察者快照，但暫不建立該玩家的場地歸屬。
+     * - 該玩家的場地由他第一次互動時選擇。
      *
      * @param state 已載入的權威狀態快照。
-     * @return 跨場地玩家歸屬衝突及已隔離的對局投影失敗。
+     * @return 跨場地玩家歸屬衝突、已隔離的對局投影失敗，以及重新安排決策失敗的對局。
      */
     suspend fun restore(state: AuthoritativeStateSnapshot): ServerSessionStateRestoreResult {
         val (venueIdsByPlayerId, conflicts) = buildMemberships(state)
@@ -58,6 +58,7 @@ class ServerSessionStateRestorer(
             room.humanPlayerIds.forEach { playerId -> roomSnapshots.setSnapshot(playerId, room.toSnapshot(playerId)) }
         }
         val snapshotFailures = mutableListOf<GameSnapshotRestoreFailure>()
+        val scheduleFailures = mutableListOf<GameDecisionScheduleRestoreFailure>()
         state.games.values.forEach { game ->
             val humanIds = game.tableState.players.filterNot { game.isAi(it.id) }.map { it.id }
             var usedConservativeSnapshots = false
@@ -98,12 +99,13 @@ class ServerSessionStateRestorer(
                     throw cancelled
                 } catch (failure: Throwable) {
                     if (!failurePolicy.isIsolatable(failure)) throw failure
+                    scheduleFailures += GameDecisionScheduleRestoreFailure(game.id, failure)
                 }
             } else {
                 decisionAvailabilityService.reconcile(game.id)
             }
         }
-        return ServerSessionStateRestoreResult(conflicts, snapshotFailures)
+        return ServerSessionStateRestoreResult(conflicts, snapshotFailures, scheduleFailures)
     }
 
     /**

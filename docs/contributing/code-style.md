@@ -8,6 +8,10 @@
   block tag (such as `@property`, `@param` or `@return`) with a blank comment line. No blank line is required
   between individual tags, or before tags when there is no description. Single-line KDoc remains allowed.
   The custom detekt rules enforce this layout through `detektAll`; they do not auto-format comments.
+- **KDoc readability**: Prefer short sentences. When a KDoc describes several rules, cases, conditions or
+  steps, start with one short sentence and list them as bullet points, or as a numbered list when the order
+  matters. This is a recommendation, not a strict rule: a single fact stays one sentence, and a list is used
+  where it keeps the text short and easy to follow. Avoid joining clauses with semicolons.
 - **Completeness**: Every Kotlin declaration must have a complete comment or KDoc.
 - **Constructor properties**: Document properties declared in a class's primary constructor with `@property`
   in the class KDoc. Do not place a separate KDoc immediately above each constructor property unless that

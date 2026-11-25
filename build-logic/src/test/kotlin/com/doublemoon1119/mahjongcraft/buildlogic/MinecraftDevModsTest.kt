@@ -59,6 +59,27 @@ class MinecraftDevModsTest {
         assertTrue(result.output.contains("dev runtime: [example:modmenu:1]"), result.output)
     }
 
+    /** 光影包只在它的組合被選中時放入開發執行。 */
+    @Test
+    fun `shader packs follow their group`() = withFixture { root ->
+        val without = runner(root, "printDevRuntime", "-P${MinecraftDevMods.PROPERTY_NAME}=modmenu").build()
+        val with = runner(root, "printDevRuntime", "-P${MinecraftDevMods.PROPERTY_NAME}=iris").build()
+
+        assertTrue(without.output.contains("shader pack prepared: false"), without.output)
+        assertTrue(with.output.contains("shader pack prepared: true"), with.output)
+    }
+
+    /** 光影包所屬的組合必須先宣告。 */
+    @Test
+    fun `shader packs need a declared group`() = withFixture { root ->
+        val script = root.resolve("platform/v1.20.1/fabric/build.gradle")
+        script.writeText(script.readText().replace("shaderPack(\"iris\"", "shaderPack(\"missing\""))
+
+        val result = runner(root, "printDevRuntime").buildAndFail()
+
+        assertTrue(result.output.contains("Development mod group 'missing' must be declared before its shader pack"), result.output)
+    }
+
     /** 可以同時選多個組合。 */
     @Test
     fun `several groups can be selected`() = withFixture { root ->
@@ -95,6 +116,9 @@ class MinecraftDevModsTest {
                 core-java-toolchain = "17"
                 core-java-release = "17"
                 kotlin-api-version = "2.4"
+
+                [libraries]
+                shader-pack = { module = "example:pack", version = "1" }
                 """.trimIndent() + "\n",
             )
         }
@@ -142,12 +166,16 @@ class MinecraftDevModsTest {
                 }
 
                 configurations.create("devRuntime")
+                tasks.register("runClient")
 
                 devMods {
                     configurationName = "devRuntime"
                     group("iris", "example:sodium:1", "example:iris:1")
                     group("modmenu", "example:modmenu:1")
+                    shaderPack("iris", libs.shader.pack)
                 }
+
+                def shaderPackPrepared = provider { tasks.names.contains("prepareDevShaderPack") }
 
                 def devRuntimeDependencies = provider {
                     configurations.devRuntime.dependencies.collect { "${'$'}{it.group}:${'$'}{it.name}:${'$'}{it.version}" }
@@ -155,8 +183,10 @@ class MinecraftDevModsTest {
 
                 tasks.register("printDevRuntime") {
                     def listed = devRuntimeDependencies
+                    def prepared = shaderPackPrepared
                     doLast {
                         println("dev runtime: " + listed.get())
+                        println("shader pack prepared: " + prepared.get())
                     }
                 }
                 """.trimIndent() + "\n",

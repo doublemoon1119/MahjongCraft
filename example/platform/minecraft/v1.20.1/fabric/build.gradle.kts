@@ -1,14 +1,23 @@
 import com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtension
 import com.doublemoon1119.mahjongcraft.buildlogic.ModPackagingTestArguments
 import com.doublemoon1119.mahjongcraft.buildlogic.UnpackLibraryJars
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestClientArguments
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestClientEnvironment
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestSystemProperties
+import com.doublemoon1119.mahjongcraft.buildlogic.clientRunDirectory
+import com.doublemoon1119.mahjongcraft.buildlogic.includeSharedVersionSources
 import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.modrinth
+import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestClientTasks
 import net.fabricmc.loom.task.RemapJarTask
 
 plugins {
     alias(libs.plugins.mahjongcraft.minecraft.loader)
     alias(libs.plugins.fabric.loom)
 }
+
+// 一起編譯跨版本共用的 example/platform/minecraft/fabric；這裡只放 1.20.1 的 mod 設定與打包測試要比對的版本內容。
+includeSharedVersionSources()
 
 configure<MinecraftModPackagingExtension> {
     modId.set("mahjongcraft_example")
@@ -44,6 +53,7 @@ repositories {
 devMods {
     group("shaders", mc1201.bundles.dev.fabric.iris)
     group("modmenu", mc1201.bundles.dev.fabric.modmenu)
+    shaderPack(group = "shaders", pack = mc1201.dev.shader.complementary.reimagined)
 }
 
 loom {
@@ -58,9 +68,14 @@ loom {
     }
     runs {
         named("client") {
-            runDirectory.set(layout.projectDirectory.dir("run/client"))
+            runDirectory.set(layout.projectDirectory.dir(clientRunDirectory()))
+            // -PmahjongcraftAutotest 時，debug 模組在遊戲啟動後自動執行測試並關閉遊戲，與本體的開發執行相同。
+            autotestClientEnvironment().forEach { (name, value) -> environmentVariable(name, value) }
+            autotestClientArguments().forEach(::programArg)
+            autotestSystemProperties().forEach { (name, value) -> vmArg("-D$name=$value") }
         }
         named("server") {
+            // 範例沒有伺服器自動測試，伺服器不帶自動測試開關，平常的開發世界不受影響。
             runDirectory.set(layout.projectDirectory.dir("run/server"))
         }
     }
@@ -84,6 +99,10 @@ dependencies {
     exampleLibraries(project(":example:example-mahjong-extension"))
     exampleLibraries(project(":example-minecraft_common"))
     mainModArtifact(project(path = ":minecraft_v1.20.1_fabric", configuration = "runtimeElements"))
+    // 開發專用的 debug 模組只在開發執行時載入，讓範例也能使用 debug 指令與自動測試；不進入測試、不打包。
+    localRuntime(project(path = ":minecraft_v1.20.1_fabric-debug", configuration = "namedElements")) {
+        isTransitive = false
+    }
 
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.serialization.json)
@@ -100,8 +119,8 @@ tasks.test {
     jvmArgumentProviders.add(packagingTestArguments)
 }
 
-// 範例中呼叫 Minecraft 1.20.1 但不用載入器的程式在 :example-minecraft_v1.20.1_mod；比照本體，把原始碼納入本模組，
-// 由 Loom 一起重新映射並打包。
+// 範例中呼叫 Minecraft 但不用載入器的程式在 :example-minecraft_v1.20.1_mod 與它一起編譯的跨版本共用
+// example/platform/minecraft/mod；它們的 JAR 使用 Mojang 名稱，因此把原始碼納入本模組，由 Loom 一起重新映射並打包。
 includeSourcesOf(":example-minecraft_v1.20.1_mod")
 
 val unpackLibraryJars = objects.newInstance<UnpackLibraryJars>()
@@ -112,3 +131,6 @@ tasks.jar {
         exclude("META-INF/MANIFEST.MF")
     }
 }
+
+// 總任務 autotest 也執行範例的用戶端自動測試。
+registerAutotestClientTasks(clientTask = "runClient")

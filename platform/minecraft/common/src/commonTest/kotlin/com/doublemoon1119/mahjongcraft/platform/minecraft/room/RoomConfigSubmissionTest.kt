@@ -27,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledComponentValidator
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.failOnSkippedHistoryEvent
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -181,7 +182,11 @@ class RoomConfigSubmissionTest {
             ),
         )
         val room = Room(id = Uuid.random(), hostId = Uuid.random(), gameConfig = accepted.config)
-        val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries(), componentValidator = bundledComponentValidator())
+        val codec = AuthoritativeStatePersistenceCodec(
+            registries = bundledPersistenceRegistries(),
+            componentValidator = bundledComponentValidator(),
+            skippedHistoryEventReporter = failOnSkippedHistoryEvent,
+        )
         val decodedRoom = codec.decode(codec.encode(listOf(room), emptyList())).rooms.getValue(room.id)
         assertEquals(accepted.config, decodedRoom.gameConfig)
     }

@@ -26,7 +26,7 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 class TaiwanPhysicalWallLayoutPolicy(
     config: TaiwanRuleConfig,
 ) : PhysicalWallLayoutPolicy {
-    /** 台麻保留區布局使用的共用補位引擎。 */
+    /** 台麻保留區布局共用的補位規則。 */
     private val delegate = ReplenishingReservedWallPhysicalLayoutPolicy(
         maximumSupplementalDrawCount = if (config.useFlowerTiles) MAX_FLOWER_AND_KAN_DRAWS else MAX_KAN_DRAWS,
         initialShape = ReservedWallInitialShape.STACKED,

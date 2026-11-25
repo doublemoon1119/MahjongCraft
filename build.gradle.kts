@@ -1,3 +1,5 @@
+import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestAggregate
+
 plugins {
     base
     alias(libs.plugins.mahjongcraft.target.management)
@@ -8,6 +10,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.fabric.loom) apply false
     alias(libs.plugins.moddev.legacyforge) apply false
+    alias(libs.plugins.moddev) apply false
     alias(libs.plugins.koin.compiler) apply false
 }
 
@@ -18,3 +21,6 @@ val projectId = "mahjongcraft"
 val projectDisplayName = "MahjongCraft"
 extra["projectId"] = projectId
 extra["projectDisplayName"] = projectDisplayName
+
+// -PmahjongcraftAutotest 時登記總任務 autotest：執行所選目標全部的自動測試並寫出總報告。
+registerAutotestAggregate()

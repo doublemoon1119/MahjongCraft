@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.forge.loader
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ChannelDirection
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.PacketTransport
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket
@@ -11,7 +12,7 @@ import net.minecraftforge.network.NetworkEvent
 
 /** 以 Forge 的事件頻道實作 [PacketTransport]；封包以原版的自訂資料封包傳送。 */
 object ForgePacketTransport : PacketTransport {
-    override fun declareChannel(channelId: ResourceLocation) {
+    override fun declareChannel(channelId: ResourceLocation, direction: ChannelDirection) {
         ForgeNetworkChannels.declare(channelId)
     }
 

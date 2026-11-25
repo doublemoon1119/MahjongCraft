@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.buildlogic
 
 import org.gradle.api.GradleException
+import org.gradle.api.Project
+import org.gradle.api.artifacts.MinimalExternalModuleDependency
 import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
@@ -9,15 +11,19 @@ import javax.inject.Inject
 /**
  * 開發執行時可選載入的模組組合，例如相容性測試用的光影模組或模組清單。
  *
- * 各載入器模組以 [group] 宣告自己的組合；開發者以 `-PmahjongcraftDevMods` 列出要載入的組合名稱。被選中的組合
- * 加入只在開發執行時使用的設定，不打包進模組，也不成為模組的依賴。沒有選擇任何組合時不加入任何東西。
+ * - 各載入器模組以 [group] 宣告自己的組合。
+ * - 開發者以 `-PmahjongcraftDevMods` 列出要載入的組合名稱。
+ * - 被選中的組合只加入開發執行時使用的設定，不打包進模組，也不成為模組的依賴。
+ * - 沒有選擇任何組合時不加入任何東西。
  *
  * @param selected 開關選擇的組合名稱。
  * @param dependencyHandler 加入依賴的對象。
+ * @param project 擁有這個擴充的專案，用來登記放入光影包的任務。
  */
 abstract class MinecraftDevModsExtension @Inject constructor(
     private val selected: Set<String>,
     private val dependencyHandler: DependencyHandler,
+    private val project: Project,
 ) {
     /** 選中的組合要加入的設定名稱；Fabric Loom 模組預設為只在開發執行時載入的 `modLocalRuntime`。 */
     abstract val configurationName: Property<String>
@@ -44,6 +50,22 @@ abstract class MinecraftDevModsExtension @Inject constructor(
         dependencies.forEach { dependency ->
             if (dependency is Provider<*>) dependencyHandler.addProvider(configuration, dependency) else dependencyHandler.add(configuration, dependency)
         }
+    }
+
+    /**
+     * 指定組合被選中時，開發用戶端啟動前放入並開啟這個光影包。
+     *
+     * - 手動開啟的用戶端與自動測試都直接在光影下執行。
+     * - 光影包以 zip 檔取得，只在開發執行時使用，不打包。
+     *
+     * @param group 已以 [group] 宣告、載入光影模組的組合名稱。
+     * @param pack 光影包，例如版本目錄中 Modrinth Maven 倉庫上的項目。
+     * @throws GradleException 組合還沒宣告時拋出。
+     */
+    fun shaderPack(group: String, pack: Provider<MinimalExternalModuleDependency>) {
+        if (group !in declared) throw GradleException("Development mod group '$group' must be declared before its shader pack")
+        if (group !in selected) return
+        project.registerDevShaderPack(pack)
     }
 }
 

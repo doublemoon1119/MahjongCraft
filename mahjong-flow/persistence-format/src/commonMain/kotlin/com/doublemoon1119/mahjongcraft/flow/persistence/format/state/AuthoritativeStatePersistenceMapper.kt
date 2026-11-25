@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenc
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toRemainingReserveByPlayerId
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toRuntimeStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.SkippedHistoryEventReporter
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.room.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.room.toPersistenceDto
@@ -37,13 +38,15 @@ import kotlin.uuid.Uuid
  * @param games 欲保存的遊戲集合；遊戲識別碼不得重複。
  * @param registries 可擴充領域型別與組件的持久化註冊表集合。
  * @param historyRecordingState 與房間及遊戲一併保存的歷史記錄狀態。
+ * @param skippedHistoryEventReporter 接收無法編碼而略過的待寫歷史事件。
  * @return 包含房間、桌況、流程設定、執行狀態及歷史待寫資料的權威狀態 DTO。
  */
 fun createAuthoritativeStatePersistenceDto(
     rooms: Collection<Room>,
     games: Collection<Game>,
     registries: PersistenceRegistries,
-    historyRecordingState: HistoryRecordingState = HistoryRecordingState(),
+    historyRecordingState: HistoryRecordingState,
+    skippedHistoryEventReporter: SkippedHistoryEventReporter,
 ): AuthoritativeStatePersistenceDto {
     require(rooms.map(Room::id).distinct().size == rooms.size) { "Room IDs must be unique" }
     require(games.map(Game::id).distinct().size == games.size) { "Game IDs must be unique" }
@@ -60,7 +63,7 @@ fun createAuthoritativeStatePersistenceDto(
         },
         gameFlowConfigs = games.associate { game -> game.id.toString() to game.flowConfig.toPersistenceDto() },
         gameRuntimeStates = games.associate { game -> game.id.toString() to game.toRuntimeStatePersistenceDto() },
-        historyRecordingState = HistoryRecordingPersistenceMapper(registries).encode(historyRecordingState),
+        historyRecordingState = HistoryRecordingPersistenceMapper(registries).encode(historyRecordingState, skippedHistoryEventReporter),
     )
 }
 
@@ -68,9 +71,13 @@ fun createAuthoritativeStatePersistenceDto(
  * 還原權威存檔中的歷史記錄狀態。
  *
  * @param registries 歷史事件所需的持久化轉換註冊表集合。
+ * @param skippedHistoryEventReporter 接收無法解碼而略過的待寫歷史事件。
  * @return 還原的歷史記錄狀態；無法還原的事件依歷史映射規則標記缺口。
  */
-fun AuthoritativeStatePersistenceDto.toHistoryRecordingState(registries: PersistenceRegistries): HistoryRecordingState = HistoryRecordingPersistenceMapper(registries).decode(historyRecordingState)
+fun AuthoritativeStatePersistenceDto.toHistoryRecordingState(
+    registries: PersistenceRegistries,
+    skippedHistoryEventReporter: SkippedHistoryEventReporter,
+): HistoryRecordingState = HistoryRecordingPersistenceMapper(registries).decode(historyRecordingState, skippedHistoryEventReporter)
 
 /**
  * 還原權威存檔中的房間集合。

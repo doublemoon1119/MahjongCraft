@@ -488,6 +488,35 @@ class StartGameUseCaseTest {
         assertEquals(firstTableState, fixtures.gameRepo.getTableState(roomId), "The existing game should be untouched.")
     }
 
+    /** 指定座位順序時照順序入座，不再隨機排座。預檢與直接開局都一樣。 */
+    @Test
+    fun `specified seat order is used instead of a random one`() = runTest {
+        val room = readyRoom()
+        val seatOrder = room.playerIds.reversed()
+        val fixtures = Fixtures()
+        fixtures.roomRepo.setRoom(room)
+        assertTrue(fixtures.useCase(roomId = roomId, operatorId = hostId, seatOrder = seatOrder) is Outcome.Success)
+        assertEquals(seatOrder, assertNotNull(fixtures.gameRepo.getTableState(roomId)).players.map { it.id })
+        val prepared = fixtures.useCase.prepare(room = room, operatorId = hostId, seatOrder = seatOrder)
+        assertEquals(seatOrder, (prepared as Outcome.Success).value.initializationResult.tableState.players.map { it.id })
+    }
+
+    /** 指定的座位順序和房間成員不符時拒絕開局，房間保持原樣。 */
+    @Test
+    fun `seat order that does not match the room is rejected`() = runTest {
+        val room = readyRoom()
+        val fixtures = Fixtures()
+        fixtures.roomRepo.setRoom(room)
+        val outsider = room.playerIds.drop(1) + Uuid.random()
+        val result = fixtures.useCase(roomId = roomId, operatorId = hostId, seatOrder = outsider)
+        assertEquals(RoomError.RoomLayoutConflict(roomId), (result as Outcome.Error).error)
+        assertEquals(room, fixtures.roomRepo.getRoom(roomId))
+        assertNull(fixtures.gameRepo.getGame(roomId))
+        val duplicated = room.playerIds.dropLast(1) + room.playerIds.first()
+        val prepared = fixtures.useCase.prepare(room = room, operatorId = hostId, seatOrder = duplicated)
+        assertEquals(RoomError.RoomLayoutConflict(roomId), (prepared as Outcome.Error).error)
+    }
+
     /** 預檢後名冊或設定已變更時，不產生牌局或開局歷史。 */
     @Test
     fun `changed room after preflight cannot start a game`() = runTest {

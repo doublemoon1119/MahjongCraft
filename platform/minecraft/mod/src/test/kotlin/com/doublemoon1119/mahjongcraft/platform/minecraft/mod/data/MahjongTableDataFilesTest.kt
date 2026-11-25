@@ -1,0 +1,61 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.data
+
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.DataPackLayout
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
+/** 驗證兩種首發麻將桌的配方。 */
+class MahjongTableDataFilesTest {
+    /** 驗證木製款接受所有 planks，且輸出固定木製麻將桌。 */
+    @Test
+    fun `wooden table recipe uses the vanilla planks tag`() {
+        val recipe = loadJson("/${DataPackLayout.RECIPES}/wooden_mahjong_table.json")
+
+        assertEquals("minecraft:planks", recipe.keyEntry("P")["tag"]?.jsonPrimitive?.content)
+        assertEquals("minecraft:wool_carpets", recipe.keyEntry("C")["tag"]?.jsonPrimitive?.content)
+        assertEquals("mahjongcraft:wooden_mahjong_table", recipe.resultItem())
+    }
+
+    /** 驗證混凝土款使用這個版本的混凝土標籤，且輸出固定混凝土麻將桌。 */
+    @Test
+    fun `concrete table recipe uses the version concrete tag`() {
+        val recipe = loadJson("/${DataPackLayout.RECIPES}/concrete_mahjong_table.json")
+
+        assertEquals(DataPackLayout.CONCRETE_TAG, recipe.keyEntry("M")["tag"]?.jsonPrimitive?.content)
+        assertEquals("minecraft:wool_carpets", recipe.keyEntry("C")["tag"]?.jsonPrimitive?.content)
+        assertEquals("mahjongcraft:concrete_mahjong_table", recipe.resultItem())
+    }
+
+    /**
+     * 讀取配方指定符號的 ingredient 物件。
+     *
+     * @param symbol 配方 key 中的符號。
+     * @return 對應的 ingredient JSON object。
+     */
+    private fun JsonObject.keyEntry(symbol: String): JsonObject = getValue("key").jsonObject.getValue(symbol).jsonObject
+
+    /**
+     * 讀取配方輸出的 item ID。
+     *
+     * @return recipe result 中的 item ID。
+     */
+    private fun JsonObject.resultItem(): String = getValue("result").jsonObject.getValue(DataPackLayout.RECIPE_RESULT_ITEM).jsonPrimitive.content
+
+    /**
+     * 從測試 classpath 載入並解析指定 JSON object。
+     *
+     * @param resourcePath classpath 資源路徑。
+     * @return 解析後的 JSON object。
+     */
+    private fun loadJson(resourcePath: String): JsonObject {
+        val content = checkNotNull(javaClass.getResourceAsStream(resourcePath)) {
+            "Resource not found: $resourcePath"
+        }.bufferedReader().use { it.readText() }
+
+        return Json.parseToJsonElement(content).jsonObject
+    }
+}

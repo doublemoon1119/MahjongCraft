@@ -2,16 +2,21 @@
 
 ## Purpose
 
-`minecraft-v1.20.1-mod` contains the Minecraft 1.20.1 code and resources shared by every loader that
-targets that game version: code that calls Minecraft 1.20.1 but no loader API.
+`minecraft-v1.20.1-mod` compiles the [shared Minecraft mod sources](../../mod/README.md) against Minecraft
+1.20.1, together with the 1.20.1 adapters and the files that differ by Minecraft version. Every loader that
+targets Minecraft 1.20.1 compiles both.
 
 Its Gradle project path is `:minecraft_v1.20.1_mod`, and its code uses the
 `com.doublemoon1119.mahjongcraft.platform.minecraft.mod` package.
 
 ## Responsibilities
 
-- Hold loader-independent Minecraft 1.20.1 code, such as entity save data.
-- Store version-specific data formats, currently including Minecraft 1.20.1 recipe JSON.
+- Provide the 1.20.1 side of every adapter the shared code calls: the `vanilla` package and the version base
+  classes, such as the entity, block, screen, button, saved data and item bases.
+- Hold the files that each Minecraft version keeps its own copy of, such as the entity type factory, the
+  achievement trigger and the translucent vertex consumer.
+- Store version-specific data formats: recipes, advancements, loot tables and item tags, and the access
+  transformer.
 - Hold the client mixins every loader applies, in the `mixin.client` package. Each loader lists them in its
   own mixin configuration; this module compiles them against the Mixin and MixinExtras annotations only.
   A point in the frame that no loader exposes, such as the end of world rendering, is published through
@@ -20,7 +25,8 @@ Its Gradle project path is `:minecraft_v1.20.1_mod`, and its code uses the
 ## Boundaries
 
 Loader APIs do not belong here; this module compiles against vanilla Minecraft only, so using one
-fails its build. Logic that does not need Minecraft classes belongs in
+fails its build. Code that is the same for every Minecraft version belongs in the
+[shared sources](../../mod/README.md). Logic that does not need Minecraft classes belongs in
 [minecraft-common](../../common/README.md), as do assets that remain compatible across Minecraft
 versions.
 
@@ -39,6 +45,6 @@ Run this module's tests against vanilla Minecraft from the repository root:
 ./gradlew :minecraft_v1.20.1_mod:test "-PmahjongcraftTarget=minecraft-v1.20.1-fabric"
 ```
 
-The recipe resources are also verified by the Minecraft common tests. Checking this module alone
+The run also covers the shared tests and this version's data pack files. Checking this module alone
 is not a substitute for the [complete target build](../../README.md), which compiles its code into
 each loader.

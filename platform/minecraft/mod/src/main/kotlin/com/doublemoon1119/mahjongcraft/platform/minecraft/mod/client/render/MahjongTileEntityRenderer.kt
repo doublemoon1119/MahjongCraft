@@ -1,0 +1,613 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
+
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.ClientDecisionPromptStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.game.DecisionCardLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.gui.ClaimedTileMarker
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.state.ClientMahjongStateStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.tile.ClientHandTileLayoutController
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTileEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTilePose
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TileActionPopupKind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.cameraFacingRotation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationFrame
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationSpec
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.math.Axis
+import net.minecraft.client.multiplayer.ClientLevel
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.RenderType
+import net.minecraft.client.renderer.culling.Frustum
+import net.minecraft.client.renderer.entity.EntityRenderer
+import net.minecraft.client.renderer.entity.EntityRendererProvider
+import net.minecraft.client.renderer.entity.ItemRenderer
+import net.minecraft.client.renderer.texture.OverlayTexture
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.util.Mth
+import net.minecraft.world.inventory.InventoryMenu
+import net.minecraft.world.item.ItemDisplayContext
+import org.joml.Quaternionf
+import kotlin.uuid.toJavaUuid
+import kotlin.uuid.toKotlinUuid
+
+/**
+ * 使用既有麻將牌 item model 呈現牌張的 client renderer；自由放置與牌局管理中的牌共用同一個 entity
+ * 類型，牌面來源不同：自由放置直接讀 entity 自身 tracked data，牌局管理中的牌改依 entity UUID
+ * （等同 `IdentifiedTile.id`）查詢 [stateStore] 目前收到的可見性快照，完全不看 entity 自身的
+ * `tileAssetKey`（該欄位在管理模式下恆為 [UNKNOWN_TILE_ASSET_KEY]，見 [MahjongTileEntity]）。
+ *
+ * 牌面角落輔助標籤統一交由 [tileFaceRenderer] 疊加，與 HUD、GUI、showcase 及結算面板共用相同設定。
+ *
+ * 特殊視覺強調（例如日麻寶牌發光，見 [MahjongRuleModule.isBonusTile]）也是逐幀在這裡由
+ * client 端自行判斷，見 [isHighlighted]——理由跟牌面解析完全一致：這個判斷只能在真正解析出可見牌面
+ * 之後才進行，對觀察者看不到牌面的隱藏牌天然不會觸發，不需要另外處理保密。
+ *
+ * @param context Minecraft renderer 建立時提供的 client context。
+ * @param stateStore 本機已收到的對局快照，用於解析管理中牌張的可見牌面。
+ * @param tileAssetRegistry 將牌張轉為註冊 asset key 的 registry。
+ * @param tileFaceRenderer 疊加牌面角落標籤的共用 renderer。
+ * @param tileAppearanceResolver 依桌子目前公開規則解析牌組外觀。
+ * @param moduleRegistry 依對局規則判斷加值牌的 registry。
+ * @param decisionPromptStore 提供目前選牌合法候選牌集合，以決定手牌是否降低亮度。
+ * @param configStore 提供牌面提示等用戶端顯示設定。
+ * @param handTileLayoutController 提供本人牌張本幀的絕對位置與姿態。
+ */
+class MahjongTileEntityRenderer(
+    context: EntityRendererProvider.Context,
+    private val stateStore: ClientMahjongStateStore,
+    private val tileAssetRegistry: MinecraftTileAssetRegistry,
+    private val tileFaceRenderer: MahjongTileFaceRenderer,
+    private val tileAppearanceResolver: ClientTileAppearanceResolver,
+    private val moduleRegistry: MahjongModuleRegistry,
+    private val decisionPromptStore: ClientDecisionPromptStore,
+    private val configStore: MahjongClientConfigStore,
+    private val handTileLayoutController: ClientHandTileLayoutController,
+) : EntityRenderer<MahjongTileEntity>(context) {
+    /** 本人牌張依顯示位置裁切，避免共享位置在畫面外時把私人格位中的牌一起隱藏。 */
+    override fun shouldRender(
+        entity: MahjongTileEntity,
+        frustum: Frustum,
+        x: Double,
+        y: Double,
+        z: Double,
+    ): Boolean = if (handTileLayoutController.display(entity) != null) {
+        entity.shouldRender(x, y, z) && frustum.isVisible(handTileLayoutController.adjustedBox(entity))
+    } else {
+        super.shouldRender(entity, frustum, x, y, z)
+    }
+
+    /** 依 entity yaw 與姿態旋轉模型，並補償原點使牌底貼齊所在表面。 */
+    override fun render(
+        entity: MahjongTileEntity,
+        yaw: Float,
+        tickDelta: Float,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
+        light: Int,
+    ) {
+        super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
+        // 沿用 vanilla Entity.isInvisible（設計給裝甲架等既有機制的隱形旗標，本身就會自動同步給所有
+        // 觀察者，不需要另外設計一套同步欄位）當作「動畫佇列還沒輪到、先隱形等待」的統一開關，見
+        // AnimatedMahjongEntity KDoc；EntityRenderDispatcher 本身只用這個旗標控制陰影／除錯 hitbox，
+        // 不會自動幫自訂 renderer 跳過 render()，所以這裡要自己判斷。
+        if (entity.isInvisible) return
+        val localDisplay = handTileLayoutController.display(entity)
+        val elapsedAnimationTicks = entity.level().gameTime.toDouble() + tickDelta - entity.animationStartGameTime
+        val animationFrame = if (localDisplay == null && entity.animating) {
+            TileMotionAnimation(
+                spec = TileMotionAnimationSpec(
+                    durationTicks = entity.animationDurationTicks,
+                    arcHeight = entity.animationArcHeight,
+                    startPoseRotationDegrees = entity.animationStartPoseRotationDegrees,
+                    endPoseRotationDegrees = entity.animationEndPoseRotationDegrees,
+                    easeRotation = entity.animationEaseRotation,
+                    liftCarryLower = entity.animationLiftCarryLower,
+                    leanDegrees = entity.animationLeanDegrees,
+                ),
+            ).frame(
+                elapsedTicks = elapsedAnimationTicks,
+                startOffset = entity.animationStartOffset,
+                startYawOffsetDegrees = entity.animationStartYawOffsetDegrees,
+            )
+        } else {
+            null
+        }
+        matrices.pushPose()
+        if (localDisplay != null) {
+            // dispatcher 已移到原生插值位置；這裡換成最終私人位置，不疊加共享動畫。
+            matrices.translate(
+                localDisplay.position.x - Mth.lerp(tickDelta.toDouble(), entity.xOld, entity.x),
+                localDisplay.position.y - Mth.lerp(tickDelta.toDouble(), entity.yOld, entity.y),
+                localDisplay.position.z - Mth.lerp(tickDelta.toDouble(), entity.zOld, entity.z),
+            )
+        }
+        if (animationFrame != null) matrices.translate(animationFrame.offset.x, animationFrame.offset.y, animationFrame.offset.z)
+        // 往前進方向的傾斜繞底部中心、以世界水平軸旋轉，在座位朝向之前套用。
+        val lean = localDisplay?.lean ?: animationFrame?.lean
+        if (lean != null && lean.degrees != 0.0f) {
+            matrices.mulPose(Quaternionf().rotateAxis(Math.toRadians(lean.degrees.toDouble()).toFloat(), lean.axisX.toFloat(), 0.0f, lean.axisZ.toFloat()))
+        }
+        matrices.mulPose(
+            Axis.YP.rotationDegrees(
+                -(localDisplay?.yawDegrees ?: entity.yRot) + 180.0f - (animationFrame?.yawOffsetDegrees ?: 0.0f),
+            ),
+        )
+        matrices.mulPose(Axis.XP.rotationDegrees(localDisplay?.poseDegrees ?: animationFrame?.poseRotationDegrees ?: entity.tilePose.rotationDegrees))
+        val (poseOffsetX, poseOffsetY, poseOffsetZ) = if (localDisplay != null) {
+            displayPoseOriginOffset(localDisplay.poseDegrees)
+        } else if (animationFrame != null) {
+            lerpPoseOriginOffset(entity.animationStartPoseRotationDegrees, entity.animationEndPoseRotationDegrees, animationFrame.progress)
+        } else {
+            poseOriginOffset(entity.tilePose.rotationDegrees)
+        }
+        matrices.translate(poseOffsetX, poseOffsetY, poseOffsetZ)
+        val assetKey = entity.resolvedTileAssetKey()
+        val appearance = TileRenderAppearanceContext(tileAppearanceResolver.resolve(entity.managedTableId))
+        val highlighted = entity.isHighlighted()
+        val effectiveLight = if (entity.isDimmedByTileSelection()) DIMMED_LIGHT else light
+        val consumers = if (highlighted) vertexConsumers.withGlint() else vertexConsumers
+        renderTile(
+            assetKey = assetKey,
+            appearance = appearance,
+            mode = ItemDisplayContext.HEAD,
+            light = effectiveLight,
+            overlay = OverlayTexture.NO_OVERLAY,
+            matrices = matrices,
+            consumers = consumers,
+        )
+        if (highlighted) {
+            // 單層光暈疊圖不夠明顯，額外疊一次「只有光暈、不含正常牌面」的
+            // pass，讓同一個模型的光暈幾何再疊加一次（GLINT_TRANSPARENCY 是相加混合，疊兩次亮度會
+            // 明顯提升），比單純換 solid 參數（改變的是光暈貼圖本身的縮放／滾動速度，不是強度）更
+            // 直接有效，且不影響正常牌面只畫一次、不會有額外的不透明面覆寫。
+            renderTile(
+                assetKey = assetKey,
+                appearance = appearance,
+                mode = ItemDisplayContext.HEAD,
+                light = effectiveLight,
+                overlay = OverlayTexture.NO_OVERLAY,
+                matrices = matrices,
+                consumers = vertexConsumers.glintOnly(),
+            )
+        }
+        tileFaceRenderer.renderModelLabels(assetKey, matrices, vertexConsumers, effectiveLight)
+        matrices.popPose()
+        WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
+            renderActionPopup(entity, assetKey, appearance.definition, tickDelta, panelMatrices, panelConsumers)
+        }
+    }
+
+    /**
+     * 以同一組公開牌組外觀繪製可見牌或蓋牌。
+     *
+     * @param assetKey 可見牌面資產 key；蓋牌時只用來保持呼叫端資料流，不會被讀取。
+     * @param appearance 本次繪製使用的公開牌組外觀。
+     * @param mode Minecraft item 顯示模式。
+     * @param light 世界光照值。
+     * @param overlay 覆蓋貼圖座標。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供牌面頂點緩衝。
+     */
+    private fun renderTile(
+        assetKey: String,
+        appearance: TileRenderAppearanceContext,
+        mode: ItemDisplayContext,
+        light: Int,
+        overlay: Int,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
+    ) {
+        if (assetKey == UNKNOWN_TILE_ASSET_KEY) {
+            MahjongTileItemRenderer.renderUnknownWithAppearance(
+                appearanceId = appearance.appearanceId,
+                mode = mode,
+                matrices = matrices,
+                vertexConsumers = consumers,
+                light = light,
+                overlay = overlay,
+            )
+        } else {
+            MahjongTileItemRenderer.renderWithAppearance(
+                appearanceId = appearance.appearanceId,
+                assetKey = assetKey,
+                mode = mode,
+                matrices = matrices,
+                vertexConsumers = consumers,
+                light = light,
+                overlay = overlay,
+            )
+        }
+    }
+
+    /**
+     * 在落地牌張上方繪製短暫、無文字的 billboard 牌面提示。
+     *
+     * @param entity 動作提示所屬牌張。
+     * @param assetKey 目前可見的牌面資產 key。
+     * @param appearance 目前牌局公開的牌組外觀。
+     * @param tickDelta 本幀部分 tick 進度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供背景與牌面頂點緩衝。
+     */
+    private fun renderActionPopup(
+        entity: MahjongTileEntity,
+        assetKey: String,
+        appearance: MinecraftTileSetAppearanceDefinition,
+        tickDelta: Float,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
+    ) {
+        val kind = entity.actionPopupKind
+        val visibility = configStore.current.presentationVisibility
+        val enabled = when (kind) {
+            TileActionPopupKind.DISCARD -> visibility.discardPopupEnabled
+            TileActionPopupKind.MELD -> visibility.meldPopupEnabled
+            TileActionPopupKind.NONE -> false
+        }
+        if (!enabled) return
+        val now = entity.level().gameTime.toDouble() + tickDelta
+        if (now !in entity.actionPopupStartGameTime.toDouble()..<entity.actionPopupEndGameTime.toDouble()) return
+        val elapsed = now - entity.actionPopupStartGameTime
+        val remaining = entity.actionPopupEndGameTime - now
+        val alpha = minOf(elapsed / ACTION_POPUP_FADE_TICKS, remaining / ACTION_POPUP_FADE_TICKS, 1.0).toFloat()
+        if (kind == TileActionPopupKind.MELD) {
+            renderMeldActionPopup(entity, appearance, alpha, matrices, consumers)
+            return
+        }
+        if (assetKey == UNKNOWN_TILE_ASSET_KEY) return
+        matrices.pushPose()
+        matrices.translate(0.0, ACTION_POPUP_WORLD_HEIGHT, 0.0)
+        matrices.mulPose(entityRenderDispatcher.cameraFacingRotation())
+        matrices.scale(-ACTION_POPUP_SCALE, -ACTION_POPUP_SCALE, ACTION_POPUP_SCALE)
+        WorldPanelRenderer.drawBackground(
+            left = -ACTION_POPUP_PANEL_WIDTH / 2f,
+            top = -ACTION_POPUP_PANEL_HEIGHT / 2f,
+            right = ACTION_POPUP_PANEL_WIDTH / 2f,
+            bottom = ACTION_POPUP_PANEL_HEIGHT / 2f,
+            color = WorldPanelRenderer.withAlpha(ACTION_POPUP_BACKGROUND, alpha * ACTION_POPUP_BACKGROUND_ALPHA),
+            z = 0f,
+            matrices = matrices,
+            consumers = consumers,
+        )
+        tileFaceRenderer.renderWorldPanel(
+            assetKey = assetKey,
+            centerX = 0f,
+            centerY = 0f,
+            width = ACTION_POPUP_TILE_WIDTH,
+            height = ACTION_POPUP_TILE_HEIGHT,
+            alpha = alpha,
+            z = -0.02f,
+            matrices = matrices,
+            consumers = consumers,
+            appearance = appearance,
+        )
+        matrices.popPose()
+    }
+
+    /**
+     * 由單一錨點繪製一個共用面板：一列直立的牌，鳴取的那張上方加註指標，比照決策卡片。
+     *
+     * @param entity 提供鳴牌牌列及其牌張 entity 的牌張。
+     * @param appearance 目前牌局公開的牌組外觀。
+     * @param alpha 面板透明度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供背景、牌面與指標頂點緩衝。
+     */
+    private fun renderMeldActionPopup(
+        entity: MahjongTileEntity,
+        appearance: MinecraftTileSetAppearanceDefinition,
+        alpha: Float,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
+    ) {
+        val popupTiles = entity.meldActionPopupTiles
+        val managedTiles = (entity.level() as? ClientLevel)?.entitiesForRendering()?.filterIsInstance<MahjongTileEntity>().orEmpty()
+        val entries = popupTiles.map { popupTile ->
+            val javaTileId = popupTile.tileId.toJavaUuid()
+            val tile = managedTiles.firstOrNull { it.uuid == javaTileId } ?: return
+            TileGroupPreviewEntry(tile.resolvedTileAssetKey(), popupTile.claimed)
+        }
+        val layout = TileGroupPreviewLayoutCalculator.calculate(
+            entries = entries,
+            tileWidth = ACTION_POPUP_TILE_WIDTH,
+            tileHeight = ACTION_POPUP_TILE_HEIGHT,
+            gap = ACTION_POPUP_TILE_GAP,
+        )
+        if (layout.placements.isEmpty()) return
+        val markerHeight = if (layout.placements.any { it.claimed }) CLAIMED_MARKER_HEIGHT + CLAIMED_MARKER_GAP else 0f
+        val panelWidth = layout.contentWidth + ACTION_POPUP_GROUP_PADDING * 2
+        val panelHeight = layout.contentHeight + markerHeight + ACTION_POPUP_GROUP_PADDING * 2
+        matrices.pushPose()
+        matrices.translate(0.0, ACTION_POPUP_WORLD_HEIGHT, 0.0)
+        matrices.mulPose(entityRenderDispatcher.cameraFacingRotation())
+        matrices.scale(-ACTION_POPUP_SCALE, -ACTION_POPUP_SCALE, ACTION_POPUP_SCALE)
+        WorldPanelRenderer.drawBackground(
+            left = -panelWidth / 2f,
+            top = -panelHeight / 2f,
+            right = panelWidth / 2f,
+            bottom = panelHeight / 2f,
+            color = WorldPanelRenderer.withAlpha(ACTION_POPUP_BACKGROUND, alpha * ACTION_POPUP_BACKGROUND_ALPHA),
+            z = 0f,
+            matrices = matrices,
+            consumers = consumers,
+        )
+        // 有指標時整列牌往下讓出指標高度，面板仍以內容整體置中。
+        val tileCenterY = markerHeight / 2f
+        layout.placements.forEachIndexed { index, placement ->
+            val z = -0.02f - index * 0.001f
+            renderPopupTile(placement.assetKey, placement.centerX, placement.centerY + tileCenterY, alpha, z, matrices, consumers, appearance)
+            if (placement.claimed) {
+                renderClaimedTileMarker(
+                    centerX = placement.centerX,
+                    bottom = placement.centerY + tileCenterY - ACTION_POPUP_TILE_HEIGHT / 2f - CLAIMED_MARKER_GAP,
+                    alpha = alpha,
+                    z = z,
+                    matrices = matrices,
+                    consumers = consumers,
+                )
+            }
+        }
+        matrices.popPose()
+    }
+
+    /**
+     * 以牌面中心為錨點畫一張直立的提示牌。
+     *
+     * @param assetKey 牌面資產 key。
+     * @param appearance 目前牌局公開的牌組外觀。
+     * @param centerX 牌面中心 X 座標。
+     * @param centerY 牌面中心 Y 座標。
+     * @param alpha 顯示透明度。
+     * @param z 局部深度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供牌面頂點緩衝。
+     */
+    private fun renderPopupTile(
+        assetKey: String,
+        centerX: Float,
+        centerY: Float,
+        alpha: Float,
+        z: Float,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
+        appearance: MinecraftTileSetAppearanceDefinition,
+    ) {
+        matrices.pushPose()
+        matrices.translate(centerX.toDouble(), centerY.toDouble(), 0.0)
+        tileFaceRenderer.renderWorldPanel(
+            assetKey = assetKey,
+            centerX = 0f,
+            centerY = 0f,
+            width = ACTION_POPUP_TILE_WIDTH,
+            height = ACTION_POPUP_TILE_HEIGHT,
+            alpha = alpha,
+            z = z,
+            matrices = matrices,
+            consumers = consumers,
+            appearance = appearance,
+        )
+        matrices.popPose()
+    }
+
+    /**
+     * 在鳴取牌正上方畫出與決策卡片相同的倒三角形指標。
+     *
+     * 列寬以決策卡片的像素描述，依牌寬比例換算成提示的單位，相對於一張牌看起來與介面一致；逐列色塊的
+     * 階梯狀外觀刻意保留。
+     *
+     * @param centerX 指標中心 X 座標。
+     * @param bottom 指標底邊 Y 座標。
+     * @param alpha 指標透明度。
+     * @param z 局部深度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供色塊頂點緩衝。
+     */
+    private fun renderClaimedTileMarker(
+        centerX: Float,
+        bottom: Float,
+        alpha: Float,
+        z: Float,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
+    ) {
+        val color = WorldPanelRenderer.withAlpha(ClaimedTileMarker.COLOR, alpha)
+        ClaimedTileMarker.ROW_WIDTHS.forEachIndexed { row, width ->
+            val halfWidth = width * CLAIMED_MARKER_UNIT / 2f
+            val rowBottom = bottom - (ClaimedTileMarker.ROW_WIDTHS.size - 1 - row) * CLAIMED_MARKER_UNIT
+            WorldPanelRenderer.drawBackground(
+                left = centerX - halfWidth,
+                top = rowBottom - CLAIMED_MARKER_UNIT,
+                right = centerX + halfWidth,
+                bottom = rowBottom,
+                color = color,
+                z = z,
+                matrices = matrices,
+                consumers = consumers,
+            )
+        }
+    }
+
+    /**
+     * ItemRenderer 自行解析材質，因此 entity renderer 不提供單一 texture。
+     *
+     * @param entity 正在繪製的牌張 entity。
+     * @return 方塊材質圖集（原版規定回傳值不可為空）；實際材質由 item model renderer 解析。
+     */
+    override fun getTextureLocation(entity: MahjongTileEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
+
+    /**
+     * 自由放置牌沿用 entity 自身 tracked data；牌局管理中的牌改查 [stateStore]——查不到（不在目前
+     * 對局範圍）或未對目前觀察者揭露時顯示牌背，查得到就換算成對應正面 asset key。
+     *
+     * @return 此觀察者可見的牌面資產 key；無可見快照時為牌背 key。
+     */
+    private fun MahjongTileEntity.resolvedTileAssetKey(): String {
+        if (!managedByGame) return tileAssetKey
+        val tableId = managedTableId ?: return UNKNOWN_TILE_ASSET_KEY
+        val face = stateStore.findManagedTileSnapshot(tableId, uuid.toKotlinUuid())?.face ?: return UNKNOWN_TILE_ASSET_KEY
+        return face.toAssetKey(tileAssetRegistry)
+    }
+
+    /**
+     * 這張管理中的牌對目前觀察者而言，牌面是否已解析出來、且為規則的加值牌
+     * （[MahjongRuleModule.isBonusTile]，例如日麻寶牌），需要特殊視覺強調。自由放置的牌、或牌面對目前觀察者
+     * 不可見（[stateStore] 查無對應快照）的管理中牌，一律回傳 `false`——不需要另外判斷保密，理由見
+     * 類別 KDoc。
+     *
+     * @return 目前觀察者是否應看到此牌張的特殊強調效果。
+     *
+     * 額外要求這張牌目前姿態不是 [MahjongTilePose.FACE_DOWN]、且沒有動畫正在播放中
+     * （`!entity.animating`）——伺服器端一算出手牌內容就會同步進快照，這張牌實際被玩家摸到、翻開之前
+     * entity 在畫面上都還蓋牌躺在牌山／發牌動畫途中，如果單純依快照是否解析出牌面就顯示光暈，玩家會在
+     * 開局發牌動畫翻牌之前就先看到寶牌發光，等於還沒翻牌就洩漏是不是寶牌。
+     * 開局發牌動畫翻牌（`TileAnimationSteps.scheduleDealBatch`）／摸牌動畫播完後 `tilePose` 會變成
+     * [MahjongTilePose.STANDING] 且 `animating` 歸零，光暈才會顯示；副露／牌河
+     * 攤開的 [MahjongTilePose.FACE_UP] 牌不受影響，本來就該一貫顯示光暈。
+     */
+    private fun MahjongTileEntity.isHighlighted(): Boolean {
+        if (!managedByGame) return false
+        if (tilePose == MahjongTilePose.FACE_DOWN || animating) return false
+        val tableId = managedTableId ?: return false
+        val face = stateStore.findManagedTileSnapshot(tableId, uuid.toKotlinUuid())?.face ?: return false
+        val snapshot = stateStore.gameSnapshot(tableId) ?: return false
+        val module = moduleRegistry.getModule(snapshot.config)
+        return module.isBonusTile(face, snapshot.tileWall.tiles.mapNotNull { it.face })
+    }
+
+    /**
+     * 疊加附魔物品光暈疊圖層——用 [ItemRenderer.getFoilBufferDirect]（entity 世界渲染用的
+     * direct 版本，不是 GUI 用的 [ItemRenderer.getFoilBuffer]）包一層，讓
+     * item renderer（`solid` 參數暫定 `false`，遊戲內驗證光暈貼合效果後可再調整）在同一次
+     * render 呼叫裡連同正常牌面一起疊畫，也不用 `Entity.setGlowingTag()`（保留給其他用途）。
+     *
+     * @return 將 layer 請求包裝為直接物品光暈 consumer 的 provider。
+     */
+    private fun MultiBufferSource.withGlint(): MultiBufferSource = MultiBufferSource { layer -> ItemRenderer.getFoilBufferDirect(this, layer, false, true) }
+
+    /**
+     * 純光暈疊圖層，不含正常牌面——所有 buffer 請求一律導向
+     * [RenderType.entityGlintDirect]，忽略呼叫端原本要求的 layer（正常牌面已經在第一次
+     * `renderItem` 呼叫時畫過一次），用來在 [render] 額外疊加第二次光暈幾何、加強亮度，見 [render]
+     * 內的呼叫點註解。
+     *
+     * @return 將緩衝請求導向純 entity 光暈 layer 的 provider。
+     */
+    private fun MultiBufferSource.glintOnly(): MultiBufferSource = MultiBufferSource { _ -> this.getBuffer(RenderType.entityGlintDirect()) }
+
+    companion object {
+        /**
+         * 本人過渡使用連續翻轉角補償牌底，模型組裝時只套用一次。
+         *
+         * @param rotationDegrees 本幀的絕對翻轉角。
+         * @return 模型原點相對牌底的位置差。
+         */
+        internal fun displayPoseOriginOffset(rotationDegrees: Float): Triple<Double, Double, Double> = if (rotationDegrees >= 0.0f) {
+            lerpPoseOriginOffset(0.0f, 90.0f, (rotationDegrees / 90.0f).toDouble().coerceIn(0.0, 1.0))
+        } else {
+            lerpPoseOriginOffset(-90.0f, 0.0f, ((rotationDegrees + 90.0f) / 90.0f).toDouble().coerceIn(0.0, 1.0))
+        }
+
+        /**
+         * 翻牌動畫（[MahjongTilePose.FACE_DOWN] ↔ [MahjongTilePose.STANDING]）播放期間的姿態補償位移。
+         *
+         * [poseOriginOffset] 只為三個離散姿態定義補償位移，動畫中的姿態旋轉角（[TileMotionAnimationFrame.poseRotationDegrees]）
+         * 則是連續內插的；`entity.tilePose` 只表示終點姿態，整段套用它的補償位移會讓旋轉角與位移對不上，牌會偏移，
+         * 旋轉軸心也不落在牌底。
+         *
+         * 因此依同一個 `progress` 在起訖姿態的補償位移之間線性內插：起訖兩端與靜態渲染完全一致，播放前後不會跳動；
+         * 中間過程不是嚴格的單一軸心剛體旋轉（三個姿態的補償位移各自調校、沒有共用幾何軸心），但觀感接近繞牌底翻起。
+         *
+         * @param startRotationDegrees 起始姿態角度。
+         * @param endRotationDegrees 結束姿態角度。
+         * @param progress 內插進度，0 對應起點，1 對應終點。
+         * @return 起訖補償位移的線性內插值。
+         */
+        private fun lerpPoseOriginOffset(startRotationDegrees: Float, endRotationDegrees: Float, progress: Double): Triple<Double, Double, Double> {
+            val (startX, startY, startZ) = poseOriginOffset(startRotationDegrees)
+            val (endX, endY, endZ) = poseOriginOffset(endRotationDegrees)
+            return Triple(
+                first = startX + (endX - startX) * progress,
+                second = startY + (endY - startY) * progress,
+                third = startZ + (endZ - startZ) * progress,
+            )
+        }
+
+        /**
+         * 依姿態旋轉角換算原點補償位移，讓 [MahjongTilePose] 三種姿態各自「牌底」都貼齊 render() 套用
+         * 姿態旋轉前的錨點位置（entity 世界座標，經過動畫位移後的位置）——這個位移是套用在姿態旋轉
+         * *之後* 的局部座標系（[render] 呼叫順序：先轉姿態、後位移），效果等同讓姿態旋轉的軸心落在牌底
+         * 而非模型幾何中心，理由見 [lerpPoseOriginOffset] KDoc。
+         *
+         * @param rotationDegrees 姿態旋轉角度。
+         * @return 將旋轉軸對齊牌底所需的補償位移。
+         */
+        internal fun poseOriginOffset(rotationDegrees: Float): Triple<Double, Double, Double> = when (rotationDegrees) {
+            MahjongTilePose.STANDING.rotationDegrees -> Triple(0.0, MahjongTileEntity.TILE_HEIGHT / 2.0, 0.0)
+            MahjongTilePose.FACE_UP.rotationDegrees -> Triple(0.0, 0.0, -MahjongTileEntity.TILE_DEPTH / 2.0)
+            else -> Triple(0.0, 0.0, MahjongTileEntity.TILE_DEPTH / 2.0) // MahjongTilePose.FACE_DOWN
+        }
+
+        /** 保留牌面可辨識度的低光照 packed value。 */
+        private const val DIMMED_LIGHT = 0x00300030
+
+        /** 落地提示在世界中的高度。 */
+        private const val ACTION_POPUP_WORLD_HEIGHT = 0.62
+
+        /** 落地提示的 GUI 像素轉世界比例。 */
+        private const val ACTION_POPUP_SCALE = 0.0125f
+
+        /** 落地提示背景寬度。 */
+        private const val ACTION_POPUP_PANEL_WIDTH = 28f
+
+        /** 落地提示背景高度。 */
+        private const val ACTION_POPUP_PANEL_HEIGHT = 36f
+
+        /** 落地提示牌面寬度。 */
+        private const val ACTION_POPUP_TILE_WIDTH = 20f
+
+        /** 落地提示牌面高度。 */
+        private const val ACTION_POPUP_TILE_HEIGHT = 28f
+
+        /** 副露提示中相鄰牌面的間距。 */
+        private const val ACTION_POPUP_TILE_GAP = 2f
+
+        /** 鳴牌指標一格（決策卡片的一個像素）在提示中的大小。 */
+        private const val CLAIMED_MARKER_UNIT = ACTION_POPUP_TILE_WIDTH / DecisionCardLayout.PREVIEW_TILE_WIDTH
+
+        /** 鳴牌指標的總高度。 */
+        private val CLAIMED_MARKER_HEIGHT = ClaimedTileMarker.ROW_WIDTHS.size * CLAIMED_MARKER_UNIT
+
+        /** 鳴牌指標與牌面之間的間距。 */
+        private const val CLAIMED_MARKER_GAP = ClaimedTileMarker.GAP * CLAIMED_MARKER_UNIT
+
+        /** 副露提示內容左右內距。 */
+        private const val ACTION_POPUP_GROUP_PADDING = 4f
+
+        /** 落地提示淡入及淡出的 tick 數。 */
+        private const val ACTION_POPUP_FADE_TICKS = 4.0
+
+        /** 落地提示背景 RGB。 */
+        private const val ACTION_POPUP_BACKGROUND = 0x101820
+
+        /** 落地提示背景基礎透明度。 */
+        private const val ACTION_POPUP_BACKGROUND_ALPHA = 0.72f
+    }
+
+    /**
+     * 動作選牌期間（例如立直宣告後選擇捨牌），合法候選牌以外的管理中手牌降低光照。
+     *
+     * @return 此管理中牌是否不在目前合法候選集合中。
+     */
+    private fun MahjongTileEntity.isDimmedByTileSelection(): Boolean {
+        if (!managedByGame) return false
+        val legalTileIds = decisionPromptStore.activeTileSelectionEligibleTileIds()
+        return legalTileIds.isNotEmpty() && uuid.toString() !in legalTileIds
+    }
+}

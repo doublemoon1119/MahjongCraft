@@ -1,7 +1,18 @@
+import com.doublemoon1119.mahjongcraft.buildlogic.AUTOTEST_SERVER_RESUME
+import com.doublemoon1119.mahjongcraft.buildlogic.AUTOTEST_SERVER_START
 import com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtension
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestClientArguments
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestClientEnvironment
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestServerSystemProperties
+import com.doublemoon1119.mahjongcraft.buildlogic.autotestSystemProperties
+import com.doublemoon1119.mahjongcraft.buildlogic.clientRunDirectory
 import com.doublemoon1119.mahjongcraft.buildlogic.includeResourcesOf
+import com.doublemoon1119.mahjongcraft.buildlogic.includeSharedVersionSources
 import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.modrinth
+import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestClientTasks
+import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestServerTasks
+import com.doublemoon1119.mahjongcraft.buildlogic.serverRunDirectory
 
 plugins {
     alias(libs.plugins.mahjongcraft.minecraft.loader)
@@ -34,6 +45,7 @@ repositories {
 devMods {
     group("shaders", mc1201.bundles.dev.fabric.iris)
     group("modmenu", mc1201.bundles.dev.fabric.modmenu)
+    shaderPack(group = "shaders", pack = mc1201.dev.shader.complementary.reimagined)
 }
 
 loom {
@@ -42,17 +54,36 @@ loom {
     runs {
         named("client") {
             // 分離 client 與 server 的 log、設定及世界資料，避免同時測試時互相覆寫。
-            runDirectory.set(layout.projectDirectory.dir("run/client"))
+            runDirectory.set(layout.projectDirectory.dir(clientRunDirectory()))
+            // -PmahjongcraftAutotest 時，debug 模組在遊戲啟動後自動執行測試並關閉遊戲。
+            autotestClientEnvironment().forEach { (name, value) -> environmentVariable(name, value) }
+            autotestClientArguments().forEach(::programArg)
+            autotestSystemProperties().forEach { (name, value) -> vmArg("-D$name=$value") }
         }
         named("server") {
-            runDirectory.set(layout.projectDirectory.dir("run/server"))
+            runDirectory.set(layout.projectDirectory.dir(serverRunDirectory()))
+            // -PmahjongcraftAutotest 時是伺服器自動測試的第一段：開局、打到一半後關機。
+            autotestServerSystemProperties(AUTOTEST_SERVER_START).forEach { (name, value) -> vmArg("-D$name=$value") }
+        }
+        // 伺服器自動測試的第二段：讀回第一段留下的世界；只由 autotestServer 任務接在第一段之後執行。
+        register("autotestServerResume") {
+            server()
+            ideConfigGenerated(false)
+            runDirectory.set(layout.projectDirectory.dir(serverRunDirectory()))
+            autotestServerSystemProperties(AUTOTEST_SERVER_RESUME).forEach { (name, value) -> vmArg("-D$name=$value") }
         }
     }
 }
+registerAutotestClientTasks(clientTask = "runClient")
+registerAutotestServerTasks(startTask = "runServer", resumeTask = "runAutotestServerResume")
+
+// 一起編譯跨版本共用的 platform/minecraft/fabric；這裡只放 1.20.1 的 Fabric 專屬部分，例如網路傳輸與 mod 的設定檔。
+includeSharedVersionSources()
 
 // 材質、模型與翻譯放在跨版本、跨載入器共用的 :minecraft_common，與本模組的資源一起打包。
-// :minecraft_v1.20.1_mod 的程式與資源（例如配方）由本模組一起編譯與打包：mod 模組自己的 JAR 使用 Mojang 名稱，
-// Fabric 執行時需要 intermediary 名稱，因此不直接依賴它的 JAR，而是把原始碼納入本模組，由 Loom 一起重新映射。
+// :minecraft_v1.20.1_mod 與它一起編譯的跨版本共用 platform/minecraft/mod，程式與資源（例如配方）由本模組一起編譯與打包：
+// mod 模組自己的 JAR 使用 Mojang 名稱，Fabric 執行時需要 intermediary 名稱，因此不直接依賴它的 JAR，而是把原始碼納入
+// 本模組，由 Loom 一起重新映射。
 includeResourcesOf(":minecraft_common", "src/jvmMain")
 includeSourcesOf(":minecraft_v1.20.1_mod")
 

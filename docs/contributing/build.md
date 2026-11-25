@@ -33,10 +33,11 @@
 
 - A selection may list several targets separated by commas, for example
   `minecraft-v1.20.1-fabric,minecraft-v1.20.1-forge`, to build and sync both loaders of one Minecraft
-  version together. The build loads the union of their modules once. Each module takes its Java version and
-  the libraries its runtime provides from the targets that contain it; a module shared by targets with
-  different Java versions fails the selection, so select those targets separately. `core` cannot be
-  combined with other targets. CI still verifies every target on its own.
+  version together, or targets of different Minecraft versions. The build loads the union of their modules
+  once. Each module takes its Java version and the libraries its runtime provides from the targets that
+  contain it; a module shared by targets with different Java versions compiles with the newest of their
+  toolchains to the oldest of their releases, so every target can load it. `core` cannot be combined with
+  other targets. CI still verifies every target on its own.
 - Properties that only apply to Minecraft builds, such as extra mods for development runs and build
   metadata, are described in [Minecraft Build](minecraft-build.md).
 - Core modules use `core-java-toolchain` and `core-java-release` from `gradle/libs.versions.toml`.
@@ -107,12 +108,12 @@
 - Verify both example-enabled and default builds. Test the actual remapped JAR contents, not just
   compilation, and keep configuration cache enabled. See the
   [Minecraft example guide](../../example/platform/minecraft/README.md) for run commands.
-- Keep example documentation actionable: link to the public registration entry point and the focused
-  tests, state which checks are automated or manual, and do not describe a missing-mod world test as
-  complete until the packaged-instance recovery steps have actually been run.
-- In shared guides, present version/loader-specific commands and paths as examples, and name the
-  adapter actually verified. Do not imply that checking one adapter verifies other versions or loaders.
-  An adapter's own guide can describe its implementation directly.
+- Keep example documentation actionable: describe what the example does and how to use it, and link to
+  the public registration entry point and the focused tests.
+- Documentation describes behavior and usage for its readers. It does not record verification
+  progress, such as which checks passed, are pending or were run on which adapter.
+- In shared guides, present version/loader-specific commands and paths as examples. An adapter's own
+  guide can describe its implementation directly.
 
 ## Continuous Integration
 
@@ -130,8 +131,10 @@
 
   CI sets the `CI` environment variable, so modules that start Koin recheck their whole dependency graph
   on every build, as `-PmahjongcraftKoinStrictSafety=true` does locally.
-  Gradle runs on JDK 25. The target's toolchain JDK is installed separately and found through
+  Gradle runs on JDK 25. The target's toolchain JDK and JDK 21 are installed separately and found through
   `org.gradle.java.installations.fromEnv`; toolchain downloads are disabled, so a missing JDK fails the job.
+  JDK 21 runs the tool that prepares Minecraft for ModDevGradle (see
+  [Minecraft Build](minecraft-build.md)), which needs at least Java 21.
 - Pushes save the Gradle cache, including Loom's Minecraft files; pull requests only read it.
 - CI builds pass the short commit hash as [build metadata](minecraft-build.md#mod-versions), so a Minecraft mod built
   by CI reads like `0.4.0-SNAPSHOT+1.20.1-fabric.a0f6307` and its JAR like

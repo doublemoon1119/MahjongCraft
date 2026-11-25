@@ -8,11 +8,17 @@ It uses the same compiler, Java and Minecraft version policies as the main proje
 - [Platform-independent extension](../../mahjong-extension/README.md): common Kotlin code.
 - [Minecraft common](common/README.md): shared presentation and resources, with a
   [registration map](common/README.md#registration-map) for extension authors.
-- [Minecraft 1.20.1 mod](v1.20.1/mod/README.md): loader-independent 1.20.1 code, such as the
-  game-event chat and furniture behavior that does not depend on how the content is registered.
-- Version/loader adapters: each one registers the 1.20.1 content in its loader's own way, for
-  example the [Fabric 1.20.1 adapter](v1.20.1/fabric/README.md) and the
-  [Forge 1.20.1 adapter](v1.20.1/forge/README.md).
+- [Shared Minecraft mod](mod/README.md): loader-independent Minecraft code that is the same for every
+  version, such as the game-event chat and furniture behavior that does not depend on how the content is
+  registered.
+- Minecraft version mods, the [Minecraft 1.20.1 mod](v1.20.1/mod/README.md) and the
+  [Minecraft 1.21.1 mod](v1.21.1/mod/README.md): the example's own adapters for each version and the files each
+  Minecraft version keeps its own copy of.
+- [Shared Fabric example](fabric/README.md): the Fabric entry points and registration, the same for every
+  Minecraft version.
+- Version/loader adapters: each one registers its version's content in its loader's own way, namely the
+  [Fabric 1.20.1 adapter](v1.20.1/fabric/README.md), the [Fabric 1.21.1 adapter](v1.21.1/fabric/README.md)
+  and the [Forge 1.20.1 adapter](v1.20.1/forge/README.md).
 
 The common extension registers the pairing rule, custom tile and Tsumogiri strategy.
 Minecraft presentation adds room settings, hand-reveal and exchange prompts, settlement text,
@@ -24,7 +30,8 @@ printed to online administrators' chat so their supplied fields can be inspected
 
 Choose a supported target and its example loader project. The commands below use the currently
 available Fabric 1.20.1 adapter as an example; other adapters have their own target and task paths,
-such as `minecraft-v1.20.1-forge` and `:example-minecraft_v1.20.1_forge` for the Forge 1.20.1 adapter.
+such as `minecraft-v1.20.1-forge` and `:example-minecraft_v1.20.1_forge` for the Forge 1.20.1 adapter, or
+`minecraft-v1.21.1-fabric` and `:example-minecraft_v1.21.1_fabric` for the Fabric 1.21.1 adapter.
 Run them from the repository root. The flag accepts only `true` or `false`.
 Omitting it is equivalent to `false`; it is not saved by `switchTarget`.
 
@@ -40,12 +47,15 @@ Their worlds, configuration and logs stay under the adapter directory
 Example runs must remain separate from the product loader's development worlds and classpath.
 Enabling the example flag does not add the example to the product loader's own run tasks.
 
+Every example adapter also runs the automated client test, which plays the main mod's steps and the
+example's extension content in game.
+
 ## Safe Recovery Check
 
 Use a disposable world and keep a full backup after a normal exit. Do not use the main development
 world for removal tests.
 
-The missing-extension recovery scenario is still a manual check, not an automated guarantee:
+Follow these steps to check that a world keeps its MahjongCraft data while the example is missing:
 
 1. Start with the same product and example versions. Create an active pairing match on the bundled
    table and stools, and record its venue ID, match ID, settings and scores.
@@ -73,12 +83,12 @@ under the example's own resource namespace.
 No example module starts Koin. Extension registration goes through MahjongCraft's public entrypoint.
 Successful compilation alone is not evidence that a rule or another extension capability works.
 
-The loader-specific entries are the Fabric 1.20.1
-[`ExampleMod.kt`](v1.20.1/fabric/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleMod.kt)
-and the Forge 1.20.1
+The loader-specific entries are the Fabric
+[`ExampleMod.kt`](fabric/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleMod.kt), shared by
+every Minecraft version, and the Forge 1.20.1
 [`ExampleMod.kt`](v1.20.1/forge/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/forge/ExampleMod.kt),
-and the observer test shared by the 1.20.1 loaders is
-[`ExampleGameEventChatTest.kt`](v1.20.1/mod/src/test/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/mod/event/ExampleGameEventChatTest.kt).
+and the observer test shared by every version and loader is
+[`ExampleGameEventChatTest.kt`](mod/src/test/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/mod/event/ExampleGameEventChatTest.kt).
 The shared Minecraft registration and its test are
 [`ExampleMinecraftMahjongExtension.kt`](common/src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/ExampleMinecraftMahjongExtension.kt)
 and [`ExampleMinecraftRegistrationTest.kt`](common/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/ExampleMinecraftRegistrationTest.kt).
@@ -87,24 +97,7 @@ The Fabric 1.20.1 packaged dedicated-server startup smoke test has already passe
 It does not establish support for other adapters or replace the manual
 checks above or prove every world interaction.
 
-## Accepted Game Checks
-
-The following integration scenarios have been accepted in game on the current Fabric 1.20.1 adapter.
-They do not need repeating solely for documentation or ABI baseline changes:
-
-- Enable the two-tile exchange, select multiple tiles, submit from every player, and confirm the
-  simultaneous exchange leaves no duplicate, stale or replayed tile before normal draw and discard.
-- Check two-player facing seats and the multi-roll opening.
-- Run one short combination for each of these pairings: example rule with bundled AI, bundled rule with
-  example AI, and example rule with example AI. A complete match or stress run is not required.
-
-The separate missing-extension recovery procedure above has not been verified at world level.
-It is not a reason to repeat these accepted gameplay checks.
-
-## Furniture and Event Checks
-
-The behavior below describes the current Fabric 1.20.1 implementation. Use it as a reference when
-adding another version/loader adapter, and verify that adapter separately.
+## Furniture and Events
 
 The **MahjongCraft Example** creative tab contains the chair, placeable cushion, bench, actor item and three tables.
 Place a chair, bench or cushion at a standard table seat. Right-click to sit; game-start seating uses the public seat
@@ -206,9 +199,7 @@ MahjongCraft's own spawned bots are recreated by its character manager and do no
 | Seat variety | Block chair, local-connection bench and persistent cushion |
 | Cleanup | Token-scoped restoration, repeated release and partial preparation failure |
 
-Registration and focused tests are automated. Native interaction, appearance, exclusions and reloads
-still need the in-game checks for the adapter being tested. Registering the owned and FACE-only test
-descriptions does not make them selectable in a normal room or prove their full in-game lifecycle.
+Registering the owned and FACE-only test descriptions does not make them selectable in a normal room.
 Removing the example mod can remove its native actors and furniture; reinstalling it does not restore
 native content that Minecraft already discarded. Use a disposable world for missing-mod checks.
 
@@ -233,9 +224,9 @@ reads the saved selection. It also requests one custom gold hand-reveal token pe
 Both kinds use the same central layout. The public tile kind comes from MahjongCraft; the token's
 native kind, entity and renderer belong entirely to the example. The Minecraft 1.20.1 example registers
 them in
-[`ExampleNativeMahjongExtension`](v1.20.1/mod/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/mod/ExampleNativeMahjongExtension.kt).
+[`ExampleNativeMahjongExtension`](mod/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/mod/ExampleNativeMahjongExtension.kt).
 
-After building, check the following in a disposable example world:
+To see these props in game, use a disposable example world:
 
 1. Start with two selected ranks, then with all eight. Count the displayed bonus tiles.
 2. Check that the bonus tiles face the dealer, including after the next round changes dealers.
@@ -244,6 +235,3 @@ After building, check the following in a disposable example world:
 4. Self-draw and compare the displayed bonus ranks with the extra points. Repeated copies count once.
 5. Leave and reopen an active match. Its bonus ranks and scores must stay the same.
 6. Finish a round or remove the table. Its old props must not remain or reappear later.
-
-These are new prop checks; their game acceptance is pending. The previously accepted seating,
-exchange, opening and event checks above remain separate.

@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
@@ -100,6 +101,34 @@ class ServerSessionProjectionRecoveryTest {
             actual = fixture.timers.getStatuses(broken.id).keys.map { id -> broken.tableState.players.indexOfFirst { it.id == id } },
         )
         assertTrue(fixture.timers.getStatuses(broken.id).isNotEmpty())
+    }
+
+    /** 保守快照的對局重新安排決策失敗時，回報這一局與原因，其他對局照常排定。 */
+    @Test
+    fun `decision reschedule failure of a conservative game is reported`() = runTest {
+        val broken = game()
+        val healthy = game()
+        val lastId = broken.tableState.players.last().id
+        val scheduleFailure = IllegalStateException("Presentation state unavailable")
+        val fixture = Fixture(
+            decorate = { delegate ->
+                object : GameVisibilityPolicy by delegate {
+                    override fun snapshotFor(game: Game, observerId: Uuid): TableStateSnapshot {
+                        if (game.id == broken.id && observerId == lastId) throw IllegalStateException("Rule projection failed")
+                        return delegate.snapshotFor(game, observerId)
+                    }
+                }
+            },
+            busyGate = object : GamePresentationBusyGate {
+                override fun isBusy(gameId: Uuid): Boolean = if (gameId == broken.id) throw scheduleFailure else false
+            },
+        )
+
+        val result = fixture.restore(broken, healthy)
+
+        assertEquals(listOf(broken.id), result.scheduleFailures.map { it.gameId })
+        assertSame(scheduleFailure, result.scheduleFailures.single().cause)
+        assertTrue(fixture.timers.getStatuses(healthy.id).isNotEmpty())
     }
 
     /** 無效 UUID、重複描述與描述回呼失敗，都只影響該局的還原顯示。 */
@@ -229,11 +258,13 @@ class ServerSessionProjectionRecoveryTest {
      * @param describe 規則提供的逐張描述。
      * @param decorate 可在指定觀察者呼叫時失敗的政策包裝。
      * @param componentRegistry 使用正式登記或可在投影失敗的登記包裝。
+     * @param busyGate 重新安排決策時查詢的呈現狀態；可在指定對局失敗。
      */
     private class Fixture(
         describe: (TableState) -> List<TileComponentDescription> = { emptyList() },
         decorate: (GameVisibilityPolicy) -> GameVisibilityPolicy = { it },
         componentRegistry: ComponentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+        busyGate: GamePresentationBusyGate = FakeGamePresentationBusyGate(),
     ) {
         val snapshots = GameSnapshotRepositoryImpl()
         val store = AuthoritativeStateStore()
@@ -258,7 +289,7 @@ class ServerSessionProjectionRecoveryTest {
             gameVisibilityPolicy = policy,
             decisionTimerManager = timers,
             decisionAvailabilityService = GameDecisionAvailabilityService(
-                busyGate = FakeGamePresentationBusyGate(),
+                busyGate = busyGate,
                 timerManager = timers,
                 synchronizationService = DecisionTimerSynchronizationService(timers, repository, FakeDecisionTimerUpdatePublisher()),
             ),

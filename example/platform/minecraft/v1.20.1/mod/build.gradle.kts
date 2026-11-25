@@ -1,3 +1,4 @@
+import com.doublemoon1119.mahjongcraft.buildlogic.includeSharedVersionSources
 import com.doublemoon1119.mahjongcraft.buildlogic.minecraftModAccessTransformer
 
 // 範例擴充中呼叫 Minecraft 1.20.1、但不使用任何載入器的部分：家具的座位、方塊與實體邏輯、角色的座位規則等。
@@ -8,6 +9,9 @@ plugins {
     alias(libs.plugins.mahjongcraft.minecraft.mod)
     alias(libs.plugins.moddev.legacyforge)
 }
+
+// 一起編譯跨版本共用的 example/platform/minecraft/mod；這裡只放 1.20.1 的轉接與各版本一份的檔案。
+includeSharedVersionSources()
 
 legacyForge {
     // 原版模式：只提供套用 Mojang 名稱的原版 Minecraft，不含任何載入器。

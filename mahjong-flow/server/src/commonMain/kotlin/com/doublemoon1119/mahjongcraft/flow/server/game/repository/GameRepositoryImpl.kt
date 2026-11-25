@@ -68,7 +68,7 @@ class GameRepositoryImpl(
             state = state.copy(games = games),
             result = result,
             historyDraftsByVenueId = if (drafts.isEmpty()) emptyMap() else mapOf(gameId to drafts),
-            historyRecordingFailures = if (recording.isFailure) setOf(gameId) else emptySet(),
+            historyRecordingFailures = recording.exceptionOrNull()?.let { mapOf(gameId to it) }.orEmpty(),
         )
     }
 
