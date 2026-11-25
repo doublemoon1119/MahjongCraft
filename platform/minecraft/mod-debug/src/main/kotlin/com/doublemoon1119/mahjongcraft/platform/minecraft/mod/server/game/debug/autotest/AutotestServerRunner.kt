@@ -177,12 +177,16 @@ internal class AutotestServerRunner(private val koin: Koin) {
     }
 
     /**
-     * 讓三位機器人玩家加入伺服器。
+     * 讓三位機器人玩家加入伺服器，並站到各自牌桌的前方；加入時的出生點是隨機的，可能落在牌桌要放的位置。
      *
      * @param server 目前伺服器。
      */
     private fun AutotestServerContext.joinBots(server: MinecraftServer) {
-        tables.forEach { table -> bots[table.botName] = AutotestBotPlayer.join(server, table.botName) }
+        tables.forEach { table ->
+            val bot = AutotestBotPlayer.join(server, table.botName)
+            table.approach(bot)
+            bots[table.botName] = bot
+        }
         check("The bots are online like players", bots.values.all { server.playerList.getPlayer(it.uuid) === it })
     }
 

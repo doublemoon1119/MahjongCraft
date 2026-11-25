@@ -37,13 +37,17 @@ internal class AutotestServerTable(val rule: String, val botName: String, val po
     /** 牌桌識別碼；放好牌桌之前為 null。 */
     var tableId: Uuid? = null
 
+    /** 機器人站在牌桌前方的位置；不在任何一張測試牌桌的範圍內，所以機器人不會擋住放牌桌。 */
+    val standingPosition: Vec3
+        get() = Vec3(position.x + 0.5, position.y.toDouble(), position.z - 2.5)
+
     /**
      * 讓機器人走到牌桌前方面向牌桌。
      *
      * @param bot 機器人玩家。
      */
     fun approach(bot: ServerPlayer) {
-        bot.teleportTo(bot.serverLevel(), position.x + 0.5, position.y.toDouble(), position.z - 2.5, 0f, 30f)
+        bot.teleportTo(bot.serverLevel(), standingPosition.x, standingPosition.y, standingPosition.z, 0f, 30f)
     }
 
     /**
