@@ -255,6 +255,7 @@ internal class HistoryReplayVisibilityScreen(
 
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         renderScreenBackground(context, mouseX, mouseY, delta)
+        renderContentBackground(context)
         ScreenRendering.title(context, font, title, width)
         val layout = layout
         val viewText = Component.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_CURRENT_VIEW, this.context.viewLabel)

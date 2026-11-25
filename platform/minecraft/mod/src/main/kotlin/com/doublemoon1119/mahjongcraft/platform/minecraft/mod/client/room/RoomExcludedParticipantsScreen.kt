@@ -194,6 +194,7 @@ internal class RoomExcludedParticipantsScreen(
         // 網路快照可能在兩次 tick 之間更新，繪製前先移除已不在名單上的卡片。
         if (room.excludedPlayerIds != entries) refreshRows()
         renderScreenBackground(context, mouseX, mouseY, delta)
+        renderContentBackground(context)
         ScreenRendering.title(context, font, title, width)
         filtered.drop(scroll.index).take(rows).forEachIndexed { index, id ->
             val y = top + index * ROW_HEIGHT

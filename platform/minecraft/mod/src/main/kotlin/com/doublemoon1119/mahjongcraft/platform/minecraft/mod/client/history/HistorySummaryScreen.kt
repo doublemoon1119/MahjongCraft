@@ -218,6 +218,7 @@ internal class HistorySummaryScreen(
     /** 繪製摘要畫面。 */
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         renderScreenBackground(context, mouseX, mouseY, delta)
+        renderContentBackground(context)
         ScreenRendering.title(context, font, title, width)
         val summary = session.controller.state.value.summary
         val status = summary?.status ?: HistoryBrowseStatus.Loading

@@ -310,6 +310,7 @@ internal class HistoryRuleSettingsScreen(
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         if (presentation() !== builtFor) rebuildWidgets()
         renderScreenBackground(context, mouseX, mouseY, delta)
+        renderContentBackground(context)
         ScreenRendering.title(context, font, title, width)
         val layout = layout
         val state = session.controller.state.value

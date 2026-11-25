@@ -197,6 +197,7 @@ internal class MultiChoiceScreen(
 
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         renderScreenBackground(context, mouseX, mouseY, delta)
+        renderContentBackground(context)
         val layout = layout()
         ScreenRendering.title(context, font, fitClientText(font, title, layout.contentWidth), width)
         context.drawCenteredString(

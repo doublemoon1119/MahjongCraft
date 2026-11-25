@@ -540,6 +540,10 @@ attempt does not fall through to another provider.
 - Use the vanilla translucent background by default. A part of the content that needs to stand apart
   from what is behind it may have its own backing, such as the decision panel over the world during a
   match or a table scene drawn in a screen. Do not cover the whole screen with an overlay.
+- Screens built around lists or forms call `MahjongScreen.renderContentBackground` after the background. On
+  Minecraft versions whose menus blur the world, it draws vanilla's list backing and separators between the
+  title and the footer, as vanilla lists do; on older versions it draws nothing. Screens with only a few
+  buttons, confirmations and screens that are one view, such as the round replay, do not call it.
 - Mark the current page, or a selector whose list is open, with the white outline
   (`RestartableMarqueeButtonWidget.outlined`). Keep the disabled look for buttons that cannot be pressed;
   it does not mean "you are here".

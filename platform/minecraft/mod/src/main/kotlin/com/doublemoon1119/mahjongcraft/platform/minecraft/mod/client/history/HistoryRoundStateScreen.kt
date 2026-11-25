@@ -152,6 +152,7 @@ internal class HistoryRoundStateScreen(
      */
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         renderScreenBackground(context, mouseX, mouseY, delta)
+        renderContentBackground(context)
         val round = currentRound()
         val status = round?.stateStatus ?: HistoryBrowseStatus.Failed(HistoryBrowseFailure.NOT_AVAILABLE)
         val state = round?.state?.takeIf { status == HistoryBrowseStatus.Ready && it.position == round.confirmedPosition }

@@ -356,6 +356,7 @@ internal class HistoryListScreen(
         val pointerX = dropdown.pointer(mouseX)
         val pointerY = dropdown.pointer(mouseY)
         renderScreenBackground(context, mouseX, mouseY, delta)
+        renderContentBackground(context)
         ScreenRendering.title(context, font, title, width)
         val state = session.controller.state.value
         hoveredEntry = null

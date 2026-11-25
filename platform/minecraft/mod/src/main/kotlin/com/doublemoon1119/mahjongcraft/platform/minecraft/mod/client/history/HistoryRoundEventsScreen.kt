@@ -221,6 +221,7 @@ internal class HistoryRoundEventsScreen(
      */
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         renderScreenBackground(context, mouseX, mouseY, delta)
+        renderContentBackground(context)
         val round = currentRound()
         val status = round?.eventsStatus ?: HistoryBrowseStatus.Failed(HistoryBrowseFailure.NOT_AVAILABLE)
         val heading = title.copy().append(" • ").append(Component.translatable(MinecraftHistoryScreenKeys.ROUND_NUMBER, round?.roundNumber ?: "—"))

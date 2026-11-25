@@ -262,6 +262,7 @@ internal class GuideScreen(
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         if (language !== Language.getInstance()) rebuildWidgets()
         renderScreenBackground(context, mouseX, mouseY, delta)
+        renderContentBackground(context)
         ScreenRendering.title(context, font, fitClientText(font, title, layout.contentWidth), width)
         val tooltip = renderContent(context = context, mouseX = mouseX, mouseY = mouseY, delta = delta)
         val bar = layout.scrollbar(contentHeight = content.height, scroll = scroll.offset)

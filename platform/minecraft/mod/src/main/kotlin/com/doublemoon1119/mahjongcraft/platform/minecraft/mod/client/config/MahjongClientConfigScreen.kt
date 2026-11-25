@@ -168,6 +168,7 @@ class MahjongClientConfigScreen(
 
     override fun render(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         renderScreenBackground(context, mouseX, mouseY, delta)
+        renderContentBackground(context)
         val layout = layout()
         ScreenRendering.title(context, font, title, width)
         ScreenRendering.tabLine(context, tabStrip(layout))

@@ -27,6 +27,16 @@ abstract class MahjongScreen(title: Component) : Screen(title) {
     }
 
     /**
+     * 在標題下方到底部按鈕上方之間畫出清單內容區的底：這個版本的原版背景已經是整片深色，清單不另外墊底，這裡不畫任何東西。
+     *
+     * 只用在以清單或表單為主的畫面；只有幾個按鈕的畫面與整個畫面就是一個視圖的畫面不畫。
+     *
+     * @param context 繪製環境。
+     */
+    @Suppress("UnusedParameter")
+    protected fun renderContentBackground(context: GuiGraphics) = Unit
+
+    /**
      * 畫出加入這個畫面的按鈕等元件，不畫背景。
      *
      * @param context 繪製環境。
