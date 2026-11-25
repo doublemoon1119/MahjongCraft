@@ -15,6 +15,9 @@ internal object MahjongRulerTint {
     /** 染色牌尺的不透明度。 */
     private const val DYED_ALPHA: Int = 180
 
+    /** 完全不透明的 `0xAARRGGBB` 透明度位元。 */
+    private const val OPAQUE: Int = 0xFF shl 24
+
     /**
      * 牌尺的顏色。
      *
@@ -25,6 +28,15 @@ internal object MahjongRulerTint {
         val dye = color.dyeName?.let { DyeColor.byName(it, null) } ?: return CLEAR_RGB
         return dyeTextureRgb(dye)
     }
+
+    /**
+     * 牌尺物品的染色。物品染色以 `0xAARRGGBB` 打包，有的 Minecraft 版本會套用其中的不透明度，所以固定為完全不透明；物品圖示
+     * 不做半透明。
+     *
+     * @param color 牌尺顏色。
+     * @return 以 `0xAARRGGBB` 打包、完全不透明的顏色。
+     */
+    fun itemTint(color: MahjongRulerColor): Int = OPAQUE or rgb(color)
 
     /**
      * 牌尺的不透明度。

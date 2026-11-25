@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongRoundInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.cameraFacingRotation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
@@ -69,7 +70,7 @@ class MahjongRoundInfoEntityRenderer(
 
         WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
             panelMatrices.pushPose()
-            panelMatrices.mulPose(entityRenderDispatcher.cameraOrientation())
+            panelMatrices.mulPose(entityRenderDispatcher.cameraFacingRotation())
             panelMatrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
             val lineHeight = textRenderer.lineHeight + LINE_SPACING
             val totalHeight = lineHeight * lines.size

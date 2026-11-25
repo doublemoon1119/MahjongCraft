@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.tile.Client
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.TileActionPopupKind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.cameraFacingRotation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimation
@@ -263,7 +264,7 @@ class MahjongTileEntityRenderer(
         if (assetKey == UNKNOWN_TILE_ASSET_KEY) return
         matrices.pushPose()
         matrices.translate(0.0, ACTION_POPUP_WORLD_HEIGHT, 0.0)
-        matrices.mulPose(entityRenderDispatcher.cameraOrientation())
+        matrices.mulPose(entityRenderDispatcher.cameraFacingRotation())
         matrices.scale(-ACTION_POPUP_SCALE, -ACTION_POPUP_SCALE, ACTION_POPUP_SCALE)
         WorldPanelRenderer.drawBackground(
             left = -ACTION_POPUP_PANEL_WIDTH / 2f,
@@ -325,7 +326,7 @@ class MahjongTileEntityRenderer(
         val panelHeight = layout.contentHeight + markerHeight + ACTION_POPUP_GROUP_PADDING * 2
         matrices.pushPose()
         matrices.translate(0.0, ACTION_POPUP_WORLD_HEIGHT, 0.0)
-        matrices.mulPose(entityRenderDispatcher.cameraOrientation())
+        matrices.mulPose(entityRenderDispatcher.cameraFacingRotation())
         matrices.scale(-ACTION_POPUP_SCALE, -ACTION_POPUP_SCALE, ACTION_POPUP_SCALE)
         WorldPanelRenderer.drawBackground(
             left = -panelWidth / 2f,

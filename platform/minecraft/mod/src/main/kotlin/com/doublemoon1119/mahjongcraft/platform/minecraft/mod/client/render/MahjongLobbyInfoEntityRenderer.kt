@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongLobbyInfoEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.cameraFacingRotation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.mojang.blaze3d.vertex.PoseStack
@@ -49,7 +50,7 @@ class MahjongLobbyInfoEntityRenderer(
         )
         WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
             panelMatrices.pushPose()
-            panelMatrices.mulPose(entityRenderDispatcher.cameraOrientation())
+            panelMatrices.mulPose(entityRenderDispatcher.cameraFacingRotation())
             panelMatrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
             val lineHeight = textRenderer.lineHeight + LINE_SPACING
             val totalHeight = lines.size * lineHeight

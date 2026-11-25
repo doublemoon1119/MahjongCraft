@@ -156,7 +156,7 @@ class MahjongCraftClientBootstrap(
             id = resourceId(MinecraftModMetadata.MOD_ID, "denomination"),
         ) { stack, _, _, _ -> MahjongScoringStickItem.readDenomination(stack).toModelPredicateValue() }
         ModItems.MAHJONG_RULERS.forEach { (color, item) ->
-            registrar.registerItemColor(color = { _, _ -> MahjongRulerTint.rgb(color) }, items = listOf(item))
+            registrar.registerItemColor(color = { _, _ -> MahjongRulerTint.itemTint(color) }, items = listOf(item))
         }
         val clientConfigStore = koin.get<MahjongClientConfigStore>()
         koin.get<RoomConfigScreenCommand>().register(events)

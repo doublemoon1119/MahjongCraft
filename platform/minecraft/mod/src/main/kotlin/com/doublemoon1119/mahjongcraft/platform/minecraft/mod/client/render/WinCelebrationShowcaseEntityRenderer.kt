@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ShowcaseCar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinCelebrationCinematicTimeline
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinCelebrationShowcaseEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.cameraFacingRotation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.render
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
@@ -99,7 +100,7 @@ class WinCelebrationShowcaseEntityRenderer(
         if (duration <= 0.0 || elapsed !in 0.0..<duration) return
         val appearance = TileRenderAppearanceContext(tileAppearanceResolver.resolve(entity.managedTableId))
         val fadeStart = duration - WinCelebrationShowcaseEntity.FADE_OUT_TICKS
-        val billboardRotation = Quaternionf(entityRenderDispatcher.cameraOrientation())
+        val billboardRotation = entityRenderDispatcher.cameraFacingRotation()
         val formation = ShowcaseFormationLayout(
             wingCardOrders = entity.wings.map { wing -> wing.cards.map { it.order } },
             includesWinningTile = entity.winningTileSnapshot != null,

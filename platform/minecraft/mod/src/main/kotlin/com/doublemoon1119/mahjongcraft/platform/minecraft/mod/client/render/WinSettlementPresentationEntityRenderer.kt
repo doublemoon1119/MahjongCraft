@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettleme
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.WinSettlementWinnerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.winSettlementTileGroups
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.cameraFacingRotation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementTemplateKeys
@@ -111,7 +112,7 @@ class WinSettlementPresentationEntityRenderer(
             currentTableId = entity.managedTableId
             panelMatrices.pushPose()
             panelMatrices.translate(0.0, 0.55, 0.0)
-            panelMatrices.mulPose(entityRenderDispatcher.cameraOrientation())
+            panelMatrices.mulPose(entityRenderDispatcher.cameraFacingRotation())
             panelMatrices.scale(-SCALE, -SCALE, SCALE)
             val rankingStart = entity.rankingStartTick().toDouble()
             if (elapsed < rankingStart) {

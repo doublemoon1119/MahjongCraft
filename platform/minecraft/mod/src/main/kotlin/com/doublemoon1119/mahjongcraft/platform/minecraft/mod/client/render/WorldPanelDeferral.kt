@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.ModelViewMatrix
+import com.mojang.blaze3d.systems.RenderSystem
 import com.mojang.blaze3d.vertex.PoseStack
 import net.minecraft.client.Minecraft
 import net.minecraft.client.renderer.MultiBufferSource
@@ -40,8 +41,7 @@ internal object WorldPanelDeferral {
     fun draw(matrices: PoseStack, consumers: MultiBufferSource, panel: (PoseStack, MultiBufferSource) -> Unit) {
         if (ShaderShadowPass.active()) return
         val entry = matrices.last()
-        val position = Matrix4f(entry.pose())
-        val normal = Matrix3f(entry.normal())
+        val (position, normal) = cameraSpaceTransform(RenderSystem.getModelViewMatrix(), entry.pose(), entry.normal())
         val distanceSquared = position.m30().toDouble().let { it * it } +
             position.m31().toDouble().let { it * it } +
             position.m32().toDouble().let { it * it }
@@ -57,9 +57,20 @@ internal object WorldPanelDeferral {
     }
 
     /**
+     * 以鏡頭為原點、鏡頭轉向為座標軸的座標轉換。鏡頭的轉向依 Minecraft 版本放在實體的座標轉換，或繪製狀態的模型檢視矩陣；
+     * 兩者相乘後，不論哪一種都得到完整的轉換。
+     *
+     * @param modelView 繪製狀態目前的模型檢視矩陣。
+     * @param pose 面板位置的座標轉換。
+     * @param normal 面板位置的法向量轉換。
+     * @return 新的座標轉換與法向量轉換；不改動傳入的矩陣。
+     */
+    internal fun cameraSpaceTransform(modelView: Matrix4f, pose: Matrix4f, normal: Matrix3f): Pair<Matrix4f, Matrix3f> = Matrix4f(modelView).mul(pose) to Matrix3f().set(modelView).mul(normal)
+
+    /**
      * 畫出這一幀收集的面板。
      *
-     * 記下的座標轉換已經包含鏡頭的轉向，與實體階段相同，所以畫的期間把繪製狀態的視角矩陣設為單位矩陣。
+     * 記下的座標轉換已經包含鏡頭的轉向（[cameraSpaceTransform]），所以畫的期間把繪製狀態的模型檢視矩陣設為單位矩陣。
      */
     private fun drawPending() {
         val panels = queue.drain()

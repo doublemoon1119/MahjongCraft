@@ -19,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.buildOrThr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.framePartialTick
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.mulPose
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.overrideCameraFacingRotation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
@@ -46,6 +47,7 @@ import net.minecraft.world.InteractionHand
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.item.ItemDisplayContext
+import org.joml.Matrix3f
 import org.joml.Matrix4f
 import org.joml.Quaternionf
 import org.joml.Vector3f
@@ -144,7 +146,9 @@ internal class GuideSceneRenderer : AutoCloseable {
         try {
             matrices.translate(centerX, centerY, SCENE_Z)
             // 上下翻轉只套用在位置；法線只受視角旋轉影響，光線因此可以直接以鏡頭的方向指定。
+            val normal = Matrix3f(matrices.last().normal())
             matrices.mulPose(Matrix4f().scaling(scale, -scale, scale))
+            matrices.last().normal().set(normal)
             matrices.translate(-bounds.centerX.toDouble(), -bounds.centerY.toDouble(), 0.0)
             matrices.mulPose(Quaternionf().setFromNormalized(rotation))
             val sceneToScreen = Matrix4f(matrices.last().pose())
@@ -341,8 +345,8 @@ internal class GuideSceneRenderer : AutoCloseable {
         val dispatcher = client.entityRenderDispatcher
         scene.roundInfo?.let { info ->
             val entity = roundInfoEntity(world).apply { lines = info.lines }
-            // 讓轉向鏡頭的面板正對畫面：抵銷場景視角，再轉半圈對齊原版名牌的座標方向。
-            dispatcher.overrideCameraOrientation(Quaternionf().setFromNormalized(rotation).conjugate().rotateY(Math.PI.toFloat()))
+            // 讓轉向鏡頭的面板正對畫面：抵銷場景視角，再轉半圈讓面板的正面朝向畫面。
+            dispatcher.overrideCameraFacingRotation(Quaternionf().setFromNormalized(rotation).conjugate().rotateY(Math.PI.toFloat()))
             matrices.pushPose()
             matrices.translate(info.x, info.y, info.z)
             dispatcher.getRenderer(entity).render(entity, 0f, 0f, matrices, consumers, FULL_LIGHT)

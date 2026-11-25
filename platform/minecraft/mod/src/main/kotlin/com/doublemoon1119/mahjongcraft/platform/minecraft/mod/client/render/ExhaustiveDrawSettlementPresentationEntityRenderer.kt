@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ExhaustiveD
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.ExhaustiveDrawSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.cameraFacingRotation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
@@ -93,7 +94,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
             currentTableId = entity.managedTableId
             panelMatrices.pushPose()
             panelMatrices.translate(0.0, 0.55, 0.0)
-            panelMatrices.mulPose(entityRenderDispatcher.cameraOrientation())
+            panelMatrices.mulPose(entityRenderDispatcher.cameraFacingRotation())
             panelMatrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
             renderPanel(sharedPanelHalfWidth, sharedPanelBottom, panelAlpha, panelMatrices, panelConsumers)
             renderTitle(entity.reasonId, panelAlpha, panelMatrices, panelConsumers)

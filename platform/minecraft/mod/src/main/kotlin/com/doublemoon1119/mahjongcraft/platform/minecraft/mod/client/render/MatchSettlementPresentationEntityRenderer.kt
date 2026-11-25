@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MatchSettle
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MatchSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.cameraFacingRotation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY
@@ -76,7 +77,7 @@ class MatchSettlementPresentationEntityRenderer(
             currentTableId = entity.managedTableId
             panelMatrices.pushPose()
             panelMatrices.translate(0.0, 0.55, 0.0)
-            panelMatrices.mulPose(entityRenderDispatcher.cameraOrientation())
+            panelMatrices.mulPose(entityRenderDispatcher.cameraFacingRotation())
             panelMatrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
             renderPanel(layout, template, alpha, panelMatrices, panelConsumers)
             drawText(

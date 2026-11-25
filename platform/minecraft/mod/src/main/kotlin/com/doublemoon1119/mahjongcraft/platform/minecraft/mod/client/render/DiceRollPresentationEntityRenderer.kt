@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.config.Mahj
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.DiceRollPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongDicePoint
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModItems
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.cameraFacingRotation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.math.Axis
@@ -60,7 +61,7 @@ class DiceRollPresentationEntityRenderer(
 
         WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
             panelMatrices.pushPose()
-            panelMatrices.mulPose(entityRenderDispatcher.cameraOrientation())
+            panelMatrices.mulPose(entityRenderDispatcher.cameraFacingRotation())
             panelMatrices.scale(-PIXEL_SCALE, -PIXEL_SCALE, PIXEL_SCALE)
             WorldPanelRenderer.drawBackground(
                 left = -panelWidth / 2f,
