@@ -32,7 +32,7 @@ sealed interface HistoryReplayFact {
      * @property typeKey 事實種類。
      * @property actorSeat 執行動作的玩家座位。
      * @property actionType 觸發收付的動作種類。
-     * @property extensionTypeId 擴充動作種類；內建動作為 null。
+     * @property extensionTypeId 擴充動作種類。內建動作為 null。
      * @property scoreDeltasBySeat 各座位的點數增減。
      * @property potDeposit 放進規則點數池的點數，正數為放入、負數為取出。
      */
@@ -66,9 +66,9 @@ sealed interface HistoryReplayFact {
      * @property stepId 步驟識別碼。
      * @property stepIndex 步驟索引。
      * @property nextStepId 下一步識別碼。
-     * @property actorSeat 提交選擇的玩家座位；不是玩家提交的事實為 null。
-     * @property optionId 玩家選擇的選項識別碼；不是單選提交時為 null。
-     * @property passed 玩家選的是否為代表跳過的選項；不是玩家提交的事實為 false。
+     * @property actorSeat 提交選擇的玩家座位。不是玩家提交的事實為 null。
+     * @property optionId 玩家選擇的選項識別碼。不是單選提交時為 null。
+     * @property passed 玩家選的是否為代表跳過的選項。不是玩家提交的事實為 false。
      */
     data class RuleDecision(
         override val typeKey: String,

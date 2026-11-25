@@ -202,7 +202,7 @@ class GameEventProjectorTest {
         assertEquals(committed, event.completedScores)
     }
 
-    /** 標記解析失敗只影響這次投影的狀態；核心終局事件仍保留，下一次投影不沿用失敗。 */
+    /** 標記解析失敗只影響這次投影的狀態。核心終局事件仍保留，下一次投影不沿用失敗。 */
     @Test
     fun `marker failure is scoped to one projection`() {
         var fail = true
@@ -299,7 +299,7 @@ class GameEventProjectorTest {
         assertEquals(emptySet(), event.beneficiaryPlayerIds)
     }
 
-    /** 本局結算摘要晚於流局記錄才補上時，在記錄流局的交易依流局記錄產生結算；途中流局沒有得利者。 */
+    /** 本局結算摘要晚於流局記錄才補上時，在記錄流局的交易依流局記錄產生結算。途中流局沒有得利者。 */
     @Test
     fun `an abortive draw without a summary settles from the recorded draws`() {
         val reason = RiichiExhaustiveDrawReason.KyuushuKyuuhai
@@ -313,7 +313,7 @@ class GameEventProjectorTest {
         assertEquals(emptySet(), event.beneficiaryPlayerIds)
     }
 
-    /** 換局只產生完成通知，不重發結算；和牌後的去留決策也不重發。 */
+    /** 換局只產生完成通知，不重發結算。和牌後的去留決策也不重發。 */
     @Test
     fun `round transitions and win continuations do not settle again`() {
         val reason = RiichiExhaustiveDrawReason.Normal
@@ -381,7 +381,7 @@ class GameEventProjectorTest {
         assertEquals(0, eventCount)
     }
 
-    /** 未附中止事實的移除交易不產生事件；每個事件各有一個事件 ID。 */
+    /** 未附中止事實的移除交易不產生事件。每個事件各有一個事件 ID。 */
     @Test
     fun `removed games produce nothing and each event has its own id`() {
         val game = game(scores(25_000, 25_000, 25_000, 25_000))
@@ -421,7 +421,7 @@ class GameEventProjectorTest {
     /**
      * 以一筆交易的前後對局與事實產生事件。
      *
-     * @param previous 交易前的對局；新對局時為 null。
+     * @param previous 交易前的對局。新對局時為 null。
      * @param game 交易後的對局。
      * @param facts 此交易提交的歷史事實。
      * @return projector 為該交易產生的對局事件。
@@ -477,7 +477,7 @@ class GameEventProjectorTest {
     )
 
     /**
-     * 由指定玩家記錄一次動作後的對局；胡牌或流局時同時以對應方式結束本局，與正式流程一致。
+     * 由指定玩家記錄一次動作後的對局。胡牌或流局時同時以對應方式結束本局，與正式流程一致。
      *
      * 流局由全部玩家記錄時為途中流局，否則為荒牌流局，記錄的玩家為聽牌者。
      *

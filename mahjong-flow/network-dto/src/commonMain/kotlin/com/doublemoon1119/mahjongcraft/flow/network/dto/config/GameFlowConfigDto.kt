@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
  * [GameFlowConfig] 的網路 DTO。
  *
  * @property timeControl 遊戲動作的時間控制設定。
- * @property ruleDecision 規則選擇設定；不需要規則選擇時為 null。
+ * @property ruleDecision 規則選擇設定。不需要規則選擇時為 null。
  * @property decisionTimeoutPolicy 決策逾時時採用的處理政策。
  * @property spectatingPolicy 觀戰政策。
  * @property spectatorHandVisibility 觀戰者可見手牌的政策。

@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.history
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 
 /**
- * 新對局的歷史記錄資格政策；已開始的對局不因 AI 篩選改動重新分類。
+ * 新對局的歷史記錄資格政策。已開始的對局不因 AI 篩選改動重新分類。
  *
  * @property enabled 是否允許新對局記錄歷史。
  * @property includeAiMatches 是否記錄開局座位包含 AI 的對局。

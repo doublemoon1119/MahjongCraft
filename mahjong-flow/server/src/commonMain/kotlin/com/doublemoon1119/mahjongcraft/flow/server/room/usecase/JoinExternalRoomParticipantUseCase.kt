@@ -32,14 +32,14 @@ class JoinExternalRoomParticipantUseCase(
     private val rosterPolicy: RoomRosterChangePolicy = RoomRosterChangePolicy.UNRESTRICTED,
 ) {
     /**
-     * 只在房間與預檢相同時提交；來源已被認領或排除時拒絕。
+     * 只在房間與預檢相同時提交。來源已被認領或排除時拒絕。
      *
      * @param expected 預檢時讀到的完整房間。
      * @param playerId 分配給本次成員的編號，不代替來源身分。
      * @param identity 接入端驗證的穩定來源。
      * @param strategyKey 已登記的策略。
      * @param playerOrder 加入後的完整順序，只能在原名單中插入新成員。
-     * @return 成功加入或拒絕原因；過期資料不寫入。
+     * @return 成功加入或拒絕原因。過期資料不寫入。
      */
     suspend operator fun invoke(
         expected: Room,

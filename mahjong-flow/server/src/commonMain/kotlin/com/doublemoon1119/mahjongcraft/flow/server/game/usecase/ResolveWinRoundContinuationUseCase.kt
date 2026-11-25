@@ -27,17 +27,19 @@ import kotlin.uuid.Uuid
 /**
  * 一次胡牌（自摸／榮和，含搶槓）即時結算完成後，判定並套用本局後續的權威決策。
  *
- * 呼叫時機：[GameFlowCoordinator][GameFlowCoordinator]
- * 偵測到這次成功指令為某些玩家新增了 [GameAction.Tsumo]／[GameAction.Ron] 記錄後呼叫一次——
- * 一炮多響已經在 `RonSettlementResolver` 收斂成單一結算，因此 `winnerPlayerIds` 在此時已包含這次
- * 一起成立的所有贏家，本用例只呼叫一次 [WinRoundContinuationResolverRegistry.resolve]。
+ * 呼叫時機：
  *
- * 只負責「本局要不要繼續」這個權威決策，不碰任何呈現：[WinRoundDirective.EndRound] 不修改任何桌況；
- * [WinRoundDirective.ContinueRound] 原子套用 `finishedPlayerIds`／`currentPlayerIndex` 的變化並同步
- * 快照。呼叫端據此決定是否銜接 `AdvanceRoundUseCase`，以及這次胡牌要用什麼方式呈現。
+ * - [GameFlowCoordinator] 偵測到這次成功指令為某些玩家新增了 [GameAction.Tsumo]／[GameAction.Ron] 記錄後呼叫一次。
+ * - 一炮多響已經在 `RonSettlementResolver` 收斂成單一結算，`winnerPlayerIds` 已包含這次一起成立的所有贏家。
+ *   本用例只呼叫一次 [WinRoundContinuationResolverRegistry.resolve]。
  *
- * [WinRoundDirective.ContinueRound] 時也在同一筆寫入中詢問規則要不要在
- * [RuleDecisionTiming.WIN_CONTINUES] 請玩家選擇；開了視窗時，剩下的玩家要等視窗關閉才繼續摸打。
+ * 只負責本局要不要繼續的權威決策，不碰任何呈現：
+ *
+ * - [WinRoundDirective.EndRound] 不修改任何桌況。
+ * - [WinRoundDirective.ContinueRound] 原子套用 `finishedPlayerIds`／`currentPlayerIndex` 的變化並同步快照。
+ *   同一筆寫入中也詢問規則要不要在 [RuleDecisionTiming.WIN_CONTINUES] 請玩家選擇。
+ *   開了視窗時，剩下的玩家要等視窗關閉才繼續摸打。
+ * - 呼叫端據此決定是否銜接 `AdvanceRoundUseCase`，以及這次胡牌要用什麼方式呈現。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的規則模組。
@@ -151,13 +153,13 @@ class ResolveWinRoundContinuationUseCase(
     /**
      * 從結算前後的桌況重建 [WinRoundContinuationContext]——放銃者／搶槓宣告者身分要從
      * [previousTableState] 尚未清除的 `pendingReaction`／`pendingRobbingReaction` 還原（自摸時兩者皆為
-     * null）；胡牌張則優先取任一贏家剛記錄的 [GameAction.Ron.tileId]，自摸時改用贏家的 `lastDrawn`
+     * null）。胡牌張則優先取任一贏家剛記錄的 [GameAction.Ron.tileId]，自摸時改用贏家的 `lastDrawn`
      * （[DeclareTsumoUseCase] 不會清除它）。規則選擇流程直接成立的和牌沒有放銃者，胡牌張取自該和牌結果。
      *
      * @param previousTableState 胡牌指令送出前的桌況。
      * @param settledTableState 胡牌結算後的桌況。
      * @param winnerPlayerIds 本次胡牌的贏家識別碼集合。
-     * @param ruleDecisionWin 規則選擇流程直接成立的和牌；一般自摸與榮和時為 null。
+     * @param ruleDecisionWin 規則選擇流程直接成立的和牌。一般自摸與榮和時為 null。
      * @return 提供給後續決策解析器的胡牌情境。
      */
     private fun buildContext(

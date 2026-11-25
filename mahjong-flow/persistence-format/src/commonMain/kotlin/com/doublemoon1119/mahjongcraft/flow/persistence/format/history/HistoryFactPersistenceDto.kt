@@ -19,7 +19,7 @@ sealed interface HistoryFactPersistenceDto {
      *
      * @property state 對局開始時的桌況。
      * @property flowConfig 對局使用的流程設定。
-     * @property aiPlayerStrategyKeys 以玩家 UUID 字串索引的 AI 策略 key；真人玩家不列入。
+     * @property aiPlayerStrategyKeys 以玩家 UUID 字串索引的 AI 策略 key。真人玩家不列入。
      */
     @Serializable
     @SerialName(HistoryFactTypeKeys.MATCH_STARTED)
@@ -73,7 +73,7 @@ sealed interface HistoryFactPersistenceDto {
      * @property stepId 被提交的選擇步驟識別碼。
      * @property stepIndex 被提交的選擇步驟索引。
      * @property submission 玩家提交的選擇內容。
-     * @property nextStepId 下一個選擇步驟識別碼；沒有下一步時為 null。
+     * @property nextStepId 下一個選擇步驟識別碼。沒有下一步時為 null。
      * @property passed 玩家選的是否為代表跳過的選項。
      */
     @Serializable
@@ -93,7 +93,7 @@ sealed interface HistoryFactPersistenceDto {
      * @property timing 選擇視窗開啟的時間點。
      * @property stepId 被自動完成的選擇步驟識別碼。
      * @property stepIndex 被自動完成的選擇步驟索引。
-     * @property nextStepId 下一個選擇步驟識別碼；沒有下一步時為 null。
+     * @property nextStepId 下一個選擇步驟識別碼。沒有下一步時為 null。
      */
     @Serializable
     @SerialName(HistoryFactTypeKeys.RULE_DECISION_AUTOMATIC_RESOLVED)
@@ -162,8 +162,8 @@ sealed interface HistoryFactPersistenceDto {
     /**
      * 多方反應結束後的實際結算結果。
      *
-     * @property resolvedAction 反應結算後實際成立的動作；沒有動作成立時為 null。
-     * @property actorPlayerId 單一得標玩家的 UUID 字串；全員過牌或多家和牌時為 null。
+     * @property resolvedAction 反應結算後實際成立的動作。沒有動作成立時為 null。
+     * @property actorPlayerId 單一得標玩家的 UUID 字串。全員過牌或多家和牌時為 null。
      */
     @Serializable
     @SerialName(HistoryFactTypeKeys.REACTION_RESOLVED)
@@ -189,7 +189,7 @@ sealed interface HistoryFactPersistenceDto {
      * @property outcomeId 和牌結算原因識別碼。
      * @property winDetails 各贏家在結算時已確定的明細。
      * @property responsiblePlayerIds 放銃或其他責任玩家的 UUID 字串。
-     * @property winningTileId 和牌張 UUID 字串；沒有和牌張時為 null。
+     * @property winningTileId 和牌張 UUID 字串。沒有和牌張時為 null。
      */
     @Serializable
     @SerialName(HistoryFactTypeKeys.WIN_SETTLED)
@@ -239,8 +239,8 @@ sealed interface HistoryFactPersistenceDto {
      * 已完成的規則效果與可能的本局結算。
      *
      * @property reasonId 規則效果的識別碼。
-     * @property roundCompletion 規則效果同時完成本局時的結算摘要；否則為 null。
-     * @property winDetails 規則效果產生的胡牌公開詳情；沒有時為空清單。
+     * @property roundCompletion 規則效果同時完成本局時的結算摘要。否則為 null。
+     * @property winDetails 規則效果產生的胡牌公開詳情。沒有時為空清單。
      */
     @Serializable
     @SerialName(HistoryFactTypeKeys.RULE_EFFECT_RESOLVED)

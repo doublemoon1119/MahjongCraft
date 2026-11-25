@@ -41,6 +41,6 @@ interface NetworkDtoRegistries :
     /** 擴充遊戲命令 DTO registry。 */
     override val extensionGameCommand: DtoRegistry<ExtensionGameCommand, ExtensionGameCommandDto>
 
-    /** 凍結所有 registry；凍結後不得新增或覆寫 mapper。 */
+    /** 凍結所有 registry。凍結後不得新增或覆寫 mapper。 */
     fun freeze()
 }

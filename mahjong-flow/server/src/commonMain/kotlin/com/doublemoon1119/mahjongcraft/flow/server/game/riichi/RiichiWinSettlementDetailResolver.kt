@@ -43,7 +43,7 @@ object RiichiWinSettlementDetailResolver : WinSettlementDetailResolver {
     }
 
     /**
-     * 建立日麻一般胡牌的役種、翻符與寶牌詳情；輸入不是日麻結算結果時回傳空清單。
+     * 建立日麻一般胡牌的役種、翻符與寶牌詳情。輸入不是日麻結算結果時回傳空清單。
      *
      * @param state 胡牌成立時的權威桌況。
      * @param handValue 已完成計算的胡牌結果。
@@ -91,10 +91,10 @@ object RiichiWinSettlementDetailResolver : WinSettlementDetailResolver {
     }
 
     /**
-     * 建立一般胡牌的翻符；滿貫以上沒有權威符數時只有翻數。
+     * 建立一般胡牌的翻符。滿貫以上沒有權威符數時只有翻數。
      *
      * @param totalHan 結算結果中的總翻數。
-     * @param totalFu 結算結果中的總符數；不大於 0 時不輸出符數欄位。
+     * @param totalFu 結算結果中的總符數。不大於 0 時不輸出符數欄位。
      * @return 翻數與可用符數組成的詳情值。
      */
     internal fun riichiHanFuValue(totalHan: Int, totalFu: Int): WinSettlementDetailValue.Quantities = WinSettlementDetailValue.Quantities(

@@ -22,7 +22,7 @@ object FlatPatchCodec {
     }
 
     /**
-     * 依序套用操作；操作格式或基底不符時立即拒絕。
+     * 依序套用操作。操作格式或基底不符時立即拒絕。
      *
      * @param before 套用差異前的 JSON 節點。
      * @param operations 依執行順序排列的精簡操作。
@@ -43,12 +43,12 @@ object FlatPatchCodec {
     internal fun applyBounded(before: JsonElement, operations: JsonArray, paths: List<List<JsonElement>>, budget: ReplayReadBudget): JsonElement = applyInternal(before, operations, paths, budget)
 
     /**
-     * 共用操作解讀入口；正式完整解碼與局級有界解碼使用同一演算法。
+     * 共用操作解讀入口。正式完整解碼與局級有界解碼使用同一演算法。
      *
      * @param before 更新前的投影。
      * @param operations 有序差異操作。
      * @param paths 共用路徑字典。
-     * @param budget 有界讀取預算；完整解碼時為 null。
+     * @param budget 有界讀取預算。完整解碼時為 null。
      * @return 更新後投影。
      */
     private fun applyInternal(before: JsonElement, operations: JsonArray, paths: List<List<JsonElement>>, budget: ReplayReadBudget?): JsonElement = operations.fold(before) { current, encodedElement ->
@@ -196,7 +196,7 @@ object FlatPatchCodec {
      * @param value 目前的 JSON 節點。
      * @param path 從目前節點到更新位置的路徑。
      * @param operation 待執行的精簡操作。
-     * @param budget 有界讀取預算；完整解碼時為 null。
+     * @param budget 有界讀取預算。完整解碼時為 null。
      * @return 更新後的 JSON 節點。
      */
     private fun update(value: JsonElement, path: List<JsonElement>, operation: JsonArray, budget: ReplayReadBudget? = null): JsonElement {

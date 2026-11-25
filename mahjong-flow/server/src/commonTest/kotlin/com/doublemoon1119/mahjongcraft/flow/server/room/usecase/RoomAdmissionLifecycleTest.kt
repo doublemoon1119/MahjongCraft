@@ -91,7 +91,7 @@ class RoomAdmissionLifecycleTest {
         assertTrue(rooms.getRoom(room.id)!!.admission.excludedParticipants.isEmpty())
     }
 
-    /** 真人被踢後不能重入，非房主不能解除；允許後仍須自行加入。 */
+    /** 真人被踢後不能重入，非房主不能解除。允許後仍須自行加入。 */
     @Test
     fun `kicked player remains excluded until host allows rejoining`() = runTest {
         val rooms = RoomRepositoryImpl(AuthoritativeStateStore())

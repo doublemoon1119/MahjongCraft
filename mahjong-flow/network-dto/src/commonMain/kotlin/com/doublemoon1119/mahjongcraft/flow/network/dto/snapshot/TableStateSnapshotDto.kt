@@ -22,12 +22,12 @@ import kotlinx.serialization.Serializable
  * @property comboCount 本場數。
  * @property currentPlayerIndex 目前玩家的座位索引。
  * @property finishedPlayerIds 已完成本局玩家 UUID 字串。
- * @property physicalWallLayout 實體牌牆布局；沒有時為 `null`。
+ * @property physicalWallLayout 實體牌牆布局。沒有時為 `null`。
  * @property openingDiceRolls 本局開局程序已完成的逐輪擲骰結果。
  * @property publicTileIds 所有合法觀察者都可讀取牌面的牌張 ID。
  * @property publicEvidenceTileIds 由對局事件明確公開過的牌張 UUID 字串。
  * @property tilePoseStates 規則描述的逐張共同姿態，不含原始授權名單。
- * @property latestDiscardTileId 本局最後打出、仍留在牌河的牌 UUID 字串；沒有時為 `null`。
+ * @property latestDiscardTileId 本局最後打出、仍留在牌河的牌 UUID 字串。沒有時為 `null`。
  */
 @Serializable
 data class TableStateSnapshotDto(

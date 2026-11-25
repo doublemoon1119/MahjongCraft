@@ -16,7 +16,7 @@ class ExhaustiveDrawSettlementPresentationService(
     private val presentationPublisher: GamePresentationPublisher,
 ) {
     /**
-     * 建立並發布一次統一流局結算呈現；[aiPlayerIds] 為由 AI 操控的玩家。
+     * 建立並發布一次統一流局結算呈現。[aiPlayerIds] 為由 AI 操控的玩家。
      *
      * @param gameId 對局識別碼。
      * @param previousState 結算前的權威桌況。
@@ -24,7 +24,7 @@ class ExhaustiveDrawSettlementPresentationService(
      * @param module 本局使用的規則模組。
      * @param aiPlayerIds 由 AI 操控的玩家識別碼。
      * @param reason 本次流局原因。
-     * @param tenpaiPlayerIds 一般荒牌流局的聽牌玩家；途中流局時為 null。
+     * @param tenpaiPlayerIds 一般荒牌流局的聽牌玩家。途中流局時為 null。
      * @param revealedHands 規則判定可公開的手牌結算資料。
      */
     fun publish(

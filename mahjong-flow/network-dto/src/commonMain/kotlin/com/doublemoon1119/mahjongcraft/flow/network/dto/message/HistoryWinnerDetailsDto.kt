@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  *
  * @property seatIndex 贏家座位。
  * @property detailFields 規則專屬詳情欄位。
- * @property hand 保存結算順序的立牌與獨立和牌張；未記錄時為 null。
+ * @property hand 保存結算順序的立牌與獨立和牌張。未記錄時為 null。
  */
 @Serializable
 data class HistoryWinnerDetailsDto(

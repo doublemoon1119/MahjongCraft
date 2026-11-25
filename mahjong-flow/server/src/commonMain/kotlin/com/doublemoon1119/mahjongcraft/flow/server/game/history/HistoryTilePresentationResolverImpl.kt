@@ -17,7 +17,7 @@ import kotlin.uuid.Uuid
 /**
  * 以與觀察者快照相同的組件解算建立牌譜呈現結果。
  *
- * 特徵以公共讀取情境投影，代表牌面可讀時能公開的資料；讀取者另記在 [HistoryTilePresentation.audience]。
+ * 特徵以公共讀取情境投影，代表牌面可讀時能公開的資料。讀取者另記在 [HistoryTilePresentation.audience]。
  *
  * @property moduleRegistry 取得對局規則模組。
  * @property componentRegistry 牌張組件與特徵投影。

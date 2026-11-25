@@ -14,8 +14,8 @@ import kotlinx.serialization.Serializable
  * @property actorId 本次動作執行者的 UUID 字串。
  * @property action 已完成的權威動作。
  * @property snapshot 動作完成後對收件玩家可見的桌況快照。
- * @property aiPlayerIds 由 AI 操控的玩家 UUID 字串；對所有觀察者相同。
- * @property historyMatchId 終局事件對應的歷史場次 UUID 字串；非終局更新為 null。
+ * @property aiPlayerIds 由 AI 操控的玩家 UUID 字串。對所有觀察者相同。
+ * @property historyMatchId 終局事件對應的歷史場次 UUID 字串。非終局更新為 null。
  */
 @Serializable
 data class GameUpdatePayloadDto(

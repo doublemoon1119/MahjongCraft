@@ -24,7 +24,7 @@ class AutomaticDecisionDriver(
      * 解析下一個可立即執行的真人自動決策。
      *
      * @param gameId 要查詢的遊戲識別碼。
-     * @return 玩家識別碼與命令；遊戲不存在、已結束、尚有待完成流程，或沒有可立即執行的動作時為 null。
+     * @return 玩家識別碼與命令。遊戲不存在、已結束、尚有待完成流程，或沒有可立即執行的動作時為 null。
      */
     suspend fun resolveNextAction(gameId: Uuid): Pair<Uuid, GameCommand>? {
         val game = gameRepository.getGame(gameId) ?: return null

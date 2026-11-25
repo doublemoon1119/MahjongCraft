@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentType
 import kotlinx.serialization.json.JsonObject
 
-/** 登記組件的保存轉換；找不到定義時拒絕讀寫，不當成空值；擴充只透過 [ComponentPersistenceRegistrar] 登記。 */
+/** 登記組件的保存轉換。找不到定義時拒絕讀寫，不當成空值。擴充只透過 [ComponentPersistenceRegistrar] 登記。 */
 class ComponentPersistenceRegistry :
     ComponentPersistenceRegistrar,
     ComponentPersistenceConverter {

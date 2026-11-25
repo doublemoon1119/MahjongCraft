@@ -22,7 +22,7 @@ class GetPlayerDecisionOptionsUseCase(
      *
      * @param gameId 對局 Uuid。
      * @param playerId 欲查詢的玩家 Uuid。
-     * @return 該玩家的完整決策選項；找不到對局或玩家時回傳 [GameError]。
+     * @return 該玩家的完整決策選項。找不到對局或玩家時回傳 [GameError]。
      */
     suspend operator fun invoke(gameId: Uuid, playerId: Uuid): Outcome<PlayerDecisionOptions, GameError> {
         val game = gameRepository.getGame(gameId)

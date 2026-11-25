@@ -83,7 +83,7 @@ internal object PlayerDecisionOptionsResolver {
      * @param state 目前權威桌況。
      * @param player 欲查詢的玩家。
      * @param validator 本局規則模組提供的合法動作判定器。
-     * @param context 已解析的操作情境；玩家目前沒有操作權時為 null。
+     * @param context 已解析的操作情境。玩家目前沒有操作權時為 null。
      * @param module 本局規則模組。
      * @return 目前可執行的合法動作。
      */
@@ -128,12 +128,12 @@ internal object PlayerDecisionOptionsResolver {
     }
 
     /**
-     * 找出目前決策的觸發牌；沒有特定牌時回傳 null。
+     * 找出目前決策的觸發牌。沒有特定牌時回傳 null。
      *
      * @param state 目前權威桌況。
      * @param player 欲查詢的玩家。
      * @param context 已解析的玩家操作情境。
-     * @return 反應牌或摸入牌；沒有特定牌或無操作情境時為 null。
+     * @return 反應牌或摸入牌。沒有特定牌或無操作情境時為 null。
      */
     private fun referenceTile(
         state: TableState,

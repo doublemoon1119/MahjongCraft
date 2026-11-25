@@ -521,7 +521,7 @@ class SubmitRuleDecisionUseCaseTest {
         assertEquals(RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW, submitted.timing)
     }
 
-    /** 玩家選了代表跳過的選項時，牌譜記錄為跳過；選其他選項則不是。 */
+    /** 玩家選了代表跳過的選項時，牌譜記錄為跳過。選其他選項則不是。 */
     @Test
     fun `the history records whether the player chose the pass option`() = runTest {
         val spec = RuleDecisionInputSpec.SingleChoice(optionIds = listOf("test:accept", "test:pass"), passOptionId = "test:pass")

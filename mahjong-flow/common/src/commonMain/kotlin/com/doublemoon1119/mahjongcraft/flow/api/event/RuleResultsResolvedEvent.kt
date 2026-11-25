@@ -4,7 +4,7 @@ import kotlin.jvm.JvmSynthetic
 import kotlin.uuid.Uuid
 
 /**
- * 一筆交易中已成立的規則結果；不代表每個結果都是和牌或已完成本局。
+ * 一筆交易中已成立的規則結果。不代表每個結果都是和牌或已完成本局。
  *
  * @property results 依提交順序排列的規則結果。
  */

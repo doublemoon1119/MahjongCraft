@@ -21,11 +21,11 @@ data class ClientDecisionTimerState(
     val receivedAt: Duration,
 ) {
     /**
-     * 從同步時起經過 [elapsed] 後的剩餘時間；先扣基本思考時間，用完後才扣保留思考時間。
+     * 從同步時起經過 [elapsed] 後的剩餘時間。先扣基本思考時間，用完後才扣保留思考時間。
      *
      * 只是依同步值推算，權威逾時仍由伺服器判定。
      *
-     * @param elapsed 從同步時起經過的時間；負數視為 0。
+     * @param elapsed 從同步時起經過的時間。負數視為 0。
      * @return 推算的剩餘時間，不小於 0。
      */
     fun remainingAfter(elapsed: Duration): DecisionTimeRemaining {

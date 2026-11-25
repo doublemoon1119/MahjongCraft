@@ -17,7 +17,7 @@ import kotlin.reflect.KClass
  * 動態 polymorphic provider 在每次編解碼時查詢 registry，而不是使用編譯期窮舉或在
  * `SerializersModule` 建立時複製一份靜態清單。
  *
- * 擴充只透過 [DtoRegistrar] 登記；轉換時把 [converter] 提供的唯讀轉換交給已登記的轉換函式。
+ * 擴充只透過 [DtoRegistrar] 登記。轉換時把 [converter] 提供的唯讀轉換交給已登記的轉換函式。
  *
  * @param Domain 領域層的開放介面型別。
  * @param Dto 對應的 DTO 開放介面型別。
@@ -77,7 +77,7 @@ class DtoRegistry<Domain : Any, Dto : Any>(
         bySerialName[serialName] = entry
     }
 
-    /** 凍結註冊表；凍結後不得新增或覆寫 DTO mapper。 */
+    /** 凍結註冊表。凍結後不得新增或覆寫 DTO mapper。 */
     fun freeze() {
         frozen = true
     }
@@ -117,7 +117,7 @@ class DtoRegistry<Domain : Any, Dto : Any>(
      * 註冊仍可由 polymorphic default provider 看見。
      *
      * @param dto 要查詢 serializer 的 DTO。
-     * @return 已註冊時回傳 serializer；未註冊時回傳 null。
+     * @return 已註冊時回傳 serializer。未註冊時回傳 null。
      */
     @Suppress("UNCHECKED_CAST")
     fun serializerFor(dto: Dto): KSerializer<Dto>? = (byDtoClass[dto::class] as? Entry<Domain, Dto>)?.serializer
@@ -126,7 +126,7 @@ class DtoRegistry<Domain : Any, Dto : Any>(
      * 依序列化資料中的 discriminator 名稱取得 serializer，供動態 polymorphic 解碼使用。
      *
      * @param serialName 序列化資料中的 discriminator 名稱。
-     * @return 已註冊時回傳 serializer；未註冊時回傳 null。
+     * @return 已註冊時回傳 serializer。未註冊時回傳 null。
      */
     @Suppress("UNCHECKED_CAST")
     fun serializerFor(serialName: String): KSerializer<out Dto>? = (bySerialName[serialName] as? Entry<Domain, Dto>)?.serializer

@@ -12,7 +12,7 @@ import kotlinx.serialization.json.JsonElement
  * @property tileCount 截至目前位置已宣告的實體牌數。
  * @property seatCount header 玩家數。
  * @property componentViews 牌面特徵的保存轉換。
- * @property poses 依牌索引保存的共同姿態；沒有紀錄的牌不列入。
+ * @property poses 依牌索引保存的共同姿態。沒有紀錄的牌不列入。
  */
 internal class HistoryReplayProjectionContext(
     private val budget: ReplayReadBudget,

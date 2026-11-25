@@ -58,7 +58,7 @@ import kotlin.uuid.Uuid
 
 /** 對局投影失敗不能影響其他場次、改寫權威資料或公開額外資訊。 */
 class ServerSessionProjectionRecoveryTest {
-    /** 第二個觀察者失敗時，第一個算好的內容也不發布，整局改用保守快照；計時器照常排定，對局不會停住。 */
+    /** 第二個觀察者失敗時，第一個算好的內容也不發布，整局改用保守快照。計時器照常排定，對局不會停住。 */
     @Test
     fun `one failed viewer replaces every view without losing other games`() = runTest {
         val broken = game()
@@ -189,7 +189,7 @@ class ServerSessionProjectionRecoveryTest {
         assertEquals(fixture.policy.snapshotFor(finished, finished.hostId), fixture.snapshots.getSnapshot(finished.id, finished.hostId))
     }
 
-    /** 沒有真人的對局不需建立真人快照；取消與致命錯誤不得被當成投影降級。 */
+    /** 沒有真人的對局不需建立真人快照。取消與致命錯誤不得被當成投影降級。 */
     @Test
     fun `all AI games need no observer projection and serious failures propagate`() = runTest {
         val initial = game()
@@ -258,7 +258,7 @@ class ServerSessionProjectionRecoveryTest {
      * @param describe 規則提供的逐張描述。
      * @param decorate 可在指定觀察者呼叫時失敗的政策包裝。
      * @param componentRegistry 使用正式登記或可在投影失敗的登記包裝。
-     * @param busyGate 重新安排決策時查詢的呈現狀態；可在指定對局失敗。
+     * @param busyGate 重新安排決策時查詢的呈現狀態。可在指定對局失敗。
      */
     private class Fixture(
         describe: (TableState) -> List<TileComponentDescription> = { emptyList() },

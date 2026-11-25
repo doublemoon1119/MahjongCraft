@@ -26,7 +26,7 @@ class ServerSessionStateCleaner(
     private val decisionTimerManager: GameDecisionTimerManager,
     private val decisionTimerSynchronizationService: DecisionTimerSynchronizationService,
 ) {
-    /** 清除 session 狀態；持久化完成後應先 flush，再呼叫本方法釋放記憶體且不標記 dirty。 */
+    /** 清除 session 狀態。持久化完成後應先 flush，再呼叫本方法釋放記憶體且不標記 dirty。 */
     suspend fun clear() {
         decisionTimerManager.clearAll()
         decisionTimerSynchronizationService.clear()

@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
  *
  * @property tiles 手牌中的立牌。
  * @property melds 手牌中的副露。
- * @property lastDrawn 最近摸入且尚未整理的牌張；沒有時為 null。
+ * @property lastDrawn 最近摸入且尚未整理的牌張。沒有時為 null。
  */
 @Serializable
 data class HandPersistenceDto(

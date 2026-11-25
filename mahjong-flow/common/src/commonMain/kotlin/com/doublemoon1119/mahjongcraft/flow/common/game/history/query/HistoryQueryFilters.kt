@@ -11,7 +11,7 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.history.query
  * @property endedAtBeforeEpochMillis 結束時間上界。
  * @property ownRank 目前使用者的終局名次範圍。
  * @property playerName 參與者名稱的大小寫不敏感部分比對文字。
- * @property matchId 指定對局 UUID 的文字篩選；null 表示不限制對局。
+ * @property matchId 指定對局 UUID 的文字篩選。null 表示不限制對局。
  */
 data class HistoryQueryFilters(
     val ruleId: String? = null,

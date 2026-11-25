@@ -34,8 +34,8 @@ import kotlin.uuid.Uuid
 /**
  * 將 [Room] 與 [Game] 集合轉換成同批保存的權威狀態 DTO。
  *
- * @param rooms 欲保存的房間集合；房間識別碼不得重複。
- * @param games 欲保存的遊戲集合；遊戲識別碼不得重複。
+ * @param rooms 欲保存的房間集合。房間識別碼不得重複。
+ * @param games 欲保存的遊戲集合。遊戲識別碼不得重複。
  * @param registries 可擴充領域型別與組件的持久化註冊表集合。
  * @param historyRecordingState 與房間及遊戲一併保存的歷史記錄狀態。
  * @param skippedHistoryEventReporter 接收無法編碼而略過的待寫歷史事件。
@@ -72,7 +72,7 @@ fun createAuthoritativeStatePersistenceDto(
  *
  * @param registries 歷史事件所需的持久化轉換註冊表集合。
  * @param skippedHistoryEventReporter 接收無法解碼而略過的待寫歷史事件。
- * @return 還原的歷史記錄狀態；無法還原的事件依歷史映射規則標記缺口。
+ * @return 還原的歷史記錄狀態。無法還原的事件依歷史映射規則標記缺口。
  */
 fun AuthoritativeStatePersistenceDto.toHistoryRecordingState(
     registries: PersistenceRegistries,
@@ -147,9 +147,9 @@ fun AuthoritativeStatePersistenceDto.toEnvelope(): PersistenceEnvelopeDto = Pers
 )
 
 /**
- * 解碼使用目前 schema version 的權威狀態封套；其他版本由遷移邊界處理。
+ * 解碼使用目前 schema version 的權威狀態封套。其他版本由遷移邊界處理。
  *
- * @return 解碼後的權威狀態 DTO；版本不符或內容無效時拋出例外。
+ * @return 解碼後的權威狀態 DTO。版本不符或內容無效時拋出例外。
  */
 fun PersistenceEnvelopeDto.decodeCurrentAuthoritativeState(): AuthoritativeStatePersistenceDto {
     require(schemaVersion == PersistenceSchema.CURRENT_VERSION) {

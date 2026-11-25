@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
  * @property matchId 對局識別碼。
  * @property scope 查詢範圍。
  * @property roundNumber 局序號。
- * @property position 第一個局內位置；開局或指定交易後。
+ * @property position 第一個局內位置。開局或指定交易後。
  * @property count 最多幾個連續位置。
  */
 @Serializable

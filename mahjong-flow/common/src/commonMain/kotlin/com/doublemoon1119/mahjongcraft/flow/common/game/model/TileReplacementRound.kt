@@ -4,7 +4,7 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.model
  * 規則逐輪把手上的牌移出並補牌時，其中一輪公開移出的牌，例如使用花牌的規則補花。
  *
  * @property round 輪次，從 1 開始。
- * @property removals 這一輪各玩家移出的牌，依處理順序排列；同一位玩家在同一輪只出現一次。
+ * @property removals 這一輪各玩家移出的牌，依處理順序排列。同一位玩家在同一輪只出現一次。
  */
 data class TileReplacementRound(
     val round: Int,

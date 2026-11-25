@@ -30,7 +30,7 @@ fun TaiwanRuleConfig.toTaiwanDto(registries: NetworkDtoConverter): TaiwanRuleCon
 )
 
 /**
- * 將台灣麻將規則設定 DTO 還原為領域資料；固定的起始手牌、王牌與玩家人數使用規則值。
+ * 將台灣麻將規則設定 DTO 還原為領域資料。固定的起始手牌、王牌與玩家人數使用規則值。
  *
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。

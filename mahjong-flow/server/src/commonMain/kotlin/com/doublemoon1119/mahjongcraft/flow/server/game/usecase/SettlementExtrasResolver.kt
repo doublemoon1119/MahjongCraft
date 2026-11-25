@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
 /**
  * 收下場上供託，並依規則的 [MahjongRuleModule.allocateSettlementExtras] 決定供託與連莊點數的歸屬。
  *
- * 只計算分數變化與收下供託後的對局組件，不寫入桌況；呼叫端把結果和手牌結算合併後一次寫入。規則的分配不合法時丟出
+ * 只計算分數變化與收下供託後的對局組件，不寫入桌況。呼叫端把結果和手牌結算合併後一次寫入。規則的分配不合法時丟出
  * [RuleContractViolationException]，由既有的中止收尾結束對局。
  */
 internal object SettlementExtrasResolver {
@@ -22,7 +22,7 @@ internal object SettlementExtrasResolver {
      * 供託與連莊點數的結算結果。
      *
      * @property scoreDeltas 供託與連莊點數造成的分數變化，只含分數有變的玩家。
-     * @property components 收下供託後的桌況組件；其他組件保持原值。
+     * @property components 收下供託後的桌況組件。其他組件保持原值。
      * @property stickPotRecipientIds 分到供託的玩家。
      */
     data class Result(
@@ -38,8 +38,8 @@ internal object SettlementExtrasResolver {
      * @param module 對局採用的規則模組。
      * @param occasion 分配的時機。
      * @param candidatePlayerIds 可以收款的玩家，依優先順序排列。
-     * @param discarderId 放銃者；沒有時為 null。
-     * @param resolutions 各和牌者的手牌結算；沒有手牌結算時為空 map。
+     * @param discarderId 放銃者。沒有時為 null。
+     * @param resolutions 各和牌者的手牌結算。沒有手牌結算時為空 map。
      * @return 分數變化與收下供託後的對局組件。
      * @throws RuleContractViolationException 規則的分配或連莊點數付款不合法時。
      */

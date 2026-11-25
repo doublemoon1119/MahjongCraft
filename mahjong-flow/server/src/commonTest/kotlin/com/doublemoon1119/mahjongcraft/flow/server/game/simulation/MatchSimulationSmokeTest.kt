@@ -28,7 +28,7 @@ import kotlin.uuid.Uuid
 /** 一般建置中執行的少量 AI 對局：確認所有內建策略能以正式流程打完整場，且模擬器能偵測並重播問題。 */
 class MatchSimulationSmokeTest {
     /**
-     * 四個內建策略同桌打完一場東風戰，沒有不合法命令、流程沒有卡住、點數守恆、正常結束；
+     * 四個內建策略同桌打完一場東風戰，沒有不合法命令、流程沒有卡住、點數守恆、正常結束。
      * 每一局的榮和與放銃互相對應，榮和一定是和牌。
      */
     @Test
@@ -51,7 +51,7 @@ class MatchSimulationSmokeTest {
     }
 
     /**
-     * 三個內建策略以三人日麻打完一場東風戰：沒有不合法命令、點數守恆、正常結束，名次為一到三位；
+     * 三個內建策略以三人日麻打完一場東風戰：沒有不合法命令、點數守恆、正常結束，名次為一到三位。
      * 有機會拔北時，期望值策略會拔北。
      */
     @Test
@@ -76,7 +76,7 @@ class MatchSimulationSmokeTest {
     }
 
     /**
-     * 四個內建策略以台灣麻將打完一場一將：沒有不合法命令、流程沒有卡住、點數守恆，名次為一到四位；
+     * 四個內建策略以台灣麻將打完一場一將：沒有不合法命令、流程沒有卡住、點數守恆，名次為一到四位。
      * 每一局的榮和與放槍互相對應。
      */
     @Test
@@ -95,7 +95,7 @@ class MatchSimulationSmokeTest {
         }
     }
 
-    /** 送出不合法命令的策略會被偵測，且以同一個數字從頭重打時同樣發生；失敗描述附上這個數字。 */
+    /** 送出不合法命令的策略會被偵測，且以同一個數字從頭重打時同樣發生。失敗描述附上這個數字。 */
     @Test
     fun `an illegal command is detected and reproduced on replay`() = runTest(timeout = SMOKE_TIMEOUT) {
         val simulator = MatchSimulator(RiichiRuleConfig()) { registry, _ ->

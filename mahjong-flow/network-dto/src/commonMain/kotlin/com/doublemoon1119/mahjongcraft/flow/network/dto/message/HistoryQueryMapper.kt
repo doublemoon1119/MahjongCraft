@@ -27,7 +27,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import kotlin.uuid.Uuid
 
 /**
- * 將網路查詢範圍映射為 Flow 查詢範圍；壓力測試範圍在權限與查詢語意上等同全部對局，資料來源由平台另外選擇。
+ * 將網路查詢範圍映射為 Flow 查詢範圍。壓力測試範圍在權限與查詢語意上等同全部對局，資料來源由平台另外選擇。
  *
  * @return 對應的 Flow 查詢範圍。
  */
@@ -101,7 +101,7 @@ fun HistoryAiFilterDto.toDomain(): HistoryAiFilter = when (this) {
 }
 
 /**
- * 將網路篩選映射為 Flow 篩選；游標由傳輸邊界的 codec 解碼。
+ * 將網路篩選映射為 Flow 篩選。游標由傳輸邊界的 codec 解碼。
  *
  * @return 對應的 Flow 篩選。
  */
@@ -118,7 +118,7 @@ fun HistoryQueryFiltersDto.toDomain(): HistoryQueryFilters = HistoryQueryFilters
 )
 
 /**
- * 將網路清單要求映射為 Flow 要求；[decodeCursor] 驗證並解碼不透明游標。
+ * 將網路清單要求映射為 Flow 要求。[decodeCursor] 驗證並解碼不透明游標。
  *
  * @param decodeCursor 驗證並解碼傳輸 cursor 的函式。
  * @return 可交給 Flow use case 驗證的清單查詢要求。
@@ -224,7 +224,7 @@ fun HistoryQueryCursor.toDto(): HistoryQueryCursorDto = HistoryQueryCursorDto(
 fun HistoryQueryCursor.encode(json: NetworkJson): String = json.encodeToString(HistoryQueryCursorDto.serializer(), toDto())
 
 /**
- * 將傳輸字串解碼為 Flow cursor；格式錯誤由呼叫端轉成無效請求。
+ * 將傳輸字串解碼為 Flow cursor。格式錯誤由呼叫端轉成無效請求。
  *
  * @param json 使用的 JSON codec。
  * @return 驗證後的 Flow cursor。

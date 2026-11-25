@@ -4,7 +4,7 @@ import java.security.SecureRandom
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
-/** 共用的安全亂數來源；[SecureRandom] 可跨執行緒使用。 */
+/** 共用的安全亂數來源。[SecureRandom] 可跨執行緒使用。 */
 private val SECURE_RANDOM = SecureRandom()
 
 /** JVM 內建的 HMAC-SHA256 演算法名稱。 */

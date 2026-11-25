@@ -233,7 +233,7 @@ class DeclareAndDiscardUseCase(
      * 交易成功後供歷史、事件與呈現階段使用的結果。
      *
      * @property tableState 寫入後的權威桌況。
-     * @property abortiveDrawReason 本次宣告流程產生的途中流局原因；沒有流局時為 null。
+     * @property abortiveDrawReason 本次宣告流程產生的途中流局原因。沒有流局時為 null。
      */
     private data class InvocationResult(
         val tableState: TableState,

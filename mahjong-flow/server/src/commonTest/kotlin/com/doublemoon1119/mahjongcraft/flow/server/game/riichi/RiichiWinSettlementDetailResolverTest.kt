@@ -40,7 +40,7 @@ class RiichiWinSettlementDetailResolverTest {
     private val config = RiichiRuleConfig()
 
     /**
-     * 立直及雙立直即使沒有裏寶牌加飜，也保留可用指示牌欄位；未立直及役滿不加入。
+     * 立直及雙立直即使沒有裏寶牌加飜，也保留可用指示牌欄位。未立直及役滿不加入。
      */
     @Test
     fun `ura indicators require an applicable winning riichi result`() {
@@ -216,7 +216,7 @@ class RiichiWinSettlementDetailResolverTest {
      * 取得指定詳情欄位的值。
      *
      * @param id 欄位識別碼。
-     * @return 第一個相符欄位的值；不存在時為 null。
+     * @return 第一個相符欄位的值。不存在時為 null。
      */
     private fun List<WinSettlementDetailField>.value(id: String): WinSettlementDetailValue? = firstOrNull { it.id == id }?.value
 

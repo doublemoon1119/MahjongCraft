@@ -43,19 +43,19 @@ import kotlin.uuid.Uuid
  * 搶和視窗由 [DeclareKanUseCase]（暗槓／加槓）或 [DeclareTileSetAsideUseCase]（移出手牌的擴充動作，例如三人日麻的拔北）
  * 開啟，存在 `TableState.pendingRobbingReaction`。
  *
- * 名詞對照：**宣告者**（`pending.declarerId`）是剛剛宣告動作的那個人；**搶和者**是這裡呼叫
- * [GameAction.Ron] 的其他玩家。搶和的本質是「用宣告者這張要拿去槓或移出的牌榮和」，所以搶和成功時，
- * 宣告者的身分變成榮和結算裡的放銃者。
+ * 名詞對照：
  *
- * 每位有資格搶和的玩家各自呼叫一次本用例記錄自己的回應，等全部人都回應完才結算，結算只有兩種結果：
- * - **有人搶和成功**：這次宣告的動作視為沒發生，改用 [RonSettlementResolver] 結算榮和；只有搶加槓計搶槓。
- * - **全員放過**：動作真的成立，這時才呼叫 [SelfDeclarationApplier] 補做原本暫緩的套用與收付，並讓
- *   宣告者摸嶺上牌——只有這個分支會摸牌，搶和成功那個分支不會。補到的牌再交給 [DrawFollowUpApplier] 依規則自動處理，
- *   自動處理可能再開一次搶和視窗。
+ * - **宣告者**（`pending.declarerId`）是剛剛宣告動作的那個人。
+ * - **搶和者**是這裡呼叫 [GameAction.Ron] 的其他玩家。
+ * - 搶和是用宣告者要拿去槓或移出的那張牌榮和，所以搶和成功時，宣告者是榮和結算裡的放銃者。
  *
- * 只信任 [GameAction.Ron]/[GameAction.Pass]：`LegalActionValidator.getLegalActions` 的「反應」
- * 分支不分辨 `sourceAction` 是不是捨牌，會一併算出吃/碰/明槓資格，但搶和情境下這些都不合法
- * （這張牌不是捨牌）——回應驗證時額外過濾，只接受 `Ron`/`Pass`。
+ * 每位有資格搶和的玩家各自呼叫一次本用例記錄自己的回應，等全部人都回應完才結算。結算只有兩種結果：
+ * - **有人搶和成功**：這次宣告的動作視為沒發生，改用 [RonSettlementResolver] 結算榮和。只有搶加槓計搶槓。
+ * - **全員放過**：動作成立。這時才呼叫 [SelfDeclarationApplier] 補做原本暫緩的套用與收付，並讓宣告者摸嶺上牌。
+ *   只有這個分支會摸牌。補到的牌再交給 [DrawFollowUpApplier] 依規則自動處理，自動處理可能再開一次搶和視窗。
+ *
+ * 回應驗證只接受 [GameAction.Ron]／[GameAction.Pass]。`LegalActionValidator.getLegalActions` 的反應分支不分辨
+ * `sourceAction` 是不是捨牌，會一併算出吃／碰／明槓資格。這張牌不是捨牌，這些在搶和情境下都不合法。
  *
  * @property componentRegistry 正式組件定義與純效果來源。
  * @property gameRepository 權威對局數據倉庫。
@@ -396,7 +396,7 @@ class RespondToRobbingUseCase(
         return Outcome.Success(Unit)
     }
 
-    /** 搶槓回應動作直接涉及的牌；過牌沒有牌面變更。 */
+    /** 搶槓回應動作直接涉及的牌。過牌沒有牌面變更。 */
     private fun GameAction.affectedTileIds(): List<Uuid> = when (this) {
         is GameAction.Ron -> listOf(tileId)
         else -> emptyList()
@@ -409,9 +409,9 @@ class RespondToRobbingUseCase(
      * 兩個視窗，同一次結算只會有其中一種非空。
      *
      * @property tableState 本次交易提交的權威桌況。
-     * @property drawnTiles 全員放過且動作成立後補到的牌；沒有補牌時為空清單。
-     * @property scoring 全員放過且動作成立當下的點數收付；不收付時為 null。
-     * @property followUp 補牌之後的自動處理；沒有補牌時為 null。
+     * @property drawnTiles 全員放過且動作成立後補到的牌。沒有補牌時為空清單。
+     * @property scoring 全員放過且動作成立當下的點數收付。不收付時為 null。
+     * @property followUp 補牌之後的自動處理。沒有補牌時為 null。
      * @property declarerId 全員放過且槓成功時的宣告者識別碼。
      * @property ronWinnerIds 搶槓榮和成立的贏家識別碼集合。
      * @property ronWinningTileId 搶槓榮和使用的牌張識別碼。
@@ -419,7 +419,7 @@ class RespondToRobbingUseCase(
      * @property ruleModuleId 本次榮和所用規則模組的識別碼。
      * @property ronDiscarderId 搶槓榮和結算中的放銃者識別碼。
      * @property settlement 同一搶槓榮和交易建立的胡牌呈現詳情。
-     * @property steps 全員放過而動作成立時依序的步驟；其他結果為 null，由呼叫端以提交的桌況呈現。
+     * @property steps 全員放過而動作成立時依序的步驟。其他結果為 null，由呼叫端以提交的桌況呈現。
      */
     private data class RobbingResult(
         val tableState: TableState,

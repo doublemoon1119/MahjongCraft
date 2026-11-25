@@ -9,7 +9,7 @@ import kotlin.uuid.Uuid
 /**
  * 一位觀察者目前應該看到的權威狀態內容。
  *
- * 同一個識別碼在同一時間只會是房間或對局其中之一；兩者都不存在時以 `null` 表示，不另設狀態。內容依
+ * 同一個識別碼在同一時間只會是房間或對局其中之一。兩者都不存在時以 `null` 表示，不另設狀態。內容依
  * 觀察者產生，因此同一個識別碼的不同觀察者可能持有不同的實例。
  */
 sealed interface ObserverSnapshot {
@@ -24,9 +24,9 @@ sealed interface ObserverSnapshot {
      * 進行中的對局內容。
      *
      * @property game 依觀看政策裁切過的對局快照。
-     * @property ruleDecision 只向本人公開的規則選擇內容；沒有進行中的選擇步驟時為 `null`。
-     * @property handReadinessAnalysis 只向該局參與者本人公開的目前手牌分析；沒有聽牌或規則不支援時為 `null`。
-     * @property aiPlayerIds 由 AI 操控的玩家；對所有觀察者相同。
+     * @property ruleDecision 只向本人公開的規則選擇內容。沒有進行中的選擇步驟時為 `null`。
+     * @property handReadinessAnalysis 只向該局參與者本人公開的目前手牌分析。沒有聽牌或規則不支援時為 `null`。
+     * @property aiPlayerIds 由 AI 操控的玩家。對所有觀察者相同。
      */
     data class OfGame(
         val game: TableStateSnapshot,

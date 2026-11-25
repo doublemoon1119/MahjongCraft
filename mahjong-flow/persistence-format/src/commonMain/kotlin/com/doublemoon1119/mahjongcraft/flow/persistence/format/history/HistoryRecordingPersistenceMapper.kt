@@ -36,7 +36,7 @@ class HistoryRecordingPersistenceMapper(
     private val registries: PersistenceRegistries,
 ) {
     /**
-     * 將單筆待寫事件編碼；失敗時交由呼叫端保留並重試，絕不略過後確認。
+     * 將單筆待寫事件編碼。失敗時交由呼叫端保留並重試，絕不略過後確認。
      *
      * @param event 欲寫入持久化儲存端的單筆權威事件。
      * @return 可持久化的單筆歷史事件 DTO。
@@ -44,7 +44,7 @@ class HistoryRecordingPersistenceMapper(
     fun encodePendingEvent(event: HistoryOutboxEvent): HistoryOutboxEventPersistenceDto = encodeEvent(event)
 
     /**
-     * 將單筆資料庫事件解回權威事實；失敗時交由呼叫端標記缺口，絕不略過後封存。
+     * 將單筆資料庫事件解回權威事實。失敗時交由呼叫端標記缺口，絕不略過後封存。
      *
      * @param event 從持久化儲存端讀取的單筆歷史事件 DTO。
      * @return 還原的權威歷史事件。

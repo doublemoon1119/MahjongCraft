@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import kotlin.uuid.Uuid
 
 /**
- * 是否有任何玩家正在決定要不要回應一張捨牌或一次搶和；決定完成前，沒有人能進行自己回合的操作或摸牌。
+ * 是否有任何玩家正在決定要不要回應一張捨牌或一次搶和。決定完成前，沒有人能進行自己回合的操作或摸牌。
  */
 val TableState.hasPendingReaction: Boolean
     get() = pendingReaction != null || pendingRobbingReaction != null

@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
  * 依目前權威桌況，為伺服器代操作選出一個安全的內建命令。
  *
  * 這個解析器只會選擇目前操作情境真正允許的命令：反應視窗必須能合法跳過，自己回合則選擇
- * 強制捨牌或一張現有手牌。它不會把無法映射的擴充動作改送成另一種動作；找不到安全候選時
+ * 強制捨牌或一張現有手牌。它不會把無法映射的擴充動作改送成另一種動作。找不到安全候選時
  * 回傳 null，讓呼叫端進入明確錯誤處理。
  *
  * @property moduleRegistry 提供本局合法動作與強制捨牌規則的註冊中心。
@@ -29,7 +29,7 @@ class AutomaticGameCommandResolver(
      *
      * @param state 目前的權威桌況。
      * @param playerId 需要代操作的玩家。
-     * @return 合法且可映射的命令；沒有安全候選時為 null。
+     * @return 合法且可映射的命令。沒有安全候選時為 null。
      */
     fun resolve(state: TableState, playerId: Uuid): GameCommand? {
         val context = actionContextResolver.resolveFor(state, playerId)

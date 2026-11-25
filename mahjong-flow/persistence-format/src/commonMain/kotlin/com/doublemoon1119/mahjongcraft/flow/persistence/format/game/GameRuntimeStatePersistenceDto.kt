@@ -15,9 +15,9 @@ import kotlin.time.Duration
  * @property isMatchOver 整場對局是否已結束，見 [Game.isMatchOver]。
  * @property pendingTransition 呈現結束後尚待完成的權威流程，見 [Game.pendingTransition]。
  * @property roundCompletion 最近一次本局結算的權威摘要。
- * @property matchEndReasonId 整場終局的完整 namespaced 原因；尚未終局時為 null。
- * @property pendingRuleDecision 尚未完成的規則選擇流程；沒有時為 null。
- * @property ruleDecisionWin 規則選擇流程剛成立、尚待結束本局流程取用的和牌結果；沒有時為 null。
+ * @property matchEndReasonId 整場終局的完整 namespaced 原因。尚未終局時為 null。
+ * @property pendingRuleDecision 尚未完成的規則選擇流程。沒有時為 null。
+ * @property ruleDecisionWin 規則選擇流程剛成立、尚待結束本局流程取用的和牌結果。沒有時為 null。
  * @property hostId 開局時的房主 UUID 字串，見 [Game.hostId]。
  * @property roomPlayerIds 開局前房間成員的固定顯示順序。
  * @property interruptedBaseByPlayerId 因 server session 結束而中斷的那一次決策，其尚未使用的
@@ -25,7 +25,7 @@ import kotlin.time.Duration
  * @property matchId 整場對局的穩定 UUID 字串。
  * @property aiPlayerStrategyKeys 以玩家 UUID 字串索引的 AI 策略 key，見 [Game.aiPlayerStrategyKeys]。
  * @property roomAdmission 開局前房間的加入限制及生命週期。
- * @property matchSeed 對局種子的十六進位字串，見 [Game.matchSeed]；只存在伺服器存檔。
+ * @property matchSeed 對局種子的十六進位字串，見 [Game.matchSeed]。只存在伺服器存檔。
  * @property openedRoundCount 已開過的局數，見 [Game.openedRoundCount]。
  */
 @Serializable

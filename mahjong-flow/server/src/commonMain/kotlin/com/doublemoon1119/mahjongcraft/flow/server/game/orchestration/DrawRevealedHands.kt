@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
  * [MahjongRuleModule.resolveAbortiveDrawRevealedHands]）記進本局已公開手牌。
  *
  * @param reason 本次途中流局原因。
- * @param declarerId 主動宣告者；系統判定的途中流局為 null。
+ * @param declarerId 主動宣告者。系統判定的途中流局為 null。
  * @param module 本局的規則模組。
  * @return 記錄流局與公開手牌後的桌況。
  */
@@ -33,7 +33,7 @@ internal fun TableState.recordAbortiveDraw(
 }
 
 /**
- * 把指定玩家目前的所有立牌記進本局已公開手牌；本局已完成的玩家不公開。
+ * 把指定玩家目前的所有立牌記進本局已公開手牌。本局已完成的玩家不公開。
  *
  * @param playerIds 要公開手牌的玩家。
  * @return 加入公開手牌後的桌況。

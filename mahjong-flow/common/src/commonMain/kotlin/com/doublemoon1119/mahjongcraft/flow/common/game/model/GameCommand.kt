@@ -12,13 +12,13 @@ import kotlin.uuid.Uuid
  * 這是一個雙方都要建構/認識的共用字彙：除了 `GameActionRouter` 會消費它，`:mahjong-ai` 的
  * AI 策略也需要建構它作為決策的最終輸出，且不該為此依賴整個 `:mahjong-flow-server` 的 use case 層。
  *
- * 規則專屬操作以 [Extension] 包裝強型別命令；核心不窮舉立直、拔北或特定途中流局。
+ * 規則專屬操作以 [Extension] 包裝強型別命令。核心不窮舉立直、拔北或特定途中流局。
  */
 sealed interface GameCommand {
     /**
      * 提交目前開著的規則選擇視窗。
      *
-     * @property windowId 提交對象的視窗；不是目前開著的視窗時視為過期而拒絕。
+     * @property windowId 提交對象的視窗。不是目前開著的視窗時視為過期而拒絕。
      * @property submission 包含本次規則選擇的提交內容。
      */
     data class SubmitRuleDecision(

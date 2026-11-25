@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.history
 
-/** 有界歷史轉移的追加結果；等待容量不會產生事件缺口。 */
+/** 有界歷史轉移的追加結果。等待容量不會產生事件缺口。 */
 enum class HistoryTransferResult {
     /** 已接收批次，或確認內容完全相同的最近批次。 */
     ACCEPTED,

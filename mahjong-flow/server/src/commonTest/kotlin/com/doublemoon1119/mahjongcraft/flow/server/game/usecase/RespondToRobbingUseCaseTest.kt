@@ -161,7 +161,7 @@ class RespondToRobbingUseCaseTest {
     /**
      * 建立宣告加槓並等待搶槓回應的桌況。
      *
-     * @param reservedWallTiles 測試桌況的保留牌；預設包含預期嶺上牌。
+     * @param reservedWallTiles 測試桌況的保留牌。預設包含預期嶺上牌。
      * @param robberRuleState 搶槓者的日麻規則狀態。
      * @return 開啟搶槓反應視窗並配置實體牌牆的桌況。
      */
@@ -279,7 +279,7 @@ class RespondToRobbingUseCaseTest {
     /**
      * 驗證全員放過時：原本被 `DeclareKanUseCase` 暫緩的副露套用與嶺上摸牌會在這裡補做——副露升級為
      * ADDED_KAN、`lastDrawn` 為補摸的嶺上牌、`actionHistory` 依序記錄 `Kan` → `Draw`、反應視窗清除、
-     * 只發布宣告者的補摸 `Draw`，不重複發布早已公開的槓宣告；本次呈現要求只標記補摸的牌，不重複標記鳴取牌。
+     * 只發布宣告者的補摸 `Draw`，不重複發布早已公開的槓宣告。本次呈現要求只標記補摸的牌，不重複標記鳴取牌。
      */
     @Test
     fun `test all pass resumes the kan declaration`() = runTest {

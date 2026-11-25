@@ -7,7 +7,7 @@ import kotlin.jvm.JvmSynthetic
  * 公開事件中的一個帶單位數值。
  *
  * @property unitId 數值單位的完整 namespaced ID，例如 `mahjongcraft:han`。
- * @property amount 數值；正負意義由單位定義，事件本身不限制方向。
+ * @property amount 數值。正負意義由單位定義，事件本身不限制方向。
  */
 class EventQuantity private constructor(
     val unitId: String,

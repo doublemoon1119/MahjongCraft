@@ -42,8 +42,8 @@ sealed interface HistoryWinDetailValuePersistenceDto {
          * 單一詳情條目。
          *
          * @property id 規則定義的條目 ID。
-         * @property quantity 條目附帶的數值；沒有數值時為 null。
-         * @property nameQuantity 出現在條目名稱裡的數值；名稱不帶數值時為 null。
+         * @property quantity 條目附帶的數值。沒有數值時為 null。
+         * @property nameQuantity 出現在條目名稱裡的數值。名稱不帶數值時為 null。
          * @property appliesToSomePayersOnly 條目是否只適用於部分付款者。
          */
         @Serializable

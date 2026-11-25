@@ -86,7 +86,7 @@ internal object ReplayFormatKeys {
     /** 動作種類字典。 */
     const val ACTION_TYPES = "actionTypes"
 
-    /** 牌張呈現字典；呈現變化事實只保存字典代碼。 */
+    /** 牌張呈現字典。呈現變化事實只保存字典代碼。 */
     const val PRESENTATION_TYPES = "presentationTypes"
 
     /** 差異路徑字典。 */
@@ -107,10 +107,10 @@ internal object ReplayFormatKeys {
     /** 牌河項目的牌。 */
     const val DISCARD_TILE = "tile"
 
-    /** 牌河項目是否已被鳴走；未鳴走時省略。 */
+    /** 牌河項目是否已被鳴走。未鳴走時省略。 */
     const val DISCARD_TAKEN = "taken"
 
-    /** 牌河項目的公開標記；沒有標記時省略。 */
+    /** 牌河項目的公開標記。沒有標記時省略。 */
     const val DISCARD_MARKERS = "markers"
 }
 
@@ -146,7 +146,7 @@ internal object ReplaySourceKeys {
     /** 牌張呈現的共同姿態。 */
     const val POSE = "pose"
 
-    /** 已保存的權威組件集合；內容保持原保存格式，不猜測其中的參照語意。 */
+    /** 已保存的權威組件集合。內容保持原保存格式，不猜測其中的參照語意。 */
     const val COMPONENTS = "components"
 
     /** 事件中的語意事實。 */

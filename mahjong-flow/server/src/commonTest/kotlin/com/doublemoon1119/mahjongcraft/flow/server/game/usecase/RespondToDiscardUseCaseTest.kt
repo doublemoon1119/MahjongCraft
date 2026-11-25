@@ -149,7 +149,7 @@ class RespondToDiscardUseCaseTest {
     }
 
     /**
-     * 讓既有用例案例提交目前視窗；測試過期視窗時則直接使用正式用例。
+     * 讓既有用例案例提交目前視窗。測試過期視窗時則直接使用正式用例。
      *
      * @property repository 提供測試當下的反應視窗。
      * @property delegate 實際執行權威驗證的用例。
@@ -159,7 +159,7 @@ class RespondToDiscardUseCaseTest {
         private val delegate: RespondToDiscardUseCase,
     ) {
         /**
-         * 由目前視窗建立反應；不存在視窗的拒絕案例仍交由用例檢查。
+         * 由目前視窗建立反應。不存在視窗的拒絕案例仍交由用例檢查。
          *
          * @param gameId 測試對局。
          * @param playerId 提交玩家。
@@ -198,7 +198,7 @@ class RespondToDiscardUseCaseTest {
     }
 
     /**
-     * 驗證唯一有資格的玩家選擇過牌時：若原本可以碰，把該牌記入放過清單；且因反應視窗已經齊全（無人動作），
+     * 驗證唯一有資格的玩家選擇過牌時：若原本可以碰，把該牌記入放過清單。且因反應視窗已經齊全（無人動作），
      * 直接推進到下一位玩家並清除反應視窗。
      *
      * 以目前的遊戲為預期遊戲執行，確認命令只寫入這一局一次（AI 命令的條件式提交契約）。
@@ -1438,7 +1438,7 @@ class RespondToDiscardUseCaseTest {
     }
 
     /**
-     * 驗證多家和時本場與供託一樣，只由頭跳順位最近的贏家收取；放銃者支付兩位贏家的役種點數與一份本場。
+     * 驗證多家和時本場與供託一樣，只由頭跳順位最近的贏家收取。放銃者支付兩位贏家的役種點數與一份本場。
      */
     @Test
     fun `test multi-ron combo bonus goes to the nearest winner only`() = runTest {
@@ -1585,7 +1585,7 @@ class RespondToDiscardUseCaseTest {
     }
 
     /**
-     * 立直者先放過榮和而永久振聽、之後已沒有任何合法動作；其他玩家再碰牌時，視窗照常裁定成碰牌，
+     * 立直者先放過榮和而永久振聽、之後已沒有任何合法動作。其他玩家再碰牌時，視窗照常裁定成碰牌，
      * 不因重新檢查那筆過牌而中止對局。
      */
     @Test
@@ -1823,7 +1823,7 @@ class RespondToDiscardUseCaseTest {
     }
 
     /**
-     * 「只有最近的人能榮和」：兩家都能和時，開窗只讓最近的南家榮和；西家因為能碰才留在視窗裡，
+     * 「只有最近的人能榮和」：兩家都能和時，開窗只讓最近的南家榮和。西家因為能碰才留在視窗裡，
      * 提交榮和會被拒絕，仍可以碰。
      */
     @Test

@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoDefinition
 
 /**
- * 擴充登記一類網路 DTO 時取得的登記介面；轉換、序列化查詢與凍結由 MahjongCraft 進行。
+ * 擴充登記一類網路 DTO 時取得的登記介面。轉換、序列化查詢與凍結由 MahjongCraft 進行。
  *
  * @param Domain 這一類的領域型別。
  * @param Dto 這一類的網路 DTO 型別。

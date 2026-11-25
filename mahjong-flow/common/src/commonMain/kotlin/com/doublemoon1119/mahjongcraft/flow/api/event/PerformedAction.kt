@@ -10,9 +10,9 @@ import kotlin.uuid.Uuid
  * @property actionId 動作的完整 namespaced ID。
  * @property actorPlayerId 執行動作的玩家 UUID。
  * @property kind 動作的中立分類。
- * @property tiles 動作公開的牌面；`null` 表示該位置的牌仍然隱藏。
- * @property supplementalTileCount 這個動作產生的補牌張數；不是補牌動作時為 `null`。
- * @property supplementalSourceId 補牌來源的完整 namespaced ID；沒有可公開來源時為 `null`。
+ * @property tiles 動作公開的牌面。`null` 表示該位置的牌仍然隱藏。
+ * @property supplementalTileCount 這個動作產生的補牌張數。不是補牌動作時為 `null`。
+ * @property supplementalSourceId 補牌來源的完整 namespaced ID。沒有可公開來源時為 `null`。
  */
 class PerformedAction private constructor(
     val actionId: String,
@@ -41,8 +41,8 @@ class PerformedAction private constructor(
          * @param actorPlayerId 執行動作的玩家 UUID。
          * @param kind 動作的中立分類。
          * @param tiles 動作公開的牌面，`null` 表示隱藏牌。
-         * @param supplementalTileCount 補牌張數；不是補牌動作時為 `null`。
-         * @param supplementalSourceId 補牌來源的完整 namespaced ID；沒有時為 `null`。
+         * @param supplementalTileCount 補牌張數。不是補牌動作時為 `null`。
+         * @param supplementalSourceId 補牌來源的完整 namespaced ID。沒有時為 `null`。
          * @return 建立的已成立動作。
          */
         @JvmSynthetic

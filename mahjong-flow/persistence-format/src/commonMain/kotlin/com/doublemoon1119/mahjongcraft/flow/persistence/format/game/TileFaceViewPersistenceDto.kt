@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
  *
  * @property tile 基本牌面。
  * @property views 提交當時已裁切的特徵資料。
- * @property appearanceId 已授權的外觀識別碼；未指定時為 null。
+ * @property appearanceId 已授權的外觀識別碼。未指定時為 null。
  */
 @Serializable
 data class TileFaceViewPersistenceDto(

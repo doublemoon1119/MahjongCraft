@@ -109,7 +109,7 @@ class DiscardTileUseCaseTest {
     private val handTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
 
     /**
-     * 驗證宣告加槓後、其他玩家還能搶槓時，宣告者不能直接捨牌，桌況不變；用例自己檢查時機，不依賴呼叫端。
+     * 驗證宣告加槓後、其他玩家還能搶槓時，宣告者不能直接捨牌，桌況不變。用例自己檢查時機，不依賴呼叫端。
      */
     @Test
     fun `test discard tile fails while other players may rob a declared kan`() = runTest {
@@ -331,7 +331,7 @@ class DiscardTileUseCaseTest {
     }
 
     /**
-     * 驗證立直者打出立直後的下一張牌時，自己的一發資格結束；其他玩家的一發資格不受這次捨牌影響。
+     * 驗證立直者打出立直後的下一張牌時，自己的一發資格結束。其他玩家的一發資格不受這次捨牌影響。
      */
     @Test
     fun `test discard tile ends the discarding riichi player's ippatsu only`() = runTest {
@@ -1424,7 +1424,7 @@ class DiscardTileUseCaseTest {
     /**
      * 以日麻模組為基礎、只替換捨牌相關 hook 並記錄呼叫的測試規則。
      *
-     * @property discardableTileIds 規則允許打出的牌；為 null 時不額外限制。
+     * @property discardableTileIds 規則允許打出的牌。為 null 時不額外限制。
      */
     private class HookProbe(private val discardableTileIds: Set<Uuid>? = null) {
         /** 依 hook 呼叫順序收集拒絕和牌的玩家識別碼。 */

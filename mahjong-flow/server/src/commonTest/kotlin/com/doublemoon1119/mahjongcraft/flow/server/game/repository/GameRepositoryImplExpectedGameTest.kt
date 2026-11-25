@@ -81,7 +81,7 @@ class GameRepositoryImplExpectedGameTest {
         assertEquals(false, current.isMatchOver)
     }
 
-    /** 命令攔下第二次寫入的例外並正常返回時，範圍結束仍丟出違約例外；第一次寫入維持提交，不回滾。 */
+    /** 命令攔下第二次寫入的例外並正常返回時，範圍結束仍丟出違約例外。第一次寫入維持提交，不回滾。 */
     @Test
     fun `a swallowed second write still breaks the contract`() = runTest {
         val game = createGame()
@@ -115,7 +115,7 @@ class GameRepositoryImplExpectedGameTest {
         assertEquals(true, repository.getGame(game.id)?.isMatchOver)
     }
 
-    /** 範圍結束後的寫入不受限制；範圍不能巢狀使用。 */
+    /** 範圍結束後的寫入不受限制。範圍不能巢狀使用。 */
     @Test
     fun `the scope covers only the command`() = runTest {
         val game = createGame()

@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewSet
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewType
 import kotlinx.serialization.json.JsonObject
 
-/** 保存提交時已裁切的投影；解碼只還原投影集合，不建立權威組件；擴充只透過 [ComponentViewPersistenceRegistrar] 登記。 */
+/** 保存提交時已裁切的投影。解碼只還原投影集合，不建立權威組件。擴充只透過 [ComponentViewPersistenceRegistrar] 登記。 */
 class ComponentViewPersistenceRegistry :
     ComponentViewPersistenceRegistrar,
     ComponentViewPersistenceConverter {

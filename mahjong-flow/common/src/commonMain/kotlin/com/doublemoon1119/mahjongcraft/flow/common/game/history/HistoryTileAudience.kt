@@ -10,7 +10,7 @@ sealed interface HistoryTileAudience {
     /**
      * 只有指定參與者知道牌面，例如持有者本人或規則授權的玩家。
      *
-     * @property playerIds 知道牌面的參與者；空集合代表沒有任何參與者知道。
+     * @property playerIds 知道牌面的參與者。空集合代表沒有任何參與者知道。
      */
     data class Players(val playerIds: Set<Uuid>) : HistoryTileAudience
 }

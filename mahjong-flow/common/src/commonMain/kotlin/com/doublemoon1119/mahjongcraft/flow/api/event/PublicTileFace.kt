@@ -6,7 +6,7 @@ import kotlin.jvm.JvmSynthetic
 /**
  * 動作事件中可公開的一張牌面。
  *
- * @property typeId 牌面的完整 namespaced ID；擴充牌沿用牌種 ID，標準牌使用事件定義的牌面 ID，不包含實體牌 UUID。
+ * @property typeId 牌面的完整 namespaced ID。擴充牌沿用牌種 ID，標準牌使用事件定義的牌面 ID，不包含實體牌 UUID。
  */
 class PublicTileFace private constructor(
     val typeId: String,

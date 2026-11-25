@@ -12,7 +12,7 @@ import kotlin.uuid.Uuid
  * @property completion 對局正常完成或中途終止。
  * @property reasonId 整場結束原因識別碼。
  * @property previousState 交易前的權威桌況。
- * @property finalState 正常結束時的最終桌況；中途終止時為 null。
+ * @property finalState 正常結束時的最終桌況。中途終止時為 null。
  * @property finalScoresByPlayerId 終局時各玩家的分數。
  */
 data class MatchEndPublicMarkerContext(

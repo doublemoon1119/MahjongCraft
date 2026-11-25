@@ -9,7 +9,7 @@ import kotlin.uuid.Uuid
  *
  * @property playerId 行動的 AI 玩家。
  * @property command 要送出的命令。
- * @property basis 決策所依據的權威遊戲；命令只應在權威遊戲仍是這個遊戲時套用。
+ * @property basis 決策所依據的權威遊戲。命令只應在權威遊戲仍是這個遊戲時套用。
  */
 data class AiTurnDecision(
     val playerId: Uuid,

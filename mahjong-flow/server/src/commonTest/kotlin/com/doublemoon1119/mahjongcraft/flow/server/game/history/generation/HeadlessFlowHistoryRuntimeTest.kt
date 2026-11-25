@@ -30,7 +30,7 @@ import kotlin.uuid.Uuid
 /** 驗證無頭真實 runtime 的完整場長流程與歷史背壓契約。 */
 @OptIn(ExperimentalCoroutinesApi::class)
 class HeadlessFlowHistoryRuntimeTest {
-    /** 驗證東風戰可由四個隨機出牌 AI 自動完成；流程測試不需要 AI 思考，對局與 AI 選擇都由固定種子決定。 */
+    /** 驗證東風戰可由四個隨機出牌 AI 自動完成。流程測試不需要 AI 思考，對局與 AI 選擇都由固定種子決定。 */
     @Test
     fun `east match completes through cold history flow`() = runTest {
         val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, seededRandomMoveHeadlessHistoryRegistries(MATCH_SEED), decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default), matchSeed = testMatchSeed(MATCH_SEED))
@@ -65,7 +65,7 @@ class HeadlessFlowHistoryRuntimeTest {
     }
 
     /**
-     * 驗證台灣麻將東風圈可由四個初級 AI 自動完成（流局時莊家連莊，隨機出牌幾乎不和牌而打不完），且花牌都經補花移到花區、從不打出；一將走同一條流程，只確認它使用東南西北圈。
+     * 驗證台灣麻將東風圈可由四個初級 AI 自動完成（流局時莊家連莊，隨機出牌幾乎不和牌而打不完），且花牌都經補花移到花區、從不打出。一將走同一條流程，只確認它使用東南西北圈。
      */
     @Test
     fun `taiwan match completes through cold history flow`() = runTest {
@@ -183,7 +183,7 @@ class HeadlessFlowHistoryRuntimeTest {
     }
 
     /**
-     * 驗證同一個數字決定的對局種子與 AI 選擇重現同一場對局：每一步的牌桌內容（牌張、牌河、分數）完全相同；只有房間與玩家 ID
+     * 驗證同一個數字決定的對局種子與 AI 選擇重現同一場對局：每一步的牌桌內容（牌張、牌河、分數）完全相同。只有房間與玩家 ID
      * 每次不同。
      */
     @Test
@@ -198,7 +198,7 @@ class HeadlessFlowHistoryRuntimeTest {
     /**
      * 驗證台灣麻將以隨機出牌 AI 推進固定步數時，對局不會被中止，每一步都有進展。
      *
-     * 隨機出牌會大量吃、碰、槓與補花，走到一般對局少見的情況；台麻流局時莊家連莊，隨機出牌幾乎不和牌而打不完，
+     * 隨機出牌會大量吃、碰、槓與補花，走到一般對局少見的情況。台麻流局時莊家連莊，隨機出牌幾乎不和牌而打不完，
      * 因此只推進固定步數，不要求整場結束。
      */
     @Test
@@ -236,7 +236,7 @@ class HeadlessFlowHistoryRuntimeTest {
     }
 
     /**
-     * 以指定數字跑完一場隨機出牌的東風戰，記下每一步的牌桌內容；玩家以座位表示，因為房間與玩家 ID 每次執行都不同。
+     * 以指定數字跑完一場隨機出牌的東風戰，記下每一步的牌桌內容。玩家以座位表示，因為房間與玩家 ID 每次執行都不同。
      *
      * @param seed 決定對局種子與 AI 選擇的數字。
      * @return 依步驟排列的牌桌內容。
@@ -289,7 +289,7 @@ class HeadlessFlowHistoryRuntimeTest {
 
     /** 測試使用的步數上限與固定種子。 */
     private companion object {
-        /** 計時測試推進的步數；足以涵蓋多次 AI 出牌，又不會塞滿待寫佇列。 */
+        /** 計時測試推進的步數。足以涵蓋多次 AI 出牌，又不會塞滿待寫佇列。 */
         const val STEPS_TO_MEASURE = 40
 
         /** 完整對局測試固定使用的種子。 */

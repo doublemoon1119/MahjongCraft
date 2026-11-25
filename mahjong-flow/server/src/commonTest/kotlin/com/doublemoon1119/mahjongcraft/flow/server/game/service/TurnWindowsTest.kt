@@ -23,7 +23,7 @@ class TurnWindowsTest {
     private val otherId = Uuid.random()
     private val drawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
 
-    /** 輪到自己、還沒摸牌且沒有人在等待回應時才能摸牌；同一時間不處於自己回合的決策。 */
+    /** 輪到自己、還沒摸牌且沒有人在等待回應時才能摸牌。同一時間不處於自己回合的決策。 */
     @Test
     fun `draw window opens only at the start of the current player's turn`() {
         val state = table()

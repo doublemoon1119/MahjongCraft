@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceS
 /**
  * 依 schema version 逐版套用權威存檔 migration 的註冊表。
  *
- * [migrations] 的 key 是來源版本；每個 migration 必須只負責轉換到下一個連續版本。
+ * [migrations] 的 key 是來源版本。每個 migration 必須只負責轉換到下一個連續版本。
  *
  * @property currentVersion 目前程式支援的 schema version。
  * @property migrations 以來源 schema version 索引的 migration。

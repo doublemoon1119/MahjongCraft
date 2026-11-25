@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  *
  * @property ruleModuleId 提供分析結果的規則模組識別碼。
  * @property waitingTiles 目前手牌可等待的牌及其可用數量。
- * @property statusIndicatorId 規則提供的狀態指示識別碼；沒有時為 `null`。
+ * @property statusIndicatorId 規則提供的狀態指示識別碼。沒有時為 `null`。
  */
 @Serializable
 data class HandReadinessAnalysisDto(

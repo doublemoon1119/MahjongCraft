@@ -5,7 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Replay 語意事實 DTO；各子類別只傳輸公開欄位。
+ * Replay 語意事實 DTO。各子類別只傳輸公開欄位。
  *
  * @property typeKey 穩定事實種類識別碼。
  */
@@ -78,9 +78,9 @@ sealed interface HistoryReplayFactDto {
      * @property stepId 步驟識別碼。
      * @property stepIndex 步驟索引。
      * @property nextStepId 下一步識別碼。
-     * @property actorSeat 提交選擇的玩家座位；不是玩家提交的事實為 null。
-     * @property optionId 玩家選擇的選項識別碼；不是單選提交時為 null。
-     * @property passed 玩家選的是否為代表跳過的選項；不是玩家提交的事實為 false。
+     * @property actorSeat 提交選擇的玩家座位。不是玩家提交的事實為 null。
+     * @property optionId 玩家選擇的選項識別碼。不是單選提交時為 null。
+     * @property passed 玩家選的是否為代表跳過的選項。不是玩家提交的事實為 false。
      */
     @SerialName("rule_decision")
     @Serializable

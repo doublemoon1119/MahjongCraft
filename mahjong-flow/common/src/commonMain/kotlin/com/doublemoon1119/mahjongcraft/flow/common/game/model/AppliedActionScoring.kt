@@ -8,8 +8,8 @@ import kotlin.uuid.Uuid
  *
  * @property actorPlayerId 執行動作的玩家。
  * @property action 觸發收付的動作。
- * @property scoreDeltas 各玩家的點數增減；只包含本局玩家，不包含 0。
- * @property potDeposit 放進規則點數池的點數，正數為放入、負數為取出；與 [scoreDeltas] 的合計為 0。
+ * @property scoreDeltas 各玩家的點數增減。只包含本局玩家，不包含 0。
+ * @property potDeposit 放進規則點數池的點數，正數為放入、負數為取出。與 [scoreDeltas] 的合計為 0。
  */
 data class AppliedActionScoring(
     val actorPlayerId: Uuid,

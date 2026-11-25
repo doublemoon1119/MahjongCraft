@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
 /**
  * 解析 AI 與逾時真人的下一次規則選擇提交。
  *
- * AI 的提交經 [decisionExecutor] 在 AI 專用的調度器上詢問策略；沒有在等待上限內得到結果、策略丟出例外，或結果不被接受時，
+ * AI 的提交經 [decisionExecutor] 在 AI 專用的調度器上詢問策略。沒有在等待上限內得到結果、策略丟出例外，或結果不被接受時，
  * 使用解析器提供的可重現提交。
  *
  * @property gameRepository 讀取權威遊戲。
@@ -32,10 +32,10 @@ class RuleDecisionAiDriver(
     private val decisionExecutor: AiDecisionExecutor,
 ) {
     /**
-     * 找出下一位需要自動提交的參與者；沒有時，或這一局已有策略呼叫正在計算時回傳 null。
+     * 找出下一位需要自動提交的參與者。沒有時，或這一局已有策略呼叫正在計算時回傳 null。
      *
      * @param gameId 欲解析規則選擇提交的對局。
-     * @return 可提交的玩家與命令；目前無自動提交時為 null。
+     * @return 可提交的玩家與命令。目前無自動提交時為 null。
      * @throws RuleContractViolationException 策略與預設提交都不符合目前選擇步驟。
      */
     suspend fun resolveNextAction(gameId: Uuid): AutomatedRuleDecision? {

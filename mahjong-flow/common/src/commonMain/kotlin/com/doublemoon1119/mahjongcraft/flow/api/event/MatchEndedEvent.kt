@@ -7,12 +7,12 @@ import kotlin.uuid.Uuid
  * 一場對局結束：正常打完或中途終止。
  *
  * @property completion 正常打完或中途終止。
- * @property reasonId 終局原因的 namespaced ID；中途終止時為終止原因。
+ * @property reasonId 終局原因的 namespaced ID。中途終止時為終止原因。
  * @property standings 依名次排列的每位玩家最終分數與名次。
- * @property roundContext 終局前最後一局的局數與場風；沒有可提供的局況時為 `null`。
+ * @property roundContext 終局前最後一局的局數與場風。沒有可提供的局況時為 `null`。
  * @property publicMarkers 規則提供的公開終局標記。
- * @property completedPlayerIds 在正常完成的終局中完成對局的玩家 UUID；沒有時為空集合。
- * @property completedScores 正常完成提交所記錄的最終分數；不以名次清單補齊缺少的玩家，中止時為空。
+ * @property completedPlayerIds 在正常完成的終局中完成對局的玩家 UUID。沒有時為空集合。
+ * @property completedScores 正常完成提交所記錄的最終分數。不以名次清單補齊缺少的玩家，中止時為空。
  */
 class MatchEndedEvent private constructor(
     override val eventId: Uuid,
@@ -39,7 +39,7 @@ class MatchEndedEvent private constructor(
          * @param completion 對局結束的方式。
          * @param reasonId 終局原因的 namespaced ID。
          * @param standings 依名次排列的玩家最終分數與名次。
-         * @param roundContext 終局前最後一局的局數與場風；沒有時為 `null`。
+         * @param roundContext 終局前最後一局的局數與場風。沒有時為 `null`。
          * @param publicMarkers 規則提供的公開終局標記。
          * @param completedPlayerIds 完成對局的玩家 UUID。
          * @param completedScores 正常終局明確提交的最終分數。

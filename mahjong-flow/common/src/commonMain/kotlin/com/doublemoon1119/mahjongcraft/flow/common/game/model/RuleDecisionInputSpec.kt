@@ -11,10 +11,10 @@ sealed interface RuleDecisionInputSpec {
     /**
      * 從完整 namespaced 選項中選擇一項的輸入。
      *
-     * @property optionIds 可選擇的完整命名空間識別碼；不可為空或重複。
-     * @property previewTileIdsByOptionId 選項要展示的牌，例如這個選項會用來和牌的牌，依展示順序排列；沒有列出的選項不展示牌。
+     * @property optionIds 可選擇的完整命名空間識別碼。不可為空或重複。
+     * @property previewTileIdsByOptionId 選項要展示的牌，例如這個選項會用來和牌的牌，依展示順序排列。沒有列出的選項不展示牌。
      * 展示時依觀看者的讀取權顯示牌面。
-     * @property passOptionId 代表「不做這件事」的選項，例如放棄特殊和牌；呈現端把它當成一般的跳過，不另佔選項位置。
+     * @property passOptionId 代表「不做這件事」的選項，例如放棄特殊和牌。呈現端把它當成一般的跳過，不另佔選項位置。
      * 沒有這種選項時為 null。
      */
     data class SingleChoice(
@@ -38,7 +38,7 @@ sealed interface RuleDecisionInputSpec {
      *
      * @property eligibleTileIds 可選取的牌張識別碼集合。
      * @property minCount 最少選取張數。
-     * @property maxCount 最多選取張數；不可少於最少張數或超過可選牌張數。
+     * @property maxCount 最多選取張數。不可少於最少張數或超過可選牌張數。
      */
     data class TileSelection(
         val eligibleTileIds: Set<Uuid>,

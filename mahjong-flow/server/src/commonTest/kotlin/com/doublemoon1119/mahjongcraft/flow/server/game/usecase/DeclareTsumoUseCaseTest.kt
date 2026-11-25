@@ -70,7 +70,7 @@ class DeclareTsumoUseCaseTest {
     /**
      * 提供自摸結算測試所需的 repository、事件與演出替身。
      *
-     * @property winCelebrationCueResolverRegistry 提供和牌演出 cue 的登記表；測試可注入替身。
+     * @property winCelebrationCueResolverRegistry 提供和牌演出 cue 的登記表。測試可注入替身。
      */
     private class Fixtures(
         val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =

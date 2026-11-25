@@ -313,7 +313,7 @@ class AdvanceRoundUseCase(
      * [AdvanceRoundUseCase] 的執行結果。
      *
      * @property tableState 套用後的桌況——整場對局已結束時，除了「桌上未被收下的供託依規則分配」
-     *           這個結算之外維持呼叫前的桌況不變（不會開新的一局）；否則為已經開始下一局的新桌況。
+     *           這個結算之外維持呼叫前的桌況不變（不會開新的一局）。否則為已經開始下一局的新桌況。
      * @property isMatchOver 整場對局是否已依規則的 progression policy 結束。
      */
     data class AdvanceRoundResult(val tableState: TableState, val isMatchOver: Boolean)
@@ -322,14 +322,14 @@ class AdvanceRoundUseCase(
      * [invoke] 內部使用的中介結果，把呈現層需要的牌牆結構資料，跟對外公開的
      * [AdvanceRoundResult] 分開夾帶，避免污染既有呼叫端（例如 `GameFlowCoordinator`）只關心的
      * 對外回傳形狀。[dealOrderHandTileIdsBySeatIndex] 是發牌順序，在
-     * [result] 的手牌已經被整理過之後就無法再從它反推出來，理由同 `StartGameUseCase` KDoc；整場對局
+     * [result] 的手牌已經被整理過之後就無法再從它反推出來，理由同 `StartGameUseCase` KDoc。整場對局
      * 已結束（沒有開新的一局）時固定為空 map，不會被用到。
      *
      * @property result 對呼叫端回傳的回合推進結果。
-     * @property wallStructure 新局的牌牆位置；沒有開新局時為 null。
-     * @property initialPhysicalWallLayout 新局開始時的實體牌牆排列；沒有開新局時為 null。
-     * @property dealOrderHandTileIdsBySeatIndex 按座位索引的發牌順序牌識別碼；沒有開新局時為空 map。
-     * @property seatOrderChanged 新局是否因局間換位而改變座位順序；沒有開新局時為 false。
+     * @property wallStructure 新局的牌牆位置。沒有開新局時為 null。
+     * @property initialPhysicalWallLayout 新局開始時的實體牌牆排列。沒有開新局時為 null。
+     * @property dealOrderHandTileIdsBySeatIndex 按座位索引的發牌順序牌識別碼。沒有開新局時為空 map。
+     * @property seatOrderChanged 新局是否因局間換位而改變座位順序。沒有開新局時為 false。
      */
     private data class AdvanceRoundOutcome(
         val result: AdvanceRoundResult,

@@ -13,18 +13,18 @@ import kotlin.uuid.Uuid
 /**
  * 一筆權威交易造成的可重建桌況差異。
  *
- * @property components 對局組件的新集合；未改變時為 null，空集合代表清空。
+ * @property components 對局組件的新集合。未改變時為 null，空集合代表清空。
  * @property changedPlayers 實際變動的玩家與新追加動作，未列出的玩家保持原值。
- * @property wall 活牌牆兩端的移除；未改變時為 null。
- * @property currentPlayerIndex 新的行動玩家索引；未改變時為 null。
- * @property turnPhase 新的回合階段；未改變時為 null。
- * @property reservedWallTiles 規則保留牌的新順序；未改變時為 null。
- * @property physicalWallLayout 實體牌牆位置的局部變化；未改變時為 null。
- * @property finishedPlayerIds 本局已完成玩家的新集合；未改變時為 null。
- * @property publicTileEvidenceIds 本局公開證據的新集合；未改變時為 null。
- * @property revealedHandSettlements 流局公開手牌與等待牌的新資料；未改變時為 null，空集合代表清空。
- * @property openingDiceRolls 本局逐輪擲骰結果；未改變時為 null。
- * @property appendedDiscards 接在本局打牌順序後面的牌；沒有新打出的牌時為空清單。一局之內打牌順序只會往後加。
+ * @property wall 活牌牆兩端的移除。未改變時為 null。
+ * @property currentPlayerIndex 新的行動玩家索引。未改變時為 null。
+ * @property turnPhase 新的回合階段。未改變時為 null。
+ * @property reservedWallTiles 規則保留牌的新順序。未改變時為 null。
+ * @property physicalWallLayout 實體牌牆位置的局部變化。未改變時為 null。
+ * @property finishedPlayerIds 本局已完成玩家的新集合。未改變時為 null。
+ * @property publicTileEvidenceIds 本局公開證據的新集合。未改變時為 null。
+ * @property revealedHandSettlements 流局公開手牌與等待牌的新資料。未改變時為 null，空集合代表清空。
+ * @property openingDiceRolls 本局逐輪擲骰結果。未改變時為 null。
+ * @property appendedDiscards 接在本局打牌順序後面的牌。沒有新打出的牌時為空清單。一局之內打牌順序只會往後加。
  */
 data class HistoryTableChange(
     val components: ComponentSet? = null,
@@ -71,11 +71,11 @@ data class HistoryTableChange(
     /** 從前後桌況建立可重建差異的入口。 */
     companion object {
         /**
-         * 建立差異，並確認套用後能還原交易後桌況；無法安全表示時回傳 null。
+         * 建立差異，並確認套用後能還原交易後桌況。無法安全表示時回傳 null。
          *
          * @param before 交易前的完整桌況。
          * @param after 交易後的完整桌況。
-         * @return 可重建 [after] 的差異；包含不支援的變更或驗證失敗時為 null。
+         * @return 可重建 [after] 的差異。包含不支援的變更或驗證失敗時為 null。
          */
         fun between(before: TableState, after: TableState): HistoryTableChange? {
             if (
@@ -140,7 +140,7 @@ data class HistoryTableChange(
          *
          * @param before 交易前的活牌牆。
          * @param after 交易後的活牌牆。
-         * @return 兩端移除的張數；新牌序不是原牌序的連續片段時為 null。
+         * @return 兩端移除的張數。新牌序不是原牌序的連續片段時為 null。
          */
         private fun wallChange(before: TileWall, after: TileWall): HistoryWallChange? {
             val old = before.getAllTiles()

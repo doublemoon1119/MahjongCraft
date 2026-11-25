@@ -217,7 +217,7 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
         }
     }
 
-    /** 以等待選擇時記下的亮花者與花牌，重建這次特殊花胡資格；局首補花依莊家起的行牌順序續跑，途中補花只處理亮花者。 */
+    /** 以等待選擇時記下的亮花者與花牌，重建這次特殊花胡資格。局首補花依莊家起的行牌順序續跑，途中補花只處理亮花者。 */
     private fun reconstructPending(
         tableState: TableState,
         winnerId: Uuid,
@@ -264,7 +264,7 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
     private fun processDrawFollowUpStep(index: Int) = RuleDecisionStep(TaiwanFlowerRuleDecisionIds.PROCESS_DRAW_FOLLOW_UP, index, emptyMap())
 
     /**
-     * 建立花胡接受／放棄步驟。胡牌的選項沿用一般胡牌動作：八仙過海是自摸，七搶一搶別人的花是胡別人的牌；選項展示這次
+     * 建立花胡接受／放棄步驟。胡牌的選項沿用一般胡牌動作：八仙過海是自摸，七搶一搶別人的花是胡別人的牌。選項展示這次
      * 和牌用到的花牌，搶來的花排在最後。放棄以一般的跳過呈現。
      *
      * @param pending 等待選擇的花胡資格。
@@ -292,7 +292,7 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
 }
 
 /**
- * 依輪次整理每一輪各玩家移出的花牌；補到的牌不公開，不列入。
+ * 依輪次整理每一輪各玩家移出的花牌。補到的牌不公開，不列入。
  *
  * @return 依輪次排列的換牌結果。
  */
@@ -308,7 +308,7 @@ private fun List<TileReplacementRounds.Step>.toReplacementRounds(): List<TileRep
 /**
  * 將補花的牌區變化依序轉成中間步驟，每一次移出或補牌是一步。
  *
- * 補到的牌照一般摸牌先放在摸牌位，再補下一張時，摸牌位上的牌接到立牌最右邊；局首補完後各家一起理牌時才收進立牌。
+ * 補到的牌照一般摸牌先放在摸牌位，再補下一張時，摸牌位上的牌接到立牌最右邊。局首補完後各家一起理牌時才收進立牌。
  * 牌局中亮出的花以移出手牌的動作呈現。
  *
  * @param isOpening 是否為局首補花。
@@ -324,7 +324,7 @@ private fun List<TileReplacementRounds.Step>.toTableSteps(isOpening: Boolean): L
     TableStep(state, events)
 }
 
-/** 局首補花時，閒家補到的牌併入立牌；莊家保留首次行動所需的摸牌位。 */
+/** 局首補花時，閒家補到的牌併入立牌。莊家保留首次行動所需的摸牌位。 */
 private fun TaiwanFlowerFlow.Result.withOpeningReplacementsStanding(): TaiwanFlowerFlow.Result = when (this) {
     is TaiwanFlowerFlow.Result.Completed -> copy(tableState = tableState.withOpeningReplacementsStanding())
     is TaiwanFlowerFlow.Result.AwaitingDecision -> copy(pending = pending.copy(tableState = pending.tableState.withOpeningReplacementsStanding()))

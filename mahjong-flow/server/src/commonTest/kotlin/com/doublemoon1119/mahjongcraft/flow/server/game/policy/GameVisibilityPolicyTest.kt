@@ -75,7 +75,7 @@ class GameVisibilityPolicyTest {
     /** 使用內建規則建立快照的受測政策。 */
     private val policy = GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)
 
-    /** 副露的私人值僅本人取得；旁觀者與未獲准觀察者不能藉由快照讀取。 */
+    /** 副露的私人值僅本人取得。旁觀者與未獲准觀察者不能藉由快照讀取。 */
     @Test
     fun `meld component projections follow the authenticated reader`() {
         val component = ComponentType(
@@ -150,7 +150,7 @@ class GameVisibilityPolicyTest {
         }
     }
 
-    /** 牌山的私人授權不變成全桌公開；公共證據在換持有人與牌區後仍有效。 */
+    /** 牌山的私人授權不變成全桌公開。公共證據在換持有人與牌區後仍有效。 */
     @Test
     fun `private wall access and cross region public evidence remain distinct`() {
         val authorized = Uuid.random()
@@ -376,7 +376,7 @@ class GameVisibilityPolicyTest {
         assertTrue(snapshot.visibleTiles(RiichiTileInterpretationPolicy).none { it.id == second.id })
     }
 
-    /** 規則衍生的外觀經同一個解算交給本人；同一份結果與快照一致，其他人與公共讀取者都拿不到未公開的牌。 */
+    /** 規則衍生的外觀經同一個解算交給本人。同一份結果與快照一致，其他人與公共讀取者都拿不到未公開的牌。 */
     @Test
     fun `tile faces follow derived appearance and the reader permission`() {
         val owner = Uuid.random()
@@ -397,7 +397,7 @@ class GameVisibilityPolicyTest {
         assertTrue(policy.publicTileFaces(game.tableState, ids).isEmpty())
     }
 
-    /** 公共讀取者只拿到全桌公開的牌，並帶著該牌的外觀；未公開的同種牌不列入。 */
+    /** 公共讀取者只拿到全桌公開的牌，並帶著該牌的外觀。未公開的同種牌不列入。 */
     @Test
     fun `public tile faces include only publicly readable tiles`() {
         val owner = Uuid.random()
@@ -609,7 +609,7 @@ class GameVisibilityPolicyTest {
         assertNull(policy.snapshotFor(game, playerId).players.first { it.id == otherPlayerId }.componentViews[RiichiPlayerComponentViews.PERMANENT_FURITEN])
     }
 
-    /** 觀察者只收到供託；牌山進度（含尚未公開的槓寶牌項目）不交付。 */
+    /** 觀察者只收到供託。牌山進度（含尚未公開的槓寶牌項目）不交付。 */
     @Test
     fun `observers receive the pot but not the wall progress`() {
         val game = createGame(Uuid.random()).let { baseGame ->

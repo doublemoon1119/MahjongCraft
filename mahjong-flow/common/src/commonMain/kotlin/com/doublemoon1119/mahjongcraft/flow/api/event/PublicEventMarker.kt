@@ -8,7 +8,7 @@ import kotlin.uuid.Uuid
  * 規則提供、可公開給事件訂閱者的狀態標記。
  *
  * @property id 標記的完整 namespaced ID。
- * @property playerId 標記所屬玩家；不屬於單一玩家時為 `null`。
+ * @property playerId 標記所屬玩家。不屬於單一玩家時為 `null`。
  * @property quantity 標記附帶的可選數值。
  */
 class PublicEventMarker private constructor(
@@ -26,7 +26,7 @@ class PublicEventMarker private constructor(
          * 建立公開標記。
          *
          * @param id 標記的完整 namespaced ID。
-         * @param playerId 標記所屬玩家；不屬於單一玩家時為 `null`。
+         * @param playerId 標記所屬玩家。不屬於單一玩家時為 `null`。
          * @param quantity 標記附帶的可選數值。
          * @return 建立的公開標記。
          */

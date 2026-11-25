@@ -16,7 +16,7 @@ sealed interface RuleDecisionInputSpecPersistenceDto {
      *
      * @property optionIds 可選項目的識別碼。
      * @property previewTileIdsByOptionId 各選項要展示的牌張識別碼。
-     * @property passOptionId 代表跳過的選項；沒有時為 null。
+     * @property passOptionId 代表跳過的選項。沒有時為 null。
      */
     @Serializable
     @SerialName("single_choice")

@@ -35,10 +35,10 @@ import kotlin.time.TimeSource
  *
  * 可調整的環境變數：
  *
- * - `MAHJONGCRAFT_SIMULATION_MATCHES`：對局數；未設定時不執行。
- * - `MAHJONGCRAFT_SIMULATION_LINEUP`：以逗號分隔的四個策略 key；預設為初級、中級、高級與隨機出牌各一位。
- * - `MAHJONGCRAFT_SIMULATION_GAME_LENGTH`：`one_game`、`east` 或 `two_winds`；預設為 `east`。
- * - `MAHJONGCRAFT_SIMULATION_PARALLELISM`：同時進行的對局數；預設為可用的處理器數。每場對局使用獨立的對局環境，
+ * - `MAHJONGCRAFT_SIMULATION_MATCHES`：對局數。未設定時不執行。
+ * - `MAHJONGCRAFT_SIMULATION_LINEUP`：以逗號分隔的四個策略 key。預設為初級、中級、高級與隨機出牌各一位。
+ * - `MAHJONGCRAFT_SIMULATION_GAME_LENGTH`：`one_game`、`east` 或 `two_winds`。預設為 `east`。
+ * - `MAHJONGCRAFT_SIMULATION_PARALLELISM`：同時進行的對局數。預設為可用的處理器數。每場對局使用獨立的對局環境，
  *   模擬全部是 CPU 運算，同時進行的場數超過處理器數不會更快。
  *
  * 輸出每個策略的和牌率、放銃率、平均名次與各自的 95% 信賴區間，以及每次決策的平均與最長計算時間與總耗時，

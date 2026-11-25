@@ -6,12 +6,12 @@ import kotlin.uuid.Uuid
 /**
  * 權威狀態中的待寫歷史，獨立於可能被移除的 [Game]。
  *
- * @property nextSequenceByMatchId 每場下一個可指派的序號，從 1 開始；即使事件遺失也會推進。
+ * @property nextSequenceByMatchId 每場下一個可指派的序號，從 1 開始。即使事件遺失也會推進。
  * @property pendingEvents 尚待寫入歷史儲存系統的事件。
- * @property firstMissingSequenceByMatchId 每場最早遺失的序號；容量不足或記錄失敗時供診斷使用。
- * @property decisionsByMatchId 每場固定的記錄資格與停止原因；與待寫事件一起持久化。
+ * @property firstMissingSequenceByMatchId 每場最早遺失的序號。容量不足或記錄失敗時供診斷使用。
+ * @property decisionsByMatchId 每場固定的記錄資格與停止原因。與待寫事件一起持久化。
  * @property terminalByMatchId 已離開權威遊戲集合的場次終點證據。
- * @property transfersByMatchId 尚未完成的隔離歷史轉移；完成或確認中止前保護其事件與 metadata。
+ * @property transfersByMatchId 尚未完成的隔離歷史轉移。完成或確認中止前保護其事件與 metadata。
  */
 data class HistoryRecordingState(
     val nextSequenceByMatchId: Map<Uuid, Long> = emptyMap(),
@@ -30,7 +30,7 @@ data class HistoryRecordingState(
     }
 
     /**
-     * 為同一權威交易的事件依序指派穩定序號；容量耗盡時只記缺口，不阻塞對局。
+     * 為同一權威交易的事件依序指派穩定序號。容量耗盡時只記缺口，不阻塞對局。
      *
      * @param game 事件所屬場次與當前局數的權威狀態。
      * @param drafts 按提交順序排列、尚未指派序號的事件。

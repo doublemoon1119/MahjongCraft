@@ -35,7 +35,7 @@ class CreateRoomUseCase(
      * @param roomId 房間的唯一識別碼。
      * @param hostId 房主的玩家 Uuid。
      * @param gameConfig 房間開局時採用的完整遊戲設定。
-     * @param hostAiStrategyKey 房主的 AI 策略識別碼；為 null 時維持真人房主，否則保存 AI 身分並自動準備。
+     * @param hostAiStrategyKey 房主的 AI 策略識別碼。為 null 時維持真人房主，否則保存 AI 身分並自動準備。
      * @return 創建結果，成功時包含 [Room] 實例，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(

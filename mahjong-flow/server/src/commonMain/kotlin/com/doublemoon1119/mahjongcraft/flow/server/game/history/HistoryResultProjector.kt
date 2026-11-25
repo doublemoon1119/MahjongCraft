@@ -51,7 +51,7 @@ object HistoryResultProjector {
         val rankableByPlayerId = finalState.players.associate { player ->
             player.id to
                 object : RankablePlayer {
-                    /** 事件中的終局分數；缺漏時使用不可見的暫時值，且不會產生名次。 */
+                    /** 事件中的終局分數。缺漏時使用不可見的暫時值，且不會產生名次。 */
                     override val score: Int = scoreByPlayer[player.id] ?: 0
 
                     /** 桌況中該玩家的本局風位。 */

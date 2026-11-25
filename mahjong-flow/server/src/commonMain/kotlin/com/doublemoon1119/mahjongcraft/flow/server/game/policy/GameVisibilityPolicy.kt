@@ -21,7 +21,7 @@ interface GameVisibilityPolicy {
     /**
      * 依觀察者的讀取權裁切指定牌張的牌面、外觀與公開特徵，與 [snapshotFor] 使用同一份解算。
      *
-     * 只回傳讀取者看得到的牌；沒有資格觀察本局時回傳空集合。
+     * 只回傳讀取者看得到的牌。沒有資格觀察本局時回傳空集合。
      *
      * @param game 包含完整桌況與流程設定的權威遊戲。
      * @param observerId 讀取者識別碼。
@@ -37,7 +37,7 @@ interface GameVisibilityPolicy {
     /**
      * 以公共讀取者裁切指定牌張，只回傳本局所有合法觀察者都看得到的牌面。
      *
-     * 用於全桌共用的呈現，例如和牌展示；不借用任何一位玩家的讀取權。
+     * 用於全桌共用的呈現，例如和牌展示。不借用任何一位玩家的讀取權。
      *
      * @param tableState 目前權威桌況。
      * @param tileIds 要讀取的牌張。
@@ -46,11 +46,11 @@ interface GameVisibilityPolicy {
     fun publicTileFaces(tableState: TableState, tileIds: Collection<Uuid>): Map<Uuid, TileFaceView>
 
     /**
-     * 產生只向本人公開輸入與提交內容的規則選擇快照；不透露其他玩家是否被詢問或已提交。
+     * 產生只向本人公開輸入與提交內容的規則選擇快照。不透露其他玩家是否被詢問或已提交。
      *
      * @param game 含有目前待處理選擇步驟的權威遊戲。
      * @param observerId 欲取得快照的讀取者識別碼。
-     * @return 含該讀取者輸入規格與提交的快照；沒有選擇步驟時為 null。
+     * @return 含該讀取者輸入規格與提交的快照。沒有選擇步驟時為 null。
      */
     fun ruleDecisionSnapshotFor(game: Game, observerId: Uuid): RuleDecisionSnapshot? {
         val ruleDecision = game.pendingRuleDecision ?: return null

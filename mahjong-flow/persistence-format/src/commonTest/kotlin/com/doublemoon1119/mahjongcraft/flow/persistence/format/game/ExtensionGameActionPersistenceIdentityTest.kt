@@ -104,7 +104,7 @@ class ExtensionGameActionPersistenceIdentityTest {
     }
 
     /**
-     * 測試用帶參數動作；所有參數值使用同一個動作 ID。
+     * 測試用帶參數動作。所有參數值使用同一個動作 ID。
      *
      * @property amount 動作攜帶的數值。
      */

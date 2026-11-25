@@ -12,14 +12,14 @@ import kotlin.uuid.Uuid
 /**
  * 供測試使用的 [GameRepository] 簡易實作。
  *
- * 權威寫入與正式實作一樣遵守 [GameRepository.withExpectedGame] 的範圍；[setGame] 是測試直接設定狀態用，不受範圍限制。
+ * 權威寫入與正式實作一樣遵守 [GameRepository.withExpectedGame] 的範圍。[setGame] 是測試直接設定狀態用，不受範圍限制。
  * 此實作沒有鎖定或並行交易隔離，僅適用於由測試控制呼叫順序的情境。
  */
 class FakeGameRepository : GameRepository {
-    /** 依遊戲識別碼保存測試狀態；不提供並行存取保護。 */
+    /** 依遊戲識別碼保存測試狀態。不提供並行存取保護。 */
     private val games = mutableMapOf<Uuid, Game>()
 
-    /** 權威寫入（[updateGame]、[update]、[setTableState]、[removeTableState]、[clearAll]）的累計次數；[setGame] 不計入。 */
+    /** 權威寫入（[updateGame]、[update]、[setTableState]、[removeTableState]、[clearAll]）的累計次數。[setGame] 不計入。 */
     var writeCount: Int = 0
         private set
 
@@ -57,7 +57,7 @@ class FakeGameRepository : GameRepository {
     }
 
     /**
-     * 寫入桌況後設定 AI 座位；AI 設定的直接更新不另計一次權威寫入。
+     * 寫入桌況後設定 AI 座位。AI 設定的直接更新不另計一次權威寫入。
      *
      * @param state 要寫入的桌況。
      * @param aiPlayerStrategyKeys AI 玩家識別碼與策略識別碼的對照。

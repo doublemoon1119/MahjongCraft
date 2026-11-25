@@ -41,7 +41,7 @@ class TaiwanWinSettlementDetailResolverTest {
     /** 八張花牌，依公開順序排列。 */
     private val flowers = TaiwanTileTypes.ALL.map { FakeIdentifiedTileFactory.create(Tile.Extension(it)) }
 
-    /** 一般胡牌列出贏家所有公開的花牌；沒有花牌時不提供欄位，不顯示那一行。 */
+    /** 一般胡牌列出贏家所有公開的花牌。沒有花牌時不提供欄位，不顯示那一行。 */
     @Test
     fun `normal win lists the winner flowers only when there are any`() {
         val winner = withFlowers(FakeMahjongPlayerFactory.create(), flowers.take(2))
@@ -168,7 +168,7 @@ class TaiwanWinSettlementDetailResolverTest {
      * 組成只有指定玩家的台麻桌況。
      *
      * @param players 座位上的玩家。
-     * @param dealerId 莊家；預設為第一位玩家。
+     * @param dealerId 莊家。預設為第一位玩家。
      * @param comboCount 連莊次數。
      * @return 桌況。
      */

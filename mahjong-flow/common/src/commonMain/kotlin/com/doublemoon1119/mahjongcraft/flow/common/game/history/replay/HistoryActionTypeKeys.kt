@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.history.replay
 
-/** 歷史動作的種類識別碼；與規則的 namespaced 動作 ID 分開管理。 */
+/** 歷史動作的種類識別碼。與規則的 namespaced 動作 ID 分開管理。 */
 object HistoryActionTypeKeys {
     /** 對局開始的種類識別碼。 */
     const val GAME_STARTED: String = "game_started"
@@ -26,7 +26,7 @@ object HistoryActionTypeKeys {
     /** 碰牌的種類識別碼。 */
     const val PON: String = "pon"
 
-    /** 槓牌的種類識別碼；槓的種類由獨立欄位識別。 */
+    /** 槓牌的種類識別碼。槓的種類由獨立欄位識別。 */
     const val KAN: String = "kan"
 
     /** 榮和的種類識別碼。 */
@@ -35,7 +35,7 @@ object HistoryActionTypeKeys {
     /** 自摸的種類識別碼。 */
     const val TSUMO: String = "tsumo"
 
-    /** 擴充動作的種類識別碼；實際動作 ID 由獨立欄位識別。 */
+    /** 擴充動作的種類識別碼。實際動作 ID 由獨立欄位識別。 */
     const val EXTENSION: String = "extension"
 
     /** 略過反應的種類識別碼。 */

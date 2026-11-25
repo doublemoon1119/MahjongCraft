@@ -28,7 +28,7 @@ sealed interface UpdatePlayerAutomaticControlsResult {
      * 提交內容遭拒絕。
      *
      * @property reason 拒絕原因。
-     * @property snapshot 驗證身分後可安全回傳的目前權威快照；無法確認成員時為 null。
+     * @property snapshot 驗證身分後可安全回傳的目前權威快照。無法確認成員時為 null。
      */
     data class Rejected(
         val reason: AutomaticControlUpdateRejection,

@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 
 /**
- * 可於 bootstrap 登記、完成後凍結的 win round continuation resolver registry；擴充只透過 [WinRoundContinuationResolverRegistrar] 登記。
+ * 可於 bootstrap 登記、完成後凍結的 win round continuation resolver registry。擴充只透過 [WinRoundContinuationResolverRegistrar] 登記。
  *
  * 未替某規則模組登記任何 resolver 時，[resolve] 固定回傳 [WinRoundDirective.EndRound]：沒有登記
  * resolver 的規則，胡牌後一律立即結束本局。
@@ -23,7 +23,7 @@ class WinRoundContinuationResolverRegistry : WinRoundContinuationResolverRegistr
     override val registrationKeys: Set<String> get() = resolvers.mapTo(mutableSetOf()) { registrationKey(it.ruleModuleId, it.id) }
 
     /**
-     * 登記 resolver；同一規則模組內的 resolver ID 不得重複，不同規則模組可使用相同 ID。
+     * 登記 resolver。同一規則模組內的 resolver ID 不得重複，不同規則模組可使用相同 ID。
      * 註冊表凍結後不可登記。
      *
      * @param resolver 要登記的胡牌後續判定器。
@@ -38,7 +38,7 @@ class WinRoundContinuationResolverRegistry : WinRoundContinuationResolverRegistr
         resolvers += resolver
     }
 
-    /** 凍結註冊表並依優先序、ID 固定判定順序；重複呼叫不改變結果。 */
+    /** 凍結註冊表並依優先序、ID 固定判定順序。重複呼叫不改變結果。 */
     fun freeze() {
         if (frozen) return
         resolvers.sortWith(
@@ -49,11 +49,11 @@ class WinRoundContinuationResolverRegistry : WinRoundContinuationResolverRegistr
     }
 
     /**
-     * 依 [ruleModule] 解析本次胡牌後的權威決策；沒有任何 resolver 成立時固定回傳 [WinRoundDirective.EndRound]。
+     * 依 [ruleModule] 解析本次胡牌後的權威決策。沒有任何 resolver 成立時固定回傳 [WinRoundDirective.EndRound]。
      *
      * @param context 胡牌即時結算後的流程情境。
      * @param ruleModule 目前對局使用的規則模組。
-     * @return 第一個成立的後續決策；沒有 resolver 成立時為 [WinRoundDirective.EndRound]。
+     * @return 第一個成立的後續決策。沒有 resolver 成立時為 [WinRoundDirective.EndRound]。
      */
     fun resolve(context: WinRoundContinuationContext, ruleModule: MahjongRuleModule<*>): WinRoundDirective {
         check(frozen) { "Win round continuation resolver registry must be frozen before use" }

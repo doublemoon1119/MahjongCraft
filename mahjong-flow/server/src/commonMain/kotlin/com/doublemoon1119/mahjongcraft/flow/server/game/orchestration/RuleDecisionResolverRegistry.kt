@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.api.registration.RuleDecision
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 
-/** 規則選擇解析器的可凍結註冊表；擴充只透過 [RuleDecisionResolverRegistrar] 登記。 */
+/** 規則選擇解析器的可凍結註冊表。擴充只透過 [RuleDecisionResolverRegistrar] 登記。 */
 class RuleDecisionResolverRegistry : RuleDecisionResolverRegistrar {
     /** 依規則模組 ID 索引的解析器。 */
     private val resolvers = mutableMapOf<String, RuleDecisionResolver>()
@@ -17,7 +17,7 @@ class RuleDecisionResolverRegistry : RuleDecisionResolverRegistrar {
     override val registrationKeys: Set<String> get() = resolvers.keys.toSet()
 
     /**
-     * 登記一個規則模組的解析器；ID 格式錯誤、重複或註冊表凍結時會失敗。
+     * 登記一個規則模組的解析器。ID 格式錯誤、重複或註冊表凍結時會失敗。
      *
      * @param resolver 要登記的選擇流程解析器。
      */
@@ -36,7 +36,7 @@ class RuleDecisionResolverRegistry : RuleDecisionResolverRegistrar {
      * 取得指定規則模組的解析器。
      *
      * @param ruleModuleId 規則模組識別碼。
-     * @return 對應的解析器；未登記時為 null。
+     * @return 對應的解析器。未登記時為 null。
      */
     fun find(ruleModuleId: String): RuleDecisionResolver? = resolvers[ruleModuleId]
 
@@ -45,7 +45,7 @@ class RuleDecisionResolverRegistry : RuleDecisionResolverRegistrar {
      *
      * @param ruleModuleId 規則模組識別碼。
      * @param ruleConfig 目前對局使用的規則設定。
-     * @return 需要規則選擇時間時的預設設定；不需要時為 null。
+     * @return 需要規則選擇時間時的預設設定。不需要時為 null。
      */
     fun findDefaultConfig(ruleModuleId: String, ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = resolvers[ruleModuleId]?.ruleDecisionConfig(ruleConfig)
 

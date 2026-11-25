@@ -23,7 +23,7 @@ class GameDecisionAvailabilityService(
      * 依目前呈現狀態調整指定遊戲的決策 availability。
      *
      * @param gameId 欲調整的遊戲識別碼。
-     * @param completedPlayerId 剛完成一次決策的玩家；純恢復或週期檢查時為 null。
+     * @param completedPlayerId 剛完成一次決策的玩家。純恢復或週期檢查時為 null。
      * @return 呈現目前是否閒置，可否繼續接受或自動推進遊戲操作。
      */
     suspend fun reconcile(gameId: Uuid, completedPlayerId: Uuid? = null): Boolean {

@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.model
 /**
  * 玩家目前取得決策權的流程階段。
  *
- * 此型別由權威桌況解析，供 timer manager、timeout policy、scheduler 與網路 DTO mapping 共用；
+ * 此型別由權威桌況解析，供 timer manager、timeout policy、scheduler 與網路 DTO mapping 共用。
  * 它不代表麻將規則中的動作種類，也不直接作為網路 schema。
  */
 enum class PlayerDecisionPhase {

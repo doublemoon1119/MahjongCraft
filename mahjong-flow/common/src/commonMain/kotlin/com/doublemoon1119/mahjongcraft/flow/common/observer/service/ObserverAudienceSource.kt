@@ -12,7 +12,7 @@ interface ObserverAudienceSource {
     /**
      * 取得目前每個識別碼的觀察者。
      *
-     * @return 以房間或對局的 Uuid 索引的觀察者集合；沒有任何觀察者的識別碼不會出現在結果中。
+     * @return 以房間或對局的 Uuid 索引的觀察者集合。沒有任何觀察者的識別碼不會出現在結果中。
      */
     suspend fun observersById(): Map<Uuid, Set<Uuid>>
 }

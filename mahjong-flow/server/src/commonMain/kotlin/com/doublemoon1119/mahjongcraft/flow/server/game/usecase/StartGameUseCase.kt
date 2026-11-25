@@ -193,8 +193,8 @@ class StartGameUseCase(
      * 先計算正式排位與初始桌況，不寫入狀態或發布通知。
      *
      * @param room 經權限與準備狀態檢查的房間。
-     * @param matchSeed 這場對局的種子；開場使用第 0 局的亂數。
-     * @param seatOrder 已確認符合房間成員的指定座位順序；null 時依種子隨機排座。
+     * @param matchSeed 這場對局的種子。開場使用第 0 局的亂數。
+     * @param seatOrder 已確認符合房間成員的指定座位順序。null 時依種子隨機排座。
      * @return 可供接入端安排入座後提交的同一份開局資料。
      */
     private fun initialize(
@@ -265,7 +265,7 @@ class StartGameUseCase(
     /**
      * 指定的座位順序是否剛好包含房間的每位玩家各一次。
      *
-     * @param seatOrder 指定的座位順序；null 表示隨機排座，一律接受。
+     * @param seatOrder 指定的座位順序。null 表示隨機排座，一律接受。
      * @return 可以用來開局時為 true。
      */
     private fun Room.accepts(seatOrder: List<Uuid>?): Boolean = seatOrder == null || (seatOrder.size == playerIds.size && seatOrder.toSet() == playerIds.toSet())

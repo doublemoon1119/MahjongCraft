@@ -6,14 +6,14 @@ import kotlin.time.Duration
 import kotlin.uuid.Uuid
 
 /**
- * 保存客戶端最後收到的權威決策計時；如何依本地時間顯示倒數由平台決定。
+ * 保存客戶端最後收到的權威決策計時。如何依本地時間顯示倒數由平台決定。
  *
  * @property clock 客戶端 runtime 的單調時間，用來記錄收到同步的時間。
  */
 class ClientDecisionTimerStateStore(
     private val clock: MonotonicClock,
 ) {
-    /** 最後收到且仍有效的權威計時；停止或尚未同步時為 null。 */
+    /** 最後收到且仍有效的權威計時。停止或尚未同步時為 null。 */
     var state: ClientDecisionTimerState? = null
         private set
 
@@ -44,7 +44,7 @@ class ClientDecisionTimerStateStore(
     }
 
     /**
-     * 停止指定遊戲的計時；其他遊戲的較新狀態不受影響。
+     * 停止指定遊戲的計時。其他遊戲的較新狀態不受影響。
      *
      * @param gameId 要停止計時的遊戲。
      */

@@ -165,7 +165,7 @@ class AiDecisionExecutorTest {
         assertEquals("first", first.await())
     }
 
-    /** 同一局先前的呼叫逾時但尚未結束時，之後直接使用固定結果並只回報一次；呼叫結束後恢復詢問策略。 */
+    /** 同一局先前的呼叫逾時但尚未結束時，之後直接使用固定結果並只回報一次。呼叫結束後恢復詢問策略。 */
     @Test
     fun `a game with an abandoned strategy uses the fallback until it ends`() = runTest {
         val fixture = Fixture(this)
@@ -227,7 +227,7 @@ class AiDecisionExecutorTest {
     }
 
     /**
-     * 等待結果的協程被取消、而策略不理會取消時，結果不會交給任何人；這一局在它結束前使用固定結果，名額也一直占用。
+     * 等待結果的協程被取消、而策略不理會取消時，結果不會交給任何人。這一局在它結束前使用固定結果，名額也一直占用。
      *
      * 這是舊 server session 留下不合作工作的情況：它不能提交結果，但仍計入名額上限。
      */
@@ -248,7 +248,7 @@ class AiDecisionExecutorTest {
         assertEquals("decided", fixture.executor.decide(otherGameId, playerId, STRATEGY_KEY, decide = { "decided" }, fallback = { "fallback" }))
     }
 
-    /** 每次有結果的決策都回報結果的來源與延遲；同一局正在計算而略過的請求不回報。尚未結束的策略工作數包含逾時後仍在執行的工作。 */
+    /** 每次有結果的決策都回報結果的來源與延遲。同一局正在計算而略過的請求不回報。尚未結束的策略工作數包含逾時後仍在執行的工作。 */
     @Test
     fun `decisions with a result are observed with their latency`() = runTest {
         val observed = mutableListOf<Pair<AiDecisionOutcome, Long>>()
@@ -279,7 +279,7 @@ class AiDecisionExecutorTest {
         assertEquals(0, executor.unfinishedStrategyCalls)
     }
 
-    /** 兩次讀取峰值之間開始又全部結束的策略工作仍計入峰值；讀取後從當下的數量重新起算。 */
+    /** 兩次讀取峰值之間開始又全部結束的策略工作仍計入峰值。讀取後從當下的數量重新起算。 */
     @Test
     fun `a short burst between two peak reads is counted`() = runTest {
         val executor = AiDecisionExecutor(StandardTestDispatcher(testScheduler), capacity = 4, timeout = TIMEOUT, failurePolicy = ExtensionFailurePolicy.Default)
@@ -413,7 +413,7 @@ class AiDecisionExecutorTest {
         }
     }
 
-    /** 收到的工作先保留，直到 [runAll]；[runEach] 為 true 後收到就立即執行。 */
+    /** 收到的工作先保留，直到 [runAll]。[runEach] 為 true 後收到就立即執行。 */
     private class HeldDispatcher : CoroutineDispatcher() {
         /** 尚未執行的排程工作。 */
         private val held = ArrayDeque<Runnable>()

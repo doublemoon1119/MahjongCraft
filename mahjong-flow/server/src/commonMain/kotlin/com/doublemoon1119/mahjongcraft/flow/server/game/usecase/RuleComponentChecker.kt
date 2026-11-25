@@ -62,7 +62,7 @@ internal class RuleComponentChecker(
     }
 
     /**
-     * 依玩家 ID 套用規則回傳的組件變更；沒有列出的玩家不變。
+     * 依玩家 ID 套用規則回傳的組件變更。沒有列出的玩家不變。
      *
      * @param tableState 玩家所在的桌況。
      * @param players 變更前的玩家列表。

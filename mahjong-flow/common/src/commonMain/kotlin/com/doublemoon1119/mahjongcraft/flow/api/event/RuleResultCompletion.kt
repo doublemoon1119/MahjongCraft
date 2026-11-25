@@ -5,7 +5,7 @@ import kotlin.jvm.JvmSynthetic
 import kotlin.uuid.Uuid
 
 /**
- * 規則結果附帶的公開結算摘要；沒有摘要與沒有受益者是不同情況。
+ * 規則結果附帶的公開結算摘要。沒有摘要與沒有受益者是不同情況。
  *
  * @property outcomeId 結算結果的完整 namespaced ID。
  * @property kind 結算分類。

@@ -86,8 +86,8 @@ sealed interface GameError : ApplicationError {
      * payload 也不影響呼叫端判斷錯誤類型。
      *
      * @property gameId 對局 Uuid。
-     * @property playerId 發起操作的玩家 Uuid；系統觸發（無玩家發起者，例如流局結算）的情境下為 null。
-     * @property reasonId 規則或 policy 提供的完整 namespaced 原因 ID；沒有更具體原因時為 null。
+     * @property playerId 發起操作的玩家 Uuid。系統觸發（無玩家發起者，例如流局結算）的情境下為 null。
+     * @property reasonId 規則或 policy 提供的完整 namespaced 原因 ID。沒有更具體原因時為 null。
      */
     data class UnsupportedAction(
         val gameId: Uuid,

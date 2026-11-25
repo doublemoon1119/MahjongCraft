@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
  *
  * @property requestId 對應要求的識別碼。
  * @property status 伺服器依權威證據判定的保存狀態。
- * @property errorCode 查詢流程失敗時的穩定錯誤碼；狀態判定成功時為 null。
+ * @property errorCode 查詢流程失敗時的穩定錯誤碼。狀態判定成功時為 null。
  */
 @Serializable
 data class HistoryArchiveStatusResponseDto(

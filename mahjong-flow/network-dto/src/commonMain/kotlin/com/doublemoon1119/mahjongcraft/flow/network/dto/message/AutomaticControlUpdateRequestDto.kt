@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 /**
  * 客戶端要求替換本人本局自動操作集合的受控傳輸資料。
  *
- * 玩家身分不屬於 payload；伺服器 adapter 必須從已驗證的連線取得。
+ * 玩家身分不屬於 payload。伺服器 adapter 必須從已驗證的連線取得。
  *
  *
  * @property requestId 配對非同步處理結果的客戶端請求識別碼。

@@ -24,7 +24,7 @@ import kotlin.test.assertTrue
 /**
  * 以固定對局及代表性的擴充明細量測新增資料成本，不依賴隨機洗牌。
  *
- * 明細是容量用負載，不宣稱是樣本對局實際成立的役種；實際結算正確性由權威流程測試驗證。
+ * 明細是容量用負載，不宣稱是樣本對局實際成立的役種。實際結算正確性由權威流程測試驗證。
  */
 class HistoryWinDetailsCapacityTest {
     /** 固定樣本加入兩次含三個條目與計分摘要的代表性結算後仍符合既有門檻。 */
@@ -57,7 +57,7 @@ class HistoryWinDetailsCapacityTest {
      * 流局樣本同樣注入負載，確保無和牌樣本不會讓量測漏掉新增資料成本。
      *
      * @param events 固定樣本原始權威歷史。
-     * @param maxSettlements 最多注入的結算數；密集量測可涵蓋每局。
+     * @param maxSettlements 最多注入的結算數。密集量測可涵蓋每局。
      * @param entryCount 每次注入的明細條目數。
      * @return 含容量用和牌詳情的事件序列。
      */

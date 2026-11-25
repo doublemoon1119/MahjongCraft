@@ -113,7 +113,7 @@ class DrawTileUseCase(
      *
      * @property drawnTile 這次從活牌摸到的牌。
      * @property drawnState 摸牌之後、自動處理之前的桌況。
-     * @property followUp 摸牌之後的自動處理；它的桌況是這次交易提交的權威桌況。
+     * @property followUp 摸牌之後的自動處理。它的桌況是這次交易提交的權威桌況。
      */
     private data class DrawResult(
         val drawnTile: IdentifiedTile,

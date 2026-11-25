@@ -74,12 +74,11 @@ import kotlin.uuid.Uuid
 /**
  * 以正式規則模組與遊戲流程組裝、不經過任何平台層的對局環境，供整場對局測試與 AI 對局模擬共用。
  *
- * 內建規則模組、日麻的立直命令、立直 AI handler、流局滿貫與途中流局判定、胡牌詳情皆已登記；AI 策略 registry
- * 建立時是空的，由呼叫端登記要使用的策略。呈現相關的 publisher 使用測試替身，呈現閘門永遠閒置，因此
- * [driveLikeServer] 會一路推進到需要真人操作或整場結束為止。
- *
- * [ReturnToRoomUseCase] 接的是獨立的權威狀態，整場結束後的 Game → Room 轉移不會生效，只停在
- * `PendingGameTransition.ReturnToRoom`。
+ * - 內建規則模組、日麻的立直命令、立直 AI handler、流局滿貫與途中流局判定、胡牌詳情皆已登記。
+ * - AI 策略 registry 建立時是空的，由呼叫端登記要使用的策略。
+ * - 呈現相關的 publisher 使用測試替身，呈現閘門永遠閒置。因此 [driveLikeServer] 會一路推進到需要真人操作或整場結束為止。
+ * - [ReturnToRoomUseCase] 接的是獨立的權威狀態，整場結束後的 Game → Room 轉移不會生效，只停在
+ *   `PendingGameTransition.ReturnToRoom`。
  *
  * @param defaultStrategyKey AI 策略 registry 遇到未知 key 時的退回 key。
  */
@@ -102,7 +101,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
     /** 由呼叫端登記策略的 AI 策略 registry。 */
     val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = defaultStrategyKey)
 
-    /** 最近一次中止對局的原因與診斷；沒有中止時為 null。 */
+    /** 最近一次中止對局的原因與診斷。沒有中止時為 null。 */
     var abortDiagnostic: String? = null
         private set
 
@@ -144,7 +143,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
         freeze()
     }
 
-    /** 快照同步；快照只寫入測試替身。 */
+    /** 快照同步。快照只寫入測試替身。 */
     private val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
 
     /** 手牌排序偏好。 */
@@ -371,7 +370,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
 
     /**
      * 以伺服器的推進方式推進對局，直到沒有進展或整場結束待返回房間：每一輪先接手排定的流程（例如換局），沒有時才
-     * 推進自動操作。伺服器的自動推進管理器每次推進都是這個順序；只呼叫一次自動推進時，規則選擇排定的換局會留給
+     * 推進自動操作。伺服器的自動推進管理器每次推進都是這個順序。只呼叫一次自動推進時，規則選擇排定的換局會留給
      * 下一次推進。
      *
      * @param gameId 要推進的對局。
@@ -390,7 +389,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
         /** 規則選擇的一般時間設定。 */
         val RULE_DECISION_TIME = 30.seconds
 
-        /** 推進輪數上限；每一輪都會讓對局前進，正常整場遠低於這個數字。 */
+        /** 推進輪數上限。每一輪都會讓對局前進，正常整場遠低於這個數字。 */
         const val MAX_ADVANCES = 10_000
     }
 }

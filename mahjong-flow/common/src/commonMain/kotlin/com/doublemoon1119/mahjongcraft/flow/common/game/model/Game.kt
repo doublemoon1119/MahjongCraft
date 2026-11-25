@@ -17,38 +17,40 @@ import kotlin.uuid.Uuid
  * @property tableState 麻將規則運算使用的完整桌況。
  * @property flowConfig 不影響麻將規則的流程與觀看設定。
  * @property remainingReserveByPlayerId 每位玩家在整場遊戲中尚未使用的保留思考時間。
- * @property forcedAutoPlayPlayerIds 已耗盡思考時間、目前這一次決策必須由伺服器自動操作的玩家。只鎖住
- *   逾時當下那一次決策——`com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator`
- *   每次替這裡的玩家送出自動命令後就會立即移除，玩家的下一次決策仍會拿到自己完整的
- *   基本思考時間，不會被永久接管。
+ * @property forcedAutoPlayPlayerIds 已耗盡思考時間、目前這一次決策必須由伺服器自動操作的玩家。
+ *   - 只鎖住逾時當下那一次決策，不會永久接管。
+ *   - `com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator` 替這裡的玩家送出自動命令後立即移除。
+ *   - 玩家的下一次決策仍會拿到完整的基本思考時間。
  * @property enabledAutomaticControlIdsByPlayerId 每位玩家在目前這一局啟用的自動操作控制 ID。沒有出現在
- *   map 中的玩家視為未啟用任何控制；本狀態與逾時用的 [forcedAutoPlayPlayerIds] 無關，並在換局時清空。
- * @property automaticControlRevision 本局自動操作集合的單調 revision；接受實際變更或進入下一局時遞增，
+ *   map 中的玩家視為未啟用任何控制。本狀態與逾時用的 [forcedAutoPlayPlayerIds] 無關，並在換局時清空。
+ * @property automaticControlRevision 本局自動操作集合的單調 revision。接受實際變更或進入下一局時遞增，
  *   供更新用例拒絕以舊快照為基礎的提交。
- * @property isMatchOver 整場對局是否已依規則的 `GameLength` 結束（見
- *   `com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase`）。一旦成立，
- *   `tableState` 維持結束當下的樣子不再變動；`AiTurnDriver`／`ForcedAutoPlayDriver` 都會檢查這個
- *   欄位並提前跳過，避免對已經沒有牌可摸的桌況重複嘗試摸牌、重複觸發流局結算。
- * @property pendingTransition 呈現結束後尚待完成的權威流程；`null` 代表沒有待收斂的流程。
- * @property roundCompletion 最近一次本局結算的權威摘要；進入下一局後清除。
- * @property matchEndReasonId 整場終局的完整 namespaced 原因；尚未終局時為 null。
- * @property pendingRuleDecision 尚待完成的規則選擇視窗；開著時一般摸打、自動操作與換局都暫停。沒有視窗時為 null。
- * @property ruleDecisionWin 規則選擇流程剛成立、尚待結束本局流程取用的和牌結果；沒有時為 null。
- * @property hostId 開局時的房主 Uuid，取自原本 `Room.hostId`——`com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase`
- *   把 Room 轉換成 Game 後，房主身分不再能從 `Room` 讀出，保留在這裡讓對局結束轉回 Room
- *   （見 `ReturnToRoomUseCase`）時能還原同一位房主，預設值取第一位玩家僅供未指定房主的測試情境使用；
- *   `tableState` 沒有任何玩家時（同樣僅見於測試情境）退回隨機值，不受下方驗證約束。
- * @property roomPlayerIds 開局前房間成員的固定顯示順序；開局的座位洗牌不得覆寫此順序。
- * @property aiPlayerStrategyKeys 由 AI 操控的玩家 Uuid 對應到其 AI 策略 key；開局時取自房間，對局結束轉回房間時還原。
+ * @property isMatchOver 整場對局是否已依規則的 `GameLength` 結束
+ *   （見 `com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase`）。
+ *   - 一旦成立，`tableState` 維持結束當下的樣子不再變動。
+ *   - `AiTurnDriver`／`ForcedAutoPlayDriver` 都會檢查這個欄位並提前跳過，避免重複摸牌或重複觸發流局結算。
+ * @property pendingTransition 呈現結束後尚待完成的權威流程。`null` 代表沒有待收斂的流程。
+ * @property roundCompletion 最近一次本局結算的權威摘要。進入下一局後清除。
+ * @property matchEndReasonId 整場終局的完整 namespaced 原因。尚未終局時為 null。
+ * @property pendingRuleDecision 尚待完成的規則選擇視窗。開著時一般摸打、自動操作與換局都暫停。沒有視窗時為 null。
+ * @property ruleDecisionWin 規則選擇流程剛成立、尚待結束本局流程取用的和牌結果。沒有時為 null。
+ * @property hostId 開局時的房主 Uuid，取自原本的 `Room.hostId`。
+ *   - `com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase` 把 Room 轉換成 Game 後，
+ *     房主身分不再能從 `Room` 讀出。保留在這裡，讓對局結束轉回 Room（見 `ReturnToRoomUseCase`）時能還原同一位房主。
+ *   - 預設值取第一位玩家，只供未指定房主的測試情境使用。
+ *   - `tableState` 沒有任何玩家時（同樣只見於測試情境）退回隨機值，不受下方驗證約束。
+ * @property roomPlayerIds 開局前房間成員的固定顯示順序。開局的座位洗牌不得覆寫此順序。
+ * @property aiPlayerStrategyKeys 由 AI 操控的玩家 Uuid 對應到其 AI 策略 key。開局時取自房間，對局結束轉回房間時還原。
  *   不在其中的玩家由真人操控。
- * @property interruptedBaseByPlayerId 因 server session 結束或 blocking presentation 而暫停的那一次
- *   決策，其尚未使用的基本思考時間，以玩家 Uuid 索引。`PlayerDecisionTimer.startedAt` 屬於
- *   runtime 單調時間、不得持久化，因此只寫回剩餘量；沒有這筆資料的玩家下一次取得決策權時重新取得
- *   完整基本思考時間。決策完成、階段改變或計時器重建後即清除，確保一次中斷只被接續一次。
- * @property matchId 整場對局的穩定識別碼；與場地本身的 [TableState.id] 分離，讓同一場地可承載多場對局歷史。
+ * @property interruptedBaseByPlayerId 因 server session 結束或 blocking presentation 而暫停的那一次決策，
+ *   其尚未使用的基本思考時間，以玩家 Uuid 索引。
+ *   - `PlayerDecisionTimer.startedAt` 屬於 runtime 單調時間、不得持久化，因此只寫回剩餘量。
+ *   - 沒有這筆資料的玩家下一次取得決策權時，重新取得完整基本思考時間。
+ *   - 決策完成、階段改變或計時器重建後即清除，確保一次中斷只被接續一次。
+ * @property matchId 整場對局的穩定識別碼。與場地本身的 [TableState.id] 分離，讓同一場地可承載多場對局歷史。
  * @property roomAdmission 開局前房間的加入限制，回房時原樣還原。
- * @property matchSeed 整場對局衍生座位、牌山與骰子的不公開種子；只存在伺服器，不得送給任何客戶端。
- * @property openedRoundCount 這場對局已經開過的局數，包含連莊與重新開局；下一次開局使用這個數值當局序，
+ * @property matchSeed 整場對局衍生座位、牌山與骰子的不公開種子。只存在伺服器，不得送給任何客戶端。
+ * @property openedRoundCount 這場對局已經開過的局數，包含連莊與重新開局。下一次開局使用這個數值當局序，
  *   確保每一局都使用不同的亂數。
  */
 data class Game(

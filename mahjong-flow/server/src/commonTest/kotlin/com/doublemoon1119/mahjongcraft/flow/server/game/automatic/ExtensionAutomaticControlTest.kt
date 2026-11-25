@@ -114,7 +114,7 @@ class ExtensionAutomaticControlTest {
         return game to respondent.id
     }
 
-    /** 只登記測試替身的 registry；替身的規則行為完全沿用正式日麻模組，只多一個自訂控制。 */
+    /** 只登記測試替身的 registry。替身的規則行為完全沿用正式日麻模組，只多一個自訂控制。 */
     private fun extensionModuleRegistry() = MahjongModuleRegistryImpl().apply {
         register(
             definition = MahjongModuleDefinition(RiichiRuleConfig::class, EXTENSION_RULE_MODULE_ID) { config, _ ->

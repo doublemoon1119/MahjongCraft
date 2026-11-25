@@ -32,7 +32,7 @@ class RobbingEligibilityTest {
     /** 此測試宣告為槓牌的白板實體牌。 */
     private val declaredWhite = FakeIdentifiedTileFactory.create(Tile.Honor.White)
 
-    /** 暗槓只有國士無雙可以搶；單騎聽同一張牌的一般手牌沒有資格，因此不會被記為放過。 */
+    /** 暗槓只有國士無雙可以搶。單騎聽同一張牌的一般手牌沒有資格，因此不會被記為放過。 */
     @Test
     fun `only a kokushi hand can rob a closed kan`() {
         val eligible = ronEligiblePlayerIds(GameAction.Kan(GameAction.KanType.CLOSED_KAN, declaredWhite.id, emptyList()))

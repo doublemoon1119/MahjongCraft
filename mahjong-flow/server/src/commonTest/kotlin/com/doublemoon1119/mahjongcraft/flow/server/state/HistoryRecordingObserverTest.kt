@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 
 /** 驗證權威交易把歷史記錄的事件數交給觀察者。 */
 class HistoryRecordingObserverTest {
-    /** 每次帶有歷史事件的交易各通知一次新加入待寫佇列的事件數；沒有歷史事件的交易不通知。 */
+    /** 每次帶有歷史事件的交易各通知一次新加入待寫佇列的事件數。沒有歷史事件的交易不通知。 */
     @Test
     fun `observer receives appended events per transaction`() = runTest {
         val appended = mutableListOf<Int>()

@@ -7,7 +7,7 @@ import kotlin.jvm.JvmSynthetic
  * 公開事件所帶的本局基本位置資訊。
  *
  * @property roundNumber 這一局在場次中的局數，從 1 開始。
- * @property prevalentWindId 本局場風的完整 namespaced ID；規則不提供時為 `null`。
+ * @property prevalentWindId 本局場風的完整 namespaced ID。規則不提供時為 `null`。
  */
 class EventRoundContext private constructor(
     val roundNumber: Int,
@@ -26,7 +26,7 @@ class EventRoundContext private constructor(
          * 建立本局資訊。
          *
          * @param roundNumber 這一局在場次中的局數。
-         * @param prevalentWindId 本局場風的完整 namespaced ID；沒有時為 `null`。
+         * @param prevalentWindId 本局場風的完整 namespaced ID。沒有時為 `null`。
          * @return 建立的本局資訊。
          */
         @JvmSynthetic

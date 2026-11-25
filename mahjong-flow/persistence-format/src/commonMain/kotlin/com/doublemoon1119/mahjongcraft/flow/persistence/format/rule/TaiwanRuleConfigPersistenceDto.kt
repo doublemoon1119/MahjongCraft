@@ -15,7 +15,7 @@ import kotlinx.serialization.Serializable
  * @property baseScore 和牌的基本分數。
  * @property pointPerTai 每一台增加的分數。
  * @property initialScore 對局開始時每位玩家的分數。
- * @property bustThreshold 低於此分數時判定為擊飛；沒有設定時為 null。
+ * @property bustThreshold 低於此分數時判定為擊飛。沒有設定時為 null。
  * @property gameLength 對局長度。
  * @property multiRonPolicy 一炮多響的處理方式。
  */

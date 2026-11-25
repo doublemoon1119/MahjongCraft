@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
  * @property baseScore 基本底分。
  * @property pointPerTai 每台對應的分數。
  * @property initialScore 對局開始時的初始分數。
- * @property bustThreshold 被飛條件的分數門檻；未設定時為 `null`。
+ * @property bustThreshold 被飛條件的分數門檻。未設定時為 `null`。
  */
 @Serializable
 data class TaiwanScoreConfigDto(

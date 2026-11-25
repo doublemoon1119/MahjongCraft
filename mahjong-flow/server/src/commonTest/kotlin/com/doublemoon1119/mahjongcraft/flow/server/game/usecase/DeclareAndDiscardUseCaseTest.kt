@@ -83,7 +83,7 @@ class DeclareAndDiscardUseCaseTest {
      * @param rejectWallReveal 是否讓宣告後的牌牆公開檢查拒絕。
      * @param revealWallTile 是否讓宣告後的牌牆公開檢查公開一張牌山牌。
      * @param tsumoAvailable 宣告者是否同時可以自摸。
-     * @param hookMode 放棄自摸與打牌後掛勾的測試行為；null 時不覆寫這兩個掛勾。
+     * @param hookMode 放棄自摸與打牌後掛勾的測試行為。null 時不覆寫這兩個掛勾。
      * @param discardComponents 宣告效果寫在新捨牌紀錄上的組件。
      * @param staleTablePatch 宣告效果是否以過時的供託值作為預期舊值。
      */
@@ -518,8 +518,8 @@ class DeclareAndDiscardUseCaseTest {
          * @param V 值型別。
          * @param component 組件定義。
          * @param ownerType 對象定義。
-         * @param appliesToDeclarationRule 是否適用受測的宣告規則；否則只適用其他規則。
-         * @param initialValue 新對象的初值；null 時不建立。
+         * @param appliesToDeclarationRule 是否適用受測的宣告規則。否則只適用其他規則。
+         * @param initialValue 新對象的初值。null 時不建立。
          * @return 每局重建的生命週期。
          */
         fun <O : Any, V : Any> lifecycle(
@@ -573,7 +573,7 @@ class DeclareAndDiscardUseCaseTest {
      * @property rejectWallReveal 是否由規則拒絕本次牌牆公開檢查。
      * @property revealWallTile 是否在牌牆公開檢查公開牌山第一張牌。
      * @property tsumoAvailable 合法動作是否包含自摸。
-     * @property hookMode 放棄自摸與打牌後掛勾的測試行為；null 時沿用日麻掛勾。
+     * @property hookMode 放棄自摸與打牌後掛勾的測試行為。null 時沿用日麻掛勾。
      * @property discardComponents 宣告效果寫在新捨牌紀錄上的組件。
      * @property staleTablePatch 宣告效果是否以過時的供託值作為預期舊值。
      */

@@ -10,12 +10,12 @@ import kotlinx.serialization.Serializable
  * @property scoresBySeat 依座位索引排列的分數。
  * @property classification 局結算分類。
  * @property responsibleSeats 責任玩家座位。
- * @property transitionDirective 下一任莊家的類型 ID；整場完成事實為 null。
- * @property nextDealerSeat 規則指定的下一任莊家座位；其他類型為 null。
+ * @property transitionDirective 下一任莊家的類型 ID。整場完成事實為 null。
+ * @property nextDealerSeat 規則指定的下一任莊家座位。其他類型為 null。
  * @property scoreChangesBySeat 該次結算相對於交易前的分數變化。
  * @property winnerDetails 各贏家的規則專屬詳情。
  * @property hasEarlierWinSettlement 是否已有較早的胡牌結算事實。
- * @property winningTile 胡牌結算的和牌張索引，不論是否攤牌；其他結算或沒有和牌張時為 null。
+ * @property winningTile 胡牌結算的和牌張索引，不論是否攤牌。其他結算或沒有和牌張時為 null。
  */
 @Serializable
 data class HistoryRoundOutcomeDto(

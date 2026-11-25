@@ -15,8 +15,8 @@ internal object ActionScoringApplier {
     /**
      * 套用結果。
      *
-     * @property tableState 已寫入收付的候選桌況；不收付時為原本的候選桌況。
-     * @property scoring 已套用的收付；不收付時為 null。
+     * @property tableState 已寫入收付的候選桌況。不收付時為原本的候選桌況。
+     * @property scoring 已套用的收付。不收付時為 null。
      */
     data class Applied(
         val tableState: TableState,
@@ -30,7 +30,7 @@ internal object ActionScoringApplier {
      * @param after 已套用動作本身、尚未補牌的候選桌況。
      * @param actorPlayerId 執行動作的玩家。
      * @param action 已確定成立的動作。
-     * @param sourcePlayerId 鳴取他家捨牌時被鳴牌的玩家；其他動作為 null。
+     * @param sourcePlayerId 鳴取他家捨牌時被鳴牌的玩家。其他動作為 null。
      * @param module 對局採用的規則模組。
      * @param componentRegistry 驗證對局組件變更的正式定義。
      * @return 套用後的候選桌況與收付。

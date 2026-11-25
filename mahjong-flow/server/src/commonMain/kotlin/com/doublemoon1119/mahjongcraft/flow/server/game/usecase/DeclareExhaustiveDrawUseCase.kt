@@ -28,23 +28,17 @@ import kotlin.uuid.Uuid
 /**
  * 宣告一般流局（牌山摸盡）的實例化用例。
  *
- * 這是「流局判定」系列子項的第一塊：處理牌山摸盡觸發的一般流局結算（如聽牌／不聽罰符），
- * 是後續子項（九種九牌、三家和了流局、四風連打、四家立直）共用的機制骨架。
+ * 處理牌山摸盡觸發的一般流局結算，例如聽牌／不聽罰符。途中流局（例如九種九牌、四風連打）共用同一套機制。
  *
- * 系統觸發、無 `playerId` 參數——一般流局不是玩家主動發起的操作，理由與
- * [AdvanceRoundUseCase] 相同。由誰、在什麼時機呼叫本用例（例如伺服器捕捉到 [DrawTileUseCase]
- * 回傳 [GameError.WallExhausted] 後接著呼叫）是更外層（伺服器流程編排）的決定，不在這裡處理；
- * 呼叫前應確認牌山確實已經摸盡。
- *
- * 聽牌判定與不聽罰符拆分等規則相關的計算完全交給
- * [MahjongRuleModule.declareExhaustiveDraw]
- * 處理——這裡刻意不轉型成任何規則專屬的具體型別，理由與 [DeclareTsumoUseCase] 相同。
- *
- * 只把 [GameAction.ExhaustiveDraw] 記錄進聽牌玩家的 `actionHistory`，不聽的玩家不記錄，
- * 供後續事件與呈現流程保留這次流局的玩家狀態。連莊與否則會明確寫入局結束摘要的
- * [RoundTransitionDirective]，不從動作紀錄反向推定。
- *
- * 對局排定了 [PendingGameTransition.SettleExhaustiveDraw] 時，結算與清除這項排定在同一筆寫入完成。
+ * - 由系統觸發，沒有 `playerId` 參數。一般流局不是玩家主動發起的操作，理由與 [AdvanceRoundUseCase] 相同。
+ * - 由誰、在什麼時機呼叫由伺服器流程編排決定，例如 [DrawTileUseCase] 回傳 [GameError.WallExhausted] 後接著呼叫。
+ *   呼叫前應確認牌山確實已經摸盡。
+ * - 聽牌判定與不聽罰符拆分等規則相關的計算交給 [MahjongRuleModule.declareExhaustiveDraw]。
+ *   這裡不轉型成任何規則專屬的具體型別，理由與 [DeclareTsumoUseCase] 相同。
+ * - 只把 [GameAction.ExhaustiveDraw] 記錄進聽牌玩家的 `actionHistory`，不聽的玩家不記錄。
+ *   後續事件與呈現流程以此保留這次流局的玩家狀態。
+ * - 連莊與否明確寫入局結束摘要的 [RoundTransitionDirective]，不從動作紀錄反向推定。
+ * - 對局排定了 [PendingGameTransition.SettleExhaustiveDraw] 時，結算與清除這項排定在同一筆寫入完成。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的規則模組。
@@ -177,7 +171,7 @@ class DeclareExhaustiveDrawUseCase(
 
     /**
      * `update` 區塊內部使用的中繼結果，讓第一次計算出的 [settlement] 能跟著 [tableState] 一起帶出
-     * `gameRepository.update` 的作用域，供後續同步與呈現使用；不能在外層重新呼叫規則模組計算。
+     * `gameRepository.update` 的作用域，供後續同步與呈現使用。不能在外層重新呼叫規則模組計算。
      *
      * @property tableState 流局結算後的權威桌況。
      * @property settlement 實際成立的流局結算與公開手牌資訊。

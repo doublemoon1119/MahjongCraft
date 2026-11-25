@@ -18,7 +18,7 @@ import kotlin.uuid.Uuid
 /** [AiDecisionExecutor.takeUnfinishedStrategyPeak] 在多條執行緒同時開始、結束策略工作時仍不漏算。 */
 class AiDecisionExecutorPeakConcurrencyTest {
     /**
-     * 每次讀取峰值前先看當下的工作數；讀到的峰值涵蓋那個時刻，因此不得小於它。讀取與重設若分開進行，期間開始的工作會被漏掉，
+     * 每次讀取峰值前先看當下的工作數。讀到的峰值涵蓋那個時刻，因此不得小於它。讀取與重設若分開進行，期間開始的工作會被漏掉，
      * 峰值就可能小於當下的數量。
      */
     @Test

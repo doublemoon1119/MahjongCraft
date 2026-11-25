@@ -157,7 +157,7 @@ class CompactReplayCodecTest {
         assertTrue(ReplaySourceKeys.ID !in reaction.keys)
     }
 
-    /** 相同的牌張呈現在文件中只保存一次，事實只帶字典代碼；完整解碼還原原本的呈現。 */
+    /** 相同的牌張呈現在文件中只保存一次，事實只帶字典代碼。完整解碼還原原本的呈現。 */
     @Test
     fun `identical tile presentations share one dictionary entry`() {
         val state = GameInitializer.initialize(
@@ -194,7 +194,7 @@ class CompactReplayCodecTest {
         assertTrue(presentations.values.all { it == dictionary.single() })
     }
 
-    /** 牌張呈現字典超過讀取上限時整份拒絕；在上限內則正常讀出呈現。 */
+    /** 牌張呈現字典超過讀取上限時整份拒絕。在上限內則正常讀出呈現。 */
     @Test
     fun `presentation dictionary beyond the read limit is rejected`() = runTest {
         val state = GameInitializer.initialize(

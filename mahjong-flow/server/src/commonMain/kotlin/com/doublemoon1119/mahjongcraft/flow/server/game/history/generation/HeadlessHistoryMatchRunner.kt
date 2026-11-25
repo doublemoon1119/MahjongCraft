@@ -5,10 +5,10 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withTimeout
 
 /**
- * 以 cold Flow 交付完整交易；收集端確認後才可推進下一步。
+ * 以 cold Flow 交付完整交易。收集端確認後才可推進下一步。
  *
  * 不預先緩衝、不丟棄事件。收集端須在持久化寫入確認後，呼叫來源 store 的
- * acknowledgeHistoryEvents；只把資料加入正式 outbox 不能作為確認依據。
+ * acknowledgeHistoryEvents。只把資料加入正式 outbox 不能作為確認依據。
  *
  * @property runtime 真實的隔離執行環境。
  * @property limits 單場步數、批次及時間限制。
@@ -18,7 +18,7 @@ class HeadlessHistoryMatchRunner(
     private val limits: HeadlessHistoryRunLimits = HeadlessHistoryRunLimits(),
 ) {
     /**
-     * 開始收集後才逐步執行來源對局；同一 runtime 只供單次完整收集。
+     * 開始收集後才逐步執行來源對局。同一 runtime 只供單次完整收集。
      *
      * @return 完整交易進度，以及最後唯一一筆空事件終點。
      * @throws IllegalStateException 當交易過大、來源有缺口、未確認或無法收斂時。

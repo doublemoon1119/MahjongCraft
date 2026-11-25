@@ -63,7 +63,7 @@ class CompactReplayCapacityTest {
     }
 
     /**
-     * 以即時完整對局統計容量分布；只在設定 `MAHJONGCRAFT_REPLAY_MEASUREMENT_BATCHES` 時執行，平常略過。
+     * 以即時完整對局統計容量分布。只在設定 `MAHJONGCRAFT_REPLAY_MEASUREMENT_BATCHES` 時執行，平常略過。
      *
      * 每批打完一組東風戰與半莊戰，並同樣驗證逐交易還原。
      */
@@ -262,7 +262,7 @@ class CompactReplayCapacityTest {
     }
 
     /**
-     * 將已知牌、玩家與牌種參照翻譯為索引；拒絕未宣告的 UUID。
+     * 將已知牌、玩家與牌種參照翻譯為索引。拒絕未宣告的 UUID。
      *
      * @param element 待轉換的 JSON 節點。
      * @param index 本局牌與玩家的索引。
@@ -334,7 +334,7 @@ class CompactReplayCapacityTest {
      */
     private fun logMetrics(length: RiichiGameLength, measurements: List<Measurement>) {
         /**
-         * 格式化量測的最小值、中位數、P95 與最大值；百分位數採最近秩次。
+         * 格式化量測的最小值、中位數、P95 與最大值。百分位數採最近秩次。
          *
          * @param selector 從量測結果取得數值的選擇器。
          * @return 包含四個摘要統計值的文字。
@@ -382,7 +382,7 @@ class CompactReplayCapacityTest {
         val typeDictionary: MutableMap<String, JsonElement>,
         val wallLayout: ReplayWallLayoutFormat.RoundLayout = ReplayWallLayoutFormat.RoundLayout(),
     ) {
-        /** 建立查詢快取時的牌種數量；牌種字典只會增加，數量不同就重建快取。 */
+        /** 建立查詢快取時的牌種數量。牌種字典只會增加，數量不同就重建快取。 */
         private var cachedTypeCount = -1
 
         /** 牌種 DTO 會出現的欄位組合。 */
@@ -392,10 +392,10 @@ class CompactReplayCapacityTest {
         private var typeCodes: Map<String, Int> = emptyMap()
 
         /**
-         * 取得與 [element] 內容相同的牌種代碼；只有欄位組合與某個牌種相同的物件才轉成文字比對。
+         * 取得與 [element] 內容相同的牌種代碼。只有欄位組合與某個牌種相同的物件才轉成文字比對。
          *
          * @param element 待比對的 JSON 物件。
-         * @return 牌種代碼；不是牌種時為 -1。
+         * @return 牌種代碼。不是牌種時為 -1。
          */
         fun typeCodeOf(element: JsonObject): Int {
             if (cachedTypeCount != typeDictionary.size) {

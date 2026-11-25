@@ -9,22 +9,22 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 /**
  * 內建日麻胡牌詳情使用的欄位、條目與單位 ID。
  *
- * 這些 ID 會保存在對局歷史中；役種 ID 逐一明列，不由 [RiichiYakuType] 的名稱推導，讓 enum 改名不影響已保存的紀錄。
+ * 這些 ID 會保存在對局歷史中。役種 ID 逐一明列，不由 [RiichiYakuType] 的名稱推導，讓 enum 改名不影響已保存的紀錄。
  */
 object RiichiWinSettlementIds {
-    /** 役種條目欄位；值為 [WinSettlementDetailValue.Entries]。 */
+    /** 役種條目欄位。值為 [WinSettlementDetailValue.Entries]。 */
     val YAKU_FIELD: String = MahjongCraftMetadata.id("riichi/yaku_list")
 
-    /** 一般和牌的翻符欄位；值為 [WinSettlementDetailValue.Quantities]，依序為翻與符，沒有權威符數時只有翻。 */
+    /** 一般和牌的翻符欄位。值為 [WinSettlementDetailValue.Quantities]，依序為翻與符，沒有權威符數時只有翻。 */
     val HAN_FU_FIELD: String = MahjongCraftMetadata.id("riichi/han_fu")
 
-    /** 自然役滿的合計倍數欄位；值為 [WinSettlementDetailValue.Quantities]，只有役滿倍數。 */
+    /** 自然役滿的合計倍數欄位。值為 [WinSettlementDetailValue.Quantities]，只有役滿倍數。 */
     val YAKUMAN_TOTAL_FIELD: String = MahjongCraftMetadata.id("riichi/yakuman_total")
 
-    /** 寶牌指示牌欄位；值為 [WinSettlementDetailValue.TileFaces]。 */
+    /** 寶牌指示牌欄位。值為 [WinSettlementDetailValue.TileFaces]。 */
     val DORA_FIELD: String = MahjongCraftMetadata.id("riichi/dora_indicators")
 
-    /** 裏寶牌指示牌欄位；只在立直和牌出現，值為 [WinSettlementDetailValue.TileFaces]。 */
+    /** 裏寶牌指示牌欄位。只在立直和牌出現，值為 [WinSettlementDetailValue.TileFaces]。 */
     val URA_DORA_FIELD: String = MahjongCraftMetadata.id("riichi/ura_dora_indicators")
 
     /** 翻數單位。 */
@@ -33,10 +33,10 @@ object RiichiWinSettlementIds {
     /** 符數單位。 */
     val FU: String = MahjongCraftMetadata.id("riichi/fu")
 
-    /** 役滿倍數單位；1 表示役滿，2 表示兩倍役滿。 */
+    /** 役滿倍數單位。1 表示役滿，2 表示兩倍役滿。 */
     val YAKUMAN: String = MahjongCraftMetadata.id("riichi/yakuman")
 
-    /** 流局滿貫條目；流局滿貫不經過一般役種判定，不屬於 [RiichiYakuType]。 */
+    /** 流局滿貫條目。流局滿貫不經過一般役種判定，不屬於 [RiichiYakuType]。 */
     val NAGASHI_MANGAN: String = MahjongCraftMetadata.id("riichi/yaku/nagashi_mangan")
 
     /** 每個役種的條目 ID。 */
@@ -121,7 +121,7 @@ object RiichiWinSettlementIds {
      * 由條目 ID 取得役種。
      *
      * @param id 條目 ID。
-     * @return 對應的役種；不是役種條目時為 null。
+     * @return 對應的役種。不是役種條目時為 null。
      */
     fun yakuType(id: String): RiichiYakuType? = YAKU_BY_ID[id]
 

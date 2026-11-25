@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
  * @property roundContext 完成本局時的局數與場風。
  * @property classification 本局完成原因的中立分類。
  * @property outcomeId 本局結果的完整 namespaced ID。
- * @property players 依座位順序排列的完成時分數與名次；此時已結算，前後值相同，分數異動請讀取 [RoundSettledEvent]。
+ * @property players 依座位順序排列的完成時分數與名次。此時已結算，前後值相同，分數異動請讀取 [RoundSettledEvent]。
  */
 class RoundCompletedEvent private constructor(
     override val eventId: Uuid,

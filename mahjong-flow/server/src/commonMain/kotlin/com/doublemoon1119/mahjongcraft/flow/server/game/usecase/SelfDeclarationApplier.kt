@@ -26,7 +26,7 @@ import kotlin.uuid.Uuid
 /**
  * 原子套用自己回合宣告的暗槓／加槓（或規則提供的移出手牌動作）與規則提供的後續補牌結果。
  *
- * 本物件只負責通用手牌變化、結果驗證及 action history；補牌來源、上限、牌牆變化與新增公開牌完全由
+ * 本物件只負責通用手牌變化、結果驗證及 action history。補牌來源、上限、牌牆變化與新增公開牌完全由
  * [MahjongRuleModule.createSupplementalDrawPolicy] 決定。
  */
 internal object SelfDeclarationApplier {
@@ -42,10 +42,10 @@ internal object SelfDeclarationApplier {
          * 完整動作已成功套用。
          *
          * @property tableState 更新後桌況。
-         * @property declaredState 動作已成立、補牌之前的桌況，包含動作的收付與補牌前公開的牌；呈現補牌前的那一步使用。
+         * @property declaredState 動作已成立、補牌之前的桌況，包含動作的收付與補牌前公開的牌。呈現補牌前的那一步使用。
          * @property drawnTiles 規則實際補到的牌張。
          * @property physicalWallTransitionPhases 已通過規則驗證的實體牌牆移動階段，在補牌那一步依序完成。
-         * @property scoring 動作成立當下的點數收付；不收付時為 null。
+         * @property scoring 動作成立當下的點數收付。不收付時為 null。
          */
         data class Applied(
             val tableState: TableState,
@@ -104,7 +104,7 @@ internal object SelfDeclarationApplier {
     /**
      * 只把宣告的槓或移出手牌的動作套用到宣告者手上、尚未補牌的候選桌況。
      *
-     * 搶和反應視窗開啟時，平台依此先呈現宣告完成的樣子，其他玩家在動畫播完後才決定要不要搶；權威桌況要等
+     * 搶和反應視窗開啟時，平台依此先呈現宣告完成的樣子，其他玩家在動畫播完後才決定要不要搶。權威桌況要等
      * 反應結束才套用，不使用這份結果。
      *
      * @param state 尚未套用本次動作的權威桌況。
@@ -113,7 +113,7 @@ internal object SelfDeclarationApplier {
      * @param incomingTile 觸發本次動作的牌張。
      * @param module 對局採用的規則模組。
      * @param componentRegistry 初始化與驗證組件的正式定義。
-     * @return 候選桌況；不是這三種動作或規則拒絕時為 null。
+     * @return 候選桌況。不是這三種動作或規則拒絕時為 null。
      */
     fun declaredState(
         state: TableState,
@@ -136,7 +136,7 @@ internal object SelfDeclarationApplier {
      * @param action 本次移出手牌的擴充動作。
      * @param module 對局採用的規則模組。
      * @param componentRegistry 驗證組件的正式定義。
-     * @return 通過驗證的候選桌況；規則不支援這個動作時為 null。
+     * @return 通過驗證的候選桌況。規則不支援這個動作時為 null。
      * @throws RuleContractViolationException 規則回傳的結果改動了不允許改動的資料時。
      */
     private fun setAsideCandidateState(
@@ -273,7 +273,7 @@ internal object SelfDeclarationApplier {
      * @param action 要套用的擴充動作。
      * @param module 對局採用的規則模組。
      * @param componentRegistry 解析及驗證組件的正式定義。
-     * @return 動作成立後、補牌前的結果；規則不接受動作時為 null。
+     * @return 動作成立後、補牌前的結果。規則不接受動作時為 null。
      */
     fun applyTileSetAsideDeclaration(
         state: TableState,
@@ -295,14 +295,14 @@ internal object SelfDeclarationApplier {
         return SetAsideDeclaration(scored.tableState, scored.scoring)
     }
 
-    /** 成功套用時附上動作的點數收付；拒絕結果維持原樣。 */
+    /** 成功套用時附上動作的點數收付。拒絕結果維持原樣。 */
     private fun Result.withScoring(scoring: AppliedActionScoring?): Result = when (this) {
         is Result.Applied -> copy(scoring = scoring)
         is Result.Rejected -> this
     }
 
     /**
-     * 驗證並套用規則補牌結果；明槓、暗槓／加槓與移出手牌的動作共用此入口。
+     * 驗證並套用規則補牌結果。明槓、暗槓／加槓與移出手牌的動作共用此入口。
      *
      * @param originalState 動作套用前的權威桌況。
      * @param candidateState 已套用副露、尚未補牌的候選桌況。

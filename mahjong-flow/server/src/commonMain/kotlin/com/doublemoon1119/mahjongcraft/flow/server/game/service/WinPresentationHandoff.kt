@@ -8,19 +8,22 @@ import kotlin.uuid.Uuid
  * 一次胡牌結算完成後，把已建構好的呈現內容從胡牌 use case 交給
  * `GameFlowCoordinator` 的暫存交接點，每個場地最多一筆。
  *
- * 為什麼需要這個東西：胡牌 use case（`DeclareTsumoUseCase`／`RespondToDiscardUseCase`／
- * `RespondToRobbingUseCase`）擁有建構 [SettledWinPresentation] 所需的全部素材（算役結果、規則模組、
- * 各種 resolver registry），但它執行的當下還不知道本局會不會就此結束——那要等
- * `ResolveWinRoundContinuationUseCase` 詢問過規則模組才有答案，而那發生在 use case 回傳之後。
- * 讓 use case 直接回傳這份內容給呼叫端則不可行：`GameActionRouter` 對所有指令（含第三方擴充指令）
- * 統一回傳 `Outcome<Unit, GameError>`，要讓演出內容穿過它就得改動每一種指令的回傳型別，連與胡牌
- * 無關的摸牌／捨牌都會被迫認識胡牌演出型別。
+ * 為什麼需要交接點：
  *
- * 刻意**不持久化**：一筆內容只在單次指令派發內存活（use case [stage]、同一次派發的收斂階段
- * [take]），伺服器重啟後沒有任何路徑會去消費殘留值，持久化換不到任何恢復能力。跨重啟的呈現狀態由平台自行保存。
+ * - 胡牌 use case（`DeclareTsumoUseCase`／`RespondToDiscardUseCase`／`RespondToRobbingUseCase`）擁有建構
+ *   [SettledWinPresentation] 所需的全部素材：算役結果、規則模組與各種 resolver registry。
+ * - 但它執行的當下還不知道本局會不會就此結束。這要等 `ResolveWinRoundContinuationUseCase` 詢問過規則模組，
+ *   發生在 use case 回傳之後。
+ * - use case 也不能直接回傳這份內容。`GameActionRouter` 對所有指令（含第三方擴充指令）統一回傳
+ *   `Outcome<Unit, GameError>`，改它就得改動每一種指令的回傳型別，連摸牌、捨牌都得認識胡牌演出型別。
  *
- * **不會殘留舊資料**：[take] 一律移除該場地的暫存內容，即使贏家不符也一樣（此時回傳 null 並丟棄）。
- * 因此就算某次胡牌的收斂流程中途失敗，下一次胡牌也不可能拿到上一次的內容。
+ * 刻意**不持久化**：
+ *
+ * - 一筆內容只在單次指令派發內存活：use case [stage]，同一次派發的收斂階段 [take]。
+ * - 伺服器重啟後沒有任何路徑會消費殘留值，持久化不會帶來恢復能力。跨重啟的呈現狀態由平台自行保存。
+ *
+ * **不會殘留舊資料**：[take] 一律移除該場地的暫存內容，贏家不符時也一樣（此時回傳 null 並丟棄）。
+ * 因此就算某次胡牌的收斂流程中途失敗，下一次胡牌也不會拿到上一次的內容。
  */
 class WinPresentationHandoff {
     /** 以對局識別碼索引、等待同一派發流程取走的胡牌呈現資料。 */
@@ -44,7 +47,7 @@ class WinPresentationHandoff {
      *
      * @param gameId 胡牌發生的對局。
      * @param expectedWinnerPlayerIds 這次預期的贏家識別碼集合。
-     * @return 這次胡牌的呈現內容；沒有暫存內容或贏家不符時為 null。
+     * @return 這次胡牌的呈現內容。沒有暫存內容或贏家不符時為 null。
      */
     fun take(gameId: Uuid, expectedWinnerPlayerIds: Set<Uuid>): SettledWinPresentation? {
         val staged = presentationsByGameId.remove(gameId) ?: return null

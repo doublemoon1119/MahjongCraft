@@ -32,7 +32,7 @@ import kotlin.uuid.Uuid
 
 /** [AutomaticDecisionDriver] 的權威反應流程測試。 */
 class AutomaticDecisionDriverTest {
-    /** 二三四萬、四五六筒、七八九筒、中中中；加上一張二條後單騎聽二條，中提供役牌役。 */
+    /** 二三四萬、四五六筒、七八九筒、中中中。加上一張二條後單騎聽二條，中提供役牌役。 */
     private val yakuhaiHandTiles: List<Tile> = listOf(
         Tile.Numeric(Tile.Suit.Character, 2),
         Tile.Numeric(Tile.Suit.Character, 3),

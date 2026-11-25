@@ -18,7 +18,7 @@ class SimulationStatisticsTest {
         assertEquals(Estimate(0.0, 0.0), Estimate.rate(successes = 0, trials = 0))
     }
 
-    /** 平均的區間半寬以樣本標準差計算；只有一個樣本時半寬為 0。 */
+    /** 平均的區間半寬以樣本標準差計算。只有一個樣本時半寬為 0。 */
     @Test
     fun `mean estimate uses the sample standard deviation`() {
         val estimate = Estimate.mean(listOf(1, 2, 3, 4))
@@ -60,7 +60,7 @@ class SimulationStatisticsTest {
         assertEquals(30.milliseconds, second.timing.max)
     }
 
-    /** 分數得失只計入該策略自己的局，和牌得點只計入和牌的局；立直下的攻守只計入有其他玩家立直的局。 */
+    /** 分數得失只計入該策略自己的局，和牌得點只計入和牌的局。立直下的攻守只計入有其他玩家立直的局。 */
     @Test
     fun `score and riichi metrics count only the matching rounds`() {
         val a = Uuid.random()

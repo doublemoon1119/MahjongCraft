@@ -11,7 +11,7 @@ import kotlinx.serialization.Serializable
  * @property components 副露攜帶的規則組件。
  * @property type 副露種類。
  * @property tiles 副露包含的牌張。
- * @property sourceTile 副露來源牌張；沒有來源牌張時為 null。
+ * @property sourceTile 副露來源牌張。沒有來源牌張時為 null。
  * @property sourceDirection 副露來源相對於目前玩家的方向。
  * @property publiclyRevealedTileIds 可讓一般觀察者知道牌面的牌張 ID。
  * @property faceDownTileIds 桌面上需要朝下呈現的牌張 ID。

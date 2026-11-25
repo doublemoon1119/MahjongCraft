@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  *
  *
  * @property requestId 對應請求的識別碼。
- * @property detail 對局摘要及局級索引；不可提供時為 null。
+ * @property detail 對局摘要及局級索引。不可提供時為 null。
  * @property errorCode 安全的查詢錯誤代碼。
  */
 @Serializable

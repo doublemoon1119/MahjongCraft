@@ -21,6 +21,6 @@ enum class RiichiExhaustiveDrawReasonPersistenceValue {
     /** 四名玩家都已宣告立直。 */
     SUUCHA_RIICHI,
 
-    /** 同一張牌有三家（或政策設為途中流局時的兩家）可榮和，因處理設定而流局；捨牌與搶槓共用此原因。 */
+    /** 同一張牌有三家（或政策設為途中流局時的兩家）可榮和，因處理設定而流局。捨牌與搶槓共用此原因。 */
     SANCHA_HOU,
 }

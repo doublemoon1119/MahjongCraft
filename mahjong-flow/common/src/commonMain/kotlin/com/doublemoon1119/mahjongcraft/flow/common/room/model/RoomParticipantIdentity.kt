@@ -6,7 +6,7 @@ import kotlin.uuid.Uuid
 /**
  * 參與者的穩定來源身分，不隨本次分配的成員編號改變。
  *
- * @property sourceId 可信任來源的完整識別碼；由接入端決定，不接受參與者自行聲稱。
+ * @property sourceId 可信任來源的完整識別碼。由接入端決定，不接受參與者自行聲稱。
  * @property subjectId 來源內穩定且唯一的身分。
  */
 data class RoomParticipantIdentity(

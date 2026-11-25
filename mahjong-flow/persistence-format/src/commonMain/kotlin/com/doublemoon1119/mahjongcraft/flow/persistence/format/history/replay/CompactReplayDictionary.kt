@@ -7,7 +7,7 @@ import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * 將 JSON 文件中的重複欄位名稱與長字串集中到可重用的字典。
- * 編碼格式使用 k、s、d 保存欄位字典、字串字典與資料樹；波浪號引用可無損還原。
+ * 編碼格式使用 k、s、d 保存欄位字典、字串字典與資料樹。波浪號引用可無損還原。
  */
 object CompactReplayDictionary {
     /**
@@ -93,7 +93,7 @@ object CompactReplayDictionary {
     }
 
     /**
-     * 依封套字典還原原始文件；任何格式、型別或索引錯誤都會立即拒絕。
+     * 依封套字典還原原始文件。任何格式、型別或索引錯誤都會立即拒絕。
      *
      * @param encoded 包含欄位字典、字串字典與資料樹的封套。
      * @return 還原後的原始 JSON 文件。
@@ -142,7 +142,7 @@ object CompactReplayDictionary {
      *
      * @param value 待驗證的 JSON 值。
      * @param name 用於錯誤訊息的字典名稱。
-     * @param budget 有界讀取預算；完整解碼時為 null。
+     * @param budget 有界讀取預算。完整解碼時為 null。
      * @return 字典中的有序字串。
      */
     private fun readStrings(value: JsonElement, name: String, budget: ReplayReadBudget? = null): List<String> {
@@ -196,7 +196,7 @@ object CompactReplayDictionary {
      * @param value 待還原的 JSON 節點。
      * @param keys 依索引排列的欄位名稱。
      * @param strings 依索引排列的字串值。
-     * @param budget 有界讀取預算；完整解碼時為 null。
+     * @param budget 有界讀取預算。完整解碼時為 null。
      * @return 展開字典引用後的 JSON 節點。
      */
     private fun expand(value: JsonElement, keys: List<String>, strings: List<String>, budget: ReplayReadBudget? = null): JsonElement {

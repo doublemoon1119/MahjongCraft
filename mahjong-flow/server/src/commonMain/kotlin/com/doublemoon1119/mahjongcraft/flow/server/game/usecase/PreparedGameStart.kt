@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.GameInitializationResult
 import kotlin.uuid.Uuid
 
 /**
- * 本次開局已計算的正式排位與桌況；提交時必須仍是同一個房間。
+ * 本次開局已計算的正式排位與桌況。提交時必須仍是同一個房間。
  *
  * @property room 產生本次資料的完整房間。
  * @property initializationResult 只計算一次的開局桌況。

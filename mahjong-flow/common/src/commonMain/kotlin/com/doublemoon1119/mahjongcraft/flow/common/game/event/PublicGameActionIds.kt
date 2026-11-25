@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.event
 
-/** 共用動作在公開事件中的完整識別碼；不作為保存格式的種類鍵。 */
+/** 共用動作在公開事件中的完整識別碼。不作為保存格式的種類鍵。 */
 object PublicGameActionIds {
     /** 捨牌。 */
     const val DISCARD = "mahjongcraft:discard"

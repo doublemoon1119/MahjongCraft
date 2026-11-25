@@ -111,8 +111,8 @@ class HistoryWinningHandProjectionTest {
      * 建立單一贏家明細。
      *
      * @param seat 贏家座位索引。
-     * @param standing 有序立牌索引；null 表示不保存牌組描述。
-     * @param winning 獨立和牌索引；特殊結算時為 null。
+     * @param standing 有序立牌索引。null 表示不保存牌組描述。
+     * @param winning 獨立和牌索引。特殊結算時為 null。
      * @return 可交給精簡事實 codec 的贏家 JSON。
      */
     private fun winner(seat: Int, standing: List<Int>?, winning: Int?): JsonObject = JsonObject(

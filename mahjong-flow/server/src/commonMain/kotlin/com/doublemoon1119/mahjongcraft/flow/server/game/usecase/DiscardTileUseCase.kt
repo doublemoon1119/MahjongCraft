@@ -16,7 +16,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferen
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
-import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -29,16 +28,13 @@ import kotlin.uuid.Uuid
  *
  * 負責處理玩家的捨牌請求，包含回合驗證、手牌與牌河狀態更新，以及快照與事件的同步。
  *
- * 捨牌後其他玩家是否有資格吃/碰/槓/榮和這張牌、一炮多響時依 [MultiRonPolicy]
- * 決定實際開放給誰、[RonResolution.ABORTIVE_DRAW] 是否直接觸發流局，這些邏輯與其他會打出一張牌的宣告
- * 用例共用，交給 [DiscardReactionResolver] 處理，詳見其 KDoc。
- *
- * 規則可透過 [MahjongRuleModule.discardableTileIds] 限定這次可以打出的牌；玩家摸牌後原本可以自摸卻選擇
- * 捨牌時，一律呼叫 [MahjongRuleModule.onPlayerDeclinedWin]，由規則決定是否產生後果。捨牌套用後再呼叫
- * [MahjongRuleModule.onPlayerDiscarded]，讓規則更新捨牌造成的規則狀態。
- *
- * 除了一炮多響判定為流局之外，這張捨牌若沒有任何人可以吃/碰/槓/榮和，還會額外透過
- * [postActionExhaustiveDrawResolverRegistry] 檢查是否構成主動觸發的途中流局（例如日麻的四風連打）。
+ * - 捨牌後的反應資格、一炮多響時開放給誰，以及 [RonResolution.ABORTIVE_DRAW] 是否直接觸發流局，
+ *   與其他會打出一張牌的宣告用例共用，交給 [DiscardReactionResolver] 處理。
+ * - 規則可透過 [MahjongRuleModule.discardableTileIds] 限定這次可以打出的牌。
+ * - 玩家摸牌後原本可以自摸卻選擇捨牌時，一律呼叫 [MahjongRuleModule.onPlayerDeclinedWin]，由規則決定是否產生後果。
+ * - 捨牌套用後呼叫 [MahjongRuleModule.onPlayerDiscarded]，讓規則更新捨牌造成的規則狀態。
+ * - 沒有任何人可以吃／碰／槓／榮和這張牌時，另外透過 [postActionExhaustiveDrawResolverRegistry]
+ *   檢查是否構成主動觸發的途中流局，例如日麻的四風連打。
  *
  * @property componentRegistry 正式組件定義與純效果來源。
  * @property gameRepository 權威對局數據倉庫。

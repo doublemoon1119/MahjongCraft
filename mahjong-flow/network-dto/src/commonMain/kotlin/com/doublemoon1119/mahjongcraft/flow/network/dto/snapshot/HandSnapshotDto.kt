@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
  * [HandSnapshot] 的網路 DTO。
  *
  * @property standingTiles 手牌區的牌張快照。
- * @property lastDrawn 最近摸入的牌；沒有時為 `null`。
+ * @property lastDrawn 最近摸入的牌。沒有時為 `null`。
  * @property melds 已完成的副露快照。
  */
 @Serializable

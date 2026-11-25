@@ -213,7 +213,7 @@ class CompactReplayRoundReaderTest {
         assertEquals(null, completion.outcome?.classification)
     }
 
-    /** 動作即時收付保留動作種類、各座位增減與點數池數量；增減指向不存在的座位時拒絕。 */
+    /** 動作即時收付保留動作種類、各座位增減與點數池數量。增減指向不存在的座位時拒絕。 */
     @Test
     fun `action scored mapping preserves seats and pot`() {
         val identity = HistoryReplayIdentity(
@@ -350,7 +350,7 @@ class CompactReplayRoundReaderTest {
         }
     }
 
-    /** 擴充動作只保留種類，不暴露私有資料；缺少種類的 envelope 被拒絕。 */
+    /** 擴充動作只保留種類，不暴露私有資料。缺少種類的 envelope 被拒絕。 */
     @Test
     fun `extension action mapping keeps only its type and rejects missing envelope`() {
         val identity = HistoryReplayIdentity(Uuid.random(), Uuid.random(), listOf(HistoryReplayPlayerIdentity(0, Uuid.random(), null)))
@@ -368,7 +368,7 @@ class CompactReplayRoundReaderTest {
         assertFailsWith<NoSuchElementException> { facts(JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryActionTypeKeys.EXTENSION)))) }
     }
 
-    /** 牌河項目保留牌、鳴走與公開標記；省略的欄位代表未鳴走與沒有標記。 */
+    /** 牌河項目保留牌、鳴走與公開標記。省略的欄位代表未鳴走與沒有標記。 */
     @Test
     fun `state mapping reads rule neutral discards`() {
         val state = HistoryReplayProjectionMapper.mapState(
@@ -402,7 +402,7 @@ class CompactReplayRoundReaderTest {
         )
     }
 
-    /** 牌河的牌只會因副露被取走；標成取走卻不是任何副露來源牌的牌河項目會被拒絕。 */
+    /** 牌河的牌只會因副露被取走。標成取走卻不是任何副露來源牌的牌河項目會被拒絕。 */
     @Test
     fun `state mapping rejects a taken discard that no meld claimed`() {
         assertFailsWith<IllegalArgumentException> {
@@ -606,8 +606,8 @@ class CompactReplayRoundReaderTest {
      * 建立一筆不分規則的牌河項目。
      *
      * @param tile 牌索引。
-     * @param taken 是否已被鳴走；未鳴走時省略欄位。
-     * @param markers 公開標記；沒有標記時省略欄位。
+     * @param taken 是否已被鳴走。未鳴走時省略欄位。
+     * @param markers 公開標記。沒有標記時省略欄位。
      * @return 牌河項目投影。
      */
     private fun discard(

@@ -13,6 +13,6 @@ internal expect fun secureRandomBytes(size: Int): ByteArray
  *
  * @param key 不公開的金鑰。
  * @param message 要計算的訊息。
- * @return 32 位元組的結果；不知道 [key] 時無法從結果推回 [key]，也無法預測其他訊息的結果。
+ * @return 32 位元組的結果。不知道 [key] 時無法從結果推回 [key]，也無法預測其他訊息的結果。
  */
 internal expect fun hmacSha256(key: ByteArray, message: ByteArray): ByteArray

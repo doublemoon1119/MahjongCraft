@@ -34,7 +34,7 @@ fun RiichiRuleConfig.toRiichiDto(registries: NetworkDtoConverter): RiichiRuleCon
 )
 
 /**
- * 將日麻規則設定 DTO 還原為領域資料；固定的起始手牌、王牌與玩家人數使用規則值。
+ * 將日麻規則設定 DTO 還原為領域資料。固定的起始手牌、王牌與玩家人數使用規則值。
  *
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
@@ -75,7 +75,7 @@ fun ThreePlayerRiichiRuleConfig.toThreePlayerRiichiDto(registries: NetworkDtoCon
 )
 
 /**
- * 將三人日麻規則設定 DTO 還原為領域資料；固定的起始手牌、王牌與玩家人數使用規則值。
+ * 將三人日麻規則設定 DTO 還原為領域資料。固定的起始手牌、王牌與玩家人數使用規則值。
  *
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。

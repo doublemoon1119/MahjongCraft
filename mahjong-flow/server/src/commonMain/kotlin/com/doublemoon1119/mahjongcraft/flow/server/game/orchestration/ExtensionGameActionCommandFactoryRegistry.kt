@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import kotlin.reflect.KClass
 import kotlin.uuid.Uuid
 
-/** 管理規則擴充動作命令 factory 的可凍結註冊表；擴充只透過 [ExtensionGameActionCommandFactoryRegistrar] 登記。 */
+/** 管理規則擴充動作命令 factory 的可凍結註冊表。擴充只透過 [ExtensionGameActionCommandFactoryRegistrar] 登記。 */
 class ExtensionGameActionCommandFactoryRegistry : ExtensionGameActionCommandFactoryRegistrar {
     /**
      * 保留具體動作型別的命令建立方式，避免放入註冊表時遺失泛型資訊。
@@ -26,7 +26,7 @@ class ExtensionGameActionCommandFactoryRegistry : ExtensionGameActionCommandFact
     override val registrationKeys: Set<String> get() = entries.keys.mapTo(mutableSetOf()) { it.qualifiedName ?: it.toString() }
 
     /**
-     * 註冊一種擴充動作的命令 factory；註冊表凍結後或同一動作型別已登記時會失敗。
+     * 註冊一種擴充動作的命令 factory。註冊表凍結後或同一動作型別已登記時會失敗。
      *
      * @param A 動作型別。
      * @param definition 動作類別與命令 factory。
@@ -37,7 +37,7 @@ class ExtensionGameActionCommandFactoryRegistry : ExtensionGameActionCommandFact
         entries[definition.actionClass] = Entry(definition.factory)
     }
 
-    /** 凍結註冊表；後續註冊會失敗。重複呼叫不改變結果。 */
+    /** 凍結註冊表。後續註冊會失敗。重複呼叫不改變結果。 */
     fun freeze() {
         frozen = true
     }
@@ -51,11 +51,11 @@ class ExtensionGameActionCommandFactoryRegistry : ExtensionGameActionCommandFact
     fun isRegistered(actionClass: KClass<out ExtensionGameAction>): Boolean = actionClass in entries
 
     /**
-     * 建立指定擴充動作的命令；未知動作或 factory 拒絕選牌資料時回傳 null。
+     * 建立指定擴充動作的命令。未知動作或 factory 拒絕選牌資料時回傳 null。
      *
      * @param action 要轉換的動作。
      * @param selectedTileIds 玩家選取的實體牌識別碼。
-     * @return 建立的命令；沒有對應 factory 或選牌資料不符合動作契約時為 null。
+     * @return 建立的命令。沒有對應 factory 或選牌資料不符合動作契約時為 null。
      */
     @Suppress("UNCHECKED_CAST")
     fun createCommand(action: ExtensionGameAction, selectedTileIds: List<Uuid>): ExtensionGameCommand? {

@@ -10,7 +10,7 @@ import kotlin.uuid.Uuid
  * @property outcomeId 和牌結果的完整 namespaced ID。
  * @property winners 依規則提供順序排列的贏家詳情。
  * @property responsiblePlayerIds 規則認定負責此結果的玩家。
- * @property discarderPlayerIds 規則明確認定為放銃者的玩家；無法判定時為空集合。
+ * @property discarderPlayerIds 規則明確認定為放銃者的玩家。無法判定時為空集合。
  * @property source 此群組來自一般和牌結算或規則結果。
  */
 class RoundWinGroup private constructor(

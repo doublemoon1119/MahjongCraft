@@ -137,7 +137,7 @@ class AutomaticGameCommandResolverTest {
      * 只替測試覆寫捨牌限制與 Pass 合法性的日麻規則包裝器。
      *
      * @property delegate 正式日麻規則模組，提供其餘規則行為。
-     * @property discardableTileIds 測試要求規則允許打出的牌；null 表示不限制。
+     * @property discardableTileIds 測試要求規則允許打出的牌。null 表示不限制。
      * @property rejectPass 是否讓測試 validator 移除 Pass 動作。
      */
     private class DiscardRestrictionRuleModule(

@@ -609,7 +609,7 @@ class DeclareKanUseCaseTest {
     /**
      * 驗證加槓時若有其他玩家可以搶槓：開啟 `pendingRobbingReaction` 反應視窗，副露**未**套用（宣告者手牌
      * 維持原樣、`lastDrawn` 不變）、牌山**未**縮減、只廣播 `Kan`（不廣播 `Draw`，因為嶺上摸牌
-     * 尚未真正發生）；呈現要求先將加槓牌列入副露，但不包含補牌。
+     * 尚未真正發生）。呈現要求先將加槓牌列入副露，但不包含補牌。
      */
     @Test
     fun `test declare added kan opens chankan window when another player can rob it`() = runTest {
@@ -723,7 +723,7 @@ class DeclareKanUseCaseTest {
     }
 
     /**
-     * 建立含發刻子、單騎等待 [robbedTileType] 的搶槓玩家；每次建立新的實體牌，供多家搶槓測試使用。
+     * 建立含發刻子、單騎等待 [robbedTileType] 的搶槓玩家。每次建立新的實體牌，供多家搶槓測試使用。
      *
      * @param id 玩家識別碼。
      * @param initialSeat 玩家初始座位。

@@ -41,8 +41,8 @@ import kotlin.time.Duration.Companion.hours
  *
  * 可調整的環境變數：
  *
- * - `MAHJONGCRAFT_CALIBRATION_MATCHES`：每個候選設定的對局數；未設定時不執行。
- * - `MAHJONGCRAFT_CALIBRATION_PARALLELISM`：同時進行的對局數；預設為可用的處理器數。
+ * - `MAHJONGCRAFT_CALIBRATION_MATCHES`：每個候選設定的對局數。未設定時不執行。
+ * - `MAHJONGCRAFT_CALIBRATION_PARALLELISM`：同時進行的對局數。預設為可用的處理器數。
  *
  * 每跑完一個候選設定，就把累積的統計寫入 `mahjong-flow/server/build/simulation/calibration.txt`，
  * 跑到一半中斷時仍可查看已完成的結果。任何一場偵測到問題時測試失敗，並列出每個問題的描述。

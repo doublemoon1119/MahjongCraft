@@ -45,7 +45,7 @@ class ReplayWallLayoutFormatTest {
         assertEquals(plain, ReplayWallLayoutFormat.decodePlacement(encoded[2]))
     }
 
-    /** 摸走的牌保留最後的格位，保存內容不變；仍在牌牆卻沒有格位的牌改寫成 null。 */
+    /** 摸走的牌保留最後的格位，保存內容不變。仍在牌牆卻沒有格位的牌改寫成 null。 */
     @Test
     fun `drawn tiles keep their last placement`() {
         val drawn = Uuid.random()

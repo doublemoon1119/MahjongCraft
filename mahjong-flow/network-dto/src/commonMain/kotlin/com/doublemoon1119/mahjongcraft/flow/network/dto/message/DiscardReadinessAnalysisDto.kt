@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  *
  * @property discardTileId 要分析的捨牌實體 UUID 字串。
  * @property waitingTiles 打出該牌後可等待的牌及其可用數量。
- * @property statusIndicatorId 規則提供的狀態指示識別碼；沒有時為 `null`。
+ * @property statusIndicatorId 規則提供的狀態指示識別碼。沒有時為 `null`。
  */
 @Serializable
 data class DiscardReadinessAnalysisDto(

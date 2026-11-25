@@ -14,7 +14,7 @@ enum class HistoryQueryScopeDto {
     @SerialName("all")
     ALL,
 
-    /** 查詢開發環境壓力測試資料庫中的全部對局；權限與查詢語意等同 [ALL]，只是讀取的資料來源不同。 */
+    /** 查詢開發環境壓力測試資料庫中的全部對局。權限與查詢語意等同 [ALL]，只是讀取的資料來源不同。 */
     @SerialName("stress_test")
     STRESS_TEST,
 }

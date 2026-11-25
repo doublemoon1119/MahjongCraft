@@ -22,7 +22,7 @@ class GameSnapshotSynchronizer(
      *
      * @param gameId 要同步的對局識別碼。
      * @param observerId 接收快照的觀看者識別碼。
-     * @return 遊戲不存在時為 false；成功寫入快照時為 true。
+     * @return 遊戲不存在時為 false。成功寫入快照時為 true。
      */
     suspend fun sync(gameId: Uuid, observerId: Uuid): Boolean {
         val game = gameRepository.getGame(gameId) ?: return false

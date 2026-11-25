@@ -11,7 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
  * 所有可擴充保存格式的唯讀轉換。
  *
  * MahjongCraft 呼叫 [PersistenceDtoDefinition] 的轉換函式時傳入，讓擴充的轉換函式能轉換巢狀的可擴充型別，
- * 例如牌河中的牌張組件；只能轉換，不能登記或凍結。
+ * 例如牌河中的牌張組件。只能轉換，不能登記或凍結。
  */
 interface PersistenceConverter {
     /** 規則配置。 */

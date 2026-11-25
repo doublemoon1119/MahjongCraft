@@ -6,17 +6,17 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 /**
  * 在正式流程入口提供的 [CompletedGameActionContext] 下，以純邏輯判定是否構成主動觸發的途中流局。
  *
- * 呼叫端目前只在捨牌、立直所含的捨牌，以及捨牌反應收斂後呼叫 registry；resolver 不應自行推進流程，
+ * 呼叫端目前只在捨牌、立直所含的捨牌，以及捨牌反應收斂後呼叫 registry。resolver 不應自行推進流程，
  * 也不應把未完成的反應視為已完成。
  */
 interface PostActionExhaustiveDrawResolver {
-    /** Resolver 的識別碼，依註冊 ID 慣例使用 `namespace:path` 格式；同優先序時作為穩定排序的最後決勝鍵。 */
+    /** Resolver 的識別碼，依註冊 ID 慣例使用 `namespace:path` 格式。同優先序時作為穩定排序的最後決勝鍵。 */
     val id: String
 
     /** 此 resolver 所屬的規則模組 ID。 */
     val ruleModuleId: String
 
-    /** 數值越大越先判定；同優先序再依穩定登記身分排序。 */
+    /** 數值越大越先判定。同優先序再依穩定登記身分排序。 */
     val priority: Int
 
     /**
@@ -24,7 +24,7 @@ interface PostActionExhaustiveDrawResolver {
      *
      * @param context 已完成的遊戲動作情境。
      * @param ruleModule 目前對局使用的規則模組。
-     * @return 成立時的流局原因；不成立或不適用時為 null。
+     * @return 成立時的流局原因。不成立或不適用時為 null。
      */
     fun resolve(context: CompletedGameActionContext, ruleModule: MahjongRuleModule<*>): ExhaustiveDrawReason?
 }
