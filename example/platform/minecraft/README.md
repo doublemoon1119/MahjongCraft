@@ -6,19 +6,22 @@ It uses the same compiler, Java and Minecraft version policies as the main proje
 ## Structure
 
 - [Platform-independent extension](../../mahjong-extension/README.md): common Kotlin code.
-- [Minecraft common](common/README.md): shared presentation and resources, with a
-  [registration map](common/README.md#registration-map) for extension authors.
-- [Shared Minecraft mod](mod/README.md): loader-independent Minecraft code that is the same for every
-  version, such as the game-event chat and furniture behavior that does not depend on how the content is
-  registered.
-- Minecraft version mods, the [Minecraft 1.20.1 mod](v1.20.1/mod/README.md) and the
-  [Minecraft 1.21.1 mod](v1.21.1/mod/README.md): the example's own adapters for each version and the files each
-  Minecraft version keeps its own copy of.
-- [Shared Fabric example](fabric/README.md): the Fabric entry points and registration, the same for every
-  Minecraft version.
-- Version/loader adapters: each one registers its version's content in its loader's own way, namely the
-  [Fabric 1.20.1 adapter](v1.20.1/fabric/README.md), the [Fabric 1.21.1 adapter](v1.21.1/fabric/README.md)
-  and the [Forge 1.20.1 adapter](v1.20.1/forge/README.md).
+- Shared by every Minecraft version:
+  - [Minecraft common](common/README.md): shared presentation and resources, with a
+    [registration map](common/README.md#registration-map) for extension authors.
+  - [Shared Minecraft mod](mod/README.md): loader-independent Minecraft code, such as the game-event chat
+    and furniture behavior that does not depend on how the content is registered.
+  - [Shared Fabric example](fabric/README.md): the Fabric entry points and registration.
+- Each Minecraft version has its own mod, with the example's adapters for that version and the files it keeps
+  its own copy of, and one adapter per loader that registers the content in that loader's own way:
+  - Minecraft 1.20.1:
+    - [Minecraft 1.20.1 mod](v1.20.1/mod/README.md)
+    - [Fabric 1.20.1 adapter](v1.20.1/fabric/README.md)
+    - [Forge 1.20.1 adapter](v1.20.1/forge/README.md)
+  - Minecraft 1.21.1:
+    - [Minecraft 1.21.1 mod](v1.21.1/mod/README.md)
+    - [Fabric 1.21.1 adapter](v1.21.1/fabric/README.md)
+    - [NeoForge 1.21.1 adapter](v1.21.1/neoforge/README.md)
 
 The common extension registers the pairing rule, custom tile and Tsumogiri strategy.
 Minecraft presentation adds room settings, hand-reveal and exchange prompts, settlement text,
@@ -28,12 +31,18 @@ printed to online administrators' chat so their supplied fields can be inspected
 
 ## Build and Run
 
-Choose a supported target and its example loader project. The commands below use the currently
-available Fabric 1.20.1 adapter as an example; other adapters have their own target and task paths,
-such as `minecraft-v1.20.1-forge` and `:example-minecraft_v1.20.1_forge` for the Forge 1.20.1 adapter, or
-`minecraft-v1.21.1-fabric` and `:example-minecraft_v1.21.1_fabric` for the Fabric 1.21.1 adapter.
-Run them from the repository root. The flag accepts only `true` or `false`.
-Omitting it is equivalent to `false`; it is not saved by `switchTarget`.
+Choose a supported target and its example loader project:
+
+- Fabric 1.20.1: `minecraft-v1.20.1-fabric`, `:example-minecraft_v1.20.1_fabric`
+- Forge 1.20.1: `minecraft-v1.20.1-forge`, `:example-minecraft_v1.20.1_forge`
+- Fabric 1.21.1: `minecraft-v1.21.1-fabric`, `:example-minecraft_v1.21.1_fabric`
+- NeoForge 1.21.1: `minecraft-v1.21.1-neoforge`, `:example-minecraft_v1.21.1_neoforge`
+
+The commands below use the Fabric 1.20.1 adapter as an example. Run them from the repository root.
+
+- `-PmahjongcraftExample` accepts only `true` or `false`.
+- Omitting it is equivalent to `false`.
+- It is not saved by `switchTarget`.
 
 ```shell
 ./gradlew build -PmahjongcraftTarget=minecraft-v1.20.1-fabric -PmahjongcraftExample=true

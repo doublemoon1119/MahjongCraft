@@ -28,7 +28,7 @@ In Minecraft, connecting a mod to MahjongCraft takes two things:
 
 Blocks, items and entities are registered the usual way for that loader. MahjongCraft does not
 require a particular registration style. The example passes its registration through its own
-`ExampleRegistrar` only so that both loaders share one list of content. A mod for a single loader
+`ExampleRegistrar` only so that every loader shares one list of content. A mod for a single loader
 does not need it.
 
 The example's build scripts depend on MahjongCraft's projects in this repository, and their

@@ -10,8 +10,8 @@
 
 - Hold the automated test's mixins, in the `client.debug.autotest.mixin` package, and their configuration
   `mahjongcraft.debug.mixins.json`. The mixins ignore input, keep the game running without focus and record
-  each sound request, only while the test runs. The Fabric debug module registers the configuration in
-  `fabric.mod.json`.
+  each sound request, only while the test runs. The loader debug modules register the configuration:
+  Fabric in `fabric.mod.json`, NeoForge in `neoforge.mods.toml`.
 - Provide the 1.21.1 side of the debug adapters the shared debug tools call, in the `debug.vanilla` package,
   such as creating and leaving the test world, running commands, looking up loot tables and connecting bot
   players.
