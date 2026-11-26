@@ -5,6 +5,8 @@ id = "minecraft-v1.20.1-fabric"
 platform = "minecraft"
 java-toolchain = 17
 java-release = 17
+# ModDevGradle 準備 Minecraft 的工具至少需要 Java 21。
+additional-java-toolchains = [21]
 modules = [
     "platform/minecraft/common",
     "platform/minecraft/common-debug",
@@ -35,6 +37,8 @@ id = "minecraft-v1.20.1-forge"
 platform = "minecraft"
 java-toolchain = 17
 java-release = 17
+# ModDevGradle 準備 Minecraft 的工具至少需要 Java 21。
+additional-java-toolchains = [21]
 modules = [
     "platform/minecraft/common",
     "platform/minecraft/common-debug",

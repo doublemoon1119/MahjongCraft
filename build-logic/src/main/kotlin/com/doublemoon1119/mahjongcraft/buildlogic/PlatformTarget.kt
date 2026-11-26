@@ -7,6 +7,7 @@ package com.doublemoon1119.mahjongcraft.buildlogic
  * @property platform 平台種類。核心載入器不假設任何特定平台。
  * @property javaToolchain 編譯此 target 使用的 JDK toolchain。
  * @property javaRelease 此 target 產出的最低 JVM bytecode 版本。
+ * @property additionalJavaToolchains 建置此 target 的工具另外需要的 JDK 版本，不用來編譯 target 本身。
  * @property modules Settings 階段必須載入的模組目錄。
  * @property exampleModules 啟用範例建置時額外載入的模組目錄。
  * @property attributes 由各平台自行定義並解讀的額外屬性。
@@ -18,6 +19,7 @@ data class PlatformTarget(
     val platform: String,
     val javaToolchain: Int,
     val javaRelease: Int,
+    val additionalJavaToolchains: List<Int> = emptyList(),
     val modules: List<String>,
     val exampleModules: List<String> = emptyList(),
     val attributes: Map<String, String>,

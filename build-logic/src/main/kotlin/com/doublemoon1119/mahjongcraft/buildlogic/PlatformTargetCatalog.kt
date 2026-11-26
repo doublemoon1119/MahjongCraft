@@ -26,6 +26,7 @@ private data class PlatformTargetCatalogDocument(
  * @property platform 平台種類。
  * @property javaToolchain JDK toolchain。
  * @property javaRelease JVM bytecode release。
+ * @property additionalJavaToolchains 建置工具另外需要的 JDK 版本。
  * @property modules 應載入的 module paths。
  * @property exampleModules 啟用範例建置時額外載入的 module paths。
  * @property attributes 平台自行定義的附加欄位。
@@ -39,6 +40,8 @@ private data class PlatformTargetDefinition(
     val javaToolchain: Int,
     @SerialName("java-release")
     val javaRelease: Int,
+    @SerialName("additional-java-toolchains")
+    val additionalJavaToolchains: List<Int> = emptyList(),
     val modules: List<String>,
     @SerialName("example-modules")
     val exampleModules: List<String> = emptyList(),
@@ -116,6 +119,7 @@ object PlatformTargetCatalog {
                 platform = definition.platform.trim(),
                 javaToolchain = definition.javaToolchain,
                 javaRelease = definition.javaRelease,
+                additionalJavaToolchains = definition.additionalJavaToolchains,
                 modules = definition.modules.map(::normalizeModulePath),
                 exampleModules = definition.exampleModules.map(::normalizeModulePath),
                 attributes = definition.attributes,
@@ -200,6 +204,9 @@ object PlatformTargetCatalog {
             }
             if (target.javaRelease !in JAVA_VERSION_RANGE) {
                 throw GradleException("Platform target ${target.id} has invalid java-release: ${target.javaRelease}")
+            }
+            target.additionalJavaToolchains.firstOrNull { it !in JAVA_VERSION_RANGE }?.let { version ->
+                throw GradleException("Platform target ${target.id} has invalid additional-java-toolchains entry: $version")
             }
             val missingAttributes = REQUIRED_ATTRIBUTES_BY_PLATFORM[target.platform].orEmpty() - target.attributes.keys
             if (missingAttributes.isNotEmpty()) {

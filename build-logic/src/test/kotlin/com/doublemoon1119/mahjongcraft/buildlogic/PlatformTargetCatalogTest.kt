@@ -30,6 +30,19 @@ class PlatformTargetCatalogTest {
         assertEquals(listOf("example/mahjong-extension"), result.exampleModules)
     }
 
+    /** target 可以宣告建置工具另外需要的 JDK；沒有宣告時為空，超出範圍的版本被拒絕。 */
+    @Test
+    fun `loads additional java toolchains and rejects invalid ones`() = withFixture { root ->
+        createModule(root, "platform/example")
+        val declared = target("minecraft-example", "platform/example").replace("modules = [", "additional-java-toolchains = [21]\nmodules = [")
+        val invalid = declared.replace("[21]", "[21, 7]")
+
+        assertEquals(emptyList(), PlatformTargetCatalog.load(writeCatalog(root, target("minecraft-example", "platform/example")), root).single().additionalJavaToolchains)
+        assertEquals(listOf(21), PlatformTargetCatalog.load(writeCatalog(root, declared), root).single().additionalJavaToolchains)
+        val failure = assertFailsWith<GradleException> { PlatformTargetCatalog.load(writeCatalog(root, invalid), root) }
+        assertEquals("Platform target minecraft-example has invalid additional-java-toolchains entry: 7", failure.message)
+    }
+
     /** 合法 catalog 應完整解析 target 與 Java policy。 */
     @Test
     fun `loads valid catalog`() = withFixture { root ->
