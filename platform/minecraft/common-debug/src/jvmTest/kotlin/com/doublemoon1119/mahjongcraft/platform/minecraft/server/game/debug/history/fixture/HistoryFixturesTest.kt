@@ -17,6 +17,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.minutes
 
 /** 測試牌譜照腳本打完整場，內容固定，並包含各自要涵蓋的情況。 */
 class HistoryFixturesTest {
@@ -113,9 +114,13 @@ class HistoryFixturesTest {
         }
     }
 
-    /** 同一份測試牌譜每次產生的事件順序都相同。 */
+    /**
+     * 同一份測試牌譜每次產生的事件順序都相同。
+     *
+     * 每份測試牌譜都完整打兩遍，工作量是其他測試的數倍。忙碌的 CI 機器上會超過預設的 60 秒時限，因此放寬時限。
+     */
     @Test
-    fun `fixtures are reproducible`() = runTest {
+    fun `fixtures are reproducible`() = runTest(timeout = 5.minutes) {
         HistoryFixtures.ALL.forEach { fixture ->
             assertEquals(play(fixture).map(::describe), play(fixture).map(::describe), "${fixture.id} must be reproducible")
         }
