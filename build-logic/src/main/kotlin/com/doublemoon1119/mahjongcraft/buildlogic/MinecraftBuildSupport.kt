@@ -122,6 +122,17 @@ internal fun isAutotestEnabled(value: String?): Boolean {
  */
 fun Project.autotestSystemProperties(): Map<String, String> {
     val selection = providers.gradleProperty("mahjongcraftAutotest").orNull?.takeIf(::isAutotestEnabled) ?: return emptyMap()
+    return autotestProperties(selection)
+}
+
+/**
+ * 啟用自動測試的遊戲要收到的系統屬性。
+ *
+ * @param selection 要執行的步驟，原樣傳給 debug 模組。
+ * @return 系統屬性名稱與值。
+ * @throws GradleException `mahjongcraftAutotestKeep` 不是正整數時拋出。
+ */
+private fun Project.autotestProperties(selection: String): Map<String, String> {
     val keep = providers.gradleProperty("mahjongcraftAutotestKeep").orNull?.let { value ->
         value.toIntOrNull()?.takeIf { it >= 1 } ?: throw GradleException("mahjongcraftAutotestKeep must be a positive integer: $value")
     }
@@ -166,27 +177,27 @@ fun Project.autotestClientArguments(): List<String> = if (autotestSystemProperti
  */
 fun Project.clientRunDirectory(): String = if (autotestSystemProperties().isEmpty()) "run/client" else "run/autotest-client"
 
-/**
- * 開發伺服器的執行目錄名稱，相對於模組資料夾。
- *
- * - 平常：`run/server`。
- * - 伺服器自動測試：獨立的 `run/autotest-server`，測試世界、設定與報告不會與平常的混在一起。
- *
- * @return 執行目錄名稱。
- */
-fun Project.serverRunDirectory(): String = if (autotestSystemProperties().isEmpty()) "run/server" else "run/autotest-server"
+/** 開發伺服器的執行目錄名稱，相對於模組資料夾。 */
+const val SERVER_RUN_DIRECTORY: String = "run/server"
+
+/** 伺服器自動測試的執行目錄名稱，相對於模組資料夾。測試世界、設定與報告不會與平常開發伺服器的混在一起。 */
+const val AUTOTEST_SERVER_RUN_DIRECTORY: String = "run/autotest-server"
 
 /**
  * 伺服器自動測試某一段要傳給伺服器的系統屬性。
  *
- * - 內容是 [autotestSystemProperties] 加上這是第幾段。
- * - 沒有設定 `mahjongcraftAutotest` 時為空。
+ * - 伺服器自動測試不需要 `mahjongcraftAutotest`，沒有設定時執行全部步驟。
+ * - 設定了 `mahjongcraftAutotest` 時，它的值是要執行的步驟，與用戶端自動測試相同。
+ * - `mahjongcraftAutotestKeep` 指定保留最近幾次的報告，沒有指定時由 debug 模組使用預設值。
  *
  * @param phase 第幾段，[AUTOTEST_SERVER_START] 或 [AUTOTEST_SERVER_RESUME]。
  * @return 系統屬性名稱與值。
+ * @throws GradleException `mahjongcraftAutotestKeep` 不是正整數時拋出。
  */
-fun Project.autotestServerSystemProperties(phase: String): Map<String, String> =
-    autotestSystemProperties().takeIf { it.isNotEmpty() }?.plus("mahjongcraft.autotest.serverPhase" to phase).orEmpty()
+fun Project.autotestServerSystemProperties(phase: String): Map<String, String> {
+    val selection = providers.gradleProperty("mahjongcraftAutotest").orNull?.takeIf(::isAutotestEnabled) ?: "true"
+    return autotestProperties(selection) + ("mahjongcraft.autotest.serverPhase" to phase)
+}
 
 /** 伺服器自動測試的第一段：準備好的新世界上開局，打到一半關機。 */
 const val AUTOTEST_SERVER_START: String = "start"

@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.buildlogic
 
 import java.io.File
+import java.time.LocalDateTime
+import java.time.ZoneId
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -35,6 +37,44 @@ class AutotestSummaryTest {
     @Test
     fun `no report counts as missing`() = withRoot { root ->
         assertEquals(AutotestSummary.MISSING, AutotestSummary.read("forge client", root, startedAt = "2026-11-24_15-00-00").status)
+    }
+
+    /** 總報告以相對路徑連到收在子資料夾中的報告，子資料夾以報告名稱命名。 */
+    @Test
+    fun `the summary links each report by a relative path`() = withRoot { root ->
+        writeReport(root, "2026-11-24_15-00-05", status = "passed")
+        val entry = AutotestSummary.read("minecraft_test_fabric server", root, startedAt = "2026-11-24_15-00-00")
+
+        val markdown = AutotestSummary.markdown("2026-11-24_15-00-00", listOf(entry))
+
+        assertEquals("minecraft_test_fabric-server", AutotestSummary.folderName("minecraft_test_fabric server"))
+        assertTrue(markdown.contains("([report](minecraft_test_fabric-server/report.md))"), markdown)
+    }
+
+    /** 診斷資料夾中只有這次執行期間修改過的檔案會被複製，並保留資料夾名稱與內部結構。 */
+    @Test
+    fun `diagnostics copy only files changed during this run`() = withRoot { root ->
+        val logs = root.resolve("run/logs").apply { resolve("nested").mkdirs() }
+        val start = LocalDateTime.of(2026, 11, 24, 15, 0, 0).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        logs.resolve("old.log").apply { writeText("old") }.setLastModified(start - 60_000)
+        logs.resolve("latest.log").apply { writeText("latest") }.setLastModified(start + 60_000)
+        logs.resolve("nested/debug.log").apply { writeText("debug") }.setLastModified(start)
+        val destination = root.resolve("summary/label")
+
+        AutotestSummary.copyDiagnostics(logs, destination, startedAt = "2026-11-24_15-00-00")
+        AutotestSummary.copyDiagnostics(root.resolve("run/missing"), destination, startedAt = "2026-11-24_15-00-00")
+
+        val copied = destination.walkTopDown().filter(File::isFile).map { it.relativeTo(destination).invariantSeparatorsPath }.toSet()
+        assertEquals(setOf("logs/latest.log", "logs/nested/debug.log"), copied)
+    }
+
+    /** 沒有任何報告要彙整時，總報告為通過並寫明沒有要執行的測試。 */
+    @Test
+    fun `a summary without reports passes and says nothing ran`() {
+        val markdown = AutotestSummary.markdown("2026-11-24_15-00-00", emptyList())
+
+        assertTrue(markdown.contains("- Result: PASSED"), markdown)
+        assertTrue(markdown.contains("- ${AutotestSummary.NOTHING_TO_RUN}"), markdown)
     }
 
     /**

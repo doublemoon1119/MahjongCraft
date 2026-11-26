@@ -216,7 +216,7 @@ internal class AutotestServerRunner(private val koin: Koin) {
             AutotestServerTable.rooms(koin).updateConfig(bot, config)
             if (!check("The room uses ${table.rule}", waitUntil(SYNC_TIMEOUT) { AutotestServerTable.hasConfig(koin, id, config) })) return
             for (count in 2..config.ruleConfig.maxPlayers) {
-                AutotestServerTable.rooms(koin).addAi(bot, null)
+                AutotestServerTable.rooms(koin).addAi(bot, AutotestServerTable.AI_STRATEGY)
                 if (!check("AI player ${count - 1} joins the ${table.rule} room", waitUntil(SYNC_TIMEOUT) { rooms.getRoom(id)?.playerIds?.size == count })) return
             }
         }
@@ -224,7 +224,7 @@ internal class AutotestServerRunner(private val koin: Koin) {
 
     /** 三張牌桌同時開局，機器人開自動操作，等三場都打完並封存進牌譜。 */
     private suspend fun AutotestServerContext.playFirstMatch() {
-        val games = startMatches() ?: return
+        val games = startMatches(matchIndex = 0) ?: return
         for (table in tables) {
             val game = games.getValue(table.rule)
             check("${table.botName} turns on automatic controls", AutotestServerTable.enableAutomaticControls(koin, game, bots.getValue(table.botName)))
@@ -236,7 +236,7 @@ internal class AutotestServerRunner(private val koin: Koin) {
     private suspend fun AutotestServerContext.interruptSecondMatch() {
         // 機器人都坐莊家位置，各桌第一個要做決定的就是它；牌局停在等機器人決定，記錄後到關機前不會再前進。
         // 其他家坐莊時，可能在機器人輪到之前就讓這一場結束（例如九種九牌），或在記錄之後才做動作（例如拔北）。
-        val games = startMatches(botsAsDealers = true) ?: return
+        val games = startMatches(matchIndex = 1, botsAsDealers = true) ?: return
         val timers = koin.get<GameDecisionTimerManager>()
         for (table in tables) {
             val tableBotId = bots.getValue(table.botName).playerId()
@@ -327,10 +327,11 @@ internal class AutotestServerRunner(private val koin: Koin) {
     /**
      * 三張牌桌由機器人照玩家流程開局，等牌局都開始。
      *
+     * @param matchIndex 各桌的第幾場對局，從 0 起算，決定這一場使用的固定種子。
      * @param botsAsDealers 為 true 時各桌的機器人坐莊家位置，其他人照房間順序。為 false 時全部照種子排座。
      * @return 各規則的牌局。有牌桌沒有開局時為 null。
      */
-    private suspend fun AutotestServerContext.startMatches(botsAsDealers: Boolean = false): Map<String, Game>? {
+    private suspend fun AutotestServerContext.startMatches(matchIndex: Int, botsAsDealers: Boolean = false): Map<String, Game>? {
         val gameRepository = koin.get<GameRepository>()
         val rooms = koin.get<RoomRepository>()
         for (table in tables) {
@@ -342,7 +343,7 @@ internal class AutotestServerRunner(private val koin: Koin) {
             } else {
                 null
             }
-            AutotestServerTable.rooms(koin).start(bot, seatOrder)
+            AutotestServerTable.rooms(koin).start(player = bot, seatOrder = seatOrder, matchSeed = table.matchSeed(matchIndex))
         }
         val started = waitUntil(SYNC_TIMEOUT) { tables.all { gameRepository.getGame(checkNotNull(it.tableId)) != null } }
         if (!check("Every table starts a match", started)) return null
@@ -413,7 +414,7 @@ internal class AutotestServerRunner(private val koin: Koin) {
          * 這次開機指定要跑的階段。
          *
          * - 只有 `autotestServer` 任務啟動的伺服器會指定階段。
-         * - 其他帶自動測試開關的伺服器，例如範例或平常的 `runServer`，不執行伺服器自動測試，避免動到平常的開發世界。
+         * - 其他伺服器，例如範例或平常的 `runServer`，不執行伺服器自動測試，避免動到平常的開發世界。
          *
          * @return [PHASE_START] 或 [PHASE_RESUME]，沒有指定或不是這兩者時為 null。
          */

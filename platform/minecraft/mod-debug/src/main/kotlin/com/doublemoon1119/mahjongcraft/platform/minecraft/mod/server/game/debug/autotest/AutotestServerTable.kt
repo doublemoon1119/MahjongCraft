@@ -1,7 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.autotest
 
+import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
@@ -23,23 +25,39 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.Vec3
 import org.koin.core.Koin
+import java.security.MessageDigest
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
 /**
  * 伺服器自動測試的一張牌桌：一種規則、一位機器人房主，以及照玩家流程進行的開房、加入 AI、開局與開自動操作。
  *
+ * 每一場對局都使用固定的種子，所以每次測試發到的牌相同；AI 都用初級策略，它的決定只取決於牌局，因此每次打出同一場對局，
+ * 耗時也相同。規則、AI 或發牌方式改動後，同一個種子會打出不同的對局：測試因此變長時，換一個種子編號。
+ *
  * @property rule 規則模組識別碼。
  * @property botName 這張牌桌房主的機器人名稱。
  * @property position 牌桌控制方塊的位置。
+ * @param seedNumbers 這張牌桌依序開的每一場對局的種子編號。
  */
-internal class AutotestServerTable(val rule: String, val botName: String, val position: BlockPos) {
+internal class AutotestServerTable(val rule: String, val botName: String, val position: BlockPos, private val seedNumbers: List<Int>) {
     /** 牌桌識別碼，放好牌桌之前為 null。 */
     var tableId: Uuid? = null
 
     /** 機器人站在牌桌前方的位置。不在任何一張測試牌桌的範圍內，所以機器人不會擋住放牌桌。 */
     val standingPosition: Vec3
         get() = Vec3(position.x + 0.5, position.y.toDouble(), position.z - 2.5)
+
+    /**
+     * 這張牌桌第幾場對局的種子，由規則與種子編號決定。
+     *
+     * @param matchIndex 這張牌桌的第幾場對局，從 0 起算。
+     * @return 這場對局的種子。
+     */
+    fun matchSeed(matchIndex: Int): MatchSeed {
+        val label = "mahjongcraft:autotest/$rule/${seedNumbers[matchIndex]}"
+        return MatchSeed.fromByteArray(MessageDigest.getInstance("SHA-256").digest(label.encodeToByteArray()))
+    }
 
     /**
      * 讓機器人走到牌桌前方面向牌桌。
@@ -88,10 +106,18 @@ internal class AutotestServerTable(val rule: String, val botName: String, val po
 
         /** 測試的三張牌桌：日麻、台麻與三人麻將，各有一位機器人房主。 */
         fun all(): List<AutotestServerTable> = listOf(
-            AutotestServerTable(BuiltInRuleModuleIds.RIICHI, "MahjongBot1", BlockPos(0, -60, 6)),
-            AutotestServerTable(BuiltInRuleModuleIds.TAIWAN, "MahjongBot2", BlockPos(12, -60, 6)),
-            AutotestServerTable(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, "MahjongBot3", BlockPos(24, -60, 6)),
+            AutotestServerTable(rule = BuiltInRuleModuleIds.RIICHI, botName = "MahjongBot1", position = BlockPos(0, -60, 6), seedNumbers = listOf(1, 1)),
+            AutotestServerTable(rule = BuiltInRuleModuleIds.TAIWAN, botName = "MahjongBot2", position = BlockPos(12, -60, 6), seedNumbers = listOf(1, 1)),
+            AutotestServerTable(
+                rule = BuiltInRuleModuleIds.RIICHI_THREE_PLAYER,
+                botName = "MahjongBot3",
+                position = BlockPos(24, -60, 6),
+                seedNumbers = listOf(1, 1),
+            ),
         )
+
+        /** AI 玩家使用的策略：初級策略的決定只取決於牌局，沒有隨機成分。 */
+        const val AI_STRATEGY: String = BuiltInAiStrategyKeys.BEGINNER
 
         /**
          * 機器人玩家的識別碼。

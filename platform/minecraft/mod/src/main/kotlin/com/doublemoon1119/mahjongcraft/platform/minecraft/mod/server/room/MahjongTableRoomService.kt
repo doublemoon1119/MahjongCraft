@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.DefaultGameConfigProvider
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
@@ -536,8 +537,9 @@ class MahjongTableRoomService internal constructor(
      *
      * @param player 發起開始操作的房主。
      * @param seatOrder 指定開場的座位順序，例如除錯時固定某位玩家的座位。null 時依種子隨機排座，不符合房間成員時拒絕開局。
+     * @param matchSeed 指定這場對局的種子，例如自動測試每次打同一場對局。null 時以安全亂數產生。
      */
-    fun start(player: ServerPlayer, seatOrder: List<Uuid>? = null) {
+    fun start(player: ServerPlayer, seatOrder: List<Uuid>? = null, matchSeed: MatchSeed? = null) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -584,7 +586,13 @@ class MahjongTableRoomService internal constructor(
                     rejected = { Outcome.Error(RoomError.RoomLayoutConflict(tableId)) },
                 ) {
                     val prepared = if (room != null && participants.isNotEmpty()) {
-                        when (val result = startGame.prepare(room = room, operatorId = playerId, seatOrder = seatOrder)) {
+                        val prepareResult = startGame.prepare(
+                            room = room,
+                            operatorId = playerId,
+                            matchSeed = matchSeed ?: MatchSeed.generate(),
+                            seatOrder = seatOrder,
+                        )
+                        when (val result = prepareResult) {
                             is Outcome.Success -> result.value
                             is Outcome.Error -> return@withParticipants Outcome.Error(result.error)
                         }
@@ -604,6 +612,7 @@ class MahjongTableRoomService internal constructor(
                             expectedRoom = room,
                             requireImmediateCommit = participants.isNotEmpty(),
                             preparedStart = prepared,
+                            matchSeed = matchSeed.takeIf { prepared == null },
                             seatOrder = seatOrder.takeIf { prepared == null },
                         )
                     } finally {

@@ -1,6 +1,8 @@
 import com.doublemoon1119.mahjongcraft.buildlogic.AUTOTEST_SERVER_RESUME
+import com.doublemoon1119.mahjongcraft.buildlogic.AUTOTEST_SERVER_RUN_DIRECTORY
 import com.doublemoon1119.mahjongcraft.buildlogic.AUTOTEST_SERVER_START
 import com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtension
+import com.doublemoon1119.mahjongcraft.buildlogic.SERVER_RUN_DIRECTORY
 import com.doublemoon1119.mahjongcraft.buildlogic.autotestClientArguments
 import com.doublemoon1119.mahjongcraft.buildlogic.autotestClientEnvironment
 import com.doublemoon1119.mahjongcraft.buildlogic.autotestServerSystemProperties
@@ -12,7 +14,6 @@ import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.modrinth
 import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestClientTasks
 import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestServerTasks
-import com.doublemoon1119.mahjongcraft.buildlogic.serverRunDirectory
 
 plugins {
     alias(libs.plugins.mahjongcraft.minecraft.loader)
@@ -61,21 +62,27 @@ loom {
             autotestSystemProperties().forEach { (name, value) -> vmArg("-D$name=$value") }
         }
         named("server") {
-            runDirectory.set(layout.projectDirectory.dir(serverRunDirectory()))
-            // -PmahjongcraftAutotest 時是伺服器自動測試的第一段：開局、打到一半後關機。
+            runDirectory.set(layout.projectDirectory.dir(SERVER_RUN_DIRECTORY))
+        }
+        // 伺服器自動測試的兩段都有專用的執行設定與執行目錄，只由 autotestServer 任務依序執行。
+        // 第一段：開局、打到一半後關機。
+        register("autotestServerStart") {
+            server()
+            ideConfigGenerated(false)
+            runDirectory.set(layout.projectDirectory.dir(AUTOTEST_SERVER_RUN_DIRECTORY))
             autotestServerSystemProperties(AUTOTEST_SERVER_START).forEach { (name, value) -> vmArg("-D$name=$value") }
         }
-        // 伺服器自動測試的第二段：讀回第一段留下的世界；只由 autotestServer 任務接在第一段之後執行。
+        // 第二段：讀回第一段留下的世界。
         register("autotestServerResume") {
             server()
             ideConfigGenerated(false)
-            runDirectory.set(layout.projectDirectory.dir(serverRunDirectory()))
+            runDirectory.set(layout.projectDirectory.dir(AUTOTEST_SERVER_RUN_DIRECTORY))
             autotestServerSystemProperties(AUTOTEST_SERVER_RESUME).forEach { (name, value) -> vmArg("-D$name=$value") }
         }
     }
 }
 registerAutotestClientTasks(clientTask = "runClient")
-registerAutotestServerTasks(startTask = "runServer", resumeTask = "runAutotestServerResume")
+registerAutotestServerTasks(startTask = "runAutotestServerStart", resumeTask = "runAutotestServerResume")
 
 // 一起編譯跨版本共用的 platform/minecraft/fabric；這裡只放 1.21.1 的 Fabric 專屬部分，例如網路傳輸與 mod 的設定檔。
 includeSharedVersionSources()

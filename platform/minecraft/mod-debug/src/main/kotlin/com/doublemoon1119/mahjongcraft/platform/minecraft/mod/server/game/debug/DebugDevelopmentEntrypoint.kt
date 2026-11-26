@@ -30,7 +30,7 @@ class DebugDevelopmentEntrypoint : MahjongCraftDevelopmentEntrypoint {
             showcaseOverride.clear(tableId)
         }
         koin.get<DebugCommand>().register(events)
-        // 伺服器自動測試只在 autotestServer 任務指定了階段時執行，其他伺服器即使帶著自動測試開關也照常啟動。
+        // 伺服器自動測試只在 autotestServer 任務啟動、指定了階段的伺服器上執行，其他伺服器照常啟動。
         if (AutotestSelection.current != null && AutotestServerRunner.requestedPhase() != null) AutotestServerRunner(koin).register(events)
     }
 }

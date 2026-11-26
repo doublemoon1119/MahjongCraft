@@ -205,10 +205,10 @@ Common commands, each followed by what it runs. The sections below explain each 
   ./gradlew :minecraft_v1.20.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=table,replay"
   ```
 
-- Only the server test, both of its runs:
+- Only the server tests of the selected targets, with a summary report; it needs no switch:
 
   ```shell
-  ./gradlew :minecraft_v1.20.1_fabric:autotestServer "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=true"
+  ./gradlew autotestServer "-PmahjongcraftTarget=minecraft-v1.20.1-fabric"
   ```
 
 - Options that combine with any of the above:
@@ -262,12 +262,18 @@ Each kind of run in detail:
 
 ### Automated Server Test
 
-- The dedicated server has its own automated test, run by the `autotestServer` task with the same switch:
+- The dedicated server has its own automated test. It needs no switch:
 
   ```shell
-  ./gradlew :minecraft_v1.20.1_fabric:autotestServer "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=true"
+  ./gradlew autotestServer "-PmahjongcraftTarget=minecraft-v1.20.1-fabric"
   ```
 
+- The root `autotestServer` task runs the server test of every selected target and no client. When the runs
+  have ended it writes `build/reports/autotest-server/<start time>/summary.md` and fails if a report did not
+  pass or a server wrote no report. With no server test among the selected targets it starts no server and
+  passes.
+- A loader module's own task, such as `:minecraft_v1.20.1_fabric:autotestServer`, runs only that module's two
+  servers and does not judge the result: it succeeds even when checks failed, so read its report.
 - **The test accepts the Minecraft EULA on your behalf.** Before the first server starts,
   `prepareAutotestServer` writes `eula=true` to the test's own `run/autotest-server/eula.txt` and prints a
   warning, and every report repeats the reminder. Do not run the server test unless you agree to the
@@ -276,12 +282,23 @@ Each kind of run in detail:
   seed, offline mode and peaceful creative play. The port is 25599 plus the target's position in the whole
   target catalog sorted by ID, so `minecraft-v1.20.1-fabric` uses 25599 and `minecraft-v1.20.1-forge` 25600.
   Pass `-PmahjongcraftAutotestServerPort=<port>` to start from another port.
-- Only the `autotestServer` task runs the server test: it tells each server which of its two runs it is. Other
-  servers started with the switch, such as an example's `runServer`, start as usual and run no test.
-- The task starts the server twice. The first run plays at tables and stops in the middle of a match; the
-  second run, `runAutotestServerResume`, loads the same world, checks what was restored and finishes the
-  matches. Both runs write into the same report under `run/autotest-server/autotest/<start time>/`, which
-  keeps the latest reports like the client test.
+- The test has its own run tasks and run directory, so the development server is never part of it:
+  `runServer` and an example's `runServer` start as usual and run no test, with or without
+  `-PmahjongcraftAutotest`.
+- The test starts the server twice. The first run, `runAutotestServerStart`, plays at tables and stops in the
+  middle of a match; the second run, `runAutotestServerResume`, loads the same world, checks what was restored
+  and finishes the matches. Both runs write into the same report under
+  `run/autotest-server/autotest/<start time>/`, which keeps the latest reports like the client test.
+- Every match of the test uses a fixed seed and the beginner AI strategy, whose decisions depend only on the
+  match, so every run and every target plays the same matches and takes the same time. A change to a rule, the
+  AI or how tiles are dealt makes the same seed play a different match; when the test becomes long after such
+  a change, pick another seed number in `AutotestServerTable`.
+- `-PmahjongcraftAutotest=<step>[,<step>...]` limits the server test to the listed steps, as it does for the
+  client test. Without it every step runs.
+- The root `autotestServer` and `autotest` tasks copy every report, and the files each game wrote to its `logs`
+  folder during the run, into the summary's folder, one subfolder per report such as
+  `minecraft_v1.20.1_fabric-server/`. The summary links the reports by relative path, so the folder can be
+  moved or uploaded as a whole.
 
 ### Running Every Target
 

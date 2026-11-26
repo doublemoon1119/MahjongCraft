@@ -94,7 +94,7 @@ Server commands run on the integrated server thread as the local player and retu
 sending it to chat; feedback that arrives later, such as an asynchronous scenario load, joins the same result.
 
 `server/game/debug/autotest` holds the dedicated server's automated test, which the development entry point
-starts on a dedicated server when the switch is set. A dedicated server has no players, so bot players join
+starts on a dedicated server that the `autotestServer` task launched. A dedicated server has no players, so bot players join
 through the vanilla join path on an in-memory connection: they are online like real players, every packet
 sent to them is dropped, and they answer keep-alive checks so the server does not disconnect them. Each bot
 places a table, opens a room, switches it to its rule and fills it with AI players through the same room

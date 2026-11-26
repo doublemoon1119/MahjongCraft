@@ -1,7 +1,9 @@
 import com.doublemoon1119.mahjongcraft.buildlogic.AUTOTEST_SERVER_RESUME
+import com.doublemoon1119.mahjongcraft.buildlogic.AUTOTEST_SERVER_RUN_DIRECTORY
 import com.doublemoon1119.mahjongcraft.buildlogic.AUTOTEST_SERVER_START
 import com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModLibraryKind
 import com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtension
+import com.doublemoon1119.mahjongcraft.buildlogic.SERVER_RUN_DIRECTORY
 import com.doublemoon1119.mahjongcraft.buildlogic.StripModuleInfo
 import com.doublemoon1119.mahjongcraft.buildlogic.UnpackLibraryJars
 import com.doublemoon1119.mahjongcraft.buildlogic.VerifyEmbeddedLibrariesTask
@@ -19,7 +21,6 @@ import com.doublemoon1119.mahjongcraft.buildlogic.minecraftModAccessTransformer
 import com.doublemoon1119.mahjongcraft.buildlogic.modrinth
 import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestClientTasks
 import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestServerTasks
-import com.doublemoon1119.mahjongcraft.buildlogic.serverRunDirectory
 import net.neoforged.moddevgradle.tasks.JarJar
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 
@@ -82,23 +83,30 @@ legacyForge {
         }
         create("server") {
             server()
-            gameDirectory.set(layout.projectDirectory.dir(serverRunDirectory()))
-            // -PmahjongcraftAutotest 時是伺服器自動測試的第一段：開局、打到一半後關機。
+            gameDirectory.set(layout.projectDirectory.dir(SERVER_RUN_DIRECTORY))
+            programArgument("--nogui")
+        }
+        // 伺服器自動測試的兩段都有專用的執行設定與執行目錄，只由 autotestServer 任務依序執行。
+        // 第一段：開局、打到一半後關機。
+        create("autotestServerStart") {
+            server()
+            disableIdeRun()
+            gameDirectory.set(layout.projectDirectory.dir(AUTOTEST_SERVER_RUN_DIRECTORY))
             autotestServerSystemProperties(AUTOTEST_SERVER_START).forEach { (name, value) -> systemProperty(name, value) }
             programArgument("--nogui")
         }
-        // 伺服器自動測試的第二段：讀回第一段留下的世界；只由 autotestServer 任務接在第一段之後執行。
+        // 第二段：讀回第一段留下的世界。
         create("autotestServerResume") {
             server()
             disableIdeRun()
-            gameDirectory.set(layout.projectDirectory.dir(serverRunDirectory()))
+            gameDirectory.set(layout.projectDirectory.dir(AUTOTEST_SERVER_RUN_DIRECTORY))
             autotestServerSystemProperties(AUTOTEST_SERVER_RESUME).forEach { (name, value) -> systemProperty(name, value) }
             programArgument("--nogui")
         }
     }
 }
 registerAutotestClientTasks(clientTask = "runClient")
-registerAutotestServerTasks(startTask = "runServer", resumeTask = "runAutotestServerResume")
+registerAutotestServerTasks(startTask = "runAutotestServerStart", resumeTask = "runAutotestServerResume")
 
 dependencies {
     modImplementation(mc1201.kotlinforforge)
