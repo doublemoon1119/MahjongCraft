@@ -16,6 +16,7 @@ import net.minecraft.world.level.storage.DimensionDataStorage
  * @param create 沒有檔案時建立新的資料。
  * @return 管理器持有的資料。
  */
+@Suppress("TYPE_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
 fun <S : SavedData> DimensionDataStorage.computeSavedData(key: String, decode: (CompoundTag) -> S, create: () -> S): S = computeIfAbsent(
     SavedData.Factory(create, { nbt, _ -> decode(nbt) }, null),
     key,

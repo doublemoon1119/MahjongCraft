@@ -367,9 +367,10 @@ core extension behavior through one adapter. For example, see the Minecraft guid
   services into a shared module, relocate public types, or widen visibility just to simplify registration.
 - The Koin compiler plugin validates the complete graph at each `startKoin` call, but only in a compilation
   that declares at least one definition of its own. Keep application entry points in such a module.
-- A module that declares definitions without starting Koin reports `compile-safety validation skipped`; its
-  definitions are validated at the entry points that load them. Do not disable `compileSafety` there to
-  silence the warning: that also hides its definitions from the entry-point check.
+- A module that declares definitions without starting Koin skips the validation; its definitions are
+  validated at the entry points that load them. The plugin reports this as `compile-safety validation
+  skipped`, which the build keeps at info level so that it does not count as a compiler warning. Do not
+  disable `compileSafety` in such a module: that also hides its definitions from the entry-point check.
 
 ## Extension Bootstrap
 

@@ -56,10 +56,10 @@ kind of change you are making; the rules in them apply even when this file does 
   when they recompile themselves, so ordinary builds do not recompile them every time.
 - CI reruns the same verification for every target on pushes and pull requests (see
   [Build](docs/contributing/build.md#continuous-integration)); it does not replace this local check.
-- A passing build does not mean warning-free: compiler warnings (e.g. redundant casts, unused
-  imports) do not fail the build, so check the compiler output explicitly.
-- Fix flagged warnings/violations before committing, unless they are pre-existing and unrelated to
-  the current change.
+- Compiler warnings (e.g. redundant casts, deprecated calls) fail the build, in Kotlin and Java, locally
+  and in CI. Fix the code. When the flagged code is intended, suppress that one warning at the declaration
+  with `@Suppress("WARNING_NAME")` and state the reason in a comment or the KDoc; do not relax the warning for
+  a whole module.
 
 ## Git Commit Conventions
 

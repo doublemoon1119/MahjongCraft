@@ -60,7 +60,7 @@ internal fun Project.configureKotlinJvm(toolchain: Int, release: Int, overrideDe
 }
 
 /**
- * 設定 Java/Kotlin bytecode release、Kotlin API 版本上限與測試 launcher。
+ * 設定 Java/Kotlin bytecode release、Kotlin API 版本上限與測試 launcher，並讓編譯警告使建置失敗。
  *
  * @param toolchain 測試 launcher 使用的 JDK toolchain 版本。
  * @param release Java 與 Kotlin 編譯輸出的 JVM bytecode release。
@@ -69,6 +69,7 @@ internal fun Project.configureKotlinJvm(toolchain: Int, release: Int, overrideDe
 private fun Project.configureCompilerTasks(toolchain: Int, release: Int, overrideDefaults: Boolean) {
     tasks.withType<JavaCompile>().configureEach {
         options.encoding = "UTF-8"
+        options.compilerArgs.add("-Werror")
         if (overrideDefaults) options.release.set(release) else options.release.convention(release)
     }
     tasks.withType<KotlinCompile>().configureEach {
@@ -82,6 +83,7 @@ private fun Project.configureCompilerTasks(toolchain: Int, release: Int, overrid
     val kotlinApiVersion = KotlinVersion.fromVersion(catalogVersion(KOTLIN_API_VERSION_ALIAS))
     tasks.withType<KotlinCompilationTask<*>>().configureEach {
         compilerOptions.apiVersion.set(kotlinApiVersion)
+        compilerOptions.allWarningsAsErrors.set(true)
     }
     val toolchains = extensions.getByType<JavaToolchainService>()
     // 需要手動開啟的量測與壓力測試讀取這些環境變數；列為輸入，改變時測試才不會被判定為最新或從建置快取取用舊結果。

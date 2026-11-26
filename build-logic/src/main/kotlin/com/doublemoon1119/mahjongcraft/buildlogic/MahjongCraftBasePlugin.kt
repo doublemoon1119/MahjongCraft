@@ -8,7 +8,7 @@ import org.gradle.kotlin.dsl.withType
 
 /** 套用所有 MahjongCraft 模組共用的 Gradle 基礎設定。 */
 class MahjongCraftBasePlugin : Plugin<Project> {
-    /** 設定 group、Minecraft 模組的版本、Base plugin、Jar 內的授權檔與 Koin 完整依賴檢查的時機。 */
+    /** 設定 group、Minecraft 模組的版本、Base plugin、Jar 內的授權檔與 Koin 編譯外掛。 */
     override fun apply(project: Project) = with(project) {
         pluginManager.apply("base")
         group = "com.doublemoon1119.mahjongcraft"
@@ -20,6 +20,6 @@ class MahjongCraftBasePlugin : Plugin<Project> {
                 rename { "${it}_${archiveName.get()}" }
             }
         }
-        configureKoinStrictSafety()
+        configureKoinCompilerPlugin()
     }
 }

@@ -43,6 +43,10 @@
 - Core modules use `core-java-toolchain` and `core-java-release` from `gradle/libs.versions.toml`.
   Platform modules use the Java policy declared by their selected platform target; see
   [Minecraft Build](minecraft-build.md) for the Minecraft modules.
+- Every Kotlin and Java compilation treats warnings as errors, in every module and in `build-logic`. A
+  dependency or compiler upgrade that introduces warnings has to resolve them in the same change. Add
+  `-Xrender-internal-diagnostic-names` to a module's Kotlin compiler arguments temporarily to print the
+  name a `@Suppress` needs.
 - MahjongCraft release trains are independent: Minecraft modules, logic, flow, AI, and extension
   API each read their own version from `gradle/libs.versions.toml`. Modules under `platform/minecraft`
   and `example/platform/minecraft` get `minecraft-mod-version` from the base convention; the others set

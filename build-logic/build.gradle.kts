@@ -52,6 +52,13 @@ gradlePlugin {
     }
 }
 
+// 編譯警告使建置失敗，與 MahjongCraft 的模組相同。
+kotlin {
+    compilerOptions {
+        allWarningsAsErrors.set(true)
+    }
+}
+
 dependencies {
     implementation(libs.kotlin.gradle.plugin)
     implementation(libs.ktlint.gradle.plugin)
