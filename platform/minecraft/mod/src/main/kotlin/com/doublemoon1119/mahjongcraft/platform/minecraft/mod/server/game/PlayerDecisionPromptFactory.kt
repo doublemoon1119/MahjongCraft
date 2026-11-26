@@ -183,7 +183,7 @@ internal fun buildPlayerDecisionKey(
 private fun decisionIdentityFingerprint(identity: String): String = MessageDigest
     .getInstance("SHA-256")
     .digest(identity.encodeToByteArray())
-    .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+    .toHexString()
 
 /**
  * 將目前合法動作候選轉成不依物件實例或列表順序變化的識別片段。

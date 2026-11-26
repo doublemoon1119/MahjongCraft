@@ -147,8 +147,7 @@ data class FixedMahjongTileModelPreparedData(
          * @param value 原始識別字串。
          * @return 不含分隔符且可逆的 UTF-8 十六進位字串。
          */
-        private fun encode(value: String): String = value.encodeToByteArray()
-            .joinToString("") { "%02x".format(it.toInt() and 0xff) }
+        private fun encode(value: String): String = value.encodeToByteArray().toHexString()
     }
 }
 

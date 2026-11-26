@@ -35,7 +35,10 @@ internal class ReadOnlySetSnapshot<T>(elements: Iterable<T>) : AbstractSet<T>() 
         return object : Iterator<T> {
             override fun hasNext(): Boolean = source.hasNext()
 
-            override fun next(): T = source.next()
+            override fun next(): T {
+                if (!source.hasNext()) throw NoSuchElementException()
+                return source.next()
+            }
         }
     }
 }

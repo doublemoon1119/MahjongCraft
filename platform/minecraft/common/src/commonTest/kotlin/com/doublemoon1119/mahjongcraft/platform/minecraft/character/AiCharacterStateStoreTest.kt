@@ -215,7 +215,7 @@ class AiCharacterStateStoreTest {
         val store = store()
         val game = Game(table, GameFlowConfig(), aiPlayerStrategyKeys = room.aiPlayerStrategyKeys)
         store.update(AuthoritativeStateSnapshot(games = mapOf(game.id to game)))
-        val captured = store.snapshot().characters!!.matches[game.matchId]!![bot]!!
+        val captured = store.snapshot().characters!!.matches.getValue(game.matchId).getValue(bot)
         assertTrue((captured.definition?.face as? AiCharacterFace.Tile)?.assetKey in STANDARD_TILE_ASSET_KEYS)
         val updated = game.copy(tableState = table.copy(comboCount = table.comboCount + 1))
         val authoritative = AuthoritativeStateSnapshot(games = mapOf(updated.id to updated))

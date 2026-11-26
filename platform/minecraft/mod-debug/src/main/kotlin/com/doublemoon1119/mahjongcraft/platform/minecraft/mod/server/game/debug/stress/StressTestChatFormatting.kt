@@ -275,13 +275,16 @@ internal fun stressOptionErrorMessage(error: StressOptionError): MutableComponen
         is StressOptionError.InvalidValue -> when (error.option) {
             StressOption.PACE -> stressText(StressDebugKeys.INVALID_PACE)
             StressOption.HISTORY -> stressText(StressDebugKeys.INVALID_HISTORY_MODE)
-            StressOption.MAX_MSPT, StressOption.WARMUP -> Component.translatableWithFallback(
-                StressDebugKeys.INVALID_OPTION_NUMBER,
-                "Stress test option %s must be a whole number from %s to %s",
-                error.option.commandName,
-                requireNotNull(error.option.range).first,
-                requireNotNull(error.option.range).last,
-            )
+            StressOption.MAX_MSPT, StressOption.WARMUP -> {
+                val range = requireNotNull(error.option.range)
+                Component.translatableWithFallback(
+                    StressDebugKeys.INVALID_OPTION_NUMBER,
+                    "Stress test option %s must be a whole number from %s to %s",
+                    error.option.commandName,
+                    range.first,
+                    range.last,
+                )
+            }
             StressOption.SEED -> Component.translatableWithFallback(
                 StressDebugKeys.INVALID_SEED,
                 "Stress test option %s must be a whole number",

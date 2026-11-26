@@ -246,7 +246,7 @@ class RepresentativeOpeningAlgorithmsTest {
             override fun createRoundOpeningProcedure(playerCount: Int): RoundOpeningProcedure = procedure
 
             override fun createWallLayout(playerCount: Int): TileWallLayout {
-                val layout = requireNotNull(delegate.createWallLayout(playerCount))
+                val layout = delegate.createWallLayout(playerCount)
                 return object : TileWallLayout by layout {
                     override fun resolve(
                         shuffledTiles: List<IdentifiedTile>,
@@ -351,7 +351,7 @@ class RepresentativeOpeningAlgorithmsTest {
                 val side = (openerSide - crossedSides).mod(context.playerIdsInTurnOrder.size)
                 RoundOpeningStep.Complete(
                     result = RoundOpeningCompletion(
-                        dealerPlayerId = requireNotNull(context.fixedDealerPlayerId),
+                        dealerPlayerId = context.fixedDealerPlayerId,
                         wallOpening = WallOpening(
                             wallSideOffsetFromDealer = side,
                             stacksFromRight = (total - 1) % 17 + 1,

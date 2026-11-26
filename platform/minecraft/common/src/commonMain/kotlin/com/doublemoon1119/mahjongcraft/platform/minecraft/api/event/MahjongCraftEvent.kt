@@ -26,6 +26,7 @@ class MahjongCraftEvent<L : Any> private constructor() {
      * @param listener 要依註冊順序接收事件的監聽者。
      * @throws IllegalStateException 訂閱點已鎖定時拋出。
      */
+    @Suppress("UnnecessaryNotNullCheck") // Java 寫的擴充可能傳入 null，在註冊時就拒絕，不等到發布事件時才出錯。
     fun register(listener: L) {
         requireNotNull(listener) { "Event listener must not be null" }
         while (true) {

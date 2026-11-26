@@ -53,7 +53,7 @@ internal object AutotestTableStep : AutotestStep {
         client.gameMode?.useItemOn(player, InteractionHand.MAIN_HAND, BlockHitResult(Vec3.atCenterOf(position), Direction.UP, position, false))
         val opened = context.waitUntil(SYNC_TIMEOUT) { client.screen is RoomScreen }
         if (!context.check("Right-clicking the table opens the room screen", opened)) return
-        val tableId = (client.screen as RoomScreen).tableId
+        val tableId = (client.screen as? RoomScreen)?.tableId ?: error("The room screen closed before its table ID was read")
         AutotestTable.tableId = tableId
         context.screenshot("room-vacant")
 

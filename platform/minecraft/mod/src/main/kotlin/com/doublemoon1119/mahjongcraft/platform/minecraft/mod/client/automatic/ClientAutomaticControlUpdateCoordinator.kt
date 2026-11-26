@@ -113,7 +113,7 @@ class ClientAutomaticControlUpdateCoordinator(
             (known?.gameId != snapshot.gameId || snapshot.revision >= known.revision)
         val accepted = stateStore.applySnapshot(snapshot)
         if (resyncResponse) {
-            val request = checkNotNull(pending)
+            val request = pending
             val authority = checkNotNull(stateStore.snapshot())
             val result = when {
                 authority.revision <= request.expectedRevision -> ClientAutomaticControlResultKind.NOT_APPLIED

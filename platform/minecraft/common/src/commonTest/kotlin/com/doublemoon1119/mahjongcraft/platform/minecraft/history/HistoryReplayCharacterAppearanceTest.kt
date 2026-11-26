@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSE
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -22,7 +23,7 @@ class HistoryReplayCharacterAppearanceTest {
             matchId = Uuid.random(),
             playerId = Uuid.random(),
         )
-        val face = (captured?.face as AiCharacterFace.Tile).assetKey
+        val face = assertIs<AiCharacterFace.Tile>(captured?.face).assetKey
         assertFalse(HistoryReplayCharacterAppearance.usesPreviewModel(captured))
         assertEquals(expected = face, actual = HistoryReplayCharacterAppearance.botFace(captured))
     }

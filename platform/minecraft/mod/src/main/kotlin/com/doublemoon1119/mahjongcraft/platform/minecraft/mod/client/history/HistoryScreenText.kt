@@ -9,6 +9,7 @@ import net.minecraft.network.chat.Component
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -65,7 +66,7 @@ internal object HistoryScreenText {
      * @return 格式化後的分秒文字。
      */
     fun duration(value: Duration?): String = value?.takeIf { it.isFinite() && !it.isNegative() }?.let {
-        "%dm %02ds".format(it.inWholeMinutes, it.inWholeSeconds % 60)
+        String.format(Locale.ROOT, "%dm %02ds", it.inWholeMinutes, it.inWholeSeconds % 60)
     } ?: "—"
 
     /**

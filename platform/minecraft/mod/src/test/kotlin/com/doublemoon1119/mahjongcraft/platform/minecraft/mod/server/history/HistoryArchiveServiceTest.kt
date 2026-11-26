@@ -35,6 +35,7 @@ import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.nio.file.Path
 import java.sql.DriverManager
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
@@ -536,7 +537,7 @@ class HistoryArchiveServiceTest {
     private class ArchiveFixture(prefix: String, appearanceFor: (Uuid, Uuid) -> AiCharacterSnapshot? = { _, _ -> null }) {
         val tableId: Uuid = Uuid.random()
         val matchId: Uuid = Uuid.random()
-        val path = createTempDirectory(prefix).resolve("history.sqlite")
+        val path: Path = createTempDirectory(prefix).resolve("history.sqlite")
         val database: SqliteHistoryDatabase = SqliteHistoryDatabase.open(path)
         private val registries = bundledPersistenceRegistries()
         private val mapper = HistoryRecordingPersistenceMapper(registries)

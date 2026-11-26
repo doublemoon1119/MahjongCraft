@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
@@ -22,10 +23,10 @@ class TileComponentSetTest {
         val source = mutableSetOf(player, other)
         val set = ComponentSet.EMPTY.with(BuiltInTileComponents.FACE_ACCESS, TileFaceAccess.Players(source))
         source.clear()
-        val first = set[BuiltInTileComponents.FACE_ACCESS] as TileFaceAccess.Players
+        val first = assertIs<TileFaceAccess.Players>(set[BuiltInTileComponents.FACE_ACCESS])
         assertEquals(setOf(player, other), first.playerIds)
         (first.playerIds as? MutableSet<Uuid>)?.clear()
-        assertEquals(setOf(player, other), (set[BuiltInTileComponents.FACE_ACCESS] as TileFaceAccess.Players).playerIds)
+        assertEquals(setOf(player, other), assertIs<TileFaceAccess.Players>(set[BuiltInTileComponents.FACE_ACCESS]).playerIds)
     }
 
     /** 名稱相同的另一個定義不能改變讀取時的型別或複製行為。 */

@@ -22,6 +22,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
 import org.junit.Assume.assumeTrue
 import java.io.ByteArrayOutputStream
+import java.util.Locale
 import java.util.logging.Logger
 import java.util.zip.GZIPOutputStream
 import kotlin.test.Test
@@ -349,7 +350,7 @@ class CompactReplayCapacityTest {
              * @return 百分位數值。
              */
             fun at(percentile: Int): Double = sorted[(((sorted.size * percentile) + 99) / 100).coerceAtLeast(1) - 1]
-            return "min=%.1f median=%.1f p95=%.1f max=%.1f".format(sorted.first(), at(50), at(95), sorted.last())
+            return String.format(Locale.ROOT, "min=%.1f median=%.1f p95=%.1f max=%.1f", sorted.first(), at(50), at(95), sorted.last())
         }
 
         logger.info(

@@ -40,8 +40,8 @@ class DecisionCardTextTest {
         )
         val entries = decisionEntriesFrom(resolver, promptOf("sample:declare", "mahjongcraft:ron"))
         val custom = entries.single { (it.label.contents as? TranslatableContents)?.key == "sample.declare" }
-        assertEquals("sample.declare.body", (custom.cardBody?.contents as TranslatableContents).key)
-        assertEquals("sample.declare.hint", (custom.cardHint?.contents as TranslatableContents).key)
+        assertEquals("sample.declare.body", assertIs<TranslatableContents>(custom.cardBody?.contents).key)
+        assertEquals("sample.declare.hint", assertIs<TranslatableContents>(custom.cardHint?.contents).key)
         assertEquals("token-sample:declare", assertIs<DecisionEntryIntent.SubmitAction>(custom.intent).token)
         val builtIn = entries.single { it !== custom }
         assertNull(builtIn.cardBody)

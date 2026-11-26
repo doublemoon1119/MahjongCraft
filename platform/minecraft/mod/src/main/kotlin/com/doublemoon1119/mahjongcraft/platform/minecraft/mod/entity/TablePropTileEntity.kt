@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModEntiti
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import net.minecraft.nbt.CompoundTag
+import net.minecraft.network.syncher.EntityDataAccessor
 import net.minecraft.network.syncher.EntityDataSerializers
 import net.minecraft.network.syncher.SynchedEntityData
 import net.minecraft.world.entity.EntityType
@@ -104,9 +105,9 @@ class TablePropTileEntity(
         const val NBT_KEY_APPEARANCE_ID = "AppearanceId"
 
         /** 只同步已公開的牌面資產。 */
-        val ASSET_KEY = SynchedEntityData.defineId(TablePropTileEntity::class.java, EntityDataSerializers.STRING)
+        val ASSET_KEY: EntityDataAccessor<String> = SynchedEntityData.defineId(TablePropTileEntity::class.java, EntityDataSerializers.STRING)
 
         /** 同步完整牌組外觀 ID。 */
-        val APPEARANCE_ID = SynchedEntityData.defineId(TablePropTileEntity::class.java, EntityDataSerializers.STRING)
+        val APPEARANCE_ID: EntityDataAccessor<String> = SynchedEntityData.defineId(TablePropTileEntity::class.java, EntityDataSerializers.STRING)
     }
 }

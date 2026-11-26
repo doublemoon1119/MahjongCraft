@@ -74,12 +74,10 @@ object CompactReplayCodec {
             ?.let { runCatching { Uuid.parse(it) }.getOrNull() }
             ?: error("Replay header lacks a valid match ID")
         require(expectedMatchId == matchId) { "Replay match ID does not match the request" }
-        val ruleDto = header[ReplayFormatKeys.RULE]?.let {
-            persistenceJson.decodeFromJsonElement(TypedPersistenceDto.serializer(), it)
-        } ?: error("Replay header lacks rule configuration")
-        val flowDto = header[ReplayFormatKeys.FLOW]?.let {
-            persistenceJson.decodeFromJsonElement(GameFlowConfigPersistenceDto.serializer(), it)
-        } ?: error("Replay header lacks flow configuration")
+        val ruleJson = header[ReplayFormatKeys.RULE] ?: error("Replay header lacks rule configuration")
+        val ruleDto = persistenceJson.decodeFromJsonElement(TypedPersistenceDto.serializer(), ruleJson)
+        val flowJson = header[ReplayFormatKeys.FLOW] ?: error("Replay header lacks flow configuration")
+        val flowDto = persistenceJson.decodeFromJsonElement(GameFlowConfigPersistenceDto.serializer(), flowJson)
         return GameConfig(
             ruleConfig = registries.ruleConfigs.decode(ruleDto),
             flowConfig = flowDto.toDomain(),
@@ -142,16 +140,16 @@ object CompactReplayCodec {
                             parts = linkedMapOf()
                             facts.clear()
                         }
-                        current = when (fact) {
+                        val openingState = when (fact) {
                             is HistoryFact.MatchStarted -> fact.tableState
                             is HistoryFact.RoundStarted -> fact.tableState
                         }
-                        val openingState = checkNotNull(current)
-                        val stateJson = (encoded[ReplaySourceKeys.FACT] as JsonObject)[ReplaySourceKeys.STATE]?.jsonObject
-                            ?: error("Replay opening fact lacks state")
+                        current = openingState
+                        val factJson = encoded[ReplaySourceKeys.FACT] as? JsonObject ?: error("Replay opening event lacks its fact")
+                        val stateJson = factJson[ReplaySourceKeys.STATE]?.jsonObject ?: error("Replay opening fact lacks state")
                         if (ruleConfig == null) {
                             ruleConfig = stateJson[ReplaySourceKeys.CONFIG]
-                            flowConfig = (encoded[ReplaySourceKeys.FACT] as JsonObject)[ReplaySourceKeys.FLOW_CONFIG]
+                            flowConfig = factJson[ReplaySourceKeys.FLOW_CONFIG]
                             val aiStrategyKeys = checkNotNull((fact as? HistoryFact.MatchStarted)?.aiPlayerStrategyKeys) {
                                 "Replay must open with match start"
                             }
@@ -504,7 +502,7 @@ object CompactReplayCodec {
                 )
             }
         }
-        val encodedPlayers = encoded[ReplayFormatKeys.PLAYERS] as JsonArray
+        val encodedPlayers = encoded[ReplayFormatKeys.PLAYERS] as? JsonArray ?: error("Replay player projection is missing")
         require(encodedPlayers.size == state.players.size) { "Replay player projection does not match the table" }
         gameplay[ReplayFormatKeys.PLAYERS] = JsonArray(
             content = encodedPlayers.zip(state.players) { encodedPlayer, player ->

@@ -251,7 +251,7 @@ class GameEventDelivery(
         if (state.load().sessionId != pending.sessionId) return
         // 內建處理與公開監聽者使用相同的失敗隔離，出錯時不影響監聽者與後續批次。
         pending.onBatchDelivered?.let { handler -> notify(pending = pending, listeners = listOf(handler), event = null) { it(batch) } }
-        val context = checkNotNull(pending.context)
+        val context = pending.context
         notify(
             pending = pending,
             listeners = eventBatchCommitted.listenersSnapshot(),
@@ -263,7 +263,7 @@ class GameEventDelivery(
 
     /** 交付批次內的單一事件，各類型仍使用各自的訂閱點。 */
     private fun deliverOne(pending: PendingBatch, event: MatchEvent) {
-        val context = checkNotNull(pending.context)
+        val context = pending.context
         when (event) {
             is MatchStartedEvent -> notify(
                 pending = pending,
@@ -323,7 +323,7 @@ class GameEventDelivery(
                 if (cause !is CancellationException && !failurePolicy.isIsolatable(cause)) throw cause
                 report {
                     if (event == null) {
-                        reporter.batchListenerFailed(checkNotNull(pending.batch), listener, cause)
+                        reporter.batchListenerFailed(pending.batch, listener, cause)
                     } else {
                         reporter.listenerFailed(event, listener, cause)
                     }

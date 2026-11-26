@@ -324,7 +324,7 @@ object MahjongPlayerAreaLayout {
             MahjongTileTableLayout.sidewaysSlotIndex(meldDisplayDirection(meld.sourceDirection, playerCount), rowTileIds.size)
         }
         val remaining = ArrayDeque(rowTileIds.filterNot { it == sidewaysTileId })
-        val tileAtSlot = rowTileIds.indices.map { slot -> if (slot == sidewaysSlot) requireNotNull(sidewaysTileId) else remaining.removeFirst() }
+        val tileAtSlot = rowTileIds.indices.map { slot -> if (slot == sidewaysSlot) sidewaysTileId else remaining.removeFirst() }
         return buildList {
             for (slot in rowTileIds.indices.reversed()) {
                 add(PlannedSlot(tileAtSlot[slot], isSideways = slot == sidewaysSlot))

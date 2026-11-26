@@ -1369,7 +1369,7 @@ class ServerThreadGamePresentationPublisher(
             requestedWinner.seatIndex to (organizedHand.tiles to melds)
         }
         if (handLaydownEndGameTime != null) {
-            val effectStartGameTime = checkNotNull(handLaydownEndGameTime) + WinCelebrationEffectSteps.START_DELAY_TICKS
+            val effectStartGameTime = handLaydownEndGameTime + WinCelebrationEffectSteps.START_DELAY_TICKS
             val effectEndGameTime = effectStartGameTime + WinCelebrationEffectSteps.DURATION_TICKS
             effectScheduler.schedule(
                 world = resolved.world,

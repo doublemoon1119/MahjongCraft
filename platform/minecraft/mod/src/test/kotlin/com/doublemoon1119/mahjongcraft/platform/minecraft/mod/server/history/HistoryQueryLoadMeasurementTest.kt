@@ -23,6 +23,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import java.lang.management.ManagementFactory
 import java.sql.DriverManager
+import java.util.Locale
 import java.util.concurrent.Executors
 import kotlin.io.path.createTempDirectory
 import kotlin.random.Random
@@ -78,11 +79,11 @@ class HistoryQueryLoadMeasurementTest {
                 result.gateBusy,
                 result.managementBusy,
                 result.attempts,
-                "%.3f".format(result.queryP50Millis),
-                "%.3f".format(result.queryP95Millis),
-                "%.3f".format(result.queryThroughputPerSecond),
+                String.format(Locale.ROOT, "%.3f", result.queryP50Millis),
+                String.format(Locale.ROOT, "%.3f", result.queryP95Millis),
+                String.format(Locale.ROOT, "%.3f", result.queryThroughputPerSecond),
                 result.writeSamples,
-                "%.3f".format(result.writeP95Millis),
+                String.format(Locale.ROOT, "%.3f", result.writeP95Millis),
                 result.processCpuMillis,
                 result.initialHeapBytes,
                 result.peakHeapBytes,

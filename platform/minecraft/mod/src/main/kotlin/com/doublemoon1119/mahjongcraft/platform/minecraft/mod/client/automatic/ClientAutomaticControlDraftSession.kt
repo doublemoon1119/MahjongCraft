@@ -148,7 +148,7 @@ class ClientAutomaticControlDraftSession(initialSnapshot: AutomaticControlSnapsh
         currentPendingRequest = null
         val accepted = completion.result == ClientAutomaticControlResultKind.ACCEPTED
         if (accepted && completion.authoritativeSnapshot?.gameId == pending.gameId) {
-            val snapshot = checkNotNull(completion.authoritativeSnapshot)
+            val snapshot = completion.authoritativeSnapshot
             currentBaseline = snapshot
             currentEnabledControlIds = snapshot.enabledControlIds
             currentStale = false
