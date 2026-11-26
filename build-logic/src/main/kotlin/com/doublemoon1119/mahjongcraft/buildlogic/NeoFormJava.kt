@@ -28,7 +28,8 @@ private const val NEOFORM_RUNTIME_MINIMUM_JAVA: Int = 21
  * 其他須知：
  *
  * - 工具的快取不區分 Java 版本，換版本後要清除快取才會重新編譯。
- * - CI 為每個 target 安裝它的 Java 與 Java 21，並停用自動下載。
+ * - CI 停用自動下載，只安裝 target 在目錄中宣告的 JDK。Java 低於工具最低需求的 target 要在 `additional-java-toolchains`
+ *   宣告工具使用的版本。
  * - 外掛不是 build-logic 的依賴，因此以類別名稱與屬性名稱取得它的任務設定。
  */
 internal fun Project.useTargetJavaForNeoForm() {

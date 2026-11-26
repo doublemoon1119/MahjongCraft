@@ -55,7 +55,8 @@
   core libraries and build tooling.
 - Each platform version has its own folder, `gradle/platform/<platform>/<version>/`:
   - `targets.toml` declares that version's platform targets. The build reads every such file and fails
-    when two files declare the same target ID.
+    when two files declare the same target ID. A target whose build tools need a JDK other than its
+    `java-toolchain` lists it in `additional-java-toolchains`; CI installs only the JDKs a target declares.
   - `versions.toml`, when present, holds that version's dependencies and runtime requirements as a separate
     catalog. Each platform's build guide names its catalogs.
 - Catalog names use lowercase words joined by `-`, never camelCase, so Gradle accessors stay predictable,
@@ -117,29 +118,33 @@
 
 ## Continuous Integration
 
-- `.github/workflows/ci.yml` runs on every push and pull request, whatever the branch, and can be started
-  manually. Branches that predate the workflow do not contain it, so pushing them does not run CI. A newer
-  push to the same branch or pull request cancels the run in progress.
-- The first job runs `./gradlew writeCiTargetMatrix`, which writes `build/ci/target-matrix.json`: the
-  built-in `core` target and every target in the `targets.toml` files, each with its Java toolchain
-  and whether it has example modules. A new target is verified without editing the workflow.
-- Each target then runs the same full verification as a local check, in its own job:
+- CI is split by platform: `.github/workflows/ci-core.yml` verifies the built-in `core` target, and each
+  platform has its own `ci-<platform>.yml`, such as `ci-minecraft.yml`. A platform's workflow may name its
+  platform, pass that platform's build properties and add steps only that platform needs. A new platform
+  adds a workflow file; a new target of an existing platform is verified without editing any workflow.
+- Every workflow runs on every push and pull request, whatever the branch, and can be started manually.
+  Branches that predate a workflow do not contain it, so pushing them does not run it. A newer push to the
+  same branch or pull request cancels that workflow's run in progress.
+- The steps the workflows share are composite actions under `.github/actions/`:
+  - `list-targets` runs `./gradlew writeCiTargetMatrix "-PciPlatform=<platform>"`, which writes
+    `build/ci/target-matrix.json`: the platform's targets from the `targets.toml` files, or the built-in
+    `core` target for `core`, each with the JDKs it declares and whether it has example modules.
+  - `setup-target` installs the JDKs the target declares, its `java-toolchain` and any
+    `additional-java-toolchains`, then JDK 25 to run Gradle, and sets up Gradle. Gradle finds the target's
+    JDKs through `org.gradle.java.installations.fromEnv`; toolchain downloads are disabled, so a missing JDK
+    fails the job. Pushes save the Gradle cache; pull requests only read it.
+  - `verify-target` runs the same full verification as a local check, with any further arguments the
+    platform's workflow passes:
 
-  ```shell
-  ./gradlew build detektAll --continue --stacktrace "-PmahjongcraftTarget=<target>" "-PmahjongcraftExample=<true|false>"
-  ```
+    ```shell
+    ./gradlew build detektAll collectCiArtifacts --continue --stacktrace "-PmahjongcraftTarget=<target>"
+    ```
 
-  CI sets the `CI` environment variable, so modules that start Koin recheck their whole dependency graph
-  on every build, as `-PmahjongcraftKoinStrictSafety=true` does locally.
-  Gradle runs on JDK 25. The target's toolchain JDK and JDK 21 are installed separately and found through
-  `org.gradle.java.installations.fromEnv`; toolchain downloads are disabled, so a missing JDK fails the job.
-  JDK 21 runs the tool that prepares Minecraft for ModDevGradle (see
-  [Minecraft Build](minecraft-build.md)), which needs at least Java 21.
-- Pushes save the Gradle cache, including Loom's Minecraft files; pull requests only read it.
-- CI builds pass the short commit hash as [build metadata](minecraft-build.md#mod-versions), so a Minecraft mod built
-  by CI reads like `0.4.0-SNAPSHOT+1.20.1-fabric.a0f6307` and its JAR like
-  `mahjongcraft-fabric-1.20.1-0.4.0-SNAPSHOT+a0f6307.jar`. Local builds leave it out.
-- A failed job uploads its test and detekt reports. A passing job runs `collectCiArtifacts`, which gathers
-  the target's distributable files into `build/ci/artifacts/`, and uploads them; a target without
-  distributable files, such as `core`, uploads nothing. Each platform's build convention decides what is
-  distributable. Both uploads are kept for seven days and are not releases.
+    A failed run uploads its test and detekt reports. A passing run uploads the files `collectCiArtifacts`
+    gathered into `build/ci/artifacts/`; a target without distributable files, such as `core`, uploads
+    nothing. Each platform's build convention decides what is distributable. Both uploads are kept for seven
+    days and are not releases.
+- Each target is verified in its own job. CI sets the `CI` environment variable, so modules that start Koin
+  recheck their whole dependency graph on every build, as `-PmahjongcraftKoinStrictSafety=true` does locally.
+- What a platform's workflow adds is described in that platform's build guide; for Minecraft see
+  [Continuous Integration](minecraft-build.md#continuous-integration).

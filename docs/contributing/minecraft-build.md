@@ -23,7 +23,8 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   the tools need at least Java 21. A newer Java names compiler-generated methods such as lambdas differently from
   vanilla, and development runs with mods that change those methods, such as Embeddium, then fail. The tools'
   cache does not record the Java version, so after changing it delete `~/.gradle/caches/neoformruntime` to
-  recompile. CI installs each target's JDK and JDK 21 and disables toolchain downloads.
+  recompile. CI disables toolchain downloads and installs only the JDKs a target declares, so a target whose
+  toolchain is older than Java 21 lists 21 in `additional-java-toolchains` in its `targets.toml`.
 
 ## Version Mod Modules
 
@@ -205,7 +206,8 @@ Common commands, each followed by what it runs. The sections below explain each 
   ./gradlew :minecraft_v1.20.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=table,replay"
   ```
 
-- Only the server tests of the selected targets, with a summary report; it needs no switch:
+- Only the server tests of the selected targets, with a summary report; this is what CI runs and it needs no
+  switch:
 
   ```shell
   ./gradlew autotestServer "-PmahjongcraftTarget=minecraft-v1.20.1-fabric"
@@ -271,7 +273,7 @@ Each kind of run in detail:
 - The root `autotestServer` task runs the server test of every selected target and no client. When the runs
   have ended it writes `build/reports/autotest-server/<start time>/summary.md` and fails if a report did not
   pass or a server wrote no report. With no server test among the selected targets it starts no server and
-  passes.
+  passes. CI runs this task for every Minecraft target (see [Continuous Integration](#continuous-integration)).
 - A loader module's own task, such as `:minecraft_v1.20.1_fabric:autotestServer`, runs only that module's two
   servers and does not judge the result: it succeeds even when checks failed, so read its report.
 - **The test accepts the Minecraft EULA on your behalf.** Before the first server starts,
@@ -321,3 +323,27 @@ Each kind of run in detail:
   `build/reports/autotest/<start time>/summary.md`, which links each report and lists the failed checks, and
   fails if any report did not pass or a run wrote no report. Only reports started during this build count,
   and the latest summaries are kept like the reports.
+
+## Continuous Integration
+
+`.github/workflows/ci-minecraft.yml` verifies every Minecraft target in its own job, with the steps shared by
+all platforms (see [Build](build.md#continuous-integration)). On top of them it does the following.
+
+- It passes `-PmahjongcraftExample=true` for a target that declares example modules, so the example mod is
+  built and tested with the mod.
+- It passes the short commit hash as [build metadata](#mod-versions), so a mod built by CI reads like
+  `0.4.0-SNAPSHOT+1.20.1-fabric.a0f6307` and its JAR like
+  `mahjongcraft-fabric-1.20.1-0.4.0-SNAPSHOT+a0f6307.jar`. Local builds leave it out.
+- The Gradle cache it saves on pushes includes the Minecraft files Fabric Loom and ModDevGradle prepared.
+- After the verification passes it runs the target's [automated server test](#automated-server-test) in a
+  separate step:
+
+  ```shell
+  ./gradlew autotestServer --stacktrace "-PmahjongcraftTarget=<target>"
+  ```
+
+  The step uploads `build/reports/autotest-server/`, which holds the summary, each server's report and its
+  logs, whether the test passed or not.
+- **A CI run accepts the Minecraft EULA on the runner**, on behalf of the owner of the repository the
+  workflow runs in, including a fork, because the server test writes `eula=true` into its run directory.
+- The client test is not part of CI: it needs a display.

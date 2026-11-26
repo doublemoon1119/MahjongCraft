@@ -1,0 +1,46 @@
+# Runs the same full verification as a local pre-commit check for one target. Run setup-target first.
+name: Verify a target
+description: Builds, tests and lints one build target, then uploads its reports or its distributable files.
+
+inputs:
+  target:
+    description: The build target ID, passed as -PmahjongcraftTarget.
+    required: true
+  gradle-arguments:
+    description: Further Gradle arguments the platform's workflow adds, separated by spaces. None may contain a space.
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Build and verify
+      shell: bash
+      env:
+        TARGET: ${{ inputs.target }}
+        GRADLE_ARGUMENTS: ${{ inputs.gradle-arguments }}
+      # GRADLE_ARGUMENTS is left unquoted on purpose so it splits into separate arguments.
+      run: >-
+        ./gradlew build detektAll collectCiArtifacts --continue --stacktrace
+        "-PmahjongcraftTarget=${TARGET}"
+        ${GRADLE_ARGUMENTS}
+        "-Porg.gradle.java.installations.fromEnv=${JAVA_TOOLCHAIN_VARIABLES}"
+        "-Porg.gradle.java.installations.auto-download=false"
+        "-Pkotlin.compiler.execution.strategy=in-process"
+        "-Dorg.gradle.jvmargs=-Xmx5g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
+    - name: Upload reports
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: reports-${{ inputs.target }}
+        path: "**/build/reports/"
+        retention-days: 7
+    # The build decides which files are distributable and collects them into build/ci/artifacts;
+    # a target without distributable files uploads nothing.
+    - name: Upload distributable artifacts
+      if: success()
+      uses: actions/upload-artifact@v7
+      with:
+        name: artifacts-${{ inputs.target }}
+        path: build/ci/artifacts/
+        if-no-files-found: ignore
+        retention-days: 7

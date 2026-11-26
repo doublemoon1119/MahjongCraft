@@ -1,0 +1,78 @@
+# Verifies every Minecraft target, one job per target: a Minecraft version with one mod loader.
+# The steps shared with the other platforms' workflows are the actions under .github/actions.
+name: CI (Minecraft)
+
+# Runs on every push and pull request. Branches created before this workflow existed do not contain it,
+# so pushes to them do not run CI.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-minecraft-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  targets:
+    name: List targets
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.targets.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: targets
+        uses: ./.github/actions/list-targets
+        with:
+          platform: minecraft
+
+  verify:
+    name: Verify (${{ matrix.target }})
+    needs: targets
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.targets.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-target
+        with:
+          java-toolchains: ${{ toJSON(matrix.javaToolchains) }}
+      # The short commit hash becomes the mod version's build metadata, so a mod built here can be told apart
+      # from a release and from other CI builds.
+      - name: Read the commit hash
+        run: echo "BUILD_METADATA=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+      # Builds the mod together with the target's example mod when it has one. The mod JARs are uploaded for
+      # testing in the game; they are not releases.
+      - uses: ./.github/actions/verify-target
+        with:
+          target: ${{ matrix.target }}
+          gradle-arguments: >-
+            -PmahjongcraftExample=${{ matrix.examples }}
+            -PmahjongcraftBuildMetadata=${{ env.BUILD_METADATA }}
+      # Starts the target's dedicated server, plays matches at its tables, stops the server in the middle of a
+      # match, starts it again on the same world and finishes the matches.
+      # The test writes eula=true into its own run directory on the runner: running this workflow accepts the
+      # Minecraft EULA (https://aka.ms/MinecraftEULA) on behalf of the owner of the repository it runs in.
+      - name: Automated server test
+        id: server-autotest
+        timeout-minutes: 30
+        run: >-
+          ./gradlew autotestServer --stacktrace
+          "-PmahjongcraftTarget=${{ matrix.target }}"
+          "-Porg.gradle.java.installations.fromEnv=${JAVA_TOOLCHAIN_VARIABLES}"
+          "-Porg.gradle.java.installations.auto-download=false"
+          "-Pkotlin.compiler.execution.strategy=in-process"
+          "-Dorg.gradle.jvmargs=-Xmx5g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
+      # The build collects the summary, each server's report and its logs into this folder.
+      - name: Upload automated server test reports
+        if: always() && steps.server-autotest.outcome != 'skipped'
+        uses: actions/upload-artifact@v7
+        with:
+          name: server-autotest-${{ matrix.target }}
+          path: build/reports/autotest-server/
+          if-no-files-found: ignore
+          retention-days: 7

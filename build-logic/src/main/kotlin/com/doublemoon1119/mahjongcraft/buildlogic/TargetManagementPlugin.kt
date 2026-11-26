@@ -38,6 +38,7 @@ class TargetManagementPlugin : Plugin<Project> {
             description = "Writes the targets CI verifies, with their Java toolchains, as a GitHub Actions matrix."
             this.rootDirectory.set(rootDirectory)
             coreJavaToolchain.set(project.provider { project.catalogVersion("core-java-toolchain").toInt() })
+            platform.set(project.providers.gradleProperty("ciPlatform"))
             outputFile.set(project.layout.buildDirectory.file("ci/target-matrix.json"))
         }
         project.tasks.register(CI_ARTIFACTS_TASK_NAME, Sync::class.java) {
