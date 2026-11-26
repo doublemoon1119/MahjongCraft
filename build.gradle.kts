@@ -1,4 +1,5 @@
 import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestAggregate
+import com.doublemoon1119.mahjongcraft.buildlogic.registerCoverageAggregate
 
 plugins {
     base
@@ -24,3 +25,6 @@ extra["projectDisplayName"] = projectDisplayName
 
 // -PmahjongcraftAutotest 時登記總任務 autotest：執行所選目標全部的自動測試並寫出總報告。
 registerAutotestAggregate()
+
+// -PmahjongcraftCoverage=true 時合併各模組的測試覆蓋率，koverHtmlReport 與 koverXmlReport 寫出總報告。
+registerCoverageAggregate()

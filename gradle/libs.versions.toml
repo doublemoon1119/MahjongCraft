@@ -32,6 +32,7 @@ koin-bom = "4.2.2"
 koin-plugin = "1.2.1"
 ktlint-gradle = "14.2.0"
 detekt = "2.0.0-alpha.6"
+kover = "0.9.11"
 
 # Minecraft build plugins
 # 可建置多個 Minecraft 版本的外掛；各 Minecraft 版本自己的依賴在 gradle/platform/minecraft/<版本>/versions.toml。
@@ -48,6 +49,7 @@ detekt-gradle-plugin = { group = "dev.detekt", name = "detekt-gradle-plugin", ve
 detekt-api = { group = "dev.detekt", name = "detekt-api", version.ref = "detekt" }
 detekt-kotlin-analysis-api = { group = "dev.detekt", name = "detekt-kotlin-analysis-api", version.ref = "detekt" }
 detekt-test = { group = "dev.detekt", name = "detekt-test", version.ref = "detekt" }
+kover-gradle-plugin = { group = "org.jetbrains.kotlinx", name = "kover-gradle-plugin", version.ref = "kover" }
 
 # Kotlin ecosystem libraries
 kotlinx-coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }

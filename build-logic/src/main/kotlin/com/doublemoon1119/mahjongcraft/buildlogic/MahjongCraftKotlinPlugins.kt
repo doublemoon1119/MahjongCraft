@@ -12,13 +12,14 @@ import org.jlleitschuh.gradle.ktlint.KtlintExtension
 
 /** 套用 MahjongCraft KMP module 的核心 Java baseline 與格式設定。 */
 class MahjongCraftKotlinMultiplatformPlugin : Plugin<Project> {
-    /** 套用 KMP、base、ktlint、detekt 與核心 JVM 編譯政策。 */
+    /** 套用 KMP、base、ktlint、detekt、開啟時的覆蓋率量測與核心 JVM 編譯政策。 */
     override fun apply(project: Project) = with(project) {
         pluginManager.apply("mahjongcraft.base")
         pluginManager.apply("org.jetbrains.kotlin.multiplatform")
         pluginManager.apply("org.jlleitschuh.gradle.ktlint")
         configureKtlint()
         configureDetekt()
+        configureCoverage()
         configureMultiplatformJvm(
             catalogVersion("core-java-toolchain").toInt(),
             catalogVersion("core-java-release").toInt(),
@@ -29,13 +30,14 @@ class MahjongCraftKotlinMultiplatformPlugin : Plugin<Project> {
 
 /** 套用 MahjongCraft Kotlin JVM module 的核心 Java baseline 與格式設定。 */
 class MahjongCraftKotlinJvmPlugin : Plugin<Project> {
-    /** 套用 Kotlin JVM、base、ktlint、detekt 與核心 JVM 編譯政策。 */
+    /** 套用 Kotlin JVM、base、ktlint、detekt、開啟時的覆蓋率量測與核心 JVM 編譯政策。 */
     override fun apply(project: Project) = with(project) {
         pluginManager.apply("mahjongcraft.base")
         pluginManager.apply("org.jetbrains.kotlin.jvm")
         pluginManager.apply("org.jlleitschuh.gradle.ktlint")
         configureKtlint()
         configureDetekt()
+        configureCoverage()
         configureKotlinJvm(
             catalogVersion("core-java-toolchain").toInt(),
             catalogVersion("core-java-release").toInt(),

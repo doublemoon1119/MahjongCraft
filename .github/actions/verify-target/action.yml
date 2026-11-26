@@ -1,6 +1,8 @@
 # Runs the same full verification as a local pre-commit check for one target. Run setup-target first.
 name: Verify a target
-description: Builds, tests and lints one build target, then uploads its reports or its distributable files.
+description: >-
+  Builds, tests and lints one build target with test coverage measured, then uploads its reports, or its
+  coverage report and distributable files.
 
 inputs:
   target:
@@ -19,9 +21,11 @@ runs:
         TARGET: ${{ inputs.target }}
         GRADLE_ARGUMENTS: ${{ inputs.gradle-arguments }}
       # GRADLE_ARGUMENTS is left unquoted on purpose so it splits into separate arguments.
+      # The tests run once, with coverage measured, and the coverage report is written from that run.
       run: >-
-        ./gradlew build detektAll collectCiArtifacts --continue --stacktrace
+        ./gradlew build detektAll collectCiArtifacts :koverXmlReport :koverHtmlReport --continue --stacktrace
         "-PmahjongcraftTarget=${TARGET}"
+        "-PmahjongcraftCoverage=true"
         ${GRADLE_ARGUMENTS}
         "-Porg.gradle.java.installations.fromEnv=${JAVA_TOOLCHAIN_VARIABLES}"
         "-Porg.gradle.java.installations.auto-download=false"
@@ -33,6 +37,14 @@ runs:
       with:
         name: reports-${{ inputs.target }}
         path: "**/build/reports/"
+        retention-days: 7
+    - name: Upload coverage report
+      if: success()
+      uses: actions/upload-artifact@v7
+      with:
+        name: coverage-${{ inputs.target }}
+        path: build/reports/kover/
+        if-no-files-found: ignore
         retention-days: 7
     # The build decides which files are distributable and collects them into build/ci/artifacts;
     # a target without distributable files uploads nothing.

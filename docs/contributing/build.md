@@ -120,6 +120,26 @@
 - In shared guides, present version/loader-specific commands and paths as examples. An adapter's own
   guide can describe its implementation directly.
 
+## Test Coverage
+
+- `-PmahjongcraftCoverage=true` measures test coverage with [Kover](https://github.com/Kotlin/kotlinx-kover). Without
+  it Kover is not applied at all: it attaches an agent to every test task, which makes tests about a quarter slower.
+- With the switch, every Kotlin module applies Kover except the test support modules under `testing/`, and the root
+  merges them. The root report covers the selected targets:
+
+  ```shell
+  ./gradlew :koverHtmlReport :koverXmlReport "-PmahjongcraftCoverage=true" "-PmahjongcraftTarget=<target>"
+  ```
+
+  The reports are written to `build/reports/kover/html/index.html` and `build/reports/kover/report.xml`. Use the
+  root task paths: a bare `koverHtmlReport` also writes a report for every module.
+- Coverage is measured on the JVM, the only target of the core modules. Debug and example modules are included;
+  the HTML report lists them under their own packages.
+- When targets of two Minecraft versions are built together, a class compiled from the shared source by both
+  version modules appears once, covered if either version's tests ran it. Build one target to see a single
+  version.
+- There is no coverage threshold.
+
 ## Continuous Integration
 
 - CI is split by platform: `.github/workflows/ci-core.yml` verifies the built-in `core` target, and each
@@ -137,17 +157,18 @@
     `additional-java-toolchains`, then JDK 25 to run Gradle, and sets up Gradle. Gradle finds the target's
     JDKs through `org.gradle.java.installations.fromEnv`; toolchain downloads are disabled, so a missing JDK
     fails the job. Pushes save the Gradle cache; pull requests only read it.
-  - `verify-target` runs the same full verification as a local check, with any further arguments the
-    platform's workflow passes:
+  - `verify-target` runs the same full verification as a local check with [test coverage](#test-coverage)
+    measured, with any further arguments the platform's workflow passes:
 
     ```shell
-    ./gradlew build detektAll collectCiArtifacts --continue --stacktrace "-PmahjongcraftTarget=<target>"
+    ./gradlew build detektAll collectCiArtifacts :koverXmlReport :koverHtmlReport --continue --stacktrace "-PmahjongcraftTarget=<target>" "-PmahjongcraftCoverage=true"
     ```
 
-    A failed run uploads its test and detekt reports. A passing run uploads the files `collectCiArtifacts`
-    gathered into `build/ci/artifacts/`; a target without distributable files, such as `core`, uploads
-    nothing. Each platform's build convention decides what is distributable. Both uploads are kept for seven
-    days and are not releases.
+    The tests run once, with coverage measured. A failed run uploads its test and detekt reports. A passing run
+    uploads the coverage report as `coverage-<target>` and the files `collectCiArtifacts` gathered into
+    `build/ci/artifacts/`; a target without distributable files, such as `core`, uploads only the coverage
+    report. Each platform's build convention decides what is distributable. All uploads are kept for seven days
+    and are not releases.
 - Each target is verified in its own job. CI sets the `CI` environment variable, so modules that start Koin
   recheck their whole dependency graph on every build, as `-PmahjongcraftKoinStrictSafety=true` does locally.
 - What a platform's workflow adds is described in that platform's build guide; for Minecraft see
