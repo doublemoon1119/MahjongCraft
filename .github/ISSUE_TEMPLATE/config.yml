@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and discussion / 提問與討論
+    url: https://github.com/doublemoon1119/MahjongCraft/discussions
+    about: Ask how to use MahjongCraft, share ideas, or check whether something is a bug. / 詢問使用方式、分享想法，或確認某個狀況是不是錯誤
+  - name: Supported Minecraft versions / 支援的 Minecraft 版本
+    url: https://github.com/doublemoon1119/MahjongCraft/blob/main/platform/minecraft/README.md#target
+    about: Check the supported Minecraft versions and loaders before asking for another one. / 要求其他版本前，請先查看目前支援的 Minecraft 版本與載入器

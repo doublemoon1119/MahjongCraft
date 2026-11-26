@@ -1,0 +1,75 @@
+name: Minecraft mod bug report / Minecraft 模組錯誤回報
+description: Report a problem in the MahjongCraft Minecraft mod. / 回報 MahjongCraft Minecraft 模組的問題
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please search existing issues first. For questions, use [Discussions](https://github.com/doublemoon1119/MahjongCraft/discussions). Logs, screenshots or recordings make problems much faster to find.
+        請先搜尋是否已有相同的 issue。一般提問請到 [Discussions](https://github.com/doublemoon1119/MahjongCraft/discussions)。附上記錄檔、截圖或錄影，能大幅加快找到問題
+  - type: input
+    id: mod-version
+    attributes:
+      label: MahjongCraft version / MahjongCraft 版本
+      description: The version in the mod file name or the mod list. / 模組檔名或模組清單中顯示的版本
+    validations:
+      required: true
+  - type: dropdown
+    id: minecraft-version
+    attributes:
+      label: Minecraft version / Minecraft 版本
+      options:
+        - "1.20.1"
+        - "1.21.1"
+        - Other / 其他
+    validations:
+      required: true
+  - type: dropdown
+    id: loader
+    attributes:
+      label: Mod loader / 模組載入器
+      options:
+        - Fabric
+        - Forge
+        - NeoForge
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Where it happens / 發生的環境
+      options:
+        - Singleplayer / 單人遊戲
+        - LAN world / 區域網路世界
+        - Dedicated server / 專用伺服器
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened / 發生了什麼
+      description: Describe the problem and what you expected instead. / 描述問題，以及原本預期的結果
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce / 重現步驟
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Logs, screenshots or recordings / 記錄檔、截圖或錄影
+      description: |
+        Drag files here, or paste links. Attach `logs/latest.log`, and the file in `crash-reports` if the game crashed.
+        可以直接拖曳檔案到這裡，或貼上連結。請附上 `logs/latest.log`；遊戲崩潰時也請附上 `crash-reports` 資料夾中的檔案
+  - type: textarea
+    id: other-mods
+    attributes:
+      label: Other mods / 其他模組
+      description: List the other installed mods, or attach the mod list. / 列出同時安裝的其他模組，或附上模組清單
