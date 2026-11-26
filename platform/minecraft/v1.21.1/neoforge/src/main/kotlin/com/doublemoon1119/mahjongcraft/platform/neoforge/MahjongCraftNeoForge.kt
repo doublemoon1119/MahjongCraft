@@ -24,7 +24,7 @@ import org.koin.core.Koin
 import org.koin.core.context.startKoin
 import thedarkcolour.kotlinforforge.neoforge.forge.MOD_BUS
 
-/** NeoForge mod 的初始化入口。安裝 NeoForge 實作、組裝 runtime graph、登記擴充後交給 [MahjongCraftBootstrap]。 */
+/** NeoForge mod 的初始化入口。安裝 NeoForge 實作、組裝 runtime graph、登記擴充後交給 [MahjongCraftBootstrap]，用戶端再交給 [MahjongCraftNeoForgeClient]。 */
 @Mod(MinecraftModMetadata.MOD_ID)
 object MahjongCraftNeoForge {
     init {
@@ -46,6 +46,7 @@ object MahjongCraftNeoForge {
             extensions = NeoForgeExtensionDiscovery.discover(),
         )
         MahjongCraftBootstrap(koin = koin, events = NeoForgeServerEvents, registrar = registrar).initialize(developmentTools)
+        if (NeoForgeLoaderPlatform.isClient) MahjongCraftNeoForgeClient.initialize(MOD_BUS)
     }
 
     /**

@@ -1,6 +1,6 @@
-package com.doublemoon1119.mahjongcraft.platform.forge.loader
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModelLoading
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import net.minecraft.client.renderer.block.model.BlockModel
 import net.minecraft.client.resources.model.UnbakedModel
 import net.minecraft.resources.ResourceLocation
@@ -13,23 +13,23 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 
 /** 驗證模型載入在每次重載時準備資料，並只為準備好的 ID 提供模型。 */
-class ForgeModelLoadingsTest {
+class ModelLoadingsTest {
     /** 準備後交出要額外載入的模型，並為這次準備的 ID 提供模型。其他 ID 交回原版。 */
     @Test
     fun `prepares each reload and resolves only prepared models`() {
         val first = BlockModel.fromString("{}")
         val second = BlockModel.fromString("{}")
         val loading = FixedModelLoading()
-        ForgeModelLoadings.add(loading)
+        ModelLoadings.add(loading)
 
         loading.next = PROVIDED to first
-        assertEquals(listOf(PROVIDED), ForgeModelLoadings.prepare(ResourceManager.Empty.INSTANCE))
-        assertSame(first, ForgeModelLoadings.resolve(PROVIDED))
-        assertNull(ForgeModelLoadings.resolve(ResourceLocation("test", "other")))
+        assertEquals(listOf(PROVIDED), ModelLoadings.prepare(ResourceManager.Empty.INSTANCE))
+        assertSame(first, ModelLoadings.resolve(PROVIDED))
+        assertNull(ModelLoadings.resolve(resourceId("test", "other")))
 
         loading.next = PROVIDED to second
-        ForgeModelLoadings.prepare(ResourceManager.Empty.INSTANCE)
-        assertSame(second, ForgeModelLoadings.resolve(PROVIDED), "A later reload must replace the prepared models")
+        ModelLoadings.prepare(ResourceManager.Empty.INSTANCE)
+        assertSame(second, ModelLoadings.resolve(PROVIDED), "A later reload must replace the prepared models")
     }
 
     /** 每次重載只提供一個指定模型的測試用模型載入。 */
@@ -46,6 +46,6 @@ class ForgeModelLoadingsTest {
 
     private companion object {
         /** 程式提供的模型 ID。 */
-        val PROVIDED = ResourceLocation("test", "provided")
+        val PROVIDED = resourceId("test", "provided")
     }
 }

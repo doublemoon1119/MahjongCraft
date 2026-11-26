@@ -15,6 +15,9 @@ description = """${description}"""
 [[mixins]]
 config = "mahjongcraft.neoforge.mixins.json"
 
+[[mixins]]
+config = "mahjongcraft.mixins.json"
+
 [[dependencies.${id}]]
 modId = "neoforge"
 type = "required"

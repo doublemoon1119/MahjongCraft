@@ -8,6 +8,9 @@
     "ServerLevelEntityCallbacksMixin",
     "ServerPlayerGameModeMixin"
   ],
+  "client": [
+    "ModelBakeryMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

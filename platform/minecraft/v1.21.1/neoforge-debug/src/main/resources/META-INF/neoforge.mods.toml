@@ -12,6 +12,10 @@ logoFile = "assets/${id}/icon.png"
 authors = "${author}"
 description = """${description}"""
 
+# 自動測試用的 mixin：忽略玩家輸入、記錄聲音等。只在開發執行載入本模組時套用。
+[[mixins]]
+config = "mahjongcraft.debug.mixins.json"
+
 [modproperties.${id}]
 "mahjongcraft:development" = "com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.DebugDevelopmentEntrypoint"
 "mahjongcraft:extension" = "com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.DebugMahjongExtension"

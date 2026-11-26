@@ -24,6 +24,10 @@ Fabric entrypoints: `mahjongcraft:development` for the development services and 
 `mahjongcraft:extension` and `mahjongcraft:client_extension` for the debug extensions. The adapter never
 references debug classes.
 
+The metadata also declares `mahjongcraft.debug.mixins.json`, the client mixins the automated client test uses,
+for example to ignore player input and to record sound requests. The `@Mod` entry point registers the
+client-side debug command and, in an automated test run, the client test.
+
 ## Dependency injection
 
 The debug services are checked at build time together with the adapter's server and client graphs through

@@ -12,12 +12,24 @@ Its Gradle project path is `:minecraft_v1.21.1_neoforge`, its code uses the
 
 ## Overview
 
-The server side is implemented: registration, server events, networking and the blocks a player uses, and
-development runs load the [debug tools](../neoforge-debug/README.md). The client side is not implemented
-yet, so the mod runs only on a dedicated server.
+The server and client sides are implemented, including the config screen opened from NeoForge's mod list,
+and development runs load the [debug tools](../neoforge-debug/README.md).
 
 NeoForge runs mods with Mojang names in production as well, so the distributable JAR is the `jar` output;
 there is no separate conversion step as on Forge 1.20.1.
+
+The shared client startup reads registered items and entities, which NeoForge writes only after the mod is
+constructed. The client therefore starts at the first client registration event, as on Forge.
+
+Differences from the Forge 1.20.1 adapter on the client:
+
+- The Mahjong tile item gets its programmatic renderer through NeoForge's client item extensions, so no
+  mixin is needed for it.
+- NeoForge still draws the chat with vanilla's chat layer method, so the HUD drawn before the chat uses the
+  shared `GuiMixin`, as on Fabric, instead of a GUI layer.
+- NeoForge already sends commands run by clicking a chat message to its client command handler first.
+- Client listeners for entity use run when the use key is pressed, as on Forge and Fabric, because vanilla
+  sends a right-click on an entity to the server before NeoForge fires its client entity interaction event.
 
 ## Networking
 
@@ -27,8 +39,8 @@ registered together then; receivers may be registered before or after the event.
 so a client or server without the mod can still connect.
 
 NeoForge refuses to send a payload to a connection that did not negotiate its channel, such as a player
-without the mod. The adapter skips such connections, which has the same effect as on the other loaders,
-where the other side ignores a payload it does not know.
+without the mod or a server without it. The adapter skips such connections in both directions, which has
+the same effect as on the other loaders, where the other side ignores a payload it does not know.
 
 ## Dependencies
 
@@ -39,9 +51,17 @@ source set. NeoForge ships MixinExtras, so the mod does not embed it.
 
 ## Mixins
 
-`mahjongcraft.neoforge.mixins.json` lists the NeoForge-only mixins for the server events NeoForge does not
-have: after vanilla starts tracking an entity added to a world, after a chunk records a block entity, and
-after a block a player breaks is actually removed.
+`mahjongcraft.mixins.json` lists the mixins shared with Fabric, which live in the
+[Minecraft 1.21.1 mod](../mod/README.md) module. `mahjongcraft.neoforge.mixins.json` lists the NeoForge-only
+mixins:
+
+- The server events NeoForge does not have: after vanilla starts tracking an entity added to a world, after a
+  chunk records a block entity, and after a block a player breaks is actually removed.
+- Model loading puts the models provided by the registered model loadings into vanilla's cache of unbaked
+  models before vanilla reads a model file, so tile variants without a model file still load. Their extra
+  models are registered as NeoForge standalone models.
+
+NeoForge reads the mixin configurations from `neoforge.mods.toml`.
 
 ## Deprecation Warnings
 
@@ -52,7 +72,11 @@ vanilla APIs, so this module disables the deprecation warnings as the
 ## Running
 
 ```shell
+./gradlew :minecraft_v1.21.1_neoforge:runClient "-PmahjongcraftTarget=minecraft-v1.21.1-neoforge"
 ./gradlew :minecraft_v1.21.1_neoforge:runServer "-PmahjongcraftTarget=minecraft-v1.21.1-neoforge"
 ```
 
-Dedicated-server runs use `run/server` under this module.
+Development runs also load the [debug tools module](../neoforge-debug/README.md), which provides the
+`/mahjongcraft debug` commands; the packaged mod does not contain it.
+
+Client and dedicated-server runs use `run/client` and `run/server` under this module.

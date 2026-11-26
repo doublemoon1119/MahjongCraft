@@ -1,6 +1,5 @@
-package com.doublemoon1119.mahjongcraft.platform.forge.loader
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModelLoading
 import net.minecraft.client.resources.model.UnbakedModel
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.packs.resources.ResourceManager
@@ -8,12 +7,12 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executor
 
 /**
- * 在 Forge 載入模型時套用登記的 [ModelLoading]。
+ * 在載入器讀取模型時套用登記的 [ModelLoading]，供沒有提供這種擴充點的載入器使用，例如 Forge 與 NeoForge。
  *
- * Forge 登記額外模型時呼叫 [prepare] 準備本次重載的資料。原版讀取模型時，Forge 專用的 mixin 先以 [resolve] 詢問有沒有
- * 程式提供的模型，沒有才照原版讀取模型檔。
+ * - 載入器登記額外模型時呼叫 [prepare] 準備本次重載的資料。
+ * - 原版讀取模型時，載入器專用的 mixin 先以 [resolve] 詢問有沒有程式提供的模型，沒有才照原版讀取模型檔。
  */
-object ForgeModelLoadings {
+object ModelLoadings {
     /** 登記的模型載入。 */
     private val loadings = CopyOnWriteArrayList<ModelLoading<*>>()
 
@@ -33,7 +32,7 @@ object ForgeModelLoadings {
     /**
      * 為本次資源重載準備資料。
      *
-     * Forge 在模型載入的工作執行緒上發出登記額外模型的事件，這裡在同一條執行緒上直接完成準備，不排入其他執行緒等待。
+     * 載入器在模型載入的工作執行緒上登記額外模型，這裡在同一條執行緒上直接完成準備，不排入其他執行緒等待。
      *
      * @param resourceManager 本次重載的資源。
      * @return 要額外載入並烘焙的模型。
@@ -44,7 +43,7 @@ object ForgeModelLoadings {
     }
 
     /**
-     * 取得程式為某個 ID 提供的未烘焙模型。只由 Forge 專用的 mixin 在原版讀取模型時呼叫。
+     * 取得程式為某個 ID 提供的未烘焙模型。只由載入器專用的 mixin 在原版讀取模型時呼叫。
      *
      * @param id 模型 ID。
      * @return 程式提供的模型。沒有時為 null，照原版讀取模型檔。
