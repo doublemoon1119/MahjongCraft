@@ -1,9 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.neoforge.loader
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.HudBeforeChatHook
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.WorldRenderFinishedHook
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.resourceId
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexFormat
 import net.minecraft.client.Camera
@@ -33,9 +34,11 @@ import net.neoforged.neoforge.client.event.ClientTickEvent
 import net.neoforged.neoforge.client.event.InputEvent
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent
 import net.neoforged.neoforge.client.event.RegisterShadersEvent
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers
 import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent
@@ -44,8 +47,8 @@ import java.util.concurrent.CopyOnWriteArrayList
 /**
  * 以 NeoForge 的事件匯流排實作 [ClientEvents]。
  *
- * - 按鍵、著色器與重載監聽在本 mod 的事件匯流排上登記，交出的項目先保留到對應事件。
- * - 聊天欄之前的畫面與世界繪製結束兩個時間點沒有 NeoForge 事件，由共用的 mixin 通知。
+ * - 按鍵、畫面圖層、著色器與重載監聽在本 mod 的事件匯流排上登記，交出的項目先保留到對應事件。
+ * - 世界繪製結束的時間點沒有 NeoForge 事件，由共用的 mixin 通知。
  */
 object NeoForgeClientEvents : ClientEvents {
     /** 等待按鍵登記事件的按鍵。 */
@@ -53,6 +56,9 @@ object NeoForgeClientEvents : ClientEvents {
 
     /** 等待重載監聽登記事件的監聽。 */
     private val pendingReloadListeners = mutableListOf<(ResourceManager) -> Unit>()
+
+    /** 等待畫面圖層登記事件、要畫在聊天欄之前的畫面。 */
+    private val pendingHudBeforeChat = mutableListOf<(GuiGraphics) -> Unit>()
 
     /** 每次資源重載都要重新建立的核心著色器。 */
     private val coreShaders = CopyOnWriteArrayList<CoreShader>()
@@ -75,6 +81,14 @@ object NeoForgeClientEvents : ClientEvents {
         modBus.addListener(EventPriority.NORMAL, false, RegisterKeyMappingsEvent::class.java) { event ->
             pendingKeyMappings.forEach(event::register)
             pendingKeyMappings.clear()
+        }
+        modBus.addListener(EventPriority.NORMAL, false, RegisterGuiLayersEvent::class.java) { event ->
+            pendingHudBeforeChat.forEachIndexed { index, listener ->
+                event.registerBelow(VanillaGuiLayers.CHAT, resourceId(MinecraftModMetadata.MOD_ID, "hud_before_chat_$index")) { graphics, _ ->
+                    listener(graphics)
+                }
+            }
+            pendingHudBeforeChat.clear()
         }
         // 每次資源重新載入都會重新建立著色器，登記內容因此保留，不在登記後清除。
         modBus.addListener(EventPriority.NORMAL, false, RegisterShadersEvent::class.java) { event ->
@@ -155,9 +169,9 @@ object NeoForgeClientEvents : ClientEvents {
         WorldRenderFinishedHook.addListener(listener)
     }
 
-    /** NeoForge 的聊天欄圖層仍由原版畫聊天欄的方法繪製，由共用的 mixin 經 [HudBeforeChatHook] 通知。 */
+    /** 以 NeoForge 的畫面圖層畫在原版聊天欄圖層的正下方。 */
     override fun onHudRenderBeforeChat(listener: (GuiGraphics) -> Unit) {
-        HudBeforeChatHook.addListener(listener)
+        pendingHudBeforeChat += listener
     }
 
     override fun onWorldRenderBeforeDebug(listener: (PoseStack, MultiBufferSource, Camera) -> Unit) {

@@ -6,8 +6,8 @@ import java.util.concurrent.CopyOnWriteArrayList
 /**
  * 每一幀原版遊戲畫面要畫聊天欄之前的時間點。
  *
- * 原版沒有這個時間點的事件，由共用的 `GuiMixin` 在原版 `Gui.render` 中呼叫 [fire]。以原版 `Gui.render` 繪製遊戲畫面的載入器，
- * 其 [ClientEvents.onHudRenderBeforeChat] 把監聽器登記到這裡。
+ * 原版沒有這個時間點的事件，由共用的 `GuiMixin` 在原版 `Gui.render` 中呼叫 [fire]。沒有其他方式把畫面排在聊天欄之前的載入器，
+ * 其 [ClientEvents.onHudRenderBeforeChat] 把監聽器登記到這裡，並載入 `GuiMixin`。有畫面圖層可用的載入器不經過這裡。
  */
 object HudBeforeChatHook {
     /** 聊天欄之前的監聽器。 */

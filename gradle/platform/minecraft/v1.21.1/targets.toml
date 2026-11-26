@@ -43,6 +43,12 @@ modules = [
     "platform/minecraft/v1.21.1/neoforge",
     "platform/minecraft/v1.21.1/neoforge-debug",
 ]
+example-modules = [
+    "example/mahjong-extension",
+    "example/platform/minecraft/common",
+    "example/platform/minecraft/v1.21.1/mod",
+    "example/platform/minecraft/v1.21.1/neoforge",
+]
 
 [targets.attributes]
 minecraft-version = "v1.21.1"

@@ -25,8 +25,8 @@ Differences from the Forge 1.20.1 adapter on the client:
 
 - The Mahjong tile item gets its programmatic renderer through NeoForge's client item extensions, so no
   mixin is needed for it.
-- NeoForge still draws the chat with vanilla's chat layer method, so the HUD drawn before the chat uses the
-  shared `GuiMixin`, as on Fabric, instead of a GUI layer.
+- The HUD drawn before the chat, such as the compact countdown and the hand analysis, is a GUI layer
+  registered below vanilla's chat layer, so this module does not load the shared `GuiMixin`.
 - NeoForge already sends commands run by clicking a chat message to its client command handler first.
 - Client listeners for entity use run when the use key is pressed, as on Forge and Fabric, because vanilla
   sends a right-click on an entity to the server before NeoForge fires its client entity interaction event.

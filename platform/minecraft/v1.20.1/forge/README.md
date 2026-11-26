@@ -25,9 +25,9 @@ constructed. The client therefore starts at the first client registration event,
 complete and key mappings, entity renderers, item colors, reload listeners and GUI overlays are not
 registered yet.
 
-Forge draws the in-game screen with its own `ForgeGui` overlays instead of vanilla `Gui.render`, so the
-shared `GuiMixin` never runs on Forge. The HUD drawn before the chat, such as the compact countdown and the
-hand analysis, is a GUI overlay registered below Forge's chat panel instead.
+Forge draws the in-game screen with its own `ForgeGui` overlays instead of vanilla `Gui.render`, so this
+module does not load the shared `GuiMixin`. The HUD drawn before the chat, such as the compact countdown and
+the hand analysis, is a GUI overlay registered below Forge's chat panel instead.
 
 Vanilla sends a right-click on an entity to the server before Forge fires its client entity interaction event,
 so cancelling that event cannot stop the server from handling the click, for example as an ordinary discard

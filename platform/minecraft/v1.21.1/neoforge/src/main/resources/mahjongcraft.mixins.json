@@ -4,7 +4,6 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "CapeLayerMixin",
-    "GuiMixin",
     "GameRendererMixin",
     "EntityRenderDispatcherMixin",
     "LivingEntityRendererMixin",

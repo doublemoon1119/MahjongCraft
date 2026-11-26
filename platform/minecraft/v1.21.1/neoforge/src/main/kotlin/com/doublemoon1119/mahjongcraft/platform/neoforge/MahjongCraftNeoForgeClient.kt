@@ -25,6 +25,7 @@ import net.neoforged.fml.ModList
 import net.neoforged.neoforge.client.event.EntityRenderersEvent
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent
 import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory
@@ -34,7 +35,7 @@ import org.koin.core.context.GlobalContext
  * NeoForge 用戶端的初始化。
  *
  * - 共用的用戶端啟動流程要讀取已登記的物品與實體，NeoForge 在 mod 建構完成後才寫入登記表。
- * - 因此在第一個用戶端登記事件發生時才啟動：這時登記表已完成，按鍵、實體繪製、物品顏色、物品繪製與重載監聽都還沒登記。
+ * - 因此在第一個用戶端登記事件發生時才啟動：這時登記表已完成，按鍵、實體繪製、物品顏色、物品繪製、畫面圖層與重載監聽都還沒登記。
  */
 internal object MahjongCraftNeoForgeClient {
     /** 用戶端初始化的紀錄。 */
@@ -61,6 +62,7 @@ internal object MahjongCraftNeoForgeClient {
             RegisterClientReloadListenersEvent::class.java,
             EntityRenderersEvent.RegisterRenderers::class.java,
             RegisterKeyMappingsEvent::class.java,
+            RegisterGuiLayersEvent::class.java,
         ).forEach { eventType -> startOn(modBus, eventType, registrar) }
     }
 

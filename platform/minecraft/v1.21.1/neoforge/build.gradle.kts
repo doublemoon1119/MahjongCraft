@@ -40,7 +40,7 @@ configure<MinecraftModPackagingExtension> {
 repositories {
     // Kotlin for Forge 只發布在作者自己的 Maven 倉庫。
     kotlinForForge()
-    // 光影的陰影判斷對其編譯的 Iris 只發布在 Modrinth 的 Maven 倉庫。
+    // Iris 與相容測試模組只發布在 Modrinth 的 Maven 倉庫。
     modrinth()
 }
 
@@ -91,6 +91,16 @@ neoForge {
         }
     }
 }
+// 開發執行時可選載入的相容測試模組，以 -PmahjongcraftDevMods 選擇；不打包，也不成為模組的依賴。
+// 光影包要放進用戶端的執行目錄，因此在執行設定建立之後宣告。
+devMods {
+    // Iris 與它需要的 Sodium，測試光影。
+    group("shaders", mc1211.bundles.dev.neoforge.iris)
+    // NeoForge 內建的模組清單就有設定按鈕，不需要另外的模組；宣告這個組合，讓同時選擇 Fabric 時同一個開關也能使用。
+    group("modmenu")
+    shaderPack(group = "shaders", pack = mc1211.dev.shader.complementary.reimagined)
+}
+
 registerAutotestClientTasks(clientTask = "runClient")
 registerAutotestServerTasks(startTask = "runAutotestServerStart", resumeTask = "runAutotestServerResume")
 
@@ -100,7 +110,7 @@ dependencies {
 
     minecraftModLibraries.addTo("implementation")
     // 光影的陰影判斷只對 Iris 的 API 編譯；API 不含 Minecraft 的類別。
-    compileOnly(mc1211.iris)
+    compileOnly(mc1211.iris.neoforge)
 }
 
 // 正式 JAR 以 jar-in-jar 附帶函式庫；Kotlin for Forge 已提供的函式庫不附帶。

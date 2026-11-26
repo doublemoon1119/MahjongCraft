@@ -6,7 +6,6 @@
   "refmap": "mahjongcraft.refmap.json",
   "client": [
     "CapeLayerMixin",
-    "GuiMixin",
     "GameRendererMixin",
     "EntityRenderDispatcherMixin",
     "LivingEntityRendererMixin",
