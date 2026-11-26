@@ -1,0 +1,169 @@
+package com.doublemoon1119.mahjongcraft.flow.server.lifecycle
+
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
+import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.flow.server.time.MonotonicClockImpl
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDecisionTimerUpdatePublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationBusyGate
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.uuid.Uuid
+
+/** [ServerSessionStateRestorer] 的 membership 與 observer snapshot 恢復測試。 */
+class ServerSessionStateRestorerTest {
+    /** 已載入的 Room／Game 應完整重建玩家歸屬與各自視角快照。 */
+    @Test
+    fun `test restore rebuilds memberships and observer snapshots`() = runTest {
+        val roomSnapshots = RoomSnapshotRepositoryImpl()
+        val gameSnapshots = GameSnapshotRepositoryImpl()
+        val memberships = PlayerMembershipRepositoryImpl()
+        val store = AuthoritativeStateStore()
+        val gameRepository = componentValidatedGameRepository(store)
+        val clock = MonotonicClockImpl()
+        val decisionTimerManager = GameDecisionTimerManager(
+            gameRepository = gameRepository,
+            authorityResolver = GameDecisionAuthorityResolver(),
+            timerFactory = PlayerDecisionTimerFactory(clock),
+            clock = clock,
+        )
+        val restorer = ServerSessionStateRestorer(
+            roomSnapshots = roomSnapshots,
+            gameSnapshots = gameSnapshots,
+            memberships = memberships,
+            gameVisibilityPolicy = GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+            decisionTimerManager = decisionTimerManager,
+            decisionAvailabilityService = GameDecisionAvailabilityService(
+                busyGate = FakeGamePresentationBusyGate(),
+                timerManager = decisionTimerManager,
+                synchronizationService = DecisionTimerSynchronizationService(
+                    timerManager = decisionTimerManager,
+                    gameRepository = gameRepository,
+                    publisher = FakeDecisionTimerUpdatePublisher(),
+                ),
+            ),
+            moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
+            failurePolicy = ExtensionFailurePolicy.Default,
+        )
+        val roomPlayerId = Uuid.random()
+        val gamePlayerId = Uuid.random()
+        val otherGamePlayerId = Uuid.random()
+        val room = Room(
+            id = Uuid.random(),
+            hostId = roomPlayerId,
+            gameConfig = GameConfig(FakeMahjongRuleConfig()),
+            playerIds = listOf(roomPlayerId),
+        )
+        val game = FakeTableStateFactory.create(
+            players = listOf(gamePlayerId, otherGamePlayerId).map { playerId ->
+                FakeMahjongPlayerFactory.create(
+                    id = playerId,
+                    hand = if (playerId == gamePlayerId) {
+                        FakeHandFactory.create(lastDrawn = Tile.Honor.East)
+                    } else {
+                        FakeHandFactory.create(listOf(Tile.Honor.East))
+                    },
+                )
+            },
+            config = RiichiRuleConfig(),
+        )
+
+        val state = AuthoritativeStateSnapshot(
+            rooms = mapOf(room.id to room),
+            games = mapOf(game.id to Game(game, GameFlowConfig())),
+        )
+        store.load(state)
+
+        restorer.restore(state)
+
+        assertEquals(room.id, memberships.getVenueId(roomPlayerId))
+        assertEquals(game.id, memberships.getVenueId(gamePlayerId))
+        assertEquals(game.id, memberships.getVenueId(otherGamePlayerId))
+        assertNotNull(roomSnapshots.getSnapshot(room.id, roomPlayerId))
+        val gamePlayerSnapshot = assertNotNull(gameSnapshots.getSnapshot(game.id, gamePlayerId))
+        assertNotNull(gamePlayerSnapshot.players.single { it.id == gamePlayerId }.hand.standingTiles.single().tile)
+        assertNull(gamePlayerSnapshot.players.single { it.id == otherGamePlayerId }.hand.standingTiles.single().tile)
+        assertEquals(setOf(gamePlayerId), decisionTimerManager.getStatuses(game.id).keys)
+    }
+
+    /** 同一玩家跨桌重複時應回報衝突、略過 membership，並保留各桌 observer snapshot。 */
+    @Test
+    fun `test restore reports conflicting membership without discarding saved tables`() = runTest {
+        val roomSnapshots = RoomSnapshotRepositoryImpl()
+        val gameSnapshots = GameSnapshotRepositoryImpl()
+        val memberships = PlayerMembershipRepositoryImpl()
+        val store = AuthoritativeStateStore()
+        val gameRepository = componentValidatedGameRepository(store)
+        val clock = MonotonicClockImpl()
+        val decisionTimerManager = GameDecisionTimerManager(
+            gameRepository = gameRepository,
+            authorityResolver = GameDecisionAuthorityResolver(),
+            timerFactory = PlayerDecisionTimerFactory(clock),
+            clock = clock,
+        )
+        val restorer = ServerSessionStateRestorer(
+            roomSnapshots = roomSnapshots,
+            gameSnapshots = gameSnapshots,
+            memberships = memberships,
+            gameVisibilityPolicy = GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+            decisionTimerManager = decisionTimerManager,
+            decisionAvailabilityService = GameDecisionAvailabilityService(
+                busyGate = FakeGamePresentationBusyGate(),
+                timerManager = decisionTimerManager,
+                synchronizationService = DecisionTimerSynchronizationService(
+                    timerManager = decisionTimerManager,
+                    gameRepository = gameRepository,
+                    publisher = FakeDecisionTimerUpdatePublisher(),
+                ),
+            ),
+            moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
+            failurePolicy = ExtensionFailurePolicy.Default,
+        )
+        val playerId = Uuid.random()
+        val existingVenueId = Uuid.random()
+        memberships.claim(playerId, existingVenueId)
+        val firstRoom = Room(Uuid.random(), playerId, GameConfig(FakeMahjongRuleConfig()), listOf(playerId))
+        val secondRoom = Room(Uuid.random(), playerId, GameConfig(FakeMahjongRuleConfig()), listOf(playerId))
+
+        val state = AuthoritativeStateSnapshot(
+            rooms = mapOf(firstRoom.id to firstRoom, secondRoom.id to secondRoom),
+        )
+        store.load(state)
+
+        val result = restorer.restore(state)
+
+        assertEquals(
+            expected = listOf(PlayerMembershipConflict(playerId, setOf(firstRoom.id, secondRoom.id))),
+            actual = result.membershipConflicts,
+        )
+        assertNull(memberships.getVenueId(playerId))
+        assertNotNull(roomSnapshots.getSnapshot(firstRoom.id, playerId))
+        assertNotNull(roomSnapshots.getSnapshot(secondRoom.id, playerId))
+    }
+}

@@ -1,0 +1,93 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
+
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+
+/** 驗證內建牌面角落標籤的顏色與文字規則（赤牌／花牌的固定配色規則）。 */
+class TileLabelsTest {
+    private val registry = TileLabelRegistryImpl().apply {
+        BuiltInMinecraftMahjongExtension.registerTileLabels(this)
+        BundledMinecraftMahjongExtensions.all.forEach { it.registerTileLabels(this) }
+    }
+
+    /** 一般數牌只有右上角紅色數字，左上角不顯示。 */
+    @Test
+    fun `normal numeric tile shows red digit at top right only`() {
+        val label = registry.find("p9")
+        assertNull(label?.topLeft)
+        assertEquals(TileLabelText("9", TileLabelColor.RED), label?.topRight)
+    }
+
+    /** 赤五（牌面本身印刷成紅色）右上角文字改用黑色維持對比。 */
+    @Test
+    fun `red five uses black text for contrast against the red tile face`() {
+        val label = registry.find("m5_red")
+        assertNull(label?.topLeft)
+        assertEquals(TileLabelText("5", TileLabelColor.BLACK), label?.topRight)
+    }
+
+    /** 紅中牌面本身印刷成紅色，跟赤五歸為同一種黑字規則。 */
+    @Test
+    fun `red dragon uses black text like the red fives`() {
+        val label = registry.find("red_dragon")
+        assertEquals(TileLabelText("R", TileLabelColor.BLACK), label?.topRight)
+    }
+
+    /** 其餘字牌（風牌、發、白）維持一般紅色文字規則。 */
+    @Test
+    fun `other honor tiles use the normal red text rule`() {
+        assertEquals(TileLabelText("W", TileLabelColor.RED), registry.find("west")?.topRight)
+        assertEquals(TileLabelText("G", TileLabelColor.RED), registry.find("green_dragon")?.topRight)
+        assertEquals(TileLabelText("Wh", TileLabelColor.RED), registry.find("white_dragon")?.topRight)
+    }
+
+    /** 四季花牌：右上紅色中文字、左上黑色數字，依春夏秋冬排序 1～4，且無視玩家開關永遠顯示。 */
+    @Test
+    fun `seasonal flowers pair red chinese character with black order number`() {
+        assertEquals(
+            expected = TileLabel(topLeft = TileLabelText("1", TileLabelColor.BLACK), topRight = TileLabelText("春", TileLabelColor.RED), forced = true),
+            actual = registry.find("flower_spring"),
+        )
+        assertEquals(
+            expected = TileLabel(topLeft = TileLabelText("4", TileLabelColor.BLACK), topRight = TileLabelText("冬", TileLabelColor.RED), forced = true),
+            actual = registry.find("flower_winter"),
+        )
+    }
+
+    /** 四君子花牌：右上紅色數字、左上黑色中文字，依梅蘭菊竹排序 1～4，且無視玩家開關永遠顯示。 */
+    @Test
+    fun `plant flowers pair black chinese character with red order number in plum orchid chrysanthemum bamboo order`() {
+        assertEquals(
+            expected = TileLabel(topLeft = TileLabelText("梅", TileLabelColor.BLACK), topRight = TileLabelText("1", TileLabelColor.RED), forced = true),
+            actual = registry.find("flower_plum"),
+        )
+        assertEquals(
+            expected = TileLabel(topLeft = TileLabelText("蘭", TileLabelColor.BLACK), topRight = TileLabelText("2", TileLabelColor.RED), forced = true),
+            actual = registry.find("flower_orchid"),
+        )
+        assertEquals(
+            expected = TileLabel(topLeft = TileLabelText("菊", TileLabelColor.BLACK), topRight = TileLabelText("3", TileLabelColor.RED), forced = true),
+            actual = registry.find("flower_chrysanthemum"),
+        )
+        assertEquals(
+            expected = TileLabel(topLeft = TileLabelText("竹", TileLabelColor.BLACK), topRight = TileLabelText("4", TileLabelColor.RED), forced = true),
+            actual = registry.find("flower_bamboo"),
+        )
+    }
+
+    /** 非花牌不強制顯示，只有玩家自己開啟開關時才顯示。 */
+    @Test
+    fun `non-flower tiles are not forced`() {
+        assertEquals(false, registry.find("p9")?.forced)
+        assertEquals(false, registry.find("red_dragon")?.forced)
+    }
+
+    /** 未知佔位牌不註冊標籤。 */
+    @Test
+    fun `unknown placeholder tile has no label`() {
+        assertNull(registry.find(UNKNOWN_TILE_ASSET_KEY))
+    }
+}

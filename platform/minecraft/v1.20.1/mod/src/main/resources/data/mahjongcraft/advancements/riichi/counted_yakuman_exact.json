@@ -1,0 +1,28 @@
+{
+  "parent": "mahjongcraft:riichi/root",
+  "display": {
+    "icon": {
+      "item": "minecraft:clock"
+    },
+    "title": {
+      "translate": "advancements.mahjongcraft.riichi.counted_yakuman_exact.title"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.riichi.counted_yakuman_exact.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:riichi/counted_yakuman_exact"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,309 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.service
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTimeSource
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.uuid.Uuid
+
+/** [GameDecisionAuthorityResolver] 的單元測試。 */
+class GameDecisionAuthorityResolverTest {
+    /** 共用的權威決策解析器。 */
+    private val resolver = GameDecisionAuthorityResolver(PlayerActionContextResolver())
+
+    /** 驗證捨牌反應只包含仍未回應的合資格玩家。 */
+    @Test
+    fun `test discard reaction resolves only unanswered eligible players`() {
+        val firstId = Uuid.random()
+        val secondId = Uuid.random()
+        val game = game(
+            playerIds = listOf(firstId, secondId),
+            pendingReaction = PendingReaction(
+                discarderId = Uuid.random(),
+                tileId = Uuid.random(),
+                eligiblePlayerIds = setOf(firstId, secondId),
+                responses = mapOf(firstId to GameAction.Pass),
+                ronPlayerIds = setOf(firstId, secondId),
+                id = Uuid.random(),
+            ),
+        )
+
+        assertEquals(
+            expected = mapOf(secondId to PlayerDecisionPhase.DISCARD_REACTION),
+            actual = resolver.resolve(game),
+        )
+    }
+
+    /** 驗證搶槓視窗優先解析，且只包含尚未回應的玩家。 */
+    @Test
+    fun `test chankan reaction resolves unanswered eligible players`() {
+        val playerId = Uuid.random()
+        val robbedTile = IdentifiedTile(Uuid.random(), Tile.Honor.White)
+        val game = Game(
+            tableState = FakeTableStateFactory.create(
+                players = listOf(FakeMahjongPlayerFactory.create(id = playerId)),
+                pendingRobbingReaction = PendingRobbingReaction(
+                    declarerId = Uuid.random(),
+                    declaredAction = GameAction.Kan(
+                        type = GameAction.KanType.ADDED_KAN,
+                        tileId = robbedTile.id,
+                        withTiles = emptyList(),
+                    ),
+                    robbedTile = robbedTile,
+                    eligiblePlayerIds = setOf(playerId),
+                ),
+            ),
+            flowConfig = GameFlowConfig(),
+        )
+
+        assertEquals(
+            expected = mapOf(playerId to PlayerDecisionPhase.ROBBING_REACTION),
+            actual = resolver.resolve(game),
+        )
+    }
+
+    /** 驗證目前玩家摸牌後取得自己回合的決策權。 */
+    @Test
+    fun `test drawn current player resolves own turn decision`() {
+        val playerId = Uuid.random()
+        val player = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            hand = Hand(lastDrawn = IdentifiedTile(Uuid.random(), Tile.Honor.East)),
+        )
+        val game = Game(
+            tableState = FakeTableStateFactory.create(players = listOf(player)),
+            flowConfig = GameFlowConfig(),
+        )
+
+        assertEquals(
+            expected = mapOf(playerId to PlayerDecisionPhase.OWN_TURN),
+            actual = resolver.resolve(game),
+        )
+    }
+
+    /** 驗證剛完成吃碰且尚未捨牌的真人取得自己回合決策權。 */
+    @Test
+    fun `test claimed meld current player resolves own turn decision`() {
+        val playerId = Uuid.random()
+        val player = FakeMahjongPlayerFactory.create(id = playerId)
+            .recordAction(GameAction.Pon(Uuid.random(), emptyList()))
+        val game = Game(
+            tableState = FakeTableStateFactory.create(players = listOf(player), turnPhase = TurnPhase.AwaitingDiscard),
+            flowConfig = GameFlowConfig(),
+        )
+
+        assertEquals(
+            expected = mapOf(playerId to PlayerDecisionPhase.OWN_TURN),
+            actual = resolver.resolve(game),
+        )
+    }
+
+    /** 驗證尚未摸牌的機械回合動作不會建立思考計時。 */
+    @Test
+    fun `test current player without draw or claimed meld has no decision`() {
+        val game = game(listOf(Uuid.random()))
+
+        assertEquals(emptyMap(), resolver.resolve(game))
+    }
+
+    /** 驗證本局已進入結算交接後，不會替仍留在桌況中的原決策者重新建立計時器。 */
+    @Test
+    fun `test pending round transition clears decision authority`() {
+        val playerId = Uuid.random()
+        val player = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            hand = Hand(lastDrawn = IdentifiedTile(Uuid.random(), Tile.Honor.East)),
+        )
+        val game = Game(
+            tableState = FakeTableStateFactory.create(players = listOf(player)),
+            flowConfig = GameFlowConfig(),
+            pendingTransition = PendingGameTransition.AdvanceRound,
+        )
+
+        assertEquals(emptyMap(), resolver.resolve(game))
+    }
+
+    /** 驗證本局結算後開啟的規則選擇視窗，即使已排定換局，尚未提交的參與者仍需要思考時間。 */
+    @Test
+    fun `test rule decision window keeps authority while a round transition is pending`() {
+        val waitingId = Uuid.random()
+        val submittedId = Uuid.random()
+        val players = listOf(waitingId, submittedId).map { FakeMahjongPlayerFactory.create(id = it) }
+        val window = PendingRuleDecision.open(
+            step = RuleDecisionStep(
+                stepId = "test:round_end",
+                stepIndex = 0,
+                inputSpecsByPlayerId = players.associate { it.id to RuleDecisionInputSpec.Confirmation },
+            ),
+            timing = RuleDecisionTiming.ROUND_END,
+        ).copy(submissionsByPlayerId = mapOf(submittedId to RuleDecisionSubmission.Confirmed))
+        val game = Game(
+            tableState = FakeTableStateFactory.create(players = players),
+            flowConfig = GameFlowConfig(),
+            pendingTransition = PendingGameTransition.AdvanceRound,
+            pendingRuleDecision = window,
+        )
+
+        assertEquals(mapOf(waitingId to PlayerDecisionPhase.RULE_DECISION), resolver.resolve(game))
+    }
+
+    /** 比照一般遊戲動作計時的規則選擇使用獨立階段，讓計時器套用一般基本與保留時間。 */
+    @Test
+    fun `test action timed rule decision resolves rule action phase`() {
+        val playerId = Uuid.random()
+        val player = FakeMahjongPlayerFactory.create(id = playerId)
+        val window = PendingRuleDecision.open(
+            step = RuleDecisionStep(
+                stepId = "test:action_timed",
+                stepIndex = 0,
+                inputSpecsByPlayerId = mapOf(playerId to RuleDecisionInputSpec.Confirmation),
+                timeSource = RuleDecisionTimeSource.ACTION_TIME,
+            ),
+            timing = RuleDecisionTiming.DRAW_FOLLOW_UP,
+        )
+        val game = Game(
+            tableState = FakeTableStateFactory.create(players = listOf(player)),
+            flowConfig = GameFlowConfig(),
+            pendingRuleDecision = window,
+        )
+
+        assertEquals(mapOf(playerId to PlayerDecisionPhase.RULE_ACTION), resolver.resolve(game))
+    }
+
+    /** 驗證強制自動操作玩家不再建立新的思考計時器。 */
+    @Test
+    fun `test forced auto play player is excluded from decisions`() {
+        val playerId = Uuid.random()
+        val player = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            hand = Hand(lastDrawn = IdentifiedTile(Uuid.random(), Tile.Honor.East)),
+        )
+        val game = Game(
+            tableState = FakeTableStateFactory.create(players = listOf(player)),
+            flowConfig = GameFlowConfig(),
+            forcedAutoPlayPlayerIds = setOf(playerId),
+        )
+
+        assertEquals(emptyMap(), resolver.resolve(game))
+    }
+
+    /** 驗證能由本局自動控制立即完成的決策不會建立思考計時。 */
+    @Test
+    fun `test immediate automatic decision is excluded from authority`() {
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+        val contextResolver = PlayerActionContextResolver()
+        val automaticResolver = GameDecisionAuthorityResolver(
+            actionContextResolver = contextResolver,
+            automaticDecisionEvaluator = AutomaticDecisionEvaluator(moduleRegistry, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry), contextResolver),
+        )
+        val discarded = IdentifiedTile(Uuid.random(), Tile.Honor.South)
+        val discarder = FakeMahjongPlayerFactory.create(discardPile = FakeDiscardPile().discardTile(discarded))
+        val respondent = FakeMahjongPlayerFactory.create(
+            hand = Hand(tiles = List(2) { IdentifiedTile(Uuid.random(), Tile.Honor.South) } + IdentifiedTile(Uuid.random(), Tile.Honor.North)),
+            components = riichiDeclarationComponents(),
+        )
+        val game = Game(
+            tableState = FakeTableStateFactory.create(
+                players = listOf(discarder, respondent),
+                config = RiichiRuleConfig(),
+                pendingReaction = PendingReaction(discarder.id, discarded.id, setOf(respondent.id), ronPlayerIds = setOf(respondent.id), id = Uuid.random()),
+            ),
+            flowConfig = GameFlowConfig(),
+            enabledAutomaticControlIdsByPlayerId = mapOf(
+                pair = respondent.id to setOf(BuiltInAutomaticControlIds.DECLINE_CALLS),
+            ),
+        )
+
+        assertEquals(emptyMap(), automaticResolver.resolve(game))
+    }
+
+    /** 驗證 AI 玩家摸牌後不建立真人決策計時。AI 策略的執行與逾時由其他元件管理。 */
+    @Test
+    fun `test ai current player does not resolve own turn decision`() {
+        val playerId = Uuid.random()
+        val aiPlayer = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            hand = Hand(lastDrawn = IdentifiedTile(Uuid.random(), Tile.Honor.East)),
+        )
+        val game = Game(
+            tableState = FakeTableStateFactory.create(players = listOf(aiPlayer)),
+            flowConfig = GameFlowConfig(),
+            aiPlayerStrategyKeys = mapOf(playerId to "example-strategy"),
+        )
+
+        assertEquals(emptyMap(), resolver.resolve(game))
+    }
+
+    /** 驗證 AI 玩家即使在捨牌反應視窗的合資格清單裡，也不會被視為需要決策。 */
+    @Test
+    fun `test ai eligible player does not resolve discard reaction decision`() {
+        val aiId = Uuid.random()
+        val humanId = Uuid.random()
+        val game = Game(
+            tableState = FakeTableStateFactory.create(
+                players = listOf(
+                    FakeMahjongPlayerFactory.create(id = aiId),
+                    FakeMahjongPlayerFactory.create(id = humanId),
+                ),
+                pendingReaction = PendingReaction(
+                    discarderId = Uuid.random(),
+                    tileId = Uuid.random(),
+                    eligiblePlayerIds = setOf(aiId, humanId),
+                    responses = emptyMap(),
+                    ronPlayerIds = setOf(aiId, humanId),
+                    id = Uuid.random(),
+                ),
+            ),
+            flowConfig = GameFlowConfig(),
+            aiPlayerStrategyKeys = mapOf(aiId to "example-strategy"),
+        )
+
+        assertEquals(
+            expected = mapOf(humanId to PlayerDecisionPhase.DISCARD_REACTION),
+            actual = resolver.resolve(game),
+        )
+    }
+
+    /**
+     * 建立指定玩家及捨牌反應視窗的權威遊戲。
+     *
+     * @param playerIds 遊戲中的玩家識別碼。
+     * @param pendingReaction 可選的待處理捨牌反應。
+     * @return 使用測試流程設定建立的遊戲。
+     */
+    private fun game(
+        playerIds: List<Uuid>,
+        pendingReaction: PendingReaction? = null,
+    ): Game = Game(
+        tableState = FakeTableStateFactory.create(
+            players = playerIds.map { FakeMahjongPlayerFactory.create(id = it) },
+            pendingReaction = pendingReaction,
+        ),
+        flowConfig = GameFlowConfig(),
+    )
+}

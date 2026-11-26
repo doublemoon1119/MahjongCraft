@@ -1,0 +1,37 @@
+{
+  "variants": {
+    "part=center": {
+      "model": "mahjongcraft_example:block/low_table/center"
+    },
+    "part=north": {
+      "model": "mahjongcraft_example:block/low_table/edge"
+    },
+    "part=east": {
+      "model": "mahjongcraft_example:block/low_table/edge",
+      "y": 90
+    },
+    "part=south": {
+      "model": "mahjongcraft_example:block/low_table/edge",
+      "y": 180
+    },
+    "part=west": {
+      "model": "mahjongcraft_example:block/low_table/edge",
+      "y": 270
+    },
+    "part=north_west": {
+      "model": "mahjongcraft_example:block/low_table/corner"
+    },
+    "part=north_east": {
+      "model": "mahjongcraft_example:block/low_table/corner",
+      "y": 90
+    },
+    "part=south_east": {
+      "model": "mahjongcraft_example:block/low_table/corner",
+      "y": 180
+    },
+    "part=south_west": {
+      "model": "mahjongcraft_example:block/low_table/corner",
+      "y": 270
+    }
+  }
+}

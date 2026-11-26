@@ -1,0 +1,741 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render
+
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.addVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.renderToBuffer
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.blaze3d.vertex.VertexConsumer
+import com.mojang.math.Axis
+import net.minecraft.client.model.TridentModel
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.RenderType
+import net.minecraft.client.renderer.entity.ItemRenderer
+import net.minecraft.client.renderer.texture.OverlayTexture
+import org.joml.Matrix4f
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.exp
+import kotlin.math.sin
+
+/**
+ * 胡牌特效的畫法：附魔三叉戟落在胡牌張上並晃動，接著小型帶狀閃電擊中它，再有短暫環繞的電弧與錯時擴張的波紋。所有幾何
+ * 皆保持牌面中央淨空。原點是胡牌張的位置，對局中的特效實體與牌譜回放共用。
+ *
+ * @property tridentModel 原版三叉戟實體模型。直接使用其明確座標，讓戟尖能穩定對準胡牌張。
+ */
+class WinCelebrationEffectGeometry(private val tridentModel: TridentModel) {
+    /**
+     * 畫出特效在某一刻的樣子。還沒開始或已經結束時不畫。
+     *
+     * @param elapsedTicks 從特效開始經過的 tick，可以有小數。
+     * @param seed 決定三叉戟角度與閃電形狀的隨機種子。
+     * @param matrices 原點在胡牌張位置的模型矩陣。
+     * @param vertexConsumers 頂點緩衝來源。
+     * @param light 光照值。
+     */
+    fun render(
+        elapsedTicks: Double,
+        seed: Long,
+        matrices: PoseStack,
+        vertexConsumers: MultiBufferSource,
+        light: Int,
+    ) {
+        if (elapsedTicks !in 0.0..<MahjongTileTableLayout.WIN_EFFECT_DURATION_TICKS.toDouble()) return
+        renderTrident(seed, elapsedTicks, matrices, vertexConsumers, light)
+
+        val lightningElapsed = elapsedTicks - LIGHTNING_START_TICK
+        if (lightningElapsed < 0.0) return
+        val progress = (lightningElapsed / LIGHTNING_DURATION_TICKS).coerceIn(0.0, 1.0)
+        val envelope = sin(progress * PI).coerceAtLeast(0.0)
+        if (envelope <= 0.0) return
+
+        val rotation = seedRotation(seed) + progress * FULL_ROTATION_RADIANS
+        val entry = matrices.last()
+        val lightningBuffer = vertexConsumers.getBuffer(RenderType.lightning())
+        lightningStrike(
+            buffer = lightningBuffer,
+            positionMatrix = entry.pose(),
+            effectProgress = progress,
+            seed = seed,
+        )
+        groundDischarge(
+            buffer = lightningBuffer,
+            positionMatrix = entry.pose(),
+            effectProgress = progress,
+            seed = seed,
+            rotation = seedRotation(seed),
+        )
+        repeat(RIPPLE_COUNT) { index ->
+            ripple(
+                buffer = lightningBuffer,
+                positionMatrix = entry.pose(),
+                rotation = rotation,
+                effectProgress = progress,
+                envelope = envelope,
+                rippleIndex = index,
+            )
+        }
+    }
+
+    /**
+     * 先讓縮小的原版附魔三叉戟落下，再以快速衰減的阻尼擺動表現插入後的顫動。
+     *
+     * @param seed 決定三叉戟角度的隨機種子。
+     * @param elapsedTicks 從演出起始時間經過的 tick。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供三叉戟模型頂點緩衝。
+     * @param light 世界光照值。
+     */
+    private fun renderTrident(
+        seed: Long,
+        elapsedTicks: Double,
+        matrices: PoseStack,
+        consumers: MultiBufferSource,
+        light: Int,
+    ) {
+        if (elapsedTicks !in 0.0..<TRIDENT_SHRINK_END_TICK.toDouble()) return
+        val fallProgress = (elapsedTicks / TRIDENT_FALL_DURATION_TICKS).coerceIn(0.0, 1.0)
+        val easedFall = 1.0 - (1.0 - fallProgress) * (1.0 - fallProgress) * (1.0 - fallProgress)
+        val settleProgress = ((elapsedTicks - TRIDENT_FALL_DURATION_TICKS) / TRIDENT_SETTLE_DURATION_TICKS).coerceIn(0.0, 1.0)
+        val rawShrinkProgress =
+            ((elapsedTicks - TRIDENT_SHRINK_START_TICK) / TRIDENT_SHRINK_DURATION_TICKS).coerceIn(0.0, 1.0)
+        val shrinkProgress = rawShrinkProgress * rawShrinkProgress * (3.0 - 2.0 * rawShrinkProgress)
+        val tridentScale = TRIDENT_SCALE * (1.0 - shrinkProgress).toFloat()
+        val wobble = if (elapsedTicks < TRIDENT_FALL_DURATION_TICKS) {
+            0.0
+        } else {
+            sin(settleProgress * TRIDENT_WOBBLE_CYCLES * PI * 2.0) *
+                exp(-settleProgress * TRIDENT_WOBBLE_DAMPING) * TRIDENT_WOBBLE_DEGREES
+        }
+        val seededYaw = Math.floorMod(seed, TRIDENT_YAW_STEPS).toFloat() /
+            TRIDENT_YAW_STEPS * FULL_ROTATION_DEGREES
+        val seededTilt =
+            TRIDENT_MIN_INSERT_ANGLE_DEGREES +
+                (
+                    (seededOffset(seed, TRIDENT_TILT_SALT) + 1.0) / 2.0 *
+                        (TRIDENT_MAX_INSERT_ANGLE_DEGREES - TRIDENT_MIN_INSERT_ANGLE_DEGREES)
+                    ).toFloat()
+        val fallingTilt = seededTilt * (1.0 - easedFall).toFloat()
+
+        matrices.pushPose()
+        matrices.translate(0.0, TRIDENT_START_HEIGHT + (TRIDENT_END_HEIGHT - TRIDENT_START_HEIGHT) * easedFall, 0.0)
+        matrices.mulPose(Axis.YP.rotationDegrees(seededYaw))
+        matrices.mulPose(Axis.ZP.rotationDegrees(fallingTilt + wobble.toFloat()))
+        matrices.scale(tridentScale, tridentScale, tridentScale)
+        matrices.translate(0.0, TRIDENT_TIP_TO_MODEL_ORIGIN, 0.0)
+        val buffer = ItemRenderer.getFoilBufferDirect(
+            consumers,
+            tridentModel.renderType(TridentModel.TEXTURE),
+            false,
+            true,
+        )
+        tridentModel.renderToBuffer(
+            pose = matrices,
+            buffer = buffer,
+            light = light,
+            overlay = OverlayTexture.NO_OVERLAY,
+            color = OPAQUE_WHITE,
+        )
+        matrices.popPose()
+    }
+
+    /**
+     * 以三層半透明帶狀幾何疊出縮小版原版閃電，並在前段切換數次形狀與明暗。
+     *
+     * @param buffer 接收閃電頂點的緩衝。
+     * @param positionMatrix 將局部座標轉換至渲染座標的矩陣。
+     * @param effectProgress 整段閃電演出的進度。
+     * @param seed 決定閃電折線形狀的持久化 seed。
+     */
+    private fun lightningStrike(
+        buffer: VertexConsumer,
+        positionMatrix: Matrix4f,
+        effectProgress: Double,
+        seed: Long,
+    ) {
+        val strikeProgress = effectProgress / LIGHTNING_DURATION_FRACTION
+        if (strikeProgress !in 0.0..<1.0) return
+
+        val flash = abs(sin(strikeProgress * LIGHTNING_FLASH_COUNT * PI))
+        if (flash < LIGHTNING_VISIBLE_THRESHOLD) return
+        val shapeIndex = (strikeProgress * LIGHTNING_SHAPE_COUNT).toInt()
+        val points = lightningPoints(seed, shapeIndex)
+        for (index in 0 until points.lastIndex) {
+            val start = points[index]
+            val end = points[index + 1]
+            lightningSegment(
+                buffer = buffer, positionMatrix = positionMatrix, start = start, end = end, width = LIGHTNING_OUTER_WIDTH, maxAlpha = LIGHTNING_OUTER_ALPHA,
+                red = LIGHTNING_OUTER_RED, green = LIGHTNING_OUTER_GREEN, blue = LIGHTNING_OUTER_BLUE, flash = flash,
+            )
+            lightningSegment(
+                buffer = buffer, positionMatrix = positionMatrix, start = start, end = end, width = LIGHTNING_MIDDLE_WIDTH, maxAlpha = LIGHTNING_MIDDLE_ALPHA,
+                red = LIGHTNING_MIDDLE_RED, green = LIGHTNING_MIDDLE_GREEN, blue = LIGHTNING_MIDDLE_BLUE, flash = flash,
+            )
+            lightningSegment(
+                buffer = buffer, positionMatrix = positionMatrix, start = start, end = end, width = LIGHTNING_CORE_WIDTH, maxAlpha = LIGHTNING_CORE_ALPHA,
+                red = LIGHTNING_CORE_RED, green = LIGHTNING_CORE_GREEN, blue = LIGHTNING_CORE_BLUE, flash = flash,
+            )
+        }
+    }
+
+    /**
+     * 由持久化 seed 與離散形狀編號產生相連的閃電節點。底端固定命中胡牌張中央。
+     *
+     * @param seed 決定節點偏移的持久化 seed。
+     * @param shapeIndex 目前使用的離散閃電形狀索引。
+     * @return 由上而下排列的折線節點。
+     */
+    private fun lightningPoints(
+        seed: Long,
+        shapeIndex: Int,
+    ): List<LightningPoint> = List(LIGHTNING_SEGMENTS + 1) { index ->
+        val verticalProgress = index.toDouble() / LIGHTNING_SEGMENTS
+        val displacementEnvelope = sin(verticalProgress * PI)
+        val salt = shapeIndex * LIGHTNING_SEGMENTS + index
+        LightningPoint(
+            x = seededOffset(seed, salt * 2) * LIGHTNING_MAX_OFFSET * displacementEnvelope,
+            y = LIGHTNING_BOTTOM_HEIGHT + LIGHTNING_HEIGHT * verticalProgress,
+            z = seededOffset(seed, salt * 2 + 1) * LIGHTNING_MAX_OFFSET * displacementEnvelope,
+        )
+    }.reversed()
+
+    /**
+     * 每層各畫兩片互相垂直的帶狀面，從各視角都能看到近似原版的柱狀閃電。
+     *
+     * @param buffer 接收頂點的閃電緩衝。
+     * @param positionMatrix 局部座標轉換矩陣。
+     * @param start 線段起點。
+     * @param end 線段終點。
+     * @param width 帶狀面半寬。
+     * @param maxAlpha 此層的最大透明度。
+     * @param red 紅色通道。
+     * @param green 綠色通道。
+     * @param blue 藍色通道。
+     * @param flash 閃爍亮度比例。
+     */
+    private fun lightningSegment(
+        buffer: VertexConsumer,
+        positionMatrix: Matrix4f,
+        start: LightningPoint,
+        end: LightningPoint,
+        width: Double,
+        maxAlpha: Int,
+        red: Int,
+        green: Int,
+        blue: Int,
+        flash: Double,
+    ) {
+        val alpha = (maxAlpha * flash).toInt().coerceIn(0, 255)
+        lightningQuad(buffer, positionMatrix, start, end, width, 0.0, alpha, red, green, blue)
+        lightningQuad(buffer, positionMatrix, start, end, 0.0, width, alpha, red, green, blue)
+        val diagonalWidth = width * INVERSE_SQRT_TWO
+        lightningQuad(buffer, positionMatrix, start, end, diagonalWidth, diagonalWidth, alpha, red, green, blue)
+        lightningQuad(buffer, positionMatrix, start, end, diagonalWidth, -diagonalWidth, alpha, red, green, blue)
+    }
+
+    /**
+     * 寫入單片不使用材質的半透明閃電帶。
+     *
+     * @param buffer 接收頂點的閃電緩衝。
+     * @param positionMatrix 局部座標轉換矩陣。
+     * @param start 線段起點。
+     * @param end 線段終點。
+     * @param xWidth X 軸半寬。
+     * @param zWidth Z 軸半寬。
+     * @param alpha 頂點透明度。
+     * @param red 紅色通道。
+     * @param green 綠色通道。
+     * @param blue 藍色通道。
+     */
+    private fun lightningQuad(
+        buffer: VertexConsumer,
+        positionMatrix: Matrix4f,
+        start: LightningPoint,
+        end: LightningPoint,
+        xWidth: Double,
+        zWidth: Double,
+        alpha: Int,
+        red: Int,
+        green: Int,
+        blue: Int,
+    ) {
+        coloredQuad(
+            buffer = buffer,
+            positionMatrix = positionMatrix,
+            first = LightningPoint(start.x - xWidth, start.y, start.z - zWidth),
+            second = LightningPoint(end.x - xWidth, end.y, end.z - zWidth),
+            third = LightningPoint(end.x + xWidth, end.y, end.z + zWidth),
+            fourth = LightningPoint(start.x + xWidth, start.y, start.z + zWidth),
+            alpha = alpha,
+            red = red,
+            green = green,
+            blue = blue,
+        )
+    }
+
+    /**
+     * 寫入正反兩面，避免帶狀幾何因視角或背面剔除而消失。
+     *
+     * @param buffer 接收頂點的閃電緩衝。
+     * @param positionMatrix 局部座標轉換矩陣。
+     * @param first 四邊形第一個頂點。
+     * @param second 第二個頂點。
+     * @param third 第三個頂點。
+     * @param fourth 第四個頂點。
+     * @param alpha 頂點透明度。
+     * @param red 紅色通道。
+     * @param green 綠色通道。
+     * @param blue 藍色通道。
+     */
+    private fun coloredQuad(
+        buffer: VertexConsumer,
+        positionMatrix: Matrix4f,
+        first: LightningPoint,
+        second: LightningPoint,
+        third: LightningPoint,
+        fourth: LightningPoint,
+        alpha: Int,
+        red: Int,
+        green: Int,
+        blue: Int,
+    ) {
+        listOf(first, second, third, fourth, fourth, third, second, first).forEach { point ->
+            lightningVertex(buffer, positionMatrix, point.x, point.y, point.z, alpha, red, green, blue)
+        }
+    }
+
+    /**
+     * 閃電 render layer 使用 position-color 頂點格式。
+     *
+     * @param buffer 接收頂點的閃電緩衝。
+     * @param positionMatrix 局部座標轉換矩陣。
+     * @param x 頂點 X 座標。
+     * @param y 頂點 Y 座標。
+     * @param z 頂點 Z 座標。
+     * @param alpha 頂點透明度。
+     * @param red 紅色通道。
+     * @param green 綠色通道。
+     * @param blue 藍色通道。
+     */
+    private fun lightningVertex(
+        buffer: VertexConsumer,
+        positionMatrix: Matrix4f,
+        x: Double,
+        y: Double,
+        z: Double,
+        alpha: Int,
+        red: Int,
+        green: Int,
+        blue: Int,
+    ) {
+        buffer.addVertex(positionMatrix, x.toFloat(), y.toFloat(), z.toFloat())
+            .setColor(red, green, blue, alpha)
+            .finishVertex()
+    }
+
+    /**
+     * 將 seed 穩定映射至 -1 到 1，讓每次重載仍得到相同的閃電形狀。
+     *
+     * @param seed 持久化演出 seed。
+     * @param salt 此次取樣使用的雜湊偏移。
+     * @return 穩定落在 -1 到 1 的取樣值。
+     */
+    private fun seededOffset(
+        seed: Long,
+        salt: Int,
+    ): Double {
+        var value = seed + salt * LIGHTNING_HASH_MULTIPLIER
+        value = (value xor (value ushr 30)) * LIGHTNING_HASH_MIX_A
+        value = (value xor (value ushr 27)) * LIGHTNING_HASH_MIX_B
+        value = value xor (value ushr 31)
+        return (value ushr 11) / LIGHTNING_HASH_DENOMINATOR * 2.0 - 1.0
+    }
+
+    /**
+     * 閃電路徑上的三維折線節點。
+     *
+     * @property x 世界局部 X 座標。
+     * @property y 世界局部 Y 座標。
+     * @property z 世界局部 Z 座標。
+     */
+    private data class LightningPoint(
+        val x: Double,
+        val y: Double,
+        val z: Double,
+    )
+
+    /**
+     * 閃電命中後讓鋸齒狀電流貼近牌桌向外放射，並以短分岔強化接地放電感。
+     *
+     * @param buffer 接收頂點的閃電緩衝。
+     * @param positionMatrix 局部座標轉換矩陣。
+     * @param effectProgress 整段效果進度。
+     * @param seed 控制電弧形狀的持久化 seed。
+     * @param rotation 電弧排列的起始角度。
+     */
+    private fun groundDischarge(
+        buffer: VertexConsumer,
+        positionMatrix: Matrix4f,
+        effectProgress: Double,
+        seed: Long,
+        rotation: Double,
+    ) {
+        val dischargeProgress = (effectProgress - DISCHARGE_START_FRACTION) / DISCHARGE_DURATION_FRACTION
+        if (dischargeProgress !in 0.0..<1.0) return
+
+        val envelope = sin(dischargeProgress * PI).coerceAtLeast(0.0)
+        val flicker = DISCHARGE_FLICKER_MIN + (1.0 - DISCHARGE_FLICKER_MIN) *
+            abs(sin(dischargeProgress * DISCHARGE_FLICKER_COUNT * PI))
+        val intensity = envelope * flicker
+        val shapeIndex = (dischargeProgress * DISCHARGE_SHAPE_COUNT).toInt()
+        repeat(DISCHARGE_RAY_COUNT) { rayIndex ->
+            val baseAngle =
+                rotation + rayIndex * FULL_ROTATION_RADIANS / DISCHARGE_RAY_COUNT +
+                    seededOffset(seed, shapeIndex * 101 + rayIndex) * DISCHARGE_ANGLE_JITTER
+            val lengthScale = DISCHARGE_MIN_LENGTH_SCALE +
+                (1.0 - DISCHARGE_MIN_LENGTH_SCALE) * ((rayIndex % 3) / 2.0)
+            val points = dischargePoints(seed, shapeIndex, rayIndex, baseAngle, lengthScale)
+            drawDischargePath(buffer, positionMatrix, points, intensity)
+
+            if (rayIndex % 3 == 0) {
+                val branchStart = points[DISCHARGE_BRANCH_START_INDEX]
+                val branchAngle = baseAngle + seededOffset(seed, shapeIndex * 313 + rayIndex) * DISCHARGE_BRANCH_ANGLE
+                val branchEnd = LightningPoint(
+                    x = branchStart.x + cos(branchAngle) * DISCHARGE_BRANCH_LENGTH,
+                    y = branchStart.y + DISCHARGE_BRANCH_HEIGHT_OFFSET,
+                    z = branchStart.z + sin(branchAngle) * DISCHARGE_BRANCH_LENGTH,
+                )
+                drawDischargePath(buffer, positionMatrix, listOf(branchStart, branchEnd), intensity * DISCHARGE_BRANCH_ALPHA)
+            }
+        }
+    }
+
+    /**
+     * 由中心向外建立一條具側向偏移的接地放電路徑。
+     *
+     * @param seed 控制節點偏移的持久化 seed。
+     * @param shapeIndex 離散路徑形狀索引。
+     * @param rayIndex 放射電弧索引。
+     * @param baseAngle 電弧的基準方向角度。
+     * @param lengthScale 此路徑的長度比例。
+     * @return 由內向外排列的電弧節點。
+     */
+    private fun dischargePoints(
+        seed: Long,
+        shapeIndex: Int,
+        rayIndex: Int,
+        baseAngle: Double,
+        lengthScale: Double,
+    ): List<LightningPoint> = List(DISCHARGE_SEGMENTS + 1) { index ->
+        val pathProgress = index.toDouble() / DISCHARGE_SEGMENTS
+        val salt = shapeIndex * 401 + rayIndex * 37 + index
+        val radius = DISCHARGE_START_RADIUS + DISCHARGE_LENGTH * lengthScale * pathProgress
+        val angle = baseAngle + seededOffset(seed, salt) * DISCHARGE_PATH_JITTER * sin(pathProgress * PI)
+        LightningPoint(
+            x = cos(angle) * radius,
+            y = DISCHARGE_HEIGHT + seededOffset(seed, salt + 701) * DISCHARGE_HEIGHT_JITTER,
+            z = sin(angle) * radius,
+        )
+    }
+
+    /**
+     * 以淡藍外光與近白核心疊出一條水平放電路徑。
+     *
+     * @param buffer 接收頂點的閃電緩衝。
+     * @param positionMatrix 局部座標轉換矩陣。
+     * @param points 電弧折線節點。
+     * @param intensity 此路徑的亮度比例。
+     */
+    private fun drawDischargePath(
+        buffer: VertexConsumer,
+        positionMatrix: Matrix4f,
+        points: List<LightningPoint>,
+        intensity: Double,
+    ) {
+        for (index in 0 until points.lastIndex) {
+            lightningSegment(
+                buffer = buffer, positionMatrix = positionMatrix, start = points[index], end = points[index + 1],
+                width = DISCHARGE_OUTER_WIDTH, maxAlpha = DISCHARGE_OUTER_ALPHA,
+                red = LIGHTNING_OUTER_RED, green = LIGHTNING_OUTER_GREEN, blue = LIGHTNING_OUTER_BLUE, flash = intensity,
+            )
+            lightningSegment(
+                buffer = buffer, positionMatrix = positionMatrix, start = points[index], end = points[index + 1],
+                width = DISCHARGE_CORE_WIDTH, maxAlpha = DISCHARGE_CORE_ALPHA,
+                red = LIGHTNING_CORE_RED, green = LIGHTNING_CORE_GREEN, blue = LIGHTNING_CORE_BLUE, flash = intensity,
+            )
+        }
+    }
+
+    /**
+     * 依序展開一圈波紋。每個後續圓環稍晚出現、略暗且高度錯開，模擬水滴擴散。
+     *
+     * @param buffer 接收頂點的閃電緩衝。
+     * @param positionMatrix 局部座標轉換矩陣。
+     * @param rotation 圓環起始角度。
+     * @param effectProgress 整段效果進度。
+     * @param envelope 整體淡入淡出比例。
+     * @param rippleIndex 波紋索引。
+     */
+    private fun ripple(
+        buffer: VertexConsumer,
+        positionMatrix: Matrix4f,
+        rotation: Double,
+        effectProgress: Double,
+        envelope: Double,
+        rippleIndex: Int,
+    ) {
+        val startProgress = RIPPLE_START_FRACTION + rippleIndex * RIPPLE_DELAY_FRACTION
+        val rippleProgress = ((effectProgress - startProgress) / RIPPLE_DURATION_FRACTION).coerceIn(0.0, 1.0)
+        if (effectProgress < startProgress || rippleProgress >= 1.0) return
+
+        val fadeIn = (rippleProgress / RIPPLE_FADE_IN_FRACTION).coerceIn(0.0, 1.0)
+        val brightness = 1.0 - rippleIndex * RIPPLE_BRIGHTNESS_STEP
+        val alpha = (MAX_RING_ALPHA * envelope * fadeIn * (1.0 - rippleProgress) * brightness).toInt()
+        if (alpha <= 0) return
+
+        val radius = RING_START_RADIUS + (RING_END_RADIUS - RING_START_RADIUS) * rippleProgress
+        val height = RING_HEIGHT + rippleIndex * RIPPLE_HEIGHT_OFFSET
+        val red = if (rippleIndex == 0) LIGHTNING_MIDDLE_RED else GLOW_RED
+        val green = if (rippleIndex == 0) LIGHTNING_MIDDLE_GREEN else GLOW_GREEN
+        val blue = if (rippleIndex == 0) LIGHTNING_MIDDLE_BLUE else GLOW_BLUE
+        repeat(RING_SEGMENTS) { segmentIndex ->
+            val startAngle = rotation + segmentIndex * FULL_ROTATION_RADIANS / RING_SEGMENTS
+            val endAngle = rotation + (segmentIndex + 1) * FULL_ROTATION_RADIANS / RING_SEGMENTS
+            rippleSegment(buffer, positionMatrix, startAngle, endAngle, radius, height, RIPPLE_OUTER_WIDTH, alpha, red, green, blue)
+            rippleSegment(
+                buffer = buffer, positionMatrix = positionMatrix, startAngle = startAngle, endAngle = endAngle, radius = radius, height = height,
+                width = RIPPLE_CORE_WIDTH, alpha = (alpha * RIPPLE_CORE_ALPHA_MULTIPLIER).toInt(),
+                red = if (rippleIndex == 0) LIGHTNING_CORE_RED else RIPPLE_CORE_RED,
+                green = if (rippleIndex == 0) LIGHTNING_CORE_GREEN else RIPPLE_CORE_GREEN,
+                blue = if (rippleIndex == 0) LIGHTNING_CORE_BLUE else RIPPLE_CORE_BLUE,
+            )
+        }
+    }
+
+    /**
+     * 同時畫水平環帶與薄垂直側壁，讓水波紋從俯視與低角度都清楚可見。
+     *
+     * @param buffer 接收頂點的閃電緩衝。
+     * @param positionMatrix 局部座標轉換矩陣。
+     * @param startAngle 圓弧起始角度。
+     * @param endAngle 圓弧結束角度。
+     * @param radius 圓弧中心半徑。
+     * @param height 圓弧高度。
+     * @param width 環帶半寬。
+     * @param alpha 頂點透明度。
+     * @param red 紅色通道。
+     * @param green 綠色通道。
+     * @param blue 藍色通道。
+     */
+    private fun rippleSegment(
+        buffer: VertexConsumer,
+        positionMatrix: Matrix4f,
+        startAngle: Double,
+        endAngle: Double,
+        radius: Double,
+        height: Double,
+        width: Double,
+        alpha: Int,
+        red: Int,
+        green: Int,
+        blue: Int,
+    ) {
+        val innerRadius = radius - width
+        val outerRadius = radius + width
+        val innerStart = LightningPoint(cos(startAngle) * innerRadius, height, sin(startAngle) * innerRadius)
+        val innerEnd = LightningPoint(cos(endAngle) * innerRadius, height, sin(endAngle) * innerRadius)
+        val outerEnd = LightningPoint(cos(endAngle) * outerRadius, height, sin(endAngle) * outerRadius)
+        val outerStart = LightningPoint(cos(startAngle) * outerRadius, height, sin(startAngle) * outerRadius)
+        coloredQuad(buffer, positionMatrix, innerStart, innerEnd, outerEnd, outerStart, alpha, red, green, blue)
+
+        val lowerStart = LightningPoint(outerStart.x, height - RIPPLE_VERTICAL_HALF_HEIGHT, outerStart.z)
+        val lowerEnd = LightningPoint(outerEnd.x, height - RIPPLE_VERTICAL_HALF_HEIGHT, outerEnd.z)
+        val upperEnd = LightningPoint(outerEnd.x, height + RIPPLE_VERTICAL_HALF_HEIGHT, outerEnd.z)
+        val upperStart = LightningPoint(outerStart.x, height + RIPPLE_VERTICAL_HALF_HEIGHT, outerStart.z)
+        coloredQuad(buffer, positionMatrix, lowerStart, lowerEnd, upperEnd, upperStart, alpha, red, green, blue)
+    }
+
+    /**
+     * 將持久化 seed 穩定映射到一圈內的起始角度，避免世界重載後圖樣旋轉相位改變。
+     *
+     * @param seed 持久化演出 seed。
+     * @return 0 到一整圈之間的起始角度（弧度）。
+     */
+    private fun seedRotation(seed: Long): Double = Math.floorMod(seed, SEED_ROTATION_STEPS) /
+        SEED_ROTATION_STEPS.toDouble() * FULL_ROTATION_RADIANS
+
+    private companion object {
+        /** 三叉戟落下、插入停頓與後續閃電的時間分段。 */
+        private const val TRIDENT_FALL_DURATION_TICKS: Int = MahjongTileTableLayout.WIN_TRIDENT_FALL_DURATION_TICKS
+        private const val TRIDENT_SETTLE_DURATION_TICKS: Int = MahjongTileTableLayout.WIN_TRIDENT_SETTLE_DURATION_TICKS
+        private const val LIGHTNING_START_TICK: Int = MahjongTileTableLayout.WIN_LIGHTNING_START_TICK
+        private const val LIGHTNING_DURATION_TICKS: Int = MahjongTileTableLayout.WIN_EFFECT_DURATION_TICKS - LIGHTNING_START_TICK
+        private const val TRIDENT_SHRINK_DELAY_TICKS: Int = 2
+        private const val TRIDENT_SHRINK_DURATION_TICKS: Int = 8
+        private const val TRIDENT_SHRINK_START_TICK: Int = LIGHTNING_START_TICK + TRIDENT_SHRINK_DELAY_TICKS
+        private const val TRIDENT_SHRINK_END_TICK: Int = TRIDENT_SHRINK_START_TICK + TRIDENT_SHRINK_DURATION_TICKS
+
+        /** 三叉戟的世界高度、尺寸與 seed 控制的插入角度範圍。 */
+        private const val TRIDENT_START_HEIGHT: Double = 1.8
+        private const val TRIDENT_END_HEIGHT: Double = 0.075
+        private const val TRIDENT_SCALE: Float = 0.2f
+        private const val TRIDENT_TIP_TO_MODEL_ORIGIN: Double = 3.0 / 16.0
+        private const val TRIDENT_MIN_INSERT_ANGLE_DEGREES: Float = 8.0f
+        private const val TRIDENT_MAX_INSERT_ANGLE_DEGREES: Float = 20.0f
+
+        /** 插入後的阻尼顫動參數。 */
+        private const val TRIDENT_WOBBLE_CYCLES: Double = 2.5
+        private const val TRIDENT_WOBBLE_DAMPING: Double = 3.8
+        private const val TRIDENT_WOBBLE_DEGREES: Double = 7.0
+
+        /** 持久化 seed 映射至三叉戟水平朝向時使用的離散精度。 */
+        private const val TRIDENT_YAW_STEPS: Long = 360L
+
+        /** 由持久化 seed 取得三叉戟傾角時使用的獨立雜湊 salt。 */
+        private const val TRIDENT_TILT_SALT: Int = 8731
+
+        /** 完整一圈的角度。 */
+        private const val FULL_ROTATION_DEGREES: Float = 360.0f
+
+        /** 圓環線段數，兼顧圓滑度與頂點數。 */
+        private const val RING_SEGMENTS: Int = 32
+
+        /** 依序展開的水波紋數量。 */
+        private const val RIPPLE_COUNT: Int = 3
+
+        /** 小型閃電主幹的分段數。 */
+        private const val LIGHTNING_SEGMENTS: Int = 7
+
+        /** 命中點向外四散的接地放電數量與每道分段數。 */
+        private const val DISCHARGE_RAY_COUNT: Int = 5
+        private const val DISCHARGE_SEGMENTS: Int = 5
+        private const val DISCHARGE_BRANCH_START_INDEX: Int = 2
+
+        /** seed 映射至初始旋轉角時的一圈離散精度。 */
+        private const val SEED_ROTATION_STEPS: Long = 3600L
+
+        /** 整段演出繞牌旋轉一圈的弧度。 */
+        private const val FULL_ROTATION_RADIANS: Double = PI * 2.0
+
+        /** 脈衝環起始半徑。 */
+        private const val RING_START_RADIUS: Double = 0.075
+
+        /** 脈衝環結束半徑。 */
+        private const val RING_END_RADIUS: Double = 0.38
+
+        /** 脈衝環略高於牌面，避免深度衝突。 */
+        private const val RING_HEIGHT: Double = 0.04
+
+        /** 單道波紋占整段演出的時間比例。 */
+        private const val RIPPLE_DURATION_FRACTION: Double = 0.42
+
+        /** 第一環延後至閃電擊中後才開始。 */
+        private const val RIPPLE_START_FRACTION: Double = 0.11
+
+        /** 相鄰波紋起始時間的間隔。 */
+        private const val RIPPLE_DELAY_FRACTION: Double = 0.13
+
+        /** 波紋開始時用於快速淡入的自身進度比例。 */
+        private const val RIPPLE_FADE_IN_FRACTION: Double = 0.12
+
+        /** 每道後續波紋降低的亮度比例。 */
+        private const val RIPPLE_BRIGHTNESS_STEP: Double = 0.18
+
+        /** 相鄰波紋的垂直錯位，避免共面閃爍。 */
+        private const val RIPPLE_HEIGHT_OFFSET: Double = 0.0015
+
+        /** 接地放電的播放區間、閃爍節奏與離散形狀數。 */
+        private const val DISCHARGE_START_FRACTION: Double = 0.08
+        private const val DISCHARGE_DURATION_FRACTION: Double = 0.38
+        private const val DISCHARGE_SHAPE_COUNT: Double = 4.0
+        private const val DISCHARGE_FLICKER_COUNT: Double = 5.0
+        private const val DISCHARGE_FLICKER_MIN: Double = 0.45
+
+        /** 接地放電由擊中點向外爬行的長度、角度與高度參數。 */
+        private const val DISCHARGE_START_RADIUS: Double = 0.055
+        private const val DISCHARGE_LENGTH: Double = 0.29
+        private const val DISCHARGE_MIN_LENGTH_SCALE: Double = 0.62
+        private const val DISCHARGE_ANGLE_JITTER: Double = 0.2
+        private const val DISCHARGE_PATH_JITTER: Double = 0.42
+        private const val DISCHARGE_HEIGHT: Double = 0.052
+        private const val DISCHARGE_HEIGHT_JITTER: Double = 0.006
+
+        /** 偶數主電弧在中段長出的短分岔。 */
+        private const val DISCHARGE_BRANCH_ANGLE: Double = PI * 0.72
+        private const val DISCHARGE_BRANCH_LENGTH: Double = 0.065
+        private const val DISCHARGE_BRANCH_HEIGHT_OFFSET: Double = 0.003
+        private const val DISCHARGE_BRANCH_ALPHA: Double = 0.72
+
+        /** 接地放電的淡藍外光與近白核心尺寸。 */
+        private const val DISCHARGE_OUTER_WIDTH: Double = 0.014
+        private const val DISCHARGE_CORE_WIDTH: Double = 0.0045
+        private const val DISCHARGE_OUTER_ALPHA: Int = 120
+        private const val DISCHARGE_CORE_ALPHA: Int = 235
+
+        /** 波紋外光、核心環帶寬度與低角度可見的側壁半高。 */
+        private const val RIPPLE_OUTER_WIDTH: Double = 0.018
+        private const val RIPPLE_CORE_WIDTH: Double = 0.006
+        private const val RIPPLE_VERTICAL_HALF_HEIGHT: Double = 0.012
+        private const val RIPPLE_CORE_ALPHA_MULTIPLIER: Double = 1.08
+
+        /** 金色波紋的近白核心。 */
+        private const val RIPPLE_CORE_RED: Int = 255
+        private const val RIPPLE_CORE_GREEN: Int = 239
+        private const val RIPPLE_CORE_BLUE: Int = 172
+
+        /** 閃電播放區間、閃爍次數與離散形狀數。 */
+        private const val LIGHTNING_DURATION_FRACTION: Double = 0.3
+        private const val LIGHTNING_FLASH_COUNT: Double = 3.0
+        private const val LIGHTNING_SHAPE_COUNT: Double = 3.0
+        private const val LIGHTNING_VISIBLE_THRESHOLD: Double = 0.08
+
+        /** 閃電從牌面上方劈下的尺寸與最大水平偏移。 */
+        private const val LIGHTNING_BOTTOM_HEIGHT: Double = 0.045
+        private const val LIGHTNING_HEIGHT: Double = 0.78
+        private const val LIGHTNING_MAX_OFFSET: Double = 0.085
+
+        /** 外光、中層與核心的半寬。 */
+        private const val LIGHTNING_OUTER_WIDTH: Double = 0.052
+        private const val LIGHTNING_MIDDLE_WIDTH: Double = 0.029
+        private const val LIGHTNING_CORE_WIDTH: Double = 0.009
+
+        /** 三層帶狀幾何的透明度。 */
+        private const val LIGHTNING_OUTER_ALPHA: Int = 58
+        private const val LIGHTNING_MIDDLE_ALPHA: Int = 125
+        private const val LIGHTNING_CORE_ALPHA: Int = 245
+
+        /** 45 度交叉面的寬度正規化係數。 */
+        private const val INVERSE_SQRT_TWO: Double = 0.7071067811865476
+
+        /** 淡藍外光、藍白中層與近白核心。 */
+        private const val LIGHTNING_OUTER_RED: Int = 128
+        private const val LIGHTNING_OUTER_GREEN: Int = 158
+        private const val LIGHTNING_OUTER_BLUE: Int = 255
+        private const val LIGHTNING_MIDDLE_RED: Int = 190
+        private const val LIGHTNING_MIDDLE_GREEN: Int = 210
+        private const val LIGHTNING_MIDDLE_BLUE: Int = 255
+        private const val LIGHTNING_CORE_RED: Int = 248
+        private const val LIGHTNING_CORE_GREEN: Int = 251
+        private const val LIGHTNING_CORE_BLUE: Int = 255
+
+        /** SplitMix64 雜湊常數，將持久化 seed 轉為穩定的節點偏移。 */
+        private const val LIGHTNING_HASH_MULTIPLIER: Long = -7046029254386353131L
+        private const val LIGHTNING_HASH_MIX_A: Long = -4658895280553007687L
+        private const val LIGHTNING_HASH_MIX_B: Long = -7723592293110705685L
+        private const val LIGHTNING_HASH_DENOMINATOR: Double = 9007199254740992.0
+
+        /** 脈衝環最高 alpha。 */
+        private const val MAX_RING_ALPHA: Int = 230
+
+        /** 暖金色外層光暈與脈衝環。 */
+        private const val GLOW_RED: Int = 255
+        private const val GLOW_GREEN: Int = 190
+        private const val GLOW_BLUE: Int = 62
+    }
+}
+
+/** 不改變模型顏色的不透明白色 ARGB。 */
+private const val OPAQUE_WHITE: Int = -1

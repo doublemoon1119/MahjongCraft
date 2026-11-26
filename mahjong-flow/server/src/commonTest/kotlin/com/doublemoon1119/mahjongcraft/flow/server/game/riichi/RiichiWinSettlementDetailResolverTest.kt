@@ -1,0 +1,230 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.riichi
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
+import com.doublemoon1119.mahjongcraft.logic.base.toPublicFaceView
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPointResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiComponentRegistryForTests
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiRedFiveFace
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
+
+/** [RiichiWinSettlementDetailResolver] 輸出的日麻語意詳情與特殊 outcome 判別測試。 */
+class RiichiWinSettlementDetailResolverTest {
+    /** 和牌詳情使用的立直規則設定。 */
+    private val config = RiichiRuleConfig()
+
+    /**
+     * 立直及雙立直即使沒有裏寶牌加飜，也保留可用指示牌欄位。未立直及役滿不加入。
+     */
+    @Test
+    fun `ura indicators require an applicable winning riichi result`() {
+        val state = FakeTableStateFactory.create(config = config)
+        listOf(RiichiYakuType.Riichi, RiichiYakuType.DoubleRiichi).forEach { yaku ->
+            val result = RiichiHandValueResult(listOf(RiichiYakuResult.han(yaku, 1)), 1, 30, RiichiPointResult.Ron(1000))
+            val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result, publicFace(state))
+            assertTrue(fields.any { it.id == RiichiWinSettlementIds.URA_DORA_FIELD })
+        }
+        listOf(
+            RiichiHandValueResult(listOf(RiichiYakuResult.han(RiichiYakuType.Tanyao, 1)), 1, 30, RiichiPointResult.Ron(1000)),
+            RiichiHandValueResult(listOf(RiichiYakuResult.han(RiichiYakuType.Riichi, 1)), -1, 0, RiichiPointResult.Ron(32000)),
+        ).forEach { result ->
+            val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result, publicFace(state))
+            assertTrue(fields.any { it.id == RiichiWinSettlementIds.DORA_FIELD })
+            assertFalse(fields.any { it.id == RiichiWinSettlementIds.URA_DORA_FIELD })
+        }
+    }
+
+    /** 指示牌詳情保存牌面，包含重複指示牌，不依賴原牌張 UUID。 */
+    @Test
+    fun `dora and ura details preserve ordered faces without tile references`() {
+        val reserved = List(14) { index -> IdentifiedTile(Uuid.random(), if (index == 5) Tile.Honor.North else Tile.Numeric(Tile.Suit.Dot, 5)) }
+        val state = FakeTableStateFactory.create(config = config).copy(reservedWallTiles = reserved, components = riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 1, revealedKanDoraCount = 1)))
+        val result = RiichiHandValueResult(listOf(RiichiYakuResult.han(RiichiYakuType.Riichi, 1)), 1, 30, RiichiPointResult.Ron(1000))
+        val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result, publicFace(state))
+        assertEquals(WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Dot, 5), Tile.Honor.North).map(::TileFaceView)), fields.value(RiichiWinSettlementIds.DORA_FIELD))
+        assertEquals(WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Dot, 5), Tile.Numeric(Tile.Suit.Dot, 5)).map(::TileFaceView)), fields.value(RiichiWinSettlementIds.URA_DORA_FIELD))
+    }
+
+    /** 赤五指示牌在結算明細中帶著赤寶牌特徵與赤五外觀，不帶局內身分。 */
+    @Test
+    fun `red five indicators keep their public appearance and feature`() {
+        val redFive = RiichiTileValues.redFive(Tile.Suit.Dot)
+        val reserved = List(14) { index ->
+            if (index == 5) IdentifiedTile(Uuid.random(), Tile.Honor.North) else IdentifiedTile(Uuid.random(), redFive.tile, redFive.components)
+        }
+        val state = FakeTableStateFactory.create(config = config).copy(reservedWallTiles = reserved, components = riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 1, revealedKanDoraCount = 1)))
+        val result = RiichiHandValueResult(listOf(RiichiYakuResult.han(RiichiYakuType.Riichi, 1)), 1, 30, RiichiPointResult.Ron(1000))
+
+        val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result, publicFace(state))
+
+        val redFace = riichiRedFiveFace(Tile.Suit.Dot)
+        assertEquals(WinSettlementDetailValue.TileFaces(listOf(redFace, TileFaceView(Tile.Honor.North))), fields.value(RiichiWinSettlementIds.DORA_FIELD))
+        assertEquals(WinSettlementDetailValue.TileFaces(listOf(redFace, redFace)), fields.value(RiichiWinSettlementIds.URA_DORA_FIELD))
+    }
+
+    /** 一般和牌的役種條目依役種結果順序帶出役種 ID 與翻數，翻符欄位帶出總翻數與符數。 */
+    @Test
+    fun `regular win lists yaku with han and the han fu total`() {
+        val state = FakeTableStateFactory.create(config = config)
+        val result = RiichiHandValueResult(
+            yakuResults = listOf(RiichiYakuResult.han(RiichiYakuType.Riichi, 1), RiichiYakuResult.han(RiichiYakuType.Tanyao, 1), RiichiYakuResult.han(RiichiYakuType.Honitsu, 3)),
+            totalHan = 5,
+            totalFu = 40,
+            pointResult = RiichiPointResult.Ron(8000),
+        )
+
+        val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result, publicFace(state))
+
+        assertEquals(
+            expected = WinSettlementDetailValue.Entries(
+                entries = listOf(
+                    RiichiWinSettlementIds.yakuEntry(RiichiYakuType.Riichi, 1),
+                    RiichiWinSettlementIds.yakuEntry(RiichiYakuType.Tanyao, 1),
+                    RiichiWinSettlementIds.yakuEntry(RiichiYakuType.Honitsu, 3),
+                ),
+            ),
+            actual = fields.value(RiichiWinSettlementIds.YAKU_FIELD),
+        )
+        assertEquals(
+            expected = WinSettlementDetailValue.Quantities(
+                quantities = listOf(WinSettlementQuantity(RiichiWinSettlementIds.HAN, 5), WinSettlementQuantity(RiichiWinSettlementIds.FU, 40)),
+            ),
+            actual = fields.value(RiichiWinSettlementIds.HAN_FU_FIELD),
+        )
+        assertFalse(fields.any { it.id == RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD })
+    }
+
+    /** 役滿和牌的條目帶出各役滿倍數，合計欄位帶出總倍數，不輸出翻符欄位。 */
+    @Test
+    fun `yakuman win lists multipliers and the yakuman total`() {
+        val state = FakeTableStateFactory.create(config = config)
+        val result = RiichiHandValueResult(
+            yakuResults = listOf(RiichiYakuResult.doubleYakuman(RiichiYakuType.KokushiMusou13), RiichiYakuResult.yakuman(RiichiYakuType.Tenhou)),
+            totalHan = -3,
+            totalFu = 0,
+            pointResult = RiichiPointResult.Ron(96000),
+        )
+
+        val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result, publicFace(state))
+
+        assertEquals(
+            expected = WinSettlementDetailValue.Entries(
+                entries = listOf(
+                    RiichiWinSettlementIds.yakumanEntry(RiichiYakuType.KokushiMusou13, 2),
+                    RiichiWinSettlementIds.yakumanEntry(RiichiYakuType.Tenhou, 1),
+                ),
+            ),
+            actual = fields.value(RiichiWinSettlementIds.YAKU_FIELD),
+        )
+        assertEquals(
+            expected = WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(RiichiWinSettlementIds.YAKUMAN, 3))),
+            actual = fields.value(RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD),
+        )
+        assertFalse(fields.any { it.id == RiichiWinSettlementIds.HAN_FU_FIELD })
+    }
+
+    /** 未達滿貫且具有權威符數時應同時提供翻數與符數。 */
+    @Test
+    fun `includes fu when available`() {
+        val value = RiichiWinSettlementDetailResolver.riichiHanFuValue(totalHan = 3, totalFu = 30)
+
+        assertEquals(
+            expected = listOf(WinSettlementQuantity(RiichiWinSettlementIds.HAN, 3), WinSettlementQuantity(RiichiWinSettlementIds.FU, 30)),
+            actual = value.quantities,
+        )
+    }
+
+    /** 滿貫以上的符數為零時不得提供不存在的符數。 */
+    @Test
+    fun `omits fu when unavailable`() {
+        val value = RiichiWinSettlementDetailResolver.riichiHanFuValue(totalHan = 5, totalFu = 0)
+
+        assertEquals(listOf(WinSettlementQuantity(RiichiWinSettlementIds.HAN, 5)), value.quantities)
+    }
+
+    /** 流局滿貫的 outcome id 應解析出只有流局滿貫條目的役種欄位。 */
+    @Test
+    fun `resolves nagashi mangan special outcome`() {
+        val winner = FakeMahjongPlayerFactory.create()
+        val state = FakeTableStateFactory.create(players = listOf(winner), config = config)
+        val outcome = ResolvedRoundOutcome(
+            id = RiichiRoundOutcomeIds.NAGASHI_MANGAN,
+            settledTableState = state,
+            beneficiaryPlayerIds = setOf(winner.id),
+            scoreDeltas = mapOf(winner.id to 0),
+            transitionDirective = RoundTransitionDirective.PassToNextSeat,
+            presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
+        )
+
+        val fields = RiichiWinSettlementDetailResolver.resolveSpecialOutcome(state, outcome, publicFace(state))
+
+        assertEquals(
+            expected = listOf(
+                element = WinSettlementDetailField(
+                    id = RiichiWinSettlementIds.YAKU_FIELD,
+                    value = WinSettlementDetailValue.Entries(listOf(WinSettlementDetailEntry(RiichiWinSettlementIds.NAGASHI_MANGAN))),
+                ),
+            ),
+            actual = fields,
+        )
+    }
+
+    /** 不認得的 outcome id（非日麻自訂的特殊結果）不得誤判成流局滿貫。 */
+    @Test
+    fun `returns null for unrecognized special outcome`() {
+        val winner = FakeMahjongPlayerFactory.create()
+        val state = FakeTableStateFactory.create(players = listOf(winner), config = config)
+        val outcome = ResolvedRoundOutcome(
+            id = "mahjongcraft:test_outcome",
+            settledTableState = state,
+            beneficiaryPlayerIds = setOf(winner.id),
+            scoreDeltas = mapOf(winner.id to 0),
+            transitionDirective = RoundTransitionDirective.PassToNextSeat,
+            presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
+        )
+
+        assertNull(RiichiWinSettlementDetailResolver.resolveSpecialOutcome(state, outcome, publicFace(state)))
+    }
+
+    /**
+     * 取得指定詳情欄位的值。
+     *
+     * @param id 欄位識別碼。
+     * @return 第一個相符欄位的值。不存在時為 null。
+     */
+    private fun List<WinSettlementDetailField>.value(id: String): WinSettlementDetailValue? = firstOrNull { it.id == id }?.value
+
+    /**
+     * 以日麻測試登記將牌值投影為公開牌面。
+     *
+     * @param state 結算時的桌況。
+     * @return 牌值到公開牌面的轉換。
+     */
+    private fun publicFace(state: TableState): (TileValue) -> TileFaceView = { value -> value.toPublicFaceView("test:riichi", state, riichiComponentRegistryForTests()) }
+}

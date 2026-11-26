@@ -1,0 +1,387 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity
+
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationQueueDriver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.ListTag
+import net.minecraft.nbt.Tag
+import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.sounds.SoundSource
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.level.Level
+
+/**
+ * 動畫佇列共用的驅動基底：把動畫播放任務（含期間的等待）持久化掛在 entity 自己身上，透過既有的
+ * `tick()` 自行繼續播放，而不是靠純記憶體的 JVM closure 串接多階段延遲——後者在 server 關閉時會遺失
+ * 「接下來該做什麼」的資訊，動畫播放中離開世界後，牌會卡在半空。
+ *
+ * 「這個 entity 是否正在播動畫」＝[isAnimating]＝「佇列是否還有東西」，不需要另外一個獨立旗標。
+ * 子類別（[MahjongTileEntity]／[MahjongDiceEntity]）的 `tick()` 只需要呼叫 `super.tick()`，佇列的
+ * 進度處理已經包含在裡面。
+ *
+ * @param C 這個實體類型專屬的瞬間動作型別（[AnimationStep.Custom] 攜帶的資料），沒有專屬動作的實體
+ *   類型用 [Nothing]。
+ * @param type Minecraft entity 類型。
+ * @param world 實體所屬世界。
+ */
+abstract class AnimatedMahjongEntity<C>(
+    type: EntityType<out AnimatedMahjongEntity<C>>,
+    world: Level,
+) : MahjongEntity(type, world) {
+    /** 尚未完成的持久化動畫步驟，依序由 server tick 推進。 */
+    private val queue: ArrayDeque<AnimationStep<C>> = ArrayDeque()
+
+    /** 目前播放中動作的絕對結束時間。沒有啟動中的動作時為 `null`。 */
+    private var activeStepEndGameTime: Long? = null
+
+    /** 傳送後等待廣播完整定位封包的絕對時間。沒有待同步傳送時為 `null`。 */
+    private var pendingTrackerResyncGameTime: Long? = null
+
+    /** 佇列是否還有未播完的 step。`false` 代表這個 entity 目前完全靜止。 */
+    val isAnimating: Boolean
+        get() = queue.isNotEmpty()
+
+    /**
+     * 查詢佇列尾端的自訂狀態，供附加動畫時確認其起始狀態。
+     *
+     * @param currentState 尚未排定自訂狀態時採用的目前值。
+     * @return 最後排定的狀態。不修改佇列或額外保存一份狀態。
+     */
+    protected fun finalQueuedCustomState(currentState: C): C = AnimationQueueDriver.finalCustomState(queue, currentState)
+
+    /**
+     * 依序附加 [steps] 到佇列尾端。相鄰的絕對等待會自動合併為較晚時間，只能在 server 端呼叫。
+     *
+     * @param steps 要附加的動畫步驟。
+     */
+    fun enqueueAll(steps: List<AnimationStep<C>>) {
+        check(!level().isClientSide) { "Animation steps must be enqueued by the server" }
+        val normalizedQueue = AnimationQueueDriver.append(queue, steps)
+        queue.clear()
+        queue.addAll(normalizedQueue)
+    }
+
+    /**
+     * 附加單一 step，等同 `enqueueAll(listOf(step))`。
+     *
+     * @param step 要附加的動畫步驟。
+     */
+    fun enqueue(step: AnimationStep<C>) = enqueueAll(listOf(step))
+
+    /** 套用 [AnimationStep.Custom] 攜帶的實體專屬瞬間動作。 */
+    protected abstract fun applyCustomStep(step: C)
+
+    /**
+     * 啟動一段 [AnimationStep.PlayMotion]：子類別在這裡同步既有的 render 用 tracked data 欄位（含
+     * [startGameTime]，通常直接寫進「動畫開始的 game time」那個 tracked field），通常也包含把自己的
+     * 「是否正在播動畫」旗標設成 `true`（配合 [onPlayMotionCompleted] 在該 step 播完時設回 `false`）
+     * ——「該不該先隱形等到真正輪到才出現」這類需求一律交給 [AnimationStep.SetInvisible]（已經是既有、
+     * 驗證過的機制），不透過提前設定「未來才到期」的動畫起點時間表達。
+     *
+     * [startGameTime] 不是永遠等於呼叫當下的 `level().gameTime`：這段動畫第一次啟動時確實是
+     * `level().gameTime`，但世界重新載入後、佇列發現最前面剛好是一個「已經啟動中」的 [AnimationStep.PlayMotion]
+     * 時（[readAnimationQueueFromNbt] 用 `activeStepEndGameTime - durationTicks` 反推出真正的起始
+     * 時間），會用還原出的原始起始時間重新呼叫一次，讓 render 端算出的經過時間正確接續在動畫播到一半
+     * 的進度，而不是把動畫重播一次或直接跳到終點。只持久化佇列本身（剩哪些 step、到期時間）不夠：render
+     * 端用來內插的欄位（例如「動畫開始的 game time」）若沒有同步還原，世界重新載入後會讀到預設值，播到一半
+     * 的動畫會直接跳到終點。
+     */
+    protected abstract fun applyPlayMotion(step: AnimationStep.PlayMotion, startGameTime: Long)
+
+    /** [AnimationStep.PlayMotion] 的 [AnimationStep.PlayMotion.durationTicks] 到期、即將被移出佇列時呼叫。 */
+    protected open fun onPlayMotionCompleted() {}
+
+    /** 序列化 [AnimationStep.Custom] 攜帶的實體專屬資料，供 [writeAnimationQueueToNbt] 使用。 */
+    protected abstract fun serializeCustomStep(step: C, nbt: CompoundTag)
+
+    /** 還原 [AnimationStep.Custom] 攜帶的實體專屬資料，供 [readAnimationQueueFromNbt] 使用。 */
+    protected abstract fun deserializeCustomStep(nbt: CompoundTag): C
+
+    /**
+     * 依序處理佇列中的 step：到期的 [AnimationStep.PlaySound] 不受運動或等待阻擋。其他瞬間動作
+     * （[AnimationStep.Teleport]／[AnimationStep.SetInvisible]／[AnimationStep.Custom]）連續處理到下一個計時
+     * step 為止，計時 step（[AnimationStep.WaitUntil]／
+     * [AnimationStep.PlayMotion]）未到期就停在原地、等下一個 tick 再檢查——同一個 tick 內可以連續
+     * 吃掉好幾個瞬間 step，銜接「隱形＋傳送同一瞬間發生」這類設計。
+     *
+     * [activeStepEndGameTime] 存絕對 `level().gameTime`，不是剩餘 tick 數——`level().gameTime` 本身是持久化、
+     * 跨存讀檔正確恢復的單調計數器，重新載入後從中斷點繼續判斷即可，不需要額外的補丁欄位。
+     */
+    override fun tick() {
+        super.tick()
+        if (level().isClientSide) return
+        drainAnimationQueue()
+        resyncTrackerIfDue()
+    }
+
+    /**
+     * 用戶端收到新位置時直接停在新位置，不在上一個 tick 的位置與新位置之間做畫面補間。
+     *
+     * 這類實體只會因伺服器排定的傳送而改變位置，看得到的移動都由自己的動畫繪製。
+     * 保留補間會讓單純的傳送在一個 tick 內閃過一段平移。
+     */
+    override fun lerpTo(
+        x: Double,
+        y: Double,
+        z: Double,
+        yRot: Float,
+        xRot: Float,
+        steps: Int,
+    ) {
+        super.lerpTo(x, y, z, yRot, xRot, steps)
+        setOldPosAndRot()
+    }
+
+    /**
+     * 到期／推進的判斷邏輯本身（哪些 step 該套用、佇列該推進到哪裡）委派給不依賴 Minecraft API 的
+     * [AnimationQueueDriver]，這裡只負責依判斷結果執行真正的副作用（改座標／改隱形／改姿態／同步
+     * render 用欄位）並寫回佇列狀態——讓佇列的到期／推進邏輯可以脫離 `Entity`／`Level` 獨立測試，見
+     * [AnimationQueueDriver] KDoc。
+     */
+    private fun drainAnimationQueue() {
+        val result = AnimationQueueDriver.tick(queue, activeStepEndGameTime, level().gameTime)
+        result.appliedInstantSteps.forEach { step ->
+            when (step) {
+                is AnimationStep.Teleport -> {
+                    moveTo(step.x, step.y, step.z, step.yaw, 0.0f)
+                    pendingTrackerResyncGameTime = level().gameTime + TRACKER_RESYNC_DELAY_TICKS
+                }
+
+                is AnimationStep.SetInvisible -> isInvisible = step.invisible
+                is AnimationStep.PlaySound -> playAnimationSound(step)
+                is AnimationStep.Custom -> applyCustomStep(step.step)
+                is AnimationStep.WaitUntil, is AnimationStep.PlayMotion ->
+                    error("AnimationQueueDriver must never report a WaitUntil/PlayMotion step as an instant step")
+            }
+        }
+        result.startedPlayMotion?.let { step -> applyPlayMotion(step, startGameTime = level().gameTime) }
+        if (result.completedPlayMotion) onPlayMotionCompleted()
+        queue.clear()
+        queue.addAll(result.remainingQueue)
+        activeStepEndGameTime = result.activeStepEndGameTime
+    }
+
+    /** 播放尚未過期且可由目前 Minecraft registry 解析的動畫聲音。 */
+    private fun playAnimationSound(step: AnimationStep.PlaySound) {
+        if (level().gameTime > step.expiresAtGameTime) return
+        val sound = ResourceLocation.tryParse(step.soundId)?.let { BuiltInRegistries.SOUND_EVENT.getOptional(it).orElse(null) }
+        if (sound == null) {
+            if (unknownSoundIds.add(step.soundId)) {
+                logger.warn("Skipped unknown animation sound ID: {}", step.soundId)
+            }
+            return
+        }
+        level().playSound(null, x, y, z, sound, SoundSource.PLAYERS, step.volume, step.pitch)
+    }
+
+    /**
+     * `AnimationStep.Teleport` 改的是真實座標，但 `ServerEntity` 對每個 entity 只維護一份
+     * 「所有追蹤中 client 共用」的相對位移基準（`positionCodec`），且這份基準只在牠自己的 `tick()`
+     * （依 `updateInterval` 節流）裡才會追上最新座標。如果一個新 client 在基準還沒追上之前開始
+     * 追蹤這個 entity（最典型的情境：世界剛重新載入、佇列一恢復就立刻執行 `Teleport`，幾乎與新玩家
+     * 開始追蹤同時發生），該 client 會先透過 spawn packet 拿到正確座標，但下一次基準追上時算出的
+     * 「相對位移」會疊加在這個已經正確的座標上，讓畫面（含 hitbox）永久停在一個偏移過的錯誤位置，
+     * 直到重新連線重新收到一次 spawn packet 為止，看起來就像牌卡在半空。
+     *
+     * 延遲（[TRACKER_RESYNC_DELAY_TICKS]，需大於 entity type 註冊的 `updateInterval`）是為了確保
+     * `ServerEntity` 自己的基準已經追上這次 `Teleport` 之後，再主動廣播一次完整定位封包
+     * （[ClientboundTeleportEntityPacket]，不是相對位移）覆蓋掉任何可能已經算歪的中間狀態，讓所有追蹤中的
+     * client 都收斂回真實座標。
+     */
+    private fun resyncTrackerIfDue() {
+        val dueAt = pendingTrackerResyncGameTime ?: return
+        if (level().gameTime < dueAt) return
+        pendingTrackerResyncGameTime = null
+        (level() as ServerLevel).chunkSource.broadcastAndSend(this, ClientboundTeleportEntityPacket(this))
+    }
+
+    /**
+     * 把目前佇列與計時進度寫進世界存檔，供子類別的 `addAdditionalSaveData` 呼叫。
+     *
+     * @param nbt 要寫入佇列資料的 NBT compound。
+     */
+    protected fun writeAnimationQueueToNbt(nbt: CompoundTag) {
+        val stepList = ListTag()
+        queue.forEach { step -> stepList.add(serializeStep(step)) }
+        nbt.put(NBT_KEY_QUEUE, stepList)
+        nbt.putLong(NBT_KEY_ACTIVE_STEP_END_GAME_TIME, activeStepEndGameTime ?: NO_ACTIVE_STEP)
+    }
+
+    /**
+     * 從世界存檔還原佇列與計時進度，供子類別的 `readAdditionalSaveData` 呼叫。
+     *
+     * 若佇列最前面剛好是一個「已經啟動中」的 [AnimationStep.PlayMotion]（[activeStepEndGameTime] 不是
+     * `null`，代表存檔當下這段動畫已經開始播放、還沒播完），額外用 `activeStepEndGameTime -
+     * durationTicks` 反推出真正的起始 game time，重新呼叫一次 [applyPlayMotion] 補回 render 端用來
+     * 內插的欄位——這些欄位只存在 tracked data、沒有另外寫進世界存檔，世界重新載入後預設會被重置，
+     * 若不補回，畫面會直接跳到這段動畫的終點，而不是接續播完剩下的進度，理由見 [applyPlayMotion]
+     * KDoc。
+     *
+     * @param nbt 含有已保存佇列資料的 NBT compound。
+     */
+    protected fun readAnimationQueueFromNbt(nbt: CompoundTag) {
+        queue.clear()
+        val stepList = nbt.getList(NBT_KEY_QUEUE, Tag.TAG_COMPOUND.toInt())
+        stepList.forEach { element -> queue.addLast(deserializeStep(element as CompoundTag)) }
+        val storedEndGameTime = nbt.getLong(NBT_KEY_ACTIVE_STEP_END_GAME_TIME)
+        activeStepEndGameTime = storedEndGameTime.takeIf { it != NO_ACTIVE_STEP }
+
+        val activeMotion = queue.firstOrNull() as? AnimationStep.PlayMotion
+        val resumedEndGameTime = activeStepEndGameTime
+        if (activeMotion != null && resumedEndGameTime != null) {
+            applyPlayMotion(activeMotion, startGameTime = resumedEndGameTime - activeMotion.durationTicks)
+        }
+    }
+
+    /**
+     * 將單一動畫步驟編碼為 NBT，供佇列存檔使用。
+     *
+     * @param step 要序列化的動畫步驟。
+     * @return 包含步驟種類及資料的 NBT compound。
+     */
+    private fun serializeStep(step: AnimationStep<C>): CompoundTag {
+        val stepNbt = CompoundTag()
+        when (step) {
+            is AnimationStep.WaitUntil -> {
+                stepNbt.putString(NBT_KEY_TYPE, TYPE_WAIT_UNTIL)
+                stepNbt.putLong(NBT_KEY_GAME_TIME, step.gameTime)
+            }
+
+            is AnimationStep.Teleport -> {
+                stepNbt.putString(NBT_KEY_TYPE, TYPE_TELEPORT)
+                stepNbt.putDouble(NBT_KEY_X, step.x)
+                stepNbt.putDouble(NBT_KEY_Y, step.y)
+                stepNbt.putDouble(NBT_KEY_Z, step.z)
+                stepNbt.putFloat(NBT_KEY_YAW, step.yaw)
+            }
+
+            is AnimationStep.SetInvisible -> {
+                stepNbt.putString(NBT_KEY_TYPE, TYPE_SET_INVISIBLE)
+                stepNbt.putBoolean(NBT_KEY_INVISIBLE, step.invisible)
+            }
+
+            is AnimationStep.PlaySound -> {
+                stepNbt.putString(NBT_KEY_TYPE, TYPE_PLAY_SOUND)
+                stepNbt.putString(NBT_KEY_SOUND_ID, step.soundId)
+                stepNbt.putFloat(NBT_KEY_VOLUME, step.volume)
+                stepNbt.putFloat(NBT_KEY_PITCH, step.pitch)
+                stepNbt.putLong(NBT_KEY_PLAY_AT_GAME_TIME, step.playAtGameTime)
+                stepNbt.putLong(NBT_KEY_EXPIRES_AT_GAME_TIME, step.expiresAtGameTime)
+            }
+
+            is AnimationStep.PlayMotion -> {
+                stepNbt.putString(NBT_KEY_TYPE, TYPE_PLAY_MOTION)
+                stepNbt.putInt(NBT_KEY_DURATION_TICKS, step.durationTicks)
+                stepNbt.putDouble(NBT_KEY_ARC_HEIGHT, step.arcHeight)
+                stepNbt.putDouble(NBT_KEY_START_OFFSET_X, step.startOffsetX)
+                stepNbt.putDouble(NBT_KEY_START_OFFSET_Y, step.startOffsetY)
+                stepNbt.putDouble(NBT_KEY_START_OFFSET_Z, step.startOffsetZ)
+                stepNbt.putFloat(NBT_KEY_START_POSE_ROTATION, step.startPoseRotationDegrees)
+                stepNbt.putFloat(NBT_KEY_END_POSE_ROTATION, step.endPoseRotationDegrees)
+                stepNbt.putBoolean(NBT_KEY_EASE_ROTATION, step.easeRotation)
+                stepNbt.putFloat(NBT_KEY_START_YAW_OFFSET, step.startYawOffsetDegrees)
+                stepNbt.putBoolean(NBT_KEY_LIFT_CARRY_LOWER, step.liftCarryLower)
+                stepNbt.putFloat(NBT_KEY_LEAN, step.leanDegrees)
+            }
+
+            is AnimationStep.Custom -> {
+                stepNbt.putString(NBT_KEY_TYPE, TYPE_CUSTOM)
+                serializeCustomStep(step.step, stepNbt)
+            }
+        }
+        return stepNbt
+    }
+
+    /**
+     * 依 NBT 內的步驟種類還原動畫步驟。
+     *
+     * @param stepNbt 已保存的步驟資料。
+     * @return 還原後的動畫步驟。
+     */
+    private fun deserializeStep(stepNbt: CompoundTag): AnimationStep<C> = when (stepNbt.getString(NBT_KEY_TYPE)) {
+        TYPE_WAIT_UNTIL -> AnimationStep.WaitUntil(stepNbt.getLong(NBT_KEY_GAME_TIME))
+        TYPE_TELEPORT -> AnimationStep.Teleport(
+            x = stepNbt.getDouble(NBT_KEY_X),
+            y = stepNbt.getDouble(NBT_KEY_Y),
+            z = stepNbt.getDouble(NBT_KEY_Z),
+            yaw = stepNbt.getFloat(NBT_KEY_YAW),
+        )
+
+        TYPE_SET_INVISIBLE -> AnimationStep.SetInvisible(stepNbt.getBoolean(NBT_KEY_INVISIBLE))
+
+        TYPE_PLAY_SOUND -> AnimationStep.PlaySound(
+            soundId = stepNbt.getString(NBT_KEY_SOUND_ID),
+            volume = stepNbt.getFloat(NBT_KEY_VOLUME),
+            pitch = stepNbt.getFloat(NBT_KEY_PITCH),
+            playAtGameTime = stepNbt.getLong(NBT_KEY_PLAY_AT_GAME_TIME),
+            expiresAtGameTime = stepNbt.getLong(NBT_KEY_EXPIRES_AT_GAME_TIME),
+        )
+
+        TYPE_PLAY_MOTION -> AnimationStep.PlayMotion(
+            durationTicks = stepNbt.getInt(NBT_KEY_DURATION_TICKS),
+            arcHeight = stepNbt.getDouble(NBT_KEY_ARC_HEIGHT),
+            startOffsetX = stepNbt.getDouble(NBT_KEY_START_OFFSET_X),
+            startOffsetY = stepNbt.getDouble(NBT_KEY_START_OFFSET_Y),
+            startOffsetZ = stepNbt.getDouble(NBT_KEY_START_OFFSET_Z),
+            startPoseRotationDegrees = stepNbt.getFloat(NBT_KEY_START_POSE_ROTATION),
+            endPoseRotationDegrees = stepNbt.getFloat(NBT_KEY_END_POSE_ROTATION),
+            easeRotation = stepNbt.getBoolean(NBT_KEY_EASE_ROTATION),
+            startYawOffsetDegrees = stepNbt.getFloat(NBT_KEY_START_YAW_OFFSET),
+            liftCarryLower = stepNbt.getBoolean(NBT_KEY_LIFT_CARRY_LOWER),
+            leanDegrees = stepNbt.getFloat(NBT_KEY_LEAN),
+        )
+
+        TYPE_CUSTOM -> AnimationStep.Custom(deserializeCustomStep(stepNbt))
+        else -> AnimationStep.WaitUntil(0L)
+    }
+
+    private companion object {
+        /** 必須大於 entity type 註冊時的 `updateInterval`（目前是 `10`），理由見 [resyncTrackerIfDue]。 */
+        const val TRACKER_RESYNC_DELAY_TICKS = 12L
+
+        const val NBT_KEY_QUEUE = "AnimationQueue"
+        const val NBT_KEY_ACTIVE_STEP_END_GAME_TIME = "AnimationActiveStepEndGameTime"
+        const val NO_ACTIVE_STEP = -1L
+
+        const val NBT_KEY_TYPE = "Type"
+        const val TYPE_WAIT_UNTIL = "WaitUntil"
+        const val TYPE_TELEPORT = "Teleport"
+        const val TYPE_SET_INVISIBLE = "SetInvisible"
+        const val TYPE_PLAY_SOUND = "PlaySound"
+        const val TYPE_PLAY_MOTION = "PlayMotion"
+        const val TYPE_CUSTOM = "Custom"
+
+        const val NBT_KEY_GAME_TIME = "GameTime"
+        const val NBT_KEY_X = "X"
+        const val NBT_KEY_Y = "Y"
+        const val NBT_KEY_Z = "Z"
+        const val NBT_KEY_YAW = "Yaw"
+        const val NBT_KEY_START_YAW_OFFSET = "StartYawOffset"
+        const val NBT_KEY_INVISIBLE = "Invisible"
+        const val NBT_KEY_SOUND_ID = "SoundId"
+        const val NBT_KEY_VOLUME = "Volume"
+        const val NBT_KEY_PITCH = "Pitch"
+        const val NBT_KEY_PLAY_AT_GAME_TIME = "PlayAtGameTime"
+        const val NBT_KEY_EXPIRES_AT_GAME_TIME = "ExpiresAtGameTime"
+        const val NBT_KEY_DURATION_TICKS = "DurationTicks"
+        const val NBT_KEY_ARC_HEIGHT = "ArcHeight"
+        const val NBT_KEY_START_OFFSET_X = "StartOffsetX"
+        const val NBT_KEY_START_OFFSET_Y = "StartOffsetY"
+        const val NBT_KEY_START_OFFSET_Z = "StartOffsetZ"
+        const val NBT_KEY_START_POSE_ROTATION = "StartPoseRotation"
+        const val NBT_KEY_END_POSE_ROTATION = "EndPoseRotation"
+        const val NBT_KEY_EASE_ROTATION = "EaseRotation"
+        const val NBT_KEY_LIFT_CARRY_LOWER = "LiftCarryLower"
+        const val NBT_KEY_LEAN = "Lean"
+
+        /** 無效聲音 ID 的去重警告集合。 */
+        private val unknownSoundIds = mutableSetOf<String>()
+
+        /** 動畫聲音解析失敗時使用的 logger。 */
+        private val logger = mahjongCraftLogger(AnimatedMahjongEntity::class)
+    }
+}

@@ -1,0 +1,29 @@
+{
+  "parent": "mahjongcraft:taiwan/root",
+  "display": {
+    "icon": {
+      "item": "mahjongcraft:mahjong_tile",
+      "nbt": "{tile:\"flower_winter\"}"
+    },
+    "title": {
+      "translate": "mahjongcraft.taiwan.tai.seven_flowers"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.taiwan.seven_flowers.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:taiwan/seven_flowers"
+        ]
+      }
+    }
+  }
+}

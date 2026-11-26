@@ -1,0 +1,127 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.room
+
+/** RoomScreen 與本地化設定呈現使用的 translation keys。 */
+object MinecraftRoomScreenKeys {
+    /** 排除卡片顯示的 UUID。 */
+    const val EXCLUDED_UUID = "mahjongcraft.room.screen.excluded_uuid"
+
+    /** 暫時排除名單（%s 人） */
+    const val EXCLUDED_COUNT = "mahjongcraft.room.screen.excluded_count"
+
+    /** 搜尋名稱… */
+    const val EXCLUDED_SEARCH = "mahjongcraft.room.screen.excluded_search"
+
+    /** 目前沒有被暫時排除的參與者。 */
+    const val EXCLUDED_EMPTY = "mahjongcraft.room.screen.excluded_empty"
+
+    /** 找不到符合名稱的參與者。 */
+    const val EXCLUDED_NO_RESULTS = "mahjongcraft.room.screen.excluded_no_results"
+
+    /** 解除全部排除 */
+    const val ALLOW_ALL_REJOINING = "mahjongcraft.room.screen.allow_all_rejoining"
+
+    /** 要解除整份暫時排除名單嗎？搜尋未顯示的參與者也會一併解除。這不會直接讓他們加入房間。 */
+    const val ALLOW_ALL_CONFIRMATION = "mahjongcraft.room.screen.allow_all_confirmation"
+
+    /** 房主專屬的暫時排除名單。 */
+    const val EXCLUDED_PARTICIPANTS = "mahjongcraft.room.screen.excluded_participants"
+
+    /** 解除排除但不強制加入。 */
+    const val ALLOW_REJOINING = "mahjongcraft.room.screen.allow_rejoining"
+
+    const val TITLE = "mahjongcraft.room.screen.title"
+    const val PAGE_ROOM = "mahjongcraft.room.screen.page.room"
+    const val PAGE_SETTINGS = "mahjongcraft.room.screen.page.settings"
+
+    /** 開啟規則一覽按鈕的提示標題。 */
+    const val RULE_CATALOGUE_BUTTON = "mahjongcraft.room.screen.rule_catalogue"
+
+    /** 開啟規則一覽按鈕的提示說明。 */
+    const val RULE_CATALOGUE_BUTTON_DESCRIPTION = "mahjongcraft.room.screen.rule_catalogue.description"
+
+    /** 規則選擇器的提示說明。 */
+    const val RULE_SELECTOR_DESCRIPTION = "mahjongcraft.room.screen.rule.description"
+
+    /** 玩法選擇器左側的標籤。 */
+    const val VARIANT_SELECTOR = "mahjongcraft.room.screen.variant"
+
+    /** 每個規則自動提供的標準玩法名稱。 */
+    const val VARIANT_STANDARD = "mahjongcraft.room.variant.standard"
+
+    /** 標準玩法的說明。 */
+    const val VARIANT_STANDARD_DESCRIPTION = "mahjongcraft.room.variant.standard.description"
+
+    const val EMPTY = "mahjongcraft.room.screen.empty"
+    const val PLAYING = "mahjongcraft.room.screen.playing"
+    const val CREATE = "mahjongcraft.room.screen.create"
+    const val JOIN = "mahjongcraft.room.screen.join"
+    const val READY = "mahjongcraft.room.screen.ready"
+    const val CANCEL_READY = "mahjongcraft.room.screen.cancel_ready"
+    const val START = "mahjongcraft.room.screen.start"
+
+    /** 桌面上方有方塊擋住時，開始按鈕的提示。 */
+    const val START_BLOCKED_TABLE_SPACE = "mahjongcraft.room.screen.start.blocked_table_space"
+    const val LEAVE = "mahjongcraft.room.screen.leave"
+    const val DISBAND = "mahjongcraft.room.screen.disband"
+    const val ADD_AI = "mahjongcraft.room.screen.add_ai"
+    const val KICK = "mahjongcraft.room.screen.kick"
+    const val APPLY = "mahjongcraft.room.screen.apply"
+    const val CLOSE = "mahjongcraft.room.screen.close"
+    const val DONE = "mahjongcraft.room.screen.done"
+    const val UNDO = "mahjongcraft.room.screen.undo"
+    const val HOST = "mahjongcraft.room.screen.host"
+    const val AI_STRATEGY_TITLE = "mahjongcraft.room.screen.ai_strategy_title"
+    const val MEMBER_READY = "mahjongcraft.room.screen.member_ready"
+    const val MEMBER_NOT_READY = "mahjongcraft.room.screen.member_not_ready"
+    const val OFFLINE_PLAYER = "mahjongcraft.room.screen.offline_player"
+    const val READ_ONLY = "mahjongcraft.room.screen.read_only"
+    const val UNAVAILABLE = "mahjongcraft.room.screen.unavailable"
+    const val DRAFT_STALE = "mahjongcraft.room.screen.draft_stale"
+    const val VALIDATION_FAILED = "mahjongcraft.room.screen.validation_failed"
+    const val PLAYER_LIMIT_EXCEEDED = "mahjongcraft.room.screen.player_limit_exceeded"
+    const val RESET_DEFAULTS_BUTTON = "mahjongcraft.room.screen.reset_defaults"
+    const val UNDO_DISCARD = "mahjongcraft.room.screen.tooltip.undo_discard"
+    const val UNDO_RESTORE = "mahjongcraft.room.screen.tooltip.undo_restore"
+    const val DISABLED_BY_DEPENDENCY = "mahjongcraft.room.screen.tooltip.disabled_by_dependency"
+    const val RESET_DEFAULTS = "mahjongcraft.room.screen.tooltip.reset_defaults"
+    const val RESET_NOT_SAVED = "mahjongcraft.room.screen.tooltip.reset_not_saved"
+    const val CONFIG_CHANGES = "mahjongcraft.room.screen.tooltip.changes"
+    const val CONFIG_VALUE_CHANGE = "mahjongcraft.room.screen.tooltip.value_change"
+
+    /** 「規則」：規則選擇器的標籤，也是設定差異清單中規則一列的名稱。 */
+    const val RULE = "mahjongcraft.room.screen.tooltip.rule"
+
+    /** 多選欄位目前選取的項目數量。 */
+    const val SELECTED_COUNT = "mahjongcraft.room.screen.selected_count"
+
+    /** 多選畫面的選取數量與允許範圍。 */
+    const val SELECTION_LIMITS = "mahjongcraft.room.screen.selection_limits"
+
+    /** 多選畫面的全選按鈕。 */
+    const val SELECT_ALL = "mahjongcraft.room.screen.select_all"
+
+    /** 最多可選數量少於選項總數時，全選按鈕停用的原因。參數為最多可選數量。 */
+    const val SELECT_ALL_UNAVAILABLE = "mahjongcraft.room.screen.select_all_unavailable"
+
+    /** 多選畫面的清除按鈕。 */
+    const val CLEAR_SELECTION = "mahjongcraft.room.screen.clear_selection"
+
+    /** 已選到上限時，未選選項停用的原因。參數為最多可選數量。 */
+    const val OPTION_AT_MAXIMUM = "mahjongcraft.room.screen.option_at_maximum"
+
+    /** 選取數量不在範圍內時，完成按鈕停用的原因。參數為最少與最多數量。 */
+    const val SELECTION_OUT_OF_RANGE = "mahjongcraft.room.screen.selection_out_of_range"
+
+    /** 多選畫面完成按鈕的操作提示。 */
+    const val MULTI_CHOICE_DONE_HINT = "mahjongcraft.room.screen.multi_choice_done_hint"
+
+    /** 多選畫面取消按鈕的操作提示。 */
+    const val MULTI_CHOICE_CANCEL_HINT = "mahjongcraft.room.screen.multi_choice_cancel_hint"
+
+    const val NONE = "mahjongcraft.room.config.value.none"
+    const val TRUE = "mahjongcraft.room.config.value.true"
+    const val FALSE = "mahjongcraft.room.config.value.false"
+    const val LOBBY_WAITING = "mahjongcraft.lobby.info.waiting"
+    const val LOBBY_SUMMARY = "mahjongcraft.lobby.info.summary"
+    const val LOBBY_VIEW_DETAILS = "mahjongcraft.lobby.info.view_details"
+}

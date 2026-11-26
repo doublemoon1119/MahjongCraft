@@ -1,0 +1,263 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
+
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDimensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropDefinitions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropKinds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropBounds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropContent
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropLayoutResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropLocation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPlacement
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatAnchor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlin.math.abs
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
+
+/** 驗證日麻桌上點棒的描述內容，以及換算出的世界位置與朝向。 */
+class RiichiTablePropsTest {
+    /** 不砌牌牆時，四家立直棒都避開桌子中央那排五張寶牌指示牌，不論莊家是誰。 */
+    @Test
+    fun `wallless riichi sticks leave the center row clear`() {
+        val seats = MahjongTableSeatLayout.FOUR_PLAYER
+        val definitions = listOf(BuiltInTablePropDefinitions.SCORING_STICK).associateBy { it.id }
+        val dimensions = BuiltInTablePropDefinitions.FACE_UP_TILE.dimensions
+        for (dealerSeatIndex in 0..3) {
+            val table = state(riichiSeatIndices = setOf(0, 1, 2, 3), dealerSeatIndex = dealerSeatIndex).copy(config = RiichiRuleConfig(buildsWall = false))
+            val centerTiles = List(MAXIMUM_DORA_INDICATORS) { index ->
+                MahjongTileTableLayout.centerRowPlacement(
+                    controllerX = 0,
+                    controllerY = 0,
+                    controllerZ = 0,
+                    tableFacing = MahjongTableFacing.NORTH,
+                    seatLayout = seats,
+                    seatIndex = dealerSeatIndex,
+                    index = index,
+                    count = MAXIMUM_DORA_INDICATORS,
+                )
+            }
+            val presentation = TablePropPresentation(
+                tableId = Uuid.random(),
+                ruleModuleId = "mahjongcraft:riichi",
+                tableLocation = TableLocation("minecraft:overworld", 0, 0, 0),
+                tableFacing = MahjongTableFacing.NORTH,
+                seatLayout = seats,
+                placements = RiichiTableProps.describe(table) { null },
+                centerTilePlacements = centerTiles,
+            )
+            val sticks = assertIs<TablePropLayoutResult.Success>(presentation.targets(definitions)).targets
+            val stickBounds = sticks.map { TablePropBounds.of(it, BuiltInTablePropDefinitions.SCORING_STICK.dimensions) }
+            val tileBounds = centerTiles.map { TablePropBounds.of(it.x, it.y, it.z, it.yaw, dimensions) }
+            assertTrue(stickBounds.none { stick -> tileBounds.any(stick::overlaps) }, "riichi sticks overlap the center row for dealer $dealerSeatIndex")
+        }
+    }
+
+    /**
+     * 建立可指定立直、莊家、本場與供託數的四人日麻桌況。
+     *
+     * @param riichiSeatIndices 已立直玩家的座位索引。
+     * @param dealerSeatIndex 莊家座位索引。
+     * @param comboCount 本場數。
+     * @param stickPotCount 尚未收取的立直棒數。
+     * @return 依指定玩家狀態建立的桌況。
+     */
+    private fun state(
+        riichiSeatIndices: Set<Int> = emptySet(),
+        dealerSeatIndex: Int = 0,
+        comboCount: Int = 0,
+        stickPotCount: Int = 0,
+    ): TableState {
+        val players = Wind.entries.mapIndexed { seatIndex, wind ->
+            FakeMahjongPlayerFactory.create(
+                seatWind = wind,
+                components = riichiDeclarationComponents(
+                    declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East).takeIf { seatIndex in riichiSeatIndices },
+                ),
+            )
+        }
+        return FakeTableStateFactory.create(
+            players = players,
+            dealerPlayerId = players[dealerSeatIndex].id,
+            comboCount = comboCount,
+            components = riichiTableComponents(potPoints = (stickPotCount) * RIICHI_STICK_POINTS),
+        )
+    }
+
+    /**
+     * 將桌面物件的座位錨點換算成世界座標。
+     *
+     * @param facing 桌子的世界朝向。
+     * @return 物件的世界座標與朝向。
+     */
+    private fun TablePropPlacement.place(facing: MahjongTableFacing): MahjongTileWallPlacement {
+        val location = this.location as TablePropLocation.Seat
+        return MahjongTileTableLayout.seatAnchorPlacement(
+            controllerX = CONTROLLER_X,
+            controllerY = CONTROLLER_Y,
+            controllerZ = CONTROLLER_Z,
+            tableFacing = facing,
+            seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
+            seatIndex = location.seatIndex,
+            anchor = location.anchor,
+            offset = location.offset,
+            yawOffset = location.yawOffset,
+        )
+    }
+
+    /**
+     * 以測試容差比較兩個世界座標與朝向。
+     *
+     * @param expected 預期位置。
+     * @param actual 實際位置。
+     * @param context 斷言失敗時顯示的情境。
+     */
+    private fun assertSamePlacement(expected: MahjongTileWallPlacement, actual: MahjongTileWallPlacement, context: String) {
+        assertTrue(abs(expected.x - actual.x) < EPSILON, "$context x: $expected vs $actual")
+        assertTrue(abs(expected.y - actual.y) < EPSILON, "$context y: $expected vs $actual")
+        assertTrue(abs(expected.z - actual.z) < EPSILON, "$context z: $expected vs $actual")
+        assertTrue(abs(expected.yaw - actual.yaw) < EPSILON, "$context yaw: $expected vs $actual")
+    }
+
+    /** 立直中的玩家各一根千點棒，放在自己的牌河內緣。 */
+    @Test
+    fun `each riichi player gets a thousand stick at their discards`() {
+        val props = RiichiTableProps.describe(state(riichiSeatIndices = setOf(1, 3), stickPotCount = 2)) { null }
+
+        assertEquals(listOf(1, 3), props.map { (it.location as TablePropLocation.Seat).seatIndex })
+        assertTrue(props.all { (it.location as TablePropLocation.Seat).anchor == TableSeatAnchor.DISCARD_INNER_EDGE && it.content == TablePropContent.CustomVariant("1000") })
+        assertTrue(props.all { it.kind == BuiltInTablePropKinds.SCORING_STICK })
+    }
+
+    /** 莊家角落先疊本場棒、再接延續的供託。延續支數是供託總數扣掉這局立直中的人數。 */
+    @Test
+    fun `the dealer corner stacks combo sticks before the carried-over pot`() {
+        val props = RiichiTableProps.describe(state(riichiSeatIndices = setOf(0), dealerSeatIndex = 2, comboCount = 2, stickPotCount = 3)) { null }
+        val corner = props.filter { (it.location as TablePropLocation.Seat).anchor == TableSeatAnchor.MELD_CORNER }
+
+        assertTrue(corner.all { (it.location as TablePropLocation.Seat).seatIndex == 2 })
+        assertEquals(listOf("100", "100", "1000", "1000"), corner.map { (it.content as TablePropContent.CustomVariant).value })
+    }
+
+    /** 沒有連莊、沒有供託、沒有人立直時，桌上沒有任何點棒。 */
+    @Test
+    fun `an empty table has no sticks`() {
+        assertEquals(emptyList(), RiichiTableProps.describe(state()) { null })
+    }
+
+    /** 只有莊家角落佔寬度。寬度隨角落棒子支數成長，一整排之後往上疊不再加寬。 */
+    @Test
+    fun `only the dealer corner is reserved and it grows up to one row`() {
+        val step = MahjongScoringStickDimensions.STICK_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING
+
+        assertEquals(0.0, RiichiTableProps.cornerWidth(state(dealerSeatIndex = 1), seatIndex = 1))
+        assertEquals(0.0, RiichiTableProps.cornerWidth(state(dealerSeatIndex = 1, comboCount = 2), seatIndex = 0))
+        assertEquals(step, RiichiTableProps.cornerWidth(state(comboCount = 1), seatIndex = 0), EPSILON)
+        assertEquals(3 * step, RiichiTableProps.cornerWidth(state(comboCount = 3), seatIndex = 0), EPSILON)
+        assertEquals(4 * step, RiichiTableProps.cornerWidth(state(comboCount = 4, stickPotCount = 2), seatIndex = 0), EPSILON)
+    }
+
+    /** 延續的供託也疊在莊家角落，算進寬度。這局宣告中的立直棒擺在牌河旁，不算。 */
+    @Test
+    fun `the carried-over pot counts toward the corner but declared riichi sticks do not`() {
+        val step = MahjongScoringStickDimensions.STICK_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING
+
+        assertEquals(2 * step, RiichiTableProps.cornerWidth(state(stickPotCount = 2), seatIndex = 0), EPSILON)
+        assertEquals(0.0, RiichiTableProps.cornerWidth(state(riichiSeatIndices = setOf(1), stickPotCount = 1), seatIndex = 0))
+        assertEquals(
+            expected = 3 * step,
+            actual = RiichiTableProps.cornerWidth(state(riichiSeatIndices = setOf(1), comboCount = 1, stickPotCount = 3), seatIndex = 0),
+            absoluteTolerance = EPSILON,
+        )
+    }
+
+    /**
+     * 立直棒的世界座標與朝向（controller 位於 12, 64, -7。四種桌子朝向、四個座位）。
+     *
+     * 以固定座標驗證各座位在四種桌子朝向下的擺放位置。
+     */
+    @Test
+    fun `riichi sticks keep their established position`() {
+        val expected = mapOf(
+            (MahjongTableFacing.NORTH to 0) to MahjongTileWallPlacement(12.5, 65.0, -6.18625, 0.0f),
+            (MahjongTableFacing.NORTH to 1) to MahjongTileWallPlacement(12.81375, 65.0, -6.5, 270.0f),
+            (MahjongTableFacing.NORTH to 2) to MahjongTileWallPlacement(12.5, 65.0, -6.81375, 180.0f),
+            (MahjongTableFacing.NORTH to 3) to MahjongTileWallPlacement(12.18625, 65.0, -6.5, 90.0f),
+            (MahjongTableFacing.EAST to 0) to MahjongTileWallPlacement(12.18625, 65.0, -6.5, 90.0f),
+            (MahjongTableFacing.EAST to 1) to MahjongTileWallPlacement(12.5, 65.0, -6.18625, 0.0f),
+            (MahjongTableFacing.EAST to 2) to MahjongTileWallPlacement(12.81375, 65.0, -6.5, 270.0f),
+            (MahjongTableFacing.EAST to 3) to MahjongTileWallPlacement(12.5, 65.0, -6.81375, 180.0f),
+            (MahjongTableFacing.SOUTH to 0) to MahjongTileWallPlacement(12.5, 65.0, -6.81375, 180.0f),
+            (MahjongTableFacing.SOUTH to 1) to MahjongTileWallPlacement(12.18625, 65.0, -6.5, 90.0f),
+            (MahjongTableFacing.SOUTH to 2) to MahjongTileWallPlacement(12.5, 65.0, -6.18625, 0.0f),
+            (MahjongTableFacing.SOUTH to 3) to MahjongTileWallPlacement(12.81375, 65.0, -6.5, 270.0f),
+            (MahjongTableFacing.WEST to 0) to MahjongTileWallPlacement(12.81375, 65.0, -6.5, 270.0f),
+            (MahjongTableFacing.WEST to 1) to MahjongTileWallPlacement(12.5, 65.0, -6.81375, 180.0f),
+            (MahjongTableFacing.WEST to 2) to MahjongTileWallPlacement(12.18625, 65.0, -6.5, 90.0f),
+            (MahjongTableFacing.WEST to 3) to MahjongTileWallPlacement(12.5, 65.0, -6.18625, 0.0f),
+        )
+        expected.forEach { (key, placement) ->
+            val (facing, seatIndex) = key
+            val stick = RiichiTableProps.describe(state(riichiSeatIndices = setOf(seatIndex), stickPotCount = 1)) { null }.single()
+            assertSamePlacement(placement, stick.place(facing), "facing=$facing seat=$seatIndex")
+        }
+    }
+
+    /**
+     * 角落那一疊的世界座標與朝向（controller 位於 12, 64, -7。桌子朝北。莊家座位 1）：一排四根，第五根起往上疊。
+     *
+     * 以固定座標驗證同一排的間距與往上堆疊的高度。
+     */
+    @Test
+    fun `corner sticks keep their established position`() {
+        val expected = listOf(
+            MahjongTileWallPlacement(13.6875, 65.0, -7.855, 0.0f),
+            MahjongTileWallPlacement(13.6875, 65.0, -7.79, 0.0f),
+            MahjongTileWallPlacement(13.6875, 65.0, -7.725, 0.0f),
+            MahjongTileWallPlacement(13.6875, 65.0, -7.66, 0.0f),
+            MahjongTileWallPlacement(13.6875, 65.015, -7.855, 0.0f),
+            MahjongTileWallPlacement(13.6875, 65.015, -7.79, 0.0f),
+        )
+        val corner = RiichiTableProps.describe(state(dealerSeatIndex = 1, comboCount = 3, stickPotCount = 3)) { null }
+
+        assertEquals(expected.size, corner.size)
+        corner.zip(expected).forEachIndexed { stackIndex, (stick, placement) ->
+            assertSamePlacement(placement, stick.place(MahjongTableFacing.NORTH), "stack=$stackIndex")
+        }
+    }
+
+    private companion object {
+        /** 測試桌面 controller 的 X 座標。 */
+        const val CONTROLLER_X = 12
+
+        /** 測試桌面 controller 的 Y 座標。 */
+        const val CONTROLLER_Y = 64
+
+        /** 測試桌面 controller 的 Z 座標。 */
+        const val CONTROLLER_Z = -7
+
+        /** 四次開槓後同時公開的寶牌指示牌張數。 */
+        const val MAXIMUM_DORA_INDICATORS = 5
+
+        /** 世界位置與朝向比較使用的誤差容許值。 */
+        const val EPSILON = 1.0e-6
+    }
+}

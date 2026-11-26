@@ -1,0 +1,61 @@
+schema-version = 1
+
+[[targets]]
+id = "minecraft-v1.21.1-fabric"
+platform = "minecraft"
+java-toolchain = 21
+java-release = 21
+modules = [
+    "platform/minecraft/common",
+    "platform/minecraft/common-debug",
+    "platform/minecraft/v1.21.1/mod",
+    "platform/minecraft/v1.21.1/mod-debug",
+    "platform/minecraft/v1.21.1/fabric",
+    "platform/minecraft/v1.21.1/fabric-debug",
+]
+example-modules = [
+    "example/mahjong-extension",
+    "example/platform/minecraft/common",
+    "example/platform/minecraft/v1.21.1/mod",
+    "example/platform/minecraft/v1.21.1/fabric",
+]
+
+[targets.attributes]
+minecraft-version = "v1.21.1"
+loader = "fabric"
+
+# Fabric Language Kotlin 1.13.14 在執行時提供、mod 不附帶的版本。
+[targets.provided-versions]
+kotlin = "2.4.20"
+kotlinx-coroutines = "1.11.0"
+kotlinx-serialization = "1.11.0"
+
+[[targets]]
+id = "minecraft-v1.21.1-neoforge"
+platform = "minecraft"
+java-toolchain = 21
+java-release = 21
+modules = [
+    "platform/minecraft/common",
+    "platform/minecraft/common-debug",
+    "platform/minecraft/v1.21.1/mod",
+    "platform/minecraft/v1.21.1/mod-debug",
+    "platform/minecraft/v1.21.1/neoforge",
+    "platform/minecraft/v1.21.1/neoforge-debug",
+]
+example-modules = [
+    "example/mahjong-extension",
+    "example/platform/minecraft/common",
+    "example/platform/minecraft/v1.21.1/mod",
+    "example/platform/minecraft/v1.21.1/neoforge",
+]
+
+[targets.attributes]
+minecraft-version = "v1.21.1"
+loader = "neoforge"
+
+# Kotlin for Forge 5.13.0 在執行時提供、mod 不附帶的版本。
+[targets.provided-versions]
+kotlin = "2.4.21"
+kotlinx-coroutines = "1.11.0"
+kotlinx-serialization = "1.13.0"

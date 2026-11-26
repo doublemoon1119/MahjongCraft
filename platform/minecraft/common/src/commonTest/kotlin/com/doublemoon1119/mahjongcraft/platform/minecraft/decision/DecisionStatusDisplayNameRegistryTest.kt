@@ -1,0 +1,101 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.decision
+
+import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardReadinessAnalyzer
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.BundledTaiwanMinecraftExtension
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
+
+/** 驗證捨牌分析狀態名稱的登記與「規則優先、退回中立預設」的查詢順序。 */
+class DecisionStatusDisplayNameRegistryTest {
+    /**
+     * 建立含通用與日麻內建狀態名稱的已註冊測試 registry。
+     *
+     * @return 含兩組內建登記的狀態名稱 registry。
+     */
+    private fun registry() = DecisionStatusDisplayNameRegistryImpl().apply {
+        BuiltInMinecraftMahjongExtension.registerDecisionStatusDisplayNames(this)
+        BundledRiichiMinecraftExtension.registerDecisionStatusDisplayNames(this)
+        BundledTaiwanMinecraftExtension.registerDecisionStatusDisplayNames(this)
+    }
+
+    /** 台麻的過水與最低台數狀態只套用到台麻規則。 */
+    @Test
+    fun `taiwan statuses resolve only for taiwan`() {
+        val registry = registry()
+
+        assertEquals(
+            expected = "mahjongcraft.taiwan.hud.passed_win",
+            actual = registry.find(BuiltInRuleModuleIds.TAIWAN, TaiwanDiscardReadinessAnalyzer.StatusIds.PASSED_WIN),
+        )
+        assertEquals(
+            expected = "mahjongcraft.taiwan.hud.win_availability.below_minimum",
+            actual = registry.find(BuiltInRuleModuleIds.TAIWAN, TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM),
+        )
+        assertNull(registry.find(BuiltInRuleModuleIds.RIICHI, TaiwanDiscardReadinessAnalyzer.StatusIds.PASSED_WIN))
+    }
+
+    /** 日麻的振聽與和牌資格由日麻自己登記，別的規則查不到。 */
+    @Test
+    fun `riichi statuses resolve only for riichi`() {
+        val registry = registry()
+
+        assertEquals(
+            expected = "mahjongcraft.riichi.hud.furiten.discard",
+            actual = registry.find(BuiltInRuleModuleIds.RIICHI, RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN),
+        )
+        assertEquals(
+            expected = "mahjongcraft.riichi.hud.win_availability.no_yaku",
+            actual = registry.find(BuiltInRuleModuleIds.RIICHI, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU),
+        )
+        assertNull(registry.find(BuiltInRuleModuleIds.TAIWAN, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU))
+    }
+
+    /** 中立預設「可和牌」對所有規則都查得到，也能被規則覆寫。 */
+    @Test
+    fun `the neutral default applies to every rule until one overrides it`() {
+        val registry = registry()
+
+        assertEquals("mahjongcraft.hud.win_availability.available", registry.find(BuiltInRuleModuleIds.RIICHI, WaitingTileAvailabilityIds.WIN_AVAILABLE))
+        assertEquals("mahjongcraft.hud.win_availability.available", registry.find(EXAMPLE_RULE, WaitingTileAvailabilityIds.WIN_AVAILABLE))
+        assertEquals("mahjongcraft.taiwan.hud.win_availability.available", registry.find(BuiltInRuleModuleIds.TAIWAN, WaitingTileAvailabilityIds.WIN_AVAILABLE))
+
+        registry.register(DecisionStatusDisplayNameDefinition(EXAMPLE_RULE, WaitingTileAvailabilityIds.WIN_AVAILABLE, "example.hud.can_win"))
+
+        assertEquals("example.hud.can_win", registry.find(EXAMPLE_RULE, WaitingTileAvailabilityIds.WIN_AVAILABLE))
+        assertEquals("mahjongcraft.hud.win_availability.available", registry.find(BuiltInRuleModuleIds.RIICHI, WaitingTileAvailabilityIds.WIN_AVAILABLE))
+    }
+
+    /** 未登記的狀態查不到，由呼叫端顯示原始 ID。 */
+    @Test
+    fun `an unregistered status resolves to nothing`() {
+        assertNull(registry().find(BuiltInRuleModuleIds.RIICHI, "example:unregistered"))
+    }
+
+    /** 重複登記與凍結後登記皆拒絕。 */
+    @Test
+    fun `duplicate and late registrations are rejected`() {
+        val registry = registry()
+
+        assertFailsWith<IllegalArgumentException> {
+            registry.register(DecisionStatusDisplayNameDefinition(BuiltInRuleModuleIds.RIICHI, RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN, "example.hud.duplicate"))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            registry.register(DecisionStatusDisplayNameDefaultDefinition(WaitingTileAvailabilityIds.WIN_AVAILABLE, "example.hud.duplicate"))
+        }
+
+        registry.freeze()
+
+        assertFailsWith<IllegalStateException> { registry.register(DecisionStatusDisplayNameDefinition(BuiltInRuleModuleIds.TAIWAN, "example:late", "example.hud.late")) }
+        assertFailsWith<IllegalStateException> { registry.register(DecisionStatusDisplayNameDefaultDefinition("example:late", "example.hud.late")) }
+    }
+}
+
+/** 沒有登記任何狀態名稱的第三方規則。 */
+private const val EXAMPLE_RULE: String = "example:rule"

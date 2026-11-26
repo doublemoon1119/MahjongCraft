@@ -1,0 +1,27 @@
+MahjongCraft Voice Asset Notice
+
+The following entries identify voice files excluded from MahjongCraft's MIT
+license and state the terms under which they are distributed. File paths are
+relative to this notice.
+
+Declaration voices
+
+Generated with TTSMaker and distributed under its generated audio terms:
+https://ttsmaker.com/copyright_and_commercial_license_terms
+
+Taiwanese mahjong - Xiao Xiao (voice 204)
+  taiwan/chi.ogg
+  taiwan/hu.ogg
+  taiwan/kan.ogg
+  taiwan/pon.ogg
+  taiwan/ready.ogg
+  taiwan/tsumo.ogg
+
+Japanese mahjong - Tsumiyuki (voice 406)
+  riichi/chii.ogg
+  riichi/kan.ogg
+  riichi/pon.ogg
+  riichi/pull_north.ogg
+  riichi/riichi.ogg
+  riichi/ron.ogg
+  riichi/tsumo.ogg

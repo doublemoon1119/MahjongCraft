@@ -1,0 +1,588 @@
+package com.doublemoon1119.mahjongcraft.logic.rules.riichi
+
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
+import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailability
+import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.PlayerTileAreas
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.logic.table.visibleTiles
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+/**
+ * 立直麻將手牌分析器之單元測試。
+ *
+ * 測試內容涵蓋只回傳仍聽牌的捨牌候選、等待牌剩餘張數估算，以及三種振聽狀態的優先順序。
+ *
+ * @see RiichiDiscardReadinessAnalyzer
+ */
+class RiichiDiscardReadinessAnalyzerTest {
+
+    /** 分析手牌向聽結果的計算器。 */
+    private val shantenCalculator = RiichiShantenCalculator()
+
+    /** 供分析器判定各等待牌和牌資格的合法動作驗證器。 */
+    private val legalActionValidator = RiichiLegalActionValidator(
+        shantenCalculator = shantenCalculator,
+        handValueCalculator = RiichiHandValueCalculator(),
+        contextCalculator = RiichiHandValueContextCalculator(RiichiRuleConfig()),
+    )
+
+    /** 本測試驗證的捨牌準備度分析器。 */
+    private val analyzer = RiichiDiscardReadinessAnalyzer(shantenCalculator, legalActionValidator)
+
+    /** 分析器兩面聽測例中的 3 條等待牌。 */
+    private val threeSou = Tile.Numeric(Tile.Suit.Bamboo, 3)
+
+    /** 分析器兩面聽測例中的 6 條等待牌。 */
+    private val sixSou = Tile.Numeric(Tile.Suit.Bamboo, 6)
+
+    /**
+     * 123456789m（三組順子）＋55p（對子）＋4s5s（兩面聽 3s/6s）加一張孤立的東風——三組順子與對子皆已
+     * 完成、花色彼此不重疊，唯一能維持聽牌的捨牌只有這張孤立東風，不會有其他捨牌候選誤判成聽牌。
+     */
+    private val floatingTile = Tile.Honor.East
+
+    /** 由 123456789 萬、55 筒與 45 條組成，等待 3 條或 6 條的十三張手牌。 */
+    private val tenpaiTiles = listOf(
+        Tile.Numeric(Tile.Suit.Character, 1),
+        Tile.Numeric(Tile.Suit.Character, 2),
+        Tile.Numeric(Tile.Suit.Character, 3),
+        Tile.Numeric(Tile.Suit.Character, 4),
+        Tile.Numeric(Tile.Suit.Character, 5),
+        Tile.Numeric(Tile.Suit.Character, 6),
+        Tile.Numeric(Tile.Suit.Character, 7),
+        Tile.Numeric(Tile.Suit.Character, 8),
+        Tile.Numeric(Tile.Suit.Character, 9),
+        Tile.Numeric(Tile.Suit.Dot, 5),
+        Tile.Numeric(Tile.Suit.Dot, 5),
+        Tile.Numeric(Tile.Suit.Bamboo, 4),
+        Tile.Numeric(Tile.Suit.Bamboo, 5),
+    )
+
+    /**
+     * 驗證只有打出孤立浮牌才會維持聽牌，其餘捨牌候選（會破壞既有面子）都不列入分析結果。
+     */
+    @Test
+    fun `test analyze only returns tenpai candidate for the floating tile`() {
+        val hand = FakeHandFactory.create(tenpaiTiles + floatingTile)
+        val player = FakeMahjongPlayerFactory.create(hand = hand)
+        val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
+
+        val analyses = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player))
+
+        val floatingTileId = hand.standingTiles.first { it.tile == floatingTile }.id
+        assertEquals(listOf(floatingTileId), analyses.map { it.discardTileId })
+    }
+
+    /**
+     * 驗證等待牌剩餘張數會扣除自己手牌中已持有的張數。沒有振聽因素時 statusIndicatorId 應為 null。
+     */
+    @Test
+    fun `test analyze computes waiting tile remaining count and no furiten status`() {
+        val hand = FakeHandFactory.create(tenpaiTiles + floatingTile)
+        val player = FakeMahjongPlayerFactory.create(hand = hand)
+        val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
+
+        val floatingTileId = hand.standingTiles.single { it.tile == floatingTile }.id
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single { it.discardTileId == floatingTileId }
+
+        val threeSouWait = analysis.waitingTiles.single { it.tile == threeSou }
+        // 手牌與他家都沒有額外的 3s，牌山最多還剩全部 4 張。
+        assertEquals(4, threeSouWait.remainingCount)
+        assertNull(analysis.statusIndicatorId)
+    }
+
+    /**
+     * 驗證他家牌河／副露中可見的等待牌會一併計入，讓剩餘張數進一步減少。
+     */
+    @Test
+    fun `test analyze reduces remaining count for tiles visible in other players discards`() {
+        val hand = FakeHandFactory.create(tenpaiTiles + floatingTile)
+        val player = FakeMahjongPlayerFactory.create(hand = hand)
+        val otherPlayer = FakeMahjongPlayerFactory.create(
+            discardPile = FakeDiscardPile().discardTile(FakeIdentifiedTileFactory.create(threeSou)),
+        )
+        val tableState = FakeTableStateFactory.create(players = listOf(player, otherPlayer), config = RiichiRuleConfig())
+
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single()
+
+        val threeSouWait = analysis.waitingTiles.single { it.tile == threeSou }
+        assertEquals(3, threeSouWait.remainingCount)
+    }
+
+    /**
+     * 驗證被鳴走的捨牌只由副露計入一次，不會因牌河保留 taken 紀錄而重複扣除。
+     */
+    @Test
+    fun `test analyze does not count a taken discard twice through its meld`() {
+        val hand = FakeHandFactory.create(tenpaiTiles + floatingTile)
+        val player = FakeMahjongPlayerFactory.create(hand = hand)
+        val calledTile = FakeIdentifiedTileFactory.create(threeSou)
+        val meld = FakeMeldFactory.create(
+            type = MeldType.Pon,
+            tiles = listOf(
+                calledTile,
+                FakeIdentifiedTileFactory.create(threeSou),
+                FakeIdentifiedTileFactory.create(threeSou),
+            ),
+            sourceTile = calledTile,
+            sourceDirection = RelativeDirection.Left,
+        )
+        val discarder = FakeMahjongPlayerFactory.create(
+            discardPile = FakeDiscardPile().discardTile(calledTile).takeLast(),
+        )
+        val caller = FakeMahjongPlayerFactory.create(hand = FakeHandFactory.create(melds = listOf(meld)))
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player, discarder, caller),
+            config = RiichiRuleConfig(),
+        )
+
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single()
+
+        assertEquals(1, analysis.waitingTiles.single { it.tile == threeSou }.remainingCount)
+    }
+
+    /**
+     * 驗證剛摸入後又作為候選捨出的牌屬於玩家已知資訊，會從同種等待牌的剩餘張數扣除。
+     */
+    @Test
+    fun `test analyze counts the last drawn discard candidate as visible`() {
+        val hand = FakeHandFactory.create(tiles = tenpaiTiles, lastDrawn = threeSou)
+        val player = FakeMahjongPlayerFactory.create(hand = hand)
+        val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
+
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single { it.discardTileId == hand.lastDrawn?.id }
+
+        assertEquals(3, analysis.waitingTiles.single { it.tile == threeSou }.remainingCount)
+    }
+
+    /**
+     * 驗證其他玩家暗手與牌山實際內容不屬於分析者可知資訊，不得改變等待牌剩餘張數。
+     */
+    @Test
+    fun `test analyze ignores concealed opponent tiles and hidden wall contents`() {
+        val hand = FakeHandFactory.create(tenpaiTiles + floatingTile)
+        val player = FakeMahjongPlayerFactory.create(hand = hand)
+        val concealedOpponent = FakeMahjongPlayerFactory.create(
+            hand = FakeHandFactory.create(List(3) { threeSou }),
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player, concealedOpponent),
+            tileWall = TileWall(List(4) { FakeIdentifiedTileFactory.create(threeSou) }),
+            config = RiichiRuleConfig(),
+        )
+
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single()
+
+        assertEquals(4, analysis.waitingTiles.single { it.tile == threeSou }.remainingCount)
+    }
+
+    /**
+     * 驗證赤五與普通五的基本牌面相同，合併計數。
+     */
+    @Test
+    fun `test analyze counts red five as the corresponding regular five`() {
+        val fiveDot = Tile.Numeric(Tile.Suit.Dot, 5)
+        val fiveDotTenpaiTiles = listOf(
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 2),
+            Tile.Numeric(Tile.Suit.Character, 3),
+            Tile.Numeric(Tile.Suit.Character, 4),
+            Tile.Numeric(Tile.Suit.Character, 5),
+            Tile.Numeric(Tile.Suit.Character, 6),
+            Tile.Numeric(Tile.Suit.Character, 7),
+            Tile.Numeric(Tile.Suit.Character, 8),
+            Tile.Numeric(Tile.Suit.Character, 9),
+            Tile.Numeric(Tile.Suit.Dot, 2),
+            Tile.Numeric(Tile.Suit.Dot, 2),
+            Tile.Numeric(Tile.Suit.Dot, 3),
+            Tile.Numeric(Tile.Suit.Dot, 4),
+        )
+        val hand = FakeHandFactory.create(fiveDotTenpaiTiles + floatingTile)
+        val player = FakeMahjongPlayerFactory.create(hand = hand)
+        val otherPlayer = FakeMahjongPlayerFactory.create(
+            discardPile = FakeDiscardPile().discardTile(
+                tile = FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Dot)),
+            ),
+        )
+        val tableState = FakeTableStateFactory.create(players = listOf(player, otherPlayer), config = RiichiRuleConfig())
+
+        val floatingTileId = hand.standingTiles.single { it.tile == floatingTile }.id
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single { it.discardTileId == floatingTileId }
+
+        assertEquals(3, analysis.waitingTiles.single { it.tile == fiveDot }.remainingCount)
+    }
+
+    /**
+     * 驗證捨牌後若等待牌先前已被自己打出過，狀態應標記為捨張振聽。
+     */
+    @Test
+    fun `test analyze reports discard furiten when a wait was already discarded`() {
+        val hand = FakeHandFactory.create(tenpaiTiles + floatingTile)
+        val player = FakeMahjongPlayerFactory.create(
+            hand = hand,
+            discardPile = FakeDiscardPile().discardTile(FakeIdentifiedTileFactory.create(threeSou)),
+        )
+        val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
+
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single()
+
+        assertEquals(RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN, analysis.statusIndicatorId)
+    }
+
+    /**
+     * 驗證捨牌後若等待牌是本巡放過的牌，狀態應標記為同巡振聽。
+     */
+    @Test
+    fun `test analyze reports temporary furiten when a wait was passed this turn`() {
+        val hand = FakeHandFactory.create(tenpaiTiles + floatingTile)
+        val player = FakeMahjongPlayerFactory.create(hand = hand)
+            .copy(passedTilesInRound = setOf(sixSou))
+        val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
+
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single()
+
+        assertEquals(RiichiDiscardReadinessAnalyzer.StatusIds.TEMPORARY_FURITEN, analysis.statusIndicatorId)
+    }
+
+    /**
+     * 驗證玩家已處於永久振聽時，不論等待牌本身是否觸發捨張／同巡振聽，狀態一律優先標記為永久振聽。
+     */
+    @Test
+    fun `test analyze reports permanent furiten regardless of other conditions`() {
+        val hand = FakeHandFactory.create(tenpaiTiles + floatingTile)
+        val player = FakeMahjongPlayerFactory.create(
+            hand = hand,
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PERMANENT_FURITEN, Unit).merge(riichiDeclarationComponents()),
+        )
+        val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
+
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single()
+
+        assertEquals(RiichiDiscardReadinessAnalyzer.StatusIds.PERMANENT_FURITEN, analysis.statusIndicatorId)
+    }
+
+    /**
+     * 驗證等待牌包含兩面聽的 3s 與 6s（實際完整聽牌組合由 [RiichiShantenCalculator] 自行決定，這裡只
+     * 驗證分析器有把計算結果如實轉為等待牌列表，不重複驗證向聽演算法本身）。
+     */
+    @Test
+    fun `test analyze includes both ryanmen wait tiles`() {
+        val hand = FakeHandFactory.create(tenpaiTiles + floatingTile)
+        val player = FakeMahjongPlayerFactory.create(hand = hand)
+        val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
+
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single()
+
+        assertTrue(analysis.waitingTiles.any { it.tile == threeSou })
+        assertTrue(analysis.waitingTiles.any { it.tile == sixSou })
+    }
+
+    /**
+     * 驗證每張等待牌的 [WaitingTileAvailability.winAvailability] 都是命名字串（規則中立設計，見該
+     * 屬性 KDoc），不是任何規則專屬型別的 toString() 結果。
+     */
+    @Test
+    fun `test analyze produces namespaced win availability ids`() {
+        val hand = FakeHandFactory.create(tenpaiTiles + floatingTile)
+        val player = FakeMahjongPlayerFactory.create(hand = hand)
+        val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
+
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single()
+
+        assertTrue(analysis.waitingTiles.isNotEmpty())
+        analysis.waitingTiles.forEach { assertTrue(it.winAvailability.startsWith("mahjongcraft:win_")) }
+    }
+
+    /**
+     * 驗證一般捨牌的無役單騎仍只可自摸，而玩家明確選擇立直後，同一候選會以正式立直狀態投影為可榮和。
+     */
+    @Test
+    fun `test riichi action analysis projects declaration yaku`() {
+        val completedMelds = listOf(
+            element = FakeMeldFactory.create(
+                type = MeldType.ClosedKan,
+                tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)) },
+            ),
+        )
+        val hand = Hand(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Dot, 4),
+                Tile.Numeric(Tile.Suit.Dot, 5),
+                Tile.Numeric(Tile.Suit.Dot, 6),
+                Tile.Numeric(Tile.Suit.Bamboo, 7),
+                Tile.Numeric(Tile.Suit.Bamboo, 8),
+                Tile.Numeric(Tile.Suit.Bamboo, 9),
+                Tile.Numeric(Tile.Suit.Dot, 5),
+                Tile.Honor.East,
+            ).map(FakeIdentifiedTileFactory::create),
+            melds = completedMelds,
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = hand,
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.North)),
+            components = riichiDeclarationComponents(),
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            tileWall = TileWall(List(20) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }),
+            config = RiichiRuleConfig(),
+            components = riichiTableComponents(potPoints = 0),
+        )
+        val floatingTileId = hand.standingTiles.single { it.tile == Tile.Honor.East }.id
+
+        val ordinary = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single { it.discardTileId == floatingTileId }
+        val projected = analyzer.analyzeForAction(tableState, player, RIICHI_GAME_ACTION, visibleTiles = visibleTo(tableState, player))
+            .single { it.discardTileId == floatingTileId }
+
+        assertEquals(RiichiDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY, ordinary.waitingTiles.single().winAvailability)
+        assertEquals("mahjongcraft:win_available", projected.waitingTiles.single().winAvailability)
+    }
+
+    @Test
+    fun `test analyze current hand returns waits without requiring a discard`() {
+        val hand = FakeHandFactory.create(tiles = tenpaiTiles)
+        val player = FakeMahjongPlayerFactory.create(hand = hand)
+        val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
+
+        val analysis = assertNotNull(analyzer.analyzeCurrentHand(tableState, player, visibleTiles = visibleTo(tableState, player)))
+
+        assertEquals(setOf<Tile>(threeSou, sixSou), analysis.waitingTiles.mapTo(linkedSetOf()) { it.tile })
+        assertNull(analysis.statusIndicatorId)
+    }
+
+    @Test
+    fun `test analyze current hand returns null when the standing tiles are not tenpai`() {
+        val hand = FakeHandFactory.create(tiles = tenpaiTiles + floatingTile)
+        val player = FakeMahjongPlayerFactory.create(hand = hand)
+        val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
+
+        assertNull(analyzer.analyzeCurrentHand(tableState, player, visibleTiles = visibleTo(tableState, player)))
+    }
+
+    /**
+     * 建立「789 萬、單張五筒、123 索」的無役單騎牌型，並加入 777 筒與 678 索副露。
+     *
+     * @param fiveDot 五筒立牌，可使用普通五或赤五。
+     * @param extraStandingTile 額外加入立牌的牌，供逐張假想捨牌測試使用。
+     * @return 等待五筒的測試玩家。
+     */
+    private fun createNoYakuFiveDotWaitPlayer(
+        fiveDot: TileValue,
+        extraStandingTile: Tile? = null,
+    ): MahjongPlayer {
+        val melds = listOf(
+            FakeMeldFactory.create(
+                type = MeldType.Pon,
+                tiles = List(3) {
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 7))
+                },
+                sourceDirection = RelativeDirection.Left,
+            ),
+            FakeMeldFactory.create(
+                type = MeldType.Chi,
+                tiles = listOf(6, 7, 8).map { value ->
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, value))
+                },
+                sourceDirection = RelativeDirection.Left,
+            ),
+        )
+        val standingTiles = buildList {
+            addAll(listOf(7, 8, 9).map { value -> TileValue(Tile.Numeric(Tile.Suit.Character, value)) })
+            add(fiveDot)
+            addAll(listOf(1, 2, 3).map { value -> TileValue(Tile.Numeric(Tile.Suit.Bamboo, value)) })
+            extraStandingTile?.let { add(TileValue(it)) }
+        }
+        val hand = Hand(
+            tiles = standingTiles.map { FakeIdentifiedTileFactory.create(it) },
+            melds = melds,
+        )
+        return FakeMahjongPlayerFactory.create(hand = hand)
+    }
+
+    /** 驗證普通五與赤五都不會把寶牌當成無役牌型的起胡役。 */
+    @Test
+    fun `test ordinary and red five waits remain no yaku before the last tile`() {
+        listOf(
+            TileValue(Tile.Numeric(Tile.Suit.Dot, 5)),
+            RiichiTileValues.redFive(Tile.Suit.Dot),
+        ).forEach { fiveDot ->
+            val player = createNoYakuFiveDotWaitPlayer(fiveDot)
+            val tableState = FakeTableStateFactory.create(
+                players = listOf(player),
+                tileWall = TileWall(List(14) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }),
+                config = RiichiRuleConfig(),
+            )
+
+            val analysis = assertNotNull(analyzer.analyzeCurrentHand(tableState, player, visibleTiles = visibleTo(tableState, player)))
+
+            assertEquals(
+                expected = listOf(Tile.Numeric(Tile.Suit.Dot, 5)),
+                actual = analysis.waitingTiles.map { it.tile },
+            )
+            assertEquals(
+                expected = RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU,
+                actual = analysis.waitingTiles.single().winAvailability,
+            )
+        }
+    }
+
+    /** 驗證同一副無役單騎在活牌耗盡後可透過海底／河底取得和牌資格。 */
+    @Test
+    fun `test haitei and houtei qualify the no yaku wait after the live wall is exhausted`() {
+        listOf(
+            TileValue(Tile.Numeric(Tile.Suit.Dot, 5)),
+            RiichiTileValues.redFive(Tile.Suit.Dot),
+        ).forEach { fiveDot ->
+            val player = createNoYakuFiveDotWaitPlayer(fiveDot)
+            val tableState = FakeTableStateFactory.create(
+                players = listOf(player),
+                tileWall = TileWall(emptyList()),
+                config = RiichiRuleConfig(),
+            )
+
+            val analysis = assertNotNull(analyzer.analyzeCurrentHand(tableState, player, visibleTiles = visibleTo(tableState, player)))
+
+            assertEquals(
+                expected = WaitingTileAvailabilityIds.WIN_AVAILABLE,
+                actual = analysis.waitingTiles.single().winAvailability,
+            )
+        }
+    }
+
+    /** 驗證逐張假想捨牌會保留普通五與赤五的無役判定。 */
+    @Test
+    fun `test projected discard keeps ordinary and red five waits as no yaku`() {
+        listOf(
+            TileValue(Tile.Numeric(Tile.Suit.Dot, 5)),
+            RiichiTileValues.redFive(Tile.Suit.Dot),
+        ).forEach { fiveDot ->
+            val player = createNoYakuFiveDotWaitPlayer(
+                fiveDot = fiveDot,
+                extraStandingTile = Tile.Honor.East,
+            )
+            val tableState = FakeTableStateFactory.create(
+                players = listOf(player),
+                tileWall = TileWall(List(14) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }),
+                config = RiichiRuleConfig(),
+            )
+            val eastId = player.hand.standingTiles.single { it.tile == Tile.Honor.East }.id
+
+            val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single { it.discardTileId == eastId }
+
+            assertEquals(
+                expected = RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU,
+                actual = analysis.waitingTiles.single().winAvailability,
+            )
+        }
+    }
+
+    /** 驗證逐張假想捨牌在活牌耗盡時，普通五與赤五等待都可取得海底／河底資格。 */
+    @Test
+    fun `test projected discard qualifies ordinary and red five waits after the live wall is exhausted`() {
+        listOf(
+            TileValue(Tile.Numeric(Tile.Suit.Dot, 5)),
+            RiichiTileValues.redFive(Tile.Suit.Dot),
+        ).forEach { fiveDot ->
+            val player = createNoYakuFiveDotWaitPlayer(
+                fiveDot = fiveDot,
+                extraStandingTile = Tile.Honor.East,
+            )
+            val tableState = FakeTableStateFactory.create(
+                players = listOf(player),
+                tileWall = TileWall(emptyList()),
+                config = RiichiRuleConfig(),
+            )
+            val eastId = player.hand.standingTiles.single { it.tile == Tile.Honor.East }.id
+
+            val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single { it.discardTileId == eastId }
+
+            assertEquals(
+                expected = WaitingTileAvailabilityIds.WIN_AVAILABLE,
+                actual = analysis.waitingTiles.single().winAvailability,
+            )
+        }
+    }
+
+    /** 三人麻將單吊北時，其他兩家拔出的三張北都從剩餘張數扣除。 */
+    @Test
+    fun `remaining count excludes north tiles pulled by every player`() {
+        val module = ThreePlayerRiichiRuleModule(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, ThreePlayerRiichiRuleConfig())
+        val waitingHand = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9).map { Tile.Numeric(Tile.Suit.Dot, it) } +
+            listOf(1, 2, 3).map { Tile.Numeric(Tile.Suit.Bamboo, it) } +
+            Tile.Honor.North
+        val player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, hand = FakeHandFactory.create(waitingHand))
+        val pulledNorths = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.North) }
+        val southPlayer = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            components = riichiDeclarationComponents(),
+            tileAreas = PlayerTileAreas.EMPTY.withArea(RiichiPlayerTileAreaIds.NORTH, pulledNorths.take(2)),
+        )
+        val westPlayer = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.WEST,
+            components = riichiDeclarationComponents(),
+            tileAreas = PlayerTileAreas.EMPTY.withArea(RiichiPlayerTileAreaIds.NORTH, pulledNorths.drop(2)),
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player, southPlayer, westPlayer),
+            config = ThreePlayerRiichiRuleConfig(),
+            components = riichiTableComponents(potPoints = 0),
+        )
+        val analyzer = assertNotNull(module.createDiscardReadinessAnalyzer())
+
+        val analysis = assertNotNull(
+            actual = analyzer.analyzeCurrentHand(
+                tableState = tableState,
+                player = player,
+                visibleTiles = visibleTo(tableState = tableState, player = player, setAsideTiles = { it.setAsideTiles }),
+            ),
+        )
+
+        assertEquals(Tile.Honor.North, analysis.waitingTiles.single().tile)
+        assertEquals(0, analysis.waitingTiles.single().remainingCount)
+    }
+
+    /**
+     * 以指定玩家可見的桌況快照列出看得到的牌。
+     *
+     * @param tableState 要擷取快照的桌況。
+     * @param player 決定手牌可見範圍的觀察者。
+     * @param setAsideTiles 擷取快照時要另行排除的牌。
+     * @return 快照中可見的牌。
+     */
+    private fun visibleTo(
+        tableState: TableState,
+        player: MahjongPlayer,
+        setAsideTiles: (MahjongPlayer) -> List<IdentifiedTile> = { emptyList() },
+    ): List<IdentifiedTile> = tableState.toSnapshot(visibleHandPlayerIds = setOf(player.id)).visibleTiles(RiichiTileInterpretationPolicy)
+}

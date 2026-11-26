@@ -1,0 +1,563 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
+
+import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverDefinition
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
+import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.runAsSingleWrite
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPaoLiability
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPaoYaku
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.DeclaredGameActionContext
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
+
+/**
+ * [DeclareTsumoUseCase] 的單元測試類別。
+ *
+ * 驗證自摸胡牌結算的業務邏輯，包含依莊/閒身分或包牌責任分攤點數、贏家的 actionHistory 記錄、
+ * 「這次範圍只改分數」的迴歸驗證、快照與事件的同步行為，以及各種驗證失敗案例。
+ */
+class DeclareTsumoUseCaseTest {
+
+    private val gameId = Uuid.random()
+    private val winnerId = Uuid.random()
+
+    /**
+     * 提供自摸結算測試所需的 repository、事件與演出替身。
+     *
+     * @property winCelebrationCueResolverRegistry 提供和牌演出 cue 的登記表。測試可注入替身。
+     */
+    private class Fixtures(
+        val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
+            bundledWinCelebrationCueResolverRegistry(),
+    ) {
+        val gameRepo = FakeGameRepository()
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+        val snapshotRepo = FakeGameSnapshotRepository()
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
+        val eventPublisher = FakeGameEventPublisher()
+        val presentationPublisher = FakeGamePresentationPublisher()
+        val winPresentationHandoff = WinPresentationHandoff()
+        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
+            BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
+            freeze()
+        }
+        val useCase = DeclareTsumoUseCase(
+            gameRepository = gameRepo,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            eventPublisher = eventPublisher,
+            presentationPublisher = presentationPublisher,
+            winPresentationHandoff = winPresentationHandoff,
+            winCelebrationCueResolverRegistry = winCelebrationCueResolverRegistry,
+            winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+        )
+    }
+
+    // 中中、發發發、白白白、123m、55p（大三元役滿，13 張立牌）
+    private val daisangenTiles = listOf(
+        Tile.Honor.Red, Tile.Honor.Red,
+        Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
+        Tile.Honor.White, Tile.Honor.White, Tile.Honor.White,
+        Tile.Numeric(Tile.Suit.Character, 1),
+        Tile.Numeric(Tile.Suit.Character, 2),
+        Tile.Numeric(Tile.Suit.Character, 3),
+        Tile.Numeric(Tile.Suit.Dot, 5),
+        Tile.Numeric(Tile.Suit.Dot, 5),
+    )
+    private val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+
+    private fun daisangenHand(): Hand = Hand(
+        tiles = daisangenTiles.map { FakeIdentifiedTileFactory.create(it) },
+        lastDrawn = winningTile,
+    )
+
+    // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
+    private fun priorDiscardPile(): RiichiDiscardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South))
+
+    /**
+     * 驗證莊家自摸時，其餘三位閒家平均分攤點數，且贏家取得對應點數。
+     *
+     * 以目前的遊戲為預期遊戲執行，確認命令只寫入這一局一次（AI 命令的條件式提交契約）。
+     */
+    @Test
+    fun `test declare tsumo splits payment evenly among three non-dealers when winner is dealer`() = runTest {
+        val fixtures = Fixtures()
+        val winner = FakeMahjongPlayerFactory.create(
+            id = winnerId,
+            initialSeat = Wind.EAST,
+            hand = daisangenHand(),
+            discardPile = priorDiscardPile(),
+            components = riichiDeclarationComponents(),
+        ).copy(score = 25000)
+        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH).copy(score = 25000)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST).copy(score = 25000)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH).copy(score = 25000)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(winner, south, west, north),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+            components = riichiTableComponents(
+                potPoints = 0,
+                wallProgress = RiichiWallProgress(
+                    completedSupplementalDrawCount = 1,
+                    revealedKanDoraCount = 0,
+                    pendingKanDoraReveals = listOf(
+                        element = RiichiPendingKanDoraReveal(winnerId, GameAction.KanType.ADDED_KAN, 1),
+                    ),
+                ),
+            ),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.gameRepo.runAsSingleWrite(gameId) { fixtures.useCase(gameId, winnerId) }
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertEquals(25000 + 48000, newState.players.first { it.id == winnerId }.score)
+        assertEquals(25000 - 16000, newState.players.first { it.id == south.id }.score)
+        assertEquals(25000 - 16000, newState.players.first { it.id == west.id }.score)
+        assertEquals(25000 - 16000, newState.players.first { it.id == north.id }.score)
+        assertTrue(newState.riichiWallProgress().pendingKanDoraReveals.isEmpty())
+        assertEquals(
+            expected = listOf(DeclaredGameActionContext(winnerId, GameAction.Tsumo)),
+            actual = fixtures.presentationPublisher.getDeclaredGameActions(gameId),
+        )
+        val settled = fixtures.gameRepo.historyDrafts.map { it.fact }.filterIsInstance<HistoryFact.WinSettled>().single()
+        assertEquals(winnerId, settled.winDetails.single().playerId)
+        assertEquals(BuiltInRoundOutcomeIds.TSUMO, settled.outcomeId)
+        assertTrue(settled.winDetails.single().detailFields.isNotEmpty())
+    }
+
+    /**
+     * 驗證閒家自摸時，莊家與另外兩位閒家支付不同金額。
+     */
+    @Test
+    fun `test declare tsumo charges dealer and non-dealers differently for non-dealer tsumo`() = runTest {
+        val fixtures = Fixtures()
+        val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST).copy(score = 25000)
+        val winner = FakeMahjongPlayerFactory.create(
+            id = winnerId,
+            initialSeat = Wind.SOUTH,
+            hand = daisangenHand(),
+            discardPile = priorDiscardPile(),
+            components = riichiDeclarationComponents(),
+        ).copy(score = 25000)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST).copy(score = 25000)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH).copy(score = 25000)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealer, winner, west, north),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 1,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, winnerId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertEquals(25000 + 32000, newState.players.first { it.id == winnerId }.score)
+        assertEquals(25000 - 16000, newState.players.first { it.id == dealer.id }.score)
+        assertEquals(25000 - 8000, newState.players.first { it.id == west.id }.score)
+        assertEquals(25000 - 8000, newState.players.first { it.id == north.id }.score)
+    }
+
+    /**
+     * 驗證包牌責任已成立時，只有包牌責任者的分數變動，其餘玩家分數維持不變。
+     */
+    @Test
+    fun `test declare tsumo only debits the pao-liable player`() = runTest {
+        val fixtures = Fixtures()
+        val paoPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST).copy(score = 25000)
+        val winner = FakeMahjongPlayerFactory.create(
+            id = winnerId,
+            initialSeat = Wind.SOUTH,
+            hand = daisangenHand(),
+            discardPile = priorDiscardPile(),
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
+        ).copy(score = 25000)
+        val other1 = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST).copy(score = 25000)
+        val other2 = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH).copy(score = 25000)
+        // paoPlayer 排在 winner 前一位（座位順序），故對 winner 而言方位為 Left，與上方宣告的包牌責任相符
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(paoPlayer, winner, other1, other2),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 1,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, winnerId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertEquals(25000 + 32000, newState.players.first { it.id == winnerId }.score)
+        assertEquals(25000 - 32000, newState.players.first { it.id == paoPlayer.id }.score)
+        assertEquals(25000, newState.players.first { it.id == other1.id }.score, "Non-pao players should not pay anything.")
+        assertEquals(25000, newState.players.first { it.id == other2.id }.score, "Non-pao players should not pay anything.")
+    }
+
+    /**
+     * 驗證自摸成功後，贏家的 actionHistory 會記錄 [GameAction.Tsumo]。
+     */
+    @Test
+    fun `test declare tsumo records Tsumo in winner's action history`() = runTest {
+        val fixtures = Fixtures()
+        val winner = FakeMahjongPlayerFactory.create(
+            id = winnerId,
+            initialSeat = Wind.EAST,
+            hand = daisangenHand(),
+            discardPile = priorDiscardPile(),
+            components = riichiDeclarationComponents(),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(winner),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        fixtures.useCase(gameId, winnerId)
+
+        val updatedWinner = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == winnerId }
+        assertEquals(GameAction.Tsumo, updatedWinner.actionHistory.last())
+    }
+
+    /**
+     * 驗證自摸贏家收下場上所有立直棒（分數含供託金額、riichiStickCount 歸零），但不動
+     * currentPlayerIndex、pendingReaction，這些留給後續（連莊/過莊/開新局）的 use case 處理。
+     */
+    @Test
+    fun `test declare tsumo collects stick pot but does not change currentPlayerIndex or pendingReaction`() = runTest {
+        val fixtures = Fixtures()
+        val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val winner = FakeMahjongPlayerFactory.create(
+            id = winnerId,
+            initialSeat = Wind.SOUTH,
+            hand = daisangenHand(),
+            discardPile = priorDiscardPile(),
+            components = riichiDeclarationComponents(),
+        )
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealer, winner, west, north),
+            config = RiichiRuleConfig(),
+            components = riichiTableComponents(potPoints = 2000),
+            currentPlayerIndex = 1,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, winnerId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertEquals(1, newState.currentPlayerIndex, "currentPlayerIndex should be left untouched by this unit's scope.")
+        assertNull(newState.pendingReaction)
+        assertEquals(TurnPhase.RoundOver(RoundConclusion.Win(setOf(winnerId))), newState.turnPhase)
+        assertEquals(0, (newState.riichiPotPoints() / RIICHI_STICK_POINTS), "The winner should collect all sticks on the table.")
+        assertEquals(
+            expected = 32000 + 2000,
+            actual = newState.players.first { it.id == winnerId }.score,
+            message = "Winner's score should include both the tsumo total and the 2 sticks (1000 each).",
+        )
+    }
+
+    /** 驗證自摸贏家依本場數向其他每家各收 本場數 × 100，並與役種點數一起從付款者扣除。 */
+    @Test
+    fun `test declare tsumo collects combo bonus from every other player`() = runTest {
+        val fixtures = Fixtures()
+        val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST).copy(score = 25000)
+        val winner = FakeMahjongPlayerFactory.create(
+            id = winnerId,
+            initialSeat = Wind.SOUTH,
+            hand = daisangenHand(),
+            discardPile = priorDiscardPile(),
+            components = riichiDeclarationComponents(),
+        ).copy(score = 25000)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST).copy(score = 25000)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH).copy(score = 25000)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealer, winner, west, north),
+            config = RiichiRuleConfig(),
+            comboCount = 2,
+            components = riichiTableComponents(potPoints = 0),
+            currentPlayerIndex = 1,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, winnerId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val scores = fixtures.gameRepo.getTableState(gameId)!!.players.associate { it.id to it.score }
+        assertEquals(25000 + 32000 + 600, scores.getValue(winnerId))
+        assertEquals(25000 - 16000 - 200, scores.getValue(dealer.id))
+        assertEquals(25000 - 8000 - 200, scores.getValue(west.id))
+        assertEquals(25000 - 8000 - 200, scores.getValue(north.id))
+    }
+
+    /**
+     * 驗證自摸成功後所有觀察者的快照皆同步更新，且所有玩家皆收到 Tsumo 事件通知。
+     */
+    @Test
+    fun `test declare tsumo syncs snapshot and notifies all players`() = runTest {
+        val fixtures = Fixtures()
+        val winner = FakeMahjongPlayerFactory.create(
+            id = winnerId,
+            initialSeat = Wind.EAST,
+            hand = daisangenHand(),
+            discardPile = priorDiscardPile(),
+            components = riichiDeclarationComponents(),
+        )
+        val otherPlayerId = Uuid.random()
+        val other = FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(winner, other),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+        fixtures.snapshotRepo.setSnapshot(winnerId, table.toSnapshot(setOf(winnerId)))
+        fixtures.snapshotRepo.setSnapshot(otherPlayerId, table.toSnapshot(setOf(otherPlayerId)))
+
+        fixtures.useCase(gameId, winnerId)
+
+        assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, winnerId))
+        assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, otherPlayerId))
+        assertEquals(GameAction.Tsumo, fixtures.eventPublisher.getNotifiedAction(gameId, winnerId, winnerId))
+        assertEquals(GameAction.Tsumo, fixtures.eventPublisher.getNotifiedAction(gameId, otherPlayerId, winnerId))
+    }
+
+    /**
+     * 驗證自摸成功後把胡牌演出寫進 `WinPresentationHandoff` 交接點（而不是直接發布），帶上正確的
+     * 贏家座位、胡牌張 Uuid，且 `isTsumo` 為 `true`。
+     *
+     * 刻意不直接發布：本局是否就此結束要等 `ResolveWinRoundContinuationUseCase` 詢問過規則模組才知道，
+     * 由它決定要立即播放或排隊延後播放——「最終有沒有真的發布出去」由 `GameFlowCoordinatorTest` 驗證。
+     */
+    @Test
+    fun `test declare tsumo stages win presentation with winner seat and winning tile`() = runTest {
+        val fixtures = Fixtures()
+        val winner = FakeMahjongPlayerFactory.create(
+            id = winnerId,
+            initialSeat = Wind.SOUTH,
+            hand = daisangenHand(),
+            discardPile = priorDiscardPile(),
+            components = riichiDeclarationComponents(),
+        )
+        val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealer, winner),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 1,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, winnerId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertTrue(
+            actual = fixtures.presentationPublisher.getPublishedWinCelebrations(gameId).isEmpty(),
+            message = "The use case must stage the presentation, not publish it directly.",
+        )
+        val staged = assertNotNull(fixtures.winPresentationHandoff.take(gameId, setOf(winnerId)))
+        assertEquals(setOf(winnerId), staged.winnerPlayerIds)
+        assertEquals(listOf(1), staged.celebration.winners.map { it.seatIndex })
+        assertEquals(winningTile.id, staged.celebration.winningTileId)
+        assertTrue(staged.celebration.isTsumo)
+    }
+
+    /** 驗證明確注入的第三方 resolver 會由實際自摸流程解析，而不是退回另一套內建 registry。 */
+    @Test
+    fun `test declare tsumo uses explicitly injected celebration resolver`() = runTest {
+        val expectedCues = listOf("test:custom_tsumo")
+        val registry = WinCelebrationCueResolverRegistryImpl().apply {
+            register(WinCelebrationCueResolverDefinition(ruleModuleId = BuiltInRuleModuleIds.RIICHI, resolver = { expectedCues }))
+            freeze()
+        }
+        val fixtures = Fixtures(registry)
+        val winner = FakeMahjongPlayerFactory.create(
+            id = winnerId,
+            initialSeat = Wind.SOUTH,
+            hand = daisangenHand(),
+            discardPile = priorDiscardPile(),
+            components = riichiDeclarationComponents(),
+        )
+        val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        fixtures.gameRepo.setTableState(
+            state = FakeTableStateFactory.create(
+                id = gameId,
+                players = listOf(dealer, winner),
+                config = RiichiRuleConfig(),
+                currentPlayerIndex = 1,
+            ),
+        )
+
+        val result = fixtures.useCase(gameId, winnerId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val staged = assertNotNull(fixtures.winPresentationHandoff.take(gameId, setOf(winnerId)))
+        assertEquals(expectedCues, staged.celebration.winners.single().cueIds)
+    }
+
+    /**
+     * 驗證對局不存在時回傳 [GameError.GameNotFound]。
+     */
+    @Test
+    fun `test declare tsumo fails when game not found`() = runTest {
+        val fixtures = Fixtures()
+
+        val result = fixtures.useCase(gameId, winnerId)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.GameNotFound(gameId), result.error)
+    }
+
+    /**
+     * 驗證發起請求的玩家不在該對局中時回傳 [GameError.PlayerNotInGame]。
+     */
+    @Test
+    fun `test declare tsumo fails when player not in game`() = runTest {
+        val fixtures = Fixtures()
+        val winner = FakeMahjongPlayerFactory.create(id = winnerId, initialSeat = Wind.EAST, hand = daisangenHand())
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(winner), config = RiichiRuleConfig())
+        fixtures.gameRepo.setTableState(table)
+        val strangerId = Uuid.random()
+
+        val result = fixtures.useCase(gameId, strangerId)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.PlayerNotInGame(strangerId, gameId), result.error)
+    }
+
+    /**
+     * 驗證非當前回合玩家嘗試宣告自摸時回傳 [GameError.NotPlayersTurn]。
+     */
+    @Test
+    fun `test declare tsumo fails when not players turn`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))),
+        )
+        val winner = FakeMahjongPlayerFactory.create(id = winnerId, initialSeat = Wind.SOUTH, hand = daisangenHand())
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, winner),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, winnerId)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.NotPlayersTurn(winnerId, gameId), result.error)
+    }
+
+    /**
+     * 驗證玩家尚未摸牌就嘗試宣告自摸時回傳 [GameError.IllegalAction]。
+     */
+    @Test
+    fun `test declare tsumo fails when player has not drawn yet`() = runTest {
+        val fixtures = Fixtures()
+        val winner = FakeMahjongPlayerFactory.create(id = winnerId, initialSeat = Wind.EAST)
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(winner), config = RiichiRuleConfig(), currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, winnerId)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.IllegalAction(winnerId, gameId, GameAction.Tsumo), result.error)
+    }
+
+    /**
+     * 驗證手牌根本沒有胡牌時回傳 [GameError.IllegalAction]。
+     */
+    @Test
+    fun `test declare tsumo fails when hand is not actually a winning hand`() = runTest {
+        val fixtures = Fixtures()
+        val winner = FakeMahjongPlayerFactory.create(
+            id = winnerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(winner), config = RiichiRuleConfig(), currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, winnerId)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.IllegalAction(winnerId, gameId, GameAction.Tsumo), result.error)
+    }
+
+    /**
+     * 驗證不支援自摸結算的規則不會讓自摸宣告成立。
+     */
+    @Test
+    fun `test declare tsumo fails for a ruleset without tsumo support`() = runTest {
+        val fixtures = Fixtures()
+        val winner = FakeMahjongPlayerFactory.create(id = winnerId, initialSeat = Wind.EAST, hand = daisangenHand())
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(winner), config = TaiwanRuleConfig(), currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, winnerId)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.IllegalAction(winnerId, gameId, GameAction.Tsumo), result.error)
+    }
+}

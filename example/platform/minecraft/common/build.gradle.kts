@@ -1,0 +1,26 @@
+plugins {
+    alias(libs.plugins.mahjongcraft.kotlin.multiplatform)
+}
+
+kotlin {
+    jvm()
+
+    sourceSets {
+        commonMain.dependencies {
+            implementation(project(":example:example-mahjong-extension"))
+            implementation(project(":mahjong-extension-api"))
+            implementation(project(":minecraft_common"))
+        }
+
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+
+        jvmTest.dependencies {
+            implementation(project(":testing:testing-mahjong-flow"))
+            implementation(project(":testing:testing-mahjong-logic"))
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.kotlinx.serialization.json)
+        }
+    }
+}

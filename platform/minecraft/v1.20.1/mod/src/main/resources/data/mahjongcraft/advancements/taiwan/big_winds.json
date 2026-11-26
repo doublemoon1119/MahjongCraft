@@ -1,0 +1,29 @@
+{
+  "parent": "mahjongcraft:taiwan/root",
+  "display": {
+    "icon": {
+      "item": "mahjongcraft:mahjong_tile",
+      "nbt": "{tile:\"east\"}"
+    },
+    "title": {
+      "translate": "mahjongcraft.taiwan.tai.big_winds"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.taiwan.big_winds.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:taiwan/big_winds"
+        ]
+      }
+    }
+  }
+}

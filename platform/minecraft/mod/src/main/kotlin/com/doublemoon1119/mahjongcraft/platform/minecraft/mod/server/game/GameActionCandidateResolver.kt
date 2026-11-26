@@ -1,0 +1,179 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game
+
+import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.model.PlayerDecisionOptions
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetPlayerDecisionOptionsUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
+import kotlin.uuid.Uuid
+
+/**
+ * 依玩家目前的桌況列出 `/mahjongcraft game discard|action` 的候選項目。
+ *
+ * 候選 token 直接用可讀的牌面／動作簡寫（例如 `5m`／`3p`／`7s`／`east`、`chi`／`pon`／`ron`），不透過
+ * tooltip 才看得懂。同一輪候選裡如果有重複（例如手牌兩張同樣的牌、或同時有多種吃法），第一個維持
+ * 原本的簡寫，其餘依序加上 `_2`／`_3`……後綴避免碰撞。[Tile.Extension] 沒有簡寫可用，直接用它本身的
+ * `namespace:path` 字串當 token。
+ *
+ * @property gameRepository 權威對局數據倉庫。
+ * @property moduleRegistry 解析對局規則模組的登錄表。
+ * @property membershipRepository 玩家目前所在桌子（房間／對局共用同一個 Uuid）的歸屬查詢。
+ * @property getPlayerDecisionOptions 查詢完整合法動作、選牌需求與捨牌分析的 Flow use case。
+ * @property visibilityPolicy 依本人的讀取權裁切牌面與外觀。
+ */
+class GameActionCandidateResolver(
+    private val gameRepository: GameRepository,
+    private val moduleRegistry: MahjongModuleRegistry,
+    private val membershipRepository: PlayerMembershipRepository,
+    private val getPlayerDecisionOptions: GetPlayerDecisionOptionsUseCase,
+    private val visibilityPolicy: GameVisibilityPolicy,
+) {
+    /**
+     * 列出玩家目前手牌（含剛摸到的牌）作為捨牌或動作選牌候選。
+     *
+     * @param playerId 要查詢的玩家識別碼。
+     * @return 可選手牌候選。玩家不在對局中時為空清單。
+     */
+    suspend fun listHandTileCandidates(playerId: Uuid): List<HandTileCandidate> {
+        val gameId = membershipRepository.getVenueId(playerId) ?: return emptyList()
+        val game = gameRepository.getGame(gameId) ?: return emptyList()
+        val player = game.tableState.players.firstOrNull { it.id == playerId } ?: return emptyList()
+        val faces = visibilityPolicy.tileFacesFor(game, playerId, player.hand.standingTiles.map { it.id })
+        return disambiguateTokens(player.hand.standingTiles, { it.tile.notationToken() }) { identifiedTile, token ->
+            HandTileCandidate(identifiedTile.id, token, faces.getValue(identifiedTile.id))
+        }
+    }
+
+    /**
+     * 列出玩家目前合法的特殊動作及各動作的額外選牌契約。
+     *
+     * @param playerId 要查詢的玩家識別碼。
+     * @return 合法動作候選。無法解析對局時為空清單。
+     */
+    suspend fun listActionCandidates(playerId: Uuid): List<GameActionCandidate> = resolveActionCandidates(playerId)?.actions.orEmpty()
+
+    /**
+     * 以同一次 Flow 查詢解析特殊動作候選與一般捨牌分析。
+     *
+     * @param playerId 要查詢的玩家識別碼。
+     * @return 候選及捨牌分析。玩家不在桌上或查詢失敗時為 null。
+     */
+    suspend fun resolveActionCandidates(playerId: Uuid): ResolvedGameActionCandidates? {
+        val gameId = membershipRepository.getVenueId(playerId) ?: return null
+        return resolveActionCandidates(gameId, playerId)
+    }
+
+    /**
+     * 依已知對局解析特殊動作候選與一般捨牌分析，避免再次透過房間歸屬反查對局。
+     *
+     * @param gameId 已知的對局識別碼。
+     * @param playerId 要查詢的玩家識別碼。
+     * @return 候選及捨牌分析。查詢沒有成功時為 null。
+     */
+    suspend fun resolveActionCandidates(gameId: Uuid, playerId: Uuid): ResolvedGameActionCandidates? {
+        val outcome = getPlayerDecisionOptions(gameId, playerId)
+        if (outcome !is Outcome.Success) return null
+        val game = gameRepository.getGame(gameId) ?: return null
+        val referenceFace = outcome.value.referenceTile?.let { tile -> visibilityPolicy.tileFacesFor(game, playerId, listOf(tile.id))[tile.id] }
+        return outcome.value.toCandidates(moduleRegistry.getModule(game.tableState.config).id, referenceFace)
+    }
+
+    /**
+     * 將 Flow 的完整決策選項映射成 Minecraft 指令與 HUD 共用的候選資料。
+     *
+     * @param ruleModuleId 對局所用規則模組識別碼。
+     * @param referenceFace 觸發牌經本人讀取權裁切的牌面。沒有觸發牌時為 null。
+     * @return 映射後的動作候選與捨牌分析。
+     */
+    private fun PlayerDecisionOptions.toCandidates(ruleModuleId: String, referenceFace: TileFaceView?): ResolvedGameActionCandidates {
+        val candidates = disambiguateTokens(actions, { it.action.baseToken() }) { option, token ->
+            GameActionCandidate(
+                action = option.action,
+                token = token,
+                referenceTile = referenceFace,
+                tileSelectionRequirement = option.tileSelectionRequirement,
+                discardAnalyses = option.discardAnalyses,
+            )
+        }
+        return ResolvedGameActionCandidates(ruleModuleId, candidates, discardAnalyses)
+    }
+
+    /**
+     * 列出指定動作契約允許選取的手牌候選。
+     *
+     * @param playerId 要查詢的玩家識別碼。
+     * @param candidate 已選取的動作候選。
+     * @return 符合選牌契約的手牌。動作不需選牌時為空清單。
+     */
+    suspend fun listTileSelectionCandidates(
+        playerId: Uuid,
+        candidate: GameActionCandidate,
+    ): List<HandTileCandidate> {
+        val eligibleTileIds = candidate.tileSelectionRequirement?.eligibleTileIds ?: return emptyList()
+        return listHandTileCandidates(playerId).filter { it.tileId in eligibleTileIds }
+    }
+
+    /**
+     * 依 [baseToken] 把 [items] 各自組成候選 token：第一次出現該 base token 時直接使用，之後重複出現
+     * 依序加上 `_2`／`_3`……避免碰撞。
+     *
+     * @param items 要建立候選的項目。
+     * @param baseToken 取得每個項目未消歧的 token。
+     * @param build 以項目和唯一 token 建立結果。
+     * @return 依輸入順序建立的結果清單。
+     */
+    private fun <T, R> disambiguateTokens(items: List<T>, baseToken: (T) -> String, build: (T, String) -> R): List<R> {
+        val seenCounts = mutableMapOf<String, Int>()
+        return items.map { item ->
+            val base = baseToken(item)
+            val count = (seenCounts[base] ?: 0) + 1
+            seenCounts[base] = count
+            build(item, if (count == 1) base else "${base}_$count")
+        }
+    }
+}
+
+/** 將牌面轉成可讀、可直接輸入指令的簡寫，例如 `5m`／`3p`／`7s`／`east`。 */
+private fun Tile.notationToken(): String = when (this) {
+    is Tile.Numeric -> "$value${suit.letter()}"
+    Tile.Honor.East -> "east"
+    Tile.Honor.South -> "south"
+    Tile.Honor.West -> "west"
+    Tile.Honor.North -> "north"
+    Tile.Honor.Red -> "red"
+    Tile.Honor.Green -> "green"
+    Tile.Honor.White -> "white"
+    is Tile.Extension -> typeId.toString()
+}
+
+/** 數牌花色的單字母簡寫：萬 m、筒 p、條 s，沿用麻將圈慣用的 man／pin／sou 記法。 */
+private fun Tile.Suit.letter(): String = when (this) {
+    Tile.Suit.Character -> "m"
+    Tile.Suit.Dot -> "p"
+    Tile.Suit.Bamboo -> "s"
+}
+
+/** 將動作轉成可讀的簡寫，供 [GameActionCandidateResolver.disambiguateTokens] 組出候選 token。 */
+private fun GameAction.baseToken(): String = when (this) {
+    GameAction.Tsumo -> "tsumo"
+    is GameAction.Chi -> "chi"
+    is GameAction.Pon -> "pon"
+    is GameAction.Kan -> when (type) {
+        GameAction.KanType.OPEN_KAN -> MinecraftKanActionTokenKeys.OPEN
+        GameAction.KanType.CLOSED_KAN -> MinecraftKanActionTokenKeys.CLOSED
+        GameAction.KanType.ADDED_KAN -> MinecraftKanActionTokenKeys.ADDED
+    }
+
+    is GameAction.Ron -> "ron"
+    GameAction.Pass -> "pass"
+    is GameAction.ExhaustiveDraw -> reason.id
+    is GameAction.Extension -> value.id
+    // Discard／GameStarted／RoundStarted／Draw 不會出現在合法動作清單裡。
+    else -> "action"
+}

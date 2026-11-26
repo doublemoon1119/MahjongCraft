@@ -1,0 +1,580 @@
+package com.doublemoon1119.mahjongcraft.flow.common.game.event
+
+import com.doublemoon1119.mahjongcraft.flow.api.event.MatchCompletion
+import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEndedEvent
+import com.doublemoon1119.mahjongcraft.flow.api.event.MatchStartedEvent
+import com.doublemoon1119.mahjongcraft.flow.api.event.RoundCompletedEvent
+import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettledEvent
+import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettlementKind
+import com.doublemoon1119.mahjongcraft.flow.api.event.RuleResultsResolvedEvent
+import com.doublemoon1119.mahjongcraft.flow.api.event.WinGroupSource
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryActionResult
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFails
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
+
+/** [GameEventProjector] 由每筆交易提交的事實產生對局事件，每次結算只產生一次。 */
+class GameEventProjectorTest {
+    private val east = Uuid.random()
+    private val south = Uuid.random()
+    private val west = Uuid.random()
+    private val north = Uuid.random()
+    private val registry = MahjongModuleRegistryImpl().apply {
+        register(MahjongModuleDefinition(RiichiRuleConfig::class, RULE_MODULE_ID) { config, id -> RiichiRuleModule(id, config) })
+    }
+    private var eventCount = 0
+    private val projector = GameEventProjector(registry, newEventId = { Uuid.random().also { eventCount++ } })
+
+    /** 對局開始時依座位列出玩家、是否由 AI 操控與起家座位。 */
+    @Test
+    fun `match start lists the players`() {
+        val game = game(scores(25_000, 25_000, 25_000, 25_000), aiPlayerIds = setOf(south, north))
+
+        val event = assertIs<MatchStartedEvent>(project(null, game, HistoryFact.MatchStarted(game.tableState, GameFlowConfig(), game.aiPlayerStrategyKeys)).single())
+
+        assertEquals(game.matchId, event.matchId)
+        assertEquals(game.id, event.venueId)
+        assertEquals(RULE_MODULE_ID, event.ruleModuleId)
+        assertEquals(listOf(east, south, west, north), event.players.map { it.playerId })
+        assertEquals(listOf(false, true, false, true), event.players.map { it.isAi })
+        assertEquals(listOf(0, 1, 2, 3), event.players.map { it.initialSeatIndex })
+    }
+
+    /** 一炮多響的同一筆交易只產生一次和牌結算，所有贏家都是得利者，前後分數與名次取交易前後的對局。 */
+    @Test
+    fun `a double ron settles once with every winner`() {
+        val before = game(scores(25_000, 25_000, 25_000, 25_000))
+        val after = before.withScores(scores(23_000, 25_000, 33_000, 19_000))
+
+        val event = assertIs<RoundSettledEvent>(
+            value = project(before, after, ron(west, responsible = north), ron(east, responsible = north)).single(),
+        )
+
+        assertEquals(RoundSettlementKind.WIN, event.kind)
+        assertEquals(BuiltInRoundOutcomeIds.RON, event.outcomeId)
+        assertEquals(setOf(west, east), event.beneficiaryPlayerIds)
+        assertEquals(setOf(north), event.responsiblePlayerIds)
+        assertEquals(setOf(WinGroupSource.WIN_SETTLEMENT), event.winGroups.map { it.source }.toSet())
+        assertEquals(listOf(east, south, west, north), event.players.map { it.playerId })
+        assertEquals(listOf(25_000, 25_000, 25_000, 25_000), event.players.map { it.previousScore })
+        assertEquals(listOf(23_000, 25_000, 33_000, 19_000), event.players.map { it.currentScore })
+        assertEquals(listOf(1, 2, 3, 4), event.players.map { it.previousRank })
+        assertEquals(listOf(3, 2, 1, 4), event.players.map { it.currentRank })
+    }
+
+    /** 規則的特殊結果在寫入本局結算摘要的交易產生一次結算。 */
+    @Test
+    fun `a special outcome settles from its round summary`() {
+        val before = game(scores(25_000, 25_000, 25_000, 25_000))
+        val after = before.withScores(scores(21_000, 37_000, 21_000, 21_000))
+        val summary = summary(RiichiRoundOutcomeIds.NAGASHI_MANGAN, RoundCompletionClassification.WIN, after, beneficiaries = setOf(south))
+
+        val event = assertIs<RoundSettledEvent>(
+            value = project(before, after, HistoryFact.RuleEffectResolved(RiichiRoundOutcomeIds.NAGASHI_MANGAN, summary))
+                .filterIsInstance<RoundSettledEvent>()
+                .single(),
+        )
+
+        assertEquals(RoundSettlementKind.SPECIAL, event.kind)
+        assertEquals(RiichiRoundOutcomeIds.NAGASHI_MANGAN, event.outcomeId)
+        assertEquals(setOf(south), event.beneficiaryPlayerIds)
+        assertEquals(setOf(WinGroupSource.RULE_RESULT), event.winGroups.map { it.source }.toSet())
+    }
+
+    /** 沒有本局摘要的規則結果仍會以獨立事件交付，保留公開詳情。 */
+    @Test
+    fun `a rule result without completion emits its own event`() {
+        val before = game(scores(25_000, 25_000, 25_000, 25_000))
+        val result = HistoryFact.RuleEffectResolved(
+            reasonId = "test:rule_result",
+            roundCompletion = null,
+            winDetails = listOf(HistoryWinDetails(east, emptyList())),
+        )
+
+        val event = assertIs<RuleResultsResolvedEvent>(project(before, before, result).single())
+
+        assertEquals(listOf("test:rule_result"), event.results.map { it.reasonId })
+        assertEquals(listOf(east), event.results.single().winDetails.map { it.playerId })
+        assertEquals(null, event.results.single().completion)
+    }
+
+    /** 規則結果的詳情成立者與結算摘要受益者保持分開，不因投影而合併。 */
+    @Test
+    fun `a rule result keeps details and completion beneficiaries separate`() {
+        val before = game(scores(25_000, 25_000, 25_000, 25_000))
+        val after = before.withScores(scores(21_000, 29_000, 25_000, 25_000))
+        val summary = summary("test:rule_outcome", RoundCompletionClassification.WIN, after, beneficiaries = setOf(south))
+        val result = HistoryFact.RuleEffectResolved(
+            reasonId = "test:rule_result",
+            roundCompletion = summary,
+            winDetails = listOf(HistoryWinDetails(east, emptyList())),
+        )
+
+        val event = assertIs<RuleResultsResolvedEvent>(project(before, after, result).filterIsInstance<RuleResultsResolvedEvent>().single())
+        val detail = event.results.single()
+
+        assertEquals(listOf(east), detail.winDetails.map { it.playerId })
+        assertEquals(setOf(south), detail.completion?.beneficiaryPlayerIds)
+        assertEquals("test:rule_outcome", detail.completion?.outcomeId)
+    }
+
+    /** 同筆交易的多個規則結果保留提交順序，不互相覆蓋或合併。 */
+    @Test
+    fun `multiple rule results preserve submission order`() {
+        val game = game(scores(25_000, 25_000, 25_000, 25_000))
+        val first = HistoryFact.RuleEffectResolved("test:first", null, emptyList())
+        val second = HistoryFact.RuleEffectResolved("test:second", null, emptyList())
+
+        val event = assertIs<RuleResultsResolvedEvent>(project(game, game, first, second).single())
+
+        assertEquals(listOf("test:first", "test:second"), event.results.map { it.reasonId })
+    }
+
+    /** 規則結果會複製來源資料，且不把隱藏牌欄位帶進公開事件。 */
+    @Test
+    fun `rule result snapshots are detached and omit tile fields`() {
+        val game = game(scores(25_000, 25_000, 25_000, 25_000))
+        val mutableDetails = mutableListOf(
+            WinSettlementDetailField("test:hidden_tiles", WinSettlementDetailValue.TileFaces(listOf(TileFaceView(Tile.Honor.North)))),
+        )
+        val mutableBeneficiaries = mutableSetOf(east)
+        val fact = HistoryFact.RuleEffectResolved(
+            reasonId = "test:rule_result",
+            roundCompletion = RoundCompletionSummary(
+                outcomeId = "test:outcome",
+                classification = RoundCompletionClassification.WIN,
+                beneficiaryPlayerIds = mutableBeneficiaries,
+                transitionDirective = RoundTransitionDirective.PassToNextSeat,
+                settledScoresByPlayerId = game.tableState.players.associate { it.id to it.score },
+            ),
+            winDetails = listOf(HistoryWinDetails(east, mutableDetails)),
+        )
+
+        val event = assertIs<RuleResultsResolvedEvent>(project(game, game, fact).filterIsInstance<RuleResultsResolvedEvent>().single())
+        mutableDetails.clear()
+        mutableBeneficiaries.clear()
+
+        assertEquals(emptyList(), event.results.single().winDetails.single().detailFields)
+        assertEquals(setOf(east), event.results.single().completion?.beneficiaryPlayerIds)
+    }
+
+    /** 正常終局事件保留提交事實的分數快照，不從交易後桌況重新推導。 */
+    @Test
+    fun `completed event keeps committed final scores`() {
+        val game = game(scores(30_000, 25_000, 25_000, 20_000))
+        val committed = scores(31_000, 24_000, 25_000, 20_000)
+
+        val event = assertIs<MatchEndedEvent>(
+            value = project(game, game, HistoryFact.MatchCompleted(REASON_ID, committed)).single(),
+        )
+
+        assertEquals(committed, event.completedScores)
+    }
+
+    /** 標記解析失敗只影響這次投影的狀態。核心終局事件仍保留，下一次投影不沿用失敗。 */
+    @Test
+    fun `marker failure is scoped to one projection`() {
+        var fail = true
+        val failingMarkers = GameEventPublicMarkerResolverRegistry().apply {
+            register(
+                definition = GameEventPublicMarkerResolverDefinition(
+                    ruleModuleId = RULE_MODULE_ID,
+                    resolver = object : GameEventPublicMarkerResolver {
+                        override fun resolveMatchEndMarkers(context: MatchEndPublicMarkerContext): List<RulePublicEventMarker> {
+                            if (fail) error("test marker failure")
+                            return emptyList()
+                        }
+                    },
+                ),
+            )
+        }
+        val failingProjector = GameEventProjector(registry, markerResolvers = failingMarkers)
+        val game = game(scores(30_000, 25_000, 25_000, 20_000))
+        val facts = CommittedGameFacts(
+            venueId = game.id,
+            previousGame = game,
+            game = game,
+            facts = listOf(HistoryEventDraft(null, HistoryFact.MatchCompleted(REASON_ID, scores(30_000, 25_000, 25_000, 20_000)))),
+        )
+
+        val failed = failingProjector.projectBatchResult(facts)
+        fail = false
+        val recovered = failingProjector.projectBatchResult(facts)
+
+        assertTrue(failed.markersFailed)
+        assertIs<MatchEndedEvent>(failed.batch?.events?.single())
+        assertEquals(false, recovered.markersFailed)
+        assertIs<MatchEndedEvent>(recovered.batch?.events?.single())
+    }
+
+    /** 完成本局的場風解析失敗也只標記本次投影，完成事件本身仍會交付。 */
+    @Test
+    fun `round context marker failure is reported without dropping completion`() {
+        val failingMarkers = GameEventPublicMarkerResolverRegistry().apply {
+            register(
+                definition = GameEventPublicMarkerResolverDefinition(
+                    ruleModuleId = RULE_MODULE_ID,
+                    resolver = object : GameEventPublicMarkerResolver {
+                        override fun resolvePrevalentWindId(state: TableState): String = error("test wind failure")
+                    },
+                ),
+            )
+        }
+        val before = game(scores(25_000, 25_000, 25_000, 25_000))
+        val completed = before.copy(
+            roundCompletion = summary("test:round_done", RoundCompletionClassification.EXHAUSTIVE_DRAW, before, emptySet()),
+        )
+        val next = completed.copy(tableState = table(scores(25_000, 25_000, 25_000, 25_000), roundNumber = 2), roundCompletion = null)
+        val facts = CommittedGameFacts(
+            venueId = before.id,
+            previousGame = completed,
+            game = next,
+            facts = listOf(HistoryEventDraft(null, HistoryFact.RoundCompleted(checkNotNull(completed.roundCompletion)))),
+        )
+
+        val result = GameEventProjector(registry, markerResolvers = failingMarkers).projectBatchResult(facts)
+
+        assertTrue(result.markersFailed)
+        assertIs<RoundCompletedEvent>(result.batch?.events?.single())
+    }
+
+    /** 規則在流局交易寫入本局結算摘要時，流局結算使用這份摘要。 */
+    @Test
+    fun `a draw with its summary uses the summary`() {
+        val reason = RiichiExhaustiveDrawReason.Normal
+        val before = game(scores(25_000, 25_000, 25_000, 25_000))
+        val recorded = before.withScores(scores(26_500, 26_500, 23_500, 23_500)).recording(GameAction.ExhaustiveDraw(reason), east, south)
+        val after = recorded.copy(roundCompletion = summary(reason.id, RoundCompletionClassification.EXHAUSTIVE_DRAW, recorded, beneficiaries = setOf(east, south)))
+
+        val event = assertIs<RoundSettledEvent>(project(before, after, accepted(GameAction.ExhaustiveDraw(reason))).single())
+
+        assertEquals(RoundSettlementKind.DRAW, event.kind)
+        assertEquals(reason.id, event.outcomeId)
+        assertEquals(setOf(east, south), event.beneficiaryPlayerIds)
+        assertEquals(listOf(26_500, 26_500, 23_500, 23_500), event.players.map { it.currentScore })
+    }
+
+    /** 荒牌流局沒有人聽牌時，玩家的動作記錄不會新增流局，仍由同一筆交易寫入的本局結算摘要產生結算。 */
+    @Test
+    fun `a draw nobody is ready for settles from its summary`() {
+        val reason = RiichiExhaustiveDrawReason.Normal
+        val before = game(scores(25_000, 25_000, 25_000, 25_000))
+        val after = before.copy(roundCompletion = summary(reason.id, RoundCompletionClassification.EXHAUSTIVE_DRAW, before, beneficiaries = emptySet()))
+
+        val event = assertIs<RoundSettledEvent>(project(before, after, accepted(GameAction.ExhaustiveDraw(reason))).single())
+
+        assertEquals(RoundSettlementKind.DRAW, event.kind)
+        assertEquals(reason.id, event.outcomeId)
+        assertEquals(emptySet(), event.beneficiaryPlayerIds)
+    }
+
+    /** 本局結算摘要晚於流局記錄才補上時，在記錄流局的交易依流局記錄產生結算。途中流局沒有得利者。 */
+    @Test
+    fun `an abortive draw without a summary settles from the recorded draws`() {
+        val reason = RiichiExhaustiveDrawReason.KyuushuKyuuhai
+        val before = game(scores(25_000, 25_000, 25_000, 25_000))
+        val after = before.recording(GameAction.ExhaustiveDraw(reason), east, south, west, north)
+
+        val event = assertIs<RoundSettledEvent>(project(before, after, accepted(GameAction.Discard(Uuid.random()))).single())
+
+        assertEquals(RoundSettlementKind.DRAW, event.kind)
+        assertEquals(reason.id, event.outcomeId)
+        assertEquals(emptySet(), event.beneficiaryPlayerIds)
+    }
+
+    /** 換局只產生完成通知，不重發結算。和牌後的去留決策也不重發。 */
+    @Test
+    fun `round transitions and win continuations do not settle again`() {
+        val reason = RiichiExhaustiveDrawReason.Normal
+        val drawn = game(scores(25_000, 25_000, 25_000, 25_000)).recording(GameAction.ExhaustiveDraw(reason), east)
+        val completed = drawn.copy(roundCompletion = summary(reason.id, RoundCompletionClassification.EXHAUSTIVE_DRAW, drawn, beneficiaries = setOf(east)))
+        val nextRound = completed.copy(tableState = table(scores(25_000, 25_000, 25_000, 25_000), roundNumber = 2), roundCompletion = null)
+
+        val events = project(completed, nextRound, HistoryFact.RoundCompleted(checkNotNull(completed.roundCompletion)), HistoryFact.RoundStarted(nextRound.tableState))
+        assertIs<RoundCompletedEvent>(events.single())
+        val won = game(scores(33_000, 25_000, 25_000, 17_000))
+        val decided = won.copy(roundCompletion = summary(BuiltInRoundOutcomeIds.TSUMO, RoundCompletionClassification.WIN, won, beneficiaries = setOf(east)))
+        assertEquals(emptyList(), project(won, decided, HistoryFact.WinContinuationResolved(WinRoundDirective.EndRound)))
+        assertEquals(1, eventCount)
+    }
+
+    /** 正常打完時依規則的終局排名列出名次，同分時起家座位較前者名次較前。 */
+    @Test
+    fun `a completed match ranks the standings by the match ranking`() {
+        val game = game(scores(30_000, 25_000, 25_000, 20_000)).let { it.copy(tableState = it.tableState.withSeatWinds(Wind.SOUTH, Wind.WEST, Wind.EAST, Wind.NORTH)) }
+
+        val event = assertIs<MatchEndedEvent>(project(game, game, HistoryFact.MatchCompleted(REASON_ID, game.tableState.players.associate { it.id to it.score })).single())
+
+        assertEquals(MatchCompletion.COMPLETED, event.completion)
+        assertEquals(REASON_ID, event.reasonId)
+        assertEquals(listOf(east, south, west, north), event.standings.map { it.playerId })
+        assertEquals(listOf(1, 2, 3, 4), event.standings.map { it.rank })
+        assertEquals(listOf(30_000, 25_000, 25_000, 20_000), event.standings.map { it.score })
+    }
+
+    /** 中止交易只產生一次終止事件，使用移除前分數、起家同分順位及 AI 身分。 */
+    @Test
+    fun `aborted removal emits only an ended event from the previous game`() {
+        val game = game(scores(25_000, 30_000, 25_000, 20_000), aiPlayerIds = setOf(south))
+            .let { it.copy(tableState = it.tableState.withSeatWinds(Wind.SOUTH, Wind.WEST, Wind.EAST, Wind.NORTH)) }
+        val facts = CommittedGameFacts(
+            venueId = game.id,
+            previousGame = game,
+            game = null,
+            facts = listOf(HistoryEventDraft(null, HistoryFact.MatchAborted(REASON_ID))),
+        )
+
+        val event = assertIs<MatchEndedEvent>(projector.project(facts).single())
+
+        assertEquals(MatchCompletion.ABORTED, event.completion)
+        assertEquals(REASON_ID, event.reasonId)
+        assertEquals(game.matchId, event.matchId)
+        assertEquals(game.id, event.venueId)
+        assertEquals(RULE_MODULE_ID, event.ruleModuleId)
+        assertEquals(listOf(south, east, west, north), event.standings.map { it.playerId })
+        assertEquals(listOf(30_000, 25_000, 25_000, 20_000), event.standings.map { it.score })
+        assertEquals(listOf(1, 2, 3, 4), event.standings.map { it.rank })
+        assertEquals(listOf(true, false, false, false), event.standings.map { it.isAi })
+        assertEquals(1, eventCount)
+    }
+
+    /** 已正常完成的對局不因清理重複通知，未移除的交易亦不能誤發中止。 */
+    @Test
+    fun `completed removal and nonremoval do not emit an abort event`() {
+        val game = game(scores(25_000, 25_000, 25_000, 25_000))
+        val completed = game.copy(isMatchOver = true)
+        val drafts = listOf(HistoryEventDraft(null, HistoryFact.MatchAborted(REASON_ID)))
+
+        assertEquals(emptyList(), projector.project(CommittedGameFacts(game.id, completed, null, drafts)))
+        assertEquals(emptyList(), projector.project(CommittedGameFacts(game.id, game, game, drafts)))
+        assertEquals(0, eventCount)
+    }
+
+    /** 未附中止事實的移除交易不產生事件。每個事件各有一個事件 ID。 */
+    @Test
+    fun `removed games produce nothing and each event has its own id`() {
+        val game = game(scores(25_000, 25_000, 25_000, 25_000))
+        assertEquals(emptyList(), projector.project(CommittedGameFacts(game.id, game, null, listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)))))
+
+        val after = game.withScores(scores(33_000, 25_000, 25_000, 17_000))
+        val first = project(game, after, ron(east, responsible = north)).single()
+        val second = project(game, after, ron(east, responsible = north)).single()
+        assertEquals(2, setOf(first.eventId, second.eventId).size)
+    }
+
+    /** 事件中的集合是無法修改的獨立快照：經由轉型或迭代器修改都會失敗，也不影響權威的結算摘要。Java 呼叫修改方法的情況見 `MatchEventsJavaVisibilityTest`。 */
+    @Test
+    fun `event collections are independent read-only snapshots`() {
+        val before = game(scores(25_000, 25_000, 25_000, 25_000))
+        val after = before.withScores(scores(21_000, 37_000, 21_000, 21_000))
+        val summary = summary(RiichiRoundOutcomeIds.NAGASHI_MANGAN, RoundCompletionClassification.WIN, after, beneficiaries = setOf(south))
+        val settled = assertIs<RoundSettledEvent>(
+            value = project(before, after, HistoryFact.RuleEffectResolved(RiichiRoundOutcomeIds.NAGASHI_MANGAN, summary))
+                .filterIsInstance<RoundSettledEvent>()
+                .single(),
+        )
+        val started = assertIs<MatchStartedEvent>(project(null, before, HistoryFact.MatchStarted(before.tableState, GameFlowConfig(), emptyMap())).single())
+        val ended = assertIs<MatchEndedEvent>(project(after, after, HistoryFact.MatchCompleted(REASON_ID, emptyMap())).single())
+
+        assertFails { (settled.beneficiaryPlayerIds as MutableSet<Uuid>).clear() }
+        assertFails { (settled.beneficiaryPlayerIds.iterator() as MutableIterator<Uuid>).apply { next() }.remove() }
+        assertFails { (settled.responsiblePlayerIds as MutableSet<Uuid>).add(south) }
+        assertFails { (settled.players as MutableList<*>).clear() }
+        assertFails { (started.players as MutableList<*>).removeAt(0) }
+        assertFails { (ended.standings as MutableList<*>).clear() }
+        assertEquals(setOf(south), summary.beneficiaryPlayerIds)
+        assertEquals(setOf(south), settled.beneficiaryPlayerIds)
+        assertEquals(4, settled.players.size)
+    }
+
+    /**
+     * 以一筆交易的前後對局與事實產生事件。
+     *
+     * @param previous 交易前的對局。新對局時為 null。
+     * @param game 交易後的對局。
+     * @param facts 此交易提交的歷史事實。
+     * @return projector 為該交易產生的對局事件。
+     */
+    private fun project(previous: Game?, game: Game, vararg facts: HistoryFact) = projector.project(CommittedGameFacts(game.id, previous, game, facts.map { HistoryEventDraft(null, it) }))
+
+    /**
+     * 四名玩家依座位東、南、西、北的分數。
+     *
+     * @param values 依東、南、西、北順序提供的分數。
+     * @return 依玩家 UUID 索引的分數。
+     */
+    private fun scores(vararg values: Int): Map<Uuid, Int> = listOf(east, south, west, north).zip(values.toList()).toMap()
+
+    /**
+     * 以 [scores] 建立日麻的桌況。
+     *
+     * @param scores 依玩家 UUID 索引的分數。
+     * @param roundNumber 桌況局數，預設為 1。
+     * @return 以指定分數與局數建立的桌況。
+     */
+    private fun table(scores: Map<Uuid, Int>, roundNumber: Int = 1): TableState = FakeTableStateFactory.create(
+        id = VENUE_ID,
+        players = listOf(east to Wind.EAST, south to Wind.SOUTH, west to Wind.WEST, north to Wind.NORTH).map { (id, wind) ->
+            FakeMahjongPlayerFactory.create(id = id, initialSeat = wind).copy(score = scores.getValue(id))
+        },
+        config = RiichiRuleConfig(),
+        roundNumber = roundNumber,
+    )
+
+    /**
+     * 以 [scores] 建立對局，將 [aiPlayerIds] 中的玩家設為由 AI 操控。
+     *
+     * @param scores 依玩家 UUID 索引的分數。
+     * @param aiPlayerIds 由 AI 操控的玩家 UUID，預設為空集合。
+     * @return 以指定分數及 AI 玩家建立的測試對局。
+     */
+    private fun game(scores: Map<Uuid, Int>, aiPlayerIds: Set<Uuid> = emptySet()): Game = Game(
+        tableState = table(scores),
+        flowConfig = GameFlowConfig(),
+        aiPlayerStrategyKeys = aiPlayerIds.associateWith { "test:ai" },
+        matchId = MATCH_ID,
+    )
+
+    /**
+     * 以指定分數複製對局。
+     *
+     * @param scores 依玩家 UUID 索引的新分數。
+     * @return 玩家分數更新後的對局副本。
+     */
+    private fun Game.withScores(scores: Map<Uuid, Int>): Game = copy(
+        tableState = tableState.copy(players = tableState.players.map { it.copy(score = scores.getValue(it.id)) }),
+    )
+
+    /**
+     * 由指定玩家記錄一次動作後的對局。胡牌或流局時同時以對應方式結束本局，與正式流程一致。
+     *
+     * 流局由全部玩家記錄時為途中流局，否則為荒牌流局，記錄的玩家為聽牌者。
+     *
+     * @param action 要記錄的遊戲動作。
+     * @param playerIds 要記錄該動作的玩家 UUID。
+     * @return 指定玩家新增該動作後的對局副本。
+     */
+    private fun Game.recording(action: GameAction, vararg playerIds: Uuid): Game {
+        val conclusion = when (action) {
+            is GameAction.Tsumo, is GameAction.Ron -> RoundConclusion.Win(playerIds.toSet())
+            is GameAction.ExhaustiveDraw -> if (playerIds.size == tableState.playerCount) {
+                RoundConclusion.AbortiveDraw(action.reason)
+            } else {
+                RoundConclusion.ExhaustiveDraw(action.reason, playerIds.toSet())
+            }
+            else -> null
+        }
+        return copy(
+            tableState = tableState.copy(
+                players = tableState.players.map { if (it.id in playerIds) it.recordAction(action) else it },
+                turnPhase = conclusion?.let(TurnPhase::RoundOver) ?: tableState.turnPhase,
+            ),
+        )
+    }
+
+    /**
+     * 依玩家順序指定本局風位後的桌況。
+     *
+     * @param winds 依桌況玩家順序排列的自風。
+     * @return 依指定風位更新玩家後的桌況副本。
+     */
+    private fun TableState.withSeatWinds(vararg winds: Wind): TableState = copy(players = players.zip(winds.toList()).map { (player, wind) -> player.copy(seatWind = wind) })
+
+    /**
+     * 建立 [winner] 榮和、由 [responsible] 放銃的事實。
+     *
+     * @param winner 榮和玩家的 UUID。
+     * @param responsible 放銃玩家的 UUID。
+     * @return 描述該榮和及放銃關係的結算事實。
+     */
+    private fun ron(winner: Uuid, responsible: Uuid) = HistoryFact.WinSettled(
+        outcomeId = BuiltInRoundOutcomeIds.RON,
+        winDetails = listOf(HistoryWinDetails(playerId = winner, detailFields = emptyList())),
+        responsiblePlayerIds = listOf(responsible),
+    )
+
+    /**
+     * 建立已接受 [action] 的事實及其測試用結果。
+     *
+     * @param action 已接受的遊戲動作。
+     * @return 帶有固定測試結果資料的已接受動作事實。
+     */
+    private fun accepted(action: GameAction) = HistoryFact.ActionAccepted(
+        action = action,
+        result = HistoryActionResult(
+            affectedTileIds = emptyList(),
+            newlyRevealedTileIds = emptyList(),
+            remainingWallTileCount = 0,
+            reservedWallTileIds = emptyList(),
+            scoresByPlayerId = emptyMap(),
+            nextPlayerId = east,
+        ),
+    )
+
+    /**
+     * 建立指定對局的本局結算摘要。
+     *
+     * @param outcomeId 本局結算原因 ID。
+     * @param classification 本局結算分類。
+     * @param game 提供玩家與結算分數的對局。
+     * @param beneficiaries 本局得利玩家 UUID。
+     * @return 使用指定原因、分類、對局分數及得利者建立的結算摘要。
+     */
+    private fun summary(
+        outcomeId: String,
+        classification: RoundCompletionClassification,
+        game: Game,
+        beneficiaries: Set<Uuid>,
+    ) = RoundCompletionSummary(
+        outcomeId = outcomeId,
+        classification = classification,
+        beneficiaryPlayerIds = beneficiaries,
+        transitionDirective = RoundTransitionDirective.PassToNextSeat,
+        settledScoresByPlayerId = game.tableState.players.associate { it.id to it.score },
+    )
+
+    private companion object {
+        /** 測試對局的規則模組 ID。 */
+        const val RULE_MODULE_ID = "mahjongcraft:riichi"
+
+        /** 測試的終局原因 ID。 */
+        const val REASON_ID = "test:schedule_completed"
+
+        /** 測試對局的場地 UUID。 */
+        val VENUE_ID: Uuid = Uuid.random()
+
+        /** 測試對局的場次 UUID。 */
+        val MATCH_ID: Uuid = Uuid.random()
+    }
+}

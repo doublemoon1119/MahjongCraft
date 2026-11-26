@@ -1,0 +1,713 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.history
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayDiscardDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayFactDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayIdentityDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayMeldDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayPlayerIdentityDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayPlayerStateDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayTileAreaDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayTransactionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayWinningHandDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundOutcomeDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailFieldDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailQuantityDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinnerDetailsDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.MeldTypeDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RelativeDirectionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RuleDecisionTimingDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPhaseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPositionDto
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+
+/** 測試用 canonical 對局 UUID。 */
+private const val TEST_MATCH_ID = "00000000-0000-0000-0000-000000000001"
+
+/** 測試用 canonical 牌桌 UUID。 */
+private const val TEST_TABLE_ID = "00000000-0000-0000-0000-000000000002"
+
+/** 驗證單局歷史回覆的上下文、座位與牌索引安全邊界。 */
+class HistoryRoundResponseValidatorTest {
+    /** 正常事件頁可以通過驗證。 */
+    @Test
+    fun `test valid event response`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        val response = HistoryRoundEventsResponseDto(
+            requestId = "request",
+            matchId = TEST_MATCH_ID,
+            roundNumber = 1,
+            startTransactionIndex = 0,
+            events = events(),
+            errorCode = null,
+        )
+
+        assertIs<HistoryRoundValidationResult.Success<*>>(HistoryRoundResponseValidator.validateEvents(request, response))
+    }
+
+    /** 交易總數必須涵蓋本頁與下一頁起點。沒有下一頁時本頁剛好到最後一筆。 */
+    @Test
+    fun `test transaction count must match the page`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        fun validate(events: HistoryRoundEventsDto) = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, events, errorCode = null))
+
+        assertIs<HistoryRoundValidationResult.Success<*>>(validate(events().copy(transactionCount = 30)))
+        assertIs<HistoryRoundValidationResult.Success<*>>(validate(events().copy(nextTransactionIndex = null, transactionCount = 1)))
+        listOf(
+            events().copy(transactionCount = 1),
+            events().copy(transactionCount = -1),
+            events().copy(nextTransactionIndex = null, transactionCount = 2),
+        ).forEach { invalid ->
+            assertEquals(HistoryRoundValidationError.TRANSACTION_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(validate(invalid)).reason)
+        }
+    }
+
+    /** 過期或不同要求的回覆不得通過。 */
+    @Test
+    fun `test mismatched event request is rejected`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        val response = HistoryRoundEventsResponseDto("other", TEST_MATCH_ID, 1, 0, events(), errorCode = null)
+
+        val result = HistoryRoundResponseValidator.validateEvents(request, response)
+        assertEquals(HistoryRoundValidationError.REQUEST_MISMATCH, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
+    }
+
+    /** 錯誤回覆可以保留穩定錯誤碼，但不得混入成功內容。 */
+    @Test
+    fun `test error response is accepted without content`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        val response = HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, events = null)
+
+        assertEquals(
+            expected = HistoryQueryErrorCodeDto.NOT_AVAILABLE,
+            actual = assertIs<HistoryRoundValidationResult.Error>(HistoryRoundResponseValidator.validateEvents(request, response)).code,
+        )
+    }
+
+    /** 錯誤回覆攜帶成功內容時拒絕整個回覆。 */
+    @Test
+    fun `test error response with content is rejected`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        val response = HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, events(), HistoryQueryErrorCodeDto.NOT_AVAILABLE)
+
+        assertEquals(HistoryRoundValidationError.CONTENT_MISMATCH, assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateEvents(request, response)).reason)
+    }
+
+    /** 牌索引超過目錄範圍時拒絕事件頁。 */
+    @Test
+    fun `test invalid event tile index is rejected`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        val invalid = events(tileIndex = 2)
+        val result = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, invalid, errorCode = null))
+
+        assertEquals(HistoryRoundValidationError.TILE_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
+    }
+
+    /** 擲骰事實引用不存在的擲骰者座位時拒絕事件頁。 */
+    @Test
+    fun `invalid dice roll actor seat is rejected`() {
+        val invalid = events(
+            fact = HistoryReplayFactDto.DiceRolled(
+                typeKey = HistoryFactTypeKeys.DICE_ROLLED,
+                rollIndex = 0,
+                actorSeat = 1,
+                dice = listOf(3, 4),
+            ),
+        )
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        val result = HistoryRoundResponseValidator.validateEvents(
+            request = request,
+            response = HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, invalid, errorCode = null),
+        )
+
+        assertEquals(HistoryRoundValidationError.SEAT_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
+    }
+
+    /** 換牌紀錄與玩家選擇引用不存在的座位或牌時拒絕事件頁。 */
+    @Test
+    fun `replacement records and player choices must reference existing seats and tiles`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        fun replacement(seat: Int, tile: Int) = HistoryReplayFactDto.TileReplacementRound(
+            typeKey = HistoryFactTypeKeys.TILE_REPLACEMENT_ROUND_RESOLVED,
+            timing = RuleDecisionTimingDto.ROUND_START,
+            round = 1,
+            removals = listOf(HistoryReplayFactDto.TileReplacementRound.Removal(seat, listOf(tile))),
+        )
+        fun choice(seat: Int) = HistoryReplayFactDto.RuleDecision(
+            typeKey = HistoryFactTypeKeys.RULE_DECISION_SUBMITTED,
+            timing = RuleDecisionTimingDto.ROUND_START,
+            stepId = "test:step",
+            stepIndex = 0,
+            nextStepId = null,
+            actorSeat = seat,
+            optionId = "test:option",
+            passed = false,
+        )
+        fun validate(fact: HistoryReplayFactDto) = HistoryRoundResponseValidator.validateEvents(
+            request = request,
+            response = HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, events(fact = fact), errorCode = null),
+        )
+
+        assertIs<HistoryRoundValidationResult.Success<*>>(validate(replacement(seat = 0, tile = 0)))
+        assertIs<HistoryRoundValidationResult.Success<*>>(validate(choice(seat = 0)))
+        assertEquals(HistoryRoundValidationError.SEAT_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(validate(replacement(seat = 1, tile = 0))).reason)
+        assertEquals(HistoryRoundValidationError.TILE_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(validate(replacement(seat = 0, tile = 1))).reason)
+        assertEquals(HistoryRoundValidationError.SEAT_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(validate(choice(seat = 1))).reason)
+    }
+
+    /** 動作即時收付的行為者或增減座位不存在時拒絕事件頁。 */
+    @Test
+    fun `action scored facts must reference existing seats`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        val facts = mapOf(
+            HistoryReplayFactDto.ActionScored(HistoryFactTypeKeys.ACTION_SCORED, 0, "kan", null, mapOf(0 to 1000), -1000) to true,
+            HistoryReplayFactDto.ActionScored(HistoryFactTypeKeys.ACTION_SCORED, 3, "kan", null, mapOf(0 to 1000), -1000) to false,
+            HistoryReplayFactDto.ActionScored(HistoryFactTypeKeys.ACTION_SCORED, 0, "kan", null, mapOf(3 to 1000), -1000) to false,
+        )
+        facts.forEach { (fact, valid) ->
+            val result = HistoryRoundResponseValidator.validateEvents(
+                request = request,
+                response = HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, events(fact = fact), errorCode = null),
+            )
+
+            if (valid) {
+                assertIs<HistoryRoundValidationResult.Success<*>>(result)
+            } else {
+                assertEquals(HistoryRoundValidationError.SEAT_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
+            }
+        }
+    }
+
+    /** 交易索引不連續時拒絕事件頁。 */
+    @Test
+    fun `test gapped transaction index is rejected`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        val invalid = events().copy(transactions = listOf(events().transactions.single().copy(index = 2)), nextTransactionIndex = 3)
+        val result = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, invalid, errorCode = null))
+
+        assertEquals(HistoryRoundValidationError.TRANSACTION_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
+    }
+
+    /** 下一頁游標不等於最後索引加一時拒絕事件頁。 */
+    @Test
+    fun `test gapped next transaction index is rejected`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        val invalid = events().copy(nextTransactionIndex = 2)
+        val result = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, invalid, errorCode = null))
+
+        assertEquals(HistoryRoundValidationError.TRANSACTION_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
+    }
+
+    /** 交易中的牌索引不得超出該交易宣告數量。 */
+    @Test
+    fun `test fact tile beyond declared count is rejected`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        val invalid = events().copy(transactions = listOf(events().transactions.single().copy(declaredTileCountAfter = 0)))
+        val result = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, invalid, errorCode = null))
+
+        assertEquals(HistoryRoundValidationError.TILE_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
+    }
+
+    /** 結算分數變更只能引用同一結算中的座位與分數欄位。 */
+    @Test
+    fun `test outcome score changes must be covered by scores`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, scoreChangesBySeat = mapOf(1 to 1000), winnerDetails = emptyList(), hasEarlierWinSettlement = false, winningTile = null)
+        val base = events()
+        val invalid = base.copy(transactions = listOf(base.transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
+
+        val result = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, invalid, errorCode = null))
+        assertEquals(HistoryRoundValidationError.CONTENT_MISMATCH, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
+    }
+
+    /** 贏家詳情只能屬於唯一受益座位，欄位必須使用 namespaced ID。 */
+    @Test
+    fun `test winner details require valid beneficiary and identifiers`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        val details = listOf(HistoryWinnerDetailsDto(0, listOf(HistoryWinDetailFieldDto("invalid", HistoryWinDetailValueDto.Quantities(listOf(HistoryWinDetailQuantityDto("test:unit", 1))))), hand = null))
+        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false, winningTile = null)
+        val base = events()
+        val invalid = base.copy(transactions = listOf(base.transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
+
+        val result = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, invalid, errorCode = null))
+        assertEquals(HistoryRoundValidationError.CONTENT_MISMATCH, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
+    }
+
+    /** 條目、單位 ID 必須是 namespaced ID，數值欄位不得為空。 */
+    @Test
+    fun `test winner detail entries and units require namespaced identifiers`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        listOf(
+            HistoryWinDetailValueDto.Entries(listOf(HistoryWinDetailValueDto.Entries.EntryDto("invalid", quantity = null, nameQuantity = null, appliesToSomePayersOnly = false))),
+            HistoryWinDetailValueDto.Entries(listOf(HistoryWinDetailValueDto.Entries.EntryDto("test:entry", HistoryWinDetailQuantityDto("invalid", 1), nameQuantity = null, appliesToSomePayersOnly = false))),
+            HistoryWinDetailValueDto.Quantities(listOf(HistoryWinDetailQuantityDto("invalid", 1))),
+            HistoryWinDetailValueDto.Quantities(emptyList()),
+        ).forEach { value ->
+            val details = listOf(HistoryWinnerDetailsDto(0, listOf(HistoryWinDetailFieldDto("test:field", value)), hand = null))
+            val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false, winningTile = null)
+            val base = events()
+            val invalid = base.copy(transactions = listOf(base.transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
+
+            val result = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, invalid, errorCode = null))
+            assertEquals(HistoryRoundValidationError.CONTENT_MISMATCH, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
+        }
+    }
+
+    /** 和牌詳情的獨立牌面不依賴局內牌目錄與已宣告牌數。 */
+    @Test
+    fun `test winner detail faces do not need catalog references`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        val details = listOf(HistoryWinnerDetailsDto(0, listOf(HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.TileFaces(listOf(TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 9), emptyList(), null))))), hand = null))
+        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false, winningTile = null)
+        val base = events().copy(tileCatalog = emptyList())
+        val valid = base.copy(transactions = listOf(base.transactions.single().copy(declaredTileCountAfter = 0, facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
+
+        val result = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, valid, errorCode = null))
+        assertIs<HistoryRoundValidationResult.Success<*>>(result)
+    }
+
+    /** 無效的數字牌、擴充 ID 與外觀 ID 不得作為結算牌面進入歷史畫面。 */
+    @Test
+    fun `test malformed settlement faces are rejected`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        listOf(
+            TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 0), emptyList(), null),
+            TileFaceViewDto(TileDto.Extension("invalid"), emptyList(), null),
+            TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), "not a namespaced id"),
+        ).forEach { face ->
+            val details = listOf(HistoryWinnerDetailsDto(0, listOf(HistoryWinDetailFieldDto("test:faces", HistoryWinDetailValueDto.TileFaces(listOf(face)))), hand = null))
+            val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false, winningTile = null)
+            val base = events()
+            val invalid = base.copy(transactions = listOf(base.transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
+            assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, invalid, errorCode = null)))
+        }
+    }
+
+    /** 多名贏家可保留各自條目尾綴與獨立牌面，且完整資料通過驗證。 */
+    @Test
+    fun `test rich winner details are accepted`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        val identity = identity().copy(
+            players = listOf(
+                HistoryReplayPlayerIdentityDto(0, null, "test:ai"),
+                HistoryReplayPlayerIdentityDto(1, null, "test:ai"),
+            ),
+        )
+        val details = listOf(
+            HistoryWinnerDetailsDto(
+                seatIndex = 0,
+                detailFields = listOf(
+                    HistoryWinDetailFieldDto(
+                        id = "test:entries",
+                        value = HistoryWinDetailValueDto.Entries(
+                            entries = listOf(
+                                HistoryWinDetailValueDto.Entries.EntryDto("test:pattern", HistoryWinDetailQuantityDto("test:points", 3), nameQuantity = null, appliesToSomePayersOnly = false),
+                                HistoryWinDetailValueDto.Entries.EntryDto("test:plain", quantity = null, nameQuantity = null, appliesToSomePayersOnly = false),
+                            ),
+                        ),
+                    ),
+                    HistoryWinDetailFieldDto(
+                        id = "test:quantities",
+                        value = HistoryWinDetailValueDto.Quantities(listOf(HistoryWinDetailQuantityDto("test:han", 3), HistoryWinDetailQuantityDto("test:fu", 30))),
+                    ),
+                    HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.TileFaces(listOf(TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 9), emptyList(), null)))),
+                ),
+                hand = null,
+            ),
+            HistoryWinnerDetailsDto(
+                seatIndex = 1,
+                detailFields = listOf(HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.TileFaces(listOf(TileFaceViewDto(TileDto.Extension("test:bonus"), emptyList(), null))))),
+                hand = null,
+            ),
+        )
+        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0, 1), mapOf(0 to 25000, 1 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false, winningTile = null)
+        val base = events().copy(
+            identity = identity,
+            tileCatalog = listOf(TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), null), TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 2), emptyList(), null)),
+            transactions = listOf(events().transactions.single().copy(declaredTileCountAfter = 2, facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))),
+        )
+
+        assertIs<HistoryRoundValidationResult.Success<*>>(
+            value = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, base, errorCode = null)),
+        )
+    }
+
+    /** 和牌手牌參照超出牌目錄或宣告牌數時拒絕事件頁。 */
+    @Test
+    fun `test winning hand references respect catalog and declared count`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        val details = listOf(
+            element = HistoryWinnerDetailsDto(
+                seatIndex = 0,
+                detailFields = emptyList(),
+                hand = HistoryReplayWinningHandDto(standingTiles = listOf(1), winningTile = 0),
+            ),
+        )
+        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false, winningTile = null)
+        val base = events().copy(transactions = listOf(events().transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
+        val catalogInvalid = base.copy(tileCatalog = listOf(TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), null)))
+        assertEquals(
+            expected = HistoryRoundValidationError.CONTENT_MISMATCH,
+            actual = assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, catalogInvalid, errorCode = null))).reason,
+        )
+
+        val declaredInvalid = base.copy(
+            tileCatalog = listOf(TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), null), TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 2), emptyList(), null)),
+            transactions = listOf(base.transactions.single().copy(declaredTileCountAfter = 1)),
+        )
+        assertEquals(
+            expected = HistoryRoundValidationError.CONTENT_MISMATCH,
+            actual = assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, declaredInvalid, errorCode = null))).reason,
+        )
+    }
+
+    /** 和牌張不得同時出現在有序立牌中，重複參照也不得通過事件驗證。 */
+    @Test
+    fun `test winning hand standing and winning tile must be unique`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        val details = listOf(
+            element = HistoryWinnerDetailsDto(
+                seatIndex = 0,
+                detailFields = emptyList(),
+                hand = HistoryReplayWinningHandDto(standingTiles = listOf(0, 0), winningTile = 0),
+            ),
+        )
+        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false, winningTile = null)
+        val base = events().copy(transactions = listOf(events().transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
+
+        assertEquals(
+            expected = HistoryRoundValidationError.CONTENT_MISMATCH,
+            actual = assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, base, errorCode = null))).reason,
+        )
+    }
+
+    /** 多名贏家可共享外部和牌張參照。每位贏家的手牌自身仍須有效。 */
+    @Test
+    fun `test multiple winners may share external winning tile`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        val identity = identity().copy(
+            players = listOf(
+                HistoryReplayPlayerIdentityDto(0, null, "test:ai"),
+                HistoryReplayPlayerIdentityDto(1, null, "test:ai"),
+            ),
+        )
+        val sharedWinningTile = 1
+        val details = listOf(
+            HistoryWinnerDetailsDto(0, emptyList(), HistoryReplayWinningHandDto(listOf(0), sharedWinningTile)),
+            HistoryWinnerDetailsDto(1, emptyList(), HistoryReplayWinningHandDto(listOf(0), sharedWinningTile)),
+        )
+        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0, 1), mapOf(0 to 25000, 1 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false, winningTile = null)
+        val base = events().copy(
+            identity = identity,
+            tileCatalog = listOf(TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), null), TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 2), emptyList(), null)),
+            transactions = listOf(events().transactions.single().copy(declaredTileCountAfter = 2, facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))),
+        )
+
+        assertIs<HistoryRoundValidationResult.Success<*>>(
+            value = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, base, errorCode = null)),
+        )
+    }
+
+    /** 未保存完整和牌牌組時 optional hand 欄位為 null 且仍可通過驗證。 */
+    @Test
+    fun `test absent winning hand remains accepted`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        val outcome = HistoryRoundOutcomeDto(
+            reasonId = "test:win",
+            beneficiarySeats = listOf(0),
+            scoresBySeat = mapOf(0 to 25000),
+            classification = "WIN",
+            responsibleSeats = emptyList(),
+            transitionDirective = null,
+            nextDealerSeat = null,
+            winnerDetails = listOf(HistoryWinnerDetailsDto(0, emptyList(), hand = null)),
+            scoreChangesBySeat = emptyMap(),
+            hasEarlierWinSettlement = false,
+            winningTile = null,
+        )
+        val base = events().copy(transactions = listOf(events().transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
+
+        assertIs<HistoryRoundValidationResult.Success<*>>(
+            value = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, base, errorCode = null)),
+        )
+    }
+
+    /** 桌況回覆的位置與要求一致時可以通過驗證。 */
+    @Test
+    fun `test valid state context`() {
+        val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, position = HistoryRoundPositionDto.Initial, scope = HistoryQueryScopeDto.OWN, count = 1)
+        val response = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, states = listOf(state()), errorCode = null)
+
+        assertIs<HistoryRoundValidationResult.Success<*>>(HistoryRoundResponseValidator.validateStates(request, response))
+    }
+
+    /** 一次回覆多份桌況時，位置必須從要求的位置起連續，數量不可超過要求。 */
+    @Test
+    fun `consecutive states are accepted and gaps or extras are rejected`() {
+        val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial, count = 3)
+        val initial = state()
+        val after = { index: Int -> initial.copy(position = HistoryRoundPositionDto.AfterTransaction(index)) }
+        fun response(states: List<HistoryRoundStateDto>) = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, states = states, errorCode = null)
+
+        val accepted = assertIs<HistoryRoundValidationResult.Success<List<HistoryRoundStateDto>>>(HistoryRoundResponseValidator.validateStates(request, response(listOf(initial, after(0), after(1)))))
+        val gap = HistoryRoundResponseValidator.validateStates(request, response(listOf(initial, after(1))))
+        val extra = HistoryRoundResponseValidator.validateStates(request, response(listOf(initial, after(0), after(1), after(2))))
+
+        assertEquals(3, accepted.value.size)
+        assertEquals(HistoryRoundValidationError.POSITION_MISMATCH, assertIs<HistoryRoundValidationResult.Invalid>(gap).reason)
+        assertEquals(HistoryRoundValidationError.CONTENT_MISMATCH, assertIs<HistoryRoundValidationResult.Invalid>(extra).reason)
+    }
+
+    /** 玩家移出牌區的牌索引超出目錄時拒絕。 */
+    @Test
+    fun `test invalid tile area index is rejected`() {
+        val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial, count = 1)
+        val base = state()
+        val invalid = base.copy(players = base.players.mapIndexed { index, player -> if (index == 0) player.copy(tileAreas = listOf(HistoryReplayTileAreaDto("test:area", listOf(base.tileCatalog.size)))) else player })
+        val response = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, states = listOf(invalid), errorCode = null)
+
+        assertEquals(HistoryRoundValidationError.TILE_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateStates(request, response)).reason)
+    }
+
+    /** 移出牌區的識別碼格式錯誤或重複時拒絕。 */
+    @Test
+    fun `tile areas need distinct namespaced ids`() {
+        val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial, count = 1)
+        val base = state()
+        listOf(
+            listOf(HistoryReplayTileAreaDto("area", emptyList())),
+            listOf(HistoryReplayTileAreaDto("test:area", emptyList()), HistoryReplayTileAreaDto("test:area", emptyList())),
+        ).forEach { areas ->
+            val invalid = base.copy(players = base.players.mapIndexed { index, player -> if (index == 0) player.copy(tileAreas = areas) else player })
+            val response = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, states = listOf(invalid), errorCode = null)
+
+            assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateStates(request, response))
+        }
+    }
+
+    /** 桌況回覆中的牌索引超出目錄時拒絕。 */
+    @Test
+    fun `test invalid state tile index is rejected`() {
+        val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial, count = 1)
+        val response = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, states = listOf(state(tileIndex = 2)), errorCode = null)
+
+        assertEquals(HistoryRoundValidationError.TILE_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateStates(request, response)).reason)
+    }
+
+    /** 桌況身份不是 canonical UUID 時拒絕。 */
+    @Test
+    fun `test malformed identity uuid is rejected`() {
+        val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial, count = 1)
+        val response = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, states = listOf(state().copy(identity = identity().copy(venueId = "table"))), errorCode = null)
+
+        assertEquals(HistoryRoundValidationError.CONTEXT_MISMATCH, assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateStates(request, response)).reason)
+    }
+
+    /** 結算結果引用不存在座位時拒絕桌況。 */
+    @Test
+    fun `test invalid outcome seat is rejected`() {
+        val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial, count = 1)
+        val outcome = HistoryRoundOutcomeDto("test:complete", listOf(3), emptyMap(), null, emptyList(), null, nextDealerSeat = null, scoreChangesBySeat = emptyMap(), winnerDetails = emptyList(), hasEarlierWinSettlement = false, winningTile = null)
+        val response = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, states = listOf(state().copy(outcome = outcome)), errorCode = null)
+
+        assertEquals(HistoryRoundValidationError.SEAT_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateStates(request, response)).reason)
+    }
+
+    /** 桌況結算中的和牌手牌參照超出目錄時拒絕。 */
+    @Test
+    fun `test invalid state winning hand tile index is rejected`() {
+        val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial, count = 1)
+        val outcome = HistoryRoundOutcomeDto(
+            reasonId = "test:win",
+            beneficiarySeats = listOf(0),
+            scoresBySeat = mapOf(0 to 25000),
+            classification = "WIN",
+            responsibleSeats = emptyList(),
+            transitionDirective = null,
+            nextDealerSeat = null,
+            winnerDetails = listOf(HistoryWinnerDetailsDto(0, emptyList(), HistoryReplayWinningHandDto(listOf(1), null))),
+            scoreChangesBySeat = emptyMap(),
+            hasEarlierWinSettlement = false,
+            winningTile = null,
+        )
+        val response = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, states = listOf(state().copy(outcome = outcome)), errorCode = null)
+
+        assertEquals(
+            expected = HistoryRoundValidationError.SEAT_INDEX_INVALID,
+            actual = assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateStates(request, response)).reason,
+        )
+    }
+
+    /** 桌況結算中的和牌張不得重複出現在有序立牌中。 */
+    @Test
+    fun `test state winning tile cannot be in standing hand`() {
+        val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial, count = 1)
+        val outcome = HistoryRoundOutcomeDto(
+            reasonId = "test:win",
+            beneficiarySeats = listOf(0),
+            scoresBySeat = mapOf(0 to 25000),
+            classification = "WIN",
+            responsibleSeats = emptyList(),
+            transitionDirective = null,
+            nextDealerSeat = null,
+            winnerDetails = listOf(HistoryWinnerDetailsDto(0, emptyList(), HistoryReplayWinningHandDto(listOf(0), 0))),
+            scoreChangesBySeat = emptyMap(),
+            hasEarlierWinSettlement = false,
+            winningTile = null,
+        )
+        val response = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, states = listOf(state().copy(outcome = outcome)), errorCode = null)
+
+        assertEquals(
+            expected = HistoryRoundValidationError.SEAT_INDEX_INVALID,
+            actual = assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateStates(request, response)).reason,
+        )
+    }
+
+    /** 桌況回覆位置與要求不一致時拒絕。 */
+    @Test
+    fun `test state position mismatch is rejected`() {
+        val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, position = HistoryRoundPositionDto.AfterTransaction(2), scope = HistoryQueryScopeDto.OWN, count = 1)
+        val response = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, states = listOf(state()), errorCode = null)
+
+        assertEquals(HistoryRoundValidationError.POSITION_MISMATCH, assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateStates(request, response)).reason)
+    }
+
+    /** 合法副露來源與已取走捨牌可以引用同一個牌索引。 */
+    @Test
+    fun `test valid meld source and taken discard alias`() {
+        val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial, count = 1)
+        val player = HistoryReplayPlayerStateDto(
+            initialSeatIndex = 0,
+            handTiles = emptyList(),
+            melds = listOf(HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(0, 1, 2), 0, RelativeDirectionDto.Left, emptySet(), emptySet())),
+            lastDrawn = null,
+            discards = listOf(HistoryReplayDiscardDto(0, true, emptySet())),
+            score = 25000,
+            seatWind = WindDto.EAST,
+            tileAreas = emptyList(),
+        )
+        val response = HistoryRoundStateResponseDto(
+            requestId = "request",
+            matchId = TEST_MATCH_ID,
+            roundNumber = 1,
+            position = HistoryRoundPositionDto.Initial,
+            states = listOf(state().copy(players = listOf(player), tileCatalog = List(3) { TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), null) }, wallTiles = emptyList())),
+            errorCode = null,
+        )
+
+        assertIs<HistoryRoundValidationResult.Success<*>>(HistoryRoundResponseValidator.validateStates(request, response))
+    }
+
+    /** 副露不允許重複實體索引。來源牌、朝下的牌與公開牌面的牌都必須屬於該副露。 */
+    @Test
+    fun `test malformed meld membership is rejected`() {
+        val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial, count = 1)
+        val base = state().copy(tileCatalog = List(4) { TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), null) }, wallTiles = emptyList())
+        val invalidMelds = listOf(
+            HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(0, 0, 1), 0, RelativeDirectionDto.Left, emptySet(), emptySet()),
+            HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(0, 1, 2), 3, RelativeDirectionDto.Left, emptySet(), emptySet()),
+            HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(0, 1, 2), 0, RelativeDirectionDto.Left, setOf(3), setOf(0)),
+            HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(0, 1, 2), 0, RelativeDirectionDto.Left, emptySet(), setOf(0, 3)),
+        )
+        invalidMelds.forEach { meld ->
+            val response = HistoryRoundStateResponseDto(
+                requestId = "request",
+                matchId = TEST_MATCH_ID,
+                roundNumber = 1,
+                position = HistoryRoundPositionDto.Initial,
+                states = listOf(base.copy(players = listOf(base.players.single().copy(melds = listOf(meld))))),
+                errorCode = null,
+            )
+            assertEquals(HistoryRoundValidationError.TILE_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateStates(request, response)).reason)
+        }
+    }
+
+    /** identity 與桌況玩家座位不一致時拒絕桌況。 */
+    @Test
+    fun `test repeated identity seat is rejected`() {
+        val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial, count = 1)
+        val duplicateIdentity = identity().copy(players = listOf(HistoryReplayPlayerIdentityDto(0, null, "test:ai"), HistoryReplayPlayerIdentityDto(0, null, "test:ai")))
+        val response = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, states = listOf(state().copy(identity = duplicateIdentity)), errorCode = null)
+
+        assertEquals(HistoryRoundValidationError.SEAT_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateStates(request, response)).reason)
+    }
+
+    /**
+     * 建立含一張實體牌及未知安全事實的事件頁。
+     *
+     * @param tileIndex 事實直接涉及的牌索引。
+     * @param fact 要驗證的事實。預設為未知安全事實。
+     * @return 待驗證的事件資料。
+     */
+    private fun events(
+        tileIndex: Int = 0,
+        fact: HistoryReplayFactDto = HistoryReplayFactDto.Opaque("test:fact", 0, listOf(tileIndex), emptyList()),
+    ): HistoryRoundEventsDto = HistoryRoundEventsDto(
+        identity = identity(),
+        roundNumber = 1,
+        transactions = listOf(
+            element = HistoryReplayTransactionDto(
+                index = 0,
+                occurredAtEpochMillis = 1,
+                isOpening = true,
+                declaredTileCountAfter = 1,
+                facts = listOf(fact),
+            ),
+        ),
+        nextTransactionIndex = 1,
+        transactionCount = 2,
+        tileCatalog = listOf(TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), null)),
+    )
+
+    /**
+     * 建立單一 AI 座位的完整初始牌面。
+     *
+     * @param tileIndex 活牌牆中的牌索引。
+     * @return 待驗證的牌面資料。
+     */
+    private fun state(tileIndex: Int = 0): HistoryRoundStateDto = HistoryRoundStateDto(
+        identity = identity(),
+        roundNumber = 1,
+        position = HistoryRoundPositionDto.Initial,
+        tileCatalog = listOf(TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), null)),
+        players = listOf(HistoryReplayPlayerStateDto(0, emptyList(), emptyList(), null, emptyList(), 25000, WindDto.EAST, emptyList())),
+        wallTiles = listOf(tileIndex),
+        reservedTiles = emptyList(),
+        currentPlayerSeat = 0,
+        dealerSeat = 0,
+        prevalentWind = WindDto.EAST,
+        roundPosition = MatchRoundPositionDto(0, WindDto.EAST, 1, MatchRoundPhaseDto.REGULAR),
+        comboCount = 0,
+        finishedPlayerSeats = emptySet(),
+        hasPendingReaction = false,
+        hasPendingRobbingReaction = false,
+        outcome = null,
+        wallPlacements = null,
+        discardOrder = emptyList(),
+        tilePoses = emptyMap(),
+        presentationNotes = null,
+    )
+
+    /**
+     * 建立合法 UUID 與單一 AI 座位的身份資料。
+     *
+     * @return 事件及牌面共用的身份資料。
+     */
+    private fun identity() = HistoryReplayIdentityDto(TEST_MATCH_ID, TEST_TABLE_ID, listOf(HistoryReplayPlayerIdentityDto(0, null, "test:ai")))
+}

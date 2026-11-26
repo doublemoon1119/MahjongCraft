@@ -1,0 +1,98 @@
+{
+  "dice.land": {
+    "subtitle": "subtitles.mahjongcraft.dice.land",
+    "sounds": ["mahjongcraft:dice/land"]
+  },
+  "scoring_stick.place": {
+    "subtitle": "subtitles.mahjongcraft.scoring_stick.place",
+    "sounds": ["mahjongcraft:tile/draw_land"]
+  },
+  "ruler.place": {
+    "subtitle": "subtitles.mahjongcraft.ruler.place",
+    "sounds": ["mahjongcraft:tile/draw_land"]
+  },
+  "tile.deal_batch": {
+    "subtitle": "subtitles.mahjongcraft.tile.deal_batch",
+    "sounds": ["mahjongcraft:tile/deal_batch"]
+  },
+  "tile.discard_land": {
+    "subtitle": "subtitles.mahjongcraft.tile.discard_land",
+    "sounds": ["mahjongcraft:tile/discard_land"]
+  },
+  "tile.wall_reveal": {
+    "subtitle": "subtitles.mahjongcraft.tile.wall_reveal",
+    "sounds": ["mahjongcraft:tile/draw_land"]
+  },
+  "tile.draw_land": {
+    "subtitle": "subtitles.mahjongcraft.tile.draw_land",
+    "sounds": ["mahjongcraft:tile/draw_land"]
+  },
+  "tile.hand_turn": {
+    "subtitle": "subtitles.mahjongcraft.tile.hand_turn",
+    "sounds": ["mahjongcraft:tile/hand_turn"]
+  },
+  "tile.meld_land": {
+    "subtitle": "subtitles.mahjongcraft.tile.meld_land",
+    "sounds": ["mahjongcraft:tile/meld_land"]
+  },
+  "tile.wall_stack_land": {
+    "subtitle": "subtitles.mahjongcraft.tile.wall_stack_land",
+    "sounds": ["mahjongcraft:tile/wall_stack_land"]
+  },
+  "voice.riichi.chii": {
+    "subtitle": "subtitles.mahjongcraft.voice.riichi.chii",
+    "sounds": ["mahjongcraft:voice/riichi/chii"]
+  },
+  "voice.riichi.kan": {
+    "subtitle": "subtitles.mahjongcraft.voice.riichi.kan",
+    "sounds": ["mahjongcraft:voice/riichi/kan"]
+  },
+  "voice.riichi.pon": {
+    "subtitle": "subtitles.mahjongcraft.voice.riichi.pon",
+    "sounds": ["mahjongcraft:voice/riichi/pon"]
+  },
+  "voice.riichi.pull_north": {
+    "subtitle": "subtitles.mahjongcraft.voice.riichi.pull_north",
+    "sounds": ["mahjongcraft:voice/riichi/pull_north"]
+  },
+  "voice.riichi.riichi": {
+    "subtitle": "subtitles.mahjongcraft.voice.riichi.riichi",
+    "sounds": ["mahjongcraft:voice/riichi/riichi"]
+  },
+  "voice.riichi.ron": {
+    "subtitle": "subtitles.mahjongcraft.voice.riichi.ron",
+    "sounds": ["mahjongcraft:voice/riichi/ron"]
+  },
+  "voice.riichi.tsumo": {
+    "subtitle": "subtitles.mahjongcraft.voice.riichi.tsumo",
+    "sounds": ["mahjongcraft:voice/riichi/tsumo"]
+  },
+  "voice.taiwan.chi": {
+    "subtitle": "subtitles.mahjongcraft.voice.taiwan.chi",
+    "sounds": ["mahjongcraft:voice/taiwan/chi"]
+  },
+  "voice.taiwan.pon": {
+    "subtitle": "subtitles.mahjongcraft.voice.taiwan.pon",
+    "sounds": ["mahjongcraft:voice/taiwan/pon"]
+  },
+  "voice.taiwan.kan": {
+    "subtitle": "subtitles.mahjongcraft.voice.taiwan.kan",
+    "sounds": ["mahjongcraft:voice/taiwan/kan"]
+  },
+  "voice.taiwan.hu": {
+    "subtitle": "subtitles.mahjongcraft.voice.taiwan.hu",
+    "sounds": ["mahjongcraft:voice/taiwan/hu"]
+  },
+  "voice.taiwan.ready": {
+    "subtitle": "subtitles.mahjongcraft.voice.taiwan.ready",
+    "sounds": ["mahjongcraft:voice/taiwan/ready"]
+  },
+  "voice.taiwan.tsumo": {
+    "subtitle": "subtitles.mahjongcraft.voice.taiwan.tsumo",
+    "sounds": ["mahjongcraft:voice/taiwan/tsumo"]
+  },
+  "win.lightning": {
+    "subtitle": "subtitles.mahjongcraft.win.lightning",
+    "sounds": ["mahjongcraft:win/lightning"]
+  }
+}

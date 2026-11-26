@@ -1,0 +1,235 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.history
+
+import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
+import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.historyCleanupPreviewMessage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.historyCleanupReportMessage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.historyStatusMessage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.historyStorageMessage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.prefixedConfigMessage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.text.readableBy
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import net.minecraft.ChatFormatting
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands.literal
+import net.minecraft.network.chat.Component
+import kotlin.uuid.Uuid
+
+/**
+ * 註冊供 OP 查詢與恢復歷史資料庫連線的正式管理員指令。
+ *
+ * @property writer 目前存檔的歷史 writer 與 session 管理邊界。
+ * @property scope 執行非同步管理工作的應用程式協程範圍。
+ * @property dispatchers 將資料庫工作與指令回覆分派至適當執行緒的 dispatcher 集合。
+ */
+class HistoryCommand(
+    private val writer: HistoryOutboxWriter,
+    private val scope: AppCoroutineScope,
+    private val dispatchers: CoroutineDispatchers,
+) {
+    /**
+     * 將 `/mahjongcraft history` 管理指令樹加入指令分派器。
+     *
+     * @param events 提供指令登記時機的伺服器事件來源。
+     */
+    fun register(events: ServerEvents) {
+        events.onRegisterCommands { dispatcher ->
+            dispatcher.register(
+                literal(MinecraftModMetadata.MOD_ID)
+                    .then(
+                        literal(HISTORY_SUBCOMMAND)
+                            .requires { source -> source.hasPermission(REQUIRED_PERMISSION_LEVEL) }
+                            .then(literal(STATUS_SUBCOMMAND).executes { context -> status(context.source) })
+                            .then(literal(RETRY_SUBCOMMAND).executes { context -> retry(context.source) })
+                            .then(
+                                literal(STORAGE_SUBCOMMAND).executes { context -> storage(context.source) },
+                            )
+                            .then(
+                                literal(CLEANUP_SUBCOMMAND)
+                                    .then(literal(PREVIEW_SUBCOMMAND).executes { context -> cleanupPreview(context.source) })
+                                    .then(literal(RUN_SUBCOMMAND).executes { context -> cleanupRun(context.source) }),
+                            ),
+                    ),
+            )
+        }
+    }
+
+    /**
+     * 非同步讀取 writer 狀態，避免在伺服器命令執行緒進行資料庫 I/O。
+     *
+     * @param source 已通過 OP 權限檢查的命令來源。
+     * @return Brigadier 的成功接收值，不表示非同步工作已完成。
+     */
+    private fun status(source: CommandSourceStack): Int {
+        val session = writer.currentSessionId
+        launchSessionBound(session, { writer.status() }) { status ->
+            source.sendSuccess({ historyStatusMessage(status).readableBy(source) }, false)
+        }
+        return COMMAND_SUCCESS
+    }
+
+    /**
+     * 非同步要求 writer 重試目前世界的歷史資料庫連線。
+     *
+     * @param source 已通過 OP 權限檢查的命令來源。
+     * @return Brigadier 的成功接收值。
+     */
+    private fun retry(source: CommandSourceStack): Int {
+        val session = writer.currentSessionId
+        val server = source.server
+        launchSessionBound(session, { writer.retry(server, session) }) { result ->
+            when (result) {
+                HistoryRetryResult.Reconnected -> source.sendSuccess(
+                    { prefixedConfigMessage(Component.translatable(MinecraftConfigCommandKeys.HISTORY_RECONNECTED), ChatFormatting.GREEN) },
+                    false,
+                )
+
+                HistoryRetryResult.AlreadyConnected -> source.sendSuccess(
+                    { prefixedConfigMessage(Component.translatable(MinecraftConfigCommandKeys.HISTORY_ALREADY_CONNECTED), ChatFormatting.YELLOW) },
+                    false,
+                )
+
+                HistoryRetryResult.Failed -> source.sendFailure(
+                    prefixedConfigMessage(Component.translatable(MinecraftConfigCommandKeys.HISTORY_RECONNECT_FAILED), ChatFormatting.RED),
+                )
+            }
+        }
+        return COMMAND_SUCCESS
+    }
+
+    /**
+     * 非同步產生目前存檔的歷史用量快照。
+     *
+     * @param source 已通過 OP 權限檢查的命令來源。
+     * @return Brigadier 的成功接收值。
+     */
+    private fun storage(source: CommandSourceStack): Int {
+        val session = writer.currentSessionId
+        source.sendSuccess({ Component.translatable(MinecraftConfigCommandKeys.HISTORY_STORAGE_STARTED) }, false)
+        launchSessionBound(session, { writer.storage(session) }) { result ->
+            when (result) {
+                is HistoryManagementResult.Success -> source.sendSuccess({ historyStorageMessage(result.value).readableBy(source) }, false)
+                is HistoryManagementResult.Busy,
+                is HistoryManagementResult.Disconnected,
+                is HistoryManagementResult.Failed,
+                -> storageFailure(source, result.commandErrorKey() ?: MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_FAILED, result.cachedSnapshot())
+                HistoryManagementResult.SessionChanged -> Unit
+            }
+        }
+        return COMMAND_SUCCESS
+    }
+
+    /**
+     * 非同步預覽歷史清理候選，不執行資料庫變更。
+     *
+     * @param source 已通過 OP 權限檢查的命令來源。
+     * @return Brigadier 的成功接收值。
+     */
+    private fun cleanupPreview(source: CommandSourceStack): Int {
+        val session = writer.currentSessionId
+        source.sendSuccess({ Component.translatable(MinecraftConfigCommandKeys.HISTORY_PREVIEW_STARTED) }, false)
+        launchSessionBound(session, { writer.previewCleanup(session) }) { result ->
+            when (result) {
+                is HistoryManagementResult.Success -> source.sendSuccess({ historyCleanupPreviewMessage(result.value).readableBy(source) }, false)
+                is HistoryManagementResult.Busy,
+                is HistoryManagementResult.Disconnected,
+                is HistoryManagementResult.Failed,
+                -> source.sendFailure(Component.translatable(result.commandErrorKey() ?: MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_FAILED))
+                HistoryManagementResult.SessionChanged -> Unit
+            }
+        }
+        return COMMAND_SUCCESS
+    }
+
+    /**
+     * 非同步執行歷史清理並回報已提交的實際結果。
+     *
+     * @param source 已通過 OP 權限檢查的命令來源。
+     * @return Brigadier 的成功接收值。
+     */
+    private fun cleanupRun(source: CommandSourceStack): Int {
+        val session = writer.currentSessionId
+        source.sendSuccess({ Component.translatable(MinecraftConfigCommandKeys.HISTORY_CLEANUP_STARTED) }, false)
+        launchSessionBound(session, { writer.runCleanup(session) }) { result ->
+            when (result) {
+                is HistoryManagementResult.Success -> source.sendSuccess({ historyCleanupReportMessage(result.value).readableBy(source) }, false)
+                is HistoryManagementResult.Busy,
+                is HistoryManagementResult.Disconnected,
+                -> source.sendFailure(Component.translatable(result.commandErrorKey() ?: MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_FAILED))
+                is HistoryManagementResult.Failed -> result.cleanup?.let { source.sendSuccess({ historyCleanupReportMessage(it).readableBy(source) }, false) }
+                    ?: source.sendFailure(Component.translatable(result.commandErrorKey() ?: MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_FAILED))
+                HistoryManagementResult.SessionChanged -> Unit
+            }
+        }
+        return COMMAND_SUCCESS
+    }
+
+    /**
+     * 明示查詢失敗原因。若有同 session 快照則附上舊資料，不假造目前用量。
+     *
+     * @param source 原本的命令來源，只於 main dispatcher 呼叫。
+     * @param key 安全的本地化原因。
+     * @param cached 同 session 最後成功的快照。
+     */
+    private fun storageFailure(source: CommandSourceStack, key: String, cached: HistoryStorageSnapshot?) {
+        if (cached == null) {
+            source.sendFailure(prefixedConfigMessage(Component.translatable(key), ChatFormatting.RED))
+        } else {
+            source.sendSuccess({ historyStorageMessage(cached, stale = true).append("\n  ").append(Component.translatable(key).withStyle(ChatFormatting.YELLOW)).readableBy(source) }, false)
+        }
+    }
+
+    /**
+     * 執行與固定存檔 session 綁定的管理工作，並只在 session 仍有效時回覆。
+     *
+     * @param session 工作開始時捕捉的存檔 session。
+     * @param operation 背景執行的管理操作。
+     * @param render 主執行緒上的結果回覆器。
+     */
+    private fun <T> launchSessionBound(
+        session: Uuid?,
+        operation: suspend () -> T,
+        render: (T) -> Unit,
+    ) {
+        scope.launch {
+            if (!writer.isCurrentSession(session)) return@launch
+            val result = operation()
+            withContext(dispatchers.main) {
+                if (writer.isCurrentSession(session)) render(result)
+            }
+        }
+    }
+
+    private companion object {
+        /** 歷史管理指令所需的 Minecraft 管理員等級。 */
+        const val REQUIRED_PERMISSION_LEVEL: Int = 2
+
+        /** Brigadier 成功回傳值。 */
+        const val COMMAND_SUCCESS: Int = 1
+
+        /** 歷史指令名稱。 */
+        const val HISTORY_SUBCOMMAND: String = "history"
+
+        /** 歷史狀態子指令名稱。 */
+        const val STATUS_SUBCOMMAND: String = "status"
+
+        /** 歷史重連子指令名稱。 */
+        const val RETRY_SUBCOMMAND: String = "retry"
+
+        /** 歷史用量子指令名稱。 */
+        const val STORAGE_SUBCOMMAND: String = "storage"
+
+        /** 清理子指令名稱。 */
+        const val CLEANUP_SUBCOMMAND: String = "cleanup"
+
+        /** 清理預覽子指令名稱。 */
+        const val PREVIEW_SUBCOMMAND: String = "preview"
+
+        /** 清理執行子指令名稱。 */
+        const val RUN_SUBCOMMAND: String = "run"
+    }
+}

@@ -1,0 +1,61 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.table
+
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+
+/** [RoundInfoLineDisplayRegistry] 的記憶體實作。 */
+class RoundInfoLineDisplayRegistryImpl : RoundInfoLineDisplayRegistry {
+    /** 依局況顯示行 key 索引的翻譯資訊。 */
+    private val displays = mutableMapOf<String, RoundInfoLineDisplay>()
+
+    /** 規則訊息 ID 對應的翻譯定義。 */
+    private val messages = mutableMapOf<String, RoundInfoMessageDefinition>()
+
+    /** 規則模組 ID 對應的局況顯示行 provider。 */
+    private val providers = mutableMapOf<String, RoundInfoLineProvider>()
+
+    override val registrationKeys: Set<String>
+        get() = buildSet {
+            displays.keys.mapTo(this) { "line:$it" }
+            messages.keys.mapTo(this) { "message:$it" }
+            providers.keys.mapTo(this) { "provider:$it" }
+        }
+
+    override var isFrozen: Boolean = false
+        private set
+
+    override fun register(definition: RoundInfoLineDisplayDefinition) {
+        val key = definition.key
+        val display = definition.display
+        check(!isFrozen) { "Round info line display registry is frozen" }
+        NamespacedId.requireValid(key) { "Round info line key must be namespaced: $key" }
+        require(displays.putIfAbsent(key, display) == null) { "Duplicate round info line display: $key" }
+    }
+
+    override fun register(definition: RoundInfoLineProviderDefinition) {
+        val ruleModuleId = definition.ruleModuleId
+        val provider = definition.provider
+        check(!isFrozen) { "Round info line display registry is frozen" }
+        NamespacedId.requireValid(ruleModuleId) { "Round info provider rule module ID must be namespaced: $ruleModuleId" }
+        require(providers.putIfAbsent(ruleModuleId, provider) == null) {
+            "Duplicate round info provider: $ruleModuleId"
+        }
+    }
+
+    override fun register(definition: RoundInfoMessageDefinition) {
+        val id = definition.id
+        check(!isFrozen) { "Round info line display registry is frozen" }
+        NamespacedId.requireValid(id) { "Round info message ID must be namespaced: $id" }
+        require(messages.putIfAbsent(id, definition) == null) { "Duplicate round info message: $id" }
+    }
+
+    override fun find(key: String): RoundInfoLineDisplay? = displays[key]
+
+    override fun findMessage(id: String): RoundInfoMessageDefinition? = messages[id]
+
+    override fun buildLines(ruleModuleId: String, tableState: TableState): List<RoundInfoLine> = providers[ruleModuleId]?.buildLines(tableState).orEmpty()
+
+    override fun freeze() {
+        isFrozen = true
+    }
+}

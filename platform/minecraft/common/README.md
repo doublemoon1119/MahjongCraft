@@ -1,0 +1,278 @@
+# Minecraft Common
+
+## Purpose
+
+`minecraft-common` contains Minecraft-facing code and resources shared across Minecraft versions
+and loaders.
+
+Its Gradle project path is `:minecraft_common`; the source directory remains `platform/minecraft/common`.
+
+## Responsibilities
+
+- Define Minecraft extension registries, assets, configuration, layout, text keys,
+  and presentation contracts.
+- Hold shared block, item, entity, and showcase resources that are currently version-compatible.
+- Provide platform-facing mappings for game actions, tiles, settlements, and animations.
+- Define shared history presentation, rule catalogues, achievement mappings,
+  and game-event subscriptions and delivery contracts.
+
+## Language files
+
+`src/jvmMain/resources/assets/mahjongcraft/lang` holds the bundled translations for every supported
+locale. Name new keys as described in
+[Translation keys](../../../docs/contributing/minecraft-presentation.md#translation-keys).
+
+## Selectable rules
+
+A rule appears in the room screen only when `MinecraftMahjongExtension.registerGameConfigPresentations`
+registers a `GameConfigPresentationDefinition` with `selectable = true`. Every tile on the table comes
+from the wall, so the rule module of a selectable rule must provide a wall layout and a wall opening
+policy, and each opening roll must use a dice count the table can place
+(`MahjongDiceTableLayout.supportedDiceCounts`, currently two or three). Startup fails when a selectable
+rule does not meet these requirements, and the server rejects room settings and game starts whose rule
+is not selectable or cannot be presented.
+
+## Player seats and wall placement
+
+Players sit on standard table sides: two players face each other; three players use south, east,
+and north; four players use all sides. These are local directions that rotate with the table.
+Always use the complete match roster when selecting a seat layout.
+
+Wall faces are independent of player count. A rule implements `TileWallLayout.sideArrangement` to
+map its logical faces to standard sides. For example, two walls may occupy adjacent or opposite sides.
+The rule also chooses whether placement stays fixed or rotates with the dealer at the next round.
+Players cannot change this through room settings. The logical opening and draw order do not change.
+
+For the `TABLE` reference, quarter-turn values `0`, `1`, `2`, and `3` mean local south, east, north,
+and west. For `DEALER`, `0` starts at the dealer's actual side and the other values rotate from there.
+The list order matches logical wall-face indices; it does not have to match player-seat order.
+
+The adapter rebuilds the arrangement from the rule configuration and dealer seat during restoration,
+so the function must be deterministic. It does not allow custom coordinates, table sizes, or tile sizes.
+The wall size comes from `TileWallLayout.sideStackCounts` in the same way, so table tiles still keep
+clear of the walls after a restart.
+
+## Shared room settings
+
+Register only your rule's own categories and fields in `GameConfigPresentationDefinition`.
+The registry automatically adds the shared flow category with decision time, reserve time,
+spectating policy, and spectator hand visibility.
+Room controls, summaries, history, and server-side validation use that same registered definition.
+
+The category `mahjongcraft:flow` and field IDs `mahjongcraft:base_seconds`,
+`mahjongcraft:reserve_seconds`, `mahjongcraft:spectating_policy`, and
+`mahjongcraft:spectator_hand_visibility` are reserved.
+`mahjongcraft:rule_decision_base_seconds` is also reserved, but is only added for rules that use
+rule decision.
+Do not register them yourself; conflicts reject registration and identify the rule and conflicting ID.
+You do not need to copy the built-in fields or access MahjongCraft's dependency injection setup.
+
+Do not add settings for operations the rule does not have. Ordinary Riichi does not ask players
+to choose anything outside ordinary play, such as exchanging tiles before a round, so it has no
+rule-decision time field. Rule-decision settings default to absent in `GameFlowConfig`. A rule that
+asks players to choose at any rule decision timing supplies a default `RuleDecisionConfig` on its
+registered rule decision resolver. The presentation registry uses that same registration to add the
+standard rule-decision time field (1–3600 seconds); do not copy its editor or maintain another
+capability flag. Automatic steps alone do not need this player timer. A player-choice step without
+its configuration is a configuration error; no implicit 30-second timer is supplied.
+Rule-decision time does not consume the ordinary decision reserve pool.
+Changing the selected rule preserves ordinary timing and spectating settings, but replaces or removes
+the rule-decision configuration according to the new rule. The timeout policy keeps its existing
+forced-auto-play behavior; there is no editable policy selector.
+
+## Tile resource locations
+
+Register a tile through `MinecraftMahjongExtension.registerTileAssets` using a
+`MinecraftTileAssetDefinition`. Its `assetKey` remains the stable value used by tile items,
+network messages, labels, and emoji mappings; it is not the texture's resource location.
+
+Supply `MinecraftTileResources` to select a texture and a model independently, each as a full
+`namespace:path` ID. For example, a texture ID `furniture:textures/tile/five.png` refers to
+`assets/furniture/textures/tile/five.png`, while model ID `furniture:item/tile/five` refers to
+`assets/furniture/models/item/tile/five.json`. Textures include `.png`; model IDs omit `.json`.
+Model JSON texture references must also use the intended namespace.
+
+The resource namespace need not match the tile type's namespace. An integration may explicitly
+reuse MahjongCraft resources without changing its tile identity. Different asset keys may use
+the same resources; the existing unique tile-type and asset-key registration rules still apply.
+Standard tile keys and `unknown` are reserved and cannot be registered by an extension.
+
+Omitting `resources` preserves the existing `mahjongcraft` texture and model paths derived from
+the asset key. Built-in keys and stored item data are unchanged. Unknown keys use the existing
+unknown-tile fallback; a registered but missing model may use its texture-only fallback.
+Resource locations are validated during registration setup rather than silently changing an
+invalid namespace. No Minecraft-version-specific `ResourceLocation` is needed in this common layer.
+
+## Shared tile-set appearance
+
+The same `MinecraftTileAssetRegistry` also registers `MinecraftTileSetAppearanceDefinition`
+and `MinecraftRuleTileAppearanceDefinition`. An appearance has three fields: its `id`,
+the shared `coverTextureId`, and an optional `unknownFaceTextureId` that defaults to the built-in
+unknown face. The rule definition binds a public rule module to that appearance.
+These definitions are registered through `registerTileAssets` and frozen
+with the existing tile definitions. Appearance IDs are not tile asset keys or item data.
+
+Loader adapters are responsible for preparing material variants during resource reload.
+Supported visible models inherit `mahjongcraft:item/mahjong_tile_base` without overriding
+geometry or display transforms. The unknown model uses that same fixed base directly;
+extensions do not provide a separate concealed model.
+Variants replace texture slot `#0` with the visible tile's front or the appearance's unknown face,
+and slot `#1` with its shared cover atlas. The particle texture also uses that cover.
+The body atlas includes the sides and back, not merely the back face. A missing or unsupported
+visible model uses the standard template with the same front and body textures.
+A missing front uses the appearance's unknown face; an invalid complete appearance falls back
+to the built-in appearance as a whole.
+
+Tile size, thickness, origin, display transforms, table layout, and label anchors remain fixed.
+Third-party resources customize material style, not these geometry contracts.
+The cover atlas has a fixed layout: its back uses the base model's south-face UV rectangle
+`[3, 0, 6, 4]` on Minecraft's 0–16 UV scale. A flat back preview crops this same rectangle,
+or normalized coordinates `[3/16, 0, 6/16, 4/16]`; no separate back-preview image is needed.
+Higher-resolution cover textures are allowed, but their face regions must keep the same
+normalized layout. Front previews use the full front texture instead of the cover atlas.
+To match an appearance's front background as well as its body, provide a custom unknown-face
+texture; omitting it deliberately retains the built-in unknown face, not the white-dragon tile.
+Concealed appearance comes only from the publicly known rule, never the concealed tile type.
+Thus visible and concealed tiles share their body style without leaking hidden information.
+
+## Seat extension contract
+
+The `api.seating` package defines the cross-version contract for objects that can seat a
+MahjongCraft participant at one of the table's fixed seat positions. A provider receives a
+`SeatRequest` and returns candidates for that exact position; it must not search for a nearby
+replacement, move the rider during resolution, or create a seat before `trySit`.
+
+Each candidate exposes a stable `SeatIdentity`, `SeatGeometry`, an occupancy result, and a
+revalidated `trySit` operation. Use a different `slot` in `SeatIdentity` for each seat on a
+multi-seat object. Block and entity targets should use stable, comparable keys; an entity
+runtime ID is not a persistent identity. `SeatGeometry` rejects non-finite values, and the
+coordinator ignores targets whose position or facing does not match the requested standard seat;
+the `SeatRequest` KDoc states the accepted horizontal, height and facing differences. A provider
+reports where the rider actually sits, not an ideal position chosen to pass the check.
+
+`SeatGeometry`, `SeatIdentity`, and `RegisteredSeatProvider` are created by integrations and keep
+public constructors. `SeatRequest` is created only by MahjongCraft. None of these types is a data
+class, so a property can be added later while the existing constructor stays available as an
+overload, without generated `copy` or `componentN` functions changing for compiled integrations.
+
+Providers must report `OCCUPIED`, `BLOCKED`, or `FAILED` without moving the rider or removing an
+existing passenger. Only resources created by the provider may be cleaned up. A failed target
+does not prevent the game from starting: the platform may leave the participant at their
+original position or safely place them standing at the fixed seat.
+
+The common contract is platform-neutral with respect to the world and rider types. Loader
+modules expose their own registration facade and implement world lookup, collision checks,
+teleportation, and the native riding mechanism. The contract does not promise integration with
+every furniture mod; a third-party integration must provide its own adapter and ownership rules.
+
+## Table contract
+
+The `api.table` package defines the cross-loader contract for a Mahjong table. A table is any block
+whose block entity implements `MahjongTableController`; there is no registration step. The
+controller exposes a `MahjongTableControllerState`, which the block entity creates once with its
+own `markDirty`, and a `MahjongTableFacing`.
+
+MahjongCraft fixes the play space, not the block structure: the controller block is the layout
+origin, the tabletop is one block above it, and the 3×3 layer centred above the controller holds
+tiles, the wall, dice, table props and selection confirmation. The integration decides how many
+blocks make up the table, its model and its collision. Its own blocks may reach into the play
+layer, such as a table rim, even when waterlogged, but must not cover where tiles are placed. Any other
+block or fluid in the play layer blocks a waiting room from starting.
+
+The state keeps the table ID and two presentation timelines that only ever extend. Integrations
+read it but never change it: extending and restoring are marked `MahjongCraftInternalApi`, and the
+loader adapter provides the save and load functions. Loader modules also provide the block-side
+contract, interaction and removal hooks, because they need native world types.
+
+## AI character descriptions
+
+Register a character through `MinecraftMahjongExtension.registerAiCharacters` and the register-only
+`AiCharacterRegistrar`. The same bootstrap registers built-in and third-party characters, reports their
+IDs, rejects duplicates, and freezes the registry. Discovery still uses the core `MahjongExtension`
+entrypoint; defining a Minecraft extension alone does not make it discoverable.
+
+`AiCharacterDefinition` describes a role independently of its strategy. It contains a namespaced ID,
+a name translation key, an optional `AiCharacterFace`, an optional world capability ID, and an optional
+`AiCharacterPreview`. A preview has its own capability ID and a bounded string map whose keys are
+namespaced IDs. Descriptions never carry entities, arbitrary NBT, downloads, or render callbacks.
+
+A character may supply only a face. Supported face descriptions are a registered tile asset or a
+normalized texture region. World and preview capability IDs describe optional integrations; registering
+an ID does not execute a factory or imply that the native capability is installed.
+
+The platform persistence adapter saves the current choices and a fixed appearance snapshot for each
+match alongside the authoritative state. Switching a role for a later match does not change an earlier
+snapshot. Missing providers keep their original IDs. An unreadable character section disables role
+changes and is preserved verbatim, while valid match data can still be saved.
+
+The role description, storage and session/version contracts are available. World actors, room selection
+controls, native previews and history portraits are separate integration work; these contracts alone do
+not spawn a character or change the current room UI.
+
+## Boundaries
+
+This module avoids loader APIs and version-specific recipe formats.
+Concrete entities, renderers, commands, persistence hooks, and runtime registration belong to
+loader modules.
+
+## Dependencies
+
+It depends on [mahjong-logic](../../../mahjong-logic/README.md),
+[mahjong-ai](../../../mahjong-ai/README.md),
+[mahjong-flow-common](../../../mahjong-flow/common/README.md),
+[network DTOs](../../../mahjong-flow/network-dto/README.md),
+coroutines, Koin, KToml, and Kotlin Serialization.
+
+## Dependency injection
+
+`minecraftCommonModule` registers the class-owned presentation registries and assembles the
+bootstrap aggregate from those same instances. Display-name registries are bound directly in this
+common module; native text conversion remains in each platform adapter.
+`minecraftServerModule` registers server-only state and codecs so that only the server graph
+creates them; session cleanup remains the lifecycle services' responsibility.
+
+The Flow modules do not depend on a DI framework, so this module also assembles them:
+`flowCommonModule`, `flowClientModule`, `flowServerModule`, `networkDtoModule`, and
+`persistenceFormatModule` list each Flow module's services. Use cases remain factories; registries
+remain singles shared with extension bootstrap. Framework-neutral Logic/AI types and configured AI
+execution/advancement factories are built inside their definitions.
+
+## Testing
+
+Common and JVM tests cover registries, layout, configuration codecs, animation calculations,
+language files, and resource consistency.
+
+Run from the repository root with a Minecraft target selected:
+
+```shell
+./gradlew :minecraft_common:check "-PmahjongcraftTarget=minecraft-v1.20.1-fabric"
+```
+
+The module is currently configured with a JVM target.
+Its JVM tests also load recipe resources from the Minecraft 1.20.1 mod module.
+Use the [complete Minecraft target build](../README.md) to verify packaging and the loader integration;
+this focused check does not replace it.
+
+## Rule table tile layouts
+
+A rule can move the wall on its table, for example toward the centre or offset into a pinwheel, by
+registering a `TableTileLayoutProfile` with `registerTableTileLayoutProfiles`. Rules without one use the
+standard layout. Tile and table sizes stay the same for every rule. See the
+[presentation conventions](../../../docs/contributing/minecraft-presentation.md#rule-table-tile-layouts).
+
+## Rule-owned table props
+
+A rule can show scoring sticks, public bonus tiles or custom tokens through the same table-prop
+pipeline. Register a `TablePropDescriber` that returns the full scene for the current state.
+Each placement has a stable namespaced ID, typed content and either a standard seat anchor or a
+central order. The adapter finds space in the shared centre and checks the complete rotated bounds;
+there is no separate reserved area for Riichi sticks.
+
+Use `BuiltInTablePropKinds.FACE_UP_TILE` with `TablePropContent.FaceUpTile` for a public tile display.
+It creates a visual copy, not a playable tile. Its artwork follows the rule's registered tile-set
+appearance, including third-party tile namespaces. Custom kinds provide their own native renderer
+and a common `TablePropKindDefinition` with the same dimensions and content validation.
+
+See the [presentation conventions](../../../docs/contributing/minecraft-presentation.md#rule-owned-table-props)
+and the [Minecraft extension example](../../../example/platform/minecraft/README.md#bonus-tiles-and-table-props).
+These prop types are usable extension points; they do not add a new binary-compatibility guarantee.

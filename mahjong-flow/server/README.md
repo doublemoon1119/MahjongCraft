@@ -1,0 +1,43 @@
+# Mahjong Flow Server
+
+## Purpose
+
+`mahjong-flow-server` is the authoritative application layer for rooms and games.
+
+## Responsibilities
+
+- Validate and execute gameplay, reaction, rule decision, and room commands.
+- Coordinate timers, AI turns, pending transitions, settlement presentations, and round advancement.
+- Manage background strategy execution, stale-decision checks, and single-game
+  automated advancement without delegating authoritative writes to strategies.
+- Apply visibility policy, publish snapshots to players and observers, and manage server-session lifecycle.
+- Track which venue each player belongs to.
+- Record history events, answer history queries, and run headless history generation.
+- Host extensible outcome, continuation, and rule decision registries.
+
+## Boundaries
+
+The server module is platform-neutral. It does not render Minecraft entities,
+parse Minecraft commands, or choose a concrete persistence backend.
+
+## Dependencies
+
+It depends on [mahjong-logic](../../mahjong-logic/README.md),
+[mahjong-ai](../../mahjong-ai/README.md), [mahjong-flow-common](../common/README.md),
+and coroutines.
+
+## Dependency injection
+
+The module does not depend on a DI framework; platform composition registers its services, see
+[Minecraft common](../../platform/minecraft/common/README.md). Use cases remain factories; registries remain singles shared with
+extension bootstrap.
+
+## Testing
+
+Unit and integration tests cover use cases, orchestration, AI driving, lifecycle
+recovery, visibility, settlement handoffs, history, and complete match flows.
+
+From the repository root, run
+`./gradlew :mahjong-flow:mahjong-flow-server:check "-PmahjongcraftTarget=core"`.
+Platform schedulers and database integration still require their adapter tests.
+See [CONTRIBUTING.md](../../CONTRIBUTING.md) for full verification.

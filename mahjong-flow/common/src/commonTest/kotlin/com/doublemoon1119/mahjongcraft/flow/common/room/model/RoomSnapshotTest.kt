@@ -1,0 +1,120 @@
+package com.doublemoon1119.mahjongcraft.flow.common.room.model
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
+
+/** 驗證 [Room.toSnapshot] 對不同觀察者呈現的房間資訊。 */
+class RoomSnapshotTest {
+
+    /** 房主的快照標示觀察者為房主。 */
+    @Test
+    fun `test toSnapshot identifies host correctly`() {
+        val config = FakeMahjongRuleConfig()
+        val hostId = Uuid.random()
+        val playerIds = listOf(hostId, Uuid.random())
+        val room = Room(
+            id = Uuid.random(),
+            hostId = hostId,
+            gameConfig = GameConfig(config),
+            playerIds = playerIds,
+            readyPlayerIds = playerIds,
+        )
+
+        val snapshot = room.toSnapshot(hostId)
+
+        assertTrue(snapshot.isHost)
+    }
+
+    /** 房間成員的快照標示其為成員但非房主。 */
+    @Test
+    fun `test toSnapshot identifies room member correctly`() {
+        val config = FakeMahjongRuleConfig()
+        val hostId = Uuid.random()
+        val memberId = Uuid.random()
+        val playerIds = listOf(hostId, memberId)
+        val room = Room(
+            id = Uuid.random(),
+            hostId = hostId,
+            gameConfig = GameConfig(config),
+            playerIds = playerIds,
+            readyPlayerIds = playerIds,
+        )
+
+        val snapshot = room.toSnapshot(memberId)
+
+        assertTrue(snapshot.isInRoom)
+        assertFalse(snapshot.isHost)
+    }
+
+    /** 房間外觀察者的快照不標示房主或成員身分。 */
+    @Test
+    fun `test toSnapshot identifies external observer correctly`() {
+        val config = FakeMahjongRuleConfig()
+        val hostId = Uuid.random()
+        val memberId = Uuid.random()
+        val externalId = Uuid.random()
+        val playerIds = listOf(hostId, memberId)
+        val room = Room(
+            id = Uuid.random(),
+            hostId = hostId,
+            gameConfig = GameConfig(config),
+            playerIds = playerIds,
+            readyPlayerIds = playerIds,
+        )
+
+        val snapshot = room.toSnapshot(externalId)
+
+        assertFalse(snapshot.isHost)
+        assertFalse(snapshot.isInRoom)
+    }
+
+    /** 房間快照包含 AI 玩家識別碼。 */
+    @Test
+    fun `test toSnapshot contains ai player info`() {
+        val hostId = Uuid.random()
+        val aiId = Uuid.random()
+        val room = Room(
+            id = Uuid.random(),
+            hostId = hostId,
+            gameConfig = GameConfig(FakeMahjongRuleConfig()),
+            playerIds = listOf(hostId, aiId),
+            aiPlayerStrategyKeys = mapOf(aiId to "mahjongcraft:random"),
+        )
+
+        val snapshot = room.toSnapshot(hostId)
+
+        assertEquals(room.aiPlayerIds, snapshot.aiPlayerIds, "Snapshot should contain the same AI player IDs.")
+        assertTrue(snapshot.aiPlayerIds.contains(aiId), "AI player should be present in snapshot.")
+    }
+
+    /** 來源身分只給房主，且用原成員編號索引實際來源的 UUID。 */
+    @Test
+    fun `excluded source identities are visible only to the host`() {
+        val host = Uuid.random()
+        val member = Uuid.random()
+        val excluded = Uuid.random()
+        val identity = RoomParticipantIdentity("test:world_entity", Uuid.random())
+        val room = Room(
+            id = Uuid.random(),
+            hostId = host,
+            gameConfig = GameConfig(FakeMahjongRuleConfig()),
+            playerIds = listOf(host, member),
+            admission = RoomAdmissionState(excludedParticipants = mapOf(identity to excluded)),
+        )
+        val hostView = room.toSnapshot(host)
+        assertEquals(mapOf(excluded to identity), hostView.excludedParticipantIdentities)
+        assertEquals(listOf(excluded), hostView.excludedPlayerIds)
+        for (observer in listOf(member, Uuid.random())) {
+            assertEquals(emptyMap(), room.toSnapshot(observer).excludedParticipantIdentities)
+            assertEquals(emptyList(), room.toSnapshot(observer).excludedPlayerIds)
+        }
+        assertFailsWith<IllegalArgumentException> { hostView.copy(isHost = false) }
+        assertFailsWith<IllegalArgumentException> { hostView.copy(excludedPlayerIds = emptyList()) }
+    }
+}

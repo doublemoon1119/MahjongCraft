@@ -1,0 +1,24 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity
+
+/** 管理中牌張落地後可短暫呈現的牌面提示種類。 */
+enum class TileActionPopupKind {
+    /** 不呈現短暫牌面。 */
+    NONE,
+
+    /** 捨牌落入牌河。 */
+    DISCARD,
+
+    /** 牌張落入副露區。 */
+    MELD,
+    ;
+
+    companion object {
+        /**
+         * 從同步名稱解析種類，未知值安全回退為 [NONE]。
+         *
+         * @param name 同步或持久化的種類名稱。
+         * @return 對應的提示種類。未知名稱回傳 [NONE]。
+         */
+        fun fromNameOrDefault(name: String): TileActionPopupKind = entries.firstOrNull { it.name == name } ?: NONE
+    }
+}

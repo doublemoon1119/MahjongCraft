@@ -1,0 +1,30 @@
+{
+  "parent": "mahjongcraft:mahjong/self_draw_win",
+  "display": {
+    "icon": {
+      "item": "minecraft:nether_star"
+    },
+    "title": {
+      "translate": "advancements.mahjongcraft.mahjong.hundred_wins.title"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.mahjong.hundred_wins.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:win"
+        ],
+        "statistic": "mahjongcraft:wins",
+        "at_least": 100
+      }
+    }
+  }
+}

@@ -1,0 +1,73 @@
+package com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay
+
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
+
+/** 查詢解析可讀入的原始 Replay UTF-8 位元組上限。 */
+const val DEFAULT_REPLAY_JSON_BYTES: Int = 8 * 1024 * 1024
+
+/**
+ * 以詞法預掃描與原生 JSON parser 解析有界 Replay 文件。
+ * 協程取消會以取消例外傳播，不會轉成解析失敗結果。
+ *
+ * @param source 原始 JSON 文字。
+ * @param limits 解析上限。
+ * @return 成功時為根物件，否則為穩定失敗。
+ */
+suspend fun parseBoundedReplayJson(source: String, limits: ReplayJsonParseLimits = ReplayJsonParseLimits()): ReplayReadResult<JsonObject> {
+    currentCoroutineContext().ensureActive()
+    if (source.length > limits.maximumUtf8Bytes) return ReplayReadResult.Failure(ReplayReadError.LIMIT_EXCEEDED)
+    val rawBytes = source.encodeToByteArray()
+    if (rawBytes.size > limits.maximumUtf8Bytes) return ReplayReadResult.Failure(ReplayReadError.LIMIT_EXCEEDED)
+    return try {
+        var depth = 0
+        var tokens = 0
+        var quoted = false
+        var escaped = false
+        source.forEachIndexed { index, character ->
+            if (index % 256 == 0) currentCoroutineContext().ensureActive()
+            if (quoted) {
+                if (escaped) {
+                    escaped = false
+                } else if (character == '\\') {
+                    escaped = true
+                } else if (character == '"') {
+                    quoted = false
+                }
+            } else {
+                when (character) {
+                    '"' -> {
+                        quoted = true
+                        tokens++
+                    }
+                    '{', '[' -> {
+                        depth++
+                        tokens++
+                        if (depth > limits.maximumDepth) throw ReplayReadException(ReplayReadError.LIMIT_EXCEEDED)
+                    }
+                    '}', ']' -> {
+                        depth--
+                        tokens++
+                        if (depth < 0) throw ReplayReadException(ReplayReadError.INVALID_DOCUMENT)
+                    }
+                    ',', ':' -> tokens++
+                }
+            }
+            if (tokens > limits.maximumTokens) throw ReplayReadException(ReplayReadError.LIMIT_EXCEEDED)
+        }
+        if (quoted || escaped || depth != 0) return ReplayReadResult.Failure(ReplayReadError.INVALID_DOCUMENT)
+        val parsed = persistenceJson.parseToJsonElement(source)
+        currentCoroutineContext().ensureActive()
+        ReplayReadResult.Success(parsed.jsonObject, ReplayReadDiagnostics(0, 0, rawBytes.size.toLong(), 0))
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (failure: ReplayReadException) {
+        ReplayReadResult.Failure(failure.error)
+    } catch (_: IllegalArgumentException) {
+        ReplayReadResult.Failure(ReplayReadError.INVALID_DOCUMENT)
+    }
+}

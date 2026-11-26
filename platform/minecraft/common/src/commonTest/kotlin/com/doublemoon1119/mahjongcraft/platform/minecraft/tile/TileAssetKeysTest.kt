@@ -1,0 +1,218 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewSet
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
+import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponentViews
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+
+class TileAssetKeysTest {
+
+    /** 只登記內建 extension 映射並凍結的 registry。供本檔所有測試共用。 */
+    private val registry: MinecraftTileAssetRegistry = MinecraftTileAssetRegistryImpl().apply {
+        BuiltInMinecraftMahjongExtension.registerTileAssets(this)
+        BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
+        freeze()
+    }
+
+    @Test
+    fun `test toAssetKey maps a plain numeric tile to suit letter plus value`() {
+        assertEquals("m1", Tile.Numeric(Tile.Suit.Character, 1).toAssetKey(registry))
+        assertEquals("p9", Tile.Numeric(Tile.Suit.Dot, 9).toAssetKey(registry))
+        assertEquals("s5", Tile.Numeric(Tile.Suit.Bamboo, 5).toAssetKey(registry))
+    }
+
+    /** 內建牌面不經過 registry 的素材 key，與經過 registry 的結果相同，可在登記期間使用。 */
+    @Test
+    fun `test standard asset keys match registry lookups for numeric and honor tiles`() {
+        Tile.Suit.entries.forEach { suit ->
+            (1..9).forEach { value ->
+                val tile = Tile.Numeric(suit, value)
+                assertEquals(tile.toAssetKey(registry), tile.standardAssetKey())
+            }
+        }
+        listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.North, Tile.Honor.Red, Tile.Honor.Green, Tile.Honor.White).forEach { honor ->
+            assertEquals(honor.toAssetKey(registry), honor.standardAssetKey())
+        }
+        assertEquals("white_dragon", Tile.Honor.White.standardAssetKey())
+    }
+
+    /** 帶透明牌特性的已知牌面使用透明版素材。沒有透明版的牌面退回基本牌面的素材。 */
+    @Test
+    fun `test transparent faces use the transparent style`() {
+        val views = ComponentViewSet.EMPTY.with(BuiltInTileComponentViews.TRANSPARENT, Unit)
+
+        assertEquals("transparent_m1", TileFaceView(Tile.Numeric(Tile.Suit.Character, 1), views).toAssetKey(registry))
+        assertEquals("transparent_east", TileFaceView(Tile.Honor.East, views).toAssetKey(registry))
+        assertEquals("flower_spring", TileFaceView(Tile.Extension(TaiwanTileTypes.SPRING), views).toAssetKey(registry))
+        assertEquals(BuiltInMinecraftTileAppearances.TRANSPARENT, registry.findBodyAppearance("transparent_m1"))
+        assertEquals(true, registry.findBodyAppearance("transparent_m1")?.translucent)
+    }
+
+    /** 透明牌的平面預覽使用墊了白底的預覽貼圖。沒有另外指定預覽貼圖的牌面沿用牌面貼圖。 */
+    @Test
+    fun `test flat previews use the dedicated preview texture when registered`() {
+        assertEquals(
+            expected = "mahjongcraft:textures/item/mahjong_tile/mahjong_tile_transparent_m1_preview.png",
+            actual = tilePreviewTexture("transparent_m1", registry).resourceId,
+        )
+        assertEquals("mahjongcraft:textures/item/mahjong_tile/mahjong_tile_m1.png", tilePreviewTexture("m1", registry).resourceId)
+    }
+
+    /** 赤五樣式有登記時使用赤五素材。同一樣式套在沒有登記的牌面上，退回基本牌面的素材。 */
+    @Test
+    fun `test face asset key uses a registered style and falls back to the base face`() {
+        val redFive = TileFaceView(Tile.Numeric(Tile.Suit.Character, 5), appearanceId = RiichiTileValues.RED_FIVE_APPEARANCE_ID)
+        val unregistered = TileFaceView(Tile.Numeric(Tile.Suit.Character, 4), appearanceId = RiichiTileValues.RED_FIVE_APPEARANCE_ID)
+
+        assertEquals("m5_red", redFive.toAssetKey(registry))
+        assertEquals("m4", unregistered.toAssetKey(registry))
+        assertEquals("m5", TileFaceView(Tile.Numeric(Tile.Suit.Character, 5)).toAssetKey(registry))
+    }
+
+    @Test
+    fun `test toAssetKey maps honor tiles to their fixed English names`() {
+        assertEquals("east", Tile.Honor.East.toAssetKey(registry))
+        assertEquals("white_dragon", Tile.Honor.White.toAssetKey(registry))
+    }
+
+    @Test
+    fun `test toAssetKey maps Taiwanese flower extensions`() {
+        assertEquals("flower_spring", Tile.Extension(TaiwanTileTypes.SPRING).toAssetKey(registry))
+        assertEquals("flower_chrysanthemum", Tile.Extension(TaiwanTileTypes.CHRYSANTHEMUM).toAssetKey(registry))
+    }
+
+    /** 基本牌在前、擴充牌種依登記順序接在後面，最後是 unknown。內建 extension 登記後共 46 個不重複的 key。 */
+    @Test
+    fun `all tile asset keys list standard tiles, registered tiles, then unknown`() {
+        val keys = registry.allTileAssetKeys()
+
+        assertEquals(80, keys.size)
+        assertEquals(keys.size, keys.toSet().size, "Asset keys must be unique.")
+        assertEquals(STANDARD_TILE_ASSET_KEYS, keys.take(STANDARD_TILE_ASSET_KEYS.size))
+        assertEquals(registry.registeredAssetKeys.toList(), keys.drop(STANDARD_TILE_ASSET_KEYS.size).dropLast(1))
+        assertEquals(UNKNOWN_TILE_ASSET_KEY, keys.last())
+    }
+
+    /** 第三方登記的牌種也列入清單，接在內建擴充牌種之後。 */
+    @Test
+    fun `all tile asset keys include third-party registrations`() {
+        val thirdPartyRegistry = MinecraftTileAssetRegistryImpl().apply {
+            BuiltInMinecraftMahjongExtension.registerTileAssets(this)
+            BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
+            register(MinecraftTileAssetDefinition(TileTypeId.parse("example:animal/cat"), "animal_cat"))
+            freeze()
+        }
+
+        assertEquals(listOf("animal_cat", UNKNOWN_TILE_ASSET_KEY), thirdPartyRegistry.allTileAssetKeys().takeLast(2))
+    }
+
+    /** registry 凍結前擴充牌種尚未確定，不能取得清單。 */
+    @Test
+    fun `all tile asset keys require a frozen registry`() {
+        assertFailsWith<IllegalStateException> { MinecraftTileAssetRegistryImpl().allTileAssetKeys() }
+    }
+
+    /** 驗證未知 Extension 安全回退至 unknown。 */
+    @Test
+    fun `unsupported extension tile types fall back to unknown`() {
+        assertEquals(
+            expected = UNKNOWN_TILE_ASSET_KEY,
+            actual = Tile.Extension(TileTypeId.parse("example:missing")).toAssetKey(registry),
+        )
+    }
+
+    /** 驗證已在 registry 註冊但不屬於固定內建清單的第三方 asset key 仍可正確解析。 */
+    @Test
+    fun `third-party registered extension resolves through the provided registry`() {
+        val thirdPartyId = TileTypeId.parse("example:animal/cat")
+        val thirdPartyRegistry = MinecraftTileAssetRegistryImpl().apply {
+            BuiltInMinecraftMahjongExtension.registerTileAssets(this)
+            BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
+            register(MinecraftTileAssetDefinition(thirdPartyId, "animal_cat"))
+        }
+
+        assertEquals("animal_cat", Tile.Extension(thirdPartyId).toAssetKey(thirdPartyRegistry))
+    }
+
+    /** 基本牌、未知佔位牌與已登記的擴充牌種都有牌面資源。沒有登記的 key 不算。 */
+    @Test
+    fun `known asset keys include standard, unknown and registered keys only`() {
+        STANDARD_TILE_ASSET_KEYS.forEach { assertTrue(registry.isKnownTileAssetKey(it), it) }
+        assertTrue(registry.isKnownTileAssetKey(UNKNOWN_TILE_ASSET_KEY))
+        assertTrue(registry.isKnownTileAssetKey("m5_red"))
+        assertTrue(registry.isKnownTileAssetKey("flower_spring"))
+        assertFalse(registry.isKnownTileAssetKey("example:missing"))
+    }
+
+    /** 驗證合法 key 保持不變，缺失及非法 key 回退至 unknown。 */
+    @Test
+    fun `normalization preserves valid keys and rejects unsupported values`() {
+        assertEquals("m5_red", "m5_red".normalizedTileAssetKey(registry))
+        assertEquals("flower_spring", "flower_spring".normalizedTileAssetKey(registry))
+        assertEquals(UNKNOWN_TILE_ASSET_KEY, null.normalizedTileAssetKey(registry))
+        assertEquals(UNKNOWN_TILE_ASSET_KEY, "example:missing".normalizedTileAssetKey(registry))
+    }
+
+    /** 驗證已在 registry 註冊的第三方 asset key 正規化時保持不變。 */
+    @Test
+    fun `normalization preserves third-party asset keys registered at runtime`() {
+        val thirdPartyId = TileTypeId.parse("example:animal/cat")
+        val thirdPartyRegistry = MinecraftTileAssetRegistryImpl().apply {
+            BuiltInMinecraftMahjongExtension.registerTileAssets(this)
+            BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
+            register(MinecraftTileAssetDefinition(thirdPartyId, "animal_cat"))
+        }
+
+        assertEquals("animal_cat", "animal_cat".normalizedTileAssetKey(thirdPartyRegistry))
+    }
+
+    /** 驗證資源 ID helper 會正規化未知 key，並回退至內建 unknown 資源。 */
+    @Test
+    fun `resource ids normalize unknown keys to built in fallback`() {
+        assertEquals(
+            expected = "mahjongcraft:textures/item/mahjong_tile/mahjong_tile_unknown.png",
+            actual = tileTextureResourceId("example:missing", registry),
+        )
+        assertEquals(
+            expected = "mahjongcraft:item/mahjong_tile/mahjong_tile_unknown",
+            actual = tileModelResourceId("example:missing", registry),
+        )
+    }
+
+    /** 驗證資源 ID helper 會使用登記的第三方 namespace。 */
+    @Test
+    fun `resource ids use registered custom resources`() {
+        val thirdPartyRegistry = MinecraftTileAssetRegistryImpl().apply {
+            register(
+                definition = MinecraftTileAssetDefinition(
+                    typeId = TileTypeId.parse("example:animal/cat"),
+                    assetKey = "animal_cat",
+                    resources = MinecraftTileResources("example:textures/custom/cat.png", "example:item/custom/cat"),
+                ),
+            )
+        }
+
+        assertEquals("example:textures/custom/cat.png", tileTextureResourceId("animal_cat", thirdPartyRegistry))
+        assertEquals("example:item/custom/cat", tileModelResourceId("animal_cat", thirdPartyRegistry))
+    }
+
+    /** 驗證循環涵蓋完整清單，並讓缺失或非法 key 從第一張重新開始。 */
+    @Test
+    fun `next asset key cycles and invalid values restart at first tile`() {
+        val keys = registry.allTileAssetKeys()
+
+        assertEquals(keys[1], keys.first().nextTileAssetKey(registry))
+        assertEquals(keys.first(), keys.last().nextTileAssetKey(registry))
+        assertEquals(keys.first(), "invalid".nextTileAssetKey(registry))
+        assertEquals(keys.first(), null.nextTileAssetKey(registry))
+    }
+}

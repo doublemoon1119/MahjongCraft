@@ -1,0 +1,324 @@
+package com.doublemoon1119.mahjongcraft.flow.persistence.format.state
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTimeSource
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionWinOutcome
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceEnvelopeDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.UnregisteredPersistenceTypeException
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.InvalidPersistenceSchemaVersionException
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.UnsupportedPersistenceSchemaVersionException
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledComponentValidator
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.failOnSkippedHistoryEvent
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+import kotlin.uuid.Uuid
+
+/** 驗證平台無關的伺服器權威狀態 persistence codec。 */
+class AuthoritativeStatePersistenceCodecTest {
+    /** 完整 codec 使用統一的歷史欄位名稱，並還原待寫事件、下一序號及缺口。 */
+    @Test
+    fun `history recording round trips through its persisted field`() {
+        val matchId = Uuid.random()
+        val recording = HistoryRecordingState(
+            nextSequenceByMatchId = mapOf(matchId to 4L),
+            pendingEvents = listOf(
+                element = HistoryOutboxEvent(
+                    matchId = matchId,
+                    venueId = Uuid.random(),
+                    roundNumber = 1,
+                    sequence = 3L,
+                    occurredAtEpochMillis = 123L,
+                    actorPlayerId = null,
+                    fact = HistoryFact.ReturnedToRoom,
+                ),
+            ),
+            firstMissingSequenceByMatchId = mapOf(matchId to 2L),
+        )
+        val encoded = codec.encode(emptyList(), emptyList(), historyRecordingState = recording)
+        val envelope = json.decodeFromString(PersistenceEnvelopeDto.serializer(), encoded)
+
+        assertTrue("historyRecordingState" in envelope.state)
+        assertEquals(recording, codec.decode(encoded).historyRecordingState)
+    }
+
+    /** 無法辨識的歷史資料不得被靜默清除。 */
+    @Test
+    fun `unknown unversioned history is rejected`() {
+        val envelope = json.decodeFromString(PersistenceEnvelopeDto.serializer(), codec.encode(emptyList(), emptyList()))
+        val unknown = json.parseToJsonElement("""{"unexpected":true}""")
+        val saved = envelope.copy(state = JsonObject(envelope.state + ("historyRecordingState" to unknown)))
+
+        assertFailsWith<SerializationException> {
+            codec.decode(json.encodeToString(PersistenceEnvelopeDto.serializer(), saved))
+        }
+    }
+
+    /** persistence 測試使用的 JSON 編解碼器。 */
+    private val json = Json
+
+    /** 使用所有內建 mapper 的待測 codec。 */
+    private val codec = AuthoritativeStatePersistenceCodec(
+        registries = bundledPersistenceRegistries(),
+        componentValidator = bundledComponentValidator(),
+        skippedHistoryEventReporter = failOnSkippedHistoryEvent,
+    )
+
+    /** 驗證空狀態能以版本化 envelope 完整 round-trip。 */
+    @Test
+    fun `empty state round-trips through versioned JSON`() {
+        val decoded = codec.decode(codec.encode(emptyList(), emptyList()))
+
+        assertTrue(decoded.rooms.isEmpty())
+        assertTrue(decoded.games.isEmpty())
+    }
+
+    /** 驗證混合 Room 與 Game 的狀態能完整 round-trip。 */
+    @Test
+    fun `mixed rooms and games round-trip through codec`() {
+        val rooms = listOf(createRoom(), createRoom())
+        val games = listOf(Game(createGame(), GameFlowConfig()), Game(createGame(), GameFlowConfig())).mapIndexed { index, game ->
+            game.copy(
+                remainingReserveByPlayerId = game.tableState.players.associate { player ->
+                    player.id to 12_345.milliseconds
+                },
+                pendingTransition = if (index == 0) {
+                    PendingGameTransition.AdvanceRound
+                } else {
+                    PendingGameTransition.ReturnToRoom
+                },
+            )
+        }
+
+        val decoded = codec.decode(codec.encode(rooms, games))
+
+        assertEquals(rooms.associateBy(Room::id), decoded.rooms)
+        assertEquals(games.associateBy(Game::id), decoded.games)
+    }
+
+    /** 驗證規則選擇視窗的身分、時間點、提交與排定的一般流局結算都能 round-trip。 */
+    @Test
+    fun `rule decision window and scheduled exhaustive draw round-trip through codec`() {
+        val base = Game(createGame(), GameFlowConfig(ruleDecision = RuleDecisionConfig(15.seconds)))
+        val participantId = base.tableState.players.first().id
+        val window = PendingRuleDecision.open(
+            step = RuleDecisionStep(
+                stepId = "mahjongcraft:test_step",
+                stepIndex = 1,
+                inputSpecsByPlayerId = mapOf(
+                    pair = participantId to RuleDecisionInputSpec.SingleChoice(listOf("mahjongcraft:a", "mahjongcraft:b")),
+                ),
+                timeSource = RuleDecisionTimeSource.ACTION_TIME,
+            ),
+            timing = RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW,
+        ).copy(submissionsByPlayerId = mapOf(participantId to RuleDecisionSubmission.Choice("mahjongcraft:b")))
+        val games = listOf(
+            base.copy(pendingRuleDecision = window),
+            Game(createGame(), GameFlowConfig()).copy(pendingTransition = PendingGameTransition.SettleExhaustiveDraw),
+        )
+
+        val decoded = codec.decode(codec.encode(emptyList(), games))
+
+        assertEquals(games.associateBy(Game::id), decoded.games)
+    }
+
+    /** 驗證規則選擇流程剛成立、尚待結束本局流程取用的和牌結果能 round-trip。 */
+    @Test
+    fun `rule decision win round-trips through codec`() {
+        val base = Game(createGame(), GameFlowConfig())
+        val winner = base.tableState.players.single()
+        val game = base.copy(
+            ruleDecisionWin = RuleDecisionWinOutcome(
+                outcomeId = "mahjongcraft:test_special_win",
+                winnerPlayerIds = setOf(winner.id),
+                responsiblePlayerIds = emptySet(),
+                winningTileId = Uuid.random(),
+                revealsWinnerHands = false,
+            ),
+        )
+
+        val decoded = codec.decode(codec.encode(emptyList(), listOf(game)))
+
+        assertEquals(mapOf(game.id to game), decoded.games)
+    }
+
+    /** 驗證 Room → Game 後的 payload 只包含同 ID Game。 */
+    @Test
+    fun `room to game transition encodes only game state`() {
+        val venueId = Uuid.random()
+        val game = Game(createGame(venueId), GameFlowConfig())
+
+        val decoded = codec.decode(codec.encode(emptyList(), listOf(game)))
+
+        assertTrue(decoded.rooms.isEmpty())
+        assertEquals(mapOf(venueId to game), decoded.games)
+    }
+
+    /** 驗證損壞 JSON 由 codec 在進入 adapter 狀態載入前拒絕。 */
+    @Test
+    fun `malformed JSON is rejected`() {
+        assertFailsWith<SerializationException> { codec.decode("{not-json") }
+    }
+
+    /** 驗證無效 schema version 會經 migration registry 拒絕。 */
+    @Test
+    fun `invalid schema version is rejected by migration registry`() {
+        val envelope = json.decodeFromString(
+            deserializer = PersistenceEnvelopeDto.serializer(),
+            string = codec.encode(emptyList(), emptyList()),
+        ).copy(schemaVersion = 0)
+
+        assertFailsWith<InvalidPersistenceSchemaVersionException> {
+            codec.decode(json.encodeToString(PersistenceEnvelopeDto.serializer(), envelope))
+        }
+    }
+
+    /** 驗證較新的未知 schema version 會經 migration registry 拒絕。 */
+    @Test
+    fun `newer schema version is rejected by migration registry`() {
+        val envelope = json.decodeFromString(
+            deserializer = PersistenceEnvelopeDto.serializer(),
+            string = codec.encode(emptyList(), emptyList()),
+        ).copy(schemaVersion = Int.MAX_VALUE)
+
+        assertFailsWith<UnsupportedPersistenceSchemaVersionException> {
+            codec.decode(json.encodeToString(PersistenceEnvelopeDto.serializer(), envelope))
+        }
+    }
+
+    /** 驗證缺少規則 mapper 時不會產生無法恢復的存檔。 */
+    @Test
+    fun `unregistered persistence type is rejected`() {
+        val registries = bundledPersistenceRegistries().copy(
+            ruleConfigs = PersistenceDtoRegistry<MahjongRuleConfig> { error("No rule config mapper is registered in this test") },
+        )
+        val codecWithoutRules = AuthoritativeStatePersistenceCodec(
+            registries = registries,
+            componentValidator = bundledComponentValidator(),
+            skippedHistoryEventReporter = failOnSkippedHistoryEvent,
+        )
+
+        assertFailsWith<IllegalStateException> { codecWithoutRules.encode(listOf(createRoom()), emptyList()) }
+    }
+
+    /** 讀取存檔時遇到沒有轉換器的型別，例如提供規則的擴充已被移除，回報存檔中的型別識別碼。 */
+    @Test
+    fun `saved type without a registered mapper reports its type key`() {
+        val saved = codec.encode(listOf(createRoom()), emptyList())
+        val registries = bundledPersistenceRegistries().copy(
+            ruleConfigs = PersistenceDtoRegistry<MahjongRuleConfig> { error("No rule config mapper is registered in this test") },
+        )
+
+        val failure = assertFailsWith<UnregisteredPersistenceTypeException> {
+            AuthoritativeStatePersistenceCodec(
+                registries = registries,
+                componentValidator = bundledComponentValidator(),
+                skippedHistoryEventReporter = failOnSkippedHistoryEvent,
+            ).decode(saved)
+        }
+
+        assertTrue("\"${failure.typeKey}\"" in saved)
+    }
+
+    /** 解碼後仍須檢查必要組件，不能把缺少的供託與牌牆進度當成新局初始化。 */
+    @Test
+    fun `decoded games missing required components are rejected without repair`() {
+        val initial = FakeTableStateFactory.create(config = RiichiRuleConfig())
+        val table = initial.copy(players = initial.players.map { it.copy(discardPile = RiichiDiscardPile()) })
+        val game = Game(tableState = table, flowConfig = GameFlowConfig())
+        val saved = codec.encode(emptyList(), listOf(game))
+        val envelope = json.decodeFromString(PersistenceEnvelopeDto.serializer(), saved)
+        val games = envelope.state.getValue("games").jsonObject
+        val strippedGame = JsonObject(games.getValue(table.id.toString()).jsonObject + ("components" to JsonArray(emptyList())))
+        val strippedState = JsonObject(envelope.state + ("games" to JsonObject(games + (table.id.toString() to strippedGame))))
+        val invalid = json.encodeToString(PersistenceEnvelopeDto.serializer(), envelope.copy(state = strippedState))
+
+        val failure = assertFailsWith<IllegalArgumentException> { codec.decode(invalid) }
+
+        assertTrue(failure.message.orEmpty().contains("Missing required component"))
+        assertEquals(saved, codec.encode(emptyList(), codec.decode(saved).games.values))
+    }
+
+    /** 直接保存不完整的權威對局也要拒絕，避免把缺失寫入檔案。 */
+    @Test
+    fun `encoding refuses missing required components`() {
+        val table = FakeTableStateFactory.create(config = RiichiRuleConfig()).copy(components = ComponentSet.EMPTY)
+        val game = Game(tableState = table, flowConfig = GameFlowConfig())
+
+        assertFailsWith<IllegalArgumentException> { codec.encode(emptyList(), listOf(game)) }
+    }
+
+    /**
+     * 建立使用台麻規則的等待階段房間。
+     *
+     * @param id 房間的識別碼，省略時隨機產生。
+     * @return 僅有房主的測試房間。
+     */
+    private fun createRoom(id: Uuid = Uuid.random()): Room {
+        val hostId = Uuid.random()
+        return Room(
+            id = id,
+            hostId = hostId,
+            gameConfig = GameConfig(TaiwanRuleConfig()),
+            playerIds = listOf(hostId),
+        )
+    }
+
+    /**
+     * 建立使用台麻規則的最小桌況。
+     *
+     * @param id 桌況的識別碼，省略時隨機產生。
+     * @return 含一位玩家與空牌山的測試桌況。
+     */
+    private fun createGame(id: Uuid = Uuid.random()): TableState {
+        val player = MahjongPlayer(
+            id = Uuid.random(),
+            initialSeatIndex = Wind.EAST.ordinal,
+            seatWind = Wind.EAST,
+            discardPile = TaiwanDiscardPile(),
+        )
+        return TableState(
+            id = id,
+            players = listOf(player),
+            config = TaiwanRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            dealerPlayerId = player.id,
+            turnPhase = TurnPhase.AwaitingDraw,
+        )
+    }
+}

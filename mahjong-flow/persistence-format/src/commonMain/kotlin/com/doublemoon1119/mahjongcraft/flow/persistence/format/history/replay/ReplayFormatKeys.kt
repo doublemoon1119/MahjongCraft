@@ -1,0 +1,424 @@
+package com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay
+
+/** 精簡 Replay 文件與內部資料樹共用的欄位名稱。 */
+internal object ReplayFormatKeys {
+    /** 文件格式版本欄位。 */
+    const val FORMAT_VERSION = "formatVersion"
+
+    /** 字典化資料封套欄位。 */
+    const val PAYLOAD = "payload"
+
+    /** 字典化資料樹中的欄位名稱字典。 */
+    const val KEY_DICTIONARY = "k"
+
+    /** 字典化資料樹中的字串值字典。 */
+    const val STRING_DICTIONARY = "s"
+
+    /** 字典化資料樹中的實際內容。 */
+    const val DATA = "d"
+
+    /** 內部文件版本欄位。 */
+    const val VERSION = "version"
+
+    /** 對局共用資料。 */
+    const val HEADER = "header"
+
+    /** 對局識別碼。 */
+    const val MATCH = "match"
+
+    /** 場地識別碼。 */
+    const val VENUE = "venue"
+
+    /** 對局玩家清單。 */
+    const val PLAYERS = "players"
+
+    /** 對局規則設定。 */
+    const val RULE = "rule"
+
+    /** 流程設定。 */
+    const val FLOW = "flow"
+
+    /** 對局起始時間。 */
+    const val TIME = "time"
+
+    /** 玩家 AI 策略。 */
+    const val PLAYER_AI = "ai"
+
+    /** 各局資料。 */
+    const val ROUNDS = "rounds"
+
+    /** 局內交易資料。 */
+    const val TRANSACTIONS = "transactions"
+
+    /** 這一局在整場對局中的順序號，從 1 開始。 */
+    const val ROUND_NUMBER = "n"
+
+    /** 交易相對時間。 */
+    const val TIME_DELTA = "dt"
+
+    /** 交易中的開局標記。 */
+    const val ROUND_OPENING = "h"
+
+    /** 交易中新宣告的牌種。 */
+    const val NEW_TILES = "new"
+
+    /** 交易中的語意事實。 */
+    const val FACTS = "e"
+
+    /** 交易中各事實的行為者座位。 */
+    const val ACTORS = "a"
+
+    /** 交易後的桌況差異。 */
+    const val PATCH = "p"
+
+    /** 局開始時的桌況投影。 */
+    const val INITIAL = "initial"
+
+    /** 局內牌種索引表。 */
+    const val TILES = "tiles"
+
+    /** 跨局牌種字典。 */
+    const val TYPES = "types"
+
+    /** 語意事實種類字典。 */
+    const val FACT_TYPES = "factTypes"
+
+    /** 動作種類字典。 */
+    const val ACTION_TYPES = "actionTypes"
+
+    /** 牌張呈現字典。呈現變化事實只保存字典代碼。 */
+    const val PRESENTATION_TYPES = "presentationTypes"
+
+    /** 差異路徑字典。 */
+    const val PATCH_PATHS = "patchPaths"
+
+    /** 附組件版本的牌張參照所使用的局內索引。 */
+    const val TILE_REFERENCE = "r"
+
+    /** 此次牌張參照的權威組件版本，僅供伺服器保存，不直接交付讀取模型。 */
+    const val TILE_COMPONENTS = "c"
+
+    /** 玩家投影中不分規則的牌河清單。 */
+    const val DISCARDS = "discards"
+
+    /** 桌況投影中外層附上的呈現附註。 */
+    const val PRESENTATION_NOTES = "presentationNotes"
+
+    /** 牌河項目的牌。 */
+    const val DISCARD_TILE = "tile"
+
+    /** 牌河項目是否已被鳴走。未鳴走時省略。 */
+    const val DISCARD_TAKEN = "taken"
+
+    /** 牌河項目的公開標記。沒有標記時省略。 */
+    const val DISCARD_MARKERS = "markers"
+}
+
+/** 桌況差異樹使用的操作名稱。 */
+internal object ReplayPatchKeys {
+    /** 物件欄位差異。 */
+    const val OBJECT = "_o"
+
+    /** 依位置更新的列表差異。 */
+    const val LIST = "_l"
+
+    /** 值替換。 */
+    const val VALUE = "_v"
+
+    /** 欄位刪除。 */
+    const val DELETE = "_x"
+
+    /** 列表片段替換。 */
+    const val SPLICE = "_a"
+}
+
+/** 從權威歷史與桌況 DTO 讀取時使用的既有欄位名稱。 */
+internal object ReplaySourceKeys {
+    /** 牌張呈現變化事實中依牌索引排列的呈現結果。 */
+    const val PRESENTATIONS = "presentations"
+
+    /** 牌張呈現的外觀樣式。 */
+    const val APPEARANCE_ID = "appearanceId"
+
+    /** 牌張呈現的公開特徵。 */
+    const val VIEWS = "views"
+
+    /** 牌張呈現的共同姿態。 */
+    const val POSE = "pose"
+
+    /** 已保存的權威組件集合。內容保持原保存格式，不猜測其中的參照語意。 */
+    const val COMPONENTS = "components"
+
+    /** 事件中的語意事實。 */
+    const val FACT = "fact"
+
+    /** 開局桌況。 */
+    const val STATE = "state"
+
+    /** 開局流程設定。 */
+    const val FLOW_CONFIG = "flowConfig"
+
+    /** 語意事實或動作的種類。 */
+    const val TYPE = "type"
+
+    /** 已接受的遊戲動作。 */
+    const val ACTION = "action"
+
+    /** 已接受動作的結果。 */
+    const val RESULT = "result"
+
+    /** 動作結果直接涉及的牌。 */
+    const val AFFECTED_TILE_IDS = "affectedTileIds"
+
+    /** 動作結果新公開的牌。 */
+    const val NEWLY_REVEALED_TILE_IDS = "newlyRevealedTileIds"
+
+    /** 精簡事實中的新公開牌。 */
+    const val REVEALED_TILES = "revealedTiles"
+
+    /** 胡牌詳情中的手牌描述。 */
+    const val WINNING_HAND = "hand"
+
+    /** 胡牌詳情中的有序立牌參照。 */
+    const val WINNING_STANDING_TILES = "standingTileIds"
+
+    /** 胡牌詳情中的獨立和牌參照。 */
+    const val WINNING_TILE = "winningTileId"
+
+    /** 玩家或牌的識別碼。 */
+    const val ID = "id"
+
+    /** 結算明細中的玩家識別碼。 */
+    const val PLAYER_ID = "playerId"
+
+    /** 擴充資料的類型識別碼。 */
+    const val TYPE_KEY = "typeKey"
+
+    /** 牌的序列化資料。 */
+    const val TILE = "tile"
+
+    /** 桌況規則設定。 */
+    const val CONFIG = "config"
+
+    /** 桌況的實體牌牆布局。 */
+    const val PHYSICAL_WALL_LAYOUT = "physicalWallLayout"
+
+    /** 桌況記錄的本場第幾局。 */
+    const val ROUND_SERIAL = "roundSerial"
+
+    /** 桌況記錄的本局打牌順序。 */
+    const val DISCARD_ORDER = "discardOrder"
+
+    /** 玩家初始座位。 */
+    const val INITIAL_SEAT_INDEX = "initialSeatIndex"
+
+    /** 玩家 AI 策略識別碼。 */
+    const val AI_STRATEGY_KEY = "aiStrategyKey"
+
+    /** 玩家獨立動作紀錄。 */
+    const val ACTION_HISTORY = "actionHistory"
+
+    /** 動作直接涉及的牌。 */
+    const val DIRECT_TILES = "directTiles"
+
+    /** 玩家目前座位。 */
+    const val CURRENT_PLAYER_INDEX = "currentPlayerIndex"
+
+    /** 莊家玩家座位。 */
+    const val DEALER_PLAYER_ID = "dealerPlayerId"
+
+    /** 局內風圈與局序位置。 */
+    const val ROUND_POSITION = "roundPosition"
+
+    /** 場風。 */
+    const val PREVALENT_WIND = "prevalentWind"
+
+    /** 活牌區。 */
+    const val TILE_WALL = "tileWall"
+
+    /** 牌牆中的牌。 */
+    const val WALL_TILES = "tiles"
+
+    /** 開局保留牌區。 */
+    const val RESERVED_WALL_TILES = "reservedWallTiles"
+
+    /** 本場數。 */
+    const val COMBO_COUNT = "comboCount"
+
+    /** 已完成玩家座位。 */
+    const val FINISHED_PLAYER_IDS = "finishedPlayerIds"
+
+    /** 一局目前所處的階段。 */
+    const val TURN_PHASE = "turnPhase"
+
+    /** 等待反應階段攜帶的反應資料。 */
+    const val TURN_PHASE_REACTION = "reaction"
+
+    /** 動作使用的牌。 */
+    const val TILE_ID = "tileId"
+
+    /** 動作搭配的牌。 */
+    const val WITH_TILE_IDS = "withTileIds"
+
+    /** 擴充動作的值。 */
+    const val VALUE = "value"
+
+    /** 反應裁定後套用的動作。 */
+    const val RESOLVED_ACTION = "resolvedAction"
+
+    /** 反應裁定的行為者座位。 */
+    const val ACTOR_PLAYER_ID = "actorPlayerId"
+
+    /** 開局程序的擲骰資料封套。 */
+    const val ROLL = "roll"
+
+    /** 開局程序中的零基底擲骰索引。 */
+    const val ROLL_INDEX = "rollIndex"
+
+    /** 單輪擲骰的逐顆點數。 */
+    const val DICE = "dice"
+
+    /** 規則選擇視窗開啟的時間點。 */
+    const val TIMING = "timing"
+
+    /** 規則選擇步驟識別碼。 */
+    const val STEP_ID = "stepId"
+
+    /** 規則選擇步驟索引。 */
+    const val STEP_INDEX = "stepIndex"
+
+    /** 換牌事實的輪次。 */
+    const val REPLACEMENT_ROUND = "round"
+
+    /** 換牌事實中各玩家移出的牌。 */
+    const val REMOVALS = "removals"
+
+    /** 換牌事實中一位玩家移出的牌。 */
+    const val TILE_IDS = "tileIds"
+
+    /** 玩家移出手牌的各個牌區。 */
+    const val TILE_AREAS = "tileAreas"
+
+    /** 牌區內的牌。 */
+    const val TILE_AREA_TILES = "tiles"
+
+    /** 下一個規則選擇步驟識別碼。 */
+    const val NEXT_STEP_ID = "nextStepId"
+
+    /** 規則選擇的提交內容。 */
+    const val SUBMISSION = "submission"
+
+    /** 單選提交選擇的選項。 */
+    const val OPTION_ID = "optionId"
+
+    /** 規則選擇提交是否為代表跳過的選項。 */
+    const val PASSED = "passed"
+
+    /** 局完成摘要。 */
+    const val SUMMARY = "summary"
+
+    /** 完成或效果原因識別碼。 */
+    const val REASON_ID = "reasonId"
+
+    /** 結算結果識別碼。 */
+    const val OUTCOME_ID = "outcomeId"
+
+    /** 局完成結果。 */
+    const val ROUND_COMPLETION = "roundCompletion"
+
+    /** 最終玩家分數。 */
+    const val FINAL_SCORES_BY_PLAYER_ID = "finalScoresByPlayerId"
+
+    /** 動作即時收付的各玩家點數增減。 */
+    const val SCORE_DELTAS_BY_PLAYER_ID = "scoreDeltasByPlayerId"
+
+    /** 動作即時收付放進規則點數池的點數。 */
+    const val POT_DEPOSIT = "potDeposit"
+
+    /** 結算後玩家分數。 */
+    const val SETTLED_SCORES_BY_PLAYER_ID = "settledScoresByPlayerId"
+
+    /** 結算受益玩家。 */
+    const val BENEFICIARY_PLAYER_IDS = "beneficiaryPlayerIds"
+
+    /** 結算責任玩家。 */
+    const val RESPONSIBLE_PLAYER_IDS = "responsiblePlayerIds"
+
+    /** 結算分類。 */
+    const val CLASSIFICATION = "classification"
+
+    /** 局流程轉移指示。 */
+    const val TRANSITION_DIRECTIVE = "transitionDirective"
+
+    /** 規則指定的下一任莊家。 */
+    const val NEXT_DEALER_PLAYER_ID = "nextDealerPlayerId"
+
+    /** 玩家手牌封套。 */
+    const val HAND = "hand"
+
+    /** 手牌中的牌。 */
+    const val HAND_TILES = "tiles"
+
+    /** 手牌中最後摸入的牌。 */
+    const val LAST_DRAWN = "lastDrawn"
+
+    /** 玩家副露清單。 */
+    const val MELDS = "melds"
+
+    /** 玩家分數。 */
+    const val SCORE = "score"
+
+    /** 玩家座風。 */
+    const val SEAT_WIND = "seatWind"
+
+    /** 玩家牌河資料。 */
+    const val DISCARD_PILE = "discardPile"
+
+    /** 副露中的牌。 */
+    const val MELD_TILES = "tiles"
+
+    /** 副露來源牌。 */
+    const val SOURCE_TILE = "sourceTile"
+
+    /** 副露來源方向。 */
+    const val SOURCE_DIRECTION = "sourceDirection"
+
+    /** 副露中需要以牌背呈現的牌。 */
+    const val FACE_DOWN_TILE_IDS = "faceDownTileIds"
+
+    /** 副露中明確公開的牌。 */
+    const val PUBLICLY_REVEALED_TILE_IDS = "publiclyRevealedTileIds"
+
+    /** 結算明細清單。 */
+    const val DETAIL_FIELDS = "detailFields"
+
+    /** 胡牌明細封套。 */
+    const val WIN_DETAILS = "winDetails"
+
+    /** 明細有單位數值清單。 */
+    const val QUANTITIES = "quantities"
+
+    /** 條目附帶的有單位數值。 */
+    const val QUANTITY = "quantity"
+
+    /** 出現在條目名稱裡的有單位數值。 */
+    const val NAME_QUANTITY = "nameQuantity"
+
+    /** 條目是否只適用於部分付款者。 */
+    const val APPLIES_TO_SOME_PAYERS_ONLY = "appliesToSomePayersOnly"
+
+    /** 有單位數值的單位 ID。 */
+    const val UNIT_ID = "unitId"
+
+    /** 有單位數值的數值。 */
+    const val AMOUNT = "amount"
+
+    /** 不引用局內牌張的結算展示牌面。 */
+    const val TILE_FACES = "faces"
+
+    /** 明細條目清單。 */
+    const val ENTRIES = "entries"
+
+    /** 動作中的擴充動作資料。 */
+    const val EXTENSION = "extension"
+}

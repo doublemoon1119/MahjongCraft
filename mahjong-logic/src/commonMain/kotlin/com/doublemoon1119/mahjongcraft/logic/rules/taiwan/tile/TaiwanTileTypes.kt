@@ -1,0 +1,58 @@
+package com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile
+
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
+import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
+
+/** 台灣麻將內建八張花牌的穩定 ID 與既有規則判讀。 */
+object TaiwanTileTypes {
+    /** 春。 */
+    val SPRING: TileTypeId = TileTypeId.parse(MahjongCraftMetadata.id("taiwan/spring"))
+
+    /** 夏。 */
+    val SUMMER: TileTypeId = TileTypeId.parse(MahjongCraftMetadata.id("taiwan/summer"))
+
+    /** 秋。 */
+    val AUTUMN: TileTypeId = TileTypeId.parse(MahjongCraftMetadata.id("taiwan/autumn"))
+
+    /** 冬。 */
+    val WINTER: TileTypeId = TileTypeId.parse(MahjongCraftMetadata.id("taiwan/winter"))
+
+    /** 梅。 */
+    val PLUM: TileTypeId = TileTypeId.parse(MahjongCraftMetadata.id("taiwan/plum"))
+
+    /** 蘭。 */
+    val ORCHID: TileTypeId = TileTypeId.parse(MahjongCraftMetadata.id("taiwan/orchid"))
+
+    /** 竹。 */
+    val BAMBOO: TileTypeId = TileTypeId.parse(MahjongCraftMetadata.id("taiwan/bamboo"))
+
+    /** 菊。 */
+    val CHRYSANTHEMUM: TileTypeId = TileTypeId.parse(MahjongCraftMetadata.id("taiwan/chrysanthemum"))
+
+    /** 依春、夏、秋、冬、梅、蘭、菊、竹排列的全部內建花牌 ID。 */
+    val ALL: List<TileTypeId> = listOf(SPRING, SUMMER, AUTUMN, WINTER, PLUM, ORCHID, CHRYSANTHEMUM, BAMBOO)
+
+    /**
+     * 建立八張各一張的台灣麻將花牌。
+     *
+     * @return 依內建排序排列的八張花牌。
+     */
+    fun createAll(): List<Tile.Extension> = ALL.map(Tile::Extension)
+
+    /**
+     * 判斷 [tile] 是否為台灣麻將內建花牌。
+     *
+     * @param tile 要檢查的牌。
+     * @return 若為內建花牌則為 true。
+     */
+    fun isFlower(tile: Tile): Boolean = (tile as? Tile.Extension)?.typeId in ALL
+
+    /**
+     * 取得內建花牌的既定排序索引。
+     *
+     * @param tile 要查詢排序的牌。
+     * @return 內建花牌的排序索引。非內建花牌為 null。
+     */
+    fun orderIndex(tile: Tile): Int? = (tile as? Tile.Extension)?.typeId?.let(ALL::indexOf)?.takeIf { it >= 0 }
+}

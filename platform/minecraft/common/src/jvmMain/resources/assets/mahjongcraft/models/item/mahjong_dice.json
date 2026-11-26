@@ -1,0 +1,79 @@
+{
+  "credit": "Made with Blockbench",
+  "texture_size": [
+    64,
+    64
+  ],
+  "textures": {
+    "dice": "mahjongcraft:item/dice/dice",
+    "particle": "mahjongcraft:item/dice/dice"
+  },
+  "elements": [
+    {
+      "from": [
+        3,
+        0,
+        3
+      ],
+      "to": [
+        13,
+        10,
+        13
+      ],
+      "faces": {
+        "north": {
+          "uv": [0, 0, 4, 4],
+          "texture": "#dice"
+        },
+        "east": {
+          "uv": [0, 4, 4, 8],
+          "texture": "#dice"
+        },
+        "south": {
+          "uv": [4, 0, 8, 4],
+          "texture": "#dice"
+        },
+        "west": {
+          "uv": [4, 4, 8, 8],
+          "texture": "#dice"
+        },
+        "up": {
+          "uv": [4, 12, 0, 8],
+          "texture": "#dice"
+        },
+        "down": {
+          "uv": [12, 0, 8, 4],
+          "texture": "#dice"
+        }
+      }
+    }
+  ],
+  "display": {
+    "thirdperson_righthand": {
+      "translation": [0, 1, -0.5],
+      "scale": [0.2, 0.2, 0.2]
+    },
+    "thirdperson_lefthand": {
+      "translation": [0, 1, -0.5],
+      "scale": [0.2, 0.2, 0.2]
+    },
+    "firstperson_righthand": {
+      "scale": [0.2, 0.2, 0.2]
+    },
+    "firstperson_lefthand": {
+      "scale": [0.2, 0.2, 0.2]
+    },
+    "ground": {
+      "scale": [0.2, 0.2, 0.2]
+    },
+    "gui": {
+      "rotation": [30, -135, 0],
+      "translation": [0, 1.5, 0],
+      "scale": [0.7, 0.7, 0.7]
+    },
+    "fixed": {
+      "rotation": [-90, 0, 0],
+      "translation": [0, 0, -3]
+    }
+  }
+}

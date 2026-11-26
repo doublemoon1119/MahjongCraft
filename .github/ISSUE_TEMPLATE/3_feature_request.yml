@@ -1,0 +1,49 @@
+name: Feature request / 功能建議
+description: Suggest a new feature or an improvement. / 建議新功能或改進
+type: Feature
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please search existing issues first. To ask for another Minecraft version, check the supported Minecraft versions first. Screenshots, sketches or recordings help explain an idea.
+        請先搜尋是否已有相同的 issue。想要求其他 Minecraft 版本，請先查看支援的 Minecraft 版本。附上截圖、示意圖或錄影能幫助說明想法
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area / 相關部分
+      options:
+        - Minecraft mod / Minecraft 模組
+        - Mahjong library (rules, game flow, AI) / 麻將函式庫（規則、流程、AI）
+        - Extension API / 擴充 API
+        - Build or documentation / 建置或文件
+        - Other / 其他
+    validations:
+      required: true
+  - type: textarea
+    id: need
+    attributes:
+      label: What you want to do / 想做到什麼
+      description: Describe the situation and why the current behavior is not enough. / 描述情境，以及目前的做法為什麼不夠
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Suggested solution / 建議的做法
+    validations:
+      required: true
+  - type: dropdown
+    id: rule
+    attributes:
+      label: Related mahjong rule / 相關的麻將規則
+      options:
+        - Not rule-specific / 與規則無關
+        - Riichi mahjong / 日本麻將
+        - Taiwanese mahjong / 台灣麻將
+        - Other / 其他
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered / 考慮過的其他做法

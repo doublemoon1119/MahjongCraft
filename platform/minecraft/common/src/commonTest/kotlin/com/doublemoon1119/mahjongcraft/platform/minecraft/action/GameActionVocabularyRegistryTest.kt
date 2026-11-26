@@ -1,0 +1,127 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.action
+
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+/** 驗證動作用語的登記與「規則優先、退回中立預設」的查詢順序。 */
+class GameActionVocabularyRegistryTest {
+    /** 操作卡的選填翻譯鍵不能是空白。 */
+    @Test
+    fun `rejects blank optional card text keys`() {
+        assertFailsWith<IllegalArgumentException> { GameActionVocabulary("sample.action", cardBodyKey = " ") }
+        assertFailsWith<IllegalArgumentException> { GameActionVocabulary("sample.action", cardHintKey = "") }
+        assertNull(GameActionVocabulary("sample.action").cardBodyKey)
+        assertNull(GameActionVocabulary("sample.action").cardHintKey)
+    }
+
+    /** 沒有登記自己用語的規則，取得中立預設。 */
+    @Test
+    fun `a rule without its own wording falls back to the default`() {
+        val registry = GameActionVocabularyRegistryImpl().apply { BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this) }
+
+        val chi = registry.find(BuiltInRuleModuleIds.TAIWAN, BuiltInGameActionIds.CHI)
+
+        assertEquals("mahjongcraft.hud.action.chi", chi?.labelKey)
+        assertEquals("mahjongcraft.message.game_action_chi", chi?.messageKey)
+        assertEquals(0, chi?.order)
+    }
+
+    /** 日麻的立直與九種九牌附有說明，基本動作沒有。 */
+    @Test
+    fun `special riichi decisions carry a description`() {
+        val registry = GameActionVocabularyRegistryImpl().apply {
+            BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this)
+            BundledRiichiMinecraftExtension.registerGameActionVocabulary(this)
+        }
+
+        assertEquals("mahjongcraft.riichi.action.riichi.description", registry.find(BuiltInRuleModuleIds.RIICHI, RiichiGameAction.Riichi.id)?.descriptionKey)
+        assertEquals(
+            expected = "mahjongcraft.riichi.action.kyuushu_kyuuhai.description",
+            actual = registry.find(BuiltInRuleModuleIds.RIICHI, RiichiExhaustiveDrawReason.KyuushuKyuuhai.id)?.descriptionKey,
+        )
+        assertNull(registry.find(BuiltInRuleModuleIds.RIICHI, BuiltInGameActionIds.CHI)?.descriptionKey)
+    }
+
+    /** 說明 key 不能是空字串。 */
+    @Test
+    fun `rejects a blank description key`() {
+        assertFailsWith<IllegalArgumentException> { GameActionVocabulary("example.hud.action", descriptionKey = " ") }
+    }
+
+    /** 規則登記同一個動作時，覆寫中立預設，其他規則不受影響。 */
+    @Test
+    fun `a rule overrides the default wording of the same action`() {
+        val registry = GameActionVocabularyRegistryImpl().apply {
+            BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this)
+            register(GameActionVocabularyDefinition(BuiltInRuleModuleIds.TAIWAN, BuiltInGameActionIds.RON, GameActionVocabulary("example.hud.win", order = 9)))
+        }
+
+        val taiwanRon = registry.find(BuiltInRuleModuleIds.TAIWAN, BuiltInGameActionIds.RON)
+
+        assertEquals("example.hud.win", taiwanRon?.labelKey)
+        assertEquals(9, taiwanRon?.order)
+        assertEquals("mahjongcraft.hud.action.ron", registry.find(BuiltInRuleModuleIds.RIICHI, BuiltInGameActionIds.RON)?.labelKey)
+    }
+
+    /** 日麻登記自己的立直，排在核心動作之後。別的規則查不到它。 */
+    @Test
+    fun `riichi registers its own actions after the built-in ones`() {
+        val registry = GameActionVocabularyRegistryImpl().apply {
+            BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this)
+            BundledRiichiMinecraftExtension.registerGameActionVocabulary(this)
+        }
+
+        val riichi = registry.find(BuiltInRuleModuleIds.RIICHI, RiichiGameAction.Riichi.id)
+        val tsumoOrder = registry.find(BuiltInRuleModuleIds.RIICHI, BuiltInGameActionIds.TSUMO)?.order
+
+        assertEquals("mahjongcraft.riichi.action.riichi", riichi?.labelKey)
+        assertEquals(riichi?.labelKey, riichi?.messageKey)
+        assertTrue((riichi?.order ?: 0) > (tsumoOrder ?: 0), "Expected riichi to come after the built-in actions.")
+        assertNull(registry.find(BuiltInRuleModuleIds.TAIWAN, RiichiGameAction.Riichi.id))
+        assertNull(registry.find(BuiltInRuleModuleIds.RIICHI, "example:unregistered"))
+    }
+
+    /** 同一個中立預設或同一個規則的同一個動作重複登記會被拒絕。 */
+    @Test
+    fun `duplicate registration is rejected`() {
+        val registry = GameActionVocabularyRegistryImpl().apply { BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this) }
+
+        assertFailsWith<IllegalArgumentException> {
+            registry.register(GameActionVocabularyDefaultDefinition(BuiltInGameActionIds.CHI, GameActionVocabulary("example.hud.chi")))
+        }
+        registry.register(GameActionVocabularyDefinition(BuiltInRuleModuleIds.TAIWAN, BuiltInGameActionIds.CHI, GameActionVocabulary("example.hud.chi")))
+        assertFailsWith<IllegalArgumentException> {
+            registry.register(GameActionVocabularyDefinition(BuiltInRuleModuleIds.TAIWAN, BuiltInGameActionIds.CHI, GameActionVocabulary("example.hud.chi2")))
+        }
+    }
+
+    /** 動作 ID 與規則模組 ID 都必須帶命名空間。 */
+    @Test
+    fun `ids must be namespaced`() {
+        val registry = GameActionVocabularyRegistryImpl()
+
+        assertFailsWith<IllegalArgumentException> { registry.register(GameActionVocabularyDefaultDefinition("chi", GameActionVocabulary("example.hud.chi"))) }
+        assertFailsWith<IllegalArgumentException> {
+            registry.register(GameActionVocabularyDefinition("taiwan", BuiltInGameActionIds.CHI, GameActionVocabulary("example.hud.chi")))
+        }
+    }
+
+    /** 凍結後禁止延遲登記。 */
+    @Test
+    fun `frozen registry rejects late registration`() {
+        val registry = GameActionVocabularyRegistryImpl().apply { freeze() }
+
+        assertFailsWith<IllegalStateException> { registry.register(GameActionVocabularyDefaultDefinition("example:late", GameActionVocabulary("example.hud.late"))) }
+        assertFailsWith<IllegalStateException> {
+            registry.register(GameActionVocabularyDefinition(BuiltInRuleModuleIds.RIICHI, "example:late", GameActionVocabulary("example.hud.late")))
+        }
+    }
+}

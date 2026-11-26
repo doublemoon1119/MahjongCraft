@@ -1,0 +1,166 @@
+package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
+import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
+import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
+
+/**
+ * [CreateRoomUseCase] 的單元測試類別。
+ *
+ * 驗證創建房間的業務邏輯，包含資料持久化與觀察者快照的同步行為。
+ */
+class CreateRoomUseCaseTest {
+
+    /** 測試房間的識別碼。 */
+    private val roomId: Uuid = Uuid.random()
+
+    /** 測試房間房主的玩家識別碼。 */
+    private val hostId: Uuid = Uuid.random()
+
+    /** 測試房間使用的規則設定。 */
+    private val config: MahjongRuleConfig = FakeMahjongRuleConfig()
+
+    /** 測試創建房間是否能正確持久化資料，並向包含房主在內的觀察者同步快照。 */
+    @Test
+    fun `test create room and sync snapshots to observers`() = runTest {
+        val store = AuthoritativeStateStore()
+        val roomRepo = RoomRepositoryImpl(store)
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val service = FakeRoomEventPublisher()
+        val useCase = CreateRoomUseCase(store, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
+
+        val roomSnapshot = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config)).toSnapshot(hostId)
+        snapshotRepo.setSnapshot(hostId, roomSnapshot)
+
+        val result = useCase(roomId, hostId, GameConfig(config))
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val savedRoom = roomRepo.getRoom(roomId)
+        assertNotNull(savedRoom, "The created room should be persisted.")
+        assertEquals(hostId, savedRoom.hostId, "The host ID should match.")
+        assertTrue(savedRoom.aiPlayerStrategyKeys.isEmpty(), "A regular host must remain human.")
+        assertTrue(savedRoom.readyPlayerIds.isEmpty(), "A regular host must remain unready.")
+
+        val savedSnapshot = snapshotRepo.getSnapshot(roomId, hostId)
+        assertNotNull(savedSnapshot, "Observers should receive a room snapshot.")
+    }
+
+    /** 驗證明確指定的 AI 房主在建立房間時保存策略與準備狀態。 */
+    @Test
+    fun `test create room with an ai host preserves strategy and readiness`() = runTest {
+        val store = AuthoritativeStateStore()
+        val useCase = CreateRoomUseCase(
+            authoritativeStateStore = store,
+            membershipRepository = PlayerMembershipRepositoryImpl(),
+            snapshotRepository = FakeRoomSnapshotRepository(),
+            eventPublisher = FakeRoomEventPublisher(),
+        )
+        val strategyKey = "test:host_ai"
+        val result = useCase(roomId, hostId, GameConfig(config), hostAiStrategyKey = strategyKey)
+        assertTrue(result is Outcome.Success, "An AI host room should be created.")
+        val savedRoom = assertNotNull(store.getRoom(roomId))
+        assertEquals(mapOf(hostId to strategyKey), savedRoom.aiPlayerStrategyKeys)
+        assertTrue(savedRoom.readyPlayerIds.isEmpty(), "The host must remain outside the readiness collection.")
+        assertEquals(listOf(hostId), savedRoom.playerIds)
+    }
+
+    /** 測試當房間 ID 已存在時，應回傳 [RoomError.RoomAlreadyExists]。 */
+    @Test
+    fun `test create room fails when room id already exists`() = runTest {
+        val store = AuthoritativeStateStore()
+        val roomRepo = RoomRepositoryImpl(store)
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val service = FakeRoomEventPublisher()
+        val useCase = CreateRoomUseCase(store, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
+
+        val existingRoom = Room(
+            id = roomId,
+            hostId = Uuid.random(),
+            gameConfig = GameConfig(config),
+        )
+        roomRepo.setRoom(existingRoom)
+
+        val result = useCase(roomId, hostId, GameConfig(config))
+        assertTrue(result is Outcome.Error)
+        assertEquals(RoomError.RoomAlreadyExists(roomId), result.error)
+    }
+
+    /** 測試創建房間時，房主應收到 Created 的加入通知。 */
+    @Test
+    fun `test create room notifies host with created reason`() = runTest {
+        val store = AuthoritativeStateStore()
+        val roomRepo = RoomRepositoryImpl(store)
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val service = FakeRoomEventPublisher()
+        val useCase = CreateRoomUseCase(store, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
+
+        val result = useCase(roomId, hostId, GameConfig(config))
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        assertNotNull(roomRepo.getRoom(roomId))
+        assertEquals(
+            expected = JoinReason.Created,
+            actual = service.getJoinReason(roomId, hostId, hostId),
+            message = "Host should be notified with Created reason when opening a room.",
+        )
+    }
+
+    /** 測試當該識別碼已有進行中的對局時，應回傳 [RoomError.GameAlreadyInProgress]，且不應建立房間。 */
+    @Test
+    fun `test create room fails when game already in progress`() = runTest {
+        val store = AuthoritativeStateStore()
+        val roomRepo = RoomRepositoryImpl(store)
+        val gameRepo = componentValidatedGameRepository(store)
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val service = FakeRoomEventPublisher()
+        val useCase = CreateRoomUseCase(store, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
+
+        gameRepo.setTableState(FakeTableStateFactory.create(id = roomId))
+
+        val result = useCase(roomId, hostId, GameConfig(config))
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(RoomError.GameAlreadyInProgress(roomId), result.error)
+        assertEquals(null, roomRepo.getRoom(roomId), "No room should be created when a game is already in progress.")
+    }
+
+    /** 玩家已占用其他場地時不得建立第二個房間。 */
+    @Test
+    fun `test create room fails when host belongs to another table`() = runTest {
+        val store = AuthoritativeStateStore()
+        val roomRepo = RoomRepositoryImpl(store)
+        val memberships = PlayerMembershipRepositoryImpl()
+        val otherVenueId = Uuid.random()
+        memberships.claim(hostId, otherVenueId)
+        val useCase = CreateRoomUseCase(
+            authoritativeStateStore = store,
+            membershipRepository = memberships,
+            snapshotRepository = FakeRoomSnapshotRepository(),
+            eventPublisher = FakeRoomEventPublisher(),
+        )
+
+        val result = useCase(roomId, hostId, GameConfig(config))
+
+        assertEquals(Outcome.Error(RoomError.PlayerAlreadyInAnotherGame(hostId, otherVenueId)), result)
+        assertEquals(null, roomRepo.getRoom(roomId))
+        assertEquals(otherVenueId, memberships.getVenueId(hostId))
+    }
+}

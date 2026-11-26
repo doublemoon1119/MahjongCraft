@@ -1,0 +1,57 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContext
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import kotlin.uuid.Uuid
+
+/** 將已通過規則驗證的玩家動作轉換為 Flow 可執行的命令。 */
+class GameActionCommandMapper(
+    private val extensionRegistry: ExtensionGameActionCommandFactoryRegistry,
+) {
+    /**
+     * 依玩家目前的操作情境轉換 [action]。無法在該情境執行或選牌資料不合法時回傳 null。
+     *
+     * @param context 玩家目前的權威操作情境。
+     * @param action 已通過規則驗證、欲轉換的動作。
+     * @param selectedTileIds 擴充動作所需的選牌識別碼。未提供時為空清單。
+     * @return 可交由 Flow 執行的命令。無法轉換時為 null。
+     */
+    fun toCommand(
+        context: PlayerActionContext,
+        action: GameAction,
+        selectedTileIds: List<Uuid> = emptyList(),
+    ): GameCommand? {
+        when (context) {
+            is PlayerActionContext.DiscardReaction -> return GameCommand.RespondToDiscard(
+                action = action,
+                reactionId = context.pending.id,
+                selectedTileIds = selectedTileIds,
+            )
+            is PlayerActionContext.RobbingReaction -> return if (
+                selectedTileIds.isEmpty() && (action is GameAction.Ron || action == GameAction.Pass)
+            ) {
+                GameCommand.RespondToRobbing(action)
+            } else {
+                null
+            }
+            is PlayerActionContext.OwnTurn -> Unit
+        }
+        if (action is GameAction.Extension) {
+            extensionRegistry.createCommand(action.value, selectedTileIds)?.let { return GameCommand.Extension(it) }
+            if (selectedTileIds.isNotEmpty()) return null
+        } else if (selectedTileIds.isNotEmpty()) {
+            return null
+        }
+        return action.toOwnTurnCommand()
+    }
+
+    /** 將自己回合的內建動作轉換成命令。不支援的動作回傳 null。 */
+    private fun GameAction.toOwnTurnCommand(): GameCommand? = when (this) {
+        is GameAction.Discard -> GameCommand.Discard(tileId)
+        GameAction.Tsumo -> GameCommand.Tsumo
+        is GameAction.Kan -> GameCommand.Kan(type, tileId)
+        is GameAction.ExhaustiveDraw -> GameCommand.DeclareExhaustiveDraw(reason)
+        else -> null
+    }
+}

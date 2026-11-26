@@ -1,0 +1,31 @@
+{
+  "parent": "mahjongcraft:taiwan/root",
+  "display": {
+    "icon": {
+      "id": "mahjongcraft:mahjong_tile",
+      "components": {
+        "mahjongcraft:tile": "east"
+      }
+    },
+    "title": {
+      "translate": "mahjongcraft.taiwan.tai.heavenly_win"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.taiwan.heavenly_win.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:taiwan/heavenly_win"
+        ]
+      }
+    }
+  }
+}

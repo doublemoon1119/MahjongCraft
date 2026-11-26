@@ -1,0 +1,98 @@
+package com.doublemoon1119.mahjongcraft.logic.table.layout
+
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
+
+/**
+ * 內建規則共用的環狀牌牆排列邏輯：牌牆由莊家面起逆時針排成數面，每面墩數相同。
+ *
+ * 供內建規則（日本麻將四人與三人、台灣麻將）的 [TileWallLayout] 實作重用同一段墩位運算，各規則只需
+ * 提供自己的面數、每面墩數與保留區墩數。不屬於 [TileWallLayout] 本身的公開契約，因為並非所有規則都必然採用
+ * 這種牌牆形狀。[TileWallPosition.side] 是從莊家面起逆時針數的牌牆面序號。
+ */
+internal object WallRingLayoutSupport {
+    /** 四人麻將的牌牆面數。 */
+    const val FOUR_SIDE_COUNT = 4
+
+    /** 每墩的層數。 */
+    private const val LAYERS_PER_STACK = 2
+
+    /**
+     * 依 [sideCount]、[stacksPerSide] 與 [reservedWallStacks] 排列牌牆。
+     *
+     * - 規則保留區從開門缺口本身開始往右連續數 [reservedWallStacks] 墩。往右即全域墩序號遞減，
+     *   跨面時繞到前一面的最右墩。
+     * - 一般摸牌區緊接在保留區另一端之後，往左（全域墩序號遞增）繞完剩餘墩數，最後回到缺口右側。
+     * - 建牌填入順序（哪個索引對應哪面哪墩哪層）與墩內摸牌順序（上層先或下層先）都是內部慣例。
+     *   牌組進入此函式前已完成洗牌，不影響公平性。
+     *
+     * @throws IllegalArgumentException 當 [shuffledTiles] 張數與 [stacksPerSide] 不吻合，或 [opening]
+     * 超出面數／墩數範圍時拋出。
+     * @param shuffledTiles 已洗牌、包含完整牌牆的牌張列表。
+     * @param opening 規則決定的開門面與墩數。
+     * @param stacksPerSide 每面牌牆的墩數。
+     * @param reservedWallStacks 從開門缺口開始保留為規則區的連續墩數。
+     * @param sideCount 牌牆面數，預設為四面。
+     * @return 一般摸牌順序、保留牌與所有牌的結構座標。
+     */
+    fun resolve(
+        shuffledTiles: List<IdentifiedTile>,
+        opening: WallOpening,
+        stacksPerSide: Int,
+        reservedWallStacks: Int,
+        sideCount: Int = FOUR_SIDE_COUNT,
+    ): TileWallLayoutResult {
+        val totalStacks = sideCount * stacksPerSide
+        val totalTiles = totalStacks * LAYERS_PER_STACK
+        require(shuffledTiles.size == totalTiles) {
+            "Wall layout requires exactly $totalTiles tiles for $stacksPerSide stacks per side, got ${shuffledTiles.size}"
+        }
+        require(opening.wallSideOffsetFromDealer < sideCount) {
+            "Wall side offset ${opening.wallSideOffsetFromDealer} exceeds side count $sideCount"
+        }
+        require(opening.stacksFromRight <= stacksPerSide) {
+            "Stacks from right ${opening.stacksFromRight} exceeds stacks per side $stacksPerSide"
+        }
+
+        val stacks: List<List<IdentifiedTile>> = (0 until totalStacks).map { globalStack ->
+            val base = globalStack * LAYERS_PER_STACK
+            shuffledTiles.subList(base, base + LAYERS_PER_STACK)
+        }
+
+        // 開門缺口右側緊鄰的墩（一基底 stacksFromRight 轉零基底）。
+        val breakGlobalStack = opening.wallSideOffsetFromDealer * stacksPerSide + (opening.stacksFromRight - 1)
+
+        val reservedWallGlobalStacks = (0 until reservedWallStacks).map { offset ->
+            floorMod(breakGlobalStack - offset, totalStacks)
+        }
+        val drawWallGlobalStacks = (1..(totalStacks - reservedWallStacks)).map { offset ->
+            floorMod(breakGlobalStack + offset, totalStacks)
+        }
+
+        // 兩份清單在這裡完成規則上的摸牌分區；是否把保留牌放在獨立實體區域由後續 layout policy
+        // 決定，這個通用 helper 不賦予日麻王牌的物理語意。
+        val reservedWallTiles = reservedWallGlobalStacks.flatMap { stacks[it].asReversed() }
+        val drawOrder = drawWallGlobalStacks.flatMap { stacks[it].asReversed() }
+
+        val structure = buildMap {
+            for (globalStack in 0 until totalStacks) {
+                val side = globalStack / stacksPerSide
+                val stack = globalStack % stacksPerSide
+                stacks[globalStack].forEachIndexed { layer, tile ->
+                    put(tile.id, TileWallPosition(side, stack, layer))
+                }
+            }
+        }
+
+        return TileWallLayoutResult(drawOrder, reservedWallTiles, structure)
+    }
+
+    /**
+     * 恆為非負餘數的取模，處理往回數保留區時可能產生的負值。
+     *
+     * @param value 要取模的整數。
+     * @param modulus 正的模數。
+     * @return 位於 `0 until modulus` 的餘數。
+     */
+    private fun floorMod(value: Int, modulus: Int): Int = ((value % modulus) + modulus) % modulus
+}

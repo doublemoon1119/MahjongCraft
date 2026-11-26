@@ -1,0 +1,37 @@
+# Lists one platform's build targets as a job matrix. The repository must be checked out first.
+# The targets come from gradle/platform/<platform>/<version>/targets.toml through the writeCiTargetMatrix task,
+# so a new target of the platform is verified without editing the platform's workflow.
+name: List targets
+description: Writes the build targets of one platform as a GitHub Actions matrix.
+
+inputs:
+  platform:
+    description: The platform whose targets to list, or "core" for the built-in core target.
+    required: true
+  gradle-java-version:
+    description: The JDK Gradle itself runs on, the same version used for local development.
+    default: "25"
+
+outputs:
+  matrix:
+    description: 'The matrix as JSON: {"include": [{"target", "javaToolchains", "examples"}]}.'
+    value: ${{ steps.matrix.outputs.matrix }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: ${{ inputs.gradle-java-version }}
+    - uses: gradle/actions/setup-gradle@v6
+      with:
+        cache-read-only: ${{ github.event_name == 'pull_request' }}
+    - name: Write target matrix
+      id: matrix
+      shell: bash
+      env:
+        CI_PLATFORM: ${{ inputs.platform }}
+      run: |
+        ./gradlew writeCiTargetMatrix "-PciPlatform=${CI_PLATFORM}"
+        echo "matrix=$(cat build/ci/target-matrix.json)" >> "$GITHUB_OUTPUT"

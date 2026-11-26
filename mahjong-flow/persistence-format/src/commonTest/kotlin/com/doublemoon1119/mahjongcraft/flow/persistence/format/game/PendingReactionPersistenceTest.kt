@@ -1,0 +1,132 @@
+package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
+import com.doublemoon1119.mahjongcraft.logic.table.DrawSource
+import com.doublemoon1119.mahjongcraft.logic.table.PendingFollowUpDraw
+import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.Json
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.uuid.Uuid
+
+/** 驗證動作與反應視窗的 encoded persistence round-trip。 */
+class PendingReactionPersistenceTest {
+    /** persistence 測試使用的 JSON 編解碼器。 */
+    private val json = Json
+
+    /** 內建流局原因的 persistence registry。 */
+    private val exhaustiveDrawReasonRegistry = bundledPersistenceRegistries().exhaustiveDrawReasons
+
+    /** 內建擴充動作的 persistence registry。 */
+    private val extensionGameActionRegistry = bundledPersistenceRegistries().extensionGameActions
+
+    /** 驗證所有 [GameAction] 變體都能完整還原。 */
+    @Test
+    fun `all game actions round-trip through encoded persistence DTOs`() {
+        val tileId = Uuid.random()
+        val withTileIds = listOf(Uuid.random(), Uuid.random(), Uuid.random())
+        val actions = listOf(
+            GameAction.GameStarted,
+            GameAction.RoundStarted,
+            GameAction.Draw,
+            GameAction.Discard(tileId),
+            GameAction.Chi(tileId, withTileIds.take(2)),
+            GameAction.Pon(tileId, withTileIds.take(2)),
+            GameAction.Kan(GameAction.KanType.ADDED_KAN, tileId, withTileIds),
+            GameAction.Ron(tileId),
+            GameAction.Tsumo,
+            RIICHI_GAME_ACTION,
+            GameAction.Pass,
+            GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SuukanNagare),
+        )
+        val serializer = ListSerializer(GameActionPersistenceDto.serializer())
+
+        val encoded = json.encodeToString(
+            serializer = serializer,
+            value = actions.map { it.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry) },
+        )
+        val restored = json.decodeFromString(serializer, encoded).map {
+            it.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry)
+        }
+
+        assertEquals(actions, restored)
+    }
+
+    /** 驗證一般捨牌反應視窗保留資格玩家與既有回應。 */
+    @Test
+    fun `pending discard reaction round-trips with submitted responses`() {
+        val discarderId = Uuid.random()
+        val responderA = Uuid.random()
+        val responderB = Uuid.random()
+        val tileId = Uuid.random()
+        val reaction = PendingReaction(
+            discarderId = discarderId,
+            tileId = tileId,
+            eligiblePlayerIds = setOf(responderA, responderB),
+            responses = mapOf(responderA to GameAction.Pon(tileId, emptyList())),
+            selectedTileIds = mapOf(responderA to listOf(Uuid.random(), Uuid.random())),
+            ronPlayerIds = setOf(responderA, responderB),
+            id = Uuid.random(),
+        )
+
+        val encoded = json.encodeToString(
+            serializer = PendingReactionPersistenceDto.serializer(),
+            value = reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
+        )
+        val restored = json.decodeFromString(PendingReactionPersistenceDto.serializer(), encoded)
+            .toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry)
+
+        assertEquals(reaction, restored)
+        assertEquals(reaction.id, restored.id)
+        assertEquals(reaction.selectedTileIds, restored.selectedTileIds)
+    }
+
+    /** 驗證搶槓反應視窗保留槓動作、被搶牌、既有回應與尚未詢問的補牌。 */
+    @Test
+    fun `pending chankan reaction round-trips with robbed tile`() {
+        val declarerId = Uuid.random()
+        val responderA = Uuid.random()
+        val responderB = Uuid.random()
+        val robbedTile = redFive(Tile.Suit.Dot)
+        val kanAction = GameAction.Kan(
+            type = GameAction.KanType.CLOSED_KAN,
+            tileId = robbedTile.id,
+            withTiles = List(3) { Uuid.random() },
+        )
+        val reaction = PendingRobbingReaction(
+            declarerId = declarerId,
+            declaredAction = kanAction,
+            robbedTile = robbedTile,
+            eligiblePlayerIds = setOf(responderA, responderB),
+            responses = mapOf(responderA to GameAction.Pass),
+            pendingFollowUpDraws = listOf(
+                PendingFollowUpDraw(Uuid.random(), DrawSource.LiveWall),
+                PendingFollowUpDraw(Uuid.random(), DrawSource.Supplemental(kanAction)),
+            ),
+        )
+
+        val encoded = json.encodeToString(
+            serializer = PendingRobbingReactionPersistenceDto.serializer(),
+            value = reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, bundledPersistenceRegistries().components),
+        )
+        val restored = json.decodeFromString(PendingRobbingReactionPersistenceDto.serializer(), encoded)
+            .toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, bundledPersistenceRegistries().components)
+
+        assertEquals(reaction, restored)
+    }
+}
+
+/**
+ * 建立帶赤寶牌特性與赤五外觀的牌張。
+ *
+ * @param suit 赤五的花色。
+ * @return 新的赤五牌張。
+ */
+private fun redFive(suit: Tile.Suit): IdentifiedTile = RiichiTileValues.redFive(suit).let { IdentifiedTile(Uuid.random(), it.tile, it.components) }

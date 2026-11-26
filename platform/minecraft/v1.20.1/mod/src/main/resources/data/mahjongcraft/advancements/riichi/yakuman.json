@@ -1,0 +1,28 @@
+{
+  "parent": "mahjongcraft:riichi/root",
+  "display": {
+    "icon": {
+      "item": "minecraft:firework_rocket"
+    },
+    "title": {
+      "translate": "advancements.mahjongcraft.riichi.yakuman.title"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.riichi.yakuman.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:riichi/yakuman"
+        ]
+      }
+    }
+  }
+}

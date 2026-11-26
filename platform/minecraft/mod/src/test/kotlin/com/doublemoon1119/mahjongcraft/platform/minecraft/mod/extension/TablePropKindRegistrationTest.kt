@@ -1,0 +1,250 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension
+
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentViewPersistenceRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatTarget
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.SeatProviderRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.registration.TablePropKindRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.tableprop.TablePropKind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.character.AiCharacterCapabilityRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.character.RoomParticipantRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatPlacementRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.seating.SeatProviderRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.prop.ScoringStickTablePropKind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.prop.TablePropKindRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.prop.TablePropKindRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropKinds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropContent
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDimensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropKindDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropTarget
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.phys.AABB
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertSame
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
+
+/** 驗證規則桌面物件種類的登記順序、凍結與錯誤診斷。 */
+class TablePropKindRegistrationTest {
+    /** 與桌面物件 registry 一起傳入啟動流程的空座位 provider。 */
+    private class FakeProvider : SeatProvider<ServerLevel, Entity> {
+        override fun resolve(world: ServerLevel, request: SeatRequest): List<SeatTarget<ServerLevel, Entity>> = emptyList()
+    }
+
+    /**
+     * 使用同一個啟動流程執行兩個原生整合 registry 的登記。
+     *
+     * @param extensions 依序登記的原生整合 extensions。
+     * @param tablePropKindRegistry 要登記桌面物件種類的 registry。
+     * @param seatProviderRegistry 要登記座位 provider 的 registry。
+     * @return 依來源分組的登記資訊。
+     */
+    private fun register(
+        extensions: Iterable<NativeMahjongExtension>,
+        tablePropKindRegistry: TablePropKindRegistry = TablePropKindRegistryImpl(),
+        seatProviderRegistry: SeatProviderRegistryImpl = SeatProviderRegistryImpl(),
+    ) = NativeMahjongExtensionBootstrap.registerAndFreeze(
+        extensions = extensions,
+        registries = NativeExtensionRegistries(
+            tablePropKindRegistry = tablePropKindRegistry,
+            seatProviderRegistry = seatProviderRegistry,
+            characterCapabilityRegistry = AiCharacterCapabilityRegistry(),
+            seatPlacementRegistry = SeatPlacementRegistry(),
+            roomParticipantRegistry = RoomParticipantRegistry(),
+        ),
+        builtIn = BuiltInNativeMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl(), ComponentViewPersistenceRegistry()),
+        failurePolicy = ExtensionFailurePolicy.Default,
+    )
+
+    /**
+     * 不讀寫世界的測試種類。
+     *
+     * @property id 桌面物件種類識別碼。
+     */
+    private class FakeKind(id: String) : TablePropKind {
+        override val definition = TablePropKindDefinition(id, TablePropDimensions(0.1, 0.1, 0.1))
+
+        override fun placementIdOf(entity: Entity): String? = null
+
+        override fun ruleModuleIdOf(entity: Entity): String? = null
+        override fun findManaged(world: ServerLevel, tableId: Uuid, searchBox: AABB): List<Entity> = emptyList()
+
+        override fun contentOf(entity: Entity): TablePropContent? = null
+
+        override fun create(world: ServerLevel, tableId: Uuid, target: TablePropTarget): Entity? = null
+    }
+
+    /**
+     * 登記指定種類的測試擴充。
+     *
+     * @property id 擴充識別碼。
+     * @property kinds 此擴充提供的桌面物件種類。
+     */
+    private class KindExtension(
+        override val id: String,
+        private val kinds: List<TablePropKind>,
+    ) : NativeMahjongExtension {
+        override fun registerTablePropKinds(registry: TablePropKindRegistrar) = kinds.forEach(registry::register)
+    }
+
+    /** 內建點棒種類先登記，第三方種類接在後面，完成後凍結。回傳值依來源分組。 */
+    @Test
+    fun `built-in kind registers first and third-party kinds follow before freeze`() {
+        val registry = TablePropKindRegistryImpl()
+        val custom = FakeKind("example:marker")
+
+        val sources = register(listOf(KindExtension("example:kind", listOf(custom))), tablePropKindRegistry = registry)
+
+        assertEquals(listOf(BuiltInTablePropKinds.SCORING_STICK, "mahjongcraft:face_up_tile", "example:marker"), registry.kinds.map { it.id })
+        assertSame(ScoringStickTablePropKind, registry.find(BuiltInTablePropKinds.SCORING_STICK))
+        assertEquals(
+            expected = listOf(null to listOf("mahjongcraft:face_up_tile", BuiltInTablePropKinds.SCORING_STICK), "example:kind" to listOf("example:marker")),
+            actual = sources.map { source ->
+                source.extensionId to source.categories
+                    .filter { it.id == "mahjongcraft:table_prop_kind" }
+                    .flatMap { it.registrationIds }
+            },
+        )
+        assertTrue(registry.isFrozen)
+        assertFailsWith<IllegalStateException> { registry.register(FakeKind("example:late")) }
+    }
+
+    /** 兩個類別同時登記時維持回呼順序、來源分組及全部完成後才凍結。 */
+    @Test
+    fun `combined registration preserves callback and report ordering`() {
+        val tablePropRegistry = TablePropKindRegistryImpl()
+        val seatProviderRegistry = SeatProviderRegistryImpl()
+        val callbacks = mutableListOf<String>()
+        val builtInsVisible = mutableListOf<Boolean>()
+
+        /**
+         * 建立同時登記桌面物件與座位的測試擴充。
+         *
+         * @param id 擴充識別碼。
+         * @param kindId 桌面物件種類識別碼。
+         * @param providerId 座位提供者識別碼。
+         * @return 可記錄回呼順序並檢查凍結時機的擴充。
+         */
+        fun extension(
+            id: String,
+            kindId: String,
+            providerId: String,
+        ) = object : NativeMahjongExtension {
+            override val id: String = id
+
+            override fun registerTablePropKinds(registry: TablePropKindRegistrar) {
+                callbacks += "$id:table"
+                builtInsVisible +=
+                    BuiltInTablePropKinds.SCORING_STICK in registry.registrationKeys &&
+                    "mahjongcraft:mahjong_stool" in seatProviderRegistry.registrationKeys
+                assertFalse(tablePropRegistry.isFrozen)
+                assertFalse(seatProviderRegistry.isFrozen)
+                registry.register(FakeKind(kindId))
+            }
+
+            override fun registerSeatProviders(registry: SeatProviderRegistrar) {
+                callbacks += "$id:seat"
+                builtInsVisible +=
+                    BuiltInTablePropKinds.SCORING_STICK in tablePropRegistry.registrationKeys &&
+                    "mahjongcraft:mahjong_stool" in registry.registrationKeys
+                assertFalse(tablePropRegistry.isFrozen)
+                assertFalse(seatProviderRegistry.isFrozen)
+                registry.register(RegisteredSeatProvider(providerId, FakeProvider()))
+            }
+        }
+
+        val sources = NativeMahjongExtensionBootstrap.registerAndFreeze(
+            extensions = listOf(
+                extension("example:first", "example:first-kind", "example:first-seat"),
+                extension("example:second", "example:second-kind", "example:second-seat"),
+            ),
+            registries = NativeExtensionRegistries(
+                tablePropKindRegistry = tablePropRegistry,
+                seatProviderRegistry = seatProviderRegistry,
+                characterCapabilityRegistry = AiCharacterCapabilityRegistry(),
+                seatPlacementRegistry = SeatPlacementRegistry(),
+                roomParticipantRegistry = RoomParticipantRegistry(),
+            ),
+            builtIn = BuiltInNativeMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl(), ComponentViewPersistenceRegistry()),
+            failurePolicy = ExtensionFailurePolicy.Default,
+        )
+
+        assertEquals(
+            expected = listOf(
+                "example:first:table",
+                "example:first:seat",
+                "example:second:table",
+                "example:second:seat",
+            ),
+            actual = callbacks,
+        )
+        assertTrue(builtInsVisible.all { it })
+        assertTrue(tablePropRegistry.isFrozen)
+        assertTrue(seatProviderRegistry.isFrozen)
+        assertEquals(
+            expected = listOf(
+                null to listOf(
+                    "mahjongcraft:table_prop_kind" to listOf("mahjongcraft:face_up_tile", BuiltInTablePropKinds.SCORING_STICK),
+                    "mahjongcraft:seat_provider" to listOf("mahjongcraft:mahjong_stool"),
+                    "mahjongcraft:ai_character_capability" to listOf("mahjongcraft:tile_mascot"),
+                    "mahjongcraft:seat_placement" to listOf("mahjongcraft:mahjong_stool"),
+                ),
+                "example:first" to listOf(
+                    "mahjongcraft:table_prop_kind" to listOf("example:first-kind"),
+                    "mahjongcraft:seat_provider" to listOf("example:first-seat"),
+                ),
+                "example:second" to listOf(
+                    "mahjongcraft:table_prop_kind" to listOf("example:second-kind"),
+                    "mahjongcraft:seat_provider" to listOf("example:second-seat"),
+                ),
+            ),
+            actual = sources.map { source ->
+                source.extensionId to source.categories.map { it.id to it.registrationIds }
+            },
+        )
+    }
+
+    /** 第三方重複登記內建種類時，錯誤會指出是哪個 extension。 */
+    @Test
+    fun `duplicate kind failure identifies the extension`() {
+        val registry = TablePropKindRegistryImpl()
+
+        val failure = assertFailsWith<NativeMahjongExtensionRegistrationException> {
+            register(
+                extensions = listOf(KindExtension("example:duplicate", listOf(FakeKind(BuiltInTablePropKinds.SCORING_STICK)))),
+                tablePropKindRegistry = registry,
+            )
+        }
+
+        assertTrue(failure.message.orEmpty().contains("example"))
+        assertTrue(failure.cause is IllegalArgumentException)
+    }
+
+    /** 同一個 extension 識別碼出現兩次時拒絕登記。 */
+    @Test
+    fun `duplicate extension id fails registration`() {
+        val registry = TablePropKindRegistryImpl()
+
+        assertFailsWith<NativeMahjongExtensionRegistrationException> {
+            register(
+                extensions = listOf(KindExtension("example:duplicate", emptyList()), KindExtension("example:duplicate", emptyList())),
+                tablePropKindRegistry = registry,
+            )
+        }
+    }
+
+    /** 種類識別碼必須帶命名空間。 */
+    @Test
+    fun `kind without namespace is rejected`() {
+        assertFailsWith<IllegalArgumentException> { TablePropKindRegistryImpl().register(FakeKind("marker")) }
+    }
+}

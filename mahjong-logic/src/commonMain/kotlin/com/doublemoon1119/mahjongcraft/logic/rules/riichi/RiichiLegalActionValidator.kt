@@ -1,0 +1,526 @@
+package com.doublemoon1119.mahjongcraft.logic.rules.riichi
+
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.Meld
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.closedKanFaceDownTileIds
+import com.doublemoon1119.mahjongcraft.logic.base.closedKanPubliclyRevealedTileIds
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
+import com.doublemoon1119.mahjongcraft.logic.judgment.TileSelectionRequirement
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponents
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.util.isHonor
+import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
+
+/**
+ * 日本麻將規則的合法動作判定器。
+ *
+ * 負責根據立直麻將的規則（包含振聽、立直、槓牌限制等）分析玩家的合法動作。
+ *
+ * @property shantenCalculator 向聽數計算器，用於判斷聽牌與胡牌。
+ * @property handValueCalculator 手牌役種計算機，用於檢查最低番數限制。
+ * @property contextCalculator 手牌役種上下文計算機，用於計算寶牌、海底撈月等資訊。
+ * @property allowsChi 是否可以吃。三人麻將不能吃。
+ * @property allowsPullNorth 是否可以拔北。只有三人麻將可以。
+ */
+class RiichiLegalActionValidator(
+    private val shantenCalculator: RiichiShantenCalculator,
+    private val handValueCalculator: RiichiHandValueCalculator,
+    private val contextCalculator: RiichiHandValueContextCalculator,
+    private val allowsChi: Boolean = true,
+    private val allowsPullNorth: Boolean = false,
+) : LegalActionValidator {
+
+    /**
+     * 分析一張完整牌型在目前桌況下的榮和與自摸資格。
+     *
+     * [player] 的手牌須為尚未加入 [incomingTile] 的待和牌狀態。本方法不套用振聽，振聽仍由呼叫端
+     * 以整組等待牌判斷。
+     *
+     * @param tableState 判定役種與起胡門檻的目前桌況。
+     * @param player 尚未加入和牌張的玩家狀態。
+     * @param incomingTile 要分析的和牌張。
+     * @return 榮和、自摸或尚未符合門檻的可用性分類。
+     */
+    fun analyzeWinAvailability(
+        tableState: TableState,
+        player: MahjongPlayer,
+        incomingTile: IdentifiedTile,
+    ): RiichiWinAvailability {
+        val ronHan = qualifyingHan(tableState, player, incomingTile, isTsumo = false)
+        val tsumoHan = qualifyingHan(tableState, player, incomingTile, isTsumo = true)
+        val minimum = tableState.config.minimumWinConstraint
+        return when {
+            ronHan.satisfies(minimum) -> RiichiWinAvailability.AVAILABLE
+            tsumoHan.satisfies(minimum) -> RiichiWinAvailability.TSUMO_ONLY
+            maxOf(ronHan.value, tsumoHan.value) <= 0 -> RiichiWinAvailability.NO_YAKU
+            else -> RiichiWinAvailability.BELOW_MINIMUM
+        }
+    }
+
+    /**
+     * 判斷在當前遊戲狀態下，指定玩家可以執行的合法動作列表。
+     *
+     * @param context 從同一份桌況建立的判定情境。來源牌已經只加入判定手牌一次。
+     * @return 該玩家可以執行的合法動作列表。
+     */
+    override fun getLegalActions(context: LegalActionContext): List<GameAction> {
+        val tableState = context.tableState
+        val sourceAction = context.sourceAction
+        val sourceDirection = context.sourceDirection
+        val incomingTile = context.incomingTile
+        val player = context.player.copy(hand = context.handBeforeIncoming)
+        val handWithIncoming = context.handWithIncoming
+        val legalActions = mutableListOf<GameAction>()
+        val hand = player.hand
+        val isMenzen = hand.exposedMelds.isEmpty() || hand.exposedMelds.all { it.type == MeldType.ClosedKan }
+        val riichiState = player.riichiDeclaration
+        val isRiichi = riichiState != null
+
+        // 全場槓子數上限（明槓/暗槓/加槓皆算）固定 4 次，不論這 4 次是不是同一位玩家達成——「同一位
+        // 玩家獨得全部 4 槓」只是不觸發 resolveSuukanNagare 流局判定（見該函式 KDoc，可能正在嘗試
+        // 四槓子役滿），不代表這位玩家還能繼續槓第 5 次；已達上限時完全不提供任何一種槓的候選，之後
+        // 由呼叫端在下一次捨牌/立直前檢查 resolveSuukanNagare 決定是否流局。
+        val totalKanCount = tableState.players.sumOf { p ->
+            p.hand.exposedMelds.count {
+                it.type == MeldType.OpenKan || it.type == MeldType.AddedKan || it.type == MeldType.ClosedKan
+            }
+        }
+        val canDeclareAnotherKan = totalKanCount < MAX_KAN_COUNT
+
+        // 牌山（不含王牌）是否還有牌可摸——恆等於這次判斷當下 tableState.tileWall.remainingCount。
+        // == 0 時，反應他家捨牌的這張牌是海底牌摸盡後打出的河底牌，只能榮和（河底撈魚）或流局，
+        // 不能吃/碰——吃/碰之後下一位仍須有正常摸牌機會，這個時間點已經不成立。
+        val wallHasMoreTiles = tableState.tileWall.remainingCount > 0
+
+        // 槓（暗槓/加槓/大明槓）需要牌山至少剩 MIN_LIVE_TILES_FOR_KAN 張：嶺上補牌後，牌山末端的一張會補進
+        // 王牌區，牌山剩 1 張時補完就沒有海底牌可摸；剩 0 張時則是正在處理海底牌或河底牌。
+        val wallAllowsKan = tableState.tileWall.remainingCount >= MIN_LIVE_TILES_FOR_KAN
+
+        // 自己回合的立直資格使用包含本次摸牌的完整判定手牌；即使同一次查詢也有摸牌，立直與自摸仍可同時成立。
+        if (sourceDirection == RelativeDirection.Self &&
+            !isRiichi &&
+            isMenzen &&
+            player.score >= RIICHI_STICK_POINTS &&
+            tableState.tileWall.remainingCount >= tableState.playerCount
+        ) {
+            val result = shantenCalculator.calculate(
+                hand = handWithIncoming,
+            )
+            if (result is ShantenResult.Tenpai || result is ShantenResult.Complete) {
+                legalActions.add(RIICHI_GAME_ACTION)
+            }
+        }
+
+        // incomingTile == null 表示目前沒有要納入額外動作判定的進牌，可能是尚未摸牌，
+        // 也可能是吃/碰/槓後進入等待捨牌的階段。
+        // 一般捨牌候選由呼叫端依手牌建立，此處不列舉一般捨牌。
+        // 此 Validator 只處理「額外動作」（鳴牌、胡牌、立直）。
+        if (incomingTile == null) {
+            return legalActions
+        }
+
+        // 進牌的基本牌面；赤五的基本牌面就是普通五
+        val incomingBaseTile = incomingTile.tile
+
+        // 處理有 incomingTile 的情況
+        if (sourceDirection == RelativeDirection.Self) {
+            // 自己摸牌
+            // 1. 檢查是否可以自摸 (Tsumo)
+            val tsumoResult = shantenCalculator.calculate(handWithIncoming)
+            if (tsumoResult is ShantenResult.Complete) {
+                if (checkMinimumHan(
+                        tableState = tableState,
+                        player = player,
+                        incomingTile = incomingTile,
+                        isTsumo = true,
+                    )
+                ) {
+                    legalActions.add(GameAction.Tsumo)
+                }
+            }
+
+            // 2. 檢查是否可以加槓 (Added Kan)——牌山剩 1 張以下時不能加槓
+            if (canDeclareAnotherKan && wallAllowsKan) {
+                player.hand.exposedMelds.forEach { meld ->
+                    if (meld.type == MeldType.Pon && meld.tiles.first().tile == incomingBaseTile) {
+                        legalActions.add(GameAction.Kan(GameAction.KanType.ADDED_KAN, incomingTile.id, emptyList()))
+                    }
+                }
+            }
+
+            // 3. 檢查是否可以暗槓 (Closed Kan)
+            // 立直後暗槓限制：
+            // - 暗槓前後的等待牌必須相同。
+            // - 每種等待的所有和牌拆法中，槓牌都只能作為刻子。
+            if (canDeclareAnotherKan && wallAllowsKan) {
+                val closedKanCandidates = handWithIncoming.standingTiles
+                    .groupBy { it.tile }
+                    .values
+                    .filter { it.size == 4 }
+                closedKanCandidates.forEach { candidate ->
+                    val includesIncomingTile = candidate.any { it.id == incomingTile.id }
+                    // 立直後手牌固定，只能以本次摸入牌組成暗槓，並且暗槓前後聽牌必須相同。
+                    if (
+                        isRiichi &&
+                        (!includesIncomingTile || !checkClosedKanAfterRiichi(player, incomingTile, tableState.config.revealsClosedKanTiles))
+                    ) {
+                        return@forEach
+                    }
+                    val triggerTile = candidate.firstOrNull { it.id == incomingTile.id } ?: candidate.first()
+                    legalActions.add(
+                        element = GameAction.Kan(
+                            type = GameAction.KanType.CLOSED_KAN,
+                            tileId = triggerTile.id,
+                            withTiles = candidate.filterNot { it.id == triggerTile.id }.map { it.id },
+                        ),
+                    )
+                }
+            }
+
+            // 4. 檢查是否可以拔北（三人麻將）：摸牌後才可以拔，碰之後的那次打牌前沒有摸牌，因此不能拔；
+            // 立直後手牌固定，只能拔剛摸到的北。拔北的補牌同樣會把活牌尾端補進王牌，因此牌山剩餘張數限制與槓相同。
+            if (allowsPullNorth && wallAllowsKan && canPullAnotherNorth(tableState)) {
+                val canPull = if (isRiichi) {
+                    incomingBaseTile == Tile.Honor.North
+                } else {
+                    handWithIncoming.standingTiles.any { it.tile == Tile.Honor.North }
+                }
+                if (canPull) legalActions.add(RIICHI_PULL_NORTH_GAME_ACTION)
+            }
+
+            // 5. 檢查是否可以宣告和局 (九種九牌)
+            if (tableState.isRiichiFirstGoAround(player)) {
+                val isKyuushuKyuuhai = handWithIncoming.standingTiles
+                    .filter { it.tile.isTerminal || it.tile.isHonor } // 過濾么九牌
+                    .map { it.tile }
+                    .toSet().size >= 9
+                if (isKyuushuKyuuhai) {
+                    legalActions.add(GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai))
+                }
+            }
+        } else {
+            // 他家打牌
+            // 1. 檢查是否可以榮和 (Ron)
+            val ronResult = shantenCalculator.calculate(handWithIncoming)
+
+            if (ronResult is ShantenResult.Complete) {
+                // 振聽檢查：收到這張牌前的聽牌中，只要任何一種和牌張在自己的牌河或本巡放過的牌裡，
+                // 所有和牌張都不能榮和（捨牌振聽、同巡振聽）。
+                val currentHandResult = shantenCalculator.calculate(
+                    hand = Hand(
+                        tiles = player.hand.standingTiles.toMutableList(),
+                        melds = player.hand.exposedMelds.toMutableList(),
+                    ),
+                )
+
+                val isFuriten = if (player.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null) {
+                    // 立直後放過和牌機會即永久振聽，本局結束前恆為振聽，不需要再比對聽牌面或
+                    // passedTilesInRound——那些之後可能因為摸牌清空，但永久振聽不受影響。
+                    true
+                } else if (currentHandResult is ShantenResult.Tenpai) {
+                    val furitenTiles = player.riichiFuritenTiles()
+
+                    currentHandResult.winningTiles.any { it in furitenTiles }
+                } else {
+                    // 手牌原本未聽牌，不可能是振聽
+                    false
+                }
+
+                if (!isFuriten) {
+                    if (checkMinimumHan(
+                            tableState = tableState,
+                            player = player,
+                            incomingTile = incomingTile,
+                            isTsumo = false,
+                            isRobbingKan = sourceAction is GameAction.Kan && sourceAction.type == GameAction.KanType.ADDED_KAN,
+                            isRobbingClosedKan = sourceAction is GameAction.Kan && sourceAction.type == GameAction.KanType.CLOSED_KAN,
+                        )
+                    ) {
+                        legalActions.add(GameAction.Ron(incomingTile.id))
+                    }
+                }
+            }
+
+            // 2. 檢查是否可以碰 (Pon)
+            // 立直後不能碰、河底牌不能碰；碰後只剩食替限制的牌可打時不能碰
+            // 放過碰之後同巡仍然可以碰：日麻沒有過水碰的限制，放過清單只用於同巡振聽（見 Ron 的判定）
+            val matchingForPon = player.hand.standingTiles.filter { it.tile == incomingBaseTile }
+            if (matchingForPon.size >= 2 && !isRiichi && wallHasMoreTiles) {
+                distinctCallTileChoices(matchingForPon.indices.flatMap { first -> (first + 1..matchingForPon.lastIndex).map { listOf(matchingForPon[first], matchingForPon[it]) } })
+                    .filter { ponTiles -> RiichiDiscardRestriction.leavesDiscard(player.hand.standingTiles, ponTiles, incomingBaseTile, isPon = true) }
+                    .forEach { ponTiles -> legalActions.add(GameAction.Pon(incomingTile.id, ponTiles.map { it.id })) }
+            }
+
+            // 3. 檢查是否可以吃 (Chi)
+            // 立直後不能吃、河底牌不能吃；吃後只剩食替限制的牌可打時不能吃
+            val incomingNumeric = incomingBaseTile as? Tile.Numeric
+            if (allowsChi && sourceDirection == RelativeDirection.Left && incomingNumeric != null && !isRiichi && wallHasMoreTiles) {
+                val iTile = incomingNumeric
+                val handTiles = player.hand.standingTiles
+
+                // 3a. 檢查 (tile - 1, tile - 2) 的組合
+                if (iTile.value > 2) {
+                    val t1 = Tile.Numeric(iTile.suit, iTile.value - 1)
+                    val t2 = Tile.Numeric(iTile.suit, iTile.value - 2)
+                    chiTileChoices(handTiles, t1, t2)
+                        .filter { chiTiles -> RiichiDiscardRestriction.leavesDiscard(handTiles, chiTiles, iTile, isPon = false) }
+                        .forEach { chiTiles -> legalActions.add(GameAction.Chi(incomingTile.id, chiTiles.map { it.id })) }
+                }
+
+                // 3b. 檢查 (tile - 1, tile + 1) 的組合
+                if (iTile.value in 2..<9) {
+                    val t1 = Tile.Numeric(iTile.suit, iTile.value - 1)
+                    val t2 = Tile.Numeric(iTile.suit, iTile.value + 1)
+                    chiTileChoices(handTiles, t1, t2)
+                        .filter { chiTiles -> RiichiDiscardRestriction.leavesDiscard(handTiles, chiTiles, iTile, isPon = false) }
+                        .forEach { chiTiles -> legalActions.add(GameAction.Chi(incomingTile.id, chiTiles.map { it.id })) }
+                }
+
+                // 3c. 檢查 (tile + 1, tile + 2) 的組合
+                if (iTile.value < 8) {
+                    val t1 = Tile.Numeric(iTile.suit, iTile.value + 1)
+                    val t2 = Tile.Numeric(iTile.suit, iTile.value + 2)
+                    chiTileChoices(handTiles, t1, t2)
+                        .filter { chiTiles -> RiichiDiscardRestriction.leavesDiscard(handTiles, chiTiles, iTile, isPon = false) }
+                        .forEach { chiTiles -> legalActions.add(GameAction.Chi(incomingTile.id, chiTiles.map { it.id })) }
+                }
+            }
+
+            // 4. 檢查是否可以大明槓 (Open Kan)
+            // 立直後不能明槓、牌山剩 1 張以下時不能明槓
+            val openKanCount = player.hand.standingTiles.count { it.tile == incomingBaseTile }
+            if (canDeclareAnotherKan && wallAllowsKan && openKanCount == 3 && !isRiichi) {
+                val withTiles =
+                    player.hand.standingTiles.filter { it.tile == incomingBaseTile }.map { it.id }
+                legalActions.add(GameAction.Kan(GameAction.KanType.OPEN_KAN, incomingTile.id, withTiles))
+            }
+        }
+
+        // 若有其他合法動作，允許玩家選擇放棄
+        if (legalActions.isNotEmpty()) {
+            legalActions.add(GameAction.Pass)
+        }
+
+        return legalActions
+    }
+
+    /**
+     * 判定本局拔北補牌次數是否尚未用完。
+     *
+     * @param tableState 目前桌況。
+     * @return 存在牌山進度且拔北補牌次數小於四時為 true。
+     */
+    private fun canPullAnotherNorth(tableState: TableState): Boolean {
+        val wallProgress = tableState.components[RiichiTableComponents.WALL_PROGRESS] ?: return false
+        return wallProgress.completedNorthDrawCount < RiichiSupplementalDrawPolicy.MAX_SUPPLEMENTAL_DRAWS
+    }
+
+    /**
+     * 列出吃牌時可用的手牌組合：兩種牌各取一張，同種牌中組件不同（例如赤五與普通五、透明與不透明）的張各成一個選項。
+     *
+     * @param handTiles 玩家的立牌。
+     * @param first 順子需要的第一種牌。
+     * @param second 順子需要的第二種牌。
+     * @return 不重複的組合，依 [distinctCallTileChoices] 的順序排列。缺少任一種牌時為空。
+     */
+    private fun chiTileChoices(handTiles: List<IdentifiedTile>, first: Tile, second: Tile): List<List<IdentifiedTile>> {
+        val firstCopies = handTiles.filter { it.tile == first }.distinctBy { it.components }
+        val secondCopies = handTiles.filter { it.tile == second }.distinctBy { it.components }
+        return distinctCallTileChoices(firstCopies.flatMap { a -> secondCopies.map { b -> listOf(a, b) } })
+    }
+
+    /**
+     * 以每張牌的牌面與組件配對去除重複，只保留每種組合的第一個選項。
+     * 用到較少赤寶牌的組合排在前面，讓預設選項保留手上的赤寶牌。
+     *
+     * @param choices 候選的手牌組合。
+     * @return 不重複的組合。
+     */
+    private fun distinctCallTileChoices(choices: List<List<IdentifiedTile>>): List<List<IdentifiedTile>> = choices
+        .distinctBy { choice -> choice.groupingBy { it.tile to it.components }.eachCount() }
+        .sortedBy { choice -> choice.count { it.components[RiichiTileComponents.RED_DORA] != null } }
+
+    /**
+     * 立直宣告需要玩家從立牌中另外指定打哪張牌，候選牌為「打出後手牌仍然聽牌」的立牌。其他日麻動作
+     * 在 [getLegalActions] 回傳時已經帶齊所需牌張，不需要額外選牌。
+     */
+    override fun tileSelectionRequirement(
+        tableState: TableState,
+        player: MahjongPlayer,
+        action: GameAction,
+    ): TileSelectionRequirement? {
+        if (action != RIICHI_GAME_ACTION) return null
+
+        val eligibleTileIds = player.hand.standingTiles
+            .filter { candidate ->
+                val discardResult = player.hand.discardById(candidate.id) ?: return@filter false
+                shantenCalculator.calculate(
+                    hand = Hand(tiles = discardResult.hand.tiles, melds = discardResult.hand.melds),
+                ) is ShantenResult.Tenpai
+            }
+            .map { it.id }
+            .toSet()
+        return TileSelectionRequirement(eligibleTileIds)
+    }
+
+    /**
+     * 檢查手牌是否符合最低胡牌番數限制。
+     *
+     * @param tableState 當前的遊戲桌況。
+     * @param player 欲判斷合法動作的玩家。
+     * @param incomingTile 進來的牌（胡牌的那張牌）。
+     * @param isTsumo 是否為自摸。
+     * @param isRobbingKan 是否為搶槓。
+     * @param isRobbingClosedKan 是否為搶暗槓。
+     * @return 是否符合最低番數限制。
+     */
+    private fun checkMinimumHan(
+        tableState: TableState,
+        player: MahjongPlayer,
+        incomingTile: IdentifiedTile,
+        isTsumo: Boolean,
+        isRobbingKan: Boolean = false,
+        isRobbingClosedKan: Boolean = false,
+    ): Boolean {
+        val result = qualifyingHan(tableState, player, incomingTile, isTsumo, isRobbingKan)
+
+        // 役滿（totalHan < 0）
+        if (result.yakuman) {
+            // 判斷是否為國士無雙
+            val isKokushiMusou =
+                result.isKokushi
+
+            return if (isRobbingClosedKan) {
+                // 國士無雙才可以搶暗槓
+                isKokushiMusou
+            } else {
+                // 溢滿必定滿足最低番數限制
+                true
+            }
+        }
+
+        // 非役滿不能搶暗槓
+        if (isRobbingClosedKan) {
+            return false
+        }
+
+        // 寶牌/裏寶牌/赤寶牌不計入最低番數限制——這裡只判斷「役種本身」夠不夠格胡牌，寶牌只在
+        // result.totalHan（用來算實際點數）裡才該疊加，不能讓一手光靠寶牌湊到門檻的牌型被視為合法。
+        return result.value >= tableState.config.minimumWinConstraint
+    }
+
+    /**
+     * 計算不含各類寶牌的起胡番數。
+     *
+     * @param tableState 目前桌況。
+     * @param player 待判定的玩家。
+     * @param incomingTile 和牌張。
+     * @param isTsumo 是否為自摸。
+     * @param isRobbingKan 是否為搶槓。
+     * @return 非寶牌番數與役滿標記。
+     */
+    private fun qualifyingHan(
+        tableState: TableState,
+        player: MahjongPlayer,
+        incomingTile: IdentifiedTile,
+        isTsumo: Boolean,
+        isRobbingKan: Boolean = false,
+    ): RiichiQualifyingHan {
+        val context = contextCalculator.calculate(
+            input = RiichiHandValueContextCalculator.Input(tableState, player, incomingTile, isTsumo, isRobbingKan),
+        )
+        return handValueCalculator.calculate(context).qualifyingHan()
+    }
+
+    /**
+     * 檢查是否允許立直後暗槓。
+     *
+     * 需要符合以下條件：
+     * 1. 暗槓後面子結構不可改變
+     * 2. 暗槓前與暗槓後的聽牌列表必須完全相同才能暗槓。
+     *
+     * @param player 玩家。
+     * @param incomingTile 即將暗槓的牌。
+     * @param revealsClosedKanTiles 規則是否公開暗槓的牌。
+     * @return 是否允許暗槓。
+     */
+    private fun checkClosedKanAfterRiichi(
+        player: MahjongPlayer,
+        incomingTile: IdentifiedTile,
+        revealsClosedKanTiles: Boolean,
+    ): Boolean {
+        val incomingBaseTile = incomingTile.tile
+
+        // 取得暗槓前的聽牌列表
+        val currentHand = Hand(
+            tiles = player.hand.standingTiles.toMutableList(),
+            melds = player.hand.exposedMelds.toMutableList(),
+        )
+        val beforeKanResult = shantenCalculator.calculate(currentHand)
+
+        if (beforeKanResult !is ShantenResult.Tenpai) {
+            // 暗槓前未聽牌，理論上不應進入此分支（呼叫端已檢查）
+            return false
+        }
+
+        val winningTilesBefore = beforeKanResult.winningTiles.toSet()
+        if (!RiichiClosedKanStructure.preservesTriplet(
+                standingTiles = player.hand.standingTiles.map { it.tile },
+                winningTiles = winningTilesBefore,
+                kanTile = incomingBaseTile,
+                existingMelds = player.hand.exposedMelds.size,
+            )
+        ) {
+            return false
+        }
+
+        // 暗槓模擬：將手牌中 3 張相同的牌移至副露區，再加上摸到的牌湊成 4 張牌
+        val tilesToKan = player.hand.standingTiles.filter { it.tile == incomingBaseTile }.toMutableList()
+        tilesToKan.add(incomingTile)
+        val remainingTiles = player.hand.standingTiles.filter { it.tile != incomingBaseTile }
+
+        // 建立暗槓的 Meld
+        val closedKanMeld = Meld(
+            type = MeldType.ClosedKan,
+            tiles = tilesToKan,
+            sourceTile = null,
+            sourceDirection = RelativeDirection.Self,
+            publiclyRevealedTileIds = closedKanPubliclyRevealedTileIds(tilesToKan, revealsClosedKanTiles),
+            faceDownTileIds = closedKanFaceDownTileIds(tilesToKan),
+        )
+
+        // 建立新的 Hand，包含剩餘立牌和新增的暗槓
+        val meldsAfterKan = (player.hand.exposedMelds + closedKanMeld).toMutableList()
+        val handAfterKan = Hand(remainingTiles.toMutableList(), meldsAfterKan)
+
+        // 取得暗槓後的聽牌列表
+        val afterKanResult = shantenCalculator.calculate(handAfterKan)
+
+        if (afterKanResult !is ShantenResult.Tenpai) {
+            // 暗槓後未聽牌，不允許暗槓
+            return false
+        }
+
+        val winningTilesAfter = afterKanResult.winningTiles.toSet()
+
+        // 比較兩者的聽牌列表是否完全相同
+        return winningTilesBefore == winningTilesAfter
+    }
+
+    /** 槓牌次數與活牌餘量限制。 */
+    private companion object {
+        /** 全場槓子數上限（明槓/暗槓/加槓皆算），見 [getLegalActions] 對這個上限的說明。 */
+        const val MAX_KAN_COUNT = 4
+
+        /** 宣告任何一種槓時，牌山（不含王牌）最少要剩下的張數。 */
+        const val MIN_LIVE_TILES_FOR_KAN = 2
+    }
+}

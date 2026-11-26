@@ -1,0 +1,81 @@
+package com.doublemoon1119.mahjongcraft.logic.rules.riichi
+
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiWallFactory
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
+import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
+import kotlin.random.Random
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+
+/**
+ * 針對 [RiichiWallFactory] 進行的單元測試。
+ *
+ * 驗證日本麻將牌山的組成，特別是赤牌（Red Dora）在不同配置下的數量與分佈。
+ */
+class RiichiWallFactoryTest {
+
+    /**
+     * 驗證日麻牌山總數與標準 3 赤牌配置。
+     *
+     * 預期總數為 136 張，且萬、筒、條應各有一張赤牌。赤牌的基本牌面是普通五，另帶赤五外觀。
+     */
+    @Test
+    fun `test riichi wall composition with three red dora`() {
+        val config = RiichiRuleConfig(redDoraCount = 3)
+        val factory = RiichiWallFactory(config)
+        val wall = factory.create(Random(0))
+
+        assertEquals(136, wall.remainingCount)
+
+        val allTiles = wall.getAllTiles()
+        val redCount = allTiles.count { it.components[RiichiTileComponents.RED_DORA] != null }
+        assertEquals(3, redCount)
+
+        val redBySuit = allTiles.filter { it.components[RiichiTileComponents.RED_DORA] != null }
+            .groupBy { (it.tile as Tile.Numeric).suit }
+
+        redBySuit.forEach { (_, tiles) ->
+            assertEquals(1, tiles.size)
+        }
+        allTiles.filter { it.components[RiichiTileComponents.RED_DORA] != null }.forEach { red ->
+            assertEquals(5, (red.tile as Tile.Numeric).value)
+            assertEquals(RiichiTileValues.RED_FIVE_APPEARANCE_ID, red.components[BuiltInTileComponents.APPEARANCE])
+        }
+    }
+
+    /**
+     * 驗證 4 赤牌配置下，筒子應佔有 2 張赤牌。
+     */
+    @Test
+    fun `test riichi wall composition with four red dora`() {
+        val config = RiichiRuleConfig(redDoraCount = 4)
+        val factory = RiichiWallFactory(config)
+        val wall = factory.create(Random(0))
+
+        val allTiles = wall.getAllTiles()
+        val redBySuit = allTiles.filter { it.components[RiichiTileComponents.RED_DORA] != null }
+            .groupBy { (it.tile as Tile.Numeric).suit }
+
+        // 驗證筒子 (Dot) 應有兩張赤牌
+        assertEquals(2, redBySuit[Tile.Suit.Dot]?.size)
+    }
+
+    /** 使用透明牌時，四人與三人日麻每種牌四張中都有三張透明。不使用時沒有透明牌。 */
+    @Test
+    fun `transparent tiles mark three of every four copies`() {
+        val fourPlayer = RiichiWallFactory(RiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0)).create(Random(0)).getAllTiles()
+        val threePlayer = ThreePlayerRiichiWallFactory(ThreePlayerRiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0))
+            .create(Random(0)).getAllTiles()
+
+        listOf(fourPlayer, threePlayer).forEach { tiles ->
+            val transparentByTile = tiles.filter { it.components[BuiltInTileComponents.TRANSPARENT] != null }.groupingBy { it.tile }.eachCount()
+            assertEquals(tiles.map { it.tile }.toSet(), transparentByTile.keys)
+            assertTrue(transparentByTile.values.all { it == RiichiTileValues.TRANSPARENT_COPIES })
+        }
+        assertTrue(RiichiWallFactory(RiichiRuleConfig()).create(Random(0)).getAllTiles().none { it.components[BuiltInTileComponents.TRANSPARENT] != null })
+    }
+}

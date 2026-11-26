@@ -1,0 +1,33 @@
+{
+  "display": {
+    "icon": {
+      "item": "mahjongcraft:wooden_mahjong_table"
+    },
+    "title": {
+      "translate": "advancements.mahjongcraft.mahjong.root.title"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.mahjong.root.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false,
+    "background": "minecraft:textures/block/green_terracotta.png"
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "mahjongcraft:wooden_mahjong_table",
+              "mahjongcraft:concrete_mahjong_table"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

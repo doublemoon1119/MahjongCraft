@@ -1,0 +1,30 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
+
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MatchSettlementPresentationTemplateRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+
+/** 內建通用終局結算模板 key。規則沒有綁定模板時使用。 */
+const val BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY: String = "${MinecraftModMetadata.MOD_ID}:generic_match_settlement"
+
+/** 終局面板模板的凍結式 registry。擴充只透過 [MatchSettlementPresentationTemplateRegistrar] 登記。 */
+interface MatchSettlementPresentationTemplateRegistry : MatchSettlementPresentationTemplateRegistrar {
+
+    /**
+     * 查詢指定 key 的模板。
+     *
+     * @param key 完整模板 key。
+     * @return 已登記的模板。未知 key 回傳 null。
+     */
+    fun find(key: String): MatchSettlementPresentationTemplate?
+
+    /**
+     * 取得規則模組使用的模板。沒有綁定或綁定的模板不存在時使用 [BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY]。
+     *
+     * @param ruleModuleId 規則模組 ID。
+     * @return 模板。連內建模板都不存在時為 null。
+     */
+    fun findForRule(ruleModuleId: String): MatchSettlementPresentationTemplate?
+
+    /** 凍結 registry，之後不可再登記。 */
+    fun freeze()
+}

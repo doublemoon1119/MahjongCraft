@@ -1,0 +1,41 @@
+# Prepares a runner to build one target: installs the JDKs and sets up Gradle.
+# Later steps pass "-Porg.gradle.java.installations.fromEnv=${JAVA_TOOLCHAIN_VARIABLES}" so Gradle finds the
+# target's JDKs, and disable toolchain downloads so a missing JDK fails the job.
+name: Set up a target
+description: Installs the JDKs a build target declares and the JDK Gradle runs on, then sets up Gradle.
+
+inputs:
+  java-toolchains:
+    description: 'The JDK versions the target declares, as a JSON array such as [17, 21]: matrix.javaToolchains.'
+    required: true
+  gradle-java-version:
+    description: The JDK Gradle itself runs on, the same version used for local development.
+    default: "25"
+
+runs:
+  using: composite
+  steps:
+    # The JDKs the target declares are installed first: its toolchain and any JDK its build tools need.
+    # The JDK running Gradle is installed last, so it becomes JAVA_HOME.
+    - uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: ${{ join(fromJSON(inputs.java-toolchains), fromJSON('"\n"')) }}
+    - uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: ${{ inputs.gradle-java-version }}
+    # setup-java sets one JAVA_HOME_<version>_<architecture> variable for each JDK it installs.
+    - name: Locate toolchain JDKs
+      shell: bash
+      env:
+        JAVA_TOOLCHAINS: ${{ join(fromJSON(inputs.java-toolchains), ' ') }}
+      run: |
+        variables=""
+        for version in ${JAVA_TOOLCHAINS}; do
+          variables="${variables:+$variables,}JAVA_HOME_${version}_${RUNNER_ARCH}"
+        done
+        echo "JAVA_TOOLCHAIN_VARIABLES=$variables" >> "$GITHUB_ENV"
+    - uses: gradle/actions/setup-gradle@v6
+      with:
+        cache-read-only: ${{ github.event_name == 'pull_request' }}

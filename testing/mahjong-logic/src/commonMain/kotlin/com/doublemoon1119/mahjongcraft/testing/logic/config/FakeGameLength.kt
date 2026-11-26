@@ -1,0 +1,12 @@
+package com.doublemoon1119.mahjongcraft.testing.logic.config
+
+import com.doublemoon1119.mahjongcraft.logic.config.GameLength
+
+/**
+ * 用於測試的模擬對局長度配置。
+ *
+ * @property totalRounds 預期總局數，預設為 4。
+ */
+class FakeGameLength(
+    override val totalRounds: Int = 4,
+) : GameLength

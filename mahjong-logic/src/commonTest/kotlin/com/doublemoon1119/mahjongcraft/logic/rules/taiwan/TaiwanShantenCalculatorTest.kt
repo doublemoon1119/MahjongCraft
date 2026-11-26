@@ -1,0 +1,161 @@
+package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
+
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenTestFixtures.assertDrawProperties
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenTestFixtures.fullWall
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenTestFixtures.handOf
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenTestFixtures.randomCompleteTiles
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenTestFixtures.randomHand
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
+import kotlin.random.Random
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
+
+/** 驗證台灣麻將向聽計算器對常見手牌、花牌及摸牌前後變化的判定。 */
+class TaiwanShantenCalculatorTest {
+
+    /** 受測台灣麻將向聽計算器。 */
+    private val calculator = TaiwanShantenCalculator()
+
+    /** 四個面子加兩組對子的十六張手牌應判為聽牌。 */
+    @Test
+    fun `test tenpai hand - 4 melds, 1 pair, 1 tatsu`() {
+        // 手牌: 111m, 234m, 567m, 東東東, 南南, 88m (16張)
+        // 4 面子, 1 雀頭, 1 搭子 -> 聽牌 (0 shanten)
+        val hand = FakeHandFactory.create(
+            tiles = listOf(
+                // 4 面子
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Honor.East,
+                Tile.Honor.East,
+                Tile.Honor.East,
+                // 1 雀頭
+                Tile.Honor.South,
+                Tile.Honor.South,
+                // 1 搭子
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 8),
+            ),
+        )
+        val result = calculator.calculate(hand)
+        assertTrue(result is ShantenResult.Tenpai, "Hand with 4 melds, 1 pair, 1 tatsu should be Tenpai.")
+    }
+
+    /** 五個面子加一張南的十六張手牌應判為單騎聽牌。 */
+    @Test
+    fun `test tenpai hand - 5 melds, 1 single`() {
+        // 手牌: 111m, 234m, 567m, 888m, 東東東, 南 (16張)
+        // 5 面子, 1 單張 -> 聽牌 (0 shanten), 聽單騎 南
+        val hand = FakeHandFactory.create(
+            tiles = listOf(
+                // 5 面子
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Honor.East,
+                Tile.Honor.East,
+                Tile.Honor.East,
+                // 1 單張
+                Tile.Honor.South,
+            ),
+        )
+        val result = calculator.calculate(hand)
+        assertTrue(result is ShantenResult.Tenpai, "Hand with 5 melds, 1 single should be Tenpai.")
+    }
+
+    /** 五個面子加一組雀頭的十七張手牌應判為完成。 */
+    @Test
+    fun `test agari hand - 5 melds, 1 pair`() {
+        // 手牌: 111m, 234m, 567m, 888m, 東東東, 南南 (17張)
+        // 5 面子, 1 雀頭 -> 胡牌 (-1 shanten)
+        val hand = FakeHandFactory.create(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Honor.East,
+                Tile.Honor.East,
+                Tile.Honor.East,
+                Tile.Honor.South,
+                Tile.Honor.South,
+            ),
+        )
+        val result = calculator.calculate(hand)
+        assertTrue(
+            actual = result is ShantenResult.Complete,
+            message = "Hand with 5 melds, 1 pair should be Complete (Agari), but was: $result",
+        )
+    }
+
+    /** 驗證台灣花牌 Extension 不會參與向聽數計算。 */
+    @Test
+    fun `test taiwan flower extensions are ignored`() {
+        val emptyHand = FakeHandFactory.create(emptyList())
+        val flowerHand = FakeHandFactory.create(TaiwanTileTypes.createAll())
+
+        assertEquals(calculator.calculate(emptyHand), calculator.calculate(flowerHand))
+    }
+
+    /** 和牌少一張的手牌（含副露）摸牌時，聽牌列表與摸進後的結果一致，向聽數最多變化 1。 */
+    @Test
+    fun `drawing into a tenpai hand agrees with its waits`() {
+        val random = Random(PROPERTY_SEED)
+        repeat(PROPERTY_HANDS) {
+            val melds = random.nextInt(5)
+            val hand = handOf(randomCompleteTiles(random, groups = 5 - melds).drop(1), melds)
+            assertIs<ShantenResult.Tenpai>(calculator.calculate(hand), "A complete hand missing one tile must be tenpai")
+            assertDrawProperties(calculator, hand, { it }, "tenpai")
+        }
+    }
+
+    /** 隨機抽出的 16 張（有副露時更少）摸牌時，向聽數最多變化 1。 */
+    @Test
+    fun `drawing into a random hand changes shanten by at most one`() {
+        val random = Random(PROPERTY_SEED + 1)
+        val wall = fullWall()
+        repeat(PROPERTY_HANDS) {
+            val melds = random.nextInt(6)
+            val hand = randomHand(random, wall, standing = 16 - 3 * melds, meldCount = melds)
+            assertDrawProperties(calculator, hand, { it }, "random")
+        }
+    }
+
+    /** 性質測試的固定亂數設定。 */
+    private companion object {
+        /** 產生可重現牌型的亂數種子。 */
+        const val PROPERTY_SEED = 20261012
+
+        /** 每項性質測試產生的牌型數。 */
+        const val PROPERTY_HANDS = 300
+    }
+}

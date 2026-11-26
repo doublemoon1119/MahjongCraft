@@ -1,0 +1,1549 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
+
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOrientation
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
+import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatAnchor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatOffset
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.localDiscardVector
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.localHandVector
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.localWallVector
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.rotateForFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.rotateForSide
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.floor
+import kotlin.math.hypot
+import kotlin.math.sin
+import kotlin.math.sqrt
+import kotlin.uuid.Uuid
+
+/** 局部水平向量。沿用 [MahjongTableSide]／[MahjongTableFacing] 兩段式旋轉合成，Y 軸不受水平旋轉影響。 */
+private data class TileTableVector(val x: Double, val y: Double, val z: Double)
+
+/**
+ * 把 [TileWallPosition] 這種與 Minecraft 座標無關的抽象牌牆結構位置，轉換成真實世界座標。
+ *
+ * 兩段式旋轉合成與 [MahjongDiceTableLayout] 完全同一套慣例：先算出「以局部南側為基準」的向量，再依序旋轉到目標側面、旋轉到桌子世界朝向。
+ * 牌牆的邏輯面由規則指定對應的桌邊，不依玩家人數或座位索引推算。
+ */
+object MahjongTileTableLayout {
+    /**
+     * 依 controller 座標、桌子世界朝向、莊家座位與牌牆總墩數，算出單一 [TileWallPosition] 的世界座標。
+     *
+     * @param stacksPerSide 這副牌牆每面的總墩數（例如四人日麻固定 17），用來將牌墩對稱置中於側面。
+     * @param controllerX 麻將桌 controller 的世界 X 座標。
+     * @param controllerY 麻將桌 controller 的世界 Y 座標。
+     * @param controllerZ 麻將桌 controller 的世界 Z 座標。
+     * @param tableFacing 麻將桌的世界朝向。
+     * @param sideLayout 規則指定並已解析的牌牆面與桌邊對應。
+     * @param tileLayout 該規則的桌面牌位配置，決定牌牆往桌心的移動與風車形錯開。
+     * @param placement 牌牆格位、位移與牌張方向。
+     * @return 對應格位的世界座標與 yaw。
+     * [TileWallPlacement.offset] 使用牌張尺寸正規化的三軸位移。沿牌牆的小數位移會在相鄰兩個基本墩位
+     * 間內插，跨過牆角時也沿環狀拓樸連續推進。這裡只投影最終端點，動畫行進路徑由呈現層另行處理。
+     */
+    fun wallPlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        sideLayout: MahjongTileWallSideLayout,
+        tileLayout: TableTileLayoutProfile,
+        stacksPerSide: Int,
+        placement: TileWallPlacement,
+    ): MahjongTileWallPlacement {
+        require(stacksPerSide > 0) { "Stacks per side must be positive" }
+        val sideCount = sideLayout.sideCount
+        val position = placement.position
+        require(position.side in 0 until sideCount) { "Side ${position.side} out of range" }
+        require(position.stack in 0 until stacksPerSide) {
+            "Stack ${position.stack} out of range for $stacksPerSide stacks per side"
+        }
+        require(position.layer in 0..1) { "Layer ${position.layer} must be 0 or 1" }
+
+        val baseCoordinate = position.side * stacksPerSide + position.stack
+        val targetCoordinate = baseCoordinate + placement.offset.alongWallStacks
+        val lowerCoordinate = floor(targetCoordinate).toInt()
+        val interpolation = targetCoordinate - lowerCoordinate
+        val lower = baseWallPlacement(
+            controllerX = controllerX,
+            controllerY = controllerY,
+            controllerZ = controllerZ,
+            tableFacing = tableFacing,
+            sideLayout = sideLayout,
+            tileLayout = tileLayout,
+            stacksPerSide = stacksPerSide,
+            circularStack = lowerCoordinate,
+            layer = position.layer,
+        )
+        val upper = baseWallPlacement(
+            controllerX = controllerX,
+            controllerY = controllerY,
+            controllerZ = controllerZ,
+            tableFacing = tableFacing,
+            sideLayout = sideLayout,
+            tileLayout = tileLayout,
+            stacksPerSide = stacksPerSide,
+            circularStack = lowerCoordinate + 1,
+            layer = position.layer,
+        )
+        val centerX = controllerX + BLOCK_CENTER
+        val centerZ = controllerZ + BLOCK_CENTER
+        val interpolated = interpolateWallBoundary(lower, upper, interpolation, centerX, centerZ)
+        val interpolatedX = interpolated.x
+        val interpolatedY = interpolated.y
+        val interpolatedZ = interpolated.z
+        val towardCenterX = centerX - interpolatedX
+        val towardCenterZ = centerZ - interpolatedZ
+        val centerDistance = sqrt(towardCenterX * towardCenterX + towardCenterZ * towardCenterZ)
+        require(centerDistance > 0.0 && centerDistance.isFinite()) { "Wall placement must have a finite direction toward the table center" }
+        val centerOffset = placement.offset.towardTableCenterTiles * MahjongTileDimensions.TILE_HEIGHT
+        val layerOffset = placement.offset.upwardLayers *
+            (MahjongTileDimensions.TILE_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING)
+        return MahjongTileWallPlacement(
+            x = interpolatedX + towardCenterX / centerDistance * centerOffset,
+            y = interpolatedY + layerOffset,
+            z = interpolatedZ + towardCenterZ / centerDistance * centerOffset,
+            yaw = (interpolated.yaw + orientationYaw(placement.orientation))
+                .mod(FULL_YAW_DEGREES),
+        )
+    }
+
+    /**
+     * 計算兩個基本墩位之間的位置。相對牆面沿外緣繞行，不穿過桌心。
+     *
+     * @param lower 起始墩位。
+     * @param upper 下一個邏輯墩位。
+     * @param progress 從起點至終點的距離比例。
+     * @param centerX 桌心世界 X 座標。
+     * @param centerZ 桌心世界 Z 座標。
+     * @return 依實際距離內插的位置與朝向。
+     */
+    private fun interpolateWallBoundary(
+        lower: MahjongTileWallPlacement,
+        upper: MahjongTileWallPlacement,
+        progress: Double,
+        centerX: Double,
+        centerZ: Double,
+    ): MahjongTileWallPlacement {
+        if (progress == 0.0) return lower
+        val turn = shortestYawDeltaDegrees(lower.yaw, upper.yaw)
+        if (abs(turn) != 180f && turn != -90f) {
+            return MahjongTileWallPlacement(
+                x = lower.x + (upper.x - lower.x) * progress,
+                y = lower.y + (upper.y - lower.y) * progress,
+                z = lower.z + (upper.z - lower.z) * progress,
+                yaw = interpolateYaw(lower.yaw, upper.yaw, progress),
+            )
+        }
+        val points = if (abs(turn) == 180f) {
+            TileWallPerimeterPath.oppositeSidePath(lower, upper, centerX, centerZ)
+        } else {
+            val corners = listOf(lower.copy(x = upper.x), lower.copy(z = upper.z))
+            val corner = corners.maxBy { (it.x - centerX) * (it.x - centerX) + (it.z - centerZ) * (it.z - centerZ) }
+            listOf(lower, corner.copy(yaw = interpolateYaw(lower.yaw, upper.yaw, 0.5)), upper)
+        }
+        val lengths = points.zipWithNext { from, to -> hypot(to.x - from.x, to.z - from.z) }
+        var remaining = lengths.sum() * progress
+        points.zipWithNext().forEachIndexed { index, (from, to) ->
+            val length = lengths[index]
+            if (remaining <= length || index == lengths.lastIndex) {
+                val fraction = if (length == 0.0) 0.0 else remaining / length
+                return MahjongTileWallPlacement(
+                    x = from.x + (to.x - from.x) * fraction,
+                    y = from.y + (to.y - from.y) * fraction,
+                    z = from.z + (to.z - from.z) * fraction,
+                    yaw = interpolateYaw(from.yaw, to.yaw, fraction),
+                )
+            }
+            remaining -= length
+        }
+        return upper
+    }
+
+    /**
+     * 將沒有額外位移與旋轉的基本牌牆格位投影為世界座標。
+     *
+     * @param controllerX 麻將桌 controller 的世界 X 座標。
+     * @param controllerY 麻將桌 controller 的世界 Y 座標。
+     * @param controllerZ 麻將桌 controller 的世界 Z 座標。
+     * @param tableFacing 麻將桌的世界朝向。
+     * @param sideLayout 規則指定並已解析的牌牆面與桌邊對應。
+     * @param tileLayout 該規則的桌面牌位配置。
+     * @param stacksPerSide 牌牆每面的墩數。
+     * @param position 牌牆基本格位。
+     * @return 對應格位的世界座標與 yaw。
+     */
+    fun wallPlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        sideLayout: MahjongTileWallSideLayout,
+        tileLayout: TableTileLayoutProfile,
+        stacksPerSide: Int,
+        position: TileWallPosition,
+    ): MahjongTileWallPlacement = wallPlacement(
+        controllerX = controllerX,
+        controllerY = controllerY,
+        controllerZ = controllerZ,
+        tableFacing = tableFacing,
+        sideLayout = sideLayout,
+        tileLayout = tileLayout,
+        stacksPerSide = stacksPerSide,
+        placement = TileWallPlacement(position),
+    )
+
+    /**
+     * 取得牌牆結構涵蓋的面數（最大面 index 加一）。沒有任何格位時為 `0`。
+     *
+     * @param positions 牌牆結構中的格位。
+     * @return 牌牆面數。
+     */
+    fun wallSideCount(positions: Collection<TileWallPosition>): Int = positions.maxOfOrNull { it.side + 1 } ?: 0
+
+    /**
+     * 向規則查詢本局牌牆第一面的墩數。規則提供的大小只由規則配置與人數決定，不需要開局時排出的牌牆結構，
+     * 重新開啟世界後也能取得。
+     *
+     * @param module 本局的規則模組。
+     * @param playerCount 本局玩家人數。
+     * @return 第一面牌牆的墩數。規則沒有牌牆布局時為 null。
+     */
+    fun wallStacksPerSide(module: MahjongRuleModule<*>, playerCount: Int): Int? = module.createWallLayout(playerCount)?.sideStackCounts()?.firstOrNull()
+
+    /**
+     * 將環狀牌牆上的整數墩位投影為基本世界座標，超出單面範圍時會依 [sideLayout] 的面數循環。
+     *
+     * @param controllerX 麻將桌 controller 的世界 X 座標。
+     * @param controllerY 麻將桌 controller 的世界 Y 座標。
+     * @param controllerZ 麻將桌 controller 的世界 Z 座標。
+     * @param tableFacing 麻將桌的世界朝向。
+     * @param sideLayout 規則指定並已解析的牌牆面與桌邊對應。
+     * @param tileLayout 該規則的桌面牌位配置。
+     * @param stacksPerSide 牌牆每面的墩數。
+     * @param circularStack 環狀排列中的整數墩位。
+     * @param layer 墩內牌張層數（`0` 或 `1`）。
+     * @return 基本格位的世界座標與 yaw。
+     */
+    private fun baseWallPlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        sideLayout: MahjongTileWallSideLayout,
+        tileLayout: TableTileLayoutProfile,
+        stacksPerSide: Int,
+        circularStack: Int,
+        layer: Int,
+    ): MahjongTileWallPlacement {
+        val normalized = circularStack.mod(stacksPerSide * sideLayout.sideCount)
+        val side = normalized / stacksPerSide
+        val stack = normalized % stacksPerSide
+        val physicalSide = sideLayout.sideOf(side)
+        val local = localWallVector(stacksPerSide, stack, layer, tileLayout)
+        val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
+        return MahjongTileWallPlacement(
+            x = controllerX + BLOCK_CENTER + worldOffset.x,
+            y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
+            z = controllerZ + BLOCK_CENTER + worldOffset.z,
+            yaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES),
+        )
+    }
+
+    /**
+     * 以最短旋轉方向在兩個世界 yaw 之間內插。
+     *
+     * @param start 起始 yaw。
+     * @param end 結束 yaw。
+     * @param progress 內插進度。
+     * @return 內插後的 yaw。
+     */
+    private fun interpolateYaw(start: Float, end: Float, progress: Double): Float {
+        val delta = shortestYawDeltaDegrees(start, end)
+        return start + delta * progress.toFloat()
+    }
+
+    /**
+     * 將規則定義的離散牌張方向轉換為額外世界 yaw。
+     *
+     * @param orientation 牌張方向。
+     * @return 相對預設方向的 yaw 偏移。
+     */
+    private fun orientationYaw(orientation: TileWallPlacementOrientation): Float = when (orientation) {
+        TileWallPlacementOrientation.DEFAULT -> 0.0f
+        TileWallPlacementOrientation.CLOCKWISE_90 -> 90.0f
+        TileWallPlacementOrientation.HALF_TURN -> 180.0f
+        TileWallPlacementOrientation.COUNTERCLOCKWISE_90 -> -90.0f
+    }
+
+    /**
+     * 依牌牆每面墩數，算出牌牆生成掉落動畫（波浪感）從觸發到全部落地所需的總 tick 數——每面牌牆
+     * `stack` 越大（越靠玩家左手邊，見 [wallPlacement] KDoc）越晚開始掉落，`stack = stacksPerSide - 1`
+     * 是最後開始掉落的一墩，該墩開始掉落後還要再等一次完整的 [TileMotionAnimationSpec.DEFAULT_DURATION_TICKS]
+     * 才落地。跟 [MahjongDiceTableLayout.totalAnimationTicks]（「最大 stagger + 單次動畫時長」）同一套
+     * 算法模式，供呼叫端標記桌子忙碌時長使用。
+     *
+     * @param stacksPerSide 牌牆每面的墩數。
+     * @return 從掉落開始到最後一墩落地的總 tick 數。
+     */
+    fun wallDropAnimationTicks(stacksPerSide: Int): Int = wallDropStartDelayTicks((stacksPerSide - 1).coerceAtLeast(0)) +
+        TileMotionAnimationSpec.DEFAULT_DURATION_TICKS
+
+    /**
+     * 依 [TileWallPosition.stack] 算出牌牆生成掉落動畫該延遲多久才開始，供
+     * `EntityMahjongTileWallPresenter` 排定每墩延遲使用。跟 [wallDropAnimationTicks] 共用同一個
+     * [WAVE_STEP_TICKS]，避免呼叫端各自寫一份相同的乘法。
+     *
+     * @param stack 牌牆面上的零基底墩位。
+     * @return 這一墩開始掉落前的延遲 tick 數。
+     */
+    fun wallDropStartDelayTicks(stack: Int): Int = stack * WAVE_STEP_TICKS
+
+    /**
+     * 以局部南側玩家為基準的單張牌牆用牌位置。
+     *
+     * - [TileWallPosition.layer] 沿 Y 軸以牌深堆疊，牌面朝下平放。
+     * - 躺平後，沿墩排列方向（局部 X 軸）的外觀寬度是 [MahjongTileDimensions.TILE_WIDTH]。
+     *   垂直於側面方向（局部 Z 軸）的外觀寬度是 [MahjongTileDimensions.TILE_HEIGHT]，也就是直立時的高度。
+     * - 垂直於側面的偏移（`halfSpan`）至少維持標準 17 墩牌牆的外側邊界，較長的牌牆依自身長度向外延伸。
+     *   短牌牆因此仍避開桌心的中央擲骰區，標準四面牌牆的直線也在桌角相接。
+     * - 角落端點往 [TableTileLayoutProfile.wallStagger] 那一端移動半個 [MahjongTileDimensions.TILE_HEIGHT]，
+     *   形成端邊與側邊相接的布局。再加上 [MahjongTileDimensions.TILE_WIDTH] 的 [CORNER_GAP_RATIO] 倍，保留角落間距。
+     * - [TableTileLayoutProfile.wallInset] 讓整面牌牆再往桌心移動。
+     * - [TableTileLayoutProfile.wallCornerOverhang] 讓整面牌牆再往同一端移動，四面同向移動形成風車形。
+     * - `stack = 0` 位於從桌外面向該面牌牆時的右端，索引遞增時往左端移動。
+     * - 哪一面牆放在哪個桌邊由 [MahjongTileWallSideLayout] 決定，該側不一定有玩家。
+     *
+     * @param stacksPerSide 牌牆每面的墩數。
+     * @param stack 面內墩位 index。
+     * @param layer 墩內牌張層數。
+     * @param tileLayout 該規則的桌面牌位配置。
+     * @return 局部座標向量。
+     */
+    private fun localWallVector(
+        stacksPerSide: Int,
+        stack: Int,
+        layer: Int,
+        tileLayout: TableTileLayoutProfile,
+    ): TileTableVector {
+        val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val halfSpan = maxOf(stacksPerSide / 2.0 * stackStep, STANDARD_WALL_HALF_SPAN) - tileLayout.wallInset
+        val staggerSign = when (tileLayout.wallStagger) {
+            TableWallStagger.RIGHT -> 1.0
+            TableWallStagger.LEFT -> -1.0
+        }
+        val cornerInterlockShift = staggerSign * (
+            MahjongTileDimensions.TILE_HEIGHT / 2.0 + MahjongTileDimensions.TILE_WIDTH * CORNER_GAP_RATIO + tileLayout.wallCornerOverhang
+            )
+        val alongSide = ((stacksPerSide - 1) / 2.0 - stack) * stackStep + cornerInterlockShift
+        val layerHeight = layer * MahjongTileDimensions.TILE_DEPTH +
+            if (layer > 0) MahjongTileDimensions.TILE_SMALL_PADDING else 0.0
+        return TileTableVector(x = alongSide, y = layerHeight, z = halfSpan)
+    }
+
+    /**
+     * 依全域抓取次序（`0` 起算，涵蓋所有座位、所有輪次攤平成一個序列——莊家抓第一批、換下一家抓、
+     * 輪完一圈才回到莊家抓下一批，見 `EntityMahjongPlayerAreaPresenter.presentInitialDeal` KDoc）算出
+     * 開局發牌動畫這一次該延遲多久才開始——不像 [wallDropStartDelayTicks] 那樣所有墩其實還是各自
+     * 獨立落下，這裡是刻意讓連續抓取大幅重疊：[DEAL_TURN_STAGGER_TICKS] 小於
+     * [DEAL_LIFT_DURATION_TICKS]，下一次抓取甚至會在上一次的起飛動畫播到一半時就先開始，不需要等
+     * 上一次的起飛播完、更不需要等牌真的落地放好，讓連續抓取的節奏更快、更連貫。供 [dealAnimationTicks]
+     * 與呼叫端排定每次抓取延遲使用。
+     *
+     * @param turnIndex 全域抓取序列中的零基底次序。
+     * @return 這次抓取動畫開始前的延遲 tick 數。
+     */
+    fun dealBatchStartDelayTicks(turnIndex: Int): Int = turnIndex * DEAL_TURN_STAGGER_TICKS
+
+    /**
+     * 依總抓取次數（輪數 × 座位數，見 [dealBatchStartDelayTicks] KDoc）算出翻牌動畫該延遲多久才開始
+     * ——所有座位的最後一次抓取（落下階段）完整播完後，經過 [DEAL_FLIP_GAP_TICKS] 這一小段停頓，
+     * 全部座位的牌才同時原地翻起（位置不變，只有姿態旋轉角內插）。跟
+     * [dealAnimationTicks] 共用「最後一次抓取的延遲 + 該次本身時長」這段算法，避免兩處各自重複計算。
+     *
+     * @param totalTurnCount 開局發牌的總抓取次數。
+     * @return 統一翻牌動畫開始前的延遲 tick 數。
+     */
+    fun dealFlipStartDelayTicks(totalTurnCount: Int): Int = dealBatchStartDelayTicks((totalTurnCount - 1).coerceAtLeast(0)) +
+        DEAL_LIFT_DURATION_TICKS + DEAL_SNAP_GAP_TICKS + DEAL_DROP_DURATION_TICKS + DEAL_FLIP_GAP_TICKS
+
+    /**
+     * 依總抓取次數（輪數 × 座位數，見 [dealBatchStartDelayTicks] KDoc）算出開局發牌動畫（含最後統一
+     * 翻牌）從觸發到全部播完所需的總 tick 數，供呼叫端標記桌子忙碌時長使用。等於 [dealFlipStartDelayTicks]
+     * 加上翻牌動畫本身的時長（[DEAL_FLIP_DURATION_TICKS]）。
+     *
+     * @param totalTurnCount 開局發牌的總抓取次數。
+     * @return 發牌及翻牌動畫完成所需的總 tick 數。
+     */
+    fun dealAnimationTicks(totalTurnCount: Int): Int = dealFlipStartDelayTicks(totalTurnCount) + DEAL_FLIP_DURATION_TICKS
+
+    /**
+     * 依 controller 座標、桌子世界朝向與座位 index，算出該玩家手牌中第 [tileIndex] 張牌的世界座標。
+     *
+     * - 手牌使用 [seatLayout] 將完整玩家名單中的固定座位索引換成桌邊，與 [MahjongSeatingTableLayout] 使用相同對應。
+     * - 換莊不移動玩家或手牌。
+     * - 牌牆是否隨莊家旋轉由規則的牌牆配置決定。
+     *
+     * @param handSize 這位玩家目前的手牌張數，用來把整排手牌對稱置中於局部側面。
+     * @param tileIndex 這張牌在手牌裡的零基底索引（`0` 在最大 X、遞增時往負向移動，跟牌牆 `stack` 的
+     * 排列方向一致）。
+     * @param handShift 整排手牌（含摸牌位，見 [drawnTilePlacement]）沿排列方向往玩家左手邊（局部 X 軸負向）平移的距離。
+     *   - 負值往右手邊平移，`0.0`（預設值）代表置中。
+     *   - 由呼叫端依 [MahjongPlayerAreaLayout] 算好傳入，這裡只負責套用。
+     *   - 整排牌一起平移，牌與牌之間的間距（`stackStep`）不變。
+     *
+     * @param controllerX 麻將桌 controller 的世界 X 座標。
+     * @param controllerY 麻將桌 controller 的世界 Y 座標。
+     * @param controllerZ 麻將桌 controller 的世界 Z 座標。
+     * @param tableFacing 麻將桌的世界朝向。
+     * @param seatLayout 本局玩家座位 index 對應的標準桌面布局。
+     * @param seatIndex 玩家在固定座位順序中的 index。
+     * @return 指定手牌格位的世界座標與 yaw。
+     */
+    fun handPlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        seatLayout: MahjongTableSeatLayout,
+        seatIndex: Int,
+        handSize: Int,
+        tileIndex: Int,
+        handShift: Double = 0.0,
+    ): MahjongTileWallPlacement {
+        require(handSize > 0) { "Hand size must be positive" }
+        require(tileIndex in 0 until handSize) { "Tile index $tileIndex out of range for hand size $handSize" }
+        require(handShift.isFinite()) { "Hand shift must be finite" }
+
+        val physicalSide = seatLayout.sideOf(seatIndex)
+        val local = localHandVector(handSize, tileIndex, handShift)
+        val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
+        return MahjongTileWallPlacement(
+            x = controllerX + BLOCK_CENTER + worldOffset.x,
+            y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
+            z = controllerZ + BLOCK_CENTER + worldOffset.z,
+            yaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES),
+        )
+    }
+
+    /**
+     * 以局部南側玩家為基準的單張手牌位置：牌直立擺放，沿排列方向（局部 X 軸）的外觀寬度是
+     * [MahjongTileDimensions.TILE_WIDTH]，跟牌牆同一套墩間距常數對稱置中，再扣掉 [handShift]
+     * 整排一起往負向平移。垂直於側面的距離（`HAND_EDGE_OFFSET`）是初始估算值，只要求比牌牆的
+     * `halfSpan` 更靠近桌緣，使手牌位於牌牆與桌緣之間、靠近玩家一側。
+     *
+     * @param handSize 手牌張數。
+     * @param tileIndex 手牌中的零基底索引。
+     * @param handShift 整排手牌往玩家左手邊平移的距離，負值往右手邊。
+     * @return 局部座標向量。
+     */
+    private fun localHandVector(handSize: Int, tileIndex: Int, handShift: Double): TileTableVector {
+        val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val alongSide = ((handSize - 1) / 2.0 - tileIndex) * stackStep - handShift
+        return TileTableVector(x = alongSide, y = 0.0, z = HAND_EDGE_OFFSET)
+    }
+
+    /**
+     * 依 controller 座標、桌子世界朝向與座位 index，算出這位玩家目前摸到、尚未併入立牌或打出的那張牌
+     * 的世界座標——緊鄰立牌列尾端外一段看得出來的縫隙，不是重新置中整排立牌（真實麻將：摸到的牌先擺
+     * 在手牌一側，不會立刻插入、重新排列整排立牌）。跟 [handPlacement] 同樣直接用座位 index 算局部
+     * 側面，不經過莊家相對旋轉。
+     *
+     * @param controllerX 麻將桌 controller 的世界 X 座標。
+     * @param controllerY 麻將桌 controller 的世界 Y 座標。
+     * @param controllerZ 麻將桌 controller 的世界 Z 座標。
+     * @param tableFacing 麻將桌的世界朝向。
+     * @param seatLayout 本局玩家座位 index 對應的標準桌面布局。
+     * @param seatIndex 玩家在固定座位順序中的 index。
+     * @param standingTileCount 目前立牌張數，不含剛摸到的牌。
+     * @param handShift 立牌與摸牌位整排往玩家左手邊平移的距離，負值往右手邊。
+     * @return 摸牌位的世界座標與 yaw。
+     */
+    fun drawnTilePlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        seatLayout: MahjongTableSeatLayout,
+        seatIndex: Int,
+        standingTileCount: Int,
+        handShift: Double = 0.0,
+    ): MahjongTileWallPlacement {
+        require(handShift.isFinite()) { "Hand shift must be finite" }
+
+        val physicalSide = seatLayout.sideOf(seatIndex)
+        val local = localDrawnTileVector(standingTileCount, handShift)
+        val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
+        return MahjongTileWallPlacement(
+            x = controllerX + BLOCK_CENTER + worldOffset.x,
+            y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
+            z = controllerZ + BLOCK_CENTER + worldOffset.z,
+            yaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES),
+        )
+    }
+
+    /**
+     * 以局部南側玩家為基準的摸牌位位置：從 [localHandVector] 立牌列的右手邊（`tileIndex = 0`）再往外一個 `stackStep`，額外加上
+     * [DRAWN_TILE_GAP_RATIO] 倍 [MahjongTileDimensions.TILE_WIDTH] 的縫隙，讓摸到的牌跟立牌列之間有
+     * 看得出來的間隔，再扣掉 [handShift]。直立擺放，`z` 跟 [localHandVector] 共用
+     * [HAND_EDGE_OFFSET]。
+     *
+     * @param standingTileCount 立牌張數。
+     * @param handShift 整排手牌往玩家左手邊平移的距離，負值往右手邊。
+     * @return 局部摸牌位座標向量。
+     */
+    private fun localDrawnTileVector(standingTileCount: Int, handShift: Double): TileTableVector {
+        val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val handRowEdge = (standingTileCount - 1) / 2.0 * stackStep
+        val gap = MahjongTileDimensions.TILE_WIDTH * DRAWN_TILE_GAP_RATIO
+        val alongSide = handRowEdge + stackStep + gap - handShift
+        return TileTableVector(x = alongSide, y = 0.0, z = HAND_EDGE_OFFSET)
+    }
+
+    /**
+     * 散放牌河中每張牌的世界座標與朝向，見 [TableDiscardArea.SCATTERED] 與 [ScatteredDiscardLayout]。
+     *
+     * @param controllerX 麻將桌 controller 的世界 X 座標。
+     * @param controllerY 麻將桌 controller 的世界 Y 座標。
+     * @param controllerZ 麻將桌 controller 的世界 Z 座標。
+     * @param tableFacing 麻將桌的世界朝向。
+     * @param seatLayout 本局玩家座位 index 對應的標準桌面布局。
+     * @param tileLayout 該規則的桌面牌位配置，決定牌牆內側的位置。
+     * @param wallStacksPerSide 牌牆每面的墩數。沒有實體牌牆時為 null，以標準牌牆計算範圍。
+     * @param patternSeed 這一局使用的位置表種子，見 [ScatteredDiscardLayout.roundPatternSeed]。
+     * @param discards 依全桌打出先後排列的牌，包含被鳴走的牌。
+     * @return 每張牌的世界座標與 yaw。
+     */
+    @Suppress("LongParameterList")
+    fun scatteredDiscardPlacements(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        seatLayout: MahjongTableSeatLayout,
+        tileLayout: TableTileLayoutProfile,
+        wallStacksPerSide: Int?,
+        patternSeed: Int,
+        discards: List<ScatteredDiscardEntry>,
+    ): Map<Uuid, MahjongTileWallPlacement> {
+        val slots = ScatteredDiscardLayout.pattern(patternSeed, scatterReach(tileLayout, wallStacksPerSide))
+        val towards = discards.map { discard ->
+            val toward = rotateForSide(TileTableVector(0.0, 0.0, 1.0), seatLayout.sideOf(discard.seatIndex))
+            ScatterRequest(discard.tileId, toward.x, toward.z, discard.isTaken)
+        }
+        val baseYaw = yawForFacing(tableFacing)
+        return ScatteredDiscardLayout.assign(slots, patternSeed, towards).mapValues { (_, scatter) ->
+            val worldOffset = rotateForFacing(TileTableVector(scatter.x, scatter.y, scatter.z), tableFacing)
+            MahjongTileWallPlacement(
+                x = controllerX + BLOCK_CENTER + worldOffset.x,
+                y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
+                z = controllerZ + BLOCK_CENTER + worldOffset.z,
+                yaw = (baseYaw + scatter.angleDegrees).mod(FULL_YAW_DEGREES),
+            )
+        }
+    }
+
+    /**
+     * 散放牌河的範圍外緣：牌的四個角離桌心最遠的距離，留在牌牆內側並保留縫隙。
+     *
+     * @param tileLayout 該規則的桌面牌位配置。
+     * @param wallStacksPerSide 牌牆每面的墩數。沒有實體牌牆時為 null。
+     * @return 沿局部 X 與 Z 各自的最遠距離。
+     */
+    internal fun scatterReach(tileLayout: TableTileLayoutProfile, wallStacksPerSide: Int?): Double {
+        val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val wallHalfSpan = maxOf((wallStacksPerSide ?: STANDARD_WALL_STACKS_PER_SIDE) / 2.0 * stackStep, STANDARD_WALL_HALF_SPAN)
+        return wallHalfSpan - tileLayout.wallInset - MahjongTileDimensions.TILE_HEIGHT / 2.0 - DISCARD_WALL_CLEARANCE_MARGIN
+    }
+
+    /**
+     * 依 controller 座標、桌子世界朝向、座位 index 與這位玩家目前牌河總張數，算出牌河中第 [discardIndex] 張牌
+     * （依捨牌順序，0-based）的世界座標。
+     *
+     * - 固定 [DISCARD_TILES_PER_ROW] 張一排，超過時往桌緣方向堆疊下一排。
+     * - 牌躺平、牌面朝上，與 [wallPlacement] 牌面朝下相反。整體比牌牆更靠近桌子中心。
+     * - 跟 [handPlacement] 同樣直接用座位 index 算局部側面，不經過莊家相對旋轉。牌河屬於捨牌者自己，一局之中跟著座位不變。
+     *
+     * @param isSidewaysMarked 這張牌是否要側身呈現，例如立直宣告牌。
+     *   - 為 `true` 時額外把 yaw 轉 [SIDEWAYS_YAW_OFFSET] 度。
+     *   - 側身牌沿排列方向（局部 X 軸）佔用的寬度是 [MahjongTileDimensions.TILE_HEIGHT]，
+     *     而非直立牌的 [MahjongTileDimensions.TILE_WIDTH]。
+     *   - [sidewaysMarkedDiscardIndex] 讓 [localDiscardVector] 知道該格用哪一個寬度計算與左右鄰居的間距，避免重疊。
+     *     做法與 [meldPlacement] 依牌實際朝向換算寬度相同。
+     * @param sidewaysMarkedDiscardIndex 這位玩家牌河裡側身標記那張牌自己的 [discardIndex]（`null`
+     * 代表這位玩家目前沒有任何側身標記牌）。同一位玩家牌河裡最多只會有一張側身標記牌。
+     * @param wallRemaining 牌山是否還有剩餘牌。用來判斷第 [DISCARD_SAFE_ROWS] 排放滿後，是否往桌緣方向新增第四排，
+     *   見 [localDiscardVector] KDoc。
+     * @param controllerX 麻將桌 controller 的世界 X 座標。
+     * @param controllerY 麻將桌 controller 的世界 Y 座標。
+     * @param controllerZ 麻將桌 controller 的世界 Z 座標。
+     * @param tableFacing 麻將桌的世界朝向。
+     * @param seatLayout 本局玩家座位 index 對應的標準桌面布局。
+     * @param seatIndex 捨牌玩家在固定座位順序中的 index。
+     * @param discardIndex 此牌在牌河中的零基底捨牌次序。
+     * @return 牌河格位的世界座標與 yaw。
+     */
+    fun discardPlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        seatLayout: MahjongTableSeatLayout,
+        seatIndex: Int,
+        discardIndex: Int,
+        isSidewaysMarked: Boolean,
+        sidewaysMarkedDiscardIndex: Int?,
+        wallRemaining: Boolean,
+    ): MahjongTileWallPlacement {
+        require(discardIndex >= 0) { "Discard index must not be negative" }
+
+        val physicalSide = seatLayout.sideOf(seatIndex)
+        val local = localDiscardVector(discardIndex, wallRemaining, sidewaysMarkedDiscardIndex)
+        val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
+        val baseYaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES)
+        return MahjongTileWallPlacement(
+            x = controllerX + BLOCK_CENTER + worldOffset.x,
+            y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
+            z = controllerZ + BLOCK_CENTER + worldOffset.z,
+            yaw = if (isSidewaysMarked) (baseYaw + SIDEWAYS_YAW_OFFSET).mod(FULL_YAW_DEGREES) else baseYaw,
+        )
+    }
+
+    /**
+     * 桌子正中央一排平放牌中第 [index] 張的位置：整排以桌心為中點，牌面朝向 [seatIndex] 的玩家，
+     * 從該玩家看由左至右排列，間距與牌河相同。
+     *
+     * @param controllerX 麻將桌 controller 的世界 X 座標。
+     * @param controllerY 麻將桌 controller 的世界 Y 座標。
+     * @param controllerZ 麻將桌 controller 的世界 Z 座標。
+     * @param tableFacing 麻將桌的世界朝向。
+     * @param seatLayout 本局玩家座位 index 對應的標準桌面布局。
+     * @param seatIndex 牌面朝向的玩家座位 index。
+     * @param index 這張牌在這一排的零基底順序。
+     * @param count 這一排的總張數。
+     * @return 中央格位的世界座標與 yaw。
+     */
+    fun centerRowPlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        seatLayout: MahjongTableSeatLayout,
+        seatIndex: Int,
+        index: Int,
+        count: Int,
+    ): MahjongTileWallPlacement {
+        require(index in 0 until count) { "Center row index $index is outside a row of $count tiles" }
+        val physicalSide = seatLayout.sideOf(seatIndex)
+        val step = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val local = TileTableVector(x = (index - (count - 1) / 2.0) * step, y = 0.0, z = 0.0)
+        val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
+        return MahjongTileWallPlacement(
+            x = controllerX + BLOCK_CENTER + worldOffset.x,
+            y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
+            z = controllerZ + BLOCK_CENTER + worldOffset.z,
+            yaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES),
+        )
+    }
+
+    /**
+     * 以局部南側玩家為基準的單張牌河牌位置。
+     *
+     * 前 [DISCARD_SAFE_ROWS] 排：
+     *
+     * - `row` 0 到 `DISCARD_SAFE_ROWS - 1` 依 [DISCARD_TILES_PER_ROW] 張正常換行。
+     * - 列沿排列方向（局部 X 軸）對稱置中。`column` 遞增時往玩家右手邊移動，符合由左至右的捨牌順序。
+     * - 行往桌緣方向（局部 Z 軸正向）堆疊。起始距離 [DISCARD_ROW_BASE_OFFSET] 比 [wallPlacement] 的 `halfSpan` 更靠近桌子中心。
+     *
+     * 第四排以後依 [wallRemaining] 決定：
+     *
+     * - 牌山還有剩餘牌時，牌牆可能佔用第四排的位置。牌停在最後一個安全排（`row = DISCARD_SAFE_ROWS - 1`），
+     *   沿同一排繼續往外延伸，`column` 不回繞。
+     * - 牌山已經摸完時，牌牆也已清空，正常往桌緣方向新增第四、第五……排。
+     * - 判斷依據是牌山整體是否還有牌，不查捨牌者自己那一面牆。兩者只在牌山快摸完、但捨牌者那面牆已先摸空時不一致。
+     *
+     * 側身標記牌：
+     *
+     * - 每排第一格（`column = 0`）都用假設全部直立的置中公式計算，所有排的第一格對齊在同一條軸線上。
+     * - 同一排有側身標記牌（[sidewaysMarkedDiscardIndex] 落在這排）時，從那一格開始往右多挪
+     *   [MahjongTileDimensions.TILE_HEIGHT] 與 [MahjongTileDimensions.TILE_WIDTH] 的差距。
+     *   側身牌橫向佔用的空間比直立牌寬，見 [meldPlacement] 依牌實際朝向換算寬度的做法。
+     * - 側身格本身只挪一半，讓左緣仍對齊直立牌的位置。之後的格子挪全額，與其他直立牌保持固定間距。
+     */
+    private fun localDiscardVector(discardIndex: Int, wallRemaining: Boolean, sidewaysMarkedDiscardIndex: Int?): TileTableVector {
+        val lastSafeRow = DISCARD_SAFE_ROWS - 1
+        val lastSafeRowStartIndex = lastSafeRow * DISCARD_TILES_PER_ROW
+
+        fun rowColumnOf(index: Int): Pair<Int, Int> = if (!wallRemaining || index < lastSafeRowStartIndex) {
+            index / DISCARD_TILES_PER_ROW to index % DISCARD_TILES_PER_ROW
+        } else {
+            lastSafeRow to (index - lastSafeRowStartIndex)
+        }
+
+        val (row, column) = rowColumnOf(discardIndex)
+        val sidewaysColumn = sidewaysMarkedDiscardIndex
+            ?.let(::rowColumnOf)
+            ?.takeIf { (sidewaysRow, _) -> sidewaysRow == row }
+            ?.second
+
+        val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val baseAlongSide = (column - (DISCARD_TILES_PER_ROW - 1) / 2.0) * stackStep
+        val sidewaysExtraWidth = MahjongTileDimensions.TILE_HEIGHT - MahjongTileDimensions.TILE_WIDTH
+        val alongSide = when {
+            sidewaysColumn == null || column < sidewaysColumn -> baseAlongSide
+            column == sidewaysColumn -> baseAlongSide + sidewaysExtraWidth / 2.0
+            else -> baseAlongSide + sidewaysExtraWidth
+        }
+
+        val rowStep = MahjongTileDimensions.TILE_HEIGHT + MahjongTileDimensions.TILE_SMALL_PADDING
+        val perpendicular = DISCARD_ROW_BASE_OFFSET + row * rowStep
+        return TileTableVector(x = alongSide, y = 0.0, z = perpendicular)
+    }
+
+    /**
+     * 依 controller 座標、桌子世界朝向與座位 index，算出這位玩家副露區中偏離桌角錨點 [alongOffsetFromCorner] 距離的那張牌的世界座標。
+     *
+     * 錨點與排列：
+     *
+     * - 副露區錨定在桌子實際邊界的固定角落（玩家自己右手邊），不是相對手牌列／摸牌位的浮動錨點，
+     *   見 [MELD_AREA_CORNER_OFFSET] KDoc。
+     * - 第一組（最早宣告）副露的最右側那張牌貼齊錨點，後續每組依序往玩家自己手牌方向（局部 X 軸負向）排開。
+     * - 單一組內鳴取牌落在哪個格位，由呼叫端依鳴取來源方位（`RelativeDirection`）換算。
+     *
+     * 側身與直立：
+     *
+     * - 側身牌（[isSidewaysTile]）沿排列方向的寬度是 [MahjongTileDimensions.TILE_HEIGHT]，直立牌是
+     *   [MahjongTileDimensions.TILE_WIDTH]，與 [wallPlacement] 的躺平慣例相同。
+     * - 因此 [alongOffsetFromCorner] 是呼叫端依每張牌實際寬度累加的距離，不是格數乘固定間距，側身牌才不會與隔壁重疊。
+     * - 垂直於排列方向的位置（`z`）也依 [isSidewaysTile] 換算，讓兩種朝向的牌靠桌緣那一側的外緣都對齊
+     *   [MELD_NEAR_EDGE_LINE]。
+     *
+     * 跟 [handPlacement]／[discardPlacement] 同樣直接用座位 index 算局部側面，不經過莊家相對旋轉。
+     * 副露屬於宣告玩家自己，一局之中跟著座位不變。
+     *
+     * @param alongOffsetFromCorner 這張牌中心點沿排列方向距離桌角錨點（[MELD_AREA_CORNER_OFFSET]）的實際世界距離，
+     *   往玩家自己手牌方向為正。
+     *   - 呼叫端需自行沿排列方向累加每張已放置牌的半寬。
+     *   - 這裡不做邊界檢查，呼叫端須確保副露不延伸進手牌列範圍。
+     * @param isSidewaysTile 這張牌是否為鳴取自他家、需側身呈現的牌。為 `true` 時額外把 yaw 轉 [SIDEWAYS_YAW_OFFSET] 度，
+     *   並依側身牌的實際外觀寬度換算 `x`／`z`。
+     * @param depthOffsetFromEdge 這張牌垂直於排列方向（局部 Z 軸）額外往桌子中心推的距離。
+     *   - `0.0`（預設值）代表跟同排其他牌一樣貼齊 [MELD_NEAR_EDGE_LINE]。
+     *   - 加槓（`MeldType.AddedKan`）補上的第 4 張牌用這個參數疊在原碰側身牌靠桌子中心的那一側，不放在排列方向的旁邊。
+     *   - 其餘所有牌固定 `0.0`。
+     *
+     * @param controllerX 麻將桌 controller 的世界 X 座標。
+     * @param controllerY 麻將桌 controller 的世界 Y 座標。
+     * @param controllerZ 麻將桌 controller 的世界 Z 座標。
+     * @param tableFacing 麻將桌的世界朝向。
+     * @param seatLayout 本局玩家座位 index 對應的標準桌面布局。
+     * @param seatIndex 副露玩家在固定座位順序中的 index。
+     * @return 副露牌格位的世界座標與 yaw。
+     */
+    fun meldPlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        seatLayout: MahjongTableSeatLayout,
+        seatIndex: Int,
+        alongOffsetFromCorner: Double,
+        isSidewaysTile: Boolean,
+        depthOffsetFromEdge: Double = 0.0,
+    ): MahjongTileWallPlacement {
+        require(alongOffsetFromCorner >= 0.0) { "Along offset from corner must not be negative" }
+        require(depthOffsetFromEdge >= 0.0) { "Depth offset from edge must not be negative" }
+
+        val physicalSide = seatLayout.sideOf(seatIndex)
+        val local = localMeldVector(alongOffsetFromCorner, isSidewaysTile, depthOffsetFromEdge)
+        val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
+        val baseYaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES)
+        return MahjongTileWallPlacement(
+            x = controllerX + BLOCK_CENTER + worldOffset.x,
+            y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
+            z = controllerZ + BLOCK_CENTER + worldOffset.z,
+            yaw = if (isSidewaysTile) (baseYaw + SIDEWAYS_YAW_OFFSET).mod(FULL_YAW_DEGREES) else baseYaw,
+        )
+    }
+
+    /**
+     * 以局部南側玩家為基準的單張副露牌位置：沿排列方向（局部 X 軸）從 [MELD_AREA_CORNER_OFFSET] 桌角
+     * 錨點往負向（玩家自己手牌方向）位移 [alongOffsetFromCorner]。垂直於排列方向（局部 Z 軸）依
+     * [isSidewaysTile] 換算讓外緣對齊 [MELD_NEAR_EDGE_LINE]（副露區自己緊貼桌子實際邊界的外緣線，
+     * 不是手牌那條退縮過的線，見該常數 KDoc），不是固定值——直立牌沿排列方向的寬度是
+     * [MahjongTileDimensions.TILE_WIDTH]，垂直方向是 [MahjongTileDimensions.TILE_HEIGHT]。側身牌兩者
+     * 互換。[depthOffsetFromEdge] 大於 `0.0` 時再額外往桌子中心方向（局部 Z 軸負向）推這麼多距離。
+     *
+     * @param alongOffsetFromCorner 從桌角沿排列方向累加的距離。
+     * @param isSidewaysTile 牌是否側身擺放。
+     * @param depthOffsetFromEdge 往桌子中心方向額外推移的距離。
+     * @return 副露牌的局部座標向量。
+     */
+    private fun localMeldVector(alongOffsetFromCorner: Double, isSidewaysTile: Boolean, depthOffsetFromEdge: Double): TileTableVector {
+        val alongSide = MELD_AREA_CORNER_OFFSET - alongOffsetFromCorner
+        val halfPerpendicularFootprint =
+            if (isSidewaysTile) MahjongTileDimensions.TILE_WIDTH / 2.0 else MahjongTileDimensions.TILE_HEIGHT / 2.0
+        val perpendicular = MELD_NEAR_EDGE_LINE - halfPerpendicularFootprint - depthOffsetFromEdge
+        return TileTableVector(x = alongSide, y = 0.0, z = perpendicular)
+    }
+
+    /**
+     * 一條沿排列方向的列在局部座標中可用的範圍：不超出桌面內框，也不碰到牌牆。
+     *
+     * 只檢查垂直方向與這條列重疊的牌牆牌，並在兩者之間保留 [HAND_CORNER_GAP]。沒有實體牌牆時只受桌面內框限制。
+     *
+     * @param wall 從這個座位看出去，牌牆在這一局剩下時間裡可能佔到的範圍。沒有實體牌牆時為 null。
+     * @param nearZ 這條列離桌心較近的邊界（局部 Z）。
+     * @param farZ 這條列離桌心較遠的邊界（局部 Z）。
+     * @return 可用範圍，往玩家右手邊為正。
+     */
+    internal fun rowSpan(
+        wall: MahjongSeatWallClearance?,
+        nearZ: Double,
+        farZ: Double,
+    ): RowSpan {
+        var left = -MELD_AREA_CORNER_OFFSET
+        var right = MELD_AREA_CORNER_OFFSET
+        wall?.footprints?.forEach { footprint ->
+            if (footprint.z + footprint.halfZ > nearZ && footprint.z - footprint.halfZ < farZ) {
+                if (footprint.x < 0.0) {
+                    left = maxOf(left, footprint.x + footprint.halfX + HAND_CORNER_GAP)
+                } else {
+                    right = minOf(right, footprint.x - footprint.halfX - HAND_CORNER_GAP)
+                }
+            }
+        }
+        return RowSpan(left, right)
+    }
+
+    /**
+     * 依牌牆位置建立讓位範圍。位置通常是規則回報的這一局剩下時間裡牌牆可能佔到的位置。
+     *
+     * @param sideLayout 規則指定並已解析的牌牆面與桌邊對應。
+     * @param tileLayout 該規則的桌面牌位配置。
+     * @param stacksPerSide 牌牆每面的墩數。
+     * @param placements 牌牆位置。
+     * @return 以桌面座標保存的讓位範圍。
+     */
+    fun wallClearance(
+        sideLayout: MahjongTileWallSideLayout,
+        tileLayout: TableTileLayoutProfile,
+        stacksPerSide: Int,
+        placements: Collection<TileWallPlacement>,
+    ): MahjongTableWallClearance = MahjongTableWallClearance(
+        stacksPerSide = stacksPerSide,
+        footprints = placements.map { placement ->
+            val projected = wallPlacement(
+                controllerX = 0,
+                controllerY = 0,
+                controllerZ = 0,
+                tableFacing = MahjongTableFacing.NORTH,
+                sideLayout = sideLayout,
+                tileLayout = tileLayout,
+                stacksPerSide = stacksPerSide,
+                placement = placement,
+            )
+            TableWallFootprint(x = projected.x - BLOCK_CENTER, z = projected.z - BLOCK_CENTER, yaw = projected.yaw)
+        },
+    )
+
+    /**
+     * 把桌面座標的讓位範圍轉到指定桌邊座位的局部座標，並依牌的朝向算出佔用的軸對齊範圍。
+     *
+     * @param clearance 桌面座標的讓位範圍。
+     * @param side 座位所在的桌邊。
+     * @return 該座位局部座標的讓位範圍。
+     */
+    internal fun seatWallClearance(clearance: MahjongTableWallClearance, side: MahjongTableSide): MahjongSeatWallClearance = MahjongSeatWallClearance(
+        stacksPerSide = clearance.stacksPerSide,
+        footprints = clearance.footprints.map { footprint ->
+            val local = rotateFromSide(TileTableVector(footprint.x, 0.0, footprint.z), side)
+            val radians = (footprint.yaw - yawForSide(side)) * PI / HALF_TURN_DEGREES
+            val alongX = abs(cos(radians))
+            val alongZ = abs(sin(radians))
+            SeatWallFootprint(
+                x = local.x,
+                z = local.z,
+                halfX = (alongX * MahjongTileDimensions.TILE_WIDTH + alongZ * MahjongTileDimensions.TILE_HEIGHT) / 2.0,
+                halfZ = (alongZ * MahjongTileDimensions.TILE_WIDTH + alongX * MahjongTileDimensions.TILE_HEIGHT) / 2.0,
+            )
+        },
+    )
+
+    /**
+     * 自己這面牌牆靠桌緣那一側的局部 Z。
+     *
+     * @param wallStacksPerSide 牌牆每面的墩數。
+     * @param tileLayout 該規則的桌面牌位配置。
+     * @return 牌牆外緣的局部 Z。
+     */
+    internal fun wallOuterFace(wallStacksPerSide: Int, tileLayout: TableTileLayoutProfile): Double = localWallVector(wallStacksPerSide, 0, 0, tileLayout).z + MahjongTileDimensions.TILE_HEIGHT / 2.0
+
+    /**
+     * 手牌那一列的局部 Z 範圍，以推倒平放時的深度計算，立著與推倒時都不碰到其他牌。
+     *
+     * @return 離桌心較近與較遠的邊界。
+     */
+    internal fun handRowBand(): RowSpan = RowSpan(HAND_EDGE_OFFSET - MahjongTileDimensions.TILE_HEIGHT / 2.0, HAND_EDGE_OFFSET + MahjongTileDimensions.TILE_HEIGHT / 2.0)
+
+    /** 擺在牌牆與手牌之間的副露列，平放牌中心的局部 Z。貼著推倒平放後的手牌，手牌推倒時也不會碰到副露。 */
+    internal val FRONT_MELD_ROW_Z: Double =
+        HAND_EDGE_OFFSET - MahjongTileDimensions.TILE_HEIGHT / 2.0 - FRONT_MELD_GAP - MahjongTileDimensions.TILE_HEIGHT / 2.0
+
+    /** 貼齊桌緣的平放牌列（桌角副露與手牌列右手邊放不下的副露），直立平放牌中心的局部 Z。 */
+    internal val EDGE_ROW_Z: Double = MELD_NEAR_EDGE_LINE - MahjongTileDimensions.TILE_HEIGHT / 2.0
+
+    /**
+     * 立牌與摸牌位置中時，整排左右兩端的局部 X。
+     *
+     * @param handSize 立牌張數。
+     * @param hasDrawnTile 是否另有摸牌位。
+     * @return 左端與右端。
+     */
+    internal fun handRowEdges(handSize: Int, hasDrawnTile: Boolean): RowSpan {
+        val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val halfRow = if (handSize > 0) (handSize - 1) / 2.0 * stackStep + MahjongTileDimensions.TILE_WIDTH / 2.0 else 0.0
+        val drawnExtra = if (hasDrawnTile) stackStep + MahjongTileDimensions.TILE_WIDTH * DRAWN_TILE_GAP_RATIO else 0.0
+        return RowSpan(-halfRow, halfRow + drawnExtra)
+    }
+
+    /**
+     * 讓整排手牌落在 [leftLimit] 與 [rightLimit] 之間所需的平移：右端一定不超出右界。左端超出左界時往右讓，但不因此超出右界。
+     *
+     * @param handSize 立牌張數。
+     * @param hasDrawnTile 是否另有摸牌位。
+     * @param leftLimit 左界（局部 X）。
+     * @param rightLimit 右界（局部 X）。
+     * @return 往玩家左手邊平移的距離，負值往右手邊。
+     */
+    internal fun fitHandShift(
+        handSize: Int,
+        hasDrawnTile: Boolean,
+        leftLimit: Double,
+        rightLimit: Double,
+    ): Double {
+        if (handSize <= 0 && !hasDrawnTile) return 0.0
+        val edges = handRowEdges(handSize, hasDrawnTile)
+        // 往右讓出左界只在不碰到右側牌組時進行；兩邊都放不下時優先避開右側的副露。
+        return maxOf(edges.right - rightLimit, minOf(0.0, edges.left - leftLimit))
+    }
+
+    /**
+     * 玩家牌區中任一張平放牌的世界座標：局部座標以坐在桌子南側的玩家為基準。
+     *
+     * @param controllerX 麻將桌 controller 的世界 X 座標。
+     * @param controllerY 麻將桌 controller 的世界 Y 座標。
+     * @param controllerZ 麻將桌 controller 的世界 Z 座標。
+     * @param tableFacing 麻將桌的世界朝向。
+     * @param seatLayout 本局玩家座位 index 對應的標準桌面布局。
+     * @param seatIndex 玩家在固定座位順序中的 index。
+     * @param x 牌中心的局部 X，往玩家右手邊為正。
+     * @param z 牌中心的局部 Z，往玩家方向為正。
+     * @param isSidewaysTile 是否橫放。
+     * @return 世界座標與 yaw。
+     */
+    internal fun areaTilePlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        seatLayout: MahjongTableSeatLayout,
+        seatIndex: Int,
+        x: Double,
+        z: Double,
+        isSidewaysTile: Boolean,
+    ): MahjongTileWallPlacement {
+        val physicalSide = seatLayout.sideOf(seatIndex)
+        val worldOffset = rotateForFacing(rotateForSide(TileTableVector(x = x, y = 0.0, z = z), physicalSide), tableFacing)
+        val baseYaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES)
+        return MahjongTileWallPlacement(
+            x = controllerX + BLOCK_CENTER + worldOffset.x,
+            y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
+            z = controllerZ + BLOCK_CENTER + worldOffset.z,
+            yaw = if (isSidewaysTile) (baseYaw + SIDEWAYS_YAW_OFFSET).mod(FULL_YAW_DEGREES) else baseYaw,
+        )
+    }
+
+    /**
+     * 依鳴取來源方位，換算鳴取牌在副露組內的格位。`0` 為組內最左，靠近副露區桌角錨點。
+     *
+     * - 上家（[RelativeDirection.Left]，吃唯一合法來源）固定最左。
+     * - 對家（[RelativeDirection.Across]）固定格位 `1`，三張的碰與四張的槓都一樣。四張時是偏左第二張，不是正中央。
+     * - 下家（[RelativeDirection.Right]）固定最右。
+     * - 暗槓（[RelativeDirection.Self]，沒有鳴牌來源）回傳 `null`，呼叫端據此不重排、四張全部直立呈現。
+     *
+     * [MahjongPlayerAreaLayout] 與除錯預覽共用這套判斷。
+     *
+     * @param direction 鳴取來源方向。
+     * @param tileCount 副露組內牌張數。
+     * @return 鳴取牌在組內的零基底格位。暗槓回傳 null。
+     */
+    fun sidewaysSlotIndex(direction: RelativeDirection, tileCount: Int): Int? = when (direction) {
+        RelativeDirection.Left -> SIDEWAYS_SLOT_LEFT
+        RelativeDirection.Across -> SIDEWAYS_SLOT_ACROSS
+        RelativeDirection.Right -> tileCount - 1
+        RelativeDirection.Self -> null
+    }
+
+    /**
+     * 第一組副露距離桌角錨點的起點：角落有規則桌面物件時，先讓開 [cornerPropWidth]，再隔一個 [MELD_GROUP_GAP]。
+     * 角落沒有物件時從桌角開始。
+     *
+     * @param cornerPropWidth 角落規則物件佔用的寬度。
+     * @return 第一組副露的起始偏移。
+     */
+    fun meldStartOffset(cornerPropWidth: Double): Double = if (cornerPropWidth > 0.0) cornerPropWidth + MELD_GROUP_GAP else 0.0
+
+    /**
+     * 取得標準席位的桌面局部朝向，供面向該玩家的公開牌或標記使用。
+     *
+     * 兩人座位使用相對兩側，不能把座位索引直接乘上九十度。世界中的桌子轉角由呈現時另外加上。
+     *
+     * @param seatLayout 完整玩家人數對應的標準布局。
+     * @param seatIndex 要面向的玩家席位索引。
+     * @return 以角度表示的席位局部朝向。
+     */
+    fun seatYaw(seatLayout: MahjongTableSeatLayout, seatIndex: Int): Float = yawForSide(seatLayout.sideOf(seatIndex))
+
+    /**
+     * 把座位錨點加上本地偏移，換算成世界座標與朝向。
+     *
+     * 錨點與偏移都以「坐在桌子南側的玩家」為基準。這裡依座位所在的桌子側面與桌子朝向旋轉，呼叫端不需要
+     * 處理旋轉。跟座位一樣直接用座位 index 算側面，不經過莊家相對旋轉。
+     *
+     * @param anchor 座位上的基準位置。
+     * @param offset 相對於 [anchor] 的偏移。
+     * @param yawOffset 在座位原本朝向之上額外轉動的角度（度）。
+     * @param controllerX 麻將桌 controller 的世界 X 座標。
+     * @param controllerY 麻將桌 controller 的世界 Y 座標。
+     * @param controllerZ 麻將桌 controller 的世界 Z 座標。
+     * @param tableFacing 麻將桌的世界朝向。
+     * @param seatLayout 本局玩家座位 index 對應的標準桌面布局。
+     * @param seatIndex 玩家在固定座位順序中的 index。
+     * @return 錨點偏移後的世界座標與 yaw。
+     */
+    fun seatAnchorPlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        seatLayout: MahjongTableSeatLayout,
+        seatIndex: Int,
+        anchor: TableSeatAnchor,
+        offset: TableSeatOffset,
+        yawOffset: Float = 0f,
+    ): MahjongTileWallPlacement {
+        val physicalSide = seatLayout.sideOf(seatIndex)
+        val anchorVector = localAnchorVector(anchor)
+        val local = TileTableVector(
+            x = anchorVector.x + offset.x,
+            y = anchorVector.y + offset.y,
+            z = anchorVector.z + offset.z,
+        )
+        val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
+        return MahjongTileWallPlacement(
+            x = controllerX + BLOCK_CENTER + worldOffset.x,
+            y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
+            z = controllerZ + BLOCK_CENTER + worldOffset.z,
+            yaw = (yawForSide(physicalSide) + yawForFacing(tableFacing) + yawOffset).mod(FULL_YAW_DEGREES),
+        )
+    }
+
+    /**
+     * 以局部南側玩家為基準的錨點位置。
+     *
+     * - [TableSeatAnchor.DISCARD_INNER_EDGE]：牌河第一排（[DISCARD_ROW_BASE_OFFSET] 是牌中心點）往桌子中心退半張牌
+     *   高，即牌河靠桌子中心那條邊。沿排列方向置中。
+     * - [TableSeatAnchor.MELD_CORNER]：副露角落，沿排列方向位於 [MELD_AREA_CORNER_OFFSET]，垂直方向位於
+     *   [MELD_NEAR_EDGE_LINE]。
+     * - [TableSeatAnchor.HAND_ROW_CENTER]：手牌那一列的中央，沿排列方向置中，垂直方向位於 [HAND_EDGE_OFFSET]。
+     *
+     * @param anchor 座位上的基準位置。
+     * @return 基準位置的局部座標向量。
+     */
+    private fun localAnchorVector(anchor: TableSeatAnchor): TileTableVector = when (anchor) {
+        TableSeatAnchor.DISCARD_INNER_EDGE -> TileTableVector(
+            x = 0.0,
+            y = 0.0,
+            z = DISCARD_ROW_BASE_OFFSET - MahjongTileDimensions.TILE_HEIGHT / 2.0,
+        )
+        TableSeatAnchor.MELD_CORNER -> TileTableVector(x = MELD_AREA_CORNER_OFFSET, y = 0.0, z = MELD_NEAR_EDGE_LINE)
+        TableSeatAnchor.HAND_ROW_CENTER -> TileTableVector(x = 0.0, y = 0.0, z = HAND_EDGE_OFFSET)
+    }
+
+    /**
+     * 依 controller 座標，算出桌面中央局況顯示（`MahjongRoundInfoEntity`）該擺放的世界座標——單一
+     * entity 置中於桌面正中央，不需要依座位旋轉（billboard 顯示永遠面向鏡頭，見該 entity 的
+     * renderer），高度高於牌牆／骰子等桌面物件（[ROUND_INFO_HEIGHT_ABOVE_TABLE]），避免文字被遮擋。回傳值的 `yaw` 未使用
+     * （billboard 不需要固定朝向），固定為 `0.0f`。
+     *
+     * @param controllerX 麻將桌 controller 的世界 X 座標。
+     * @param controllerY 麻將桌 controller 的世界 Y 座標。
+     * @param controllerZ 麻將桌 controller 的世界 Z 座標。
+     * @return 桌面中央局況顯示的世界座標。
+     */
+    fun roundInfoDisplayPlacement(controllerX: Int, controllerY: Int, controllerZ: Int): MahjongTileWallPlacement = MahjongTileWallPlacement(
+        x = controllerX + BLOCK_CENTER,
+        y = controllerY + TABLETOP_HEIGHT + ROUND_INFO_HEIGHT_ABOVE_TABLE,
+        z = controllerZ + BLOCK_CENTER,
+        yaw = 0.0f,
+    )
+
+    /**
+     * 取得胡牌 showcase 的固定世界錨點：水平位置是 controller 所在桌面的幾何中心，高度落在桌面上緣。
+     * 正式對局與 debug 虛擬桌共用這個入口，避免 stage 再以胡牌張或呼叫者座標作為中心而產生偏移。
+     *
+     * @param controllerX 麻將桌 controller 的世界 X 座標。
+     * @param controllerY 麻將桌 controller 的世界 Y 座標。
+     * @param controllerZ 麻將桌 controller 的世界 Z 座標。
+     * @return 胡牌 showcase 舞台錨點的世界座標。
+     */
+    fun showcaseStagePlacement(controllerX: Int, controllerY: Int, controllerZ: Int): MahjongTileWallPlacement = MahjongTileWallPlacement(
+        x = controllerX + BLOCK_CENTER,
+        y = controllerY + TABLETOP_HEIGHT,
+        z = controllerZ + BLOCK_CENTER,
+        yaw = 0.0f,
+    )
+
+    /**
+     * 依 controller 座標、桌子世界朝向與座位 index，算出這位玩家多選選牌確認面板某一個拼湊 instance
+     * （`MahjongTileSelectionConfirmEntity`，見該類別 KDoc「多個 instance 拼湊」的設計）該擺放的世界
+     * 座標——整組面板置中於這位玩家手牌正上方（沿排列方向與手牌同樣置中，深度沿用 [HAND_EDGE_OFFSET]），
+     * 高度比手牌本身（[MahjongTileDimensions.TILE_HEIGHT]）高出一截（[TILE_SELECTION_CONFIRM_HEIGHT_ABOVE_HAND]），避免與手牌碰撞箱重疊。跟 [handPlacement] 同樣直接用座位 index 算局部側面，不經過莊家
+     * 相對旋轉。
+     *
+     * [segmentIndex]（`0` 到 [TILE_SELECTION_CONFIRM_SEGMENT_COUNT] - 1）決定這個 instance 沿排列
+     * 方向（本地 X 軸）偏離整組面板中心多遠，讓 [TILE_SELECTION_CONFIRM_SEGMENT_COUNT] 個小 instance
+     * 並排起來仍能涵蓋完整面板寬度。
+     *
+     * @param controllerX 麻將桌 controller 的世界 X 座標。
+     * @param controllerY 麻將桌 controller 的世界 Y 座標。
+     * @param controllerZ 麻將桌 controller 的世界 Z 座標。
+     * @param tableFacing 麻將桌的世界朝向。
+     * @param seatIndex 玩家在固定座位順序中的 index。
+     * @param segmentIndex 拼湊確認面板的零基底片段索引。
+     * @param seatLayout 本局完整玩家名單對應的標準座位布局。
+     * @return 確認面板片段的世界座標與 yaw。
+     */
+    fun tileSelectionConfirmPlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        seatLayout: MahjongTableSeatLayout,
+        seatIndex: Int,
+        segmentIndex: Int,
+    ): MahjongTileWallPlacement {
+        val physicalSide = seatLayout.sideOf(seatIndex)
+        val local = TileTableVector(
+            x = tileSelectionConfirmSegmentAlongOffset(segmentIndex),
+            y = TILE_SELECTION_CONFIRM_HEIGHT_ABOVE_HAND,
+            z = HAND_EDGE_OFFSET,
+        )
+        val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
+        return MahjongTileWallPlacement(
+            x = controllerX + BLOCK_CENTER + worldOffset.x,
+            y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
+            z = controllerZ + BLOCK_CENTER + worldOffset.z,
+            yaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES),
+        )
+    }
+
+    /**
+     * 拼湊選牌確認面板的某個 `segmentIndex`（`0` 到 [TILE_SELECTION_CONFIRM_SEGMENT_COUNT] - 1）沿排列
+     * 方向（本地 X 軸）偏離整組面板中心的距離，供 [tileSelectionConfirmPlacement] 換算世界座標，也供
+     * `MahjongTileSelectionConfirmEntityRenderer` 比對目前實際文字寬度、決定各 instance 是否要回應
+     * 右鍵——兩邊共用同一個公式，確保拼湊面板的實際位置跟渲染端判斷可點擊範圍時用的位置永遠一致。
+     *
+     * @param segmentIndex 拼湊面板片段的零基底索引。
+     * @return 片段相對面板中心的局部 X 偏移。
+     */
+    fun tileSelectionConfirmSegmentAlongOffset(segmentIndex: Int): Double = (segmentIndex - (TILE_SELECTION_CONFIRM_SEGMENT_COUNT - 1) / 2.0) * TILE_SELECTION_CONFIRM_SEGMENT_SPACING
+
+    /**
+     * 將局部南側基準旋轉至指定側面。
+     *
+     * @param vector 局部座標向量。
+     * @param side 目標桌面側邊。
+     * @return 旋轉後的局部向量。
+     */
+    private fun rotateForSide(vector: TileTableVector, side: MahjongTableSide): TileTableVector = when (side) {
+        MahjongTableSide.SOUTH -> vector
+        MahjongTableSide.WEST -> TileTableVector(-vector.z, vector.y, vector.x)
+        MahjongTableSide.NORTH -> TileTableVector(-vector.x, vector.y, -vector.z)
+        MahjongTableSide.EAST -> TileTableVector(vector.z, vector.y, -vector.x)
+    }
+
+    /**
+     * [rotateForSide] 的反向旋轉：把桌面座標轉回以指定側面為局部南側的座標。
+     *
+     * @param vector 桌面座標向量。
+     * @param side 作為局部南側的桌面側邊。
+     * @return 該側面的局部向量。
+     */
+    private fun rotateFromSide(vector: TileTableVector, side: MahjongTableSide): TileTableVector = when (side) {
+        MahjongTableSide.SOUTH -> vector
+        MahjongTableSide.WEST -> TileTableVector(vector.z, vector.y, -vector.x)
+        MahjongTableSide.NORTH -> TileTableVector(-vector.x, vector.y, -vector.z)
+        MahjongTableSide.EAST -> TileTableVector(-vector.z, vector.y, vector.x)
+    }
+
+    /**
+     * 將朝北擺放桌子的局部向量旋轉至指定世界朝向。
+     *
+     * @param vector 局部座標向量。
+     * @param facing 桌子的世界朝向。
+     * @return 旋轉後的世界向量。
+     */
+    private fun rotateForFacing(vector: TileTableVector, facing: MahjongTableFacing): TileTableVector = when (facing) {
+        MahjongTableFacing.NORTH -> vector
+        MahjongTableFacing.EAST -> TileTableVector(-vector.z, vector.y, vector.x)
+        MahjongTableFacing.SOUTH -> TileTableVector(-vector.x, vector.y, -vector.z)
+        MahjongTableFacing.WEST -> TileTableVector(vector.z, vector.y, -vector.x)
+    }
+
+    /**
+     * 座位正面朝向：該座位的手牌與直立副露牌使用的 yaw。
+     *
+     * @param tableFacing 桌子朝向。
+     * @param seatLayout 本局玩家座位 index 對應的標準桌面布局。
+     * @param seatIndex 座位 index。
+     * @return 該座位面向桌子的 yaw。
+     */
+    fun seatYaw(tableFacing: MahjongTableFacing, seatLayout: MahjongTableSeatLayout, seatIndex: Int): Float = (yawForSide(seatLayout.sideOf(seatIndex)) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES)
+
+    /**
+     * 取得局部側面對應的基準 yaw，旋轉方向與 [rotateForSide] 的向量旋轉一致。
+     *
+     * @param side 局部桌面側邊。
+     * @return 該側邊的基準 yaw。
+     */
+    private fun yawForSide(side: MahjongTableSide): Float = when (side) {
+        MahjongTableSide.SOUTH -> 0.0f
+        MahjongTableSide.WEST -> 90.0f
+        MahjongTableSide.NORTH -> 180.0f
+        MahjongTableSide.EAST -> 270.0f
+    }
+
+    /**
+     * 取得世界朝向對應的基準 yaw，旋轉方向與 [rotateForFacing] 的向量旋轉一致。
+     *
+     * @param facing 桌子的世界朝向。
+     * @return 世界朝向對應的基準 yaw。
+     */
+    private fun yawForFacing(facing: MahjongTableFacing): Float = when (facing) {
+        MahjongTableFacing.NORTH -> 0.0f
+        MahjongTableFacing.EAST -> 90.0f
+        MahjongTableFacing.SOUTH -> 180.0f
+        MahjongTableFacing.WEST -> 270.0f
+    }
+
+    /** 固定桌面幾何常數。 */
+    private const val BLOCK_CENTER: Double = 0.5
+    private const val TABLETOP_HEIGHT: Double = 1.0
+
+    /**
+     * 桌面中央局況顯示（[roundInfoDisplayPlacement]）懸浮高度，明顯高於牌牆／骰子等其他桌面機關的
+     * 最高點，避免文字被擋住。
+     */
+    private const val ROUND_INFO_HEIGHT_ABOVE_TABLE: Double = 2.25
+
+    /** 多選選牌確認面板高於手牌（[MahjongTileDimensions.TILE_HEIGHT]）的垂直距離，見 [tileSelectionConfirmPlacement]。 */
+    private const val TILE_SELECTION_CONFIRM_HEIGHT_ABOVE_HAND: Double = 0.5
+
+    /**
+     * 多選選牌確認面板由幾個 `MahjongTileSelectionConfirmEntity` instance 拼湊而成，見該類別 KDoc。
+     *
+     * - 不是 `internal`，因為 presenter 與 renderer 位於另一個平台版本模組，需要直接引用同一個數值。
+     * - 與 [TILE_SELECTION_CONFIRM_SEGMENT_SPACING] 相乘得出這組 instance 涵蓋的最大總寬度，
+     *   接近 [MELD_AREA_CORNER_OFFSET] 的兩倍，也就是桌子沿排列方向的完整可用內框寬度。
+     * - 這裡只決定 instance 位置與可點擊範圍的上限。實際可點擊範圍與背景寬度依渲染的文字內容決定，
+     *   見 `MahjongTileSelectionConfirmEntity.isActive` KDoc。
+     * - 取奇數，讓正中央剛好有一個 index（見 [tileSelectionConfirmSegmentAlongOffset]）。
+     *   負責顯示的 instance 因此直接落在面板的幾何中心，不需要額外的置中平移。
+     */
+    const val TILE_SELECTION_CONFIRM_SEGMENT_COUNT: Int = 11
+
+    /**
+     * 拼湊面板相鄰兩個 instance 沿排列方向（本地 X 軸）的間距，見 [tileSelectionConfirmPlacement]
+     * KDoc。**必須**與 `MahjongTileSelectionConfirmEntity.WIDTH` 一致，否則相鄰 instance 的碰撞箱之間
+     * 會有沒被涵蓋的縫隙。非 `internal` 理由同 [TILE_SELECTION_CONFIRM_SEGMENT_COUNT]。
+     */
+    const val TILE_SELECTION_CONFIRM_SEGMENT_SPACING: Double = 0.3
+
+    /**
+     * 牌牆生成掉落動畫中，同一面牌牆相鄰兩墩（`stack` 差 1）開始掉落的時間差，供 [wallDropAnimationTicks]
+     * 與呼叫端排定每墩延遲使用。取遊戲內比對過仍看得出波浪感的最小值。
+     */
+    internal const val WAVE_STEP_TICKS: Int = 1
+
+    /**
+     * 開局發牌動畫中，牌從牌山位置小幅起飛的動畫時長，供 [dealBatchStartDelayTicks]／[dealAnimationTicks]
+     * 使用。公開（非 `internal`）讓版本層的動畫實作能直接引用同一個值當作 [AnimationStep.PlayMotion] 的
+     * `durationTicks`，不需要另外複製一份可能忘記同步的數字。
+     */
+    const val DEAL_LIFT_DURATION_TICKS: Int = 4
+
+    /** 開局發牌動畫中，牌從起飛頂點瞬間重新排列到手牌列上空後，落下到最終手牌位置的動畫時長。公開理由同 [DEAL_LIFT_DURATION_TICKS]。 */
+    const val DEAL_DROP_DURATION_TICKS: Int = 5
+
+    /**
+     * 開局發牌動畫中，起飛完成、瞬間重新排列到手牌列上空那一刻起，到真正解除隱形開始落下之間的短暫
+     * 間隔——這段期間牌是隱形的（見 `TileAnimationSteps.scheduleDealBatch`），
+     * 讓「重新排成一列」感覺像是刻意的一個轉場動作，不是無縫瞬移。公開理由同 [DEAL_LIFT_DURATION_TICKS]。
+     */
+    const val DEAL_SNAP_GAP_TICKS: Int = 2
+
+    /**
+     * 開局發牌動畫中，連續兩次抓取「開始」之間的間隔——刻意小於 [DEAL_LIFT_DURATION_TICKS]，讓下一次
+     * 抓取在上一次起飛動畫「播到一半」就先開始，不必等上一次的起飛都播完，兩次抓取的起飛動作會有一小
+     * 段同時進行，讓連續抓取的節奏更快、更連貫。重新排列＋落下就更不用等了，理由見
+     * [dealBatchStartDelayTicks]。`internal` 理由同 [CORNER_GAP_RATIO]。
+     */
+    internal const val DEAL_TURN_STAGGER_TICKS: Int = 3
+
+    /**
+     * 開局發牌動畫中，所有座位的最後一次抓取都落地後，到全部座位的牌同時開始原地翻起之間的短暫停頓，
+     * 供 [dealFlipStartDelayTicks] 使用——讓「全部落地」跟「一起翻起」感覺是兩個分開的動作，不是無縫
+     * 接續。遊戲內驗證後從 3 調高，原本的量級太短，最後一手剛摸進來就緊接著翻牌，感覺不夠自然。公開
+     * 理由同 [DEAL_LIFT_DURATION_TICKS]。
+     */
+    const val DEAL_FLIP_GAP_TICKS: Int = 15
+
+    /**
+     * 開局發牌動畫中，翻牌動畫（姿態從蓋牌轉直立，位置不變）的動畫時長，供
+     * [dealFlipStartDelayTicks]／[dealAnimationTicks] 使用。公開理由同
+     * [DEAL_LIFT_DURATION_TICKS]。
+     */
+    const val DEAL_FLIP_DURATION_TICKS: Int = 4
+
+    /**
+     * 摸牌動畫起飛階段的相對高度，跟開局發牌動畫共用同一套「起飛→隱形傳送→落下」節奏（見
+     * `TileAnimationSteps.schedulePlannedMotion` 的 [TileMotionKind.DRAW]），差別只在摸牌落下時直接是目的地的姿態、
+     * 不需要額外的翻牌步驟——摸牌是單張、高頻的動作，直接面向玩家出現比蓋牌後再翻更符合直覺。
+     */
+    const val DRAW_LIFT_HEIGHT: Double = 0.4
+
+    /** 摸牌動畫起飛階段的動畫時長，供 [MahjongTileTableLayout] 以外的呼叫端引用，理由同 [DEAL_LIFT_DURATION_TICKS]。 */
+    const val DRAW_LIFT_DURATION_TICKS: Int = 4
+
+    /** 摸牌動畫起飛完成、隱形傳送到摸牌位上空後，到解除隱形開始落下之間的短暫間隔，理由同 [DEAL_SNAP_GAP_TICKS]。 */
+    const val DRAW_SNAP_GAP_TICKS: Int = 2
+
+    /** 摸牌動畫落下階段的動畫時長，理由同 [DEAL_DROP_DURATION_TICKS]。 */
+    const val DRAW_DROP_DURATION_TICKS: Int = 5
+
+    /**
+     * 捨牌動畫是一次連續可見的拋物線飛行（不隱形、不傳送），從手牌位置直接飛到牌河位置，途中姿態從
+     * 面向玩家的直立牌連續轉成攤平面朝上——跟摸牌／發牌刻意不同：丟牌是玩家自己主動觸發、全場最高頻
+     * 的即時操作，玩家丟牌當下早就知道牌面內容，不需要摸牌／發牌那種「隱形揭曉」的儀式感，反而應該
+     * 像現實丟牌一樣是一個連續、看得見、俐落的動作。
+     * 側身旋轉（立直宣告牌）不連續內插，直接在動畫一開始就用最終 yaw 起飛。
+     *
+     * 這個值是拋物線頂點的額外高度。
+     */
+    const val DISCARD_ARC_HEIGHT: Double = 0.3
+
+    /** 捨牌動畫的動畫總時長，理由同 [DISCARD_ARC_HEIGHT]。 */
+    const val DISCARD_FLIGHT_DURATION_TICKS: Int = 5
+
+    /** 同一排內越過其他牌時往前進方向傾斜的角度。 */
+    const val ROW_ARC_LEAN_DEGREES: Float = 15.0f
+
+    /**
+     * 同一排內越過其他牌時的提起高度：牌往前進方向傾斜後，後方較低的那個角剛好貼著直立牌的上緣滑過。牌繞底部中心傾斜，
+     * 後角比底部中心低半個牌寬乘上傾斜角的正弦。
+     */
+    val ROW_ARC_HEIGHT: Double = MahjongTileDimensions.TILE_HEIGHT +
+        MahjongTileDimensions.TILE_WIDTH / 2.0 * sin(ROW_ARC_LEAN_DEGREES * PI / 180.0)
+
+    /** 同一排內越過其他牌的時長：提起、沿上緣滑行、落下插入。 */
+    const val ROW_ARC_DURATION_TICKS: Int = 12
+
+    /**
+     * 胡牌展示中，手牌瞬間整理到位後、開始倒牌流程前的短暫等待。
+     */
+    const val WIN_POST_REORDER_DELAY_TICKS: Int = 5
+
+    /**
+     * 胡牌慶祝演出中，牌姿態從立牌轉平放（牌面朝上）「倒下」的動畫時長，供自摸牌單獨倒下與其餘手牌
+     * 一起倒下這兩個步驟共用。位置不變，只有姿態旋轉角內插，手法比照 [DEAL_FLIP_DURATION_TICKS]。
+     */
+    const val WIN_LAYDOWN_DURATION_TICKS: Int = 4
+
+    /**
+     * 自摸牌單獨倒下後，到其餘手牌一起倒下前的等待，約 0.8 秒。
+     * 榮和或搶槓時，從整理到位後的短暫停頓結束時起算。
+     */
+    const val WIN_PRE_HAND_LAYDOWN_DELAY_TICKS: Int = 16
+
+    /** 胡牌慶祝演出中，手牌一起倒下播完到引雷三叉戟開始落下之間的等待，約 0.8 秒。 */
+    const val WIN_PRE_EFFECT_DELAY_TICKS: Int = 16
+
+    /** 引雷三叉戟從牌面上方落到胡牌張的時長。 */
+    const val WIN_TRIDENT_FALL_DURATION_TICKS: Int = 6
+
+    /** 三叉戟插中胡牌張後顫動並等待閃電落下的時長。 */
+    const val WIN_TRIDENT_SETTLE_DURATION_TICKS: Int = 8
+
+    /** 胡牌閃電相對整段降臨特效開始的 tick。 */
+    const val WIN_LIGHTNING_START_TICK: Int = WIN_TRIDENT_FALL_DURATION_TICKS + WIN_TRIDENT_SETTLE_DURATION_TICKS
+
+    /** 三叉戟引雷前搖與後續閃電、環形電弧的完整播放時長。 */
+    const val WIN_EFFECT_DURATION_TICKS: Int = WIN_LIGHTNING_START_TICK + 30
+
+    /**
+     * 牌牆角落貼齊處縫隙相對 [MahjongTileDimensions.TILE_WIDTH] 的比例，遊戲內驗證後調整的觀感參數。
+     * `internal` 而非 `private`：讓同模組的 `MahjongTileTableLayoutTest`
+     * 能直接引用同一個數值驗證預期位移量，不需要在測試裡另外複製一份可能忘記同步的常數。
+     */
+    internal const val CORNER_GAP_RATIO: Double = 0.25
+
+    /** 世界 yaw 進行最短路徑內插時使用的半圈角度。 */
+    private const val FULL_YAW_DEGREES: Float = 360.0f
+
+    /** 半圈的角度，用來把 yaw 換成弧度。 */
+    private const val HALF_TURN_DEGREES: Double = 180.0
+
+    /** [HAND_EDGE_OFFSET] 額外扣除的桌緣留白，遊戲內驗證後調整的觀感參數（初版手牌幾乎貼到桌緣）。 */
+    internal const val HAND_EDGE_MARGIN: Double = 0.15
+
+    /**
+     * 手牌垂直於側面、離桌子中心的距離：46×46 模型單位可用內框半寬（換算 1.4375 block）扣除立牌厚度
+     * 的一半，再扣掉 [HAND_EDGE_MARGIN] 讓手牌跟桌緣之間留一點空隙——初始版本沒扣這段 margin，
+     * 遊戲內驗證時手牌幾乎貼到桌緣，因此往桌子中心方向再退一點。仍比牌牆（`halfSpan` 約 0.98 block，
+     * 17 墩時）更靠外，維持在牌牆與桌緣之間。
+     */
+    internal const val HAND_EDGE_OFFSET: Double =
+        46.0 / 16.0 / 2.0 - MahjongTileDimensions.TILE_DEPTH / 2.0 - HAND_EDGE_MARGIN
+
+    /** 摸牌位跟立牌列尾端之間的縫隙相對 [MahjongTileDimensions.TILE_WIDTH] 的比例。 */
+    internal const val DRAWN_TILE_GAP_RATIO: Double = 0.5
+
+    /** 牌河固定每排張數，超過往下一排堆疊。 */
+    internal const val DISCARD_TILES_PER_ROW: Int = 6
+
+    /** 標準桌面以每面 17 墩的牌牆，決定短牌牆離桌心的最小距離及牌河的預留空間。 */
+    private const val STANDARD_WALL_STACKS_PER_SIDE: Int = 17
+
+    /** 標準牌牆的外側半跨距。短牌牆也維持在這條安全邊界之外。 */
+    private const val STANDARD_WALL_HALF_SPAN: Double =
+        STANDARD_WALL_STACKS_PER_SIDE / 2.0 * (MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING)
+
+    /**
+     * 牌河實際會換行的排數——第三排（`row` 從 0 起算為 2）用完後，[localDiscardVector] 不再往桌緣
+     * 方向新增第四排，而是固定停在這一排、沿排列方向繼續延伸，理由見 [localDiscardVector] KDoc。
+     */
+    internal const val DISCARD_SAFE_ROWS: Int = 3
+
+    /** [DISCARD_WALL_NEAR_EDGE] 再往內縮的小留白，避免牌河貼到牌牆邊緣完全不留縫隙。 */
+    internal const val DISCARD_WALL_CLEARANCE_MARGIN: Double = 0.05
+
+    /**
+     * 牌牆內緣（最靠近桌子中心那一側）的估算位置，扣掉 [DISCARD_WALL_CLEARANCE_MARGIN] 留白，供
+     * [DISCARD_ROW_BASE_OFFSET] 換算用。
+     */
+    internal const val DISCARD_WALL_NEAR_EDGE: Double =
+        STANDARD_WALL_HALF_SPAN -
+            DISCARD_WALL_CLEARANCE_MARGIN
+
+    /**
+     * 牌河第一排垂直於側面、離桌子中心的起始距離——用「[DISCARD_WALL_NEAR_EDGE] 扣掉 [DISCARD_SAFE_ROWS]
+     * 排乘每排間距」算出來的：可以離桌子中心最遠、又保證 [DISCARD_SAFE_ROWS] 排都不會撞進牌牆的偏移
+     * 值。超過 [DISCARD_SAFE_ROWS] 排的牌由 [localDiscardVector] 停在最後一排往旁延伸，所以牌河既不會
+     * 太靠近桌子中心，也不會撞進牌牆。[DISCARD_SAFE_ROWS] 或牌牆大小改變時，這個值會自動跟著調整。
+     */
+    internal const val DISCARD_ROW_BASE_OFFSET: Double =
+        DISCARD_WALL_NEAR_EDGE - DISCARD_SAFE_ROWS * (MahjongTileDimensions.TILE_HEIGHT + MahjongTileDimensions.TILE_SMALL_PADDING)
+
+    /** 側身標記的牌額外旋轉角度。 */
+    internal const val SIDEWAYS_YAW_OFFSET: Float = 90.0f
+
+    /** [MELD_AREA_CORNER_OFFSET] 額外扣除的桌緣留白，理由同 [HAND_EDGE_MARGIN]。 */
+    internal const val MELD_AREA_CORNER_MARGIN: Double = 0.05
+
+    /**
+     * 副露區沿排列方向（局部 X 軸）的固定桌角邊界線。
+     *
+     * - 這是第一組（最早宣告）副露最右側那張牌外緣貼齊的線，不是那張牌的中心點。
+     *   中心點依牌的實際朝向（直立或側身）由呼叫端以 [meldPlacement] 的 `alongOffsetFromCorner` 換算。
+     * - 邊界固定在桌子實際邊界的角落，用與 [HAND_EDGE_OFFSET] 相同的 46×46 模型單位可用內框半寬換算，
+     *   再扣除 [MELD_AREA_CORNER_MARGIN] 留白。
+     * - 邊界不隨手牌張數或副露組數變動。若跟著變動，手牌隨副露成立縮小時邊界會往外退，
+     *   副露可能撐出桌面，甚至超出牌區清理的搜尋半徑，在遊戲結束後留下沒有回收的 entity。
+     * - 後續每組副露都往這條線的左側（玩家自己手牌方向）排開，只往桌子內側延伸。
+     */
+    internal const val MELD_AREA_CORNER_OFFSET: Double =
+        46.0 / 16.0 / 2.0 - MELD_AREA_CORNER_MARGIN
+
+    /**
+     * 副露區垂直於排列方向（局部 Z 軸）、靠近桌緣那一側的固定外緣邊界線——直接沿用跟
+     * [MELD_AREA_CORNER_OFFSET] 相同的「46×46 模型單位可用內框半寬扣 [MELD_AREA_CORNER_MARGIN]」桌子
+     * 實際邊界公式（兩個方向的留白刻意用同一個較小的邊界留白，不是 [HAND_EDGE_MARGIN] 那個手牌專用、
+     * 為了視覺退縮特地調大的留白值），讓錨點那張牌在角落的兩側外緣（沿排列方向與垂直排列方向）都貼齊
+     * 桌子實際邊界，不是跟手牌列共用同一條線——手牌是立牌、副露是躺平的牌，兩者外觀尺寸與貼齊基準本來
+     * 就不同，因此副露與手牌列使用不同邊界線。直立與側身兩種
+     * 朝向的牌，外觀垂直於排列方向的寬度不同（分別是 [MahjongTileDimensions.TILE_HEIGHT] 與
+     * [MahjongTileDimensions.TILE_WIDTH]），[meldPlacement] 依朝向各自從這條邊界線往桌子中心扣除半寬
+     * 換算中心點，確保兩種朝向的牌外緣都對齊同一條線，不會其中一種突出或內縮。
+     */
+    internal const val MELD_NEAR_EDGE_LINE: Double = 46.0 / 16.0 / 2.0 - MELD_AREA_CORNER_MARGIN
+
+    /**
+     * 相鄰兩組副露之間額外跳過的世界距離相對 [MahjongTileDimensions.TILE_WIDTH] 的比例——只需要
+     * 看得出分組的小縫隙，不是一整張牌的寬度。[MahjongPlayerAreaLayout] 逐格擺放時使用此比例。
+     */
+    const val MELD_GROUP_GAP_RATIO: Double = 0.3
+
+    /** 相鄰兩組副露之間額外跳過的世界距離，見 [MELD_GROUP_GAP_RATIO]。 */
+    const val MELD_GROUP_GAP: Double = MahjongTileDimensions.TILE_WIDTH * MELD_GROUP_GAP_RATIO
+
+    /**
+     * 加槓補上的第 4 張牌，垂直於排列方向（往桌子中心）額外推的距離——剛好是側身牌自己的外觀寬度
+     * （[MahjongTileDimensions.TILE_WIDTH]，側身後這個方向的寬度）加一層
+     * [MahjongTileDimensions.TILE_SMALL_PADDING] 縫隙，讓兩張側身牌前後相鄰、不重疊。搬移理由同
+     * [MELD_GROUP_GAP]。
+     */
+    const val ADDED_KAN_DEPTH_OFFSET: Double = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+
+    /** 上家鳴取（吃唯一合法來源）的側身牌組內格位：固定最左。搬移理由同 [MELD_GROUP_GAP]。 */
+    const val SIDEWAYS_SLOT_LEFT: Int = 0
+
+    /**
+     * 對家鳴取的側身牌組內格位：固定 `1`（碰／槓皆同，四張時是偏左第二張，不是幾何正中央）。搬移
+     * 理由同 [MELD_GROUP_GAP]。
+     */
+    const val SIDEWAYS_SLOT_ACROSS: Int = 1
+
+    /**
+     * 手牌／摸牌位讓開角落區時，額外多留的縫隙——避免 [fitHandShift] 算出來的偏移
+     * 只是讓兩者剛好貼齊、外觀上完全不留空隙。跟 [MELD_GROUP_GAP] 同一數量級但不共用同一個值，
+     * 因為這裡是手牌區跟角落區兩個不同區域之間的縫隙，不是同一副露內部的組間縫隙，兩者觀感上不必然要一致。
+     */
+    internal const val HAND_CORNER_GAP: Double = MahjongTileDimensions.TILE_WIDTH * 0.2
+
+    /** 桌心留給擲骰、不放牌的半徑。 */
+    internal const val SCATTER_DICE_CLEARANCE: Double = 0.2
+
+    /** 牌牆與手牌之間的副露列，與推倒後的手牌之間保留的縫隙。 */
+    internal const val FRONT_MELD_GAP: Double = MahjongTileDimensions.TILE_WIDTH * 0.05
+}
+
+/**
+ * 沿一個方向的範圍。
+ *
+ * @property left 較小的一端。
+ * @property right 較大的一端。
+ */
+internal data class RowSpan(val left: Double, val right: Double)

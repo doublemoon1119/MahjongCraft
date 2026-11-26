@@ -1,0 +1,51 @@
+package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
+
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
+import kotlin.random.Random
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+
+/**
+ * 針對 [TaiwanWallFactory] 進行的單元測試。
+ *
+ * 驗證台灣麻將牌山的組成是否符合預期，包含基礎 136 張牌以及可選的 8 張花牌。
+ */
+class TaiwanWallFactoryTest {
+
+    /**
+     * 驗證台麻牌山在啟用花牌時的總數與組成。
+     *
+     * 預期總數為 144 張，且應包含 8 張花牌。
+     */
+    @Test
+    fun `test taiwan wall composition with flowers`() {
+        val config = TaiwanRuleConfig(useFlowerTiles = true)
+        val factory = TaiwanWallFactory(config)
+        val wall = factory.create(Random(0))
+
+        // 136 (基礎) + 8 (花牌) = 144
+        assertEquals(144, wall.remainingCount)
+
+        val allTiles = wall.getAllTiles()
+        val flowers = allTiles.map { it.tile }.filter(TaiwanTileTypes::isFlower)
+        assertEquals(TaiwanTileTypes.createAll().toSet(), flowers.toSet())
+        assertEquals(8, flowers.size)
+    }
+
+    /**
+     * 驗證台麻牌山在停用花牌時的總數與組成。
+     *
+     * 預期總數為 136 張，且不應包含任何花牌。
+     */
+    @Test
+    fun `test taiwan wall composition without flowers`() {
+        val config = TaiwanRuleConfig(useFlowerTiles = false)
+        val factory = TaiwanWallFactory(config)
+        val wall = factory.create(Random(0))
+
+        // 僅 136 張基礎牌
+        assertEquals(136, wall.remainingCount)
+        assertTrue(wall.getAllTiles().none { TaiwanTileTypes.isFlower(it.tile) })
+    }
+}

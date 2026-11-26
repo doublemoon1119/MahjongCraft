@@ -1,0 +1,586 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
+import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.config.GameLength
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallFactory
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.testMatchSeed
+import com.doublemoon1119.mahjongcraft.testing.flow.server.noRuleDecisionBeginUseCase
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.uuid.Uuid
+
+/**
+ * [AdvanceRoundUseCase] 的單元測試類別。
+ *
+ * 驗證連莊與過莊指示的套用、開下一局、整場對局結束時的過渡行為，以及快照與事件的同步行為。
+ */
+class AdvanceRoundUseCaseTest {
+
+    /** 各測試共用的對局識別碼。 */
+    private val gameId = Uuid.random()
+
+    /**
+     * 組成換局用例與同步、事件發布替身的測試環境。
+     *
+     * @property gameRepo 保存測試對局的權威倉庫。
+     * @property moduleRegistry 內建規則模組註冊中心。
+     * @property snapshotRepo 保存觀察者快照的替身。
+     * @property snapshotSynchronizer 依可見性政策產生同步快照的元件。
+     * @property handSortPreferenceStore 玩家手牌排序偏好。
+     * @property eventPublisher 記錄流程事件的替身。
+     * @property presentationPublisher 記錄呈現要求的替身。
+     * @property useCase 受測換局用例。
+     */
+    private class Fixtures {
+        val gameRepo = FakeGameRepository()
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+        val snapshotRepo = FakeGameSnapshotRepository()
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
+        val handSortPreferenceStore = HandSortPreferenceStore()
+        val eventPublisher = FakeGameEventPublisher()
+        val presentationPublisher = FakeGamePresentationPublisher()
+        val useCase = AdvanceRoundUseCase(
+            gameRepository = gameRepo,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            handSortPreferenceStore = handSortPreferenceStore,
+            eventPublisher = eventPublisher,
+            presentationPublisher = presentationPublisher,
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+            beginRuleDecisionUseCase = noRuleDecisionBeginUseCase(gameRepo, moduleRegistry, snapshotSynchronizer),
+        )
+
+        /**
+         * 依測試桌況的動作紀錄建立本局摘要，再寫入測試倉庫。不重新計算和牌或流局結算。
+         *
+         * @param tableState 含有本局結算動作的桌況。
+         * @param remainingReserveByPlayerId 要保留的玩家思考時間。null 時沿用預設值。
+         * @param enabledAutomaticControlIdsByPlayerId 玩家目前啟用的自動控制項目。
+         */
+        fun setCompletedState(
+            tableState: TableState,
+            remainingReserveByPlayerId: Map<Uuid, Duration>? = null,
+            enabledAutomaticControlIdsByPlayerId: Map<Uuid, Set<String>> = emptyMap(),
+        ) {
+            val winners = tableState.players.filter { player ->
+                player.actionHistory.any { it is GameAction.Tsumo || it is GameAction.Ron }
+            }.mapTo(mutableSetOf()) { it.id }
+            val drawPlayers = tableState.players.filter { player ->
+                player.actionHistory.any { it is GameAction.ExhaustiveDraw }
+            }.mapTo(mutableSetOf()) { it.id }
+            val directive = if (tableState.dealerPlayerId in winners || tableState.dealerPlayerId in drawPlayers) {
+                RoundTransitionDirective.RepeatDealer
+            } else {
+                RoundTransitionDirective.PassToNextSeat
+            }
+            val drawReason = tableState.players.asSequence()
+                .flatMap { it.actionHistory.asSequence() }
+                .filterIsInstance<GameAction.ExhaustiveDraw>()
+                .firstOrNull()?.reason
+            val completion = RoundCompletionSummary(
+                outcomeId = when {
+                    drawReason != null -> drawReason.id
+                    tableState.players.any { player -> player.actionHistory.any { it is GameAction.Ron } } -> BuiltInRoundOutcomeIds.RON
+                    else -> BuiltInRoundOutcomeIds.TSUMO
+                },
+                classification = if (drawReason == null) {
+                    RoundCompletionClassification.WIN
+                } else {
+                    RoundCompletionClassification.EXHAUSTIVE_DRAW
+                },
+                beneficiaryPlayerIds = winners + drawPlayers,
+                transitionDirective = directive,
+                settledScoresByPlayerId = tableState.players.associate { it.id to it.score },
+            )
+            gameRepo.setGame(
+                game = Game(
+                    tableState = tableState,
+                    flowConfig = GameFlowConfig(),
+                    remainingReserveByPlayerId = remainingReserveByPlayerId
+                        ?: tableState.players.associate { it.id to GameFlowConfig().timeControl.reserve },
+                    enabledAutomaticControlIdsByPlayerId = enabledAutomaticControlIdsByPlayerId,
+                    roundCompletion = completion,
+                    matchSeed = testMatchSeed(0),
+                ),
+            )
+        }
+    }
+
+    /**
+     * 驗證莊家胡牌時，連莊：本場數 +1、莊家不變、局數不變，且確實重新發了一手新牌、清空了
+     * 每局狀態。
+     */
+    @Test
+    fun `test advance round repeats dealer when dealer won`() = runTest {
+        val fixtures = Fixtures()
+        val dealerId = Uuid.random()
+        val dealer = FakeMahjongPlayerFactory.create(Wind.EAST, id = dealerId)
+            .copy(actionHistory = listOf(GameAction.Tsumo))
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
+        val players = listOf(dealer, p2, p3, p4)
+        // 使用東風戰，避免單局模式在第一局完成時直接終局，讓測試能檢查連莊後的新局狀態。
+        val config = RiichiRuleConfig(gameLength = RiichiGameLength.East)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = players,
+            config = config,
+            roundNumber = 1,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+        )
+        val remainingReserveByPlayerId = players.associate { it.id to 12_345.milliseconds }
+        fixtures.setCompletedState(
+            tableState = table,
+            remainingReserveByPlayerId = remainingReserveByPlayerId,
+            enabledAutomaticControlIdsByPlayerId = mapOf(dealerId to setOf("example:auto_action")),
+        )
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val advanceResult = result.value
+        assertEquals(false, advanceResult.isMatchOver)
+        val newState = advanceResult.tableState
+        assertEquals(1, newState.comboCount)
+        val roll = newState.openingDiceRolls.single()
+        assertEquals(dealerId, roll.playerId)
+        assertEquals(0, roll.rollIndex)
+        assertEquals(listOf(roll), fixtures.presentationPublisher.getPublishedOpeningRolls(gameId))
+        val recorded = fixtures.gameRepo.historyDrafts.filter { it.fact is HistoryFact.DiceRolled }
+        assertEquals(listOf(roll), recorded.map { (it.fact as HistoryFact.DiceRolled).roll })
+        assertEquals(listOf(dealerId), recorded.map { it.actorPlayerId })
+        assertTrue(fixtures.gameRepo.historyDrafts[1].fact is HistoryFact.RoundStarted)
+        assertTrue(fixtures.gameRepo.historyDrafts[2].fact is HistoryFact.DiceRolled)
+        assertEquals(1, newState.roundNumber)
+        assertEquals(Wind.EAST, newState.prevalentWind)
+        assertEquals(
+            expected = remainingReserveByPlayerId,
+            actual = fixtures.gameRepo.getGame(gameId)?.remainingReserveByPlayerId,
+        )
+        assertTrue(fixtures.gameRepo.getGame(gameId)?.enabledAutomaticControlIdsByPlayerId.isNullOrEmpty())
+        assertEquals(1L, fixtures.gameRepo.getGame(gameId)?.automaticControlRevision)
+        assertEquals(
+            expected = dealerId,
+            actual = newState.dealerPlayerId,
+            message = "Dealer should stay the same on a repeat.",
+        )
+        newState.players.forEach { player ->
+            assertEquals(
+                expected = config.initialHandSize,
+                actual = player.hand.tiles.size,
+                message = "A fresh hand should be dealt for the new round.",
+            )
+            assertTrue(player.actionHistory.isEmpty(), "actionHistory should be reset for the new round.")
+        }
+        assertNull(newState.pendingReaction)
+        val layout = assertNotNull(fixtures.presentationPublisher.getPublishedWallStructure(gameId))
+        val assemblyStructure = assertNotNull(fixtures.presentationPublisher.getPublishedWallAssemblyStructure(gameId))
+        assertEquals(136, layout.placements.size)
+        assertEquals(layout.placements.keys, assemblyStructure.keys)
+        val dealtTileIds = newState.players.flatMap { player -> player.hand.tiles }.mapTo(mutableSetOf()) { it.id }
+        assertTrue(layout.placements.keys.containsAll(dealtTileIds))
+    }
+
+    /**
+     * 驗證非莊家胡牌時，過莊：本場數歸零、局數 +1、莊家換成座位順序中的下一位。
+     */
+    @Test
+    fun `test advance round rotates dealer when dealer did not win`() = runTest {
+        val fixtures = Fixtures()
+        val dealer = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val nextDealerId = Uuid.random()
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH, id = nextDealerId)
+            .copy(actionHistory = listOf(GameAction.Ron(Uuid.random())))
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealer, p2, p3, p4),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            roundNumber = 1,
+            comboCount = 2,
+            prevalentWind = Wind.EAST,
+        )
+        fixtures.setCompletedState(table)
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val advanceResult = result.value
+        assertEquals(false, advanceResult.isMatchOver)
+        val newState = advanceResult.tableState
+        assertEquals(0, newState.comboCount)
+        assertEquals(2, newState.roundNumber)
+        assertEquals(Wind.EAST, newState.prevalentWind)
+        assertEquals(
+            expected = nextDealerId,
+            actual = newState.dealerPlayerId,
+            message = "P2 (South) should become the new dealer.",
+        )
+    }
+
+    /**
+     * 驗證下一局的牌山由對局種子與目前已開局數衍生，換局後已開局數加一，讓之後每一局都使用不同的亂數。
+     */
+    @Test
+    fun `test advance round deals the next round from the match seed`() = runTest {
+        val fixtures = Fixtures()
+        val config = RiichiRuleConfig(gameLength = RiichiGameLength.East)
+        val winner = FakeMahjongPlayerFactory.create(Wind.SOUTH).copy(actionHistory = listOf(GameAction.Ron(Uuid.random())))
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(FakeMahjongPlayerFactory.create(Wind.EAST), winner, FakeMahjongPlayerFactory.create(Wind.WEST), FakeMahjongPlayerFactory.create(Wind.NORTH)),
+            config = config,
+            roundNumber = 1,
+            prevalentWind = Wind.EAST,
+        )
+        fixtures.setCompletedState(table)
+        val seed = MatchSeed.fromByteArray(ByteArray(MatchSeed.SIZE_BYTES) { 9 })
+        fixtures.gameRepo.setGame(checkNotNull(fixtures.gameRepo.getGame(gameId)).copy(matchSeed = seed, openedRoundCount = 3))
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = result.value.tableState
+        val dealtTileIds = (newState.tileWall.getAllTiles() + newState.reservedWallTiles + newState.players.flatMap { it.hand.allTiles }).map { it.id }.toSet()
+        val expectedTileIds = RiichiWallFactory(config).create(seed.roundRandomness(roundOrdinal = 3).wall).getAllTiles().map { it.id }.toSet()
+        assertEquals(expectedTileIds, dealtTileIds)
+        assertEquals(4, fixtures.gameRepo.getGame(gameId)?.openedRoundCount)
+        assertEquals(seed, fixtures.gameRepo.getGame(gameId)?.matchSeed)
+    }
+
+    /**
+     * 驗證莊家一般流局時聽牌（`actionHistory` 有 `ExhaustiveDraw`）：連莊、本場數 +1、莊家不變，
+     * 上一局流局時公開的手牌在新的一局不再公開。
+     */
+    @Test
+    fun `test advance round repeats dealer when dealer was tenpai at exhaustive draw`() = runTest {
+        val fixtures = Fixtures()
+        val dealerId = Uuid.random()
+        val dealer = FakeMahjongPlayerFactory.create(Wind.EAST, id = dealerId)
+            .copy(actionHistory = listOf(GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.Normal)))
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealer, p2, p3, p4),
+            // 用 East（4 局）而非預設的 OneGame，理由同上一個連莊測試。
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            roundNumber = 1,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+        ).copy(publicTileEvidenceIds = setOf(Uuid.random()))
+        fixtures.setCompletedState(table)
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val advanceResult = result.value
+        assertEquals(false, advanceResult.isMatchOver)
+        val newState = advanceResult.tableState
+        assertEquals(1, newState.comboCount)
+        assertEquals(1, newState.roundNumber)
+        assertEquals(
+            expected = dealerId,
+            actual = newState.dealerPlayerId,
+            message = "Dealer should stay the same when tenpai at exhaustive draw.",
+        )
+        assertEquals(emptySet(), newState.publicTileEvidenceIds, "Hands revealed at the draw are concealed again in the new round.")
+    }
+
+    /**
+     * 驗證莊家一般流局時不聽（`actionHistory` 沒有 Tsumo/Ron/ExhaustiveDraw）：過莊、換下一位當莊家。
+     */
+    @Test
+    fun `test advance round rotates dealer when dealer was noten at exhaustive draw`() = runTest {
+        val fixtures = Fixtures()
+        val dealer = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val nextDealerId = Uuid.random()
+        // 莊家不聽時 actionHistory 完全空白（DeclareExhaustiveDrawUseCase 只把 ExhaustiveDraw
+        // 記錄進聽牌玩家），p2 是否記錄跟這個判斷式無關，這裡刻意留空模擬「p2 也不聽」的情境。
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH, id = nextDealerId)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealer, p2, p3, p4),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            roundNumber = 1,
+            comboCount = 2,
+            prevalentWind = Wind.EAST,
+        )
+        fixtures.setCompletedState(table)
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val advanceResult = result.value
+        assertEquals(false, advanceResult.isMatchOver)
+        val newState = advanceResult.tableState
+        assertEquals(0, newState.comboCount)
+        assertEquals(2, newState.roundNumber)
+        assertEquals(
+            expected = nextDealerId,
+            actual = newState.dealerPlayerId,
+            message = "P2 (South) should become the new dealer.",
+        )
+    }
+
+    /**
+     * 驗證局數已達 [GameLength.totalRounds] 上限時，
+     * 回報整場對局已結束，且不會開新的一局（回傳與寫回的桌況都與呼叫前完全相同）。
+     */
+    @Test
+    fun `test advance round reports match over without starting a new round`() = runTest {
+        val fixtures = Fixtures()
+        val dealer = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealer, p2, p3, p4),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.OneGame),
+            roundNumber = 1,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+        )
+        fixtures.setCompletedState(table)
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val advanceResult = result.value
+        assertEquals(true, advanceResult.isMatchOver)
+        val matchSettlement = assertNotNull(fixtures.presentationPublisher.getPublishedMatchSettlement(gameId))
+        assertEquals(advanceResult.tableState.players.size, matchSettlement.players.size)
+        assertEquals(
+            expected = advanceResult.tableState.players.map { it.score },
+            actual = matchSettlement.players.map { it.finalScore },
+        )
+        assertEquals(
+            expected = (1..advanceResult.tableState.players.size).toList(),
+            actual = matchSettlement.players.map { it.finalRank }.sorted(),
+        )
+        assertEquals(
+            expected = table,
+            actual = advanceResult.tableState,
+            message = "Table state should be left completely untouched when the match is over.",
+        )
+        assertEquals(table, fixtures.gameRepo.getTableState(gameId), "Repository should not have been mutated either.")
+    }
+
+    /**
+     * 驗證整場對局結束時，桌上未被任何人收下的立直棒歸給最終第一名（分數最高者）——這位玩家的分數
+     * 應加上 `立直棒數 * 1000`，對局組件中的供託應歸零。
+     */
+    @Test
+    fun `test advance round awards leftover stick pot to the top-ranked player at match end`() = runTest {
+        val fixtures = Fixtures()
+        val dealer = FakeMahjongPlayerFactory.create(Wind.EAST).copy(score = 20000)
+        val topPlayer = FakeMahjongPlayerFactory.create(Wind.SOUTH).copy(score = 30000)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST).copy(score = 25000)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH).copy(score = 22000)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealer, topPlayer, p3, p4),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.OneGame),
+            roundNumber = 1,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+            components = riichiTableComponents(potPoints = 2000),
+        )
+        fixtures.setCompletedState(table)
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val advanceResult = result.value
+        assertEquals(true, advanceResult.isMatchOver)
+        val finalTopPlayer = advanceResult.tableState.players.first { it.id == topPlayer.id }
+        assertEquals(32000, finalTopPlayer.score, "The final 1st place player should collect all leftover riichi sticks (2 * 1000).")
+        assertEquals(
+            expected = 0,
+            actual = (advanceResult.tableState.riichiPotPoints() / RIICHI_STICK_POINTS),
+            message = "The stick pot should be reset once collected.",
+        )
+        assertEquals(advanceResult.tableState, fixtures.gameRepo.getTableState(gameId), "Repository should reflect the swept state.")
+    }
+
+    /**
+     * 驗證終局排名同分決勝依 `initialSeatIndex`（起家順位）：A(南) 跟 B(西) 並列最高分 28000，A 起家順位
+     * 較前（南 < 西），供託應該歸給 A，不是 B——用來確認 `compareForMatchRanking` 真的有在比
+     * 起家順位，不是只比分數。
+     */
+    @Test
+    fun `test advance round breaks tied match ranking by initialSeat when awarding leftover stick pot`() = runTest {
+        val fixtures = Fixtures()
+        val playerA = FakeMahjongPlayerFactory.create(Wind.SOUTH).copy(score = 28000)
+        val playerB = FakeMahjongPlayerFactory.create(Wind.WEST).copy(score = 28000)
+        val playerC = FakeMahjongPlayerFactory.create(Wind.EAST).copy(score = 24000)
+        val playerD = FakeMahjongPlayerFactory.create(Wind.NORTH).copy(score = 20000)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(playerA, playerB, playerC, playerD),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.OneGame),
+            roundNumber = 1,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+            components = riichiTableComponents(potPoints = 1000),
+        )
+        fixtures.setCompletedState(table)
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val advanceResult = result.value
+        val finalA = advanceResult.tableState.players.first { it.id == playerA.id }
+        val finalB = advanceResult.tableState.players.first { it.id == playerB.id }
+        assertEquals(29000, finalA.score, "A sits closer to the starting dealer (South before West) and should win the tie.")
+        assertEquals(28000, finalB.score, "B should not receive the stick pot despite the tied score.")
+    }
+
+    /**
+     * 驗證整場對局結束時，桌上沒有未被收下的立直棒，分數與桌況完全不受影響。
+     */
+    @Test
+    fun `test advance round leaves scores untouched at match end when there is no leftover stick pot`() = runTest {
+        val fixtures = Fixtures()
+        val dealer = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealer, p2, p3, p4),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.OneGame),
+            roundNumber = 1,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+            components = riichiTableComponents(potPoints = 0),
+        )
+        fixtures.setCompletedState(table)
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val advanceResult = result.value
+        assertEquals(true, advanceResult.isMatchOver)
+        assertEquals(table, advanceResult.tableState, "No leftover stick pot means the table state should be left untouched.")
+    }
+
+    /**
+     * 驗證 progression policy 的擊飛判定：即使局數遠未達
+     * [GameLength.totalRounds] 上限，只要有玩家分數低於 0，整場對局也應該立即結束，不開新的一局。
+     */
+    @Test
+    fun `test advance round reports match over when a player is bankrupt even before the final round`() = runTest {
+        val fixtures = Fixtures()
+        val dealer = FakeMahjongPlayerFactory.create(Wind.EAST).copy(score = -500)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH).copy(score = 30500)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST).copy(score = 25000)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH).copy(score = 25000)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealer, p2, p3, p4),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.TwoWinds),
+            roundNumber = 1,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+        )
+        fixtures.setCompletedState(table)
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val advanceResult = result.value
+        assertEquals(true, advanceResult.isMatchOver, "A negative score should end the match immediately (Tobi).")
+        assertEquals(table, advanceResult.tableState, "Table state should be left completely untouched when the match is over.")
+    }
+
+    /**
+     * 驗證開新的一局後，兩名已登記玩家的快照皆同步更新，且皆收到 [GameAction.RoundStarted] 事件通知，
+     * 且平台收到一次規則狀態更新通知。
+     */
+    @Test
+    fun `test advance round syncs snapshot and notifies all players`() = runTest {
+        val fixtures = Fixtures()
+        val dealerId = Uuid.random()
+        val dealer = FakeMahjongPlayerFactory.create(Wind.EAST, id = dealerId)
+            .copy(actionHistory = listOf(GameAction.Tsumo))
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealer, p2, p3, p4),
+            // 用 East（4 局）而非預設的 OneGame——這裡要驗證的是「開下一局後的快照/事件同步」，
+            // 用 OneGame 會讓這局直接結束對局，走進完全不同（也不會有 RoundStarted）的分支。
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+        )
+        fixtures.setCompletedState(table)
+        fixtures.snapshotRepo.setSnapshot(dealerId, table.toSnapshot(setOf(dealerId)))
+        fixtures.snapshotRepo.setSnapshot(p2.id, table.toSnapshot(setOf(p2.id)))
+
+        fixtures.useCase(gameId)
+
+        assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, dealerId))
+        assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, p2.id))
+        assertTrue(GameAction.RoundStarted in fixtures.eventPublisher.getNotifiedActions(gameId, dealerId, dealerId))
+        assertTrue(GameAction.RoundStarted in fixtures.eventPublisher.getNotifiedActions(gameId, p2.id, dealerId))
+        assertNotNull(fixtures.presentationPublisher.getPublishedInitialDeal(gameId))
+    }
+
+    /**
+     * 驗證對局不存在時回傳 [GameError.GameNotFound]。
+     */
+    @Test
+    fun `test advance round fails when game not found`() = runTest {
+        val fixtures = Fixtures()
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.GameNotFound(gameId), result.error)
+    }
+}

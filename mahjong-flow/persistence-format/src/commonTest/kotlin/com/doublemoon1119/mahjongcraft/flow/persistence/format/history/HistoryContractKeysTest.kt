@@ -1,0 +1,77 @@
+package com.doublemoon1119.mahjongcraft.flow.persistence.format.history
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryDetailValueTypeKeys
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
+/** 驗證歷史格式種類識別碼維持既有的文字契約。 */
+class HistoryContractKeysTest {
+    /** 歷史事實種類識別碼必須保持既有文字值。 */
+    @Test
+    fun `history fact type keys preserve serialized contract`() {
+        assertEquals(
+            expected = listOf(
+                "match_started",
+                "round_started",
+                "dice_rolled",
+                "rule_decision_started",
+                "rule_decision_submitted",
+                "rule_decision_automatic_resolved",
+                "tile_replacement_round_resolved",
+                "action_accepted",
+                "reaction_resolved",
+                "round_completed",
+                "win_settled",
+                "match_completed",
+                "match_aborted",
+                "win_continuation_resolved",
+                "rule_effect_resolved",
+                "table_changed",
+                "returned_to_room",
+            ),
+            actual = listOf(
+                HistoryFactPersistenceDto.MatchStarted.serializer(),
+                HistoryFactPersistenceDto.RoundStarted.serializer(),
+                HistoryFactPersistenceDto.DiceRolled.serializer(),
+                HistoryFactPersistenceDto.RuleDecisionStarted.serializer(),
+                HistoryFactPersistenceDto.RuleDecisionSubmitted.serializer(),
+                HistoryFactPersistenceDto.RuleDecisionAutomaticallyResolved.serializer(),
+                HistoryFactPersistenceDto.TileReplacementRoundResolved.serializer(),
+                HistoryFactPersistenceDto.ActionAccepted.serializer(),
+                HistoryFactPersistenceDto.ReactionResolved.serializer(),
+                HistoryFactPersistenceDto.RoundCompleted.serializer(),
+                HistoryFactPersistenceDto.WinSettled.serializer(),
+                HistoryFactPersistenceDto.MatchCompleted.serializer(),
+                HistoryFactPersistenceDto.MatchAborted.serializer(),
+                HistoryFactPersistenceDto.WinContinuationResolved.serializer(),
+                HistoryFactPersistenceDto.RuleEffectResolved.serializer(),
+                HistoryFactPersistenceDto.TableChanged.serializer(),
+                HistoryFactPersistenceDto.ReturnedToRoom.serializer(),
+            ).map { it.descriptor.serialName },
+        )
+    }
+
+    /** 和牌明細值種類識別碼必須保持既有文字值。 */
+    @Test
+    fun `detail value type keys preserve serialized contract`() {
+        assertEquals("quantities", HistoryDetailValueTypeKeys.QUANTITIES)
+        assertEquals("tile_faces", HistoryDetailValueTypeKeys.TILE_FACES)
+        assertEquals("entries", HistoryDetailValueTypeKeys.ENTRIES)
+
+        assertEquals(
+            expected = listOf("quantities", "tile_faces", "entries"),
+            actual = listOf(
+                HistoryWinDetailValuePersistenceDto.Quantities.serializer(),
+                HistoryWinDetailValuePersistenceDto.TileFaces.serializer(),
+                HistoryWinDetailValuePersistenceDto.Entries.serializer(),
+            ).map { it.descriptor.serialName },
+        )
+
+        val value = HistoryWinDetailValuePersistenceDto.Quantities(listOf(HistoryWinDetailQuantityPersistenceDto("test:unit", 1)))
+        val encoded = Json.encodeToString(HistoryWinDetailValuePersistenceDto.serializer(), value)
+        assertEquals("quantities", Json.parseToJsonElement(encoded).jsonObject.getValue("type").jsonPrimitive.content)
+    }
+}

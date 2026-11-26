@@ -1,0 +1,221 @@
+package com.doublemoon1119.mahjongcraft.logic.rules.riichi
+
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.RiichiFuuro
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.RiichiHandStructure
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.RiichiMentsu
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+
+/**
+ * [RiichiHandDecomposer] 的單元測試。
+ *
+ * 測試手牌分割功能，包括標準手牌、七對子（Chiitoitsu）、國士無雙（KokushiMusou）等牌型。
+ */
+class RiichiHandDecomposerTest {
+
+    /**
+     * 測試不完整的手牌無法分割。
+     *
+     * 牌數不足 14 張時，應回傳空的分割結果。
+     */
+    @Test
+    fun `test invalid hand returns empty hand structure`() {
+        val handTiles = listOf(
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 2),
+            Tile.Numeric(Tile.Suit.Character, 3),
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
+        val result = RiichiHandDecomposer.decompose(handTiles, winningTile)
+
+        assertTrue(result.isEmpty())
+    }
+
+    /**
+     * 測試非 14 張牌無法分割。
+     */
+    @Test
+    fun `test not 14 tiles returns empty hand structure`() {
+        val handTiles = listOf(
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 1),
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
+        val result = RiichiHandDecomposer.decompose(handTiles, winningTile)
+
+        assertTrue(result.isEmpty())
+    }
+
+    /**
+     * 測試國士無雙（KokushiMusou）沒有對子時無法分割。
+     *
+     * 國士無雙需要十三張不同的么九牌加上一張重複的牌做雀頭。
+     */
+    @Test
+    fun `test kokushi musou without pair returns empty hand structure`() {
+        val handTiles = listOf(
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 9),
+            Tile.Numeric(Tile.Suit.Dot, 1),
+            Tile.Numeric(Tile.Suit.Dot, 9),
+            Tile.Numeric(Tile.Suit.Bamboo, 1),
+            Tile.Numeric(Tile.Suit.Bamboo, 9),
+            Tile.Honor.East,
+            Tile.Honor.South,
+            Tile.Honor.West,
+            Tile.Honor.North,
+            Tile.Honor.Red,
+            Tile.Honor.Green,
+            Tile.Honor.White,
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 2)
+        val result = RiichiHandDecomposer.decompose(handTiles, winningTile)
+
+        assertTrue(result.isEmpty())
+    }
+
+    /**
+     * 測試七對子（Chiitoitsu）不能有副露。
+     *
+     * 七對子為門前清牌型，不能有副露。
+     */
+    @Test
+    fun `test chiitoitsu cannot have fuuro`() {
+        val handTiles = listOf(
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 2),
+            Tile.Numeric(Tile.Suit.Character, 2),
+            Tile.Numeric(Tile.Suit.Character, 3),
+            Tile.Numeric(Tile.Suit.Character, 3),
+            Tile.Numeric(Tile.Suit.Character, 4),
+            Tile.Numeric(Tile.Suit.Character, 4),
+            Tile.Numeric(Tile.Suit.Character, 5),
+            Tile.Numeric(Tile.Suit.Character, 5),
+            Tile.Numeric(Tile.Suit.Character, 6),
+            Tile.Numeric(Tile.Suit.Character, 6),
+            Tile.Numeric(Tile.Suit.Character, 7),
+        )
+
+        val fuuro = listOf(
+            element = RiichiFuuro(
+                mentsu = RiichiMentsu.Kotsu(Tile.Numeric(Tile.Suit.Dot, 1)),
+                from = RelativeDirection.Left,
+            ),
+        )
+
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 7)
+        val result = RiichiHandDecomposer.decompose(handTiles, winningTile, fuuro)
+
+        assertTrue(result.isEmpty())
+    }
+
+    /**
+     * 測試七對子（Chiitoitsu）分割。
+     *
+     * 使用不同花色的牌，確保無法組成標準手牌。
+     */
+    @Test
+    fun `test chiitoitsu decomposition`() {
+        val handTiles = listOf(
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Dot, 2),
+            Tile.Numeric(Tile.Suit.Dot, 2),
+            Tile.Numeric(Tile.Suit.Bamboo, 3),
+            Tile.Numeric(Tile.Suit.Bamboo, 3),
+            Tile.Numeric(Tile.Suit.Character, 5),
+            Tile.Numeric(Tile.Suit.Character, 5),
+            Tile.Numeric(Tile.Suit.Dot, 6),
+            Tile.Numeric(Tile.Suit.Dot, 6),
+            Tile.Numeric(Tile.Suit.Bamboo, 7),
+            Tile.Numeric(Tile.Suit.Bamboo, 7),
+            Tile.Numeric(Tile.Suit.Character, 9),
+        )
+
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 9)
+        val result = RiichiHandDecomposer.decompose(handTiles, winningTile).find { it is RiichiHandStructure.Chiitoitsu }
+
+        assertNotNull(result)
+        assertTrue(result is RiichiHandStructure.Chiitoitsu)
+        assertEquals(7, result.pairs.size)
+    }
+
+    /**
+     * 測試碰碰胡（Toitoi）分割。
+     *
+     * 全部由刻子組成的牌型。
+     */
+    @Test
+    fun `test toitoi hand decomposition`() {
+        val handTiles = listOf(
+            Tile.Honor.White,
+            Tile.Honor.White,
+            Tile.Honor.White,
+            Tile.Honor.East,
+            Tile.Honor.East,
+            Tile.Honor.East,
+            Tile.Honor.Green,
+            Tile.Honor.Green,
+            Tile.Honor.Green,
+            Tile.Honor.Red,
+            Tile.Honor.Red,
+            Tile.Honor.Red,
+            Tile.Numeric(Tile.Suit.Character, 1),
+        )
+
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
+        val result = RiichiHandDecomposer.decompose(handTiles, winningTile).find { it is RiichiHandStructure.Standard }
+
+        assertNotNull(result)
+        assertTrue(result is RiichiHandStructure.Standard)
+
+        assertEquals(4, result.mentsus.size)
+        assertTrue(result.mentsus.all { it is RiichiMentsu.Kotsu })
+
+        assertTrue(result.pair.tile is Tile.Numeric)
+    }
+
+    /**
+     * 測試包含順子的標準手牌分割。
+     *
+     * 驗證手牌可以正確分割為 3 個順子 + 1 個刻子 + 1 個雀頭。
+     */
+    @Test
+    fun `test standard hand with sequences decomposition`() {
+        val handTiles = listOf(
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 2),
+            Tile.Numeric(Tile.Suit.Character, 3),
+            Tile.Numeric(Tile.Suit.Character, 4),
+            Tile.Numeric(Tile.Suit.Character, 4),
+            Tile.Numeric(Tile.Suit.Character, 5),
+            Tile.Numeric(Tile.Suit.Character, 6),
+            Tile.Numeric(Tile.Suit.Character, 7),
+            Tile.Numeric(Tile.Suit.Character, 8),
+            Tile.Numeric(Tile.Suit.Character, 9),
+            Tile.Honor.Red,
+            Tile.Honor.Red,
+            Tile.Honor.Red,
+        )
+
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
+        val result = RiichiHandDecomposer.decompose(handTiles, winningTile).find { it is RiichiHandStructure.Standard }
+
+        assertNotNull(result)
+        assertTrue(result is RiichiHandStructure.Standard)
+
+        assertEquals(4, result.mentsus.size)
+
+        val shuntsuCount = result.mentsus.count { it is RiichiMentsu.Shuntsu }
+        val kotsuCount = result.mentsus.count { it is RiichiMentsu.Kotsu }
+        assertEquals(1, kotsuCount)
+        assertEquals(3, shuntsuCount)
+
+        assertTrue(result.pair.tile is Tile.Numeric)
+    }
+}

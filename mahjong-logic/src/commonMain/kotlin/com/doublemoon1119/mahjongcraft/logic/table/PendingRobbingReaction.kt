@@ -1,0 +1,38 @@
+package com.doublemoon1119.mahjongcraft.logic.table
+
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import kotlin.uuid.Uuid
+
+/**
+ * 暗槓／加槓（或規則提供的其他移出手牌動作，見 [MahjongRuleModule.tileSetAsideBy]）宣告後、
+ * 等待其他玩家搶和（榮和）的反應視窗狀態。
+ *
+ * - 與 [PendingReaction] 不同，[robbedTile] 尚未套用進 [declarerId] 的副露或移出區。
+ * - 套用與補摸嶺上牌都延後到反應視窗解析完畢之後。提早套用會在被搶時讓寶牌指示牌或副露提前曝光，
+ *   不符合規則對翻寶牌時機的要求。
+ * - 這是規則無關的通用型別。誰有資格搶和由呼叫端（例如 use case）搭配 [LegalActionValidator] 決定。
+ *   這裡只追蹤誰還沒回應，以及是否都回應完了。
+ *
+ * @property declarerId 宣告動作的玩家 Uuid。
+ * @property declaredAction 本次宣告的具體動作：[GameAction.Kan]（含 [GameAction.KanType]，決定全員放過時
+ *           要套用暗槓還是加槓），或移出手牌的 [GameAction.Extension]。
+ * @property robbedTile 被搶的那張牌（暗槓/加槓觸發牌或要移出的牌），尚未套用。
+ * @property eligiblePlayerIds 有資格搶和的玩家 Uuid 集合。
+ * @property responses 目前已收到的回應（只會是 [GameAction.Ron] 或 [GameAction.Pass]），鍵為玩家 Uuid。
+ * @property pendingFollowUpDraws 摸牌後自動處理在這次移出時還沒詢問過規則的牌與它們各自的來源，依摸取順序排列。全員放過、
+ *           補牌後先詢問這些牌，再詢問新補到的牌。不是摸牌後自動處理造成的視窗，或沒有剩下的牌時為空清單。
+ */
+data class PendingRobbingReaction(
+    val declarerId: Uuid,
+    val declaredAction: GameAction,
+    val robbedTile: IdentifiedTile,
+    val eligiblePlayerIds: Set<Uuid>,
+    val responses: Map<Uuid, GameAction> = emptyMap(),
+    val pendingFollowUpDraws: List<PendingFollowUpDraw> = emptyList(),
+) {
+    /** 是否所有有資格的玩家都已經回應。 */
+    val isComplete: Boolean get() = responses.keys.containsAll(eligiblePlayerIds)
+}

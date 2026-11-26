@@ -1,0 +1,30 @@
+{
+  "parent": "mahjongcraft:mahjong/first_deal_in",
+  "display": {
+    "icon": {
+      "item": "minecraft:totem_of_undying"
+    },
+    "title": {
+      "translate": "advancements.mahjongcraft.mahjong.hundred_deal_ins.title"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.mahjong.hundred_deal_ins.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:deal_in"
+        ],
+        "statistic": "mahjongcraft:deal_ins",
+        "at_least": 100
+      }
+    }
+  }
+}

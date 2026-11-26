@@ -1,0 +1,28 @@
+{
+  "parent": "mahjongcraft:mahjong/first_match",
+  "display": {
+    "icon": {
+      "item": "minecraft:cake"
+    },
+    "title": {
+      "translate": "advancements.mahjongcraft.mahjong.last_place.title"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.mahjong.last_place.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:last_place"
+        ]
+      }
+    }
+  }
+}

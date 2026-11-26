@@ -1,0 +1,20 @@
+public abstract interface class com/doublemoon1119/mahjongcraft/logic/api/registration/ComponentRegistrar {
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/logic/component/ComponentType;)V
+	public abstract fun registerEffect (Lcom/doublemoon1119/mahjongcraft/logic/component/ComponentEffectDefinition;)V
+	public abstract fun registerLifecycle (Lcom/doublemoon1119/mahjongcraft/logic/component/ComponentLifecycleDefinition;)V
+	public abstract fun registerLifecycleScope (Lcom/doublemoon1119/mahjongcraft/logic/component/ComponentLifecycleScope;)V
+	public abstract fun registerOwner (Lcom/doublemoon1119/mahjongcraft/logic/component/ComponentOwnerType;)V
+	public abstract fun registerProjection (Lcom/doublemoon1119/mahjongcraft/logic/component/ComponentProjectionDefinition;)V
+	public abstract fun registerView (Lcom/doublemoon1119/mahjongcraft/logic/component/ComponentViewType;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/logic/api/registration/MahjongModuleRegistrar {
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/logic/module/MahjongModuleDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/logic/api/registration/TileTypeRegistrar {
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/logic/tile/TileTypeDefinition;)V
+}
+

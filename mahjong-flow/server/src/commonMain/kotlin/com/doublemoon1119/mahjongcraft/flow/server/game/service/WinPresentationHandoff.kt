@@ -1,0 +1,65 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.service
+
+import com.doublemoon1119.mahjongcraft.flow.common.concurrent.concurrentMutableMap
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.SettledWinPresentation
+import kotlin.uuid.Uuid
+
+/**
+ * 一次胡牌結算完成後，把已建構好的呈現內容從胡牌 use case 交給
+ * `GameFlowCoordinator` 的暫存交接點，每個場地最多一筆。
+ *
+ * 為什麼需要交接點：
+ *
+ * - 胡牌 use case（`DeclareTsumoUseCase`／`RespondToDiscardUseCase`／`RespondToRobbingUseCase`）擁有建構
+ *   [SettledWinPresentation] 所需的全部素材：算役結果、規則模組與各種 resolver registry。
+ * - 但它執行的當下還不知道本局會不會就此結束。這要等 `ResolveWinRoundContinuationUseCase` 詢問過規則模組，
+ *   發生在 use case 回傳之後。
+ * - use case 也不能直接回傳這份內容。`GameActionRouter` 對所有指令（含第三方擴充指令）統一回傳
+ *   `Outcome<Unit, GameError>`，改它就得改動每一種指令的回傳型別，連摸牌、捨牌都得認識胡牌演出型別。
+ *
+ * 刻意**不持久化**：
+ *
+ * - 一筆內容只在單次指令派發內存活：use case [stage]，同一次派發的收斂階段 [take]。
+ * - 伺服器重啟後沒有任何路徑會消費殘留值，持久化不會帶來恢復能力。跨重啟的呈現狀態由平台自行保存。
+ *
+ * **不會殘留舊資料**：[take] 一律移除該場地的暫存內容，贏家不符時也一樣（此時回傳 null 並丟棄）。
+ * 因此就算某次胡牌的收斂流程中途失敗，下一次胡牌也不會拿到上一次的內容。
+ */
+class WinPresentationHandoff {
+    /** 以對局識別碼索引、等待同一派發流程取走的胡牌呈現資料。 */
+    private val presentationsByGameId = concurrentMutableMap<Uuid, SettledWinPresentation>()
+
+    /**
+     * 暫存 [gameId] 這次胡牌的呈現內容，覆寫任何尚未被取走的舊值。
+     *
+     * @param gameId 胡牌發生的對局。
+     * @param presentation 已建構的胡牌呈現資料。
+     */
+    fun stage(gameId: Uuid, presentation: SettledWinPresentation) {
+        presentationsByGameId[gameId] = presentation
+    }
+
+    /**
+     * 取出並清除 [gameId] 暫存的呈現內容。
+     *
+     * [expectedWinnerPlayerIds] 作為關聯鍵：暫存內容的贏家集合必須完全相符才會回傳，否則視為
+     * 不屬於這次胡牌的殘留資料，一樣清除但回傳 null——避免把上一次胡牌的演出誤播成這一次的。
+     *
+     * @param gameId 胡牌發生的對局。
+     * @param expectedWinnerPlayerIds 這次預期的贏家識別碼集合。
+     * @return 這次胡牌的呈現內容。沒有暫存內容或贏家不符時為 null。
+     */
+    fun take(gameId: Uuid, expectedWinnerPlayerIds: Set<Uuid>): SettledWinPresentation? {
+        val staged = presentationsByGameId.remove(gameId) ?: return null
+        return staged.takeIf { it.winnerPlayerIds == expectedWinnerPlayerIds }
+    }
+
+    /**
+     * 丟棄 [gameId] 任何尚未取走的暫存內容，供收斂流程提前中止時清理。
+     *
+     * @param gameId 欲清除暫存內容的對局。
+     */
+    fun discard(gameId: Uuid) {
+        presentationsByGameId.remove(gameId)
+    }
+}

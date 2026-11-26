@@ -1,0 +1,168 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.scenario
+
+import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
+import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiPullNorthCommand
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_PULL_NORTH_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.DebugMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.presentation.DebugWinRoundContinuationState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.server.game.debug.scenario.DebugScriptedAiStrategy
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.uuid.Uuid
+
+/** 驗證 debug 情境腳本 AI 的固定行為。 */
+class DebugScriptedAiStrategyTest {
+    /** 捨牌反應測試共用的視窗識別碼。 */
+    private val discardReactionId = Uuid.random()
+
+    /** 策略所操控的玩家識別碼。 */
+    private val selfId = Uuid.random()
+
+    /** 沒有摸牌位時，預期被打出的立牌。 */
+    private val standingTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+
+    /** 自己回合預期被摸切的牌。 */
+    private val drawnTile = FakeIdentifiedTileFactory.create(Tile.Honor.South)
+
+    /** 他家捨牌與宣告槓時，即使可以榮和也一律跳過。 */
+    @Test
+    fun `always passes reactions`() = runTest {
+        val strategy = DebugScriptedAiStrategy(declaresKanFirst = true)
+        val ron = GameAction.Ron(Uuid.random())
+
+        assertEquals(
+            expected = GameCommand.RespondToDiscard(GameAction.Pass, discardReactionId),
+            actual = strategy.decideGameCommand(context(AiDecisionPhase.RespondingToDiscard, listOf(ron, GameAction.Pass))),
+        )
+        assertEquals(
+            expected = GameCommand.RespondToRobbing(GameAction.Pass),
+            actual = strategy.decideGameCommand(context(AiDecisionPhase.RespondingToRobbing, listOf(ron, GameAction.Pass))),
+        )
+    }
+
+    /** 自己回合不和牌、不槓，打出剛摸到的牌。 */
+    @Test
+    fun `tsumogiri strategy discards the drawn tile even when it could win or kan`() = runTest {
+        val strategy = DebugScriptedAiStrategy(declaresKanFirst = false)
+        val legalActions = listOf(GameAction.Tsumo, GameAction.Kan(GameAction.KanType.CLOSED_KAN, drawnTile.id, emptyList()))
+
+        assertEquals(GameCommand.Discard(drawnTile.id), strategy.decideGameCommand(context(AiDecisionPhase.OwnTurn, legalActions)))
+    }
+
+    /** 能槓時先宣告槓。 */
+    @Test
+    fun `kan first strategy declares an available kan`() = runTest {
+        val strategy = DebugScriptedAiStrategy(declaresKanFirst = true)
+        val kan = GameAction.Kan(GameAction.KanType.ADDED_KAN, drawnTile.id, emptyList())
+
+        assertEquals(
+            expected = GameCommand.Kan(GameAction.KanType.ADDED_KAN, drawnTile.id),
+            actual = strategy.decideGameCommand(context(AiDecisionPhase.OwnTurn, listOf(GameAction.Tsumo, kan))),
+        )
+    }
+
+    /** 能拔北時先拔北，即使同時可以槓。 */
+    @Test
+    fun `pull north first strategy pulls an available north`() = runTest {
+        val strategy = DebugScriptedAiStrategy(declaresKanFirst = true, pullsNorthFirst = true)
+        val kan = GameAction.Kan(GameAction.KanType.CLOSED_KAN, drawnTile.id, emptyList())
+
+        assertEquals(
+            expected = GameCommand.Extension(RiichiPullNorthCommand),
+            actual = strategy.decideGameCommand(context(AiDecisionPhase.OwnTurn, listOf(kan, RIICHI_PULL_NORTH_GAME_ACTION))),
+        )
+    }
+
+    /** 不能拔北時照常摸切。 */
+    @Test
+    fun `pull north first strategy discards when no north can be pulled`() = runTest {
+        val strategy = DebugScriptedAiStrategy(declaresKanFirst = false, pullsNorthFirst = true)
+
+        assertEquals(GameCommand.Discard(drawnTile.id), strategy.decideGameCommand(context(AiDecisionPhase.OwnTurn, emptyList())))
+    }
+
+    /** 沒有摸牌時打出第一張立牌。 */
+    @Test
+    fun `discards the first standing tile without a drawn tile`() = runTest {
+        val strategy = DebugScriptedAiStrategy(declaresKanFirst = true)
+
+        assertEquals(
+            expected = GameCommand.Discard(standingTile.id),
+            actual = strategy.decideGameCommand(context(AiDecisionPhase.OwnTurn, emptyList(), hand = Hand(tiles = listOf(standingTile)))),
+        )
+    }
+
+    /** 和牌優先的腳本 AI 可以榮和時送出規則提供的榮和命令，可以自摸時自摸。 */
+    @Test
+    fun `win first strategy takes an offered ron or tsumo`() = runTest {
+        val strategy = DebugScriptedAiStrategy(declaresKanFirst = false, winsFirst = true)
+        val ronCommand = GameCommand.RespondToDiscard(GameAction.Ron(Uuid.random()), discardReactionId)
+        val passCommand = GameCommand.RespondToDiscard(GameAction.Pass, discardReactionId)
+
+        assertEquals(
+            expected = ronCommand,
+            actual = strategy.decideGameCommand(
+                context = context(AiDecisionPhase.RespondingToDiscard, listOf(ronCommand.action, GameAction.Pass), reactionCommands = listOf(passCommand, ronCommand)),
+            ),
+        )
+        assertEquals(GameCommand.Tsumo, strategy.decideGameCommand(context(AiDecisionPhase.OwnTurn, listOf(GameAction.Tsumo))))
+        assertEquals(GameCommand.Discard(drawnTile.id), strategy.decideGameCommand(context(AiDecisionPhase.OwnTurn, emptyList())))
+    }
+
+    /** 所有腳本 AI 皆可由 registry 解析。 */
+    @Test
+    fun `registration exposes every scripted strategy`() {
+        val registry = MahjongAiStrategyRegistryImpl(defaultKey = DebugScriptedAiStrategy.TSUMOGIRI_KEY)
+        DebugMahjongExtension(winRoundContinuationState = DebugWinRoundContinuationState()).registerAiStrategies(registry)
+
+        assertEquals(
+            expected = setOf(
+                DebugScriptedAiStrategy.TSUMOGIRI_KEY,
+                DebugScriptedAiStrategy.KAN_FIRST_KEY,
+                DebugScriptedAiStrategy.PULL_NORTH_FIRST_KEY,
+                DebugScriptedAiStrategy.WIN_FIRST_KEY,
+            ),
+            actual = registry.getAllStrategyKeys(),
+        )
+        assertIs<DebugScriptedAiStrategy>(registry.resolve(DebugScriptedAiStrategy.KAN_FIRST_KEY))
+        assertIs<DebugScriptedAiStrategy>(registry.resolve(DebugScriptedAiStrategy.PULL_NORTH_FIRST_KEY))
+    }
+
+    /**
+     * 建立只有策略玩家的決策情境，不公開任何另置牌。
+     *
+     * @param phase 要模擬的決策階段。
+     * @param legalActions 該階段提供給策略的合法動作。
+     * @param hand 策略玩家的手牌。
+     * @param reactionCommands 規則提供的完整捨牌反應命令。
+     * @return 包含完整自身手牌的決策情境。
+     */
+    private fun context(
+        phase: AiDecisionPhase,
+        legalActions: List<GameAction>,
+        hand: Hand = Hand(tiles = listOf(standingTile), lastDrawn = drawnTile),
+        reactionCommands: List<GameCommand.RespondToDiscard> = emptyList(),
+    ): AiDecisionContext {
+        val table = FakeTableStateFactory.create(players = listOf(FakeMahjongPlayerFactory.create(id = selfId, hand = hand)))
+        return AiDecisionContext(
+            snapshot = table.toSnapshot(setOf(selfId)),
+            selfId = selfId,
+            phase = phase,
+            legalActions = legalActions,
+            discardReactionId = discardReactionId.takeIf { phase == AiDecisionPhase.RespondingToDiscard },
+            discardReactionCommands = reactionCommands,
+        )
+    }
+}

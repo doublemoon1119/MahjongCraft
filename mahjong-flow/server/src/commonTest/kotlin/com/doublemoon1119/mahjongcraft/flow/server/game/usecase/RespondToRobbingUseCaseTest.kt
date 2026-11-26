@@ -1,0 +1,509 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
+
+import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
+import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.runAsSingleWrite
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.Meld
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.tileRegion
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
+
+/**
+ * [RespondToRobbingUseCase] 的單元測試類別。
+ *
+ * 驗證搶槓反應視窗的回應：只信任 Ron/Pass（過濾掉 getLegalActions 誤算出的吃/碰/明槓資格）、
+ * 搶槓成功時透過 [RonSettlementResolver] 結算（暗槓/加槓宣告視為未成立，副露不套用）、全員放過時
+ * 透過 [SelfDeclarationApplier] 補做原本被暫緩的套用，以及各種驗證失敗案例。
+ */
+class RespondToRobbingUseCaseTest {
+
+    /** 受測對局的識別碼。 */
+    private val gameId = Uuid.random()
+
+    /** 宣告槓牌的玩家識別碼。 */
+    private val declarerId = Uuid.random()
+
+    /** 搶槓反應者的玩家識別碼。 */
+    private val robberId = Uuid.random()
+
+    /** 組成受測用例及記錄副作用的記憶體替身。 */
+    private class Fixtures {
+        /** 保存權威桌況與歷史事實的測試資料倉庫。 */
+        val gameRepo = FakeGameRepository()
+
+        /** 已註冊內建規則的模組註冊中心。 */
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+
+        /** 記錄同步快照的測試倉庫。 */
+        val snapshotRepo = FakeGameSnapshotRepository()
+
+        /** 依觀看政策同步對局快照的元件。 */
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
+
+        /** 記錄流程事件的發布替身。 */
+        val eventPublisher = FakeGameEventPublisher()
+
+        /** 記錄呈現要求的發布替身。 */
+        val presentationPublisher = FakeGamePresentationPublisher()
+
+        /** 暫存待發布的和牌呈現要求。 */
+        val winPresentationHandoff = WinPresentationHandoff()
+
+        /** 和牌明細的解析器註冊中心。 */
+        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
+            BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
+            freeze()
+        }
+
+        /** 受測搶槓反應用例。 */
+        val useCase = RespondToRobbingUseCase(
+            gameRepository = gameRepo,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            eventPublisher = eventPublisher,
+            presentationPublisher = presentationPublisher,
+            winPresentationHandoff = winPresentationHandoff,
+            winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
+            winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+        )
+    }
+
+    /** 構成宣告加槓既有碰子的第一張白板。 */
+    private val whiteTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+
+    /** 構成宣告加槓既有碰子的第二張白板。 */
+    private val whiteTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+
+    /** 構成宣告加槓既有碰子的第三張白板。 */
+    private val whiteTile3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+
+    /** 宣告加槓並供搶槓的白板。 */
+    private val robbedWhiteTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+
+    /** 宣告成立後預期摸入的嶺上牌。 */
+    private val rinshanTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+
+    /** 宣告加槓時提交的槓動作。 */
+    private val kanAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, robbedWhiteTile.id, emptyList())
+
+    /**
+     * 建立宣告加槓前的既有碰子。
+     *
+     * @return 由三張測試白板組成、來源為上家的碰子。
+     */
+    private fun existingPon() = Meld(
+        type = MeldType.Pon,
+        tiles = listOf(whiteTile1, whiteTile2, whiteTile3),
+        sourceTile = whiteTile3,
+        sourceDirection = RelativeDirection.Left,
+        publiclyRevealedTileIds = listOf(whiteTile1, whiteTile2, whiteTile3).map { it.id }.toSet(),
+        faceDownTileIds = emptySet(),
+    )
+
+    /**
+     * 建立具有發刻子、三組順子並單騎聽白的搶槓手牌。
+     *
+     * @return 已有役牌、等待被搶白板的十三張手牌。
+     */
+    private fun robberHand() = Hand(
+        tiles = listOf(
+            Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
+            Tile.Numeric(Tile.Suit.Character, 2), Tile.Numeric(Tile.Suit.Character, 3), Tile.Numeric(Tile.Suit.Character, 4),
+            Tile.Numeric(Tile.Suit.Dot, 5), Tile.Numeric(Tile.Suit.Dot, 6), Tile.Numeric(Tile.Suit.Dot, 7),
+            Tile.Numeric(Tile.Suit.Bamboo, 6), Tile.Numeric(Tile.Suit.Bamboo, 7), Tile.Numeric(Tile.Suit.Bamboo, 8),
+        ).map { FakeIdentifiedTileFactory.create(it) } + FakeIdentifiedTileFactory.create(Tile.Honor.White),
+    )
+
+    /**
+     * 建立宣告加槓並等待搶槓回應的桌況。
+     *
+     * @param reservedWallTiles 測試桌況的保留牌。預設包含預期嶺上牌。
+     * @param robberRuleState 搶槓者的日麻規則狀態。
+     * @return 開啟搶槓反應視窗並配置實體牌牆的桌況。
+     */
+    private fun setUpTable(
+        reservedWallTiles: List<IdentifiedTile> = completeRiichiReservedWall(rinshanTile),
+        robberRuleState: ComponentSet = riichiDeclarationComponents(),
+    ): TableState {
+        val declarer = FakeMahjongPlayerFactory.create(
+            id = declarerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(melds = listOf(existingPon()), lastDrawn = robbedWhiteTile),
+        )
+        val robber = FakeMahjongPlayerFactory.create(
+            id = robberId,
+            initialSeat = Wind.SOUTH,
+            hand = robberHand(),
+            components = robberRuleState,
+        )
+        return FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(declarer, robber),
+            config = RiichiRuleConfig(),
+            reservedWallTiles = reservedWallTiles,
+            currentPlayerIndex = 0,
+            components = riichiTableComponents(potPoints = 0),
+            pendingRobbingReaction = PendingRobbingReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
+        ).withFirstKanPhysicalWallLayout()
+    }
+
+    /**
+     * 驗證搶槓成功：贏家分數增加（含搶槓 1 翻的加成）、`actionHistory` 記錄 `Ron`、反應視窗清除，
+     * 且暗槓/加槓宣告視為未成立——宣告者的副露維持原本的 PON、`lastDrawn` 不變、牌山不縮減。
+     *
+     * 以目前的遊戲為預期遊戲執行，確認命令只寫入這一局一次（AI 命令的條件式提交契約）。
+     */
+    @Test
+    fun `test chankan ron settles winner and leaves the kan unapplied`() = runTest {
+        val fixtures = Fixtures()
+        fixtures.gameRepo.setTableState(setUpTable())
+
+        val result = fixtures.gameRepo.runAsSingleWrite(gameId) { fixtures.useCase(gameId, robberId, GameAction.Ron(robbedWhiteTile.id)) }
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertNull(newState.pendingRobbingReaction)
+        assertEquals(TurnPhase.RoundOver(RoundConclusion.Win(setOf(robberId))), newState.turnPhase)
+
+        val winner = newState.players.first { it.id == robberId }
+        assertTrue(winner.score > 0, "Winner should have gained points.")
+        assertEquals(GameAction.Ron(robbedWhiteTile.id), winner.actionHistory.last())
+
+        val declarer = newState.players.first { it.id == declarerId }
+        assertTrue(declarer.score < 0, "The declarer should pay for the robbed kan, like a discarder.")
+        assertEquals(MeldType.Pon, declarer.hand.melds.single().type, "The kan must not be applied; it was robbed.")
+        assertEquals(robbedWhiteTile, declarer.hand.lastDrawn, "The declarer's hand should remain untouched.")
+
+        assertEquals(
+            expected = listOf(GameAction.Ron(robbedWhiteTile.id)),
+            actual = fixtures.eventPublisher.getNotifiedActions(gameId, declarerId, robberId),
+            message = "Only the Ron response should be broadcast; no rinshan draw happened.",
+        )
+        // 搶槓成立只宣告和牌，槓沒有成立，也沒有補牌。
+        val ronStep = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single().single()
+        assertEquals(listOf<TableStepEvent>(TableStepEvent.ActionDeclared(robberId, GameAction.Ron(robbedWhiteTile.id))), ronStep.events)
+        assertEquals(TileRegion.DRAWN, ronStep.tableState.tileRegion(robbedWhiteTile.id))
+        val settled = fixtures.gameRepo.historyDrafts.map { it.fact }.filterIsInstance<HistoryFact.WinSettled>().single()
+        assertEquals(setOf(robberId), settled.winDetails.map { it.playerId }.toSet())
+
+        // 演出寫進交接槽而非直接發布，理由見 DeclareTsumoUseCaseTest 對應案例的 KDoc。
+        assertTrue(fixtures.presentationPublisher.getPublishedWinCelebrations(gameId).isEmpty())
+        val staged = assertNotNull(fixtures.winPresentationHandoff.take(gameId, setOf(robberId)))
+        assertEquals(setOf(robberId), staged.winnerPlayerIds)
+        assertEquals(
+            expected = listOf(newState.players.indexOfFirst { it.id == robberId }),
+            actual = staged.celebration.winners.map { it.seatIndex },
+        )
+        assertEquals(robbedWhiteTile.id, staged.celebration.winningTileId)
+        assertFalse(staged.celebration.isTsumo)
+    }
+
+    /** 反應視窗尚未結束時，搶槓者的選擇不應透過對局事件通知其他玩家。 */
+    @Test
+    fun `provisional robbing response is not broadcast`() = runTest {
+        val fixtures = Fixtures()
+        val otherEligibleId = Uuid.random()
+        val base = setUpTable()
+        fixtures.gameRepo.setTableState(
+            state = base.copy(
+                players = base.players + FakeMahjongPlayerFactory.create(
+                    id = otherEligibleId,
+                    initialSeat = Wind.WEST,
+                    hand = robberHand(),
+                ),
+                turnPhase = TurnPhase.AwaitingRobbingReaction(
+                    reaction = requireNotNull(base.pendingRobbingReaction).copy(
+                        eligiblePlayerIds = setOf(robberId, otherEligibleId),
+                    ),
+                ),
+            ),
+        )
+
+        val result = fixtures.useCase(gameId, robberId, GameAction.Pass)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertTrue(
+            actual = fixtures.eventPublisher.getNotifiedActions(gameId, otherEligibleId, robberId).isEmpty(),
+            message = "A provisional Pass must not be broadcast to another eligible player.",
+        )
+        assertTrue(
+            actual = fixtures.eventPublisher.getNotifiedActions(gameId, robberId, robberId).isEmpty(),
+            message = "A provisional Pass does not need a game action event for its actor.",
+        )
+    }
+
+    /**
+     * 驗證全員放過時：原本被 `DeclareKanUseCase` 暫緩的副露套用與嶺上摸牌會在這裡補做——副露升級為
+     * ADDED_KAN、`lastDrawn` 為補摸的嶺上牌、`actionHistory` 依序記錄 `Kan` → `Draw`、反應視窗清除、
+     * 只發布宣告者的補摸 `Draw`，不重複發布早已公開的槓宣告。本次呈現要求只標記補摸的牌，不重複標記鳴取牌。
+     */
+    @Test
+    fun `test all pass resumes the kan declaration`() = runTest {
+        val fixtures = Fixtures()
+        fixtures.gameRepo.setTableState(setUpTable())
+
+        val result = fixtures.useCase(gameId, robberId, GameAction.Pass)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertNull(newState.pendingRobbingReaction)
+
+        val declarer = newState.players.first { it.id == declarerId }
+        val meld = declarer.hand.melds.single()
+        assertEquals(MeldType.AddedKan, meld.type)
+        assertEquals(setOf(whiteTile1, whiteTile2, whiteTile3, robbedWhiteTile), meld.tiles.toSet())
+        assertEquals(rinshanTile, declarer.hand.lastDrawn)
+        assertEquals(listOf(kanAction, GameAction.Draw), declarer.actionHistory.takeLast(2))
+        assertEquals(TurnPhase.AwaitingAction, newState.turnPhase)
+
+        assertEquals(
+            expected = listOf(GameAction.Draw),
+            actual = fixtures.eventPublisher.getNotifiedActions(gameId, robberId, declarerId),
+        )
+        // 加槓在開啟視窗時已經呈現，這裡接續加槓成立與補牌，不再宣告一次。
+        val (declared, drawn) = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single()
+        assertTrue(declared.events.none { it is TableStepEvent.ActionDeclared })
+        assertEquals(TileRegion.MELD, declared.tableState.tileRegion(robbedWhiteTile.id))
+        assertEquals(TileRegion.RESERVED, declared.tableState.tileRegion(rinshanTile.id))
+        assertEquals(newState, drawn.tableState)
+        assertEquals(TileRegion.DRAWN, drawn.tableState.tileRegion(rinshanTile.id))
+        assertTrue(
+            actual = fixtures.presentationPublisher.getPublishedWinCelebrations(gameId).isEmpty(),
+            message = "A completed kan (not robbed) should never trigger a win celebration.",
+        )
+        assertNull(
+            actual = fixtures.winPresentationHandoff.take(gameId, setOf(robberId)),
+            message = "A completed kan (not robbed) should never stage a win presentation either.",
+        )
+        drawn.events.filterIsInstance<TableStepEvent.WallRearranged>().single().phases.flatMap { it.moves }.forEach { move ->
+            assertEquals(newState.physicalWallLayout?.placements?.get(move.tileId), move.destination)
+        }
+    }
+
+    /**
+     * 驗證全員放過、但牌山恰好在補摸嶺上牌時摸盡：回傳 [GameError.WallExhausted]，且桌況維持回應前
+     * 的樣子不變（all-or-nothing）。
+     */
+    @Test
+    fun `test all pass fails with wall exhausted and applies nothing`() = runTest {
+        val fixtures = Fixtures()
+        fixtures.gameRepo.setTableState(setUpTable(reservedWallTiles = emptyList()))
+
+        val result = fixtures.useCase(gameId, robberId, GameAction.Pass)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.WallExhausted(gameId), result.error)
+        val unchangedState = fixtures.gameRepo.getTableState(gameId)!!
+        val unchangedDeclarer = unchangedState.players.first { it.id == declarerId }
+        assertEquals(MeldType.Pon, unchangedDeclarer.hand.melds.single().type, "The meld should not be applied.")
+        assertEquals(robbedWhiteTile, unchangedDeclarer.hand.lastDrawn)
+        assertTrue(fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).isEmpty())
+    }
+
+    /**
+     * 驗證回應不在 Ron/Pass 之列時回傳 [GameError.IllegalAction]——即使 `getLegalActions` 的
+     * 「反應」分支誤算出其他資格（例如碰），搶槓情境下這些都不合法。
+     */
+    @Test
+    fun `test respond fails for actions other than ron or pass`() = runTest {
+        val fixtures = Fixtures()
+        fixtures.gameRepo.setTableState(setUpTable())
+
+        val result = fixtures.useCase(gameId, robberId, GameAction.Pon(robbedWhiteTile.id, emptyList()))
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.IllegalAction(robberId, gameId, GameAction.Pon(robbedWhiteTile.id, emptyList())), result.error)
+    }
+
+    /**
+     * 驗證對局不存在時回傳 [GameError.GameNotFound]。
+     */
+    @Test
+    fun `test respond fails when game not found`() = runTest {
+        val fixtures = Fixtures()
+
+        val result = fixtures.useCase(gameId, robberId, GameAction.Pass)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.GameNotFound(gameId), result.error)
+    }
+
+    /**
+     * 驗證發起請求的玩家不在該對局中時回傳 [GameError.PlayerNotInGame]。
+     */
+    @Test
+    fun `test respond fails when player not in game`() = runTest {
+        val fixtures = Fixtures()
+        fixtures.gameRepo.setTableState(setUpTable())
+        val strangerId = Uuid.random()
+
+        val result = fixtures.useCase(gameId, strangerId, GameAction.Pass)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.PlayerNotInGame(strangerId, gameId), result.error)
+    }
+
+    /**
+     * 驗證目前沒有搶槓反應視窗時回傳 [GameError.IllegalAction]。
+     */
+    @Test
+    fun `test respond fails when there is no pending chankan`() = runTest {
+        val fixtures = Fixtures()
+        val table = setUpTable().copy(turnPhase = TurnPhase.AwaitingAction)
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, robberId, GameAction.Pass)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.IllegalAction(robberId, gameId, GameAction.Pass), result.error)
+    }
+
+    /**
+     * 驗證玩家不在本次反應視窗的資格名單中時回傳 [GameError.IllegalAction]。
+     */
+    @Test
+    fun `test respond fails when player is not eligible`() = runTest {
+        val fixtures = Fixtures()
+        val bystanderId = Uuid.random()
+        val bystander = FakeMahjongPlayerFactory.create(id = bystanderId, initialSeat = Wind.WEST)
+        val table = setUpTable().let { it.copy(players = it.players + bystander) }
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, bystanderId, GameAction.Pass)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.IllegalAction(bystanderId, gameId, GameAction.Pass), result.error)
+    }
+
+    /**
+     * 驗證玩家已經回應過一次後，不能再次回應。
+     */
+    @Test
+    fun `test respond fails when player has already responded`() = runTest {
+        val fixtures = Fixtures()
+        val declarer = FakeMahjongPlayerFactory.create(
+            id = declarerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(melds = listOf(existingPon()), lastDrawn = robbedWhiteTile),
+        )
+        val robber = FakeMahjongPlayerFactory.create(id = robberId, initialSeat = Wind.SOUTH, hand = robberHand())
+        val otherEligibleId = Uuid.random()
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(declarer, robber),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(listOf(rinshanTile)),
+            currentPlayerIndex = 0,
+            pendingRobbingReaction = PendingRobbingReaction(
+                declarerId = declarerId,
+                declaredAction = kanAction,
+                robbedTile = robbedWhiteTile,
+                eligiblePlayerIds = setOf(robberId, otherEligibleId),
+                responses = mapOf(robberId to GameAction.Pass),
+            ),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, robberId, GameAction.Pass)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.IllegalAction(robberId, gameId, GameAction.Pass), result.error)
+    }
+
+    /** 全員放過搶槓時，被搶的牌記入放過者的清單。 */
+    @Test
+    fun `passing a robbable kan records the robbed tile`() = runTest {
+        val fixtures = Fixtures()
+        fixtures.gameRepo.setTableState(setUpTable())
+
+        val result = fixtures.useCase(gameId, robberId, GameAction.Pass)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val robber = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == robberId }
+        assertEquals(setOf(Tile.Honor.White), robber.passedTilesInRound)
+    }
+
+    /** 立直中放過搶槓時永久振聽。 */
+    @Test
+    fun `passing a robbable kan while in riichi marks permanent furiten`() = runTest {
+        val fixtures = Fixtures()
+        fixtures.gameRepo.setTableState(
+            state = setUpTable(robberRuleState = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East))),
+        )
+
+        val result = fixtures.useCase(gameId, robberId, GameAction.Pass)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val robber = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == robberId }
+        assertTrue(
+            actual = robber.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null,
+            message = "Passing a robbable kan while in riichi should mark permanent furiten.",
+        )
+    }
+
+    /** 頭跳只詢問最近一家時，同樣可以搶槓卻沒被詢問的玩家在全員放過後也記入被搶的牌。 */
+    @Test
+    fun `a player who can rob but was not asked also records the robbed tile`() = runTest {
+        val fixtures = Fixtures()
+        val secondRobberId = Uuid.random()
+        val baseTable = setUpTable()
+        val secondRobber = FakeMahjongPlayerFactory.create(
+            id = secondRobberId,
+            initialSeat = Wind.WEST,
+            hand = robberHand(),
+            components = riichiDeclarationComponents(),
+        )
+        fixtures.gameRepo.setTableState(baseTable.copy(players = baseTable.players + secondRobber))
+
+        val result = fixtures.useCase(gameId, robberId, GameAction.Pass)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val players = fixtures.gameRepo.getTableState(gameId)!!.players.associateBy { it.id }
+        assertEquals(setOf(Tile.Honor.White), players.getValue(robberId).passedTilesInRound)
+        assertEquals(setOf(Tile.Honor.White), players.getValue(secondRobberId).passedTilesInRound)
+    }
+}

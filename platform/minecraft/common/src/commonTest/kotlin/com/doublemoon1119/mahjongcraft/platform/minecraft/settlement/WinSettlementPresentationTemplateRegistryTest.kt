@@ -1,0 +1,251 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiWinSettlementTemplates
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanWinSettlementTemplates
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+/** 驗證內建與擴充和牌結算模板的版面、欄位、動畫及 registry 契約。 */
+class WinSettlementPresentationTemplateRegistryTest {
+    /** 預設容器不繪製底色、框線或內容留白。 */
+    @Test
+    fun `container appearance defaults to transparent borderless and padding free`() {
+        val style = PresentationContainerStyle()
+        assertEquals(0, style.backgroundArgb)
+        assertEquals(0, style.borderArgb)
+        assertEquals(0f, style.borderWidth)
+        assertEquals(0f, style.padding)
+        assertEquals(0f, style.dividerWidth)
+    }
+
+    /** 內建通用模板不包含日麻專屬的寶牌、翻數或符數欄位。 */
+    @Test
+    fun `built in generic template stays rule neutral`() {
+        val registry = WinSettlementPresentationTemplateRegistryImpl()
+        registry.registerBundledWinSettlementTemplates()
+        val rendered = registry.findTemplate("mahjongcraft:generic").toString()
+        assertFalse(rendered.contains(":dora", ignoreCase = true))
+        assertFalse(rendered.contains(":han", ignoreCase = true))
+        assertFalse(rendered.contains(":fu", ignoreCase = true))
+    }
+
+    /** 日麻模板沿用共用的玩家身分、版面及動畫節點。 */
+    @Test
+    fun `built in riichi template uses the same public animation and identity primitives`() {
+        val registry = WinSettlementPresentationTemplateRegistryImpl()
+        registry.registerBundledWinSettlementTemplates()
+        val rendered = registry.findTemplate(RiichiWinSettlementTemplates.RIICHI_KEY).toString()
+
+        assertTrue(rendered.contains("Animated"))
+        assertTrue(rendered.contains("PlayerIdentity"))
+        assertTrue(rendered.contains("Box"))
+        assertTrue(rendered.contains("Positioned"))
+        assertTrue(rendered.contains("TileGroups"))
+    }
+
+    /** 未揭示的指示牌欄位以牌背填滿固定槽位。 */
+    @Test
+    fun `riichi indicator providers fill unrevealed slots with tile backs`() {
+        val registry = WinSettlementPresentationTemplateRegistryImpl()
+        registry.registerBundledWinSettlementTemplates()
+        val doraId = PresentationFieldId(RiichiWinSettlementIds.DORA_FIELD)
+        val snapshot = WinSettlementPresentationFieldSnapshot(
+            outcomeId = "mahjongcraft:ron",
+            isTsumo = false,
+            winActionLabelKey = "test.win_action",
+            winnerId = "winner",
+            winnerDisplayName = "Winner",
+            winnerIsAi = false,
+            responsiblePlayerId = "loser",
+            responsiblePlayerDisplayName = "Loser",
+            responsiblePlayerIsAi = false,
+            totalScore = 7_700,
+            tileAssetKeys = emptyList(),
+            tileGroups = emptyList(),
+            winningTileAssetKey = null,
+            extensionFields = listOf(
+                element = ExtensionPresentationField(doraId, PresentationValue.TileListValue(listOf("man_1", "man_2"))),
+            ),
+        )
+
+        val value = assertIs<PresentationValue.TileListValue>(registry.findFieldProvider(doraId)?.provide(snapshot))
+        assertEquals(listOf("man_1", "man_2", "back", "back", "back"), value.assetKeys)
+    }
+
+    /** 不攤牌的贏家沒有手牌欄位，版面可以整行省略。台麻的花牌欄位只在規則提供時存在。 */
+    @Test
+    fun `hidden hand and missing flowers leave their fields absent`() {
+        val registry = WinSettlementPresentationTemplateRegistryImpl()
+        registry.registerBundledWinSettlementTemplates()
+        val flowers = TaiwanWinSettlementTemplates.FLOWERS
+        val winningFlower = TaiwanWinSettlementTemplates.WINNING_FLOWER
+        val snapshot = WinSettlementPresentationFieldSnapshot(
+            outcomeId = "mahjongcraft:taiwan/outcome/eight_flowers",
+            isTsumo = true,
+            winActionLabelKey = "test.win_action",
+            winnerId = "winner",
+            winnerDisplayName = "Winner",
+            winnerIsAi = false,
+            responsiblePlayerId = null,
+            responsiblePlayerDisplayName = null,
+            responsiblePlayerIsAi = false,
+            totalScore = 8_000,
+            tileAssetKeys = emptyList(),
+            tileGroups = emptyList(),
+            winningTileAssetKey = null,
+            extensionFields = listOf(
+                element = ExtensionPresentationField(flowers, PresentationValue.TileListValue(listOf("spring", "summer"))),
+            ),
+        )
+
+        assertNull(registry.findFieldProvider(BuiltInWinSettlementFieldIds.COMPLETE_HAND)?.provide(snapshot))
+        assertEquals(PresentationValue.TileListValue(listOf("spring", "summer")), registry.findFieldProvider(flowers)?.provide(snapshot))
+        assertNull(registry.findFieldProvider(winningFlower)?.provide(snapshot))
+        assertNotNull(registry.findFieldProvider(TaiwanWinSettlementTemplates.TAI), "The tai list has a provider.")
+    }
+
+    /** 內建日麻模板明確提供兩種指示牌的本地化欄位標題。 */
+    @Test
+    fun `built in riichi template exposes localized indicator labels`() {
+        val registry = WinSettlementPresentationTemplateRegistryImpl()
+        registry.registerBundledWinSettlementTemplates()
+        val template = registry.findTemplate(RiichiWinSettlementTemplates.RIICHI_KEY) ?: error("Missing built-in riichi template")
+
+        assertEquals(
+            expected = "mahjongcraft.riichi.settlement.dora_indicator",
+            actual = template.detailFieldLabelKeys[PresentationFieldId(RiichiWinSettlementIds.DORA_FIELD)],
+        )
+        assertEquals(
+            expected = "mahjongcraft.riichi.settlement.ura_dora_indicator",
+            actual = template.detailFieldLabelKeys[PresentationFieldId(RiichiWinSettlementIds.URA_DORA_FIELD)],
+        )
+    }
+
+    /** 內建台麻模板只把贏家花牌標為贏家桌前的牌，並為搶到的花提供標題。 */
+    @Test
+    fun `built in taiwan template marks only the winner flowers as winner tiles`() {
+        val registry = WinSettlementPresentationTemplateRegistryImpl()
+        registry.registerBundledWinSettlementTemplates()
+        val template = registry.findTemplate(TaiwanWinSettlementTemplates.TEMPLATE_KEY) ?: error("Missing built-in taiwan template")
+
+        assertEquals(setOf(TaiwanWinSettlementTemplates.FLOWERS), template.winnerTileDetailFields)
+        assertEquals("mahjongcraft.taiwan.settlement.winning_flower", template.detailFieldLabelKeys[TaiwanWinSettlementTemplates.WINNING_FLOWER])
+    }
+
+    /** 版面提供預期的排列、權重及預設垂直對齊選項。 */
+    @Test
+    fun `layout exposes compose style arrangements and weighted children`() {
+        assertEquals(
+            expected = setOf("START", "CENTER", "END", "SPACE_BETWEEN", "SPACE_AROUND", "SPACE_EVENLY"),
+            actual = PresentationArrangement.entries.map(Enum<*>::name).toSet(),
+        )
+        val weighted = PresentationLayout.Weighted(PresentationLayout.Spacer(), weight = 2f)
+        assertEquals(2f, weighted.weight)
+        assertFailsWith<IllegalArgumentException> {
+            PresentationLayout.Weighted(PresentationLayout.Spacer(), weight = 0f)
+        }
+        assertEquals(
+            expected = PresentationAlignment.CENTER,
+            actual = PresentationLayout.RepeatEntries(PresentationFieldId("example:entries")).verticalAlignment,
+        )
+    }
+
+    /** 第三方可組合玩家身分、受控動畫與詳情欄位標題。 */
+    @Test
+    fun `third party template can compose player identity and controlled reveal effects`() {
+        val identity = PresentationFieldId("example:winner")
+        val animated = PresentationLayout.Animated(
+            child = PresentationLayout.PlayerIdentity(identity, scale = 1.25f),
+            timeline = PresentationTimeline(PresentationTimelineAnchor.SCORE_REVEAL, durationTicks = 14),
+            effects = listOf(
+                PresentationAnimationEffect.Fade(),
+                PresentationAnimationEffect.ScaleKeyframes(
+                    keyframes = listOf(
+                        ScaleKeyframe(0f, 1.35f),
+                        ScaleKeyframe(0.55f, 0.94f),
+                        ScaleKeyframe(1f, 1f),
+                    ),
+                ),
+                PresentationAnimationEffect.HighlightSweep(),
+            ),
+        )
+        val registry = WinSettlementPresentationTemplateRegistryImpl()
+        registry.register(
+            definition = WinSettlementPresentationFieldProviderDefinition(identity) {
+                PresentationValue.PlayerIdentityValue("player", "Player", isAi = false)
+            },
+        )
+        val labelField = PresentationFieldId("example:detail")
+        registry.register(
+            template = WinSettlementPresentationTemplate(
+                key = "example:animated",
+                root = animated,
+                detailFieldLabelKeys = mapOf(labelField to "example.detail.label"),
+            ),
+        )
+
+        assertIs<PresentationLayout.Animated>(registry.findTemplate("example:animated")?.root)
+        assertEquals("example.detail.label", registry.findTemplate("example:animated")?.detailFieldLabelKeys?.get(labelField))
+    }
+
+    /** 宣告式聲音拒絕非 namespaced ID。 */
+    @Test
+    fun `declarative sounds require namespaced identifiers and bounded values`() {
+        val cue = PresentationSoundCue(
+            soundId = "example:score_reveal",
+            anchor = PresentationTimelineAnchor.SCORE_REVEAL,
+            volume = 0.4f,
+            pitch = 0.9f,
+        )
+        assertEquals("example:score_reveal", cue.soundId)
+        assertFailsWith<IllegalArgumentException> {
+            PresentationSoundCue("missing_namespace", PresentationTimelineAnchor.PANEL_START)
+        }
+    }
+
+    /** 日麻規則使用日麻模板，沒有綁定的規則使用通用模板。 */
+    @Test
+    fun `templates are selected by rule module`() {
+        val registry = WinSettlementPresentationTemplateRegistryImpl()
+        registry.registerBundledWinSettlementTemplates()
+
+        assertEquals(RiichiWinSettlementTemplates.RIICHI_KEY, registry.findTemplateForRule(BuiltInRuleModuleIds.RIICHI)?.key)
+        assertEquals(BuiltInWinSettlementTemplateKeys.GENERIC, registry.findTemplateForRule("custom:rule")?.key)
+    }
+
+    /** 日麻詳情欄位登記了格式化器。同一欄位不得重複登記。 */
+    @Test
+    fun `riichi detail formatters are registered once per field`() {
+        val registry = WinSettlementPresentationTemplateRegistryImpl()
+        registry.registerBundledWinSettlementTemplates()
+
+        listOf(RiichiWinSettlementIds.YAKU_FIELD, RiichiWinSettlementIds.HAN_FU_FIELD, RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD).forEach { id ->
+            assertNotNull(registry.findDetailTextFormatter(id))
+        }
+        assertNull(registry.findDetailTextFormatter(RiichiWinSettlementIds.DORA_FIELD))
+        assertFailsWith<IllegalArgumentException> {
+            registry.register(WinSettlementDetailTextFormatterDefinition(RiichiWinSettlementIds.YAKU_FIELD, FallbackWinSettlementDetailTextFormatter))
+        }
+        assertFailsWith<IllegalArgumentException> { registry.register(WinSettlementRuleTemplateBindingDefinition(BuiltInRuleModuleIds.RIICHI, "example:other")) }
+    }
+
+    @Test
+    fun `frozen registry rejects later registration`() {
+        val registry = WinSettlementPresentationTemplateRegistryImpl()
+        registry.registerBundledWinSettlementTemplates()
+        registry.freeze()
+        assertFailsWith<IllegalStateException> {
+            registry.register(
+                template = WinSettlementPresentationTemplate("example:late", PresentationLayout.Spacer()),
+            )
+        }
+    }
+}

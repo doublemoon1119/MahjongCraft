@@ -1,0 +1,9 @@
+{
+  "parent": "mahjongcraft:item/mahjong_scoring_stick_base",
+  "overrides": [
+    {"predicate": {"mahjongcraft:denomination": 0.0}, "model": "mahjongcraft:item/mahjong_scoring_stick/100"},
+    {"predicate": {"mahjongcraft:denomination": 0.3}, "model": "mahjongcraft:item/mahjong_scoring_stick/1000"},
+    {"predicate": {"mahjongcraft:denomination": 0.6}, "model": "mahjongcraft:item/mahjong_scoring_stick/5000"},
+    {"predicate": {"mahjongcraft:denomination": 0.9}, "model": "mahjongcraft:item/mahjong_scoring_stick/10000"}
+  ]
+}

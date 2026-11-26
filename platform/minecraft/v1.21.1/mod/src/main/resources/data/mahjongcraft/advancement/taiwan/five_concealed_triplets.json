@@ -1,0 +1,31 @@
+{
+  "parent": "mahjongcraft:taiwan/root",
+  "display": {
+    "icon": {
+      "id": "mahjongcraft:mahjong_tile",
+      "components": {
+        "mahjongcraft:tile": "s5"
+      }
+    },
+    "title": {
+      "translate": "mahjongcraft.taiwan.tai.five_concealed_triplets"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.taiwan.five_concealed_triplets.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:taiwan/five_concealed_triplets"
+        ]
+      }
+    }
+  }
+}

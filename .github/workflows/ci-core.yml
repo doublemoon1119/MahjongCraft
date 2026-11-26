@@ -1,0 +1,46 @@
+# Verifies the built-in core target: the platform-independent modules, built without loading any platform.
+# Each platform has its own workflow, ci-<platform>.yml; the steps they share are the actions under .github/actions.
+name: CI (core)
+
+# Runs on every push and pull request. Branches created before this workflow existed do not contain it,
+# so pushes to them do not run CI.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-core-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  targets:
+    name: List targets
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.targets.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: targets
+        uses: ./.github/actions/list-targets
+        with:
+          platform: core
+
+  verify:
+    name: Verify (${{ matrix.target }})
+    needs: targets
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.targets.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-target
+        with:
+          java-toolchains: ${{ toJSON(matrix.javaToolchains) }}
+      - uses: ./.github/actions/verify-target
+        with:
+          target: ${{ matrix.target }}

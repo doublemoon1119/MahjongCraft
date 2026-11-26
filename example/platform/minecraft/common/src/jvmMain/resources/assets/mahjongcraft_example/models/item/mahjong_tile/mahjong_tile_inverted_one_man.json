@@ -1,0 +1,8 @@
+{
+	"parent": "mahjongcraft:item/mahjong_tile_base",
+	"textures": {
+		"0": "mahjongcraft_example:item/mahjong_tile/mahjong_tile_inverted_one_man",
+		"1": "mahjongcraft_example:item/mahjong_tile/mahjong_tile_cover",
+		"particle": "mahjongcraft_example:item/mahjong_tile/mahjong_tile_cover"
+	}
+}

@@ -1,0 +1,28 @@
+package com.doublemoon1119.mahjongcraft.flow.server.room.repository
+
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import kotlin.uuid.Uuid
+
+/**
+ * 供測試使用的 [RoomRepository] 簡易實作。
+ */
+class FakeRoomRepository : RoomRepository {
+    /** 以房間 ID 索引的測試房間資料。 */
+    private val rooms = mutableMapOf<Uuid, Room>()
+    override suspend fun getRoom(id: Uuid): Room? = rooms[id]
+    override suspend fun setRoom(room: Room) {
+        rooms[room.id] = room
+    }
+    override suspend fun removeRoom(id: Uuid) {
+        rooms.remove(id)
+    }
+    override suspend fun clearAll() {
+        rooms.clear()
+    }
+
+    override suspend fun <T> update(id: Uuid, block: suspend (Room?) -> Pair<Room?, T>): T {
+        val (next, result) = block(rooms[id])
+        if (next == null) rooms.remove(id) else rooms[id] = next
+        return result
+    }
+}

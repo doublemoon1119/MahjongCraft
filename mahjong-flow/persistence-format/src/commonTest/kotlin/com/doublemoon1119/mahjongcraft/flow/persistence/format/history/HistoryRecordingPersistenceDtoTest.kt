@@ -1,0 +1,510 @@
+package com.doublemoon1119.mahjongcraft.flow.persistence.format.history
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryPlayerChange
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingDecision
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableChange
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTileAudience
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTilePresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinningHand
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.TileReplacementRemoval
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.TileReplacementRound
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewSet
+import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponentViews
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.failOnSkippedHistoryEvent
+import kotlinx.serialization.json.Json
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
+
+/** 驗證歷史 outbox 的持久化 DTO 可保存並還原穩定序號與事實。 */
+class HistoryRecordingPersistenceDtoTest {
+    /** 終局 metadata 經持久化 DTO 往返後保持完整。 */
+    @Test
+    fun `terminal metadata round trips`() {
+        val matchId = Uuid.random()
+        val terminal = HistoryRecordingTerminal(42L, true, Uuid.random())
+        val state = HistoryRecordingState(terminalByMatchId = mapOf(matchId to terminal))
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
+        assertEquals(state, mapper.decode(mapper.encode(state, failOnSkippedHistoryEvent), failOnSkippedHistoryEvent))
+    }
+
+    /** 終局 metadata 的場地 UUID 無法解析時必須拒絕資料。 */
+    @Test
+    fun `malformed terminal table ID fails decoding`() {
+        val dto = HistoryRecordingPersistenceDto(
+            terminalByMatchId = mapOf(
+                pair = Uuid.random().toString() to HistoryRecordingTerminalPersistenceDto(1L, false, "not-a-uuid"),
+            ),
+            nextSequenceByMatchId = emptyMap(),
+            pendingEvents = emptyList(),
+            firstMissingSequenceByMatchId = emptyMap(),
+            decisionsByMatchId = emptyMap(),
+            transfersByMatchId = emptyMap(),
+            formatVersion = HistoryRecordingPersistenceDto.FORMAT_VERSION,
+        )
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
+        assertFailsWith<IllegalArgumentException> { mapper.decode(dto, failOnSkippedHistoryEvent) }
+    }
+
+    /** 交易差異經 JSON 與 DTO 往返後，保留分數及公開結果的新增、清空、未變更語意。 */
+    @Test
+    fun `table change round trips without full table snapshot`() {
+        val player = MahjongPlayer(Uuid.random(), 0, discardPile = TaiwanDiscardPile(), seatWind = Wind.EAST)
+        val matchId = Uuid.random()
+        val change = HistoryTableChange(
+            changedPlayers = listOf(HistoryPlayerChange(player.copy(score = 100), 0, listOf(GameAction.Draw))),
+            publicTileEvidenceIds = setOf(Uuid.random()),
+            appendedDiscards = listOf(Uuid.random()),
+            revealedHandSettlements = listOf(
+                element = RevealedHandSettlement(
+                    playerId = player.id,
+                    waitingTiles = setOf(Tile.Honor.North),
+                ),
+            ),
+        )
+        val state = HistoryRecordingState(
+            nextSequenceByMatchId = mapOf(matchId to 2L),
+            pendingEvents = listOf(
+                element = HistoryOutboxEvent(
+                    matchId = matchId,
+                    venueId = Uuid.random(),
+                    roundNumber = 1,
+                    sequence = 1L,
+                    occurredAtEpochMillis = 1L,
+                    actorPlayerId = null,
+                    fact = HistoryFact.TableChanged(HistoryTableResult.Change(change)),
+                ),
+            ),
+        )
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
+        listOf(
+            change,
+            change.copy(revealedHandSettlements = emptyList()),
+            change.copy(revealedHandSettlements = null),
+        ).forEach { variant ->
+            val variantState = state.copy(
+                pendingEvents = state.pendingEvents.map { event ->
+                    event.copy(fact = HistoryFact.TableChanged(HistoryTableResult.Change(variant)))
+                },
+            )
+            val dto = mapper.encode(variantState, failOnSkippedHistoryEvent)
+            val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), dto)
+
+            assertTrue(!encoded.contains("resultingState"))
+            assertEquals(
+                expected = variantState,
+                actual = mapper.decode(
+                    dto = Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded),
+                    skippedEventReporter = failOnSkippedHistoryEvent,
+                ),
+            )
+        }
+    }
+
+    /** 開局事實攜帶的 AI 策略 key 在 JSON 與 DTO 往返後保持不變。 */
+    @Test
+    fun `match started ai strategy keys round trip`() {
+        val player = MahjongPlayer(Uuid.random(), 0, discardPile = TaiwanDiscardPile(), seatWind = Wind.EAST)
+        val tableState = TableState(
+            id = Uuid.random(),
+            players = listOf(player),
+            config = TaiwanRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            dealerPlayerId = player.id,
+            turnPhase = TurnPhase.AwaitingDraw,
+        )
+        val matchId = Uuid.random()
+        val state = HistoryRecordingState(
+            nextSequenceByMatchId = mapOf(matchId to 2L),
+            pendingEvents = listOf(
+                element = HistoryOutboxEvent(
+                    matchId = matchId,
+                    venueId = tableState.id,
+                    roundNumber = 1,
+                    sequence = 1L,
+                    occurredAtEpochMillis = 1L,
+                    actorPlayerId = null,
+                    fact = HistoryFact.MatchStarted(
+                        tableState = tableState,
+                        flowConfig = GameFlowConfig(),
+                        aiPlayerStrategyKeys = mapOf(player.id to "example:strategy"),
+                    ),
+                ),
+            ),
+        )
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
+        val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), mapper.encode(state, failOnSkippedHistoryEvent))
+
+        assertEquals(
+            expected = state,
+            actual = mapper.decode(
+                dto = Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded),
+                skippedEventReporter = failOnSkippedHistoryEvent,
+            ),
+        )
+    }
+
+    /** 開局擲骰事實在歷史 outbox 的 JSON 往返後保留完整逐輪資料。 */
+    @Test
+    fun `dice rolled fact round trips`() {
+        val playerId = Uuid.random()
+        val matchId = Uuid.random()
+        val roll = OpeningDiceRoll(1, playerId, DiceRollResult.of(listOf(2, 6)))
+        val state = HistoryRecordingState(
+            nextSequenceByMatchId = mapOf(matchId to 2L),
+            pendingEvents = listOf(
+                element = HistoryOutboxEvent(
+                    matchId = matchId,
+                    venueId = Uuid.random(),
+                    roundNumber = 1,
+                    sequence = 1L,
+                    occurredAtEpochMillis = 1L,
+                    actorPlayerId = playerId,
+                    fact = HistoryFact.DiceRolled(roll),
+                ),
+            ),
+        )
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
+
+        assertEquals(state, mapper.decode(mapper.encode(state, failOnSkippedHistoryEvent), failOnSkippedHistoryEvent))
+    }
+
+    /** 牌張呈現變化保留外觀、公開特徵、姿態與知道牌面的讀取者。 */
+    @Test
+    fun `tile presentation fact round trips`() {
+        val matchId = Uuid.random()
+        val owner = Uuid.random()
+        val presentations = mapOf(
+            Uuid.random() to HistoryTilePresentation(
+                appearanceId = RiichiTileValues.RED_FIVE_APPEARANCE_ID,
+                views = ComponentViewSet.EMPTY.with(RiichiTileComponentViews.RED_DORA, Unit),
+                pose = TilePose.UPRIGHT,
+                audience = HistoryTileAudience.Players(setOf(owner)),
+            ),
+            Uuid.random() to HistoryTilePresentation(
+                appearanceId = null,
+                views = ComponentViewSet.EMPTY,
+                pose = TilePose.FACE_DOWN,
+                audience = HistoryTileAudience.Public,
+            ),
+        )
+        val state = HistoryRecordingState(
+            nextSequenceByMatchId = mapOf(matchId to 2L),
+            pendingEvents = listOf(
+                element = HistoryOutboxEvent(
+                    matchId = matchId,
+                    venueId = Uuid.random(),
+                    roundNumber = 1,
+                    sequence = 1L,
+                    occurredAtEpochMillis = 1L,
+                    actorPlayerId = null,
+                    fact = HistoryFact.TilePresentationChanged(presentations),
+                ),
+            ),
+        )
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
+
+        assertEquals(state, mapper.decode(mapper.encode(state, failOnSkippedHistoryEvent), failOnSkippedHistoryEvent))
+    }
+
+    /** 規則選擇的開始、提交、自動完成與換牌事實在 JSON 往返後保留開啟視窗的時間點與內容。 */
+    @Test
+    fun `rule decision facts round trip with their timing`() {
+        val playerId = Uuid.random()
+        val matchId = Uuid.random()
+        val facts = listOf(
+            HistoryFact.RuleDecisionStarted(RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW, "mahjongcraft:test_step", 0),
+            HistoryFact.RuleDecisionSubmitted(
+                timing = RuleDecisionTiming.WIN_CONTINUES,
+                stepId = "mahjongcraft:test_step",
+                stepIndex = 0,
+                submission = RuleDecisionSubmission.Choice("mahjongcraft:option"),
+                nextStepId = null,
+                passed = true,
+            ),
+            HistoryFact.RuleDecisionAutomaticallyResolved(RuleDecisionTiming.ROUND_END, "mahjongcraft:test_step", 1, "mahjongcraft:next_step"),
+            HistoryFact.TileReplacementRoundResolved(
+                timing = RuleDecisionTiming.ROUND_START,
+                round = TileReplacementRound(
+                    round = 2,
+                    removals = listOf(
+                        TileReplacementRemoval(playerId, listOf(Uuid.random(), Uuid.random())),
+                        TileReplacementRemoval(Uuid.random(), listOf(Uuid.random())),
+                    ),
+                ),
+            ),
+        )
+        val state = HistoryRecordingState(
+            nextSequenceByMatchId = mapOf(matchId to facts.size + 1L),
+            pendingEvents = facts.mapIndexed { index, fact ->
+                HistoryOutboxEvent(
+                    matchId = matchId,
+                    venueId = Uuid.random(),
+                    roundNumber = 1,
+                    sequence = index + 1L,
+                    occurredAtEpochMillis = 1L,
+                    actorPlayerId = playerId,
+                    fact = fact,
+                )
+            },
+        )
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
+
+        assertEquals(state, mapper.decode(mapper.encode(state, failOnSkippedHistoryEvent), failOnSkippedHistoryEvent))
+    }
+
+    /** 動作即時收付事實在 JSON 與 DTO 往返後保留動作、各玩家增減與點數池數量。 */
+    @Test
+    fun `action scored fact round trips`() {
+        val matchId = Uuid.random()
+        val actorId = Uuid.random()
+        val payerId = Uuid.random()
+        val state = HistoryRecordingState(
+            pendingEvents = listOf(
+                element = HistoryOutboxEvent(
+                    matchId = matchId,
+                    venueId = Uuid.random(),
+                    roundNumber = 1,
+                    sequence = 1L,
+                    occurredAtEpochMillis = 1L,
+                    actorPlayerId = actorId,
+                    fact = HistoryFact.ActionScored(
+                        action = GameAction.Kan(GameAction.KanType.CLOSED_KAN, Uuid.random(), List(3) { Uuid.random() }),
+                        scoreDeltas = mapOf(actorId to 2000, payerId to -3000),
+                        potDeposit = 1000,
+                    ),
+                ),
+            ),
+        )
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
+        val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), mapper.encode(state, failOnSkippedHistoryEvent))
+
+        assertEquals(
+            expected = state,
+            actual = mapper.decode(
+                dto = Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded),
+                skippedEventReporter = failOnSkippedHistoryEvent,
+            ),
+        )
+    }
+
+    /** 中止事實的原因識別碼在 JSON 與 DTO 往返後保持不變。 */
+    @Test
+    fun `match aborted reason round trips`() {
+        val matchId = Uuid.random()
+        val state = HistoryRecordingState(
+            pendingEvents = listOf(
+                element = HistoryOutboxEvent(
+                    matchId = matchId,
+                    venueId = Uuid.random(),
+                    roundNumber = 1,
+                    sequence = 1L,
+                    occurredAtEpochMillis = 1L,
+                    actorPlayerId = null,
+                    fact = HistoryFact.MatchAborted("mahjongcraft:table_missing"),
+                ),
+            ),
+        )
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
+        val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), mapper.encode(state, failOnSkippedHistoryEvent))
+
+        assertEquals(
+            expected = state,
+            actual = mapper.decode(
+                dto = Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded),
+                skippedEventReporter = failOnSkippedHistoryEvent,
+            ),
+        )
+    }
+
+    /** 即使版本為預設值，也必須明確輸出歷史格式版本。 */
+    @Test
+    fun `history format version is always serialized`() {
+        val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), HistoryRecordingPersistenceDto(nextSequenceByMatchId = emptyMap(), pendingEvents = emptyList(), firstMissingSequenceByMatchId = emptyMap(), decisionsByMatchId = emptyMap(), terminalByMatchId = emptyMap(), transfersByMatchId = emptyMap(), formatVersion = HistoryRecordingPersistenceDto.FORMAT_VERSION))
+        assertTrue(encoded.contains("\"formatVersion\":1"))
+    }
+
+    /** 驗證含待寫事件、下一序號與缺口 checkpoint 的完整 round-trip。 */
+    @Test
+    fun `history recording state round trips through mapper`() {
+        val matchId = Uuid.random()
+        val venueId = Uuid.random()
+        val state = HistoryRecordingState(
+            nextSequenceByMatchId = mapOf(matchId to 4L),
+            pendingEvents = listOf(
+                element = HistoryOutboxEvent(
+                    matchId = matchId,
+                    venueId = venueId,
+                    roundNumber = 1,
+                    sequence = 3L,
+                    occurredAtEpochMillis = 123L,
+                    actorPlayerId = null,
+                    fact = HistoryFact.ReturnedToRoom,
+                ),
+            ),
+            firstMissingSequenceByMatchId = mapOf(matchId to 2L),
+        )
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
+
+        assertEquals(state, mapper.decode(mapper.encode(state, failOnSkippedHistoryEvent), failOnSkippedHistoryEvent))
+    }
+
+    /** 驗證所有歷史記錄決策均以穩定列舉名稱往返持久化。 */
+    @Test
+    fun `all history recording decisions round trip through mapper`() {
+        val decisionsByMatchId = HistoryRecordingDecision.entries.associate { decision ->
+            Uuid.random() to decision
+        }
+        val state = HistoryRecordingState(decisionsByMatchId = decisionsByMatchId)
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
+
+        assertEquals(state, mapper.decode(mapper.encode(state, failOnSkippedHistoryEvent), failOnSkippedHistoryEvent))
+    }
+
+    /** 未知的歷史記錄決策名稱必須拒絕載入，避免錯誤地視為可記錄。 */
+    @Test
+    fun `unknown history recording decision rejects decoding`() {
+        val matchId = Uuid.random()
+        val dto = HistoryRecordingPersistenceDto(
+            decisionsByMatchId = mapOf(matchId.toString() to "UNKNOWN_DECISION"),
+            nextSequenceByMatchId = emptyMap(),
+            pendingEvents = emptyList(),
+            firstMissingSequenceByMatchId = emptyMap(),
+            terminalByMatchId = emptyMap(),
+            transfersByMatchId = emptyMap(),
+            formatVersion = HistoryRecordingPersistenceDto.FORMAT_VERSION,
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            HistoryRecordingPersistenceMapper(bundledPersistenceRegistries()).decode(dto, failOnSkippedHistoryEvent)
+        }
+    }
+
+    /** 單筆事件無法解碼時留下序號缺口，不讓歷史附加資料阻止權威存檔載入。 */
+    @Test
+    fun `undecodable history event leaves a checkpoint gap`() {
+        val matchId = Uuid.random()
+        val venueId = Uuid.random()
+        val dto = HistoryRecordingPersistenceDto(
+            nextSequenceByMatchId = mapOf(matchId.toString() to 3L),
+            pendingEvents = listOf(
+                HistoryOutboxEventPersistenceDto(
+                    matchId = matchId.toString(),
+                    venueId = venueId.toString(),
+                    roundNumber = 1,
+                    sequence = 1L,
+                    occurredAtEpochMillis = 123L,
+                    actorPlayerId = null,
+                    fact = HistoryFactPersistenceDto.MatchCompleted("test", mapOf("invalid-player-id" to 1)),
+                    transactionFirstSequence = 1L,
+                ),
+                HistoryOutboxEventPersistenceDto(
+                    matchId = matchId.toString(),
+                    venueId = venueId.toString(),
+                    roundNumber = 1,
+                    sequence = 2L,
+                    occurredAtEpochMillis = 124L,
+                    actorPlayerId = null,
+                    fact = HistoryFactPersistenceDto.ReturnedToRoom,
+                    transactionFirstSequence = 2L,
+                ),
+            ),
+            firstMissingSequenceByMatchId = emptyMap(),
+            decisionsByMatchId = emptyMap(),
+            terminalByMatchId = emptyMap(),
+            transfersByMatchId = emptyMap(),
+            formatVersion = HistoryRecordingPersistenceDto.FORMAT_VERSION,
+        )
+
+        val skipped = mutableListOf<Pair<Uuid, Long>>()
+        val decoded = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries()).decode(dto) { skippedMatchId, sequence, _ ->
+            skipped += skippedMatchId to sequence
+        }
+
+        assertEquals(listOf(2L), decoded.pendingEvents.map { it.sequence })
+        assertEquals(1L, decoded.firstMissingSequenceByMatchId.getValue(matchId))
+        assertEquals(listOf(matchId to 1L), skipped)
+    }
+
+    /** 胡牌詳情的文字、條目與牌參照均可完整往返。 */
+    @Test
+    fun `win settled details round trip`() {
+        val matchId = Uuid.random()
+        val winner = Uuid.random()
+        val tile = Uuid.random()
+        val standing = listOf(Uuid.random(), Uuid.random())
+        val details = HistoryWinDetails(
+            playerId = winner,
+            detailFields = listOf(
+                WinSettlementDetailField(
+                    id = "mahjongcraft:quantities",
+                    value = WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity("mahjongcraft:han", 3), WinSettlementQuantity("mahjongcraft:fu", 30))),
+                ),
+                WinSettlementDetailField(
+                    id = "mahjongcraft:entries",
+                    value = WinSettlementDetailValue.Entries(
+                        entries = listOf(
+                            WinSettlementDetailEntry("mahjongcraft:yaku/test", WinSettlementQuantity("mahjongcraft:han", 1)),
+                            WinSettlementDetailEntry("mahjongcraft:yaku/plain"),
+                            WinSettlementDetailEntry(
+                                id = "mahjongcraft:tai/streak",
+                                quantity = WinSettlementQuantity("mahjongcraft:tai", 5),
+                                nameQuantity = WinSettlementQuantity("mahjongcraft:streak", 2),
+                                appliesToSomePayersOnly = true,
+                            ),
+                        ),
+                    ),
+                ),
+                WinSettlementDetailField("test:faces", WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Character, 3), Tile.Extension(TileTypeId.parse("test:bonus_face")), Tile.Honor.North, Tile.Honor.North).map(::TileFaceView))),
+            ),
+            hand = HistoryWinningHand(standing, tile),
+        )
+        val state = HistoryRecordingState(
+            pendingEvents = listOf(
+                element = HistoryOutboxEvent(
+                    matchId = matchId,
+                    venueId = Uuid.random(),
+                    roundNumber = 1,
+                    sequence = 1L,
+                    occurredAtEpochMillis = 1L,
+                    actorPlayerId = winner,
+                    fact = HistoryFact.WinSettled("mahjongcraft:ron", listOf(details), listOf(Uuid.random()), winningTileId = Uuid.random()),
+                ),
+            ),
+        )
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
+        assertEquals(state, mapper.decode(mapper.encode(state, failOnSkippedHistoryEvent), failOnSkippedHistoryEvent))
+    }
+}

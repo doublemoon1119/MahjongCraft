@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "mahjongcraft:block/mahjong_stool/plastic"
+    },
+    "facing=east": {
+      "model": "mahjongcraft:block/mahjong_stool/plastic",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "mahjongcraft:block/mahjong_stool/plastic",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "mahjongcraft:block/mahjong_stool/plastic",
+      "y": 270
+    }
+  }
+}

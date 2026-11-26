@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "${id}",
+  "version": "${version}",
+  "name": "${name}",
+  "description": "${description}",
+  "authors": [
+    "${author}"
+  ],
+  "license": "${license}",
+  "icon": "assets/${id}/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.doublemoon1119.mahjongcraft.example.fabric.ExampleMod"
+    ],
+    "client": [
+      "com.doublemoon1119.mahjongcraft.example.fabric.ExampleModClient"
+    ],
+    "mahjongcraft:extension": [
+      "com.doublemoon1119.mahjongcraft.example.minecraft.mod.ExampleNativeMahjongExtension"
+    ],
+    "mahjongcraft:client_extension": [
+      "com.doublemoon1119.mahjongcraft.example.minecraft.mod.ExampleNativeMahjongClientExtension"
+    ]
+  },
+  "depends": {
+    "mahjongcraft": "${version}",
+    "fabricloader": "${dependencyRequirements.fabricLoader}",
+    "fabric": "${dependencyRequirements.fabricApi}",
+    "minecraft": "${dependencyRequirements.minecraft}",
+    "fabric-language-kotlin": "${dependencyRequirements.fabricLanguageKotlin}"
+  }
+}

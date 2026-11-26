@@ -1,0 +1,39 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity
+
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDenomination
+import net.minecraft.nbt.CompoundTag
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
+/** 點棒面額持久化的名稱往返與無效資料測試。 */
+class MahjongScoringStickDenominationNbtTest {
+    /** 測試讀寫面額使用的 NBT 欄位名稱。 */
+    private val key = "Denomination"
+
+    /** 每個面額都以名稱寫入並讀回同一個面額。 */
+    @Test
+    fun `every denomination survives a name round trip`() {
+        MahjongScoringStickDenomination.entries.forEach { denomination ->
+            val nbt = CompoundTag()
+
+            MahjongScoringStickDenominationNbt.write(nbt, denomination)
+
+            assertEquals(denomination.name, nbt.getString(key), "denomination must be stored by name")
+            assertEquals(denomination, MahjongScoringStickDenominationNbt.read(nbt))
+        }
+    }
+
+    /** 缺少欄位、名稱無效或型別不符時使用百分棒。 */
+    @Test
+    fun `unknown values fall back to the smallest denomination`() {
+        assertEquals(MahjongScoringStickDenomination.P100, MahjongScoringStickDenominationNbt.read(CompoundTag()))
+        assertEquals(
+            expected = MahjongScoringStickDenomination.P100,
+            actual = MahjongScoringStickDenominationNbt.read(CompoundTag().apply { putString(key, "P999") }),
+        )
+        assertEquals(
+            expected = MahjongScoringStickDenomination.P100,
+            actual = MahjongScoringStickDenominationNbt.read(CompoundTag().apply { putInt(key, 99) }),
+        )
+    }
+}

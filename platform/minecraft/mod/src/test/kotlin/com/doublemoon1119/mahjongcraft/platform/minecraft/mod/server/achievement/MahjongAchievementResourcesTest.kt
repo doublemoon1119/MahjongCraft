@@ -1,0 +1,173 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.achievement
+
+import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.AchievementStatisticIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.BuiltInAchievementIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.MinecraftTestBootstrap
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.DataPackLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement.RiichiAchievementIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.achievement.TaiwanAchievementIds
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
+import java.io.File
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
+import kotlin.test.fail
+
+/** 驗證內建進度 JSON 與成果、統計、語系資料彼此一致，並驗證條件 JSON 的解析。 */
+class MahjongAchievementResourcesTest {
+    @BeforeTest
+    fun bootstrapMinecraft() {
+        MinecraftTestBootstrap.ensure()
+    }
+
+    /** 必須具有完整成果翻譯的語言清單。 */
+    private val locales = listOf("en_us", "ja_jp", "zh_cn", "zh_tw")
+
+    /** 內建的全部成果 ID。 */
+    private val knownAchievementIds: Set<String> = setOf(
+        BuiltInAchievementIds.MATCH_COMPLETED,
+        BuiltInAchievementIds.FIRST_PLACE,
+        BuiltInAchievementIds.LAST_PLACE,
+        BuiltInAchievementIds.WIN,
+        BuiltInAchievementIds.SELF_DRAW_WIN,
+        BuiltInAchievementIds.DISCARD_WIN,
+        BuiltInAchievementIds.DEAL_IN,
+        BuiltInAchievementIds.DOUBLE_DEAL_IN,
+        BuiltInAchievementIds.TRIPLE_DEAL_IN,
+        BuiltInAchievementIds.EXHAUSTIVE_DRAW,
+        RiichiAchievementIds.MATCH_COMPLETED,
+        RiichiAchievementIds.RIICHI_WIN,
+        RiichiAchievementIds.IPPATSU,
+        RiichiAchievementIds.NAGASHI_MANGAN,
+        RiichiAchievementIds.BUSTED,
+        RiichiAchievementIds.BUSTED_FAR,
+        RiichiAchievementIds.BUSTED_IN_EAST_ONE,
+        RiichiAchievementIds.COUNTED_YAKUMAN_EXACT,
+        RiichiAchievementIds.COUNTED_YAKUMAN_OVER,
+        RiichiAchievementIds.YAKUMAN,
+        RiichiAchievementIds.DOUBLE_YAKUMAN,
+        RiichiAchievementIds.MULTIPLE_YAKUMAN,
+        TaiwanAchievementIds.MATCH_COMPLETED,
+        TaiwanAchievementIds.ALL_EXPOSED,
+        TaiwanAchievementIds.FULL_FLUSH,
+        TaiwanAchievementIds.FIVE_CONCEALED_TRIPLETS,
+        TaiwanAchievementIds.BIG_DRAGONS,
+        TaiwanAchievementIds.BIG_WINDS,
+        TaiwanAchievementIds.ALL_HONORS,
+        TaiwanAchievementIds.HEAVENLY_WIN,
+        TaiwanAchievementIds.EARTHLY_WIN,
+        TaiwanAchievementIds.HUMAN_WIN,
+        TaiwanAchievementIds.EIGHT_FLOWERS,
+        TaiwanAchievementIds.SEVEN_FLOWERS,
+    ) + (RiichiAchievementIds.yakumanTypes + RiichiAchievementIds.doubleYakumanTypes).mapNotNull(RiichiAchievementIds::yakuman)
+
+    /** 每個進度的上一層存在、條件引用的成果與統計都存在，且每個內建成果都有對應的進度。 */
+    @Test
+    fun `advancements reference existing parents achievements and statistics`() {
+        val advancements = loadAdvancements()
+        val referenced = mutableSetOf<String>()
+
+        advancements.forEach { (id, json) ->
+            json.get("parent")?.asString?.let { parent -> assertTrue(parent in advancements, "$id has a missing parent $parent") }
+            json.getAsJsonObject("criteria").entrySet().forEach { (_, criterion) ->
+                val trigger = criterion.asJsonObject.get("trigger").asString
+                if (trigger == MahjongAchievementCriterion.ID.toString()) {
+                    val condition = MahjongAchievementCriterion.conditionFromJson(criterion.asJsonObject.getAsJsonObject("conditions"))
+                    condition.achievementIds.forEach { achievementId -> assertTrue(achievementId in knownAchievementIds, "$id references unknown $achievementId") }
+                    condition.statistic?.let { assertTrue(it.statisticId in AchievementStatisticIds.ALL, "$id references unknown ${it.statisticId}") }
+                    referenced += condition.achievementIds
+                } else {
+                    assertTrue(trigger in VANILLA_TRIGGERS, "$id uses an unexpected trigger $trigger")
+                }
+            }
+        }
+
+        assertEquals(knownAchievementIds, referenced)
+    }
+
+    /** 台麻分支的層級與隱藏設定符合核定的成就清單。 */
+    @Test
+    fun `only flower challenges are hidden in the taiwan advancement branch`() {
+        val branch = loadAdvancements().filterKeys { it.startsWith("mahjongcraft:taiwan/") }
+        val root = "mahjongcraft:taiwan/root"
+        val goals = setOf("mahjongcraft:taiwan/all_exposed", "mahjongcraft:taiwan/full_flush")
+        val hidden = setOf("mahjongcraft:taiwan/eight_flowers", "mahjongcraft:taiwan/seven_flowers")
+        assertEquals(12, branch.size)
+        branch.forEach { (id, json) ->
+            val display = json.getAsJsonObject("display")
+            val frame = when (id) {
+                root -> "task"
+                in goals -> "goal"
+                else -> "challenge"
+            }
+            assertEquals(frame, display.get("frame").asString, id)
+            assertEquals(id in hidden, display.get("hidden").asBoolean, id)
+            assertEquals(root.takeUnless { id == root }, json.get("parent")?.asString, id)
+        }
+    }
+
+    /** 進度標題、說明與統計名稱在四種語言都有翻譯。 */
+    @Test
+    fun `advancement and statistic texts have translations in every language`() {
+        val requiredKeys = loadAdvancements().values.flatMap { json ->
+            val display = json.getAsJsonObject("display")
+            listOf("title", "description").map { display.getAsJsonObject(it).get("translate").asString }
+        } + AchievementStatisticIds.ALL.map { statisticId -> "stat." + statisticId.replace(':', '.') }
+
+        locales.forEach { locale ->
+            val translations = loadTranslations(locale)
+            requiredKeys.forEach { key -> assertTrue(key in translations, "$locale is missing $key") }
+        }
+    }
+
+    /** 條件 JSON 可以帶限定規則與統計門檻。缺少成果清單時拒絕載入。 */
+    @Test
+    fun `condition json parses rule and statistic and rejects missing achievements`() {
+        val condition = MahjongAchievementCriterion.conditionFromJson(
+            obj = JsonParser.parseString(
+                """{"achievements": ["mahjongcraft:win"], "rule": "mahjongcraft:riichi", "statistic": "mahjongcraft:wins", "at_least": 100}""",
+            ).asJsonObject,
+        )
+
+        assertEquals(setOf("mahjongcraft:win"), condition.achievementIds)
+        assertEquals("mahjongcraft:riichi", condition.ruleModuleId)
+        assertEquals(100, condition.statistic?.atLeast)
+        assertFailsWith<RuntimeException> { MahjongAchievementCriterion.conditionFromJson(JsonObject()) }
+    }
+
+    /**
+     * 以 `mahjongcraft:<相對路徑>` 為鍵載入全部內建進度。
+     *
+     * @return 進度識別碼與 JSON 的對照。找不到資源或內容為空時使測試失敗。
+     */
+    private fun loadAdvancements(): Map<String, JsonObject> {
+        val root = javaClass.classLoader.getResource(DataPackLayout.ADVANCEMENTS) ?: fail("Missing ${DataPackLayout.ADVANCEMENTS}")
+        val directory = File(root.toURI())
+        return directory.walkTopDown()
+            .filter { it.isFile && it.extension == "json" }
+            .associate { file ->
+                val path = file.relativeTo(directory).invariantSeparatorsPath.removeSuffix(".json")
+                "mahjongcraft:$path" to JsonParser.parseString(file.readText()).asJsonObject
+            }
+            .also { assertTrue(it.isNotEmpty(), "No advancements found") }
+    }
+
+    /**
+     * 讀取指定語言已提供的翻譯鍵。
+     *
+     * @param locale 語言資源名稱。
+     * @return 該語言檔的所有翻譯鍵。找不到檔案時使測試失敗。
+     */
+    private fun loadTranslations(locale: String): Set<String> {
+        val resource = javaClass.classLoader.getResource("assets/mahjongcraft/lang/$locale.json") ?: fail("Missing $locale language file")
+        return JsonParser.parseString(resource.readText()).asJsonObject.keySet()
+    }
+
+    private companion object {
+        /** 內建進度可以使用的原版觸發條件：取得物品，以及用牌尺打中其他玩家。 */
+        val VANILLA_TRIGGERS: Set<String> = setOf("minecraft:inventory_changed", "minecraft:player_hurt_entity")
+    }
+}

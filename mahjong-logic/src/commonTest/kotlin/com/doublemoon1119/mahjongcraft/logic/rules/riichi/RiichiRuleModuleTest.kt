@@ -1,0 +1,1415 @@
+package com.doublemoon1119.mahjongcraft.logic.rules.riichi
+
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.Meld
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
+import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.MeldCompletedContext
+import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiPhysicalWallLayoutPolicy
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiWallLayout
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDoraIndicatorFace
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiRedFiveFace
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertSame
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
+
+/**
+ * 針對 [RiichiRuleModule] 進行的單元測試。
+ *
+ * 驗證該模組是否能針對日本麻將規則正確生產對應的領域層組件。
+ */
+class RiichiRuleModuleTest {
+
+    /** 以標準四人日麻配置建立受測規則模組。 */
+    private val module: RiichiRuleModule = RiichiRuleModule(
+        id = "mahjongcraft:riichi",
+        config = RiichiRuleConfig(),
+    )
+
+    /** 驗證四人日本麻將公開三項本局自動操作能力。 */
+    @Test
+    fun `test supported automatic controls contain built-in riichi controls`() {
+        assertEquals(
+            expected = setOf(
+                BuiltInAutomaticControlIds.AUTO_WIN,
+                BuiltInAutomaticControlIds.DECLINE_CALLS,
+                BuiltInAutomaticControlIds.AUTO_TSUMOGIRI,
+            ),
+            actual = module.getSupportedAutomaticControlIds(),
+        )
+    }
+
+    /**
+     * 驗證建立的牌山工廠是否為日本麻將實作。
+     */
+    @Test
+    fun `test create wall factory returns riichi implementation`() {
+        val factory = module.createWallFactory(module.config.maxPlayers)
+        assertEquals(RiichiWallFactory::class, factory::class)
+    }
+
+    /** 驗證規則模組提供四人日本麻將的雙骰開門 policy。 */
+    @Test
+    fun `test create wall opening policy returns riichi implementation`() {
+        assertSame(RiichiWallOpeningPolicy, module.createWallOpeningPolicy())
+    }
+
+    /** 驗證規則模組提供四人日本麻將固定 136 張的牌牆布局。 */
+    @Test
+    fun `test create wall layout returns riichi implementation`() {
+        assertEquals(RiichiWallLayout::class, module.createWallLayout(module.config.maxPlayers)::class)
+    }
+
+    /** 驗證規則模組提供日麻獨立王牌區與槓後補位 policy。 */
+    @Test
+    fun `test create physical wall layout policy returns riichi implementation`() {
+        assertIs<RiichiPhysicalWallLayoutPolicy>(module.createPhysicalWallLayoutPolicy())
+    }
+
+    /** 驗證規則模組提供日麻赤五的牌面解讀 policy。 */
+    @Test
+    fun `test create tile interpretation policy returns riichi implementation`() {
+        assertSame(RiichiTileInterpretationPolicy, module.createTileInterpretationPolicy())
+    }
+
+    /**
+     * 驗證建立的牌河是否為日本麻將實作。
+     */
+    @Test
+    fun `test create discard pile returns riichi implementation`() {
+        val discardPile = module.createDiscardPile()
+        assertEquals(RiichiDiscardPile::class, discardPile::class)
+    }
+
+    /**
+     * 驗證建立的向聽數計算器是否為日本麻將實作。
+     */
+    @Test
+    fun `test create shanten calculator returns riichi implementation`() {
+        val discardPile = module.createShantenCalculator()
+        assertEquals(RiichiShantenCalculator::class, discardPile::class)
+    }
+
+    /**
+     * 驗證建立的合法動作判定器是否為日本麻將實作。
+     */
+    @Test
+    fun `test create legal action validator returns riichi implementation`() {
+        val discardPile = module.createLegalActionValidator()
+        assertEquals(RiichiLegalActionValidator::class, discardPile::class)
+    }
+
+    /**
+     * 驗證建立的手牌價值計算機是否為日本麻將實作。
+     */
+    @Test
+    fun `test create hand value calculator returns riichi implementation`() {
+        val discardPile = module.createHandValueCalculator()
+        assertEquals(RiichiHandValueCalculator::class, discardPile::class)
+    }
+
+    /**
+     * 驗證建立的手牌價值上下文計算機是否為日本麻將實作。
+     */
+    @Test
+    fun `test create hand value context calculator returns riichi implementation`() {
+        val discardPile = module.createHandValueContextCalculator()
+        assertEquals(RiichiHandValueContextCalculator::class, discardPile::class)
+    }
+
+    /** 立直宣告的規則效果只描述資料變更與費用，並帶著讀到的舊值。 */
+    @Test
+    fun `riichi declaration effect describes component changes and the stick cost`() {
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val discardResult = Hand(lastDrawn = discardedTile).discardById(discardedTile.id)!!
+        val player = FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)))
+        val table = FakeTableStateFactory.create(players = listOf(player), config = module.config, components = riichiTableComponents(potPoints = 2000))
+
+        val effect = riichiDeclarationEffect(table, player, discardResult)
+
+        val declaration = assertNotNull(effect.playerComponents.values[RiichiPlayerComponents.DECLARATION])
+        assertEquals(discardedTile.id, declaration.discardTileId)
+        assertTrue(declaration.isIppatsu)
+        assertTrue(effect.playerComponents.expected.isEmpty)
+        assertEquals(RiichiDiscardComponents.declaration(), effect.discardComponents)
+        assertEquals(3000, effect.tableComponents.values[RiichiTableComponents.POT_POINTS])
+        assertEquals(2000, effect.tableComponents.expected[RiichiTableComponents.POT_POINTS])
+        assertEquals(RIICHI_STICK_POINTS, effect.cost)
+    }
+
+    /** 供託再加一根立直棒會超出整數範圍時拒絕宣告，不產生效果。 */
+    @Test
+    fun `riichi declaration rejects a pot that would overflow`() {
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val discardResult = Hand(lastDrawn = discardedTile).discardById(discardedTile.id)!!
+        val player = FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile())
+        val table = FakeTableStateFactory.create(players = listOf(player), config = module.config, components = riichiTableComponents(potPoints = 0))
+            .let { it.copy(components = it.components.with(RiichiTableComponents.POT_POINTS, Int.MAX_VALUE / 1000 * 1000)) }
+
+        assertFailsWith<IllegalArgumentException> { riichiDeclarationEffect(table, player, discardResult) }
+    }
+
+    /**
+     * 沒有整包玩家狀態的玩家仍可透過獨立組件完成立直宣告。
+     */
+    @Test
+    fun `declaration does not require a monolithic player state`() {
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val hand = Hand(lastDrawn = discardedTile)
+        val discardResult = hand.discardById(discardedTile.id)!!
+
+        val player = FakeMahjongPlayerFactory.create(hand = hand, discardPile = RiichiDiscardPile())
+        val table = FakeTableStateFactory.create(players = listOf(player), components = riichiTableComponents(potPoints = 0))
+
+        assertNotNull(riichiDeclarationEffect(table, player, discardResult))
+    }
+
+    /**
+     * 缺少必要供託組件時拒絕宣告，不能把缺值當成零點。
+     */
+    @Test
+    fun `riichi declaration rejects a missing pot component`() {
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val hand = Hand(lastDrawn = discardedTile)
+        val discardResult = hand.discardById(discardedTile.id)!!
+
+        val player = FakeMahjongPlayerFactory.create(
+            hand = hand,
+            discardPile = RiichiDiscardPile(),
+            components = riichiDeclarationComponents(),
+        )
+        val table = FakeTableStateFactory.create(players = listOf(player), config = module.config, components = ComponentSet.EMPTY)
+
+        assertFailsWith<IllegalArgumentException> { riichiDeclarationEffect(table, player, discardResult) }
+    }
+
+    /**
+     * 驗證立直後的下一次摸牌仍在一發期限內，摸牌不會清除一發資格。
+     */
+    @Test
+    fun `test onPlayerDrew keeps ippatsu so the next draw can still win with ippatsu`() {
+        val player = FakeMahjongPlayerFactory.create(
+            components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East), isIppatsu = true),
+        )
+
+        assertTrue(module.onPlayerDrew(player).isEmpty)
+    }
+
+    /**
+     * 驗證玩家已立直且仍有一發資格時，打出下一張牌會清除一發資格。
+     */
+    @Test
+    fun `test onPlayerDiscarded clears ippatsu when the player still has it`() {
+        val player = FakeMahjongPlayerFactory.create(
+            components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East), isIppatsu = true),
+        )
+
+        val result = player.applied(module.onPlayerDiscarded(player))
+
+        val riichiState = checkNotNull(result.riichiDeclaration)
+        assertFalse(riichiState.isIppatsu)
+        assertNotNull(riichiState, "Riichi itself should remain in effect.")
+    }
+
+    /**
+     * 驗證玩家沒有一發資格（未立直或一發已失效）時，捨牌不做任何變更。
+     */
+    @Test
+    fun `test onPlayerDiscarded is a no-op without ippatsu`() {
+        val player = FakeMahjongPlayerFactory.create(components = riichiDeclarationComponents())
+
+        assertTrue(module.onPlayerDiscarded(player).isEmpty)
+    }
+
+    /**
+     * 驗證鳴牌事件會清除所有仍在一發窗口內的玩家的一發資格，不影響其他玩家。
+     */
+    @Test
+    fun `test onMeldCompleted clears ippatsu for all affected players`() {
+        val ippatsuPlayer = FakeMahjongPlayerFactory.create(
+            components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East), isIppatsu = true),
+        )
+        val nonRiichiPlayer = FakeMahjongPlayerFactory.create()
+
+        val players = listOf(ippatsuPlayer, nonRiichiPlayer)
+        val result = module.onMeldCompleted(MeldCompletedContext(players, players, nonRiichiPlayer.id, MeldType.Chi))
+
+        assertFalse(assertNotNull(ippatsuPlayer.applied(result.getValue(ippatsuPlayer.id)).riichiDeclaration).isIppatsu)
+        assertTrue(result.getValue(nonRiichiPlayer.id).isEmpty)
+    }
+
+    /**
+     * 驗證已碰出兩組三元牌、再碰第三組（第 3 組副露）時，會將包牌責任寫入玩家的規則狀態。
+     */
+    @Test
+    fun `test beforeDiscardClaimed writes liability when triggered`() {
+        val hand = twoDragonMeldsHand(whiteCount = 2)
+        val player = FakeMahjongPlayerFactory.create(hand = hand, components = riichiDeclarationComponents())
+        val calledTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+
+        val result = module.beforeDiscardClaimed(player, MeldType.Pon, calledTile, RelativeDirection.Left)
+
+        assertEquals(RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Left), result.values[RiichiPlayerComponents.PAO_LIABILITY])
+    }
+
+    /**
+     * 驗證吃不構成包牌責任，即使手牌已碰出兩組三元牌。
+     */
+    @Test
+    fun `test beforeDiscardClaimed ignores a chi`() {
+        val hand = twoDragonMeldsHand(whiteCount = 2)
+        val player = FakeMahjongPlayerFactory.create(hand = hand, components = riichiDeclarationComponents())
+        val calledTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+
+        val result = module.beforeDiscardClaimed(player, MeldType.Chi, calledTile, RelativeDirection.Left)
+
+        assertTrue(result.isEmpty)
+    }
+
+    /**
+     * 驗證已碰出兩組三元牌、再明槓第三組時同樣寫入包牌責任。
+     */
+    @Test
+    fun `test beforeDiscardClaimed writes liability for an open kan`() {
+        val hand = twoDragonMeldsHand(whiteCount = 3)
+        val player = FakeMahjongPlayerFactory.create(hand = hand, components = riichiDeclarationComponents())
+        val calledTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+
+        val result = module.beforeDiscardClaimed(player, MeldType.OpenKan, calledTile, RelativeDirection.Right)
+
+        assertEquals(RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Right), result.values[RiichiPlayerComponents.PAO_LIABILITY])
+    }
+
+    /**
+     * 套用掛勾回傳的玩家組件變更。
+     *
+     * @param patch 掛勾回傳的變更。
+     * @return 只有組件改變的玩家。
+     */
+    private fun MahjongPlayer.applied(patch: ComponentPatch): MahjongPlayer = copy(components = patch.applyTo(components, BuiltInComponentOwners.PLAYER))
+
+    /**
+     * 建立已碰出中、發兩組副露，並持有指定白板數量的手牌。
+     *
+     * @param whiteCount 手牌中的白板張數。
+     * @return 含兩組三元牌副露及指定白板的測試手牌。
+     */
+    private fun twoDragonMeldsHand(whiteCount: Int) = FakeHandFactory.create(
+        tiles = List(whiteCount) { Tile.Honor.White },
+        melds = listOf(Tile.Honor.Red, Tile.Honor.Green).map { tile ->
+            val meldTiles = List(3) { FakeIdentifiedTileFactory.create(tile) }
+            Meld(
+                type = MeldType.Pon,
+                tiles = meldTiles,
+                sourceTile = meldTiles.last(),
+                sourceDirection = RelativeDirection.Across,
+                publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(),
+                faceDownTileIds = emptySet(),
+            )
+        },
+    )
+
+    /**
+     * 驗證未觸發包牌責任時不做任何變更。
+     */
+    @Test
+    fun `test beforeDiscardClaimed is a no-op when not triggered`() {
+        val player = FakeMahjongPlayerFactory.create(components = riichiDeclarationComponents())
+        val calledTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
+
+        val result = module.beforeDiscardClaimed(player, MeldType.Pon, calledTile, RelativeDirection.Left)
+
+        assertTrue(result.isEmpty)
+    }
+
+    /**
+     * 驗證玩家沒有日麻規則資料時不做任何變更（防呆）。
+     */
+    @Test
+    fun `test beforeDiscardClaimed is a no-op when player rule state is not riichi`() {
+        val player = FakeMahjongPlayerFactory.create()
+        val calledTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+
+        val result = module.beforeDiscardClaimed(player, MeldType.Pon, calledTile, RelativeDirection.Left)
+
+        assertTrue(result.isEmpty)
+    }
+
+    /**
+     * 手牌：中中、發發發、白白白、123m、55p（大三元役滿，13 張立牌），供自摸結算測試共用。
+     */
+    private fun daisangenTiles() = listOf(
+        Tile.Honor.Red, Tile.Honor.Red,
+        Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
+        Tile.Honor.White, Tile.Honor.White, Tile.Honor.White,
+        Tile.Numeric(Tile.Suit.Character, 1),
+        Tile.Numeric(Tile.Suit.Character, 2),
+        Tile.Numeric(Tile.Suit.Character, 3),
+        Tile.Numeric(Tile.Suit.Dot, 5),
+        Tile.Numeric(Tile.Suit.Dot, 5),
+    )
+
+    /**
+     * 驗證莊家自摸大三元時，其餘三位閒家平均分攤點數。
+     */
+    @Test
+    fun `test declareTsumo splits payment evenly among three non-dealers when winner is dealer`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }, lastDrawn = winningTile),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            components = riichiDeclarationComponents(),
+        )
+        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        val table = FakeTableStateFactory.create(players = listOf(winner, south, west, north), config = module.config)
+
+        val result = module.declareTsumo(table, winner)
+
+        assertEquals(
+            expected = WinSettlementResult(
+                totalGained = 48000,
+                paymentsByPlayerId = mapOf(south.id to 16000, west.id to 16000, north.id to 16000),
+            ),
+            actual = result?.settlement,
+        )
+    }
+
+    /**
+     * 驗證閒家自摸大三元時，莊家與另外兩位閒家支付不同金額。
+     */
+    @Test
+    fun `test declareTsumo charges dealer more than the other two non-dealers when winner is non-dealer`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }, lastDrawn = winningTile),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            components = riichiDeclarationComponents(),
+        )
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        val table = FakeTableStateFactory.create(players = listOf(dealer, winner, west, north), config = module.config)
+
+        val result = module.declareTsumo(table, winner)
+
+        assertEquals(
+            expected = WinSettlementResult(
+                totalGained = 32000,
+                paymentsByPlayerId = mapOf(dealer.id to 16000, west.id to 8000, north.id to 8000),
+            ),
+            actual = result?.settlement,
+        )
+    }
+
+    /**
+     * 驗證包牌責任已成立時，只有包牌責任者（依 [RiichiPaoLiability.direction] 解析回實際玩家）付款，
+     * 其餘玩家完全不出現在結算結果中。
+     */
+    @Test
+    fun `test declareTsumo resolves pao payer via relative direction and no other player pays`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val paoPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }, lastDrawn = winningTile),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
+        )
+        val other1 = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val other2 = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        // paoPlayer 排在 winner 前一位（座位順序），故對 winner 而言方位為 Left，與上方宣告的包牌責任相符
+        val table = FakeTableStateFactory.create(players = listOf(paoPlayer, winner, other1, other2), config = module.config)
+
+        val result = module.declareTsumo(table, winner)
+
+        assertEquals(
+            expected = WinSettlementResult(
+                totalGained = 32000,
+                paymentsByPlayerId = mapOf(paoPlayer.id to 32000),
+                paymentReasonIdsByPlayerId = mapOf(paoPlayer.id to BuiltInPaymentReasonIds.PAO),
+            ),
+            actual = result?.settlement,
+        )
+    }
+
+    /**
+     * 驗證玩家尚未摸牌（hand.lastDrawn 為 null）時，自摸結算回傳 null（防呆）。
+     */
+    @Test
+    fun `test declareTsumo returns null when player has not drawn`() {
+        val player = FakeMahjongPlayerFactory.create(components = riichiDeclarationComponents())
+        val table = FakeTableStateFactory.create(players = listOf(player), config = module.config)
+
+        assertNull(module.declareTsumo(table, player))
+    }
+
+    /**
+     * 驗證莊家榮和大三元時，放銃者一人支付全額。
+     */
+    @Test
+    fun `test declareRon charges the discarder the full amount when winner is dealer`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            components = riichiDeclarationComponents(),
+        )
+        val discarder = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        val table = FakeTableStateFactory.create(players = listOf(winner, discarder, west, north), config = module.config)
+
+        val result = module.declareRon(table, winner, winningTile, discarderId = discarder.id)
+
+        assertEquals(
+            expected = WinSettlementResult(totalGained = 48000, paymentsByPlayerId = mapOf(discarder.id to 48000)),
+            actual = result?.settlement,
+        )
+    }
+
+    /**
+     * 驗證閒家榮和大三元時，放銃者一人支付全額（金額比莊家榮和少）。
+     */
+    @Test
+    fun `test declareRon charges the discarder the full amount when winner is non-dealer`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            components = riichiDeclarationComponents(),
+        )
+        val discarder = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        val table = FakeTableStateFactory.create(players = listOf(dealer, winner, discarder, north), config = module.config)
+
+        val result = module.declareRon(table, winner, winningTile, discarderId = discarder.id)
+
+        assertEquals(
+            expected = WinSettlementResult(totalGained = 32000, paymentsByPlayerId = mapOf(discarder.id to 32000)),
+            actual = result?.settlement,
+        )
+    }
+
+    /**
+     * 驗證包牌責任已成立、且包牌責任者與放銃者是不同人時，兩人平分點數。
+     */
+    @Test
+    fun `test declareRon splits payment between discarder and pao-liable player`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val paoPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
+        )
+        val discarder = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        // paoPlayer 排在 winner 前一位（座位順序），故對 winner 而言方位為 Left，與上方宣告的包牌責任相符
+        val table = FakeTableStateFactory.create(players = listOf(paoPlayer, winner, discarder, other), config = module.config)
+
+        val result = module.declareRon(table, winner, winningTile, discarderId = discarder.id)
+
+        assertEquals(
+            expected = WinSettlementResult(
+                totalGained = 32000,
+                paymentsByPlayerId = mapOf(discarder.id to 16000, paoPlayer.id to 16000),
+                paymentReasonIdsByPlayerId = mapOf(paoPlayer.id to BuiltInPaymentReasonIds.PAO),
+            ),
+            actual = result?.settlement,
+        )
+    }
+
+    /**
+     * 驗證包牌責任者恰好就是放銃者本人時，歸戶成單一全額付款，而不是兩筆各半的付款
+     * （避免兩筆同 key 的付款在合併時互相覆蓋掉一半金額）。
+     */
+    @Test
+    fun `test declareRon collapses to a single full payment when pao-liable player is the discarder`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val paoPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
+        )
+        val other1 = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val other2 = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        val table = FakeTableStateFactory.create(players = listOf(paoPlayer, winner, other1, other2), config = module.config)
+
+        // 包牌責任者（paoPlayer）這次剛好也是放銃者本人；付款金額與一般放銃相同，但仍標示包牌。
+        val result = module.declareRon(table, winner, winningTile, discarderId = paoPlayer.id)
+
+        assertEquals(
+            expected = WinSettlementResult(
+                totalGained = 32000,
+                paymentsByPlayerId = mapOf(paoPlayer.id to 32000),
+                paymentReasonIdsByPlayerId = mapOf(paoPlayer.id to BuiltInPaymentReasonIds.PAO),
+            ),
+            actual = result?.settlement,
+        )
+    }
+
+    /**
+     * 手牌：中中中、發發發、白白（役滿：三組三元牌刻子，缺最後一張白）、東東東、南南——湊齊後
+     * 同時成立大三元（三元牌三組刻子）與字一色（全牌皆為字牌），供包牌疊加役滿測試共用。
+     */
+    private fun daisangenPlusTsuuiisouTiles() = listOf(
+        Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red,
+        Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
+        Tile.Honor.White, Tile.Honor.White,
+        Tile.Honor.East, Tile.Honor.East, Tile.Honor.East,
+        Tile.Honor.South, Tile.Honor.South,
+    )
+
+    /**
+     * 驗證包牌責任成立、且和了同時疊加其他役滿時：包牌責任者只承擔 1 倍役滿（基本點 8000）的自摸
+     * 金額，超出包牌範圍的疊加役滿部分改由正常自摸結算的對象（莊家與其餘閒家）支付——不是把整體
+     * 役滿倍數都算進包牌範圍。
+     *
+     * 這次自摸完成的是大三元最後一組（白）刻子，四組刻子（中/發/白/東）皆為自摸完成、視為暗刻，
+     * 疊加成立四暗刻。加上字一色（全牌皆為字牌），役滿倍數共 3 倍（與 `declareRon` 版本的姊妹
+     * 測試不同——榮和完成的那組刻子不算暗刻，四暗刻不成立，只疊加大三元 + 字一色共 2 倍）。
+     */
+    @Test
+    fun `test declareTsumo splits pao payment from stacked yakuman remainder`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val paoPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisangenPlusTsuuiisouTiles().map { FakeIdentifiedTileFactory.create(it) }, lastDrawn = winningTile),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.North)),
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
+        )
+        // paoPlayer（東家）恰好也是莊家，故正常結算的「莊家份」與包牌份會疊加到同一人身上
+        val other1 = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val other2 = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        val table = FakeTableStateFactory.create(players = listOf(paoPlayer, winner, other1, other2), config = module.config)
+
+        val result = module.declareTsumo(table, winner)
+
+        assertEquals(
+            expected = WinSettlementResult(
+                totalGained = 96000,
+                paymentsByPlayerId = mapOf(paoPlayer.id to 64000, other1.id to 16000, other2.id to 16000),
+                paymentReasonIdsByPlayerId = mapOf(paoPlayer.id to BuiltInPaymentReasonIds.PAO),
+            ),
+            actual = result?.settlement,
+        )
+    }
+
+    /**
+     * 驗證包牌責任成立、且和了同時疊加另一個役滿時，榮和情境下包牌責任者與放銃者平分的只有 1 倍
+     * 役滿部分，超出包牌範圍的疊加役滿部分改由放銃者全額支付（正常榮和結算）。
+     */
+    @Test
+    fun `test declareRon splits pao payment from stacked yakuman remainder`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val paoPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisangenPlusTsuuiisouTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.North)),
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
+        )
+        val discarder = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        val table = FakeTableStateFactory.create(players = listOf(paoPlayer, winner, discarder, other), config = module.config)
+
+        val result = module.declareRon(table, winner, winningTile, discarderId = discarder.id)
+
+        assertEquals(
+            expected = WinSettlementResult(
+                totalGained = 64000,
+                paymentsByPlayerId = mapOf(discarder.id to 48000, paoPlayer.id to 16000),
+                paymentReasonIdsByPlayerId = mapOf(paoPlayer.id to BuiltInPaymentReasonIds.PAO),
+            ),
+            actual = result?.settlement,
+        )
+    }
+
+    /**
+     * 手牌：東東東、南南南、西西西、北北（大四喜：四組風牌刻子，缺最後一張北）、五五筒（雀頭），
+     * 供大四喜包牌測試共用。
+     */
+    private fun daisuushiiTiles() = listOf(
+        Tile.Honor.East, Tile.Honor.East, Tile.Honor.East,
+        Tile.Honor.South, Tile.Honor.South, Tile.Honor.South,
+        Tile.Honor.West, Tile.Honor.West, Tile.Honor.West,
+        Tile.Honor.North, Tile.Honor.North,
+        Tile.Numeric(Tile.Suit.Dot, 5), Tile.Numeric(Tile.Suit.Dot, 5),
+    )
+
+    /**
+     * 驗證大四喜（雙倍役滿）觸發包牌責任時，包牌責任者承擔的是大四喜本身的 2 倍，不是大三元那種
+     * 1 倍——大三元與大四喜彼此互斥，過去若把包牌範圍寫死成 1 倍役滿，大四喜包牌會少算一半。
+     * 刻意用榮和（而非自摸）完成最後一組風牌刻子，避免意外疊加四暗刻（自摸完成的刻子視為暗刻，
+     * 會讓四組刻子都變成暗刻），讓役滿倍數維持乾淨的 2 倍、不受疊加役滿干擾。
+     */
+    @Test
+    fun `test declareRon charges the full daisuushii multiplier for pao`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.North)
+        val paoPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisuushiiTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.Red)),
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisuushii, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
+        )
+        val discarder = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        val table = FakeTableStateFactory.create(players = listOf(paoPlayer, winner, discarder, other), config = module.config)
+
+        val result = module.declareRon(table, winner, winningTile, discarderId = discarder.id)
+
+        // 大四喜榮和、贏家為閒家：基本點 8000 * 2 倍 = 16000，非莊家倍率 4 → 64000，
+        // 包牌雙方各付一半 32000；沒有疊加其他役滿，totalGained 與過去簡化算法巧合相同。
+        assertEquals(
+            expected = WinSettlementResult(
+                totalGained = 64000,
+                paymentsByPlayerId = mapOf(discarder.id to 32000, paoPlayer.id to 32000),
+                paymentReasonIdsByPlayerId = mapOf(paoPlayer.id to BuiltInPaymentReasonIds.PAO),
+            ),
+            actual = result?.settlement,
+        )
+    }
+
+    // 手牌：白白白（役牌刻子，1 翻）、234m、567p、89s（等 7s）、99p，供搶槓（isRobbingKan）測試共用。
+    // 刻意只有單一役牌（而非 daisangenTiles 那種役滿），讓搶槓多算的 1 翻能真正反映在點數差異上。
+    /**
+     * 建立單一白板役牌與一般面子組成的榮和前手牌。
+     *
+     * @return 供搶槓比較測試使用的手牌牌面。
+     */
+    private fun singleYakuhaiTiles() = listOf(
+        Tile.Honor.White, Tile.Honor.White, Tile.Honor.White,
+        Tile.Numeric(Tile.Suit.Character, 2), Tile.Numeric(Tile.Suit.Character, 3), Tile.Numeric(Tile.Suit.Character, 4),
+        Tile.Numeric(Tile.Suit.Dot, 5), Tile.Numeric(Tile.Suit.Dot, 6), Tile.Numeric(Tile.Suit.Dot, 7),
+        Tile.Numeric(Tile.Suit.Bamboo, 8), Tile.Numeric(Tile.Suit.Bamboo, 9),
+        Tile.Numeric(Tile.Suit.Dot, 9), Tile.Numeric(Tile.Suit.Dot, 9),
+    )
+
+    /**
+     * 驗證 `isRobbingKan = true` 時，搶槓（[RiichiYakuType.Chankan]）1 翻會被計入榮和結算，
+     * 點數比 `isRobbingKan = false`（預設值）的同一手牌更高。
+     */
+    @Test
+    fun `test declareRon includes chankan yaku when isRobbingKan is true`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 7))
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = singleYakuhaiTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸人和
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            components = riichiDeclarationComponents(),
+        )
+        val discarder = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val table = FakeTableStateFactory.create(players = listOf(winner, discarder), config = module.config)
+
+        val withoutChankan = module.declareRon(table, winner, winningTile, discarderId = discarder.id, isRobbingKan = false)
+        val withChankan = module.declareRon(table, winner, winningTile, discarderId = discarder.id, isRobbingKan = true)
+
+        assertNotNull(withoutChankan)
+        assertNotNull(withChankan)
+        assertTrue(
+            actual = withChankan.totalGained > withoutChankan.totalGained,
+            message = "Chankan should add an extra han on top of the existing yakuhai, worth more points.",
+        )
+    }
+
+    /**
+     * 驗證場上有立直棒時，收供託會回傳正確金額（立直棒數 * 1000），且回傳的狀態立直棒數歸零。
+     */
+    @Test
+    fun `test collectStickPot returns amount and resets stick count when sticks are on the table`() {
+        val table = FakeTableStateFactory.create(
+            players = listOf(FakeMahjongPlayerFactory.create()),
+            config = module.config,
+            components = riichiTableComponents(potPoints = 3000),
+        )
+
+        val result = module.collectStickPot(table)
+
+        assertEquals(3000, result.points)
+        val collected = result.tableComponents.applyTo(table.components, BuiltInComponentOwners.TABLE)
+        assertEquals(0, collected[RiichiTableComponents.POT_POINTS])
+        assertEquals(table.components[RiichiTableComponents.WALL_PROGRESS], collected[RiichiTableComponents.WALL_PROGRESS])
+        assertEquals(3000, table.riichiPotPoints())
+    }
+
+    /**
+     * 驗證場上沒有立直棒時，收供託仍回傳非 null（金額 0、狀態不變）——null 專門用來表示
+     * 「這個規則根本沒有供託機制」，不跟「目前沒有供託」混用。
+     */
+    @Test
+    fun `test collectStickPot returns zero amount when there are no sticks on the table`() {
+        val table = FakeTableStateFactory.create(
+            players = listOf(FakeMahjongPlayerFactory.create()),
+            config = module.config,
+            components = riichiTableComponents(potPoints = 0),
+        )
+
+        val result = module.collectStickPot(table)
+
+        assertEquals(0, result.points)
+        val collected = result.tableComponents.applyTo(table.components, BuiltInComponentOwners.TABLE)
+        assertEquals(0, collected[RiichiTableComponents.POT_POINTS])
+        assertEquals(table.components[RiichiTableComponents.WALL_PROGRESS], collected[RiichiTableComponents.WALL_PROGRESS])
+        assertEquals(0, table.riichiPotPoints())
+    }
+
+    /**
+     * 驗證 [RiichiRuleModule.getStickPotCount] 純查詢場上目前立直棒數量，不像 [RiichiRuleModule.collectStickPot]
+     * 會連帶把狀態歸零。
+     */
+    @Test
+    fun `test getStickPotCount reads current stick count without resetting it`() {
+        val table = FakeTableStateFactory.create(
+            players = listOf(FakeMahjongPlayerFactory.create()),
+            config = module.config,
+            components = riichiTableComponents(potPoints = 3000),
+        )
+
+        val count = module.getStickPotCount(table)
+
+        assertEquals(3, count)
+        assertEquals(3, table.riichiPotPoints() / RIICHI_STICK_POINTS, "getStickPotCount must be a pure query, not mutate the table state.")
+    }
+
+    /**
+     * 驗證 [MahjongRuleModule.compareForRoundRanking] 預設實作：分數優先，同分時依這一局的座位
+     * （`seatWind`）決定順序，越接近這一局東家名次越前面——`RiichiRuleModule` 沒有覆寫這個 hook，
+     * 這裡測的就是介面本身的預設慣例。
+     */
+    @Test
+    fun `test compareForRoundRanking breaks ties by seatWind`() {
+        val east = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH).copy(score = 25000, seatWind = Wind.EAST)
+        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST).copy(score = 25000, seatWind = Wind.SOUTH)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST).copy(score = 30000, seatWind = Wind.WEST)
+
+        val ranked = listOf(south, west, east).sortedWith(module.compareForRoundRanking())
+
+        assertEquals(listOf(west, east, south), ranked, "Highest score first; tied scores broken by this hand's seat (seatWind), not initialSeat.")
+    }
+
+    /**
+     * 驗證 [MahjongRuleModule.compareForMatchRanking] 預設實作：分數優先，同分時依起家座位
+     * （`initialSeat`）決定順序，越接近起家名次越前面。
+     */
+    @Test
+    fun `test compareForMatchRanking breaks ties by initialSeat`() {
+        val east = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST).copy(score = 24000, seatWind = Wind.SOUTH)
+        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH).copy(score = 24000, seatWind = Wind.EAST)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH).copy(score = 20000, seatWind = Wind.NORTH)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST).copy(score = 32000, seatWind = Wind.WEST)
+
+        val ranked = listOf(north, south, west, east).sortedWith(module.compareForMatchRanking())
+
+        assertEquals(listOf(west, east, south, north), ranked, "Highest score first; tied scores broken by initialSeat, not seatWind.")
+    }
+
+    /**
+     * 本局已胡牌退場的玩家（[TableState.finishedPlayerIds]）完全不參與流局計算：不判聽牌、不收付
+     * 不聽罰符，罰符總額也改以仍在局中的人數計算。
+     */
+    @Test
+    fun `test declareExhaustiveDraw excludes players who already finished the round`() {
+        val finishedTenpai = FakeMahjongPlayerFactory.create(hand = tenpaiHand())
+        val activeTenpai = FakeMahjongPlayerFactory.create(hand = tenpaiHand())
+        val activeNoten = List(2) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
+        val table = FakeTableStateFactory.create(
+            players = listOf(activeTenpai) + activeNoten + finishedTenpai,
+            config = module.config,
+        ).copy(finishedPlayerIds = setOf(finishedTenpai.id))
+
+        val result = module.declareExhaustiveDraw(table)
+
+        assertEquals(
+            expected = setOf(activeTenpai.id),
+            actual = result.tenpaiPlayerIds,
+            message = "A finished player must not be judged tenpai even with a tenpai hand.",
+        )
+        assertEquals(
+            expected = null,
+            actual = result.scoreDeltas[finishedTenpai.id],
+            message = "A finished player must neither collect nor pay the noten penalty.",
+        )
+        // 仍在局中的只有 3 人，因此總額是 1000 * (3 - 1) = 2000，由唯一聽牌者收取、兩位不聽者均分支付。
+        assertEquals(2000, result.scoreDeltas[activeTenpai.id])
+        activeNoten.forEach { assertEquals(-1000, result.scoreDeltas[it.id]) }
+    }
+
+    /** 已退場玩家的牌河不得成立流局滿貫——他早就不再摸打，牌河只是停在退場那一刻的樣子。 */
+    @Test
+    fun `test resolveNagashiMangan ignores players who already finished the round`() {
+        val finished = FakeMahjongPlayerFactory.create(discardPile = allYaochuuDiscardPile())
+        val others = List(3) { FakeMahjongPlayerFactory.create() }
+        val table = FakeTableStateFactory.create(
+            players = others + finished,
+            config = module.config,
+        ).copy(finishedPlayerIds = setOf(finished.id))
+
+        assertEquals(null, module.resolveNagashiMangan(table))
+    }
+
+    /**
+     * 聽牌手牌：1112345678999m（聽 1m 對倒），供 [RiichiRuleModule.declareExhaustiveDraw] 測試共用。
+     */
+    private fun tenpaiHand() = FakeHandFactory.create(
+        tiles = listOf(
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 2),
+            Tile.Numeric(Tile.Suit.Character, 3),
+            Tile.Numeric(Tile.Suit.Character, 4),
+            Tile.Numeric(Tile.Suit.Character, 5),
+            Tile.Numeric(Tile.Suit.Character, 6),
+            Tile.Numeric(Tile.Suit.Character, 7),
+            Tile.Numeric(Tile.Suit.Character, 8),
+            Tile.Numeric(Tile.Suit.Character, 9),
+            Tile.Numeric(Tile.Suit.Character, 9),
+            Tile.Numeric(Tile.Suit.Character, 9),
+        ),
+    )
+
+    /**
+     * 明顯遠離聽牌的手牌（13 張互不相干的孤立牌），供 [RiichiRuleModule.declareExhaustiveDraw] 測試共用。
+     */
+    private fun notTenpaiHand() = FakeHandFactory.create(
+        tiles = listOf(
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 4),
+            Tile.Numeric(Tile.Suit.Character, 7),
+            Tile.Numeric(Tile.Suit.Dot, 1),
+            Tile.Numeric(Tile.Suit.Dot, 4),
+            Tile.Numeric(Tile.Suit.Dot, 7),
+            Tile.Numeric(Tile.Suit.Bamboo, 1),
+            Tile.Numeric(Tile.Suit.Bamboo, 4),
+            Tile.Numeric(Tile.Suit.Bamboo, 7),
+            Tile.Honor.East,
+            Tile.Honor.South,
+            Tile.Honor.West,
+            Tile.Honor.North,
+        ),
+    )
+
+    /**
+     * 全為么九牌、皆未被鳴走的牌河，成立流局滿貫的必要條件，供 [RiichiRuleModule.resolveNagashiMangan] 測試共用。
+     */
+    private fun allYaochuuDiscardPile() = RiichiDiscardPile()
+        .discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East))
+        .discardTile(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)))
+        .discardTile(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)))
+
+    /**
+     * 驗證無人聽牌時不進行任何點數交換。
+     */
+    @Test
+    fun `test declareExhaustiveDraw no exchange when nobody is tenpai`() {
+        val players = List(4) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
+        val table = FakeTableStateFactory.create(players = players, config = module.config)
+
+        val result = module.declareExhaustiveDraw(table)
+
+        assertEquals(
+            expected = ExhaustiveDrawSettlementResult(
+                reason = RiichiExhaustiveDrawReason.Normal,
+                tenpaiPlayerIds = emptySet(),
+                stickPotCollectorPlayerIds = emptySet(),
+                scoreDeltas = emptyMap(),
+            ),
+            actual = result,
+        )
+    }
+
+    /**
+     * 驗證全員聽牌時不進行任何點數交換。
+     */
+    @Test
+    fun `test declareExhaustiveDraw no exchange when everyone is tenpai`() {
+        val players = List(4) { FakeMahjongPlayerFactory.create(hand = tenpaiHand()) }
+        val table = FakeTableStateFactory.create(players = players, config = module.config)
+
+        val result = module.declareExhaustiveDraw(table)
+
+        assertEquals(players.map { it.id }.toSet(), result.tenpaiPlayerIds)
+        assertEquals(emptyMap<Uuid, Int>(), result.scoreDeltas)
+    }
+
+    /**
+     * 驗證恰好一人聽牌時，聽牌者從其餘三家各收 1000 點（總額 3000）。
+     */
+    @Test
+    fun `test declareExhaustiveDraw single tenpai player collects from the other three`() {
+        val tenpaiPlayer = FakeMahjongPlayerFactory.create(hand = tenpaiHand())
+        val notenPlayers = List(3) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
+        val table = FakeTableStateFactory.create(players = listOf(tenpaiPlayer) + notenPlayers, config = module.config)
+
+        val result = module.declareExhaustiveDraw(table)
+
+        assertEquals(setOf(tenpaiPlayer.id), result.tenpaiPlayerIds)
+        val expectedDeltas = mapOf(tenpaiPlayer.id to 3000) + notenPlayers.associate { it.id to -1000 }
+        assertEquals(expectedDeltas, result.scoreDeltas)
+    }
+
+    /**
+     * 驗證恰好兩人聽牌時，兩位不聽者各支付 1500 點，兩位聽牌者各收 1500 點。
+     */
+    @Test
+    fun `test declareExhaustiveDraw two tenpai players split evenly with two noten players`() {
+        val tenpaiPlayers = List(2) { FakeMahjongPlayerFactory.create(hand = tenpaiHand()) }
+        val notenPlayers = List(2) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
+        val table = FakeTableStateFactory.create(players = tenpaiPlayers + notenPlayers, config = module.config)
+
+        val result = module.declareExhaustiveDraw(table)
+
+        val expectedDeltas = tenpaiPlayers.associate { it.id to 1500 } + notenPlayers.associate { it.id to -1500 }
+        assertEquals(expectedDeltas, result.scoreDeltas)
+    }
+
+    /**
+     * 驗證恰好三人聽牌時，唯一不聽者支付 3000 點，由三位聽牌者各收 1000 點。
+     */
+    @Test
+    fun `test declareExhaustiveDraw three tenpai players collect from the single noten player`() {
+        val tenpaiPlayers = List(3) { FakeMahjongPlayerFactory.create(hand = tenpaiHand()) }
+        val notenPlayer = FakeMahjongPlayerFactory.create(hand = notTenpaiHand())
+        val table = FakeTableStateFactory.create(players = tenpaiPlayers + notenPlayer, config = module.config)
+
+        val result = module.declareExhaustiveDraw(table)
+
+        val expectedDeltas = tenpaiPlayers.associate { it.id to 1000 } + mapOf(notenPlayer.id to -3000)
+        assertEquals(expectedDeltas, result.scoreDeltas)
+    }
+
+    /**
+     * 宣告不聽的聽牌玩家不公開手牌、不算聽牌，照不聽支付罰符。
+     */
+    @Test
+    fun `test declareExhaustiveDraw treats noten declared tenpai players as noten`() {
+        val tenpaiPlayer = FakeMahjongPlayerFactory.create(hand = tenpaiHand())
+        val declaredPlayer = FakeMahjongPlayerFactory.create(hand = tenpaiHand())
+        val notenPlayers = List(2) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
+        val table = FakeTableStateFactory.create(players = listOf(tenpaiPlayer, declaredPlayer) + notenPlayers, config = module.config)
+
+        val result = module.declareExhaustiveDraw(table, setOf(declaredPlayer.id))
+
+        assertEquals(setOf(tenpaiPlayer.id), result.tenpaiPlayerIds)
+        assertEquals(listOf(tenpaiPlayer.id), result.revealedHands.map { it.playerId })
+        val expectedDeltas = mapOf(tenpaiPlayer.id to 3000, declaredPlayer.id to -1000) + notenPlayers.associate { it.id to -1000 }
+        assertEquals(expectedDeltas, result.scoreDeltas)
+    }
+
+    /**
+     * 已立直的玩家不能宣告不聽。
+     */
+    @Test
+    fun `test declareExhaustiveDraw rejects noten declaration from a riichi player`() {
+        val riichiPlayer = FakeMahjongPlayerFactory.create(hand = tenpaiHand()).copy(
+            components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+        )
+        val others = List(3) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
+        val table = FakeTableStateFactory.create(players = listOf(riichiPlayer) + others, config = module.config)
+
+        assertFailsWith<IllegalArgumentException> { module.declareExhaustiveDraw(table, setOf(riichiPlayer.id)) }
+    }
+
+    /**
+     * 驗證莊家成立流局滿貫時，視為自摸滿貫由其餘三家各付 4000 點（總額 12000），
+     * 且即使其他玩家不聽也不進行不聽罰符收授。
+     */
+    @Test
+    fun `test resolveNagashiMangan dealer charges 4000 from each of the other three`() {
+        val dealer = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            hand = notTenpaiHand(),
+            discardPile = allYaochuuDiscardPile(),
+        )
+        val others = List(3) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
+        val table = FakeTableStateFactory.create(players = listOf(dealer) + others, config = module.config)
+
+        val result = module.resolveNagashiMangan(table)
+
+        assertEquals(setOf(dealer.id), result?.achieverPlayerIds)
+        val expectedDeltas = mapOf(dealer.id to 12000) + others.associate { it.id to -4000 }
+        assertEquals(expectedDeltas, result?.scoreDeltas)
+    }
+
+    /**
+     * 驗證閒家成立流局滿貫時，視為自摸滿貫，莊家付 4000 點、其餘兩位閒家各付 2000 點（總額 8000）。
+     */
+    @Test
+    fun `test resolveNagashiMangan non-dealer charges dealer double`() {
+        val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, hand = notTenpaiHand())
+        val achiever = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = notTenpaiHand(),
+            discardPile = allYaochuuDiscardPile(),
+        )
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, hand = notTenpaiHand())
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH, hand = notTenpaiHand())
+        val table = FakeTableStateFactory.create(players = listOf(dealer, achiever, west, north), config = module.config)
+
+        val result = module.resolveNagashiMangan(table)
+
+        assertEquals(setOf(achiever.id), result?.achieverPlayerIds)
+        val expectedDeltas = mapOf(achiever.id to 8000, dealer.id to -4000, west.id to -2000, north.id to -2000)
+        assertEquals(expectedDeltas, result?.scoreDeltas)
+    }
+
+    /**
+     * 驗證牌河中有一張么九牌被鳴走時，流局滿貫不成立，退回一般聽牌/不聽罰符路徑。
+     */
+    @Test
+    fun `test resolveNagashiMangan does not apply when a discard was taken`() {
+        val discardPile = allYaochuuDiscardPile().takeLast()
+        val player = FakeMahjongPlayerFactory.create(hand = tenpaiHand(), discardPile = discardPile)
+        val notenPlayers = List(3) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
+        val table = FakeTableStateFactory.create(players = listOf(player) + notenPlayers, config = module.config)
+
+        val result = module.declareExhaustiveDraw(table)
+
+        assertEquals(emptySet<Uuid>(), result.stickPotCollectorPlayerIds)
+        assertEquals(mapOf(player.id to 3000) + notenPlayers.associate { it.id to -1000 }, result.scoreDeltas)
+    }
+
+    /**
+     * 驗證牌河中含有非么九牌時，流局滿貫不成立，退回一般聽牌/不聽罰符路徑。
+     */
+    @Test
+    fun `test resolveNagashiMangan does not apply when a non-yaochuu tile was discarded`() {
+        val discardPile = RiichiDiscardPile()
+            .discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East))
+            .discardTile(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)))
+        val player = FakeMahjongPlayerFactory.create(hand = tenpaiHand(), discardPile = discardPile)
+        val notenPlayers = List(3) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
+        val table = FakeTableStateFactory.create(players = listOf(player) + notenPlayers, config = module.config)
+
+        val result = module.declareExhaustiveDraw(table)
+
+        assertEquals(emptySet<Uuid>(), result.stickPotCollectorPlayerIds)
+        assertEquals(mapOf(player.id to 3000) + notenPlayers.associate { it.id to -1000 }, result.scoreDeltas)
+    }
+
+    /**
+     * 驗證兩位非莊家同時成立流局滿貫時，各自的自摸滿貫結算會正確加總到同一份 `scoreDeltas`——
+     * 兩位成立者彼此之間互為對方結算裡的付款方，需要疊加而非互相覆蓋。
+     */
+    @Test
+    fun `test resolveNagashiMangan aggregates deltas for multiple non-dealers`() {
+        val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, hand = notTenpaiHand())
+        val south = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = notTenpaiHand(),
+            discardPile = allYaochuuDiscardPile(),
+        )
+        val west = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.WEST,
+            hand = notTenpaiHand(),
+            discardPile = allYaochuuDiscardPile(),
+        )
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH, hand = notTenpaiHand())
+        val table = FakeTableStateFactory.create(players = listOf(dealer, south, west, north), config = module.config)
+
+        val result = module.resolveNagashiMangan(table)
+
+        assertEquals(setOf(south.id, west.id), result?.achieverPlayerIds)
+        val expectedDeltas = mapOf(
+            dealer.id to -8000,
+            south.id to 6000,
+            west.id to 6000,
+            north.id to -4000,
+        )
+        assertEquals(expectedDeltas, result?.scoreDeltas)
+    }
+
+    /**
+     * 驗證多家和判定為流局時，日本麻將對應的具體流局原因固定為三家和了。
+     */
+    @Test
+    fun `test resolveMultiRonAbortiveDraw returns SanchaHou`() {
+        assertEquals(RiichiExhaustiveDrawReason.SanchaHou, module.resolveMultiRonAbortiveDraw())
+    }
+
+    /**
+     * 建立一份「全員恰好都打過一張牌」的桌況，供 [RiichiRuleModule.resolveSuufonRenda] 測試共用。
+     *
+     * @param discards 依座位順序（東南西北）各自的第一張捨牌。
+     */
+    private fun tableWithFirstDiscards(discards: List<Tile>): TableState {
+        val winds = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH)
+        val players = winds.zip(discards).map { (wind, tile) ->
+            FakeMahjongPlayerFactory.create(
+                initialSeat = wind,
+                discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(tile)),
+            )
+        }
+        return FakeTableStateFactory.create(players = players, config = module.config)
+    }
+
+    /**
+     * 驗證第一巡全員的第一張捨牌皆為同一種風牌時，成立四風連打。
+     */
+    @Test
+    fun `test resolveSuufonRenda returns SuufonRenda when all first discards are the same wind`() {
+        val table = tableWithFirstDiscards(List(4) { Tile.Honor.East })
+
+        assertEquals(RiichiExhaustiveDrawReason.SuufonRenda, module.resolveSuufonRenda(table))
+    }
+
+    /**
+     * 驗證第一張捨牌種類不同時，不成立四風連打。
+     */
+    @Test
+    fun `test resolveSuufonRenda returns null when first discards differ`() {
+        val table = tableWithFirstDiscards(listOf(Tile.Honor.East, Tile.Honor.East, Tile.Honor.South, Tile.Honor.East))
+
+        assertNull(module.resolveSuufonRenda(table))
+    }
+
+    /**
+     * 驗證還沒全員都打過牌時，不成立四風連打。
+     */
+    @Test
+    fun `test resolveSuufonRenda returns null when not everyone has discarded yet`() {
+        val players = listOf(
+            FakeMahjongPlayerFactory.create(
+                initialSeat = Wind.EAST,
+                discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+            ),
+            FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, discardPile = RiichiDiscardPile()),
+        )
+        val table = FakeTableStateFactory.create(players = players, config = module.config)
+
+        assertNull(module.resolveSuufonRenda(table))
+    }
+
+    /**
+     * 驗證已經有玩家鳴牌（不是第一巡）時，不成立四風連打。
+     */
+    @Test
+    fun `test resolveSuufonRenda returns null when someone has already melded`() {
+        val meldTiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
+        val meldedHand = Hand(tiles = meldTiles.drop(1)).call(
+            type = MeldType.Pon,
+            tiles = meldTiles,
+            source = meldTiles[0],
+            direction = RelativeDirection.Left,
+            publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(),
+            faceDownTileIds = emptySet(),
+        )
+        val players = listOf(
+            FakeMahjongPlayerFactory.create(
+                initialSeat = Wind.EAST,
+                hand = meldedHand,
+                discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+            ),
+            FakeMahjongPlayerFactory.create(
+                initialSeat = Wind.SOUTH,
+                discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+            ),
+        )
+        val table = FakeTableStateFactory.create(players = players, config = module.config)
+
+        assertNull(module.resolveSuufonRenda(table))
+    }
+
+    /**
+     * 驗證全員皆已宣告立直時，成立四家立直。
+     */
+    @Test
+    fun `test resolveSuuchaRiichi returns SuuchaRiichi when everyone is riichi`() {
+        val players = List(4) {
+            FakeMahjongPlayerFactory.create(
+                components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+            )
+        }
+        val table = FakeTableStateFactory.create(players = players, config = module.config)
+
+        assertEquals(RiichiExhaustiveDrawReason.SuuchaRiichi, module.resolveSuuchaRiichi(table))
+    }
+
+    /**
+     * 驗證仍有玩家未立直時，不成立四家立直。
+     */
+    @Test
+    fun `test resolveSuuchaRiichi returns null when not everyone is riichi`() {
+        val players = List(3) {
+            FakeMahjongPlayerFactory.create(
+                components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+            )
+        } + FakeMahjongPlayerFactory.create(components = riichiDeclarationComponents())
+        val table = FakeTableStateFactory.create(players = players, config = module.config)
+
+        assertNull(module.resolveSuuchaRiichi(table))
+    }
+
+    /**
+     * 建立指定 [type] 的四張牌槓子。
+     *
+     * @param type 槓子種類。
+     * @return 測試用槓子副露。
+     */
+    private fun kanMeld(type: MeldType): Meld {
+        val tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)) }
+        return Meld(type, tiles, sourceDirection = RelativeDirection.Self, publiclyRevealedTileIds = tiles.map { it.id }.toSet(), faceDownTileIds = emptySet())
+    }
+
+    /**
+     * 建立持有 [count] 組暗槓的測試玩家。
+     *
+     * @param count 暗槓數量。
+     * @return 持有指定槓數的測試玩家。
+     */
+    private fun playerWithKans(count: Int) = FakeMahjongPlayerFactory.create(
+        hand = Hand(melds = List(count) { kanMeld(MeldType.ClosedKan) }),
+    )
+
+    /**
+     * 驗證全場合計槓了 4 次、且分屬不同玩家時，成立四槓散了。
+     */
+    @Test
+    fun `test resolveSuukanNagare returns SuukanNagare when 4 kans belong to different players`() {
+        val players = List(4) { playerWithKans(count = 1) }
+        val table = FakeTableStateFactory.create(players = players, config = module.config)
+
+        assertEquals(RiichiExhaustiveDrawReason.SuukanNagare, module.resolveSuukanNagare(table))
+    }
+
+    /**
+     * 驗證全場合計槓了 4 次以上（5 次）、且分屬不同玩家時，仍成立四槓散了。
+     */
+    @Test
+    fun `test resolveSuukanNagare returns SuukanNagare when more than 4 kans belong to different players`() {
+        val players = listOf(playerWithKans(count = 2)) + List(3) { playerWithKans(count = 1) }
+        val table = FakeTableStateFactory.create(players = players, config = module.config)
+
+        assertEquals(RiichiExhaustiveDrawReason.SuukanNagare, module.resolveSuukanNagare(table))
+    }
+
+    /**
+     * 驗證 4 個槓子都由同一位玩家達成時，不成立四槓散了（該玩家可能正在做四槓子役滿）。
+     */
+    @Test
+    fun `test resolveSuukanNagare returns null when all 4 kans belong to a single player`() {
+        val players = listOf(playerWithKans(count = 4)) + List(3) { FakeMahjongPlayerFactory.create() }
+        val table = FakeTableStateFactory.create(players = players, config = module.config)
+
+        assertNull(module.resolveSuukanNagare(table))
+    }
+
+    /**
+     * 驗證全場合計未滿 4 個槓子時，不成立四槓散了。
+     */
+    @Test
+    fun `test resolveSuukanNagare returns null when fewer than 4 kans total`() {
+        val players = List(3) { playerWithKans(count = 1) } + FakeMahjongPlayerFactory.create()
+        val table = FakeTableStateFactory.create(players = players, config = module.config)
+
+        assertNull(module.resolveSuukanNagare(table))
+    }
+
+    /** 驗證指示牌的下一張數牌被判定為寶牌，循環邊界（9 → 1）也一併驗證。 */
+    @Test
+    fun `test isBonusTile matches the tile following a numeric dora indicator`() {
+        val indicator = Tile.Numeric(Tile.Suit.Character, 8)
+        val dora = Tile.Numeric(Tile.Suit.Character, 9)
+        val wraparoundIndicator = Tile.Numeric(Tile.Suit.Dot, 9)
+        val wraparoundDora = Tile.Numeric(Tile.Suit.Dot, 1)
+
+        assertTrue(module.isBonusTile(TileFaceView(dora), listOf(riichiDoraIndicatorFace(indicator))))
+        assertTrue(module.isBonusTile(TileFaceView(wraparoundDora), listOf(riichiDoraIndicatorFace(wraparoundIndicator))))
+        assertFalse(module.isBonusTile(TileFaceView(indicator), listOf(riichiDoraIndicatorFace(indicator))))
+    }
+
+    /** 驗證字牌指示牌的循環方向（東→南→西→北→東、白→發→中→白）。 */
+    @Test
+    fun `test isBonusTile matches the tile following an honor dora indicator`() {
+        assertTrue(module.isBonusTile(TileFaceView(Tile.Honor.South), listOf(riichiDoraIndicatorFace(Tile.Honor.East))))
+        assertTrue(module.isBonusTile(TileFaceView(Tile.Honor.East), listOf(riichiDoraIndicatorFace(Tile.Honor.North))))
+        assertTrue(module.isBonusTile(TileFaceView(Tile.Honor.Green), listOf(riichiDoraIndicatorFace(Tile.Honor.White))))
+        assertTrue(module.isBonusTile(TileFaceView(Tile.Honor.White), listOf(riichiDoraIndicatorFace(Tile.Honor.Red))))
+    }
+
+    /** 驗證帶赤寶牌特徵的牌無論目前的寶牌指示牌是什麼都成立。 */
+    @Test
+    fun `test isBonusTile matches red dora regardless of indicators`() {
+        val redFive = riichiRedFiveFace(Tile.Suit.Character)
+
+        assertTrue(module.isBonusTile(redFive, emptyList()))
+        assertTrue(module.isBonusTile(redFive, listOf(riichiDoraIndicatorFace(Tile.Numeric(Tile.Suit.Bamboo, 1)))))
+    }
+
+    /** 驗證赤五指示牌只會強調同花色的六，不會把普通五誤標成指示寶牌。 */
+    @Test
+    fun `test isBonusTile resolves red five dora indicators by their base face`() {
+        Tile.Suit.entries.forEach { suit ->
+            val indicator = riichiRedFiveFace(suit).copy(views = riichiDoraIndicatorFace(Tile.Numeric(suit, 5)).views)
+
+            assertTrue(module.isBonusTile(TileFaceView(Tile.Numeric(suit, 6)), listOf(indicator)))
+            assertFalse(module.isBonusTile(TileFaceView(Tile.Numeric(suit, 5)), listOf(indicator)))
+        }
+    }
+
+    /** 驗證看得到牌面、但沒有指示牌特徵的牌山牌不會讓下一張成為寶牌。 */
+    @Test
+    fun `test isBonusTile ignores visible wall tiles that are not indicators`() {
+        assertFalse(module.isBonusTile(TileFaceView(Tile.Numeric(Tile.Suit.Character, 2)), listOf(TileFaceView(Tile.Numeric(Tile.Suit.Character, 1)))))
+    }
+
+    /** 驗證沒有翻開任何指示牌、且不是赤寶牌時，一般的牌不成立寶牌。 */
+    @Test
+    fun `test isBonusTile returns false when nothing matches`() {
+        val five = TileFaceView(Tile.Numeric(Tile.Suit.Character, 5))
+
+        assertFalse(module.isBonusTile(five, emptyList()))
+        assertFalse(module.isBonusTile(five, listOf(riichiDoraIndicatorFace(Tile.Numeric(Tile.Suit.Character, 1)))))
+    }
+}

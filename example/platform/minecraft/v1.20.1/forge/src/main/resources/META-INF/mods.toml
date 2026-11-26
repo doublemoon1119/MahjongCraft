@@ -1,0 +1,45 @@
+modLoader = "kotlinforforge"
+loaderVersion = "${dependencyRequirements.kotlinForForge}"
+license = "${license}"
+issueTrackerURL = "${issues}"
+
+[[mods]]
+modId = "${id}"
+version = "${version}"
+displayName = "${name}"
+displayURL = "${homepage}"
+logoFile = "assets/${id}/icon.png"
+authors = "${author}"
+description = """${description}"""
+
+[modproperties.${id}]
+"mahjongcraft:extension" = "com.doublemoon1119.mahjongcraft.example.minecraft.mod.ExampleNativeMahjongExtension"
+"mahjongcraft:client_extension" = "com.doublemoon1119.mahjongcraft.example.minecraft.mod.ExampleNativeMahjongClientExtension"
+
+[[dependencies.${id}]]
+modId = "mahjongcraft"
+mandatory = true
+versionRange = "[${version}]"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.${id}]]
+modId = "forge"
+mandatory = true
+versionRange = "${dependencyRequirements.forge}"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.${id}]]
+modId = "minecraft"
+mandatory = true
+versionRange = "${dependencyRequirements.minecraft}"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.${id}]]
+modId = "kotlinforforge"
+mandatory = true
+versionRange = "${dependencyRequirements.kotlinForForge}"
+ordering = "NONE"
+side = "BOTH"

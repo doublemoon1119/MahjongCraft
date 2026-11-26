@@ -1,0 +1,226 @@
+package com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.seating
+
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.ExampleFurnitureIds
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.entity.ExampleSeatGeometry
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.seating.ExampleFurnitureSeatRules
+import com.doublemoon1119.mahjongcraft.example.minecraft.furniture.seating.ExampleSeatSupportCleanup
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.ExampleFurnitureBlocks
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.ExampleFurnitureEntities
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.entity.ExampleChairSeatEntity
+import com.doublemoon1119.mahjongcraft.example.minecraft.mod.furniture.entity.ExampleCushionEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatGeometry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatIdentity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatTarget
+import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.level.block.state.properties.BlockStateProperties
+import net.minecraft.world.phys.AABB
+
+/** 建立椅子、長凳與坐墊的座位 provider。登記時不讀取原生世界。 */
+object ExampleFurnitureSeatProviders {
+    /** 建立三種家具的 provider 描述。 */
+    fun definitions(): List<RegisteredSeatProvider<ServerLevel, Entity>> = listOf(
+        RegisteredSeatProvider(
+            id = ExampleFurnitureIds.CHAIR,
+            provider = ExampleChairSeatProvider(ExampleChairSeatService(), ExampleFurnitureIds.CHAIR),
+            priority = 0,
+        ),
+        RegisteredSeatProvider(
+            id = ExampleFurnitureIds.BENCH,
+            provider = ExampleChairSeatProvider(ExampleChairSeatService(), ExampleFurnitureIds.BENCH),
+            priority = 0,
+        ),
+        RegisteredSeatProvider(
+            id = ExampleFurnitureIds.CUSHION,
+            provider = ExampleCushionSeatProvider(),
+            priority = 0,
+        ),
+    )
+}
+
+/**
+ * 只解析指定標準席位方塊的椅子或長凳。
+ *
+ * @property service 手動右鍵與自動入座共用的椅子服務。
+ * @property furnitureId 本 provider 辨識的單格家具。
+ */
+private class ExampleChairSeatProvider(
+    private val service: ExampleChairSeatService,
+    private val furnitureId: String,
+) : SeatProvider<ServerLevel, Entity> {
+    /** 建立指定位置的單一椅子座位目標。 */
+    override fun resolve(world: ServerLevel, request: SeatRequest): List<SeatTarget<ServerLevel, Entity>> {
+        if (request.dimensionId != world.dimension().location().toString()) return emptyList()
+        if (!ExampleFurnitureEntities.isRegistered()) return emptyList()
+        if (!ExampleFurnitureBlocks.isRegistered()) return emptyList()
+        val pos = BlockPos.containing(
+            request.seat.x,
+            request.seat.y,
+            request.seat.z,
+        )
+        if (!world.chunkSource.hasChunk(pos.x shr 4, pos.z shr 4)) return emptyList()
+        val expected = if (furnitureId == ExampleFurnitureIds.BENCH) ExampleFurnitureBlocks.bench else ExampleFurnitureBlocks.chair
+        if (world.getBlockState(pos).block !== expected) return emptyList()
+        return listOf(
+            element = ExampleChairSeatTarget(
+                world = world,
+                pos = pos,
+                request = request,
+                service = service,
+            ),
+        )
+    }
+}
+
+/**
+ * 範例方塊椅子的座位目標，每次入座前重新檢查所在方塊。
+ *
+ * @property world 解析時的世界，禁止跨世界重用目標。
+ * @property pos 椅子所在的固定方塊位置。
+ * @property request 本次標準席位與面向要求。
+ * @property service 椅子的入座服務。
+ */
+private class ExampleChairSeatTarget(
+    private val world: ServerLevel,
+    private val pos: BlockPos,
+    private val request: SeatRequest,
+    private val service: ExampleChairSeatService,
+) : SeatTarget<ServerLevel, Entity> {
+    override val identity: SeatIdentity = SeatIdentity(
+        dimensionId = world.dimension().location().toString(),
+        kind = "minecraft:block",
+        key = "${pos.x},${pos.y},${pos.z}",
+    )
+
+    /** 回報椅子實際乘坐者腳底與標準席位面向。 */
+    override fun geometry(world: ServerLevel, rider: Entity): SeatGeometry = SeatGeometry(
+        x = pos.x + 0.5,
+        y = ExampleSeatGeometry.passengerFeetY(ExampleSeatGeometry.chairSeatY(pos.y)),
+        z = pos.z + 0.5,
+        yaw = if (world.getBlockState(pos).`is`(ExampleFurnitureBlocks.bench)) world.getBlockState(pos).getValue(BlockStateProperties.HORIZONTAL_FACING).toYRot() else request.seat.yaw,
+    )
+
+    /** 查詢椅子是否有效、占用或可用。 */
+    override fun inspect(world: ServerLevel, rider: Entity): SeatState {
+        if (world !== this.world || rider.level() !== world || !world.chunkSource.hasChunk(pos.x shr 4, pos.z shr 4)) return SeatState.INVALID
+        if (!ExampleFurnitureBlocks.isSeat(world.getBlockState(pos))) return SeatState.INVALID
+        val own = rider.vehicle as? ExampleChairSeatEntity
+        if (own != null && own.level() === world && own.blockPosition() == pos) return SeatState.SEATED
+        if (ExampleSeatSupportCleanup.isOccupied(ExampleChairSeatEntity.seatsAt(world, pos), Entity::isVehicle)) return SeatState.OCCUPIED
+        if (rider.isPassenger) return SeatState.UNSUPPORTED
+        return if (service.canSit(
+                world = world,
+                pos = pos,
+                rider = rider,
+            )
+        ) {
+            SeatState.AVAILABLE
+        } else {
+            SeatState.BLOCKED
+        }
+    }
+
+    /** 重新檢查後讓乘坐者坐上椅子。 */
+    override fun trySit(world: ServerLevel, rider: Entity): SeatState {
+        val current = inspect(world, rider)
+        return when (current) {
+            SeatState.AVAILABLE -> if (service.sit(
+                    world = world,
+                    pos = pos,
+                    rider = rider,
+                    yaw = geometry(world, rider).yaw,
+                )
+            ) {
+                SeatState.SEATED
+            } else {
+                SeatState.FAILED
+            }
+            else -> current
+        }
+    }
+}
+
+/** 在標準席位附近查詢已載入範圍內範例坐墊的 provider。 */
+private class ExampleCushionSeatProvider : SeatProvider<ServerLevel, Entity> {
+    /** 只查標準席位附近已載入的坐墊。實際乘坐幾何由本體再次篩選。 */
+    override fun resolve(world: ServerLevel, request: SeatRequest): List<SeatTarget<ServerLevel, Entity>> {
+        if (request.dimensionId != world.dimension().location().toString()) return emptyList()
+        if (!ExampleFurnitureEntities.isRegistered()) return emptyList()
+        val center = request.seat
+        val box = AABB(
+            center.x - 1.0,
+            center.y - 2.0,
+            center.z - 1.0,
+            center.x + 1.0,
+            center.y + 2.0,
+            center.z + 1.0,
+        )
+        return world.getEntitiesOfClass(ExampleCushionEntity::class.java, box) { !it.isRemoved }
+            .map {
+                ExampleCushionSeatTarget(
+                    world = world,
+                    cushion = it,
+                    request = request,
+                )
+            }
+    }
+}
+
+/**
+ * 範例坐墊的座位目標，使用坐墊目前位置，不把家具拉回理想位置。
+ *
+ * @property world 解析時的世界。
+ * @property cushion 作為座位本體的坐墊實體。
+ * @property request 本次標準席位與面向要求。
+ */
+private class ExampleCushionSeatTarget(
+    private val world: ServerLevel,
+    private val cushion: ExampleCushionEntity,
+    private val request: SeatRequest,
+) : SeatTarget<ServerLevel, Entity> {
+    override val identity: SeatIdentity = ExampleFurnitureSeatRules.cushionIdentity(
+        dimensionId = world.dimension().location().toString(),
+        uuidAsString = cushion.stringUUID,
+    )
+
+    /** 回報坐墊目前實際位置與標準席位面向。 */
+    override fun geometry(world: ServerLevel, rider: Entity): SeatGeometry = SeatGeometry(
+        x = cushion.x,
+        y = ExampleSeatGeometry.cushionFeetY(cushion.y),
+        z = cushion.z,
+        yaw = request.seat.yaw,
+    )
+
+    /** 查詢與其他入口相同的占用與碰撞規則。 */
+    override fun inspect(world: ServerLevel, rider: Entity): SeatState = if (world !== this.world) {
+        SeatState.INVALID
+    } else {
+        ExampleCushionSeatService.inspect(
+            world = world,
+            cushion = cushion,
+            rider = rider,
+        )
+    }
+
+    /** 與真人及人偶建立共用同一個掛載、定位及失敗還原流程。 */
+    override fun trySit(world: ServerLevel, rider: Entity): SeatState {
+        val current = inspect(world, rider)
+        if (current != SeatState.AVAILABLE) return current
+        return if (ExampleCushionSeatService.sit(
+                world = world,
+                cushion = cushion,
+                rider = rider,
+                yaw = request.seat.yaw,
+            )
+        ) {
+            SeatState.SEATED
+        } else {
+            SeatState.FAILED
+        }
+    }
+}

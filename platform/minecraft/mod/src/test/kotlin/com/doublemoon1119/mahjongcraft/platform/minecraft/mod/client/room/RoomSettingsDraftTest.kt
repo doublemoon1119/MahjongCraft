@@ -1,0 +1,449 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.room
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatorHandVisibility
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigFieldDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationValue
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
+
+/** 驗證房間設定草稿的狀態轉換與按鈕可用性判定。 */
+class RoomSettingsDraftTest {
+    /** 剛建立草稿且未編輯時，只有 Done 可用。 */
+    @Test
+    fun `offers only done before anything is edited`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+
+        assertFalse(draft.hasUnsavedChanges(AUTHORITATIVE))
+        assertFalse(draft.canApply(AUTHORITATIVE, FULL_ROOM))
+        assertFalse(draft.canUndo(AUTHORITATIVE))
+        assertTrue(draft.canDone(FULL_ROOM))
+    }
+
+    /** 草稿換成人數上限較少的規則、房間人數超過上限時，Apply 與 Done 停用。人數沒有超過時照常可用。 */
+    @Test
+    fun `blocks apply and done while the room has more players than the drafted rule allows`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+
+        draft.resetTo(THREE_PLAYER)
+
+        assertTrue(draft.exceedsPlayerLimit(FULL_ROOM))
+        assertFalse(draft.canApply(AUTHORITATIVE, FULL_ROOM))
+        assertFalse(draft.canDone(FULL_ROOM))
+        assertTrue(draft.canUndo(AUTHORITATIVE))
+        assertFalse(draft.exceedsPlayerLimit(THREE_PLAYER_ROOM))
+        assertTrue(draft.canApply(AUTHORITATIVE, THREE_PLAYER_ROOM))
+        assertTrue(draft.canDone(THREE_PLAYER_ROOM))
+    }
+
+    /** 房間人數少於規則的人數下限時照常可以套用，之後還能補人。 */
+    @Test
+    fun `allows apply while the room still has fewer players than the rule needs`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+
+        draft.resetTo(THREE_PLAYER)
+
+        assertFalse(draft.exceedsPlayerLimit(SINGLE_PLAYER_ROOM))
+        assertTrue(draft.canApply(AUTHORITATIVE, SINGLE_PLAYER_ROOM))
+    }
+
+    /** 已有草稿時再次進入設定頁不覆蓋編輯中的內容。 */
+    @Test
+    fun `keeps an existing draft when re-entering the page`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+        draft.updateField(ruleDecisionSecondsField(), GameConfigPresentationValue.IntegerValue(45))
+
+        draft.beginIfAbsent(AUTHORITATIVE)
+
+        assertEquals(45.seconds, draft.config?.flowConfig?.ruleDecision?.base)
+    }
+
+    /** 編輯欄位後 Apply 與 Undo 開啟，改回與權威相同時再次關閉。 */
+    @Test
+    fun `enables apply and undo only while the draft differs`() {
+        val draft = RoomSettingsDraft()
+        val authoritative = withRuleDecisionSeconds(30)
+        draft.beginIfAbsent(authoritative)
+
+        draft.updateField(ruleDecisionSecondsField(), GameConfigPresentationValue.IntegerValue(45))
+        assertTrue(draft.canApply(authoritative, FULL_ROOM))
+        assertTrue(draft.canUndo(authoritative))
+
+        draft.updateField(ruleDecisionSecondsField(), GameConfigPresentationValue.IntegerValue(30))
+        assertFalse(draft.canApply(authoritative, FULL_ROOM))
+        assertFalse(draft.canUndo(authoritative))
+    }
+
+    /** updater 拋例外時欄位標記為無效、草稿不變，Apply 與 Done 停用。 */
+    @Test
+    fun `marks the field invalid when the updater rejects the value`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+
+        draft.updateField(rejectingField(), GameConfigPresentationValue.IntegerValue(1))
+
+        assertTrue(draft.isFieldInvalid(REJECTING_FIELD_ID))
+        assertTrue(draft.hasInvalidFields)
+        assertEquals(AUTHORITATIVE, draft.config)
+        assertFalse(draft.canApply(AUTHORITATIVE, FULL_ROOM))
+        assertFalse(draft.canDone(FULL_ROOM))
+        assertTrue(draft.canUndo(AUTHORITATIVE), "Expected undo to stay available while a field is invalid.")
+    }
+
+    /** 同一欄位改回合法值後清除該欄位的無效標記。 */
+    @Test
+    fun `clears the invalid mark once the same field becomes valid`() {
+        val draft = RoomSettingsDraft()
+        val field = ruleDecisionSecondsField()
+        draft.beginIfAbsent(AUTHORITATIVE)
+        draft.markNumericInput(field, GameConfigEditorSpec.IntegerInput(minimum = 10, maximum = 60), "999")
+        assertTrue(draft.isFieldInvalid(field.id))
+
+        draft.markNumericInput(field, GameConfigEditorSpec.IntegerInput(minimum = 10, maximum = 60), "45")
+
+        assertFalse(draft.isFieldInvalid(field.id))
+        assertFalse(draft.hasInvalidFields)
+        assertTrue(draft.canDone(FULL_ROOM))
+    }
+
+    /** 編輯另一個欄位不會清除既有欄位的無效標記。 */
+    @Test
+    fun `keeps another field invalid while editing a different one`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+        draft.updateField(rejectingField(), GameConfigPresentationValue.IntegerValue(1))
+
+        draft.updateField(ruleDecisionSecondsField(), GameConfigPresentationValue.IntegerValue(45))
+
+        assertTrue(draft.isFieldInvalid(REJECTING_FIELD_ID))
+        assertTrue(draft.hasInvalidFields)
+        assertFalse(draft.canDone(FULL_ROOM), "Expected done to be blocked while a field is invalid.")
+        assertEquals(45.seconds, draft.config?.flowConfig?.ruleDecision?.base, "Expected an edit to a valid field to still reach the draft.")
+    }
+
+    /** 第一段驗證擋下超出範圍的輸入，且不改動草稿。 */
+    @Test
+    fun `rejects an out of range numeric input without touching the draft`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+        val field = ruleDecisionSecondsField()
+        val editor = GameConfigEditorSpec.IntegerInput(minimum = 10, maximum = 60)
+
+        assertFalse(draft.markNumericInput(field, editor, "999"))
+        assertTrue(draft.isFieldInvalid(field.id))
+        assertEquals(AUTHORITATIVE, draft.config)
+        assertFalse(draft.canDone(FULL_ROOM))
+    }
+
+    /** 第一段通過後第二段才套用 updater。 */
+    @Test
+    fun `applies the numeric input once it is in range`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+        val field = ruleDecisionSecondsField()
+        val editor = GameConfigEditorSpec.IntegerInput(minimum = 10, maximum = 60)
+
+        assertTrue(draft.markNumericInput(field, editor, "45"))
+        draft.applyNumericInput(field, "45")
+
+        assertFalse(draft.isFieldInvalid(field.id))
+        assertEquals(45.seconds, draft.config?.flowConfig?.ruleDecision?.base)
+        assertTrue(draft.canApply(AUTHORITATIVE, FULL_ROOM))
+    }
+
+    /** 可為空的整數欄位接受空字串。 */
+    @Test
+    fun `accepts an empty string for a nullable integer field`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+        val editor = GameConfigEditorSpec.IntegerInput(minimum = 10, maximum = 60, nullable = true)
+
+        assertTrue(draft.markNumericInput(ruleDecisionSecondsField(), editor, ""))
+    }
+
+    /** 關閉旁觀時一併關閉旁觀者手牌公開。 */
+    @Test
+    fun `hides spectator hands when spectating is disabled`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+
+        draft.updateField(spectatingPolicyField(), GameConfigPresentationValue.BooleanValue(false))
+
+        assertEquals(SpectatingPolicy.DISABLED, draft.config?.flowConfig?.spectatingPolicy)
+        assertEquals(SpectatorHandVisibility.HIDDEN, draft.config?.flowConfig?.spectatorHandVisibility)
+    }
+
+    /** 同一條一致性規則也套用在預設值上。 */
+    @Test
+    fun `normalizes a supplied config with the same rule`() {
+        val draft = RoomSettingsDraft()
+        val disabled = AUTHORITATIVE.copy(
+            flowConfig = AUTHORITATIVE.flowConfig.copy(spectatingPolicy = SpectatingPolicy.DISABLED),
+        )
+
+        assertEquals(SpectatorHandVisibility.HIDDEN, draft.normalized(disabled).flowConfig.spectatorHandVisibility)
+    }
+
+    /** Reset 與規則切換清除既有的無效欄位標記。 */
+    @Test
+    fun `clears invalid marks when resetting`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+        draft.updateField(rejectingField(), GameConfigPresentationValue.IntegerValue(1))
+
+        draft.resetTo(AUTHORITATIVE)
+
+        assertFalse(draft.hasInvalidFields)
+        assertFalse(draft.isFieldInvalid(REJECTING_FIELD_ID))
+    }
+
+    /** 權威設定沒有變動時不做任何反應。 */
+    @Test
+    fun `ignores an authoritative update that changes nothing`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+
+        assertIs<RoomSettingsDraft.Outcome.Unchanged>(draft.onAuthoritativeChanged(AUTHORITATIVE))
+        assertFalse(draft.isStale)
+    }
+
+    /** 使用者尚未編輯時直接採用新的權威設定。 */
+    @Test
+    fun `adopts the new authoritative config when the draft was untouched`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+        val updated = withRuleDecisionSeconds(45)
+
+        val outcome = draft.onAuthoritativeChanged(updated)
+
+        assertEquals(RoomSettingsDraft.Outcome.Adopted(returnToRoom = false), outcome)
+        assertEquals(updated, draft.config)
+        assertFalse(draft.isStale)
+    }
+
+    /** 送出後收到與草稿一致的權威回覆時採用並要求返回房間頁。 */
+    @Test
+    fun `reports the pending return once the applied config comes back`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+        draft.updateField(ruleDecisionSecondsField(), GameConfigPresentationValue.IntegerValue(45))
+        draft.markReturnToRoomAfterApply()
+
+        val outcome = draft.onAuthoritativeChanged(withRuleDecisionSeconds(45))
+
+        assertEquals(RoomSettingsDraft.Outcome.Adopted(returnToRoom = true), outcome)
+        assertFalse(draft.isReturningToRoomAfterApply)
+        assertFalse(draft.isStale)
+    }
+
+    /** 草稿與權威同時被改動時標記為過期並取消待返回狀態。 */
+    @Test
+    fun `marks the draft stale when both sides changed`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+        draft.updateField(ruleDecisionSecondsField(), GameConfigPresentationValue.IntegerValue(45))
+        draft.markReturnToRoomAfterApply()
+
+        val outcome = draft.onAuthoritativeChanged(withRuleDecisionSeconds(20))
+
+        assertIs<RoomSettingsDraft.Outcome.BecameStale>(outcome)
+        assertTrue(draft.isStale)
+        assertFalse(draft.isReturningToRoomAfterApply)
+        assertEquals(45.seconds, draft.config?.flowConfig?.ruleDecision?.base, "Expected the draft contents to survive becoming stale.")
+    }
+
+    /** 過期後只剩 Undo 可用。 */
+    @Test
+    fun `leaves only undo available once stale`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+        draft.updateField(ruleDecisionSecondsField(), GameConfigPresentationValue.IntegerValue(45))
+        draft.onAuthoritativeChanged(withRuleDecisionSeconds(20))
+        val authoritative = withRuleDecisionSeconds(20)
+
+        assertFalse(draft.canApply(authoritative, FULL_ROOM))
+        assertFalse(draft.canDone(FULL_ROOM))
+        assertTrue(draft.canUndo(authoritative))
+    }
+
+    /** Undo 還原權威設定並清除過期與待返回狀態。 */
+    @Test
+    fun `restores the authoritative config and clears every pending flag`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+        draft.updateField(rejectingField(), GameConfigPresentationValue.IntegerValue(1))
+        draft.updateField(ruleDecisionSecondsField(), GameConfigPresentationValue.IntegerValue(45))
+        draft.markReturnToRoomAfterApply()
+        draft.onAuthoritativeChanged(withRuleDecisionSeconds(20))
+
+        draft.restoreAuthoritative(AUTHORITATIVE)
+
+        assertEquals(AUTHORITATIVE, draft.config)
+        assertFalse(draft.isStale)
+        assertFalse(draft.hasInvalidFields)
+        assertFalse(draft.isReturningToRoomAfterApply)
+    }
+
+    /** 規則設定讓欄位消失時，該欄位留下的無效標記不應繼續阻擋送出。 */
+    @Test
+    fun `removes invalid flags for fields no longer presented`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+        draft.updateField(rejectingField(), GameConfigPresentationValue.IntegerValue(1))
+
+        assertTrue(draft.hasInvalidFields)
+
+        draft.replaceConfig(AUTHORITATIVE, availableFieldIds = emptySet())
+
+        assertFalse(draft.hasInvalidFields)
+    }
+
+    /** 套用玩法時採用新設定，只清除玩法所設定欄位的無效標記。 */
+    @Test
+    fun `applying a variant clears invalid flags only for the fields it sets`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+        draft.updateField(rejectingField(), GameConfigPresentationValue.IntegerValue(1))
+
+        draft.applyVariant(updated = THREE_PLAYER, variantFieldIds = setOf("mahjongcraft:other"))
+
+        assertEquals(THREE_PLAYER, draft.config)
+        assertTrue(draft.isFieldInvalid(REJECTING_FIELD_ID))
+
+        draft.applyVariant(updated = AUTHORITATIVE, variantFieldIds = setOf(REJECTING_FIELD_ID))
+
+        assertEquals(AUTHORITATIVE, draft.config)
+        assertFalse(draft.hasInvalidFields)
+    }
+
+    /** 房間清空時丟棄草稿。 */
+    @Test
+    fun `drops the draft when the room is cleared`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+        draft.updateField(rejectingField(), GameConfigPresentationValue.IntegerValue(1))
+
+        draft.clear()
+
+        assertNull(draft.config)
+        assertFalse(draft.hasInvalidFields)
+        assertIs<RoomSettingsDraft.Outcome.Unchanged>(draft.onAuthoritativeChanged(withRuleDecisionSeconds(45)))
+    }
+
+    /** Reset 只在草稿與預設值不同時可用。 */
+    @Test
+    fun `enables reset only when the draft differs from the defaults`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+
+        assertFalse(draft.canReset(AUTHORITATIVE))
+        assertFalse(draft.canReset(null))
+        assertTrue(draft.canReset(withRuleDecisionSeconds(45)))
+    }
+
+    /** 測試共用的設定與欄位資料。 */
+    private companion object {
+        /** 測試用的權威設定。 */
+        val AUTHORITATIVE = GameConfig(RiichiRuleConfig(), GameFlowConfig())
+
+        /** 三人日麻的設定。 */
+        val THREE_PLAYER = GameConfig(ThreePlayerRiichiRuleConfig(), GameFlowConfig())
+
+        /** 四人坐滿的房間人數。 */
+        const val FULL_ROOM = 4
+
+        /** 三人坐滿的房間人數。 */
+        const val THREE_PLAYER_ROOM = 3
+
+        /** 只有房主一人的房間人數。 */
+        const val SINGLE_PLAYER_ROOM = 1
+
+        /** 一定會被 updater 拒絕的欄位 ID。 */
+        const val REJECTING_FIELD_ID = "mahjongcraft:rejecting"
+
+        /**
+         * 依規則選擇秒數建立權威設定。
+         *
+         * @param seconds 規則選擇秒數。
+         * @return 僅更新規則選擇秒數的權威設定。
+         */
+        fun withRuleDecisionSeconds(seconds: Int): GameConfig = AUTHORITATIVE.copy(
+            flowConfig = AUTHORITATIVE.flowConfig.copy(ruleDecision = RuleDecisionConfig(seconds.seconds)),
+        )
+
+        /**
+         * 建立可更新規則選擇秒數的測試欄位。
+         *
+         * @return 讀寫規則選擇秒數的整數欄位定義。
+         */
+        fun ruleDecisionSecondsField(): GameConfigFieldDefinition = GameConfigFieldDefinition(
+            id = "mahjongcraft:rule_decision_seconds",
+            categoryId = "mahjongcraft:flow",
+            nameTranslationKey = "test.name",
+            descriptionTranslationKey = "test.description",
+            editor = GameConfigEditorSpec.IntegerInput(minimum = 10, maximum = 60),
+            isEditable = true,
+            read = { GameConfigPresentationValue.IntegerValue(it.flowConfig.ruleDecision?.base?.inWholeSeconds?.toInt()) },
+            update = { config, value ->
+                val seconds = (value as GameConfigPresentationValue.IntegerValue).number ?: error("missing number")
+                config.copy(
+                    flowConfig = config.flowConfig.copy(ruleDecision = RuleDecisionConfig(seconds.seconds)),
+                )
+            },
+        )
+
+        /**
+         * 建立可切換旁觀開關的測試欄位。
+         *
+         * @return 讀寫旁觀政策的布林欄位定義。
+         */
+        fun spectatingPolicyField(): GameConfigFieldDefinition = GameConfigFieldDefinition(
+            id = "mahjongcraft:spectating",
+            categoryId = "mahjongcraft:flow",
+            nameTranslationKey = "test.name",
+            descriptionTranslationKey = "test.description",
+            editor = GameConfigEditorSpec.BooleanToggle,
+            isEditable = true,
+            read = { GameConfigPresentationValue.BooleanValue(it.flowConfig.spectatingPolicy == SpectatingPolicy.ENABLED) },
+            update = { config, value ->
+                val enabled = (value as GameConfigPresentationValue.BooleanValue).enabled
+                config.copy(
+                    flowConfig = config.flowConfig.copy(
+                        spectatingPolicy = if (enabled) SpectatingPolicy.ENABLED else SpectatingPolicy.DISABLED,
+                    ),
+                )
+            },
+        )
+
+        /**
+         * 建立 updater 固定拋出例外的測試欄位。
+         *
+         * @return 用於驗證無效欄位狀態的欄位定義。
+         */
+        fun rejectingField(): GameConfigFieldDefinition = GameConfigFieldDefinition(
+            id = REJECTING_FIELD_ID,
+            categoryId = "mahjongcraft:flow",
+            nameTranslationKey = "test.name",
+            descriptionTranslationKey = "test.description",
+            editor = GameConfigEditorSpec.IntegerInput(minimum = 0, maximum = 10),
+            isEditable = true,
+            read = { GameConfigPresentationValue.IntegerValue(0) },
+            update = { _, _ -> error("always rejects") },
+        )
+    }
+}

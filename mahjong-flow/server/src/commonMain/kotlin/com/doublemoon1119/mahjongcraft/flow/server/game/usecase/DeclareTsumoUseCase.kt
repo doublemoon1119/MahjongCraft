@@ -1,0 +1,255 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.SettledWinPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationWinner
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.winSettlementHistoryDetails
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.winSettlementWinningTileId
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasOccasion
+import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
+import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
+import kotlin.uuid.Uuid
+
+/**
+ * 驗證並結算玩家宣告的自摸，同步結果及啟動胡牌呈現。
+ *
+ * 1. 依目前權威桌況檢查操作時機與自摸資格。自摸資格由規則的合法動作判定器決定。
+ * 2. 由規則提供結算、供託歸屬及連莊加分。付款由 [MahjongRuleModule.declareTsumo] 提供。
+ * 3. 寫入成功後發布自摸結果及呈現要求。
+ *
+ * - 已允許自摸卻無法取得結算時，回報規則契約錯誤，不把這次和牌當成零分結果。
+ * - 本局結束後是否連莊、換莊或開新局，由後續流程處理。
+ *
+ * @property componentRegistry 正式組件定義與純效果來源。
+ * @property gameRepository 權威對局數據倉庫。
+ * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器與點數結算邏輯。
+ * @property snapshotSynchronizer 對局快照同步服務。
+ * @property eventPublisher 對局通知服務。
+ * @property presentationPublisher 對局 in-process 呈現觸發器，用於觸發胡牌慶祝演出。
+ * @property winPresentationHandoff 胡牌呈現 request 的交易後交接點。
+ * @property winCelebrationCueResolverRegistry 胡牌慶祝 cue 解析器 registry。
+ * @property winSettlementDetailResolverRegistry 胡牌詳情解析器 registry。
+ */
+class DeclareTsumoUseCase(
+    private val gameRepository: GameRepository,
+    private val moduleRegistry: MahjongModuleRegistry,
+    private val snapshotSynchronizer: GameSnapshotSynchronizer,
+    private val eventPublisher: GameEventPublisher,
+    private val presentationPublisher: GamePresentationPublisher,
+    private val winPresentationHandoff: WinPresentationHandoff,
+    private val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry,
+    private val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry,
+    private val componentRegistry: ComponentRegistry,
+) {
+    /**
+     * 執行自摸宣告邏輯。
+     *
+     * @param gameId 對局 Uuid。
+     * @param playerId 發起自摸宣告的玩家 Uuid。
+     * @return 宣告結果，成功時為 [Unit]，失敗時為 [GameError]。
+     */
+    suspend operator fun invoke(gameId: Uuid, playerId: Uuid): Outcome<Unit, GameError> {
+        // 1. 以原子方式讀取桌況、驗證業務規則並寫回
+        // AI 名單整場對局不變，先取出供結算呈現使用。
+        val aiPlayerIds = gameRepository.getGame(gameId)?.aiPlayerIds.orEmpty()
+        val outcome = gameRepository.update(
+            gameId = gameId,
+            history = { before, after, result ->
+                if (result is Outcome.Success && before != null && after != null) {
+                    val settled = result.value
+                    listOf(
+                        acceptedActionHistoryDraft(
+                            actorPlayerId = playerId,
+                            action = GameAction.Tsumo,
+                            before = before,
+                            after = after,
+                            affectedTileIds = listOfNotNull(before.players.first { it.id == playerId }.hand.lastDrawn?.id),
+                        ),
+                        HistoryEventDraft(
+                            actorPlayerId = playerId,
+                            fact = HistoryFact.WinSettled(
+                                outcomeId = BuiltInRoundOutcomeIds.TSUMO,
+                                winDetails = winSettlementHistoryDetails(settled.settlement),
+                                winningTileId = winSettlementWinningTileId(settled.settlement),
+                            ),
+                        ),
+                    )
+                } else {
+                    emptyList<HistoryEventDraft>()
+                }
+            },
+        ) { state ->
+            when {
+                state == null -> state to Outcome.Error(GameError.GameNotFound(gameId))
+                state.players.none { it.id == playerId } ->
+                    state to Outcome.Error(GameError.PlayerNotInGame(playerId, gameId))
+                state.currentPlayer.id != playerId ->
+                    state to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
+                !state.isOwnTurnWindowOpenFor(playerId) || state.currentPlayer.hand.lastDrawn == null ->
+                    state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Tsumo))
+                else -> {
+                    val winningTile = state.currentPlayer.hand.lastDrawn
+                        ?: return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Tsumo))
+
+                    val module = moduleRegistry.getModule(state.config)
+
+                    val legalActions = module.createLegalActionValidator().getLegalActions(
+                        context = LegalActionContext.ownTurn(state, playerId),
+                    )
+                    if (legalActions.none { it is GameAction.Tsumo }) {
+                        return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Tsumo))
+                    }
+
+                    val revealResult = WallRevealDecisionApplier.apply(
+                        tableState = state,
+                        checkpoint = WallRevealCheckpoint.WIN_CONFIRMED,
+                        module = module,
+                        actorPlayerId = playerId,
+                        sourceAction = GameAction.Tsumo,
+                        componentRegistry = componentRegistry,
+                    )
+                    if (revealResult is WallRevealDecisionApplier.Result.Rejected) {
+                        return@update state to Outcome.Error(
+                            error = GameError.UnsupportedAction(gameId, playerId, revealResult.reasonId),
+                        )
+                    }
+                    revealResult as WallRevealDecisionApplier.Result.Applied
+                    val stateForSettlement = revealResult.tableState
+
+                    // 已驗證的和牌卻缺少結算是規則矛盾，不能改當一般非法請求或零分和牌。
+                    val tsumoResult = module.declareTsumo(stateForSettlement, stateForSettlement.currentPlayer)
+                        ?: throw RuleContractViolationException(
+                            reasonId = GameAbortReasonIds.MISSING_WIN_SETTLEMENT,
+                            diagnostic = "Rule ${module.id} offered tsumo but returned no settlement for $playerId",
+                        )
+
+                    // 場上供託與連莊點數的歸屬交給規則決定；自摸時唯一的候選者是和牌者。
+                    val extras = SettlementExtrasResolver.resolve(
+                        state = stateForSettlement,
+                        module = module,
+                        occasion = SettlementExtrasOccasion.WIN,
+                        candidatePlayerIds = listOf(playerId),
+                        resolutions = mapOf(playerId to tsumoResult),
+                    )
+                    val updatedPlayers = stateForSettlement.players.map { p ->
+                        val handDelta = if (p.id == playerId) tsumoResult.totalGained else -(tsumoResult.paymentsByPlayerId[p.id] ?: 0)
+                        val delta = handDelta + (extras.scoreDeltas[p.id] ?: 0)
+                        val scored = if (delta == 0) p else p.copy(score = p.score + delta)
+                        if (p.id == playerId) scored.recordAction(GameAction.Tsumo) else scored
+                    }
+                    val newState = stateForSettlement.copy(
+                        players = updatedPlayers,
+                        components = extras.components,
+                        turnPhase = TurnPhase.RoundOver(RoundConclusion.Win(setOf(playerId))),
+                    )
+
+                    val settlement = WinSettlementPresentationRequestFactory.create(
+                        previousState = stateForSettlement,
+                        currentState = newState,
+                        module = module,
+                        aiPlayerIds = aiPlayerIds,
+                        outcomeId = BuiltInRoundOutcomeIds.TSUMO,
+                        isTsumo = true,
+                        winningTileId = winningTile.id,
+                        responsiblePlayerId = null,
+                        resolutions = mapOf(playerId to tsumoResult),
+                        detailResolverRegistry = winSettlementDetailResolverRegistry,
+                    )
+
+                    newState to Outcome.Success(
+                        value = TsumoResult(
+                            tableState = newState,
+                            resolution = tsumoResult,
+                            ruleModuleId = module.id,
+                            settlement = settlement,
+                        ),
+                    )
+                }
+            }
+        }
+
+        if (outcome is Outcome.Error) return outcome
+        val result = (outcome as Outcome.Success).value
+        val newState = result.tableState
+
+        // 2. 同步快照給所有正在觀察的玩家
+        snapshotSynchronizer.syncAll(gameId)
+
+        // 3. 通知在場玩家與旁觀者：廣播自摸事件
+        eventPublisher.publishToAllObservers(gameId, newState.players.map { it.id }, playerId, GameAction.Tsumo)
+        presentationPublisher.publishTableSteps(
+            gameId = gameId,
+            steps = listOf(TableStep(newState, listOf(TableStepEvent.ActionDeclared(playerId, GameAction.Tsumo)))),
+        )
+
+        // 4. 建構胡牌演出內容並寫進交接槽——手牌不受這個 use case 影響（只改分數與 actionHistory），
+        // 贏家的 lastDrawn 此時仍是自摸那張牌。刻意不直接發布：本局是否就此結束，要等
+        // ResolveWinRoundContinuationUseCase 詢問過規則模組才知道，由它決定要立即呈現或排隊延後呈現。
+        val winnerSeatIndex = newState.players.indexOfFirst { it.id == playerId }
+        newState.players[winnerSeatIndex].hand.lastDrawn?.let { winningTile ->
+            val presentation = SettledWinPresentation(
+                winnerPlayerIds = setOf(playerId),
+                celebration = WinCelebrationRequest(
+                    winningTileId = winningTile.id,
+                    isTsumo = true,
+                    revealsWinnerHands = true,
+                    winners = listOf(
+                        element = WinCelebrationWinner(
+                            seatIndex = winnerSeatIndex,
+                            cueIds = winCelebrationCueResolverRegistry.resolve(result.ruleModuleId, result.handValueResult),
+                        ),
+                    ),
+                ),
+                settlement = result.settlement,
+            )
+            winPresentationHandoff.stage(gameId, presentation)
+        }
+
+        return Outcome.Success(Unit)
+    }
+
+    /**
+     * 將原子更新內取得的算役結果帶到呈現發布階段。
+     *
+     * @property tableState 自摸結算後的權威桌況。
+     * @property resolution 自摸宣告產生的完整算役結果。
+     * @property ruleModuleId 執行自摸結算的規則模組識別碼。
+     * @property settlement 同一交易建立的胡牌呈現詳情。
+     */
+    private data class TsumoResult(
+        val tableState: TableState,
+        val resolution: WinResolutionResult,
+        val ruleModuleId: String,
+        val settlement: WinSettlementPresentationRequest,
+    ) {
+        val handValueResult get() = resolution.handValueResult
+    }
+}

@@ -1,0 +1,371 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.catalogue
+
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.Meld
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalculator
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.BuiltInRuleCatalogueCategoryIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.MinecraftRuleCatalogueScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueExample
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueLabel
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueResolution
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroup
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroupRole
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiGameConfigTranslationKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.allTileAssetKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.FakeRiichiHandValueContextFactory
+import kotlin.random.Random
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+/** 驗證日麻目錄覆蓋、配置邊界、範例牌面與既有計算器一致。 */
+class RiichiCatalogueProviderTest {
+    /** 「基本玩法」排在第一個分類。四人日麻 12 條，三人日麻多出拔北共 13 條。 */
+    @Test
+    fun `basics come first and differ between four and three players`() {
+        val provider = RiichiCatalogueProvider()
+        val four = checkNotNull(provider.catalogue(RiichiRuleConfig()))
+        val three = checkNotNull(threePlayerProvider().catalogue(ThreePlayerRiichiRuleConfig()))
+
+        listOf(four, three).forEach { catalogue -> assertEquals(BuiltInRuleCatalogueCategoryIds.BASICS, catalogue.categories.first().id) }
+        val fourBasics = four.entries.filter { it.categoryId == BuiltInRuleCatalogueCategoryIds.BASICS }
+        val threeBasics = three.entries.filter { it.categoryId == BuiltInRuleCatalogueCategoryIds.BASICS }
+        assertEquals(RiichiCatalogueBasic.entries.filter { it != RiichiCatalogueBasic.PullNorth }.map { it.nameKey }, fourBasics.map { it.nameTranslationKey })
+        assertEquals(RiichiCatalogueBasic.entries.map { it.nameKey }, threeBasics.map { it.nameTranslationKey })
+        assertEquals(RiichiCatalogueBasic.Tiles.threePlayerDescriptionKey, threeBasics.first().descriptionTranslationKey)
+        assertEquals(RiichiCatalogueBasic.Tiles.descriptionKey, fourBasics.first().descriptionTranslationKey)
+        assertEquals(listOf(RiichiGameConfigTranslationKeys.MINIMUM_WIN_CONSTRAINT), fourBasics.single { it.nameTranslationKey == RiichiCatalogueBasic.Winning.nameKey }.adjustableSettingNameKeys)
+    }
+
+    /** 三人日麻「基本玩法」的牌例不使用二到八萬，鳴牌只有碰的牌例。 */
+    @Test
+    fun `three player basics examples avoid middle characters and chi`() {
+        val three = checkNotNull(threePlayerProvider().catalogue(ThreePlayerRiichiRuleConfig()))
+        val basics = three.entries.filter { it.categoryId == BuiltInRuleCatalogueCategoryIds.BASICS }
+        val tiles = basics.flatMap { entry -> entry.examples.flatMap { example -> example.groups.flatMap { it.tiles } } }.map { it.tile }
+
+        assertTrue(tiles.none { it is Tile.Numeric && it.suit == Tile.Suit.Character && it.value in 2..8 }, tiles.toString())
+        val calls = basics.single { it.nameTranslationKey == RiichiCatalogueBasic.Calls.nameKey }
+        assertEquals(listOf(MinecraftRuleCatalogueScreenKeys.EXAMPLE_PON), calls.examples.map { it.titleTranslationKey })
+    }
+
+    /** 不是鷲巢玩法時「鷲巢麻將」條目留在原位並標示原因，鷲巢玩法時可以使用。 */
+    @Test
+    fun `washizu basics entry is unavailable outside the washizu variant`() {
+        val provider = RiichiCatalogueProvider()
+        val standard = checkNotNull(provider.catalogue(RiichiRuleConfig()))
+        val washizu = checkNotNull(provider.catalogue(RiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0)))
+
+        assertEquals(RiichiCatalogueBasicsKeys.WASHIZU_UNAVAILABLE, standard.entries.single { it.nameTranslationKey == RiichiCatalogueBasic.Washizu.nameKey }.unavailableReasonTranslationKey)
+        assertEquals(null, washizu.entries.single { it.nameTranslationKey == RiichiCatalogueBasic.Washizu.nameKey }.unavailableReasonTranslationKey)
+    }
+
+    /** 目錄的分類與條目都是日麻專屬 ID，放在日麻的路徑底下。 */
+    @Test
+    fun `catalogue ids live under the riichi path`() {
+        val ids = RiichiCatalogueCategory.entries.map { it.id } + RiichiCatalogueYaku.entries.map { it.id } + RiichiCatalogueSpecial.entries.map { it.id }
+
+        assertTrue(ids.all { it.startsWith("mahjongcraft:riichi/catalogue/") }, ids.toString())
+    }
+
+    /** 內建役種與特殊說明不缺漏，也不把流局條件混成一般役。 */
+    @Test
+    fun `catalogue covers every built in yaku and separate special categories`() {
+        assertEquals(RiichiYakuType.entries.toSet(), RiichiCatalogueYaku.entries.flatMap { it.coveredTypes }.toSet())
+        assertEquals(RiichiYakuType.entries.size, RiichiCatalogueYaku.entries.sumOf { it.coveredTypes.size }, "Each yaku belongs to exactly one entry")
+        val catalogue = checkNotNull(RiichiCatalogueProvider().catalogue(RiichiRuleConfig()))
+        // 四人日麻不列拔北寶牌；「基本玩法」另外驗證。
+        val rules = catalogue.entries.filter { it.categoryId != BuiltInRuleCatalogueCategoryIds.BASICS }
+        assertEquals(RiichiCatalogueYaku.entries.size - 1 + RiichiCatalogueSpecial.entries.size, rules.size)
+        assertTrue(catalogue.entries.none { it.id == RiichiCatalogueYaku.NukiDora.id })
+        assertEquals(catalogue.entries.size, catalogue.entries.map { it.id }.distinct().size)
+        assertEquals(3, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.Bonus.id })
+        assertEquals(4, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.AbortiveDraw.id })
+        assertEquals(1, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.Mangan.id })
+        assertEquals(2, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.Han5.id })
+        catalogue.categories.forEach { category -> assertTrue(catalogue.entries.any { category.id in it.categoryIds }, category.id) }
+        assertTrue(catalogue.entries.all { it.descriptionTranslationKey.isNotBlank() })
+    }
+
+    /** 三人日麻目錄多列拔北寶牌、省略四風連打與四家立直，並標出需要二～八萬的役種無法成立。 */
+    @Test
+    fun `three player catalogue lists nuki dora and omits four player abortive draws`() {
+        val provider = RiichiCatalogueProvider(
+            ruleModuleId = BuiltInRuleModuleIds.RIICHI_THREE_PLAYER,
+            configClass = ThreePlayerRiichiRuleConfig::class,
+            defaultConfig = ::ThreePlayerRiichiRuleConfig,
+        )
+        assertNull(provider.catalogue(RiichiRuleConfig()))
+        assertNull(RiichiCatalogueProvider().catalogue(ThreePlayerRiichiRuleConfig()))
+        val catalogue = checkNotNull(provider.catalogue(provider.defaultRuleConfig()))
+
+        assertEquals(4, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.Bonus.id })
+        assertTrue(catalogue.entries.any { it.id == RiichiCatalogueYaku.NukiDora.id })
+        assertEquals(
+            expected = listOf(RiichiCatalogueSpecial.Suukaikan.id, RiichiCatalogueSpecial.KyuushuKyuuhai.id),
+            actual = catalogue.entries.filter { it.categoryId == RiichiCatalogueCategory.AbortiveDraw.id }.map { it.id },
+        )
+        listOf(RiichiCatalogueYaku.SanshokuDoujun, RiichiCatalogueYaku.Daisuurin).forEach { definition ->
+            assertEquals(
+                expected = RiichiCatalogueKeys.THREE_PLAYER_TILES_UNAVAILABLE,
+                actual = catalogue.entries.single { it.id == definition.id }.unavailableReasonTranslationKey,
+            )
+        }
+    }
+
+    /** 不算役、門清限定、古役與副露翻數標籤附有說明，其他價值標籤沒有。 */
+    @Test
+    fun `labels that need explanation carry descriptions`() {
+        val catalogue = checkNotNull(RiichiCatalogueProvider().catalogue(RiichiRuleConfig(allowOpenTanyao = false)))
+        val labels = catalogue.entries.flatMap { it.labels }.distinct()
+        val expected = mapOf(
+            RiichiCatalogueKeys.BONUS_ONLY to RiichiCatalogueKeys.BONUS_ONLY_DESCRIPTION,
+            RiichiCatalogueKeys.CLOSED_ONLY to RiichiCatalogueKeys.CLOSED_ONLY_DESCRIPTION,
+            RiichiCatalogueKeys.LOCAL_YAKU to RiichiCatalogueKeys.LOCAL_YAKU_DESCRIPTION,
+            RiichiCatalogueKeys.OPEN_HAN_1 to RiichiCatalogueKeys.OPEN_HAN_DESCRIPTION,
+            RiichiCatalogueKeys.OPEN_HAN_2 to RiichiCatalogueKeys.OPEN_HAN_DESCRIPTION,
+            RiichiCatalogueKeys.OPEN_HAN_5 to RiichiCatalogueKeys.OPEN_HAN_DESCRIPTION,
+        )
+
+        labels.forEach { label -> assertEquals(expected[label.nameTranslationKey], label.descriptionTranslationKey, label.nameTranslationKey) }
+        assertEquals(expected.keys, labels.map { it.nameTranslationKey }.filter { it in expected }.toSet())
+    }
+
+    /** 配置只調整正確的條件，不改變分類與條目。 */
+    @Test
+    fun `configuration changes labels without changing catalogue identities`() {
+        val provider = RiichiCatalogueProvider()
+        assertNull(provider.catalogue(TaiwanRuleConfig()))
+        val default = checkNotNull(provider.catalogue(RiichiRuleConfig()))
+        val restricted = checkNotNull(provider.catalogue(RiichiRuleConfig(allowOpenTanyao = false, redDoraCount = 0, useLocalYaku = true)))
+        assertEquals(default.categories, restricted.categories)
+        assertEquals(default.entries.map { it.id }, restricted.entries.map { it.id })
+        val tanyao = restricted.entries.single { it.id == RiichiCatalogueYaku.Tanyao.id }
+        assertTrue(RuleCatalogueLabel(RiichiCatalogueKeys.CLOSED_ONLY, RiichiCatalogueKeys.CLOSED_ONLY_DESCRIPTION) in tanyao.labels)
+        assertTrue(default.entries.single { it.id == RiichiCatalogueYaku.Tanyao.id }.labels.none { it.nameTranslationKey == RiichiCatalogueKeys.CLOSED_ONLY })
+        assertNull(tanyao.unavailableReasonTranslationKey)
+        assertEquals(RiichiCatalogueKeys.RED_DORA_UNAVAILABLE, restricted.entries.single { it.id == RiichiCatalogueYaku.AkaDora.id }.unavailableReasonTranslationKey)
+        assertNull(default.entries.single { it.id == RiichiCatalogueYaku.AkaDora.id }.unavailableReasonTranslationKey)
+        assertEquals(RiichiCatalogueKeys.DRAGON_NAME, default.entries.single { it.id == RiichiCatalogueYaku.Dragon.id }.nameTranslationKey)
+    }
+
+    /** 古役條目都帶古役標籤並列在古役分類。未啟用古役時標示未啟用，啟用後不再標示，一般役種不受影響。 */
+    @Test
+    fun `local yaku entries show whether local yaku are enabled`() {
+        val provider = RiichiCatalogueProvider()
+        val localIds = RiichiCatalogueYaku.entries.filter { it.type.isLocal }.map { it.id }.toSet()
+        val disabled = checkNotNull(provider.catalogue(RiichiRuleConfig()))
+        val enabled = checkNotNull(provider.catalogue(RiichiRuleConfig(useLocalYaku = true)))
+
+        assertTrue(disabled.entries.filter { it.id in localIds }.all { it.unavailableReasonTranslationKey == RiichiCatalogueKeys.LOCAL_YAKU_UNAVAILABLE })
+        assertTrue(enabled.entries.filter { it.id in localIds }.all { it.unavailableReasonTranslationKey == null })
+        assertTrue(disabled.entries.filterNot { it.id in localIds }.none { it.unavailableReasonTranslationKey == RiichiCatalogueKeys.LOCAL_YAKU_UNAVAILABLE })
+        assertTrue(enabled.entries.filter { it.id in localIds }.all { entry -> entry.labels.any { it.nameTranslationKey == RiichiCatalogueKeys.LOCAL_YAKU } })
+        assertTrue(enabled.entries.filterNot { it.id in localIds }.none { entry -> entry.labels.any { it.nameTranslationKey == RiichiCatalogueKeys.LOCAL_YAKU } })
+        assertEquals(localIds, enabled.entries.filter { RiichiCatalogueCategory.Local.id in it.categoryIds }.map { it.id }.toSet())
+        assertTrue(enabled.entries.filter { it.id in localIds }.none { it.categoryId == RiichiCatalogueCategory.Local.id })
+    }
+
+    /** 一般說明仍標記為預設配置，台麻不冒用日麻目錄。 */
+    @Test
+    fun `built in registration resolves only riichi and remains frozen`() {
+        val registry = RuleCatalogueRegistryImpl()
+        BundledRiichiMinecraftExtension.registerRuleCatalogues(registry)
+        registry.freeze()
+        assertTrue(assertIs<RuleCatalogueResolution.Available>(registry.resolve(BuiltInRuleModuleIds.RIICHI)).usesDefaultConfig)
+        assertEquals(RuleCatalogueResolution.MissingProvider, registry.resolve(BuiltInRuleModuleIds.TAIWAN))
+        assertEquals(RuleCatalogueResolution.UnsupportedConfig, registry.resolve(BuiltInRuleModuleIds.RIICHI, TaiwanRuleConfig()))
+        assertTrue(registry.isFrozen)
+    }
+
+    /** 內建範例沿用可解析的現有素材，不製造普通牌種 ID。 */
+    @Test
+    fun `every example tile resolves a built in asset`() {
+        val registry = MinecraftTileAssetRegistryImpl().apply {
+            BuiltInMinecraftMahjongExtension.registerTileAssets(this)
+            BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
+            freeze()
+        }
+        val catalogue = checkNotNull(RiichiCatalogueProvider().catalogue(RiichiRuleConfig()))
+        catalogue.entries.flatMap { it.examples }.flatMap { it.groups }.flatMap { it.tiles }.forEach { tile ->
+            val key = tile.toAssetKey(registry)
+            assertTrue(key in registry.allTileAssetKeys() && key != UNKNOWN_TILE_ASSET_KEY, "Example tile must resolve a known asset: $tile")
+        }
+    }
+
+    /** 完整範例在明確情境下必須成立目標役，不以其他役或役滿冒充成功。四人與三人日麻的範例都要成立。 */
+    @Test
+    fun `every complete example produces its target yaku`() {
+        listOf(false, true).forEach { usesThreePlayerTiles ->
+            RiichiCatalogueYaku.entries.forEach { definition ->
+                val examples = riichiCatalogueExamples(definition.type, usesThreePlayerTiles)
+                assertTrue(examples.isNotEmpty(), "Missing example for ${definition.type}")
+                if (definition.category != RiichiCatalogueCategory.Bonus) assertTrue(examples.all { it.completeHand }, "Yaku example must be a complete hand: ${definition.type}")
+                examples.filter { it.completeHand }.forEach { example ->
+                    val result = evaluateExample(definition.type, example)
+                    assertTrue(result.yakuResults.any { it.yaku == definition.type }, "${definition.type} example produced ${result.yakuResults}")
+                }
+            }
+        }
+    }
+
+    /** 三人日麻能成立的役種，範例只用三人牌組裡有的牌，也不用吃。 */
+    @Test
+    fun `three player examples only use three player tiles and no chi`() {
+        val provider = RiichiCatalogueProvider(
+            ruleModuleId = BuiltInRuleModuleIds.RIICHI_THREE_PLAYER,
+            configClass = ThreePlayerRiichiRuleConfig::class,
+            defaultConfig = ::ThreePlayerRiichiRuleConfig,
+        )
+        val config = ThreePlayerRiichiRuleConfig()
+        val wallTiles = ThreePlayerRiichiRuleModule(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, config)
+            .createWallFactory(3)
+            .create(Random(0))
+            .getAllTiles()
+            .mapTo(mutableSetOf()) { it.tile }
+        val catalogue = checkNotNull(provider.catalogue(config))
+
+        catalogue.entries.filter { it.unavailableReasonTranslationKey == null }.forEach { entry ->
+            entry.examples.flatMap { it.groups }.forEach { group ->
+                assertTrue(group.tiles.all { it.tile in wallTiles }, "${entry.id} example uses a tile missing from three player mahjong: ${group.tiles}")
+                assertTrue(
+                    actual = group.role != RuleCatalogueTileGroupRole.OPEN_MELD || group.tiles.map { it.tile }.distinct().size == 1,
+                    message = "${entry.id} example calls chi, which three player mahjong does not allow",
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 將說明範例轉為測試計算情境，所有計算均限制在測試邊界。
+ *
+ * @param type 範例欲說明的役種。
+ * @param example 完整手牌及明確分組。
+ * @return 現行日麻計算器的結果。
+ */
+private fun evaluateExample(type: RiichiYakuType, example: RuleCatalogueExample) = run {
+    val winning = exampleValue(example.groups.single { it.role == RuleCatalogueTileGroupRole.WINNING_TILE }.tiles.single())
+    val kanCount = example.groups.count { it.role == RuleCatalogueTileGroupRole.OPEN_KAN || it.role == RuleCatalogueTileGroupRole.CLOSED_KAN }
+    val allTiles = example.groups.flatMap { it.tiles }
+    assertEquals(14 + kanCount, allTiles.size, "Invalid physical tile count for $type")
+    assertTrue(allTiles.groupingBy { it.tile }.eachCount().values.all { it <= 4 }, "Too many copies in $type example")
+    val meldGroups = example.groups.filter { it.role in meldRoles }
+    val melds = meldGroups.map(::exampleMeld)
+    val isMenzen = meldGroups.none { it.role != RuleCatalogueTileGroupRole.CLOSED_KAN }
+    val hand = Hand(
+        tiles = example.groups.filter { it.role == RuleCatalogueTileGroupRole.HAND }.flatMap { it.tiles }.map { FakeIdentifiedTileFactory.create(exampleValue(it)) },
+        melds = melds,
+    )
+    val context = FakeRiichiHandValueContextFactory.create(
+        hand = hand,
+        winningTile = winning.tile,
+        winningTileValue = winning,
+        isTsumo = type in tsumoTypes,
+        isMenzen = isMenzen,
+        isDealer = type == RiichiYakuType.Tenhou,
+        seatWind = when (type) {
+            RiichiYakuType.SeatWind -> Wind.WEST
+            RiichiYakuType.Tenhou -> Wind.EAST
+            else -> Wind.SOUTH
+        },
+        roundWind = if (type == RiichiYakuType.RoundWind) Wind.WEST else Wind.EAST,
+        isRiichi = type in riichiTypes,
+        isDoubleRiichi = type == RiichiYakuType.DoubleRiichi || type == RiichiYakuType.IshinoUeSannen,
+        isIppatsu = type == RiichiYakuType.Ippatsu,
+        isLastDraw = type == RiichiYakuType.Haitei || type == RiichiYakuType.IipinMoyue || type == RiichiYakuType.IshinoUeSannen,
+        isLastDiscard = type == RiichiYakuType.Houtei || type == RiichiYakuType.ChuupinRaoyui,
+        isRobbingKan = type == RiichiYakuType.Chankan,
+        isRinshanKaihou = type == RiichiYakuType.RinshanKaihou,
+        isFirstTurn = type == RiichiYakuType.Tenhou || type == RiichiYakuType.Chiihou || type == RiichiYakuType.Renhou,
+        isRiichiDeclarationDiscard = type == RiichiYakuType.TsubameGaeshi,
+        isDiscardAfterKan = type == RiichiYakuType.Kanburi,
+    )
+    RiichiHandValueCalculator(useLocalYaku = type.isLocal).calculate(context)
+}
+
+/**
+ * 將範例牌面轉成計分用牌值：帶赤五外觀的牌是赤五，其餘是普通牌值。
+ *
+ * @param face 範例牌面。
+ * @return 計分用牌值。
+ */
+private fun exampleValue(face: TileFaceView): TileValue {
+    val five = face.tile as? Tile.Numeric
+    return if (face.appearanceId == RiichiTileValues.RED_FIVE_APPEARANCE_ID && five != null) RiichiTileValues.redFive(five.suit) else TileValue(face.tile)
+}
+
+/** 範例中需轉成副露的牌組角色。 */
+private val meldRoles = setOf(RuleCatalogueTileGroupRole.OPEN_MELD, RuleCatalogueTileGroupRole.OPEN_KAN, RuleCatalogueTileGroupRole.CLOSED_KAN)
+
+/** 使用自摸情境驗證的役種。 */
+private val tsumoTypes = setOf(
+    RiichiYakuType.Menzentsumo,
+    RiichiYakuType.RinshanKaihou,
+    RiichiYakuType.Haitei,
+    RiichiYakuType.Tenhou,
+    RiichiYakuType.Chiihou,
+    RiichiYakuType.Suuankou,
+    RiichiYakuType.IipinMoyue,
+    RiichiYakuType.IshinoUeSannen,
+)
+
+/** 使用已立直情境驗證的役種。 */
+private val riichiTypes = setOf(RiichiYakuType.Riichi, RiichiYakuType.DoubleRiichi, RiichiYakuType.Ippatsu, RiichiYakuType.IshinoUeSannen)
+
+/**
+ * 將已明確標記的範例副露轉成測試模型。
+ *
+ * @param group 副露牌組。
+ * @return 測試使用的副露。
+ */
+private fun exampleMeld(group: RuleCatalogueTileGroup): Meld {
+    val type = when (group.role) {
+        RuleCatalogueTileGroupRole.OPEN_KAN -> MeldType.OpenKan
+        RuleCatalogueTileGroupRole.CLOSED_KAN -> MeldType.ClosedKan
+        else -> if (group.tiles.map { it.tile }.distinct().size == 1) MeldType.Pon else MeldType.Chi
+    }
+    val tiles = group.tiles.map { FakeIdentifiedTileFactory.create(exampleValue(it)) }
+    return Meld(
+        type = type,
+        tiles = tiles,
+        sourceTile = if (type == MeldType.ClosedKan) null else tiles.last(),
+        sourceDirection = if (type == MeldType.ClosedKan) RelativeDirection.Self else RelativeDirection.Left,
+        publiclyRevealedTileIds = tiles.map { it.id }.toSet(),
+        faceDownTileIds = if (type == MeldType.ClosedKan) setOf(tiles.first().id, tiles.last().id) else emptySet(),
+    )
+}
+
+/**
+ * 與內建登記相同的三人日麻目錄來源。
+ *
+ * @return 三人日麻目錄來源。
+ */
+private fun threePlayerProvider(): RiichiCatalogueProvider = RiichiCatalogueProvider(
+    ruleModuleId = BuiltInRuleModuleIds.RIICHI_THREE_PLAYER,
+    configClass = ThreePlayerRiichiRuleConfig::class,
+    defaultConfig = ::ThreePlayerRiichiRuleConfig,
+)

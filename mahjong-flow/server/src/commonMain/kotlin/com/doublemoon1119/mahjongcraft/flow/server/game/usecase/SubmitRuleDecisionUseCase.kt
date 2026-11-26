@@ -1,0 +1,201 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTimeSource
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.accepts
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolution
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionWin
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionPresentationUpdate
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionWinPresentationStager
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import kotlin.uuid.Uuid
+
+/**
+ * 驗證並提交一位玩家的規則選擇。
+ *
+ * @property gameRepository 權威對局資料倉庫。
+ * @property moduleRegistry 麻將規則模組註冊中心。
+ * @property resolverRegistry 規則選擇步驟解析器註冊中心。
+ * @property snapshotSynchronizer 對局快照同步服務。
+ * @property presentationPublisher 更新規則選擇結果改變的牌區與局況。
+ * @property winPresentationStager 將規則選擇步驟直接成立的和牌交給共用胡牌演出與結算呈現。
+ * @property handSortPreferenceStore 規則選擇過程中玩家整理手牌時，查詢是否依規則牌序整理。
+ */
+class SubmitRuleDecisionUseCase(
+    private val gameRepository: GameRepository,
+    private val moduleRegistry: MahjongModuleRegistry,
+    private val resolverRegistry: RuleDecisionResolverRegistry,
+    private val snapshotSynchronizer: GameSnapshotSynchronizer,
+    private val presentationPublisher: GamePresentationPublisher,
+    private val winPresentationStager: RuleDecisionWinPresentationStager,
+    private val handSortPreferenceStore: HandSortPreferenceStore,
+) {
+    /**
+     * 對指定對局提交一次規則選擇。
+     *
+     * @param gameId 對局識別碼。
+     * @param playerId 提交選擇的玩家識別碼。
+     * @param windowId 提交對象的選擇視窗。不是目前開著的視窗時視為過期。
+     * @param submission 玩家提交的規則選擇。
+     * @return 提交結果。對局不存在、視窗已過期、選擇步驟不可用或內容無效時回傳 [GameError]。
+     */
+    suspend operator fun invoke(
+        gameId: Uuid,
+        playerId: Uuid,
+        windowId: Uuid,
+        submission: RuleDecisionSubmission,
+    ): Outcome<Unit, GameError> {
+        val result = gameRepository.updateGame(
+            gameId = gameId,
+            history = { _, _, update -> update.historyDrafts },
+        ) { game ->
+            if (game == null) {
+                return@updateGame null to RuleDecisionSubmissionUpdate(
+                    outcome = Outcome.Error(GameError.GameNotFound(gameId)),
+                    historyDrafts = emptyList(),
+                )
+            }
+            val ruleDecision = game.pendingRuleDecision?.takeIf { it.id == windowId }
+                ?: return@updateGame game to RuleDecisionSubmissionUpdate(
+                    outcome = Outcome.Error(GameError.RuleDecisionUnavailable(gameId, playerId)),
+                    historyDrafts = emptyList(),
+                )
+            val input = ruleDecision.inputSpecsByPlayerId[playerId]
+                ?: return@updateGame game to RuleDecisionSubmissionUpdate(
+                    outcome = Outcome.Error(GameError.RuleDecisionUnavailable(gameId, playerId)),
+                    historyDrafts = emptyList(),
+                )
+            if (playerId in ruleDecision.completedPlayerIds || !input.accepts(submission)) {
+                return@updateGame game to RuleDecisionSubmissionUpdate(
+                    outcome = Outcome.Error(GameError.InvalidRuleDecisionSubmission(gameId, playerId)),
+                    historyDrafts = emptyList(),
+                )
+            }
+            val module = moduleRegistry.getModule(game.tableState.config)
+            val resolver = resolverRegistry.find(module.id)
+                ?: return@updateGame game to RuleDecisionSubmissionUpdate(
+                    outcome = Outcome.Error(GameError.InvalidRuleDecisionSubmission(gameId, playerId)),
+                    historyDrafts = emptyList(),
+                )
+            val usesIndependentTime = ruleDecision.step.timeSource == RuleDecisionTimeSource.RULE_DECISION_TIME
+            if (
+                usesIndependentTime &&
+                (resolverRegistry.findDefaultConfig(module.id, game.tableState.config) == null || game.flowConfig.ruleDecision == null)
+            ) {
+                throw RuleContractViolationException(
+                    reasonId = GameAbortReasonIds.RULE_EXECUTION_FAILED,
+                    diagnostic = "Rule decision requires a time configuration for player input",
+                )
+            }
+            if (!resolver.accepts(game.tableState, ruleDecision, playerId, submission, module)) {
+                return@updateGame game to RuleDecisionSubmissionUpdate(
+                    outcome = Outcome.Error(GameError.InvalidRuleDecisionSubmission(gameId, playerId)),
+                    historyDrafts = emptyList(),
+                )
+            }
+            val submitted = ruleDecision.copy(
+                submissionsByPlayerId = ruleDecision.submissionsByPlayerId + (playerId to submission),
+            )
+            var updated = game.copy(pendingRuleDecision = submitted)
+            var completedResolution: RuleDecisionResolution? = null
+            if (submitted.isComplete) {
+                val resolution = resolver.resolve(game.tableState, submitted, module)
+                completedResolution = resolution
+                updated = RuleDecisionWindows.advance(game, submitted, resolution, module, resolverRegistry, handSortPreferenceStore::isEnabled)
+            }
+            updated to RuleDecisionSubmissionUpdate(
+                outcome = Outcome.Success(Unit),
+                historyDrafts = listOf(
+                    element = HistoryEventDraft(
+                        actorPlayerId = playerId,
+                        fact = HistoryFact.RuleDecisionSubmitted(
+                            timing = ruleDecision.timing,
+                            stepId = ruleDecision.stepId,
+                            stepIndex = ruleDecision.stepIndex,
+                            submission = submission,
+                            nextStepId = updated.pendingRuleDecision?.stepId,
+                            passed = submission.isPassFor(ruleDecision.inputSpecsByPlayerId[playerId]),
+                        ),
+                    ),
+                ) + completedResolution?.replacementHistoryDrafts(ruleDecision.timing).orEmpty() + listOfNotNull(
+                    element = completedResolution?.win?.let { win ->
+                        winPresentationStager.historyDraft(
+                            previousState = game.tableState,
+                            currentState = updated.tableState,
+                            module = module,
+                            aiPlayerIds = game.aiPlayerIds,
+                            win = win,
+                        )
+                    },
+                ),
+                presentationUpdate = if (submitted.isComplete) {
+                    RuleDecisionPresentationUpdate(
+                        previous = game.tableState,
+                        current = updated.tableState,
+                        steps = completedResolution?.steps.orEmpty(),
+                    )
+                } else {
+                    null
+                },
+                win = completedResolution?.win,
+            )
+        }
+        val outcome = result.outcome
+        if (outcome is Outcome.Success) {
+            result.presentationUpdate?.let { update ->
+                val module = moduleRegistry.getModule(update.current.config)
+                update.publish(presentationPublisher)
+                result.win?.let { win ->
+                    winPresentationStager.stage(
+                        gameId = gameId,
+                        previousState = update.previous,
+                        currentState = update.current,
+                        module = module,
+                        aiPlayerIds = gameRepository.getGame(gameId)?.aiPlayerIds.orEmpty(),
+                        win = win,
+                    )
+                }
+            }
+            snapshotSynchronizer.syncAll(gameId)
+        }
+        return outcome
+    }
+
+    /**
+     * 將更新結果與可選的歷史事件草稿帶出交易區塊。
+     *
+     * @property outcome 對外回傳的提交結果。
+     * @property historyDrafts 本次成功提交的歷史事件，以及完成步驟的換牌結果。失敗時為空清單。
+     * @property presentationUpdate 已完成步驟的桌況差異。尚未收齊或提交失敗時為 null。
+     * @property win 已完成步驟直接成立的和牌。沒有時為 null。
+     */
+    private data class RuleDecisionSubmissionUpdate(
+        val outcome: Outcome<Unit, GameError>,
+        val historyDrafts: List<HistoryEventDraft>,
+        val presentationUpdate: RuleDecisionPresentationUpdate? = null,
+        val win: RuleDecisionWin? = null,
+    )
+}
+
+/**
+ * 判斷提交內容是否為玩家輸入規格中代表跳過的選項。
+ *
+ * @param spec 這位玩家在步驟中的輸入規格。沒有規格時視為未跳過。
+ * @return 選擇的是代表跳過的選項時為 true。
+ */
+private fun RuleDecisionSubmission.isPassFor(spec: RuleDecisionInputSpec?): Boolean {
+    val passOptionId = (spec as? RuleDecisionInputSpec.SingleChoice)?.passOptionId ?: return false
+    return (this as? RuleDecisionSubmission.Choice)?.optionId == passOptionId
+}

@@ -1,0 +1,895 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.history
+
+/** 歷史列表、篩選與保存狀態提示共用的集中式翻譯鍵。 */
+object MinecraftHistoryScreenKeys {
+    /** 歷史列表標題。 */
+    const val TITLE = "mahjongcraft.history_screen.title"
+
+    /** 篩選子頁標題。 */
+    const val FILTERS = "mahjongcraft.history_screen.filters"
+
+    /** 篩選頁返回按鈕。 */
+    const val BACK = "mahjongcraft.history_screen.back"
+
+    /** 篩選頁重設按鈕。 */
+    const val RESET = "mahjongcraft.history_screen.reset"
+
+    /** 篩選規則欄位。 */
+    const val FILTER_RULE = "mahjongcraft.history_screen.filter.rule"
+
+    /** 篩選開始日期欄位。 */
+    const val FILTER_FROM = "mahjongcraft.history_screen.filter.from"
+
+    /** 篩選結束日期欄位。 */
+    const val FILTER_THROUGH = "mahjongcraft.history_screen.filter.through"
+
+    /** 篩選最低名次欄位。 */
+    const val FILTER_MIN_RANK = "mahjongcraft.history_screen.filter.min_rank"
+
+    /** 篩選最高名次欄位。 */
+    const val FILTER_MAX_RANK = "mahjongcraft.history_screen.filter.max_rank"
+
+    /** 結果篩選欄位。 */
+    const val FILTER_OUTCOME = "mahjongcraft.history_screen.filter.outcome"
+
+    /** 結果篩選：已完成。 */
+    const val FILTER_OUTCOME_COMPLETED = "mahjongcraft.history_screen.filter.outcome.completed"
+
+    /** 結果篩選：中斷。 */
+    const val FILTER_OUTCOME_INTERRUPTED = "mahjongcraft.history_screen.filter.outcome.interrupted"
+
+    /** 完整性篩選欄位。 */
+    const val FILTER_INTEGRITY = "mahjongcraft.history_screen.filter.integrity"
+
+    /** 完整性篩選：完整。 */
+    const val FILTER_INTEGRITY_COMPLETE = "mahjongcraft.history_screen.filter.integrity.complete"
+
+    /** 完整性篩選：不完整。 */
+    const val FILTER_INTEGRITY_INCOMPLETE = "mahjongcraft.history_screen.filter.integrity.incomplete"
+
+    /** AI 篩選欄位。 */
+    const val FILTER_AI = "mahjongcraft.history_screen.filter.ai"
+
+    /** AI 篩選：含 AI。 */
+    const val FILTER_AI_CONTAINS_AI = "mahjongcraft.history_screen.filter.ai.contains_ai"
+
+    /** AI 篩選：不含 AI。 */
+    const val FILTER_AI_NO_AI = "mahjongcraft.history_screen.filter.ai.no_ai"
+
+    /** 篩選不限值。 */
+    const val FILTER_ANY = "mahjongcraft.history_screen.filter.any"
+
+    /** 已完成結果。 */
+    const val OUTCOME_COMPLETED = "mahjongcraft.history_screen.outcome.completed"
+
+    /** 已中斷結果。 */
+    const val OUTCOME_INTERRUPTED = "mahjongcraft.history_screen.outcome.interrupted"
+
+    /** 篩選錯誤：規則無效。 */
+    const val FILTER_ERROR_INVALID_RULE = "mahjongcraft.history_screen.filter.error.invalid_rule"
+
+    /** 篩選錯誤：日期格式無效。 */
+    const val FILTER_ERROR_INVALID_DATE = "mahjongcraft.history_screen.filter.error.invalid_date"
+
+    /** 篩選錯誤：名次無效。 */
+    const val FILTER_ERROR_INVALID_RANK = "mahjongcraft.history_screen.filter.error.invalid_rank"
+
+    /** 篩選錯誤：對局 ID 無效。 */
+    const val FILTER_ERROR_INVALID_MATCH_ID = "mahjongcraft.history_screen.filter.error.invalid_match_id"
+
+    /** 篩選錯誤：玩家名稱無效。 */
+    const val FILTER_ERROR_INVALID_PLAYER_NAME = "mahjongcraft.history_screen.filter.error.invalid_player_name"
+
+    /** 篩選錯誤：範圍起訖顛倒。 */
+    const val FILTER_ERROR_REVERSED_RANGE = "mahjongcraft.history_screen.filter.error.reversed_range"
+
+    /** 篩選按鈕 tooltip。 */
+    const val TOOLTIP_FILTERS = "mahjongcraft.history_screen.tooltip.filters"
+
+    /** 篩選按鈕 tooltip 中已套用條件清單的標題。 */
+    const val TOOLTIP_FILTERS_APPLIED = "mahjongcraft.history_screen.tooltip.filters.applied"
+
+    /** 篩選按鈕 tooltip 的操作提示。 */
+    const val TOOLTIP_FILTERS_HINT = "mahjongcraft.history_screen.tooltip.filters.hint"
+
+    /** 篩選按鈕文字。 */
+    const val FILTERS_BUTTON = "mahjongcraft.history_screen.filters_button"
+
+    /** 紀錄範圍按鈕左側的標籤。 */
+    const val SHOW_LABEL = "mahjongcraft.history_screen.show_label"
+
+    /** 未套用任何篩選條件。 */
+    const val FILTER_NONE = "mahjongcraft.history_screen.filter.none"
+
+    /** 結束日期範圍篩選欄位。 */
+    const val FILTER_DATE = "mahjongcraft.history_screen.filter.date"
+
+    /** 自己的名次範圍篩選欄位。 */
+    const val FILTER_OWN_RANK = "mahjongcraft.history_screen.filter.own_rank"
+
+    /** 玩家名稱輸入框沒有內容時的灰色提示。 */
+    const val FILTER_PLACEHOLDER_PLAYER_NAME = "mahjongcraft.history_screen.filter.placeholder.player_name"
+
+    /** 對局 UUID 輸入框沒有內容時的灰色提示。 */
+    const val FILTER_PLACEHOLDER_MATCH_ID = "mahjongcraft.history_screen.filter.placeholder.match_id"
+
+    /** 日期輸入框沒有內容時的灰色提示。 */
+    const val FILTER_PLACEHOLDER_DATE = "mahjongcraft.history_screen.filter.placeholder.date"
+
+    /** 玩家名稱篩選欄位。 */
+    const val FILTER_PLAYER_NAME = "mahjongcraft.history_screen.filter.player_name"
+
+    /** 對局 UUID 篩選欄位。 */
+    const val FILTER_MATCH_ID = "mahjongcraft.history_screen.filter.match_id"
+
+    /** 篩選欄位用途說明：玩家名稱。 */
+    const val FILTER_INPUT_DESCRIPTION_PLAYER_NAME = "mahjongcraft.history_screen.filter.input_description.player_name"
+
+    /** 篩選欄位用途說明：對局 ID。 */
+    const val FILTER_INPUT_DESCRIPTION_MATCH_ID = "mahjongcraft.history_screen.filter.input_description.match_id"
+
+    /** 篩選欄位用途說明：起始日期。 */
+    const val FILTER_INPUT_DESCRIPTION_FROM_DATE = "mahjongcraft.history_screen.filter.input_description.from_date"
+
+    /** 篩選欄位用途說明：結束日期。 */
+    const val FILTER_INPUT_DESCRIPTION_THROUGH_DATE = "mahjongcraft.history_screen.filter.input_description.through_date"
+
+    /** 篩選欄位用途說明：名次下限。 */
+    const val FILTER_INPUT_DESCRIPTION_MIN_RANK = "mahjongcraft.history_screen.filter.input_description.min_rank"
+
+    /** 篩選欄位用途說明：名次上限。 */
+    const val FILTER_INPUT_DESCRIPTION_MAX_RANK = "mahjongcraft.history_screen.filter.input_description.max_rank"
+
+    /** 篩選欄位輸入範例：玩家名稱。 */
+    const val FILTER_INPUT_EXAMPLE_PLAYER_NAME = "mahjongcraft.history_screen.filter.input_example.player_name"
+
+    /** 篩選欄位輸入範例：對局 ID。 */
+    const val FILTER_INPUT_EXAMPLE_MATCH_ID = "mahjongcraft.history_screen.filter.input_example.match_id"
+
+    /** 篩選欄位輸入範例：起始日期。 */
+    const val FILTER_INPUT_EXAMPLE_FROM_DATE = "mahjongcraft.history_screen.filter.input_example.from_date"
+
+    /** 篩選欄位輸入範例：結束日期。 */
+    const val FILTER_INPUT_EXAMPLE_THROUGH_DATE = "mahjongcraft.history_screen.filter.input_example.through_date"
+
+    /** 篩選欄位輸入範例：名次下限。 */
+    const val FILTER_INPUT_EXAMPLE_MIN_RANK = "mahjongcraft.history_screen.filter.input_example.min_rank"
+
+    /** 篩選欄位輸入範例：名次上限。 */
+    const val FILTER_INPUT_EXAMPLE_MAX_RANK = "mahjongcraft.history_screen.filter.input_example.max_rank"
+
+    /** 篩選欄位輸入範例標籤。 */
+    const val FILTER_INPUT_EXAMPLE_LABEL = "mahjongcraft.history_screen.filter.input.example_label"
+
+    /** 歷史紀錄完整狀態。 */
+    const val INTEGRITY_COMPLETE = "mahjongcraft.history_screen.filter.integrity.complete"
+
+    /** 歷史紀錄不完整狀態。 */
+    const val INTEGRITY_INCOMPLETE = "mahjongcraft.history_screen.filter.integrity.incomplete"
+
+    /** 未知值文字。 */
+    const val UNKNOWN = "mahjongcraft.history_screen.unknown"
+
+    /** 等待列表結果。 */
+    const val LOADING = "mahjongcraft.history_screen.loading"
+
+    /** 空列表提示。 */
+    const val EMPTY = "mahjongcraft.history_screen.empty"
+
+    /** 查詢失敗：查詢已停用。 */
+    const val FAILURE_QUERY_DISABLED = "mahjongcraft.history_screen.failure.query_disabled"
+
+    /** 查詢失敗：沒有權限。 */
+    const val FAILURE_ACCESS_DENIED = "mahjongcraft.history_screen.failure.access_denied"
+
+    /** 查詢失敗：請求無效。 */
+    const val FAILURE_INVALID_REQUEST = "mahjongcraft.history_screen.failure.invalid_request"
+
+    /** 查詢失敗：紀錄不存在。 */
+    const val FAILURE_NOT_AVAILABLE = "mahjongcraft.history_screen.failure.not_available"
+
+    /** 查詢失敗：伺服器忙碌。 */
+    const val FAILURE_BUSY = "mahjongcraft.history_screen.failure.busy"
+
+    /** 查詢失敗：查詢過於頻繁。 */
+    const val FAILURE_RATE_LIMITED = "mahjongcraft.history_screen.failure.rate_limited"
+
+    /** 查詢失敗：伺服器逾時。 */
+    const val FAILURE_SERVER_TIMEOUT = "mahjongcraft.history_screen.failure.server_timeout"
+
+    /** 查詢失敗：已中斷連線。 */
+    const val FAILURE_DISCONNECTED = "mahjongcraft.history_screen.failure.disconnected"
+
+    /** 查詢失敗：內容過大。 */
+    const val FAILURE_CONTENT_TOO_LARGE = "mahjongcraft.history_screen.failure.content_too_large"
+
+    /** 查詢失敗：送出失敗。 */
+    const val FAILURE_SEND_FAILED = "mahjongcraft.history_screen.failure.send_failed"
+
+    /** 查詢失敗：客戶端逾時。 */
+    const val FAILURE_CLIENT_TIMEOUT = "mahjongcraft.history_screen.failure.client_timeout"
+
+    /** 保存狀態：保存中。 */
+    const val ARCHIVE_STATUS_PENDING = "mahjongcraft.history_screen.archive_status.pending"
+
+    /** 保存狀態：不保存。 */
+    const val ARCHIVE_STATUS_EXCLUDED = "mahjongcraft.history_screen.archive_status.excluded"
+
+    /** 保存狀態：保存已停用。 */
+    const val ARCHIVE_STATUS_DISABLED = "mahjongcraft.history_screen.archive_status.disabled"
+
+    /** 保存狀態：保存失敗。 */
+    const val ARCHIVE_STATUS_FAILED = "mahjongcraft.history_screen.archive_status.failed"
+
+    /** 保存狀態：找不到紀錄。 */
+    const val ARCHIVE_STATUS_MISSING = "mahjongcraft.history_screen.archive_status.missing"
+
+    /** 保存狀態：沒有權限。 */
+    const val ARCHIVE_STATUS_DENIED = "mahjongcraft.history_screen.archive_status.denied"
+
+    /** 重試按鈕。 */
+    const val RETRY = "mahjongcraft.history_screen.retry"
+
+    /** 關閉按鈕。 */
+    const val CLOSE = "mahjongcraft.history_screen.close"
+
+    /** 重新整理按鈕。 */
+    const val REFRESH = "mahjongcraft.history_screen.refresh"
+
+    /** 重新整理 tooltip。 */
+    const val REFRESH_TOOLTIP = "mahjongcraft.history_screen.tooltip.refresh"
+
+    /** 查詢尚未完成時的操作說明。 */
+    const val QUERY_LOADING_TOOLTIP = "mahjongcraft.history_screen.tooltip.query_loading"
+
+    /** 最短查詢間隔尚未經過時的操作說明。 */
+    const val QUERY_COOLDOWN_TOOLTIP = "mahjongcraft.history_screen.tooltip.query_cooldown"
+
+    /** 上一頁按鈕。 */
+    const val PREVIOUS = "mahjongcraft.history_screen.previous"
+
+    /** 下一頁按鈕。 */
+    const val NEXT = "mahjongcraft.history_screen.next"
+
+    /** 當前頁實際包含的紀錄索引範圍。 */
+    const val PAGE_RANGE = "mahjongcraft.history_screen.page_range"
+
+    /** 卡片 tooltip。 */
+    const val CARD_TOOLTIP = "mahjongcraft.history_screen.card_tooltip"
+
+    /** 卡片開啟對局摘要提示。 */
+    const val CARD_OPEN_HINT = "mahjongcraft.history_screen.card_open_hint"
+
+    /** 對局摘要標題。 */
+    const val SUMMARY_TITLE = "mahjongcraft.history_screen.summary.title"
+
+    /** 對局摘要基本資料區段。 */
+    const val SUMMARY_BASIC = "mahjongcraft.history_screen.summary.basic"
+
+    /** 對局摘要排名區段。 */
+    const val SUMMARY_RANKING = "mahjongcraft.history_screen.summary.ranking"
+
+    /** 對局摘要每局一列的局數標籤。 */
+    const val SUMMARY_ROUND_LABEL = "mahjongcraft.history_screen.summary.round_label"
+
+    /** 對局摘要每局一列的起訖時間與時長。 */
+    const val SUMMARY_ROUND_TIMES = "mahjongcraft.history_screen.summary.round_times"
+
+    /** 對局 ID 旁的複製按鈕。 */
+    const val SUMMARY_COPY = "mahjongcraft.history_screen.summary.copy"
+
+    /** 對局摘要對局識別碼標籤。 */
+    const val SUMMARY_MATCH_ID = "mahjongcraft.history_screen.summary.match_id"
+
+    /** 摘要所用規則的標籤。 */
+    const val SUMMARY_RULE = "mahjongcraft.history_screen.summary.rule"
+
+    /** 複製按鈕的操作提示。 */
+    const val SUMMARY_COPY_MATCH_ID = "mahjongcraft.history_screen.summary.copy_match_id"
+
+    /** 複製成功的短暫提示。 */
+    const val SUMMARY_MATCH_ID_COPIED = "mahjongcraft.history_screen.summary.match_id_copied"
+
+    /** 對局摘要開始時間標籤。 */
+    const val SUMMARY_STARTED_AT = "mahjongcraft.history_screen.summary.started_at"
+
+    /** 對局摘要結束時間標籤。 */
+    const val SUMMARY_ENDED_AT = "mahjongcraft.history_screen.summary.ended_at"
+
+    /** 對局摘要時長標籤。 */
+    const val SUMMARY_DURATION = "mahjongcraft.history_screen.summary.duration"
+
+    /** 對局摘要結果標籤。 */
+    const val SUMMARY_OUTCOME = "mahjongcraft.history_screen.summary.outcome"
+
+    /** 對局摘要局數標籤。 */
+    const val SUMMARY_ROUND_COUNT = "mahjongcraft.history_screen.summary.round_count"
+
+    /** 對局摘要結果不可用提示。 */
+    const val SUMMARY_RESULTS_UNAVAILABLE = "mahjongcraft.history_screen.summary.results_unavailable"
+
+    /** 對局摘要沒有局資料提示。 */
+    const val SUMMARY_ROUNDS_EMPTY = "mahjongcraft.history_screen.summary.rounds_empty"
+
+    /** 對局摘要排名欄標題。 */
+    const val SUMMARY_RANK_HEADER = "mahjongcraft.history_screen.summary.rank_header"
+
+    /** 對局摘要玩家欄標題。 */
+    const val SUMMARY_PLAYER_HEADER = "mahjongcraft.history_screen.summary.player_header"
+
+    /** 對局摘要分數欄標題。 */
+    const val SUMMARY_SCORE_HEADER = "mahjongcraft.history_screen.summary.score_header"
+
+    /** 對局摘要完整性提示。 */
+    const val SUMMARY_INTEGRITY_TOOLTIP = "mahjongcraft.history_screen.summary.integrity_tooltip"
+
+    /** 規則設定標題。 */
+    const val RULE_SETTINGS_TITLE = "mahjongcraft.history_screen.rule_settings.title"
+
+    /** 規則設定頁開啟規則一覽的按鈕。 */
+    const val RULE_CATALOGUE = "mahjongcraft.history_screen.rule_settings.rule_catalogue"
+
+    /** 規則設定頁開啟規則一覽按鈕的提示。 */
+    const val RULE_CATALOGUE_TOOLTIP = "mahjongcraft.history_screen.rule_settings.rule_catalogue_tooltip"
+
+    /** 規則設定入口提示。 */
+    const val RULE_SETTINGS_OPEN_HINT = "mahjongcraft.history_screen.rule_settings.open_hint"
+
+    /** 規則設定唯讀提示。 */
+    const val RULE_SETTINGS_READ_ONLY = "mahjongcraft.history_screen.rule_settings.read_only"
+
+    /** 規則設定資料不可用提示。 */
+    const val RULE_SETTINGS_UNAVAILABLE = "mahjongcraft.history_screen.rule_settings.unavailable"
+
+    /** 對局局數格式。 */
+    const val ROUNDS = "mahjongcraft.history_screen.rounds"
+
+    /** 摘要局列可點擊開啟單局紀錄的提示。 */
+    const val ROUND_OPEN_HINT = "mahjongcraft.history_screen.round_open_hint"
+
+    /** 單局事件畫面標題。 */
+    const val ROUND_TITLE = "mahjongcraft.history_screen.round.title"
+
+    /** 單局牌面狀態畫面標題。 */
+    const val STATE_TITLE = "mahjongcraft.history_screen.state.title"
+
+    /** 初始牌面狀態標籤。 */
+    const val STATE_INITIAL = "mahjongcraft.history_screen.state.initial"
+
+    /** 交易完成後牌面狀態標籤。 */
+    const val STATE_AFTER_TRANSACTION = "mahjongcraft.history_screen.state.after_transaction"
+
+    /** 開啟交易完成後完整牌面。 */
+    const val STATE_OPEN = "mahjongcraft.history_screen.state.open"
+
+    /** 開啟交易完成後完整牌面提示。 */
+    const val STATE_OPEN_TOOLTIP = "mahjongcraft.history_screen.state.open_tooltip"
+
+    /** 查看局面按鈕的操作提示。 */
+    const val STATE_OPEN_HINT = "mahjongcraft.history_screen.state.open_hint"
+
+    /** 開啟初始牌面。 */
+    const val STATE_INITIAL_OPEN = "mahjongcraft.history_screen.state.initial_open"
+
+    /** 手牌區標籤。 */
+    const val STATE_HAND = "mahjongcraft.history_screen.state.hand"
+
+    /** 保存順序的可點擊狀態文字。 */
+    const val STATE_SORT_ORIGINAL = "mahjongcraft.history_screen.state.sort_original"
+
+    /** 理牌順序的可點擊狀態文字。 */
+    const val STATE_SORT_SORTED = "mahjongcraft.history_screen.state.sort_sorted"
+
+    /** 手牌順序切換按鈕的說明。 */
+    const val STATE_SORT_DESCRIPTION = "mahjongcraft.history_screen.state.sort_description"
+
+    /** 無法解析規則牌序時的保留順序提示。 */
+    const val STATE_SORT_UNAVAILABLE = "mahjongcraft.history_screen.state.sort_unavailable"
+
+    /** 保存順序的狀態名稱。 */
+    const val STATE_SORT_MODE_ORIGINAL = "mahjongcraft.history_screen.state.sort_mode_original"
+
+    /** 理牌順序的狀態名稱。 */
+    const val STATE_SORT_MODE_SORTED = "mahjongcraft.history_screen.state.sort_mode_sorted"
+
+    /** 牌河標題與累計捨牌張數。 */
+    const val STATE_DISCARDS_COUNT = "mahjongcraft.history_screen.state.discards_count"
+
+    /** 牌河張數包含被鳴走捨牌的說明。 */
+    const val STATE_DISCARDS_COUNT_TOOLTIP = "mahjongcraft.history_screen.state.discards_count_tooltip"
+
+    /** 副露區標籤。 */
+    const val STATE_MELDS = "mahjongcraft.history_screen.state.melds"
+
+    /** 規則沒有登記標題的移出牌區使用的中立標題。 */
+    const val STATE_SET_ASIDE = "mahjongcraft.history_screen.state.set_aside"
+
+    /** 活牌區標籤。 */
+    const val STATE_WALL = "mahjongcraft.history_screen.state.wall"
+
+    /** 保留牌區標籤。 */
+    const val STATE_RESERVED = "mahjongcraft.history_screen.state.reserved"
+
+    /** 和牌手牌標籤。 */
+    const val STATE_WINNING_HAND = "mahjongcraft.history_screen.state.winning_hand"
+
+    /** 在事件明細展開完整和牌手牌的入口。 */
+    const val STATE_LOAD_WINNING_HAND = "mahjongcraft.history_screen.state.load_winning_hand"
+
+    /** 展開和牌手牌所需查詢與呈現位置的提示。 */
+    const val STATE_LOAD_WINNING_HAND_TOOLTIP = "mahjongcraft.history_screen.state.load_winning_hand_tooltip"
+
+    /** 未記錄完整和牌牌組提示。 */
+    const val STATE_WINNING_HAND_UNAVAILABLE = "mahjongcraft.history_screen.state.winning_hand_unavailable"
+
+    /** 副露被鳴的牌的來源玩家說明。 */
+    const val STATE_MELD_CLAIMED_FROM = "mahjongcraft.history_screen.state.meld_claimed_from"
+
+    /** 加槓補上的牌的說明。 */
+    const val STATE_MELD_ADDED_KAN = "mahjongcraft.history_screen.state.meld_added_kan"
+
+    /** 局內牌索引標籤。 */
+    const val STATE_TILE_INDEX = "mahjongcraft.history_screen.state.tile_index"
+
+    /** 牌河中被鳴走的牌，帶鳴走它的玩家。 */
+    const val STATE_TAKEN_BY = "mahjongcraft.history_screen.state.taken_by"
+
+    /** 牌牆展開區塊與兩區剩餘數量。 */
+    const val STATE_WALL_SECTION = "mahjongcraft.history_screen.state.wall_section"
+
+    /** 展開牌牆區塊的操作提示。 */
+    const val STATE_WALL_EXPAND_TOOLTIP = "mahjongcraft.history_screen.state.wall_expand_tooltip"
+
+    /** 收合牌牆區塊的操作提示。 */
+    const val STATE_WALL_COLLAPSE_TOOLTIP = "mahjongcraft.history_screen.state.wall_collapse_tooltip"
+
+    /** 空內容標籤。 */
+    const val STATE_EMPTY = "mahjongcraft.history_screen.state.empty"
+
+    /** 目前回合標籤。 */
+    const val STATE_CURRENT = "mahjongcraft.history_screen.state.current"
+
+    /** 莊家標籤。 */
+    const val STATE_DEALER = "mahjongcraft.history_screen.state.dealer"
+
+    /** 單局序號。 */
+    const val ROUND_NUMBER = "mahjongcraft.history_screen.round.number"
+
+    /** 開局交易標記。 */
+    const val ROUND_OPENING = "mahjongcraft.history_screen.round.opening"
+
+    /** 單局交易標題，參數為顯示索引與時間。 */
+    const val ROUND_TRANSACTION = "mahjongcraft.history_screen.round.transaction"
+
+    /** 單局事件中的直接牌列標籤。 */
+    const val ROUND_DIRECT_TILES = "mahjongcraft.history_screen.round.direct_tiles"
+
+    /** 單局事件中的新公開牌列標籤。 */
+    const val ROUND_REVEALED_TILES = "mahjongcraft.history_screen.round.revealed_tiles"
+
+    /** 單局事件中的玩家座位標籤。 */
+    const val ROUND_SEAT = "mahjongcraft.history_screen.round.seat"
+
+    /** 規則沒有登記換牌用語時使用的中立用語。 */
+    const val ROUND_REPLACEMENT = "mahjongcraft.history_screen.round.replacement"
+
+    /** 會產生換牌紀錄的規則選擇步驟開始時的文字，帶換牌用語。 */
+    const val ROUND_REPLACEMENT_STARTED = "mahjongcraft.history_screen.round.replacement.started"
+
+    /** 局首逐輪換牌的標題，帶輪次與換牌用語。 */
+    const val ROUND_REPLACEMENT_ROUND = "mahjongcraft.history_screen.round.replacement.round"
+
+    /** 依玩家列出一列牌時，牌前面的玩家名稱。 */
+    const val ROUND_SEAT_LINE = "mahjongcraft.history_screen.round.seat_line"
+
+    /** 單局事件中的結算分數列。 */
+    const val ROUND_SCORE = "mahjongcraft.history_screen.round.score"
+
+    /** 單局結算原因。 */
+    const val ROUND_OUTCOME_REASON = "mahjongcraft.history_screen.round.outcome_reason"
+
+    /** 單局結算分類。 */
+    const val ROUND_OUTCOME_CLASSIFICATION = "mahjongcraft.history_screen.round.outcome_classification"
+
+    /** 單局結算受益玩家。 */
+    const val ROUND_BENEFICIARY = "mahjongcraft.history_screen.round.beneficiary"
+
+    /** 單局結算責任玩家。 */
+    const val ROUND_RESPONSIBLE = "mahjongcraft.history_screen.round.responsible"
+
+    /** 單局回應事件格式。 */
+    const val ROUND_REACTION = "mahjongcraft.history_screen.round.reaction"
+
+    /** 動作即時收付事件格式。 */
+    const val ROUND_ACTION_SCORED = "mahjongcraft.history_screen.round.action_scored"
+
+    /** 動作即時收付並放入點數池的事件格式。 */
+    const val ROUND_ACTION_SCORED_POT_DEPOSIT = "mahjongcraft.history_screen.round.action_scored_pot_deposit"
+
+    /** 動作即時收付並從點數池取出的事件格式。 */
+    const val ROUND_ACTION_SCORED_POT_WITHDRAWAL = "mahjongcraft.history_screen.round.action_scored_pot_withdrawal"
+
+    /** 和牌後續流程已處理事件。 */
+    const val ROUND_EVENT_WIN_CONTINUATION = "mahjongcraft.history_screen.round.event.win_continuation"
+
+    /** 返回房間事件。 */
+    const val ROUND_EVENT_RETURNED_TO_ROOM = "mahjongcraft.history_screen.round.event.returned_to_room"
+
+    /** 對局開始事件。 */
+    const val ROUND_EVENT_MATCH_STARTED = "mahjongcraft.history_screen.round.event.match_started"
+
+    /** 本局開始事件。 */
+    const val ROUND_EVENT_ROUND_STARTED = "mahjongcraft.history_screen.round.event.round_started"
+
+    /** 遊戲開始操作。 */
+    const val ROUND_ACTION_GAME_STARTED = "mahjongcraft.history_screen.round.action.game_started"
+
+    /** 本局開始操作。 */
+    const val ROUND_ACTION_ROUND_STARTED = "mahjongcraft.history_screen.round.action.round_started"
+
+    /** 對局結束操作。 */
+    const val ROUND_ACTION_MATCH_ENDED = "mahjongcraft.history_screen.round.action.match_ended"
+
+    /** 擲骰操作。 */
+    const val ROUND_ACTION_DICE_ROLLED = "mahjongcraft.history_screen.round.action.dice_rolled"
+
+    /** 歷史事件中的一輪擲骰，帶輪次與骰子點數。 */
+    const val ROUND_EVENT_DICE_ROLLED = "mahjongcraft.history_screen.round.event.dice_rolled"
+
+    /** 回應處理完成。 */
+    const val ROUND_REACTION_NONE = "mahjongcraft.history_screen.round.reaction.none"
+
+    /** 單局選擇步驟格式。 */
+    const val RULE_DECISION = "mahjongcraft.history_screen.round.rule_decision"
+
+    /** 選擇步驟格式。 */
+    const val RULE_DECISION_STEP = "mahjongcraft.history_screen.round.rule_decision.step"
+
+    /** 規則選擇完成。 */
+    const val RULE_DECISION_NONE = "mahjongcraft.history_screen.round.rule_decision.none"
+
+    /** 接續選擇步驟。 */
+    const val RULE_DECISION_NEXT = "mahjongcraft.history_screen.round.rule_decision.next"
+
+    /** 選擇步驟開始。 */
+    const val RULE_DECISION_STARTED = "mahjongcraft.history_screen.round.rule_decision.started"
+
+    /** 玩家已提交規則選擇。 */
+    const val RULE_DECISION_SUBMITTED = "mahjongcraft.history_screen.round.rule_decision.submitted"
+
+    /** 單局完成事件格式。 */
+    const val ROUND_COMPLETION = "mahjongcraft.history_screen.round.completion"
+
+    /** 和牌結算事件格式。 */
+    const val ROUND_WIN_SETTLEMENT = "mahjongcraft.history_screen.round.win_settlement"
+
+    /** 單局規則效果事件格式。 */
+    const val ROUND_RULE_EFFECT = "mahjongcraft.history_screen.round.rule_effect"
+
+    /** 其他事件。 */
+    const val ROUND_UNKNOWN_FACT = "mahjongcraft.history_screen.round.unknown_fact"
+
+    /** 整場結束格式。 */
+    const val ROUND_MATCH_COMPLETION = "mahjongcraft.history_screen.round.match_completion"
+
+    /** 整場中途終止格式。 */
+    const val ROUND_MATCH_ABORTED = "mahjongcraft.history_screen.round.match_aborted"
+
+    /** 桌子消失的中途終止原因。 */
+    const val ROUND_ABORT_REASON_TABLE_MISSING = "mahjongcraft.history_screen.round.abort_reason.table_missing"
+
+    /** 玩家破壞桌子的中途終止原因。 */
+    const val ROUND_ABORT_REASON_TABLE_BROKEN_BY_PLAYER = "mahjongcraft.history_screen.round.abort_reason.table_broken_by_player"
+
+    /** 已完成預定賽程。 */
+    const val ROUND_OUTCOME_SCHEDULE_COMPLETED = "mahjongcraft.history_screen.round.outcome.schedule_completed"
+
+    /** 其他結算原因。 */
+    const val ROUND_OUTCOME_OTHER = "mahjongcraft.history_screen.round.outcome.other"
+
+    /** 已達終局點數。 */
+    const val ROUND_OUTCOME_TARGET_SCORE_REACHED = "mahjongcraft.history_screen.round.outcome.target_score_reached"
+
+    /** 已達延長賽上限。 */
+    const val ROUND_OUTCOME_EXTRA_ROUND_LIMIT_REACHED = "mahjongcraft.history_screen.round.outcome.extra_round_limit_reached"
+
+    /** 玩家分數達到終止門檻。 */
+    const val ROUND_OUTCOME_PLAYER_BUSTED = "mahjongcraft.history_screen.round.outcome.player_busted"
+
+    /** 和牌。 */
+    const val ROUND_CLASSIFICATION_WIN = "mahjongcraft.history_screen.round.classification.win"
+
+    /** 流局。 */
+    const val ROUND_CLASSIFICATION_EXHAUSTIVE_DRAW = "mahjongcraft.history_screen.round.classification.exhaustive_draw"
+
+    /** 途中流局。 */
+    const val ROUND_CLASSIFICATION_ABORTIVE_DRAW = "mahjongcraft.history_screen.round.classification.abortive_draw"
+
+    /** 擴充規則結算。 */
+    const val ROUND_CLASSIFICATION_EXTENSION = "mahjongcraft.history_screen.round.classification.extension"
+
+    /** 其他結算。 */
+    const val ROUND_CLASSIFICATION_OTHER = "mahjongcraft.history_screen.round.classification.other"
+
+    /** 其他操作。 */
+    const val ROUND_ACTION_OTHER = "mahjongcraft.history_screen.round.action.other"
+
+    /** 沒有語意事實提示。 */
+    const val ROUND_EMPTY_FACTS = "mahjongcraft.history_screen.round.empty_facts"
+
+    /** 單局沒有事件提示。 */
+    const val ROUND_NO_EVENTS = "mahjongcraft.history_screen.round.no_events"
+
+    /** 單局尚未取得結算提示。 */
+    const val ROUND_NO_OUTCOME_YET = "mahjongcraft.history_screen.round.no_outcome_yet"
+
+    /** 單局沒有結算提示。 */
+    const val ROUND_NO_OUTCOME = "mahjongcraft.history_screen.round.no_outcome"
+
+    /** 單局頁面範圍格式。 */
+    const val ROUND_PAGE_RANGE = "mahjongcraft.history_screen.round.page_range"
+
+    /** 和牌明細標題。 */
+    const val ROUND_WIN_DETAILS = "mahjongcraft.history_screen.round.win_details"
+
+    /** 未記錄和牌明細。 */
+    const val ROUND_WIN_DETAILS_UNAVAILABLE = "mahjongcraft.history_screen.round.win_details_unavailable"
+
+    /** 單局交易時間格式。 */
+    const val ROUND_TIMING = "mahjongcraft.history_screen.round.timing"
+
+    /** 中立槓牌動作名稱。 */
+    const val ROUND_ACTION_KAN = "mahjongcraft.history_screen.round.action.kan"
+
+    /** 中立摸牌動作名稱。 */
+    const val ROUND_ACTION_DRAW = "mahjongcraft.history_screen.round.action.draw"
+
+    /** 結算聊天訊息開啟歷史提示。 */
+    const val OPEN_HINT = "mahjongcraft.history_screen.open_hint"
+
+    /** 保存狀態查詢不可用。 */
+    const val ARCHIVE_UNAVAILABLE = "mahjongcraft.history_screen.archive_status.unavailable"
+
+    /** 紀錄範圍：自己的紀錄。 */
+    const val SCOPE_OWN = "mahjongcraft.history_screen.scope.own"
+
+    /** 紀錄範圍：全部紀錄。 */
+    const val SCOPE_ALL = "mahjongcraft.history_screen.scope.all"
+
+    /** 紀錄範圍：壓力測試紀錄。 */
+    const val SCOPE_STRESS_TEST = "mahjongcraft.history_screen.scope.stress_test"
+
+    /** 紀錄範圍 tooltip 標題。 */
+    const val SCOPE_TITLE = "mahjongcraft.history_screen.scope"
+
+    /** 排序欄位：結束時間。 */
+    const val SORT_ENDED_AT = "mahjongcraft.history_screen.sort.ended_at"
+
+    /** 排序欄位：對局時間。 */
+    const val SORT_DURATION = "mahjongcraft.history_screen.sort.duration"
+
+    /** 排序欄位：自己的名次。 */
+    const val SORT_OWN_RANK = "mahjongcraft.history_screen.sort.own_rank"
+
+    /** 排序欄位：自己的分數。 */
+    const val SORT_OWN_SCORE = "mahjongcraft.history_screen.sort.own_score"
+
+    /** 排序欄位 tooltip 標題。 */
+    const val SORT_TITLE = "mahjongcraft.history_screen.sort"
+
+    /** 排序方向：由小到大。 */
+    const val DIRECTION_ASC = "mahjongcraft.history_screen.direction.asc"
+
+    /** 排序方向：由大到小。 */
+    const val DIRECTION_DESC = "mahjongcraft.history_screen.direction.desc"
+
+    /** 排序方向 tooltip 標題。 */
+    const val DIRECTION_TITLE = "mahjongcraft.history_screen.direction"
+
+    /** 頁碼範圍下方的總數。 */
+    const val RANGE_TOTAL = "mahjongcraft.history_screen.range_total"
+
+    /** 上一頁按鈕的操作提示。 */
+    const val HINT_PREVIOUS_PAGE = "mahjongcraft.history_screen.hint.previous_page"
+
+    /** 上一頁按鈕按住 Shift 的操作提示。 */
+    const val HINT_FIRST_PAGE = "mahjongcraft.history_screen.hint.first_page"
+
+    /** 下一頁按鈕的操作提示。 */
+    const val HINT_NEXT_PAGE = "mahjongcraft.history_screen.hint.next_page"
+
+    /** 下一頁按鈕按住 Shift 的操作提示。 */
+    const val HINT_LAST_PAGE = "mahjongcraft.history_screen.hint.last_page"
+
+    /** 局面頁上一步按鈕的操作提示。 */
+    const val HINT_PREVIOUS_TRANSACTION = "mahjongcraft.history_screen.hint.previous_transaction"
+
+    /** 局面頁上一步按鈕按住 Shift 的操作提示。 */
+    const val HINT_INITIAL_STATE = "mahjongcraft.history_screen.hint.initial_state"
+
+    /** 局面頁下一步按鈕的操作提示。 */
+    const val HINT_NEXT_TRANSACTION = "mahjongcraft.history_screen.hint.next_transaction"
+
+    /** 局面頁下一步按鈕按住 Shift 的操作提示。 */
+    const val HINT_LAST_TRANSACTION = "mahjongcraft.history_screen.hint.last_transaction"
+
+    /** 牌譜回放畫面標題。 */
+    const val REPLAY_TITLE = "mahjongcraft.history_screen.replay.title"
+
+    /** 事件頁標題列開啟回放的按鈕。 */
+    const val REPLAY_OPEN = "mahjongcraft.history_screen.replay.open"
+
+    /** 從初始牌面開始回放的提示。 */
+    const val REPLAY_OPEN_TOOLTIP = "mahjongcraft.history_screen.replay.open_tooltip"
+
+    /** 交易卡片上從該筆交易後開始回放的提示。 */
+    const val REPLAY_OPEN_HERE_TOOLTIP = "mahjongcraft.history_screen.replay.open_here_tooltip"
+
+    /** 視角選擇器的標籤。 */
+    const val REPLAY_VIEW = "mahjongcraft.history_screen.replay.view"
+
+    /** 可拖曳轉動的自由視角。 */
+    const val REPLAY_VIEW_FREE = "mahjongcraft.history_screen.replay.view.free"
+
+    /** 某一家座位的視角：座位風與玩家名稱。 */
+    const val REPLAY_VIEW_SEAT = "mahjongcraft.history_screen.replay.view.seat"
+
+    /** 手牌顯示選擇器的標籤。 */
+    const val REPLAY_HAND = "mahjongcraft.history_screen.replay.hand"
+
+    /** 手牌和對局中一樣立著。 */
+    const val REPLAY_HAND_STANDING = "mahjongcraft.history_screen.replay.hand.standing"
+
+    /** 每一家的手牌面朝上攤開。 */
+    const val REPLAY_HAND_OPEN = "mahjongcraft.history_screen.replay.hand.open"
+
+    /** 播放速度選擇器的標籤。 */
+    const val REPLAY_SPEED = "mahjongcraft.history_screen.replay.speed"
+
+    /** 播放速度的倍數。 */
+    const val REPLAY_SPEED_VALUE = "mahjongcraft.history_screen.replay.speed.value"
+
+    /** 跳到初始牌面的按鈕說明。 */
+    const val REPLAY_FIRST = "mahjongcraft.history_screen.replay.first"
+
+    /** 上一筆交易的按鈕說明。 */
+    const val REPLAY_PREVIOUS = "mahjongcraft.history_screen.replay.previous"
+
+    /** 播放按鈕說明。 */
+    const val REPLAY_PLAY = "mahjongcraft.history_screen.replay.play"
+
+    /** 暫停按鈕說明。 */
+    const val REPLAY_PAUSE = "mahjongcraft.history_screen.replay.pause"
+
+    /** 下一筆交易的按鈕說明。 */
+    const val REPLAY_NEXT = "mahjongcraft.history_screen.replay.next"
+
+    /** 跳到最後一筆交易的按鈕說明。 */
+    const val REPLAY_LAST = "mahjongcraft.history_screen.replay.last"
+
+    /** 控制列上目前交易與總交易數。 */
+    const val REPLAY_COUNTER = "mahjongcraft.history_screen.replay.counter"
+
+    /** 場景下方說明目前交易的編號。 */
+    const val REPLAY_CAPTION = "mahjongcraft.history_screen.replay.caption"
+
+    /** 窄視窗叫出交易列表的按鈕。 */
+    const val REPLAY_LIST = "mahjongcraft.history_screen.replay.list"
+
+    /** 回放上一局。 */
+    const val REPLAY_PREVIOUS_ROUND = "mahjongcraft.history_screen.replay.previous_round"
+
+    /** 回放下一局。 */
+    const val REPLAY_NEXT_ROUND = "mahjongcraft.history_screen.replay.next_round"
+
+    /** 對局的總局數。 */
+    const val REPLAY_ROUND_TOTAL = "mahjongcraft.history_screen.replay.round_total"
+
+    /** 牌譜缺少擺放牌桌所需資料時的說明。 */
+    const val REPLAY_UNAVAILABLE = "mahjongcraft.history_screen.replay.unavailable"
+
+    /** 這台電腦沒有裝這場對局使用的規則，無法回放的說明。 */
+    const val REPLAY_RULE_NOT_INSTALLED = "mahjongcraft.history_screen.replay.rule_not_installed"
+
+    /** 這一步的牌桌擺不出來時的說明。 */
+    const val REPLAY_ARRANGEMENT_FAILED = "mahjongcraft.history_screen.replay.arrangement_failed"
+
+    /** 視角選項中的東家。 */
+    const val REPLAY_WIND_EAST = "mahjongcraft.history_screen.replay.wind.east"
+
+    /** 視角選項中的南家。 */
+    const val REPLAY_WIND_SOUTH = "mahjongcraft.history_screen.replay.wind.south"
+
+    /** 視角選項中的西家。 */
+    const val REPLAY_WIND_WEST = "mahjongcraft.history_screen.replay.wind.west"
+
+    /** 視角選項中的北家。 */
+    const val REPLAY_WIND_NORTH = "mahjongcraft.history_screen.replay.wind.north"
+
+    /** 場景切換成全螢幕的按鈕說明。 */
+    const val REPLAY_FULLSCREEN = "mahjongcraft.history_screen.replay.fullscreen"
+
+    /** 結束全螢幕的按鈕說明。 */
+    const val REPLAY_EXIT_FULLSCREEN = "mahjongcraft.history_screen.replay.exit_fullscreen"
+
+    /** 回放場景可見性的按鈕與畫面標題。 */
+    const val REPLAY_VISIBILITY = "mahjongcraft.history_screen.replay.visibility"
+
+    /** 可見性按鈕的說明。 */
+    const val REPLAY_VISIBILITY_TOOLTIP = "mahjongcraft.history_screen.replay.visibility.tooltip"
+
+    /** 可見性畫面標題下的目前視角，參數為視角名稱。 */
+    const val REPLAY_VISIBILITY_CURRENT_VIEW = "mahjongcraft.history_screen.replay.visibility.current_view"
+
+    /** 可見性畫面「人物」段落的標題。 */
+    const val REPLAY_VISIBILITY_FIGURES = "mahjongcraft.history_screen.replay.visibility.figures"
+
+    /** 可見性畫面「遊戲面板」段落的標題。 */
+    const val REPLAY_VISIBILITY_PANELS = "mahjongcraft.history_screen.replay.visibility.panels"
+
+    /** 可見性畫面「桌上物件」段落與該列的名稱。 */
+    const val REPLAY_VISIBILITY_TABLE_PROPS = "mahjongcraft.history_screen.replay.visibility.table_props"
+
+    /** 可見性畫面「特效」段落的標題。 */
+    const val REPLAY_VISIBILITY_EFFECTS = "mahjongcraft.history_screen.replay.visibility.effects"
+
+    /** 可見性畫面「胡牌特效」列的名稱。 */
+    const val REPLAY_VISIBILITY_WIN_EFFECT = "mahjongcraft.history_screen.replay.visibility.win_effect"
+
+    /** 可見性畫面「本局資訊」列的名稱。 */
+    const val REPLAY_VISIBILITY_ROUND_INFO = "mahjongcraft.history_screen.replay.visibility.round_info"
+
+    /** 可見性畫面一家玩家資訊列的名稱，參數為座位與玩家名稱。 */
+    const val REPLAY_VISIBILITY_PLAYER_INFO = "mahjongcraft.history_screen.replay.visibility.player_info"
+
+    /** 人物顯示方式「自動」。 */
+    const val REPLAY_VISIBILITY_AUTO = "mahjongcraft.history_screen.replay.visibility.auto"
+
+    /** 顯示方式「顯示」。 */
+    const val REPLAY_VISIBILITY_SHOWN = "mahjongcraft.history_screen.replay.visibility.shown"
+
+    /** 人物顯示方式「半透明」。 */
+    const val REPLAY_VISIBILITY_TRANSLUCENT = "mahjongcraft.history_screen.replay.visibility.translucent"
+
+    /** 顯示方式「隱藏」。 */
+    const val REPLAY_VISIBILITY_HIDDEN = "mahjongcraft.history_screen.replay.visibility.hidden"
+
+    /** 人物選擇器的說明。 */
+    const val REPLAY_VISIBILITY_FIGURE_DESCRIPTION = "mahjongcraft.history_screen.replay.visibility.figure.description"
+
+    /** 視角所在那一家的人物固定隱藏的原因。 */
+    const val REPLAY_VISIBILITY_FIGURE_VIEWED = "mahjongcraft.history_screen.replay.visibility.figure.viewed"
+
+    /** 視角所在那一家的玩家資訊固定隱藏的原因。 */
+    const val REPLAY_VISIBILITY_PLAYER_INFO_VIEWED = "mahjongcraft.history_screen.replay.visibility.player_info.viewed"
+
+    /** 本局資訊選擇器的說明。 */
+    const val REPLAY_VISIBILITY_ROUND_INFO_DESCRIPTION = "mahjongcraft.history_screen.replay.visibility.round_info.description"
+
+    /** 玩家資訊選擇器的說明。 */
+    const val REPLAY_VISIBILITY_PLAYER_INFO_DESCRIPTION = "mahjongcraft.history_screen.replay.visibility.player_info.description"
+
+    /** 桌上物件選擇器的說明。 */
+    const val REPLAY_VISIBILITY_TABLE_PROPS_DESCRIPTION = "mahjongcraft.history_screen.replay.visibility.table_props.description"
+
+    /** 胡牌特效選擇器的說明。 */
+    const val REPLAY_VISIBILITY_WIN_EFFECT_DESCRIPTION = "mahjongcraft.history_screen.replay.visibility.win_effect.description"
+
+    /** 可見性畫面的「恢復預設值」按鈕。 */
+    const val REPLAY_VISIBILITY_RESET = "mahjongcraft.history_screen.replay.visibility.reset"
+
+    /** 可見性畫面的「完成」按鈕。 */
+    const val REPLAY_VISIBILITY_DONE = "mahjongcraft.history_screen.replay.visibility.done"
+
+    /** 回放結算卡片的標題與重新顯示按鈕。 */
+    const val REPLAY_SETTLEMENT = "mahjongcraft.history_screen.replay.settlement"
+
+    /** 收起回放結算卡片的按鈕。 */
+    const val REPLAY_SETTLEMENT_HIDE = "mahjongcraft.history_screen.replay.settlement.hide"
+
+    /** 收起回放結算卡片按鈕的說明。 */
+    const val REPLAY_SETTLEMENT_HIDE_TOOLTIP = "mahjongcraft.history_screen.replay.settlement.hide_tooltip"
+
+    /** 重新顯示回放結算卡片按鈕的說明。 */
+    const val REPLAY_SETTLEMENT_SHOW_TOOLTIP = "mahjongcraft.history_screen.replay.settlement.show_tooltip"
+}

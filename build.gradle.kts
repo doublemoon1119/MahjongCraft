@@ -1,71 +1,30 @@
+import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestAggregate
+import com.doublemoon1119.mahjongcraft.buildlogic.registerCoverageAggregate
+
 plugins {
-    id("fabric-loom")
-    val kotlinVersion: String by System.getProperties()
-    kotlin("jvm").version(kotlinVersion)
-    kotlin("plugin.serialization").version(kotlinVersion)
+    base
+    alias(libs.plugins.mahjongcraft.target.management)
+    alias(libs.plugins.mahjongcraft.repository.verification)
+    // Declared once here so every module loads the same classes of these plugins. Loom modules that apply
+    // different plugin sets would otherwise load Loom in separate class loaders, and Loom fails when it
+    // reaches another project's extension, for example while an IDE sync creates genSources tasks.
+    alias(libs.plugins.kotlin.serialization) apply false
+    alias(libs.plugins.fabric.loom) apply false
+    alias(libs.plugins.moddev.legacyforge) apply false
+    alias(libs.plugins.moddev) apply false
+    alias(libs.plugins.koin.compiler) apply false
 }
 
-base {
-    val minecraftVersion: String by project
-    val archivesBaseName: String by project
-    archivesName.set("$archivesBaseName-mc$minecraftVersion")
-}
+group = "com.doublemoon1119.mahjongcraft"
+version = "0.0.0-dev"
 
-val modVersion: String by project
-version = modVersion
-val mavenGroup: String by project
-group = mavenGroup
+val projectId = "mahjongcraft"
+val projectDisplayName = "MahjongCraft"
+extra["projectId"] = projectId
+extra["projectDisplayName"] = projectDisplayName
 
-repositories {
-    maven(url = "https://server.bbkr.space/artifactory/libs-release") { name = "CottonMC" }
-    maven(url = "https://jitpack.io")  //Mahjong4j
-    maven(url = "https://maven.shedaniel.me/") //Cloth Config
-    maven(url = "https://maven.terraformersmc.com/") //Mod Menu
-}
+// -PmahjongcraftAutotest 時登記總任務 autotest：執行所選目標全部的自動測試並寫出總報告。
+registerAutotestAggregate()
 
-dependencies {
-    val minecraftVersion: String by project
-    minecraft("com.mojang:minecraft:$minecraftVersion")
-    val yarnMappings: String by project
-    mappings("net.fabricmc:yarn:$yarnMappings:v2")
-    val loaderVersion: String by project
-    modImplementation("net.fabricmc:fabric-loader:$loaderVersion")
-    val fabricVersion: String by project
-    modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricVersion")
-    val fabricKotlinVersion: String by project
-    modImplementation("net.fabricmc:fabric-language-kotlin:$fabricKotlinVersion")
-    // Mahjong4J (https://github.com/mahjong4j/mahjong4j)
-    include("com.github.mahjong4j:mahjong4j:0.3.2")?.let { modImplementation(it) }
-    // LibGui (https://github.com/cottonmc/libgui)
-    val libguiVersion: String by project
-    include("io.github.cottonmc:LibGui:$libguiVersion")?.let { modImplementation(it) }
-    val clothConfigVersion: String by project
-    // Cloth Config API (https://www.curseforge.com/minecraft/mc-mods/cloth-config)
-    modApi("me.shedaniel.cloth:cloth-config-fabric:$clothConfigVersion") {
-        exclude(group = "net.fabricmc.fabric-api")
-    }
-    // Mod Menu (https://www.curseforge.com/minecraft/mc-mods/modmenu)
-    val modMenuVersion: String by project
-    modImplementation("com.terraformersmc:modmenu:$modMenuVersion")
-}
-
-tasks {
-    val javaVersion = JavaVersion.VERSION_21
-    compileJava {
-        options.encoding = "UTF-8"
-        options.release.set(javaVersion.toString().toInt())
-        sourceCompatibility = "$javaVersion"
-        targetCompatibility = "$javaVersion"
-    }
-
-    jar { from("LICENSE") { rename { "${it}_${base.archivesName}" } } }
-    processResources {
-        inputs.property("version", project.version)
-        filesMatching("fabric.mod.json") { expand(mutableMapOf("version" to project.version)) }
-    }
-    java {
-        sourceCompatibility = javaVersion
-        targetCompatibility = javaVersion
-        withSourcesJar()
-    }
-}
+// -PmahjongcraftCoverage=true 時合併各模組的測試覆蓋率，koverHtmlReport 與 koverXmlReport 寫出總報告。
+registerCoverageAggregate()

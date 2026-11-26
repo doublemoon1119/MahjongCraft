@@ -1,0 +1,29 @@
+{
+  "display": {
+    "icon": {
+      "item": "mahjongcraft:mahjong_scoring_stick",
+      "nbt": "{denomination:\"P1000\"}"
+    },
+    "title": {
+      "translate": "advancements.mahjongcraft.riichi.root.title"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.riichi.root.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false,
+    "background": "minecraft:textures/block/dark_oak_planks.png"
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:riichi/match_completed"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,147 @@
+package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.LeaveReason
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
+import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.room.repository.FakeRoomRepository
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
+import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
+
+/**
+ * [LeaveRoomUseCase] 的單元測試類別。
+ */
+class LeaveRoomUseCaseTest {
+
+    /** 測試房間的識別碼。 */
+    private val roomId: Uuid = Uuid.random()
+
+    /** 測試房間房主的玩家識別碼。 */
+    private val hostId: Uuid = Uuid.random()
+
+    /** 測試房間使用的規則設定。 */
+    private val config: MahjongRuleConfig = FakeMahjongRuleConfig()
+
+    /**
+     * 測試普通玩家離開房間，驗證房間狀態更新與 Voluntary 通知。
+     */
+    @Test
+    fun `test guest player leaves with voluntary reason`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val service = FakeRoomEventPublisher()
+        val useCase = LeaveRoomUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
+
+        val guestId = Uuid.random()
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId, guestId))
+        roomRepo.setRoom(room)
+
+        // 模擬兩位玩家都在觀察
+        snapshotRepo.setSnapshot(hostId, room.toSnapshot(hostId))
+        snapshotRepo.setSnapshot(guestId, room.toSnapshot(guestId))
+
+        // Act
+        val result = useCase(roomId, guestId)
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        // Assert: 檢查通知
+        assertEquals(
+            expected = LeaveReason.Voluntary,
+            actual = service.getLeaveReason(roomId, guestId, guestId),
+            message = "The leaving guest should receive Voluntary reason.",
+        )
+
+        // Assert: 檢查快照更新（房主應看到玩家已離開）
+        val hostSnapshot = snapshotRepo.getSnapshot(roomId, hostId)
+        assertNotNull(hostSnapshot)
+        assertFalse(hostSnapshot.playerIds.contains(guestId), "Host snapshot should reflect guest left.")
+    }
+
+    /**
+     * 測試房主離開時，驗證房間解散且所有觀察者收到 Dissolved 通知。
+     */
+    @Test
+    fun `test all observers get dissolved reason when host leaves`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val service = FakeRoomEventPublisher()
+        val useCase = LeaveRoomUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
+
+        val guestId = Uuid.random()
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId, guestId))
+        roomRepo.setRoom(room)
+
+        // 模擬房主與客場玩家都在觀察該房間
+        snapshotRepo.setSnapshot(hostId, room.toSnapshot(hostId))
+        snapshotRepo.setSnapshot(guestId, room.toSnapshot(guestId))
+
+        // Act: 房主解散房間
+        val dissolveResult = useCase(roomId, hostId)
+        assertTrue(dissolveResult is Outcome.Success, "Expected Success but got $dissolveResult")
+
+        // Assert: 檢查解散通知
+        assertEquals(
+            expected = LeaveReason.Dissolved,
+            actual = service.getLeaveReason(roomId, hostId, hostId),
+            message = "Host should be notified of dissolution.",
+        )
+        assertEquals(
+            expected = LeaveReason.Dissolved,
+            actual = service.getLeaveReason(roomId, guestId, guestId),
+            message = "Guest should be notified of dissolution.",
+        )
+
+        // Assert: 檢查快照是否已移除
+        assertNull(snapshotRepo.getSnapshot(roomId, hostId), "Host snapshot should be removed.")
+        assertNull(snapshotRepo.getSnapshot(roomId, guestId), "Guest snapshot should be removed.")
+    }
+
+    /**
+     * 測試對不存在的房間執行離開操作時，應回傳 [RoomError.RoomNotFound]。
+     */
+    @Test
+    fun `test leave room fails when room does not exist`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val service = FakeRoomEventPublisher()
+        val useCase = LeaveRoomUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
+
+        val result = useCase(roomId, hostId)
+        assertTrue(result is Outcome.Error, "Expected Error but got $result")
+        assertEquals(RoomError.RoomNotFound(roomId), result.error)
+    }
+
+    /** 玩家成功離開後應釋放場地歸屬。 */
+    @Test
+    fun `test leaving room releases player membership`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val memberships = PlayerMembershipRepositoryImpl()
+        val guestId = Uuid.random()
+        roomRepo.setRoom(Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId, guestId)))
+        memberships.claim(guestId, roomId)
+        val useCase = LeaveRoomUseCase(
+            roomRepository = roomRepo,
+            membershipRepository = memberships,
+            snapshotRepository = FakeRoomSnapshotRepository(),
+            eventPublisher = FakeRoomEventPublisher(),
+        )
+
+        val result = useCase(roomId, guestId)
+
+        assertTrue(result is Outcome.Success)
+        assertNull(memberships.getVenueId(guestId))
+    }
+}

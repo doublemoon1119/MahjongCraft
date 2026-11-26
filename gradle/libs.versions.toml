@@ -1,0 +1,97 @@
+[versions]
+
+# MahjongCraft release trains
+# 各可發布模組的獨立版本；root project 與 testing modules 固定使用 0.0.0-dev。
+minecraft-mod-version = "0.4.0-SNAPSHOT"
+logic-version = "0.4.0-SNAPSHOT"
+flow-version = "0.4.0-SNAPSHOT"
+ai-version = "0.4.0-SNAPSHOT"
+extension-api-version = "0.4.0-SNAPSHOT"
+bundled-extensions-version = "0.4.0-SNAPSHOT"
+
+# MahjongCraft core JVM policy
+# toolchain 是執行編譯器與測試的 JDK；release 是產出 bytecode 的最低 Java 版本。
+# Minecraft version-specific modules 改由 gradle/platform/minecraft/<版本>/targets.toml 指定 Java policy。
+core-java-toolchain = "17"
+core-java-release = "17"
+
+# Kotlin ecosystem
+kotlin = "2.4.20"
+# 程式可使用的 Kotlin 標準函式庫 API 版本上限，不得高於任何建置目標執行時提供的 Kotlin。
+# 各目標提供的版本記錄在 gradle/platform/<平台>/<版本>/targets.toml 的 provided-versions。
+kotlin-api-version = "2.4"
+kotlinx-coroutines = "1.11.0"
+kotlinx-serialization = "1.11.0"
+kotlinx-datetime = "0.7.1-0.6.x-compat"
+ktoml = "0.7.1"
+exposed = "1.5.0"
+sqlite-jdbc = "3.53.4.0"
+
+# Dependency injection and build tooling
+koin-bom = "4.2.2"
+koin-plugin = "1.2.1"
+ktlint-gradle = "14.2.0"
+detekt = "2.0.0-alpha.6"
+kover = "0.9.11"
+
+# Minecraft build plugins
+# 可建置多個 Minecraft 版本的外掛；各 Minecraft 版本自己的依賴在 gradle/platform/minecraft/<版本>/versions.toml。
+fabric-loom = "1.17.19"
+moddev = "2.0.148"
+
+[libraries]
+
+# Build-logic implementation dependencies
+# 只供 included build 編譯 convention plugins，不會打包進 MahjongCraft runtime。
+kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+ktlint-gradle-plugin = { group = "org.jlleitschuh.gradle", name = "ktlint-gradle", version.ref = "ktlint-gradle" }
+detekt-gradle-plugin = { group = "dev.detekt", name = "detekt-gradle-plugin", version.ref = "detekt" }
+detekt-api = { group = "dev.detekt", name = "detekt-api", version.ref = "detekt" }
+detekt-kotlin-analysis-api = { group = "dev.detekt", name = "detekt-kotlin-analysis-api", version.ref = "detekt" }
+detekt-test = { group = "dev.detekt", name = "detekt-test", version.ref = "detekt" }
+kover-gradle-plugin = { group = "org.jetbrains.kotlinx", name = "kover-gradle-plugin", version.ref = "kover" }
+
+# Kotlin ecosystem libraries
+kotlinx-coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+ktoml-core = { group = "com.akuleshov7", name = "ktoml-core", version.ref = "ktoml" }
+kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version.ref = "kotlinx-datetime" }
+exposed-core = { group = "org.jetbrains.exposed", name = "exposed-core", version.ref = "exposed" }
+exposed-jdbc = { group = "org.jetbrains.exposed", name = "exposed-jdbc", version.ref = "exposed" }
+sqlite-jdbc = { group = "org.xerial", name = "sqlite-jdbc", version.ref = "sqlite-jdbc" }
+
+# Dependency injection libraries
+koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
+koin-core = { module = "io.insert-koin:koin-core" }
+
+# JVM artifacts of Kotlin multiplatform libraries
+# 只給無法處理多平台轉址的打包方式使用（例如 ModDevGradle 的 jar-in-jar）；一般模組使用上面的通用座標。
+# 版本與通用座標相同，Koin 的版本即 BOM 的版本。
+jvm-koin-core = { group = "io.insert-koin", name = "koin-core-jvm", version.ref = "koin-bom" }
+jvm-ktoml-core = { group = "com.akuleshov7", name = "ktoml-core-jvm", version.ref = "ktoml" }
+jvm-kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime-jvm", version.ref = "kotlinx-datetime" }
+
+[plugins]
+
+# MahjongCraft convention plugins
+# 由 build-logic included build 提供，因此不宣告外部版本。
+mahjongcraft-base = { id = "mahjongcraft.base" }
+mahjongcraft-public-api-abi = { id = "mahjongcraft.public-api-abi" }
+mahjongcraft-kotlin-multiplatform = { id = "mahjongcraft.kotlin-multiplatform" }
+mahjongcraft-minecraft-mod = { id = "mahjongcraft.minecraft-mod" }
+mahjongcraft-minecraft-loader = { id = "mahjongcraft.minecraft-loader" }
+mahjongcraft-target-management = { id = "mahjongcraft.target-management" }
+mahjongcraft-repository-verification = { id = "mahjongcraft.repository-verification" }
+
+# Kotlin and general build plugins
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+koin-compiler = { id = "io.insert-koin.compiler.plugin", version.ref = "koin-plugin" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }
+
+# Minecraft loader plugins
+fabric-loom = { id = "fabric-loom", version.ref = "fabric-loom" }
+moddev-legacyforge = { id = "net.neoforged.moddev.legacyforge", version.ref = "moddev" }
+moddev = { id = "net.neoforged.moddev", version.ref = "moddev" }

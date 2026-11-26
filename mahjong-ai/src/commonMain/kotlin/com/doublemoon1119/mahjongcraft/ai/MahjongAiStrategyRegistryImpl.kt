@@ -1,0 +1,34 @@
+package com.doublemoon1119.mahjongcraft.ai
+
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+
+/**
+ * [MahjongAiStrategyRegistry] 的預設實作。建構時是空的對照表，不預先塞入任何策略。要新增策略，
+ * 直接呼叫 [register] 即可，不需要修改這個類別——連內建的 [RandomAiStrategy] 也是透過
+ * `BuiltInMahjongExtension` 呼叫 [register] 註冊進來，跟第三方策略走同一套流程。
+ *
+ * @property defaultKey 找不到對應策略時的退回 key。由呼叫端決定要退回哪個內建策略，這個類別本身
+ *           不預設任何特定策略。
+ */
+class MahjongAiStrategyRegistryImpl(private val defaultKey: String) : MahjongAiStrategyRegistry {
+    /** 依註冊順序保存的策略建構方式。 */
+    private val factoriesByKey = linkedMapOf<String, () -> MahjongAiStrategy>()
+
+    /** 是否已禁止後續註冊。 */
+    private var frozen = false
+
+    override fun register(definition: MahjongAiStrategyDefinition) {
+        check(!frozen) { "AI strategy registry is frozen" }
+        NamespacedId.requireValid(definition.key) { "AI strategy key must be namespaced: ${definition.key}" }
+        require(definition.key !in factoriesByKey) { "AI strategy already registered: ${definition.key}" }
+        factoriesByKey[definition.key] = definition.factory
+    }
+
+    override fun freeze() {
+        frozen = true
+    }
+
+    override fun resolve(key: String?): MahjongAiStrategy = (factoriesByKey[key] ?: factoriesByKey.getValue(defaultKey)).invoke()
+
+    override fun getAllStrategyKeys(): Set<String> = factoriesByKey.keys
+}

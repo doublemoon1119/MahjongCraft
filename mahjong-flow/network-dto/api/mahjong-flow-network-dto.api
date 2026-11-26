@@ -1,0 +1,20 @@
+public abstract interface class com/doublemoon1119/mahjongcraft/flow/network/dto/api/registration/ComponentViewNetworkRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/flow/network/dto/component/ComponentViewNetworkDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/flow/network/dto/api/registration/DtoRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/flow/network/dto/registry/DtoDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/flow/network/dto/api/registration/NetworkDtoRegistrars {
+	public abstract fun getComponentViews ()Lcom/doublemoon1119/mahjongcraft/flow/network/dto/api/registration/ComponentViewNetworkRegistrar;
+	public abstract fun getExhaustiveDrawReason ()Lcom/doublemoon1119/mahjongcraft/flow/network/dto/api/registration/DtoRegistrar;
+	public abstract fun getExtensionGameAction ()Lcom/doublemoon1119/mahjongcraft/flow/network/dto/api/registration/DtoRegistrar;
+	public abstract fun getExtensionGameCommand ()Lcom/doublemoon1119/mahjongcraft/flow/network/dto/api/registration/DtoRegistrar;
+	public abstract fun getGameLength ()Lcom/doublemoon1119/mahjongcraft/flow/network/dto/api/registration/DtoRegistrar;
+	public abstract fun getRuleConfig ()Lcom/doublemoon1119/mahjongcraft/flow/network/dto/api/registration/DtoRegistrar;
+	public abstract fun getScoreConfig ()Lcom/doublemoon1119/mahjongcraft/flow/network/dto/api/registration/DtoRegistrar;
+}
+

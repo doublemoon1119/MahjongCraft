@@ -1,0 +1,417 @@
+package com.doublemoon1119.mahjongcraft.flow.persistence.format.state
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceEnvelopeDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceDto
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.failOnSkippedHistoryEvent
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.uuid.Uuid
+
+/** 驗證 Room 與 Game 同批保存的伺服器權威狀態。 */
+class AuthoritativeStatePersistenceDtoTest {
+
+    /** 內建規則配置的 persistence registry。 */
+    private val ruleConfigRegistry = bundledPersistenceRegistries().ruleConfigs
+
+    /** 內建牌河的 persistence registry。 */
+    private val discardPileRegistry = bundledPersistenceRegistries().discardPiles
+
+    /** 內建流局原因的 persistence registry。 */
+    private val exhaustiveDrawReasonRegistry = bundledPersistenceRegistries().exhaustiveDrawReasons
+
+    /** 內建擴充動作的 persistence registry。 */
+    private val extensionGameActionRegistry = bundledPersistenceRegistries().extensionGameActions
+
+    /** 驗證多個 Room 與 Game 能在同一 envelope 中完整編解碼。 */
+    @Test
+    fun `mixed rooms and games round-trip in one envelope`() {
+        val rooms = listOf(createRoom(), createRoom())
+        val games = listOf(createGame(), createGame())
+        val expected = createState(rooms, games)
+
+        val envelope = expected.toEnvelope()
+        val encoded = persistenceJson.encodeToString(PersistenceEnvelopeDto.serializer(), envelope)
+        val decodedEnvelope = persistenceJson.decodeFromString(
+            deserializer = PersistenceEnvelopeDto.serializer(),
+            string = encoded,
+        )
+        val restored = decodedEnvelope.decodeCurrentAuthoritativeState()
+
+        assertEquals(expected, restored)
+        assertEquals(rooms.associateBy(Room::id), restored.toRooms(ruleConfigRegistry))
+        assertEquals(games.map(TableState::id).toSet(), restored.toGames().keys)
+    }
+
+    /** 驗證 Room 轉成 Game 後，相同場地 ID 只存在於 Game 集合。 */
+    @Test
+    fun `room to game transition leaves only game state`() {
+        val venueId = Uuid.random()
+        val state = createState(emptyList(), listOf(createGame(venueId)))
+
+        assertTrue(state.rooms.isEmpty())
+        assertEquals(setOf(venueId.toString()), state.games.keys)
+    }
+
+    /** 驗證輸入集合中的重複 Room ID 不會被 map 轉換靜默覆蓋。 */
+    @Test
+    fun `duplicate room IDs are rejected before indexing`() {
+        val room = createRoom()
+
+        assertFailsWith<IllegalArgumentException> { createState(listOf(room, room.copy()), emptyList()) }
+    }
+
+    /** 驗證輸入集合中的重複 Game ID 不會被 map 轉換靜默覆蓋。 */
+    @Test
+    fun `duplicate game IDs are rejected before indexing`() {
+        val game = createGame()
+
+        assertFailsWith<IllegalArgumentException> { createState(emptyList(), listOf(game, game.copy())) }
+    }
+
+    /** 驗證索引 key 與 Room DTO 內部 ID 不一致時拒絕資料。 */
+    @Test
+    fun `mismatched room index is rejected`() {
+        val roomDto = createState(listOf(createRoom()), emptyList()).rooms.values.single()
+
+        assertFailsWith<IllegalArgumentException> {
+            AuthoritativeStatePersistenceDto(
+                rooms = mapOf(Uuid.random().toString() to roomDto),
+                games = emptyMap(),
+                gameFlowConfigs = emptyMap(),
+                gameRuntimeStates = emptyMap(),
+                historyRecordingState = HistoryRecordingPersistenceDto.EMPTY,
+            )
+        }
+    }
+
+    /** 驗證索引 key 與 Game DTO 內部 ID 不一致時拒絕資料。 */
+    @Test
+    fun `mismatched game index is rejected`() {
+        val state = createState(emptyList(), listOf(createGame()))
+        val gameDto = state.games.values.single()
+
+        assertFailsWith<IllegalArgumentException> {
+            AuthoritativeStatePersistenceDto(
+                rooms = emptyMap(),
+                games = mapOf(Uuid.random().toString() to gameDto),
+                gameFlowConfigs = state.gameFlowConfigs,
+                gameRuntimeStates = state.gameRuntimeStates,
+                historyRecordingState = HistoryRecordingPersistenceDto.EMPTY,
+            )
+        }
+    }
+
+    /** 驗證相同場地 ID 不可同時存在於 Room 與 Game。 */
+    @Test
+    fun `same venue ID cannot be both room and game`() {
+        val venueId = Uuid.random()
+        val roomDto = createState(listOf(createRoom(venueId)), emptyList()).rooms.getValue(venueId.toString())
+        val gameState = createState(emptyList(), listOf(createGame(venueId)))
+        val gameDto = gameState.games.getValue(venueId.toString())
+
+        assertFailsWith<IllegalArgumentException> {
+            AuthoritativeStatePersistenceDto(
+                rooms = mapOf(venueId.toString() to roomDto),
+                games = mapOf(venueId.toString() to gameDto),
+                gameFlowConfigs = gameState.gameFlowConfigs,
+                gameRuntimeStates = gameState.gameRuntimeStates,
+                historyRecordingState = HistoryRecordingPersistenceDto.EMPTY,
+            )
+        }
+    }
+
+    /** 驗證每個 Game 都必須具有對應的 runtime 狀態。 */
+    @Test
+    fun `missing game runtime state is rejected`() {
+        val state = createState(emptyList(), listOf(createGame()))
+
+        assertFailsWith<IllegalArgumentException> { state.copy(gameRuntimeStates = emptyMap()) }
+    }
+
+    /** 驗證 runtime 狀態中的玩家索引必須與 Game 玩家完全一致。 */
+    @Test
+    fun `mismatched runtime player IDs are rejected`() {
+        val state = createState(emptyList(), listOf(createGame()))
+        val gameId = state.games.keys.single()
+        val invalidRuntimeState = state.gameRuntimeStates.getValue(gameId).copy(
+            remainingReserveByPlayerId = mapOf(Uuid.random().toString() to 1.milliseconds),
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            state.copy(gameRuntimeStates = mapOf(gameId to invalidRuntimeState))
+        }
+    }
+
+    /** 驗證 persistence runtime 狀態不接受負數的剩餘保留思考時間。 */
+    @Test
+    fun `negative persisted reserve time is rejected`() {
+        val state = createState(emptyList(), listOf(createGame()))
+        val gameId = state.games.keys.single()
+        val playerId = state.games.getValue(gameId).players.single().id
+        val invalidRuntimeState = state.gameRuntimeStates.getValue(gameId).copy(
+            remainingReserveByPlayerId = mapOf(playerId to (-1).milliseconds),
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            state.copy(gameRuntimeStates = mapOf(gameId to invalidRuntimeState))
+        }
+    }
+
+    /** 驗證強制自動操作狀態會隨權威遊戲保存及恢復。 */
+    @Test
+    fun `forced auto play players round-trip`() {
+        val tableState = createGame()
+        val playerId = tableState.players.single().id
+        val game = Game(
+            tableState = tableState,
+            flowConfig = GameFlowConfig(),
+            forcedAutoPlayPlayerIds = setOf(playerId),
+        )
+        val state = createAuthoritativeStatePersistenceDto(
+            rooms = emptyList(),
+            games = listOf(game),
+            registries = bundledPersistenceRegistries(),
+            historyRecordingState = HistoryRecordingState(),
+            skippedHistoryEventReporter = failOnSkippedHistoryEvent,
+        )
+
+        val restored = state.toGames(
+            ruleConfigRegistry = ruleConfigRegistry,
+            discardPileRegistry = discardPileRegistry,
+            exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry = extensionGameActionRegistry,
+            componentRegistry = bundledPersistenceRegistries().components,
+        ).getValue(game.id)
+
+        assertEquals(setOf(playerId), restored.forcedAutoPlayPlayerIds)
+    }
+
+    /** 驗證 AI 操控的玩家與其策略 key 會隨權威遊戲保存及恢復。 */
+    @Test
+    fun `ai player strategy keys round-trip`() {
+        val tableState = createGame()
+        val playerId = tableState.players.single().id
+        val game = Game(
+            tableState = tableState,
+            flowConfig = GameFlowConfig(),
+            aiPlayerStrategyKeys = mapOf(playerId to "example:strategy"),
+        )
+        val state = createAuthoritativeStatePersistenceDto(
+            rooms = emptyList(),
+            games = listOf(game),
+            registries = bundledPersistenceRegistries(),
+            historyRecordingState = HistoryRecordingState(),
+            skippedHistoryEventReporter = failOnSkippedHistoryEvent,
+        )
+
+        val restored = state.toGames(
+            ruleConfigRegistry = ruleConfigRegistry,
+            discardPileRegistry = discardPileRegistry,
+            exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry = extensionGameActionRegistry,
+            componentRegistry = bundledPersistenceRegistries().components,
+        ).getValue(game.id)
+
+        assertEquals(mapOf(playerId to "example:strategy"), restored.aiPlayerStrategyKeys)
+    }
+
+    /** 驗證對局種子與已開局數會隨權威遊戲保存及恢復，伺服器重開後接著打仍使用同一串亂數。 */
+    @Test
+    fun `match seed and opened round count round-trip`() {
+        val seed = MatchSeed.fromByteArray(ByteArray(MatchSeed.SIZE_BYTES) { (it * 3).toByte() })
+        val game = Game(tableState = createGame(), flowConfig = GameFlowConfig(), matchSeed = seed, openedRoundCount = 5)
+        val state = createAuthoritativeStatePersistenceDto(
+            rooms = emptyList(),
+            games = listOf(game),
+            registries = bundledPersistenceRegistries(),
+            historyRecordingState = HistoryRecordingState(),
+            skippedHistoryEventReporter = failOnSkippedHistoryEvent,
+        )
+
+        val restored = state.toGames(
+            ruleConfigRegistry = ruleConfigRegistry,
+            discardPileRegistry = discardPileRegistry,
+            exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry = extensionGameActionRegistry,
+            componentRegistry = bundledPersistenceRegistries().components,
+        ).getValue(game.id)
+
+        assertEquals(seed, restored.matchSeed)
+        assertEquals(5, restored.openedRoundCount)
+    }
+
+    /** 驗證本局自動操作控制會隨權威遊戲保存及恢復。 */
+    @Test
+    fun `round automatic controls round-trip`() {
+        val tableState = createGame()
+        val playerId = tableState.players.single().id
+        val game = Game(
+            tableState = tableState,
+            flowConfig = GameFlowConfig(),
+            enabledAutomaticControlIdsByPlayerId = mapOf(playerId to setOf("example:auto_action")),
+            automaticControlRevision = 12L,
+        )
+        val state = createAuthoritativeStatePersistenceDto(
+            rooms = emptyList(),
+            games = listOf(game),
+            registries = bundledPersistenceRegistries(),
+            historyRecordingState = HistoryRecordingState(),
+            skippedHistoryEventReporter = failOnSkippedHistoryEvent,
+        )
+
+        val restored = state.toGames(
+            ruleConfigRegistry = ruleConfigRegistry,
+            discardPileRegistry = discardPileRegistry,
+            exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry = extensionGameActionRegistry,
+            componentRegistry = bundledPersistenceRegistries().components,
+        ).getValue(game.id)
+
+        assertEquals(
+            expected = mapOf(playerId to setOf("example:auto_action")),
+            actual = restored.enabledAutomaticControlIdsByPlayerId,
+        )
+        assertEquals(12L, restored.automaticControlRevision)
+    }
+
+    /** 驗證中斷時尚未使用的基本思考時間能完整保存及還原。 */
+    @Test
+    fun `interrupted base time round-trips`() {
+        val tableState = createGame()
+        val playerId = tableState.players.single().id
+        val game = Game(
+            tableState = tableState,
+            flowConfig = GameFlowConfig(),
+            interruptedBaseByPlayerId = mapOf(playerId to 3_500.milliseconds),
+        )
+        val state = createAuthoritativeStatePersistenceDto(
+            rooms = emptyList(),
+            games = listOf(game),
+            registries = bundledPersistenceRegistries(),
+            historyRecordingState = HistoryRecordingState(),
+            skippedHistoryEventReporter = failOnSkippedHistoryEvent,
+        )
+
+        val restored = state.toGames(
+            ruleConfigRegistry = ruleConfigRegistry,
+            discardPileRegistry = discardPileRegistry,
+            exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry = extensionGameActionRegistry,
+            componentRegistry = bundledPersistenceRegistries().components,
+        ).getValue(game.id)
+
+        assertEquals(mapOf(playerId to 3_500.milliseconds), restored.interruptedBaseByPlayerId)
+    }
+
+    /** 驗證強制自動操作索引不得包含遊戲以外的玩家。 */
+    @Test
+    fun `unknown forced auto play player is rejected`() {
+        val state = createState(emptyList(), listOf(createGame()))
+        val gameId = state.games.keys.single()
+        val invalidRuntimeState = state.gameRuntimeStates.getValue(gameId).copy(
+            forcedAutoPlayPlayerIds = setOf(Uuid.random().toString()),
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            state.copy(gameRuntimeStates = mapOf(gameId to invalidRuntimeState))
+        }
+    }
+
+    /** 驗證 AI 策略索引不得包含遊戲以外的玩家。 */
+    @Test
+    fun `unknown ai player is rejected`() {
+        val state = createState(emptyList(), listOf(createGame()))
+        val gameId = state.games.keys.single()
+        val invalidRuntimeState = state.gameRuntimeStates.getValue(gameId).copy(
+            aiPlayerStrategyKeys = mapOf(Uuid.random().toString() to "example:strategy"),
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            state.copy(gameRuntimeStates = mapOf(gameId to invalidRuntimeState))
+        }
+    }
+
+    /**
+     * 建立使用台麻規則的等待階段房間。
+     *
+     * @param id 房間識別碼，省略時隨機產生。
+     * @return 僅有房主的測試房間。
+     */
+    private fun createRoom(id: Uuid = Uuid.random()): Room {
+        val hostId = Uuid.random()
+        return Room(
+            id = id,
+            hostId = hostId,
+            gameConfig = GameConfig(TaiwanRuleConfig()),
+            playerIds = listOf(hostId),
+        )
+    }
+
+    /**
+     * 建立使用台麻規則的最小桌況。
+     *
+     * @param id 桌況識別碼，省略時隨機產生。
+     * @return 含一位玩家與空牌山的測試桌況。
+     */
+    private fun createGame(id: Uuid = Uuid.random()): TableState {
+        val player = MahjongPlayer(
+            id = Uuid.random(),
+            initialSeatIndex = Wind.EAST.ordinal,
+            seatWind = Wind.EAST,
+            discardPile = TaiwanDiscardPile(),
+        )
+        return TableState(
+            id = id,
+            players = listOf(player),
+            config = TaiwanRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            dealerPlayerId = player.id,
+            turnPhase = TurnPhase.AwaitingDraw,
+        )
+    }
+
+    /**
+     * 使用所有內建註冊表建立伺服器權威狀態 DTO。
+     *
+     * @param rooms 要保存的房間。
+     * @param games 要以預設流程設定包裝成遊戲後保存的桌況。
+     * @return 同批保存房間與遊戲的權威狀態 DTO。
+     */
+    private fun createState(
+        rooms: Collection<Room>,
+        games: Collection<TableState>,
+    ): AuthoritativeStatePersistenceDto = createAuthoritativeStatePersistenceDto(
+        rooms = rooms,
+        games = games.map { Game(it, GameFlowConfig()) },
+        registries = bundledPersistenceRegistries(),
+        historyRecordingState = HistoryRecordingState(),
+        skippedHistoryEventReporter = failOnSkippedHistoryEvent,
+    )
+
+    /** 使用所有內建註冊表還原遊戲，再取出以遊戲 ID 索引的桌況。 */
+    private fun AuthoritativeStatePersistenceDto.toGames(): Map<Uuid, TableState> = toGames(
+        ruleConfigRegistry = ruleConfigRegistry,
+        discardPileRegistry = discardPileRegistry,
+        exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+        extensionGameActionRegistry = extensionGameActionRegistry,
+        componentRegistry = bundledPersistenceRegistries().components,
+    ).mapValues { it.value.tableState }
+}

@@ -1,0 +1,133 @@
+package com.doublemoon1119.mahjongcraft.flow.network.dto.registry
+
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.DtoRegistrar
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import kotlinx.serialization.KSerializer
+import kotlin.reflect.KClass
+
+/**
+ * 領域層開放介面（例如 [MahjongRuleConfig]）與其對應
+ * DTO 之間的通用註冊表，比照 [MahjongModuleRegistryImpl] 的既有精神：建構時是空
+ * 的對照表，各規則（例如日麻）在自己的 extension 呼叫 [register] 註冊進來，第三方規則模組要支援
+ * 序列化的話走同一套流程，這個類別本身不知道、也不在乎誰註冊了什麼。
+ *
+ * 領域層的這幾組型別本來就刻意設計成開放介面（讓第三方能註冊自己的規則），DTO 層如果寫死成
+ * `sealed interface` 會讓第三方規則完全無法被序列化，因此這裡改用執行期註冊表 +
+ * 動態 polymorphic provider 在每次編解碼時查詢 registry，而不是使用編譯期窮舉或在
+ * `SerializersModule` 建立時複製一份靜態清單。
+ *
+ * 擴充只透過 [DtoRegistrar] 登記。轉換時把 [converter] 提供的唯讀轉換交給已登記的轉換函式。
+ *
+ * @param Domain 領域層的開放介面型別。
+ * @param Dto 對應的 DTO 開放介面型別。
+ * @property converter 取得交給轉換函式的唯讀轉換，通常是所屬的整組網路 DTO registry。
+ */
+class DtoRegistry<Domain : Any, Dto : Any>(
+    private val converter: () -> NetworkDtoConverter,
+) : DtoRegistrar<Domain, Dto>,
+    DtoConverter<Domain, Dto> {
+
+    /**
+     * 將具體 DTO serializer 與雙向 mapper 綁在同一筆註冊資料。
+     *
+     * @param D 此項目接受的領域型別。
+     * @param T 對應的 DTO 型別。
+     * @property serializer 對應 DTO 型別的 serializer。
+     * @property toDto 將領域物件轉為 DTO 的函式。
+     * @property toDomain 將 DTO 還原為領域物件的函式。
+     */
+    private inner class Entry<D : Domain, T : Dto>(
+        val serializer: KSerializer<T>,
+        val toDto: (D, NetworkDtoConverter) -> T,
+        val toDomain: (T, NetworkDtoConverter) -> D,
+    )
+
+    /** 以領域具體型別查找註冊項目的索引。 */
+    private val byDomainClass = mutableMapOf<KClass<out Domain>, Entry<*, *>>()
+
+    /** 以 DTO 具體型別查找註冊項目的索引。 */
+    private val byDtoClass = mutableMapOf<KClass<out Dto>, Entry<*, *>>()
+
+    /** 以序列化名稱查找註冊項目的索引。 */
+    private val bySerialName = mutableMapOf<String, Entry<*, *>>()
+
+    /** 是否已禁止後續註冊。 */
+    private var frozen = false
+
+    /** 目前已登記 DTO 的穩定序列化名稱快照。 */
+    override val registrationKeys: Set<String> get() = bySerialName.keys.toSet()
+
+    /**
+     * 註冊一組領域型別 ↔ DTO 的對應關係。
+     *
+     * @param D 要登記的具體領域型別。
+     * @param T 對應的 DTO 型別。
+     * @param definition 領域型別、DTO 型別、serializer 與雙向 mapper 的完整定義。
+     */
+    override fun <D : Domain, T : Dto> register(definition: DtoDefinition<D, T>) {
+        check(!frozen) { "Network DTO registry is frozen" }
+        require(definition.domainClass !in byDomainClass) { "Network DTO already registered for ${definition.domainClass}" }
+        require(definition.dtoClass !in byDtoClass) { "Network domain mapping already registered for ${definition.dtoClass}" }
+        val serialName = definition.serializer.descriptor.serialName
+        require(serialName !in bySerialName) { "Network DTO serial name already registered: $serialName" }
+        val entry = Entry(definition.serializer, definition.toDto, definition.toDomain)
+        byDomainClass[definition.domainClass] = entry
+        byDtoClass[definition.dtoClass] = entry
+        bySerialName[serialName] = entry
+    }
+
+    /** 凍結註冊表。凍結後不得新增或覆寫 DTO mapper。 */
+    fun freeze() {
+        frozen = true
+    }
+
+    /**
+     * 將領域物件轉換成對應的 DTO。
+     *
+     * @param domain 要轉換的領域物件。
+     * @return 對應的 DTO。
+     * @throws IllegalStateException 若 [domain] 的具體類別尚未透過 [register] 註冊過。
+     */
+    @Suppress("UNCHECKED_CAST")
+    override fun toDto(domain: Domain): Dto {
+        val entry = byDomainClass[domain::class] as? Entry<Domain, Dto>
+            ?: error("No DTO registered for ${domain::class}")
+        return entry.toDto(domain, converter())
+    }
+
+    /**
+     * 將 DTO 轉換回對應的領域物件。
+     *
+     * @param dto 要轉換的 DTO。
+     * @return 對應的領域物件。
+     * @throws IllegalStateException 若 [dto] 的具體類別尚未透過 [register] 註冊過。
+     */
+    @Suppress("UNCHECKED_CAST")
+    override fun toDomain(dto: Dto): Domain {
+        val entry = byDtoClass[dto::class] as? Entry<Domain, Dto>
+            ?: error("No domain mapping registered for ${dto::class}")
+        return entry.toDomain(dto, converter())
+    }
+
+    /**
+     * 依執行期 DTO 型別取得 serializer。
+     *
+     * 這個查詢刻意保留動態性：即使 `Json` 早於 extension bootstrap 建立，之後完成的 DTO
+     * 註冊仍可由 polymorphic default provider 看見。
+     *
+     * @param dto 要查詢 serializer 的 DTO。
+     * @return 已註冊時回傳 serializer。未註冊時回傳 null。
+     */
+    @Suppress("UNCHECKED_CAST")
+    fun serializerFor(dto: Dto): KSerializer<Dto>? = (byDtoClass[dto::class] as? Entry<Domain, Dto>)?.serializer
+
+    /**
+     * 依序列化資料中的 discriminator 名稱取得 serializer，供動態 polymorphic 解碼使用。
+     *
+     * @param serialName 序列化資料中的 discriminator 名稱。
+     * @return 已註冊時回傳 serializer。未註冊時回傳 null。
+     */
+    @Suppress("UNCHECKED_CAST")
+    fun serializerFor(serialName: String): KSerializer<out Dto>? = (bySerialName[serialName] as? Entry<Domain, Dto>)?.serializer
+}

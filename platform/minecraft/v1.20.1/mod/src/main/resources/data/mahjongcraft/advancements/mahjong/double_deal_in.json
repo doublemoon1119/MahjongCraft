@@ -1,0 +1,28 @@
+{
+  "parent": "mahjongcraft:mahjong/first_deal_in",
+  "display": {
+    "icon": {
+      "item": "minecraft:fire_charge"
+    },
+    "title": {
+      "translate": "advancements.mahjongcraft.mahjong.double_deal_in.title"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.mahjong.double_deal_in.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:double_deal_in"
+        ]
+      }
+    }
+  }
+}

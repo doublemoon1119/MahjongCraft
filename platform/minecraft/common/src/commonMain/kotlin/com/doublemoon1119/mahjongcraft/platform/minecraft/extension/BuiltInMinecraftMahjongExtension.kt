@@ -1,0 +1,427 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
+
+import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
+import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
+import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefaultDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterFace
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AiCharacterRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AiStrategyDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AutomaticControlDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.DecisionStatusDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionVocabularyRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MatchSettlementPresentationTemplateRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MinecraftTileAssetRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.PlayerPortraitSourceRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.PublicPlayerIndicatorDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoomMemberAppearanceSourceRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundInfoLineDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleWordingRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSettlementPresentationTemplateRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInAutomaticControlDisplayOrders
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInAutomaticControlTranslationKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInMinecraftAutomaticControlIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameDefaultDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSource
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSource
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementFieldIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementTemplates
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplate
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldProviderDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInRoundInfoLineKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.BuiltInRuleWordingIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingDefaultDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileStyles
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.blackTextOnRedTile
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.redText
+
+/**
+ * MahjongCraft 不屬於任何規則的內建 Minecraft 呈現。所有規則中立的內建登記都寫在這裡。
+ *
+ * [MinecraftMahjongExtensionBootstrap] 在所有 extension 之前登記它，啟動報告將它的登記列為內建來源。
+ * 登記方式與其他 extension 相同，不具有覆寫或繞過重複 key 驗證的特權。
+ */
+object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
+    override val id: String = MahjongCraftMetadata.id("builtin")
+
+    override fun registerAiCharacters(registry: AiCharacterRegistrar) {
+        registry.register(BuiltInAiCharacters.TILE_MASCOT)
+    }
+
+    override fun registerRoomMemberAppearanceSources(registry: RoomMemberAppearanceSourceRegistrar) {
+        registry.register(
+            definition = RoomMemberAppearanceSourceDefinition(
+                providerId = BuiltInAiCharacters.ROOM_MODEL_SOURCE_ID,
+                priority = -100,
+                provider = { context ->
+                    if (context.isAi && context.hasLiveModel) {
+                        RoomMemberAppearanceSource.WorldEntityModel
+                    } else {
+                        context.character?.preview?.let { RoomMemberAppearanceSource.ActorPreview(it.capabilityId) }
+                    }
+                },
+            ),
+        )
+    }
+
+    override fun registerPlayerPortraitSources(registry: PlayerPortraitSourceRegistrar) {
+        registry.register(
+            definition = PlayerPortraitSourceDefinition(
+                providerId = BuiltInAiCharacters.PORTRAIT_SOURCE_ID,
+                priority = -100,
+                provider = { context ->
+                    when (val face = context.character?.face) {
+                        is AiCharacterFace.Tile -> PlayerPortraitSource.TileFace(face.assetKey)
+                        is AiCharacterFace.TextureRegion -> PlayerPortraitSource.TextureRegion(face.resourceId, face.u0, face.v0, face.u1, face.v1)
+                        null -> null
+                    }
+                },
+            ),
+        )
+    }
+
+    override fun registerTileAssets(registry: MinecraftTileAssetRegistrar) {
+        registry.register(BuiltInMinecraftTileAppearances.DEFAULT)
+        registry.register(BuiltInMinecraftTileAppearances.TRANSPARENT)
+        BuiltInMinecraftTileStyles.TRANSPARENT.forEach(registry::register)
+    }
+
+    override fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistrar) {
+        registry.register(AiStrategyDisplayNameDefinition(RandomAiStrategy.KEY, MinecraftMessageKeys.AI_STRATEGY_RANDOM))
+        registry.register(AiStrategyDisplayNameDefinition(BuiltInAiStrategyKeys.BEGINNER, MinecraftMessageKeys.AI_STRATEGY_BEGINNER))
+        registry.register(AiStrategyDisplayNameDefinition(BuiltInAiStrategyKeys.INTERMEDIATE, MinecraftMessageKeys.AI_STRATEGY_INTERMEDIATE))
+        registry.register(AiStrategyDisplayNameDefinition(BuiltInAiStrategyKeys.ADVANCED, MinecraftMessageKeys.AI_STRATEGY_ADVANCED))
+    }
+
+    override fun registerAutomaticControlDisplays(registry: AutomaticControlDisplayRegistrar) {
+        registry.register(
+            definition = AutomaticControlDisplayDefinition(
+                controlId = BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND,
+                display = AutomaticControlDisplay(
+                    labelTranslationKey = MinecraftClientConfigScreenKeys.AUTO_SORT_HAND,
+                    descriptionTranslationKey = MinecraftClientConfigScreenKeys.AUTO_SORT_HAND_DESCRIPTION,
+                    displayOrder = BuiltInAutomaticControlDisplayOrders.AUTO_SORT_HAND,
+                ),
+            ),
+        )
+        registry.register(
+            definition = AutomaticControlDisplayDefinition(
+                controlId = BuiltInAutomaticControlIds.AUTO_WIN,
+                display = AutomaticControlDisplay(
+                    labelTranslationKey = BuiltInAutomaticControlTranslationKeys.AUTO_WIN,
+                    descriptionTranslationKey = BuiltInAutomaticControlTranslationKeys.AUTO_WIN_DESCRIPTION,
+                    displayOrder = BuiltInAutomaticControlDisplayOrders.AUTO_WIN,
+                ),
+            ),
+        )
+        registry.register(
+            definition = AutomaticControlDisplayDefinition(
+                controlId = BuiltInAutomaticControlIds.DECLINE_CALLS,
+                display = AutomaticControlDisplay(
+                    labelTranslationKey = BuiltInAutomaticControlTranslationKeys.DECLINE_CALLS,
+                    descriptionTranslationKey = BuiltInAutomaticControlTranslationKeys.DECLINE_CALLS_DESCRIPTION,
+                    displayOrder = BuiltInAutomaticControlDisplayOrders.DECLINE_CALLS,
+                ),
+            ),
+        )
+        registry.register(
+            definition = AutomaticControlDisplayDefinition(
+                controlId = BuiltInAutomaticControlIds.AUTO_TSUMOGIRI,
+                display = AutomaticControlDisplay(
+                    labelTranslationKey = BuiltInAutomaticControlTranslationKeys.AUTO_TSUMOGIRI,
+                    descriptionTranslationKey = BuiltInAutomaticControlTranslationKeys.AUTO_TSUMOGIRI_DESCRIPTION,
+                    displayOrder = BuiltInAutomaticControlDisplayOrders.AUTO_TSUMOGIRI,
+                ),
+            ),
+        )
+    }
+
+    /**
+     * 34 種基本牌與未知牌的 asset key 對應的 Unicode「Mahjong Tiles」區塊字元（U+1F000~U+1F02F）。這組字元由
+     * `assets/minecraft/font/default.json`（見 `platform/minecraft/common/src/jvmMain/resources`）註冊成自訂 bitmap 字型，
+     * 讓文字內容直接顯示成牌面貼圖。規則專屬牌（例如日麻的赤五）由該規則的 extension 登記同一區塊的字元。
+     */
+    override fun registerTileEmojis(registry: TileEmojiRegistrar) {
+        registry.register(TileEmojiDefinition("east", "🀀"))
+        registry.register(TileEmojiDefinition("south", "🀁"))
+        registry.register(TileEmojiDefinition("west", "🀂"))
+        registry.register(TileEmojiDefinition("north", "🀃"))
+        registry.register(TileEmojiDefinition("red_dragon", "🀄"))
+        registry.register(TileEmojiDefinition("green_dragon", "🀅"))
+        registry.register(TileEmojiDefinition("white_dragon", "🀆"))
+        registry.register(TileEmojiDefinition("m1", "🀇"))
+        registry.register(TileEmojiDefinition("m2", "🀈"))
+        registry.register(TileEmojiDefinition("m3", "🀉"))
+        registry.register(TileEmojiDefinition("m4", "🀊"))
+        registry.register(TileEmojiDefinition("m5", "🀋"))
+        registry.register(TileEmojiDefinition("m6", "🀌"))
+        registry.register(TileEmojiDefinition("m7", "🀍"))
+        registry.register(TileEmojiDefinition("m8", "🀎"))
+        registry.register(TileEmojiDefinition("m9", "🀏"))
+        registry.register(TileEmojiDefinition("s1", "🀐"))
+        registry.register(TileEmojiDefinition("s2", "🀑"))
+        registry.register(TileEmojiDefinition("s3", "🀒"))
+        registry.register(TileEmojiDefinition("s4", "🀓"))
+        registry.register(TileEmojiDefinition("s5", "🀔"))
+        registry.register(TileEmojiDefinition("s6", "🀕"))
+        registry.register(TileEmojiDefinition("s7", "🀖"))
+        registry.register(TileEmojiDefinition("s8", "🀗"))
+        registry.register(TileEmojiDefinition("s9", "🀘"))
+        registry.register(TileEmojiDefinition("p1", "🀙"))
+        registry.register(TileEmojiDefinition("p2", "🀚"))
+        registry.register(TileEmojiDefinition("p3", "🀛"))
+        registry.register(TileEmojiDefinition("p4", "🀜"))
+        registry.register(TileEmojiDefinition("p5", "🀝"))
+        registry.register(TileEmojiDefinition("p6", "🀞"))
+        registry.register(TileEmojiDefinition("p7", "🀟"))
+        registry.register(TileEmojiDefinition("p8", "🀠"))
+        registry.register(TileEmojiDefinition("p9", "🀡"))
+        registry.register(TileEmojiDefinition(UNKNOWN_TILE_ASSET_KEY, "🀯"))
+    }
+
+    /**
+     * 34 種基本牌的牌面角落標籤，供非中文圈玩家開啟輔助標籤時使用。
+     *
+     * - 內建映射與第三方映射共用 [TileLabelRegistry.register]，不能覆寫或繞過重複 key 驗證。
+     * - [UNKNOWN_TILE_ASSET_KEY] 與尚未提供標籤的牌種一律不註冊。呈現端 [TileLabelRegistry.find] 回傳 `null` 時不顯示標籤。
+     * - 只有右上角標籤，左上角固定不顯示。
+     * - 顏色：牌面本身印成紅色的牌（紅中，以及例如日麻的赤五）用黑字，其餘用紅字。
+     * - 數牌只顯示點數數字，不標花色字母，花色已由牌面的餅／條／萬圖案表達。
+     * - 字牌用字母縮寫：東南西北為 E/S/W/N，紅中為 R，發為 G，白為 Wh。白用兩個字母，避免跟西風的 `W` 混淆。
+     */
+    override fun registerTileLabels(registry: TileLabelRegistrar) {
+        // 萬子
+        registry.register(TileLabelDefinition("m1", redText("1")))
+        registry.register(TileLabelDefinition("m2", redText("2")))
+        registry.register(TileLabelDefinition("m3", redText("3")))
+        registry.register(TileLabelDefinition("m4", redText("4")))
+        registry.register(TileLabelDefinition("m5", redText("5")))
+        registry.register(TileLabelDefinition("m6", redText("6")))
+        registry.register(TileLabelDefinition("m7", redText("7")))
+        registry.register(TileLabelDefinition("m8", redText("8")))
+        registry.register(TileLabelDefinition("m9", redText("9")))
+
+        // 條子
+        registry.register(TileLabelDefinition("s1", redText("1")))
+        registry.register(TileLabelDefinition("s2", redText("2")))
+        registry.register(TileLabelDefinition("s3", redText("3")))
+        registry.register(TileLabelDefinition("s4", redText("4")))
+        registry.register(TileLabelDefinition("s5", redText("5")))
+        registry.register(TileLabelDefinition("s6", redText("6")))
+        registry.register(TileLabelDefinition("s7", redText("7")))
+        registry.register(TileLabelDefinition("s8", redText("8")))
+        registry.register(TileLabelDefinition("s9", redText("9")))
+
+        // 餅子
+        registry.register(TileLabelDefinition("p1", redText("1")))
+        registry.register(TileLabelDefinition("p2", redText("2")))
+        registry.register(TileLabelDefinition("p3", redText("3")))
+        registry.register(TileLabelDefinition("p4", redText("4")))
+        registry.register(TileLabelDefinition("p5", redText("5")))
+        registry.register(TileLabelDefinition("p6", redText("6")))
+        registry.register(TileLabelDefinition("p7", redText("7")))
+        registry.register(TileLabelDefinition("p8", redText("8")))
+        registry.register(TileLabelDefinition("p9", redText("9")))
+
+        // 風牌
+        registry.register(TileLabelDefinition("east", redText("E")))
+        registry.register(TileLabelDefinition("south", redText("S")))
+        registry.register(TileLabelDefinition("west", redText("W")))
+        registry.register(TileLabelDefinition("north", redText("N")))
+
+        // 三元牌：紅中牌面本身印刷成紅色，跟赤牌歸為同一種黑字規則
+        registry.register(TileLabelDefinition("red_dragon", blackTextOnRedTile("R")))
+        registry.register(TileLabelDefinition("green_dragon", redText("G")))
+        registry.register(TileLabelDefinition("white_dragon", redText("Wh")))
+    }
+
+    /** 通用 fallback 模板與共用欄位。 */
+    override fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistrar) {
+        registry.register(BuiltInWinSettlementTemplates.GENERIC)
+        registry.register(
+            // 不攤牌的贏家沒有手牌，欄位不存在，版面可以整行省略。
+            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.COMPLETE_HAND) { snapshot ->
+                snapshot.tileAssetKeys.takeIf { it.isNotEmpty() }?.let(PresentationValue::TileListValue)
+            },
+        )
+        registry.register(
+            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.COMPLETE_HAND_GROUPS) { snapshot ->
+                snapshot.tileGroups.takeIf { groups -> groups.any { it.isNotEmpty() } }?.let(PresentationValue::TileGroupsValue)
+            },
+        )
+        registry.register(
+            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.OUTCOME_TITLE) { snapshot ->
+                PresentationValue.TextValue(snapshot.winActionLabelKey)
+            },
+        )
+        registry.register(
+            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.WINNER_SUMMARY) { snapshot ->
+                if (snapshot.isTsumo) {
+                    PresentationValue.TextValue("%s", listOf(snapshot.winnerDisplayName))
+                } else {
+                    PresentationValue.TextValue(
+                        translationKey = WinSettlementTextKeys.RON_RELATIONSHIP,
+                        arguments = listOf(snapshot.winnerDisplayName, snapshot.responsiblePlayerDisplayName.orEmpty()),
+                    )
+                }
+            },
+        )
+        registry.register(
+            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.WINNER_IDENTITY) { snapshot ->
+                PresentationValue.PlayerIdentityValue(snapshot.winnerId, snapshot.winnerDisplayName, snapshot.winnerIsAi)
+            },
+        )
+        registry.register(
+            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.RESPONSIBLE_PLAYER_IDENTITY) { snapshot ->
+                snapshot.responsiblePlayerId?.let { id ->
+                    PresentationValue.PlayerIdentityValue(
+                        playerId = id,
+                        displayName = snapshot.responsiblePlayerDisplayName.orEmpty(),
+                        isAi = snapshot.responsiblePlayerIsAi == true,
+                    )
+                }
+            },
+        )
+        registry.register(
+            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.RELATION_ARROW) { snapshot ->
+                snapshot.responsiblePlayerId?.let { PresentationValue.TextValue(WinSettlementTextKeys.RELATIONSHIP_ARROW) }
+            },
+        )
+        registry.register(WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.PAYMENT_SUMMARY) { null })
+        registry.register(
+            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.WINNING_TILE) { snapshot ->
+                snapshot.winningTileAssetKey?.let(PresentationValue::TileValue)
+            },
+        )
+        registry.register(
+            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.TOTAL_SCORE) { snapshot ->
+                PresentationValue.TextValue(WinSettlementTextKeys.TOTAL_SCORE, listOf(snapshot.totalScore.toString()))
+            },
+        )
+    }
+
+    override fun registerMatchSettlementPresentationTemplates(registry: MatchSettlementPresentationTemplateRegistrar) {
+        registry.register(
+            template = MatchSettlementPresentationTemplate(
+                key = BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY,
+                titleTranslationKey = MinecraftMessageKeys.MATCH_SETTLEMENT_TITLE,
+            ),
+        )
+    }
+
+    /** 不屬於任何規則的局況行：第幾局與牌牆剩餘張數。 */
+    override fun registerRoundInfoPresentations(registry: RoundInfoLineDisplayRegistrar) {
+        registry.register(RoundInfoLineDisplayDefinition(BuiltInRoundInfoLineKeys.ROUND_NUMBER, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_ROUND_NUMBER)))
+        registry.register(RoundInfoLineDisplayDefinition(BuiltInRoundInfoLineKeys.WALL_REMAINING, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_WALL_REMAINING)))
+    }
+
+    override fun registerPublicPlayerIndicatorDisplays(registry: PublicPlayerIndicatorDisplayRegistrar) {
+        registry.register(
+            definition = PublicPlayerIndicatorDisplayDefinition(
+                id = BuiltInPaymentReasonIds.PAO,
+                display = PublicPlayerIndicatorDisplay(MinecraftMessageKeys.PLAYER_INDICATOR_PAO, colorRgb = PAO_PAYMENT_REASON_COLOR),
+            ),
+        )
+    }
+
+    /** 摸完提示與牌譜槓動作的中立用語。說法不同的規則以同一個文字 ID 覆寫。 */
+    override fun registerRuleWordings(registry: RuleWordingRegistrar) {
+        registry.register(RuleWordingDefaultDefinition(BuiltInRuleWordingIds.WALL_EXHAUSTED, MinecraftMessageKeys.WALL_EXHAUSTED))
+        registry.register(RuleWordingDefaultDefinition(BuiltInRuleWordingIds.HISTORY_KAN, MinecraftHistoryScreenKeys.ROUND_ACTION_KAN))
+    }
+
+    /** 核心動作的中立預設用語與操作卡順序。說法不同的規則登記同一個動作 ID 即可覆寫，不需要改動呈現程式。 */
+    override fun registerGameActionVocabulary(registry: GameActionVocabularyRegistrar) {
+        registry.register(
+            definition = GameActionVocabularyDefaultDefinition(
+                actionId = BuiltInGameActionIds.CHI,
+                vocabulary = GameActionVocabulary(MinecraftHudKeys.ACTION_CHI, MinecraftMessageKeys.GAME_ACTION_CHI, order = 0),
+            ),
+        )
+        registry.register(
+            definition = GameActionVocabularyDefaultDefinition(
+                actionId = BuiltInGameActionIds.PON,
+                vocabulary = GameActionVocabulary(MinecraftHudKeys.ACTION_PON, MinecraftMessageKeys.GAME_ACTION_PON, order = 1),
+            ),
+        )
+        registry.register(
+            definition = GameActionVocabularyDefaultDefinition(
+                actionId = BuiltInGameActionIds.KAN_OPEN,
+                vocabulary = GameActionVocabulary(MinecraftHudKeys.ACTION_KAN_OPEN, MinecraftMessageKeys.GAME_ACTION_KAN_OPEN, order = 2),
+            ),
+        )
+        registry.register(
+            definition = GameActionVocabularyDefaultDefinition(
+                actionId = BuiltInGameActionIds.KAN_CLOSED,
+                vocabulary = GameActionVocabulary(MinecraftHudKeys.ACTION_KAN_CLOSED, MinecraftMessageKeys.GAME_ACTION_KAN_CLOSED, order = 2),
+            ),
+        )
+        registry.register(
+            definition = GameActionVocabularyDefaultDefinition(
+                actionId = BuiltInGameActionIds.KAN_ADDED,
+                vocabulary = GameActionVocabulary(MinecraftHudKeys.ACTION_KAN_ADDED, MinecraftMessageKeys.GAME_ACTION_KAN_ADDED, order = 2),
+            ),
+        )
+        registry.register(
+            definition = GameActionVocabularyDefaultDefinition(
+                actionId = BuiltInGameActionIds.RON,
+                vocabulary = GameActionVocabulary(MinecraftHudKeys.ACTION_RON, MinecraftMessageKeys.GAME_ACTION_RON, order = 3),
+            ),
+        )
+        registry.register(
+            definition = GameActionVocabularyDefaultDefinition(
+                actionId = BuiltInGameActionIds.TSUMO,
+                vocabulary = GameActionVocabulary(MinecraftHudKeys.ACTION_TSUMO, MinecraftMessageKeys.GAME_ACTION_TSUMO, order = 4),
+            ),
+        )
+        registry.register(
+            definition = GameActionVocabularyDefaultDefinition(
+                actionId = BuiltInGameActionIds.PASS,
+                vocabulary = GameActionVocabulary(MinecraftHudKeys.ACTION_PASS, MinecraftMessageKeys.GAME_ACTION_PASS),
+            ),
+        )
+        registry.register(
+            definition = GameActionVocabularyDefaultDefinition(
+                actionId = BuiltInGameActionIds.DISCARD,
+                vocabulary = GameActionVocabulary(MinecraftHudKeys.ACTION_DISCARD, MinecraftMessageKeys.GAME_ACTION_DISCARD),
+            ),
+        )
+    }
+
+    /** 中立預設：和牌資格沒有特殊限制。 */
+    override fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistrar) {
+        registry.register(DecisionStatusDisplayNameDefaultDefinition(WaitingTileAvailabilityIds.WIN_AVAILABLE, MinecraftHudKeys.WIN_AVAILABILITY_AVAILABLE))
+    }
+}
+
+/** 包牌付款原因的文字顏色。與分數增減的紅綠色區隔。 */
+private const val PAO_PAYMENT_REASON_COLOR: Int = 0xFFB05C

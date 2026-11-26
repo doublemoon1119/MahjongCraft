@@ -1,0 +1,333 @@
+package com.doublemoon1119.mahjongcraft.logic.table
+
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
+import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
+import kotlin.uuid.Uuid
+
+/**
+ * 代表一場麻將遊戲的通用全局狀態。
+ *
+ * 負責管理所有參與玩家、牌山、規則配置以及跨規則通用的局數資訊。
+ *
+ * @property components 此對象攜帶的規則組件。
+ * @property id 當前遊戲的唯一識別碼
+ * @property players 參與遊戲的玩家列表。
+ * @property config 當前遊戲的規則配置，包含物理參數與計分規則。
+ * @property tileWall 當前仍可依一般摸牌流程取得的牌堆。支援開門布局時，規則保留牌已在初始化階段排除並
+ * 另存於 [reservedWallTiles]。因此 [TileWall.remainingCount] 就是一般摸牌流程的剩餘張數，不得再次扣除
+ * [MahjongRuleConfig.reservedTileCount]。未支援開門布局的規則則由其初始化流程自行定義這個容器的內容。
+ * @property dealerPlayerId 本局權威莊家 Uuid。莊家身分與自風彼此獨立。
+ * @property prevalentWind 當前的場風（圈風）。
+ * @property roundNumber 當前的局數。
+ * @property roundPosition 整場對局中的權威局位。既有場風與絕對局數欄位必須與它一致。
+ * @property comboCount 連莊次數（日麻：本場數。台麻：連幾）。
+ * @property currentPlayerIndex 目前輪到執行動作的玩家索引。
+ * @property turnPhase 一局目前所處的階段。流程依它判斷玩家可以做什麼。
+ * @property wallOpening 本局權威擲骰決定的牌牆開門位置。規則尚未支援開門流程時為 null。
+ * @property openingDiceRolls 本局完整擲骰記錄。規則不使用擲骰時為空清單。
+ * @property reservedWallTiles 目前不由一般 [tileWall] 摸牌流程取得、改由規則解讀用途與順序的保留牌。日麻將它
+ * 解讀為王牌。其他規則可以維持連續牌牆、採用不同補牌語意或完全不使用保留牌。
+ * @property physicalWallLayout 目前仍位於活牌區與規則保留區的權威抽象實體位置。不支援實體布局的規則為 null。
+ * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合。
+ *   - 供第三方規則實作胡牌後本局不結束的玩法，例如持續胡牌局。
+ *   - 內建規則不寫入這個集合，對它們永遠是空集合。
+ *   - 座位、分數、快照仍保留這些玩家。見 [isPlayerActive]、[activePlayers]、[nextActivePlayerAfter]。
+ * @property publicTileEvidenceIds 本局曾明確對所有合法觀察者公開的牌張，不限目前所在區域。
+ * 私人授權不能寫入此集合。牌移動或更換持有人不清除公共證據，換局才清空。
+ * @property revealedHandSettlements 本局流局 resolver 第一次計算出的公開手牌與等待牌資料。呈現流程只讀這份結果，
+ * 每局重新開始時為空集合。
+ * @property roundSerial 這一局是本場對局開始的第幾局，從 `0` 起算。每開一局加一，連莊與流局重來的局也算。
+ * @property discardOrder 本局全桌打出的牌，依打出先後排列。各家牌河中的每張牌（包含被鳴走的）都剛好出現一次，
+ * 每局重新開始時為空清單。
+ */
+data class TableState(
+    val id: Uuid,
+    val players: List<MahjongPlayer>,
+    val config: MahjongRuleConfig,
+    val tileWall: TileWall,
+    val dealerPlayerId: Uuid,
+    val prevalentWind: Wind = Wind.EAST,
+    val roundNumber: Int = 1,
+    val roundPosition: MatchRoundPosition = MatchRoundPosition(
+        sequenceIndex = roundNumber - 1,
+        prevalentWind = prevalentWind,
+        localRoundNumber = ((roundNumber - 1) % players.size) + 1,
+    ),
+    val comboCount: Int = 0,
+    val currentPlayerIndex: Int = 0,
+    val turnPhase: TurnPhase,
+    val wallOpening: WallOpening? = null,
+    val openingDiceRolls: List<OpeningDiceRoll> = emptyList(),
+    val reservedWallTiles: List<IdentifiedTile> = emptyList(),
+    val physicalWallLayout: TileWallPhysicalLayout? = null,
+    val finishedPlayerIds: Set<Uuid> = emptySet(),
+    val publicTileEvidenceIds: Set<Uuid> = emptySet(),
+    val revealedHandSettlements: List<RevealedHandSettlement> = emptyList(),
+    val roundSerial: Int = 0,
+    val discardOrder: List<Uuid> = emptyList(),
+    val components: ComponentSet = ComponentSet.EMPTY,
+) {
+    init {
+        components.requireTarget(BuiltInComponentOwners.TABLE)
+        if (turnPhase == TurnPhase.AwaitingDraw || turnPhase == TurnPhase.AwaitingDiscard) {
+            require(players[currentPlayerIndex].hand.lastDrawn == null) { "$turnPhase requires the current player to hold no drawn tile" }
+        }
+        require(players.map { it.id }.distinct().size == players.size) { "Table players must have unique IDs" }
+        require(players.any { it.id == dealerPlayerId }) { "dealerPlayerId must belong to this table" }
+        require(players.map { it.initialSeatIndex }.sorted() == players.indices.toList()) {
+            "initialSeatIndex values must form a complete zero-based sequence"
+        }
+        require(players.map { it.seatWind }.distinct().size == players.size) {
+            "Players must have unique seat winds"
+        }
+        require(roundPosition.prevalentWind == prevalentWind) { "prevalentWind must match roundPosition" }
+        require(roundPosition.roundNumber == roundNumber) { "roundNumber must match roundPosition" }
+        require(roundSerial >= 0) { "roundSerial must not be negative" }
+        val discardedTileIds = players.flatMap { player -> player.discardPile.entries.map { it.tile.id } }
+        require(discardOrder.size == discardedTileIds.size && discardOrder.toSet() == discardedTileIds.toSet()) {
+            "discardOrder must list every discard exactly once"
+        }
+        physicalWallLayout?.let { layout ->
+            val wallTileIds = (tileWall.getAllTiles() + reservedWallTiles).mapTo(mutableSetOf()) { it.id }
+            require(layout.placements.keys == wallTileIds) {
+                "physicalWallLayout keys must match current wall and reserved tile IDs"
+            }
+        }
+        if (finishedPlayerIds.isNotEmpty()) {
+            val playerIds = players.mapTo(mutableSetOf()) { it.id }
+            require(finishedPlayerIds.all { it in playerIds }) {
+                "finishedPlayerIds must belong to this table: ${finishedPlayerIds - playerIds}"
+            }
+            if (players.isNotEmpty()) {
+                require(currentPlayer.id !in finishedPlayerIds) {
+                    "currentPlayerIndex must not point at a finished player: ${currentPlayer.id}"
+                }
+            }
+        }
+    }
+
+    /** 本局最後打出的牌。這張牌之後被鳴走或胡走仍是它，本局還沒有人打牌時為 null。 */
+    val lastDiscardTileId: Uuid? get() = discardOrder.lastOrNull()
+
+    /** 獲取參與遊戲的總人數。 */
+    val playerCount: Int get() = players.size
+
+    /** 目前尚待其他玩家回應（吃／碰／槓／過）的捨牌反應。不在這個階段時為 null。 */
+    val pendingReaction: PendingReaction? get() = (turnPhase as? TurnPhase.AwaitingDiscardReaction)?.reaction
+
+    /** 目前尚待其他玩家回應（搶和／過）的槓或移出手牌反應。不在這個階段時為 null。 */
+    val pendingRobbingReaction: PendingRobbingReaction? get() = (turnPhase as? TurnPhase.AwaitingRobbingReaction)?.reaction
+
+    /** 獲取目前輪到執行動作的玩家。 */
+    val currentPlayer: MahjongPlayer get() = players[currentPlayerIndex]
+
+    /** 本局權威莊家。 */
+    val dealer: MahjongPlayer get() = players[dealerIndex]
+
+    /** 本局權威莊家在固定座位順序中的索引。 */
+    val dealerIndex: Int get() = players.indexOfFirst { it.id == dealerPlayerId }
+
+    /** [playerId] 是否為本局權威莊家。 */
+    fun isDealer(playerId: Uuid): Boolean = playerId == dealerPlayerId
+
+    /** 尚未完成本局、仍參與後續回合的玩家，依 [players] 原本的座位順序排列。 */
+    val activePlayers: List<MahjongPlayer> get() = players.filterNot { it.id in finishedPlayerIds }
+
+    /**
+     * [playerId] 是否為本桌仍在本局中的玩家（在座、且尚未被標記為 [finishedPlayerIds]）。
+     *
+     * 不在本桌的 Uuid 一律回傳 `false`，而不是因為「不在 finished 集合裡」就當成 active——
+     * 這個函式的呼叫端全都是在問「這個人現在還能不能行動」，把陌生 Uuid 當成可以行動會讓打錯的
+     * 識別碼安靜地通過檢查。
+     */
+    fun isPlayerActive(playerId: Uuid): Boolean = players.any { it.id == playerId } && playerId !in finishedPlayerIds
+
+    /**
+     * [roundNumber] 換算成目前場風（[prevalentWind]）內的第幾局（`1` 起算）——[roundNumber] 本身是
+     * 跨場風累計的絕對局數（例如四人桌東 4 局結束後，南 1 局的 [roundNumber] 是 `5`），這個屬性把它
+     * 換算回場風內慣用的「東1局」那種局數表示法，供呈現層使用。
+     */
+    val localRoundNumber: Int get() = roundPosition.localRoundNumber
+
+    /**
+     * 初始化對局。
+     * 將所有玩家的分數根據 [config] 設定為初始分數，回傳套用後的新 [TableState] 實例。
+     *
+     * @return 所有玩家分數皆已初始化的新 [TableState] 實例。
+     */
+    fun init(): TableState {
+        val initialScore = config.scoreConfig.initialScore
+        return copy(players = players.map { it.copy(score = initialScore) })
+    }
+
+    /**
+     * 根據指定玩家獲取其下家（回合順序中的下一位玩家）。
+     *
+     * @param player 指定的玩家。
+     * @return 該玩家的下家。
+     * @throws IllegalArgumentException 當玩家不在該桌子上時拋出。
+     */
+    fun getNextPlayer(player: MahjongPlayer): MahjongPlayer {
+        val index = players.indexOf(player)
+        require(index != -1) { "Player not found in this table" }
+        return players[(index + 1) % playerCount]
+    }
+
+    /**
+     * 找出從 [afterPlayerId] 起算、下一位仍在本局中（未列入 [finishedPlayerIds]）的玩家。
+     *
+     * 與 [getNextPlayer] 的差異：[getNextPlayer] 回傳座位表上物理相鄰的下一位，不論其是否已完成
+     * 本局。此函式跳過 finished 玩家，用於決定「回合真正輪到誰」。座位相對方向（[relativeDirectionOf]）
+     * 與頭跳、供託候選順位（[playersInTurnOrderFrom]）仍應使用 [getNextPlayer] 那套完整座位順序，不應改用
+     * 這個函式。
+     *
+     * @param afterPlayerId 作為起算基準的玩家 Uuid（本身不必是 active）。
+     * @return 座位順序中，[afterPlayerId] 之後第一位 active 的玩家。
+     * @throws IllegalArgumentException [afterPlayerId] 不在本桌，或本桌沒有任何 active 玩家。
+     */
+    fun nextActivePlayerAfter(afterPlayerId: Uuid): MahjongPlayer {
+        val startIndex = players.indexOfFirst { it.id == afterPlayerId }
+        require(startIndex != -1) { "Player not found in this table: $afterPlayerId" }
+        require(activePlayers.isNotEmpty()) { "No active players remain in this table" }
+
+        var index = startIndex
+        repeat(playerCount) {
+            index = (index + 1) % playerCount
+            val candidate = players[index]
+            if (isPlayerActive(candidate.id)) return candidate
+        }
+        error("Unreachable: activePlayers is non-empty but no active player found after $afterPlayerId")
+    }
+
+    /**
+     * 依 [players] 目前的座位順序（即回合順序，與 [getNextPlayer] 使用同一套順序）計算
+     * [toPlayerId] 相對於 [fromPlayerId] 的方位。
+     *
+     * - 座位順序中的下一位玩家（[getNextPlayer]）是 [fromPlayerId] 的下家（[RelativeDirection.Right]）。
+     * - 順序中排在 [fromPlayerId] 前一位的玩家是上家（[RelativeDirection.Left]），也是唯一合法的吃牌來源。
+     * - 依序判斷自己、上家、下家，其餘才是對家（只有四人桌會出現）。
+     * - 這個順序在三人桌很重要：差值 2 同時等於 `playerCount - 1`，必須判定為上家而不是對家。
+     *
+     * @param fromPlayerId 作為方位判斷基準的玩家 Uuid。
+     * @param toPlayerId 欲判斷相對方位的玩家 Uuid。
+     * @return [toPlayerId] 相對於 [fromPlayerId] 的方位。若兩者相同則為 [RelativeDirection.Self]。
+     * @throws IllegalArgumentException 當任一玩家不在該桌子上時拋出。
+     */
+    fun relativeDirectionOf(fromPlayerId: Uuid, toPlayerId: Uuid): RelativeDirection {
+        val fromIndex = players.indexOfFirst { it.id == fromPlayerId }
+        require(fromIndex != -1) { "Player not found in this table" }
+        val toIndex = players.indexOfFirst { it.id == toPlayerId }
+        require(toIndex != -1) { "Player not found in this table" }
+
+        val diff = (toIndex - fromIndex).mod(playerCount)
+        return when (diff) {
+            0 -> RelativeDirection.Self
+            playerCount - 1 -> RelativeDirection.Left
+            1 -> RelativeDirection.Right
+            else -> RelativeDirection.Across
+        }
+    }
+
+    /**
+     * 依 [players] 的回合順序，從 [candidateIds] 中找出離 [fromPlayerId] 最近（依 [getNextPlayer] 方向、
+     * 即從下家開始算起）的玩家。用於頭跳（atama-hane）判定：同一張捨牌有多位玩家可反應時，
+     * 依序找出第一位符合資格的玩家。
+     *
+     * @param fromPlayerId 作為順位判斷基準的玩家 Uuid（例如放銃者）。
+     * @param candidateIds 候選玩家 Uuid 集合。
+     * @return [candidateIds] 中順位最接近 [fromPlayerId] 下家方向的玩家 Uuid。
+     * @throws IllegalArgumentException 當 [fromPlayerId] 不在桌上、[candidateIds] 為空、
+     *         或其中有玩家不在桌上時拋出。
+     */
+    fun nearestPlayerInTurnOrder(fromPlayerId: Uuid, candidateIds: Set<Uuid>): Uuid = playersInTurnOrderFrom(fromPlayerId, candidateIds).first()
+
+    /**
+     * 依 [players] 的回合順序，從 [fromPlayerId] 起算排列 [candidateIds]：[fromPlayerId] 本人若在候選中排最前，
+     * 接著依 [getNextPlayer] 方向排列。第一位就是 [nearestPlayerInTurnOrder] 的結果。
+     *
+     * @param fromPlayerId 作為起算基準的玩家 Uuid（例如放銃者或莊家）。
+     * @param candidateIds 候選玩家 Uuid 集合。
+     * @return 依上述順序排列的 [candidateIds]。
+     * @throws IllegalArgumentException 當 [fromPlayerId] 不在桌上、[candidateIds] 為空、
+     *         或其中有玩家不在桌上時拋出。
+     */
+    fun playersInTurnOrderFrom(fromPlayerId: Uuid, candidateIds: Set<Uuid>): List<Uuid> {
+        require(candidateIds.isNotEmpty()) { "candidateIds must not be empty" }
+        val fromIndex = players.indexOfFirst { it.id == fromPlayerId }
+        require(fromIndex != -1) { "Player not found in this table" }
+        return candidateIds.sortedBy { candidateId ->
+            val candidateIndex = players.indexOfFirst { it.id == candidateId }
+            require(candidateIndex != -1) { "Player not found in this table" }
+            (candidateIndex - fromIndex).mod(playerCount)
+        }
+    }
+
+    /**
+     * 套用已由 [MatchProgressionPolicy] 決定的局位變化與局間換位，以及本局保存的下一任莊家，不在此重新判斷終局。
+     *
+     * 過莊給下一位（[RoundTransitionDirective.PassToNextSeat]）依本局、也就是換位前的座位順序計算。換位只改變
+     * 下一局 `players` 的順序。玩家身分、分數與 [MahjongPlayer.initialSeatIndex] 都不變。
+     *
+     * @param transition 局位變化。
+     * @param directive 本局結束時保存的下一任莊家。連莊必須搭配 [RoundTransitionDirective.RepeatDealer]，前進局位必須搭配過莊。
+     * @param seatOrder 下一局完整的座位順序。null 表示不換位。
+     * @return 下一局初始化所需的權威資料。
+     * @throws IllegalArgumentException 局位變化與下一任莊家矛盾、指定的莊家不在本桌或就是現任莊家，或座位順序不是本桌玩家的完整排列。
+     */
+    fun advanceRound(
+        transition: MatchRoundTransition,
+        directive: RoundTransitionDirective,
+        seatOrder: List<Uuid>? = null,
+    ): RoundAdvancementResult {
+        val nextPlayers = seatOrder?.let { order ->
+            require(order.size == playerCount && order.toSet() == players.mapTo(mutableSetOf()) { it.id }) {
+                "Seat order must list every table player exactly once"
+            }
+            order.map { playerId -> players.first { it.id == playerId } }
+        } ?: players
+        return when (transition) {
+            MatchRoundTransition.RepeatCurrentRound -> {
+                require(directive == RoundTransitionDirective.RepeatDealer) { "Progression decision conflicts with dealer directive" }
+                RoundAdvancementResult(
+                    players = nextPlayers,
+                    dealerPlayerId = dealerPlayerId,
+                    roundSerial = roundSerial + 1,
+                    roundNumber = roundNumber,
+                    comboCount = comboCount + 1,
+                    prevalentWind = prevalentWind,
+                    roundPosition = roundPosition,
+                )
+            }
+
+            is MatchRoundTransition.AdvanceTo -> {
+                require(transition.nextPosition.sequenceIndex > roundPosition.sequenceIndex) {
+                    "Advanced match round position must move forward"
+                }
+                val nextDealerPlayerId = when (directive) {
+                    RoundTransitionDirective.RepeatDealer -> throw IllegalArgumentException("Progression decision conflicts with dealer directive")
+                    RoundTransitionDirective.PassToNextSeat -> getNextPlayer(dealer).id
+                    is RoundTransitionDirective.PassTo -> directive.nextDealerPlayerId.also { playerId ->
+                        require(players.any { it.id == playerId }) { "Next dealer must belong to this table" }
+                        require(playerId != dealerPlayerId) { "Passing the deal must choose another player" }
+                    }
+                }
+                RoundAdvancementResult(
+                    players = nextPlayers,
+                    dealerPlayerId = nextDealerPlayerId,
+                    roundSerial = roundSerial + 1,
+                    roundNumber = transition.nextPosition.roundNumber,
+                    comboCount = if (transition.continuesCombo) comboCount + 1 else 0,
+                    prevalentWind = transition.nextPosition.prevalentWind,
+                    roundPosition = transition.nextPosition,
+                )
+            }
+        }
+    }
+}

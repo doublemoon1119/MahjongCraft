@@ -1,0 +1,136 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
+
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordAbortiveDraw
+import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.DiscardReactionOptionsResolver
+import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
+import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
+import kotlin.uuid.Uuid
+
+/**
+ * 依一張剛打出的牌，計算其他玩家的吃／碰／槓／榮和資格，並套用結果到桌況的共用邏輯。
+ *
+ * 供 [DiscardTileUseCase]（一般捨牌）與 [DeclareRiichiUseCase]（立直宣告牌）共用。兩者只有捨牌前套用的規則狀態不同：
+ * 後者還套用立直宣告的玩家與對局組件。捨牌後其他玩家能否反應這張牌的計算完全相同。
+ *
+ * 一炮多響（同一張捨牌同時被多位玩家榮和）依 [MultiRonPolicy] 決定實際開放給誰。
+ * 恰有 2 人可榮和時查 [MultiRonPolicy.doubleRonResolution]，3 人以上查 [MultiRonPolicy.tripleRonResolution]：
+ *
+ * - [RonResolution.ALL_WINNERS]：全部開放。
+ * - [RonResolution.NEAREST_WINNER]：只開放依 [TableState.nearestPlayerInTurnOrder] 判定、最接近放銃者下家的那一位（頭跳）。
+ * - [RonResolution.ABORTIVE_DRAW]：規則模組提供途中流局原因時，這張捨牌讓本局直接結束。
+ *   吃／碰／槓資格一併作廢、不開反應視窗，[GameAction.ExhaustiveDraw] 記錄進全員的 `actionHistory`。
+ *   不結算任何點數，供託延續到下一局。
+ */
+internal object DiscardReactionResolver {
+
+    /**
+     * 計算並套用一張剛打出的牌的反應結果。
+     *
+     * @param stateBeforeDiscard 捨牌前的桌況，用於取得原本的 `currentPlayerIndex` 以計算下一位玩家。
+     * @param stateAfterDiscard 捨牌（含呼叫端套用的規則特有狀態變化）後的桌況。
+     * @param module 該對局採用的規則模組。
+     * @param discarderId 打出 [discardedTile] 的玩家 Uuid。
+     * @param discardedTile 剛打出的牌。
+     * @return 套用反應資格判定後的結果。
+     */
+    fun resolve(
+        stateBeforeDiscard: TableState,
+        stateAfterDiscard: TableState,
+        module: MahjongRuleModule<*>,
+        discarderId: Uuid,
+        discardedTile: IdentifiedTile,
+    ): Result {
+        // 先為每位其他玩家各算一次合法動作清單，因為榮和資格需要「先看過全部人」才能
+        // 判斷是否為一炮多響，不能像吃/碰/槓一樣邊算邊篩。
+        val legalActionsByOtherPlayer = stateAfterDiscard.players
+            .filter { it.id != discarderId && stateAfterDiscard.isPlayerActive(it.id) }
+            .associate { otherPlayer ->
+                otherPlayer.id to DiscardReactionOptionsResolver.resolveCandidates(
+                    state = stateAfterDiscard,
+                    module = module,
+                    playerId = otherPlayer.id,
+                    discarderId = discarderId,
+                    discardedTile = discardedTile,
+                )
+            }
+
+        val ronEligiblePlayerIds = legalActionsByOtherPlayer
+            .filterValues { candidates -> candidates.any { it.action is GameAction.Ron } }
+            .keys
+        val meldEligiblePlayerIds = legalActionsByOtherPlayer
+            .filterValues { candidates -> candidates.any { it.claimEffect != null } }
+            .keys
+
+        // 一炮多響：依規則設定決定實際開放榮和資格給誰（4 人對局扣除放銃者後最多
+        // 同時有 3 人可榮和，故只需區分雙響／三響兩種情境）。
+        val ronResolution = when (ronEligiblePlayerIds.size) {
+            0, 1 -> null
+            2 -> stateBeforeDiscard.config.multiRonPolicy.doubleRonResolution
+            else -> stateBeforeDiscard.config.multiRonPolicy.tripleRonResolution
+        }
+        val ronWinningPlayerIds = when (ronResolution) {
+            null, RonResolution.ALL_WINNERS -> ronEligiblePlayerIds
+            RonResolution.NEAREST_WINNER ->
+                setOf(stateAfterDiscard.nearestPlayerInTurnOrder(discarderId, ronEligiblePlayerIds))
+
+            RonResolution.ABORTIVE_DRAW -> emptySet()
+        }
+
+        val abortiveDrawReason = if (ronResolution == RonResolution.ABORTIVE_DRAW) {
+            RuleHookResultValidator.requireMultiRonAbortiveDrawReason(module)
+        } else {
+            null
+        }
+
+        val newState = if (abortiveDrawReason != null) {
+            // 途中流局：這張捨牌已經讓本局結束，吃/碰/槓資格一併作廢（不開反應視窗）、不結算任何
+            // 點數。流局動作記錄與規則決定的莊家去留，供後續流程與歷史使用。
+            stateAfterDiscard.recordAbortiveDraw(abortiveDrawReason, declarerId = null, module = module)
+        } else {
+            val eligiblePlayerIds = meldEligiblePlayerIds + ronWinningPlayerIds
+            if (eligiblePlayerIds.isEmpty()) {
+                // 沒有人能反應：這張牌已經交給每位其他玩家而沒有人榮和。
+                val nextPlayer = stateAfterDiscard.nextActivePlayerAfter(discarderId)
+                PassedTileRecorder.record(
+                    tableState = stateAfterDiscard.copy(
+                        currentPlayerIndex = stateAfterDiscard.players.indexOf(nextPlayer),
+                        turnPhase = TurnPhase.AwaitingDraw,
+                    ),
+                    tile = discardedTile,
+                    playerIds = legalActionsByOtherPlayer.keys,
+                    module = module,
+                )
+            } else {
+                stateAfterDiscard.copy(
+                    turnPhase = TurnPhase.AwaitingDiscardReaction(
+                        reaction = PendingReaction(
+                            discarderId = discarderId,
+                            tileId = discardedTile.id,
+                            eligiblePlayerIds = eligiblePlayerIds,
+                            ronPlayerIds = ronWinningPlayerIds,
+                            id = Uuid.random(),
+                        ),
+                    ),
+                )
+            }
+        }
+
+        return Result(newState, abortiveDrawReason)
+    }
+
+    /**
+     * [resolve] 的結果。
+     *
+     * @property tableState 套用反應資格判定後的桌況。
+     * @property abortiveDrawReason 若這張捨牌依一炮多響設定判定為流局則為對應的流局原因，否則為 null。
+     */
+    data class Result(val tableState: TableState, val abortiveDrawReason: ExhaustiveDrawReason?)
+}

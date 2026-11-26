@@ -1,0 +1,275 @@
+package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
+
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.flower.calculateTaiwanEightFlowers
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.flower.calculateTaiwanSevenFlowers
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.uuid.Uuid
+
+/** 逐筆付款、零台、花胡及數值上限的行為測試。 */
+class TaiwanPaymentCalculatorTest {
+    /** 四位互不相同的玩家。 */
+    private val players = List(4) { Uuid.random() }
+
+    /** 底30、每台10的既有預設。 */
+    private val config = TaiwanScoreConfig()
+
+    /** 四個莊家座位都必須按付款關係加台。 */
+    @Test
+    fun `self draw payments depend on the dealer relation for every seat`() {
+        players.forEach { dealer ->
+            players.forEach { winner ->
+                val result = TaiwanPaymentCalculator.calculate(
+                    config = config,
+                    playerIds = players,
+                    winnerId = winner,
+                    dealerId = dealer,
+                    handTai = 2,
+                    dealerStreak = 1,
+                    discarderId = null,
+                )
+                val expected = players.filter { it != winner }.associateWith { payer -> if (winner == dealer || payer == dealer) 80 else 50 }
+                assertEquals(expected, result.paymentsByPlayerId)
+                assertEquals(if (winner == dealer) 240 else 180, result.totalGained)
+                assertEquals(result.paymentsByPlayerId.values.sum(), result.totalGained)
+            }
+        }
+    }
+
+    /** 放槍只有一位付款，旁觀的莊家不會讓兩位閒家多付。 */
+    @Test
+    fun `discard wins charge only the discarder and only the applicable dealer tai`() {
+        players.forEach { dealer ->
+            players.forEach { winner ->
+                players.filter { it != winner }.forEach { payer ->
+                    val result = TaiwanPaymentCalculator.calculate(
+                        config = config,
+                        playerIds = players,
+                        winnerId = winner,
+                        dealerId = dealer,
+                        handTai = 2,
+                        dealerStreak = 1,
+                        discarderId = payer,
+                    )
+                    val expected = if (dealer == winner || dealer == payer) 80 else 50
+                    assertEquals(mapOf(payer to expected), result.paymentsByPlayerId)
+                    assertEquals(expected, result.totalGained)
+                }
+            }
+        }
+    }
+
+    /** 零台與初莊仍有底，莊家加一台。 */
+    @Test
+    fun `zero tai and initial dealer use base plus one dealer tai`() {
+        val result = TaiwanPaymentCalculator.calculate(
+            config = config,
+            playerIds = players,
+            winnerId = players[1],
+            dealerId = players[0],
+            handTai = 0,
+            dealerStreak = 0,
+            discarderId = null,
+        )
+        assertEquals(mapOf(players[0] to 40, players[2] to 30, players[3] to 30), result.paymentsByPlayerId)
+        assertEquals(100, result.totalGained)
+    }
+
+    /** 固定8台的花胡不額外混入手牌台，付款方由既有結算參數指定。 */
+    @Test
+    fun `eight flower win and seven flower claim retain distinct payment structures`() {
+        val eight = TaiwanPaymentCalculator.calculate(
+            config = config,
+            playerIds = players,
+            winnerId = players[1],
+            dealerId = players[0],
+            handTai = calculateTaiwanEightFlowers().tai,
+            dealerStreak = 0,
+            discarderId = null,
+        )
+        assertEquals(mapOf(players[0] to 120, players[2] to 110, players[3] to 110), eight.paymentsByPlayerId)
+        val seven = TaiwanPaymentCalculator.calculate(
+            config = config,
+            playerIds = players,
+            winnerId = players[1],
+            dealerId = players[0],
+            handTai = calculateTaiwanSevenFlowers().tai,
+            dealerStreak = 0,
+            discarderId = players[2],
+        )
+        assertEquals(mapOf(players[2] to 110), seven.paymentsByPlayerId)
+    }
+
+    /** 錯誤身分與負值不會變成一筆有效付款。 */
+    @Test
+    fun `invalid seats and negative values are rejected`() {
+        assertFailsWith<IllegalArgumentException> {
+            TaiwanPaymentCalculator.calculate(
+                config = config,
+                playerIds = players,
+                winnerId = players[1],
+                dealerId = players[0],
+                handTai = -1,
+                dealerStreak = 0,
+                discarderId = null,
+            )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            TaiwanPaymentCalculator.calculate(
+                config = config,
+                playerIds = players,
+                winnerId = players[1],
+                dealerId = players[0],
+                handTai = 1,
+                dealerStreak = -1,
+                discarderId = null,
+            )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            TaiwanPaymentCalculator.calculate(
+                config = config,
+                playerIds = players,
+                winnerId = players[1],
+                dealerId = players[0],
+                handTai = 1,
+                dealerStreak = 0,
+                discarderId = players[1],
+            )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            TaiwanPaymentCalculator.calculate(
+                config = config,
+                playerIds = players,
+                winnerId = Uuid.random(),
+                dealerId = players[0],
+                handTai = 1,
+                dealerStreak = 0,
+                discarderId = null,
+            )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            TaiwanPaymentCalculator.calculate(
+                config = config,
+                playerIds = List(4) { players[0] },
+                winnerId = players[0],
+                dealerId = players[0],
+                handTai = 1,
+                dealerStreak = 0,
+                discarderId = null,
+            )
+        }
+    }
+
+    /** 單筆乘加或三家加總溢位都必須安全拒絕。 */
+    @Test
+    fun `overflow in individual payments and total receipts is rejected`() {
+        assertFailsWith<IllegalArgumentException> {
+            TaiwanPaymentCalculator.calculate(
+                config = config,
+                playerIds = players,
+                winnerId = players[0],
+                dealerId = players[0],
+                handTai = Int.MAX_VALUE,
+                dealerStreak = Int.MAX_VALUE,
+                discarderId = null,
+            )
+        }
+        val largeBase = config.copy(baseScore = 1_000_000_000, pointPerTai = 0)
+        assertFailsWith<IllegalArgumentException> {
+            TaiwanPaymentCalculator.calculate(
+                config = largeBase,
+                playerIds = players,
+                winnerId = players[0],
+                dealerId = players[0],
+                handTai = 0,
+                dealerStreak = 0,
+                discarderId = null,
+            )
+        }
+        val free = config.copy(baseScore = 0, pointPerTai = 0)
+        val result = TaiwanPaymentCalculator.calculate(
+            config = free,
+            playerIds = players,
+            winnerId = players[0],
+            dealerId = players[0],
+            handTai = 0,
+            dealerStreak = 0,
+            discarderId = null,
+        )
+        assertEquals(0, result.totalGained)
+        assertTrueEmpty(result.paymentsByPlayerId)
+    }
+
+    /** 零付款不留下假的付款玩家。 */
+    private fun assertTrueEmpty(payments: Map<Uuid, Int>) = assertEquals(emptyMap(), payments)
+
+    /** 包牌自摸：包牌者付三家的份，總額與每份照原付款者計算的莊家台相同。 */
+    @Test
+    fun `pao self draw moves every share to the liable player`() {
+        val normal = TaiwanPaymentCalculator.calculate(
+            config = config,
+            playerIds = players,
+            winnerId = players[1],
+            dealerId = players[0],
+            handTai = 8,
+            dealerStreak = 1,
+            discarderId = null,
+        )
+
+        val pao = TaiwanPaymentCalculator.withPaoLiability(settlement = normal, paoPlayerId = players[3], discarderId = null)
+
+        assertEquals(mapOf(players[3] to normal.totalGained), pao.paymentsByPlayerId)
+        assertEquals(normal.totalGained, pao.totalGained)
+        assertEquals(mapOf(players[3] to BuiltInPaymentReasonIds.PAO), pao.paymentReasonIdsByPlayerId)
+    }
+
+    /** 包牌者本人放槍時照常由他付。 */
+    @Test
+    fun `pao player dealing in pays as usual`() {
+        val normal = ron(discarder = players[3], baseScore = 30)
+
+        val pao = TaiwanPaymentCalculator.withPaoLiability(settlement = normal, paoPlayerId = players[3], discarderId = players[3])
+
+        assertEquals(normal.paymentsByPlayerId, pao.paymentsByPlayerId)
+        assertEquals(mapOf(players[3] to BuiltInPaymentReasonIds.PAO), pao.paymentReasonIdsByPlayerId)
+    }
+
+    /** 別人放槍時包牌者與放槍者平分。除不盡時包牌者多付一點，總額不變。 */
+    @Test
+    fun `pao discard win by someone else is split with the liable player paying the odd point`() {
+        val even = ron(discarder = players[2], baseScore = 30)
+        val odd = ron(discarder = players[2], baseScore = 31)
+
+        val evenSplit = TaiwanPaymentCalculator.withPaoLiability(settlement = even, paoPlayerId = players[3], discarderId = players[2])
+        val oddSplit = TaiwanPaymentCalculator.withPaoLiability(settlement = odd, paoPlayerId = players[3], discarderId = players[2])
+
+        val evenAmount = even.totalGained
+        assertEquals(mapOf(players[3] to evenAmount / 2, players[2] to evenAmount / 2), evenSplit.paymentsByPlayerId)
+        val oddAmount = odd.totalGained
+        assertEquals(1, oddAmount % 2)
+        assertEquals(mapOf(players[3] to oddAmount / 2 + 1, players[2] to oddAmount / 2), oddSplit.paymentsByPlayerId)
+        assertEquals(oddAmount, oddSplit.paymentsByPlayerId.values.sum())
+    }
+
+    /**
+     * 閒家胡閒家放槍、8 台的一般付款。
+     *
+     * @param discarder 放槍者。
+     * @param baseScore 底分。
+     * @return 一般付款。
+     */
+    private fun ron(
+        discarder: Uuid,
+        baseScore: Int,
+    ) = TaiwanPaymentCalculator.calculate(
+        config = TaiwanScoreConfig(baseScore = baseScore),
+        playerIds = players,
+        winnerId = players[1],
+        dealerId = players[0],
+        handTai = 8,
+        dealerStreak = 0,
+        discarderId = discarder,
+    )
+}

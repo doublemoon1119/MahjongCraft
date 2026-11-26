@@ -1,0 +1,57 @@
+package com.doublemoon1119.mahjongcraft.logic.module
+
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import kotlin.reflect.KClass
+
+/**
+ * [MahjongModuleRegistry] 的預設實作。
+ *
+ * - 建構時是空的對照表，不會預先塞入任何規則。
+ * - 要新增規則，直接呼叫 [register]，不需要修改這個類別。
+ * - 內建規則也由外層組裝時呼叫 [register] 註冊，跟第三方規則走同一套流程。這個類別不區分註冊來源。
+ * - `:mahjong-logic` 不依賴 DI 框架。把這個類別綁定成 [MahjongModuleRegistry] 由外層組裝負責。
+ */
+class MahjongModuleRegistryImpl : MahjongModuleRegistry {
+
+    /**
+     * 保存規則模組的穩定識別碼與配置轉模組的建立函式。
+     *
+     * @property id 規則模組的 namespaced 識別碼。
+     * @property factory 依規則配置與模組識別碼建立規則模組的函式。
+     */
+    private class Entry(
+        val id: String,
+        val factory: (MahjongRuleConfig, String) -> MahjongRuleModule<*>,
+    )
+
+    private val entriesByConfigClass = mutableMapOf<KClass<out MahjongRuleConfig>, Entry>()
+
+    /** 是否已禁止後續註冊。 */
+    private var frozen = false
+
+    override fun <T : MahjongRuleConfig> register(definition: MahjongModuleDefinition<T>) {
+        check(!frozen) { "Mahjong module registry is frozen" }
+        NamespacedId.requireValid(definition.id) { "Mahjong module ID must be namespaced: ${definition.id}" }
+        require(definition.configClass !in entriesByConfigClass) { "Mahjong module already registered for ${definition.configClass}" }
+        require(entriesByConfigClass.values.none { it.id == definition.id }) { "Mahjong module ID already registered: ${definition.id}" }
+        @Suppress("UNCHECKED_CAST")
+        entriesByConfigClass[definition.configClass] = Entry(definition.id, definition.factory as (MahjongRuleConfig, String) -> MahjongRuleModule<*>)
+    }
+
+    override fun freeze() {
+        frozen = true
+    }
+
+    override fun <T : MahjongRuleConfig> getModule(config: T): MahjongRuleModule<T> {
+        val entry = entriesByConfigClass[config::class]
+            ?: error("No MahjongRuleModule registered for config class ${config::class}")
+
+        @Suppress("UNCHECKED_CAST")
+        return entry.factory(config, entry.id) as MahjongRuleModule<T>
+    }
+
+    override fun getAllModuleIds(): Set<String> = entriesByConfigClass.values.map { it.id }.toSet()
+
+    override fun getConfigClass(id: String): KClass<out MahjongRuleConfig>? = entriesByConfigClass.entries.find { it.value.id == id }?.key
+}

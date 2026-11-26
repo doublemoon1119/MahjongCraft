@@ -1,0 +1,29 @@
+{
+  "parent": "mahjongcraft:riichi/busted",
+  "display": {
+    "icon": {
+      "item": "mahjongcraft:mahjong_tile",
+      "nbt": "{tile:\"east\"}"
+    },
+    "title": {
+      "translate": "advancements.mahjongcraft.riichi.busted_in_east_one.title"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.riichi.busted_in_east_one.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:riichi/busted_in_east_one"
+        ]
+      }
+    }
+  }
+}

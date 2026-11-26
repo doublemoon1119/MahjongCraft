@@ -1,0 +1,37 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.config
+
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.seconds
+
+/** [MinecraftServerConfig] 預設生命週期政策的單元測試。 */
+class MinecraftServerConfigTest {
+    /** 預設值立即移除等待階段的斷線玩家，並拒絕破壞使用中的麻將桌。 */
+    @Test
+    fun `test defaults remove disconnected waiting players and deny breaking occupied tables`() {
+        val config = MinecraftServerConfig()
+
+        assertEquals(DisconnectedPlayerPolicy.LEAVE_IMMEDIATELY, config.disconnectedPlayerPolicy)
+        assertEquals(TableBreakPolicy.DENY_WHILE_OCCUPIED, config.tableBreakPolicy)
+        assertEquals(OrphanedTablePolicy.REMOVE_ALL, config.orphanedTablePolicy)
+        assertEquals(30.seconds, config.disconnectedPlayerTimeout)
+        assertEquals(true, config.mahjongTilePhysicalCollisionEnabled)
+        assertEquals(MinecraftHistoryConfig.DEFAULT_ENABLED, config.history.enabled)
+        assertEquals(MinecraftHistoryConfig.DEFAULT_INCLUDE_AI_MATCHES, config.history.includeAiMatches)
+        assertEquals(MinecraftHistoryConfig.DEFAULT_INCLUDE_INTERRUPTED_MATCHES, config.history.includeInterruptedMatches)
+        assertEquals(MinecraftHistoryConfig.DEFAULT_MAX_MATCHES, config.history.maxMatches)
+        assertEquals(MinecraftHistoryConfig.DEFAULT_RETENTION, config.history.retention)
+        assertEquals(MinecraftHistoryConfig.DEFAULT_MAX_DISK_MIB, config.history.maxDiskMiB)
+    }
+
+    /** 各破壞政策應依 Room／Game 占用狀態產生固定結果。 */
+    @Test
+    fun `test table break policies distinguish room and game occupancy`() {
+        assertEquals(true, TableBreakPolicy.DENY_WHILE_OCCUPIED.allowsTableBreak(hasRoom = false, hasGame = false))
+        assertEquals(false, TableBreakPolicy.DENY_WHILE_OCCUPIED.allowsTableBreak(hasRoom = true, hasGame = false))
+        assertEquals(false, TableBreakPolicy.DENY_WHILE_OCCUPIED.allowsTableBreak(hasRoom = false, hasGame = true))
+        assertEquals(true, TableBreakPolicy.ALLOW_WAITING_ROOM_ONLY.allowsTableBreak(hasRoom = true, hasGame = false))
+        assertEquals(false, TableBreakPolicy.ALLOW_WAITING_ROOM_ONLY.allowsTableBreak(hasRoom = false, hasGame = true))
+        assertEquals(true, TableBreakPolicy.ALLOW_AND_TERMINATE.allowsTableBreak(hasRoom = false, hasGame = true))
+    }
+}

@@ -1,0 +1,36 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.decision
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
+import kotlinx.serialization.Serializable
+
+/** 將流程決策階段轉成網路 DTO。 */
+fun PlayerDecisionPhase.toDto(): PlayerDecisionPhaseDto = when (this) {
+    PlayerDecisionPhase.RULE_DECISION -> PlayerDecisionPhaseDto.RULE_DECISION
+    PlayerDecisionPhase.RULE_ACTION -> PlayerDecisionPhaseDto.RULE_ACTION
+    PlayerDecisionPhase.OWN_TURN -> PlayerDecisionPhaseDto.OWN_TURN
+    PlayerDecisionPhase.DISCARD_REACTION -> PlayerDecisionPhaseDto.DISCARD_REACTION
+    PlayerDecisionPhase.ROBBING_REACTION -> PlayerDecisionPhaseDto.ROBBING_REACTION
+}
+
+/** 將網路決策階段還原成 flow common 型別。 */
+fun PlayerDecisionPhaseDto.toDomain(): PlayerDecisionPhase = when (this) {
+    PlayerDecisionPhaseDto.RULE_DECISION -> PlayerDecisionPhase.RULE_DECISION
+    PlayerDecisionPhaseDto.RULE_ACTION -> PlayerDecisionPhase.RULE_ACTION
+    PlayerDecisionPhaseDto.OWN_TURN -> PlayerDecisionPhase.OWN_TURN
+    PlayerDecisionPhaseDto.DISCARD_REACTION -> PlayerDecisionPhase.DISCARD_REACTION
+    PlayerDecisionPhaseDto.ROBBING_REACTION -> PlayerDecisionPhase.ROBBING_REACTION
+}
+
+/**
+ * `mahjongcraft:decision_timer_update` S2C 頻道的權威計時 payload。
+ *
+ * [status] 為 null 表示玩家已失去該遊戲的決策權，客戶端必須停止顯示舊倒數。
+ *
+ * @property gameId 計時狀態所屬遊戲的 UUID 字串。
+ * @property status 目前有效的計時狀態。停止計時時為 null。
+ */
+@Serializable
+data class DecisionTimerUpdatePayloadDto(
+    val gameId: String,
+    val status: DecisionTimerStatusDto?,
+)

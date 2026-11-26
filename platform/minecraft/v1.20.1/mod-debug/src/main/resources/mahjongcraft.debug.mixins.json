@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.autotest.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "KeyboardHandlerMixin",
+    "MinecraftMixin",
+    "MouseHandlerMixin",
+    "SoundManagerMixin",
+    "WindowMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -1,0 +1,509 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.history.generation
+
+import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
+import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepository
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpdate
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpdatePublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationBusyGate
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
+import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.LeaveReason
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
+import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
+import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.HistoryTilePresentationResolverImpl
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomaticGameCommandResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandContext
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutor
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ForcedAutoPlayDriver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameActionRouter
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionAiDriver
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
+import com.doublemoon1119.mahjongcraft.flow.server.game.random.RoundRandomnessSource
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.ExpectedGameResult
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortEffects
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionWinPresentationStager
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AbortGameUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceAutomaticRuleDecisionUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.BeginRuleDecisionUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAndDiscardUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKanUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolvePostReactionRoundOutcomeUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolveWinRoundContinuationUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToRobbingUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SubmitRuleDecisionUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.AddAiPlayerUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.CreateRoomUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.flow.server.time.MonotonicClockImpl
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.component.AuthoritativeComponentValidatorImpl
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlin.uuid.Uuid
+
+/**
+ * 不依賴平台或測試 fixture 的單場真實 Flow 執行環境。
+ *
+ * 用來以真實流程驗證歷史記錄與封存管線。規則整合一律取自執行環境已完成登記的 [HeadlessHistoryRegistries]，
+ * 與正式對局使用同一套登記。權威狀態、快照與事件則全部隔離，不影響正式玩家。
+ *
+ * @property scenario 生成情境。
+ * @property store 隔離權威狀態儲存。
+ * @property venueId 場地識別碼。
+ * @property gameRepository 隔離對局 repository。
+ * @property coordinator 真實流程 coordinator。
+ * @property advances 這一局的單局推進。[step] 經它執行，這一局已在推進時略過。
+ * @property gameId 目前對局識別碼。
+ * @property match 場次識別碼。
+ */
+class HeadlessFlowHistoryRuntime private constructor(
+    override val scenario: HeadlessHistoryScenario,
+    override val store: AuthoritativeStateStore,
+    override val venueId: Uuid,
+    private val gameRepository: GameRepositoryImpl,
+    private val coordinator: GameFlowCoordinator,
+    private val advances: AutomatedAdvanceManager,
+    private val gameId: Uuid,
+    private val match: Uuid,
+) : HeadlessHistoryMatchRuntime {
+    /**
+     * 目前場次識別碼。
+     *
+     * @return 場次 UUID。
+     */
+    override suspend fun matchId(): Uuid = match
+
+    /**
+     * 推進一個自動玩家步驟。這一局已在推進時不推進。
+     *
+     * @return 是否實際推進權威流程。
+     */
+    override suspend fun step(): Boolean = advances.runExclusive(gameId) { coordinator.advanceAutomatedPlayerStep(gameId) } ?: false
+
+    /**
+     * 取得目前對局。對局已移出權威狀態時為 null。
+     *
+     * @return 目前對局，或對局已移除時的 null。
+     */
+    override suspend fun currentGame(): Game? = gameRepository.getGame(gameId)
+
+    /** 建立隔離且完整的全 AI 對局執行環境。 */
+    companion object {
+        /**
+         * 建立一場使用真實 AI 策略的無頭對局。
+         *
+         * @param scenario 對局規則與場長情境。
+         * @param registries 執行環境已完成登記的規則整合。
+         * @param store 承載這場對局的權威來源。多場對局可共用同一個來源，如同正式伺服器上同時進行的多桌。
+         * @param stepTimer 累計 AI 視角快照、策略思考與快照同步耗時，以及過期 AI 決策數的計時器，null 時不量測。
+         *   歷史記錄耗時由 [store] 自己的觀察者量測。
+         * @param decisionExecutor 呼叫 AI 策略的執行器，由呼叫端決定排程方式與擴充失敗判斷。
+         * @param matchSeed 指定對局種子以重現同一場對局，null 時以安全亂數產生。
+         * @param roundRandomnessSource 每一局的亂數來源。固定內容的對局可指定骰子與牌山排列。
+         * @param aiStrategyKey 每個座位使用的 AI 策略，必須已登記在 [registries] 的策略登記中。
+         * @return 已開局且可逐步推進的 runtime。
+         */
+        suspend fun create(
+            scenario: HeadlessHistoryScenario,
+            registries: HeadlessHistoryRegistries,
+            store: AuthoritativeStateStore = AuthoritativeStateStore(
+                historyRecordingEnabled = true,
+                tilePresentationResolver = HistoryTilePresentationResolverImpl(registries.moduleRegistry, registries.componentRegistry),
+            ),
+            stepTimer: HeadlessStepTimer? = null,
+            decisionExecutor: AiDecisionExecutor,
+            matchSeed: MatchSeed? = null,
+            roundRandomnessSource: RoundRandomnessSource = RoundRandomnessSource.SEEDED,
+            aiStrategyKey: String = BuiltInAiStrategyKeys.BEGINNER,
+        ): HeadlessFlowHistoryRuntime {
+            val gameRepository = GameRepositoryImpl(store, AuthoritativeComponentValidatorImpl(registries.moduleRegistry, registries.componentRegistry))
+            val roomRepository = RoomRepositoryImpl(store)
+            val membership = PlayerMembershipRepositoryImpl()
+            val rooms = MemoryRoomSnapshots()
+            val gameSnapshots = MemoryGameSnapshots()
+            val roomEvents = NoOpRoomEvents()
+            val gameEvents = NoOpGameEvents()
+            val presentation = NoOpPresentation()
+            val busy = NoOpBusyGate()
+            val moduleRegistry = registries.moduleRegistry
+            val snapshotPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = registries.componentRegistry).let { policy ->
+                if (stepTimer == null) policy else TimedVisibilityPolicy(policy, stepTimer::addSnapshotSync)
+            }
+            val aiPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = registries.componentRegistry).let { policy ->
+                if (stepTimer == null) policy else TimedVisibilityPolicy(policy, stepTimer::addAiContext)
+            }
+            val aiStrategies = registries.aiStrategyRegistry.let { strategies ->
+                if (stepTimer == null) strategies else TimedAiStrategyRegistry(strategies, stepTimer)
+            }
+            val synchronizer = GameSnapshotSynchronizer(gameRepository, gameSnapshots, snapshotPolicy)
+            val handSort = HandSortPreferenceStore()
+            val create = CreateRoomUseCase(store, membership, rooms, roomEvents)
+            val addAi = AddAiPlayerUseCase(roomRepository, rooms, roomEvents, registries.aiStrategyRegistry)
+            val createCue = registries.winCelebrationCueResolverRegistry
+            val winHandoff = WinPresentationHandoff()
+            val postAction = registries.postActionExhaustiveDrawResolverRegistry
+            val winDetails = registries.winSettlementDetailResolverRegistry
+            val commands = ExtensionGameCommandExecutor(
+                registry = registries.gameCommandRegistry,
+                context = ExtensionGameCommandContext(
+                    componentRegistry = registries.componentRegistry,
+                    gameRepository = gameRepository,
+                    moduleRegistry = moduleRegistry,
+                    snapshotSynchronizer = synchronizer,
+                    handSortPreferenceStore = handSort,
+                    postActionExhaustiveDrawResolverRegistry = postAction,
+                    eventPublisher = gameEvents,
+                    presentationPublisher = presentation,
+                    declareAndDiscardUseCase = DeclareAndDiscardUseCase(
+                        gameRepository = gameRepository,
+                        moduleRegistry = moduleRegistry,
+                        snapshotSynchronizer = synchronizer,
+                        handSortPreferenceStore = handSort,
+                        postActionExhaustiveDrawResolverRegistry = postAction,
+                        eventPublisher = gameEvents,
+                        presentationPublisher = presentation,
+                        componentRegistry = registries.componentRegistry,
+                    ),
+                ),
+            )
+            val clock = MonotonicClockImpl()
+            val timers = GameDecisionTimerManager(gameRepository, GameDecisionAuthorityResolver(), PlayerDecisionTimerFactory(clock), clock)
+            val timerSync = DecisionTimerSynchronizationService(timers, gameRepository, NoOpTimerUpdates())
+            val abort = AbortGameUseCase(
+                store = store,
+                gameSnapshots = gameSnapshots,
+                roomSnapshots = rooms,
+                roomEvents = roomEvents,
+                presentation = presentation,
+                availability = GameDecisionAvailabilityService(busy, timers, timerSync),
+                winHandoff = winHandoff,
+                effects = GameAbortEffects.NONE,
+            )
+            val ruleDecisions = registries.ruleDecisionResolverRegistry
+            val ruleDecisionWins = RuleDecisionWinPresentationStager(winHandoff, winDetails)
+            val beginRuleDecision = BeginRuleDecisionUseCase(gameRepository, moduleRegistry, ruleDecisions, synchronizer, abort)
+            val router = GameActionRouter(
+                drawTileUseCase = DrawTileUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents, presentation, componentRegistry = registries.componentRegistry),
+                discardTileUseCase = DiscardTileUseCase(gameRepository, moduleRegistry, synchronizer, handSort, postAction, gameEvents, presentation, componentRegistry = registries.componentRegistry),
+                declareTsumoUseCase = DeclareTsumoUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents, presentation, winHandoff, createCue, winDetails, componentRegistry = registries.componentRegistry),
+                declareKanUseCase = DeclareKanUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents, presentation, componentRegistry = registries.componentRegistry),
+                respondToDiscardUseCase = RespondToDiscardUseCase(gameRepository, moduleRegistry, synchronizer, handSort, gameEvents, presentation, winHandoff, createCue, winDetails, postAction, componentRegistry = registries.componentRegistry),
+                respondToRobbingUseCase = RespondToRobbingUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents, presentation, winHandoff, createCue, winDetails, componentRegistry = registries.componentRegistry),
+                declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents),
+                extensionCommandExecutor = commands,
+                submitRuleDecisionUseCase = SubmitRuleDecisionUseCase(
+                    gameRepository = gameRepository,
+                    moduleRegistry = moduleRegistry,
+                    resolverRegistry = ruleDecisions,
+                    snapshotSynchronizer = synchronizer,
+                    presentationPublisher = presentation,
+                    winPresentationStager = ruleDecisionWins,
+                    handSortPreferenceStore = handSort,
+                ),
+            )
+            val getLegal = GetLegalActionsUseCase(gameRepository, moduleRegistry)
+            val ai = AiTurnDriver(
+                gameRepository = gameRepository,
+                getLegalActionsUseCase = getLegal,
+                aiStrategyRegistry = aiStrategies,
+                visibilityPolicy = aiPolicy,
+                moduleRegistry = moduleRegistry,
+                decisionExecutor = decisionExecutor,
+                commandResolver = AutomaticGameCommandResolver(moduleRegistry),
+            )
+            // 協調者以這個倉庫提交 AI 決策；量測時一併計算過期而沒有套用的決策。
+            val decisionRepository = if (stepTimer == null) gameRepository else StaleCountingGameRepository(gameRepository, stepTimer)
+            val coordinator = GameFlowCoordinator(
+                gameActionRouter = router,
+                gameRepository = decisionRepository,
+                moduleRegistry = moduleRegistry,
+                winSettlementDetailResolverRegistry = winDetails,
+                declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents),
+                resolvePostReactionRoundOutcomeUseCase = ResolvePostReactionRoundOutcomeUseCase(
+                    gameRepository = gameRepository,
+                    moduleRegistry = moduleRegistry,
+                    resolverRegistry = registries.postReactionRoundOutcomeResolverRegistry,
+                    snapshotSynchronizer = synchronizer,
+                    winSettlementDetailResolverRegistry = winDetails,
+                ),
+                resolveWinRoundContinuationUseCase = ResolveWinRoundContinuationUseCase(
+                    gameRepository = gameRepository,
+                    moduleRegistry = moduleRegistry,
+                    resolverRegistry = registries.winRoundContinuationResolverRegistry,
+                    snapshotSynchronizer = synchronizer,
+                    ruleDecisionResolverRegistry = ruleDecisions,
+                ),
+                advanceRoundUseCase = AdvanceRoundUseCase(
+                    gameRepository = gameRepository,
+                    moduleRegistry = moduleRegistry,
+                    snapshotSynchronizer = synchronizer,
+                    handSortPreferenceStore = handSort,
+                    eventPublisher = gameEvents,
+                    presentationPublisher = presentation,
+                    componentRegistry = registries.componentRegistry,
+                    beginRuleDecisionUseCase = beginRuleDecision,
+                    roundRandomnessSource = roundRandomnessSource,
+                ),
+                returnToRoomUseCase = ReturnToRoomUseCase(store, rooms, roomEvents, presentation),
+                aiTurnDriver = ai,
+                forcedAutoPlayDriver = ForcedAutoPlayDriver(
+                    gameRepository = gameRepository,
+                    commandResolver = AutomaticGameCommandResolver(moduleRegistry),
+                ),
+                automaticDecisionDriver = null,
+                decisionAvailabilityService = GameDecisionAvailabilityService(busy, timers, timerSync),
+                exhaustiveDrawSettlementPresentationService = ExhaustiveDrawSettlementPresentationService(presentation),
+                winPresentationHandoff = winHandoff,
+                presentationPublisher = presentation,
+                presentationBusyGate = busy,
+                abortGameUseCase = abort,
+                automaticCommandResolver = AutomaticGameCommandResolver(moduleRegistry),
+                ruleDecisionAiDriver = RuleDecisionAiDriver(gameRepository, moduleRegistry, ruleDecisions, aiStrategies, aiPolicy, decisionExecutor),
+                advanceAutomaticRuleDecisionUseCase = AdvanceAutomaticRuleDecisionUseCase(
+                    gameRepository = gameRepository,
+                    moduleRegistry = moduleRegistry,
+                    resolverRegistry = ruleDecisions,
+                    snapshotSynchronizer = synchronizer,
+                    presentationPublisher = presentation,
+                    winPresentationStager = ruleDecisionWins,
+                    handSortPreferenceStore = handSort,
+                ),
+                beginRuleDecisionUseCase = beginRuleDecision,
+            )
+            val start = StartGameUseCase(
+                authoritativeStateStore = store,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = synchronizer,
+                handSortPreferenceStore = handSort,
+                eventPublisher = gameEvents,
+                presentationPublisher = presentation,
+                componentRegistry = registries.componentRegistry,
+                beginRuleDecisionUseCase = beginRuleDecision,
+                roundRandomnessSource = roundRandomnessSource,
+            )
+            val venueId = Uuid.random()
+            val host = Uuid.random()
+            val config = GameConfig(ruleConfig = scenario.ruleConfig)
+            check(create(venueId, host, config, hostAiStrategyKey = aiStrategyKey) is Outcome.Success)
+            repeat(scenario.ruleConfig.maxPlayers - 1) { check(addAi(venueId, host, aiStrategyKey) is Outcome.Success) }
+            val started = start(roomId = venueId, operatorId = host, matchSeed = matchSeed)
+            check(started is Outcome.Success) { "Headless history runtime failed to start game: $started" }
+            val id = started.value
+            val game = checkNotNull(store.getGame(id))
+            // 離線對局只經 step 逐步推進，不使用排程推進，因此作用域不會啟動任何協程。
+            val advances = AutomatedAdvanceManager(
+                scope = CoroutineScope(SupervisorJob()),
+                dispatcher = Dispatchers.Unconfined,
+                advanceOnce = { false },
+                failureReporter = { _, error -> throw error },
+            )
+            return HeadlessFlowHistoryRuntime(scenario, store, venueId, gameRepository, coordinator, advances, id, game.matchId)
+        }
+    }
+}
+
+/** 隔離房間快照儲存。 */
+private class MemoryRoomSnapshots : RoomSnapshotRepository {
+    /** 觀察者與房間快照的隔離索引。 */
+    private val data = mutableMapOf<Pair<Uuid, Uuid>, RoomSnapshot>()
+
+    /** 讀取觀察者房間快照。 */
+    override suspend fun getSnapshot(roomId: Uuid, observerId: Uuid): RoomSnapshot? = data[roomId to observerId]
+
+    /** 寫入觀察者房間快照。 */
+    override suspend fun setSnapshot(observerId: Uuid, snapshot: RoomSnapshot) {
+        data[snapshot.id to observerId] = snapshot
+    }
+
+    /** 移除觀察者房間快照。 */
+    override suspend fun removeSnapshot(roomId: Uuid, observerId: Uuid) {
+        data.remove(roomId to observerId)
+    }
+
+    override suspend fun removeSnapshotIf(
+        roomId: Uuid,
+        observerId: Uuid,
+        isStillValid: () -> Boolean,
+    ): Boolean {
+        if (!isStillValid()) return false
+        data.remove(roomId to observerId)
+        return true
+    }
+
+    /** 列出房間觀察者。 */
+    override suspend fun getAllObservers(roomId: Uuid): Set<Uuid> = data.keys.filter { it.first == roomId }.map { it.second }.toSet()
+
+    /** 清空隔離快照。 */
+    override suspend fun clearAll() {
+        data.clear()
+    }
+}
+
+/** 隔離對局快照儲存。 */
+private class MemoryGameSnapshots : GameSnapshotRepository {
+    /** 觀察者與對局快照的隔離索引。 */
+    private val data = mutableMapOf<Pair<Uuid, Uuid>, TableStateSnapshot>()
+
+    /** 讀取觀察者對局快照。 */
+    override suspend fun getSnapshot(gameId: Uuid, observerId: Uuid) = data[gameId to observerId]
+
+    /** 寫入觀察者對局快照。 */
+    override suspend fun setSnapshot(observerId: Uuid, snapshot: TableStateSnapshot) {
+        data[snapshot.id to observerId] = snapshot
+    }
+
+    /** 移除觀察者對局快照。 */
+    override suspend fun removeSnapshot(gameId: Uuid, observerId: Uuid) {
+        data.remove(gameId to observerId)
+    }
+
+    override suspend fun removeSnapshotIf(
+        gameId: Uuid,
+        observerId: Uuid,
+        isStillValid: () -> Boolean,
+    ): Boolean {
+        if (!isStillValid()) return false
+        data.remove(gameId to observerId)
+        return true
+    }
+
+    /** 列出對局觀察者。 */
+    override suspend fun getAllObservers(gameId: Uuid) = data.keys.filter { it.first == gameId }.map { it.second }.toSet()
+
+    /** 清空隔離快照。 */
+    override suspend fun clearAll() {
+        data.clear()
+    }
+}
+
+/** 丟棄房間通知的無頭 adapter。 */
+private class NoOpRoomEvents : RoomEventPublisher {
+    /** 丟棄加入通知。 */
+    override suspend fun publishJoin(roomId: Uuid, targetPlayerId: Uuid, joinedPlayerId: Uuid, reason: JoinReason) = Unit
+
+    /** 丟棄離開通知。 */
+    override suspend fun publishLeave(roomId: Uuid, targetPlayerId: Uuid, leftPlayerId: Uuid, reason: LeaveReason) = Unit
+
+    /** 丟棄準備通知。 */
+    override suspend fun publishReady(roomId: Uuid, targetPlayerId: Uuid, readyPlayerId: Uuid, isReady: Boolean) = Unit
+
+    /** 丟棄設定通知。 */
+    override suspend fun publishConfigChanged(roomId: Uuid, targetPlayerId: Uuid, newConfig: MahjongRuleConfig) = Unit
+}
+
+/** 丟棄對局通知的無頭 adapter。 */
+private class NoOpGameEvents : GameEventPublisher {
+    /** 丟棄單一玩家事件。 */
+    override suspend fun publish(gameId: Uuid, targetPlayerId: Uuid, actorId: Uuid, action: GameAction) = Unit
+
+    /** 丟棄廣播給所有觀察者的事件。 */
+    override suspend fun publishToAllObservers(gameId: Uuid, seatedPlayerIds: Collection<Uuid>, actorId: Uuid, action: GameAction) = Unit
+}
+
+/** 完成呈現握手但不產生平台副作用的無頭 adapter。 */
+private class NoOpPresentation : GamePresentationPublisher {
+    /** 丟棄流局結算呈現。 */
+    override fun publishExhaustiveDrawSettlement(gameId: Uuid, request: ExhaustiveDrawSettlementPresentationRequest) = Unit
+
+    /** 丟棄終局結算呈現。 */
+    override fun publishMatchSettlement(gameId: Uuid, request: MatchSettlementPresentationRequest) = Unit
+
+    /** 丟棄骰子呈現。 */
+    override fun publishOpeningRolls(gameId: Uuid, rolls: List<OpeningDiceRoll>) = Unit
+
+    /** 丟棄牌牆呈現。 */
+    override fun publishWallStructure(gameId: Uuid, assemblyStructure: Map<Uuid, TileWallPosition>, layout: TileWallPhysicalLayout, dealerSeatIndex: Int, reservedWallTileIds: Set<Uuid>, openingDiceCounts: List<Int>, isNewOpening: Boolean, revealedTileIds: Set<Uuid>) = Unit
+
+    /** 丟棄桌況步驟。 */
+    override fun publishTableSteps(gameId: Uuid, steps: List<TableStep>) = Unit
+
+    /** 丟棄初始發牌通知。 */
+    override fun publishInitialDeal(gameId: Uuid, tableState: TableState, handTileIdsBySeatIndex: Map<Int, List<Uuid>>, dealBatchSizes: List<Int>, openingDiceCounts: List<Int>) = Unit
+
+    /** 丟棄清除玩家區域呈現的要求。 */
+    override fun clearPlayerTiles(gameId: Uuid) = Unit
+
+    /** 丟棄開局通知。 */
+    override fun publishGameStarted(gameId: Uuid, seatedPlayerIds: List<Uuid>) = Unit
+
+    /** 丟棄局間換位通知。 */
+    override fun publishSeatOrderChanged(gameId: Uuid, seatedPlayerIds: List<Uuid>) = Unit
+
+    /** 丟棄胡牌慶祝通知。 */
+    override fun publishWinCelebration(gameId: Uuid, request: WinCelebrationRequest) = Unit
+
+    /** 丟棄胡牌結算通知。 */
+    override fun publishWinSettlement(gameId: Uuid, request: WinSettlementPresentationRequest) = Unit
+}
+
+/** 表示沒有需要等待的呈現的無頭 gate。 */
+private class NoOpBusyGate : GamePresentationBusyGate {
+    /** 回報沒有進行中的呈現。 */
+    override fun isBusy(gameId: Uuid) = false
+}
+
+/** 丟棄計時器更新的無頭 adapter。 */
+private class NoOpTimerUpdates : DecisionTimerUpdatePublisher {
+    /** 丟棄計時器更新。 */
+    override suspend fun publish(targetPlayerId: Uuid, update: DecisionTimerUpdate) = Unit
+}
+
+/**
+ * 計算過期 AI 決策的倉庫：[GameRepository.withExpectedGame] 回報過期時記到 [timer]，其餘直接交給 [delegate]。
+ *
+ * @property delegate 實際的倉庫。
+ * @property timer 接收過期的 AI 決策。
+ */
+private class StaleCountingGameRepository(
+    private val delegate: GameRepository,
+    private val timer: HeadlessStepTimer,
+) : GameRepository by delegate {
+    override suspend fun <T> withExpectedGame(gameId: Uuid, expectedGame: Game, command: suspend () -> T): ExpectedGameResult<T> = delegate.withExpectedGame(gameId, expectedGame, command).also { result ->
+        if (result == ExpectedGameResult.Stale) timer.addStaleDecision()
+    }
+}

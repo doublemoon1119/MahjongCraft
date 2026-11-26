@@ -1,0 +1,282 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
+
+import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AiCharacterRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AiStrategyDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AutomaticControlDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.DecisionStatusDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.ExhaustiveDrawReasonDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameAchievementResolverRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionSoundPresentationRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionVocabularyRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameConfigPresentationRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.HistoryDiscardMarkerDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.HistoryTileSetAsideDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MatchSettlementPresentationTemplateRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MinecraftTileAssetRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.PlayerPortraitSourceRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.PublicPlayerIndicatorDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoomMemberAppearanceSourceRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundInfoLineDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundOutcomeDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleCatalogueRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleDecisionDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleModuleDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleWordingRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TablePropDescriberRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TableTileLayoutProfileRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinCelebrationShowcaseRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSettlementPresentationTemplateRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RulePresentationRequirements
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+
+/**
+ * 第三方 Minecraft mod 在 MahjongCraft runtime 啟動前登記 Minecraft 專屬整合的共用契約。
+ *
+ * - 跟平台無關的規則邏輯（規則配置與計算、自訂牌種、網路／存檔層的資料轉換）由 `MahjongExtension` 登記，不在這裡。
+ * - 這裡只涵蓋 Minecraft 專屬的整合，例如 [MinecraftTileAssetRegistry]／[AiStrategyDisplayNameRegistry]。
+ *   它們屬於 Minecraft adapter，不放進平台無關的 extension API，規則邏輯才能保持可攜。
+ * - 要同時登記規則層與 Minecraft 專屬整合時，讓同一個類別同時實作兩個介面，不需要向載入器另外宣告。
+ * - 載入器只找出 `MahjongExtension`，再從中篩選有實作此介面的部分。
+ *   只實作這個介面、沒有同時實作 `MahjongExtension` 的類別不會被發現。
+ */
+interface MinecraftMahjongExtension {
+    /** 第三方 extension 的穩定識別字串，用於診斷註冊錯誤。 */
+    val id: String
+
+    /**
+     * 登記角色外觀與可選能力，不建立實體。
+     *
+     * @param registry 只可登記角色的介面。
+     */
+    fun registerAiCharacters(registry: AiCharacterRegistrar) = Unit
+
+    /**
+     * 登記第三方規則的自訂說明目錄來源。
+     *
+     * 預設不登記任何來源，使既有 extension 不必加入空實作。目錄缺失不影響牌局。
+     *
+     * @param registry 與內建來源共用、於 bootstrap 結束後凍結的目錄 registry。
+     */
+    fun registerRuleCatalogues(registry: RuleCatalogueRegistrar) = Unit
+
+    /**
+     * 登記第三方規則的專屬成果判定。成果 ID 由該規則自己的進度資料引用。
+     *
+     * 預設不登記任何判定，使既有 extension 不必加入空實作。沒有判定的規則只會取得通用成果。
+     *
+     * @param registry 與內建判定共用、於 bootstrap 結束後凍結的成果判定 registry。
+     */
+    fun registerGameAchievementResolvers(registry: GameAchievementResolverRegistrar) = Unit
+
+    /**
+     * 登記第三方牌種對應的 Minecraft asset key。asset key 命名建議見 [MinecraftTileAssetRegistry.register]。
+     *
+     * 預設不註冊任何映射，使只提供規則層整合的 extension 不必加入空實作。
+     *
+     * @param registry 與內建映射共用的牌種 asset registry。
+     */
+    fun registerTileAssets(registry: MinecraftTileAssetRegistrar) = Unit
+
+    /**
+     * 登記第三方 AI 策略對應的顯示名稱。
+     *
+     * 預設不註冊任何映射，使不提供 AI 策略的 extension 不必加入空實作。
+     *
+     * @param registry 與內建映射共用的 AI 策略顯示名稱 registry。
+     */
+    fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistrar) = Unit
+
+    /**
+     * 登記第三方自動操作在 Minecraft 中使用的名稱、說明與排列順序。
+     *
+     * @param registry 自動操作顯示 registry。
+     */
+    fun registerAutomaticControlDisplays(registry: AutomaticControlDisplayRegistrar) = Unit
+
+    /**
+     * 登記規則動作在 Minecraft 中使用的用語與操作卡順序。
+     *
+     * 同一個動作在不同規則可能有不同說法，登記同一個動作 ID 即可覆寫中立預設。
+     *
+     * @param registry 與中立預設共用的動作用語 registry。
+     */
+    fun registerGameActionVocabulary(registry: GameActionVocabularyRegistrar) = Unit
+
+    /**
+     * 登記捨牌分析狀態（例如振聽、和牌資格）在 Minecraft 中使用的顯示名稱。
+     *
+     * 與動作用語相同，登記同一個狀態 ID 即可覆寫中立預設。
+     *
+     * @param registry 與中立預設共用的決策狀態名稱 registry。
+     */
+    fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistrar) = Unit
+
+    /**
+     * 登記規則動作成立後在 Minecraft 世界中播放的宣告式語音。
+     *
+     * @param registry 遊戲動作音效呈現 registry。
+     */
+    fun registerGameActionSounds(registry: GameActionSoundPresentationRegistrar) = Unit
+
+    /**
+     * 登記第三方規則在桌上要擺哪些物件的描述，依規則模組識別碼登記。
+     *
+     * 描述裡使用的物件種類若不是內建種類，需另外在該 Minecraft 版本的平台端登記種類，說明如何生成與辨識
+     * 對應的 entity。預設不登記，桌上就不會擺任何由規則描述的物件。
+     *
+     * @param registry 桌面物件描述 registry。
+     */
+    fun registerTablePropDescribers(registry: TablePropDescriberRegistrar) = Unit
+
+    /**
+     * 登記規則的桌面牌位配置，依規則模組識別碼登記，例如牌牆往桌心移動的距離與風車形錯開量。
+     *
+     * 預設不登記，該規則使用標準擺法。
+     *
+     * @param registry 桌面牌位配置 registry。
+     */
+    fun registerTableTileLayoutProfiles(registry: TableTileLayoutProfileRegistrar) = Unit
+
+    /**
+     * 登記第三方流局原因在 Minecraft 中使用的本地化顯示名稱。
+     *
+     * @param registry 流局原因顯示名稱 registry。
+     */
+    fun registerExhaustiveDrawReasonDisplayNames(registry: ExhaustiveDrawReasonDisplayNameRegistrar) = Unit
+
+    /**
+     * 登記規則特殊本局結果（例如日麻的流局滿貫）在歷史畫面的名稱。
+     *
+     * @param registry 本局結果顯示名稱 registry。
+     */
+    fun registerRoundOutcomeDisplayNames(registry: RoundOutcomeDisplayNameRegistrar) = Unit
+
+    /**
+     * 登記共用文字的中立用語，或規則對共用文字的說法（例如牌堆叫「牌牆」或「牌山」）。
+     *
+     * @param registry 規則用語 registry。
+     */
+    fun registerRuleWordings(registry: RuleWordingRegistrar) = Unit
+
+    /**
+     * 登記規則在歷史牌河上的公開標記如何呈現，例如日麻立直宣告的牌要橫擺。
+     *
+     * @param registry 歷史牌河標記顯示 registry。
+     */
+    fun registerHistoryDiscardMarkerDisplays(registry: HistoryDiscardMarkerDisplayRegistrar) = Unit
+
+    /**
+     * 登記牌譜上規則移出牌區的標題與換牌用語，例如台灣麻將的「花牌」區與「補花」。未登記時顯示中立的「移出的牌」與「換牌」。
+     *
+     * @param registry 移出牌區呈現 registry。
+     */
+    fun registerHistoryTileSetAsideDisplays(registry: HistoryTileSetAsideDisplayRegistrar) = Unit
+
+    /**
+     * 登記第三方規則選擇選項的本地化顯示名稱，顯示在決策面板的選項卡片上。代表跳過的選項使用一般的跳過用語，不需要登記。
+     *
+     * @param registry 規則選擇顯示名稱 registry。
+     */
+    fun registerRuleDecisionDisplayNames(registry: RuleDecisionDisplayNameRegistrar) = Unit
+
+    /**
+     * 登記第三方牌種對應的顯示名稱。
+     *
+     * 預設不註冊任何映射，使不提供自訂牌種顯示名稱的 extension 不必加入空實作。
+     *
+     * @param registry 與內建映射共用的牌種顯示名稱 registry。
+     */
+    fun registerTileDisplayNames(registry: TileDisplayNameRegistrar) = Unit
+
+    /**
+     * 登記第三方規則模組對應的顯示名稱。
+     *
+     * 預設不註冊任何映射，使不提供自訂規則模組顯示名稱的 extension 不必加入空實作。
+     *
+     * @param registry 與內建映射共用的規則模組顯示名稱 registry。
+     */
+    fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistrar) = Unit
+
+    /**
+     * 登記第三方牌種 asset key 對應的顯示 emoji 字元。
+     *
+     * 預設不註冊任何映射，使不提供自訂牌面 emoji 的 extension 不必加入空實作。字元本身要能顯示成
+     * 貼圖，還需要第三方 mod／資源包另外提供對應的 `assets/minecraft/font/default.json` bitmap
+     * provider。這個 registry 只負責保存字元對照，不管字型檔案。
+     *
+     * @param registry 牌種 asset key 至 emoji 字元的 registry。
+     */
+    fun registerTileEmojis(registry: TileEmojiRegistrar) = Unit
+
+    /**
+     * 登記第三方牌種 asset key 對應的牌面角落標籤（非中文圈玩家可切換的輔助標籤）。
+     *
+     * 預設不註冊任何映射，使不提供自訂標籤的 extension 不必加入空實作。未註冊的 asset key 呈現端會
+     * 視為不顯示標籤，不是錯誤。
+     *
+     * @param registry 牌種 asset key 至角落標籤的 registry。
+     */
+    fun registerTileLabels(registry: TileLabelRegistrar) = Unit
+
+    /**
+     * 登記第三方宣告式胡牌 showcase 定義。
+     *
+     * @param registry 胡牌 showcase registry。
+     */
+    fun registerWinCelebrationShowcases(registry: WinCelebrationShowcaseRegistrar) = Unit
+
+    /**
+     * 登記第三方胡牌結算欄位 provider 與完整宣告式模板。
+     *
+     * @param registry 胡牌結算模板 registry。
+     */
+    fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistrar) = Unit
+
+    /**
+     * 登記第三方終局排行面板模板。
+     *
+     * @param registry 終局結算模板 registry。
+     */
+    fun registerMatchSettlementPresentationTemplates(registry: MatchSettlementPresentationTemplateRegistrar) = Unit
+
+    /**
+     * 登記第三方玩家頭像來源。來源只能是 skin、牌面或 texture region。
+     *
+     * @param registry 玩家頭像來源 registry。
+     */
+    fun registerPlayerPortraitSources(registry: PlayerPortraitSourceRegistrar) = Unit
+
+    /**
+     * 登記規則公開 indicator／option 的本地化顯示。
+     *
+     * @param registry 公開玩家標記顯示 registry。
+     */
+    fun registerPublicPlayerIndicatorDisplays(registry: PublicPlayerIndicatorDisplayRegistrar) = Unit
+
+    /**
+     * 登記第三方規則的宣告式房間設定欄位。
+     *
+     * 標為可選的規則必須能在麻將桌上呈現（[RulePresentationRequirements]），啟動時檢查，不符合時啟動失敗。
+     *
+     * @param registry 遊戲設定呈現 registry。
+     */
+    fun registerGameConfigPresentations(registry: GameConfigPresentationRegistrar) = Unit
+
+    /**
+     * 登記第三方房間成員外觀來源。完整 entity factory 留待 SeatActorProvider 階段。
+     *
+     * @param registry 房間成員外觀來源 registry。
+     */
+    fun registerRoomMemberAppearanceSources(registry: RoomMemberAppearanceSourceRegistrar) = Unit
+
+    /**
+     * 登記第三方規則的桌面局況 provider 與其顯示行翻譯資訊。
+     *
+     * @param registry 桌面局況資訊行 registry。
+     */
+    fun registerRoundInfoPresentations(registry: RoundInfoLineDisplayRegistrar) = Unit
+}

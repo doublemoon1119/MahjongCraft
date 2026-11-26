@@ -1,0 +1,303 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.config
+
+import com.akuleshov7.ktoml.Toml
+import com.akuleshov7.ktoml.TomlInputConfig
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+
+/** 在不同 Minecraft loader 間共用的嚴格 server config TOML codec。 */
+class MinecraftServerConfigTomlCodec {
+    /** 拒絕未知欄位、空值與空文件的 TOML decoder。 */
+    private val toml = Toml(
+        inputConfig = TomlInputConfig(
+            ignoreUnknownNames = false,
+            allowEmptyValues = false,
+            allowNullValues = false,
+            allowEmptyToml = false,
+        ),
+    )
+
+    /**
+     * 將 [content] 解碼並驗證成完整的 [MinecraftServerConfig]。
+     *
+     * @param content TOML 設定檔文字。
+     * @return 解碼並通過驗證的設定。
+     * @throws InvalidMinecraftServerConfigException TOML 無法解碼或欄位驗證失敗時。
+     */
+    fun decode(content: String): MinecraftServerConfig {
+        val dto = try {
+            toml.decodeFromString<MinecraftServerConfigTomlDto>(content)
+        } catch (exception: Exception) {
+            throw InvalidMinecraftServerConfigException(
+                message = "Unable to parse server config TOML: ${exception.message ?: exception::class.simpleName}",
+                cause = exception,
+            )
+        }
+        return dto.toConfig()
+    }
+
+    /**
+     * 將 [config] 格式化為不含註解的標準 TOML。此方法不另外驗證設定值。
+     *
+     * @param config 欲編碼的完整伺服器設定。
+     * @return 使用穩定欄位名稱的 TOML 文字。欄位值仍須符合解碼時的驗證規則。
+     */
+    fun encode(config: MinecraftServerConfig): String = toml.encodeToString(
+        value = MinecraftServerConfigTomlDto.fromConfig(config),
+    )
+}
+
+/**
+ * TOML 根節點，只負責穩定的設定檔結構。
+ *
+ * @property playerDisconnection 尚未開始的遊戲之玩家斷線設定。
+ * @property aiPlayer 找不到 AI 玩家時的處理設定。
+ * @property table 麻將桌破壞與缺失資料設定。
+ * @property mahjongTile 麻將牌世界呈現設定。
+ * @property history 歷史資料記錄與封存設定。
+ */
+@Serializable
+private data class MinecraftServerConfigTomlDto(
+    @SerialName("player-disconnection")
+    val playerDisconnection: PlayerDisconnectionTomlDto = PlayerDisconnectionTomlDto(),
+    @SerialName("ai-player")
+    val aiPlayer: AiPlayerTomlDto = AiPlayerTomlDto(),
+    val table: TablePolicyTomlDto = TablePolicyTomlDto(),
+    @SerialName("mahjong-tile")
+    val mahjongTile: MahjongTileTomlDto = MahjongTileTomlDto(),
+    val history: HistoryTomlDto = HistoryTomlDto(),
+) {
+    /**
+     * 驗證設定欄位並轉成執行期設定。
+     *
+     * @return 通過欄位驗證的完整伺服器設定。
+     * @throws InvalidMinecraftServerConfigException 政策名稱或數值不合法時拋出。
+     */
+    fun toConfig(): MinecraftServerConfig = MinecraftServerConfig(
+        disconnectedPlayerPolicy = enumValue(
+            field = "player-disconnection.policy",
+            value = playerDisconnection.policy,
+            values = DisconnectedPlayerPolicy.entries,
+            configValue = DisconnectedPlayerPolicy::configValue,
+        ),
+        disconnectedPlayerTimeout = playerDisconnection.timeoutSeconds.seconds.also { timeout ->
+            requireConfig(
+                condition = timeout in MinecraftServerConfig.MIN_DISCONNECTED_PLAYER_TIMEOUT..MinecraftServerConfig.MAX_DISCONNECTED_PLAYER_TIMEOUT,
+            ) {
+                "player-disconnection.timeout-seconds must be between " +
+                    "${MinecraftServerConfig.MIN_DISCONNECTED_PLAYER_TIMEOUT.inWholeSeconds} and " +
+                    "${MinecraftServerConfig.MAX_DISCONNECTED_PLAYER_TIMEOUT.inWholeSeconds}, " +
+                    "but was ${playerDisconnection.timeoutSeconds}"
+            }
+        },
+        tableBreakPolicy = enumValue(
+            field = "table.break-policy",
+            value = table.breakPolicy,
+            values = TableBreakPolicy.entries,
+            configValue = TableBreakPolicy::configValue,
+        ),
+        orphanedTablePolicy = enumValue(
+            field = "table.orphaned-policy",
+            value = table.orphanedPolicy,
+            values = OrphanedTablePolicy.entries,
+            configValue = OrphanedTablePolicy::configValue,
+        ),
+        missingAiPlayerPolicy = enumValue(
+            field = "ai-player.missing-policy",
+            value = aiPlayer.missingPolicy,
+            values = MissingAiPlayerPolicy.entries,
+            configValue = MissingAiPlayerPolicy::configValue,
+        ),
+        mahjongTilePhysicalCollisionEnabled = mahjongTile.physicalCollisionEnabled,
+        history = history.toConfig(),
+    )
+
+    /** 建立反映目前 runtime config 的完整 TOML DTO。 */
+    companion object {
+        /**
+         * 將 [config] 映射成可序列化的穩定設定檔結構。
+         *
+         * @param config 欲輸出的完整伺服器設定。
+         * @return 不額外驗證欄位值的 TOML 資料。
+         */
+        fun fromConfig(config: MinecraftServerConfig): MinecraftServerConfigTomlDto = MinecraftServerConfigTomlDto(
+            playerDisconnection = PlayerDisconnectionTomlDto(
+                policy = config.disconnectedPlayerPolicy.configValue,
+                timeoutSeconds = config.disconnectedPlayerTimeout.inWholeSeconds,
+            ),
+            aiPlayer = AiPlayerTomlDto(config.missingAiPlayerPolicy.configValue),
+            table = TablePolicyTomlDto(
+                breakPolicy = config.tableBreakPolicy.configValue,
+                orphanedPolicy = config.orphanedTablePolicy.configValue,
+            ),
+            mahjongTile = MahjongTileTomlDto(
+                physicalCollisionEnabled = config.mahjongTilePhysicalCollisionEnabled,
+            ),
+            history = HistoryTomlDto.fromConfig(config.history),
+        )
+    }
+}
+
+/**
+ * 尚未開始的遊戲之玩家斷線 TOML 欄位。
+ *
+ * @property policy 斷線後的座位處理政策。
+ * @property timeoutSeconds 延遲離開秒數。
+ */
+@Serializable
+private data class PlayerDisconnectionTomlDto(
+    val policy: String = DisconnectedPlayerPolicy.LEAVE_IMMEDIATELY.configValue,
+    @SerialName("timeout-seconds")
+    val timeoutSeconds: Long = MinecraftServerConfig.DEFAULT_DISCONNECTED_PLAYER_TIMEOUT.inWholeSeconds,
+)
+
+/**
+ * 設定已開局的對局找不到 AI 玩家時，要中止還是繼續。
+ *
+ * @property missingPolicy 找不到 AI 玩家時採用的處理方式。
+ */
+@Serializable
+private data class AiPlayerTomlDto(
+    @SerialName("missing-policy") val missingPolicy: String = MissingAiPlayerPolicy.ABORT_MATCH.configValue,
+)
+
+/**
+ * 麻將桌生命週期 TOML 欄位。
+ *
+ * @property breakPolicy 玩家破壞麻將桌時使用的政策。
+ * @property orphanedPolicy 預期麻將桌缺失時使用的政策。
+ */
+@Serializable
+private data class TablePolicyTomlDto(
+    @SerialName("break-policy")
+    val breakPolicy: String = TableBreakPolicy.DENY_WHILE_OCCUPIED.configValue,
+    @SerialName("orphaned-policy")
+    val orphanedPolicy: String = OrphanedTablePolicy.REMOVE_ALL.configValue,
+)
+
+/**
+ * 麻將牌世界呈現 TOML 欄位。
+ *
+ * @property physicalCollisionEnabled 麻將牌是否阻擋玩家及其他非麻將牌 entity。
+ */
+@Serializable
+private data class MahjongTileTomlDto(
+    @SerialName("physical-collision-enabled")
+    val physicalCollisionEnabled: Boolean = true,
+)
+
+/**
+ * 歷史資料記錄與封存 TOML 欄位。
+ *
+ * @property enabled 是否啟用歷史資料記錄。停用會停止目前記錄，重新啟用只會記錄之後的新牌局。
+ * @property includeAiMatches 是否記錄含有任一 AI 座位的牌局。
+ * @property includeInterruptedMatches 是否保留無法接續的中止或部分紀錄。正常關服後可接續的對局不算中止。
+ * @property queryEnabled 是否允許查詢已保存的歷史資料。
+ * @property allowAdminQuery 是否允許管理員查詢全部歷史資料。
+ * @property queryMinimumIntervalMilliseconds 同一玩家歷史查詢之間的最短間隔毫秒數。
+ * @property queryMaxOutstanding 全伺服器同時執行中的歷史查詢上限。
+ * @property queryRejectionReplyIntervalMilliseconds 同一玩家收到歷史查詢拒絕回覆之間的最短間隔毫秒數。
+ * @property maxMatches 最多保留的已完成牌局數量，零表示不限制數量。
+ * @property retentionDays 已完成牌局的保留天數，零表示不限制天數。
+ * @property maxDiskMiB 歷史資料磁碟空間上限，必須為正值。
+ */
+@Serializable
+private data class HistoryTomlDto(
+    val enabled: Boolean = MinecraftHistoryConfig.DEFAULT_ENABLED,
+    @SerialName("include-ai-matches") val includeAiMatches: Boolean = MinecraftHistoryConfig.DEFAULT_INCLUDE_AI_MATCHES,
+    @SerialName("include-interrupted-matches") val includeInterruptedMatches: Boolean = MinecraftHistoryConfig.DEFAULT_INCLUDE_INTERRUPTED_MATCHES,
+    @SerialName("query-enabled") val queryEnabled: Boolean = MinecraftHistoryConfig.DEFAULT_QUERY_ENABLED,
+    @SerialName("allow-admin-query") val allowAdminQuery: Boolean = MinecraftHistoryConfig.DEFAULT_ALLOW_ADMIN_QUERY,
+    @SerialName("query-minimum-interval-ms")
+    val queryMinimumIntervalMilliseconds: Long = MinecraftHistoryConfig.DEFAULT_QUERY_MINIMUM_INTERVAL.inWholeMilliseconds,
+    @SerialName("query-max-outstanding")
+    val queryMaxOutstanding: Int = MinecraftHistoryConfig.DEFAULT_QUERY_MAX_OUTSTANDING,
+    @SerialName("query-rejection-reply-interval-ms")
+    val queryRejectionReplyIntervalMilliseconds: Long =
+        MinecraftHistoryConfig.DEFAULT_QUERY_REJECTION_REPLY_INTERVAL.inWholeMilliseconds,
+    @SerialName("max-matches") val maxMatches: Int = MinecraftHistoryConfig.DEFAULT_MAX_MATCHES,
+    @SerialName("retention-days") val retentionDays: Int = MinecraftHistoryConfig.DEFAULT_RETENTION.inWholeDays.toInt(),
+    @SerialName("max-disk-mib") val maxDiskMiB: Long = MinecraftHistoryConfig.DEFAULT_MAX_DISK_MIB,
+) {
+    /**
+     * 驗證 TOML 欄位並建立歷史資料設定。
+     *
+     * @return 通過驗證的歷史設定。
+     * @throws InvalidMinecraftServerConfigException 歷史設定的數值不合法時拋出。
+     */
+    fun toConfig(): MinecraftHistoryConfig = try {
+        MinecraftHistoryConfig(
+            enabled = enabled,
+            includeAiMatches = includeAiMatches,
+            includeInterruptedMatches = includeInterruptedMatches,
+            queryEnabled = queryEnabled,
+            allowAdminQuery = allowAdminQuery,
+            queryMinimumInterval = queryMinimumIntervalMilliseconds.milliseconds,
+            queryMaxOutstanding = queryMaxOutstanding,
+            queryRejectionReplyInterval = queryRejectionReplyIntervalMilliseconds.milliseconds,
+            maxMatches = maxMatches,
+            retention = retentionDays.days,
+            maxDiskMiB = maxDiskMiB,
+        )
+    } catch (exception: IllegalArgumentException) {
+        throw InvalidMinecraftServerConfigException(exception.message ?: "Invalid history configuration", exception)
+    }
+
+    /** 將歷史資料設定映射成 TOML 欄位。 */
+    companion object {
+        /**
+         * 建立序列化用的歷史資料設定。
+         *
+         * @param config 已通過驗證的歷史設定。
+         * @return 使用穩定 TOML 欄位名稱的設定資料。
+         */
+        fun fromConfig(config: MinecraftHistoryConfig): HistoryTomlDto = HistoryTomlDto(
+            enabled = config.enabled,
+            includeAiMatches = config.includeAiMatches,
+            includeInterruptedMatches = config.includeInterruptedMatches,
+            queryEnabled = config.queryEnabled,
+            allowAdminQuery = config.allowAdminQuery,
+            queryMinimumIntervalMilliseconds = config.queryMinimumInterval.inWholeMilliseconds,
+            queryMaxOutstanding = config.queryMaxOutstanding,
+            queryRejectionReplyIntervalMilliseconds = config.queryRejectionReplyInterval.inWholeMilliseconds,
+            maxMatches = config.maxMatches,
+            retentionDays = config.retention.inWholeDays.toInt(),
+            maxDiskMiB = config.maxDiskMiB,
+        )
+    }
+}
+
+/**
+ * 將 config 字串驗證並映射到 enum。
+ *
+ * @param T enum 值的型別。
+ * @param field 設定欄位名稱，供錯誤訊息指出問題位置。
+ * @param value 欄位中讀取到的字串值。
+ * @param values 可接受的 enum 值。
+ * @param configValue 將 enum 值轉成設定字串的映射。
+ * @return 字串所對應的 enum 值。
+ * @throws InvalidMinecraftServerConfigException 找不到相符值時。
+ */
+private fun <T> enumValue(
+    field: String,
+    value: String,
+    values: List<T>,
+    configValue: (T) -> String,
+): T = values.firstOrNull { configValue(it) == value } ?: throw InvalidMinecraftServerConfigException(
+    message = "$field has unsupported value '$value'; allowed values: ${values.joinToString { configValue(it) }}",
+)
+
+/**
+ * 以 config 專用例外回報驗證失敗。
+ *
+ * @param condition 欄位是否通過驗證。
+ * @param lazyMessage 驗證失敗時才產生的錯誤訊息。
+ */
+private inline fun requireConfig(condition: Boolean, lazyMessage: () -> String) {
+    if (!condition) throw InvalidMinecraftServerConfigException(lazyMessage())
+}

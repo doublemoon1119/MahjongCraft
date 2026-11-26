@@ -1,0 +1,504 @@
+package com.doublemoon1119.mahjongcraft.extension
+
+import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
+import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.api.registration.MahjongAiStrategyRegistrar
+import com.doublemoon1119.mahjongcraft.ai.api.registration.OpponentModelRegistrar
+import com.doublemoon1119.mahjongcraft.ai.expectation.NeutralOpponentModel
+import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
+import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
+import com.doublemoon1119.mahjongcraft.flow.api.registration.GameEventPublicMarkerResolverRegistrar
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
+import com.doublemoon1119.mahjongcraft.flow.network.dto.component.ComponentViewNetworkRegistry
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoRegistry
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExhaustiveDrawReasonDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExtensionGameActionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExtensionGameCommandDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.GameLengthDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ScoreConfigDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
+import com.doublemoon1119.mahjongcraft.logic.api.registration.TileTypeRegistrar
+import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
+import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.config.GameLength
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleModule
+import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeDefinition
+import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
+import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistryImpl
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
+
+/** 驗證 extension 的統一註冊順序、依來源分組的登記結果、錯誤診斷與 registry freeze。 */
+class MahjongExtensionBootstrapTest {
+    /** 驗證三個註冊階段都會執行，完成後禁止新增規則模組。 */
+    @Test
+    fun `extension registers all integrations before registries freeze`() {
+        val moduleRegistry = MahjongModuleRegistryImpl()
+        val networkRegistries = TestNetworkDtoRegistries()
+        val persistenceRegistries = bundledPersistenceRegistries()
+        val tileTypeRegistry = TileTypeRegistryImpl()
+        val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY)
+        val opponentModelRegistry = OpponentModelRegistry()
+        val calls = mutableListOf<String>()
+        val extension = RecordingExtension(calls)
+
+        val sources = MahjongExtensionBootstrap.registerAndFreeze(
+            extensions = listOf(extension),
+            registries = testCoreRegistries(
+                moduleRegistry = moduleRegistry,
+                tileTypeRegistry = tileTypeRegistry,
+                networkRegistries = networkRegistries,
+                persistenceRegistries = persistenceRegistries,
+                aiStrategyRegistry = aiStrategyRegistry,
+                opponentModelRegistry = opponentModelRegistry,
+            ),
+            failurePolicy = ExtensionFailurePolicy.Default,
+        )
+
+        assertEquals(listOf("rule", "tile", "network", "persistence", "strategy", "opponent", "public_marker"), calls)
+        assertEquals(
+            expected = setOf(
+                "mahjongcraft:rule_module",
+                "mahjongcraft:tile_type",
+                "mahjongcraft:ai_strategy",
+                "mahjongcraft:opponent_model",
+            ),
+            actual = sources.single { it.extensionId == extension.id }.categories.mapTo(mutableSetOf(), ExtensionRegistrationCategory::id),
+        )
+        assertTrue(moduleRegistry.getModule(RiichiRuleConfig()) is RiichiRuleModule)
+        assertIs<RandomAiStrategy>(aiStrategyRegistry.resolve(RecordingExtension.STRATEGY_KEY))
+        assertEquals(
+            expected = TileTypeId.parse("example:flower/spring"),
+            actual = tileTypeRegistry.require(TileTypeId.parse("example:flower/spring")).id,
+        )
+        assertFailsWith<IllegalStateException> {
+            moduleRegistry.register(
+                definition = MahjongModuleDefinition(TaiwanRuleConfig::class, "example:taiwan") { config, id ->
+                    TaiwanRuleModule(id, config)
+                },
+            )
+        }
+        assertFailsWith<IllegalStateException> {
+            tileTypeRegistry.register(TileTypeDefinition(TileTypeId.parse("example:late")))
+        }
+        assertFailsWith<IllegalStateException> {
+            aiStrategyRegistry.register(MahjongAiStrategyDefinition("example:late") { RandomAiStrategy(ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl())) })
+        }
+        assertEquals(setOf(RecordingExtension.RULE_MODULE_ID), opponentModelRegistry.registrationKeys)
+        assertFailsWith<IllegalStateException> {
+            opponentModelRegistry.register(OpponentModelDefinition("example:late") { _, depth -> NeutralOpponentModel(depth) })
+        }
+    }
+
+    /** 呼叫前已存在的登記歸為內建來源，每個 extension 只列出自己新增的登記。沒有登記任何項目的 extension 仍會列出。 */
+    @Test
+    fun `registrations are grouped by the source that registered them`() {
+        val opponentModelRegistry = OpponentModelRegistry().apply {
+            register(OpponentModelDefinition("example:built_in_rule") { _, depth -> NeutralOpponentModel(depth) })
+        }
+
+        val sources = MahjongExtensionBootstrap.registerAndFreeze(
+            extensions = listOf(
+                RecordingExtension(mutableListOf()),
+                StrategyExtension("example:strategy_only"),
+                EmptyExtension("example:empty"),
+            ),
+            registries = testCoreRegistries(opponentModelRegistry = opponentModelRegistry),
+            failurePolicy = ExtensionFailurePolicy.Default,
+        )
+
+        assertEquals(listOf(null, "example:recording", "example:strategy_only", "example:empty"), sources.map { it.extensionId })
+        assertEquals(
+            expected = listOf("example:built_in_rule"),
+            actual = sources[0].categories.single { it.id == "mahjongcraft:opponent_model" }.registrationIds,
+        )
+        assertEquals(
+            expected = listOf(RecordingExtension.RULE_MODULE_ID),
+            actual = sources[1].categories.single { it.id == "mahjongcraft:opponent_model" }.registrationIds,
+        )
+        assertEquals(
+            expected = listOf(ExtensionRegistrationCategory("mahjongcraft:ai_strategy", "AI Strategy", listOf(StrategyExtension.STRATEGY_KEY))),
+            actual = sources[2].categories,
+        )
+        assertEquals(emptyList(), sources[3].categories)
+    }
+
+    /** 驗證註冊失敗時的例外會指出第三方 extension ID。 */
+    @Test
+    fun `registration failure identifies extension`() {
+        val extension = object : MahjongExtension {
+            override val id: String = "example:broken"
+
+            override fun registerRuleModules(registry: MahjongModuleRegistrar) {
+                error("broken")
+            }
+
+            override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
+
+            override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
+        }
+
+        val error = assertFailsWith<MahjongExtensionRegistrationException> {
+            MahjongExtensionBootstrap.registerAndFreeze(
+                extensions = listOf(extension),
+                registries = testCoreRegistries(),
+                failurePolicy = ExtensionFailurePolicy.Default,
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains("example:broken"))
+    }
+
+    /** 判斷規則接受隔離的錯誤，包成指出 extension ID 的註冊例外。不接受的錯誤原樣往外傳。 */
+    @Test
+    fun `registration errors follow the failure policy`() {
+        val policy = ExtensionFailurePolicy { it is IsolatableTestError || ExtensionFailurePolicy.Default.isIsolatable(it) }
+        fun failing(failure: Throwable) = object : MahjongExtension {
+            override val id: String = "example:error"
+
+            override fun registerRuleModules(registry: MahjongModuleRegistrar): Unit = throw failure
+
+            override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
+
+            override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
+        }
+
+        val wrapped = assertFailsWith<MahjongExtensionRegistrationException> {
+            MahjongExtensionBootstrap.registerAndFreeze(
+                extensions = listOf(failing(IsolatableTestError())),
+                registries = testCoreRegistries(),
+                failurePolicy = policy,
+            )
+        }
+        assertTrue(wrapped.message.orEmpty().contains("example:error"))
+        assertFailsWith<FatalTestError> {
+            MahjongExtensionBootstrap.registerAndFreeze(
+                extensions = listOf(failing(FatalTestError())),
+                registries = testCoreRegistries(),
+                failurePolicy = policy,
+            )
+        }
+    }
+
+    /** 驗證回呼失敗時已完成的登記保留，且啟動流程不會凍結任何 registry。 */
+    @Test
+    fun `registration failure leaves partial registrations and registries unfrozen`() {
+        val moduleRegistry = MahjongModuleRegistryImpl()
+        val tileTypeRegistry = TileTypeRegistryImpl()
+        val registries = testCoreRegistries(
+            moduleRegistry = moduleRegistry,
+            tileTypeRegistry = tileTypeRegistry,
+        )
+        val extension = object : MahjongExtension {
+            override val id: String = "example:partial_failure"
+
+            override fun registerRuleModules(registry: MahjongModuleRegistrar) {
+                registry.register(
+                    definition = MahjongModuleDefinition(RiichiRuleConfig::class, "example:partial_rule") { config, id ->
+                        RiichiRuleModule(id, config)
+                    },
+                )
+            }
+
+            override fun registerTileTypes(registry: TileTypeRegistrar) {
+                registry.register(TileTypeDefinition(TileTypeId.parse("example:partial_tile")))
+                error("broken after partial registration")
+            }
+
+            override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
+
+            override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
+        }
+
+        assertFailsWith<MahjongExtensionRegistrationException> {
+            MahjongExtensionBootstrap.registerAndFreeze(listOf(extension), registries, failurePolicy = ExtensionFailurePolicy.Default)
+        }
+
+        assertTrue(moduleRegistry.getModule(RiichiRuleConfig()) is RiichiRuleModule)
+        assertEquals(
+            expected = TileTypeId.parse("example:partial_tile"),
+            actual = tileTypeRegistry.require(TileTypeId.parse("example:partial_tile")).id,
+        )
+        moduleRegistry.register(
+            definition = MahjongModuleDefinition(TaiwanRuleConfig::class, "example:after_failure") { config, id ->
+                TaiwanRuleModule(id, config)
+            },
+        )
+        tileTypeRegistry.register(TileTypeDefinition(TileTypeId.parse("example:after_failure")))
+        registries.aiStrategyRegistry.register(
+            definition = MahjongAiStrategyDefinition("example:after_failure") {
+                RandomAiStrategy(ExtensionGameActionAiRegistry(registries.moduleRegistry))
+            },
+        )
+        registries.opponentModelRegistry.register(OpponentModelDefinition("example:after_failure") { _, depth -> NeutralOpponentModel(depth) })
+    }
+
+    /** 驗證相同 extension ID 不會形成無法判斷來源的部分註冊結果。 */
+    @Test
+    fun `duplicate extension id fails registration`() {
+        val extension = RecordingExtension(mutableListOf())
+
+        val error = assertFailsWith<MahjongExtensionRegistrationException> {
+            MahjongExtensionBootstrap.registerAndFreeze(
+                extensions = listOf(extension, extension),
+                registries = testCoreRegistries(),
+                failurePolicy = ExtensionFailurePolicy.Default,
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains(extension.id))
+        assertTrue(error.cause?.message.orEmpty().contains("Duplicate"))
+    }
+
+    /** 驗證 built-in 與 extension 共用 ID 保留檢查。 */
+    @Test
+    fun `built in extension id cannot be reused by an extension`() {
+        val builtIn = EmptyExtension("example:built_in")
+        val error = assertFailsWith<MahjongExtensionRegistrationException> {
+            MahjongExtensionBootstrap.registerAndFreeze(
+                extensions = listOf(EmptyExtension(builtIn.id)),
+                builtIn = builtIn,
+                registries = testCoreRegistries(),
+                failurePolicy = ExtensionFailurePolicy.Default,
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains(builtIn.id))
+        assertTrue(error.cause?.message.orEmpty().contains("Duplicate"))
+    }
+
+    /** 驗證 extension ID 與內建 extension ID 都必須符合 namespaced ID 格式。 */
+    @Test
+    fun `invalid extension ids fail with contextual errors`() {
+        listOf("", " ", "invalid").forEach { invalidId ->
+            val error = assertFailsWith<MahjongExtensionRegistrationException> {
+                MahjongExtensionBootstrap.registerAndFreeze(
+                    extensions = listOf(EmptyExtension(invalidId)),
+                    registries = testCoreRegistries(),
+                    failurePolicy = ExtensionFailurePolicy.Default,
+                )
+            }
+            assertTrue(error.message.orEmpty().contains(invalidId))
+            assertTrue(error.cause?.message.orEmpty().contains("namespaced"))
+        }
+
+        val error = assertFailsWith<MahjongExtensionRegistrationException> {
+            MahjongExtensionBootstrap.registerAndFreeze(
+                extensions = emptyList(),
+                builtIn = EmptyExtension("builtin"),
+                registries = testCoreRegistries(),
+                failurePolicy = ExtensionFailurePolicy.Default,
+            )
+        }
+        assertTrue(error.message.orEmpty().contains("builtin"))
+        assertTrue(error.cause?.message.orEmpty().contains("namespaced"))
+    }
+
+    /** 不同 extension 登記同一策略 key 時，錯誤指出後登記的 extension，原策略不被取代。 */
+    @Test
+    fun `duplicate ai strategy key identifies registering extension`() {
+        val registries = testCoreRegistries()
+        val error = assertFailsWith<MahjongExtensionRegistrationException> {
+            MahjongExtensionBootstrap.registerAndFreeze(
+                extensions = listOf(StrategyExtension("example:first"), StrategyExtension("example:second")),
+                registries = registries,
+                failurePolicy = ExtensionFailurePolicy.Default,
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains("example:second"))
+        assertTrue(error.cause?.message.orEmpty().contains(StrategyExtension.STRATEGY_KEY))
+        assertIs<RandomAiStrategy>(registries.aiStrategyRegistry.resolve(StrategyExtension.STRATEGY_KEY))
+    }
+}
+
+/**
+ * 建立啟動流程測試使用的獨立 core registry 集合。
+ *
+ * @param moduleRegistry 規則模組 registry，預設建立新的實作。
+ * @param tileTypeRegistry 牌種類型 registry，預設建立新的實作。
+ * @param networkRegistries network DTO registry 集合，預設建立新的測試替身。
+ * @param persistenceRegistries persistence DTO registry 集合，預設建立 bundled 測試集合。
+ * @param aiStrategyRegistry AI 策略 registry，預設包含預設策略。
+ * @param opponentModelRegistry 對手模型 registry，預設建立新的實例。
+ * @return 使用指定或預設 registry 組成的 core registry 集合。
+ */
+private fun testCoreRegistries(
+    moduleRegistry: MahjongModuleRegistry = MahjongModuleRegistryImpl(),
+    tileTypeRegistry: TileTypeRegistry = TileTypeRegistryImpl(),
+    networkRegistries: NetworkDtoRegistries = TestNetworkDtoRegistries(),
+    persistenceRegistries: PersistenceRegistries = bundledPersistenceRegistries(),
+    aiStrategyRegistry: MahjongAiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY),
+    opponentModelRegistry: OpponentModelRegistry = OpponentModelRegistry(),
+): CoreExtensionRegistries = CoreExtensionRegistries(
+    moduleRegistry = moduleRegistry,
+    tileTypeRegistry = tileTypeRegistry,
+    componentRegistry = ComponentRegistryImpl().apply {
+        BuiltInComponentOwners.ALL.forEach(::registerOwner)
+        persistenceRegistries.components.componentTypes.forEach(::register)
+        persistenceRegistries.componentViews.viewTypes.forEach(::registerView)
+    },
+    networkRegistries = networkRegistries,
+    persistenceRegistries = persistenceRegistries,
+    winCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl(),
+    gameActionAiRegistry = ExtensionGameActionAiRegistry(moduleRegistry),
+    aiStrategyRegistry = aiStrategyRegistry,
+    opponentModelRegistry = opponentModelRegistry,
+    gameActionCommandFactoryRegistry = ExtensionGameActionCommandFactoryRegistry(),
+    gameCommandRegistry = ExtensionGameCommandExecutorRegistry(),
+    postReactionRoundOutcomeResolverRegistry = PostReactionRoundOutcomeResolverRegistry(),
+    postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry(),
+    ruleDecisionResolverRegistry = RuleDecisionResolverRegistry(),
+    winRoundContinuationResolverRegistry = WinRoundContinuationResolverRegistry(),
+    winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry),
+    gameEventPublicMarkerResolverRegistry = GameEventPublicMarkerResolverRegistry(),
+)
+
+/**
+ * 記錄啟動流程呼叫順序並登記一個可解析規則的測試 extension。
+ *
+ * @property calls 接收每個登記回呼名稱的可變清單。
+ */
+private class RecordingExtension(
+    private val calls: MutableList<String>,
+) : MahjongExtension {
+    override val id: String = "example:recording"
+
+    override fun registerRuleModules(registry: MahjongModuleRegistrar) {
+        calls += "rule"
+        registry.register(MahjongModuleDefinition(RiichiRuleConfig::class, RULE_MODULE_ID) { config, id -> RiichiRuleModule(id, config) })
+    }
+
+    override fun registerTileTypes(registry: TileTypeRegistrar) {
+        calls += "tile"
+        registry.register(TileTypeDefinition(TileTypeId.parse("example:flower/spring")))
+    }
+
+    override fun registerNetworkDtos(registries: NetworkDtoRegistrars) {
+        calls += "network"
+    }
+
+    override fun registerPersistenceDtos(registries: PersistenceRegistrars) {
+        calls += "persistence"
+    }
+
+    override fun registerAiStrategies(registry: MahjongAiStrategyRegistrar) {
+        calls += "strategy"
+        registry.register(MahjongAiStrategyDefinition(STRATEGY_KEY) { RandomAiStrategy(ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl())) })
+    }
+
+    override fun registerOpponentModels(registry: OpponentModelRegistrar) {
+        calls += "opponent"
+        registry.register(OpponentModelDefinition(RULE_MODULE_ID) { _, depth -> NeutralOpponentModel(depth) })
+    }
+
+    override fun registerGameEventPublicMarkerResolvers(registry: GameEventPublicMarkerResolverRegistrar) {
+        calls += "public_marker"
+    }
+
+    /** 此測試 extension 的常數。 */
+    companion object {
+        /** 此 extension 登記的測試規則模組 ID。 */
+        const val RULE_MODULE_ID: String = "example:riichi"
+
+        /** 此 extension 登記的測試策略 key。 */
+        const val STRATEGY_KEY: String = "example:recorded_strategy"
+    }
+}
+
+/**
+ * 不登記任何項目的 extension 測試替身。
+ *
+ * @property id 此測試 extension 的識別字串。
+ */
+private class EmptyExtension(override val id: String) : MahjongExtension {
+    override fun registerRuleModules(registry: MahjongModuleRegistrar) = Unit
+
+    override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
+
+    override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
+}
+
+/**
+ * 僅登記 AI 策略的第三方 extension 測試替身。
+ *
+ * @property id 此測試 extension 的識別字串。
+ */
+private class StrategyExtension(override val id: String) : MahjongExtension {
+    override fun registerRuleModules(registry: MahjongModuleRegistrar) = Unit
+
+    override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
+
+    override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
+
+    override fun registerAiStrategies(registry: MahjongAiStrategyRegistrar) {
+        registry.register(MahjongAiStrategyDefinition(STRATEGY_KEY) { RandomAiStrategy(ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl())) })
+    }
+
+    /** 兩個測試 extension 共用的常數。 */
+    companion object {
+        /** 兩個測試 extension 故意重複登記的策略 key。 */
+        const val STRATEGY_KEY: String = "example:duplicate_strategy"
+    }
+}
+
+/** 提供啟動流程測試使用的獨立 network DTO registry 集合。 */
+private class TestNetworkDtoRegistries : NetworkDtoRegistries {
+    override val ruleConfig = DtoRegistry<MahjongRuleConfig, MahjongRuleConfigDto> { this }
+    override val scoreConfig = DtoRegistry<ScoreConfig, ScoreConfigDto> { this }
+    override val gameLength = DtoRegistry<GameLength, GameLengthDto> { this }
+    override val componentViews = ComponentViewNetworkRegistry()
+    override val exhaustiveDrawReason = DtoRegistry<ExhaustiveDrawReason, ExhaustiveDrawReasonDto> { this }
+    override val extensionGameAction = DtoRegistry<ExtensionGameAction, ExtensionGameActionDto> { this }
+    override val extensionGameCommand = DtoRegistry<ExtensionGameCommand, ExtensionGameCommandDto> { this }
+
+    override fun freeze() {
+        ruleConfig.freeze()
+        scoreConfig.freeze()
+        gameLength.freeze()
+        componentViews.freeze()
+        exhaustiveDrawReason.freeze()
+        extensionGameAction.freeze()
+        extensionGameCommand.freeze()
+    }
+}
+
+/** 測試用、由判斷規則明確接受隔離的錯誤。 */
+private class IsolatableTestError : Error("isolatable test error")
+
+/** 測試用、判斷規則不接受隔離的錯誤。 */
+private class FatalTestError : Error("fatal test error")

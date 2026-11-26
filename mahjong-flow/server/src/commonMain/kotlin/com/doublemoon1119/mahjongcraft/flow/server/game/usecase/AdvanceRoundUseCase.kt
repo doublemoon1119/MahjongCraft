@@ -1,0 +1,341 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
+
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPlayerPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.random.RoundRandomnessSource
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
+import com.doublemoon1119.mahjongcraft.logic.component.initializeRuleComponents
+import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasOccasion
+import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
+import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionContext
+import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionDecision
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import com.doublemoon1119.mahjongcraft.logic.tile.component.publicFaceUpWallTileIds
+import kotlin.uuid.Uuid
+
+/**
+ * 依規則的 Match progression 決定終局、連莊或下一局位置的用例。
+ *
+ * 決定方式：
+ *
+ * - 呼叫前必須已有 [Game.roundCompletion]。
+ * - 不讀取 `actionHistory` 猜測連莊，也不以固定局數自行判斷終局。
+ * - 把結算後桌況、權威結果摘要與規則 comparator 產生的排行交給 `MatchProgressionPolicy`，驗證它的決策後才一次寫回終局或
+ *   下一局。
+ *
+ * 終局時：
+ *
+ * - 把終局事實與完整 reason ID 寫回 [Game]，並記下 `isMatchOver`。`AiTurnDriver` 與 `ForcedAutoPlayDriver` 靠它跳過已結束的
+ *   對局，否則牌山已空的桌況會被反覆摸牌、反覆觸發流局結算。
+ * - 同步最終桌況快照，廣播 [GameAction.MatchEnded]，快照帶著最終分數，供呼叫端與用戶端組出排名呈現。
+ * - 不開新的一局。`TableState` 只依規則分配桌上未收下的供託（見 `MahjongRuleModule.allocateSettlementExtras`），其餘維持呼叫前
+ *   的樣子。
+ * - 不處理房間清理。把場地從 Game 轉回 Room 由呼叫端接著呼叫 `ReturnToRoomUseCase`。
+ *
+ * @property gameRepository 權威對局數據倉庫。
+ * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的規則模組。
+ * @property snapshotSynchronizer 對局快照同步服務。
+ * @property handSortPreferenceStore 查詢玩家是否啟用自動整理手牌，見該類別 KDoc。
+ * @property eventPublisher 對局通知服務。
+ * @property presentationPublisher 對局 in-process 呈現觸發器。
+ * @property componentRegistry 正式開局與換局使用的組件建立及保留規格。
+ * @property beginRuleDecisionUseCase 新局發牌後啟動規則選擇步驟的 use case。
+ * @property failurePolicy 判斷規則失敗能否回報為無法推進。取消與致命錯誤不得轉成一般錯誤。
+ * @property roundRandomnessSource 新一局的亂數來源。
+ */
+class AdvanceRoundUseCase(
+    private val gameRepository: GameRepository,
+    private val moduleRegistry: MahjongModuleRegistry,
+    private val snapshotSynchronizer: GameSnapshotSynchronizer,
+    private val handSortPreferenceStore: HandSortPreferenceStore,
+    private val eventPublisher: GameEventPublisher,
+    private val presentationPublisher: GamePresentationPublisher,
+    private val componentRegistry: ComponentRegistry,
+    private val beginRuleDecisionUseCase: BeginRuleDecisionUseCase,
+    private val failurePolicy: ExtensionFailurePolicy = ExtensionFailurePolicy.Default,
+    private val roundRandomnessSource: RoundRandomnessSource = RoundRandomnessSource.SEEDED,
+) {
+    /**
+     * 執行連莊/過莊、開下一局邏輯。
+     *
+     * @param gameId 對局 Uuid。
+     * @return 執行結果，成功時為 [AdvanceRoundResult]，失敗時為 [GameError]。
+     */
+    suspend operator fun invoke(gameId: Uuid): Outcome<AdvanceRoundResult, GameError> {
+        // 1. 以原子方式讀取桌況、計算連莊/過莊結果並寫回
+        val outcome = gameRepository.updateGame(
+            gameId = gameId,
+            history = { before, after, result ->
+                if (result is Outcome.Success && before != null && after != null) {
+                    val completed = HistoryEventDraft(null, HistoryFact.RoundCompleted(checkNotNull(before.roundCompletion)))
+                    val next = if (after.isMatchOver) {
+                        HistoryEventDraft(
+                            actorPlayerId = null,
+                            fact = HistoryFact.MatchCompleted(
+                                reasonId = checkNotNull(after.matchEndReasonId),
+                                finalScoresByPlayerId = after.tableState.players.associate { it.id to it.score },
+                            ),
+                        )
+                    } else {
+                        HistoryEventDraft(null, HistoryFact.RoundStarted(after.tableState))
+                    }
+                    listOf(completed, next) + if (after.isMatchOver) {
+                        emptyList()
+                    } else {
+                        after.tableState.openingDiceRolls.map { roll -> HistoryEventDraft(roll.playerId, HistoryFact.DiceRolled(roll)) }
+                    }
+                } else {
+                    emptyList<HistoryEventDraft>()
+                }
+            },
+        ) { game ->
+            val state = game?.tableState
+            when {
+                game == null || state == null -> null to Outcome.Error(GameError.GameNotFound(gameId))
+                else -> {
+                    val module = moduleRegistry.getModule(state.config)
+                    val completion = game.roundCompletion
+                        ?: return@updateGame game to Outcome.Error(
+                            error = GameError.InvalidMatchProgression(gameId, "Missing round completion summary"),
+                        )
+                    if (completion.settledScoresByPlayerId != state.players.associate { it.id to it.score }) {
+                        return@updateGame game to Outcome.Error(
+                            error = GameError.InvalidMatchProgression(gameId, "Round completion scores do not match table state"),
+                        )
+                    }
+                    val decision = try {
+                        module.createMatchProgressionPolicy().decide(
+                            context = MatchProgressionContext(
+                                tableState = state,
+                                completion = completion,
+                                rankedPlayerIds = state.players.sortedWith(module.compareForMatchRanking()).map { it.id },
+                            ),
+                        )
+                    } catch (error: Throwable) {
+                        if (!failurePolicy.isIsolatable(error)) throw error
+                        return@updateGame game to Outcome.Error(
+                            error = GameError.InvalidMatchProgression(gameId, error.stackTraceToString()),
+                        )
+                    }
+
+                    if (decision is MatchProgressionDecision.EndMatch) {
+                        // 整場對局結束時，桌上還沒被收下的供託交給規則決定歸屬；候選者依最終排名排列，排名判準與
+                        // 平台呈現終局排名時使用同一支 module.compareForMatchRanking()。
+                        val extras = SettlementExtrasResolver.resolve(
+                            state = state,
+                            module = module,
+                            occasion = SettlementExtrasOccasion.MATCH_END,
+                            candidatePlayerIds = state.players.sortedWith(module.compareForMatchRanking()).map { it.id },
+                        )
+                        val finalState = state.copy(
+                            players = state.players.map { player ->
+                                extras.scoreDeltas[player.id]?.let { delta -> player.copy(score = player.score + delta) } ?: player
+                            },
+                            components = extras.components,
+                        )
+                        val advanceOutcome = AdvanceRoundOutcome(
+                            result = AdvanceRoundResult(finalState, isMatchOver = true),
+                            wallStructure = null,
+                            initialPhysicalWallLayout = null,
+                            dealOrderHandTileIdsBySeatIndex = emptyMap(),
+                            seatOrderChanged = false,
+                        )
+                        // 對局已經結束：記下這個事實，讓 AiTurnDriver／ForcedAutoPlayDriver 之後都
+                        // 跳過這場對局，不會對已經沒有牌可摸的桌況繼續重複嘗試、重複觸發流局結算。
+                        game.copy(
+                            tableState = finalState,
+                            isMatchOver = true,
+                            pendingTransition = PendingGameTransition.ReturnToRoom,
+                            roundCompletion = null,
+                            matchEndReasonId = decision.reasonId,
+                        ) to Outcome.Success(advanceOutcome)
+                    } else {
+                        val continuation = decision as MatchProgressionDecision.ContinueMatch
+                        val roundAdvancement = try {
+                            state.advanceRound(continuation.transition, completion.transitionDirective, continuation.seatOrder)
+                        } catch (error: Throwable) {
+                            if (!failurePolicy.isIsolatable(error)) throw error
+                            return@updateGame game to Outcome.Error(
+                                error = GameError.InvalidMatchProgression(gameId, error.stackTraceToString()),
+                            )
+                        }
+                        val randomness = roundRandomnessSource.roundRandomness(game.matchSeed, game.openedRoundCount)
+                        val initializationResult = GameInitializer.startNextRound(
+                            gameId = gameId,
+                            roundAdvancement = roundAdvancement,
+                            module = module,
+                            randomness = randomness,
+                        ).initializeRuleComponents(
+                            ruleModuleId = module.id,
+                            registry = componentRegistry,
+                            random = randomness.components,
+                            previousTableState = state,
+                        )
+                        val dealtState = initializationResult.tableState
+                        // 發牌順序（哪張牌在哪一批發出），只提供給呈現使用，不是實際寫回權威狀態的手牌
+                        // 順序——實際寫回的是下面整理過的 organizedState，理由同 StartGameUseCase。
+                        val dealOrderHandTileIdsBySeatIndex = dealtState.players.withIndex().associate { (seatIndex, player) ->
+                            seatIndex to player.hand.tiles.map { tile -> tile.id }
+                        }
+                        val organizedPlayers = dealtState.players.map { player ->
+                            if (handSortPreferenceStore.isEnabled(player.id)) {
+                                player.copy(hand = player.hand.organize(module.tileOrder))
+                            } else {
+                                player
+                            }
+                        }
+                        val newState = dealtState.copy(players = organizedPlayers)
+                        val advanceOutcome = AdvanceRoundOutcome(
+                            result = AdvanceRoundResult(newState, isMatchOver = false),
+                            wallStructure = initializationResult.wallStructure,
+                            initialPhysicalWallLayout = initializationResult.initialPhysicalWallLayout,
+                            dealOrderHandTileIdsBySeatIndex = dealOrderHandTileIdsBySeatIndex,
+                            seatOrderChanged = newState.players.map { it.id } != state.players.map { it.id },
+                        )
+                        game.copy(
+                            tableState = newState,
+                            enabledAutomaticControlIdsByPlayerId = emptyMap(),
+                            automaticControlRevision = game.automaticControlRevision + 1L,
+                            openedRoundCount = game.openedRoundCount + 1,
+                            pendingTransition = null,
+                            roundCompletion = null,
+                            matchEndReasonId = null,
+                        ) to Outcome.Success(advanceOutcome)
+                    }
+                }
+            }
+        }
+
+        if (outcome is Outcome.Error) return outcome
+        val advanceOutcome = (outcome as Outcome.Success).value
+        val result = advanceOutcome.result
+        val newState = result.tableState
+
+        if (result.isMatchOver) {
+            // 對局已結束：仍要同步最終快照、廣播 MatchEnded，讓客戶端能讀到最終分數組出排名呈現，
+            // 但不做開下一局才需要的 RoundStarted 廣播或擲骰／牌牆呈現。
+            snapshotSynchronizer.syncAll(gameId)
+            val lastDealerId = newState.dealerPlayerId
+            eventPublisher.publishToAllObservers(gameId, newState.players.map { it.id }, lastDealerId, GameAction.MatchEnded)
+            val presentationModule = moduleRegistry.getModule(newState.config)
+            val aiPlayerIds = gameRepository.getGame(gameId)?.aiPlayerIds.orEmpty()
+            val finalRankById = newState.players.sortedWith(presentationModule.compareForMatchRanking())
+                .mapIndexed { index, player -> player.id to index + 1 }
+                .toMap()
+            presentationPublisher.publishMatchSettlement(
+                gameId = gameId,
+                request = MatchSettlementPresentationRequest(
+                    ruleModuleId = presentationModule.id,
+                    players = newState.players.mapIndexed { seatIndex, player ->
+                        MatchSettlementPlayerPresentation(
+                            playerId = player.id,
+                            seatIndex = seatIndex,
+                            isAi = player.id in aiPlayerIds,
+                            initialSeatIndex = player.initialSeatIndex,
+                            finalScore = player.score,
+                            finalRank = finalRankById.getValue(player.id),
+                        )
+                    },
+                ),
+            )
+            return Outcome.Success(result)
+        }
+
+        // 2. 同步快照給所有正在觀察的玩家
+        snapshotSynchronizer.syncAll(gameId)
+
+        // 3. 廣播「下一局已開始」事件；RoundStarted 沒有實際執行者，比照 GameStarted 的既有慣例，
+        //    填入新莊家的 Uuid
+        val newDealerId = newState.dealerPlayerId
+        val seatedPlayerIds = newState.players.map { it.id }
+        eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, newDealerId, GameAction.RoundStarted)
+        // 局間換位時先讓玩家移到新座位，再擺下一局的牌與桌上物件。
+        if (advanceOutcome.seatOrderChanged) presentationPublisher.publishSeatOrderChanged(gameId, seatedPlayerIds)
+
+        // 4. 觸發平台呈現層：規則不支援開門流程時皆為 null，直接跳過。牌牆先建、骰子後擲，理由同
+        // StartGameUseCase，這裡不能對調呼叫順序。
+        val dealerSeatIndex = newState.players.indexOfFirst { player -> player.id == newDealerId }
+        advanceOutcome.initialPhysicalWallLayout?.let { layout ->
+            val reservedWallTileIds = newState.reservedWallTiles.map { tile -> tile.id }.toSet()
+            val openingDiceCounts = newState.openingDiceRolls.map { it.dice.values.size }
+            val revealedTileIds = moduleRegistry.getModule(newState.config).publicFaceUpWallTileIds(newState, componentRegistry)
+            presentationPublisher.publishWallStructure(
+                gameId = gameId,
+                assemblyStructure = requireNotNull(advanceOutcome.wallStructure),
+                layout = layout,
+                dealerSeatIndex = dealerSeatIndex,
+                reservedWallTileIds = reservedWallTileIds,
+                openingDiceCounts = openingDiceCounts,
+                revealedTileIds = revealedTileIds,
+            )
+        }
+        if (newState.openingDiceRolls.isNotEmpty()) {
+            presentationPublisher.publishOpeningRolls(
+                gameId = gameId,
+                rolls = newState.openingDiceRolls,
+            )
+            newState.openingDiceRolls.forEach { roll ->
+                eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, roll.playerId, GameAction.DiceRolled(roll))
+            }
+        }
+        // newState 的立牌已是整理後的最終牌序，與發牌順序 advanceOutcome.dealOrderHandTileIdsBySeatIndex 分開。
+        presentationPublisher.publishInitialDeal(
+            gameId = gameId,
+            tableState = newState,
+            handTileIdsBySeatIndex = advanceOutcome.dealOrderHandTileIdsBySeatIndex,
+            dealBatchSizes = newState.config.dealBatchSizes(),
+            openingDiceCounts = newState.openingDiceRolls.map { it.dice.values.size },
+        )
+        beginRuleDecisionUseCase(gameId, RuleDecisionTiming.ROUND_START)
+
+        return Outcome.Success(result)
+    }
+
+    /**
+     * [AdvanceRoundUseCase] 的執行結果。
+     *
+     * @property tableState 套用後的桌況——整場對局已結束時，除了「桌上未被收下的供託依規則分配」
+     *           這個結算之外維持呼叫前的桌況不變（不會開新的一局）。否則為已經開始下一局的新桌況。
+     * @property isMatchOver 整場對局是否已依規則的 progression policy 結束。
+     */
+    data class AdvanceRoundResult(val tableState: TableState, val isMatchOver: Boolean)
+
+    /**
+     * [invoke] 內部使用的中介結果，把呈現層需要的牌牆結構資料，跟對外公開的
+     * [AdvanceRoundResult] 分開夾帶，避免污染既有呼叫端（例如 `GameFlowCoordinator`）只關心的
+     * 對外回傳形狀。[dealOrderHandTileIdsBySeatIndex] 是發牌順序，在
+     * [result] 的手牌已經被整理過之後就無法再從它反推出來，理由同 `StartGameUseCase` KDoc。整場對局
+     * 已結束（沒有開新的一局）時固定為空 map，不會被用到。
+     *
+     * @property result 對呼叫端回傳的回合推進結果。
+     * @property wallStructure 新局的牌牆位置。沒有開新局時為 null。
+     * @property initialPhysicalWallLayout 新局開始時的實體牌牆排列。沒有開新局時為 null。
+     * @property dealOrderHandTileIdsBySeatIndex 按座位索引的發牌順序牌識別碼。沒有開新局時為空 map。
+     * @property seatOrderChanged 新局是否因局間換位而改變座位順序。沒有開新局時為 false。
+     */
+    private data class AdvanceRoundOutcome(
+        val result: AdvanceRoundResult,
+        val wallStructure: Map<Uuid, TileWallPosition>?,
+        val initialPhysicalWallLayout: TileWallPhysicalLayout?,
+        val dealOrderHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
+        val seatOrderChanged: Boolean,
+    )
+}

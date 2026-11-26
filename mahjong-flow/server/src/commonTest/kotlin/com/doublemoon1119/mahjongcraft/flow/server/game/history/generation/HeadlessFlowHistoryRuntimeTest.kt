@@ -1,0 +1,301 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.history.generation
+
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameLength
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerTileAreaIds
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledHeadlessHistoryRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.seededRandomMoveHeadlessHistoryRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.testMatchSeed
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+import kotlin.uuid.Uuid
+
+/** 驗證無頭真實 runtime 的完整場長流程與歷史背壓契約。 */
+@OptIn(ExperimentalCoroutinesApi::class)
+class HeadlessFlowHistoryRuntimeTest {
+    /** 驗證東風戰可由四個隨機出牌 AI 自動完成。流程測試不需要 AI 思考，對局與 AI 選擇都由固定種子決定。 */
+    @Test
+    fun `east match completes through cold history flow`() = runTest {
+        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, seededRandomMoveHeadlessHistoryRegistries(MATCH_SEED), decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default), matchSeed = testMatchSeed(MATCH_SEED))
+        var terminal = false
+        runtimeFlow(runtime) { terminal = it }
+        assertTrue(terminal)
+        val room = runtime.store.snapshot().rooms.getValue(runtime.venueId)
+        assertTrue(room.canStart, "The returned AI room must remain ready to start another match.")
+        assertEquals(4, room.aiPlayerIds.size)
+        assertTrue(room.hostId !in room.readyPlayerIds, "The host must remain outside the readiness collection.")
+    }
+
+    /** 驗證半莊戰可由四個隨機出牌 AI 自動完成。 */
+    @Test
+    fun `hanchan match completes through cold history flow`() = runTest {
+        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_HANCHAN, seededRandomMoveHeadlessHistoryRegistries(MATCH_SEED), decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default), matchSeed = testMatchSeed(MATCH_SEED))
+        var terminal = false
+        runtimeFlow(runtime) { terminal = it }
+        assertTrue(terminal)
+    }
+
+    /** 驗證三人東風戰與三人半莊戰可由三個隨機出牌 AI 自動完成。 */
+    @Test
+    fun `three player matches complete through cold history flow`() = runTest {
+        listOf(HeadlessHistoryScenario.THREE_PLAYER_RIICHI_EAST, HeadlessHistoryScenario.THREE_PLAYER_RIICHI_HANCHAN).forEach { scenario ->
+            val runtime = HeadlessFlowHistoryRuntime.create(scenario, seededRandomMoveHeadlessHistoryRegistries(MATCH_SEED), decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default), matchSeed = testMatchSeed(MATCH_SEED))
+            var terminal = false
+            runtimeFlow(runtime) { terminal = it }
+            assertTrue(terminal, "$scenario must reach its terminal event")
+            assertEquals(3, runtime.store.snapshot().rooms.getValue(runtime.venueId).aiPlayerIds.size)
+        }
+    }
+
+    /**
+     * 驗證台灣麻將東風圈可由四個初級 AI 自動完成（流局時莊家連莊，隨機出牌幾乎不和牌而打不完），且花牌都經補花移到花區、從不打出。一將走同一條流程，只確認它使用東南西北圈。
+     */
+    @Test
+    fun `taiwan match completes through cold history flow`() = runTest {
+        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.TAIWAN_EAST, bundledHeadlessHistoryRegistries(), decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default), matchSeed = testMatchSeed(MATCH_SEED))
+        var terminal = false
+        var flowersSetAside = false
+        HeadlessHistoryMatchRunner(runtime).events().collect { progress ->
+            runtime.store.acknowledgeHistoryEvents(progress.events.map { it.matchId to it.sequence }.toSet())
+            if (progress.terminal && progress.events.isEmpty()) terminal = true
+            runtime.currentGame()?.tableState?.players?.forEach { player ->
+                val discardedFlowers = player.discardPile.entries.filter { TaiwanTileTypes.isFlower(it.tile.tile) }
+                assertTrue(discardedFlowers.isEmpty(), "Flowers must be set aside, not discarded: $discardedFlowers")
+                if (player.tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles.orEmpty().isNotEmpty()) flowersSetAside = true
+            }
+        }
+        assertTrue(terminal)
+        assertTrue(flowersSetAside, "Some flowers must reach a flower area during the match")
+        assertEquals(4, runtime.store.snapshot().rooms.getValue(runtime.venueId).aiPlayerIds.size)
+        assertEquals(TaiwanGameLength.FourWinds, (HeadlessHistoryScenario.TAIWAN_FOUR_WINDS.ruleConfig as TaiwanRuleConfig).gameLength)
+    }
+
+    /** 驗證計時器量到 AI 決策、快照同步與歷史記錄，歸零後重新累計。 */
+    @Test
+    fun `step timer measures each stage`() = runTest {
+        val timer = HeadlessStepTimer()
+        val store = AuthoritativeStateStore(historyRecordingEnabled = true, historyRecordingObserver = timer)
+        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries(), store, timer, decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default))
+        assertTrue(timer.historyEvents > 0, "Opening the match must record history events.")
+
+        timer.reset()
+        assertEquals(Duration.ZERO, timer.aiDecision + timer.snapshotSync + timer.historyRecording)
+        assertEquals(0, timer.historyEvents)
+        repeat(STEPS_TO_MEASURE) { runtime.step() }
+
+        assertTrue(timer.aiDecision > Duration.ZERO, "AI turns must be timed.")
+        assertTrue(timer.snapshotSync > Duration.ZERO, "Snapshot synchronization must be timed.")
+        assertTrue(timer.historyRecording > Duration.ZERO, "History recording must be timed.")
+        assertTrue(timer.historyEvents > 0)
+        assertNotNull(timer.slowestAiDecision, "The slowest AI decision must be kept for diagnosis.")
+        assertNull(timer.ongoingAiDecision, "No AI decision may stay in progress after a step.")
+
+        timer.reset()
+        assertNull(timer.slowestAiDecision)
+    }
+
+    /** 驗證未確認整批事件時，流程不會推進下一個權威步驟。 */
+    @Test
+    fun `cold flow requires complete batch acknowledgement`() = runTest {
+        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries(), decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default))
+        val pendingBefore = runtime.store.snapshot().historyRecordingState.pendingEvents.size
+        var failed = false
+        var message = ""
+        try {
+            HeadlessHistoryMatchRunner(runtime).events().collect { }
+        } catch (error: IllegalStateException) {
+            failed = true
+            message = error.message.orEmpty()
+        }
+        assertTrue(failed)
+        assertTrue(message.contains("acknowledge the entire emitted batch"))
+        assertEquals(pendingBefore, runtime.store.snapshot().historyRecordingState.pendingEvents.size)
+    }
+
+    /** 驗證 collector 尚未完成確認時，流程會停在同一批事件而不推進權威步驟。 */
+    @Test
+    fun `cold flow waits for collector before advancing`() = runTest {
+        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries(), decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default))
+        val entered = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val before = runtime.store.snapshot().historyRecordingState.pendingEvents.size
+        val job = launch {
+            HeadlessHistoryMatchRunner(runtime).events().collect { progress ->
+                entered.complete(Unit)
+                release.await()
+                runtime.store.acknowledgeHistoryEvents(progress.events.map { it.matchId to it.sequence }.toSet())
+            }
+        }
+        entered.await()
+        advanceUntilIdle()
+        assertEquals(before, runtime.store.snapshot().historyRecordingState.pendingEvents.size)
+        release.complete(Unit)
+        job.join()
+    }
+
+    /** 驗證步數上限在初始交易確認後仍會阻止無界推進。 */
+    @Test
+    fun `runner enforces maximum steps`() = runTest {
+        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries(), decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default))
+        var failed = false
+        try {
+            HeadlessHistoryMatchRunner(runtime, HeadlessHistoryRunLimits(maxSteps = 1)).events().collect { progress ->
+                runtime.store.acknowledgeHistoryEvents(progress.events.map { it.matchId to it.sequence }.toSet())
+            }
+        } catch (error: IllegalStateException) {
+            failed = error.message.orEmpty().contains("step limit")
+        }
+        assertTrue(failed)
+    }
+
+    /** 驗證收集端超過保存等待期限時，來源批次仍然保留。 */
+    @Test
+    fun `runner times out a stalled collector without dropping events`() = runTest {
+        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries(), decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default))
+        val before = runtime.store.snapshot().historyRecordingState.pendingEvents.size
+        var timedOut = false
+        try {
+            HeadlessHistoryMatchRunner(runtime).events().collect {
+                delay(61.seconds)
+            }
+        } catch (_: TimeoutCancellationException) {
+            timedOut = true
+        }
+        assertTrue(timedOut)
+        assertEquals(before, runtime.store.snapshot().historyRecordingState.pendingEvents.size)
+    }
+
+    /**
+     * 驗證同一個數字決定的對局種子與 AI 選擇重現同一場對局：每一步的牌桌內容（牌張、牌河、分數）完全相同。只有房間與玩家 ID
+     * 每次不同。
+     */
+    @Test
+    fun `same match seed reproduces the whole match`() = runTest {
+        val first = recordMatch(MATCH_SEED)
+        val second = recordMatch(MATCH_SEED)
+        assertTrue(first.size > 1, "The match must advance through several steps.")
+        assertEquals(first, second)
+        assertNotEquals(openingWall(MATCH_SEED), openingWall(MATCH_SEED + 1), "A different seed must deal a different wall.")
+    }
+
+    /**
+     * 驗證台灣麻將以隨機出牌 AI 推進固定步數時，對局不會被中止，每一步都有進展。
+     *
+     * 隨機出牌會大量吃、碰、槓與補花，走到一般對局少見的情況。台麻流局時莊家連莊，隨機出牌幾乎不和牌而打不完，
+     * 因此只推進固定步數，不要求整場結束。
+     */
+    @Test
+    fun `taiwan random moves advance without aborting`() = runTest {
+        val runtime = HeadlessFlowHistoryRuntime.create(
+            scenario = HeadlessHistoryScenario.TAIWAN_EAST,
+            registries = seededRandomMoveHeadlessHistoryRegistries(MATCH_SEED),
+            store = AuthoritativeStateStore(historyRecordingEnabled = false),
+            decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+            matchSeed = testMatchSeed(MATCH_SEED),
+        )
+        repeat(TAIWAN_RANDOM_MOVE_STEPS) { step ->
+            assertTrue(runtime.step(), "Taiwan random moves made no progress at step $step")
+            val game = assertNotNull(runtime.currentGame(), "The Taiwan match ended or was aborted at step $step")
+            assertNull(game.matchEndReasonId, "The Taiwan match ended at step $step")
+        }
+    }
+
+    /** 驗證收集取消不會確認或刪除尚未完成的來源批次。 */
+    @Test
+    fun `runner cancellation retains pending events`() = runTest {
+        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries(), decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default))
+        val before = runtime.store.snapshot().historyRecordingState.pendingEvents.size
+        val entered = CompletableDeferred<Unit>()
+        val job = launch {
+            HeadlessHistoryMatchRunner(runtime).events().collect {
+                entered.complete(Unit)
+                CompletableDeferred<Unit>().await()
+            }
+        }
+        entered.await()
+        job.cancel()
+        job.join()
+        assertEquals(before, runtime.store.snapshot().historyRecordingState.pendingEvents.size)
+    }
+
+    /**
+     * 以指定數字跑完一場隨機出牌的東風戰，記下每一步的牌桌內容。玩家以座位表示，因為房間與玩家 ID 每次執行都不同。
+     *
+     * @param seed 決定對局種子與 AI 選擇的數字。
+     * @return 依步驟排列的牌桌內容。
+     */
+    private suspend fun recordMatch(seed: Int): List<String> {
+        val runtime = HeadlessFlowHistoryRuntime.create(
+            scenario = HeadlessHistoryScenario.RIICHI_EAST,
+            registries = seededRandomMoveHeadlessHistoryRegistries(seed),
+            decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+            matchSeed = testMatchSeed(seed),
+        )
+        val steps = mutableListOf<String>()
+        HeadlessHistoryMatchRunner(runtime).events().collect { progress ->
+            runtime.store.acknowledgeHistoryEvents(progress.events.map { it.matchId to it.sequence }.toSet())
+            runtime.currentGame()?.tableState?.let { table ->
+                steps += table.players.joinToString(separator = " | ") { player ->
+                    "${player.score}:${player.hand.allTiles.map { it.id }}:${player.discardPile.entries.map { it.tile.id }}"
+                } + " | wall=${table.tileWall.getAllTiles().map { it.id }}"
+            }
+        }
+        return steps
+    }
+
+    /**
+     * 以指定種子開局，取得第一局牌山的牌張 ID。
+     *
+     * @param seed 決定對局種子的數字。
+     * @return 依摸牌順序排列的牌張 ID。
+     */
+    private suspend fun openingWall(seed: Int): List<Uuid> = HeadlessFlowHistoryRuntime.create(
+        scenario = HeadlessHistoryScenario.RIICHI_EAST,
+        registries = bundledHeadlessHistoryRegistries(),
+        decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+        matchSeed = testMatchSeed(seed),
+    ).currentGame().let(::checkNotNull).tableState.tileWall.getAllTiles().map { it.id }
+
+    /**
+     * 收集流程並在每批事件後確認完整事件交易。
+     *
+     * @param runtime 欲推進的隔離 runtime。
+     * @param terminal 終局進度回呼。
+     */
+    private suspend fun runtimeFlow(runtime: HeadlessFlowHistoryRuntime, terminal: (Boolean) -> Unit) {
+        HeadlessHistoryMatchRunner(runtime).events().collect { progress ->
+            val ids = progress.events.map { it.matchId to it.sequence }.toSet()
+            runtime.store.acknowledgeHistoryEvents(ids)
+            if (progress.terminal && progress.events.isEmpty()) terminal(true)
+        }
+    }
+
+    /** 測試使用的步數上限與固定種子。 */
+    private companion object {
+        /** 計時測試推進的步數。足以涵蓋多次 AI 出牌，又不會塞滿待寫佇列。 */
+        const val STEPS_TO_MEASURE = 40
+
+        /** 完整對局測試固定使用的種子。 */
+        const val MATCH_SEED = 1
+
+        /** 台麻隨機出牌推進的步數，約涵蓋二十局。 */
+        const val TAIWAN_RANDOM_MOVE_STEPS = 3_000
+    }
+}

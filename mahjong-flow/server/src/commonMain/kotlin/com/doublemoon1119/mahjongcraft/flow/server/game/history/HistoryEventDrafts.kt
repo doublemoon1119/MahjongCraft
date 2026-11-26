@@ -1,0 +1,85 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.history
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryActionResult
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinningHand
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.AppliedActionScoring
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import kotlin.uuid.Uuid
+
+/**
+ * 由明確接受的動作與交易前後桌況產生事件。不從 `actionHistory` 猜測動作。
+ *
+ * @param actorPlayerId 執行動作的玩家。規則自動動作可為 null。
+ * @param action 已通過權威驗證的動作。
+ * @param before 交易前的完整桌況，用來計算新增公開的牌。
+ * @param after 交易提交後的完整桌況，用來計算新增公開資訊與索引。
+ * @param affectedTileIds 動作直接涉及的牌 UUID。未指定時為空清單。
+ * @return 尚未指派場次內序號與時間戳的事件草稿。
+ */
+fun acceptedActionHistoryDraft(
+    actorPlayerId: Uuid?,
+    action: GameAction,
+    before: TableState,
+    after: TableState,
+    affectedTileIds: List<Uuid> = emptyList(),
+): HistoryEventDraft {
+    val beforeRevealed = before.publicTileEvidenceIds
+    val wallTileIds = (after.tileWall.getAllTiles() + after.reservedWallTiles).mapTo(mutableSetOf()) { it.id }
+    val afterRevealed = after.publicTileEvidenceIds.intersect(wallTileIds)
+    return HistoryEventDraft(
+        actorPlayerId = actorPlayerId,
+        fact = HistoryFact.ActionAccepted(
+            action = action,
+            result = HistoryActionResult(
+                affectedTileIds = affectedTileIds,
+                newlyRevealedTileIds = (afterRevealed - beforeRevealed).sortedBy(Uuid::toString),
+                remainingWallTileCount = after.tileWall.remainingCount,
+                reservedWallTileIds = after.reservedWallTiles.map { it.id },
+                scoresByPlayerId = after.players.associate { it.id to it.score },
+                nextPlayerId = after.currentPlayer.id,
+            ),
+        ),
+    )
+}
+
+/**
+ * 由已套用的動作即時收付產生事件。
+ *
+ * @param scoring 已寫入權威狀態的收付。
+ * @return 尚未指派場次內序號與時間戳的事件草稿。
+ */
+fun actionScoredHistoryDraft(scoring: AppliedActionScoring): HistoryEventDraft = HistoryEventDraft(
+    actorPlayerId = scoring.actorPlayerId,
+    fact = HistoryFact.ActionScored(
+        action = scoring.action,
+        scoreDeltas = scoring.scoreDeltas,
+        potDeposit = scoring.potDeposit,
+    ),
+)
+
+/**
+ * 將已建立的胡牌 request 轉成歷史詳情。
+ *
+ * @param request 已建立的胡牌 request。
+ * @return 可保存的規則中立胡牌詳情。
+ */
+fun winSettlementHistoryDetails(request: WinSettlementPresentationRequest): List<HistoryWinDetails> = request.winners.map { winner ->
+    HistoryWinDetails(
+        playerId = winner.playerId,
+        detailFields = winner.detailFields,
+        hand = HistoryWinningHand(winner.standingTileIds, winner.winningTileId),
+    )
+}
+
+/**
+ * 胡牌 request 的和牌張。一炮多響的贏家共用同一張。
+ *
+ * @param request 已建立的胡牌 request。
+ * @return 和牌張。沒有和牌張時為 null。
+ */
+fun winSettlementWinningTileId(request: WinSettlementPresentationRequest): Uuid? = request.winners.firstNotNullOfOrNull { it.winningTileId }

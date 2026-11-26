@@ -1,0 +1,17 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.doublemoon1119.mahjongcraft.platform.minecraft.mod.mixin.client",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "mahjongcraft.refmap.json",
+  "client": [
+    "CapeLayerMixin",
+    "GameRendererMixin",
+    "EntityRenderDispatcherMixin",
+    "LivingEntityRendererMixin",
+    "PlayerModelAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

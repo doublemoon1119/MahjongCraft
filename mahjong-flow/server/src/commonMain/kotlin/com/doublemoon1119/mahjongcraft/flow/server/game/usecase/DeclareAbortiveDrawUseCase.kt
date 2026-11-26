@@ -1,0 +1,152 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordAbortiveDraw
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
+import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionContext
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import kotlin.uuid.Uuid
+
+/**
+ * 宣告由規則模組提供之途中流局原因的實例化用例。
+ *
+ * 是否合法完全交給該規則模組自己的 `LegalActionValidator`：現在
+ * [GameAction.ExhaustiveDraw] 是不是合法動作——這裡不重新實作么九牌計數或第一巡判斷，理由與
+ * [DeclareRiichiUseCase] 相同。九種九牌屬於途中流局：不結算任何點數、供託延續到下一局（不呼叫
+ * `collectStickPot`），莊家是否連莊則交由 [MahjongRuleModule.resolveRoundTransition] 判定。
+ * 這裡直接把 `getLegalActions` 回傳的 [GameAction.ExhaustiveDraw] 實例本身（含其規則無關的 `reason` 屬性）
+ * 記錄進**全員**的 `actionHistory`，保留完整的流局事實。
+ *
+ * @property gameRepository 權威對局數據倉庫。
+ * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器。
+ * @property snapshotSynchronizer 對局快照同步服務。
+ * @property eventPublisher 對局通知服務。
+ */
+class DeclareAbortiveDrawUseCase(
+    private val gameRepository: GameRepository,
+    private val moduleRegistry: MahjongModuleRegistry,
+    private val snapshotSynchronizer: GameSnapshotSynchronizer,
+    private val eventPublisher: GameEventPublisher,
+) {
+    /**
+     * 執行指定原因的途中流局宣告邏輯。
+     *
+     * @param gameId 對局 Uuid。
+     * @param playerId 發起宣告的玩家 Uuid。
+     * @param reason 玩家選擇的途中流局原因。
+     * @return 宣告結果，成功時為 [Unit]，失敗時為 [GameError]。
+     */
+    suspend operator fun invoke(
+        gameId: Uuid,
+        playerId: Uuid,
+        reason: ExhaustiveDrawReason,
+    ): Outcome<Unit, GameError> {
+        // 1. 以原子方式讀取桌況、驗證業務規則並寫回
+        val outcome = gameRepository.updateGame(
+            gameId = gameId,
+            history = { before, after, result ->
+                if (result is Outcome.Success && before != null && after != null) {
+                    listOf(
+                        element = acceptedActionHistoryDraft(
+                            actorPlayerId = playerId,
+                            action = GameAction.ExhaustiveDraw(result.value.reason),
+                            before = before.tableState,
+                            after = after.tableState,
+                        ),
+                    )
+                } else {
+                    emptyList<HistoryEventDraft>()
+                }
+            },
+        ) { game ->
+            val state = game?.tableState
+            when {
+                game == null || state == null -> null to Outcome.Error(GameError.GameNotFound(gameId))
+                state.players.none { it.id == playerId } ->
+                    game to Outcome.Error(GameError.PlayerNotInGame(playerId, gameId))
+
+                state.currentPlayer.id != playerId ->
+                    game to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
+
+                !state.isOwnTurnWindowOpenFor(playerId) || state.currentPlayer.hand.lastDrawn == null ->
+                    game to Outcome.Error(GameError.UnsupportedAction(gameId, playerId))
+
+                else -> {
+                    val module = moduleRegistry.getModule(state.config)
+
+                    val legalActions = module.createLegalActionValidator().getLegalActions(
+                        context = LegalActionContext.ownTurn(state, playerId),
+                    )
+                    val exhaustiveDraw = legalActions.filterIsInstance<GameAction.ExhaustiveDraw>()
+                        .firstOrNull { it.reason == reason }
+                        ?: return@updateGame game to Outcome.Error(GameError.UnsupportedAction(gameId, playerId))
+
+                    // 途中流局不結算點數，並把 ExhaustiveDraw 記錄進全員的 actionHistory；莊家是否連莊
+                    // 由規則模組依完整結果情境決定。
+                    val newState = state.recordAbortiveDraw(exhaustiveDraw.reason, declarerId = playerId, module = module)
+
+                    val transitionDirective = module.resolveRoundTransition(
+                        context = RoundTransitionContext(
+                            tableState = newState,
+                            outcomeId = exhaustiveDraw.reason.id,
+                            classification = RoundCompletionClassification.ABORTIVE_DRAW,
+                            beneficiaryPlayerIds = emptySet(),
+                            responsiblePlayerIds = emptySet(),
+                            exhaustiveDrawReason = exhaustiveDraw.reason,
+                        ),
+                    )
+
+                    game.copy(
+                        tableState = newState,
+                        roundCompletion = RoundCompletionSummary(
+                            outcomeId = exhaustiveDraw.reason.id,
+                            classification = RoundCompletionClassification.ABORTIVE_DRAW,
+                            beneficiaryPlayerIds = emptySet(),
+                            transitionDirective = transitionDirective,
+                            settledScoresByPlayerId = newState.players.associate { it.id to it.score },
+                        ),
+                    ) to Outcome.Success(AbortiveDrawResult(newState, exhaustiveDraw.reason))
+                }
+            }
+        }
+
+        if (outcome is Outcome.Error) return outcome
+        val result = (outcome as Outcome.Success).value
+        val newState = result.tableState
+
+        // 2. 同步快照給所有正在觀察的玩家
+        snapshotSynchronizer.syncAll(gameId)
+
+        // 3. 廣播流局事件；跟 DeclareTsumoUseCase/DeclareRiichiUseCase 一樣，actor 是宣告的玩家本人
+        eventPublisher.publishToAllObservers(gameId, newState.players.map { it.id }, playerId, GameAction.ExhaustiveDraw(result.reason))
+
+        return Outcome.Success(Unit)
+    }
+
+    /**
+     * 原子更新後的桌況及實際採用的途中流局原因。此中繼結果讓 [reason] 能與 [tableState]
+     * 一起帶出 `gameRepository.update` 的作用域，供廣播事件使用。[reason] 不是 [TableState]
+     * 的欄位，無法在作用域外從桌況反推。
+     *
+     * @property tableState 記錄途中流局後的權威桌況。
+     * @property reason 規則判定成立的流局原因。
+     */
+    private data class AbortiveDrawResult(
+        val tableState: TableState,
+        val reason: ExhaustiveDrawReason,
+    )
+}

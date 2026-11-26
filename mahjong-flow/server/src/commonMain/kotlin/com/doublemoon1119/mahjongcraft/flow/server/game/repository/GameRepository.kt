@@ -1,0 +1,104 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.repository
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import kotlin.uuid.Uuid
+
+/**
+ * 伺服器端桌況數據倉庫。
+ *
+ * 負責管理伺服器運行期間遊戲狀態的存取與追蹤。
+ */
+interface GameRepository {
+    /** 取得包含流程設定的完整權威 [Game]。 */
+    suspend fun getGame(gameId: Uuid): Game?
+
+    /**
+     * 取得目前所有進行中對局的 Uuid。
+     *
+     * 供需要定期巡邏所有對局的呼叫端使用（例如逾時排程每次心跳都要推進所有對局的自動操作，
+     * 不能只依賴「這次心跳剛好有玩家逾時」——已進入強制自動操作或全員皆為 AI 的對局，一旦沒有
+     * 真人決策計時器可等，就不會再出現在任何逾時事件裡，需要有獨立於計時器之外的心跳持續推進）。
+     */
+    suspend fun getAllGameIds(): Set<Uuid>
+
+    /**
+     * 獲取指定遊戲 ID 的 [TableState]。
+     *
+     * @param gameId 遊戲的唯一識別碼。
+     * @return 遊戲桌狀態物件，若不存在則回傳 null。
+     */
+    suspend fun getTableState(gameId: Uuid): TableState?
+
+    /**
+     * 設置或更新遊戲桌狀態。
+     *
+     * @param state 要管理的狀態物件。
+     */
+    suspend fun setTableState(state: TableState)
+
+    /**
+     * 移除指定遊戲的狀態。
+     *
+     * @param gameId 遊戲的唯一識別碼。
+     */
+    suspend fun removeTableState(gameId: Uuid)
+
+    /** 清除目前 server session 中的所有遊戲狀態。平台停止或切換存檔時使用。 */
+    suspend fun clearAll()
+
+    /**
+     * 以原子方式讀取並更新包含桌況與流程 runtime 狀態的完整 [Game]。
+     *
+     * @param T 呼叫端自訂的回傳型別。
+     * @param gameId 欲更新的遊戲唯一識別碼。
+     * @param history 根據交易前後的完整遊戲與 [block] 的結果建立本次交易的事實。未提供時不產生事實。
+     *   僅在遊戲狀態實際改變時呼叫。是否寫入歷史由記錄政策決定。
+     * @param block 根據目前完整遊戲計算欲寫入的遊戲與回傳結果。遊戲為 null 時代表移除。
+     * @return [block] 計算出的結果。
+     */
+    suspend fun <T> updateGame(
+        gameId: Uuid,
+        history: (Game?, Game?, T) -> List<HistoryEventDraft> = { _, _, _ -> emptyList() },
+        block: suspend (Game?) -> Pair<Game?, T>,
+    ): T
+
+    /**
+     * 以原子方式讀取並更新指定遊戲的桌況，確保「讀取現況、驗證業務規則、寫回」整個流程不被其他並發呼叫插入。
+     *
+     * 用於取代「先 [getTableState] 再 [setTableState]」的寫法，避免多個請求同時操作同一遊戲時，
+     * 因各自持有過期的讀取結果而覆蓋彼此的變更（check-then-act 競態條件）。
+     *
+     * @param T 呼叫端自訂的回傳型別，通常用於攜帶驗證結果（如 [Outcome]）。
+     * @param gameId 欲更新的遊戲唯一識別碼。
+     * @param history 根據交易前後的桌況與 [block] 的結果建立本次交易的事實。未提供時不產生事實。
+     *   僅在桌況實際改變時呼叫。是否寫入歷史由記錄政策決定。
+     * @param block 根據目前的桌況（不存在時為 null）計算「欲寫入的新狀態」與「回傳給呼叫端的結果」。
+     *              回傳的桌況為 null 時代表該遊戲應被移除。若無需變更，回傳原本傳入的桌況即可（等同無操作）。
+     * @return [block] 計算出的結果。
+     */
+    suspend fun <T> update(
+        gameId: Uuid,
+        history: (TableState?, TableState?, T) -> List<HistoryEventDraft> = { _, _, _ -> emptyList() },
+        block: suspend (TableState?) -> Pair<TableState?, T>,
+    ): T
+
+    /**
+     * 只在 [gameId] 的權威遊戲仍是 [expectedGame] 時讓 [command] 寫入這一局。
+     *
+     * - [command] 執行期間對這一局的權威寫入（[updateGame]、[update]、[setTableState]、[removeTableState]、[clearAll]），
+     *   會在同一個交易內、執行修改區塊之前比對目前的遊戲與 [expectedGame]。
+     * - 不符時不寫入，並以例外中止 [command]，結果為 [ExpectedGameResult.Stale]。
+     * - [command] 對這一局最多寫入一次。第二次寫入丟出 [ExpectedGameWrittenTwiceException]，此時第一次寫入可能已經提交。
+     * - 範圍只涵蓋 [command] 本身，不影響其他遊戲的寫入，也不能巢狀使用。
+     *
+     * @param T [command] 的回傳型別。
+     * @param gameId 受條件限制的遊戲。
+     * @param expectedGame 預期的權威遊戲。
+     * @param command 至多寫入這一局一次的命令。
+     * @return [command] 的結果，或過期。
+     */
+    suspend fun <T> withExpectedGame(gameId: Uuid, expectedGame: Game, command: suspend () -> T): ExpectedGameResult<T>
+}

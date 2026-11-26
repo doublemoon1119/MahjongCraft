@@ -1,0 +1,133 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.simulation
+
+import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
+import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
+import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
+import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiPullNorthCommand
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_PULL_NORTH_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameLength
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.minutes
+import kotlin.uuid.Uuid
+
+/** 一般建置中執行的少量 AI 對局：確認所有內建策略能以正式流程打完整場，且模擬器能偵測並重播問題。 */
+class MatchSimulationSmokeTest {
+    /**
+     * 四個內建策略同桌打完一場東風戰，沒有不合法命令、流程沒有卡住、點數守恆、正常結束。
+     * 每一局的榮和與放銃互相對應，榮和一定是和牌。
+     */
+    @Test
+    fun `every built-in strategy plays a full east match`() = runTest(timeout = SMOKE_TIMEOUT) {
+        val lineup = listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.INTERMEDIATE, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY)
+
+        val config = RiichiRuleConfig(gameLength = RiichiGameLength.East)
+        val result = MatchSimulator(config).play(lineup, seed = 1)
+        val diagnostic = "rounds played: ${result.rounds.size}; end reason: ${result.matchEndReasonId}; final scores: ${result.finalScoresByPlayer}"
+
+        assertNull(result.failure, result.failure?.describe())
+        assertLegalRiichiMatchCompletion(config, result.rounds.size, result.matchEndReasonId, result.finalScoresByPlayer)
+        assertEquals(result.strategyKeysByPlayer.keys, result.finalScoresByPlayer.keys, diagnostic)
+        assertEquals(setOf(1, 2, 3, 4), result.placementsByPlayer.values.toSet(), diagnostic)
+        assertEquals(lineup.toSet(), result.strategyKeysByPlayer.values.toSet())
+        result.rounds.forEach { seats ->
+            assertEquals(seats.any { it.wonByRon }, seats.any { it.dealtIn }, "ron and deal-in must match: $seats")
+            assertTrue(seats.none { it.wonByRon && !it.won }, "a ron must be a win: $seats")
+        }
+    }
+
+    /**
+     * 三個內建策略以三人日麻打完一場東風戰：沒有不合法命令、點數守恆、正常結束，名次為一到三位。
+     * 有機會拔北時，期望值策略會拔北。
+     */
+    @Test
+    fun `built-in strategies play a full three-player east match`() = runTest(timeout = SMOKE_TIMEOUT) {
+        val lineup = listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY)
+
+        val config = ThreePlayerRiichiRuleConfig(gameLength = RiichiGameLength.East)
+        val recorder = DecisionRecorder(traceLimit = Int.MAX_VALUE)
+        val result = MatchSimulator(config).play(lineup, recorder, seed = 2)
+        val diagnostic = "rounds played: ${result.rounds.size}; end reason: ${result.matchEndReasonId}; final scores: ${result.finalScoresByPlayer}"
+
+        assertNull(result.failure, result.failure?.describe())
+        assertLegalRiichiMatchCompletion(config, result.rounds.size, result.matchEndReasonId, result.finalScoresByPlayer)
+        val pullNorthChances = recorder.recent.filter { RIICHI_PULL_NORTH_GAME_ACTION in it.legalActions && it.strategyKey != RandomAiStrategy.KEY }
+        if (pullNorthChances.isNotEmpty()) {
+            assertTrue(pullNorthChances.any { it.command == GameCommand.Extension(RiichiPullNorthCommand) }, "Expectation strategies never pulled north")
+        }
+        assertEquals(setOf(1, 2, 3), result.placementsByPlayer.values.toSet(), diagnostic)
+        result.rounds.forEach { seats ->
+            assertEquals(seats.any { it.wonByRon }, seats.any { it.dealtIn }, "ron and deal-in must match: $seats")
+        }
+    }
+
+    /**
+     * 四個內建策略以台灣麻將打完一場一將：沒有不合法命令、流程沒有卡住、點數守恆，名次為一到四位。
+     * 每一局的榮和與放槍互相對應。
+     */
+    @Test
+    fun `built-in strategies play a full taiwan match`() = runTest(timeout = SMOKE_TIMEOUT) {
+        val lineup = listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.INTERMEDIATE, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY)
+
+        val result = MatchSimulator(TaiwanRuleConfig(gameLength = TaiwanGameLength.East)).play(lineup, seed = 3)
+        val diagnostic = "rounds played: ${result.rounds.size}; end reason: ${result.matchEndReasonId}; final scores: ${result.finalScoresByPlayer}"
+
+        assertNull(result.failure, result.failure?.describe())
+        assertTrue(result.rounds.size >= TaiwanGameLength.East.totalRounds, diagnostic)
+        assertEquals(0, result.finalScoresByPlayer.values.sum(), diagnostic)
+        assertEquals(setOf(1, 2, 3, 4), result.placementsByPlayer.values.toSet(), diagnostic)
+        result.rounds.forEach { seats ->
+            assertEquals(seats.any { it.wonByRon }, seats.any { it.dealtIn }, "ron and deal-in must match: $seats")
+        }
+    }
+
+    /** 送出不合法命令的策略會被偵測，且以同一個數字從頭重打時同樣發生。失敗描述附上這個數字。 */
+    @Test
+    fun `an illegal command is detected and reproduced on replay`() = runTest(timeout = SMOKE_TIMEOUT) {
+        val simulator = MatchSimulator(RiichiRuleConfig()) { registry, _ ->
+            registry.register(MahjongAiStrategyDefinition(ILLEGAL_KEY) { DiscardsForeignTileStrategy() })
+        }
+
+        val result = simulator.play(List(4) { ILLEGAL_KEY }, seed = 4)
+
+        val failure = assertNotNull(result.failure)
+        assertIs<IllegalAiCommandException>(failure.cause)
+        assertTrue(failure.reproducedOnReplay)
+        assertEquals(4, failure.seed)
+        assertTrue("Seed: 4" in failure.describe())
+        assertTrue(failure.trace.isNotEmpty())
+        assertTrue(result.placementsByPlayer.isEmpty())
+    }
+
+    /** 自己回合一律打出一張不在手中的牌，其餘情境都過的測試策略。 */
+    private class DiscardsForeignTileStrategy : MahjongAiStrategy {
+        override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = when (context.phase) {
+            AiDecisionPhase.OwnTurn -> GameCommand.Discard(Uuid.random())
+            AiDecisionPhase.RespondingToDiscard -> GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(context.discardReactionId))
+            AiDecisionPhase.RespondingToRobbing -> GameCommand.RespondToRobbing(GameAction.Pass)
+        }
+    }
+
+    /** 測試常數。 */
+    private companion object {
+        /** 送出不合法命令的測試策略 key。 */
+        const val ILLEGAL_KEY = "test:illegal"
+
+        /** 單場模擬的時間上限。 */
+        val SMOKE_TIMEOUT = 10.minutes
+    }
+}

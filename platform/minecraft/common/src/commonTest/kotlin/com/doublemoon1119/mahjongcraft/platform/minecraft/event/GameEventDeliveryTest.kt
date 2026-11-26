@@ -1,0 +1,949 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.event
+
+import com.doublemoon1119.mahjongcraft.flow.api.event.CommittedMatchEventBatch
+import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEvent
+import com.doublemoon1119.mahjongcraft.flow.api.event.MatchStartedEvent
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolver
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverDefinition
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.MatchEndPublicMarkerContext
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.RulePublicEventMarker
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.ActionsPerformedListener
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.EventBatchCommittedListener
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.GameEventContext
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MahjongCraftEvent
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MatchEndedListener
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MatchStartedListener
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RoundCompletedListener
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RoundSettledListener
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RuleResultsResolvedListener
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertSame
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
+
+/** [GameEventDelivery] 僅在交易釋放後，依序把投影事件交付給訂閱者。 */
+class GameEventDeliveryTest {
+    /** 用於建立真實投影事件的規則模組登錄。 */
+    private val registry = MahjongModuleRegistryImpl().apply {
+        register(MahjongModuleDefinition(RiichiRuleConfig::class, RULE_MODULE_ID) { config, id -> RiichiRuleModule(id, config) })
+    }
+
+    /** 測試用的固定對局。 */
+    private val game = game()
+
+    /** 第一次啟動鎖定所有訂閱點，關閉與重新啟動都不會重新開放註冊。 */
+    @Test
+    fun `starting a session permanently locks all injected endpoints`() {
+        val started = MahjongCraftEvent.create<MatchStartedListener>()
+        val settled = MahjongCraftEvent.create<RoundSettledListener>()
+        val ended = MahjongCraftEvent.create<MatchEndedListener>()
+        val actions = MahjongCraftEvent.create<ActionsPerformedListener>()
+        val completed = MahjongCraftEvent.create<RoundCompletedListener>()
+        val batches = MahjongCraftEvent.create<EventBatchCommittedListener>()
+        val ruleResults = MahjongCraftEvent.create<RuleResultsResolvedListener>()
+        val delivery = GameEventDelivery(
+            projector = GameEventProjector(registry),
+            scheduler = ManualScheduler(),
+            locations = GameEventLocationSource { null },
+            reporter = RecordingReporter(),
+            matchStarted = started,
+            roundSettled = settled,
+            matchEnded = ended,
+            failurePolicy = ExtensionFailurePolicy.Default,
+            actionsPerformed = actions,
+            roundCompleted = completed,
+            eventBatchCommitted = batches,
+            ruleResultsResolved = ruleResults,
+        )
+        started.register(MatchStartedListener { _, _ -> })
+        settled.register(RoundSettledListener { _, _ -> })
+        ended.register(MatchEndedListener { _, _ -> })
+        actions.register(ActionsPerformedListener { _, _ -> })
+        completed.register(RoundCompletedListener { _, _ -> })
+        batches.register(EventBatchCommittedListener { _, _ -> })
+        ruleResults.register(RuleResultsResolvedListener { _, _ -> })
+        val session = delivery.startSession()
+
+        assertFailsWith<IllegalStateException> { started.register(MatchStartedListener { _, _ -> }) }
+        assertFailsWith<IllegalStateException> { settled.register(RoundSettledListener { _, _ -> }) }
+        assertFailsWith<IllegalStateException> { ended.register(MatchEndedListener { _, _ -> }) }
+        assertFailsWith<IllegalStateException> { actions.register(ActionsPerformedListener { _, _ -> }) }
+        assertFailsWith<IllegalStateException> { completed.register(RoundCompletedListener { _, _ -> }) }
+        assertFailsWith<IllegalStateException> { batches.register(EventBatchCommittedListener { _, _ -> }) }
+        assertFailsWith<IllegalStateException> { ruleResults.register(RuleResultsResolvedListener { _, _ -> }) }
+        delivery.stopSession(session)
+        assertFailsWith<IllegalStateException> { started.register(MatchStartedListener { _, _ -> }) }
+        delivery.startSession()
+        assertFailsWith<IllegalStateException> { started.register(MatchStartedListener { _, _ -> }) }
+        assertEquals(1, started.listenersSnapshot().size)
+        assertEquals(1, settled.listenersSnapshot().size)
+        assertEquals(1, ended.listenersSnapshot().size)
+        assertEquals(1, actions.listenersSnapshot().size)
+        assertEquals(1, completed.listenersSnapshot().size)
+        assertEquals(1, batches.listenersSnapshot().size)
+        assertEquals(1, ruleResults.listenersSnapshot().size)
+    }
+
+    /** 交易尚未釋放時不會交付事件。 */
+    @Test
+    fun `event waits until transaction is released and is delivered`() {
+        val scheduler = ManualScheduler()
+        val received = mutableListOf<Uuid>()
+        val endpoint = MahjongCraftEvent.create<MatchStartedListener>().also {
+            it.register(MatchStartedListener { event, _ -> received += event.matchId })
+        }
+        val delivery = delivery(scheduler, endpoint)
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, startFacts())
+        assertTrue(scheduler.tasks.isEmpty())
+
+        delivery.onReleased(session, 1)
+        assertEquals(1, scheduler.tasks.size)
+        assertTrue(received.isEmpty())
+
+        scheduler.runNext()
+        assertEquals(listOf(game.matchId), received)
+    }
+
+    /** 已成立的規則結果會交付給規則結果訂閱者。 */
+    @Test
+    fun `resolved rule results are delivered`() {
+        val scheduler = ManualScheduler()
+        var received = 0
+        val ruleResults = MahjongCraftEvent.create<RuleResultsResolvedListener>().also {
+            it.register(
+                listener = RuleResultsResolvedListener { event, _ ->
+                    received += event.results.size
+                },
+            )
+        }
+        val delivery = delivery(scheduler, endpoint { _, _ -> }, ruleResultsResolved = ruleResults)
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, ruleResultsFacts())
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+
+        assertEquals(1, received)
+    }
+
+    /** 標記解析失敗保留公開事件，但略過整筆內建成果。後續正常交易恢復授予。 */
+    @Test
+    fun `marker failure suppresses only built in processing for that batch`() {
+        var fail = true
+        var projectionCalls = 0
+        val markers = GameEventPublicMarkerResolverRegistry().apply {
+            register(
+                definition = GameEventPublicMarkerResolverDefinition(
+                    ruleModuleId = RULE_MODULE_ID,
+                    resolver = object : GameEventPublicMarkerResolver {
+                        override fun resolveMatchEndMarkers(context: MatchEndPublicMarkerContext): List<RulePublicEventMarker> {
+                            projectionCalls++
+                            if (fail) error("test marker failure")
+                            return emptyList()
+                        }
+                    },
+                ),
+            )
+        }
+        val scheduler = ManualScheduler()
+        var publicCalls = 0
+        var internalCalls = 0
+        val batches = MahjongCraftEvent.create<EventBatchCommittedListener>().apply {
+            register(EventBatchCommittedListener { _, _ -> publicCalls++ })
+        }
+        val delivery = delivery(
+            scheduler = scheduler,
+            endpoint = endpoint { _, _ -> },
+            eventBatchCommitted = batches,
+            projector = GameEventProjector(registry, markerResolvers = markers),
+        )
+        val session = delivery.startSession()
+        val facts = startFacts().copy(
+            previousGame = game,
+            facts = listOf(HistoryEventDraft(null, HistoryFact.MatchCompleted("test:completed", game.tableState.players.associate { it.id to it.score }))),
+        )
+        delivery.onCommitted(session, 1, facts) { internalCalls++ }
+        assertEquals(0, internalCalls)
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+        assertEquals(1, publicCalls)
+        assertEquals(0, internalCalls)
+        fail = false
+        delivery.onCommitted(session, 2, facts) { internalCalls++ }
+        delivery.onReleased(session, 2)
+        scheduler.runNext()
+        assertEquals(2, publicCalls)
+        assertEquals(1, internalCalls)
+        assertEquals(2, projectionCalls, "Each transaction must project its markers exactly once")
+    }
+
+    /** 缺少桌位仍交付事件並回報診斷。 */
+    @Test
+    fun `events are delivered when location is missing`() {
+        val scheduler = ManualScheduler()
+        val reporter = RecordingReporter()
+        val contexts = mutableListOf<GameEventContext>()
+        val endpoint = MahjongCraftEvent.create<MatchStartedListener>().also {
+            it.register(MatchStartedListener { _, context -> contexts += context })
+        }
+        val delivery = delivery(scheduler, endpoint, locations = GameEventLocationSource { null }, reporter = reporter)
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, startFacts())
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+
+        assertEquals(listOf(game.matchId to game.id), reporter.missingLocations)
+        assertNull(contexts.single().tableLocation)
+    }
+
+    /** 三種訂閱點依同一交易的投影順序交付，且共用提交時擷取的情境。 */
+    @Test
+    fun `all event types are delivered in projection order`() {
+        val scheduler = ManualScheduler()
+        val received = mutableListOf<String>()
+        val contexts = mutableListOf<GameEventContext>()
+        val started = endpoint { _, context ->
+            received += "started"
+            contexts += context
+        }
+        val settled = MahjongCraftEvent.create<RoundSettledListener>()
+        settled.register(
+            listener = RoundSettledListener { _, context ->
+                received += "settled"
+                contexts += context
+            },
+        )
+        val ended = MahjongCraftEvent.create<MatchEndedListener>()
+        ended.register(
+            listener = MatchEndedListener { _, context ->
+                received += "ended"
+                contexts += context
+            },
+        )
+        val delivery = GameEventDelivery(
+            projector = GameEventProjector(registry),
+            scheduler = scheduler,
+            locations = GameEventLocationSource { TableLocation("minecraft:overworld", 0, 64, 0) },
+            reporter = RecordingReporter(),
+            matchStarted = started,
+            roundSettled = settled,
+            matchEnded = ended,
+            failurePolicy = ExtensionFailurePolicy.Default,
+        )
+        val facts = startFacts().copy(
+            previousGame = game,
+            facts = startFacts().facts + listOf(
+                HistoryEventDraft(null, HistoryFact.WinSettled(outcomeId = "test:win", winDetails = emptyList())),
+                HistoryEventDraft(null, HistoryFact.MatchCompleted(reasonId = "test:completed", finalScoresByPlayerId = emptyMap())),
+            ),
+        )
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, facts)
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+
+        assertEquals(listOf("started", "settled", "ended"), received)
+        assertEquals(1, contexts.distinct().size)
+        assertTrue(delivery.belongsToSession(contexts.first(), session))
+        delivery.stopSession(session)
+        assertFalse(delivery.belongsToSession(contexts.first(), session))
+    }
+
+    /** 一筆交易的個別事件先依序交付，最後才交付同一批次。批次保留相同事件物件。 */
+    @Test
+    fun `batch is delivered after its events in one transaction`() {
+        val scheduler = ManualScheduler()
+        val received = mutableListOf<String>()
+        var deliveredStarted: MatchStartedEvent? = null
+        var deliveredBatch: CommittedMatchEventBatch? = null
+        val started = endpoint { event, _ ->
+            deliveredStarted = event
+            received += "started"
+        }
+        val settled = MahjongCraftEvent.create<RoundSettledListener>().also {
+            it.register(RoundSettledListener { _, _ -> received += "settled" })
+        }
+        val ended = MahjongCraftEvent.create<MatchEndedListener>().also {
+            it.register(MatchEndedListener { _, _ -> received += "ended" })
+        }
+        val batches = MahjongCraftEvent.create<EventBatchCommittedListener>().also {
+            it.register(
+                listener = EventBatchCommittedListener { batch, _ ->
+                    deliveredBatch = batch
+                    received += "batch"
+                },
+            )
+        }
+        val delivery = delivery(
+            scheduler = scheduler,
+            endpoint = started,
+            roundSettled = settled,
+            matchEnded = ended,
+            eventBatchCommitted = batches,
+        )
+        val facts = startFacts().copy(
+            previousGame = game,
+            facts = startFacts().facts + listOf(
+                HistoryEventDraft(null, HistoryFact.WinSettled(outcomeId = "test:win", winDetails = emptyList())),
+                HistoryEventDraft(null, HistoryFact.MatchCompleted(reasonId = "test:completed", finalScoresByPlayerId = emptyMap())),
+            ),
+        )
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, facts)
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+
+        assertEquals(listOf("started", "settled", "ended", "batch"), received)
+        assertSame(deliveredStarted, deliveredBatch?.events?.first())
+    }
+
+    /** 內建成果與公開訂閱者收到同一批次，且內建接收端也等交易解鎖後才執行。 */
+    @Test
+    fun `built in consumer receives the exact public batch after release`() {
+        val scheduler = ManualScheduler()
+        var internalBatch: CommittedMatchEventBatch? = null
+        var publicBatch: CommittedMatchEventBatch? = null
+        val batchEndpoint = MahjongCraftEvent.create<EventBatchCommittedListener>().also {
+            it.register(EventBatchCommittedListener { batch, _ -> publicBatch = batch })
+        }
+        val delivery = delivery(scheduler, endpoint { _, _ -> }, eventBatchCommitted = batchEndpoint)
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, startFacts(), onBatchDelivered = { internalBatch = it })
+        assertNull(internalBatch)
+        assertNull(publicBatch)
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+
+        assertSame(assertNotNull(publicBatch), internalBatch)
+    }
+
+    /** 可隔離的第三方監聽失敗，不會阻擋同筆交易的內建成果接收端。 */
+    @Test
+    fun `listener failure does not block the built in consumer`() {
+        val scheduler = ManualScheduler()
+        val reporter = RecordingReporter()
+        var calls = 0
+        val delivery = delivery(
+            scheduler = scheduler,
+            endpoint = endpoint { _, _ -> error("extension listener failed") },
+            reporter = reporter,
+        )
+        val session = delivery.startSession()
+        delivery.onCommitted(sessionId = session, sequence = 1, facts = startFacts(), onBatchDelivered = {
+            assertNotNull(it)
+            calls++
+        })
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+        assertEquals(1, reporter.listenerFailures)
+        assertEquals(1, calls)
+    }
+
+    /** 內建處理丟出取消例外時只記錄失敗，公開批次監聽者與後續批次照常收到。 */
+    @Test
+    fun `built in consumer failure does not block listeners or later batches`() {
+        val scheduler = ManualScheduler()
+        val reporter = RecordingReporter()
+        var received = 0
+        val batches = MahjongCraftEvent.create<EventBatchCommittedListener>().also {
+            it.register(EventBatchCommittedListener { _, _ -> received++ })
+        }
+        val delivery = delivery(scheduler, endpoint { _, _ -> }, reporter = reporter, eventBatchCommitted = batches)
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, startFacts(), onBatchDelivered = { throw CancellationException("built in consumer failed") })
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+        delivery.onCommitted(session, 2, startFacts())
+        delivery.onReleased(session, 2)
+        scheduler.runNext()
+
+        assertEquals(2, received)
+        assertEquals(1, reporter.batchFailures.size)
+    }
+
+    /** 單一監聽者失敗不會阻止同一事件的其他監聽者。 */
+    @Test
+    fun `listener failure does not prevent later listeners`() {
+        val scheduler = ManualScheduler()
+        val received = mutableListOf<Uuid>()
+        val endpoint = MahjongCraftEvent.create<MatchStartedListener>().also {
+            it.register(MatchStartedListener { _, _ -> error("test listener failure") })
+            it.register(MatchStartedListener { event, _ -> received += event.matchId })
+        }
+        val reporter = RecordingReporter()
+        val delivery = delivery(scheduler, endpoint, reporter = reporter)
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, startFacts())
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+
+        assertEquals(listOf(game.matchId), received)
+        assertEquals(1, reporter.listenerFailures)
+    }
+
+    /** 新批次訂閱者失敗時仍會隔離，後續批次訂閱者與下一筆交易不受影響。 */
+    @Test
+    fun `batch listener failure does not stop batch delivery`() {
+        val scheduler = ManualScheduler()
+        var received = 0
+        val failure = IsolatableTestError()
+        val failingListener = EventBatchCommittedListener { _, _ -> throw failure }
+        val delivered = mutableListOf<CommittedMatchEventBatch>()
+        val batches = MahjongCraftEvent.create<EventBatchCommittedListener>().also {
+            it.register(failingListener)
+            it.register(
+                listener = EventBatchCommittedListener { batch, _ ->
+                    received++
+                    delivered += batch
+                },
+            )
+        }
+        val reporter = RecordingReporter()
+        val delivery = delivery(
+            scheduler = scheduler,
+            endpoint = endpoint { _, _ -> },
+            reporter = reporter,
+            failurePolicy = ExtensionFailurePolicy {
+                it is IsolatableTestError || ExtensionFailurePolicy.Default.isIsolatable(it)
+            },
+            eventBatchCommitted = batches,
+        )
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, startFacts())
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+        delivery.onCommitted(session, 2, startFacts())
+        delivery.onReleased(session, 2)
+        scheduler.runNext()
+
+        assertEquals(2, received)
+        assertEquals(0, reporter.listenerFailures)
+        assertEquals(2, reporter.batchFailures.size)
+        reporter.batchFailures.forEachIndexed { index, (batch, listener, cause) ->
+            assertSame(delivered[index], batch)
+            assertSame(failingListener, listener)
+            assertSame(failure, cause)
+        }
+    }
+
+    /** 個別事件失敗的診斷指向該事件，不會誤記為同批第一個事件或整批失敗。 */
+    @Test
+    fun `individual listener failure reports its actual event`() {
+        val scheduler = ManualScheduler()
+        val reporter = RecordingReporter()
+        var failedEvent: MatchEvent? = null
+        val settled = MahjongCraftEvent.create<RoundSettledListener>().also {
+            it.register(
+                listener = RoundSettledListener { event, _ ->
+                    failedEvent = event
+                    throw IllegalStateException("listener failed")
+                },
+            )
+        }
+        val delivery = delivery(
+            scheduler = scheduler,
+            endpoint = endpoint { _, _ -> },
+            roundSettled = settled,
+            reporter = reporter,
+        )
+        val facts = startFacts().copy(
+            previousGame = game,
+            facts = startFacts().facts + HistoryEventDraft(null, HistoryFact.WinSettled("test:win", emptyList())),
+        )
+        val session = delivery.startSession()
+        delivery.onCommitted(session, 1, facts)
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+
+        assertEquals(1, reporter.listenerFailures)
+        assertSame(assertNotNull(failedEvent), reporter.failedEvents.single())
+        assertTrue(reporter.batchFailures.isEmpty())
+    }
+
+    /** 監聽者丟出取消例外時與一般失敗一樣只略過該監聽者。交付不在協程中，不代表交付被取消。 */
+    @Test
+    fun `listener cancellation is isolated like an ordinary failure`() {
+        val scheduler = ManualScheduler()
+        val received = mutableListOf<Uuid>()
+        val endpoint = MahjongCraftEvent.create<MatchStartedListener>().also {
+            it.register(MatchStartedListener { _, _ -> throw CancellationException("test listener cancellation") })
+            it.register(MatchStartedListener { event, _ -> received += event.matchId })
+        }
+        val reporter = RecordingReporter()
+        val delivery = delivery(scheduler, endpoint, reporter = reporter)
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, startFacts())
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+
+        assertEquals(listOf(game.matchId), received)
+        assertEquals(1, reporter.listenerFailures)
+    }
+
+    /** 判斷規則接受的錯誤被隔離。不接受的錯誤原樣往外傳，之後的事件仍會重新排程交付。 */
+    @Test
+    fun `listener errors follow the failure policy`() {
+        val scheduler = ManualScheduler()
+        val received = mutableListOf<Uuid>()
+        var failure: Throwable? = IsolatableTestError()
+        val endpoint = MahjongCraftEvent.create<MatchStartedListener>().also {
+            it.register(
+                listener = MatchStartedListener { event, _ ->
+                    failure?.let { cause -> throw cause }
+                    received += event.matchId
+                },
+            )
+        }
+        val reporter = RecordingReporter()
+        val delivery = delivery(
+            scheduler = scheduler,
+            endpoint = endpoint,
+            reporter = reporter,
+            failurePolicy = ExtensionFailurePolicy { it is IsolatableTestError || ExtensionFailurePolicy.Default.isIsolatable(it) },
+        )
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, startFacts())
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+        assertEquals(1, reporter.listenerFailures)
+
+        failure = FatalTestError()
+        delivery.onCommitted(session, 2, startFacts())
+        delivery.onReleased(session, 2)
+        assertFailsWith<FatalTestError> { scheduler.runNext() }
+
+        failure = null
+        delivery.onCommitted(session, 3, startFacts())
+        delivery.onReleased(session, 3)
+        scheduler.runNext()
+        assertEquals(listOf(game.matchId), received)
+    }
+
+    /** 舊 session 的排程工作會在執行時被捨棄。 */
+    @Test
+    fun `old session events and scheduled work are discarded`() {
+        val scheduler = ManualScheduler()
+        val received = mutableListOf<Uuid>()
+        val endpoint = MahjongCraftEvent.create<MatchStartedListener>().also {
+            it.register(MatchStartedListener { event, _ -> received += event.matchId })
+        }
+        val delivery = delivery(scheduler, endpoint)
+        val oldSession = delivery.startSession()
+        delivery.onCommitted(oldSession, 1, startFacts())
+        delivery.onReleased(oldSession, 1)
+        assertEquals(1, scheduler.tasks.size)
+
+        val newSession = delivery.startSession()
+        scheduler.runNext()
+        assertTrue(received.isEmpty())
+        assertFalse(delivery.belongsToSession(GameEventContext.create(null, oldSession), newSession))
+    }
+
+    /** 可交付水位只會前進，不會被較小的釋放序號退回。 */
+    @Test
+    fun `release watermark does not regress`() {
+        val scheduler = ManualScheduler()
+        val received = mutableListOf<Uuid>()
+        val endpoint = endpoint { event, _ -> received += event.matchId }
+        val delivery = delivery(scheduler, endpoint)
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, startFacts())
+        delivery.onCommitted(session, 2, startFacts())
+        delivery.onReleased(session, 2)
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+
+        assertEquals(2, received.size)
+    }
+
+    /** 尚未釋放的較後交易不可越過已交付的較前交易。 */
+    @Test
+    fun `later pending sequence waits for its release`() {
+        val scheduler = ManualScheduler()
+        val received = mutableListOf<Uuid>()
+        val endpoint = endpoint { event, _ -> received += event.matchId }
+        val delivery = delivery(scheduler, endpoint)
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, startFacts())
+        delivery.onReleased(session, 1)
+        delivery.onCommitted(session, 2, startFacts())
+        scheduler.runNext()
+
+        assertEquals(1, received.size)
+        delivery.onReleased(session, 2)
+        scheduler.runNext()
+        assertEquals(2, received.size)
+    }
+
+    /** 事件情境保存投影當下的位置，而不是交付工作執行時的位置。 */
+    @Test
+    fun `location is captured before the source changes`() {
+        val scheduler = ManualScheduler()
+        val received = mutableListOf<Int>()
+        var location = TableLocation("minecraft:overworld", 10, 64, 10)
+        val endpoint = MahjongCraftEvent.create<MatchStartedListener>().also {
+            it.register(MatchStartedListener { _, context -> received += checkNotNull(context.tableLocation).x })
+        }
+        val delivery = delivery(scheduler, endpoint, locations = GameEventLocationSource { location })
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, startFacts())
+        location = TableLocation("minecraft:overworld", 20, 64, 20)
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+
+        assertEquals(listOf(10), received)
+    }
+
+    /** 單一監聽者失敗後，該監聽者仍會收到後續事件。 */
+    @Test
+    fun `listener failure does not suppress later event`() {
+        val scheduler = ManualScheduler()
+        val received = mutableListOf<Uuid>()
+        var first = true
+        val endpoint = MahjongCraftEvent.create<MatchStartedListener>().also {
+            it.register(
+                listener = MatchStartedListener { event, _ ->
+                    if (first) {
+                        first = false
+                        error("test listener failure")
+                    }
+                    received += event.matchId
+                },
+            )
+        }
+        val reporter = RecordingReporter()
+        val delivery = delivery(scheduler, endpoint, reporter = reporter)
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, startFacts())
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+        delivery.onCommitted(session, 2, startFacts())
+        delivery.onReleased(session, 2)
+        scheduler.runNext()
+
+        assertEquals(listOf(game.matchId), received)
+        assertEquals(1, reporter.listenerFailures)
+    }
+
+    /** 舊 session 的提交與釋放通知都不會影響新 session。 */
+    @Test
+    fun `old session callbacks are rejected after a new session starts`() {
+        val scheduler = ManualScheduler()
+        val received = mutableListOf<Uuid>()
+        val endpoint = endpoint { event, _ -> received += event.matchId }
+        val delivery = delivery(scheduler, endpoint)
+        val oldSession = delivery.startSession()
+        val newSession = delivery.startSession()
+
+        delivery.stopSession(oldSession)
+        delivery.onCommitted(oldSession, 1, startFacts())
+        delivery.onReleased(oldSession, 1)
+        delivery.onCommitted(newSession, 1, startFacts())
+        delivery.onReleased(newSession, 1)
+        scheduler.runNext()
+
+        assertEquals(listOf(game.matchId), received)
+    }
+
+    /** 監聽者切換 session 時，舊事件剩餘監聽者不會繼續收到事件。 */
+    @Test
+    fun `starting a session from a listener suppresses remaining old listeners`() {
+        val scheduler = ManualScheduler()
+        var secondListenerCalled = false
+        var batchListenerCalled = false
+        val endpoint = MahjongCraftEvent.create<MatchStartedListener>()
+        val batchEndpoint = MahjongCraftEvent.create<EventBatchCommittedListener>().also {
+            it.register(EventBatchCommittedListener { _, _ -> batchListenerCalled = true })
+        }
+        lateinit var delivery: GameEventDelivery
+        endpoint.register(MatchStartedListener { _, _ -> delivery.startSession() })
+        endpoint.register(MatchStartedListener { _, _ -> secondListenerCalled = true })
+        delivery = delivery(scheduler, endpoint, eventBatchCommitted = batchEndpoint)
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, startFacts())
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+
+        assertFalse(secondListenerCalled)
+        assertFalse(batchListenerCalled)
+    }
+
+    /** 監聽者重新提交並釋放交易時，事件仍依序在同一交付工作中完成。 */
+    @Test
+    fun `reentrant commit and release preserve order`() {
+        val scheduler = ManualScheduler()
+        val received = mutableListOf<Uuid>()
+        val endpoint = MahjongCraftEvent.create<MatchStartedListener>()
+        lateinit var delivery: GameEventDelivery
+        var reentered = false
+        lateinit var sessionId: Uuid
+        endpoint.register(
+            listener = MatchStartedListener { event, _ ->
+                received += event.matchId
+                if (!reentered) {
+                    reentered = true
+                    delivery.onCommitted(sessionId, 2, startFacts())
+                    delivery.onReleased(sessionId, 2)
+                }
+            },
+        )
+        delivery = delivery(scheduler, endpoint)
+        sessionId = delivery.startSession()
+        delivery.onCommitted(sessionId, 1, startFacts())
+        delivery.onReleased(sessionId, 1)
+        scheduler.runNext()
+
+        assertEquals(listOf(game.matchId, game.matchId), received)
+    }
+
+    /** 排程失敗時事件保留，下一次可交付通知仍可重新排程。 */
+    @Test
+    fun `scheduling failure retains pending events`() {
+        val scheduler = ManualScheduler()
+        scheduler.failNext = true
+        val received = mutableListOf<Uuid>()
+        val endpoint = endpoint { event, _ -> received += event.matchId }
+        val delivery = delivery(scheduler, endpoint)
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, startFacts())
+        delivery.onReleased(session, 1)
+        assertTrue(received.isEmpty())
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+
+        assertEquals(listOf(game.matchId), received)
+    }
+
+    /**
+     * 建立單一開始事件監聽端點。
+     *
+     * @param listener 收到事件時呼叫的測試監聽器。
+     * @return 已建立並註冊監聽器的事件端點。
+     */
+    private fun endpoint(listener: (MatchStartedEvent, GameEventContext) -> Unit): MahjongCraftEvent<MatchStartedListener> = MahjongCraftEvent.create<MatchStartedListener>().also {
+        it.register(MatchStartedListener(listener))
+    }
+
+    /**
+     * 建立使用指定測試端點的事件交付器。
+     *
+     * @param scheduler 控制工作執行時機的測試排程器。
+     * @param endpoint 開始事件監聽端點。
+     * @param locations 提供桌子位置的測試來源。
+     * @param reporter 收集交付診斷的測試回報器。
+     * @param failurePolicy 判斷監聽者失敗能否隔離的規則。
+     * @param ruleResultsResolved 規則結果監聽端點。
+     * @return 配置完成的事件交付器。
+     */
+    private fun delivery(
+        scheduler: ManualScheduler,
+        endpoint: MahjongCraftEvent<MatchStartedListener>,
+        locations: GameEventLocationSource = GameEventLocationSource {
+            TableLocation(dimensionId = "minecraft:overworld", x = 10, y = 64, z = 10)
+        },
+        reporter: RecordingReporter = RecordingReporter(),
+        failurePolicy: ExtensionFailurePolicy = ExtensionFailurePolicy.Default,
+        roundSettled: MahjongCraftEvent<RoundSettledListener> = MahjongCraftEvent.create(),
+        matchEnded: MahjongCraftEvent<MatchEndedListener> = MahjongCraftEvent.create(),
+        eventBatchCommitted: MahjongCraftEvent<EventBatchCommittedListener> = MahjongCraftEvent.create(),
+        ruleResultsResolved: MahjongCraftEvent<RuleResultsResolvedListener> = MahjongCraftEvent.create(),
+        projector: GameEventProjector = GameEventProjector(registry),
+    ): GameEventDelivery = GameEventDelivery(
+        projector = projector,
+        scheduler = scheduler,
+        locations = locations,
+        reporter = reporter,
+        matchStarted = endpoint,
+        roundSettled = roundSettled,
+        matchEnded = matchEnded,
+        failurePolicy = failurePolicy,
+        actionsPerformed = MahjongCraftEvent.create(),
+        roundCompleted = MahjongCraftEvent.create(),
+        eventBatchCommitted = eventBatchCommitted,
+        ruleResultsResolved = ruleResultsResolved,
+    )
+
+    /**
+     * 建立一筆對局開始事實。
+     *
+     * @return 包含本測試對局開始事件的已提交事實。
+     */
+    private fun startFacts(): CommittedGameFacts = CommittedGameFacts(
+        venueId = game.id,
+        previousGame = null,
+        game = game,
+        facts = listOf(HistoryEventDraft(null, HistoryFact.MatchStarted(game.tableState, GameFlowConfig(), emptyMap()))),
+    )
+
+    /** 建立一筆只包含規則結果的測試交易。 */
+    private fun ruleResultsFacts(): CommittedGameFacts = CommittedGameFacts(
+        venueId = game.id,
+        previousGame = game,
+        game = game,
+        facts = listOf(
+            element = HistoryEventDraft(
+                actorPlayerId = null,
+                fact = HistoryFact.RuleEffectResolved(
+                    reasonId = "test:rule_result",
+                    roundCompletion = null,
+                    winDetails = emptyList(),
+                ),
+            ),
+        ),
+    )
+
+    /**
+     * 建立測試用四人日麻對局。
+     *
+     * @return 四人各帶 25,000 分的日麻對局。
+     */
+    private fun game(): Game {
+        val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { wind ->
+            FakeMahjongPlayerFactory.create(initialSeat = wind).copy(score = 25_000)
+        }
+        return Game(
+            tableState = FakeTableStateFactory.create(
+                id = Uuid.random(),
+                players = players,
+                config = RiichiRuleConfig(),
+            ),
+            flowConfig = GameFlowConfig(),
+            matchId = Uuid.random(),
+        )
+    }
+
+    /** 可由測試明確執行或令下一次失敗的排程器。 */
+    private class ManualScheduler : GameEventScheduler {
+        /** 尚未執行的工作。 */
+        val tasks = ArrayDeque<() -> Unit>()
+
+        /** 下一次排程是否故意失敗。 */
+        var failNext: Boolean = false
+
+        /**
+         * 將工作加入待執行佇列，或依測試設定拒絕一次排程。
+         *
+         * @param task 要排入佇列的工作。
+         */
+        override fun enqueue(task: () -> Unit) {
+            if (failNext) {
+                failNext = false
+                error("test scheduler failure")
+            }
+            tasks += task
+        }
+
+        /** 執行一個已排程工作。若佇列為空則拋出檢查例外。 */
+        fun runNext() {
+            check(tasks.isNotEmpty())
+            tasks.removeFirst().invoke()
+        }
+    }
+
+    /** 記錄交付過程發生的位置缺漏與 listener 失敗。 */
+    private class RecordingReporter : GameEventDeliveryReporter {
+        /** 找不到位置的事件。 */
+        val missingLocations = mutableListOf<Pair<Uuid, Uuid>>()
+
+        /** 監聽者失敗次數。 */
+        var listenerFailures: Int = 0
+
+        /** 個別監聽者失敗時實際交付的事件。 */
+        val failedEvents = mutableListOf<MatchEvent>()
+
+        /** 批次監聽者失敗時的批次、監聽者與原因。 */
+        val batchFailures = mutableListOf<Triple<CommittedMatchEventBatch, Any, Throwable>>()
+
+        /**
+         * 記錄缺少桌位的比賽與場地識別碼。
+         *
+         * @param matchId 比賽 UUID。
+         * @param venueId 場地 UUID。
+         */
+        override fun missingLocation(matchId: Uuid, venueId: Uuid) {
+            missingLocations += matchId to venueId
+        }
+
+        /**
+         * 累計監聽者失敗次數。
+         *
+         * @param event 觸發失敗的事件。
+         * @param listener 失敗的監聽者。
+         * @param cause 監聽者拋出的原因。
+         */
+        override fun listenerFailed(
+            event: MatchEvent,
+            listener: Any,
+            cause: Throwable,
+        ) {
+            listenerFailures++
+            failedEvents += event
+        }
+
+        override fun batchListenerFailed(
+            batch: CommittedMatchEventBatch,
+            listener: Any,
+            cause: Throwable,
+        ) {
+            batchFailures += Triple(batch, listener, cause)
+        }
+
+        /**
+         * 排程失敗不另行記錄，測試直接檢查保留與重試結果。
+         *
+         * @param cause 排程器拋出的原因。
+         */
+        override fun schedulingFailed(cause: Throwable) = Unit
+    }
+
+    /** 共用測試規則模組識別碼。 */
+    private companion object {
+        /** 測試規則模組 ID。 */
+        const val RULE_MODULE_ID = "mahjongcraft:riichi"
+    }
+
+    /** 測試用、由判斷規則明確接受隔離的錯誤。 */
+    private class IsolatableTestError : Error("isolatable test error")
+
+    /** 測試用、判斷規則不接受隔離的錯誤。 */
+    private class FatalTestError : Error("fatal test error")
+}

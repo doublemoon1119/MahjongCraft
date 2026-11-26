@@ -1,0 +1,342 @@
+package com.doublemoon1119.mahjongcraft.logic.table
+
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
+
+/** 驗證 [TableState.localRoundNumber] 換算邏輯，以及 [TableState] 的 active/finished 玩家概念。 */
+class TableStateTest {
+    /** 依東、南、西、北順序建立的四位共用玩家。 */
+    private val fourPlayers = Wind.entries.map { FakeMahjongPlayerFactory.create(it) }
+
+    /** 實體布局只要缺少或多出目前牌牆的一張牌，就必須在建立桌況時立即拒絕。 */
+    @Test
+    fun `test physical wall layout keys must exactly match wall membership`() {
+        val wallTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val unrelatedTile = FakeIdentifiedTileFactory.create(Tile.Honor.Green)
+
+        assertFailsWith<IllegalArgumentException> {
+            FakeTableStateFactory.create(
+                players = fourPlayers,
+                tileWall = TileWall(listOf(wallTile)),
+                physicalWallLayout = TileWallPhysicalLayout(
+                    placements = mapOf(unrelatedTile.id to TileWallPlacement(TileWallPosition(0, 0, 0))),
+                ),
+            )
+        }
+    }
+
+    /** 場風內第一局（跨場風累計局數等於玩家人數的整數倍加一）應換算回 `1`。 */
+    @Test
+    fun `test localRoundNumber resets to 1 at the start of a wind`() {
+        val state = FakeTableStateFactory.create(players = fourPlayers, roundNumber = 1)
+        assertEquals(1, state.localRoundNumber)
+
+        val nextWindFirstRound = FakeTableStateFactory.create(players = fourPlayers, roundNumber = 5)
+        assertEquals(1, nextWindFirstRound.localRoundNumber)
+    }
+
+    /** 場風內非第一局應正確換算回場風內的局數，不受跨場風累計局數影響。 */
+    @Test
+    fun `test localRoundNumber wraps within a wind`() {
+        val state = FakeTableStateFactory.create(players = fourPlayers, roundNumber = 7)
+        assertEquals(3, state.localRoundNumber)
+    }
+
+    /** 沒有任何 finished 玩家時，所有玩家都應視為 active。 */
+    @Test
+    fun `test activePlayers and isPlayerActive when no one is finished`() {
+        val state = FakeTableStateFactory.create(players = fourPlayers)
+        assertEquals(fourPlayers, state.activePlayers)
+        fourPlayers.forEach { assertTrue(state.isPlayerActive(it.id)) }
+    }
+
+    /** finished 玩家不應出現在 [TableState.activePlayers]，且 [TableState.isPlayerActive] 應回報 false。 */
+    @Test
+    fun `test activePlayers and isPlayerActive exclude finished players`() {
+        val finished = setOf(fourPlayers[1].id, fourPlayers[3].id)
+        val state = FakeTableStateFactory.create(players = fourPlayers, finishedPlayerIds = finished)
+
+        assertEquals(listOf(fourPlayers[0], fourPlayers[2]), state.activePlayers)
+        assertTrue(state.isPlayerActive(fourPlayers[0].id))
+        assertTrue(!state.isPlayerActive(fourPlayers[1].id))
+        assertTrue(state.isPlayerActive(fourPlayers[2].id))
+        assertTrue(!state.isPlayerActive(fourPlayers[3].id))
+    }
+
+    /** 沒有 finished 玩家時，[TableState.nextActivePlayerAfter] 的行為應等同座位表上物理相鄰的下一位。 */
+    @Test
+    fun `test nextActivePlayerAfter behaves like getNextPlayer when no one is finished`() {
+        val state = FakeTableStateFactory.create(players = fourPlayers, currentPlayerIndex = 0)
+        assertEquals(fourPlayers[1], state.nextActivePlayerAfter(fourPlayers[0].id))
+        assertEquals(fourPlayers[2], state.nextActivePlayerAfter(fourPlayers[1].id))
+        assertEquals(fourPlayers[0], state.nextActivePlayerAfter(fourPlayers[3].id))
+    }
+
+    /** 起算玩家的下一位剛好 finished 時，應跳過他找到下一位 active 玩家。 */
+    @Test
+    fun `test nextActivePlayerAfter skips a single finished player`() {
+        val state = FakeTableStateFactory.create(
+            players = fourPlayers,
+            currentPlayerIndex = 0,
+            finishedPlayerIds = setOf(fourPlayers[1].id),
+        )
+        assertEquals(fourPlayers[2], state.nextActivePlayerAfter(fourPlayers[0].id))
+    }
+
+    /** 連續多位玩家 finished 時，應一路跳過直到找到下一位 active 玩家，必要時繞回座位表開頭。 */
+    @Test
+    fun `test nextActivePlayerAfter skips multiple consecutive finished players and wraps around`() {
+        val state = FakeTableStateFactory.create(
+            players = fourPlayers,
+            currentPlayerIndex = 0,
+            finishedPlayerIds = setOf(fourPlayers[1].id, fourPlayers[2].id, fourPlayers[3].id),
+        )
+        // 座位表上除了起算玩家自己以外只剩他自己是 active，繞一圈後應回到自己。
+        assertEquals(fourPlayers[0], state.nextActivePlayerAfter(fourPlayers[0].id))
+    }
+
+    /** 桌上只剩一位 active 玩家時，仍能正確繞一圈回到唯一的 active 玩家自己。 */
+    @Test
+    fun `test nextActivePlayerAfter wraps back to the sole remaining active player`() {
+        val state = FakeTableStateFactory.create(
+            players = fourPlayers,
+            currentPlayerIndex = 3,
+            finishedPlayerIds = setOf(fourPlayers[0].id, fourPlayers[1].id, fourPlayers[2].id),
+        )
+        assertEquals(fourPlayers[3], state.nextActivePlayerAfter(fourPlayers[3].id))
+    }
+
+    /**
+     * 不在本桌的 Uuid 一律不是 active——不能因為「不在 finished 集合裡」就當成可以行動，那會讓打錯的
+     * 識別碼安靜地通過檢查。
+     */
+    @Test
+    fun `test isPlayerActive is false for a player who is not seated at this table`() {
+        val seated = FakeTableStateFactory.create(players = fourPlayers)
+        assertTrue(!seated.isPlayerActive(Uuid.random()))
+
+        val withFinished = FakeTableStateFactory.create(
+            players = fourPlayers,
+            currentPlayerIndex = 0,
+            finishedPlayerIds = setOf(fourPlayers[1].id),
+        )
+        assertTrue(!withFinished.isPlayerActive(Uuid.random()))
+    }
+
+    /** `finishedPlayerIds` 內含不屬於本桌的玩家時，建構當下就該拋出例外。 */
+    @Test
+    fun `test constructing TableState throws when finishedPlayerIds contains an outsider`() {
+        assertFailsWith<IllegalArgumentException> {
+            FakeTableStateFactory.create(
+                players = fourPlayers,
+                currentPlayerIndex = 0,
+                finishedPlayerIds = setOf(fourPlayers[1].id, Uuid.random()),
+            )
+        }
+    }
+
+    /** 莊家必須是桌上玩家，固定起家順位與本局風位也都必須形成無重複的完整配置。 */
+    @Test
+    fun `test constructing TableState validates dealer seats and winds`() {
+        val validState = FakeTableStateFactory.create(players = fourPlayers)
+
+        assertFailsWith<IllegalArgumentException> {
+            validState.copy(dealerPlayerId = Uuid.random())
+        }
+        assertFailsWith<IllegalArgumentException> {
+            validState.copy(
+                players = validState.players.mapIndexed { index, player ->
+                    player.copy(initialSeatIndex = if (index == 3) 2 else index)
+                },
+            )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            validState.copy(
+                players = validState.players.mapIndexed { index, player ->
+                    player.copy(seatWind = if (index == 3) Wind.WEST else player.seatWind)
+                },
+            )
+        }
+    }
+
+    /** 三人桌過莊只依固定玩家順序移交莊家，且不擅自改寫由下一局 policy 負責的自風。 */
+    @Test
+    fun `test three player round advancement rotates explicit dealer without changing seat winds`() {
+        val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST).map { FakeMahjongPlayerFactory.create(it) }
+        val state = FakeTableStateFactory.create(players = players, dealerPlayerId = players[0].id)
+
+        val repeated = state.advanceRound(MatchRoundTransition.RepeatCurrentRound, RoundTransitionDirective.RepeatDealer)
+        val advanced = state.advanceRound(
+            transition = MatchRoundTransition.AdvanceTo(MatchRoundPosition(1, Wind.EAST, 2)),
+            directive = RoundTransitionDirective.PassToNextSeat,
+        )
+
+        assertEquals(players[0].id, repeated.dealerPlayerId)
+        assertEquals(players[1].id, advanced.dealerPlayerId)
+        assertEquals(players.map { it.seatWind }, advanced.players.map { it.seatWind })
+    }
+
+    /** 過莊時依 transition 決定本場數累加或歸零。連莊一律累加。 */
+    @Test
+    fun `test round advancement accumulates or resets combo count by transition`() {
+        val state = FakeTableStateFactory.create(players = fourPlayers, comboCount = 2)
+        val nextPosition = MatchRoundPosition(1, Wind.EAST, 2)
+
+        val repeated = state.advanceRound(MatchRoundTransition.RepeatCurrentRound, RoundTransitionDirective.RepeatDealer)
+        val continued = state.advanceRound(
+            transition = MatchRoundTransition.AdvanceTo(nextPosition = nextPosition, continuesCombo = true),
+            directive = RoundTransitionDirective.PassToNextSeat,
+        )
+        val reset = state.advanceRound(
+            transition = MatchRoundTransition.AdvanceTo(nextPosition = nextPosition, continuesCombo = false),
+            directive = RoundTransitionDirective.PassToNextSeat,
+        )
+
+        assertEquals(3, repeated.comboCount)
+        assertEquals(3, continued.comboCount)
+        assertEquals(0, reset.comboCount)
+    }
+
+    /** 每開一局，本場局序都加一。連莊、過莊都一樣。 */
+    @Test
+    fun `test round advancement counts every round including repeats`() {
+        val state = FakeTableStateFactory.create(players = fourPlayers).copy(roundSerial = 4)
+
+        val repeated = state.advanceRound(MatchRoundTransition.RepeatCurrentRound, RoundTransitionDirective.RepeatDealer)
+        val advanced = state.advanceRound(MatchRoundTransition.AdvanceTo(MatchRoundPosition(1, Wind.EAST, 2)), RoundTransitionDirective.PassToNextSeat)
+
+        assertEquals(5, repeated.roundSerial)
+        assertEquals(5, advanced.roundSerial)
+    }
+
+    /** 規則指定的玩家成為下一任莊家。指定外人、指定現任莊家或與局位變化矛盾時拒絕。 */
+    @Test
+    fun `test round advancement passes the deal to the chosen player`() {
+        val state = FakeTableStateFactory.create(players = fourPlayers, dealerPlayerId = fourPlayers[0].id)
+        val advance = MatchRoundTransition.AdvanceTo(MatchRoundPosition(1, Wind.EAST, 2))
+
+        val passed = state.advanceRound(advance, RoundTransitionDirective.PassTo(fourPlayers[2].id))
+
+        assertEquals(fourPlayers[2].id, passed.dealerPlayerId)
+        assertFailsWith<IllegalArgumentException> { state.advanceRound(advance, RoundTransitionDirective.PassTo(Uuid.random())) }
+        assertFailsWith<IllegalArgumentException> { state.advanceRound(advance, RoundTransitionDirective.PassTo(fourPlayers[0].id)) }
+        assertFailsWith<IllegalArgumentException> { state.advanceRound(advance, RoundTransitionDirective.RepeatDealer) }
+        assertFailsWith<IllegalArgumentException> {
+            state.advanceRound(MatchRoundTransition.RepeatCurrentRound, RoundTransitionDirective.PassToNextSeat)
+        }
+    }
+
+    /** 換位依完整的新順序排列下一局的玩家，下一位莊家仍依換位前的座位計算。身分、分數與初始座位不變。 */
+    @Test
+    fun `test round advancement applies a complete seat order`() {
+        val state = FakeTableStateFactory.create(players = fourPlayers, dealerPlayerId = fourPlayers[0].id)
+        val newOrder = listOf(fourPlayers[2], fourPlayers[0], fourPlayers[3], fourPlayers[1]).map { it.id }
+
+        val advanced = state.advanceRound(
+            transition = MatchRoundTransition.AdvanceTo(MatchRoundPosition(1, Wind.EAST, 2)),
+            directive = RoundTransitionDirective.PassToNextSeat,
+            seatOrder = newOrder,
+        )
+
+        assertEquals(newOrder, advanced.players.map { it.id })
+        assertEquals(fourPlayers[1].id, advanced.dealerPlayerId)
+        assertEquals(
+            expected = fourPlayers.associate { it.id to (it.initialSeatIndex to it.score) },
+            actual = advanced.players.associate { it.id to (it.initialSeatIndex to it.score) },
+        )
+    }
+
+    /** 換位的座位順序缺人、重複或混入外人時拒絕。 */
+    @Test
+    fun `test round advancement rejects an incomplete seat order`() {
+        val state = FakeTableStateFactory.create(players = fourPlayers)
+        val ids = fourPlayers.map { it.id }
+        val invalidOrders = listOf(
+            ids.dropLast(1),
+            ids.dropLast(1) + ids.first(),
+            ids.dropLast(1) + Uuid.random(),
+        )
+
+        invalidOrders.forEach { order ->
+            assertFailsWith<IllegalArgumentException> {
+                state.advanceRound(MatchRoundTransition.RepeatCurrentRound, RoundTransitionDirective.RepeatDealer, seatOrder = order)
+            }
+        }
+    }
+
+    /** 起算玩家不在桌上時應拋出例外。 */
+    @Test
+    fun `test nextActivePlayerAfter throws when starting player is not seated`() {
+        val state = FakeTableStateFactory.create(players = fourPlayers)
+        assertFailsWith<IllegalArgumentException> {
+            state.nextActivePlayerAfter(Uuid.random())
+        }
+    }
+
+    /**
+     * 建構 [TableState] 時，若 `currentPlayerIndex` 指向一位已經 finished 的玩家，應立即拋出例外。
+     *
+     * 同時驗證全員都已完成的桌況也遭到拒絕，避免把當前回合交給不能再行動的玩家。
+     */
+    @Test
+    fun `test constructing TableState throws when currentPlayerIndex points at a finished player`() {
+        assertFailsWith<IllegalArgumentException> {
+            FakeTableStateFactory.create(
+                players = fourPlayers,
+                currentPlayerIndex = 1,
+                finishedPlayerIds = setOf(fourPlayers[1].id),
+            )
+        }
+
+        assertFailsWith<IllegalArgumentException> {
+            FakeTableStateFactory.create(
+                players = fourPlayers,
+                currentPlayerIndex = 0,
+                finishedPlayerIds = fourPlayers.map { it.id }.toSet(),
+            )
+        }
+    }
+
+    /** 四人桌的相對方位依座位順序：下一位是下家、上一位是上家、隔一位是對家、自己是 Self。 */
+    @Test
+    fun `test relativeDirectionOf maps seat distance to a relative direction`() {
+        val players = Wind.entries.map { wind -> FakeMahjongPlayerFactory.create(wind) }
+        val state = FakeTableStateFactory.create(players = players, dealerPlayerId = players.first().id)
+
+        assertEquals(RelativeDirection.Self, state.relativeDirectionOf(players[0].id, players[0].id))
+        assertEquals(RelativeDirection.Right, state.relativeDirectionOf(players[0].id, players[1].id))
+        assertEquals(RelativeDirection.Across, state.relativeDirectionOf(players[0].id, players[2].id))
+        assertEquals(RelativeDirection.Left, state.relativeDirectionOf(players[0].id, players[3].id))
+        assertEquals(RelativeDirection.Right, state.relativeDirectionOf(players[3].id, players[0].id))
+    }
+
+    /** 兩人桌的另一位同時是上家與下家。判定順序讓上家先成立，雙向都回報上家。 */
+    @Test
+    fun `test relativeDirectionOf reports the only opponent of a two player table as the left player`() {
+        val state = FakeTableStateFactory.create()
+        val players = state.players
+
+        assertEquals(RelativeDirection.Left, state.relativeDirectionOf(players[0].id, players[1].id))
+        assertEquals(RelativeDirection.Left, state.relativeDirectionOf(players[1].id, players[0].id))
+    }
+
+    /** 查詢不在這張桌子的玩家會被擋下。 */
+    @Test
+    fun `test relativeDirectionOf throws for a player outside the table`() {
+        val state = FakeTableStateFactory.create()
+
+        assertFailsWith<IllegalArgumentException> { state.relativeDirectionOf(Uuid.random(), state.players[0].id) }
+        assertFailsWith<IllegalArgumentException> { state.relativeDirectionOf(state.players[0].id, Uuid.random()) }
+    }
+}

@@ -1,0 +1,172 @@
+package com.doublemoon1119.mahjongcraft.logic.rules.riichi
+
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
+import com.doublemoon1119.mahjongcraft.logic.module.DeclarationEffect
+import com.doublemoon1119.mahjongcraft.logic.module.PositionRules
+import com.doublemoon1119.mahjongcraft.logic.module.PositionView
+import com.doublemoon1119.mahjongcraft.logic.module.RonExclusions
+import com.doublemoon1119.mahjongcraft.logic.module.WinValue
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponentViews
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.riichiNextDora
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
+import kotlin.uuid.Uuid
+
+/**
+ * 日本麻將的規則查詢。
+ *
+ * - 和牌價值與正式結算使用同一套役種、點數與起胡判定，並加上場上可收下的立直棒與本場點數。
+ * - 振聽只依評估者的牌河與立直後振聽判定：快照不包含本巡放過的牌，因此同巡振聽不列入。
+ * - 不能榮和的牌：對手自己打過的牌因振聽不能榮和。對手立直後其他玩家打出的牌，對手放過後因立直後振聽也不能榮和。
+ *   快照沒有跨玩家的打牌先後，因此只把一定在宣告之後打出的牌算進去：每次鳴牌最多讓立直者少打一巡，
+ *   也最多讓鳴牌者多打一張，因此其他玩家牌河中位置超過「立直宣告牌的位置加上兩倍全桌鳴牌次數」的牌必定在宣告之後打出。
+ * - 寶牌：寶牌指示牌的下一張，加上赤寶牌。
+ * - 宣告聽牌時打出的牌：已經立直的對手宣告立直時打出的牌。
+ * - 移出手牌的牌：三人麻將拔出的北，計入評估者的拔北寶牌。
+ *
+ * @property config 本局日麻規則設定。
+ * @property handValueCalculator 役種與點數計算。
+ * @property shantenCalculator 判斷手牌是否構成和牌型與聽哪些牌。
+ */
+class RiichiPositionRules(
+    private val config: RiichiFamilyRuleConfig,
+    private val handValueCalculator: RiichiHandValueCalculator,
+    private val shantenCalculator: RiichiShantenCalculator,
+) : PositionRules {
+    override fun winValue(
+        view: PositionView,
+        hand: Hand,
+        winningTile: TileValue,
+        isTsumo: Boolean,
+        declarations: Set<GameAction.Extension>,
+    ): WinValue {
+        val completed = Hand(tiles = hand.tiles + IdentifiedTile(id = Uuid.NIL, tile = winningTile.tile, components = winningTile.components), melds = hand.melds)
+        if (shantenCalculator.calculate(completed) != ShantenResult.Complete) return WinValue.NotWinnable
+
+        val self = view.evaluator
+        val declaration = self.riichiDeclaration
+        val declaresRiichi = declaration == null && declarations.any { it.value == RiichiGameAction.Riichi }
+        if (!isTsumo && isFuriten(self, hand)) return WinValue.NotWinnable
+
+        val result = handValueCalculator.calculate(
+            context = RiichiHandValueContext.forPlayer(
+                config = config,
+                declaration = declaration,
+                hand = hand,
+                winningTile = winningTile,
+                isTsumo = isTsumo,
+                roundWind = view.snapshot.prevalentWind,
+                seatWind = self.seatWind,
+                isDealer = view.snapshot.dealerPlayerId == self.id,
+                doraIndicators = visibleDoraIndicators(view),
+                paoLiability = self.componentViews[RiichiPlayerComponentViews.PAO_LIABILITY],
+                nukiDoraTiles = self.tileAreas.firstOrNull { it.id == RiichiPlayerTileAreaIds.NORTH }?.tiles.orEmpty().mapNotNull { it.tile },
+            ).let { context -> if (declaresRiichi) context.copy(isRiichi = true) else context },
+        )
+        if (!result.qualifyingHan().satisfies(config.minimumWinConstraint)) return WinValue.NotWinnable
+
+        val sticks = riichiStickCount(view) + if (declaresRiichi) 1 else 0
+        return WinValue.Points(result.pointResult.totalFor(view.snapshot.players.size) + sticks * RIICHI_STICK_POINTS + comboBonus(view, isTsumo))
+    }
+
+    override fun declarationEffect(view: PositionView, action: GameAction.Extension): DeclarationEffect = if (action.value == RiichiGameAction.Riichi) {
+        DeclarationEffect(cost = RIICHI_STICK_POINTS, locksHand = true)
+    } else {
+        DeclarationEffect.NONE
+    }
+
+    /** 尚未立直、門清（暗槓不算副露）且點數足夠支付立直棒時，聽牌後可以立直。 */
+    override fun prospectiveDeclarations(view: PositionView, hand: Hand): Set<GameAction.Extension> {
+        val self = view.evaluator
+        val isRiichi = self.riichiDeclaration != null
+        val isClosed = hand.melds.all { it.type == MeldType.ClosedKan }
+        return if (!isRiichi && isClosed && self.score >= RIICHI_STICK_POINTS) setOf(RIICHI_GAME_ACTION) else emptySet()
+    }
+
+    override fun ronExclusions(view: PositionView, opponentId: Uuid): RonExclusions {
+        val opponent = view.player(opponentId)
+        val ownDiscards = opponent.discardPile.entries.mapNotNullTo(mutableSetOf()) { it.tile.tile }
+        val declarationIndex = opponent.discardPile.entries.indexOfFirst { RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED in it.publicMarkerIds }
+        val isRiichi = opponent.riichiDeclaration != null
+        if (!isRiichi || declarationIndex < 0) return RonExclusions(ownDiscards = ownDiscards)
+        val callCount = view.snapshot.players.sumOf { player -> player.hand.melds.count { it.sourceTile != null } }
+        val passed = view.snapshot.players
+            .filter { it.id != opponentId }
+            .flatMap { player -> player.discardPile.entries.drop(declarationIndex + 1 + 2 * callCount) }
+            .mapNotNullTo(mutableSetOf()) { it.tile.tile }
+        return RonExclusions(ownDiscards = ownDiscards, passedAfterDeclaration = passed)
+    }
+
+    /** 已經立直的對手宣告立直時打出的牌。 */
+    override fun declarationTile(view: PositionView, opponentId: Uuid): Tile? {
+        val opponent = view.player(opponentId)
+        if (opponent.riichiDeclaration == null) return null
+        return opponent.discardPile.entries
+            .firstOrNull { RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED in it.publicMarkerIds }
+            ?.tile
+            ?.tile
+    }
+
+    /** 移出手牌的牌是拔出的北，另外記進評估者的拔北寶牌。 */
+    override fun afterTileSetAside(view: PositionView, tileId: Uuid): PositionView = view.withTileSetAside(tileId, RiichiPlayerTileAreaIds.NORTH)
+
+    override fun bonusTileCount(view: PositionView, tile: TileValue): Int {
+        val doraTiles = visibleDoraIndicators(view).map { riichiNextDora(it, config.usesThreePlayerTiles) }
+        return doraTiles.count { it == tile.tile } + if (tile.components[RiichiTileComponents.RED_DORA] != null) 1 else 0
+    }
+
+    /**
+     * 計算評估者可收取的本場點數。
+     *
+     * @param view 目前評估局面。
+     * @param isTsumo 是否為自摸。自摸由其他每位玩家各付一份。
+     * @return 本場加算點數。
+     */
+    private fun comboBonus(view: PositionView, isTsumo: Boolean): Int {
+        val comboCount = view.snapshot.comboCount
+        return if (isTsumo) {
+            comboCount * RIICHI_COMBO_BONUS_TSUMO_POINTS_PER_PAYER * (view.snapshot.players.size - 1)
+        } else {
+            comboCount * riichiComboBonusRonPoints(config.maxPlayers)
+        }
+    }
+
+    /**
+     * 判定評估者是否因捨牌或永久振聽而無法榮和，不判定同巡振聽。
+     *
+     * @param self 評估者的公開及自身資料。
+     * @param hand 尚未加入和牌張的手牌。
+     * @return 永久振聽或等待牌含自己捨牌時為 true。
+     */
+    private fun isFuriten(
+        self: MahjongPlayerSnapshot,
+        hand: Hand,
+    ): Boolean {
+        if (self.componentViews[RiichiPlayerComponentViews.PERMANENT_FURITEN] != null) return true
+        val waits = (shantenCalculator.calculate(hand) as? ShantenResult.Tenpai)?.winningTiles ?: return false
+        val furitenTiles = self.discardPile.entries.mapNotNull { it.tile.tile }.toSet()
+        return waits.any { it in furitenTiles }
+    }
+
+    /**
+     * 從快照牌山取得公開的寶牌指示牌。
+     *
+     * @param view 目前評估局面。
+     * @return 保持快照順序的公開牌種。
+     */
+    private fun visibleDoraIndicators(view: PositionView): List<Tile> = view.snapshot.tileWall.tiles.filter { it.face?.views?.get(RiichiTileComponentViews.DORA_INDICATOR) != null }.mapNotNull { it.tile }
+
+    /**
+     * 取得場上尚未被收下的立直棒數。
+     *
+     * @param view 目前評估局面。
+     * @return 公開供託點數換算的立直棒數。
+     */
+    private fun riichiStickCount(view: PositionView): Int = requireNotNull(view.snapshot.componentViews[RiichiTableComponentViews.POT_POINTS]) { "Riichi position is missing public pot points" } / RIICHI_STICK_POINTS
+}

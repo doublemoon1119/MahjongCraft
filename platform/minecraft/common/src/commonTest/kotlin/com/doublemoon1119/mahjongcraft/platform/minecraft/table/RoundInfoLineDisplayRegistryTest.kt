@@ -1,0 +1,162 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.table
+
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
+
+/** 驗證局況顯示行的翻譯資訊註冊流程。 */
+class RoundInfoLineDisplayRegistryTest {
+    /** 驗證內建日麻與第三方 key 都透過同一個 registry 解析。 */
+    @Test
+    fun `built-in and third-party keys resolve registered displays`() {
+        val registry = RoundInfoLineDisplayRegistryImpl().apply {
+            BundledRiichiMinecraftExtension.registerRoundInfoPresentations(this)
+            register(RoundInfoLineDisplayDefinition("example:custom", RoundInfoLineDisplay("example.message.custom")))
+            register(RoundInfoMessageDefinition("example:rule_text", "example.round_info.rule_text"))
+        }
+
+        val title = registry.find("mahjongcraft:riichi/round_title")
+        assertEquals(true, title != null)
+        assertEquals("example.message.custom", registry.find("example:custom")?.translationKey)
+        assertEquals("example.round_info.rule_text", registry.findMessage("example:rule_text")?.translationKey)
+        assertNull(registry.find("example:unknown"))
+        assertNull(registry.findMessage("example:unknown"))
+    }
+
+    /** 日麻呈現端依桌況建立完整三行，不再要求 logic 模組組裝面板內容。 */
+    @Test
+    fun `riichi provider builds ordered lines from table state`() {
+        val state = FakeTableStateFactory.create(
+            tileWall = TileWall(List(50) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5)) }),
+            prevalentWind = Wind.SOUTH,
+            roundNumber = 2,
+            comboCount = 1,
+            components = riichiTableComponents(potPoints = 2000),
+        )
+        val registry = RoundInfoLineDisplayRegistryImpl().apply { BundledRiichiMinecraftExtension.registerRoundInfoPresentations(this) }
+
+        assertEquals(
+            expected = listOf(
+                RoundInfoLine(
+                    key = "mahjongcraft:riichi/round_title",
+                    args = listOf(
+                        RoundInfoArgument.WindValue(Wind.SOUTH),
+                        RoundInfoArgument.Number(state.localRoundNumber),
+                        RoundInfoArgument.Number(1),
+                    ),
+                ),
+                RoundInfoLine("mahjongcraft:riichi/stick_pot", listOf(RoundInfoArgument.Number(2))),
+                RoundInfoLine("mahjongcraft:riichi/wall_remaining", listOf(RoundInfoArgument.Number(50))),
+            ),
+            actual = registry.buildLines(BuiltInRuleModuleIds.RIICHI, state),
+        )
+    }
+
+    /** 未註冊的規則沒有局況行。第三方 provider 可自行決定行與順序。 */
+    @Test
+    fun `custom and missing providers are independent of riichi`() {
+        val state = FakeTableStateFactory.create()
+        val registry = RoundInfoLineDisplayRegistryImpl().apply {
+            register(RoundInfoLineDisplayDefinition("example:custom", RoundInfoLineDisplay("example.message.custom")))
+            register(RoundInfoLineProviderDefinition("example:rule", RoundInfoLineProvider { listOf(RoundInfoLine("example:custom", listOf(RoundInfoArgument.Number(it.comboCount)))) }))
+        }
+
+        assertEquals(listOf(RoundInfoLine("example:custom", listOf(RoundInfoArgument.Number(state.comboCount)))), registry.buildLines("example:rule", state))
+        assertEquals(emptyList(), registry.buildLines("example:missing", state))
+    }
+
+    /** 驗證 registry 凍結後禁止第三方延遲修改。 */
+    @Test
+    fun `frozen registry rejects late registration`() {
+        val registry = RoundInfoLineDisplayRegistryImpl().apply { freeze() }
+
+        assertFailsWith<IllegalStateException> {
+            registry.register(RoundInfoLineDisplayDefinition("example:late", RoundInfoLineDisplay("example.message.late")))
+        }
+        assertFailsWith<IllegalStateException> {
+            registry.register(RoundInfoMessageDefinition("example:late_message", "example.message.late"))
+        }
+    }
+
+    /** 驗證重複登記同一個 key 會被拒絕，避免第三方無意間覆蓋內建顯示。 */
+    @Test
+    fun `duplicate key registration is rejected`() {
+        val registry = RoundInfoLineDisplayRegistryImpl().apply {
+            register(RoundInfoLineDisplayDefinition("example:duplicate", RoundInfoLineDisplay("example.message.a")))
+        }
+
+        assertFailsWith<IllegalArgumentException> {
+            registry.register(RoundInfoLineDisplayDefinition("example:duplicate", RoundInfoLineDisplay("example.message.b")))
+        }
+        registry.register(RoundInfoMessageDefinition("example:duplicate", "example.message.a"))
+        assertFailsWith<IllegalArgumentException> {
+            registry.register(RoundInfoMessageDefinition("example:duplicate", "example.message.b"))
+        }
+    }
+
+    /** 顯示行與 provider 使用同一 ID 時仍保留可辨識的診斷前綴。 */
+    @Test
+    fun `registration keys distinguish display and provider entries`() {
+        val registry = RoundInfoLineDisplayRegistryImpl().apply {
+            register(RoundInfoLineDisplayDefinition("example:same", RoundInfoLineDisplay("example.message.same")))
+            register(RoundInfoMessageDefinition("example:same", "example.message.same"))
+            register(RoundInfoLineProviderDefinition("example:same", RoundInfoLineProvider { emptyList() }))
+        }
+
+        assertEquals(setOf("line:example:same", "message:example:same", "provider:example:same"), registry.registrationKeys)
+    }
+
+    /** 顯示行 key 與規則模組 ID 都必須是完整 namespaced ID。 */
+    @Test
+    fun `registration rejects ids without namespace`() {
+        val registry = RoundInfoLineDisplayRegistryImpl()
+
+        assertFailsWith<IllegalArgumentException> {
+            registry.register(RoundInfoLineDisplayDefinition("missing_namespace", RoundInfoLineDisplay("example.message")))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            registry.register(RoundInfoLineProviderDefinition("missing_namespace", RoundInfoLineProvider { emptyList() }))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            registry.register(RoundInfoMessageDefinition("missing_namespace", "example.message"))
+        }
+    }
+
+    /** 不同 namespace 可以使用相同 path，彼此不會覆蓋。 */
+    @Test
+    fun `different namespaces can reuse the same path`() {
+        val registry = RoundInfoLineDisplayRegistryImpl().apply {
+            register(RoundInfoLineDisplayDefinition("first:round", RoundInfoLineDisplay("first.message")))
+            register(RoundInfoLineDisplayDefinition("second:round", RoundInfoLineDisplay("second.message")))
+            register(RoundInfoMessageDefinition("first:notice", "first.notice"))
+            register(RoundInfoMessageDefinition("second:notice", "second.notice"))
+            register(RoundInfoLineProviderDefinition("first:rule", RoundInfoLineProvider { emptyList() }))
+            register(RoundInfoLineProviderDefinition("second:rule", RoundInfoLineProvider { emptyList() }))
+        }
+
+        assertEquals("first.message", registry.find("first:round")?.translationKey)
+        assertEquals("second.message", registry.find("second:round")?.translationKey)
+        assertEquals("first.notice", registry.findMessage("first:notice")?.translationKey)
+        assertEquals("second.notice", registry.findMessage("second:notice")?.translationKey)
+        assertEquals(
+            expected = setOf(
+                "line:first:round",
+                "line:second:round",
+                "message:first:notice",
+                "message:second:notice",
+                "provider:first:rule",
+                "provider:second:rule",
+            ),
+            actual = registry.registrationKeys,
+        )
+    }
+}

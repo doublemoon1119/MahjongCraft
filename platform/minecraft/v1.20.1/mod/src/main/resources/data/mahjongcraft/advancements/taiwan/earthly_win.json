@@ -1,0 +1,29 @@
+{
+  "parent": "mahjongcraft:taiwan/root",
+  "display": {
+    "icon": {
+      "item": "mahjongcraft:mahjong_tile",
+      "nbt": "{tile:\"south\"}"
+    },
+    "title": {
+      "translate": "mahjongcraft.taiwan.tai.earthly_win"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.taiwan.earthly_win.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:taiwan/earthly_win"
+        ]
+      }
+    }
+  }
+}

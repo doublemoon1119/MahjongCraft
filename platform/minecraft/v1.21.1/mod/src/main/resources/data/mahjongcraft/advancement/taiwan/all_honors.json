@@ -1,0 +1,31 @@
+{
+  "parent": "mahjongcraft:taiwan/root",
+  "display": {
+    "icon": {
+      "id": "mahjongcraft:mahjong_tile",
+      "components": {
+        "mahjongcraft:tile": "white_dragon"
+      }
+    },
+    "title": {
+      "translate": "mahjongcraft.taiwan.tai.all_honors"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.taiwan.all_honors.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:taiwan/all_honors"
+        ]
+      }
+    }
+  }
+}

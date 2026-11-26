@@ -1,0 +1,22 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
+
+/** 沒有登記格式化器的胡牌詳情 fallback。 */
+object FallbackWinSettlementDetailTextFormatter : WinSettlementDetailTextFormatter {
+    override fun quantities(quantities: List<WinSettlementQuantity>): PresentationValue.TextValue = PresentationValue.TextValue(
+        translationKey = quantities.joinToString(" ") { "${it.amount} ${it.unitId}" },
+    )
+
+    override fun entries(entries: List<WinSettlementDetailEntry>): PresentationValue.EntryListValue = PresentationValue.EntryListValue(
+        entries = entries.map { entry ->
+            PresentationValue.EntryListValue.Entry(
+                translationKey = entry.id,
+                translationArgument = entry.nameQuantity?.amount?.toString(),
+                trailingText = entry.quantity?.let { "${it.amount} ${it.unitId}" }.orEmpty(),
+                emphasis = if (entry.appliesToSomePayersOnly) EntryEmphasis.CONDITIONAL else EntryEmphasis.NORMAL,
+            )
+        },
+    )
+}

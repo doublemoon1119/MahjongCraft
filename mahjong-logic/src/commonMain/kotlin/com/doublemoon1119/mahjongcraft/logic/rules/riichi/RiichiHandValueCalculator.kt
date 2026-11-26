@@ -1,0 +1,612 @@
+package com.doublemoon1119.mahjongcraft.logic.rules.riichi
+
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueCalculator
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.RiichiFuuro
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.RiichiHandStructure
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.RiichiMentsu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.calculateRiichiAkaDora
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.calculateRiichiDora
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.calculateRiichiUraDora
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.honor.calculateRiichiHonorYaku
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.local.calculateRiichiDaichisei
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.local.calculateRiichiIsshokuSanjun
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.local.calculateRiichiSanrenkou
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.local.calculateRiichiShiiaruRaotai
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.local.calculateRiichiUumenChii
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.local.calculateRiichiWheelYakuman
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateRiichiChiitoitsu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateRiichiChinitsu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateRiichiHonchan
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateRiichiHonitsu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateRiichiHonroutou
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateRiichiIipeikou
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateRiichiIttuitsu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateRiichiJunchan
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateRiichiPinfu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateRiichiRyanpeikou
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateRiichiSanankou
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateRiichiSankantsu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateRiichiSanshokuDokoku
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateRiichiSanshokuDoujun
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateRiichiTanyao
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateRiichiToitoi
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateRiichiChinroutou
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateRiichiChurenPoto
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateRiichiKokushiMusou
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateRiichiRyuuuiisou
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateRiichiSangaen
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateRiichiSukantsu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateRiichiSuuankou
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateRiichiSuushii
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateRiichiTsuuiisou
+import kotlin.math.abs
+
+/**
+ * 日本麻將手牌番數計算機。
+ *
+ * 負責計算手牌的全部番數，使用 [RiichiHandValueContext] 提供計算所需的上下文資訊。
+ *
+ * @property useLocalYaku 是否啟用古役（Local Yaku）。關閉時只計算一般役種。
+ */
+class RiichiHandValueCalculator(
+    private val useLocalYaku: Boolean = false,
+) : HandValueCalculator<RiichiHandValueContext, RiichiHandValueResult> {
+
+    override fun calculate(context: RiichiHandValueContext): RiichiHandValueResult {
+        // 嘗試分解手牌（用於需要手牌結構的役種）
+        val handTiles = context.hand.standingTiles.map { it.tile }
+        val winningTile = context.winningTile
+        val fuuro = context.hand.exposedMelds.map { meld ->
+            // 將 base.Meld 轉換為 structure.RiichiFuuro
+            val tile = meld.tiles.first().tile
+            val mentsu = when (meld.type) {
+                MeldType.Pon -> RiichiMentsu.Kotsu(tile)
+                // CHI 的 tiles 依鳴牌時呼叫端選牌順序排列（被鳴牌固定最後一張），不保證數值遞增，
+                // Shuntsu 的 headTile 必須是三張裡數值最小的那張，不能直接沿用 tiles.first()。
+                MeldType.Chi -> RiichiMentsu.Shuntsu(
+                    headTile = meld.tiles.minBy { (it.tile as Tile.Numeric).value }.tile,
+                )
+                MeldType.OpenKan -> RiichiMentsu.Minkan(tile)
+                MeldType.ClosedKan -> RiichiMentsu.Ankan(tile)
+                MeldType.AddedKan -> RiichiMentsu.Kakan(tile)
+                is MeldType.Extension -> error("Unsupported extension meld type in riichi calculator: ${meld.type.typeId}")
+            }
+            RiichiFuuro(
+                mentsu = mentsu,
+                from = meld.sourceDirection,
+            )
+        }
+
+        // [RiichiHandStructure] 用於分析手牌內部結構，將一副手牌拆解成所有可能胡牌的形式，empty 表示手牌不符合任何胡牌形式。
+        // 會需要 [RiichiHandStructure] 進行役種判定的役，例如：Pinfu、Chiitoitsu、Iipeikou、Ryanpeikou 等。
+        // 不需要 [RiichiHandStructure] 的役種（如 Dora、Tanyao、Chinitsu 等）則直接從 hand 計算。
+        val handStructures =
+            RiichiHandDecomposer.decompose(handTiles = handTiles, winningTile = winningTile, fuuro = fuuro)
+                .ifEmpty {
+                    return RiichiHandValueResult(
+                        yakuResults = emptyList(),
+                        totalHan = 0,
+                        totalFu = 0,
+                        pointResult = RiichiPointResult.Ron(0),
+                    )
+                }
+
+        // 將 handStructures 轉化成對應的點數
+        val handValueResults = handStructures.map { handStructure ->
+            // 先計算役滿
+            val yakuResults = mutableListOf<RiichiYakuResult>()
+            calculateYakuman(context, handStructure, yakuResults)
+
+            // 若有任何役滿，則只計算役滿（役滿疊加）
+            if (yakuResults.any { it.isYakuman }) {
+                val totalHan = RiichiHanCalculator.calculateTotalHan(yakuResults)
+
+                // 包牌僅在「狀態上已成立包牌責任」且「本次胡牌實際包含對應役滿」兩者皆成立時才適用，
+                // 避免狀態成立後手牌卻演變成其他役滿（如濃厚牌型被打散重組）時誤套用包牌。
+                val paoYakuType = context.paoLiability?.let { pao ->
+                    when (pao.yaku) {
+                        RiichiPaoYaku.Daisangen -> RiichiYakuType.Daisangen
+                        RiichiPaoYaku.Daisuushii -> RiichiYakuType.Daisuushii
+                    }
+                }
+                val paoYakuResult = paoYakuType?.let { type -> yakuResults.firstOrNull { it.yaku == type } }
+                val pao = context.paoLiability?.takeIf { paoYakuResult != null }
+
+                val pointResult = RiichiPointCalculator.calculateYakumanPoint(
+                    yakumanMultiplier = abs(totalHan), // 役滿總翻數為負數，這裡帶入絕對值
+                    // 莊家的自風永遠是東，不會隨場風（圈風）轉南——不能直接比較 roundWind == seatWind，
+                    // 那算的是連風牌（雙東）是否成立，只有東場時才會跟「是否為莊家」剛好重合
+                    isDealer = context.isDealer,
+                    isTsumo = context.isTsumo,
+                    isPao = pao != null,
+                    // 包牌責任只承擔「觸發包牌的那個役滿本身」的倍數，不是整體役滿倍數：大三元是
+                    // 1 倍役滿，但大四喜是雙倍役滿（見 RiichiYakuResult.doubleYakuman(Daisuushii)），兩者
+                    // 包牌範圍不同，必須讀該役種自己的 han 而非寫死 1 倍。
+                    paoYakuMultiplier = paoYakuResult?.let { abs(it.han) } ?: 1,
+                )
+
+                return@map RiichiHandValueResult(
+                    yakuResults = yakuResults,
+                    totalHan = totalHan,
+                    totalFu = 0,
+                    pointResult = pointResult,
+                    paoLiability = pao,
+                )
+            }
+
+            // 無役滿時，計算一般役
+            // 計算寶牌
+            val doraResult = calculateRiichiDora(
+                hand = context.hand,
+                winningTile = context.winningTile,
+                doraIndicators = context.doraIndicators,
+                setAsideTiles = context.nukiDoraTiles,
+                usesThreePlayerTiles = context.usesThreePlayerTiles,
+            )
+            if (doraResult.han > 0) {
+                yakuResults.add(doraResult)
+            }
+
+            // 計算裏寶牌（立直時）
+            if (context.isRiichi) {
+                val uraDoraResult = calculateRiichiUraDora(
+                    hand = context.hand,
+                    winningTile = context.winningTile,
+                    uraDoraIndicators = context.uraDoraIndicators,
+                    setAsideTiles = context.nukiDoraTiles,
+                    usesThreePlayerTiles = context.usesThreePlayerTiles,
+                )
+                if (uraDoraResult.han > 0) {
+                    yakuResults.add(uraDoraResult)
+                }
+            }
+
+            // 計算赤寶牌
+            val akaDoraResult = calculateRiichiAkaDora(
+                hand = context.hand,
+                winningTile = context.winningTileValue,
+            )
+            if (akaDoraResult.han > 0) {
+                yakuResults.add(akaDoraResult)
+            }
+
+            // 計算拔北寶牌
+            if (context.nukiDoraTiles.isNotEmpty()) {
+                yakuResults.add(RiichiYakuResult.han(RiichiYakuType.NukiDora, context.nukiDoraTiles.size))
+            }
+
+            // 計算一般役
+            calculateStandardYaku(context, handStructure, yakuResults)
+
+            // 計算字牌役
+            calculateRiichiHonorYaku(context, fuuro, yakuResults)
+
+            // 計算特殊役
+            calculateSpecialYaku(context, yakuResults)
+
+            // 計算古役
+            if (useLocalYaku) calculateLocalYaku(context, handStructure, yakuResults)
+
+            // 計算總番數
+            val totalHan = RiichiHanCalculator.calculateTotalHan(yakuResults)
+
+            // 計算符數（滿貫(5翻)以上時不計算）
+            val totalFu = if (totalHan >= 5) {
+                -1 // 滿貫(5翻)以上時返回 -1
+            } else {
+                RiichiFuCalculator.calculateTotalFu(context, handStructure)
+            }
+
+            // 計算總點數
+            val pointResult = RiichiPointCalculator.calculateNonYakumanPoint(
+                han = totalHan,
+                fu = totalFu,
+                isDealer = context.isDealer,
+                isTsumo = context.isTsumo,
+            )
+
+            return@map RiichiHandValueResult(
+                yakuResults = yakuResults,
+                totalHan = totalHan,
+                totalFu = totalFu,
+                pointResult = pointResult,
+            )
+        }
+
+        // 日本麻將適用高點法，選擇最終點數最高的結果。
+        return handValueResults.maxWithOrNull(
+            comparator = compareBy<RiichiHandValueResult> { it.totalPoint } // 1. 點數最高優先
+                .thenBy { it.isYakuman } // 2. 點數相同時，役滿役優先於數役滿 (避免`累計役滿`覆蓋掉`役滿`)
+                .thenBy { if (it.isYakuman) abs(it.totalHan) else it.totalHan } // 3. 翻數次之 (如果是役滿，其翻數以負數表示，這裡取其絕對值)
+                .thenBy { it.totalFu }, // 4. 最後才是符數
+        ) ?: RiichiHandValueResult(
+            yakuResults = emptyList(),
+            totalHan = 0,
+            totalFu = 0,
+            pointResult = RiichiPointResult.Ron(0),
+        )
+    }
+
+    /**
+     * 計算一般役（1-6 翻）。
+     *
+     * 處理役種之間的互斥與優先級：
+     * - 清一色 > 混一色（保留較高番數者）
+     * - 兩杯口 > 一杯口（保留較高番數者）
+     * - 七對子與一杯口、兩杯口互斥（按點數決定）
+     *
+     * @param context 和牌情境與規則狀態。
+     * @param handStructure 本次候選的手牌結構。
+     * @param results 收集計算結果的清單。
+     */
+    private fun calculateStandardYaku(
+        context: RiichiHandValueContext,
+        handStructure: RiichiHandStructure,
+        results: MutableList<RiichiYakuResult>,
+    ) {
+        val standardResults = mutableListOf<RiichiYakuResult>()
+
+        // 斷么九
+        calculateRiichiTanyao(
+            hand = context.hand,
+            winningTile = context.winningTile,
+            isMenzen = context.isMenzen,
+            allowOpenTanyao = context.allowOpenTanyao,
+        )?.let { standardResults.add(it) }
+
+        // 一氣通貫
+        calculateRiichiIttuitsu(
+            hand = context.hand,
+            winningTile = context.winningTile,
+            isMenzen = context.isMenzen,
+        )?.let { standardResults.add(it) }
+
+        // 混一色與清一色
+        val honitsu = calculateRiichiHonitsu(
+            hand = context.hand,
+            winningTile = context.winningTile,
+            isMenzen = context.isMenzen,
+        )
+        val chinitsu = calculateRiichiChinitsu(
+            hand = context.hand,
+            winningTile = context.winningTile,
+            isMenzen = context.isMenzen,
+        )
+        // 清一色優先於混一色
+        if (chinitsu != null) {
+            standardResults.add(chinitsu)
+        } else if (honitsu != null) {
+            standardResults.add(honitsu)
+        }
+
+        // 計算一杯口、兩杯口、七對子
+        val iipeikou = calculateRiichiIipeikou(
+            handStructure = handStructure,
+            isMenzen = context.isMenzen,
+        )
+        val ryanpeikou = calculateRiichiRyanpeikou(
+            handStructure = handStructure,
+            isMenzen = context.isMenzen,
+        )
+        val chiitoitsu = calculateRiichiChiitoitsu(
+            handStructure = handStructure,
+            isMenzen = context.isMenzen,
+        )
+
+        // 古役一色三同順包含一杯口，成立時取代一杯口；與兩杯口同時成立時保留兩杯口
+        val isshokuSanjun = if (useLocalYaku) {
+            calculateRiichiIsshokuSanjun(handStructure = handStructure, isMenzen = context.isMenzen)
+        } else {
+            null
+        }
+
+        // 處理七對子與一杯口、兩杯口、一色三同順的衝突
+        // 兩杯口 (3 han) > 七對子 (2 han) > 一色三同順 > 一杯口 (1 han)
+        when {
+            ryanpeikou != null -> standardResults.add(ryanpeikou)
+            chiitoitsu != null -> standardResults.add(chiitoitsu)
+            isshokuSanjun != null -> standardResults.add(isshokuSanjun)
+            iipeikou != null -> standardResults.add(iipeikou)
+        }
+
+        // 計算平和
+        calculateRiichiPinfu(
+            handStructure = handStructure,
+            isMenzen = context.isMenzen,
+            roundWind = context.roundWind,
+            seatWind = context.seatWind,
+        )?.let { standardResults.add(it) }
+
+        // 計算對對胡
+        calculateRiichiToitoi(
+            handStructure = handStructure,
+        )?.let { standardResults.add(it) }
+
+        // 計算三暗刻
+        calculateRiichiSanankou(
+            handStructure = handStructure,
+            isTsumo = context.isTsumo,
+        )?.let { standardResults.add(it) }
+
+        // 計算三杠子
+        calculateRiichiSankantsu(
+            handStructure = handStructure,
+        )?.let { standardResults.add(it) }
+
+        // 計算三色同刻
+        calculateRiichiSanshokuDokoku(
+            handStructure = handStructure,
+        )?.let { standardResults.add(it) }
+
+        // 計算三色同順
+        calculateRiichiSanshokuDoujun(
+            handStructure = handStructure,
+            isMenzen = context.isMenzen,
+        )?.let { standardResults.add(it) }
+
+        // 計算混老頭
+        calculateRiichiHonroutou(
+            hand = context.hand,
+            winningTile = context.winningTile,
+        )?.let { standardResults.add(it) }
+
+        // 計算混全帶么九
+        calculateRiichiHonchan(
+            handStructure = handStructure,
+            isMenzen = context.isMenzen,
+        )?.let { standardResults.add(it) }
+
+        // 計算純全帶么九
+        calculateRiichiJunchan(
+            handStructure = handStructure,
+            isMenzen = context.isMenzen,
+        )?.let { standardResults.add(it) }
+
+        results.addAll(standardResults)
+    }
+
+    /**
+     * 計算字牌役（場風、自風、役牌）。
+     *
+     * @param context 和牌情境與規則狀態。
+     * @param fuuro 已曝光的副露面子。
+     * @param results 收集計算結果的清單。
+     */
+    private fun calculateRiichiHonorYaku(
+        context: RiichiHandValueContext,
+        fuuro: List<RiichiFuuro>,
+        results: MutableList<RiichiYakuResult>,
+    ) {
+        // 取得所有牌（去除赤寶牌標記）
+        val handTiles = context.hand.standingTiles.map { it.tile }
+
+        // 計算字牌役
+        val honorResults = calculateRiichiHonorYaku(
+            handTiles = handTiles,
+            winningTile = context.winningTile,
+            fuuro = fuuro,
+            roundWind = context.roundWind,
+            seatWind = context.seatWind,
+        )
+
+        results.addAll(honorResults)
+    }
+
+    /**
+     * 計算特殊役（立直、一發、嶺上花等）。
+     *
+     * @param context 和牌情境與規則狀態。
+     * @param results 收集計算結果的清單。
+     */
+    private fun calculateSpecialYaku(context: RiichiHandValueContext, results: MutableList<RiichiYakuResult>) {
+        // 立直 和 雙立直
+        if (context.isMenzen) {
+            if (context.isDoubleRiichi) { // 雙立直
+                results.add(RiichiYakuResult.han(RiichiYakuType.DoubleRiichi, 2))
+            } else if (context.isRiichi) { // 立直
+                results.add(RiichiYakuResult.han(RiichiYakuType.Riichi, 1))
+            }
+        }
+
+        // 一發
+        if (context.isMenzen && context.isIppatsu) {
+            results.add(RiichiYakuResult.han(RiichiYakuType.Ippatsu, 1))
+        }
+
+        // 嶺上花
+        if (context.isRinshanKaihou) {
+            results.add(RiichiYakuResult.han(RiichiYakuType.RinshanKaihou, 1))
+        }
+
+        // 海底撈月
+        if (context.isLastDraw && context.isTsumo) {
+            results.add(RiichiYakuResult.han(RiichiYakuType.Haitei, 1))
+        }
+
+        // 河底撈魚
+        if (context.isLastDiscard && !context.isTsumo) {
+            results.add(RiichiYakuResult.han(RiichiYakuType.Houtei, 1))
+        }
+
+        // 搶槓
+        if (context.isRobbingKan) {
+            results.add(RiichiYakuResult.han(RiichiYakuType.Chankan, 1))
+        }
+
+        // 門前清自摸
+        if (context.isMenzen && context.isTsumo) {
+            results.add(RiichiYakuResult.han(RiichiYakuType.Menzentsumo, 1))
+        }
+    }
+
+    /**
+     * 計算非役滿的古役。一筒摸月、九筒撈魚分別取代海底摸月、河底撈魚。
+     *
+     * @param context 和牌情境與規則狀態。
+     * @param handStructure 本次候選的手牌結構。
+     * @param results 收集計算結果的清單。
+     */
+    private fun calculateLocalYaku(
+        context: RiichiHandValueContext,
+        handStructure: RiichiHandStructure,
+        results: MutableList<RiichiYakuResult>,
+    ) {
+        val winningTile = context.winningTile
+
+        // 燕返：以其他玩家的立直宣言牌榮和
+        if (!context.isTsumo && context.isRiichiDeclarationDiscard) {
+            results.add(RiichiYakuResult.han(RiichiYakuType.TsubameGaeshi, 1))
+        }
+
+        // 槓振：以其他玩家槓後打出的牌榮和
+        if (!context.isTsumo && context.isDiscardAfterKan) {
+            results.add(RiichiYakuResult.han(RiichiYakuType.Kanburi, 1))
+        }
+
+        calculateRiichiShiiaruRaotai(hand = context.hand)?.let { results.add(it) }
+        calculateRiichiUumenChii(hand = context.hand, winningTile = context.winningTile)?.let { results.add(it) }
+        calculateRiichiSanrenkou(handStructure = handStructure)?.let { results.add(it) }
+
+        // 一筒摸月：海底自摸一筒，取代海底摸月
+        if (context.isLastDraw && context.isTsumo && winningTile == IIPIN) {
+            results.removeAll { it.yaku == RiichiYakuType.Haitei }
+            results.add(RiichiYakuResult.han(RiichiYakuType.IipinMoyue, LAST_TILE_PIN_HAN))
+        }
+
+        // 九筒撈魚：河底榮和九筒，取代河底撈魚
+        if (context.isLastDiscard && !context.isTsumo && winningTile == CHUUPIN) {
+            results.removeAll { it.yaku == RiichiYakuType.Houtei }
+            results.add(RiichiYakuResult.han(RiichiYakuType.ChuupinRaoyui, LAST_TILE_PIN_HAN))
+        }
+    }
+
+    /**
+     * 計算役滿古役。大七星取代字一色。
+     *
+     * @param context 和牌情境與規則狀態。
+     * @param handStructure 本次候選的手牌結構。
+     * @param results 收集計算結果的清單。
+     */
+    private fun calculateLocalYakuman(
+        context: RiichiHandValueContext,
+        handStructure: RiichiHandStructure,
+        results: MutableList<RiichiYakuResult>,
+    ) {
+        calculateRiichiWheelYakuman(hand = context.hand, winningTile = context.winningTile, isMenzen = context.isMenzen)?.let { results.add(it) }
+
+        calculateRiichiDaichisei(handStructure = handStructure)?.let {
+            results.removeAll { result -> result.yaku == RiichiYakuType.Tsuuiisou }
+            results.add(it)
+        }
+
+        // 人和：非莊家在自己第一次摸牌前、無人鳴牌中斷時榮和
+        if (!context.isTsumo && !context.isDealer && context.isFirstTurn && !context.isRobbingKan) {
+            results.add(RiichiYakuResult.yakuman(RiichiYakuType.Renhou))
+        }
+
+        // 石上三年：雙立直，並以海底自摸或河底榮和和牌
+        val isLastTileWin = (context.isLastDraw && context.isTsumo) || (context.isLastDiscard && !context.isTsumo)
+        if (context.isDoubleRiichi && isLastTileWin) {
+            results.add(RiichiYakuResult.yakuman(RiichiYakuType.IshinoUeSannen))
+        }
+    }
+
+    /**
+     * 計算役滿。
+     *
+     * 可能會含有小三元 (非役滿)
+     *
+     * @param context 和牌情境與規則狀態。
+     * @param handStructure 本次候選的手牌結構。
+     * @param results 收集計算結果的清單。
+     */
+    private fun calculateYakuman(
+        context: RiichiHandValueContext,
+        handStructure: RiichiHandStructure,
+        results: MutableList<RiichiYakuResult>,
+    ) {
+        // 計算國士無雙
+        calculateRiichiKokushiMusou(
+            handStructure = handStructure,
+            winningTile = context.winningTile,
+        )?.let { results.add(it) }
+
+        // 計算九蓮寶燈
+        calculateRiichiChurenPoto(
+            hand = context.hand,
+            winningTile = context.winningTile,
+            handStructure = handStructure,
+            isMenzen = context.isMenzen,
+        )?.let { results.add(it) }
+
+        // 計算字一色
+        calculateRiichiTsuuiisou(
+            hand = context.hand,
+            winningTile = context.winningTile,
+        )?.let { results.add(it) }
+
+        // 計算綠一色
+        calculateRiichiRyuuuiisou(
+            hand = context.hand,
+            winningTile = context.winningTile,
+        )?.let { results.add(it) }
+
+        // 計算四暗刻
+        calculateRiichiSuuankou(
+            handStructure = handStructure,
+            isMenzen = context.isMenzen,
+            isTsumo = context.isTsumo,
+        )?.let { results.add(it) }
+
+        // 計算四杠子
+        calculateRiichiSukantsu(
+            handStructure = handStructure,
+        )?.let { results.add(it) }
+
+        // 計算四喜
+        calculateRiichiSuushii(
+            handStructure = handStructure,
+        )?.let { results.add(it) }
+
+        // 計算三元
+        calculateRiichiSangaen(
+            handStructure = handStructure,
+        )?.let { results.add(it) }
+
+        // 計算清老頭
+        calculateRiichiChinroutou(
+            hand = context.hand,
+            winningTile = context.winningTile,
+        )?.let { results.add(it) }
+
+        // 計算天和與地和
+        if (context.isFirstTurn && context.isTsumo) {
+            // 天和：親（莊家）在第一巡自摸
+            if (context.isDealer) {
+                results.add(RiichiYakuResult.yakuman(RiichiYakuType.Tenhou))
+            }
+            // 地和：子在第一巡自摸
+            else {
+                results.add(RiichiYakuResult.yakuman(RiichiYakuType.Chiihou))
+            }
+        }
+
+        if (useLocalYaku) calculateLocalYakuman(context, handStructure, results)
+    }
+
+    /** 古役判定使用的牌與翻數。 */
+    private companion object {
+        /** 一筒摸月的和牌張。 */
+        val IIPIN: Tile = Tile.Numeric(Tile.Suit.Dot, 1)
+
+        /** 九筒撈魚的和牌張。 */
+        val CHUUPIN: Tile = Tile.Numeric(Tile.Suit.Dot, 9)
+
+        /** 一筒摸月、九筒撈魚的翻數。 */
+        const val LAST_TILE_PIN_HAN = 5
+    }
+}

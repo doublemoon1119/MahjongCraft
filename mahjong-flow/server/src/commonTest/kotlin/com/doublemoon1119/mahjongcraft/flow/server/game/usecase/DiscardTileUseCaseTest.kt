@@ -1,0 +1,1531 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
+
+import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.runAsSingleWrite
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
+import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
+import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
+import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.tileRegion
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
+
+/**
+ * [DiscardTileUseCase] 的單元測試類別。
+ *
+ * 驗證捨牌的業務邏輯，包含回合驗證、手牌與牌河狀態更新、推進下一位玩家或開啟反應視窗，
+ * 以及快照與事件的同步行為。
+ */
+class DiscardTileUseCaseTest {
+
+    private val gameId = Uuid.random()
+    private val currentPlayerId = Uuid.random()
+    private val otherPlayerId = Uuid.random()
+
+    /**
+     * 提供捨牌測試共用的規則模組、遊戲 repository 與快照同步器。
+     *
+     * @property moduleRegistry 測試使用的規則模組註冊表。
+     */
+    private class Fixtures(
+        val moduleRegistry: MahjongModuleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
+    ) {
+        val gameRepo = FakeGameRepository()
+        val snapshotRepo = FakeGameSnapshotRepository()
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
+        val handSortPreferenceStore = HandSortPreferenceStore()
+        val postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
+            BundledRiichiExtension.registerPostActionExhaustiveDrawResolvers(this)
+            freeze()
+        }
+        val eventPublisher = FakeGameEventPublisher()
+        val presentationPublisher = FakeGamePresentationPublisher()
+        val useCase = DiscardTileUseCase(
+            gameRepository = gameRepo,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            handSortPreferenceStore = handSortPreferenceStore,
+            postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+            eventPublisher = eventPublisher,
+            presentationPublisher = presentationPublisher,
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+        )
+    }
+
+    private val drawnTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+    private val handTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
+
+    /**
+     * 驗證宣告加槓後、其他玩家還能搶槓時，宣告者不能直接捨牌，桌況不變。用例自己檢查時機，不依賴呼叫端。
+     */
+    @Test
+    fun `test discard tile fails while other players may rob a declared kan`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(handTile), lastDrawn = drawnTile),
+        )
+        val otherPlayer = FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        ).copy(
+            turnPhase = TurnPhase.AwaitingRobbingReaction(
+                reaction = PendingRobbingReaction(
+                    declarerId = currentPlayerId,
+                    declaredAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, handTile.id, emptyList()),
+                    robbedTile = handTile,
+                    eligiblePlayerIds = setOf(otherPlayerId),
+                ),
+            ),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        assertEquals(Outcome.Error(GameError.IllegalAction(currentPlayerId, gameId, GameAction.Discard(drawnTile.id))), result)
+        assertEquals(table, fixtures.gameRepo.getTableState(gameId))
+    }
+
+    /**
+     * 驗證捨棄剛摸到的牌（摸切）時，正確更新手牌、牌河並推進到下一位玩家。
+     *
+     * 以目前的遊戲為預期遊戲執行，確認命令只寫入這一局一次（AI 命令的條件式提交契約）。
+     */
+    @Test
+    fun `test discard drawn tile advances to next player`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(handTile), lastDrawn = drawnTile),
+        )
+        val otherPlayer = FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.gameRepo.runAsSingleWrite(gameId) { fixtures.useCase(gameId, currentPlayerId, drawnTile.id) }
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        val updatedPlayer = newState.players.first { it.id == currentPlayerId }
+        assertEquals(null, updatedPlayer.hand.lastDrawn)
+        assertEquals(listOf(handTile), updatedPlayer.hand.tiles)
+        assertEquals(1, updatedPlayer.discardPile.entries.size)
+        assertEquals(drawnTile, updatedPlayer.discardPile.entries.first().tile)
+        assertTrue(updatedPlayer.actionHistory.last() is GameAction.Discard)
+        assertEquals(1, newState.currentPlayerIndex, "Turn should advance to the next player.")
+        assertEquals(TurnPhase.AwaitingDraw, newState.turnPhase)
+        assertNull(newState.pendingReaction, "No one is eligible to react, so no reaction window should open.")
+        assertEquals(drawnTile.id, newState.lastDiscardTileId)
+    }
+
+    /**
+     * 驗證捨牌後送出一步：捨出的牌移到牌河，立牌維持原樣，沒有宣告事件。
+     */
+    @Test
+    fun `test discard tile presents one step with the tile in the discard pile`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(handTile), lastDrawn = drawnTile),
+        )
+        val otherPlayer = FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        val step = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single().single()
+        assertEquals(fixtures.gameRepo.getTableState(gameId), step.tableState)
+        assertTrue(step.events.isEmpty())
+        assertEquals(TileRegion.DISCARD, step.tableState.tileRegion(drawnTile.id))
+        assertEquals(TileRegion.HAND, step.tableState.tileRegion(handTile.id))
+    }
+
+    /**
+     * 驗證已宣告立直的玩家後續再捨牌時，呈現的桌況中牌河的側身標記仍指向較早的立直宣告牌
+     * （[SidewaysMarkedDiscardPile.sidewaysMarkedTileId]
+     * 掃描整個牌河推導，不受這次捨牌影響）。
+     */
+    @Test
+    fun `test discard tile keeps the sideways marked tile from an earlier riichi declaration`() = runTest {
+        val fixtures = Fixtures()
+        val riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.South)
+        val alreadyDiscarded = RiichiDiscardPile().discard(DiscardEntry(tile = riichiTile, components = RiichiDiscardComponents.declaration()))
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = drawnTile),
+            discardPile = alreadyDiscarded,
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        val presented = fixtures.presentationPublisher.getLastPresentedTableState(gameId)!!.players.single().discardPile
+        assertEquals(listOf(riichiTile.id, drawnTile.id), presented.entries.map { it.tile.id })
+        assertEquals(riichiTile.id, (presented as SidewaysMarkedDiscardPile).sidewaysMarkedTileId())
+    }
+
+    /**
+     * 驗證捨棄手牌中的牌（非摸切）時，剛摸到的牌會併入立牌。
+     */
+    @Test
+    fun `test discard tile from standing hand keeps drawn tile in hand`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(handTile), lastDrawn = drawnTile),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, handTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val updatedPlayer = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == currentPlayerId }
+        assertEquals(null, updatedPlayer.hand.lastDrawn)
+        assertEquals(listOf(drawnTile), updatedPlayer.hand.tiles)
+        assertEquals(handTile, updatedPlayer.discardPile.entries.first().tile)
+    }
+
+    /**
+     * 驗證立直中的玩家嘗試打出手牌裡的牌（非摸切）時應該被拒絕——立直鎖定手牌結構，只能摸切。
+     */
+    @Test
+    fun `test discard tile fails when riichi player tries to discard a hand tile instead of tsumogiri`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(handTile), lastDrawn = drawnTile),
+            components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, handTile.id)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.IllegalAction(currentPlayerId, gameId, GameAction.Discard(handTile.id)), result.error)
+    }
+
+    /**
+     * 驗證立直中的玩家摸切（打出剛摸到的牌）時仍然合法。
+     */
+    @Test
+    fun `test discard tile succeeds when riichi player discards the drawn tile`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(handTile), lastDrawn = drawnTile),
+            components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+    }
+
+    /**
+     * 驗證立直者打出立直後的下一張牌時，自己的一發資格結束。其他玩家的一發資格不受這次捨牌影響。
+     */
+    @Test
+    fun `test discard tile ends the discarding riichi player's ippatsu only`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(handTile), lastDrawn = drawnTile),
+            components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East), isIppatsu = true),
+        )
+        val otherPlayer = FakeMahjongPlayerFactory.create(
+            id = otherPlayerId,
+            initialSeat = Wind.SOUTH,
+            components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.South), isIppatsu = true),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val players = fixtures.gameRepo.getTableState(gameId)!!.players
+        val currentState = assertNotNull(players.first { it.id == currentPlayerId }.riichiDeclaration)
+        val otherState = assertNotNull(players.first { it.id == otherPlayerId }.riichiDeclaration)
+        assertFalse(currentState.isIppatsu, "Discarding the next tile after riichi ends the ippatsu window.")
+        assertNotNull(currentState, "Riichi itself should remain in effect.")
+        assertTrue(otherState.isIppatsu, "Another player's discard must not end this player's ippatsu window.")
+    }
+
+    /**
+     * 驗證立直中的玩家摸切棄胡（摸到的牌原本可以自摸，卻選擇打出）時，本局起永久振聽——見
+     * [MahjongRuleModule.onPlayerDeclinedWin] KDoc。手牌結構是門前清自摸 1 番的單騎聽牌（聽西風），
+     * 摸到第二張西風時打出（而不是宣告自摸）即視為見逃す。
+     */
+    @Test
+    fun `test discard tile marks permanent furiten when riichi player tsumogiri declines a legal tsumo`() = runTest {
+        val fixtures = Fixtures()
+        val secondWest = FakeIdentifiedTileFactory.create(Tile.Honor.West)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(
+                tiles = listOf(
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 7)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 8)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 4)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 6)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 3)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 4)),
+                    FakeIdentifiedTileFactory.create(Tile.Honor.West),
+                ),
+                lastDrawn = secondWest,
+            ),
+            components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, secondWest.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val updatedPlayer = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == currentPlayerId }
+        assertTrue(updatedPlayer.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null, "Declining a legal tsumo while riichi-locked should mark permanent furiten.")
+    }
+
+    /** 規則以 [MahjongRuleModule.discardableTileIds] 限定捨牌時，打出其他牌被拒絕、打出允許的牌成功。 */
+    @Test
+    fun `discard restriction from the rule module rejects any other tile`() = runTest {
+        val probe = HookProbe(discardableTileIds = setOf(drawnTile.id))
+        val fixtures = Fixtures(probe.registry())
+        fixtures.gameRepo.setTableState(singlePlayerTable(Hand(tiles = listOf(handTile), lastDrawn = drawnTile)))
+
+        val rejected = fixtures.useCase(gameId, currentPlayerId, handTile.id)
+        val accepted = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        assertEquals(GameError.IllegalAction(currentPlayerId, gameId, GameAction.Discard(handTile.id)), (rejected as Outcome.Error).error)
+        assertTrue(accepted is Outcome.Success, "Expected the forced tile to be accepted but got $accepted")
+    }
+
+    /** 摸牌後可以自摸卻打出手牌時，同樣通知規則玩家放棄了和牌。 */
+    @Test
+    fun `discarding a hand tile while a tsumo is legal notifies the rule module`() = runTest {
+        val probe = HookProbe()
+        val fixtures = Fixtures(probe.registry())
+        val hand = westWaitHand()
+        fixtures.gameRepo.setTableState(singlePlayerTable(hand))
+
+        val result = fixtures.useCase(gameId, currentPlayerId, hand.tiles.first().id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertEquals(listOf(currentPlayerId), probe.declinedPlayerIds)
+    }
+
+    /** 摸到的牌無法自摸時，不通知規則放棄和牌。 */
+    @Test
+    fun `discarding without a legal tsumo does not notify the rule module`() = runTest {
+        val probe = HookProbe()
+        val fixtures = Fixtures(probe.registry())
+        fixtures.gameRepo.setTableState(singlePlayerTable(Hand(tiles = listOf(handTile), lastDrawn = drawnTile)))
+
+        val result = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertEquals(emptyList(), probe.declinedPlayerIds)
+    }
+
+    /** 日麻未立直玩家放棄自摸時不會永久振聽。 */
+    @Test
+    fun `declining a legal tsumo without riichi does not mark permanent furiten`() = runTest {
+        val fixtures = Fixtures()
+        val hand = westWaitHand()
+        fixtures.gameRepo.setTableState(singlePlayerTable(hand))
+
+        val result = fixtures.useCase(gameId, currentPlayerId, hand.lastDrawn!!.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val updatedPlayer = fixtures.gameRepo.getTableState(gameId)!!.players.single()
+        assertFalse(
+            actual = updatedPlayer.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null,
+            message = "Declining a tsumo without riichi should not mark permanent furiten.",
+        )
+    }
+
+    /**
+     * 驗證捨出的牌讓其他玩家有資格碰牌時，不推進回合，改為開啟反應視窗。
+     */
+    @Test
+    fun `test discard tile opens pending reaction when someone is eligible to react`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = discardedTile),
+        )
+        // 另一位玩家手牌中有兩張東風，湊滿碰牌的條件
+        val otherPlayer = FakeMahjongPlayerFactory.create(
+            id = otherPlayerId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(
+                tiles = listOf(
+                    FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                    FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)),
+                ),
+            ),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, discardedTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        assertEquals(0, newState.currentPlayerIndex, "Turn should not advance while a reaction is pending.")
+        val pendingReaction = newState.pendingReaction
+        assertNotNull(pendingReaction, "A reaction window should open since otherPlayer can Pon.")
+        assertEquals(currentPlayerId, pendingReaction.discarderId)
+        assertEquals(discardedTile.id, pendingReaction.tileId)
+        assertEquals(setOf(otherPlayerId), pendingReaction.eligiblePlayerIds)
+        assertEquals(TurnPhase.AwaitingDiscardReaction(pendingReaction), newState.turnPhase)
+    }
+
+    /**
+     * 手牌：白白白、發發發、234p、567s，加上單張中（役牌白＋役牌發已成立，單騎聽中）,
+     * 供榮和資格測試共用。刻意採用單騎聽牌（聽的牌手牌中只有 1 張），而非碰/槓聽牌那種
+     * 手牌中已有 2 張的形狀，避免榮和資格意外與碰牌資格重疊，干擾測試判斷。
+     *
+     * @return 具備中單騎聽牌形狀的牌種清單。
+     */
+    private fun ronTankiWaitTiles() = listOf(
+        Tile.Honor.White, Tile.Honor.White, Tile.Honor.White,
+        Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
+        Tile.Numeric(Tile.Suit.Dot, 2),
+        Tile.Numeric(Tile.Suit.Dot, 3),
+        Tile.Numeric(Tile.Suit.Dot, 4),
+        Tile.Numeric(Tile.Suit.Bamboo, 5),
+        Tile.Numeric(Tile.Suit.Bamboo, 6),
+        Tile.Numeric(Tile.Suit.Bamboo, 7),
+        Tile.Honor.Red,
+    )
+
+    /**
+     * 驗證捨出的牌讓唯一一位其他玩家有資格榮和時，正確開啟反應視窗並給予榮和資格。
+     */
+    @Test
+    fun `test discard tile opens ron eligibility when exactly one player can ron`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        // 役牌白＋役牌發已成立，單騎聽中，捨出的紅中即可榮和
+        val otherPlayer = FakeMahjongPlayerFactory.create(
+            id = otherPlayerId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        assertEquals(0, newState.currentPlayerIndex, "Turn should not advance while a reaction is pending.")
+        val pendingReaction = newState.pendingReaction
+        assertNotNull(pendingReaction, "A reaction window should open since otherPlayer can Ron.")
+        assertEquals(setOf(otherPlayerId), pendingReaction.eligiblePlayerIds)
+    }
+
+    /**
+     * 驗證雙響時規則設定為流局（[RonResolution.ABORTIVE_DRAW]）時，這張捨牌會讓本局直接結束
+     * （途中流局）：不開反應視窗（連原本可以碰的玩家也一併作廢）、全員 `actionHistory` 皆記錄
+     * `ExhaustiveDraw(SanchaHou)`、`currentPlayerIndex` 不變、不結算任何點數。
+     */
+    @Test
+    fun `test discard tile triggers abortive draw when double ron resolves to ABORTIVE_DRAW`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = winningTile),
+        ).copy(score = 25000)
+        val ronEligiblePlayerId1 = otherPlayerId
+        val ronEligiblePlayerId2 = Uuid.random()
+        val ponEligiblePlayerId = Uuid.random()
+        // 兩位玩家皆單騎聽中，同時可榮和捨出的紅中
+        val ronPlayer1 = FakeMahjongPlayerFactory.create(
+            id = ronEligiblePlayerId1,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        ).copy(score = 25000)
+        val ronPlayer2 = FakeMahjongPlayerFactory.create(
+            id = ronEligiblePlayerId2,
+            initialSeat = Wind.WEST,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        ).copy(score = 25000)
+        // 手牌中有兩張紅中，湊滿碰牌的條件，驗證流局判斷會讓這個碰牌資格一併作廢
+        val ponPlayer = FakeMahjongPlayerFactory.create(
+            id = ponEligiblePlayerId,
+            initialSeat = Wind.NORTH,
+            hand = Hand(
+                tiles = listOf(
+                    FakeIdentifiedTileFactory.create(Tile.Honor.Red),
+                    FakeIdentifiedTileFactory.create(Tile.Honor.Red),
+                ),
+            ),
+        ).copy(score = 25000)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, ronPlayer1, ronPlayer2, ponPlayer),
+            config = RiichiRuleConfig(
+                multiRonPolicy = MultiRonPolicy(
+                    doubleRonResolution = RonResolution.ABORTIVE_DRAW,
+                    tripleRonResolution = RonResolution.ABORTIVE_DRAW,
+                ),
+            ),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        assertNull(
+            actual = newState.pendingReaction,
+            message = "The hand already ended via the abortive draw; no reaction window should open, not even for ponPlayer.",
+        )
+        assertEquals(0, newState.currentPlayerIndex, "Turn advancement is left to AdvanceRoundUseCase.")
+        assertEquals(TurnPhase.RoundOver(RoundConclusion.AbortiveDraw(RiichiExhaustiveDrawReason.SanchaHou)), newState.turnPhase)
+        val expectedAction = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SanchaHou)
+        newState.players.forEach { player ->
+            assertEquals(
+                expected = expectedAction,
+                actual = player.actionHistory.last(),
+                message = "Every player should have ExhaustiveDraw recorded.",
+            )
+            assertEquals(25000, player.score, "An abortive draw should not exchange any points.")
+        }
+    }
+
+    /**
+     * 驗證三響（三家和了本義）時規則設定為流局時，同樣正確觸發途中流局。
+     */
+    @Test
+    fun `test discard tile triggers abortive draw when triple ron resolves to ABORTIVE_DRAW`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        val ronPlayer1 = FakeMahjongPlayerFactory.create(
+            id = otherPlayerId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val ronPlayer2 = FakeMahjongPlayerFactory.create(
+            id = Uuid.random(),
+            initialSeat = Wind.WEST,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val ronPlayer3 = FakeMahjongPlayerFactory.create(
+            id = Uuid.random(),
+            initialSeat = Wind.NORTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, ronPlayer1, ronPlayer2, ronPlayer3),
+            config = RiichiRuleConfig(
+                multiRonPolicy = MultiRonPolicy(
+                    doubleRonResolution = RonResolution.ALL_WINNERS,
+                    tripleRonResolution = RonResolution.ABORTIVE_DRAW,
+                ),
+            ),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        assertNull(newState.pendingReaction)
+        val expectedAction = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SanchaHou)
+        newState.players.forEach { player -> assertEquals(expectedAction, player.actionHistory.last()) }
+        val recordedDraws = fixtures.gameRepo.committedFacts.flatMap { it.facts }
+            .mapNotNull { (it.fact as? HistoryFact.ActionAccepted)?.action as? GameAction.ExhaustiveDraw }
+        assertEquals(listOf(expectedAction), recordedDraws)
+    }
+
+    /**
+     * 驗證流局觸發時，所有玩家皆先收到捨牌事件、再收到流局事件（依序廣播）。
+     */
+    @Test
+    fun `test discard tile broadcasts Discard then ExhaustiveDraw when abortive draw is triggered`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        val ronPlayer1 = FakeMahjongPlayerFactory.create(
+            id = otherPlayerId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val ronPlayer2 = FakeMahjongPlayerFactory.create(
+            id = Uuid.random(),
+            initialSeat = Wind.WEST,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, ronPlayer1, ronPlayer2),
+            config = RiichiRuleConfig(
+                multiRonPolicy = MultiRonPolicy(
+                    doubleRonResolution = RonResolution.ABORTIVE_DRAW,
+                    tripleRonResolution = RonResolution.ABORTIVE_DRAW,
+                ),
+            ),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        val notifiedActions = fixtures.eventPublisher.getNotifiedActions(gameId, currentPlayerId, currentPlayerId)
+        assertEquals(
+            expected = listOf(GameAction.Discard(winningTile.id), GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SanchaHou)),
+            actual = notifiedActions,
+        )
+    }
+
+    /**
+     * 驗證雙響時規則設定為多家和（[RonResolution.ALL_WINNERS]，Riichi 預設）時，
+     * 兩位符合資格的玩家皆取得榮和資格。
+     */
+    @Test
+    fun `test discard tile grants ron eligibility to both players when double ron resolves to all winners`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        val ronPlayer1Id = otherPlayerId
+        val ronPlayer2Id = Uuid.random()
+        val ronPlayer1 = FakeMahjongPlayerFactory.create(
+            id = ronPlayer1Id,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val ronPlayer2 = FakeMahjongPlayerFactory.create(
+            id = ronPlayer2Id,
+            initialSeat = Wind.WEST,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, ronPlayer1, ronPlayer2),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        val pendingReaction = newState.pendingReaction
+        assertNotNull(pendingReaction)
+        assertEquals(setOf(ronPlayer1Id, ronPlayer2Id), pendingReaction.eligiblePlayerIds)
+    }
+
+    /**
+     * 驗證雙響時規則設定為頭跳（[RonResolution.NEAREST_WINNER]，Taiwan 預設）時，
+     * 只有順位最接近放銃者下家的那一位玩家取得榮和資格。
+     */
+    @Test
+    fun `test discard tile grants ron eligibility to nearest player only when double ron resolves to nearest winner`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        val nearestPlayerId = otherPlayerId
+        val fartherPlayerId = Uuid.random()
+        // nearestPlayer 坐在放銃者（currentPlayer）的下家，順位比 fartherPlayer 更靠前
+        val nearestPlayer = FakeMahjongPlayerFactory.create(
+            id = nearestPlayerId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val fartherPlayer = FakeMahjongPlayerFactory.create(
+            id = fartherPlayerId,
+            initialSeat = Wind.WEST,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, nearestPlayer, fartherPlayer),
+            config = RiichiRuleConfig(
+                multiRonPolicy = MultiRonPolicy(
+                    doubleRonResolution = RonResolution.NEAREST_WINNER,
+                    tripleRonResolution = RonResolution.NEAREST_WINNER,
+                ),
+            ),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        val pendingReaction = newState.pendingReaction
+        assertNotNull(pendingReaction)
+        assertEquals(setOf(nearestPlayerId), pendingReaction.eligiblePlayerIds)
+    }
+
+    /**
+     * 驗證三響時規則設定為多家和時，三位符合資格的玩家皆取得榮和資格。
+     */
+    @Test
+    fun `test discard tile grants ron eligibility to all three players when triple ron resolves to all winners`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        val southId = otherPlayerId
+        val westId = Uuid.random()
+        val northId = Uuid.random()
+        val south = FakeMahjongPlayerFactory.create(
+            id = southId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val west = FakeMahjongPlayerFactory.create(
+            id = westId,
+            initialSeat = Wind.WEST,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val north = FakeMahjongPlayerFactory.create(
+            id = northId,
+            initialSeat = Wind.NORTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, south, west, north),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        val pendingReaction = newState.pendingReaction
+        assertNotNull(pendingReaction)
+        assertEquals(setOf(southId, westId, northId), pendingReaction.eligiblePlayerIds)
+    }
+
+    /**
+     * 驗證三響時規則設定為頭跳時，只有順位最接近放銃者下家的那一位玩家取得榮和資格。
+     */
+    @Test
+    fun `test discard tile grants ron eligibility to nearest player only when triple ron resolves to nearest winner`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        val southId = otherPlayerId
+        val westId = Uuid.random()
+        val northId = Uuid.random()
+        val south = FakeMahjongPlayerFactory.create(
+            id = southId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val west = FakeMahjongPlayerFactory.create(
+            id = westId,
+            initialSeat = Wind.WEST,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val north = FakeMahjongPlayerFactory.create(
+            id = northId,
+            initialSeat = Wind.NORTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, south, west, north),
+            config = RiichiRuleConfig(
+                multiRonPolicy = MultiRonPolicy(
+                    doubleRonResolution = RonResolution.NEAREST_WINNER,
+                    tripleRonResolution = RonResolution.NEAREST_WINNER,
+                ),
+            ),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        val pendingReaction = newState.pendingReaction
+        assertNotNull(pendingReaction)
+        assertEquals(
+            expected = setOf(southId),
+            actual = pendingReaction.eligiblePlayerIds,
+            message = "South sits immediately after the discarder, so South should win under NEAREST_WINNER.",
+        )
+    }
+
+    /**
+     * 驗證捨牌後所有觀察者的快照皆同步更新，且所有玩家皆收到 Discard 事件通知。
+     */
+    @Test
+    fun `test discard tile syncs snapshot and notifies all players`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = drawnTile),
+        )
+        val otherPlayer = FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+        fixtures.snapshotRepo.setSnapshot(currentPlayerId, table.toSnapshot(setOf(currentPlayerId)))
+        fixtures.snapshotRepo.setSnapshot(otherPlayerId, table.toSnapshot(setOf(otherPlayerId)))
+
+        fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, currentPlayerId))
+        assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, otherPlayerId))
+        assertEquals(
+            expected = GameAction.Discard(drawnTile.id),
+            actual = fixtures.eventPublisher.getNotifiedAction(gameId, currentPlayerId, currentPlayerId),
+        )
+        assertEquals(
+            expected = GameAction.Discard(drawnTile.id),
+            actual = fixtures.eventPublisher.getNotifiedAction(gameId, otherPlayerId, currentPlayerId),
+        )
+    }
+
+    /**
+     * 驗證對局不存在時回傳 [GameError.GameNotFound]。
+     */
+    @Test
+    fun `test discard tile fails when game not found`() = runTest {
+        val fixtures = Fixtures()
+
+        val result = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.GameNotFound(gameId), result.error)
+    }
+
+    /**
+     * 驗證發起請求的玩家不在該對局中時回傳 [GameError.PlayerNotInGame]。
+     */
+    @Test
+    fun `test discard tile fails when player not in game`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = drawnTile),
+        )
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(currentPlayer))
+        fixtures.gameRepo.setTableState(table)
+        val strangerId = Uuid.random()
+
+        val result = fixtures.useCase(gameId, strangerId, drawnTile.id)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.PlayerNotInGame(strangerId, gameId), result.error)
+    }
+
+    /**
+     * 驗證非當前回合玩家嘗試捨牌時回傳 [GameError.NotPlayersTurn]。
+     */
+    @Test
+    fun `test discard tile fails when not players turn`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = drawnTile),
+        )
+        val otherPlayer = FakeMahjongPlayerFactory.create(
+            id = otherPlayerId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(lastDrawn = handTile),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, otherPlayer),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, otherPlayerId, handTile.id)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.NotPlayersTurn(otherPlayerId, gameId), result.error)
+    }
+
+    /**
+     * 驗證玩家尚未摸牌就嘗試捨牌時回傳 [GameError.IllegalAction]。
+     */
+    @Test
+    fun `test discard tile fails when player has not drawn yet`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(handTile)),
+        )
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(currentPlayer), currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, handTile.id)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(
+            expected = GameError.IllegalAction(currentPlayerId, gameId, GameAction.Discard(handTile.id)),
+            actual = result.error,
+        )
+    }
+
+    /**
+     * 驗證玩家剛吃／碰成立、`lastDrawn` 仍為 null 時仍然可以捨牌。
+     *
+     * `lastDrawn == null` 的檢查必須排除「剛吃／碰，該直接捨牌」的情境，否則這種捨牌會被誤判成「還沒摸牌」：
+     * `AiTurnDriver`／`ForcedAutoPlayDriver` 都會在吃／碰成立後送出捨牌指令，若被拒絕，回合會無法推進，
+     * 而且不會拋出例外。
+     */
+    @Test
+    fun `test discard tile succeeds right after claiming a meld with no lastDrawn`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(handTile)),
+        ).recordAction(GameAction.Pon(tileId = Uuid.random(), withTiles = emptyList()))
+        val table = FakeTableStateFactory.create(
+            turnPhase = TurnPhase.AwaitingDiscard,
+            id = gameId,
+            players = listOf(currentPlayer),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, handTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+    }
+
+    /**
+     * 驗證欲捨棄的牌不存在於玩家手牌中時回傳 [GameError.IllegalAction]。
+     */
+    @Test
+    fun `test discard tile fails when tile not found in hand`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = drawnTile),
+        )
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(currentPlayer), currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table)
+        val unknownTileId = Uuid.random()
+
+        val result = fixtures.useCase(gameId, currentPlayerId, unknownTileId)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(
+            expected = GameError.IllegalAction(currentPlayerId, gameId, GameAction.Discard(unknownTileId)),
+            actual = result.error,
+        )
+    }
+
+    /**
+     * 驗證第一巡全員的第一張捨牌皆為同一種風牌時，觸發四風連打：不開反應視窗、全員記錄
+     * `ExhaustiveDraw(SuufonRenda)`、不結算任何點數。
+     */
+    @Test
+    fun `test discard tile triggers SuufonRenda when all first discards are the same wind`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val alreadyDiscardedEast = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East))
+        val east = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, discardPile = alreadyDiscardedEast)
+            .copy(score = 25000)
+        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, discardPile = alreadyDiscardedEast)
+            .copy(score = 25000)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, discardPile = alreadyDiscardedEast)
+            .copy(score = 25000)
+        val north = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.NORTH,
+            hand = Hand(lastDrawn = winningTile),
+        ).copy(score = 25000)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(east, south, west, north),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 3,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        assertNull(newState.pendingReaction)
+        val expectedAction = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SuufonRenda)
+        newState.players.forEach { player ->
+            assertEquals(expectedAction, player.actionHistory.last())
+            assertEquals(25000, player.score, "Suufon renda is an abortive draw and should not exchange any points.")
+        }
+    }
+
+    /**
+     * 驗證第一張捨牌種類不同時，不觸發四風連打，正常推進到下一位玩家。
+     */
+    @Test
+    fun `test discard tile does not trigger SuufonRenda when first discards differ`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val alreadyDiscardedEast = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East))
+        val alreadyDiscardedSouth = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South))
+        val east = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, discardPile = alreadyDiscardedEast)
+        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, discardPile = alreadyDiscardedSouth)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, discardPile = alreadyDiscardedEast)
+        val north = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.NORTH,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(east, south, west, north),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 3,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        assertNull(newState.pendingReaction)
+        assertEquals(0, newState.currentPlayerIndex, "Turn should advance normally to the next player.")
+        newState.players.forEach { player -> assertTrue(player.actionHistory.none { it is GameAction.ExhaustiveDraw }) }
+    }
+
+    /**
+     * 驗證即使四家第一張捨牌皆同風牌，只要有玩家可以碰這張牌，就不會觸發四風連打——改為正常開啟
+     * 反應視窗，因為「這張牌可能被鳴走」已經不是「無人反應」的情境。
+     */
+    @Test
+    fun `test discard tile does not trigger SuufonRenda when someone can pon`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val alreadyDiscardedEast = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East))
+        val east = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, discardPile = alreadyDiscardedEast)
+        // 手牌中有兩張東風，湊滿碰牌的條件
+        val south = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            discardPile = alreadyDiscardedEast,
+            hand = Hand(
+                tiles = listOf(
+                    FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                    FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)),
+                ),
+            ),
+        )
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, discardPile = alreadyDiscardedEast)
+        val north = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.NORTH,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(east, south, west, north),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 3,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        assertNotNull(newState.pendingReaction, "A reaction window should open since south can pon.")
+        newState.players.forEach { player -> assertTrue(player.actionHistory.none { it is GameAction.ExhaustiveDraw }) }
+    }
+
+    /**
+     * 驗證已標記為 finished 的玩家即使手牌湊滿碰牌條件，也不會被納入反應資格，且回合推進時
+     * 會跳過他，直接輪到下一位仍在本局中的玩家（座位表上物理相鄰的下一位是 finished 玩家）。
+     */
+    @Test
+    fun `test discard tile excludes finished player from pon eligibility and skips them when advancing turn`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = discardedTile),
+        )
+        val finishedPlayerId = otherPlayerId
+        // 手牌中有兩張東風，本應湊滿碰牌條件，但這位玩家已經 finished，不該被納入反應資格。
+        val finishedPlayer = FakeMahjongPlayerFactory.create(
+            id = finishedPlayerId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(
+                tiles = listOf(
+                    FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                    FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)),
+                ),
+            ),
+        )
+        val nextActivePlayerId = Uuid.random()
+        val nextActivePlayer = FakeMahjongPlayerFactory.create(id = nextActivePlayerId, initialSeat = Wind.WEST)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, finishedPlayer, nextActivePlayer),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+            finishedPlayerIds = setOf(finishedPlayerId),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, discardedTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        assertNull(newState.pendingReaction, "The finished player's pon eligibility must not open a reaction window.")
+        assertEquals(2, newState.currentPlayerIndex, "Turn should skip the finished player and go to the next active one.")
+    }
+
+    /**
+     * 驗證已標記為 finished 的玩家即使聽牌，也不會被納入榮和資格。
+     */
+    @Test
+    fun `test discard tile excludes finished player from ron eligibility`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        val finishedPlayerId = otherPlayerId
+        // 單騎聽中，本應可以榮和，但這位玩家已經 finished，不該被納入榮和資格。
+        val finishedPlayer = FakeMahjongPlayerFactory.create(
+            id = finishedPlayerId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, finishedPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+            finishedPlayerIds = setOf(finishedPlayerId),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        assertNull(newState.pendingReaction, "The finished player's ron eligibility must not open a reaction window.")
+    }
+
+    /** 驗證延後中的槓寶牌會在捨牌反應確定無人可執行後公開。 */
+    @Test
+    fun `test discard without reactions reveals pending kan dora`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = drawnTile),
+        )
+        val otherPlayer = FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH)
+        val deadWall = List(14) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2)) }
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+            reservedWallTiles = deadWall,
+            components = riichiTableComponents(
+                potPoints = 0,
+                wallProgress = RiichiWallProgress(
+                    completedSupplementalDrawCount = 1,
+                    revealedKanDoraCount = 0,
+                    pendingKanDoraReveals = listOf(
+                        element = RiichiPendingKanDoraReveal(currentPlayerId, GameAction.KanType.OPEN_KAN, 1),
+                    ),
+                ),
+            ),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = assertNotNull(fixtures.gameRepo.getTableState(gameId))
+        val wallProgress = newState.riichiWallProgress()
+        assertEquals(1, wallProgress.revealedKanDoraCount)
+        assertTrue(wallProgress.pendingKanDoraReveals.isEmpty())
+        assertEquals(newState, fixtures.presentationPublisher.getLastPresentedTableState(gameId), "The revealed indicator is part of the presented state.")
+    }
+
+    /**
+     * 只有目前玩家的日麻桌況。
+     *
+     * @param hand 目前玩家的手牌。
+     * @return 只有目前玩家的日麻桌況。
+     */
+    private fun singlePlayerTable(hand: Hand) = FakeTableStateFactory.create(
+        id = gameId,
+        players = listOf(FakeMahjongPlayerFactory.create(id = currentPlayerId, initialSeat = Wind.EAST, hand = hand)),
+        config = RiichiRuleConfig(),
+        tileWall = TileWall(emptyList()),
+        currentPlayerIndex = 0,
+    )
+
+    /**
+     * 門前清單騎聽西風、剛摸到第二張西風，可以門前清自摸。
+     *
+     * @return 西風單騎聽牌且剛摸到西風的手牌。
+     */
+    private fun westWaitHand() = Hand(
+        tiles = listOf(
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 2),
+            Tile.Numeric(Tile.Suit.Character, 3),
+            Tile.Numeric(Tile.Suit.Character, 7),
+            Tile.Numeric(Tile.Suit.Character, 8),
+            Tile.Numeric(Tile.Suit.Character, 9),
+            Tile.Numeric(Tile.Suit.Dot, 4),
+            Tile.Numeric(Tile.Suit.Dot, 5),
+            Tile.Numeric(Tile.Suit.Dot, 6),
+            Tile.Numeric(Tile.Suit.Bamboo, 2),
+            Tile.Numeric(Tile.Suit.Bamboo, 3),
+            Tile.Numeric(Tile.Suit.Bamboo, 4),
+            Tile.Honor.West,
+        ).map(FakeIdentifiedTileFactory::create),
+        lastDrawn = FakeIdentifiedTileFactory.create(Tile.Honor.West),
+    )
+
+    /**
+     * 以日麻模組為基礎、只替換捨牌相關 hook 並記錄呼叫的測試規則。
+     *
+     * @property discardableTileIds 規則允許打出的牌。為 null 時不額外限制。
+     */
+    private class HookProbe(private val discardableTileIds: Set<Uuid>? = null) {
+        /** 依 hook 呼叫順序收集拒絕和牌的玩家識別碼。 */
+        val declinedPlayerIds = mutableListOf<Uuid>()
+
+        /**
+         * 建立將日麻規則行為委派至此 probe 的測試註冊表。
+         *
+         * @return 僅登記測試日麻規則模組的註冊表。
+         */
+        fun registry(): MahjongModuleRegistry = MahjongModuleRegistryImpl().apply {
+            register(
+                definition = MahjongModuleDefinition(RiichiRuleConfig::class, "test:hook_probe") { config, id ->
+                    ProbeRuleModule(delegate = RiichiRuleModule(id, config), probe = this@HookProbe)
+                },
+            )
+        }
+
+        /**
+         * 包裝日麻規則模組，只替換捨牌與拒絕和牌相關的測試 hook。
+         *
+         * @param delegate 要保留其餘行為的日麻規則模組。
+         * @property probe 提供強制捨牌牌張並記錄 hook 呼叫的測試替身。
+         */
+        private class ProbeRuleModule(
+            delegate: RiichiRuleModule,
+            private val probe: HookProbe,
+        ) : MahjongRuleModule<RiichiRuleConfig> by delegate {
+            override fun discardableTileIds(tableState: TableState, player: MahjongPlayer): Set<Uuid>? = probe.discardableTileIds
+
+            override fun onPlayerDeclinedWin(player: MahjongPlayer): ComponentPatch {
+                probe.declinedPlayerIds += player.id
+                return ComponentPatch()
+            }
+        }
+    }
+
+    /**
+     * 他家打出自己無役的和牌張、沒有被詢問時，同一巡仍會同巡振聽：23萬＋456筒＋555筒＋234條＋66條聽 1-4 萬，
+     * 1 萬無役（不是斷么），4 萬有斷么。打牌者打出 1 萬後，4 萬也不能榮和。
+     */
+    @Test
+    fun `an unclaimable wait discarded by another player causes temporary furiten`() = runTest {
+        val fixtures = Fixtures()
+        val waitingPlayerId = Uuid.random()
+        val oneCharacter = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+        val waitingPlayer = FakeMahjongPlayerFactory.create(
+            id = waitingPlayerId,
+            initialSeat = Wind.WEST,
+            hand = Hand(
+                tiles = listOf(
+                    Tile.Numeric(Tile.Suit.Character, 2),
+                    Tile.Numeric(Tile.Suit.Character, 3),
+                    Tile.Numeric(Tile.Suit.Dot, 4),
+                    Tile.Numeric(Tile.Suit.Dot, 5),
+                    Tile.Numeric(Tile.Suit.Dot, 6),
+                    Tile.Numeric(Tile.Suit.Dot, 5),
+                    Tile.Numeric(Tile.Suit.Dot, 5),
+                    Tile.Numeric(Tile.Suit.Dot, 5),
+                    Tile.Numeric(Tile.Suit.Bamboo, 2),
+                    Tile.Numeric(Tile.Suit.Bamboo, 3),
+                    Tile.Numeric(Tile.Suit.Bamboo, 4),
+                    Tile.Numeric(Tile.Suit.Bamboo, 6),
+                    Tile.Numeric(Tile.Suit.Bamboo, 6),
+                ).map(FakeIdentifiedTileFactory::create),
+            ),
+            components = riichiDeclarationComponents(),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(
+                FakeMahjongPlayerFactory.create(
+                    id = currentPlayerId,
+                    initialSeat = Wind.EAST,
+                    hand = Hand(tiles = listOf(handTile), lastDrawn = oneCharacter),
+                ),
+                FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH),
+                waitingPlayer,
+            ),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(List(10) { FakeIdentifiedTileFactory.create(Tile.Honor.North) }),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+        val fourCharacter = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 4))
+        val validator = fixtures.moduleRegistry.getModule(table.config).createLegalActionValidator()
+        fun canRonFourCharacter(state: TableState) = validator.getLegalActions(
+            context = LegalActionContext.discardReaction(
+                tableState = state,
+                playerId = waitingPlayerId,
+                discarderId = otherPlayerId,
+                discardedTile = fourCharacter,
+            ),
+        ).any { it is GameAction.Ron }
+        assertTrue(canRonFourCharacter(table), "4m should be a legal ron before 1m passes by")
+
+        val result = fixtures.useCase(gameId, currentPlayerId, oneCharacter.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertNull(newState.pendingReaction, "Nobody can claim the no-yaku 1m, so no reaction window should open.")
+        assertFalse(canRonFourCharacter(newState), "4m should be temporarily furiten after passing the 1m wait")
+    }
+}

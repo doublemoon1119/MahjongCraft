@@ -1,0 +1,317 @@
+package com.doublemoon1119.mahjongcraft.ai
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
+import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.test.runTest
+import kotlin.random.Random
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
+
+/**
+ * [RandomAiStrategy] 的單元測試類別。
+ *
+ * 驗證三種 [AiDecisionPhase] 下的行為，以及未登記擴充動作的安全回退。
+ * 含機率性行為的分支（是否選擇 Tsumo/Kan/九種九牌）透過多次試驗驗證兩種結果都可能出現，
+ * 不依賴特定亂數種子的具體輸出序列。
+ */
+class RandomAiStrategyTest {
+    /** 驗證 registry 注入用的測試擴充動作。 */
+    private data object TestExtensionAction : ExtensionGameAction {
+        override val id: String = "test:ai_action"
+    }
+
+    /** 驗證 registry 注入用的測試擴充命令。 */
+    private data object TestExtensionCommand : ExtensionGameCommand
+
+    /** 不登記額外動作的明確測試 registry。 */
+    private val extensionActionRegistry = ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl())
+
+    private val selfId = Uuid.random()
+
+    /**
+     * 以指定手牌、階段與合法動作建立決策情境。
+     *
+     * @param hand 測試玩家的手牌。
+     * @param phase AI 所處的決策階段。
+     * @param legalActions 該階段提供的合法動作。
+     * @param discardableTileIds 規則允許打出的牌。null 表示未限制。
+     * @return 對應輸入的 AI 決策情境。
+     */
+    private fun contextWithHand(
+        hand: Hand,
+        phase: AiDecisionPhase,
+        legalActions: List<GameAction>,
+        discardableTileIds: Set<Uuid>? = null,
+        discardReactionId: Uuid? = null,
+        discardReactionCommands: List<GameCommand.RespondToDiscard> = emptyList(),
+    ): AiDecisionContext {
+        val self = FakeMahjongPlayerFactory.create(id = selfId, hand = hand)
+        val table = FakeTableStateFactory.create(players = listOf(self))
+        return AiDecisionContext(
+            snapshot = table.toSnapshot(setOf(selfId)),
+            selfId = selfId,
+            phase = phase,
+            legalActions = legalActions,
+            discardableTileIds = discardableTileIds,
+            discardReactionId = discardReactionId,
+            discardReactionCommands = discardReactionCommands,
+        )
+    }
+
+    /**
+     * 驗證回應捨牌反應視窗時，回傳的 [GameCommand.RespondToDiscard] 攜帶的動作確實來自
+     * [AiDecisionContext.legalActions]。
+     */
+    @Test
+    fun `test responding to discard picks one of the legal actions`() = runTest {
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
+        val ronAction = GameAction.Ron(Uuid.random())
+        val context = contextWithHand(
+            hand = Hand(),
+            phase = AiDecisionPhase.RespondingToDiscard,
+            legalActions = listOf(ronAction, GameAction.Pass),
+            discardReactionId = Uuid.random(),
+        )
+
+        val result = strategy.decideGameCommand(context)
+
+        assertTrue(result is GameCommand.RespondToDiscard)
+        assertTrue(result.action == ronAction || result.action == GameAction.Pass)
+    }
+
+    /**
+     * 驗證合法動作清單為空時，回應捨牌反應視窗預設回傳 `Pass`（防呆）。
+     */
+    @Test
+    fun `test responding to discard defaults to pass when legal actions is empty`() = runTest {
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
+        val reactionId = Uuid.random()
+        val context = contextWithHand(
+            hand = Hand(),
+            phase = AiDecisionPhase.RespondingToDiscard,
+            legalActions = emptyList(),
+            discardReactionId = reactionId,
+        )
+
+        val result = strategy.decideGameCommand(context)
+
+        assertEquals(GameCommand.RespondToDiscard(GameAction.Pass, reactionId), result)
+    }
+
+    /** 擴充反應必須從呼叫端提供的完整命令中選取，不能自行拼出沒有選牌的命令。 */
+    @Test
+    fun `test responding to discard uses concrete custom reaction command`() = runTest {
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
+        val reactionId = Uuid.random()
+        val selectedTileIds = listOf(Uuid.random(), Uuid.random())
+        val command = GameCommand.RespondToDiscard(
+            action = GameAction.Extension(TestExtensionAction),
+            reactionId = reactionId,
+            selectedTileIds = selectedTileIds,
+        )
+        val result = strategy.decideGameCommand(
+            context = contextWithHand(
+                hand = Hand(),
+                phase = AiDecisionPhase.RespondingToDiscard,
+                legalActions = listOf(GameAction.Extension(TestExtensionAction)),
+                discardReactionId = reactionId,
+                discardReactionCommands = listOf(command),
+            ),
+        )
+
+        assertEquals(command, result)
+    }
+
+    /**
+     * 驗證回應搶槓反應視窗時，回傳的 [GameCommand.RespondToRobbing] 攜帶的動作確實來自
+     * [AiDecisionContext.legalActions]。
+     */
+    @Test
+    fun `test responding to chankan picks one of the legal actions`() = runTest {
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
+        val ronAction = GameAction.Ron(Uuid.random())
+        val context = contextWithHand(Hand(), AiDecisionPhase.RespondingToRobbing, listOf(ronAction, GameAction.Pass))
+
+        val result = strategy.decideGameCommand(context)
+
+        assertTrue(result is GameCommand.RespondToRobbing)
+        assertTrue(result.action == ronAction || result.action == GameAction.Pass)
+    }
+
+    /**
+     * 驗證合法動作清單為空時，回應搶槓反應視窗預設回傳 `Pass`（防呆）。
+     */
+    @Test
+    fun `test responding to chankan defaults to pass when legal actions is empty`() = runTest {
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
+        val context = contextWithHand(Hand(), AiDecisionPhase.RespondingToRobbing, emptyList())
+
+        val result = strategy.decideGameCommand(context)
+
+        assertEquals(GameCommand.RespondToRobbing(GameAction.Pass), result)
+    }
+
+    /**
+     * 驗證自己回合時，若合法動作清單只有 [RIICHI_GAME_ACTION]/[GameAction.Pass]（過濾後視同沒有
+     * 可選的特殊動作），一律捨牌——這個判斷不涉及機率（`actionableOptions.isEmpty()` 短路），
+     * 不需要固定亂數種子即可穩定驗證。
+     */
+    @Test
+    fun `test own turn always discards when only riichi and pass are legal`() = runTest {
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
+        val onlyTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val hand = Hand(tiles = listOf(onlyTile))
+        val context = contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(RIICHI_GAME_ACTION, GameAction.Pass))
+
+        val result = strategy.decideGameCommand(context)
+
+        assertEquals(GameCommand.Discard(onlyTile.id), result)
+    }
+
+    /**
+     * 驗證自己回合捨牌時，候選牌同時包含立牌與剛摸到的牌。
+     */
+    @Test
+    fun `test own turn discard picks from standing tiles and last drawn`() = runTest {
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
+        val standingTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val lastDrawn = FakeIdentifiedTileFactory.create(Tile.Honor.South)
+        val hand = Hand(tiles = listOf(standingTile), lastDrawn = lastDrawn)
+        val context = contextWithHand(hand, AiDecisionPhase.OwnTurn, emptyList())
+
+        val result = strategy.decideGameCommand(context)
+
+        assertTrue(result is GameCommand.Discard)
+        assertTrue(result.tileId == standingTile.id || result.tileId == lastDrawn.id)
+    }
+
+    /**
+     * 驗證規則指定強制捨牌時，隨機策略不會從其他手牌中選牌。
+     */
+    @Test
+    fun `test own turn obeys discardable tiles`() = runTest {
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
+        val standingTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val allowedTile = FakeIdentifiedTileFactory.create(Tile.Honor.South)
+        val hand = Hand(tiles = listOf(standingTile), lastDrawn = allowedTile)
+        val context = contextWithHand(
+            hand = hand,
+            phase = AiDecisionPhase.OwnTurn,
+            legalActions = emptyList(),
+            discardableTileIds = setOf(allowedTile.id),
+        )
+
+        val result = strategy.decideGameCommand(context)
+
+        assertEquals(GameCommand.Discard(allowedTile.id), result)
+    }
+
+    /**
+     * 驗證自己回合有自摸資格時，多次試驗下「選擇自摸」與「捨牌」兩種結果皆可能出現——證明
+     * `GameAction.Tsumo` 選項確實有機會被選中，不是永遠被忽略。
+     */
+    @Test
+    fun `test own turn can select tsumo when legal across many trials`() = runTest {
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(42))
+        val tile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val hand = Hand(tiles = listOf(tile))
+        val results = List(200) {
+            val context = contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(GameAction.Tsumo))
+            strategy.decideGameCommand(context)
+        }
+
+        assertTrue(results.any { it == GameCommand.Tsumo }, "Tsumo should be selected at least once across many trials.")
+        assertTrue(results.any { it is GameCommand.Discard }, "Discard should still occur at least once across many trials.")
+    }
+
+    /**
+     * 驗證自己回合有暗槓資格時，多次試驗下會選到正確的 [GameCommand.Kan]（`type`/`tileId` 對應）。
+     */
+    @Test
+    fun `test own turn can select kan when legal across many trials`() = runTest {
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(42))
+        val tile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val hand = Hand(tiles = listOf(tile))
+        val kanAction = GameAction.Kan(GameAction.KanType.CLOSED_KAN, tile.id, emptyList())
+        val results = List(200) {
+            val context = contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(kanAction))
+            strategy.decideGameCommand(context)
+        }
+
+        assertTrue(
+            actual = results.any { it == GameCommand.Kan(GameAction.KanType.CLOSED_KAN, tile.id) },
+            message = "Kan should be selected at least once across many trials.",
+        )
+        assertTrue(results.any { it is GameCommand.Discard }, "Discard should still occur at least once across many trials.")
+    }
+
+    /**
+     * 驗證自己回合有九種九牌資格時，多次試驗下會選到 [GameCommand.DeclareExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai)]。
+     */
+    @Test
+    fun `test own turn can select kyuushu kyuuhai when legal across many trials`() = runTest {
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(42))
+        val tile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val hand = Hand(tiles = listOf(tile))
+        val exhaustiveDrawAction = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai)
+        val results = List(200) {
+            val context = contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(exhaustiveDrawAction))
+            strategy.decideGameCommand(context)
+        }
+
+        assertTrue(results.any { it == GameCommand.DeclareExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai) }, "KyuushuKyuuhai should be selected at least once across many trials.")
+        assertTrue(results.any { it is GameCommand.Discard }, "Discard should still occur at least once across many trials.")
+    }
+
+    /**
+     * 驗證未登記 AI handler 的擴充動作會被安全略過。
+     */
+    @Test
+    fun `test own turn skips unregistered extension action`() = runTest {
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(42))
+        val tile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val hand = Hand(tiles = listOf(tile))
+        val results = List(200) {
+            val context = contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(RIICHI_GAME_ACTION, GameAction.Tsumo))
+            strategy.decideGameCommand(context)
+        }
+
+        assertTrue(results.none { it is GameCommand.Extension }, "Unregistered extension actions must not produce commands.")
+    }
+
+    /** 驗證策略會使用明確注入的 registry 將第三方動作轉成命令。 */
+    @Test
+    fun `test own turn uses explicitly injected extension action handler`() = runTest {
+        val registry = ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }).apply {
+            register(ExtensionGameActionAiDefinition(TestExtensionAction::class) { _, _, _ -> listOf(ExtensionCommandCandidate(GameCommand.Extension(TestExtensionCommand))) })
+            freeze()
+        }
+        val strategy = RandomAiStrategy(registry, Random(42))
+        val hand = Hand(tiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.East)))
+        val results = List(200) {
+            strategy.decideGameCommand(
+                context = contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(GameAction.Extension(TestExtensionAction))).let { context ->
+                    // 擴充動作 handler 會依對局設定取得規則模組，這裡改用已登記的日麻設定。
+                    context.copy(snapshot = context.snapshot.copy(config = RiichiRuleConfig()))
+                },
+            )
+        }
+
+        assertTrue(results.any { it == GameCommand.Extension(TestExtensionCommand) })
+    }
+}

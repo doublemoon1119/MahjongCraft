@@ -1,0 +1,375 @@
+package com.doublemoon1119.mahjongcraft.buildlogic
+
+import org.gradle.api.GradleException
+import java.io.File
+import kotlin.io.path.createDirectories
+import kotlin.io.path.createTempDirectory
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+
+/** 驗證 target catalog、輸入優先序與本機設定更新。 */
+class PlatformTargetCatalogTest {
+    /** 路徑驗證與 Settings 必須使用同一份已去除首尾空白的目錄名稱。 */
+    @Test
+    fun `returns the normalized paths used during validation`() = withFixture { root ->
+        createModule(root, "platform/test")
+        createModule(root, "example/mahjong-extension")
+        val catalog = writeCatalog(
+            root,
+            target("minecraft-test", " platform/test ").replace(
+                "[targets.attributes]",
+                "example-modules = [\" example/mahjong-extension/ \"]\n\n[targets.attributes]",
+            ),
+        )
+
+        val result = PlatformTargetCatalog.load(catalog, root).single()
+        assertEquals(listOf("platform/test"), result.modules)
+        assertEquals(listOf("example/mahjong-extension"), result.exampleModules)
+    }
+
+    /** target 可以宣告建置工具另外需要的 JDK；沒有宣告時為空，超出範圍的版本被拒絕。 */
+    @Test
+    fun `loads additional java toolchains and rejects invalid ones`() = withFixture { root ->
+        createModule(root, "platform/example")
+        val declared = target("minecraft-example", "platform/example").replace("modules = [", "additional-java-toolchains = [21]\nmodules = [")
+        val invalid = declared.replace("[21]", "[21, 7]")
+
+        assertEquals(emptyList(), PlatformTargetCatalog.load(writeCatalog(root, target("minecraft-example", "platform/example")), root).single().additionalJavaToolchains)
+        assertEquals(listOf(21), PlatformTargetCatalog.load(writeCatalog(root, declared), root).single().additionalJavaToolchains)
+        val failure = assertFailsWith<GradleException> { PlatformTargetCatalog.load(writeCatalog(root, invalid), root) }
+        assertEquals("Platform target minecraft-example has invalid additional-java-toolchains entry: 7", failure.message)
+    }
+
+    /** 合法 catalog 應完整解析 target 與 Java policy。 */
+    @Test
+    fun `loads valid catalog`() = withFixture { root ->
+        createModule(root, "platform/example")
+        val targets = writeCatalog(
+            root,
+            target("minecraft-example", "platform/example"),
+        ).let { PlatformTargetCatalog.load(it, root) }
+
+        assertEquals(1, targets.size)
+        assertEquals("minecraft-example", targets.single().id)
+        assertEquals(17, targets.single().javaToolchain)
+        assertEquals(17, targets.single().javaRelease)
+        assertEquals("v1.20.1", targets.single().attributes["minecraft-version"])
+    }
+
+    /** target 可以宣告另外載入的範例模組。 */
+    @Test
+    fun `loads example modules`() = withFixture { root ->
+        createModule(root, "platform/example")
+        createModule(root, "example/mahjong-extension")
+        createModule(root, "example/platform/minecraft/common")
+        createModule(root, "example/platform/minecraft/v1.20.1/fabric")
+        val targets = writeCatalog(
+            root,
+            target("minecraft-example", "platform/example").replace(
+                "[targets.attributes]",
+                """
+                example-modules = [
+                    "example/mahjong-extension",
+                    "example/platform/minecraft/common",
+                    "example/platform/minecraft/v1.20.1/fabric",
+                ]
+
+                [targets.attributes]
+                """.trimIndent(),
+            ),
+        ).let { PlatformTargetCatalog.load(it, root) }
+
+        assertEquals(
+            listOf(
+                "example/mahjong-extension",
+                "example/platform/minecraft/common",
+                "example/platform/minecraft/v1.20.1/fabric",
+            ),
+            targets.single().exampleModules,
+        )
+    }
+
+    /** 正式模組與範例模組不能重複宣告同一個目錄。 */
+    @Test
+    fun `rejects formal and example module overlap`() = withFixture { root ->
+        createModule(root, "example/mahjong-extension")
+        val catalog = writeCatalog(
+            root,
+            target("minecraft-example", "example/mahjong-extension").replace(
+                "[targets.attributes]",
+                "example-modules = [\"example/mahjong-extension\"]\n\n[targets.attributes]",
+            ),
+        )
+
+        assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
+    }
+
+    /** 範例清單不能把一般平台模組誤標成範例。 */
+    @Test
+    fun `rejects non example path in example modules`() = withFixture { root ->
+        createModule(root, "platform/example")
+        val catalog = writeCatalog(
+            root,
+            target("minecraft-example", "platform/example").replace(
+                "[targets.attributes]",
+                "example-modules = [\"platform/example\"]\n\n[targets.attributes]",
+            ),
+        )
+
+        assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
+    }
+
+    /** Minecraft 範例路徑必須同時指定平台與實際 module。 */
+    @Test
+    fun `rejects example platform prefix without module`() = withFixture { root ->
+        val catalog = writeCatalog(
+            root,
+            target("minecraft-example", "platform/example").replace(
+                "[targets.attributes]",
+                "example-modules = [\"example/platform/minecraft\"]\n\n[targets.attributes]",
+            ),
+        )
+        createModule(root, "platform/example")
+
+        assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
+    }
+
+    /** 正式 module 清單不能誤用範例目錄。 */
+    @Test
+    fun `rejects example path in formal modules`() = withFixture { root ->
+        createModule(root, "example/mahjong-extension")
+        val catalog = writeCatalog(root, target("minecraft-example", "example/mahjong-extension"))
+
+        assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
+    }
+
+    /** target 可以記錄執行環境提供的函式庫版本。沒有記錄時為空。 */
+    @Test
+    fun `loads provided versions`() = withFixture { root ->
+        createModule(root, "platform/one")
+        createModule(root, "platform/two")
+        val catalog = writeCatalog(
+            root,
+            target("minecraft-one", "platform/one") + "\n[targets.provided-versions]\nkotlin = \" 2.4.20 \"\n\n" +
+                target("minecraft-two", "platform/two"),
+        )
+
+        val targets = PlatformTargetCatalog.load(catalog, root)
+
+        assertEquals(mapOf("kotlin" to "2.4.20"), targets.first().providedVersions)
+        assertEquals(emptyMap(), targets.last().providedVersions)
+    }
+
+    /** 非 Minecraft 平台不需要提供 Minecraft 專屬欄位。 */
+    @Test
+    fun `loads platform neutral target`() = withFixture { root ->
+        createModule(root, "platform/desktop")
+        val catalog = writeCatalog(
+            root,
+            """
+            [[targets]]
+            id = "desktop-release"
+            platform = "desktop"
+            java-toolchain = 21
+            java-release = 21
+            modules = ["platform/desktop"]
+
+            [targets.attributes]
+            package-format = "zip"
+            """.trimIndent() + "\n",
+        )
+
+        val target = PlatformTargetCatalog.load(catalog, root).single()
+
+        assertEquals("desktop", target.platform)
+        assertEquals(mapOf("package-format" to "zip"), target.attributes)
+    }
+
+    /** 重複 target ID 必須立即失敗。 */
+    @Test
+    fun `rejects duplicate target ids`() = withFixture { root ->
+        createModule(root, "platform/one")
+        createModule(root, "platform/two")
+        val catalog = writeCatalog(
+            root,
+            target("duplicate", "platform/one") + target("duplicate", "platform/two"),
+        )
+
+        assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
+    }
+
+    /** 不合理的 Java version 必須立即失敗。 */
+    @Test
+    fun `rejects invalid java version`() = withFixture { root ->
+        createModule(root, "platform/example")
+        val catalog = writeCatalog(
+            root,
+            target("minecraft-example", "platform/example").replace("java-release = 17", "java-release = 0"),
+        )
+
+        assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
+    }
+
+    /** 指向不存在 module 的 catalog 必須立即失敗。 */
+    @Test
+    fun `rejects missing module`() = withFixture { root ->
+        val catalog = writeCatalog(root, target("minecraft-example", "platform/missing"))
+
+        assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
+    }
+
+    /** module 路徑不能透過 parent segment 離開 repository。 */
+    @Test
+    fun `rejects module path escape`() = withFixture { root ->
+        val catalog = writeCatalog(root, target("minecraft-example", "../outside"))
+
+        assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
+    }
+
+    /** 已知平台缺少必要 attributes 時必須立即失敗。 */
+    @Test
+    fun `rejects missing known platform attribute`() = withFixture { root ->
+        createModule(root, "platform/example")
+        val catalog = writeCatalog(
+            root,
+            target("minecraft-example", "platform/example").replace("loader = \"fabric\"", ""),
+        )
+
+        assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
+    }
+
+    /** 各平台版本資料夾的 target 檔案依路徑順序合併。 */
+    @Test
+    fun `loads targets from every platform version directory`() = withFixture { root ->
+        createModule(root, "platform/new")
+        createModule(root, "platform/old")
+        writeVersionTargets(root, "minecraft/v1.21.1", target("minecraft-new", "platform/new"))
+        writeVersionTargets(root, "minecraft/v1.20.1", target("minecraft-old", "platform/old"))
+        root.resolve("gradle/platform/minecraft/notes.toml").writeText("not a target file\n")
+
+        assertEquals(listOf("minecraft-old", "minecraft-new"), PlatformTargetCatalog.loadAll(root).map(PlatformTarget::id))
+    }
+
+    /** 不同檔案宣告同一個 target ID 時拒絕。 */
+    @Test
+    fun `rejects duplicate target ids across files`() = withFixture { root ->
+        createModule(root, "platform/test")
+        writeVersionTargets(root, "minecraft/v1.20.1", target("minecraft-test", "platform/test"))
+        writeVersionTargets(root, "minecraft/v1.21.1", target("minecraft-test", "platform/test"))
+
+        assertFailsWith<GradleException> { PlatformTargetCatalog.loadAll(root) }
+    }
+
+    /** 沒有任何 target 檔案時只剩 core。 */
+    @Test
+    fun `loads no targets without target files`() = withFixture { root ->
+        assertEquals(emptyList(), PlatformTargetCatalog.loadAll(root))
+    }
+
+    /** Gradle property 應依序覆寫環境變數與 local fallback。 */
+    @Test
+    fun `resolves target by documented precedence`() {
+        assertEquals(
+            "cli",
+            PlatformTargetCatalog.resolveSelectedTargetId(" cli ", "environment", "local"),
+        )
+        assertEquals(
+            "environment",
+            PlatformTargetCatalog.resolveSelectedTargetId(" ", "environment", "local"),
+        )
+        assertEquals(
+            "local",
+            PlatformTargetCatalog.resolveSelectedTargetId(null, null, "local"),
+        )
+        assertEquals(
+            PlatformTargetCatalog.CORE_TARGET_ID,
+            PlatformTargetCatalog.resolveSelectedTargetId(null, " ", null),
+        )
+    }
+
+    /** 切換與清除 target 時必須保留其他 local properties。 */
+    @Test
+    fun `updates only target property`() = withFixture { root ->
+        val localFile = root.resolve("local.dev.properties")
+        localFile.writeText("customProperty=kept\nmahjongcraftTarget=old\n")
+
+        updateLocalProperty(localFile, "new-target")
+        assertTrue(localFile.readText().contains("customProperty=kept"))
+        assertTrue(localFile.readText().contains("mahjongcraftTarget=new-target"))
+        assertFalse(localFile.readText().contains("mahjongcraftTarget=old"))
+
+        updateLocalProperty(localFile, null)
+        assertEquals("customProperty=kept", localFile.readText().trim())
+    }
+
+    /**
+     * 建立 Minecraft 平台 target 的 TOML 片段。
+     *
+     * @param id target ID。
+     * @param module target 載入的 module 路徑。
+     * @return 含預設 Java 與 Minecraft loader attribute 的 target 定義。
+     */
+    private fun target(id: String, module: String): String = """
+        [[targets]]
+        id = "$id"
+        platform = "minecraft"
+        java-toolchain = 17
+        java-release = 17
+        modules = ["$module"]
+
+        [targets.attributes]
+        minecraft-version = "v1.20.1"
+        loader = "fabric"
+    """.trimIndent() + "\n"
+
+    /**
+     * 將 target 定義寫入測試 catalog。
+     *
+     * @param root 測試專案根目錄。
+     * @param targets 要寫入的 TOML target 定義。
+     * @return 寫入後的 catalog 檔案。
+     */
+    private fun writeCatalog(root: File, targets: String): File = root.resolve("platform-targets.toml").apply {
+        writeText("schema-version = 1\n\n$targets")
+    }
+
+    /**
+     * 將 target 定義寫入某個平台版本資料夾的 target 檔案。
+     *
+     * @param root 測試專案根目錄。
+     * @param platformVersion 相對於 `gradle/platform` 的平台與版本資料夾，例如 `minecraft/v1.20.1`。
+     * @param targets 要寫入的 TOML target 定義。
+     */
+    private fun writeVersionTargets(root: File, platformVersion: String, targets: String) {
+        root.resolve("gradle/platform/$platformVersion/targets.toml").apply { parentFile.mkdirs() }
+            .writeText("schema-version = 1\n\n$targets")
+    }
+
+    /**
+     * 建立 catalog target 引用的測試 module 目錄。
+     *
+     * @param root 測試專案根目錄。
+     * @param path 相對於根目錄的 module 路徑。
+     */
+    private fun createModule(root: File, path: String) {
+        root.toPath().resolve(path).createDirectories()
+    }
+
+    /**
+     * 建立並在測試完成後刪除暫存專案。
+     *
+     * @param block 使用暫存專案根目錄的測試動作。
+     */
+    private fun withFixture(block: (File) -> Unit) {
+        createTempDirectory("mahjongcraft-target-test").toFile().apply {
+            try {
+                block(this)
+            } finally {
+                deleteRecursively()
+            }
+        }
+    }
+}

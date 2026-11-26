@@ -1,0 +1,461 @@
+package com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTileAudience
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTilePresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayIdentity
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayPlayerIdentity
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundTileCatalog
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentViewPersistenceRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.GameFlowConfigPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.TypedPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewSet
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
+import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
+import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
+import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollSource
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
+import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonPrimitive
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
+import kotlin.uuid.Uuid
+
+/** 驗證精簡 Replay 文件的 envelope 與損壞輸入防護。 */
+class CompactReplayCodecTest {
+    /** 精簡 Replay 以初始座位索引保存多輪擲骰，且不依賴玩家清單排列順序。 */
+    @Test
+    fun `compact replay round trips dice rolls with multiple actors`() {
+        val playerIds = List(4) { Uuid.random() }
+        val base = GameInitializer.initialize(
+            id = Uuid.random(),
+            playerIds = playerIds,
+            module = RiichiRuleModule("test:riichi", RiichiRuleConfig()),
+            randomness = testRoundRandomness(
+                dice = DiceRollSource {
+                    DiceRollResult.of(List(it) { 1 })
+                },
+            ),
+        ).tableState
+        val table = base.copy(players = base.players.reversed())
+        val first = OpeningDiceRoll(0, table.players[0].id, DiceRollResult.of(listOf(2, 6)))
+        val second = OpeningDiceRoll(1, table.players[2].id, DiceRollResult.of(listOf(3, 4, 1)))
+        val state = table.copy(openingDiceRolls = listOf(first, second))
+        val matchId = Uuid.random()
+        val events = listOf(
+            HistoryOutboxEvent(matchId, state.id, 1, 1, 1, 100, null, HistoryFact.MatchStarted(state, GameFlowConfig(), emptyMap())),
+            HistoryOutboxEvent(matchId, state.id, 1, 2, 2, 200, first.playerId, HistoryFact.DiceRolled(first)),
+            HistoryOutboxEvent(matchId, state.id, 1, 3, 2, 200, second.playerId, HistoryFact.DiceRolled(second)),
+            HistoryOutboxEvent(matchId, state.id, 1, 4, 4, 400, null, HistoryFact.MatchCompleted("test:complete", state.players.associate { it.id to it.score })),
+            HistoryOutboxEvent(matchId, state.id, 1, 5, 5, 500, null, HistoryFact.ReturnedToRoom),
+        )
+        val registries = bundledPersistenceRegistries()
+        val document = CompactReplayCodec.encodeCompact(
+            events = events,
+            mapper = HistoryRecordingPersistenceMapper(registries),
+            registries = registries,
+            presentationNotes = ReplayPresentationNotes.NONE,
+        )
+
+        val transactions = CompactReplayCodec.decodeCompact(document).flatten()
+        val diceTransaction = transactions.single { transaction ->
+            transaction.facts.count { it[ReplaySourceKeys.TYPE]?.jsonPrimitive?.content == HistoryFactTypeKeys.DICE_ROLLED } == 2
+        }
+        val identity = HistoryReplayIdentity(
+            matchId = matchId,
+            venueId = state.id,
+            players = state.players.map { player -> HistoryReplayPlayerIdentity(player.initialSeatIndex, player.id, null) },
+        )
+        val projected = HistoryReplayProjectionMapper.mapFacts(
+            facts = diceTransaction.facts,
+            actorSeats = diceTransaction.actorSeats,
+            identity = identity,
+            roundNumber = 1,
+            tileCatalog = HistoryRoundTileCatalog(emptyList()),
+            budget = ReplayReadBudget(ReplayReadLimits()) {},
+            componentViews = ComponentViewPersistenceRegistry(),
+        )
+
+        assertEquals(
+            expected = listOf(
+                HistoryReplayFact.DiceRolled(HistoryFactTypeKeys.DICE_ROLLED, 0, table.players[0].initialSeatIndex, listOf(2, 6)),
+                HistoryReplayFact.DiceRolled(HistoryFactTypeKeys.DICE_ROLLED, 1, table.players[2].initialSeatIndex, listOf(3, 4, 1)),
+            ),
+            actual = projected,
+        )
+    }
+
+    /** 精簡 Replay 去掉只用於即時提交驗證的反應視窗識別碼，保留榮和名單與各玩家的選牌。 */
+    @Test
+    fun `compact replay drops the reaction window id but keeps its contents`() {
+        val base = GameInitializer.initialize(
+            id = Uuid.random(),
+            playerIds = List(4) { Uuid.random() },
+            module = RiichiRuleModule("test:riichi", RiichiRuleConfig()),
+            randomness = testRoundRandomness(dice = DiceRollSource { DiceRollResult.of(List(it) { 1 }) }),
+        ).tableState
+        val discarder = base.players[0]
+        val responder = base.players[1]
+        val state = base.copy(
+            turnPhase = TurnPhase.AwaitingDiscardReaction(
+                reaction = PendingReaction(
+                    discarderId = discarder.id,
+                    tileId = discarder.hand.tiles.first().id,
+                    eligiblePlayerIds = setOf(responder.id),
+                    ronPlayerIds = setOf(responder.id),
+                    id = Uuid.random(),
+                    responses = mapOf(responder.id to GameAction.Pass),
+                    selectedTileIds = mapOf(responder.id to emptyList()),
+                ),
+            ),
+        )
+        val matchId = Uuid.random()
+        val events = listOf(
+            HistoryOutboxEvent(matchId, state.id, 1, 1, 1, 100, null, HistoryFact.MatchStarted(state, GameFlowConfig(), emptyMap())),
+            HistoryOutboxEvent(matchId, state.id, 1, 2, 2, 200, null, HistoryFact.MatchCompleted("test:complete", state.players.associate { it.id to it.score })),
+            HistoryOutboxEvent(matchId, state.id, 1, 3, 3, 300, null, HistoryFact.ReturnedToRoom),
+        )
+        val registries = bundledPersistenceRegistries()
+        val document = CompactReplayCodec.encodeCompact(
+            events = events,
+            mapper = HistoryRecordingPersistenceMapper(registries),
+            registries = registries,
+            presentationNotes = ReplayPresentationNotes.NONE,
+        )
+
+        val content = CompactReplayDictionary.decode(document.getValue(ReplayFormatKeys.PAYLOAD) as JsonObject)
+        val reaction = findObjectWithKey(content, "ronPlayerIds")
+        assertTrue("selectedTileIds" in reaction.keys)
+        assertTrue("responses" in reaction.keys)
+        assertTrue(ReplaySourceKeys.ID !in reaction.keys)
+    }
+
+    /** 相同的牌張呈現在文件中只保存一次，事實只帶字典代碼。完整解碼還原原本的呈現。 */
+    @Test
+    fun `identical tile presentations share one dictionary entry`() {
+        val state = GameInitializer.initialize(
+            id = Uuid.random(),
+            playerIds = List(4) { Uuid.random() },
+            module = RiichiRuleModule("test:riichi", RiichiRuleConfig()),
+            randomness = testRoundRandomness(dice = DiceRollSource { DiceRollResult.of(List(it) { 1 }) }),
+        ).tableState
+        val tiles = state.players[0].hand.tiles.take(2)
+        val shared = HistoryTilePresentation(null, ComponentViewSet.EMPTY, TilePose.UPRIGHT, HistoryTileAudience.Players(setOf(state.players[0].id)))
+        val matchId = Uuid.random()
+        val events = listOf(
+            HistoryOutboxEvent(matchId, state.id, 1, 1, 1, 100, null, HistoryFact.MatchStarted(state, GameFlowConfig(), emptyMap())),
+            HistoryOutboxEvent(matchId, state.id, 1, 2, 1, 100, null, HistoryFact.TilePresentationChanged(tiles.associate { it.id to shared })),
+            HistoryOutboxEvent(matchId, state.id, 1, 3, 3, 200, null, HistoryFact.MatchCompleted("test:complete", state.players.associate { it.id to it.score })),
+            HistoryOutboxEvent(matchId, state.id, 1, 4, 4, 300, null, HistoryFact.ReturnedToRoom),
+        )
+        val registries = bundledPersistenceRegistries()
+        val document = CompactReplayCodec.encodeCompact(
+            events = events,
+            mapper = HistoryRecordingPersistenceMapper(registries),
+            registries = registries,
+            presentationNotes = ReplayPresentationNotes.NONE,
+        )
+
+        val content = CompactReplayDictionary.decode(document.getValue(ReplayFormatKeys.PAYLOAD) as JsonObject) as JsonObject
+        val header = content.getValue(ReplayFormatKeys.HEADER) as JsonObject
+        val dictionary = header.getValue(ReplayFormatKeys.PRESENTATION_TYPES) as JsonArray
+        assertEquals(1, dictionary.size)
+        val presentations = CompactReplayCodec.decodeCompact(document).flatten().flatMap { it.facts }
+            .single { it[ReplaySourceKeys.TYPE]?.jsonPrimitive?.content == HistoryFactTypeKeys.TILE_PRESENTATION_CHANGED }
+            .getValue(ReplaySourceKeys.PRESENTATIONS) as JsonObject
+        assertEquals(2, presentations.size)
+        assertTrue(presentations.values.all { it == dictionary.single() })
+    }
+
+    /** 牌張呈現字典超過讀取上限時整份拒絕。在上限內則正常讀出呈現。 */
+    @Test
+    fun `presentation dictionary beyond the read limit is rejected`() = runTest {
+        val state = GameInitializer.initialize(
+            id = Uuid.random(),
+            playerIds = List(4) { Uuid.random() },
+            module = RiichiRuleModule("test:riichi", RiichiRuleConfig()),
+            randomness = testRoundRandomness(dice = DiceRollSource { DiceRollResult.of(List(it) { 1 }) }),
+        ).tableState
+        val (upright, faceDown) = state.players[0].hand.tiles.take(2)
+        val audience = HistoryTileAudience.Players(setOf(state.players[0].id))
+        val matchId = Uuid.random()
+        val presentations = mapOf(
+            upright.id to HistoryTilePresentation(null, ComponentViewSet.EMPTY, TilePose.UPRIGHT, audience),
+            faceDown.id to HistoryTilePresentation(null, ComponentViewSet.EMPTY, TilePose.FACE_DOWN, audience),
+        )
+        val events = listOf(
+            HistoryOutboxEvent(matchId, state.id, 1, 1, 1, 100, null, HistoryFact.MatchStarted(state, GameFlowConfig(), emptyMap())),
+            HistoryOutboxEvent(matchId, state.id, 1, 2, 1, 100, null, HistoryFact.TilePresentationChanged(presentations)),
+            HistoryOutboxEvent(matchId, state.id, 1, 3, 3, 200, null, HistoryFact.MatchCompleted("test:complete", state.players.associate { it.id to it.score })),
+            HistoryOutboxEvent(matchId, state.id, 1, 4, 4, 300, null, HistoryFact.ReturnedToRoom),
+        )
+        val registries = bundledPersistenceRegistries()
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, ReplayPresentationNotes.NONE)
+
+        val limited = CompactReplayRoundReader(registries.componentViews, ReplayReadLimits(maxPresentationTypes = 1))
+            .readState(document, matchId, 1, HistoryRoundPosition.Initial)
+        val unlimited = CompactReplayRoundReader(registries.componentViews).readState(document, matchId, 1, HistoryRoundPosition.Initial)
+
+        assertEquals(ReplayReadError.LIMIT_EXCEEDED, assertIs<ReplayReadResult.Failure>(limited).error)
+        assertIs<ReplayReadResult.Success<*>>(unlimited)
+    }
+
+    /**
+     * 找出第一個帶有指定欄位的 JSON 物件。
+     *
+     * @param element 要搜尋的 JSON。
+     * @param key 物件必須帶有的欄位名稱。
+     * @return 第一個符合的物件。
+     */
+    private fun findObjectWithKey(element: JsonElement, key: String): JsonObject {
+        val queue = ArrayDeque(listOf(element))
+        while (queue.isNotEmpty()) {
+            when (val current = queue.removeFirst()) {
+                is JsonObject -> if (key in current.keys) return current else queue.addAll(current.values)
+                is JsonArray -> queue.addAll(current)
+                else -> Unit
+            }
+        }
+        error("No object with $key")
+    }
+
+    /** 未知 envelope 欄位不得被靜默忽略。 */
+    @Test
+    fun `unknown top-level field is rejected`() {
+        assertFailsWith<IllegalArgumentException> {
+            CompactReplayCodec.decodeCompact(
+                document = JsonObject(
+                    content = mapOf(
+                        ReplayFormatKeys.FORMAT_VERSION to JsonPrimitive(1),
+                        ReplayFormatKeys.PAYLOAD to JsonObject(emptyMap()),
+                        "extra" to JsonPrimitive(true),
+                    ),
+                ),
+            )
+        }
+    }
+
+    /** 未知格式版本不得被當成目前格式解碼。 */
+    @Test
+    fun `unknown format version is rejected`() {
+        assertFailsWith<IllegalArgumentException> {
+            CompactReplayCodec.decodeCompact(
+                document = JsonObject(mapOf(ReplayFormatKeys.FORMAT_VERSION to JsonPrimitive(2), ReplayFormatKeys.PAYLOAD to JsonObject(emptyMap()))),
+            )
+        }
+    }
+
+    /** 缺少 payload 或交易內容時必須明確失敗。 */
+    @Test
+    fun `missing replay payload is rejected`() {
+        assertFailsWith<IllegalStateException> {
+            CompactReplayCodec.decodeCompact(
+                document = JsonObject(mapOf(ReplayFormatKeys.FORMAT_VERSION to JsonPrimitive(1), ReplayFormatKeys.PAYLOAD to JsonArray(emptyList()))),
+            )
+        }
+    }
+
+    /** 中止的對局不可被編碼為需要完整終局證據的 Replay。 */
+    @Test
+    fun `aborted match is rejected as a complete replay`() {
+        val event = HistoryOutboxEvent(
+            matchId = Uuid.random(),
+            venueId = Uuid.random(),
+            roundNumber = 1,
+            sequence = 1L,
+            occurredAtEpochMillis = 1L,
+            actorPlayerId = null,
+            fact = HistoryFact.MatchAborted("test:aborted"),
+        )
+        val registries = bundledPersistenceRegistries()
+
+        val error = assertFailsWith<IllegalArgumentException> {
+            CompactReplayCodec.encodeCompact(
+                events = listOf(event),
+                mapper = HistoryRecordingPersistenceMapper(registries),
+                registries = registries,
+                presentationNotes = ReplayPresentationNotes.NONE,
+            )
+        }
+        assertEquals("Aborted matches cannot be archived as complete replays", error.message)
+    }
+
+    /** 規則設定解碼只展開 header，不需要解碼任何局內交易。 */
+    @Test
+    fun `rule settings decode uses header only`() {
+        val registries = bundledPersistenceRegistries()
+        val matchId = Uuid.random()
+        val document = settingsDocument(matchId, registries.ruleConfigs.encode(RiichiRuleConfig()))
+
+        val settings = CompactReplayCodec.decodeRuleSettings(document, registries, expectedMatchId = matchId)
+
+        assertEquals(RiichiRuleConfig(), settings.ruleConfig)
+        assertEquals(GameFlowConfig(), settings.flowConfig)
+    }
+
+    /** 開局的非預設規則與流程設定均從 header 還原，不使用目前設定。 */
+    @Test
+    fun `rule settings decode preserves nondefault rule and flow configuration`() {
+        val registries = bundledPersistenceRegistries()
+        val matchId = Uuid.random()
+        val rule = RiichiRuleConfig(redDoraCount = 0, allowOpenTanyao = false, useLocalYaku = true, minimumWinConstraint = 2)
+        val flow = GameFlowConfig(
+            timeControl = ActionTimeControl.from(17.seconds, 41.seconds),
+            ruleDecision = RuleDecisionConfig(43.seconds),
+            spectatingPolicy = SpectatingPolicy.DISABLED,
+        )
+        val document = settingsDocument(matchId, registries.ruleConfigs.encode(rule), flowConfig = flow)
+        val decoded = CompactReplayCodec.decodeRuleSettings(document, registries, matchId)
+        assertEquals(rule, decoded.ruleConfig)
+        assertEquals(flow, decoded.flowConfig)
+    }
+
+    /** 未知規則 codec 不得以目前伺服器設定猜測替代。 */
+    @Test
+    fun `rule settings decode rejects unknown codec`() {
+        val registries = bundledPersistenceRegistries()
+        val matchId = Uuid.random()
+        val document = settingsDocument(
+            matchId = matchId,
+            rule = TypedPersistenceDto(
+                typeKey = "unknown:rule",
+                payload = JsonObject(emptyMap()),
+            ),
+        )
+
+        assertFailsWith<IllegalStateException> {
+            CompactReplayCodec.decodeRuleSettings(document, registries, expectedMatchId = matchId)
+        }
+    }
+
+    /** 要求的對局 ID 與 Replay header 不一致時必須拒絕。 */
+    @Test
+    fun `rule settings decode rejects mismatched match`() {
+        val registries = bundledPersistenceRegistries()
+        val document = settingsDocument(Uuid.random(), registries.ruleConfigs.encode(RiichiRuleConfig()))
+
+        assertFailsWith<IllegalArgumentException> {
+            CompactReplayCodec.decodeRuleSettings(document, registries, expectedMatchId = Uuid.random())
+        }
+    }
+
+    /** 開局規則設定缺少必要 header 時必須拒絕文件。 */
+    @Test
+    fun `rule settings decode rejects missing configuration header`() {
+        val registries = bundledPersistenceRegistries()
+        val matchId = Uuid.random()
+        val document = settingsDocument(
+            matchId = matchId,
+            rule = registries.ruleConfigs.encode(RiichiRuleConfig()),
+            includeRule = false,
+        )
+
+        assertFailsWith<IllegalStateException> {
+            CompactReplayCodec.decodeRuleSettings(document, registries, expectedMatchId = matchId)
+        }
+    }
+
+    /** 缺少流程設定不得悄悄改用預設流程設定。 */
+    @Test
+    fun `rule settings decode rejects missing flow configuration`() {
+        val registries = bundledPersistenceRegistries()
+        val matchId = Uuid.random()
+        val document = settingsDocument(matchId, registries.ruleConfigs.encode(RiichiRuleConfig()), includeFlow = false)
+        assertFailsWith<IllegalStateException> {
+            CompactReplayCodec.decodeRuleSettings(document, registries, matchId)
+        }
+    }
+
+    /** 開局設定內容版本不受支援時必須拒絕文件。 */
+    @Test
+    fun `rule settings decode rejects unknown content version`() {
+        val registries = bundledPersistenceRegistries()
+        val matchId = Uuid.random()
+        val document = settingsDocument(
+            matchId = matchId,
+            rule = registries.ruleConfigs.encode(RiichiRuleConfig()),
+            contentVersion = CompactReplayCodec.FORMAT_VERSION + 1,
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            CompactReplayCodec.decodeRuleSettings(document, registries, expectedMatchId = matchId)
+        }
+    }
+
+    /** 局部解碼仍拒絕同一字典索引的不同文字表示，避免重複欄位覆蓋。 */
+    @Test
+    fun `rule settings dictionary rejects duplicate decoded root keys`() {
+        val encoded = CompactReplayDictionary.encode(JsonObject(mapOf(ReplayFormatKeys.VERSION to JsonPrimitive(1))))
+        val corrupt = JsonObject(encoded + (ReplayFormatKeys.DATA to JsonObject(mapOf("0" to JsonPrimitive(1), "00" to JsonPrimitive(2)))))
+        assertFailsWith<IllegalArgumentException> {
+            CompactReplayDictionary.decodeFields(corrupt, setOf(ReplayFormatKeys.VERSION))
+        }
+    }
+
+    /**
+     * 建立最小 Replay，局內內容刻意不提供可解碼的交易資料。
+     *
+     * @param matchId header 對局識別碼。
+     * @param rule 規則持久化 DTO。
+     * @param contentVersion 內容版本。
+     * @param includeRule 是否加入規則設定。
+     * @param flowConfig 開局流程設定。
+     * @param includeFlow 是否加入流程設定。
+     * @return 供設定查閱測試使用的字典封套。
+     */
+    private fun settingsDocument(
+        matchId: Uuid,
+        rule: TypedPersistenceDto,
+        contentVersion: Int = CompactReplayCodec.FORMAT_VERSION,
+        includeRule: Boolean = true,
+        flowConfig: GameFlowConfig = GameFlowConfig(),
+        includeFlow: Boolean = true,
+    ): JsonObject {
+        val flow = Json.encodeToJsonElement(GameFlowConfigPersistenceDto.serializer(), flowConfig.toPersistenceDto())
+        val header = buildMap {
+            put(ReplayFormatKeys.MATCH, JsonPrimitive(matchId.toString()))
+            if (includeRule) put(ReplayFormatKeys.RULE, Json.encodeToJsonElement(rule))
+            if (includeFlow) put(ReplayFormatKeys.FLOW, flow)
+        }
+        val content = JsonObject(
+            content = mapOf(
+                ReplayFormatKeys.VERSION to JsonPrimitive(contentVersion),
+                ReplayFormatKeys.HEADER to JsonObject(header),
+                ReplayFormatKeys.ROUNDS to JsonPrimitive("Transactions are not decoded by this query"),
+            ),
+        )
+        return JsonObject(
+            content = mapOf(
+                ReplayFormatKeys.FORMAT_VERSION to JsonPrimitive(CompactReplayCodec.FORMAT_VERSION),
+                ReplayFormatKeys.PAYLOAD to CompactReplayDictionary.encode(content),
+            ),
+        )
+    }
+}

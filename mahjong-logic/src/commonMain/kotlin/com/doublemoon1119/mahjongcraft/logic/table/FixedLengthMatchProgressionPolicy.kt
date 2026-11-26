@@ -1,0 +1,45 @@
+package com.doublemoon1119.mahjongcraft.logic.table
+
+/**
+ * 不使用延長賽的固定局數 progression policy。
+ *
+ * @property totalRounds 原定局數。
+ */
+class FixedLengthMatchProgressionPolicy(
+    private val totalRounds: Int,
+) : MatchProgressionPolicy {
+    init {
+        require(totalRounds > 0) { "Fixed match length must be positive" }
+    }
+
+    override fun decide(context: MatchProgressionContext): MatchProgressionDecision {
+        val state = context.tableState
+        val directive = context.completion.transitionDirective
+        if (state.roundPosition.roundNumber >= totalRounds) {
+            return MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.SCHEDULE_COMPLETED)
+        }
+        return when (directive) {
+            RoundTransitionDirective.RepeatDealer -> MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound)
+            RoundTransitionDirective.PassToNextSeat, is RoundTransitionDirective.PassTo -> MatchProgressionDecision.ContinueMatch(
+                transition = MatchRoundTransition.AdvanceTo(nextPosition(state.roundPosition, state.playerCount)),
+            )
+        }
+    }
+
+    /**
+     * 依既有固定局數慣例產生下一個局位。
+     *
+     * @param current 目前局位。
+     * @param playerCount 對局玩家人數。
+     * @return 下一個序號與場風內局數已更新的局位。
+     */
+    private fun nextPosition(current: MatchRoundPosition, playerCount: Int): MatchRoundPosition {
+        val nextIndex = current.sequenceIndex + 1
+        val winds = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH)
+        return MatchRoundPosition(
+            sequenceIndex = nextIndex,
+            prevalentWind = winds[(nextIndex / playerCount).coerceAtMost(winds.lastIndex)],
+            localRoundNumber = nextIndex % playerCount + 1,
+        )
+    }
+}

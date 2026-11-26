@@ -1,0 +1,20 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.doublemoon1119.mahjongcraft.platform.forge.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "mahjongcraft.refmap.json",
+  "mixins": [
+    "LevelChunkMixin",
+    "ServerLevelEntityCallbacksMixin",
+    "ServerPlayerGameModeMixin",
+    "MahjongTileItemMixin"
+  ],
+  "client": [
+    "ClientPacketListenerMixin",
+    "ModelBakeryMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

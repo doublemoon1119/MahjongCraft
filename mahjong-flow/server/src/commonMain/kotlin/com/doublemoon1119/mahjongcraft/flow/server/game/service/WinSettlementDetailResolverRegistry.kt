@@ -1,0 +1,87 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.service
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.WinSettlementDetailResolverRegistrar
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
+import com.doublemoon1119.mahjongcraft.logic.base.toPublicFaceView
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
+import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import kotlin.uuid.Uuid
+
+/**
+ * 以完整規則模組 ID 登記、bootstrap 後凍結的胡牌詳情解析器。擴充只透過 [WinSettlementDetailResolverRegistrar] 登記。
+ *
+ * @property componentRegistry 將詳情中的牌值投影為公開牌面。
+ */
+class WinSettlementDetailResolverRegistry(private val componentRegistry: ComponentRegistry) : WinSettlementDetailResolverRegistrar {
+    /** 以完整規則模組識別碼索引的詳情解析器。 */
+    private val resolvers = linkedMapOf<String, WinSettlementDetailResolver>()
+
+    /** 目前已登記規則模組 ID 的快照。 */
+    override val registrationKeys: Set<String> get() = resolvers.keys.toSet()
+
+    /** 是否已禁止後續註冊。 */
+    override var isFrozen: Boolean = false
+        private set
+
+    /**
+     * 登記指定規則模組的胡牌詳情解析器。
+     *
+     * @param definition 規則模組識別碼與胡牌詳情解析器的完整註冊定義。
+     * @throws IllegalStateException registry 已凍結時拋出。
+     * @throws IllegalArgumentException 識別碼格式無效或識別碼已被登記時拋出。
+     */
+    override fun register(definition: WinSettlementDetailResolverDefinition) {
+        check(!isFrozen) { "Win settlement detail resolver registry is frozen" }
+        NamespacedId.requireValid(definition.ruleModuleId) { "Rule module ID must be namespaced: ${definition.ruleModuleId}" }
+        require(resolvers.putIfAbsent(definition.ruleModuleId, definition.resolver) == null) { "Duplicate win settlement detail resolver: ${definition.ruleModuleId}" }
+    }
+
+    /**
+     * 解析指定規則模組的一般胡牌詳情。
+     *
+     * @param ruleModuleId 欲查詢的規則模組識別碼。
+     * @param state 胡牌成立時的權威桌況。
+     * @param winnerId 這筆詳情所屬的贏家。
+     * @param responsiblePlayerId 單獨付款的玩家。由其他玩家一起付款時為 null。
+     * @param handValue 已完成計算的胡牌結果。
+     * @return 規則解析器產生的詳情欄位。沒有對應解析器時為空清單。
+     */
+    fun resolve(
+        ruleModuleId: String,
+        state: TableState,
+        winnerId: Uuid,
+        responsiblePlayerId: Uuid?,
+        handValue: HandValueResult,
+    ): List<WinSettlementDetailField> = resolvers[ruleModuleId]?.resolve(state, winnerId, responsiblePlayerId, handValue, publicFace(ruleModuleId, state))
+        ?: emptyList()
+
+    /**
+     * 解析指定規則模組的特殊胡牌等價結果詳情。
+     *
+     * @param ruleModuleId 欲查詢的規則模組識別碼。
+     * @param state 特殊結果成立時的權威桌況。
+     * @param outcome 欲解析的特殊回合結果。
+     * @return 規則解析器產生的詳情欄位。沒有對應解析器或不支援此結果時為空清單。
+     */
+    fun resolveSpecialOutcome(ruleModuleId: String, state: TableState, outcome: ResolvedRoundOutcome): List<WinSettlementDetailField> = resolvers[ruleModuleId]?.resolveSpecialOutcome(state, outcome, publicFace(ruleModuleId, state))
+        ?: emptyList()
+
+    /**
+     * 建立以公共讀取者投影牌值的轉換，不產生局內身分。
+     *
+     * @param ruleModuleId 產生詳情的規則。
+     * @param state 結算時的權威桌況。
+     * @return 牌值到公開牌面的轉換。
+     */
+    private fun publicFace(ruleModuleId: String, state: TableState): (TileValue) -> TileFaceView = { value -> value.toPublicFaceView(ruleModuleId, state, componentRegistry) }
+
+    /** 凍結 registry，禁止後續註冊新的解析器。 */
+    fun freeze() {
+        isFrozen = true
+    }
+}

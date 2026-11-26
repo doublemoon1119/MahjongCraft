@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "mahjongcraft_example:block/one_block_table"
+    },
+    "facing=east": {
+      "model": "mahjongcraft_example:block/one_block_table",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "mahjongcraft_example:block/one_block_table",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "mahjongcraft_example:block/one_block_table",
+      "y": 270
+    }
+  }
+}

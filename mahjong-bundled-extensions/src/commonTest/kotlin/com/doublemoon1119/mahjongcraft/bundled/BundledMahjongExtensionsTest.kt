@@ -1,0 +1,137 @@
+package com.doublemoon1119.mahjongcraft.bundled
+
+import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
+import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
+import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
+import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSource
+import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionBootstrap
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.emptyPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
+import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistryImpl
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
+
+/** 驗證內建規則 extension 經由正式啟動流程登記各自的平台無關整合。 */
+class BundledMahjongExtensionsTest {
+    /** 日麻與台麻依序登記，各自的規則模組與牌種歸在自己名下，空的 registry 不會預先帶有任何規則。 */
+    @Test
+    fun `bundled extensions register each rule under its own source`() {
+        val registries = registries()
+
+        val sources = MahjongExtensionBootstrap.registerAndFreeze(BundledMahjongExtensions.all, registries, builtIn = builtIn(registries), failurePolicy = ExtensionFailurePolicy.Default)
+
+        assertEquals(listOf(null, BundledRiichiExtension.id, BundledTaiwanExtension.id), sources.map { it.extensionId })
+        assertTrue(sources.first().ids("mahjongcraft:rule_module").isEmpty(), "Core registrations must not carry any bundled rule")
+        assertEquals(listOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER), sources[1].ids("mahjongcraft:rule_module"))
+        assertEquals(listOf(BuiltInRuleModuleIds.TAIWAN), sources[2].ids("mahjongcraft:rule_module"))
+        assertTrue(sources[1].ids("mahjongcraft:tile_type").isEmpty(), "Riichi red fives are ordinary fives with a tile feature")
+        assertEquals(TaiwanTileTypes.ALL.map { it.toString() }.sorted(), sources[2].ids("mahjongcraft:tile_type"))
+        assertIs<RiichiRuleModule>(registries.moduleRegistry.getModule(RiichiRuleConfig()))
+        assertIs<ThreePlayerRiichiRuleModule>(registries.moduleRegistry.getModule(ThreePlayerRiichiRuleConfig()))
+        assertIs<TaiwanRuleModule>(registries.moduleRegistry.getModule(TaiwanRuleConfig()))
+    }
+
+    /** 日麻的規則狀態、擴充動作、對手模型與結算整合都登記在日麻名下，台麻只登記自己的規則設定與牌河。 */
+    @Test
+    fun `riichi integrations stay with riichi and taiwan registers only its own formats`() {
+        val registries = registries()
+        val sources = MahjongExtensionBootstrap.registerAndFreeze(BundledMahjongExtensions.all, registries, builtIn = builtIn(registries), failurePolicy = ExtensionFailurePolicy.Default)
+        val riichi = sources[1]
+        val taiwan = sources[2]
+
+        listOf(
+            "mahjongcraft:opponent_model",
+            "mahjongcraft:game_command",
+            "mahjongcraft:post_action_exhaustive_draw_resolver",
+            "mahjongcraft:win_settlement_detail_resolver",
+            "mahjongcraft:game_event_public_marker_resolver",
+            "mahjongcraft:win_celebration_cue_resolver",
+        ).forEach { categoryId -> assertTrue(riichi.ids(categoryId).isNotEmpty(), "Riichi should register $categoryId") }
+        assertEquals(
+            expected = listOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER),
+            actual = riichi.ids("mahjongcraft:game_event_public_marker_resolver"),
+        )
+        assertTrue(riichi.ids("mahjongcraft:persistence_dto").any { "riichi/player/declaration" in it })
+        assertTrue(riichi.ids("mahjongcraft:persistence_dto").none { "riichi/player_state" in it })
+        assertTrue(
+            actual = riichi.ids("mahjongcraft:component").containsAll(
+                elements = listOf(
+                    "value:mahjongcraft:riichi/player/declaration",
+                    "value:mahjongcraft:riichi/player/permanent_furiten",
+                    "value:mahjongcraft:riichi/player/pao_liability",
+                ),
+            ),
+        )
+        assertTrue(taiwan.ids("mahjongcraft:persistence_dto").all { "taiwan" in it })
+        assertTrue(taiwan.ids("mahjongcraft:network_dto").all { "taiwan" in it })
+    }
+
+    /**
+     * 取得這個來源在指定分類中登記的 ID。沒有登記時為空清單。
+     *
+     * @param categoryId 要查詢的登記分類 ID。
+     * @return 該分類登記的 ID 清單。
+     */
+    private fun ExtensionRegistrationSource.ids(categoryId: String): List<String> = categories.firstOrNull { it.id == categoryId }?.registrationIds.orEmpty()
+
+    /** 所有子 registry 皆為空的測試集合。 */
+    private fun registries(): CoreExtensionRegistries {
+        val moduleRegistry = MahjongModuleRegistryImpl()
+        val componentRegistry = ComponentRegistryImpl()
+        return CoreExtensionRegistries(
+            moduleRegistry = moduleRegistry,
+            tileTypeRegistry = TileTypeRegistryImpl(),
+            componentRegistry = componentRegistry,
+            networkRegistries = DefaultNetworkDtoRegistries(),
+            persistenceRegistries = emptyPersistenceRegistries(),
+            winCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl(),
+            gameActionAiRegistry = ExtensionGameActionAiRegistry(moduleRegistry),
+            aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY),
+            opponentModelRegistry = OpponentModelRegistry(),
+            gameActionCommandFactoryRegistry = ExtensionGameActionCommandFactoryRegistry(),
+            gameCommandRegistry = ExtensionGameCommandExecutorRegistry(),
+            postReactionRoundOutcomeResolverRegistry = PostReactionRoundOutcomeResolverRegistry(),
+            postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry(),
+            ruleDecisionResolverRegistry = RuleDecisionResolverRegistry(),
+            winRoundContinuationResolverRegistry = WinRoundContinuationResolverRegistry(),
+            winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(componentRegistry),
+            gameEventPublicMarkerResolverRegistry = GameEventPublicMarkerResolverRegistry(),
+        )
+    }
+
+    /**
+     * 建立與正式啟動相同的規則中立整合。
+     *
+     * @param registries 本次測試共用的登記集合。
+     * @return 使用相同登記集合的內建整合。
+     */
+    private fun builtIn(registries: CoreExtensionRegistries): BuiltInMahjongExtension = BuiltInMahjongExtension(
+        moduleRegistry = registries.moduleRegistry,
+        extensionActionRegistry = registries.gameActionAiRegistry,
+        opponentModelRegistry = registries.opponentModelRegistry,
+    )
+}

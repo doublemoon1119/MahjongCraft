@@ -1,0 +1,28 @@
+{
+  "parent": "mahjongcraft:riichi/riichi_win",
+  "display": {
+    "icon": {
+      "item": "minecraft:arrow"
+    },
+    "title": {
+      "translate": "advancements.mahjongcraft.riichi.ippatsu.title"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.riichi.ippatsu.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:riichi/ippatsu"
+        ]
+      }
+    }
+  }
+}

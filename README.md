@@ -1,18 +1,70 @@
-# MahjongCraft
-A Fabric Minecraft mod that allows you to play Japanese(Riichi) Mahjong in game, supports multiplayer.
+<p align="center"><img src="docs/assets/branding/logo.png" alt="MahjongCraft logo" width="200"></p>
+<h1 align="center">MahjongCraft  <br>
+	<a href="https://www.curseforge.com/minecraft/mc-mods/mahjongcraft"><img src="https://img.shields.io/curseforge/dt/544804?logo=curseforge&label=&suffix=%20&style=flat&color=242629&labelColor=F16436&logoColor=1C1C1C" alt="CurseForge"></a>
+	<a href="https://modrinth.com/mod/mahjongcraft"><img src="https://img.shields.io/modrinth/dt/mahjongcraft?logo=modrinth&label=&suffix=%20&style=flat&color=242629&labelColor=5CA424&logoColor=1C1C1C" alt="Modrinth"></a>
+	<br>
+</h1>
 
-## Dependencies
-<div>
-    <a href="https://www.curseforge.com/minecraft/mc-mods/fabric-api"><img alt="" src="https://i.imgur.com/Ol1Tcf8.png" height="50"/></a>
-    <a href="https://www.curseforge.com/minecraft/mc-mods/fabric-language-kotlin"><img alt="" src="https://i.imgur.com/c1DH9VL.png" height="50"/></a>
-</div>
+MahjongCraft is a Kotlin Multiplatform mahjong library and an in-development Minecraft mod built on
+it. Each mahjong rule is a rule module registered through the extension API. The
+[bundled extensions](mahjong-bundled-extensions/README.md) list the rules that ship with the project,
+and the [Minecraft guide](platform/minecraft/README.md) lists the supported Minecraft versions and
+loaders.
 
-- [Fabric API](https://www.curseforge.com/minecraft/mc-mods/fabric-api)
-- [Fabric Language Kotlin](https://www.curseforge.com/minecraft/mc-mods/fabric-language-kotlin)
-- [Cloth Config API (Fabric)](https://www.curseforge.com/minecraft/mc-mods/cloth-config)
-- [Mod Menu](https://www.curseforge.com/minecraft/mc-mods/modmenu) (Optional)
+The project is under active development. This documentation describes the code that exists today and
+does not promise future rules, platforms, interfaces, or release schedules.
 
-## Support
-Please report any issues to [the issue tracker](https://github.com/doublemoon1119/MahjongCraft/issues) on Github.
+## 🗺️ Project map
+
+| Area | Purpose |
+| --- | --- |
+| [Mahjong logic](mahjong-logic/README.md) | Platform-independent tiles, table state, scoring, and rule modules. |
+| [Mahjong flow](mahjong-flow/README.md) | Application state, client/server orchestration, networking, and persistence boundaries. |
+| [Mahjong AI](mahjong-ai/README.md) | Pluggable AI strategies for gameplay and rule decision. |
+| [Extension API](mahjong-extension-api/README.md) | Public registration surface for third-party MahjongCraft extensions. |
+| [Bundled extensions](mahjong-bundled-extensions/README.md) | Built-in rule integrations registered through the extension API. |
+| [Platforms](platform/README.md) | Runtime adapters, currently including Minecraft. |
+| [Examples](example/README.md) | Opt-in extension examples and their platform adapters. |
+| [Testing](testing/README.md) | Shared test fixtures for logic and flow modules. |
+| [Build logic](build-logic/README.md) | Gradle conventions and platform-target selection. |
+
+## 🛠️ Building
+
+Run commands from the repository root. Select `core` explicitly to build only the platform-independent
+modules, regardless of local target settings:
+
+```shell
+./gradlew build "-PmahjongcraftTarget=core"
+```
+
+Run a Minecraft build by selecting its target, for example Fabric for Minecraft 1.20.1:
+
+```shell
+./gradlew build "-PmahjongcraftTarget=minecraft-v1.20.1-fabric"
+```
+
+Separate several targets with commas to build them together, for example
+`"-PmahjongcraftTarget=minecraft-v1.20.1-fabric,minecraft-v1.20.1-forge"`.
+
+On Windows PowerShell, replace `./gradlew` with `.\gradlew.bat` and keep the target argument quoted.
+Use `./gradlew listPlatformTargets` to inspect the catalog-backed platform targets; directory names
+alone do not establish supported releases.
+
+`build` compiles, tests, packages, and runs the configured checks for the selected modules;
+detekt is a separate command. See [CONTRIBUTING.md](CONTRIBUTING.md) for toolchain policy,
+target-selection precedence, conventions, and the complete verification workflow.
+The Kotlin Multiplatform modules currently declare only the JVM target.
+
+## 📄 License
+
+MahjongCraft is available under the [MIT License](LICENSE), except for files explicitly identified
+in an applicable notice file:
+
+- `NOTICE.txt`
+- `notice.txt` inside Minecraft resource folders, where file names must be lowercase
+
+## 💬 Support
+Please report any issues to
+[the issue tracker](https://github.com/doublemoon1119/MahjongCraft/issues) on Github.
 
 我是臺灣人，除了英文以外你也可用中文發表 [問題](https://github.com/doublemoon1119/MahjongCraft/issues) 或留言

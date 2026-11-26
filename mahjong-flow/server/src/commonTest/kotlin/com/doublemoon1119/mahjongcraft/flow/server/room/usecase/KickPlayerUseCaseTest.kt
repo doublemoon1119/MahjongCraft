@@ -1,0 +1,146 @@
+package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.LeaveReason
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.room.repository.FakeRoomRepository
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
+import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
+
+/**
+ * [KickPlayerUseCase] 的單元測試類別。
+ */
+class KickPlayerUseCaseTest {
+
+    /** 測試房間的識別碼。 */
+    private val roomId: Uuid = Uuid.random()
+
+    /** 測試房間房主的玩家識別碼。 */
+    private val hostId: Uuid = Uuid.random()
+
+    /** 測試房間使用的規則設定。 */
+    private val config: MahjongRuleConfig = FakeMahjongRuleConfig()
+
+    /**
+     * 測試房主成功將玩家剔除，並驗證通知服務是否收到 Kicked 原因。
+     */
+    @Test
+    fun `test host kicks player successfully`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val service = FakeRoomEventPublisher()
+        val useCase = KickPlayerUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
+
+        val targetId = Uuid.random()
+        val room = Room(
+            id = roomId,
+            hostId = hostId,
+            gameConfig = GameConfig(config),
+            playerIds = listOf(hostId, targetId),
+            readyPlayerIds = listOf(targetId),
+        )
+        roomRepo.setRoom(room)
+
+        // Act
+        val result = useCase(roomId, hostId, targetId)
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        // Assert: 檢查持久化資料
+        val updatedRoom = roomRepo.getRoom(roomId)
+        assertNotNull(updatedRoom)
+        assertFalse(updatedRoom.playerIds.contains(targetId), "Target should be removed from playerIds.")
+        assertFalse(updatedRoom.readyPlayerIds.contains(targetId), "Target should be removed from readyPlayerIds.")
+
+        // Assert: 檢查通知服務
+        assertEquals(
+            expected = LeaveReason.Kicked,
+            actual = service.getLeaveReason(roomId, targetId, targetId),
+            message = "The kicked player should receive Kicked reason via notification service.",
+        )
+    }
+
+    /**
+     * 驗證剔除 AI 玩家時，[Room.aiPlayerStrategyKeys]
+     * 裡對應的項目也會一併清除，不會留下指向不存在成員的殘留資料。
+     */
+    @Test
+    fun `test kicking ai player also removes its strategy key`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val service = FakeRoomEventPublisher()
+        val useCase = KickPlayerUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
+
+        val aiId = Uuid.random()
+        val room = Room(
+            id = roomId,
+            hostId = hostId,
+            gameConfig = GameConfig(config),
+            playerIds = listOf(hostId, aiId),
+            readyPlayerIds = listOf(aiId),
+            aiPlayerStrategyKeys = mapOf(aiId to "mahjongcraft:random"),
+        )
+        roomRepo.setRoom(room)
+
+        val result = useCase(roomId, hostId, aiId)
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val updatedRoom = roomRepo.getRoom(roomId)
+        assertNotNull(updatedRoom)
+        assertFalse(
+            actual = updatedRoom.aiPlayerStrategyKeys.containsKey(aiId),
+            message = "Kicked AI's strategy key should be removed, not left dangling.",
+        )
+    }
+
+    /**
+     * 驗證房主嘗試剔除自己時回傳錯誤結果。
+     */
+    @Test
+    fun `test host cannot kick themselves`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val service = FakeRoomEventPublisher()
+        val useCase = KickPlayerUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
+
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId))
+        roomRepo.setRoom(room)
+
+        val result = useCase(roomId, hostId, hostId)
+        assertTrue(result is Outcome.Error, "Expected Error but got $result")
+    }
+
+    /**
+     * 驗證非房主嘗試剔除其他玩家時回傳錯誤結果。
+     */
+    @Test
+    fun `test non host cannot kick player`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val service = FakeRoomEventPublisher()
+        val useCase = KickPlayerUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
+
+        val guestId = Uuid.random()
+        val targetId = Uuid.random()
+        val room = Room(
+            id = roomId,
+            hostId = hostId,
+            gameConfig = GameConfig(config),
+            playerIds = listOf(hostId, guestId, targetId),
+        )
+        roomRepo.setRoom(room)
+
+        val result = useCase(roomId, guestId, targetId)
+        assertTrue(result is Outcome.Error, "Expected Error but got $result")
+    }
+}

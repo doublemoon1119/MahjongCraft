@@ -1,0 +1,616 @@
+package com.doublemoon1119.mahjongcraft.ai.expectation
+
+import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
+import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
+import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.context
+import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.discardReactionId
+import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.hand
+import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.m
+import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.p
+import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.player
+import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.s
+import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.strategy
+import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.table
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.toRiichiSnapshotForTests
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
+
+/** 以日麻固定手牌驗證三個資訊等級的期望值決策。 */
+class ExpectedValueAiStrategyTest {
+    /** 三個內建等級。 */
+    private val allLevels = listOf(InformationLevel.BEGINNER, InformationLevel.INTERMEDIATE, InformationLevel.ADVANCED)
+
+    /** 初級與中級以基本深度讀牌。高級以進階深度讀牌，並且不計後續風險。 */
+    @Test
+    fun `only the advanced level reads at the advanced depth`() {
+        assertEquals(ReadingDepth.BASIC, InformationLevel.BEGINNER.readingDepth)
+        assertEquals(ReadingDepth.BASIC, InformationLevel.INTERMEDIATE.readingDepth)
+        assertEquals(ReadingDepth.ADVANCED, InformationLevel.ADVANCED.readingDepth)
+        assertEquals(false, InformationLevel.ADVANCED.considersFutureRisk)
+    }
+
+    /** 初級不區分打點，中級只粗略區分，高級使用完整打點。 */
+    @Test
+    fun `the built-in levels see win values in increasing detail`() {
+        assertEquals(0.0, InformationLevel.BEGINNER.winValueDetail)
+        assertTrue(InformationLevel.INTERMEDIATE.winValueDetail in 0.0..1.0)
+        assertTrue(InformationLevel.INTERMEDIATE.winValueDetail > InformationLevel.BEGINNER.winValueDetail)
+        assertTrue(InformationLevel.INTERMEDIATE.winValueDetail < InformationLevel.ADVANCED.winValueDetail)
+        assertEquals(1.0, InformationLevel.ADVANCED.winValueDetail)
+    }
+
+    /** 策略以自己的讀牌深度向 registry 建立對手模型。 */
+    @Test
+    fun `the strategy builds opponent models at its own reading depth`() = runTest {
+        val requested = mutableListOf<ReadingDepth>()
+        val registry = OpponentModelRegistry().apply {
+            register(OpponentModelDefinition(ExpectationFixtures.module.id) { _, depth -> NeutralOpponentModel(depth).also { requested += depth } })
+        }
+        val self = player(Wind.SOUTH, hand = hand(listOf(m(1), m(2), m(3), p(4), p(5), p(6), s(7), s(8), m(6), m(7), s(9), s(9), Tile.Honor.East), drawn = Tile.Honor.North))
+        val table = fourPlayers(self)
+
+        allLevels.forEach { level ->
+            ExpectedValueAiStrategy(
+                level = level,
+                moduleRegistry = ExpectationFixtures.moduleRegistry,
+                extensionActionRegistry = ExpectationFixtures.extensionRegistry,
+                opponentModels = registry,
+            ).decideGameCommand(context(table, self))
+        }
+
+        assertEquals(allLevels.map { it.readingDepth }, requested)
+    }
+
+    /** 一向聽時打出孤張字牌，不拆搭子。 */
+    @Test
+    fun `every level discards an isolated honor rather than breaking a shape`() = runTest {
+        val self = player(
+            wind = Wind.SOUTH,
+            hand = hand(
+                tiles = listOf(m(1), m(2), m(3), p(4), p(5), p(6), s(7), s(8), m(6), m(7), s(9), s(9), Tile.Honor.East),
+                drawn = Tile.Honor.North,
+            ),
+        )
+        val table = fourPlayers(self)
+
+        allLevels.forEach { level ->
+            val tile = discardedTile(table, self, strategy(level).decideGameCommand(context(table, self)))
+            assertTrue(tile == Tile.Honor.East || tile == Tile.Honor.North, "$level discarded $tile")
+        }
+    }
+
+    /** 同樣聽牌時選擇聽牌張數多的兩面，而不是坎張。 */
+    @Test
+    fun `the intermediate level keeps the wider wait`() = runTest {
+        val self = player(
+            wind = Wind.SOUTH,
+            hand = hand(
+                tiles = listOf(m(1), m(2), m(3), m(4), m(5), m(6), m(7), m(8), m(9), p(1), p(1), s(3), s(4)),
+                drawn = s(6),
+            ),
+        )
+        val table = fourPlayers(self)
+
+        val command = strategy(InformationLevel.INTERMEDIATE).decideGameCommand(context(table, self))
+
+        assertEquals(GameCommand.Discard(checkNotNull(self.hand.lastDrawn).id), command)
+    }
+
+    /** 莊家立直、自己兩向聽時，中級與高級改打現物。初級不防守，照樣打出孤張。 */
+    @Test
+    fun `against a riichi only the intermediate and advanced levels fold with a distant hand`() = runTest {
+        val dealer = player(Wind.EAST, discards = listOf(Tile.Honor.North, Tile.Honor.White, p(7)), riichi = true)
+        val self = player(
+            wind = Wind.SOUTH,
+            hand = hand(
+                tiles = listOf(m(1), m(2), m(3), s(7), s(8), s(9), p(4), p(6), p(7), p(7), m(5), s(5), m(8)),
+                drawn = s(2),
+            ),
+        )
+        val table = table(listOf(dealer, self, player(Wind.WEST), player(Wind.NORTH)), liveTiles = 24)
+
+        listOf(InformationLevel.INTERMEDIATE, InformationLevel.ADVANCED).forEach { level ->
+            assertEquals(p(7), discardedTile(table, self, strategy(level).decideGameCommand(context(table, self))), "$level")
+        }
+        assertNotEquals(p(7), discardedTile(table, self, strategy(InformationLevel.BEGINNER).decideGameCommand(context(table, self))))
+    }
+
+    /** 碰三元牌後聽牌且有役，選擇碰。 */
+    @Test
+    fun `a pon that gives a yaku and tenpai is taken`() = runTest {
+        val (table, self, pon) = ponSituation(ponTile = Tile.Honor.Red, others = listOf(Tile.Honor.Red, Tile.Honor.Red, m(9)))
+
+        val command = strategy(InformationLevel.INTERMEDIATE).decideGameCommand(
+            context = context(table, self, phase = AiDecisionPhase.RespondingToDiscard, legalActions = listOf(pon, GameAction.Pass)),
+        )
+
+        assertEquals(GameCommand.RespondToDiscard(pon, discardReactionId, pon.withTiles), command)
+    }
+
+    /** 吃有兩個用牌選項時（例如透明與不透明的五萬），策略從合法選項中挑一個吃，不因選項變多而放棄。 */
+    @Test
+    fun `a chi with several tile choices takes one of them`() = runTest {
+        val self = player(Wind.SOUTH, hand = hand(listOf(m(5), m(5), m(6), p(2), p(3), p(4), s(6), s(7), s(8), s(3), s(4), p(6), p(6))))
+        val east = player(Wind.EAST, discards = listOf(m(4)))
+        val table = table(listOf(east, self, player(Wind.WEST), player(Wind.NORTH)))
+        val seatedSelf = table.players.first { it.id == self.id }
+        val claimed = table.players.first { it.id == east.id }.discardPile.entries.last().tile
+        val fives = seatedSelf.hand.tiles.filter { it.tile == m(5) }
+        val six = seatedSelf.hand.tiles.first { it.tile == m(6) }
+        val choices = fives.map { five -> GameAction.Chi(tileId = claimed.id, withTiles = listOf(five.id, six.id)) }
+
+        val command = strategy(InformationLevel.INTERMEDIATE).decideGameCommand(
+            context = context(table, seatedSelf, phase = AiDecisionPhase.RespondingToDiscard, legalActions = choices + GameAction.Pass),
+        )
+
+        assertTrue(
+            actual = command in choices.map { GameCommand.RespondToDiscard(it, discardReactionId, it.withTiles) },
+            message = "$command",
+        )
+    }
+
+    /** 碰牌後沒有任何役可以和牌時，所有等級都不碰。 */
+    @Test
+    fun `a pon that leaves no yaku is declined`() = runTest {
+        val (table, self, pon) = ponSituation(ponTile = s(1), others = listOf(Tile.Honor.West, Tile.Honor.North, m(9)))
+
+        allLevels.forEach { level ->
+            val command = strategy(level).decideGameCommand(
+                context = context(table, self, phase = AiDecisionPhase.RespondingToDiscard, legalActions = listOf(pon, GameAction.Pass)),
+            )
+            assertEquals(GameCommand.RespondToDiscard(GameAction.Pass, discardReactionId), command, "$level")
+        }
+    }
+
+    /** 能自摸或榮和時一律和牌。 */
+    @Test
+    fun `a legal win is always taken`() = runTest {
+        val self = player(
+            wind = Wind.SOUTH,
+            hand = hand(listOf(m(1), m(2), m(3), m(4), m(5), m(6), m(7), m(8), m(9), p(1), p(1), s(3), s(4)), drawn = s(5)),
+        )
+        val table = fourPlayers(self)
+        val ron = GameAction.Ron(checkNotNull(self.hand.lastDrawn).id)
+
+        allLevels.forEach { level ->
+            assertEquals(
+                expected = GameCommand.Tsumo,
+                actual = strategy(level).decideGameCommand(context(table, self, legalActions = listOf(GameAction.Tsumo))),
+            )
+            assertEquals(
+                expected = GameCommand.RespondToDiscard(ron, discardReactionId),
+                actual = strategy(level).decideGameCommand(
+                    context = context(table, self, phase = AiDecisionPhase.RespondingToDiscard, legalActions = listOf(GameAction.Pass, ron)),
+                ),
+            )
+            assertEquals(
+                expected = GameCommand.RespondToRobbing(ron),
+                actual = strategy(level).decideGameCommand(
+                    context = context(table, self, phase = AiDecisionPhase.RespondingToRobbing, legalActions = listOf(GameAction.Pass, ron)),
+                ),
+            )
+        }
+    }
+
+    /** 沒有役的門前聽牌立直後才能榮和：打出同一張牌時，中級與高級評估立直優於默聽。 */
+    @Test
+    fun `riichi scores above dama for a closed tenpai without yaku`() {
+        val self = player(
+            wind = Wind.SOUTH,
+            hand = hand(
+                tiles = listOf(m(2), m(3), m(4), p(4), p(5), p(6), p(7), p(8), p(9), s(2), s(3), s(4), s(5)),
+                drawn = Tile.Honor.North,
+            ),
+        )
+        val table = fourPlayers(self)
+        val context = context(table, self, legalActions = listOf(RIICHI_GAME_ACTION))
+        val north = checkNotNull(self.hand.lastDrawn)
+        val dama = DecisionCandidate.Discard(tile = north, declaration = null, command = GameCommand.Discard(north.id))
+        val riichi = DecisionCandidate.Discard(
+            tile = north,
+            declaration = RIICHI_GAME_ACTION,
+            command = GameCommand.Extension(RiichiGameCommand(north.id)),
+        )
+
+        listOf(InformationLevel.INTERMEDIATE, InformationLevel.ADVANCED).forEach { level ->
+            val (damaScore, riichiScore) = ExpectedValueEvaluator(level, ExpectationParameters.DEFAULT, ExpectationFixtures.module, ExpectationFixtures.opponentModel(level), context).scoreAll(listOf(dama, riichi))
+            assertTrue(riichiScore.expectedValue > damaScore.expectedValue, "$level riichi $riichiScore dama $damaScore")
+            assertTrue(riichiScore.winProbability > damaScore.winProbability)
+        }
+    }
+
+    /**
+     * 三人麻將聽牌時摸到北：拔北與打出北之後的手牌相同，但拔北後多一張拔北寶牌，和牌價值較高。不計防守時兩者沒有其他差別，
+     * 因此拔北的期望值較高。
+     */
+    @Test
+    fun `pulling a north values the extra pulled north dora`() {
+        val module = ThreePlayerRiichiRuleModule(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, ThreePlayerRiichiRuleConfig())
+        val self = player(
+            wind = Wind.SOUTH,
+            hand = hand(
+                tiles = List(3) { m(9) } + listOf(p(4), p(5), p(6), p(7), p(8), p(9), Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red, s(2)),
+                drawn = Tile.Honor.North,
+            ),
+        )
+        val table = FakeTableStateFactory.create(
+            players = listOf(player(Wind.EAST), self, player(Wind.WEST)),
+            config = ThreePlayerRiichiRuleConfig(),
+            components = riichiTableComponents(potPoints = 0),
+        )
+        val context = AiDecisionContext(
+            snapshot = table.toRiichiSnapshotForTests(self.id),
+            selfId = self.id,
+            phase = AiDecisionPhase.OwnTurn,
+            legalActions = emptyList(),
+            discardableTileIds = null,
+        )
+        val north = checkNotNull(self.hand.lastDrawn)
+        val discard = DecisionCandidate.Discard(tile = north, declaration = null, command = GameCommand.Discard(north.id))
+        val pull = DecisionCandidate.SetAside(tileId = north.id, command = GameCommand.Discard(north.id))
+        val level = InformationLevel.ADVANCED.copy(defenseScope = DefenseScope.NONE)
+        val opponentModel = ExpectationFixtures.opponentModelRegistry.create(module, level.readingDepth)
+
+        val (discardScore, pullScore) = ExpectedValueEvaluator(level, ExpectationParameters.DEFAULT, module, opponentModel, context)
+            .scoreAll(listOf(discard, pull))
+
+        assertTrue(pullScore.expectedValue > discardScore.expectedValue, "pull $pullScore discard $discardScore")
+    }
+
+    /**
+     * 有役的聽牌立直後打點較高：打點看得越仔細，立直相對默聽的期望值優勢越大。
+     * 完全不區分打點時立直只剩成本，中間值介於兩者之間。
+     */
+    @Test
+    fun `win value detail scales how much riichi adds over dama`() {
+        val self = player(
+            wind = Wind.SOUTH,
+            hand = hand(
+                tiles = listOf(m(2), m(3), m(4), p(4), p(5), p(6), p(7), p(8), p(9), Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red, s(2)),
+                drawn = Tile.Honor.North,
+            ),
+        )
+        val context = context(fourPlayers(self), self, legalActions = listOf(RIICHI_GAME_ACTION))
+        val north = checkNotNull(self.hand.lastDrawn)
+        val dama = DecisionCandidate.Discard(tile = north, declaration = null, command = GameCommand.Discard(north.id))
+        val riichi = DecisionCandidate.Discard(tile = north, declaration = RIICHI_GAME_ACTION, command = GameCommand.Extension(RiichiGameCommand(north.id)))
+
+        /**
+         * 計算指定打點細節下立直相對默聽的期望值差。
+         *
+         * @param detail 和牌打點細節比例。
+         * @return 立直評分減去默聽評分的差值。
+         */
+        fun riichiAdvantage(detail: Double): Double {
+            val level = InformationLevel.INTERMEDIATE.copy(winValueDetail = detail)
+            val (damaScore, riichiScore) = ExpectedValueEvaluator(level, ExpectationParameters.DEFAULT, ExpectationFixtures.module, ExpectationFixtures.opponentModel(level), context).scoreAll(listOf(dama, riichi))
+            return riichiScore.expectedValue - damaScore.expectedValue
+        }
+
+        val flat = riichiAdvantage(0.0)
+        val middle = riichiAdvantage(0.5)
+        val exact = riichiAdvantage(1.0)
+
+        assertTrue(flat < middle, "flat $flat middle $middle")
+        assertTrue(middle < exact, "middle $middle exact $exact")
+    }
+
+    /**
+     * 單騎聽五筒、剩下的五筒都是 2 張時：赤五筒還沒出現的一桌，其中一張胡到會多一張赤寶牌，
+     * 期望值高於赤五筒已經被打出的一桌。
+     */
+    @Test
+    fun `an unseen red five adds value to a wait on five`() {
+        /**
+         * 以指定已公開五筒計算單騎聽五筒的期望值。
+         *
+         * @param visibleFive 桌上可見的普通五筒或赤五筒。
+         * @return 單一捨牌候選的期望值。
+         */
+        fun expectedValue(visibleFive: TileValue): Double {
+            val self = player(
+                wind = Wind.SOUTH,
+                hand = hand(
+                    tiles = listOf(m(2), m(3), m(4), p(1), p(2), p(3), p(7), p(8), p(9), Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red, p(5)),
+                    drawn = Tile.Honor.North,
+                ),
+            )
+            val discarder = player(Wind.EAST).copy(discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(visibleFive)))
+            val table = table(listOf(discarder, self, player(Wind.WEST), player(Wind.NORTH)))
+            val context = context(table, self)
+            val north = checkNotNull(self.hand.lastDrawn)
+            val discard = DecisionCandidate.Discard(tile = north, declaration = null, command = GameCommand.Discard(north.id))
+            val level = InformationLevel.ADVANCED
+            return ExpectedValueEvaluator(level, ExpectationParameters.DEFAULT, ExpectationFixtures.module, ExpectationFixtures.opponentModel(level), context)
+                .scoreAll(listOf(discard))
+                .single()
+                .expectedValue
+        }
+
+        val redStillUnseen = expectedValue(visibleFive = TileValue(p(5)))
+        val redAlreadyDiscarded = expectedValue(visibleFive = RiichiTileValues.redFive(Tile.Suit.Dot))
+
+        assertTrue(redStillUnseen > redAlreadyDiscarded, "red unseen $redStillUnseen, red discarded $redAlreadyDiscarded")
+    }
+
+    /** 鳴取他家打出的赤五時保留赤寶牌特徵，碰赤五的期望值高於碰普通五。 */
+    @Test
+    fun `a pon of a red five keeps its red dora value`() {
+        /**
+         * 計算碰下指定五筒的候選與期望值。
+         *
+         * @param discardedFive 西家打出的五筒。
+         * @return 碰牌候選與其期望值。
+         */
+        fun pon(discardedFive: TileValue): Pair<DecisionCandidate.Claim, Double> {
+            val self = player(Wind.SOUTH, hand = hand(listOf(m(2), m(3), m(4), p(2), p(3), p(4), s(2), s(3), s(4), s(6), s(7), p(5), p(5))))
+            val west = player(Wind.WEST).copy(discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(discardedFive)))
+            val table = table(listOf(player(Wind.EAST), self, west, player(Wind.NORTH)))
+            val seatedSelf = table.players.first { it.id == self.id }
+            val claimed = table.players.first { it.id == west.id }.discardPile.entries.last().tile
+            val action = GameAction.Pon(tileId = claimed.id, withTiles = seatedSelf.hand.tiles.filter { it.tile == p(5) }.take(2).map { it.id })
+            val level = InformationLevel.ADVANCED
+            val evaluator = ExpectedValueEvaluator(
+                level = level,
+                parameters = ExpectationParameters.DEFAULT,
+                module = ExpectationFixtures.module,
+                opponentModel = ExpectationFixtures.opponentModel(level),
+                context = context(table, seatedSelf, phase = AiDecisionPhase.RespondingToDiscard, legalActions = listOf(action)),
+            )
+            val claim = assertIs<DecisionCandidate.Claim>(evaluator.claimCandidates().single())
+            return claim to evaluator.scoreAll(listOf(claim)).single().expectedValue
+        }
+
+        val (redClaim, redValue) = pon(RiichiTileValues.redFive(Tile.Suit.Dot))
+        val (_, plainValue) = pon(TileValue(p(5)))
+
+        assertEquals(Unit, redClaim.claimedTile.components[RiichiTileComponents.RED_DORA])
+        assertTrue(redValue > plainValue, "red $redValue, plain $plainValue")
+    }
+
+    /** 打點看得多仔細只能介於 0 到 1。 */
+    @Test
+    fun `win value detail must be between zero and one`() {
+        assertFailsWith<IllegalArgumentException> { InformationLevel.INTERMEDIATE.copy(winValueDetail = -0.1) }
+        assertFailsWith<IllegalArgumentException> { InformationLevel.INTERMEDIATE.copy(winValueDetail = 1.1) }
+    }
+
+    /** 莊家已立直、自己的單騎只剩一張時，計入後續風險的等級考慮立直後不能換牌的風險而不立直。 */
+    @Test
+    fun `future risk keeps a thin wait from riichi into a dealer riichi`() = runTest {
+        val dealer = player(Wind.EAST, discards = listOf(Tile.Honor.North, Tile.Honor.West, s(1)), riichi = true)
+        val self = player(
+            wind = Wind.SOUTH,
+            hand = hand(
+                tiles = listOf(m(2), m(3), m(4), p(4), p(5), p(6), p(6), p(7), p(8), s(2), s(3), s(4), s(5)),
+                drawn = m(8),
+            ),
+        )
+        val west = player(Wind.WEST, discards = listOf(s(5), s(5)))
+        val table = table(listOf(dealer, self, west, player(Wind.NORTH)))
+
+        val command = strategy(WITH_FUTURE_RISK).decideGameCommand(context(table, self, legalActions = listOf(RIICHI_GAME_ACTION)))
+
+        assertIs<GameCommand.Discard>(command)
+    }
+
+    /** 沒有高威脅的對手時，後續風險只計高威脅對手就等於不計，同一手牌的期望值較高。 */
+    @Test
+    fun `future risk against high threats only ignores quiet opponents`() {
+        val quietDiscards = listOf(Tile.Honor.North, Tile.Honor.West, s(1), p(9), m(9), Tile.Honor.White)
+        val self = player(
+            wind = Wind.SOUTH,
+            hand = hand(
+                tiles = listOf(m(1), m(2), m(3), m(4), m(5), m(6), m(7), m(8), m(9), p(1), p(1), s(3), s(4)),
+                drawn = s(6),
+            ),
+        )
+        val table = table(
+            players = listOf(
+                player(Wind.EAST, discards = quietDiscards),
+                self,
+                player(Wind.WEST, discards = quietDiscards),
+                player(Wind.NORTH, discards = quietDiscards),
+            ),
+        )
+        val context = context(table, self)
+        val six = checkNotNull(self.hand.lastDrawn)
+        val discard = DecisionCandidate.Discard(tile = six, declaration = null, command = GameCommand.Discard(six.id))
+
+        /**
+         * 以指定參數評估同一捨牌候選。
+         *
+         * @param parameters 後續風險估計參數。
+         * @return 候選的期望值。
+         */
+        fun score(parameters: ExpectationParameters): Double = ExpectedValueEvaluator(WITH_FUTURE_RISK, parameters, ExpectationFixtures.module, ExpectationFixtures.opponentModel(WITH_FUTURE_RISK), context).scoreAll(listOf(discard)).single().expectedValue
+
+        assertTrue(score(ExpectationParameters(futureRiskHighThreatOnly = true)) > score(ExpectationParameters.DEFAULT))
+    }
+
+    /**
+     * 莊家已立直時：立直的後續風險折扣越低，立直的期望值越高。假設之後打出最安全的牌時，默聽的後續風險比全部平均小。
+     */
+    @Test
+    fun `future risk parameters change how risky continuing looks`() {
+        val dealer = player(Wind.EAST, discards = listOf(Tile.Honor.North, Tile.Honor.West, s(1)), riichi = true)
+        val self = player(
+            wind = Wind.SOUTH,
+            hand = hand(
+                tiles = listOf(m(2), m(3), m(4), p(4), p(5), p(6), p(6), p(7), p(8), s(2), s(3), s(4), s(5)),
+                drawn = m(8),
+            ),
+        )
+        val table = table(listOf(dealer, self, player(Wind.WEST), player(Wind.NORTH)))
+        val context = context(table, self, legalActions = listOf(RIICHI_GAME_ACTION))
+        val eight = checkNotNull(self.hand.lastDrawn)
+        val dama = DecisionCandidate.Discard(tile = eight, declaration = null, command = GameCommand.Discard(eight.id))
+        val riichi = DecisionCandidate.Discard(tile = eight, declaration = RIICHI_GAME_ACTION, command = GameCommand.Extension(RiichiGameCommand(eight.id)))
+
+        /**
+         * 以指定參數評估默聽與立直候選。
+         *
+         * @param parameters 後續風險估計參數。
+         * @return 依候選輸入順序排列的評分。
+         */
+        fun scores(parameters: ExpectationParameters): List<CandidateScore> = ExpectedValueEvaluator(WITH_FUTURE_RISK, parameters, ExpectationFixtures.module, ExpectationFixtures.opponentModel(WITH_FUTURE_RISK), context).scoreAll(listOf(dama, riichi))
+
+        val (defaultDama, defaultRiichi) = scores(ExpectationParameters.DEFAULT)
+        val (_, discountedRiichi) = scores(ExpectationParameters(lockedFutureRiskFactor = 0.0))
+        val (safestDama, _) = scores(ExpectationParameters(futureRiskTiles = FutureRiskTiles.SAFEST))
+
+        assertTrue(discountedRiichi.expectedValue > defaultRiichi.expectedValue, "discounted $discountedRiichi default $defaultRiichi")
+        assertTrue(safestDama.expectedValue >= defaultDama.expectedValue, "safest $safestDama default $defaultDama")
+    }
+
+    /** 剛好九種么九牌、其他牌也連不起來的手牌和牌機率很低，宣告途中流局。接近聽牌的手牌則繼續。 */
+    @Test
+    fun `an abortive draw is declared only for a hopeless hand`() = runTest {
+        val kyuushu = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai)
+        val hopeless = player(
+            wind = Wind.SOUTH,
+            hand = hand(
+                tiles = listOf(
+                    m(1), m(9), p(1), p(9), s(1),
+                    Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.North,
+                    m(4), p(6), s(3), s(7),
+                ),
+                drawn = p(3),
+            ),
+        )
+        val ready = player(
+            wind = Wind.SOUTH,
+            hand = hand(
+                tiles = listOf(m(1), m(2), m(3), m(4), m(5), m(6), m(7), m(8), m(9), p(1), p(1), s(3), s(4)),
+                drawn = Tile.Honor.East,
+            ),
+        )
+
+        assertEquals(
+            expected = GameCommand.DeclareExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai),
+            actual = strategy(InformationLevel.INTERMEDIATE).decideGameCommand(context(fourPlayers(hopeless), hopeless, legalActions = listOf(kyuushu))),
+        )
+        assertIs<GameCommand.Discard>(
+            value = strategy(InformationLevel.INTERMEDIATE).decideGameCommand(context(fourPlayers(ready), ready, legalActions = listOf(kyuushu))),
+        )
+        val neverDeclares = ExpectationParameters(abortiveDrawWinProbability = 0.0)
+        assertIs<GameCommand.Discard>(
+            value = strategy(InformationLevel.INTERMEDIATE, neverDeclares)
+                .decideGameCommand(context(fourPlayers(hopeless), hopeless, legalActions = listOf(kyuushu))),
+            message = "the strategy must use the parameters it was given",
+        )
+    }
+
+    /** 立直後規則強制打出摸到的牌，所有等級都只打出那張牌。 */
+    @Test
+    fun `a forced discard is obeyed`() = runTest {
+        val self = player(
+            wind = Wind.SOUTH,
+            hand = hand(
+                tiles = listOf(m(2), m(3), m(4), p(4), p(5), p(6), p(7), p(8), p(9), s(2), s(3), s(4), s(5)),
+                drawn = m(5),
+            ),
+            riichi = true,
+        )
+        val table = fourPlayers(self)
+
+        allLevels.forEach { level ->
+            assertEquals(GameCommand.Discard(checkNotNull(self.hand.lastDrawn).id), strategy(level).decideGameCommand(context(table, self)))
+        }
+    }
+
+    /** 同一局面重複詢問得到相同決策，且打出的牌一定在自己手中。 */
+    @Test
+    fun `decisions are deterministic and use own tiles`() = runTest {
+        val self = player(
+            wind = Wind.SOUTH,
+            hand = hand(
+                tiles = listOf(m(1), m(3), m(5), p(2), p(4), p(8), s(1), s(6), s(9), Tile.Honor.East, Tile.Honor.Red, m(9), p(9)),
+                drawn = s(4),
+            ),
+        )
+        val table = fourPlayers(self)
+        val ownIds = self.hand.standingTiles.map { it.id }.toSet()
+
+        allLevels.forEach { level ->
+            val first = strategy(level).decideGameCommand(context(table, self))
+            val second = strategy(level).decideGameCommand(context(table, self))
+            assertEquals(first, second)
+            assertTrue(assertIs<GameCommand.Discard>(first).tileId in ownIds)
+        }
+    }
+
+    /**
+     * 將 [self] 放在第二個座位，其他三家沒有手牌的四人桌。
+     *
+     * @param self 南家及測試決策者。
+     * @return 依東、[self]、西、北順序排列的四人桌。
+     */
+    private fun fourPlayers(self: MahjongPlayer): TableState = table(listOf(player(Wind.EAST), self, player(Wind.WEST), player(Wind.NORTH)))
+
+    /**
+     * 取得命令打出的牌面。
+     *
+     * @param table 執行命令前的桌況。
+     * @param self 執行命令的玩家。
+     * @param command 待檢查的遊戲命令。
+     * @return 命令指定牌識別碼對應的手牌牌面。
+     */
+    private fun discardedTile(
+        table: TableState,
+        self: MahjongPlayer,
+        command: GameCommand,
+    ): Tile {
+        val tileId = assertIs<GameCommand.Discard>(command).tileId
+        return table.players.first { it.id == self.id }.hand.standingTiles.first { it.id == tileId }.tile
+    }
+
+    /**
+     * 西家剛打出 [ponTile]、南家可以用手中兩張碰的局面。
+     *
+     * 南家手牌：一二三萬、七八九筒、五六條、一一條，加上三張 [others]。
+     *
+     * @param ponTile 西家剛打出的牌面。
+     * @param others 南家手牌中補足牌型的三張牌。
+     * @return 桌況、南家玩家與對應的碰牌合法動作。
+     */
+    private fun ponSituation(ponTile: Tile, others: List<Tile>): Triple<TableState, MahjongPlayer, GameAction.Pon> {
+        val self = player(Wind.SOUTH, hand = hand(listOf(m(1), m(2), m(3), p(7), p(8), p(9), s(5), s(6), s(1), s(1)) + others))
+        val west = player(Wind.WEST, discards = listOf(ponTile))
+        val table = table(listOf(player(Wind.EAST), self, west, player(Wind.NORTH)))
+        val seatedSelf = table.players.first { it.id == self.id }
+        val claimed = table.players.first { it.id == west.id }.discardPile.entries.last().tile
+        val withTiles = seatedSelf.hand.tiles.filter { it.tile == ponTile }.take(2).map { it.id }
+        return Triple(table, seatedSelf, GameAction.Pon(tileId = claimed.id, withTiles = withTiles))
+    }
+
+    /** 測試常數。 */
+    private companion object {
+        /** 高級另外計入後續風險，用於驗證後續風險的計算。 */
+        val WITH_FUTURE_RISK: InformationLevel = InformationLevel.ADVANCED.copy(considersFutureRisk = true)
+    }
+}

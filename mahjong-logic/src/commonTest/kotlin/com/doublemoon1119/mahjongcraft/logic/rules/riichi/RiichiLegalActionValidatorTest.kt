@@ -1,0 +1,1194 @@
+package com.doublemoon1119.mahjongcraft.logic.rules.riichi
+
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponents
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.withRedFives
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+
+/**
+ * 立直麻將合法動作驗證器之單元測試。
+ *
+ * 測試內容涵蓋吃、碰、槓、胡牌（自摸及榮和）等動作之合法性判斷。
+ *
+ * @see RiichiLegalActionValidator
+ */
+class RiichiLegalActionValidatorTest {
+
+    /** 依日麻規則判定牌局動作資格的合法動作驗證器。 */
+    private val validator = RiichiLegalActionValidator(
+        shantenCalculator = RiichiShantenCalculator(),
+        handValueCalculator = RiichiHandValueCalculator(),
+        contextCalculator = RiichiHandValueContextCalculator(RiichiRuleConfig()),
+    )
+
+    /** 牌山剩 2 張——鳴牌/槓牌測試預設用這個，避免被「河底/海底不可鳴牌」與「剩 1 張以下不可槓」的限制誤擋。 */
+    private val nonEmptyWall = TileWall(List(2) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5)) })
+
+    /**
+     * 測試可執行碰牌動作之情況。
+     *
+     * 當手牌中有兩張與打出的牌相同時，應可執行碰牌動作。
+     */
+    @Test
+    fun `test can pon`() {
+        // 準備
+        val playerHand = FakeHandFactory.create(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Honor.North,
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            tileWall = nonEmptyWall,
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+
+        // 執行
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
+
+        // 驗證：withTiles 記錄實際要消耗的兩張手牌實例，供 UI 預覽與實際執行共用同一份決定。
+        val ponAction = actions.filterIsInstance<GameAction.Pon>().single()
+        assertEquals(incomingTile.id, ponAction.tileId)
+        assertEquals(playerHand.standingTiles.take(2).map { it.id }, ponAction.withTiles)
+    }
+
+    /**
+     * 測試可執行吃牌動作之情況。
+     *
+     * 當手牌中有可與打出的牌組成順子之兩張牌時，應可執行吃牌動作。
+     */
+    @Test
+    fun `test can chi`() {
+        // 準備
+        val playerHand = FakeHandFactory.create(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Honor.North,
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            tileWall = nonEmptyWall,
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+
+        // 執行
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Left, incomingTile))
+
+        // 驗證
+        assertTrue(actions.any { it is GameAction.Chi && it.tileId == incomingTile.id })
+    }
+
+    /**
+     * 測試可執行大明槓動作之情況。
+     *
+     * 當手牌中有三張與打出的牌相同時，應可執行大明槓動作。
+     */
+    @Test
+    fun `test can open kan`() {
+        // 準備
+        val playerHand = FakeHandFactory.create(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            tileWall = nonEmptyWall,
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+
+        // 執行
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
+
+        // 驗證
+        assertTrue(actions.any { it is GameAction.Kan && it.type == GameAction.KanType.OPEN_KAN })
+    }
+
+    /**
+     * 測試可執行加槓動作之情況。
+     *
+     * 當已有碰牌副露，且摸入與該碰牌相同之牌時，應可執行加槓動作。
+     */
+    @Test
+    fun `test can added kan`() {
+        // 準備
+        val ponMeld = FakeMeldFactory.create(
+            type = MeldType.Pon,
+            tiles = listOf(
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+            ),
+            sourceDirection = RelativeDirection.Left,
+        )
+        val playerHand = Hand(melds = mutableListOf(ponMeld))
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            tileWall = nonEmptyWall,
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+
+        // 執行
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
+
+        // 驗證
+        assertTrue(actions.any { it is GameAction.Kan && it.type == GameAction.KanType.ADDED_KAN })
+    }
+
+    /**
+     * 測試可執行暗槓動作之情況。
+     *
+     * 當手牌中有三張相同之牌時，應可執行暗槓動作。
+     */
+    @Test
+    fun `test can closed kan`() {
+        // 準備
+        val playerHand = FakeHandFactory.create(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            tileWall = nonEmptyWall,
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+
+        // 執行
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
+
+        // 驗證
+        assertTrue(actions.any { it is GameAction.Kan && it.type == GameAction.KanType.CLOSED_KAN })
+    }
+
+    /**
+     * 驗證牌山只剩 1 張時，暗槓、加槓與大明槓都不能宣告：嶺上補牌後牌山末端那張會補進王牌區，
+     * 就沒有海底牌可摸。碰不受影響。
+     */
+    @Test
+    fun `test no kan of any type when only one live tile remains`() {
+        val oneTileWall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))))
+        val ponMeld = FakeMeldFactory.create(
+            type = MeldType.Pon,
+            tiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)) },
+            sourceDirection = RelativeDirection.Left,
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = FakeHandFactory.create(List(3) { Tile.Numeric(Tile.Suit.Character, 1) } + Tile.Honor.North).copy(melds = listOf(ponMeld)),
+        )
+        val tableState = FakeTableStateFactory.create(players = listOf(player), tileWall = oneTileWall)
+
+        val ownTurnActions = listOf(Tile.Numeric(Tile.Suit.Character, 1), Tile.Numeric(Tile.Suit.Character, 9)).flatMap { drawn ->
+            val incomingTile = FakeIdentifiedTileFactory.create(drawn)
+            validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
+        }
+        val discard = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+        val responseActions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, discard))
+
+        assertTrue(ownTurnActions.none { it is GameAction.Kan }, "own turn actions: $ownTurnActions")
+        assertTrue(responseActions.none { it is GameAction.Kan }, "response actions: $responseActions")
+        assertTrue(responseActions.any { it is GameAction.Pon }, "response actions: $responseActions")
+    }
+
+    /**
+     * 測試牌山已摸盡（河底牌情境）時不可吃／碰／大明槓——只能榮和（河底撈魚）或流局，見
+     * [RiichiLegalActionValidator.getLegalActions] 的 `wallHasMoreTiles` 判斷。
+     */
+    @Test
+    fun `test cannot chi pon or open kan when wall is exhausted`() {
+        // 準備：手牌同時滿足吃、碰、大明槓三種條件
+        val playerHand = FakeHandFactory.create(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(hand = playerHand)
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            tileWall = TileWall(emptyList()),
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+
+        // 執行
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Left, incomingTile))
+
+        // 驗證：吃／碰／大明槓皆不可，只留下 Pass
+        assertFalse(actions.any { it is GameAction.Chi })
+        assertFalse(actions.any { it is GameAction.Pon })
+        assertFalse(actions.any { it is GameAction.Kan && it.type == GameAction.KanType.OPEN_KAN })
+    }
+
+    /**
+     * 測試牌山已摸盡（海底牌）時，自己摸到的這張牌不可拿來暗槓／加槓。
+     */
+    @Test
+    fun `test cannot closed or added kan on the haitei tile`() {
+        // 準備：手牌另外湊了一組可以暗槓的三張，且有一組可加槓的副露
+        val ponMeld = FakeMeldFactory.create(
+            type = MeldType.Pon,
+            tiles = listOf(
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
+            ),
+            sourceDirection = RelativeDirection.Left,
+        )
+        val playerHand = Hand(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+            ).map { FakeIdentifiedTileFactory.create(it) },
+            melds = mutableListOf(ponMeld),
+        )
+        val player = FakeMahjongPlayerFactory.create(hand = playerHand)
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            tileWall = TileWall(emptyList()),
+        )
+        val incomingCharacterOne = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+
+        // 執行：摸到手牌已有 3 張的 1 萬（可暗槓的條件）
+        val closedKanActions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingCharacterOne))
+        // 驗證：牌山已摸盡，不可暗槓
+        assertFalse(closedKanActions.any { it is GameAction.Kan && it.type == GameAction.KanType.CLOSED_KAN })
+
+        // 執行：摸到跟既有碰牌相同的 5 條（可加槓的條件）
+        val incomingBambooFive = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
+        val addedKanActions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingBambooFive))
+        // 驗證：牌山已摸盡，不可加槓
+        assertFalse(addedKanActions.any { it is GameAction.Kan && it.type == GameAction.KanType.ADDED_KAN })
+    }
+
+    /**
+     * 測試全場槓子數已達上限（4 次）時不可再暗槓——即使這 4 次全部由同一位玩家達成（
+     * `resolveSuukanNagare` 因此不會判定四槓散了，該玩家可能正在嘗試四槓子役滿），全場槓子總數的
+     * 硬上限仍然是 4 次，這位玩家也不能繼續槓第 5 次。
+     */
+    @Test
+    fun `test cannot closed kan when the table already has 4 kans by a single player`() {
+        // 準備：這位玩家已經有 4 組暗槓副露（湊到全場上限），手牌另外湊了一組可以暗槓的第 5 組
+        val existingKans = (1..4).map { value ->
+            FakeMeldFactory.create(
+                type = MeldType.ClosedKan,
+                tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, value)) },
+            )
+        }
+        val playerHand = Hand(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+            ).map { FakeIdentifiedTileFactory.create(it) },
+            melds = existingKans,
+        )
+        val player = FakeMahjongPlayerFactory.create(hand = playerHand)
+        val tableState = FakeTableStateFactory.create(players = listOf(player))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+
+        // 執行
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
+
+        // 驗證：即使 3 張同種牌 + 摸到第 4 張的條件成立，全場槓子數已達上限，不應提供暗槓選項
+        assertFalse(actions.any { it is GameAction.Kan && it.type == GameAction.KanType.CLOSED_KAN })
+    }
+
+    /**
+     * 測試全場槓子數已達上限（4 次，皆由另一位玩家達成）時，其他玩家也不能明槓——上限是全場共用的
+     * 硬上限，不是「每位玩家各自 4 次」，即使這位玩家自己一次槓都還沒槓過。
+     */
+    @Test
+    fun `test cannot open kan for a different player when someone else already has 4 kans`() {
+        // 準備：另一位玩家已經獨得全場 4 組暗槓副露
+        val otherPlayerKans = (1..4).map { value ->
+            FakeMeldFactory.create(
+                type = MeldType.ClosedKan,
+                tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, value)) },
+            )
+        }
+        val otherPlayer = FakeMahjongPlayerFactory.create(hand = Hand(melds = otherPlayerKans))
+        val playerHand = FakeHandFactory.create(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(hand = playerHand)
+        val tableState = FakeTableStateFactory.create(players = listOf(otherPlayer, player))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+
+        // 執行
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
+
+        // 驗證：即使這位玩家自己手牌條件符合明槓，全場槓子數已達上限，不應提供明槓選項
+        assertFalse(actions.any { it is GameAction.Kan && it.type == GameAction.KanType.OPEN_KAN })
+    }
+
+    /**
+     * 測試可執行榮和動作之情況（標準型）。
+     *
+     * 當打出的牌可使手牌形成胡牌結構時，應可執行榮和動作。
+     */
+    @Test
+    fun `test can ron`() {
+        // 準備
+        // 手牌: 111234567899m + incoming 9m = 111 234 567 899 99 (4面子+1雀頭=14張=胡牌)
+        // 原本13張: 1,1,1,2,3,4,5,6,7,8,9,9,9 = 13張
+        val playerHand = FakeHandFactory.create(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+            components = riichiDeclarationComponents(),
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            config = RiichiRuleConfig(),
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
+
+        // 執行
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
+
+        // 驗證
+        assertTrue(actions.any { it is GameAction.Ron && it.tileId == incomingTile.id })
+    }
+
+    /**
+     * 測試雙碰聽三元牌時可以榮和。
+     *
+     * 手上兩張中、第三張由和牌張補成刻子，役牌因此成立，這手牌不是無役。
+     */
+    @Test
+    fun `test can ron on a shanpon wait that completes a dragon triplet`() {
+        val playerHand = FakeHandFactory.create(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Dot, 4),
+                Tile.Numeric(Tile.Suit.Dot, 5),
+                Tile.Numeric(Tile.Suit.Dot, 6),
+                Tile.Numeric(Tile.Suit.Dot, 7),
+                Tile.Numeric(Tile.Suit.Dot, 8),
+                Tile.Numeric(Tile.Suit.Dot, 9),
+                Tile.Numeric(Tile.Suit.Bamboo, 2),
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Honor.Red,
+                Tile.Honor.Red,
+                Tile.Numeric(Tile.Suit.Bamboo, 7),
+                Tile.Numeric(Tile.Suit.Bamboo, 7),
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+            components = riichiDeclarationComponents(),
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            config = RiichiRuleConfig(),
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
+
+        assertTrue(actions.any { it is GameAction.Ron && it.tileId == incomingTile.id })
+    }
+
+    /**
+     * 測試可執行自摸動作之情況。
+     *
+     * 當摸入的牌可使手牌形成胡牌結構時，應可執行自摸動作。
+     */
+    @Test
+    fun `test can tsumo`() {
+        // 準備
+        // 手牌: 111234567899m + incoming 9m = 111 234 567 899 99 (4面子+1雀頭=14張=胡牌)
+        // 原本13張: 1,1,1,2,3,4,5,6,7,8,9,9,9 = 13張
+        val playerHand = FakeHandFactory.create(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+            components = riichiDeclarationComponents(),
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            config = RiichiRuleConfig(),
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
+
+        // 執行
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
+
+        // 驗證
+        assertTrue(actions.any { it is GameAction.Tsumo })
+    }
+
+    /**
+     * 測試可執行榮和動作之情況（七對子）。
+     *
+     * 當打出的牌可使手牌形成七對子胡牌結構時，應可執行榮和動作。
+     */
+    @Test
+    fun `test can ron with seven pairs`() {
+        // 準備
+        // 手牌: 112233445566m (6對子=12張) + incoming 7m = 7對子 (胡牌)
+        val playerHand = FakeHandFactory.create(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+            components = riichiDeclarationComponents(),
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            config = RiichiRuleConfig(),
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 7))
+
+        // 執行
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
+
+        // 驗證
+        assertTrue(actions.any { it is GameAction.Ron && it.tileId == incomingTile.id })
+    }
+
+    /**
+     * 測試有副露時不可執行七對子榮和動作之情況。
+     *
+     * 七對子必須門前清，當已有副露時，應不可執行七對子胡牌動作。
+     */
+    @Test
+    fun `test cannot ron with seven pairs if exposed meld`() {
+        // 準備
+        val playerHand = FakeHandFactory.create(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 5),
+            ),
+        )
+        val ponMeld = FakeMeldFactory.create(
+            type = MeldType.Pon,
+            tiles = listOf(
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 6)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 6)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 6)),
+            ),
+            sourceDirection = RelativeDirection.Left,
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand.copy(melds = listOf(ponMeld)),
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            tileWall = nonEmptyWall,
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 7))
+
+        // 執行
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
+
+        // 驗證
+        assertFalse(actions.any { it is GameAction.Ron })
+    }
+
+    /**
+     * 測試最低胡牌番數限制 - 番數不足無法自摸。
+     *
+     * 當 minimumWinConstraint = 2 時，手牌番數為 1 則不可自摸。
+     */
+    @Test
+    fun `test tsumo not allowed when han is insufficient`() {
+        // 準備：手牌為 1 番 (門前清自摸) 的牌型
+        val playerHand = FakeHandFactory.create(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Dot, 4),
+                Tile.Numeric(Tile.Suit.Dot, 5),
+                Tile.Numeric(Tile.Suit.Dot, 6),
+                Tile.Numeric(Tile.Suit.Bamboo, 2),
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Honor.West,
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+            discardPile = FakeDiscardPile().discard(
+                entry = FakeDiscardPile.FakeEntry(
+                    tile = FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                    isTaken = false,
+                ),
+            ),
+            components = riichiDeclarationComponents(),
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            config = RiichiRuleConfig(minimumWinConstraint = 2),
+        )
+
+        // 摸到胡牌張
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Honor.West)
+
+        // 執行
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
+
+        // 驗證：不可自摸（番數不足）
+        assertFalse(actions.any { it is GameAction.Tsumo })
+    }
+
+    /**
+     * 測試最低胡牌番數限制 - 赤寶牌不能拿來湊最低番數。
+     *
+     * 手牌結構跟「番數不足無法自摸」完全相同（門前清自摸 1 番），只把 456p 裡的普通 5 筒換成赤 5 筒，
+     * 讓 `result.totalHan` 疊加赤寶牌後變成 2 番——如果直接拿 `totalHan` 去跟 `minimumWinConstraint`
+     * 比較會誤判為合法，但赤寶牌不該計入這個門檻，役種本身仍然只有 1 番，所以應該跟原本一樣不可自摸。
+     */
+    @Test
+    fun `test tsumo not allowed when han is insufficient even with aka dora`() {
+        val playerHand = FakeHandFactory.create(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Dot, 4),
+                Tile.Numeric(Tile.Suit.Dot, 5), // 赤5筒，取代普通5筒
+                Tile.Numeric(Tile.Suit.Dot, 6),
+                Tile.Numeric(Tile.Suit.Bamboo, 2),
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Honor.West,
+            ),
+        ).withRedFives(Tile.Suit.Dot)
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+            discardPile = FakeDiscardPile().discard(
+                entry = FakeDiscardPile.FakeEntry(
+                    tile = FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                    isTaken = false,
+                ),
+            ),
+            components = riichiDeclarationComponents(),
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            config = RiichiRuleConfig(minimumWinConstraint = 2),
+        )
+
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Honor.West)
+
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
+
+        assertFalse(actions.any { it is GameAction.Tsumo })
+    }
+
+    /**
+     * 測試最低胡牌番數限制 - 番數足夠可以自摸。
+     *
+     * 當 minimumWinConstraint = 1 時，使用役滿牌型確保通過。
+     */
+    @Test
+    fun `test tsumo allowed when han is sufficient`() {
+        val playerHand = FakeHandFactory.create(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+            components = riichiDeclarationComponents(),
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            config = RiichiRuleConfig(),
+            prevalentWind = Wind.EAST,
+        )
+
+        // 摸到胡牌張
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+
+        // 執行
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
+
+        // 驗證：可以自摸（役滿）
+        assertTrue(actions.any { it is GameAction.Tsumo })
+    }
+
+    /**
+     * 測試最低胡牌番數限制 - 役滿必定可以胡牌。
+     *
+     * 當 minimumWinConstraint = 13 時，役滿仍可自摸。
+     */
+    @Test
+    fun `test yakuman always allowed regardless of minimum constraint`() {
+        val playerHand = FakeHandFactory.create(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+            components = riichiDeclarationComponents(),
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            config = RiichiRuleConfig(),
+            prevalentWind = Wind.EAST,
+        )
+
+        // 摸到胡牌張
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+
+        // 執行
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
+
+        // 驗證：可以自摸（役滿不受最低番數限制）
+        assertTrue(actions.any { it is GameAction.Tsumo })
+    }
+
+    /**
+     * 測試可執行九種九牌和局動作之情況。
+     *
+     * 當滿足以下條件時，應可執行九種九牌和局：
+     * - 第一巡（場上無鳴牌、每人最多打 1 張牌、自己未打牌）
+     * - 持有的么九牌總數達 9 種以上
+     */
+    @Test
+    fun `test can kyuushu kyuuhai`() {
+        // 準備：持有九種么九牌（東南西北發中白 + 19m + 19s + 19p = 13種取9種）
+        val playerHand = FakeHandFactory.create(
+            tiles = listOf(
+                Tile.Honor.East,
+                Tile.Honor.South,
+                Tile.Honor.West,
+                Tile.Honor.North,
+                Tile.Honor.White,
+                Tile.Honor.Green,
+                Tile.Honor.Red,
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+            ),
+        )
+        val discardPile = FakeDiscardPile()
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+            discardPile = discardPile,
+        )
+        // 建立其他玩家（每人只打1張以滿足第一巡條件）
+        val discardPile1 = FakeDiscardPile().discard(
+            entry = FakeDiscardPile.FakeEntry(
+                tile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
+            ),
+        )
+        val otherPlayer1 = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = FakeHandFactory.create(listOf(Tile.Numeric(Tile.Suit.Bamboo, 1))),
+            discardPile = discardPile1,
+        )
+        val discardPile2 = FakeDiscardPile().discard(
+            entry = FakeDiscardPile.FakeEntry(
+                tile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2)),
+            ),
+        )
+        val otherPlayer2 = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.WEST,
+            hand = FakeHandFactory.create(listOf(Tile.Numeric(Tile.Suit.Bamboo, 2))),
+            discardPile = discardPile2,
+        )
+        val discardPile3 = FakeDiscardPile().discard(
+            entry = FakeDiscardPile.FakeEntry(
+                tile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 3)),
+            ),
+        )
+        val otherPlayer3 = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.NORTH,
+            hand = FakeHandFactory.create(listOf(Tile.Numeric(Tile.Suit.Bamboo, 3))),
+            discardPile = discardPile3,
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player, otherPlayer1, otherPlayer2, otherPlayer3),
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
+
+        // 執行
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
+
+        // 驗證：可執行九種九牌
+        assertTrue(actions.any { it is GameAction.ExhaustiveDraw })
+    }
+
+    /**
+     * 測試不符合九種九牌條件時不可執行和局動作之情況。
+     *
+     * 當持有的么九牌不足9種時，不可執行九種九牌和局。
+     */
+    @Test
+    fun `test cannot kyuushu kyuuhai with insufficient tile types`() {
+        // 準備：只持有3種么九牌
+        val playerHand = FakeHandFactory.create(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 2),
+                Tile.Numeric(Tile.Suit.Dot, 3),
+                Tile.Numeric(Tile.Suit.Dot, 4),
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+            discardPile = FakeDiscardPile(),
+        )
+        val discardPile1 = FakeDiscardPile().discard(
+            entry = FakeDiscardPile.FakeEntry(
+                tile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
+            ),
+        )
+        val otherPlayer1 = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = FakeHandFactory.create(listOf(Tile.Numeric(Tile.Suit.Bamboo, 1))),
+            discardPile = discardPile1,
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player, otherPlayer1),
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))
+
+        // 執行
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
+
+        // 驗證：不可執行九種九牌
+        assertFalse(actions.any { it is GameAction.ExhaustiveDraw })
+    }
+
+    /**
+     * 無役聽牌在活牌仍剩 14 張時不可因重複扣除王牌而取得河底役。真正摸盡後才可用河底榮和。
+     */
+    @Test
+    fun `test houtei only grants ron after live wall is exhausted`() {
+        val chiMeld = FakeMeldFactory.create(
+            type = MeldType.Chi,
+            tiles = listOf(1, 2, 3).map { value ->
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, value))
+            },
+            sourceDirection = RelativeDirection.Left,
+        )
+        val terminalPon = FakeMeldFactory.create(
+            type = MeldType.Pon,
+            tiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)) },
+            sourceDirection = RelativeDirection.Across,
+        )
+        val nonValueHonorPon = FakeMeldFactory.create(
+            type = MeldType.Pon,
+            tiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.West) },
+            sourceDirection = RelativeDirection.Right,
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            hand = Hand(
+                tiles = listOf(
+                    Tile.Numeric(Tile.Suit.Bamboo, 5),
+                    Tile.Numeric(Tile.Suit.Bamboo, 5),
+                    Tile.Numeric(Tile.Suit.Bamboo, 6),
+                    Tile.Numeric(Tile.Suit.Bamboo, 7),
+                ).map(FakeIdentifiedTileFactory::create),
+                melds = listOf(chiMeld, terminalPon, nonValueHonorPon),
+            ),
+            discardPile = FakeDiscardPile().discard(
+                entry = FakeDiscardPile.FakeEntry(FakeIdentifiedTileFactory.create(Tile.Honor.North)),
+            ),
+            components = riichiDeclarationComponents(),
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 8))
+        val fourteenLiveTiles = TileWall(
+            tiles = List(14) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)) },
+        )
+        val liveWallState = FakeTableStateFactory.create(
+            players = listOf(player),
+            tileWall = fourteenLiveTiles,
+            config = RiichiRuleConfig(minimumWinConstraint = 1),
+            prevalentWind = Wind.SOUTH,
+        )
+
+        assertEquals(
+            expected = RiichiWinAvailability.NO_YAKU,
+            actual = validator.analyzeWinAvailability(liveWallState, player, incomingTile),
+        )
+        val prematureActions = validator.getLegalActions(
+            context = LegalActionTestContexts.discard(liveWallState, player, RelativeDirection.Across, incomingTile),
+        )
+        assertFalse(prematureActions.any { it is GameAction.Ron })
+
+        val exhaustedState = liveWallState.copy(tileWall = TileWall(emptyList()))
+        assertEquals(
+            expected = RiichiWinAvailability.AVAILABLE,
+            actual = validator.analyzeWinAvailability(exhaustedState, player, incomingTile),
+        )
+        val houteiActions = validator.getLegalActions(
+            context = LegalActionTestContexts.discard(exhaustedState, player, RelativeDirection.Across, incomingTile),
+        )
+        assertTrue(houteiActions.any { it is GameAction.Ron })
+    }
+
+    /**
+     * 測試搶槓時可執行榮和動作之情況。
+     *
+     * 當手牌已听牌，且其他玩家執行加槓時，可搶槓榮和。
+     * 此手牌為無役牌型（副露含老頭牌與字牌），但搶槓本身有 1 番，
+     * 故在 minimumWinConstraint = 1 之條件下可榮和。
+     *
+     * 牌型：
+     * - 副露 1：123m（吃）
+     * - 副露 2：999p（碰）
+     * - 副露 3：西西西（碰，非場風非自風非三元牌）
+     * - 手中：55s（雀頭）、67s（聽 5s, 8s）
+     */
+    @Test
+    fun `test can robbing kan`() {
+        // 準備
+        val chiMeld = FakeMeldFactory.create(
+            type = MeldType.Chi,
+            tiles = listOf(
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3)),
+            ),
+            sourceDirection = RelativeDirection.Left,
+        )
+        val ponMeld1 = FakeMeldFactory.create(
+            type = MeldType.Pon,
+            tiles = listOf(
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
+            ),
+            sourceDirection = RelativeDirection.Across,
+        )
+        val ponMeld2 = FakeMeldFactory.create(
+            type = MeldType.Pon,
+            tiles = listOf(
+                FakeIdentifiedTileFactory.create(Tile.Honor.West),
+                FakeIdentifiedTileFactory.create(Tile.Honor.West),
+                FakeIdentifiedTileFactory.create(Tile.Honor.West),
+            ),
+            sourceDirection = RelativeDirection.Right,
+        )
+        val playerHand = Hand(
+            tiles = mutableListOf(
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 6)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 7)),
+            ),
+            melds = mutableListOf(chiMeld, ponMeld1, ponMeld2),
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+            components = riichiDeclarationComponents(),
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            config = RiichiRuleConfig(minimumWinConstraint = 1),
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
+
+        // 執行：模擬其他玩家加槓 5s，觸發搶槓判定
+        val actions = validator.getLegalActions(LegalActionTestContexts.declaration(tableState, player, RelativeDirection.Across, GameAction.Kan(GameAction.KanType.ADDED_KAN, incomingTile.id, emptyList()), incomingTile))
+
+        // 驗證：搶槓可榮和
+        assertTrue(actions.any { it is GameAction.Ron })
+    }
+
+    /**
+     * 測試搶暗槓時可執行榮和動作之情況（國士無雙）。
+     *
+     * 當手牌為國士無雙聽牌，且其他玩家執行暗槓時，可搶暗槓榮和。
+     * 國士無雙為役滿牌型，可搶暗槓。
+     *
+     * 牌型：國士無雙（19 萬筒索＋東南西北白發中各一張，再加 1 張東風作雀頭）
+     */
+    @Test
+    fun `test can robbing closed kan with kokushi musou`() {
+        // 準備：國士無雙聽牌（13張幺九牌 + 1張東風雀頭）
+        // 聽牌為其他任意幺九牌，暗槓東風後手牌變為 14 張（東風刻子 + 13 張幺九牌）
+        val playerHand = FakeHandFactory.create(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 9),
+                Tile.Numeric(Tile.Suit.Bamboo, 1),
+                Tile.Numeric(Tile.Suit.Bamboo, 9),
+                Tile.Honor.East,
+                Tile.Honor.South,
+                Tile.Honor.West,
+                Tile.Honor.North,
+                Tile.Honor.White,
+                Tile.Honor.Green,
+                Tile.Honor.Red,
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+            components = riichiDeclarationComponents(),
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            config = RiichiRuleConfig(),
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+
+        // 執行：模擬其他玩家暗槓東風，觸發搶暗槓判定
+        val actions = validator.getLegalActions(LegalActionTestContexts.declaration(tableState, player, RelativeDirection.Across, GameAction.Kan(GameAction.KanType.CLOSED_KAN, incomingTile.id, emptyList()), incomingTile))
+
+        // 驗證：國士無雙可搶暗槓榮和
+        assertTrue(actions.any { it is GameAction.Ron })
+    }
+
+    /**
+     * 測試搶暗槓時不可執行榮和動作之情況（非國士無雙）。
+     *
+     * 當手牌為非國士無雙的聽牌，且其他玩家執行暗槓時，不可搶暗槓榮和。
+     * 只有國士無雙可以搶暗槓。
+     *
+     * 牌型：非國士無雙聽牌
+     */
+    @Test
+    fun `test cannot robbing closed kan without kokushi musou`() {
+        // 準備：九蓮寶燈 (聽 2 萬)
+        val playerHand = FakeHandFactory.create(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+            components = riichiDeclarationComponents(),
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            config = RiichiRuleConfig(),
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2))
+
+        // 執行：模擬其他玩家暗槓 2m，觸發搶暗槓判定
+        val actions = validator.getLegalActions(LegalActionTestContexts.declaration(tableState, player, RelativeDirection.Across, GameAction.Kan(GameAction.KanType.CLOSED_KAN, incomingTile.id, emptyList()), incomingTile))
+
+        // 驗證：非國士無雙手牌不可搶暗槓榮和
+        assertFalse(actions.any { it is GameAction.Ron })
+    }
+
+    /** 手上同種牌有赤五與普通五時，碰有兩個選項，沒用到赤五的排在前面。完全相同的牌只給一個選項。 */
+    @Test
+    fun `pon offers one option per distinct tile combination`() {
+        val redHand = FakeHandFactory.create(tiles = List(3) { Tile.Numeric(Tile.Suit.Dot, 5) } + Tile.Honor.North).withRedFives(Tile.Suit.Dot)
+        val plainHand = FakeHandFactory.create(tiles = List(3) { Tile.Numeric(Tile.Suit.Dot, 5) } + Tile.Honor.North)
+
+        val redOptions = ponOptions(redHand)
+        val plainOptions = ponOptions(plainHand)
+
+        assertEquals(2, redOptions.size)
+        assertTrue(redOptions.first().withTiles.none { id -> redHand.tiles.single { it.id == id }.components[RiichiTileComponents.RED_DORA] != null })
+        assertTrue(redOptions.last().withTiles.any { id -> redHand.tiles.single { it.id == id }.components[RiichiTileComponents.RED_DORA] != null })
+        assertEquals(1, plainOptions.size)
+    }
+
+    /** 手上同種牌有透明與不透明的張時，碰與吃都依組合各給一個選項。 */
+    @Test
+    fun `calls offer separate options for transparent and opaque copies`() {
+        val opaque = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2))
+        val transparentTiles = List(2) { transparent(Tile.Numeric(Tile.Suit.Character, 2)) }
+        val three = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3))
+        val transparentThree = transparent(three.tile)
+        val hand = Hand(tiles = listOf(opaque) + transparentTiles + listOf(three, transparentThree))
+        val player = FakeMahjongPlayerFactory.create(hand = hand)
+        val tableState = FakeTableStateFactory.create(players = listOf(player), tileWall = nonEmptyWall)
+
+        val ponActions = validator.getLegalActions(
+            context = LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, transparent(Tile.Numeric(Tile.Suit.Character, 2))),
+        ).filterIsInstance<GameAction.Pon>()
+        val chiActions = validator.getLegalActions(
+            context = LegalActionTestContexts.discard(tableState, player, RelativeDirection.Left, FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))),
+        ).filterIsInstance<GameAction.Chi>()
+
+        assertEquals(setOf(setOf(opaque.id, transparentTiles[0].id), transparentTiles.map { it.id }.toSet()), ponActions.map { it.withTiles.toSet() }.toSet())
+        val expectedChiTiles = setOf(
+            setOf(opaque.id, three.id),
+            setOf(opaque.id, transparentThree.id),
+            setOf(transparentTiles[0].id, three.id),
+            setOf(transparentTiles[0].id, transparentThree.id),
+        )
+        assertEquals(expectedChiTiles.size, chiActions.size)
+        assertEquals(expectedChiTiles, chiActions.map { it.withTiles.toSet() }.toSet())
+    }
+
+    /**
+     * 取得他家打出五筒時的碰選項。
+     *
+     * @param hand 碰牌者的手牌。
+     * @return 碰的合法動作。
+     */
+    private fun ponOptions(hand: Hand): List<GameAction.Pon> {
+        val player = FakeMahjongPlayerFactory.create(hand = hand)
+        val tableState = FakeTableStateFactory.create(players = listOf(player), tileWall = nonEmptyWall)
+        val incoming = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))
+        return validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incoming)).filterIsInstance<GameAction.Pon>()
+    }
+
+    /**
+     * 建立透明牌。
+     *
+     * @param tile 牌面。
+     * @return 帶透明牌組件的牌張。
+     */
+    private fun transparent(tile: Tile) = FakeIdentifiedTileFactory.create(tile).let { it.copy(components = it.components.with(BuiltInTileComponents.TRANSPARENT, Unit)) }
+}
