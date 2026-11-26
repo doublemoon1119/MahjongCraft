@@ -50,7 +50,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.loader.IrisShadowPassProbe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameDefinition
@@ -77,6 +76,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.di.modClientModule
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.LinkageIsolatingExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.MahjongCraftExtensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.NativeExtensionRegistries
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.IrisShadowPassProbe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ShadowPassProbe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.metadata.RuntimeMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.ServerHolder

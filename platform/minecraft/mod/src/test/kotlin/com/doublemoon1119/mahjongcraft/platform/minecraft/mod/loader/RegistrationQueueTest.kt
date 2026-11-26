@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.forge.loader
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

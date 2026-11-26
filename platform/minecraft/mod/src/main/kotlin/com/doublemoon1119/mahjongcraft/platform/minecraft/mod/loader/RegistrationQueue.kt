@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.forge.loader
+package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader
 
 /**
  * 等待載入器依登記表分批寫入的項目，以及全部寫入後要執行的工作。
