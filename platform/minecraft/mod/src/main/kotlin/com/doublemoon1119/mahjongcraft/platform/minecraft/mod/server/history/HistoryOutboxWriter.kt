@@ -798,15 +798,15 @@ class HistoryOutboxWriter(
                     if (!wrote) delay(HISTORY_WRITER_IDLE_POLL_INTERVAL)
                 } catch (cancelled: CancellationException) {
                     throw cancelled
+                } catch (error: SQLException) {
+                    lastError = error.message ?: error::class.simpleName
+                    logger.error("History database connection failed; $PAUSED_RECORDING_CONSEQUENCE", error)
+                    connected = false
+                    database = null
+                    store.applyHistoryStorageAvailability(false)
+                    return@launch
                 } catch (error: Exception) {
                     lastError = error.message ?: error::class.simpleName
-                    if (error is SQLException) {
-                        logger.error("History database connection failed; $PAUSED_RECORDING_CONSEQUENCE", error)
-                        connected = false
-                        database = null
-                        store.applyHistoryStorageAvailability(false)
-                        return@launch
-                    }
                     logger.error("History outbox write failed; pending events remain in the authoritative save", error)
                     store.applyHistoryStorageAvailability(false)
                     lastPolicy = null

@@ -7,8 +7,10 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
  *
  * @property reasonId 規則中立的終止原因。
  * @param diagnostic 僅供伺服器診斷的說明，不直接傳給參與者。
+ * @param cause 引起違反的例外，例如規則程式的驗證失敗。不是由例外引起時為 null。
  */
 internal class RuleContractViolationException(
     val reasonId: String,
     diagnostic: String,
-) : IllegalStateException(diagnostic)
+    cause: Throwable? = null,
+) : IllegalStateException(diagnostic, cause)

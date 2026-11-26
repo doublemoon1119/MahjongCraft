@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.repository
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
@@ -13,6 +14,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertSame
 import kotlin.uuid.Uuid
 
 /** [GameRepositoryImpl.withExpectedGame] 的條件式寫入。 */
@@ -140,6 +142,22 @@ class GameRepositoryImplExpectedGameTest {
 
         assertEquals(ExpectedGameResult.Stale, result)
         assertNotNull(repository.getGame(game.id))
+    }
+
+    /** 候選桌況的組件不合法時以規則契約違反拒絕寫入，並保留驗證失敗作為原因。 */
+    @Test
+    fun `invalid components keep the validation failure as the cause`() = runTest {
+        val invalid = IllegalArgumentException("invalid component")
+        val rejecting = GameRepositoryImpl(AuthoritativeStateStore()) { throw invalid }
+        val table = FakeTableStateFactory.create(
+            id = Uuid.random(),
+            players = listOf(FakeMahjongPlayerFactory.create()),
+            config = RiichiRuleConfig(),
+        )
+
+        val failure = assertFailsWith<RuleContractViolationException> { rejecting.updateGame(table.id) { Game(table, GameFlowConfig()) to Unit } }
+
+        assertSame(invalid, failure.cause)
     }
 
     /**

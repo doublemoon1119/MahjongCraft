@@ -21,5 +21,6 @@ internal inline fun <T> requireValidRuleComponents(source: String, block: () -> 
     throw RuleContractViolationException(
         reasonId = GameAbortReasonIds.RULE_EXECUTION_FAILED,
         diagnostic = "$source produced invalid components: ${failure.message}",
+        cause = failure,
     )
 }

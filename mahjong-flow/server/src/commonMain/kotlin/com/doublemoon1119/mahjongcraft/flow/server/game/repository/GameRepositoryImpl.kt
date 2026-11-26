@@ -101,6 +101,7 @@ class GameRepositoryImpl(
             throw RuleContractViolationException(
                 reasonId = GameAbortReasonIds.RULE_EXECUTION_FAILED,
                 diagnostic = "Invalid authoritative components for game ${state.id}: ${failure.message}",
+                cause = failure,
             )
         }
     }

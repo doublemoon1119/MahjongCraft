@@ -411,6 +411,7 @@ class GameFlowCoordinator(
             throw RuleContractViolationException(
                 reasonId = GameAbortReasonIds.AUTOMATIC_DECISION_FAILED,
                 diagnostic = "Automated command ${command::class.simpleName} by $playerId attempted a second authoritative write; first write may be committed: ${violation.message}",
+                cause = violation,
             )
         }
         when (conditional) {
@@ -448,7 +449,7 @@ class GameFlowCoordinator(
     /**
      * 只中止仍屬於原場次的最新已提交狀態，不回滾前一個成功步驟。
      *
-     * - 規則契約違反已帶有明確原因，診斷只附訊息。
+     * - 規則契約違反已帶有明確原因，診斷附上訊息。違反由其他例外引起時，另附該例外的完整堆疊。
      * - 其他例外是規則程式本身出錯，診斷附上完整堆疊，讓管理日誌指出出錯位置。
      *
      * @param basis 失敗操作所屬的原場次。
@@ -461,10 +462,11 @@ class GameFlowCoordinator(
         val contractViolation = failure as? RuleContractViolationException
         val reasonId = contractViolation?.reasonId ?: GameAbortReasonIds.RULE_EXECUTION_FAILED
         val moduleId = moduleRegistry.getModule(current.tableState.config).id
-        val diagnostic = if (contractViolation != null) {
-            "$moduleId: ${failure::class.simpleName}: ${failure.message.orEmpty()}"
-        } else {
-            "$moduleId: ${failure.stackTraceToString()}"
+        val violationCause = contractViolation?.cause
+        val diagnostic = when {
+            contractViolation == null -> "$moduleId: ${failure.stackTraceToString()}"
+            violationCause == null -> "$moduleId: ${failure::class.simpleName}: ${failure.message.orEmpty()}"
+            else -> "$moduleId: ${failure::class.simpleName}: ${failure.message.orEmpty()}\nCaused by: ${violationCause.stackTraceToString()}"
         }
         return if (abortGameUseCase.abort(current, reasonId, diagnostic)) {
             Outcome.Error(GameError.MatchAborted(basis.id, reasonId))

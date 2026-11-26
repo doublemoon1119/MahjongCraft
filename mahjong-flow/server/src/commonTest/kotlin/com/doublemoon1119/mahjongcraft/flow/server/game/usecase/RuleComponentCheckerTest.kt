@@ -30,6 +30,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertSame
 import kotlin.uuid.Uuid
 
@@ -72,7 +73,8 @@ class RuleComponentCheckerTest {
         )
         val tableOwned = ComponentPatch(values = ComponentSet.EMPTY.with(RiichiTableComponents.POT_POINTS, 1000))
 
-        assertFailsWith<RuleContractViolationException> { checker.applyPlayerPatch(table, player, stale, "onPlayerDrew") }
+        val staleFailure = assertFailsWith<RuleContractViolationException> { checker.applyPlayerPatch(table, player, stale, "onPlayerDrew") }
+        assertIs<IllegalArgumentException>(staleFailure.cause)
         assertFailsWith<RuleContractViolationException> { checker.applyPlayerPatch(table, player, tableOwned, "onPlayerDrew") }
         assertFailsWith<RuleContractViolationException> {
             checker.applyPlayerPatches(table, table.players, mapOf(Uuid.random() to ComponentPatch()), "onMeldCompleted")

@@ -28,7 +28,7 @@ class AppCoroutineScopeTest {
 
         // 啟動一個會崩潰的協程，並加上 handler
         scope.launch(handler) {
-            throw RuntimeException("Simulated failure")
+            error("Simulated failure")
         }
 
         // 啟動另一個正常的協程驗證作用域狀態

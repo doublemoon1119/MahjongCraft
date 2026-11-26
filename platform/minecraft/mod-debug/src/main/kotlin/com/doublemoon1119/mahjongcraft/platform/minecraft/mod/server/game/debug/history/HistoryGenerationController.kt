@@ -246,7 +246,7 @@ class HistoryGenerationController(
                 }
             }
             logger.info("History generation batch finished: generated={}, archived={}, pruned={}, replayBytes={}", completed.size, archived.size, pruned.size, samples.values.sum())
-        } catch (timeout: TimeoutCancellationException) {
+        } catch (_: TimeoutCancellationException) {
             markFailure(HistoryGenerationFailure.TIMEOUT)
             logger.warn("History generation batch exceeded its time limit")
         } catch (cancelled: CancellationException) {

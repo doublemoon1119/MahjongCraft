@@ -2305,6 +2305,8 @@ class GameFlowCoordinatorTest {
         assertEquals(1L, abortedGame.automaticControlRevision, "The first write stays committed.")
         assertFalse(abortedGame.isMatchOver, "The swallowed second write must not mark the match over.")
         assertNull(fixtures.gameRepo.getGame(gameId))
+        val diagnostic = assertNotNull(fixtures.abortDiagnostic)
+        assertTrue("Caused by: " in diagnostic && "ExpectedGameWrittenTwiceException" in diagnostic, diagnostic)
     }
 
     /**

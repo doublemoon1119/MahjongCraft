@@ -87,7 +87,7 @@ internal suspend fun <T> runWithExpectedGame(
     val result = try {
         val value = withContext(scope) { command() }
         if (scope.stale) ExpectedGameResult.Stale else ExpectedGameResult.Applied(value)
-    } catch (stale: StaleExpectedGameException) {
+    } catch (_: StaleExpectedGameException) {
         ExpectedGameResult.Stale
     }
     if (scope.violated) throw ExpectedGameWrittenTwiceException(gameId)
