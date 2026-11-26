@@ -19,6 +19,15 @@ require-fabric-loader = ">=0.19.0"
 require-fabric-api = "*"
 require-fabric-language-kotlin = ">=1.13.14"
 
+# NeoForge：編譯依賴
+neoforge = "21.1.268"
+kotlinforforge = "5.13.0"
+
+# NeoForge：執行相容範圍（neoforge.mods.toml 的 Maven 版本範圍寫法）
+require-neoforge-minecraft = "[1.21.1,1.21.2)"
+require-neoforge-loader = "[21.1,)"
+require-neoforge-kotlinforforge = "[5.13,)"
+
 # 共用 mixin 只對註解編譯；各載入器在執行時提供 Mixin 與 MixinExtras。
 mixin = "0.8.5"
 mixinextras = "0.5.4"
@@ -49,6 +58,10 @@ minecraft = { group = "com.mojang", name = "minecraft", version.ref = "minecraft
 fabric-loader = { group = "net.fabricmc", name = "fabric-loader", version.ref = "fabric-loader" }
 fabric-api = { group = "net.fabricmc.fabric-api", name = "fabric-api", version.ref = "fabric-api" }
 fabric-language-kotlin = { group = "net.fabricmc", name = "fabric-language-kotlin", version.ref = "fabric-language-kotlin" }
+
+# NeoForge
+kotlinforforge = { group = "thedarkcolour", name = "kotlinforforge-neoforge", version.ref = "kotlinforforge" }
+kotlinforforge-lib = { group = "thedarkcolour", name = "kfflib-neoforge", version.ref = "kotlinforforge" }
 
 # 共用 mixin
 mixin = { group = "org.spongepowered", name = "mixin", version.ref = "mixin" }

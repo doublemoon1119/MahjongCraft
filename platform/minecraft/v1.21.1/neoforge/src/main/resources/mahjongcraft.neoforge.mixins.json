@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.doublemoon1119.mahjongcraft.platform.neoforge.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "LevelChunkMixin",
+    "ServerLevelEntityCallbacksMixin",
+    "ServerPlayerGameModeMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -230,10 +230,10 @@ fun Project.minecraftModAccessTransformer(): File =
     project(":minecraft_${projectDir.parentFile.name}_mod").file("src/main/resources/META-INF/accesstransformer.cfg")
 
 /**
- * 不顯示 Forge 對原版寫法的過時警告。
+ * 不顯示 Forge 與 NeoForge 對原版寫法的過時警告。
  *
- * Forge 把部分原版寫法標成過時，要 mod 改用 Forge 的寫法。與 Fabric 共用的程式只能用原版寫法。共用程式真正的過時寫法仍由
- * 以原版編譯的 mod 模組與 Fabric 的編譯提醒。
+ * Forge 與 NeoForge 把部分原版寫法標成過時，要 mod 改用它們的寫法。與 Fabric 共用的程式只能用原版寫法。共用程式真正的
+ * 過時寫法仍由以原版編譯的 mod 模組與 Fabric 的編譯提醒。
  */
 fun Project.hideForgeDeprecationsOfVanillaApis() {
     extensions.getByType<KotlinJvmProjectExtension>().compilerOptions {
