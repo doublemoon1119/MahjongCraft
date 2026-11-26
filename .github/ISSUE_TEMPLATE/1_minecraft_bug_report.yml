@@ -1,6 +1,7 @@
 name: Minecraft mod bug report / Minecraft 模組錯誤回報
 description: Report a problem in the MahjongCraft Minecraft mod. / 回報 MahjongCraft Minecraft 模組的問題
-labels: ["bug"]
+type: Bug
+labels: ["area: minecraft"]
 body:
   - type: markdown
     attributes:

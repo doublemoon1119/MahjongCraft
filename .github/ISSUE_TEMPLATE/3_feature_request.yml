@@ -1,6 +1,6 @@
 name: Feature request / 功能建議
 description: Suggest a new feature or an improvement. / 建議新功能或改進
-labels: ["enhancement"]
+type: Feature
 body:
   - type: markdown
     attributes:

@@ -1,6 +1,6 @@
 name: Library, API or build bug report / 函式庫、API 或建置錯誤回報
 description: Report a problem in the mahjong library, the extension API, the build or the documentation. / 回報麻將函式庫、擴充 API、建置或文件的問題
-labels: ["bug"]
+type: Bug
 body:
   - type: markdown
     attributes:
