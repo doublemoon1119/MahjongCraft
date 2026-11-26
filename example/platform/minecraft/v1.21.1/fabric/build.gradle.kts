@@ -70,9 +70,9 @@ loom {
         named("client") {
             runDirectory.set(layout.projectDirectory.dir(clientRunDirectory()))
             // -PmahjongcraftAutotest 時，debug 模組在遊戲啟動後自動執行測試並關閉遊戲，與本體的開發執行相同。
-            autotestClientEnvironment().forEach { (name, value) -> environmentVariable(name, value) }
-            autotestClientArguments().forEach(::programArg)
-            autotestSystemProperties().forEach { (name, value) -> vmArg("-D$name=$value") }
+            environmentVars.putAll(autotestClientEnvironment())
+            programArguments.addAll(autotestClientArguments())
+            systemProperties.putAll(autotestSystemProperties())
         }
         named("server") {
             // 範例沒有伺服器自動測試，伺服器不帶自動測試開關，平常的開發世界不受影響。

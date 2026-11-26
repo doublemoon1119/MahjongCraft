@@ -57,9 +57,9 @@ loom {
             // 分離 client 與 server 的 log、設定及世界資料，避免同時測試時互相覆寫。
             runDirectory.set(layout.projectDirectory.dir(clientRunDirectory()))
             // -PmahjongcraftAutotest 時，debug 模組在遊戲啟動後自動執行測試並關閉遊戲。
-            autotestClientEnvironment().forEach { (name, value) -> environmentVariable(name, value) }
-            autotestClientArguments().forEach(::programArg)
-            autotestSystemProperties().forEach { (name, value) -> vmArg("-D$name=$value") }
+            environmentVars.putAll(autotestClientEnvironment())
+            programArguments.addAll(autotestClientArguments())
+            systemProperties.putAll(autotestSystemProperties())
         }
         named("server") {
             runDirectory.set(layout.projectDirectory.dir(SERVER_RUN_DIRECTORY))
@@ -68,16 +68,16 @@ loom {
         // 第一段：開局、打到一半後關機。
         register("autotestServerStart") {
             server()
-            ideConfigGenerated(false)
+            generateRunConfig.set(false)
             runDirectory.set(layout.projectDirectory.dir(AUTOTEST_SERVER_RUN_DIRECTORY))
-            autotestServerSystemProperties(AUTOTEST_SERVER_START).forEach { (name, value) -> vmArg("-D$name=$value") }
+            systemProperties.putAll(autotestServerSystemProperties(AUTOTEST_SERVER_START))
         }
         // 第二段：讀回第一段留下的世界。
         register("autotestServerResume") {
             server()
-            ideConfigGenerated(false)
+            generateRunConfig.set(false)
             runDirectory.set(layout.projectDirectory.dir(AUTOTEST_SERVER_RUN_DIRECTORY))
-            autotestServerSystemProperties(AUTOTEST_SERVER_RESUME).forEach { (name, value) -> vmArg("-D$name=$value") }
+            systemProperties.putAll(autotestServerSystemProperties(AUTOTEST_SERVER_RESUME))
         }
     }
 }
