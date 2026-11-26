@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character
 
-import org.joml.Matrix4f
 import org.joml.Quaternionf
 import kotlin.math.atan
 
@@ -25,14 +24,6 @@ internal data class RoomModelPreviewLayout(
 
     /** 原版預覽的座標翻轉與垂直旋轉。 */
     fun modelRotation(): Quaternionf = Quaternionf().rotateZ(Math.PI.toFloat()).mul(pitchRotation())
-
-    /**
-     * 原版預覽只翻轉位置矩陣的 Z 軸，不能改成翻轉 Y 軸。
-     *
-     * @param modelScale 此模型使用的比例。
-     * @return 交由繪製矩陣套用的位置縮放。
-     */
-    fun scaleMatrix(modelScale: Int): Matrix4f = Matrix4f().scaling(modelScale.toFloat(), modelScale.toFloat(), -modelScale.toFloat())
 
     /** 原版預覽的整體水平朝向。 */
     fun bodyYaw(): Float = 180f + atan(lookX / 40f) * 20f

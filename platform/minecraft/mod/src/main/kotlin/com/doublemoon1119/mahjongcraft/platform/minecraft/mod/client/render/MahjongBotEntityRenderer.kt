@@ -199,7 +199,7 @@ class MahjongBotEntityRenderer(
         matrices.mulPose(Axis.ZP.rotationDegrees(roll))
         matrices.mulPose(Axis.YP.rotationDegrees(yaw))
         matrices.mulPose(Axis.XP.rotationDegrees(angle))
-        matrices.scale(dimensions.width, dimensions.length, dimensions.depth)
+        matrices.scaleKeepingNormals(dimensions.width, dimensions.length, dimensions.depth)
         matrices.translate(-0.5, -1.0, -0.5)
         val model = ClientModels.find(LIMB_MODEL_ID) ?: modelManager.missingModel
         blockModelRenderer.renderModel(

@@ -3,16 +3,15 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.api.character.AiCharacterPreviewHandle
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.ModelViewMatrix
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.renderEntityLikeInventory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSource
 import com.mojang.blaze3d.pipeline.TextureTarget
 import com.mojang.blaze3d.platform.NativeImage
 import com.mojang.blaze3d.systems.RenderSystem
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexSorting
-import com.mojang.math.Axis
 import net.minecraft.client.Minecraft
 import net.minecraft.client.multiplayer.ClientLevel
-import net.minecraft.client.renderer.LightTexture
 import net.minecraft.client.renderer.texture.DynamicTexture
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.entity.LivingEntity
@@ -97,21 +96,20 @@ internal class NativeCharacterPreviewRenderer(private val registry: ClientAiChar
                         RenderSystem.depthMask(true)
                         RenderSystem.enableBlend()
                         RenderSystem.defaultBlendFunc()
-                        val matrices = PoseStack()
-                        val scale = (SIZE * 0.8f) / maxOf(entity.bbHeight, entity.bbWidth)
-                        matrices.translate(SIZE / 2.0, SIZE * 0.9, 0.0)
-                        matrices.scale(scale, -scale, scale)
-                        matrices.mulPose(Axis.YP.rotationDegrees(180f))
-                        val dispatcher = client.entityRenderDispatcher
-                        dispatcher.overrideCameraOrientation(Quaternionf().rotationY(Math.PI.toFloat()))
-                        dispatcher.setRenderShadow(false)
-                        dispatcher.setRenderHitBoxes(false)
-                        val consumers = client.renderBuffers().bufferSource()
-                        try {
-                            dispatcher.render(entity, 0.0, 0.0, 0.0, 180f, 0f, matrices, consumers, LightTexture.FULL_BRIGHT)
-                        } finally {
-                            consumers.endBatch()
-                        }
+                        client.entityRenderDispatcher.setRenderHitBoxes(false)
+                        // 以原版物品欄的方式從正面畫出模型，視線不偏移。
+                        renderEntityLikeInventory(
+                            matrices = PoseStack(),
+                            consumers = client.renderBuffers().bufferSource(),
+                            x = SIZE / 2f,
+                            y = SIZE * 0.9f,
+                            scale = (SIZE * 0.8f) / maxOf(entity.bbHeight, entity.bbWidth),
+                            rotation = Quaternionf().rotateZ(Math.PI.toFloat()),
+                            lookRotation = Quaternionf(),
+                            entity = entity,
+                            yaw = 180f,
+                            partialTick = 0f,
+                        )
                         RenderSystem.bindTexture(target.colorTextureId)
                         val image = NativeImage(SIZE, SIZE, false)
                         var texture: DynamicTexture? = null

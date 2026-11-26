@@ -1,18 +1,16 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.character
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.framePartialTick
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.mulPose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.renderEntityFollowingLook
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.renderEntityLikeInventory
 import com.mojang.blaze3d.platform.Lighting
-import com.mojang.blaze3d.systems.RenderSystem
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
-import net.minecraft.client.renderer.LightTexture
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.player.Player
 
-/** 房間模型沿用玩家的預覽版面。生物使用原版入口，其他實體使用相同座標方向。 */
+/** 房間模型沿用玩家的預覽版面。生物使用原版入口，其他實體依各版本原版物品欄的步驟繪製。 */
 internal object GuiEntityModelRenderer {
     /**
      * 依卡片原有基線與游標偏移繪製。暫時展示狀態在成功或失敗時都還原。
@@ -41,22 +39,18 @@ internal object GuiEntityModelRenderer {
                         renderEntityFollowingLook(context, view.centerX, view.feetY, scale, view.lookX, view.lookY, entity)
                     }
                 } else {
-                    matrices.pushPose()
-                    matrices.translate(view.centerX.toDouble(), view.feetY.toDouble(), 50.0)
-                    matrices.mulPose(view.scaleMatrix(scale))
-                    matrices.mulPose(view.modelRotation())
-                    Lighting.setupForEntityInInventory()
-                    val dispatcher = client.entityRenderDispatcher
-                    dispatcher.overrideCameraOrientation(view.pitchRotation().conjugate())
-                    dispatcher.setRenderShadow(false)
-                    val consumers = client.renderBuffers().bufferSource()
-                    // 此版本原版物品欄同樣使用此入口選擇預覽目標。
-                    @Suppress("DEPRECATION")
-                    RenderSystem.runAsFancy {
-                        AutoCloseable { consumers.endBatch() }.use {
-                            dispatcher.render(entity, 0.0, 0.0, 0.0, view.bodyYaw(), client.framePartialTick, matrices, consumers, LightTexture.FULL_BRIGHT)
-                        }
-                    }
+                    renderEntityLikeInventory(
+                        matrices = matrices,
+                        consumers = client.renderBuffers().bufferSource(),
+                        x = view.centerX.toFloat(),
+                        y = view.feetY.toFloat(),
+                        scale = scale.toFloat(),
+                        rotation = view.modelRotation(),
+                        lookRotation = view.pitchRotation(),
+                        entity = entity,
+                        yaw = view.bodyYaw(),
+                        partialTick = client.framePartialTick,
+                    )
                 }
             } finally {
                 while (matrices.last() !== originalEntry && !matrices.clear()) matrices.popPose()

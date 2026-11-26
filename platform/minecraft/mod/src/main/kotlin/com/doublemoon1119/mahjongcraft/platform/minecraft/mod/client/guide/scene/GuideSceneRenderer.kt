@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.Mahj
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.MahjongTileItemRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.SceneEntityTranslucency
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.WinCelebrationEffectGeometry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.render.scaleKeepingNormals
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.tile.LatestDiscardHighlightController
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.tile.MatchingTileHighlightController
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongBotEntity
@@ -18,7 +19,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.begin
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.buildOrThrow
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.finishVertex
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.framePartialTick
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.mulPose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.overrideCameraFacingRotation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.setColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
@@ -47,7 +47,6 @@ import net.minecraft.world.InteractionHand
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.item.ItemDisplayContext
-import org.joml.Matrix3f
 import org.joml.Matrix4f
 import org.joml.Quaternionf
 import org.joml.Vector3f
@@ -147,9 +146,7 @@ internal class GuideSceneRenderer : AutoCloseable {
         try {
             matrices.translate(centerX, centerY, SCENE_Z)
             // 上下翻轉只套用在位置；法線只受視角旋轉影響，光線因此可以直接以鏡頭的方向指定。
-            val normal = Matrix3f(matrices.last().normal())
-            matrices.mulPose(Matrix4f().scaling(scale, -scale, scale))
-            matrices.last().normal().set(normal)
+            matrices.scaleKeepingNormals(scale, -scale, scale)
             matrices.translate(-bounds.centerX.toDouble(), -bounds.centerY.toDouble(), 0.0)
             matrices.mulPose(Quaternionf().setFromNormalized(rotation))
             val sceneToScreen = Matrix4f(matrices.last().pose())
