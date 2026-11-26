@@ -19,6 +19,19 @@ require-fabric-loader = ">=0.19.0"
 require-fabric-api = "*"
 require-fabric-language-kotlin = ">=1.13.14"
 
+# NeoForge：編譯依賴
+neoforge = "21.1.268"
+kotlinforforge = "5.13.0"
+
+# NeoForge：執行相容範圍（neoforge.mods.toml 的 Maven 版本範圍寫法）
+require-neoforge-minecraft = "[1.21.1,1.21.2)"
+require-neoforge-loader = "[21.1,)"
+require-neoforge-kotlinforforge = "[5.13,)"
+
+# NeoForge 版的 Iris 與它要求的 Sodium，與 Fabric 版的版本相同。只對 Iris 的 API 編譯、不打包；開發執行時由 shaders 組合載入。
+iris-neoforge = "1.8.8+1.21.1-neoforge"
+sodium-neoforge = "mc1.21.1-0.6.13-neoforge"
+
 # 共用 mixin 只對註解編譯；各載入器在執行時提供 Mixin 與 MixinExtras。
 mixin = "0.8.5"
 mixinextras = "0.5.4"
@@ -50,6 +63,12 @@ fabric-loader = { group = "net.fabricmc", name = "fabric-loader", version.ref = 
 fabric-api = { group = "net.fabricmc.fabric-api", name = "fabric-api", version.ref = "fabric-api" }
 fabric-language-kotlin = { group = "net.fabricmc", name = "fabric-language-kotlin", version.ref = "fabric-language-kotlin" }
 
+# NeoForge
+kotlinforforge = { group = "thedarkcolour", name = "kotlinforforge-neoforge", version.ref = "kotlinforforge" }
+kotlinforforge-lib = { group = "thedarkcolour", name = "kfflib-neoforge", version.ref = "kotlinforforge" }
+iris-neoforge = { group = "maven.modrinth", name = "iris", version.ref = "iris-neoforge" }
+sodium-neoforge = { group = "maven.modrinth", name = "sodium", version.ref = "sodium-neoforge" }
+
 # 共用 mixin
 mixin = { group = "org.spongepowered", name = "mixin", version.ref = "mixin" }
 mixinextras-common = { group = "io.github.llamalad7", name = "mixinextras-common", version.ref = "mixinextras" }
@@ -68,3 +87,5 @@ antlr-runtime = { group = "org.antlr", name = "antlr4-runtime", version.ref = "a
 # Fabric 的 Iris 組合包含 Sodium，以及 Iris 附帶在自己 JAR 中的函式庫：Loom 準備開發執行時會移除它們，須另外提供。
 dev-fabric-iris = ["sodium", "iris", "jcpp", "glsl-transformer", "antlr-runtime"]
 dev-fabric-modmenu = ["mod-menu"]
+# NeoForge 的 Iris 組合：Iris 與它需要的 Sodium。NeoForge 的開發執行保留 mod 內嵌的程式庫，不需要另外提供。
+dev-neoforge-iris = ["sodium-neoforge", "iris-neoforge"]

@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.di
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.loader.FabricLoaderPlatform
-import com.doublemoon1119.mahjongcraft.platform.fabric.loader.IrisShadowPassProbe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.di.modCommonModule
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.extension.LinkageIsolatingExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.IrisShadowPassProbe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.LoaderPlatform
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ShadowPassProbe
 import org.koin.dsl.module

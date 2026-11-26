@@ -63,7 +63,7 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   `:minecraft_common`. `includeTestSourcesOf` adds a test folder that only loader modules compile, such as
   the debug assembly test shared by the loader debug modules.
 - Modules that use the version mod module's access transformer, such as Forge modules, debug modules and the
-  example's version module, read it through `minecraftModAccessTransformer()`. Forge modules call
+  example's version module, read it through `minecraftModAccessTransformer()`. Forge and NeoForge modules call
   `hideForgeDeprecationsOfVanillaApis()`, as the [Forge adapter](../../platform/minecraft/v1.20.1/forge/README.md)
   explains.
 - Logic that does not need Minecraft classes belongs in the cross-version common layer instead, so the code each
@@ -116,8 +116,9 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
 - A loader module's mod JAR is distributable unless its packaging sets `distributable` to `false`, as
   development-only modules and examples do. Distributable mods are what `collectCiArtifacts` gathers for CI:
   the JAR converted to run-time names, which is `remapJar` for Fabric Loom modules and `reobfJar` for
-  ModDevGradle's legacy Forge modules, otherwise the plain JAR. Those modules' plain JAR keeps development
-  names and is not distributable.
+  ModDevGradle's legacy Forge modules, otherwise the plain JAR, as for ModDevGradle's NeoForge modules, which
+  run with Mojang names. The plain JAR of Fabric Loom and legacy Forge modules keeps development names and is
+  not distributable.
 - `-PmahjongcraftBuildMetadata=<value>` appends `.<value>` to the metadata version and `+<value>` to the JAR
   version, for example to identify a CI build by its commit. It must be dot-separated letters, digits and
   hyphens, and it leaves project versions and the version policy unchanged.
@@ -140,11 +141,13 @@ modules. General Gradle configuration, targets, examples and CI are in [Build](b
   that offer the same group share it, for example `group("shaders", mc1201.bundles.dev.fabric.iris)`. Group
   names describe the environment, not one mod, while bundle names include the loader and name the mods, because
   each loader needs its own mods.
-- Fabric Loom modules add selected groups to `modLocalRuntime`, and ModDevGradle's legacy Forge modules to
-  `modRuntimeOnly`, so the mods are neither bundled nor published as dependencies. Another loader sets
-  `configurationName` to its equivalent.
+- Fabric Loom modules add selected groups to `modLocalRuntime`, ModDevGradle's legacy Forge modules to
+  `modRuntimeOnly`, and ModDevGradle's NeoForge modules to `localRuntime`, which only the module's own run
+  class path extends. The mods are neither bundled nor passed to modules that depend on the loader module.
+  Another loader sets `configurationName` to its equivalent.
 - When several targets are selected, one switch applies to all of them, so a loader that needs no mods for
-  a group declares it empty, as Forge does for `modmenu` because its own mod list has a settings button.
+  a group declares it empty, as Forge and NeoForge do for `modmenu` because their own mod list has a settings
+  button.
 - A group that loads a shader mod can also name a shader pack with `shaderPack(group = ..., pack = ...)`.
   When the group is selected, the client run puts the pack in its `shaderpacks` folder and writes the shader
   mod's settings to turn it on before the game starts, so manual runs and automated tests both run with
@@ -171,7 +174,7 @@ Common commands, each followed by what it runs. The sections below explain each 
   Minecraft EULA on your behalf (see [Automated Server Test](#automated-server-test)):
 
   ```shell
-  ./gradlew autotest "-PmahjongcraftTarget=minecraft-v1.20.1-fabric,minecraft-v1.20.1-forge,minecraft-v1.21.1-fabric" "-PmahjongcraftAutotest=true"
+  ./gradlew autotest "-PmahjongcraftTarget=minecraft-v1.20.1-fabric,minecraft-v1.20.1-forge,minecraft-v1.21.1-fabric,minecraft-v1.21.1-neoforge" "-PmahjongcraftAutotest=true"
   ```
 
 - One loader's client and server tests at the same time, with a summary report: select only that target.
@@ -310,7 +313,7 @@ Each kind of run in detail:
   A loader module's `runClient` can still run its own client test directly:
 
   ```shell
-  ./gradlew autotest "-PmahjongcraftTarget=minecraft-v1.20.1-fabric,minecraft-v1.20.1-forge,minecraft-v1.21.1-fabric" "-PmahjongcraftAutotest=true"
+  ./gradlew autotest "-PmahjongcraftTarget=minecraft-v1.20.1-fabric,minecraft-v1.20.1-forge,minecraft-v1.21.1-fabric,minecraft-v1.21.1-neoforge" "-PmahjongcraftAutotest=true"
   ```
 
 - At most two games run at the same time; pass `-PmahjongcraftAutotestParallel=<count>` to change it. Each game

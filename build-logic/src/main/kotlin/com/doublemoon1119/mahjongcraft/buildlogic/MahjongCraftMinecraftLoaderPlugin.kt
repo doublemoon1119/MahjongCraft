@@ -176,6 +176,8 @@ private const val LOOM_RUNTIME_JAVA_PROPERTY = "fabric.loom.runtimeJavaCompatibi
  * - 專案有宣告組合時，開關選中卻沒有宣告的組合，在專案設定完成後報錯。
  * - Fabric Loom 模組預設把選中的組合加入只在開發執行時載入的 `modLocalRuntime`。
  * - ModDevGradle 舊版 Forge 模組預設加入 `modRuntimeOnly`：模組先轉成開發時的名稱，只在執行時使用、不打包。
+ * - ModDevGradle 的 NeoForge 模組預設加入 `localRuntime`：只有本模組的執行 classpath 繼承它，不打包，也不傳給依賴本模組的
+ *   其他模組。NeoForge 的開發執行從執行 classpath 找到模組。
  */
 private fun Project.configureDevMods() {
     val selected = MinecraftDevMods.parse(providers.gradleProperty(MinecraftDevMods.PROPERTY_NAME).orNull)
@@ -186,10 +188,27 @@ private fun Project.configureDevMods() {
     pluginManager.withPlugin(MODDEV_LEGACY_FORGE_PLUGIN_ID) {
         devMods.configurationName.convention(MODDEV_REMAPPED_RUNTIME_CONFIGURATION)
     }
+    pluginManager.withPlugin(MODDEV_PLUGIN_ID) {
+        val localRuntime = configurations.maybeCreate(MODDEV_LOCAL_RUNTIME_CONFIGURATION).apply {
+            isCanBeConsumed = false
+            isCanBeResolved = false
+        }
+        configurations.named(RUNTIME_CLASSPATH_CONFIGURATION) { extendsFrom(localRuntime) }
+        devMods.configurationName.convention(MODDEV_LOCAL_RUNTIME_CONFIGURATION)
+    }
     afterEvaluate {
         MinecraftDevMods.requireDeclared(path, selected, devMods.groupNames)
     }
 }
+
+/** ModDevGradle 的 NeoForge 外掛的 plugin ID。 */
+private const val MODDEV_PLUGIN_ID = "net.neoforged.moddev"
+
+/** ModDevGradle 的 NeoForge 模組只在本模組的開發執行時載入、不打包也不傳遞的模組設定。 */
+private const val MODDEV_LOCAL_RUNTIME_CONFIGURATION = "localRuntime"
+
+/** Java 外掛的執行 classpath 設定。 */
+private const val RUNTIME_CLASSPATH_CONFIGURATION = "runtimeClasspath"
 
 /** ModDevGradle 舊版 Forge 外掛轉成開發時名稱、只在執行時使用的模組設定。 */
 private const val MODDEV_REMAPPED_RUNTIME_CONFIGURATION = "modRuntimeOnly"

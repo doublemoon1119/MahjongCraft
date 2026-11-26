@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.forge.loader
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.RegisteredEntry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.RegistrationQueue
 import net.minecraft.core.Registry
 import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation

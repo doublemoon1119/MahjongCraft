@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.forge.loader
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ItemStackRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModelLoading
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ModelLoadings
 import net.minecraft.client.Minecraft
 import net.minecraft.client.color.item.ItemColor
 import net.minecraft.client.renderer.entity.EntityRendererProvider
@@ -23,7 +24,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent
  * 以 Forge 的登記事件實作 [ClientRegistrar]：登記先保留，Forge 發出對應的登記事件時才套用。
  *
  * 實體繪製器與物品顏色在各自的登記事件中加入，物品屬性在用戶端設定階段的主執行緒加入。以程式繪製的物品與模型載入
- * 分別由 [ForgeItemRenderers] 與 [ForgeModelLoadings] 在 Forge 需要時取用。
+ * 分別由 [ForgeItemRenderers] 與 [ModelLoadings] 在 Forge 需要時取用。
  */
 class ForgeClientRegistrar : ClientRegistrar {
     /** 等待實體繪製器登記事件的登記。 */
@@ -55,7 +56,7 @@ class ForgeClientRegistrar : ClientRegistrar {
             event.enqueueWork { pending.forEach { it() } }
         }
         modBus.addListener(EventPriority.NORMAL, false, ModelEvent.RegisterAdditional::class.java) { event ->
-            ForgeModelLoadings.prepare(Minecraft.getInstance().resourceManager).forEach(event::register)
+            ModelLoadings.prepare(Minecraft.getInstance().resourceManager).forEach(event::register)
         }
     }
 
@@ -76,6 +77,6 @@ class ForgeClientRegistrar : ClientRegistrar {
     }
 
     override fun <T : Any> registerModelLoading(loading: ModelLoading<T>) {
-        ForgeModelLoadings.add(loading)
+        ModelLoadings.add(loading)
     }
 }

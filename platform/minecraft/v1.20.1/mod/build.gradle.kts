@@ -1,4 +1,5 @@
 import com.doublemoon1119.mahjongcraft.buildlogic.includeSharedVersionSources
+import com.doublemoon1119.mahjongcraft.buildlogic.modrinth
 
 // Minecraft 1.20.1 中與載入器無關的程式與資源，由各載入器模組一起編譯；這個模組自己只對原版 Minecraft 編譯與測試，
 // 確認其中的程式不依賴任何載入器，產出的 JAR 不發布。
@@ -41,6 +42,11 @@ legacyForge {
     addModdingDependenciesTo(sourceSets.test.get())
 }
 
+repositories {
+    // 光影的陰影判斷對其編譯的 Iris 只發布在 Modrinth 的 Maven 倉庫。
+    modrinth()
+}
+
 // 與載入器模組使用相同的專案模組與函式庫；載入器模組編譯這裡的原始碼時自行宣告同樣的依賴，並負責打包。
 dependencies {
     // 本體附帶的專案模組與函式庫，與載入器模組相同的共用清單。
@@ -50,6 +56,8 @@ dependencies {
     // 共用的 mixin 只對註解編譯；各載入器在執行時提供 Mixin 與 MixinExtras。
     compileOnly(mc1201.mixin)
     compileOnly(mc1201.mixinextras.common)
+    // 光影的陰影判斷只對 Iris 的 API 編譯；API 不含 Minecraft 的類別，可以對任何載入器版本的 Iris 編譯。
+    compileOnly(mc1201.iris)
 
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)

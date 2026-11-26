@@ -104,6 +104,99 @@ class MinecraftDevModsTest {
         assertTrue(result.output.contains("Unknown development mod groups for :loader: missing. Available: iris, modmenu"), result.output)
     }
 
+    /** ModDevGradle 的 NeoForge 模組把選中的組合加入只給本模組開發執行用的設定，不傳給依賴它的模組。 */
+    @Test
+    fun `neoforge modules keep selected groups to their own runs`() = withFixture { root ->
+        addNeoForgeModule(root)
+
+        val result = runner(root, ":neoforge:printDevRuntime", "-P${MinecraftDevMods.PROPERTY_NAME}=iris").build()
+
+        assertTrue(result.output.contains("local runtime: [example:iris:1]"), result.output)
+        assertTrue(result.output.contains("run class path extends local runtime: true"), result.output)
+        assertTrue(result.output.contains("published runtime: []"), result.output)
+    }
+
+    /**
+     * 在 fixture 加入一個套用 ModDevGradle NeoForge 外掛的載入器模組。
+     *
+     * 外掛以同樣 ID 的替身代替，只套用 Java 外掛，不下載 NeoForge。
+     *
+     * @param root fixture 根目錄。
+     */
+    private fun addNeoForgeModule(root: File) {
+        root.resolve("buildSrc/build.gradle").apply {
+            parentFile.mkdirs()
+            writeText(
+                """
+                plugins {
+                    id("java-gradle-plugin")
+                }
+
+                gradlePlugin {
+                    plugins {
+                        modDev {
+                            id = "net.neoforged.moddev"
+                            implementationClass = "FakeModDevPlugin"
+                        }
+                    }
+                }
+                """.trimIndent() + "\n",
+            )
+        }
+        root.resolve("buildSrc/src/main/java/FakeModDevPlugin.java").apply {
+            parentFile.mkdirs()
+            writeText(
+                """
+                import org.gradle.api.Plugin;
+                import org.gradle.api.Project;
+
+                public class FakeModDevPlugin implements Plugin<Project> {
+                    @Override
+                    public void apply(Project project) {
+                        project.getPluginManager().apply("java");
+                    }
+                }
+                """.trimIndent() + "\n",
+            )
+        }
+        val settings = root.resolve("settings.gradle")
+        settings.writeText(
+            settings.readText()
+                .replace("include(\":debug\")", "include(\":debug\")\ninclude(\":neoforge\")\nproject(\":neoforge\").projectDir = file(\"platform/v1.21.1/neoforge\")")
+                .replace("[\":loader\": 17, \":debug\": 17]", "[\":loader\": 17, \":debug\": 17, \":neoforge\": 21]"),
+        )
+        root.resolve("platform/v1.21.1/neoforge/build.gradle").apply {
+            parentFile.mkdirs()
+            writeText(
+                """
+                plugins {
+                    id("mahjongcraft.minecraft-loader")
+                    id("net.neoforged.moddev")
+                }
+
+                devMods {
+                    group("iris", "example:iris:1")
+                }
+
+                def localRuntime = provider { configurations.localRuntime.dependencies.collect { "${'$'}{it.group}:${'$'}{it.name}:${'$'}{it.version}" } }
+                def extendsLocal = provider { configurations.runtimeClasspath.extendsFrom.collect { it.name }.contains("localRuntime") }
+                def published = provider { configurations.runtimeElements.allDependencies.collect { "${'$'}{it.group}:${'$'}{it.name}:${'$'}{it.version}" }.findAll { it.startsWith("example:") } }
+
+                tasks.register("printDevRuntime") {
+                    def listed = localRuntime
+                    def extended = extendsLocal
+                    def runtime = published
+                    doLast {
+                        println("local runtime: " + listed.get())
+                        println("run class path extends local runtime: " + extended.get())
+                        println("published runtime: " + runtime.get())
+                    }
+                }
+                """.trimIndent() + "\n",
+            )
+        }
+    }
+
     /**
      * 建立含兩個載入器模組的 fixture：一個宣告組合並以自訂設定代替 Fabric Loom 的開發執行設定，另一個沒有宣告任何組合。
      */

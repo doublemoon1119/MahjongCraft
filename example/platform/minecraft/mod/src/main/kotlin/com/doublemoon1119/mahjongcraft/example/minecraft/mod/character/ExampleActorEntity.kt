@@ -8,6 +8,7 @@ import net.minecraft.nbt.CompoundTag
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
 import net.minecraft.world.damagesource.DamageSource
+import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.player.Player
@@ -96,6 +97,24 @@ class ExampleActorEntity(type: EntityType<out ArmorStand>, world: Level) : Armor
                 0f,
             ),
         )
+    }
+
+    /**
+     * 開始乘坐時立即換成坐姿。
+     *
+     * - 伺服器與客戶端都會執行，不必等下一次 tick。
+     * - 不加入世界、不執行 tick 的預覽模型，也能在場景讓它乘坐座位時坐下。
+     */
+    override fun startRiding(vehicle: Entity, force: Boolean): Boolean {
+        val started = super.startRiding(vehicle, force)
+        if (started) updateSittingPose()
+        return started
+    }
+
+    /** 離開座位時立即恢復站姿，預覽模型離開場景座位後也不會維持坐姿。 */
+    override fun removeVehicle() {
+        super.removeVehicle()
+        updateSittingPose()
     }
 
     /** 更新返回位置、坐姿與揮手計時，姿態透過原生資料追蹤同步。 */
