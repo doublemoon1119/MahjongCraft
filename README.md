@@ -64,7 +64,11 @@ in an applicable notice file:
 - `notice.txt` inside Minecraft resource folders, where file names must be lowercase
 
 ## 💬 Support
-Please report any issues to
-[the issue tracker](https://github.com/doublemoon1119/MahjongCraft/issues) on Github.
 
-我是臺灣人，除了英文以外你也可用中文發表 [問題](https://github.com/doublemoon1119/MahjongCraft/issues) 或留言
+- Questions, ideas and anything else to discuss: [Discussions](https://github.com/doublemoon1119/MahjongCraft/discussions).
+- Bug reports and feature requests: [the issue tracker](https://github.com/doublemoon1119/MahjongCraft/issues), using its forms.
+- Security problems, such as ways to crash or cheat on a server: report them privately through
+  [Report a vulnerability](https://github.com/doublemoon1119/MahjongCraft/security/advisories/new)
+  instead of opening an issue.
+
+我是臺灣人，除了英文以外，你也可以用中文到 [Discussions](https://github.com/doublemoon1119/MahjongCraft/discussions) 發問或留言，或到 [issue](https://github.com/doublemoon1119/MahjongCraft/issues) 回報問題
