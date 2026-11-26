@@ -94,7 +94,7 @@ class TableLocationValidationQueueTest {
         val cleanedEntries = mutableListOf<TableLocationEntry>()
 
         /** 推進一次 server tick 邊界。 */
-        suspend fun advance() {
+        fun advance() {
             queue.advance(
                 session = session,
                 isChunkUsable = { _, _, _ -> true },

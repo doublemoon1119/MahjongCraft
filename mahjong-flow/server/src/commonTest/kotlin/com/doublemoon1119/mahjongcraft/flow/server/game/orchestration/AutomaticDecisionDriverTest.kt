@@ -243,7 +243,7 @@ class AutomaticDecisionDriverTest {
      * @param enabledControlIds 各玩家啟用的自動操作識別碼。
      * @return 使用正式規則與測試資料倉庫的解析器。
      */
-    private suspend fun createDriver(
+    private fun createDriver(
         state: TableState,
         enabledControlIds: Map<Uuid, Set<String>>,
     ): AutomaticDecisionDriver {

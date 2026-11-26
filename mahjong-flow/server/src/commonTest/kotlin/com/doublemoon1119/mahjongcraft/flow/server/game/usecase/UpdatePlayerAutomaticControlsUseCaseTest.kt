@@ -39,7 +39,7 @@ class UpdatePlayerAutomaticControlsUseCaseTest {
          * @param isMatchOver 對局是否已結束。
          * @return 建立的對局與測試玩家 ID。
          */
-        suspend fun createGame(
+        fun createGame(
             automaticControlRevision: Long = 0L,
             enabledControlIds: Set<String> = emptySet(),
             isMatchOver: Boolean = false,

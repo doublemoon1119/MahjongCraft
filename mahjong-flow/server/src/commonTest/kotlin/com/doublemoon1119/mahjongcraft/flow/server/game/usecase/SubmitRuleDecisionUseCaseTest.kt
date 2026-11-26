@@ -542,7 +542,7 @@ class SubmitRuleDecisionUseCaseTest {
      * @param inputSpec 玩家在視窗中的輸入規格。
      * @return 保存對局的 repository、受測用例與開窗後的對局。
      */
-    private suspend fun scoreChangingFixture(
+    private fun scoreChangingFixture(
         timing: RuleDecisionTiming,
         inputSpec: RuleDecisionInputSpec = RuleDecisionInputSpec.Confirmation,
     ): Triple<FakeGameRepository, SubmitRuleDecisionUseCase, Game> {

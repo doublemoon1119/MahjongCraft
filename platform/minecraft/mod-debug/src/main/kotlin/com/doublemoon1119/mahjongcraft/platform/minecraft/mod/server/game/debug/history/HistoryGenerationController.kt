@@ -173,6 +173,7 @@ class HistoryGenerationController(
      * @param create 建立一場隔離對局。
      * @param verify 整場打完、封存之前的額外檢查。
      */
+    @Suppress("SuspendFunSwallowedCancellation") // 協程被取消時先做收尾，再把取消往外丟，取消沒有被吞掉。
     private suspend fun runBatch(
         count: Int,
         session: Uuid,

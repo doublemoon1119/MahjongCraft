@@ -306,6 +306,7 @@ class HistoryOutboxWriter(
      * @param expectedSessionId 原要求所屬 session。
      * @return 實際清理結果或附有部分結果的失敗。
      */
+    @Suppress("SuspendFunSwallowedCancellation") // 協程被取消時先做收尾，再把取消往外丟，取消沒有被吞掉。
     internal suspend fun runCleanup(expectedSessionId: Uuid? = currentSessionId): HistoryManagementResult<HistoryCleanupReport> = manage(expectedSessionId) { activeDatabase, policy ->
         var before: HistoryDiskUsage? = null
         var committed = 0L
@@ -716,6 +717,7 @@ class HistoryOutboxWriter(
      * @param path 歷史資料庫檔案位置。
      * @return 是否成功建立背景寫入 session。
      */
+    @Suppress("SuspendFunSwallowedCancellation") // 協程被取消時先做收尾，再把取消往外丟，取消沒有被吞掉。
     private suspend fun open(path: Path): Boolean {
         val opened = try {
             withContext(dispatchers.io) { SqliteHistoryDatabase.open(path) }

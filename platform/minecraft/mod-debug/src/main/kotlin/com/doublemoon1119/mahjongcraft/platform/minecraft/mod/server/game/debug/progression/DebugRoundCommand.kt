@@ -99,7 +99,7 @@ class DebugRoundCommand(
      * @param tableId 牌桌識別碼。
      * @param state 本場數已更新的權威桌況。
      */
-    private suspend fun publishStickPresentation(tableId: Uuid, state: TableState) {
+    private fun publishStickPresentation(tableId: Uuid, state: TableState) {
         presentationPublisher.publishTableSteps(tableId, listOf(TableStep(state, emptyList())))
     }
 

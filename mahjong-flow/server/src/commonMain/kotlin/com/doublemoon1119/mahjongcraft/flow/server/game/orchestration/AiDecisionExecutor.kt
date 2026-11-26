@@ -93,6 +93,7 @@ class AiDecisionExecutor(
      * @param fallback 沒有等到策略結果時使用的固定結果，在呼叫端的執行緒上計算。
      * @return 策略或固定結果。這一局已有策略呼叫正在正常計算時為 null，這次不決策。
      */
+    @Suppress("SuspendFunSwallowedCancellation") // 協程被取消時先做收尾，再把取消往外丟，取消沒有被吞掉。
     suspend fun <T : Any> decide(
         gameId: Uuid,
         playerId: Uuid,

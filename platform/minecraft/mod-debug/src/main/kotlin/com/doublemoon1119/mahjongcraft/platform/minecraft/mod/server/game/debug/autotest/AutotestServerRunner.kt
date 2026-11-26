@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.autotest.AutotestServerTable.Companion.playerId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -176,7 +177,14 @@ internal class AutotestServerRunner(private val koin: Koin) {
         logger.info("Server autotest step {} started", id)
         val context = AutotestServerContext()
         val mark = TimeSource.Monotonic.markNow()
-        val error = runCatching { context.body() }.exceptionOrNull()
+        val error = try {
+            context.body()
+            null
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Throwable) {
+            failure
+        }
         val errors = AutotestErrorLog.drain()
         context.check("MahjongCraft logged no errors", errors.isEmpty(), errors.joinToString(" | ").takeIf(String::isNotEmpty))
         val passed = error == null && context.checks.all { it.passed }

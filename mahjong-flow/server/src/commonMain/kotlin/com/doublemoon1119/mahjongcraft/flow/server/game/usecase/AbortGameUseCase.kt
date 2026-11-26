@@ -14,12 +14,15 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvai
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 
 /**
  * 對局無法安全繼續時，原子地中止本場並還原房間，不改分數或補造正常終局。
  *
  * - 只在權威對局仍等於失敗時的快照時提交。重複呼叫或舊背景結果不能移除後來的新場次。
  * - 權威資料先完成轉移，再處理呈現與通知。
+ * - 權威資料轉移後，清除舊快照與通知回房不受呼叫端取消影響。
  * - 不移除場地，也不釋放仍屬於該房間的參與關係。
  *
  * @property store 房間與對局共用的權威交易來源。
@@ -78,17 +81,19 @@ class AbortGameUseCase(
                 diagnostic = diagnostic,
             )
         } finally {
-            // 外部清理失敗不能阻止核心快照回房；原始例外仍向呼叫端傳遞。
-            val isCurrent = { store.state.value.rooms[gameId] === room && gameId !in store.state.value.games }
-            observers.forEach { observerId -> gameSnapshots.removeSnapshotIf(gameId, observerId, isCurrent) }
-            if (isCurrent()) {
-                GameRoomRestoration.publish(
-                    room = room,
-                    reason = JoinReason.MatchAborted,
-                    snapshots = roomSnapshots,
-                    events = roomEvents,
-                    presentation = presentation,
-                )
+            // 外部清理失敗或呼叫端被取消都不能阻止核心快照回房；原始例外仍向呼叫端傳遞。
+            withContext(NonCancellable) {
+                val isCurrent = { store.state.value.rooms[gameId] === room && gameId !in store.state.value.games }
+                observers.forEach { observerId -> gameSnapshots.removeSnapshotIf(gameId, observerId, isCurrent) }
+                if (isCurrent()) {
+                    GameRoomRestoration.publish(
+                        room = room,
+                        reason = JoinReason.MatchAborted,
+                        snapshots = roomSnapshots,
+                        events = roomEvents,
+                        presentation = presentation,
+                    )
+                }
             }
         }
         return true

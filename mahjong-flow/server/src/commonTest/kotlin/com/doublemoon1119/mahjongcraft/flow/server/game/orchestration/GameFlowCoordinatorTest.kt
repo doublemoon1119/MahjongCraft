@@ -113,11 +113,13 @@ import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableCom
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
@@ -174,6 +176,7 @@ class GameFlowCoordinatorTest {
         ruleDecisionResolvers: RuleDecisionResolverRegistry = RuleDecisionResolverRegistry().apply { freeze() },
         extraCommandHandlers: (ExtensionGameCommandExecutorRegistry) -> Unit = {},
         ruleModuleDecorator: ((RiichiRuleModule) -> MahjongRuleModule<RiichiRuleConfig>)? = null,
+        failurePolicy: ExtensionFailurePolicy = ExtensionFailurePolicy.Default,
     ) {
         /**
          * 驗證各交易產生的事件中只有一次指定種類的結算。
@@ -352,6 +355,7 @@ class GameFlowCoordinatorTest {
             abortGameHandler = abortGameHandler,
         )
         val coordinator = GameFlowCoordinator(
+            failurePolicy = failurePolicy,
             gameActionRouter = router,
             gameRepository = gameRepo,
             moduleRegistry = moduleRegistry,
@@ -451,6 +455,18 @@ class GameFlowCoordinatorTest {
     ) : MahjongRuleModule<RiichiRuleConfig> by delegate {
         /** 模擬規則程式在流局結算中出錯。 */
         override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult = error(THROWING_RULE_MESSAGE)
+    }
+
+    /**
+     * 保留其餘日麻行為，讓一般流局結算在執行中被取消。
+     *
+     * @property delegate 提供其餘正常日麻行為的規則模組。
+     */
+    private class CancellingExhaustiveDrawRuleModule(
+        private val delegate: RiichiRuleModule,
+    ) : MahjongRuleModule<RiichiRuleConfig> by delegate {
+        /** 模擬流局結算執行中協程被取消。 */
+        override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult = throw CancellationException("cancelled during settlement")
     }
 
     /**
@@ -853,6 +869,51 @@ class GameFlowCoordinatorTest {
         val diagnostic = assertNotNull(fixtures.abortDiagnostic)
         assertTrue(THROWING_RULE_MESSAGE in diagnostic, diagnostic)
         assertTrue("${ThrowingExhaustiveDrawRuleModule::class.simpleName}.declareExhaustiveDraw" in diagnostic, diagnostic)
+    }
+
+    /** 規則程式中途被取消時，取消往外傳，不當成規則失敗中止對局，即使失敗政策把它當成可隔離。 */
+    @Test
+    fun `test cancellation during a guarded rule step propagates instead of aborting`() = runTest {
+        val fixtures = Fixtures(ruleModuleDecorator = ::CancellingExhaustiveDrawRuleModule, failurePolicy = ISOLATE_EVERY_FAILURE)
+        val playerId = Uuid.random()
+        val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(player),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        assertFailsWith<CancellationException> { fixtures.coordinator.dispatchThenDrive(gameId, playerId, GameCommand.Draw) }
+
+        assertNull(fixtures.abortReason)
+        assertNotNull(fixtures.gameRepo.getGame(gameId))
+    }
+
+    /** AI 決策中途被取消時，自動推進把取消往外傳，不中止對局，即使失敗政策把它當成可隔離。 */
+    @Test
+    fun `test cancellation during an automated step propagates instead of aborting`() = runTest {
+        val fixtures = Fixtures(extraStrategies = mapOf(CANCELLING_STRATEGY_KEY to CancellingStrategy), failurePolicy = ISOLATE_EVERY_FAILURE)
+        val aiId = Uuid.random()
+        val ai = FakeMahjongPlayerFactory.create(
+            id = aiId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(ai, FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table, mapOf(aiId to CANCELLING_STRATEGY_KEY))
+
+        assertFailsWith<CancellationException> { fixtures.coordinator.advanceAutomatedPlayerStep(gameId) }
+
+        assertNull(fixtures.abortReason)
+        assertNotNull(fixtures.gameRepo.getGame(gameId))
     }
 
     // ---- 四槓散了：捨牌後收斂 ----
@@ -2296,6 +2357,11 @@ class GameFlowCoordinatorTest {
         override suspend fun decideRuleDecision(context: RuleDecisionAiContext): RuleDecisionSubmission = awaitCancellation()
     }
 
+    /** 決策中途被取消的 AI 策略。 */
+    private object CancellingStrategy : MahjongAiStrategy {
+        override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = throw CancellationException("cancelled while deciding")
+    }
+
     /** 只完成規則選擇、不改變桌況的測試策略。 */
     private object FixedRuleDecisionStrategy : MahjongAiStrategy {
         override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand {
@@ -2414,6 +2480,12 @@ class GameFlowCoordinatorTest {
 
         /** [FixedCommandStrategy] 的策略 key。 */
         const val FIXED_STRATEGY_KEY = "test:fixed_command"
+
+        /** [CancellingStrategy] 的策略識別碼。 */
+        const val CANCELLING_STRATEGY_KEY = "test:cancelling"
+
+        /** 把任何失敗都當成可隔離的失敗政策，用來確認取消不靠失敗政策往外傳。 */
+        val ISOLATE_EVERY_FAILURE = ExtensionFailurePolicy { true }
 
         /** [HangingStrategy] 的策略 key。 */
         const val HANGING_STRATEGY_KEY = "test:hanging"

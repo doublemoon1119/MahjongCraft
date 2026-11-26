@@ -38,6 +38,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionContext
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlin.uuid.Uuid
 
@@ -204,6 +205,8 @@ class GameFlowCoordinator(
         val basis = gameRepository.getGame(gameId) ?: return false
         return try {
             advanceAutomatedPlayerStepUnchecked(gameId)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (failure: Throwable) {
             if (!failurePolicy.isIsolatable(failure)) throw failure
             abortAfterFailure(basis, failure)
@@ -435,6 +438,8 @@ class GameFlowCoordinator(
         } else {
             result
         }
+    } catch (cancelled: CancellationException) {
+        throw cancelled
     } catch (failure: Throwable) {
         if (!failurePolicy.isIsolatable(failure)) throw failure
         abortAfterFailure(basis, failure)

@@ -38,7 +38,7 @@ class FakeGameRepository : GameRepository {
      *
      * @param game 要建立或取代的測試遊戲。
      */
-    suspend fun setGame(game: Game) {
+    fun setGame(game: Game) {
         games[game.id] = game
     }
 

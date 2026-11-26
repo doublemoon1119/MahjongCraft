@@ -34,9 +34,10 @@ kind of change you are making; the rules in them apply even when this file does 
 - If it fails on ktlint violations, run `./gradlew ktlintFormat` to auto-fix them instead of fixing
   them by hand.
 - Run `./gradlew detektAll` before committing. It runs detekt with type resolution, limited to the rules
-  enabled in `config/detekt/detekt.yml` (KDoc layout, unnecessary fully qualified names and unused private
-  declarations). `build` does not run detekt, and detekt does not auto-fix; fix the reported code, or suppress
-  an intentional exception at the declaration with `@Suppress("RuleName")` and a comment stating the reason.
+  enabled in `config/detekt/detekt.yml` (KDoc layout, unnecessary fully qualified names, unused private
+  declarations and coroutine handling, such as rethrowing a caught cancellation). `build` does not run detekt,
+  and detekt does not auto-fix; fix the reported code, or suppress an intentional exception at the declaration
+  with `@Suppress("RuleName")` and a comment stating the reason.
 - `./gradlew build` also verifies the Minecraft language files (`platform/minecraft/common/.../lang/`)
   are sorted by translation key. If it fails, run `./gradlew sortMinecraftLangFiles` to auto-fix instead
   of reordering entries by hand. This check reads that fixed directory directly and always runs

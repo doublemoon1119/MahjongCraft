@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraf
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
@@ -33,7 +34,12 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGame
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -84,6 +90,29 @@ class AbortGameUseCaseTest {
             fixtures.useCase.abort(game, "test:broken", "test diagnostic")
         }
 
+        assertNull(fixtures.store.getGame(game.id))
+        assertNotNull(fixtures.store.getRoom(game.id))
+        assertNull(fixtures.gameSnapshots.getSnapshot(game.id, game.roomPlayerIds.first()))
+        assertEquals(JoinReason.MatchAborted, fixtures.roomEvents.getJoinReason(game.id, game.roomPlayerIds.first(), game.roomPlayerIds.first()))
+    }
+
+    /** 外部清理期間呼叫端被取消，仍移除舊快照並通知回房，取消照常結束呼叫端。 */
+    @Test
+    fun `cancellation during external effects still restores core room notifications`() = runTest {
+        val fixtures = Fixtures(
+            effects = GameAbortEffects { _, _, _, _, _ ->
+                currentCoroutineContext().cancel()
+                currentCoroutineContext().ensureActive()
+            },
+            checksCancellationOnSnapshotRemoval = true,
+        )
+        val game = fixtures.openGame()
+        fixtures.seedSnapshots(game)
+
+        val aborting = launch { fixtures.useCase.abort(game, "test:broken", "test diagnostic") }
+        aborting.join()
+
+        assertTrue(aborting.isCancelled)
         assertNull(fixtures.store.getGame(game.id))
         assertNotNull(fixtures.store.getRoom(game.id))
         assertNull(fixtures.gameSnapshots.getSnapshot(game.id, game.roomPlayerIds.first()))
@@ -161,10 +190,12 @@ class AbortGameUseCaseTest {
      *
      * @param historyRecordingEnabled 是否同時驗證中止後的歷史事實。
      * @param effects 額外清理出口，可模擬外部失敗。
+     * @param checksCancellationOnSnapshotRemoval 移除對局快照前是否先經過會檢查取消的掛起點，例如正式實作等待鎖。
      */
     private class Fixtures(
         historyRecordingEnabled: Boolean = false,
         effects: GameAbortEffects = GameAbortEffects.NONE,
+        checksCancellationOnSnapshotRemoval: Boolean = false,
     ) {
         val store = AuthoritativeStateStore(historyRecordingEnabled = historyRecordingEnabled, maxPendingHistoryEvents = 10_000)
         val gameRepo = componentValidatedGameRepository(store)
@@ -175,7 +206,7 @@ class AbortGameUseCaseTest {
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val useCase = AbortGameUseCase(
             store = store,
-            gameSnapshots = gameSnapshots,
+            gameSnapshots = if (checksCancellationOnSnapshotRemoval) CancellationCheckingGameSnapshots(gameSnapshots) else gameSnapshots,
             roomSnapshots = roomSnapshots,
             roomEvents = roomEvents,
             presentation = presentation,
@@ -246,5 +277,21 @@ class AbortGameUseCaseTest {
                 synchronizationService = DecisionTimerSynchronizationService(manager, repository, FakeDecisionTimerUpdatePublisher()),
             )
         }
+    }
+}
+
+/**
+ * 移除快照前先經過會檢查取消的掛起點，其餘照 [delegate] 處理。
+ *
+ * @param delegate 實際保存快照的 repository。
+ */
+private class CancellationCheckingGameSnapshots(private val delegate: GameSnapshotRepository) : GameSnapshotRepository by delegate {
+    override suspend fun removeSnapshotIf(
+        gameId: Uuid,
+        observerId: Uuid,
+        isStillValid: () -> Boolean,
+    ): Boolean {
+        yield()
+        return delegate.removeSnapshotIf(gameId, observerId, isStillValid)
     }
 }

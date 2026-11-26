@@ -94,7 +94,7 @@ class AdvanceRoundUseCaseTest {
          * @param remainingReserveByPlayerId 要保留的玩家思考時間。null 時沿用預設值。
          * @param enabledAutomaticControlIdsByPlayerId 玩家目前啟用的自動控制項目。
          */
-        suspend fun setCompletedState(
+        fun setCompletedState(
             tableState: TableState,
             remainingReserveByPlayerId: Map<Uuid, Duration>? = null,
             enabledAutomaticControlIdsByPlayerId: Map<Uuid, Set<String>> = emptyMap(),

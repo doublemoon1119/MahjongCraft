@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.Aut
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.autotestReportMarkdown
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ClientEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -170,7 +171,14 @@ internal class AutotestClientRunner(
         val context = AutotestContext(client, outputDirectory, step.id)
         val mark = TimeSource.Monotonic.markNow()
         AutotestRuntime.drainSounds()
-        val error = runCatching { step.run(context) }.exceptionOrNull()
+        val error = try {
+            step.run(context)
+            null
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Throwable) {
+            failure
+        }
         val passed = error == null && context.checks.all(AutotestCheck::passed)
         results += AutotestStepResult(
             id = step.id,

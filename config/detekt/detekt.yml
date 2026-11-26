@@ -5,6 +5,30 @@
 config:
   validation: true
 
+coroutines:
+  active: true
+  GlobalCoroutineUsage:
+    active: true
+  RedundantSuspendModifier:
+    active: true
+  SleepInsteadOfDelay:
+    active: true
+  # Tests clean up in finally at the end of the test, where cancellation cannot cut the cleanup short.
+  SuspendFunInFinallySection:
+    active: true
+    excludes: &testSources ['**/src/test/**', '**/src/*Test/**']
+  # A catch of CancellationException has to rethrow it before doing anything else. Tests catch exceptions to
+  # assert on them.
+  SuspendFunSwallowedCancellation:
+    active: true
+    excludes: *testSources
+  # Test helpers take TestScope as their receiver to drive virtual time.
+  SuspendFunWithCoroutineScopeReceiver:
+    active: true
+    excludes: *testSources
+  SuspendFunWithFlowReturnType:
+    active: true
+
 mahjongcraft:
   active: true
   KDocOpeningLine:

@@ -114,7 +114,7 @@ class HistoryBrowseRoundControllerTest {
      * @param roundNumber 本次選取的局序號。
      * @return 使用虛擬時間的瀏覽控制器。
      */
-    private suspend fun TestScope.openRound(
+    private fun TestScope.openRound(
         transport: FakeRoundHistoryTransport,
         roundNumber: Int = 1,
     ): HistoryBrowseController {
@@ -775,7 +775,7 @@ class HistoryBrowseRoundControllerTest {
      * @param transport 可手動回覆的模擬傳輸。
      * @return 使用虛擬時間的瀏覽控制器。
      */
-    private suspend fun TestScope.openReplay(transport: FakeRoundHistoryTransport): HistoryBrowseController {
+    private fun TestScope.openReplay(transport: FakeRoundHistoryTransport): HistoryBrowseController {
         val controller = openRound(transport)
         transport.respondEvents(roundNumber = 1, start = 0, next = EVENTS_PAGE, transactionCount = TRANSACTION_COUNT)
         runCurrent()
