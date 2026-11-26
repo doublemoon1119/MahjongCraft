@@ -76,3 +76,17 @@ jobs:
           path: build/reports/autotest-server/
           if-no-files-found: ignore
           retention-days: 7
+      # The build writes the summary last. When the step timed out or the build stopped before that, the reports
+      # and logs are still in each server's own run directory, so those are uploaded instead.
+      - name: Upload uncollected automated server test files
+        if: >-
+          always() && steps.server-autotest.outcome != 'skipped'
+          && hashFiles('build/reports/autotest-server/*/summary.md') == ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: server-autotest-raw-${{ matrix.target }}
+          path: |
+            platform/minecraft/*/*/run/autotest-server/logs/
+            platform/minecraft/*/*/run/autotest-server/autotest/
+          if-no-files-found: ignore
+          retention-days: 7

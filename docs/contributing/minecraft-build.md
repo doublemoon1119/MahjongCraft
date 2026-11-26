@@ -343,7 +343,9 @@ all platforms (see [Build](build.md#continuous-integration)). On top of them it 
   ```
 
   The step uploads `build/reports/autotest-server/`, which holds the summary, each server's report and its
-  logs, whether the test passed or not.
+  logs, whether the test passed or not. The build writes that folder last, so when the step timed out or the
+  build stopped before the summary, the workflow uploads the reports and logs from each server's own
+  `run/autotest-server/` instead, as a separate `server-autotest-raw-<target>` upload.
 - **A CI run accepts the Minecraft EULA on the runner**, on behalf of the owner of the repository the
   workflow runs in, including a fork, because the server test writes `eula=true` into its run directory.
 - The client test is not part of CI: it needs a display.
