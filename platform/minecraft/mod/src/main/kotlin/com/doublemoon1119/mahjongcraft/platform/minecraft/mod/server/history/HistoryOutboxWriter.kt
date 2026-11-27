@@ -144,7 +144,11 @@ class HistoryOutboxWriter(
     /** 最近一次對帳已知的序號缺口。 */
     @Volatile private var knownGaps: Map<String, Long> = emptyMap()
 
-    /** 目前是否已建立可用的資料庫 session。 */
+    /**
+     * 目前是否已建立可用的資料庫 session。
+     *
+     * - 因錯誤斷線時，先把紀錄儲存標記為不可用，再改為 false，讓看到斷線的呼叫端一定也看到記錄已暫停。
+     */
     @Volatile private var connected = false
 
     /** 此連線已成功同步的設定停止診斷，避免輪詢時重複寫入相同資料。 */
@@ -750,11 +754,11 @@ class HistoryOutboxWriter(
             connected = false
             throw cancelled
         } catch (error: Exception) {
-            database = null
-            connected = false
             lastError = error.message ?: error::class.simpleName
             logger.error("History startup reconciliation failed; $PAUSED_RECORDING_CONSEQUENCE", error)
             store.applyHistoryStorageAvailability(false)
+            database = null
+            connected = false
             return false
         }
         connected = true
@@ -801,9 +805,9 @@ class HistoryOutboxWriter(
                 } catch (error: SQLException) {
                     lastError = error.message ?: error::class.simpleName
                     logger.error("History database connection failed; $PAUSED_RECORDING_CONSEQUENCE", error)
+                    store.applyHistoryStorageAvailability(false)
                     connected = false
                     database = null
-                    store.applyHistoryStorageAvailability(false)
                     return@launch
                 } catch (error: Exception) {
                     lastError = error.message ?: error::class.simpleName
