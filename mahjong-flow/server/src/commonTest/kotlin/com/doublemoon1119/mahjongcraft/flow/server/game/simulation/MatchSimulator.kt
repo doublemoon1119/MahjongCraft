@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.dispatchThenDrive
@@ -21,6 +22,8 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtension
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBuiltInAiStrategies
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.testMatchSeed
 import kotlin.random.Random
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
 /**
@@ -110,10 +113,14 @@ internal data class MatchResult(
  * - 點數守恆以日麻計算：所有玩家的分數加上場上立直棒的點數，等於開局總分。
  *
  * @property config 對局規則設定。
+ * @property onGameWritten 每次寫入對局後收到寫入後的對局。
+ * @property stalledDecisionRate 每次 AI 決策拖過等待上限的機率，模擬伺服器忙碌時改用固定命令。0 時不拖延。
  * @property registerStrategies 在原始策略 registry 登記可用的策略。預設為所有內建策略。
  */
 internal class MatchSimulator(
     private val config: MahjongRuleConfig,
+    private val onGameWritten: (Game) -> Unit = {},
+    private val stalledDecisionRate: Double = 0.0,
     private val registerStrategies: (registry: MahjongAiStrategyRegistry, runtime: SimulationRuntime) -> Unit = { registry, runtime ->
         registry.registerBuiltInAiStrategies(
             moduleRegistry = runtime.moduleRegistry,
@@ -295,15 +302,31 @@ internal class MatchSimulator(
      * @param seed 決定隨機出牌選擇的數字。
      * @return 註冊好儀器化 AI 策略的新對局環境。
      */
-    private fun runtime(recorder: DecisionRecorder, seed: Int): SimulationRuntime = SimulationRuntime(defaultStrategyKey = BuiltInAiStrategyKeys.BEGINNER).also { runtime ->
+    private fun runtime(recorder: DecisionRecorder, seed: Int): SimulationRuntime = SimulationRuntime(
+        defaultStrategyKey = BuiltInAiStrategyKeys.BEGINNER,
+        onGameWritten = onGameWritten,
+        aiDecisionTimeout = SIMULATED_DECISION_TIMEOUT.takeIf { stalledDecisionRate > 0.0 },
+    ).also { runtime ->
         val source = MahjongAiStrategyRegistryImpl(defaultKey = BuiltInAiStrategyKeys.BEGINNER)
         registerStrategies(source, runtime)
         val seededRandom = RandomAiStrategy(runtime.extensionActionRegistry, Random(seed))
         val seededSource = object : MahjongAiStrategyRegistry by source {
             override fun resolve(key: String?): MahjongAiStrategy = if (key == RandomAiStrategy.KEY) seededRandom else source.resolve(key)
         }
+        val stallRandom = Random(seed * STALL_SEED_FACTOR + 1)
+        val stallingSource = if (stalledDecisionRate <= 0.0) {
+            seededSource
+        } else {
+            object : MahjongAiStrategyRegistry by seededSource {
+                override fun resolve(key: String?): MahjongAiStrategy = SlowDecisionStrategy(
+                    delegate = seededSource.resolve(key),
+                    random = stallRandom,
+                    rate = stalledDecisionRate,
+                )
+            }
+        }
         runtime.aiStrategyRegistry.registerInstrumented(
-            source = seededSource,
+            source = stallingSource,
             keys = source.getAllStrategyKeys(),
             extensionActionRegistry = runtime.extensionActionRegistry,
             recorder = recorder,
@@ -323,3 +346,9 @@ private class StartedMatch(
     val gameId: Uuid,
     val strategyKeysByPlayer: Map<Uuid, String>,
 )
+
+/** 模擬伺服器忙碌時，等待一次 AI 決策的上限。 */
+private val SIMULATED_DECISION_TIMEOUT: Duration = 5.milliseconds
+
+/** 拖延亂數的種子與對局數字的換算倍數，讓兩者不使用同一串亂數。 */
+private const val STALL_SEED_FACTOR = 31

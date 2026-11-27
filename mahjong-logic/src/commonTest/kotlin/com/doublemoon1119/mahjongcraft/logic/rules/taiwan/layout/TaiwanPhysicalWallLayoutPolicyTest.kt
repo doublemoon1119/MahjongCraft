@@ -219,6 +219,64 @@ class TaiwanPhysicalWallLayoutPolicyTest {
     }
 
     /**
+     * 窮舉補牌與一般摸牌的交錯方式，一路摸到牌牆耗盡，任何一步都不得拒絕、不得出現位置相同或重疊的牌。
+     *
+     * - 全部開門位置、有無花牌都檢查。
+     * - 第一次補牌前先摸 [FIRST_SUPPLEMENT_OFFSETS] 張活牌，之後每兩次補牌之間摸 [LIVE_DRAW_GAPS] 張活牌。
+     * - 補滿規則上限後繼續摸活牌到牌牆耗盡。
+     */
+    @Test
+    fun `every interleaving of live draws and replacements keeps placements distinct`() {
+        listOf(true, false).forEach { useFlowerTiles ->
+            val stacksPerSide = if (useFlowerTiles) STACKS_PER_SIDE_WITH_FLOWERS else STACKS_PER_SIDE_WITHOUT_FLOWERS
+            val maximumDraws = if (useFlowerTiles) MAX_FLOWER_AND_KAN_DRAWS else MAX_KAN_DRAWS
+            allOpenings(stacksPerSide).forEach { opening ->
+                FIRST_SUPPLEMENT_OFFSETS.forEach { firstOffset ->
+                    LIVE_DRAW_GAPS.forEach { gap ->
+                        val case = "$opening flowers=$useFlowerTiles first=$firstOffset gap=$gap"
+                        var fixture = fixture(opening, useFlowerTiles)
+                        var supplementalDraws = 0
+                        var liveDrawsUntilSupplement = firstOffset
+                        while (fixture.tableState.tileWall.getAllTiles().isNotEmpty()) {
+                            val before = fixture.tableState
+                            val supplement = liveDrawsUntilSupplement == 0 && supplementalDraws < maximumDraws
+                            val after = if (supplement) {
+                                withSupplementalDraw(before)
+                            } else {
+                                before.copy(tileWall = TileWall(before.tileWall.getAllTiles().drop(1)), physicalWallLayout = null)
+                            }
+                            val decision = runCatching {
+                                fixture.policy.resolveTransitionValidated(
+                                    context = PhysicalWallLayoutTransitionContext(
+                                        tableStateBeforeAction = before,
+                                        tableStateAfterAction = after,
+                                        currentLayout = fixture.layout,
+                                        actorPlayerId = before.currentPlayer.id,
+                                        action = if (supplement) TAIWAN_REVEAL_FLOWER_ACTION else GameAction.Draw,
+                                    ),
+                                )
+                            }.getOrElse { error -> throw AssertionError("Transition threw at $case after $supplementalDraws draws", error) }
+                            val layout = when (decision) {
+                                is PhysicalWallLayoutTransitionDecision.Completed -> decision.layout
+                                PhysicalWallLayoutTransitionDecision.Unchanged -> fixture.layout
+                                is PhysicalWallLayoutTransitionDecision.Rejected -> error("Rejected at $case after $supplementalDraws draws: ${decision.reasonId}")
+                            }
+                            fixture = fixture.copy(tableState = after.copy(physicalWallLayout = layout), layout = layout)
+                            assertNoOverlap(layout, fixture.tableState, "$case after $supplementalDraws draws")
+                            if (supplement) {
+                                supplementalDraws++
+                                liveDrawsUntilSupplement = gap
+                            } else if (liveDrawsUntilSupplement > 0) {
+                                liveDrawsUntilSupplement--
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * 從保留區補一張牌，並在第一位玩家的花牌區多放一張牌，讓規則算出的補牌次數加一。
      *
      * @param state 補牌前的桌況。
@@ -469,6 +527,12 @@ class TaiwanPhysicalWallLayoutPolicyTest {
 
         /** 模擬時每摸幾張活牌補一次牌。1 代表連續補牌。 */
         val LIVE_DRAWS_PER_SUPPLEMENT: List<Int> = listOf(1, 2, 4)
+
+        /** 窮舉時第一次補牌前已摸的活牌張數。 */
+        val FIRST_SUPPLEMENT_OFFSETS: List<Int> = (0..5).toList()
+
+        /** 窮舉時兩次補牌之間摸的活牌張數。0 代表連續補牌。 */
+        val LIVE_DRAW_GAPS: List<Int> = (0..3).toList()
 
         /** 環狀座標的精度倍數。 */
         const val COORDINATE_SCALE = 1000
