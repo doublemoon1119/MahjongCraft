@@ -202,8 +202,9 @@ internal class AutotestContext(
      * @param eye 鏡頭的位置。
      * @param yaw 鏡頭的水平角度，與原版相同：0 朝南（z 增加的方向）。
      * @param pitch 鏡頭的俯仰角度，正值朝下。
+     * @param beforeCapture 鏡頭就位後、截圖前執行，例如等鏡頭附近的地形畫好。
      */
-    suspend fun screenshotFrom(name: String, eye: Vec3, yaw: Float, pitch: Float) {
+    suspend fun screenshotFrom(name: String, eye: Vec3, yaw: Float, pitch: Float, beforeCapture: suspend () -> Unit = {}) {
         val level = client.level ?: return screenshot(name)
         val camera = ArmorStand(level, eye.x, eye.y, eye.z)
         camera.setPos(eye.x, eye.y - camera.eyeHeight, eye.z)
@@ -221,6 +222,7 @@ internal class AutotestContext(
         client.options.hideGui = true
         client.setCameraEntity(camera)
         try {
+            beforeCapture()
             screenshot(name)
         } finally {
             previous?.let(client::setCameraEntity)

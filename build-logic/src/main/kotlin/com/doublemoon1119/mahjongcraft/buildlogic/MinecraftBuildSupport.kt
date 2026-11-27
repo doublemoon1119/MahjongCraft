@@ -141,16 +141,16 @@ private fun Project.autotestProperties(selection: String): Map<String, String> {
 }
 
 /**
- * 自動測試的開發用戶端要加上的環境變數。
+ * 自動測試與宣傳截圖的開發用戶端要加上的環境變數。
  *
  * - 讓 Minecraft 使用的音訊庫 OpenAL Soft 使用空輸出：聲音照常載入與播放，但聽不到。
  * - 不改動遊戲的音量或輸出裝置設定。
- * - 沒有設定 `mahjongcraftAutotest` 時為空。
+ * - 沒有設定 `mahjongcraftAutotest`、也沒有開啟宣傳截圖模式時為空。
  *
  * @return 環境變數名稱與值。
  */
 fun Project.autotestClientEnvironment(): Map<String, String> =
-    if (autotestSystemProperties().isEmpty()) emptyMap() else mapOf("ALSOFT_DRIVERS" to "null")
+    if (autotestSystemProperties().isEmpty() && !showcaseEnabled()) emptyMap() else mapOf("ALSOFT_DRIVERS" to "null")
 
 /**
  * 自動測試的開發用戶端要加上的程式參數。
@@ -172,10 +172,66 @@ fun Project.autotestClientArguments(): List<String> = if (autotestSystemProperti
  *
  * - 平常：`run/client`。
  * - 自動測試：獨立的 `run/autotest-client`，設定、世界與報告不會與平常的混在一起。
+ * - 宣傳截圖：獨立的 `run/showcase-client`，理由與自動測試相同。
  *
  * @return 執行目錄名稱。
  */
-fun Project.clientRunDirectory(): String = if (autotestSystemProperties().isEmpty()) "run/client" else "run/autotest-client"
+fun Project.clientRunDirectory(): String = when {
+    autotestSystemProperties().isNotEmpty() -> "run/autotest-client"
+    showcaseEnabled() -> "run/showcase-client"
+    else -> "run/client"
+}
+
+/**
+ * `mahjongcraftShowcase` 的值是否開啟宣傳截圖模式。
+ *
+ * - `true`（不分大小寫，前後空白不計）：開啟。
+ * - 其他值或沒有設定：關閉。
+ *
+ * @param value Gradle 屬性的值。沒有設定時為 null。
+ * @return 開啟時為 true。
+ */
+internal fun isShowcaseEnabled(value: String?): Boolean = value?.trim().equals("true", ignoreCase = true)
+
+/**
+ * 這次建置是否開啟宣傳截圖模式，由 Gradle 屬性 `mahjongcraftShowcase` 決定（[isShowcaseEnabled]）。
+ *
+ * @return 開啟時為 true。
+ */
+fun Project.showcaseEnabled(): Boolean = isShowcaseEnabled(providers.gradleProperty("mahjongcraftShowcase").orNull)
+
+/**
+ * 宣傳截圖模式要傳給開發用戶端的系統屬性。
+ *
+ * - `mahjongcraft.showcase`：debug 模組讀到後，在遊戲啟動後自動拍攝宣傳截圖並關閉遊戲。
+ * - `mahjongcraft.showcase.title`：後製時疊在 GitHub 預覽圖上的標題圖片，為倉庫中的 `docs/assets/branding/title.png`。
+ * - 沒有開啟宣傳截圖模式時為空。
+ *
+ * @return 系統屬性名稱與值。
+ */
+fun Project.showcaseSystemProperties(): Map<String, String> = if (!showcaseEnabled()) {
+    emptyMap()
+} else {
+    mapOf(
+        "mahjongcraft.showcase" to "true",
+        "mahjongcraft.showcase.title" to rootProject.file("docs/assets/branding/title.png").absolutePath,
+    )
+}
+
+/**
+ * 宣傳截圖模式的開發用戶端要加上的程式參數。
+ *
+ * - 固定玩家名稱，每次拍到的玩家相同。
+ * - 固定 2560×1440 的視窗，截圖的大小與構圖每次相同。
+ * - 沒有開啟宣傳截圖模式時為空。
+ *
+ * @return 程式參數。
+ */
+fun Project.showcaseClientArguments(): List<String> = if (!showcaseEnabled()) {
+    emptyList()
+} else {
+    listOf("--username", "MahjongShowcase", "--width", "2560", "--height", "1440")
+}
 
 /** 開發伺服器的執行目錄名稱，相對於模組資料夾。 */
 const val SERVER_RUN_DIRECTORY: String = "run/server"

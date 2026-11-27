@@ -1,14 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.client.debug.autotest
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.AutotestSelection
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.showcase.ShowcaseMode
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.time.Duration
 import kotlin.time.TimeSource
 
 /**
- * 自動測試期間 mixin 查詢與回報的共用狀態。
+ * 自動測試與宣傳截圖期間 mixin 查詢與回報的共用狀態。
  *
- * - 是否處於自動測試模式。這個模式從遊戲啟動起就生效，直到遊戲關閉。
+ * - 是否處於自動測試或宣傳截圖模式。模式從遊戲啟動起就生效，直到遊戲關閉。
  * - 記錄下來的聲音播放要求。
  */
 object AutotestRuntime {
@@ -19,16 +20,16 @@ object AutotestRuntime {
     private val sounds = CopyOnWriteArrayList<AutotestSoundRequest>()
 
     /**
-     * 是否處於自動測試模式。這個模式下：
+     * 是否處於自動測試或宣傳截圖模式。這兩種模式下：
      *
      * - 忽略滑鼠鍵盤輸入，不鎖定游標。
      * - 失去焦點不暫停。
      * - 聲音只記錄不播放。
      *
-     * @return 處於自動測試模式時為 true。
+     * @return 處於自動測試或宣傳截圖模式時為 true。
      */
     @JvmStatic
-    fun isActive(): Boolean = AutotestSelection.current != null
+    fun isActive(): Boolean = AutotestSelection.current != null || ShowcaseMode.current != null
 
     /**
      * 記錄一次被攔下的聲音播放要求。

@@ -563,6 +563,8 @@ class DebugGameScenarioTest {
             "mahjongcraft:riichi/debug/ippatsu_tsumo",
             "mahjongcraft:riichi/debug/meld_showcase",
             "mahjongcraft:riichi/debug/noten_declaration_exhaustive_draw",
+            "mahjongcraft:riichi/debug/showcase_midgame",
+            "mahjongcraft:riichi/debug/showcase_tsumo",
             "mahjongcraft:riichi/debug/wall_opening",
             "mahjongcraft:riichi/debug/washizu_opening",
             "mahjongcraft:riichi/debug/washizu_tiles",
