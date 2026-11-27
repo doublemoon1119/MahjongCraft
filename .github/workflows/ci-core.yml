@@ -3,7 +3,7 @@
 name: CI (core)
 
 # Runs on every push and pull request. Branches created before this workflow existed do not contain it,
-# so pushes to them do not run CI.
+# so pushes to them do not run it. A change to Markdown outside src/ alone skips every job but the result.
 on:
   push:
   pull_request:
@@ -17,8 +17,23 @@ permissions:
   contents: read
 
 jobs:
+  # Decides whether the change needs this workflow's jobs; a change to Markdown outside src/ alone skips them.
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.changes.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: changes
+        uses: ./.github/actions/detect-changes
+
   targets:
     name: List targets
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.targets.outputs.matrix }}
@@ -44,3 +59,18 @@ jobs:
       - uses: ./.github/actions/verify-target
         with:
           target: ${{ matrix.target }}
+
+  # Always runs and passes when every job passed or was skipped, so a required check can name this one job whatever
+  # the targets are and whether the change skipped them.
+  result:
+    name: CI (core) result
+    needs: [changes, targets, verify]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the jobs
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "$RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          echo "$RESULTS" | jq -e '.changes.result == "success" and ([.[].result] | all(. == "success" or . == "skipped"))' > /dev/null
