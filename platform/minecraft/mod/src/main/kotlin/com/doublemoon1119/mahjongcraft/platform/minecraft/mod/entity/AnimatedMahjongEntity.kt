@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationMotionEvent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationQueueDriver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
@@ -158,8 +159,12 @@ abstract class AnimatedMahjongEntity<C>(
                     error("AnimationQueueDriver must never report a WaitUntil/PlayMotion step as an instant step")
             }
         }
-        result.startedPlayMotion?.let { step -> applyPlayMotion(step, startGameTime = level().gameTime) }
-        if (result.completedPlayMotion) onPlayMotionCompleted()
+        result.motionEvents.forEach { event ->
+            when (event) {
+                is AnimationMotionEvent.Started -> applyPlayMotion(event.step, startGameTime = level().gameTime)
+                AnimationMotionEvent.Completed -> onPlayMotionCompleted()
+            }
+        }
         queue.clear()
         queue.addAll(result.remainingQueue)
         activeStepEndGameTime = result.activeStepEndGameTime

@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.tile
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationMotionEvent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationQueueDriver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationQueueTickResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
@@ -33,8 +35,8 @@ class TileRevealReorderTest {
             assertTrue(waiting.appliedInstantSteps.isEmpty())
             val due = AnimationQueueDriver.tick(waiting.remainingQueue, waiting.activeStepEndGameTime, 100L)
             assertEquals(listOf(AnimationStep.Custom(MahjongTilePose.FACE_UP)), due.appliedInstantSteps)
-            assertEquals(pose.rotationDegrees, due.startedPlayMotion?.startPoseRotationDegrees)
-            assertEquals(MahjongTilePose.FACE_UP.rotationDegrees, due.startedPlayMotion?.endPoseRotationDegrees)
+            assertEquals(pose.rotationDegrees, due.startedMotion?.startPoseRotationDegrees)
+            assertEquals(MahjongTilePose.FACE_UP.rotationDegrees, due.startedMotion?.endPoseRotationDegrees)
         }
     }
 
@@ -53,7 +55,7 @@ class TileRevealReorderTest {
 
         val due = AnimationQueueDriver.tick(waiting.remainingQueue, waiting.activeStepEndGameTime, 100L)
         assertEquals(listOf(AnimationStep.Teleport(1.0, 2.0, 3.0, 90.0f)), due.appliedInstantSteps)
-        assertNull(due.startedPlayMotion)
+        assertNull(due.startedMotion)
         assertTrue(due.remainingQueue.isEmpty())
     }
 
@@ -77,10 +79,10 @@ class TileRevealReorderTest {
                 poseMotion,
             )
             val reordered = AnimationQueueDriver.tick(steps, null, 100L)
-            assertNull(reordered.startedPlayMotion)
+            assertNull(reordered.startedMotion)
             val laidDown = AnimationQueueDriver.tick(reordered.remainingQueue, reordered.activeStepEndGameTime, 130L)
             assertEquals(listOf(AnimationStep.Custom(pose)), laidDown.appliedInstantSteps)
-            assertEquals(poseMotion, laidDown.startedPlayMotion)
+            assertEquals(poseMotion, laidDown.startedMotion)
         }
     }
 
@@ -94,4 +96,8 @@ class TileRevealReorderTest {
         assertEquals(1, TileAnimationSteps.groupLaydownSoundIndex(listOf(standing, standing, standing)))
         assertNull(TileAnimationSteps.groupLaydownSoundIndex(listOf(up, up)))
     }
+
+    /** 這次 tick 開始播放的動作。沒有開始時為 null。 */
+    private val AnimationQueueTickResult<*>.startedMotion: AnimationStep.PlayMotion?
+        get() = motionEvents.filterIsInstance<AnimationMotionEvent.Started>().lastOrNull()?.step
 }

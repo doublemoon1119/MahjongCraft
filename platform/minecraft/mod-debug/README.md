@@ -77,8 +77,12 @@ Automated tests run in a fixed environment and act only on explicit conditions:
 
 Steps that need fixed situations create them instead of waiting for them by chance:
 
-- `/mahjongcraft debug room start <seat>` starts the room's match through the normal start flow with the
-  host at the given seat, so a new match always moves the player to a different seat.
+- `/mahjongcraft debug room start <seat> [seed]` starts the room's match through the normal start flow with
+  the host at the given seat, so a new match always moves the player to a different seat. A seed word fixes
+  the match's randomness, such as the dice, the wall and the hands: the same seed, rule settings and seats
+  open the same match every time. With the default three-player Riichi settings, the seed `cross-gap-8`
+  opens a first round whose wall opening moves tiles between the two walls on either side of the empty seat,
+  from any seat; `DebugRoomSeedTest` checks it.
 - `/mahjongcraft debug history fixture <id>` records a fixed match from the common debug tools'
   `HistoryFixtures`: its first rounds deal scripted hands, walls and dice and follow scripted decisions; the
   later rounds use a fixed seed and every player discards the drawn tile and passes every call until the

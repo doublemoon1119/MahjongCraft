@@ -71,8 +71,7 @@ class AnimationQueueDriverTest {
         val result = AnimationQueueDriver.tick<Nothing>(emptyList(), activeStepEndGameTime = null, currentGameTime = 100L)
 
         assertTrue(result.appliedInstantSteps.isEmpty())
-        assertNull(result.startedPlayMotion)
-        assertEquals(false, result.completedPlayMotion)
+        assertTrue(result.motionEvents.isEmpty())
         assertTrue(result.remainingQueue.isEmpty())
         assertNull(result.activeStepEndGameTime)
     }
@@ -92,7 +91,7 @@ class AnimationQueueDriverTest {
         assertNull(result.activeStepEndGameTime)
     }
 
-    /** [AnimationStep.PlayMotion] 啟動當下就回報 `startedPlayMotion`，到期前不重複啟動。 */
+    /** [AnimationStep.PlayMotion] 啟動當下就回報開始，到期前不重複啟動。 */
     @Test
     fun `test play motion reports start once and completes when due`() {
         val motion = AnimationStep.PlayMotion(
@@ -107,19 +106,16 @@ class AnimationQueueDriverTest {
         val queue = listOf<AnimationStep<Nothing>>(motion)
 
         val started = AnimationQueueDriver.tick(queue, activeStepEndGameTime = null, currentGameTime = 0L)
-        assertEquals(motion, started.startedPlayMotion)
-        assertEquals(false, started.completedPlayMotion)
+        assertEquals(listOf(AnimationMotionEvent.Started(motion)), started.motionEvents)
         assertEquals(4L, started.activeStepEndGameTime)
         assertEquals(queue, started.remainingQueue)
 
         val midFlight = AnimationQueueDriver.tick(started.remainingQueue, started.activeStepEndGameTime, currentGameTime = 2L)
-        assertNull(midFlight.startedPlayMotion)
-        assertEquals(false, midFlight.completedPlayMotion)
+        assertTrue(midFlight.motionEvents.isEmpty())
         assertEquals(queue, midFlight.remainingQueue)
 
         val completed = AnimationQueueDriver.tick(midFlight.remainingQueue, midFlight.activeStepEndGameTime, currentGameTime = 4L)
-        assertNull(completed.startedPlayMotion)
-        assertTrue(completed.completedPlayMotion)
+        assertEquals(listOf(AnimationMotionEvent.Completed), completed.motionEvents)
         assertTrue(completed.remainingQueue.isEmpty())
         assertNull(completed.activeStepEndGameTime)
     }
@@ -148,9 +144,40 @@ class AnimationQueueDriverTest {
         // currentGameTime 遠遠超過 105。
         val result = AnimationQueueDriver.tick(queue, activeStepEndGameTime = null, currentGameTime = 1_000_000L)
 
-        assertEquals(motion, result.startedPlayMotion)
+        assertEquals(listOf(AnimationMotionEvent.Started(motion)), result.motionEvents)
         assertEquals(1_000_000L + 3, result.activeStepEndGameTime)
         assertEquals(listOf(motion), result.remainingQueue)
+    }
+
+    /**
+     * 一段動作播完、緊接著的瞬移與下一段動作在同一個 tick 開始時，先回報結束再回報開始，
+     * 依序處理後下一段仍在播放。
+     */
+    @Test
+    fun `test a motion ending and the next starting in one tick report completion before start`() {
+        val first = AnimationStep.PlayMotion(5, 0.0, 0.3, 0.0, 0.0, 0.0f, 0.0f)
+        val teleport = AnimationStep.Teleport(0.0, 0.0, -2.0, 0.0f)
+        val second = AnimationStep.PlayMotion(34, 0.0, 0.0, 0.0, 2.0, 0.0f, 0.0f)
+        val started = AnimationQueueDriver.tick(listOf<AnimationStep<Nothing>>(first, teleport, second), null, currentGameTime = 0L)
+
+        val handover = AnimationQueueDriver.tick(started.remainingQueue, started.activeStepEndGameTime, currentGameTime = 5L)
+
+        assertEquals(listOf(teleport), handover.appliedInstantSteps)
+        assertEquals(listOf(AnimationMotionEvent.Completed, AnimationMotionEvent.Started(second)), handover.motionEvents)
+        assertEquals(5L + 34, handover.activeStepEndGameTime)
+        assertEquals(listOf(second), handover.remainingQueue)
+    }
+
+    /** 長度為 `0` 的動作在同一個 tick 內先開始再結束。 */
+    @Test
+    fun `test a zero length motion starts before it completes`() {
+        val motion = AnimationStep.PlayMotion(0, 0.0, 0.0, 0.0, 0.0, 0.0f, 0.0f)
+
+        val result = AnimationQueueDriver.tick(listOf<AnimationStep<Nothing>>(motion), null, currentGameTime = 7L)
+
+        assertEquals(listOf(AnimationMotionEvent.Started(motion), AnimationMotionEvent.Completed), result.motionEvents)
+        assertTrue(result.remainingQueue.isEmpty())
+        assertNull(result.activeStepEndGameTime)
     }
 
     /** [AnimationStep.Custom] 攜帶的實體專屬資料原封不動出現在套用列表裡。 */
@@ -171,7 +198,7 @@ class AnimationQueueDriverTest {
 
         val result = AnimationQueueDriver.tick(listOf(sound, motion), null, currentGameTime = 0L)
 
-        assertEquals(motion, result.startedPlayMotion)
+        assertEquals(listOf(AnimationMotionEvent.Started(motion)), result.motionEvents)
         assertEquals(listOf(sound, motion), result.remainingQueue)
         assertTrue(result.appliedInstantSteps.isEmpty())
     }
@@ -187,7 +214,7 @@ class AnimationQueueDriverTest {
 
         assertEquals(listOf(sound), due.appliedInstantSteps)
         assertEquals(listOf(motion), due.remainingQueue)
-        assertNull(due.startedPlayMotion)
+        assertTrue(due.motionEvents.isEmpty())
 
         val next = AnimationQueueDriver.tick(due.remainingQueue, due.activeStepEndGameTime, currentGameTime = 3L)
         assertTrue(next.appliedInstantSteps.isEmpty())
