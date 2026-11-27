@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.LocatedMahjongTable
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
@@ -18,6 +19,9 @@ import net.minecraft.server.level.ServerLevel
 
 /**
  * 在 tick 邊界後登記已載入桌子，並定點驗證已載入 chunk 的預期位置。
+ *
+ * - 方塊實體載入後的登記延到 tick 邊界，等存檔中的桌子 UUID 讀完。
+ * - 玩家右鍵桌子時由 [ensureRegistered] 當場登記，剛放下、還沒輪到延後登記的桌子也能立即開啟房間畫面。
  *
  * @property locations 桌子位置與 revision 索引。
  * @property cleanupService 清理經延遲確認仍缺失的桌子。
@@ -116,7 +120,32 @@ class TableLocationValidationService(
     private fun processTableLoad(request: PendingTableLoad) {
         if (!isUsable(request.world, request.pos.x shr 4, request.pos.z shr 4)) return
         val table = MahjongTableLookup.find(request.world, request.pos) ?: return
-        val location = request.world.toTableLocation(request.pos)
+        register(request.world, table)
+    }
+
+    /**
+     * 確保被右鍵的桌子已以目前位置登記，不等延後的登記。
+     *
+     * - 已以相同位置登記時不做任何事。
+     * - 不屬於目前 server session 時不登記，與延後登記相同。
+     *
+     * @param world 桌子所在世界。
+     * @param table 被右鍵的桌子控制點。
+     */
+    internal fun ensureRegistered(world: ServerLevel, table: LocatedMahjongTable) {
+        if (world.server !== activeServer) return
+        if (locations.get(table.tableId)?.location == world.toTableLocation(table.pos)) return
+        register(world, table)
+    }
+
+    /**
+     * 以桌子目前位置登記 UUID，位置改變時記錄移動並重新整理桌面物件。
+     *
+     * @param world 桌子所在世界。
+     * @param table 已讀完 UUID 的桌子控制點。
+     */
+    private fun register(world: ServerLevel, table: LocatedMahjongTable) {
+        val location = world.toTableLocation(table.pos)
         val previous = locations.get(table.tableId)
         val current = locations.put(table.tableId, location)
         if (previous != null && previous.location != current.location) {
