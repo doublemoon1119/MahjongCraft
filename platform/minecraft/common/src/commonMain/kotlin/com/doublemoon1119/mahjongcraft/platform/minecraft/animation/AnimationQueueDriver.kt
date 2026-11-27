@@ -74,8 +74,7 @@ object AnimationQueueDriver {
         var endGameTime = activeStepEndGameTime
         val appliedInstantSteps = mutableListOf<AnimationStep<C>>()
         appliedInstantSteps += dueSounds
-        var startedPlayMotion: AnimationStep.PlayMotion? = null
-        var completedPlayMotion = false
+        val motionEvents = mutableListOf<AnimationMotionEvent>()
 
         while (true) {
             val step = remaining.firstOrNull() ?: break
@@ -96,19 +95,18 @@ object AnimationQueueDriver {
                     val justStarted = endGameTime == null
                     val resolvedEndGameTime = endGameTime ?: (currentGameTime + step.durationTicks)
                     endGameTime = resolvedEndGameTime
-                    if (justStarted) startedPlayMotion = step
+                    if (justStarted) motionEvents += AnimationMotionEvent.Started(step)
                     if (currentGameTime < resolvedEndGameTime) break
                     endGameTime = null
                     remaining.removeFirst()
-                    completedPlayMotion = true
+                    motionEvents += AnimationMotionEvent.Completed
                 }
             }
         }
 
         return AnimationQueueTickResult(
             appliedInstantSteps = appliedInstantSteps,
-            startedPlayMotion = startedPlayMotion,
-            completedPlayMotion = completedPlayMotion,
+            motionEvents = motionEvents,
             remainingQueue = futureSounds + remaining,
             activeStepEndGameTime = endGameTime,
         )
