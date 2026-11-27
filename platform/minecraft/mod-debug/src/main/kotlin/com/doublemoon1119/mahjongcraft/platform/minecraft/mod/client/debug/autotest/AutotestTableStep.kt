@@ -25,7 +25,8 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * 像玩家一樣開一場牌局。
  *
- * - 放下麻將桌、右鍵打開房間畫面，經網路送出建立房間、加入三個 AI 與開始的操作，等發牌演出結束。
+ * - 放下麻將桌後不等待就右鍵，確認剛放下的桌子也能打開房間畫面。
+ * - 再右鍵打開房間畫面，經網路送出建立房間、加入三個 AI 與開始的操作，等發牌演出結束。
  * - 開局後的牌桌由之後的步驟沿用。
  * - 本機玩家不開自動操作，牌局停在等玩家操作，讓之後的步驟在同一局中進行。
  */
@@ -44,8 +45,13 @@ internal object AutotestTableStep : AutotestStep {
         if (!context.check("Holding a wooden table", holding)) return
         val below = position.below()
         client.gameMode?.useItemOn(player, InteractionHand.MAIN_HAND, BlockHitResult(Vec3.atCenterOf(below).add(0.0, 0.5, 0.0), Direction.UP, below, false))
+        // 放下後不等待就右鍵，伺服器通常在同一個 tick 處理兩者：桌子還沒等到延後的位置登記，也要能開啟房間畫面。
+        client.gameMode?.useItemOn(player, InteractionHand.MAIN_HAND, BlockHitResult(Vec3.atCenterOf(position), Direction.UP, position, false))
         val placed = context.waitUntil(SYNC_TIMEOUT) { BuiltInRegistries.BLOCK.getKey(client.level!!.getBlockState(position).block).toString() == TABLE_ITEM }
         if (!context.check("Placed a wooden table like a player", placed)) return
+        val openedAtOnce = context.waitUntil(SYNC_TIMEOUT) { client.screen is RoomScreen }
+        if (!context.check("Right-clicking the table right after placing it opens the room screen", openedAtOnce)) return
+        client.setScreen(null)
         if (!context.clearInventory()) return
         if (!context.teleport(x = 0.5, y = -60.0, z = 1.5, yaw = 0f, pitch = 35f)) return
         context.screenshot("placed")

@@ -124,6 +124,7 @@ class MahjongCraftBootstrap(
         MahjongTables.install(
             roomService = koin.get<MahjongTableRoomService>(),
             tableLifecycleService = tableLifecycleService,
+            tableLocationValidation = tableLocationValidation,
         )
         ModBlocks.register(registrar = registrar, seatService = koin.get<MahjongStoolSeatService>())
         ModItemGroups.register(registrar)

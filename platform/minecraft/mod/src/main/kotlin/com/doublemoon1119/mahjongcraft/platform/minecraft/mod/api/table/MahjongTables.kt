@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.block.playSpaceCel
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableLifecycleService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.table.TableLocationValidationService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSpace
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
@@ -30,7 +31,8 @@ object MahjongTables {
     /**
      * 右鍵桌子任何一格時呼叫，開啟房間畫面。取代方塊 `use` 的內容。
      *
-     * 客戶端一律回傳成功，讓手部動作正常顯示。伺服器依 [MahjongTableStructureBlock] 找到控制點後開啟畫面。
+     * - 客戶端一律回傳成功，讓手部動作正常顯示。
+     * - 伺服器依 [MahjongTableStructureBlock] 找到控制點，確保桌子位置已登記後開啟畫面，所以剛放下的桌子也能立即開啟。
      *
      * @param world 方塊所在世界。
      * @param pos 被右鍵的方塊位置。
@@ -53,8 +55,9 @@ object MahjongTables {
             logger.warn("Rejected interaction with Mahjong table block at {}: no controller at {}", pos, controllerPos)
             return InteractionResult.FAIL
         }
-        val roomService = requireServices().roomService
-        roomService.openRoomScreen(table, serverPlayer)
+        val services = requireServices()
+        if (world is ServerLevel) services.tableLocationValidation.ensureRegistered(world, table)
+        services.roomService.openRoomScreen(table, serverPlayer)
         return InteractionResult.SUCCESS
     }
 
@@ -96,12 +99,14 @@ object MahjongTables {
      *
      * @param roomService 開啟房間畫面的服務。
      * @param tableLifecycleService 清理桌子呈現與生命週期的服務。
+     * @param tableLocationValidation 右鍵時確保桌子位置已登記的服務。
      */
     internal fun install(
         roomService: MahjongTableRoomService,
         tableLifecycleService: TableLifecycleService,
+        tableLocationValidation: TableLocationValidationService,
     ) {
-        services = Services(roomService, tableLifecycleService)
+        services = Services(roomService, tableLifecycleService, tableLocationValidation)
     }
 
     /** @return 已提供的服務。MahjongCraft 尚未初始化時拋出例外。 */
@@ -112,9 +117,11 @@ object MahjongTables {
      *
      * @property roomService 開啟房間畫面的服務。
      * @property tableLifecycleService 清理桌子呈現與生命週期的服務。
+     * @property tableLocationValidation 右鍵時確保桌子位置已登記的服務。
      */
     private class Services(
         val roomService: MahjongTableRoomService,
         val tableLifecycleService: TableLifecycleService,
+        val tableLocationValidation: TableLocationValidationService,
     )
 }

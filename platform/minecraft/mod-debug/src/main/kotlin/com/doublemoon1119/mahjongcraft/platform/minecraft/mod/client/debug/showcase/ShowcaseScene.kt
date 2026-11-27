@@ -32,7 +32,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.Mahjon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -409,18 +408,6 @@ internal class ShowcaseScene(private val context: AutotestContext) {
         val placed = context.waitUntil(SYNC_TIMEOUT) { BuiltInRegistries.BLOCK.getKey(client.level!!.getBlockState(site).block).toString() == TABLE_ITEM }
         if (!context.check("Placed a wooden table", placed)) return false
         if (!context.clearInventory()) return false
-        // 伺服器登記牌桌位置後，右鍵才找得到這張桌子；登記前的右鍵會被忽略。
-        val locations = GlobalContext.get().get<TableLocationRegistry>()
-        val registered = context.waitUntil(SYNC_TIMEOUT) {
-            context.onServer { locations.snapshot().values.any { it.location.x == site.x && it.location.y == site.y && it.location.z == site.z } }
-        }
-        val registeredDetail = if (registered) {
-            null
-        } else {
-            context.onServer { locations.snapshot().values.joinToString { "${it.location.x}, ${it.location.y}, ${it.location.z}" }.ifEmpty { "none" } }
-        }
-        if (!context.check("The server registers the table location", registered, registeredDetail?.let { "registered: $it" })) return false
-
         client.gameMode?.useItemOn(player, InteractionHand.MAIN_HAND, BlockHitResult(Vec3.atCenterOf(site), Direction.UP, site, false))
         val opened = context.waitUntil(SYNC_TIMEOUT) { client.screen is RoomScreen }
         if (!opened) {
