@@ -26,9 +26,11 @@ internal class RecordedRound(val start: TableState) {
  * 每次寫入後比較局位、本場數與莊家：與目前這一局不同時視為新的一局開始，否則更新目前這一局的最終桌況。
  *
  * @property delegate 實際保存狀態的倉庫。
+ * @property onGameWritten 每次寫入對局後收到寫入後的對局，例如用來檢查存檔來回轉換。
  */
 internal class RoundRecordingGameRepository(
     private val delegate: FakeGameRepository = FakeGameRepository(),
+    private val onGameWritten: (Game) -> Unit = {},
 ) : GameRepository by delegate {
     /**
      * 區分不同局的鍵。
@@ -94,6 +96,7 @@ internal class RoundRecordingGameRepository(
      * @param gameId 要觀察的對局識別碼。
      */
     private suspend fun observe(gameId: Uuid) {
+        delegate.getGame(gameId)?.let(onGameWritten)
         val state = delegate.getTableState(gameId) ?: return
         val key = RoundKey(position = state.roundPosition, comboCount = state.comboCount, dealerPlayerId = state.dealerPlayerId)
         val rounds = roundsByGame.getOrPut(gameId) { mutableListOf() }

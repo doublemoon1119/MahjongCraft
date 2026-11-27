@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.bundled.BundledTaiwanExtension
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
@@ -68,6 +69,8 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGame
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
+import kotlinx.coroutines.Dispatchers
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
@@ -81,13 +84,29 @@ import kotlin.uuid.Uuid
  *   `PendingGameTransition.ReturnToRoom`。
  *
  * @param defaultStrategyKey AI 策略 registry 遇到未知 key 時的退回 key。
+ * @param onGameWritten 每次寫入對局後收到寫入後的對局。
+ * @param aiDecisionTimeout 等待 AI 決策的上限。超過時改用固定命令，與伺服器相同。null 時一律等到策略回傳。
  */
-internal class SimulationRuntime(defaultStrategyKey: String) {
+internal class SimulationRuntime(
+    defaultStrategyKey: String,
+    onGameWritten: (Game) -> Unit = {},
+    aiDecisionTimeout: Duration? = null,
+) {
+    /** AI 回合與規則決策共用的決策執行器。 */
+    private val decisionExecutor = aiDecisionTimeout?.let { timeout ->
+        AiDecisionExecutor(
+            dispatcher = Dispatchers.Unconfined,
+            capacity = Int.MAX_VALUE,
+            failurePolicy = ExtensionFailurePolicy.Default,
+            timeout = timeout,
+        )
+    } ?: AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default)
+
     /** 登記內建規則的模組 registry。 */
     val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
 
     /** 記錄每一局開局與最終桌況的對局倉庫。 */
-    val gameRepository = RoundRecordingGameRepository()
+    val gameRepository = RoundRecordingGameRepository(onGameWritten = onGameWritten)
 
     /** 登記日麻立直 handler 的擴充動作 AI registry。 */
     val extensionActionRegistry = ExtensionGameActionAiRegistry(moduleRegistry).apply {
@@ -315,7 +334,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             aiStrategyRegistry = aiStrategyRegistry,
             visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             moduleRegistry = moduleRegistry,
-            decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+            decisionExecutor = decisionExecutor,
             commandResolver = AutomaticGameCommandResolver(moduleRegistry),
         ),
         forcedAutoPlayDriver = ForcedAutoPlayDriver(
@@ -339,7 +358,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             resolverRegistry = ruleDecisionResolverRegistry,
             aiStrategyRegistry = aiStrategyRegistry,
             visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
-            decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+            decisionExecutor = decisionExecutor,
         ),
         advanceAutomaticRuleDecisionUseCase = AdvanceAutomaticRuleDecisionUseCase(
             gameRepository = gameRepository,
