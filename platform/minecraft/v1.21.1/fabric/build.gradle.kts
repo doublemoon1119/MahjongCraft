@@ -14,6 +14,9 @@ import com.doublemoon1119.mahjongcraft.buildlogic.includeSourcesOf
 import com.doublemoon1119.mahjongcraft.buildlogic.modrinth
 import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestClientTasks
 import com.doublemoon1119.mahjongcraft.buildlogic.registerAutotestServerTasks
+import com.doublemoon1119.mahjongcraft.buildlogic.registerShowcaseClientTasks
+import com.doublemoon1119.mahjongcraft.buildlogic.showcaseClientArguments
+import com.doublemoon1119.mahjongcraft.buildlogic.showcaseSystemProperties
 
 plugins {
     alias(libs.plugins.mahjongcraft.minecraft.loader)
@@ -60,6 +63,9 @@ loom {
             environmentVars.putAll(autotestClientEnvironment())
             programArguments.addAll(autotestClientArguments())
             systemProperties.putAll(autotestSystemProperties())
+            // -PmahjongcraftShowcase 時，debug 模組在遊戲啟動後自動拍攝宣傳截圖並關閉遊戲。
+            programArguments.addAll(showcaseClientArguments())
+            systemProperties.putAll(showcaseSystemProperties())
         }
         named("server") {
             runDirectory.set(layout.projectDirectory.dir(SERVER_RUN_DIRECTORY))
@@ -82,6 +88,7 @@ loom {
     }
 }
 registerAutotestClientTasks(clientTask = "runClient")
+registerShowcaseClientTasks(clientTask = "runClient")
 registerAutotestServerTasks(startTask = "runAutotestServerStart", resumeTask = "runAutotestServerResume")
 
 // 一起編譯跨版本共用的 platform/minecraft/fabric；這裡只放 1.21.1 的 Fabric 專屬部分，例如網路傳輸與 mod 的設定檔。

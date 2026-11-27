@@ -13,8 +13,9 @@ import org.gradle.work.DisableCachingByDefault
  * - 啟動前寫好選項，引導與朗讀都不會出現。
  * - 其他選項保留上次的值，由自動測試在遊戲中設定。
  * - 平常的 `run/client` 不受影響。
+ * - 宣傳截圖模式（[registerShowcaseClientTasks]）也以同一個任務準備它的執行目錄。
  *
- * @property runDirectory 用戶端自動測試的執行目錄。
+ * @property runDirectory 用戶端自動測試或宣傳截圖的執行目錄。
  */
 @DisableCachingByDefault(because = "Rewrites a local run directory's options")
 abstract class PrepareAutotestClientTask : DefaultTask() {

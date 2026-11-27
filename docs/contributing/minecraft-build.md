@@ -327,6 +327,39 @@ Each kind of run in detail:
   fails if any report did not pass or a run wrote no report. Only reports started during this build count,
   and the latest summaries are kept like the reports.
 
+## Showcase Screenshots
+
+- The Minecraft 1.21.1 Fabric development client can take the promotional screenshots by itself. Load the
+  shader group so the pictures use shaders:
+
+  ```shell
+  ./gradlew :minecraft_v1.21.1_fabric:runClient "-PmahjongcraftTarget=minecraft-v1.21.1-fabric" "-PmahjongcraftShowcase=true" "-PmahjongcraftDevMods=shaders"
+  ```
+
+- `-PmahjongcraftShowcase=true` passes the `mahjongcraft.showcase` system property and the path of
+  `docs/assets/branding/title.png` to the run. It cannot be combined with `-PmahjongcraftAutotest`; the build
+  fails if both are set.
+- The run uses its own run directory, `run/showcase-client`, signs in as `MahjongShowcase` with a 2560×1440
+  window, and writes the same startup options as the automated client test before it starts.
+- Once the title screen has loaded, the client hides every MahjongCraft panel, highlight and tile label,
+  creates a creative world with normal terrain, a fixed seed and a fixed evening time, and flies to the
+  nearest cherry grove. It checks the fixed table spot next to the grove, without digging into the
+  terrain, and that the sun reaches the tabletop; when a tree blocks the spot or shades the table, it
+  generates the world again. It then places a table, stools and a few props, and starts a match with three
+  AI players from a fixed seat order so the player always sits on the same side. A Steve stand-in sits in
+  the player's seat.
+- It loads a mid-game debug scenario and takes a screenshot from each camera, turning the distant scenery
+  camera around the table when terrain blocks its view. It then loads a scenario where the player has just
+  drawn the winning tile, declares tsumo and captures the lightning of the win effect. Each screenshot waits
+  until the terrain around the camera is loaded and built, then a fixed number of ticks so the shader's
+  temporal effects settle.
+- The results go to `showcase/<start time>/` in the run directory: the original screenshots, a 2:1 and a 16:9
+  crop of each, a 1280×640 JPEG for the GitHub social preview with the title over a darkened top, at most
+  1 MB, and `showcase.json`, which lists every camera, the table position and the checks. The latest folders
+  are kept like the automated test reports. The game closes when it has finished.
+- The scene and its cameras live in the
+  [shared Minecraft mod debug tools](../../platform/minecraft/mod-debug/README.md).
+
 ## Continuous Integration
 
 `.github/workflows/ci-minecraft.yml` verifies every Minecraft target in its own job, with the steps shared by

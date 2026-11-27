@@ -84,6 +84,7 @@ object RiichiDebugGameScenarios {
         addAll(RiichiIppatsuDebugGameScenarios.all)
         addAll(RiichiAutomaticControlDebugGameScenarios.all)
         addAll(RiichiMeldDebugGameScenarios.all)
+        addAll(RiichiShowcaseDebugGameScenarios.all)
         addAll(RiichiSeatChangeDebugGameScenarios.all)
         addAll(RiichiRuleDecisionDebugGameScenarios.all)
         addAll(ThreePlayerRiichiDebugGameScenarios.all)

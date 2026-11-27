@@ -105,3 +105,43 @@ moves on after that until shutdown. The second
 run compares the loaded state with that record before the bots rejoin and finish. Both runs check how long
 the server takes to stop and that MahjongCraft logged no errors. The report and its retention are shared with
 the client test in `debug/autotest`.
+
+## Showcase screenshots
+
+`client/debug/showcase` holds the run that takes the promotional screenshots when development runs start
+with `-PmahjongcraftShowcase=true` (see
+[Minecraft Build](../../../docs/contributing/minecraft-build.md#showcase-screenshots)). `ShowcaseScene`
+builds the scene and lists the cameras; it reuses `AutotestContext` and the table helpers of the automated
+client test and follows the same waiting rules. Before each screenshot it waits until the chunks around the
+camera are loaded and the terrain in view has been built for a number of consecutive ticks; the fixed wait
+after that only chooses when to take the picture. `debug/showcase` holds the mode switch, the result file,
+`ShowcaseImages`, which crops the screenshots and builds the GitHub social preview with plain Java imaging,
+and `ShowcaseSiteChooser`, which checks that the table's spot is usable.
+
+The table always stands on the same spot of the fixed-seed world, next to the cherry grove nearest the
+spawn, and the scene does not dig into the terrain. Trees in that world depend on the order chunks are
+generated in, so the client first flies above the grove and loads the same area every time.
+`ShowcaseSiteChooser` then checks the fixed spot: open, nearly flat ground with nothing low overhead near
+the table, no hillside next to it and enough cherry trees around. `ShowcaseSunlight` checks that the
+evening sun reaches the tabletop, looking from points on the tabletop towards the sun. Trees can still grow
+slightly differently, so when either check fails the client leaves the world and generates it again, up to a
+fixed number of times, instead of moving the table. Ground one block lower than the table is filled up to the same height, and only the
+plants where the table stands are removed.
+
+The scene puts a wooden mahjong stool on every side, a barrel with a cake next to the stool on the
+player's right and two lanterns on fence posts beyond the far corners. The match starts from the server
+with a fixed seat order and seed, so the player always sits on the north side and the cameras always face
+the evening sun from the same direction. Vanilla does not draw the local player while the camera is on
+another entity, so `ShowcaseStandIn`, a client-only player with the default Steve skin, sits on its own
+client-only seat in the player's place. The table shots use the `showcase_midgame` debug scenario, a
+mid-game table with full discard rivers, a riichi and a pon; the win shot uses `showcase_tsumo` and is
+taken while the lightning of the win effect strikes the winning tile.
+
+When the distant scenery camera's view of the table is blocked, it turns around the table, then moves
+closer, until it sees the table; the cameras near the seat stay where they are, because the spot keeps that
+area open and turning them could show the other players' tiles. The GitHub social preview darkens the top
+of the picture with a fading gradient and draws a soft dark outline around the title, so the white and
+green title stays readable over a bright sky or blossoms.
+
+Showcase runs share the automated test's input and sound handling: the game ignores mouse and keyboard input
+and records sounds instead of playing them.
