@@ -1,0 +1,36 @@
+# Decides whether a push or pull request needs the full CI, so a change to documentation alone skips the heavy jobs.
+# The repository must be checked out with its full history (fetch-depth: 0) first.
+name: Detect changes
+description: Writes whether the change needs the full CI, from the files it changes.
+
+outputs:
+  code:
+    description: '"true" to run the full CI, "false" when only Markdown outside src/ was modified or added.'
+    value: ${{ steps.detect.outputs.code }}
+
+runs:
+  using: composite
+  steps:
+    # The rules live in detect-changes.sh; its own test runs first, so a broken rule fails the job instead of
+    # skipping CI.
+    - name: Test the change rules
+      shell: bash
+      run: bash "${GITHUB_ACTION_PATH}/test-detect-changes.sh"
+    # A manual run always runs everything. A push compares with the commit the branch pointed to before it; a pull
+    # request compares from where it branched off its base.
+    - id: detect
+      name: Compare the changed files
+      shell: bash
+      env:
+        EVENT: ${{ github.event_name }}
+        PUSH_BEFORE: ${{ github.event.before }}
+        PULL_BASE: ${{ github.event.pull_request.base.sha }}
+        PULL_HEAD: ${{ github.event.pull_request.head.sha }}
+      run: |
+        case "$EVENT" in
+          push) code="$(bash "${GITHUB_ACTION_PATH}/detect-changes.sh" "$PUSH_BEFORE" "$GITHUB_SHA")" ;;
+          pull_request) code="$(bash "${GITHUB_ACTION_PATH}/detect-changes.sh" "$PULL_BASE" "$PULL_HEAD" three-dot)" ;;
+          *) code=true ;;
+        esac
+        echo "Full CI needed: $code"
+        echo "code=$code" >> "$GITHUB_OUTPUT"

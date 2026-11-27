@@ -151,6 +151,18 @@
 - Every workflow runs on every push and pull request, whatever the branch, and can be started manually.
   Branches that predate a workflow do not contain it, so pushing them does not run it. A newer push to the
   same branch or pull request cancels that workflow's run in progress.
+- Every workflow starts with a `Detect changes` job and ends with a `<workflow name> result` job, such as
+  `CI (core) result`:
+  - `Detect changes` compares a push with the commit the branch pointed to before it, and a pull request with
+    where it branched off its base. When every changed file is Markdown outside any `src/` folder and was
+    modified or added, the workflow skips every other job. A deleted or renamed file, Markdown under `src/`,
+    any other file, a manual run, or a push it cannot compare, such as the first push of a new branch, runs
+    everything. The rules and their test are in `.github/actions/detect-changes/`.
+  - A build script that packages Markdown from outside `src/` must also exclude those files in
+    `detect-changes.sh`, or a change to them alone would skip CI.
+  - The result job always runs. It passes when every job passed or was skipped, and fails when any failed or
+    was cancelled. A required status check should name the result jobs: a workflow skipped by path filters
+    leaves its checks pending, and the per-target job names change with the targets.
 - The steps the workflows share are composite actions under `.github/actions/`:
   - `list-targets` runs `./gradlew writeCiTargetMatrix "-PciPlatform=<platform>"`, which writes
     `build/ci/target-matrix.json`: the platform's targets from the `targets.toml` files, or the built-in
