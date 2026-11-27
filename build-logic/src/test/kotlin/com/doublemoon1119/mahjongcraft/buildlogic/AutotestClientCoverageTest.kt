@@ -6,7 +6,7 @@ import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-/** 驗證總任務在有範例模組時，以範例的用戶端測試代替載入器模組自己的用戶端測試。 */
+/** 驗證總任務 `autotest` 與 `autotestClient` 在有範例模組時，以範例的用戶端測試代替載入器模組自己的用戶端測試。 */
 class AutotestClientCoverageTest {
     /** 沒有範例模組時，載入器模組的用戶端測試列入總任務。 */
     @Test
@@ -14,6 +14,7 @@ class AutotestClientCoverageTest {
         val result = runner(root).build()
 
         assertTrue(result.output.contains("loader client in aggregate: true"), result.output)
+        assertTrue(result.output.contains("loader client task: true"), result.output)
     }
 
     /** 有範例模組時，載入器模組的用戶端測試不列入總任務，範例的用戶端測試列入。 */
@@ -23,6 +24,8 @@ class AutotestClientCoverageTest {
 
         assertTrue(result.output.contains("loader client in aggregate: false"), result.output)
         assertTrue(result.output.contains("example client in aggregate: true"), result.output)
+        assertTrue(result.output.contains("loader client task: false"), result.output)
+        assertTrue(result.output.contains("example client task: true"), result.output)
     }
 
     /**
@@ -76,10 +79,13 @@ class AutotestClientCoverageTest {
                 com.doublemoon1119.mahjongcraft.buildlogic.AutotestRunSupportKt.registerAutotestClientTasks(project, "runClient")
 
                 def inAggregate = provider { tasks.names.contains("autotestTarget") }
+                def hasClientTask = provider { tasks.names.contains("autotestClient") }
                 tasks.register("printCoverage") {
                     def joined = inAggregate
+                    def clientTask = hasClientTask
                     doLast {
                         println("$label client in aggregate: " + joined.get())
+                        println("$label client task: " + clientTask.get())
                     }
                 }
                 """.trimIndent() + "\n",

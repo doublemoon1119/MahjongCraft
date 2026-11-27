@@ -9,12 +9,13 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * 驗證根專案的總任務 `autotestServer`。
+ * 驗證根專案的自動測試總任務。
  *
- * - 不需要任何開關，只執行並判定伺服器自動測試。
- * - `autotest` 仍要開關，並涵蓋用戶端與伺服器。
+ * - `autotestServer` 不需要任何開關，只執行並判定伺服器自動測試。
+ * - `autotestClient` 要開關，只執行並判定用戶端自動測試。
+ * - `autotest` 要開關，涵蓋用戶端與伺服器。
  */
-class AutotestServerAggregateTest {
+class AutotestAggregateTest {
     /** 伺服器報告通過時總任務成功，不需要開關，而且不啟動用戶端與平常的開發伺服器。 */
     @Test
     fun `server aggregate runs only the server test without a switch`() = withFixture(withLoader = true) { root ->
@@ -68,6 +69,42 @@ class AutotestServerAggregateTest {
 
         assertFalse(rootTasks.any { it.startsWith("autotest ") }, rootTasks.joinToString("\n"))
         assertTrue(rootTasks.any { it.startsWith("autotestServer ") }, rootTasks.joinToString("\n"))
+    }
+
+    /** 沒有開啟自動測試時不登記總任務 `autotestClient`。 */
+    @Test
+    fun `client aggregate is not registered without the switch`() = withFixture(withLoader = true) { root ->
+        val rootTasks = runner(root, "tasks", "--all").build().output.lines()
+
+        assertFalse(rootTasks.any { it.startsWith("autotestClient ") }, rootTasks.joinToString("\n"))
+    }
+
+    /** 用戶端報告通過時總任務成功，而且不啟動伺服器，總報告與用戶端的紀錄檔收在一起。 */
+    @Test
+    fun `client aggregate runs only the client test`() = withFixture(withLoader = true) { root ->
+        val result = runner(root, "autotestClient", "-PmahjongcraftAutotest=true", "-PfakeClientStatus=passed").build()
+
+        assertTrue(result.ran(":minecraft_test_fabric:runClient"), result.output)
+        assertFalse(result.ran(":minecraft_test_fabric:runAutotestServerStart"), result.output)
+        assertTrue(summary(root, folder = "autotest-client").contains("- PASSED minecraft_test_fabric client"), summary(root, folder = "autotest-client"))
+        val collected = summaryFile(root, folder = "autotest-client").parentFile.resolve("minecraft_test_fabric-client")
+        assertTrue(collected.resolve("logs/latest.log").isFile, "The client log was not collected")
+    }
+
+    /** 用戶端報告未通過時總任務失敗。 */
+    @Test
+    fun `client aggregate fails when the client report did not pass`() = withFixture(withLoader = true) { root ->
+        val result = runner(root, "autotestClient", "-PmahjongcraftAutotest=true", "-PfakeClientStatus=failed").buildAndFail()
+
+        assertTrue(result.output.contains("Automated tests did not pass: minecraft_test_fabric client failed"), result.output)
+    }
+
+    /** 用戶端沒有寫出報告時總任務失敗。 */
+    @Test
+    fun `client aggregate fails when the client wrote no report`() = withFixture(withLoader = true) { root ->
+        val result = runner(root, "autotestClient", "-PmahjongcraftAutotest=true").buildAndFail()
+
+        assertTrue(result.output.contains("Automated tests did not pass: minecraft_test_fabric client missing"), result.output)
     }
 
     /** `autotest` 執行用戶端與伺服器，並彙整兩者的報告。 */
@@ -132,7 +169,7 @@ class AutotestServerAggregateTest {
         root.resolve("docs/assets/branding/logo.png").apply { parentFile.mkdirs() }.writeBytes(byteArrayOf(0x89.toByte(), 0x50, 0x4e, 0x47))
         root.resolve("settings.gradle").writeText(
             buildString {
-                appendLine("rootProject.name = \"autotest-server-aggregate-fixture\"")
+                appendLine("rootProject.name = \"autotest-aggregate-fixture\"")
                 if (withLoader) {
                     appendLine("include(\":minecraft_test_fabric\")")
                     appendLine("project(\":minecraft_test_fabric\").projectDir = file(\"platform/v1.20.1/fabric\")")
@@ -210,7 +247,7 @@ class AutotestServerAggregateTest {
      * @param block 使用 fixture 根目錄的測試動作。
      */
     private fun withFixture(withLoader: Boolean, block: (File) -> Unit) {
-        createTempDirectory("mahjongcraft-autotest-server-aggregate").toFile().apply {
+        createTempDirectory("mahjongcraft-autotest-aggregate").toFile().apply {
             try {
                 prepareFixture(this, withLoader)
                 block(this)

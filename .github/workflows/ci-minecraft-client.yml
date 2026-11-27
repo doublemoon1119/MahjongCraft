@@ -1,0 +1,92 @@
+# Runs the automated client test of every Minecraft target, one job per target: a Minecraft version with one mod
+# loader. It is separate from CI (Minecraft), so a slow or unstable client test does not change the build
+# verification's result.
+name: CI (Minecraft client)
+
+# Runs on every push and pull request. Branches created before this workflow existed do not contain it,
+# so pushes to them do not run it.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-minecraft-client-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  targets:
+    name: List targets
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.targets.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: targets
+        uses: ./.github/actions/list-targets
+        with:
+          platform: minecraft
+
+  client:
+    name: Client test (${{ matrix.target }})
+    needs: targets
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.targets.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-target
+        with:
+          java-toolchains: ${{ toJSON(matrix.javaToolchains) }}
+      # The runner has no display and no GPU. Xvfb provides a virtual display, and Mesa draws OpenGL in software
+      # (llvmpipe), which covers the OpenGL 3.2 that Minecraft needs.
+      - name: Install a virtual display and software OpenGL
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends xvfb libgl1-mesa-dri libglx-mesa0
+      # Opens a flat world in the development client, goes through each step of the test and closes the game.
+      # A target with an example mod runs the example's client, which also loads the mod.
+      - name: Automated client test
+        id: client-autotest
+        timeout-minutes: 45
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: >-
+          xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24"
+          ./gradlew autotestClient --stacktrace
+          "-PmahjongcraftAutotest=true"
+          "-PmahjongcraftExample=${{ matrix.examples }}"
+          "-PmahjongcraftTarget=${{ matrix.target }}"
+          "-Porg.gradle.java.installations.fromEnv=${JAVA_TOOLCHAIN_VARIABLES}"
+          "-Porg.gradle.java.installations.auto-download=false"
+          "-Pkotlin.compiler.execution.strategy=in-process"
+          "-Dorg.gradle.jvmargs=-Xmx5g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
+      # The build collects the summary, the client's report with its screenshots and its logs into this folder.
+      - name: Upload automated client test reports
+        if: always() && steps.client-autotest.outcome != 'skipped'
+        uses: actions/upload-artifact@v7
+        with:
+          name: client-autotest-${{ matrix.target }}
+          path: build/reports/autotest-client/
+          if-no-files-found: ignore
+          retention-days: 7
+      # The build writes the summary last. When the step timed out or the build stopped before that, the report
+      # and logs are still in the client's own run directory, so those are uploaded instead.
+      - name: Upload uncollected automated client test files
+        if: >-
+          always() && steps.client-autotest.outcome != 'skipped'
+          && hashFiles('build/reports/autotest-client/*/summary.md') == ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: client-autotest-raw-${{ matrix.target }}
+          path: |
+            platform/minecraft/*/*/run/autotest-client/logs/
+            platform/minecraft/*/*/run/autotest-client/autotest/
+            example/platform/minecraft/*/*/run/autotest-client/logs/
+            example/platform/minecraft/*/*/run/autotest-client/autotest/
+          if-no-files-found: ignore
+          retention-days: 7

@@ -4,15 +4,18 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
 
 /**
- * 在根專案登記總任務 [AUTOTEST_SERVER_TASK] 與 `autotest`。
+ * 在根專案登記總任務 [AUTOTEST_SERVER_TASK]、[AUTOTEST_CLIENT_TASK] 與 `autotest`。
  *
  * - [AUTOTEST_SERVER_TASK] 執行所選目標各模組的伺服器自動測試，也就是各模組的同名任務。它不需要 `mahjongcraftAutotest`。
+ * - [AUTOTEST_CLIENT_TASK] 執行所選目標各模組的用戶端自動測試，也就是各模組的同名任務。用戶端的執行目錄與啟動參數由
+ *   `mahjongcraftAutotest` 決定，所以只有設定了它時才登記。
  * - `autotest` 執行所選目標全部模組的自動測試，也就是各模組的 [AUTOTEST_TARGET_TASK]。只有設定了 `mahjongcraftAutotest`
  *   時才登記。
  * - 同時執行的遊戲數量受 `mahjongcraftAutotestParallel` 限制。
- * - 全部結束後由 [AutotestSummaryTask] 寫出總報告。[AUTOTEST_SERVER_TASK] 寫在
- *   `build/reports/autotest-server/<開始時間>/summary.md`，`autotest` 寫在 `build/reports/autotest/<開始時間>/summary.md`。
- *   各份報告與診斷資料收在同一個資料夾。
+ * - 全部結束後由 [AutotestSummaryTask] 寫出總報告，各份報告與診斷資料收在同一個資料夾：
+ *   - [AUTOTEST_SERVER_TASK]：`build/reports/autotest-server/<開始時間>/summary.md`。
+ *   - [AUTOTEST_CLIENT_TASK]：`build/reports/autotest-client/<開始時間>/summary.md`。
+ *   - `autotest`：`build/reports/autotest/<開始時間>/summary.md`。
  * - 所選目標沒有對應的自動測試時，總任務不啟動任何遊戲並成功。
  */
 fun Project.registerAutotestAggregate() {
@@ -23,6 +26,12 @@ fun Project.registerAutotestAggregate() {
         outputFolder = "reports/autotest-server",
     )
     if (autotestSystemProperties().isEmpty()) return
+    registerAutotestSummary(
+        name = AUTOTEST_CLIENT_TASK,
+        summary = "Runs every selected target's automated client test and writes a summary.",
+        moduleTask = AUTOTEST_CLIENT_TASK,
+        outputFolder = "reports/autotest-client",
+    )
     registerAutotestSummary(
         name = "autotest",
         summary = "Runs every selected target's automated tests and writes a summary.",
