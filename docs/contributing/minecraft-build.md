@@ -216,6 +216,12 @@ Common commands, each followed by what it runs. The sections below explain each 
   ./gradlew autotestServer "-PmahjongcraftTarget=minecraft-v1.20.1-fabric"
   ```
 
+- Only the client tests of the selected targets, with a summary report; this is what the client CI runs:
+
+  ```shell
+  ./gradlew autotestClient "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" "-PmahjongcraftAutotest=true"
+  ```
+
 - Options that combine with any of the above:
   - `-PmahjongcraftAutotestParallel=<count>`: how many games run at once.
   - `-PmahjongcraftAutotestKeep=<count>`: how many reports to keep.
@@ -300,8 +306,8 @@ Each kind of run in detail:
   a change, pick another seed number in `AutotestServerTable`.
 - `-PmahjongcraftAutotest=<step>[,<step>...]` limits the server test to the listed steps, as it does for the
   client test. Without it every step runs.
-- The root `autotestServer` and `autotest` tasks copy every report, and the files each game wrote to its `logs`
-  folder during the run, into the summary's folder, one subfolder per report such as
+- The root `autotestServer`, `autotestClient` and `autotest` tasks copy every report, and the files each game
+  wrote to its `logs` folder during the run, into the summary's folder, one subfolder per report such as
   `minecraft_v1.20.1_fabric-server/`. The summary links the reports by relative path, so the folder can be
   moved or uploaded as a whole.
 
@@ -316,6 +322,10 @@ Each kind of run in detail:
   ./gradlew autotest "-PmahjongcraftTarget=minecraft-v1.20.1-fabric,minecraft-v1.20.1-forge,minecraft-v1.21.1-fabric,minecraft-v1.21.1-neoforge" "-PmahjongcraftAutotest=true"
   ```
 
+- The root `autotestClient` task runs only the client tests, choosing each target's client the same way, and
+  writes `build/reports/autotest-client/<start time>/summary.md`. Like `autotest` it needs
+  `-PmahjongcraftAutotest`, which sets up the client's run directory and launch options. A loader or example
+  module's own `autotestClient` task runs only that client and does not judge the result.
 - At most two games run at the same time; pass `-PmahjongcraftAutotestParallel=<count>` to change it. Each game
   needs a few gigabytes of memory, and every client opens its own window.
 - `-PmahjongcraftAutotestServerPort` sets the first server port; each loader module adds its target's position
@@ -384,4 +394,16 @@ all platforms (see [Build](build.md#continuous-integration)). On top of them it 
   `run/autotest-server/` instead, as a separate `server-autotest-raw-<target>` upload.
 - **A CI run accepts the Minecraft EULA on the runner**, on behalf of the owner of the repository the
   workflow runs in, including a fork, because the server test writes `eula=true` into its run directory.
-- The client test is not part of CI: it needs a display.
+- `.github/workflows/ci-minecraft-client.yml`, named `CI (Minecraft client)`, runs each target's client test in
+  its own job, separate from the verification so a slow or unstable client test does not change its result.
+  It runs on every push and pull request and can be started by hand. The runner has no display and no GPU,
+  so the job installs Xvfb and Mesa, sets `LIBGL_ALWAYS_SOFTWARE=1` so OpenGL is drawn in software, and runs
+  the test inside a 1920×1080 virtual display:
+
+  ```shell
+  xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" ./gradlew autotestClient --stacktrace "-PmahjongcraftAutotest=true" "-PmahjongcraftExample=<true|false>" "-PmahjongcraftTarget=<target>"
+  ```
+
+  It uploads `build/reports/autotest-client/`, with the summary, the client's report, screenshots and logs, as
+  `client-autotest-<target>`, or the files from the client's own `run/autotest-client/` as
+  `client-autotest-raw-<target>` when the build stopped before the summary.

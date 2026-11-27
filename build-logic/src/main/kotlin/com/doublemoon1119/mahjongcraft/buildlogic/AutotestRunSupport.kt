@@ -15,8 +15,11 @@ abstract class AutotestSlotsService : BuildService<BuildServiceParameters.None>
  * 接上用戶端自動測試。
  *
  * - 開發用戶端啟動前，由 [PrepareAutotestClientTask] 寫好啟動時就要生效的選項。
- * - 遵守同時執行數的限制，並把報告與紀錄檔的位置登記給總任務 `autotest` 彙整。
- * - 建置中有這個模組的範例模組時，總任務只跑範例的用戶端：範例也載入本體、執行同樣的步驟，再多測擴充的內容。
+ * - 遵守同時執行數的限制。
+ * - 登記任務 [AUTOTEST_CLIENT_TASK]：執行開發用戶端但不判定結果，並記下報告與紀錄檔的位置，由根專案的同名總任務與
+ *   總任務 `autotest` 彙整。
+ * - 建置中有這個模組的範例模組時不登記 [AUTOTEST_CLIENT_TASK]，總任務只跑範例的用戶端：範例也載入本體、執行同樣的步驟，
+ *   再多測擴充的內容。
  * - 這個模組的開發用戶端仍可單獨執行自動測試。
  * - 沒有設定 `mahjongcraftAutotest` 時不做任何事。
  *
@@ -34,10 +37,19 @@ fun Project.registerAutotestClientTasks(clientTask: String) {
     if (rootProject.findProject(exampleProjectPath(name)) != null) return
     val label = "$name client"
     val runDirectory = layout.projectDirectory.dir(clientRunDirectory())
-    autotestTarget().configure {
+    val reportRoot = runDirectory.dir("autotest").asFile.absolutePath
+    val logRoot = runDirectory.dir(RUN_LOG_FOLDER).asFile.absolutePath
+    val client = tasks.register(AUTOTEST_CLIENT_TASK, AutotestTargetTask::class.java) {
+        group = "verification"
+        description = "Runs the automated client test: opens a world, goes through each step and writes a report."
         dependsOn(clientTask)
-        reportRoots.put(label, runDirectory.dir("autotest").asFile.absolutePath)
-        diagnosticRoots.put(label, runDirectory.dir(RUN_LOG_FOLDER).asFile.absolutePath)
+        reportRoots.put(label, reportRoot)
+        diagnosticRoots.put(label, logRoot)
+    }
+    autotestTarget().configure {
+        dependsOn(client)
+        reportRoots.put(label, reportRoot)
+        diagnosticRoots.put(label, logRoot)
     }
 }
 
@@ -152,6 +164,9 @@ internal fun exampleProjectPath(projectName: String): String = ":example-$projec
 
 /** 每個模組彙整全部自動測試用的任務名稱。 */
 internal const val AUTOTEST_TARGET_TASK: String = "autotestTarget"
+
+/** 用戶端自動測試的任務名稱。模組的任務執行開發用戶端但不判定結果，根專案的同名總任務依報告判定。 */
+internal const val AUTOTEST_CLIENT_TASK: String = "autotestClient"
 
 /** 伺服器自動測試的任務名稱。載入器模組的任務執行兩段伺服器但不判定結果，根專案的同名總任務依報告判定。 */
 internal const val AUTOTEST_SERVER_TASK: String = "autotestServer"

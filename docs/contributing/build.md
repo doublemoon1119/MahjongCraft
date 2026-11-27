@@ -144,8 +144,10 @@
 
 - CI is split by platform: `.github/workflows/ci-core.yml` verifies the built-in `core` target, and each
   platform has its own `ci-<platform>.yml`, such as `ci-minecraft.yml`. A platform's workflow may name its
-  platform, pass that platform's build properties and add steps only that platform needs. A new platform
-  adds a workflow file; a new target of an existing platform is verified without editing any workflow.
+  platform, pass that platform's build properties and add steps only that platform needs. A platform can add
+  further workflows for checks kept apart from the verification, such as `ci-minecraft-client.yml`. A new
+  platform adds a workflow file; a new target of an existing platform is verified without editing any
+  workflow.
 - Every workflow runs on every push and pull request, whatever the branch, and can be started manually.
   Branches that predate a workflow do not contain it, so pushing them does not run it. A newer push to the
   same branch or pull request cancels that workflow's run in progress.
