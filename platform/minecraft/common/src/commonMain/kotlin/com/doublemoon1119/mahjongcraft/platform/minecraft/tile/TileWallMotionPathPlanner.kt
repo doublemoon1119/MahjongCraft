@@ -55,7 +55,7 @@ object TileWallMotionPathPlanner {
                 centerX = context.controllerX + BLOCK_CENTER,
                 centerZ = context.controllerZ + BLOCK_CENTER,
             )
-            return TileWallMotionPathDecision.Completed(perimeterPath.zipWithNext(::segment))
+            return TileWallMotionPathDecision.Completed(roundedPathSegments(perimeterPath))
         }
         return TileWallMotionPathDecision.Completed(roundedCornerSegments(context, startWorld, endWorld))
     }
@@ -78,23 +78,68 @@ object TileWallMotionPathPlanner {
         val firstCandidate = HorizontalPoint(end.x, start.z)
         val secondCandidate = HorizontalPoint(start.x, end.z)
         val corner = maxOf(firstCandidate, secondCandidate, compareBy { it.distanceSquaredFrom(centerX, centerZ) })
-        val entry = pointToward(corner, HorizontalPoint(start.x, start.z), CORNER_RADIUS)
-        val exit = pointToward(corner, HorizontalPoint(end.x, end.z), CORNER_RADIUS)
+        return roundedPathSegments(listOf(start, start.withHorizontal(corner, start.yaw), end))
+    }
+
+    /**
+     * 沿 [vertices] 連成的折線建立路徑，每個中間轉折點都改成外圓角。
+     *
+     * - 每個轉折點前後各取最多 [CORNER_RADIUS] 的距離作為圓角的入口與出口，中間以二次曲線近似。
+     *   兩個轉折點之間的直線不足兩個半徑時，兩邊各取一半，圓角不重疊。
+     * - 直線段維持固定朝向，轉向只在圓角內完成：第一段沿用起點朝向，最後一段沿用終點朝向，
+     *   中間的直線段取兩端轉折點朝向的中間值。
+     *
+     * @param vertices 起點、各轉折點與終點。轉折點的朝向是轉過該角一半時的朝向。
+     * @return 依序連接直線段與圓角近似點的路徑段。
+     */
+    private fun roundedPathSegments(vertices: List<MahjongTileWallPlacement>): List<TileWallMotionSegment> {
+        val start = vertices.first()
+        val end = vertices.last()
+        val legYaws = vertices.indices.toList().dropLast(1).map { leg ->
+            when (leg) {
+                0 -> start.yaw
+                vertices.lastIndex - 1 -> end.yaw
+                else -> vertices[leg].yaw + shortestYawDeltaDegrees(vertices[leg].yaw, vertices[leg + 1].yaw) / 2.0f
+            }
+        }
         val points = buildList {
             add(start)
-            if (hypot(entry.x - start.x, entry.z - start.z) > POSITION_EPSILON) {
-                add(start.withHorizontal(entry, start.yaw))
-            }
-            for (index in 1..CORNER_SUBDIVISIONS) {
-                val progress = index.toDouble() / CORNER_SUBDIVISIONS
-                val point = quadraticBezier(entry, corner, exit, progress)
-                val yaw = start.yaw + shortestYawDeltaDegrees(start.yaw, end.yaw) * progress.toFloat()
-                add(start.withHorizontal(point, yaw))
+            for (index in 1 until vertices.lastIndex) {
+                val corner = HorizontalPoint(vertices[index].x, vertices[index].z)
+                val entry = pointToward(corner, vertices[index - 1].horizontal(), cornerRadius(vertices, leg = index - 1))
+                val exit = pointToward(corner, vertices[index + 1].horizontal(), cornerRadius(vertices, leg = index))
+                val yawIn = legYaws[index - 1]
+                val yawOut = legYaws[index]
+                if (hypot(entry.x - last().x, entry.z - last().z) > POSITION_EPSILON) add(start.withHorizontal(entry, yawIn))
+                for (step in 1..CORNER_SUBDIVISIONS) {
+                    val progress = step.toDouble() / CORNER_SUBDIVISIONS
+                    val yaw = yawIn + shortestYawDeltaDegrees(yawIn, yawOut) * progress.toFloat()
+                    add(start.withHorizontal(quadraticBezier(entry, corner, exit, progress), yaw))
+                }
             }
             if (horizontalDistance(last(), end) > POSITION_EPSILON || last().yaw != end.yaw) add(end)
         }
         return points.zipWithNext(::segment)
     }
+
+    /**
+     * 一段直線上圓角可用的半徑。兩端都是轉折點時最多用到一半長度，避免前後兩個圓角重疊。
+     *
+     * @param vertices 起點、各轉折點與終點。
+     * @param leg 直線段的序號，從 `vertices[leg]` 到 `vertices[leg + 1]`。
+     * @return 這段直線上每個圓角可用的半徑。
+     */
+    private fun cornerRadius(vertices: List<MahjongTileWallPlacement>, leg: Int): Double {
+        val betweenCorners = leg > 0 && leg + 1 < vertices.lastIndex
+        return if (betweenCorners) minOf(CORNER_RADIUS, horizontalDistance(vertices[leg], vertices[leg + 1]) / 2.0) else CORNER_RADIUS
+    }
+
+    /**
+     * placement 的水平座標。
+     *
+     * @return 忽略高度與朝向的水平座標。
+     */
+    private fun MahjongTileWallPlacement.horizontal(): HorizontalPoint = HorizontalPoint(x, z)
 
     /**
      * 建立一段按世界距離換算時長的路徑。

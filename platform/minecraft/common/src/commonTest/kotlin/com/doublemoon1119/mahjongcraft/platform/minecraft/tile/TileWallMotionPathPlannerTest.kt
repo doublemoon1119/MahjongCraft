@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallSideArrangemen
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallSideReference
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
+import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.sqrt
 import kotlin.test.Test
@@ -61,6 +62,28 @@ class TileWallMotionPathPlannerTest {
         val result = completedPath(start, end)
 
         assertTrue(result.segments.size >= 3)
+    }
+
+    /** 三面牌牆隔著空座位的兩面之間移動時，兩個桌角都走外圓角，不經過銳利的桌角。 */
+    @Test
+    fun `moving across the empty seat rounds both outer corners`() {
+        val points = acrossEmptySeat().segments.flatMap { listOf(it.start, it.end) }
+        val centerX = THREE_SIDE_CONTEXT.controllerX + 0.5
+        val centerZ = THREE_SIDE_CONTEXT.controllerZ + 0.5
+        val reach = points.maxOf { maxOf(abs(it.x - centerX), abs(it.z - centerZ)) }
+
+        assertTrue(points.none { abs(abs(it.x - centerX) - reach) < 1e-6 && abs(abs(it.z - centerZ) - reach) < 1e-6 }, "passes a sharp corner")
+        assertTrue(points.count { abs(abs(it.x - centerX) - reach) > 1e-6 && abs(abs(it.z - centerZ) - reach) > 1e-6 } >= 2, "no rounded corner")
+    }
+
+    /** 沿空座位那一側的直線段不轉向，轉向只在桌角的圓角內完成。 */
+    @Test
+    fun `moving across the empty seat turns only at the corners`() {
+        val segments = acrossEmptySeat().segments
+        val straight = segments.maxBy(::length)
+
+        assertEquals(straight.start.yaw, straight.end.yaw)
+        assertEquals(segments.first().start.yaw + 270.0f, straight.start.yaw, "the straight leg faces halfway through the turn")
     }
 
     /** 跨越不相鄰牆面必須拒絕，不得退化成穿過桌面的直線。 */
@@ -121,6 +144,15 @@ class TileWallMotionPathPlannerTest {
     )
 
     /**
+     * 三面牌牆時，從莊家面前的牌牆隔著空座位移到另一面的路徑。
+     *
+     * @return planner 成功產生的路徑。
+     */
+    private fun acrossEmptySeat(): TileWallMotionPathDecision.Completed = assertIs(
+        value = TileWallMotionPathPlanner.plan(THREE_SIDE_CONTEXT, position(0, 16, 0), position(1, 4, 0)),
+    )
+
+    /**
      * 建立測試用零 offset placement。
      *
      * @param side 牌牆側面索引。
@@ -157,6 +189,20 @@ class TileWallMotionPathPlannerTest {
             ),
             tileLayout = TableTileLayoutProfile.STANDARD,
             stacksPerSide = 17,
+        )
+
+        /** 三面牌牆的桌面投影：第零面在南、第一面在北、第二面在東，西側是沒有牌牆的空座位。 */
+        val THREE_SIDE_CONTEXT = MahjongTileWallProjectionContext(
+            controllerX = 0,
+            controllerY = 64,
+            controllerZ = 0,
+            tableFacing = MahjongTableFacing.NORTH,
+            sideLayout = MahjongTileWallSideLayout.resolve(
+                arrangement = TileWallSideArrangement(TileWallSideReference.TABLE, listOf(0, 2, 1)),
+                dealerSide = MahjongTableSide.SOUTH,
+            ),
+            tileLayout = TableTileLayoutProfile.STANDARD,
+            stacksPerSide = 18,
         )
 
         /** 三維長度比較使用的誤差容許值。 */
