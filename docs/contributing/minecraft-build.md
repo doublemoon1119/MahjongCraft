@@ -300,8 +300,10 @@ Each kind of run in detail:
   bots offline and back while an unseated bot watches, checks that leftover table objects whose match or
   room is gone remove themselves, and stops in the middle of a match. The second run,
   `runAutotestServerResume`, loads the same world, checks what was restored and that the matches stay paused
-  until the seated bots rejoin, then finishes the matches. Both runs write into the same report under
-  `run/autotest-server/autotest/<start time>/`, which keeps the latest reports like the client test.
+  until the seated bots rejoin, then finishes the matches. It then aborts a match whose seated bot stays offline
+  past a short pause limit, and plays a match of three idle seated bots that ends after one inactive round.
+  Both runs write into the same report under `run/autotest-server/autotest/<start time>/`, which keeps the
+  latest reports like the client test.
 - Every match of the test uses a fixed seed and the beginner AI strategy, whose decisions depend only on the
   match, so every run and every target plays the same matches and takes the same time. A change to a rule, the
   AI or how tiles are dealt makes the same seed play a different match; when the test becomes long after such

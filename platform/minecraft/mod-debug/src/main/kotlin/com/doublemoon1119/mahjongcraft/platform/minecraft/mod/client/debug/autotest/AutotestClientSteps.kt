@@ -12,4 +12,5 @@ internal val autotestClientSteps: List<AutotestStep> = buildList {
     add(AutotestSaveStep)
     add(AutotestPlayStep)
     add(AutotestReplayStep)
+    add(AutotestOfflinePauseStep)
 }

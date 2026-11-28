@@ -1,10 +1,21 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.autotest
 
+import com.doublemoon1119.mahjongcraft.flow.api.event.MatchCompletion
+import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEndedEvent
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.OfflineMatchPause
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MahjongCraftEvents
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MatchEndedListener
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.AutotestReport
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.AutotestReportRetention
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.AutotestStatus
@@ -36,6 +47,7 @@ import org.koin.core.Koin
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.LocalDateTime
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executor
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -63,7 +75,11 @@ import kotlin.uuid.Uuid
  *
  * - 讀回世界，比對牌局進度、房間成員與剩下的決策時間。
  * - 房主機器人還沒加入時，旁觀的機器人確認各桌仍在暫停；房主重新加入後確認各桌繼續。
- * - 房主開自動操作把牌局打完，再正常關機。
+ * - 房主開自動操作把牌局打完。
+ * - 日麻桌再開一場，暫停時限縮短後房主離線，確認這一場以所有玩家離線過久中止。
+ * - 三人麻將桌換成三位機器人玩家，改打東風場，連續無人操作的局數設為 1、思考時間 1 秒，都不操作，確認這一場打完一局就以
+ *   連續無人操作正常結束並封存進牌譜。
+ * - 正常關機。
  *
  * 其他：
  *
@@ -114,6 +130,9 @@ internal class AutotestServerRunner(private val koin: Koin) {
     /** 第二段房主重新加入前，各桌暫停時房主剩下的決策時間。暫停的檢查沒通過時為 null。 */
     private var pausedAfterRestart: Map<String, Pair<Duration, Duration>>? = null
 
+    /** 這一次開機結束的對局，以場次識別碼索引。 */
+    private val endedMatches = ConcurrentHashMap<Uuid, MatchEndedEvent>()
+
     /** 要求關機的時間，還沒要求時為 null。 */
     private var stopRequestedAt: TimeMark? = null
 
@@ -123,6 +142,7 @@ internal class AutotestServerRunner(private val koin: Koin) {
      * @param events 登記伺服器事件用的事件來源。
      */
     fun register(events: ServerEvents) {
+        MahjongCraftEvents.MATCH_ENDED.register(MatchEndedListener { event, _ -> endedMatches[event.matchId] = event })
         events.onServerStarted { server ->
             if (server.isDedicatedServer) start(server)
         }
@@ -190,7 +210,9 @@ internal class AutotestServerRunner(private val koin: Koin) {
         if (!step("restart-pause") { checkPausedAfterRestart(server) }) return
         if (!step("rejoin") { joinBots(server) }) return
         if (!step("resume") { checkResumedAfterRestart(server) }) return
-        step("finish") { finishMatches() }
+        if (!step("finish") { finishMatches() }) return
+        if (!step("offline-timeout") { abortAfterOfflineLimit(server) }) return
+        step("inactive-end") { endInactiveMatch(server) }
     }
 
     /**
@@ -588,6 +610,124 @@ internal class AutotestServerRunner(private val koin: Koin) {
     }
 
     /**
+     * 日麻桌再開一場，等房主的決策時間開始倒數後，把暫停時限縮短並讓房主離線：這一場應以所有玩家離線過久中止。房主之後重新加入。
+     *
+     * @param server 目前伺服器。
+     */
+    private suspend fun AutotestServerContext.abortAfterOfflineLimit(server: MinecraftServer) {
+        val table = tables.first()
+        val bot = bots.getValue(table.botName)
+        val game = startMatch(table, matchIndex = 2) ?: return
+        val timers = koin.get<GameDecisionTimerManager>()
+        val counting = waitUntil(MATCH_TIMEOUT) { timers.getStatuses(game.id)[bot.playerId()] != null }
+        if (!check("${table.botName}'s decision time is counting down", counting)) return
+        withServerConfig({ it.copy(offlinePauseTimeout = OFFLINE_LIMIT) }) {
+            AutotestBotPlayer.leave(bot)
+            val ended = waitUntil(SYNC_TIMEOUT) { endedMatches[game.matchId] != null }
+            if (check("The ${table.rule} match ends once its seated player has been offline for $OFFLINE_LIMIT", ended)) {
+                val event = checkNotNull(endedMatches[game.matchId])
+                check(
+                    name = "The match is aborted because every seated player was offline",
+                    passed = event.completion == MatchCompletion.ABORTED && event.reasonId == GameAbortReasonIds.PLAYERS_OFFLINE,
+                    detail = "${event.completion} ${event.reasonId}",
+                )
+                check("The ${table.rule} table returns to its room", waitUntil(SYNC_TIMEOUT) { AutotestServerTable.isWaitingRoom(koin, game.id) })
+            }
+        }
+        bots[table.botName] = AutotestBotPlayer.join(server, table.botName).also(table::approach)
+    }
+
+    /**
+     * 三人麻將桌的 AI 換成兩位機器人玩家，改打東風場、思考時間改為 1 秒，連續無人操作的局數設為 1，三位都不操作：這一場應打完
+     * 第一局就以連續無人操作正常結束，並封存進牌譜。
+     *
+     * @param server 目前伺服器。
+     */
+    private suspend fun AutotestServerContext.endInactiveMatch(server: MinecraftServer) {
+        val table = tables.last()
+        val tableId = checkNotNull(table.tableId)
+        val host = bots.getValue(table.botName)
+        val rooms = koin.get<RoomRepository>()
+        val service = AutotestServerTable.rooms(koin)
+        checkNotNull(rooms.getRoom(tableId)).aiPlayerIds.forEach { service.kick(host, it) }
+        if (!check("The AI players leave the ${table.rule} room", waitUntil(SYNC_TIMEOUT) { rooms.getRoom(tableId)?.aiPlayerIds?.isEmpty() == true })) return
+        val current = checkNotNull(rooms.getRoom(tableId)).gameConfig
+        // 預設只打一局，打完規則就結束整場。改成東風場，第一局之後規則還要繼續，才看得出是因為無人操作而結束。
+        val config = current.copy(
+            ruleConfig = (current.ruleConfig as ThreePlayerRiichiRuleConfig).copy(gameLength = RiichiGameLength.East),
+            flowConfig = current.flowConfig.copy(timeControl = ActionTimeControl.Custom(base = INACTIVE_BASE_TIME, reserve = Duration.ZERO)),
+        )
+        service.updateConfig(host, config)
+        val configured = waitUntil(SYNC_TIMEOUT) { AutotestServerTable.hasConfig(koin, tableId, config) }
+        if (!check("The ${table.rule} room plays an East round with a $INACTIVE_BASE_TIME decision time", configured)) return
+        val guests = INACTIVE_GUEST_NAMES.map { name -> AutotestBotPlayer.join(server, name).also(table::approach) }
+        guests.forEach { service.joinFromScreen(tableId, it) }
+        val joined = waitUntil(SYNC_TIMEOUT) { rooms.getRoom(tableId)?.humanPlayerIds?.containsAll(guests.map { it.playerId() }) == true }
+        if (!check("Two more bots join the ${table.rule} room", joined)) return
+        guests.forEach(service::ready)
+        val ready = waitUntil(SYNC_TIMEOUT) { rooms.getRoom(tableId)?.readyPlayerIds?.containsAll(guests.map { it.playerId() }) == true }
+        if (!check("The joined bots are ready", ready)) return
+        withServerConfig({ it.copy(inactiveRoundLimit = 1) }) {
+            val game = startMatch(table, matchIndex = 2) ?: return@withServerConfig
+            // 每一局最後記到的操作紀錄，檢查沒通過時寫進報告。
+            val names = (INACTIVE_GUEST_NAMES + table.botName).associateBy(AutotestBotPlayer::playerIdOf)
+            val activityByRound = linkedMapOf<Int, String>()
+            val gameRepository = koin.get<GameRepository>()
+            val ended = waitUntil(MATCH_TIMEOUT) {
+                gameRepository.getGame(tableId)?.takeIf { it.matchId == game.matchId }?.let { current ->
+                    val activity = current.roundActivity
+                    activityByRound[current.tableState.roundSerial] = "active=${activity.activePlayerIds.map(names::get)} " +
+                        "timedOut=${activity.timedOutPlayerIds.map(names::get)} streak=${current.inactiveRoundStreak}"
+                }
+                endedMatches[game.matchId] != null
+            }
+            if (!check("The ${table.rule} match of idle players ends", ended)) return@withServerConfig
+            val event = checkNotNull(endedMatches[game.matchId])
+            check(
+                name = "The match ends normally because nobody acted for a round",
+                passed = event.completion == MatchCompletion.COMPLETED && event.reasonId == BuiltInMatchEndReasonIds.PLAYERS_INACTIVE,
+                detail = "${event.completion} ${event.reasonId}; rounds $activityByRound",
+            )
+            check("The ${table.rule} match is archived", waitUntil(SYNC_TIMEOUT) { AutotestServerTable.isArchived(koin, game.matchId) })
+        }
+    }
+
+    /**
+     * 一張牌桌由房主機器人坐莊開局，等牌局開始。
+     *
+     * @param table 牌桌。
+     * @param matchIndex 這張牌桌的第幾場對局，從 0 起算，決定這一場使用的固定種子。
+     * @return 開始的牌局。沒有開局時為 null。
+     */
+    private suspend fun AutotestServerContext.startMatch(table: AutotestServerTable, matchIndex: Int): Game? {
+        val tableId = checkNotNull(table.tableId)
+        val bot = bots.getValue(table.botName)
+        table.approach(bot)
+        val members = checkNotNull(koin.get<RoomRepository>().getRoom(tableId)).playerIds
+        AutotestServerTable.rooms(koin).start(player = bot, seatOrder = listOf(bot.playerId()) + (members - bot.playerId()), matchSeed = table.matchSeed(matchIndex))
+        val gameRepository = koin.get<GameRepository>()
+        if (!check("The ${table.rule} table starts a match", waitUntil(SYNC_TIMEOUT) { gameRepository.getGame(tableId) != null })) return null
+        return gameRepository.getGame(tableId)
+    }
+
+    /**
+     * 暫時改用另一份伺服器設定執行 [block]，結束後恢復原本的設定。
+     *
+     * @param change 由目前設定得到暫時的設定。
+     * @param block 使用暫時設定的內容。
+     */
+    private inline fun withServerConfig(change: (MinecraftServerConfig) -> MinecraftServerConfig, block: () -> Unit) {
+        val state = koin.get<MinecraftServerConfigState>()
+        val original = state.current
+        state.replace(change(original))
+        try {
+            block()
+        } finally {
+            state.replace(original)
+        }
+    }
+
+    /**
      * 三張牌桌由機器人照玩家流程開局，等牌局都開始。
      *
      * @param matchIndex 各桌的第幾場對局，從 0 起算，決定這一場使用的固定種子。
@@ -733,6 +873,15 @@ internal class AutotestServerRunner(private val koin: Koin) {
 
         /** 從牌桌控制方塊找局況顯示的範圍。 */
         private const val ROUND_INFO_SEARCH_RADIUS = 8.0
+
+        /** 確認暫停逾時中止時使用的暫停時限。 */
+        private val OFFLINE_LIMIT = 2.seconds
+
+        /** 確認連續無人操作結束時使用的基本思考時間。 */
+        private val INACTIVE_BASE_TIME = 1.seconds
+
+        /** 加入三人麻將桌、和房主一起都不操作的機器人名稱。 */
+        private val INACTIVE_GUEST_NAMES = listOf("MahjongBot4", "MahjongBot5")
 
         /** 關機應該在這段時間內完成。 */
         private val STOP_LIMIT = 20.seconds
