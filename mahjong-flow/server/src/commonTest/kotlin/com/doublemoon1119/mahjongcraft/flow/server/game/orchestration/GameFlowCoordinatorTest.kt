@@ -1898,6 +1898,29 @@ class GameFlowCoordinatorTest {
         )
     }
 
+    /** 驗證平台代替玩家送出的摸牌不算玩家這一局主動操作過，玩家自己送出的摸牌才算。 */
+    @Test
+    fun `test a draw sent on the player's behalf does not count as the player acting`() = runTest {
+        val fixtures = Fixtures()
+        val playerId = Uuid.random()
+        val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(player),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            tileWall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Honor.East), FakeIdentifiedTileFactory.create(Tile.Honor.South))),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        assertTrue(fixtures.coordinator.dispatch(gameId, playerId, GameCommand.Draw, initiatedByPlayer = false) is Outcome.Success)
+        assertEquals(RoundPlayerActivity(), fixtures.gameRepo.getGame(gameId)?.roundActivity)
+
+        fixtures.gameRepo.setTableState(table)
+        assertTrue(fixtures.coordinator.dispatch(gameId, playerId, GameCommand.Draw) is Outcome.Success)
+        assertEquals(RoundPlayerActivity(activePlayerIds = setOf(playerId)), fixtures.gameRepo.getGame(gameId)?.roundActivity)
+    }
+
     /**
      * 驗證一般槓牌成功（無搶槓視窗開啟）不會觸發任何銜接。
      */

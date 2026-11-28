@@ -449,6 +449,22 @@ class AdvanceRoundUseCaseTest {
         assertNotNull(fixtures.presentationPublisher.getPublishedMatchSettlement(gameId))
     }
 
+    /** 驗證規則本來就要結束整場時，即使這一局無人操作也保留規則的終局原因。 */
+    @Test
+    fun `test advance round keeps the rule's end reason when the schedule ends the match anyway`() = runTest {
+        val fixtures = Fixtures(absenceSettings(inactiveRoundLimit = 1))
+        val table = continuingTable().copy(config = RiichiRuleConfig(gameLength = RiichiGameLength.OneGame))
+        fixtures.setCompletedState(table, roundActivity = allTimedOut(table))
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertTrue(result.value.isMatchOver)
+        val game = assertNotNull(fixtures.gameRepo.getGame(gameId))
+        assertEquals(BuiltInMatchEndReasonIds.SCHEDULE_COMPLETED, game.matchEndReasonId)
+        assertEquals(1, game.inactiveRoundStreak)
+    }
+
     /** 驗證未到達設定局數時照常開下一局，累計局數並清空這一局的活動紀錄。 */
     @Test
     fun `test advance round counts an inactive round below the limit and continues`() = runTest {

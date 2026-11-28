@@ -136,12 +136,15 @@ class GameFlowCoordinator(
      * @param gameId 對局 Uuid。
      * @param playerId 發起操作的玩家 Uuid。
      * @param command 欲執行的操作。
+     * @param initiatedByPlayer 玩家自己送出時為 true，成功後記成玩家這一局主動操作過，見 [Game.roundActivity]。平台代替玩家送出的
+     * 機械動作，例如伺服器替真人自動摸牌，傳 false，不算玩家主動操作。
      * @return 命令結果。規則契約錯誤導致中止時，回傳 [GameError.MatchAborted]。
      */
     suspend fun dispatch(
         gameId: Uuid,
         playerId: Uuid,
         command: GameCommand,
+        initiatedByPlayer: Boolean = true,
     ): Outcome<Unit, GameError> {
         val game = gameRepository.getGame(gameId)
             ?: return Outcome.Error(GameError.GameNotFound(gameId))
@@ -152,7 +155,7 @@ class GameFlowCoordinator(
             return Outcome.Error(GameError.ForcedAutoPlayActive(playerId, gameId))
         }
         val result = dispatchAndReconcile(gameId, playerId, command)
-        if (result is Outcome.Success) recordRoundActivity(gameId, playerId, game.tableState.roundSerial, timedOut = false)
+        if (result is Outcome.Success && initiatedByPlayer) recordRoundActivity(gameId, playerId, game.tableState.roundSerial, timedOut = false)
         return result
     }
 
