@@ -1,8 +1,34 @@
+<p align="center"><img src="../../docs/assets/branding/banner.jpg" alt="MahjongCraft"></p>
+
 # Minecraft Platform
 
 ## Purpose
 
 The Minecraft adapter turns MahjongCraft flow and domain state into a playable mod.
+
+## Requirements
+
+Install the mod on both the server and the clients.
+
+### Fabric
+
+<p>
+<a href="https://fabricmc.net/"><img src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/fabric_vector.svg" alt="Available for Fabric" height="40"></a>&nbsp;&nbsp;
+<a href="https://github.com/FabricMC/fabric-api"><img src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/requires/fabric-api_vector.svg" alt="Requires Fabric API" height="40"></a>&nbsp;&nbsp;
+<a href="https://github.com/FabricMC/fabric-language-kotlin"><img src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/requires/fabric-language-kotlin_vector.svg" alt="Requires Fabric Language Kotlin" height="40"></a>
+</p>
+
+Requires [Fabric API](https://github.com/FabricMC/fabric-api) and
+[Fabric Language Kotlin](https://github.com/FabricMC/fabric-language-kotlin).
+
+### Forge and NeoForge
+
+<p>
+<a href="https://files.minecraftforge.net/"><img src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/forge_vector.svg" alt="Available for Forge" height="40"></a>&nbsp;&nbsp;
+<a href="https://neoforged.net/"><img src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/neoforge_vector.svg" alt="Available for NeoForge" height="40"></a>
+</p>
+
+Requires [Kotlin for Forge](https://github.com/thedarkcolour/KotlinForForge).
 
 ## Layers
 
