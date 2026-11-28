@@ -518,6 +518,7 @@ internal class HistoryRoundEventPresenter(
         BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED -> Component.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_TARGET_SCORE_REACHED)
         BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED -> Component.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_EXTRA_ROUND_LIMIT_REACHED)
         BuiltInMatchEndReasonIds.PLAYER_BUSTED -> Component.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_PLAYER_BUSTED)
+        BuiltInMatchEndReasonIds.PLAYERS_INACTIVE -> Component.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_PLAYERS_INACTIVE)
         MinecraftMatchAbortReasonIds.TABLE_MISSING -> Component.translatable(MinecraftHistoryScreenKeys.ROUND_ABORT_REASON_TABLE_MISSING)
         MinecraftMatchAbortReasonIds.TABLE_BROKEN_BY_PLAYER -> Component.translatable(MinecraftHistoryScreenKeys.ROUND_ABORT_REASON_TABLE_BROKEN_BY_PLAYER)
         GameAbortReasonIds.MISSING_WIN_SETTLEMENT,
@@ -525,6 +526,7 @@ internal class HistoryRoundEventPresenter(
         GameAbortReasonIds.INVALID_PROGRESSION,
         GameAbortReasonIds.AUTOMATIC_DECISION_FAILED,
         GameAbortReasonIds.RULE_EXECUTION_FAILED,
+        GameAbortReasonIds.PLAYERS_OFFLINE,
         -> Component.translatable(minecraftAbortReasonTranslationKey(reasonId))
         else -> Component.translatable(roundOutcomes.find(reasonId) ?: exhaustiveDrawReasons.find(reasonId) ?: MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER)
     }

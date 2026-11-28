@@ -5,14 +5,17 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongRoun
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.vanilla.cameraFacingRotation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.mojang.blaze3d.vertex.PoseStack
+import net.minecraft.ChatFormatting
 import net.minecraft.client.gui.Font
 import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.client.renderer.entity.EntityRenderer
 import net.minecraft.client.renderer.entity.EntityRendererProvider
+import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.inventory.InventoryMenu
 
@@ -23,6 +26,7 @@ import net.minecraft.world.inventory.InventoryMenu
  * - 每行交給 [RoundInfoLineTextBuilder] 組成文字，再由用戶端依自己的語系顯示。
  * - 牌名、牌面 emoji 與規則訊息都透過各自的 registry 查詢。
  * - 未登記的行 ID 直接顯示原始 ID，不會讓整行消失。
+ * - [MahjongRoundInfoEntity.offlinePaused] 為 true 時在最後加上一行離線暫停提示，「暫停中」以紅色顯示。
  * - 繪製方式沿用原版實體名牌的座標方向：套用攝影機旋轉、以 `(-scale, -scale, scale)` 縮放，
  *   並使用 [Font.DisplayMode.NORMAL] 畫在半空中。
  *
@@ -66,7 +70,7 @@ class MahjongRoundInfoEntityRenderer(
         if (!configStore.current.presentationVisibility.roundInfoEnabled) return
         if (entity.isInvisible) return
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
-        val lines = entity.lines.map(lineTextBuilder::buildLineText)
+        val lines = entity.lines.map(lineTextBuilder::buildLineText) + listOfNotNull(OFFLINE_PAUSED_LINE.takeIf { entity.offlinePaused })
 
         WorldPanelDeferral.draw(matrices, vertexConsumers) { panelMatrices, panelConsumers ->
             panelMatrices.pushPose()
@@ -109,6 +113,12 @@ class MahjongRoundInfoEntityRenderer(
     override fun getTextureLocation(entity: MahjongRoundInfoEntity): ResourceLocation = InventoryMenu.BLOCK_ATLAS
 
     companion object {
+        /** 所有真人都離線、對局暫停時加在面板最後的一行。 */
+        private val OFFLINE_PAUSED_LINE: Component = Component.translatable(
+            MinecraftMessageKeys.ROUND_INFO_OFFLINE_PAUSED,
+            Component.translatable(MinecraftMessageKeys.ROUND_INFO_PAUSED).withStyle(ChatFormatting.RED),
+        )
+
         /** 文字縮放。 */
         private const val TEXT_SCALE: Float = 0.025f
 

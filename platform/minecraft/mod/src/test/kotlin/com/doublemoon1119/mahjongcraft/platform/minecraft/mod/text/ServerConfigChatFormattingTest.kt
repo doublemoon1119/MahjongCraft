@@ -26,6 +26,8 @@ class ServerConfigChatFormattingTest {
         assertEquals(
             expected = listOf(
                 MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_PLAYER_DISCONNECTION,
+                MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_INACTIVE_PLAYERS,
+                MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_OFFLINE_PLAYERS,
                 MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_AI_PLAYER,
                 MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_TABLE,
                 MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_MAHJONG_TILE,
@@ -33,7 +35,7 @@ class ServerConfigChatFormattingTest {
             ),
             actual = sections.map { (it.name.contents as TranslatableContents).key },
         )
-        assertEquals(listOf(2, 1, 2, 1, 11), sections.map { it.entries.size })
+        assertEquals(listOf(2, 1, 1, 1, 2, 1, 11), sections.map { it.entries.size })
         val keys = sections.flatMap { it.entries }.map { (it.name.contents as TranslatableContents).key }
         assertEquals(keys.size, keys.distinct().size)
         assertEquals(1, keys.count { it == MinecraftConfigCommandKeys.HISTORY_QUERY_ENABLED })
@@ -43,12 +45,12 @@ class ServerConfigChatFormattingTest {
         assertEquals(1, keys.count { it == MinecraftConfigCommandKeys.HISTORY_QUERY_REJECTION_REPLY_INTERVAL })
     }
 
-    /** 單則訊息只有一個前綴，五個分類標籤各自擁有獨立懸停內容。 */
+    /** 單則訊息只有一個前綴，七個分類標籤各自擁有獨立懸停內容。 */
     @Test
-    fun `test message contains five independent section tooltips`() {
+    fun `test message contains seven independent section tooltips`() {
         val message = serverConfigShowMessage("test/server.toml", MinecraftServerConfig())
         val labels = message.siblings.filter { it.style.hoverEvent != null }
-        assertEquals(5, labels.size)
+        assertEquals(7, labels.size)
         val sections = serverConfigSections(MinecraftServerConfig())
         labels.zip(sections).forEach { (label, section) ->
             val hover = assertNotNull(label.style.hoverEvent).getValue(HoverEvent.Action.SHOW_TEXT)

@@ -327,6 +327,9 @@ object MinecraftMessageKeys {
     /** 伺服器無法完成合法代打。 */
     const val GAME_ABORT_REASON_AUTOMATIC = "mahjongcraft.message.game_abort_reason_automatic"
 
+    /** 所有真人離線太久。 */
+    const val GAME_ABORT_REASON_PLAYERS_OFFLINE = "mahjongcraft.message.game_abort_reason_players_offline"
+
     /** 規則執行失敗。 */
     const val GAME_ABORT_REASON_RULE = "mahjongcraft.message.game_abort_reason_rule"
 
@@ -365,6 +368,12 @@ object MinecraftMessageKeys {
 
     /** 局況顯示目前是第幾局，不帶場風或圈風，帶一個局數參數（一個 `%d`）。 */
     const val ROUND_INFO_ROUND_NUMBER = "mahjongcraft.message.round_info_round_number"
+
+    /** 局況顯示在所有真人都離線、對局暫停時加上的一行，帶一個以紅色顯示的 [ROUND_INFO_PAUSED] 參數（一個 `%s`）。 */
+    const val ROUND_INFO_OFFLINE_PAUSED = "mahjongcraft.message.round_info_offline_paused"
+
+    /** [ROUND_INFO_OFFLINE_PAUSED] 裡以紅色顯示的「暫停中」。 */
+    const val ROUND_INFO_PAUSED = "mahjongcraft.message.round_info_paused"
 
     /** 牌面角落輔助標籤（給非中文圈玩家看的數字/字母）切換訊息的前綴，後面接切換前後的狀態文字。 */
     const val TILE_LABELS_TOGGLE_PREFIX = "mahjongcraft.message.tile_labels_toggle_prefix"
@@ -601,6 +610,7 @@ object MinecraftMessageKeys {
         GAME_ABORT_REASON_SETTLEMENT,
         GAME_ABORT_REASON_PROGRESSION,
         GAME_ABORT_REASON_AUTOMATIC,
+        GAME_ABORT_REASON_PLAYERS_OFFLINE,
         GAME_ABORT_REASON_RULE,
         GAME_ABORT_REASON_AI_PLAYER,
         GAME_ABORT_REASON_UNKNOWN,
@@ -612,6 +622,8 @@ object MinecraftMessageKeys {
         HAND_WAITING,
         ROUND_INFO_WALL_REMAINING,
         ROUND_INFO_ROUND_NUMBER,
+        ROUND_INFO_OFFLINE_PAUSED,
+        ROUND_INFO_PAUSED,
         TILE_LABELS_TOGGLE_PREFIX,
         TILE_LABELS_STATE_ON,
         TILE_LABELS_STATE_OFF,

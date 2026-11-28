@@ -15,4 +15,7 @@ object BuiltInMatchEndReasonIds {
 
     /** 至少一位玩家已達擊飛門檻。 */
     val PLAYER_BUSTED: String = MahjongCraftMetadata.id("player_busted")
+
+    /** 連續數局所有真人都只有逾時代打、沒有主動操作。 */
+    val PLAYERS_INACTIVE: String = MahjongCraftMetadata.id("players_inactive")
 }

@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecision
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceFailureReporter
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceFollowUp
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortEffects
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerPresence
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateFailureReporter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.di.flowServerModule
@@ -100,6 +101,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.player.PlayerConnectionLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.player.ServerAiPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.player.ServerPlayerIdentityStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.player.ServerPlayerPresence
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.BuiltInDefaultGameConfigProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.MahjongLobbyInfoLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.room.MahjongLobbyInfoPresenter
@@ -262,6 +264,7 @@ val modServerModule = module {
     single<TableLocationPersistence>()
 
     single<PlayerConnectionLifecycleService>()
+    single<ServerPlayerPresence>() bind PlayerPresence::class
     single<ServerPlayerIdentityStore>()
 
     single<BuiltInDefaultGameConfigProvider>() bind DefaultGameConfigProvider::class

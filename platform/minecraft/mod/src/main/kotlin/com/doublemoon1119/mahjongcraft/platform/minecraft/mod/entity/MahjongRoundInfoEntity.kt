@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity
 
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.OfflineMatchPause
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.SpectatorObservationService
@@ -49,6 +50,16 @@ class MahjongRoundInfoEntity(
         get() = RoundInfoLineCodec.decode(entityData[LINES])
         set(value) = entityData.set(LINES, RoundInfoLineCodec.encode(value))
 
+    /**
+     * 所屬對局是否因所有真人都離線而暫停。client 端 renderer 依此在面板最後加上一行暫停提示。
+     *
+     * - 伺服器每個 tick 依 [OfflineMatchPause.isPaused] 更新，值沒變時不會重新同步。
+     * - 不寫進存檔。區塊載入或伺服器重新啟動後，由下一個 tick 依目前的暫停狀態重新決定。
+     */
+    var offlinePaused: Boolean
+        get() = entityData[OFFLINE_PAUSED]
+        private set(value) = entityData.set(OFFLINE_PAUSED, value)
+
     /** 正式牌局所屬麻將桌。未指派時為 `null`。 */
     var managedTableId: Uuid?
         get() = entityData[MANAGED_TABLE_ID]
@@ -82,6 +93,7 @@ class MahjongRoundInfoEntity(
         super.tick()
         if (level().isClientSide) return
         applyVisibility()
+        offlinePaused = managedTableId?.let(GlobalContext.get().get<OfflineMatchPause>()::isPaused) == true
         if (firstTickWorldTime == Long.MIN_VALUE) firstTickWorldTime = level().gameTime
         if (level().gameTime - firstTickWorldTime >= FALLBACK_DESPAWN_AFTER_TICKS) {
             discard()
@@ -214,6 +226,7 @@ class MahjongRoundInfoEntity(
     override fun defineSyncedData(data: SyncedDataDefiner) {
         data.define(LINES, "")
         data.define(MANAGED_TABLE_ID, "")
+        data.define(OFFLINE_PAUSED, false)
     }
 
     /**
@@ -265,6 +278,10 @@ class MahjongRoundInfoEntity(
         /** 同步要顯示的完整內容，編碼格式見 [lines]。 */
         private val LINES: EntityDataAccessor<String> =
             SynchedEntityData.defineId(MahjongRoundInfoEntity::class.java, EntityDataSerializers.STRING)
+
+        /** 同步離線暫停狀態，見 [offlinePaused]。 */
+        private val OFFLINE_PAUSED: EntityDataAccessor<Boolean> =
+            SynchedEntityData.defineId(MahjongRoundInfoEntity::class.java, EntityDataSerializers.BOOLEAN)
 
         /** 同步所屬麻將桌 UUID。空字串表示尚未指派。 */
         private val MANAGED_TABLE_ID: EntityDataAccessor<String> =

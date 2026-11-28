@@ -11,7 +11,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.OfflineMatchPause
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerPresence
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
@@ -58,6 +60,7 @@ class ServerSessionStateCleanerTest {
                 gameRepository = gameRepository,
                 publisher = FakeDecisionTimerUpdatePublisher(),
             ),
+            offlineMatchPause = OfflineMatchPause(gameRepository, PlayerPresence.ALWAYS_ONLINE, clock),
         )
         val observerId = Uuid.random()
 

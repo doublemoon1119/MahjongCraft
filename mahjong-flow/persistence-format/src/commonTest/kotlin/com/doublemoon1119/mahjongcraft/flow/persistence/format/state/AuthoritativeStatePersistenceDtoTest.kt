@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecording
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPlayerActivity
 import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceEnvelopeDto
@@ -290,6 +291,39 @@ class AuthoritativeStatePersistenceDtoTest {
             actual = restored.enabledAutomaticControlIdsByPlayerId,
         )
         assertEquals(12L, restored.automaticControlRevision)
+    }
+
+    /** 驗證本局玩家活動、無人操作局數與離線暫停時間會隨權威遊戲保存及恢復。 */
+    @Test
+    fun `absence tracking round-trips`() {
+        val tableState = createGame()
+        val playerId = tableState.players.single().id
+        val game = Game(
+            tableState = tableState,
+            flowConfig = GameFlowConfig(),
+            roundActivity = RoundPlayerActivity(activePlayerIds = setOf(playerId), timedOutPlayerIds = setOf(playerId)),
+            inactiveRoundStreak = 3,
+            offlinePauseElapsed = 4_250.milliseconds,
+        )
+        val state = createAuthoritativeStatePersistenceDto(
+            rooms = emptyList(),
+            games = listOf(game),
+            registries = bundledPersistenceRegistries(),
+            historyRecordingState = HistoryRecordingState(),
+            skippedHistoryEventReporter = failOnSkippedHistoryEvent,
+        )
+
+        val restored = state.toGames(
+            ruleConfigRegistry = ruleConfigRegistry,
+            discardPileRegistry = discardPileRegistry,
+            exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry = extensionGameActionRegistry,
+            componentRegistry = bundledPersistenceRegistries().components,
+        ).getValue(game.id)
+
+        assertEquals(game.roundActivity, restored.roundActivity)
+        assertEquals(3, restored.inactiveRoundStreak)
+        assertEquals(4_250.milliseconds, restored.offlinePauseElapsed)
     }
 
     /** 驗證中斷時尚未使用的基本思考時間能完整保存及還原。 */

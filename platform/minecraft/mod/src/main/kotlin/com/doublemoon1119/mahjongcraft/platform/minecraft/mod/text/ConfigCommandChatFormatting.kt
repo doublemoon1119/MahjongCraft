@@ -94,6 +94,24 @@ fun serverConfigSections(config: MinecraftServerConfig): List<ConfigPresentation
         ),
     ),
     ConfigPresentationSection(
+        name = Component.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_INACTIVE_PLAYERS),
+        entries = listOf(
+            element = ConfigPresentationEntry(
+                name = Component.translatable(MinecraftConfigCommandKeys.INACTIVE_ROUND_LIMIT),
+                displayedValue = Component.literal(config.inactiveRoundLimit.toString()),
+            ),
+        ),
+    ),
+    ConfigPresentationSection(
+        name = Component.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_OFFLINE_PLAYERS),
+        entries = listOf(
+            element = ConfigPresentationEntry(
+                name = Component.translatable(MinecraftConfigCommandKeys.OFFLINE_PAUSE_TIMEOUT),
+                displayedValue = Component.literal(config.offlinePauseTimeout.inWholeSeconds.toString()),
+            ),
+        ),
+    ),
+    ConfigPresentationSection(
         name = Component.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_AI_PLAYER),
         entries = listOf(
             element = ConfigPresentationEntry(

@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPol
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiGameEventPublicMarkerResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.MatchAbsenceSettings
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolvePostReactionRoundOutcomeUseCase
@@ -127,6 +128,7 @@ class RuleOutcomeAchievementIntegrationTest {
             presentationPublisher = FakeGamePresentationPublisher(),
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             beginRuleDecisionUseCase = noRuleDecisionBeginUseCase(repository, modules, synchronizer),
+            absenceSettings = MatchAbsenceSettings.DISABLED,
         )
         assertTrue(useCase(game.id) is Outcome.Success, "The real progression should end a busted match")
 

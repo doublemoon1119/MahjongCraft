@@ -23,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvai
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.MatchAbsenceSettings
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
@@ -311,6 +312,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 presentationPublisher = presentationPublisher,
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
                 beginRuleDecisionUseCase = ruleDecisions.begin,
+                absenceSettings = MatchAbsenceSettings.DISABLED,
             ),
             returnToRoomUseCase = ReturnToRoomUseCase(
                 authoritativeStateStore = store,

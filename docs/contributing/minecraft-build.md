@@ -296,9 +296,10 @@ Each kind of run in detail:
 - The test has its own run tasks and run directory, so the development server is never part of it:
   `runServer` and an example's `runServer` start as usual and run no test, with or without
   `-PmahjongcraftAutotest`.
-- The test starts the server twice. The first run, `runAutotestServerStart`, plays at tables and stops in the
-  middle of a match; the second run, `runAutotestServerResume`, loads the same world, checks what was restored
-  and finishes the matches. Both runs write into the same report under
+- The test starts the server twice. The first run, `runAutotestServerStart`, plays at tables, takes the seated
+  bots offline and back while an unseated bot watches, and stops in the middle of a match. The second run,
+  `runAutotestServerResume`, loads the same world, checks what was restored and that the matches stay paused
+  until the seated bots rejoin, then finishes the matches. Both runs write into the same report under
   `run/autotest-server/autotest/<start time>/`, which keeps the latest reports like the client test.
 - Every match of the test uses a fixed seed and the beginner AI strategy, whose decisions depend only on the
   match, so every run and every target plays the same matches and takes the same time. A change to a rule, the

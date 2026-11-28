@@ -38,6 +38,7 @@ class MinecraftAbortReasonTextTest {
             GameAbortReasonIds.INVALID_PROGRESSION to MinecraftMessageKeys.GAME_ABORT_REASON_PROGRESSION,
             GameAbortReasonIds.AUTOMATIC_DECISION_FAILED to MinecraftMessageKeys.GAME_ABORT_REASON_AUTOMATIC,
             GameAbortReasonIds.RULE_EXECUTION_FAILED to MinecraftMessageKeys.GAME_ABORT_REASON_RULE,
+            GameAbortReasonIds.PLAYERS_OFFLINE to MinecraftMessageKeys.GAME_ABORT_REASON_PLAYERS_OFFLINE,
         )
         expected.forEach { (id, key) -> assertEquals(key, minecraftAbortReasonTranslationKey(id)) }
     }

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.config
 
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 
@@ -36,6 +37,8 @@ val OrphanedTablePolicy.configValue: String
  * @property tableBreakPolicy 麻將桌被破壞時採用的政策。
  * @property orphanedTablePolicy 已確認桌子缺失時採用的資料清理政策。
  * @property disconnectedPlayerTimeout `LEAVE_AFTER_TIMEOUT` 使用的離線寬限時間。
+ * @property inactiveRoundLimit 連續幾局所有真人都只有逾時代打時正常結束這場。0 代表不因此結束。
+ * @property offlinePauseTimeout 所有真人都離線而暫停的累計時間上限，到達時中止對局。[Duration.ZERO] 代表一直等待。
  * @property mahjongTilePhysicalCollisionEnabled 麻將牌是否阻擋玩家及其他非麻將牌 entity。
  * @property history 歷史資料記錄與封存設定。
  * @property missingAiPlayerPolicy 找不到參與遊戲的 AI 玩家時，中止或繼續對局。
@@ -45,6 +48,8 @@ data class MinecraftServerConfig(
     val tableBreakPolicy: TableBreakPolicy = TableBreakPolicy.DENY_WHILE_OCCUPIED,
     val orphanedTablePolicy: OrphanedTablePolicy = OrphanedTablePolicy.REMOVE_ALL,
     val disconnectedPlayerTimeout: Duration = DEFAULT_DISCONNECTED_PLAYER_TIMEOUT,
+    val inactiveRoundLimit: Int = DEFAULT_INACTIVE_ROUND_LIMIT,
+    val offlinePauseTimeout: Duration = Duration.ZERO,
     val mahjongTilePhysicalCollisionEnabled: Boolean = true,
     val history: MinecraftHistoryConfig = MinecraftHistoryConfig(),
     val missingAiPlayerPolicy: MissingAiPlayerPolicy = MissingAiPlayerPolicy.ABORT_MATCH,
@@ -59,5 +64,14 @@ data class MinecraftServerConfig(
 
         /** 預設斷線逾時。 */
         val DEFAULT_DISCONNECTED_PLAYER_TIMEOUT: Duration = 30.seconds
+
+        /** 無人主動操作局數上限允許的最大值。 */
+        const val MAX_INACTIVE_ROUND_LIMIT: Int = 10
+
+        /** 預設的無人主動操作局數上限。 */
+        const val DEFAULT_INACTIVE_ROUND_LIMIT: Int = 2
+
+        /** 全員離線暫停時限允許的最大值。 */
+        val MAX_OFFLINE_PAUSE_TIMEOUT: Duration = 7.days
     }
 }

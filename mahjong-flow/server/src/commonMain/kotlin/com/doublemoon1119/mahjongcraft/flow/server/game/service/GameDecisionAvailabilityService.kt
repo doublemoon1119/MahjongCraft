@@ -4,20 +4,25 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentation
 import kotlin.uuid.Uuid
 
 /**
- * 依平台呈現忙碌狀態統一暫停或恢復玩家決策計時，並立即同步相同結果。
+ * 依平台呈現忙碌狀態與真人是否在線，統一暫停或恢復玩家決策計時，並立即同步相同結果。
  *
  * Coordinator、session restore、scheduler 與直接重建權威狀態的 debug 工具應使用本服務，不得自行拼接
  * timer manager 與同步服務。如此 blocking presentation 一開始就會保存剩餘時間並送出停止更新，呈現結束
  * 後才從同一筆剩餘時間恢復。
  *
+ * 所有真人都離線時（見 [OfflineMatchPause]）與呈現忙碌相同地暫停：計時器停止並寫回剩餘時間，自動推進、代打與 AI 都不進行。
+ * 任何一位真人重新在線後，下一次 reconcile 就從暫停前的剩餘時間繼續。
+ *
  * @property busyGate 查詢目前是否有阻擋遊戲流程的呈現。
  * @property timerManager 管理 runtime timer 及其中斷狀態。
  * @property synchronizationService 將本次 availability 結果同步給真人玩家。
+ * @property offlinePause 判斷所有真人是否都離線。null 時不因離線暫停，例如沒有連線概念的離線牌譜產生。
  */
 class GameDecisionAvailabilityService(
     private val busyGate: GamePresentationBusyGate,
     private val timerManager: GameDecisionTimerManager,
     private val synchronizationService: DecisionTimerSynchronizationService,
+    private val offlinePause: OfflineMatchPause? = null,
 ) {
     /**
      * 依目前呈現狀態調整指定遊戲的決策 availability。
@@ -27,7 +32,8 @@ class GameDecisionAvailabilityService(
      * @return 呈現目前是否閒置，可否繼續接受或自動推進遊戲操作。
      */
     suspend fun reconcile(gameId: Uuid, completedPlayerId: Uuid? = null): Boolean {
-        val isAvailable = !busyGate.isBusy(gameId)
+        val isOffline = offlinePause?.update(gameId) == true
+        val isAvailable = !busyGate.isBusy(gameId) && !isOffline
         val statuses = if (isAvailable) {
             timerManager.reconcile(gameId, completedPlayerId)
         } else {

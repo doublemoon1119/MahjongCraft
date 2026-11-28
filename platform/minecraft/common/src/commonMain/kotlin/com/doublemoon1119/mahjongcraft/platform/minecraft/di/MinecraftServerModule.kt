@@ -1,9 +1,12 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.di
 
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.MatchAbsenceSettings
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.ConfiguredMatchAbsenceSettings
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigTomlCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import org.koin.dsl.bind
 import org.koin.dsl.module
 import org.koin.plugin.module.dsl.single
 
@@ -16,5 +19,6 @@ import org.koin.plugin.module.dsl.single
 val minecraftServerModule = module {
     single { MinecraftServerConfigState(MinecraftServerConfig()) }
     single<MinecraftServerConfigTomlCodec>()
+    single<ConfiguredMatchAbsenceSettings>() bind MatchAbsenceSettings::class
     single<TableLocationRegistry>()
 }

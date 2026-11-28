@@ -1,16 +1,19 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPlayerActivity
 import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.MatchAbsenceSettings
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.config.GameLength
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
@@ -20,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallFactory
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
+import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
@@ -44,6 +48,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /**
@@ -67,8 +72,9 @@ class AdvanceRoundUseCaseTest {
      * @property eventPublisher 記錄流程事件的替身。
      * @property presentationPublisher 記錄呈現要求的替身。
      * @property useCase 受測換局用例。
+     * @param absenceSettings 無人操作時結束對局的設定。
      */
-    private class Fixtures {
+    private class Fixtures(absenceSettings: MatchAbsenceSettings = MatchAbsenceSettings.DISABLED) {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
@@ -85,6 +91,7 @@ class AdvanceRoundUseCaseTest {
             presentationPublisher = presentationPublisher,
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             beginRuleDecisionUseCase = noRuleDecisionBeginUseCase(gameRepo, moduleRegistry, snapshotSynchronizer),
+            absenceSettings = absenceSettings,
         )
 
         /**
@@ -93,11 +100,19 @@ class AdvanceRoundUseCaseTest {
          * @param tableState 含有本局結算動作的桌況。
          * @param remainingReserveByPlayerId 要保留的玩家思考時間。null 時沿用預設值。
          * @param enabledAutomaticControlIdsByPlayerId 玩家目前啟用的自動控制項目。
+         * @param flowConfig 對局流程設定。
+         * @param aiPlayerStrategyKeys AI 座位與策略。
+         * @param roundActivity 真人玩家在這一局怎麼完成決策。
+         * @param inactiveRoundStreak 之前連續幾局無人主動操作。
          */
         fun setCompletedState(
             tableState: TableState,
             remainingReserveByPlayerId: Map<Uuid, Duration>? = null,
             enabledAutomaticControlIdsByPlayerId: Map<Uuid, Set<String>> = emptyMap(),
+            flowConfig: GameFlowConfig = GameFlowConfig(),
+            aiPlayerStrategyKeys: Map<Uuid, String> = emptyMap(),
+            roundActivity: RoundPlayerActivity = RoundPlayerActivity(),
+            inactiveRoundStreak: Int = 0,
         ) {
             val winners = tableState.players.filter { player ->
                 player.actionHistory.any { it is GameAction.Tsumo || it is GameAction.Ron }
@@ -132,10 +147,13 @@ class AdvanceRoundUseCaseTest {
             gameRepo.setGame(
                 game = Game(
                     tableState = tableState,
-                    flowConfig = GameFlowConfig(),
+                    flowConfig = flowConfig,
                     remainingReserveByPlayerId = remainingReserveByPlayerId
-                        ?: tableState.players.associate { it.id to GameFlowConfig().timeControl.reserve },
+                        ?: tableState.players.associate { it.id to flowConfig.timeControl.reserve },
                     enabledAutomaticControlIdsByPlayerId = enabledAutomaticControlIdsByPlayerId,
+                    aiPlayerStrategyKeys = aiPlayerStrategyKeys,
+                    roundActivity = roundActivity,
+                    inactiveRoundStreak = inactiveRoundStreak,
                     roundCompletion = completion,
                     matchSeed = testMatchSeed(0),
                 ),
@@ -408,6 +426,162 @@ class AdvanceRoundUseCaseTest {
             message = "Table state should be left completely untouched when the match is over.",
         )
         assertEquals(table, fixtures.gameRepo.getTableState(gameId), "Repository should not have been mutated either.")
+    }
+
+    /**
+     * 驗證連續無人主動操作的局數到達設定時，以 [BuiltInMatchEndReasonIds.PLAYERS_INACTIVE] 正常終局並保留成績。
+     */
+    @Test
+    fun `test advance round ends the match after the configured number of inactive rounds`() = runTest {
+        val fixtures = Fixtures(absenceSettings(inactiveRoundLimit = 2))
+        val table = continuingTable()
+        fixtures.setCompletedState(table, roundActivity = allTimedOut(table), inactiveRoundStreak = 1)
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertTrue(result.value.isMatchOver)
+        val game = assertNotNull(fixtures.gameRepo.getGame(gameId))
+        assertEquals(BuiltInMatchEndReasonIds.PLAYERS_INACTIVE, game.matchEndReasonId)
+        assertEquals(2, game.inactiveRoundStreak)
+        val completed = fixtures.gameRepo.historyDrafts.mapNotNull { it.fact as? HistoryFact.MatchCompleted }.single()
+        assertEquals(BuiltInMatchEndReasonIds.PLAYERS_INACTIVE, completed.reasonId)
+        assertNotNull(fixtures.presentationPublisher.getPublishedMatchSettlement(gameId))
+    }
+
+    /** 驗證未到達設定局數時照常開下一局，累計局數並清空這一局的活動紀錄。 */
+    @Test
+    fun `test advance round counts an inactive round below the limit and continues`() = runTest {
+        val fixtures = Fixtures(absenceSettings(inactiveRoundLimit = 2))
+        val table = continuingTable()
+        fixtures.setCompletedState(table, roundActivity = allTimedOut(table))
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertEquals(false, result.value.isMatchOver)
+        val game = assertNotNull(fixtures.gameRepo.getGame(gameId))
+        assertEquals(1, game.inactiveRoundStreak)
+        assertEquals(RoundPlayerActivity(), game.roundActivity)
+    }
+
+    /** 驗證設定為 0 時不因無人操作結束對局。 */
+    @Test
+    fun `test advance round ignores inactive rounds when the limit is zero`() = runTest {
+        val fixtures = Fixtures(absenceSettings(inactiveRoundLimit = 0))
+        val table = continuingTable()
+        fixtures.setCompletedState(table, roundActivity = allTimedOut(table), inactiveRoundStreak = 5)
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertEquals(false, result.value.isMatchOver)
+    }
+
+    /** 驗證任何一位真人主動操作過，這一局就不算無人操作，累計局數歸零。 */
+    @Test
+    fun `test advance round resets the inactive streak when a player acted`() = runTest {
+        val fixtures = Fixtures(absenceSettings(inactiveRoundLimit = 2))
+        val table = continuingTable()
+        val activity = allTimedOut(table).withActive(table.players.first().id)
+        fixtures.setCompletedState(table, roundActivity = activity, inactiveRoundStreak = 1)
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertEquals(false, result.value.isMatchOver)
+        assertEquals(0, fixtures.gameRepo.getGame(gameId)?.inactiveRoundStreak)
+    }
+
+    /** 驗證只要有一位真人這一局沒有逾時過，就不算無人操作。 */
+    @Test
+    fun `test advance round does not count a round where a player never timed out`() = runTest {
+        val fixtures = Fixtures(absenceSettings(inactiveRoundLimit = 1))
+        val table = continuingTable()
+        val activity = RoundPlayerActivity(timedOutPlayerIds = table.players.drop(1).mapTo(mutableSetOf()) { it.id })
+        fixtures.setCompletedState(table, roundActivity = activity)
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertEquals(false, result.value.isMatchOver)
+        assertEquals(0, fixtures.gameRepo.getGame(gameId)?.inactiveRoundStreak)
+    }
+
+    /** 驗證有 AI 座位的對局不因無人操作結束。 */
+    @Test
+    fun `test advance round never counts inactive rounds in a match with an AI seat`() = runTest {
+        val fixtures = Fixtures(absenceSettings(inactiveRoundLimit = 1))
+        val table = continuingTable()
+        val aiId = table.players.last().id
+        val humans = table.players.dropLast(1).mapTo(mutableSetOf()) { it.id }
+        fixtures.setCompletedState(
+            tableState = table,
+            aiPlayerStrategyKeys = mapOf(aiId to "test:ai"),
+            roundActivity = RoundPlayerActivity(timedOutPlayerIds = humans),
+        )
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertEquals(false, result.value.isMatchOver)
+    }
+
+    /** 驗證基本思考時間為 0 的對局不因無人操作結束。 */
+    @Test
+    fun `test advance round never counts inactive rounds without base thinking time`() = runTest {
+        val fixtures = Fixtures(absenceSettings(inactiveRoundLimit = 1))
+        val table = continuingTable()
+        fixtures.setCompletedState(
+            tableState = table,
+            flowConfig = GameFlowConfig(timeControl = ActionTimeControl.Custom(base = Duration.ZERO, reserve = 10.seconds)),
+            roundActivity = allTimedOut(table),
+        )
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertEquals(false, result.value.isMatchOver)
+    }
+
+    /**
+     * 建立東風戰第一局、由非莊家和牌的桌況，規則本身會繼續對局。
+     *
+     * @return 規則會開下一局的桌況。
+     */
+    private fun continuingTable(): TableState = FakeTableStateFactory.create(
+        id = gameId,
+        players = listOf(
+            FakeMahjongPlayerFactory.create(Wind.EAST),
+            FakeMahjongPlayerFactory.create(Wind.SOUTH).copy(actionHistory = listOf(GameAction.Ron(Uuid.random()))),
+            FakeMahjongPlayerFactory.create(Wind.WEST),
+            FakeMahjongPlayerFactory.create(Wind.NORTH),
+        ),
+        config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+        roundNumber = 1,
+        comboCount = 0,
+        prevalentWind = Wind.EAST,
+    )
+
+    /**
+     * 建立所有玩家這一局都只有逾時代打的活動紀錄。
+     *
+     * @param table 這一局的桌況。
+     * @return 每位玩家都逾時過、沒有人主動操作的紀錄。
+     */
+    private fun allTimedOut(table: TableState): RoundPlayerActivity = RoundPlayerActivity(
+        timedOutPlayerIds = table.players.mapTo(mutableSetOf()) { it.id },
+    )
+
+    /**
+     * 建立只設定無人操作局數上限的設定。
+     *
+     * @param inactiveRoundLimit 連續幾局無人主動操作就結束這場。
+     * @return 測試用設定。
+     */
+    private fun absenceSettings(inactiveRoundLimit: Int): MatchAbsenceSettings = object : MatchAbsenceSettings {
+        override val inactiveRoundLimit: Int = inactiveRoundLimit
+        override val offlinePauseLimit: Duration = Duration.ZERO
     }
 
     /**

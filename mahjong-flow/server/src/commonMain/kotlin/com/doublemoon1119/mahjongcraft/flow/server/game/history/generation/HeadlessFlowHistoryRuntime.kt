@@ -45,6 +45,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvai
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.MatchAbsenceSettings
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionWinPresentationStager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
@@ -288,6 +289,7 @@ class HeadlessFlowHistoryRuntime private constructor(
                     componentRegistry = registries.componentRegistry,
                     beginRuleDecisionUseCase = beginRuleDecision,
                     roundRandomnessSource = roundRandomnessSource,
+                    absenceSettings = MatchAbsenceSettings.DISABLED,
                 ),
                 returnToRoomUseCase = ReturnToRoomUseCase(store, rooms, roomEvents, presentation),
                 aiTurnDriver = ai,

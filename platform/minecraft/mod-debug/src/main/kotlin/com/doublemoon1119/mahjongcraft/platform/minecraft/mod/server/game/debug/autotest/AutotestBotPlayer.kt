@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.autotest
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.answerKeepAlive
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.disconnectPlayer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.newServerPlayer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.placeNewPlayer
 import com.mojang.authlib.GameProfile
@@ -14,6 +15,8 @@ import net.minecraft.network.Connection
 import net.minecraft.network.protocol.PacketFlow
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
+import kotlin.uuid.Uuid
+import kotlin.uuid.toKotlinUuid
 
 /**
  * 伺服器自動測試的機器人玩家。
@@ -38,6 +41,23 @@ internal object AutotestBotPlayer {
         EmbeddedChannel(DiscardingOutbound(player), connection)
         placeNewPlayer(server, connection, player)
         return player
+    }
+
+    /**
+     * 機器人玩家的識別碼。離線模式下由名稱決定，不在線時也查得到。
+     *
+     * @param name 玩家名稱。
+     * @return 玩家識別碼。
+     */
+    fun playerIdOf(name: String): Uuid = UUIDUtil.createOfflinePlayerUUID(name).toKotlinUuid()
+
+    /**
+     * 讓一位機器人玩家與連線中斷時相同地離開伺服器。之後以同一個名稱 [join] 就是重新連線。需要在伺服器主執行緒上呼叫。
+     *
+     * @param player 要離開的機器人玩家。
+     */
+    fun leave(player: ServerPlayer) {
+        disconnectPlayer(player, "Autotest bot disconnected")
     }
 
     /**

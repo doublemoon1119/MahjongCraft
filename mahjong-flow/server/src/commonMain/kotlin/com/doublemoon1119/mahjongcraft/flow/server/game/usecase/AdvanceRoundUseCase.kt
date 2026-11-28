@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPlayerPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPlayerActivity
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
@@ -16,12 +17,14 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.random.RoundRandomnessSo
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.MatchAbsenceSettings
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.component.initializeRuleComponents
 import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasOccasion
+import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionContext
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionDecision
@@ -40,6 +43,8 @@ import kotlin.uuid.Uuid
  * - 不讀取 `actionHistory` 猜測連莊，也不以固定局數自行判斷終局。
  * - 把結算後桌況、權威結果摘要與規則 comparator 產生的排行交給 `MatchProgressionPolicy`，驗證它的決策後才一次寫回終局或
  *   下一局。
+ * - 規則決定繼續時，若連續無人主動操作的局數達到 [MatchAbsenceSettings.inactiveRoundLimit]，改為以
+ *   `BuiltInMatchEndReasonIds.PLAYERS_INACTIVE` 結束這場。是否算無人主動操作見 [isInactiveRound]。
  *
  * 終局時：
  *
@@ -60,6 +65,7 @@ import kotlin.uuid.Uuid
  * @property beginRuleDecisionUseCase 新局發牌後啟動規則選擇步驟的 use case。
  * @property failurePolicy 判斷規則失敗能否回報為無法推進。取消與致命錯誤不得轉成一般錯誤。
  * @property roundRandomnessSource 新一局的亂數來源。
+ * @property absenceSettings 連續幾局無人主動操作就結束這場的伺服器設定，見 [MatchAbsenceSettings]。
  */
 class AdvanceRoundUseCase(
     private val gameRepository: GameRepository,
@@ -72,6 +78,7 @@ class AdvanceRoundUseCase(
     private val beginRuleDecisionUseCase: BeginRuleDecisionUseCase,
     private val failurePolicy: ExtensionFailurePolicy = ExtensionFailurePolicy.Default,
     private val roundRandomnessSource: RoundRandomnessSource = RoundRandomnessSource.SEEDED,
+    private val absenceSettings: MatchAbsenceSettings,
 ) {
     /**
      * 執行連莊/過莊、開下一局邏輯。
@@ -121,7 +128,7 @@ class AdvanceRoundUseCase(
                             error = GameError.InvalidMatchProgression(gameId, "Round completion scores do not match table state"),
                         )
                     }
-                    val decision = try {
+                    val ruleDecision = try {
                         module.createMatchProgressionPolicy().decide(
                             context = MatchProgressionContext(
                                 tableState = state,
@@ -134,6 +141,14 @@ class AdvanceRoundUseCase(
                         return@updateGame game to Outcome.Error(
                             error = GameError.InvalidMatchProgression(gameId, error.stackTraceToString()),
                         )
+                    }
+
+                    val inactiveRoundStreak = if (isInactiveRound(game)) game.inactiveRoundStreak + 1 else 0
+                    val inactiveRoundLimit = absenceSettings.inactiveRoundLimit
+                    val decision = if (ruleDecision !is MatchProgressionDecision.EndMatch && inactiveRoundLimit > 0 && inactiveRoundStreak >= inactiveRoundLimit) {
+                        MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.PLAYERS_INACTIVE)
+                    } else {
+                        ruleDecision
                     }
 
                     if (decision is MatchProgressionDecision.EndMatch) {
@@ -162,6 +177,7 @@ class AdvanceRoundUseCase(
                         // 跳過這場對局，不會對已經沒有牌可摸的桌況繼續重複嘗試、重複觸發流局結算。
                         game.copy(
                             tableState = finalState,
+                            inactiveRoundStreak = inactiveRoundStreak,
                             isMatchOver = true,
                             pendingTransition = PendingGameTransition.ReturnToRoom,
                             roundCompletion = null,
@@ -215,6 +231,8 @@ class AdvanceRoundUseCase(
                             enabledAutomaticControlIdsByPlayerId = emptyMap(),
                             automaticControlRevision = game.automaticControlRevision + 1L,
                             openedRoundCount = game.openedRoundCount + 1,
+                            roundActivity = RoundPlayerActivity(),
+                            inactiveRoundStreak = inactiveRoundStreak,
                             pendingTransition = null,
                             roundCompletion = null,
                             matchEndReasonId = null,
@@ -338,4 +356,17 @@ class AdvanceRoundUseCase(
         val dealOrderHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
         val seatOrderChanged: Boolean,
     )
+
+    /**
+     * 剛結束的這一局是否算「無人主動操作」，見 [RoundPlayerActivity.isInactive]。
+     *
+     * - 有 AI 座位時不算，AI 會讓對局繼續前進。
+     * - 基本思考時間為 0 時不算，保留時間用完後玩家來不及主動操作，不代表已經離開。
+     *
+     * @param game 本局結算後的對局。
+     * @return 這一局所有真人都只有逾時代打時為 true。
+     */
+    private fun isInactiveRound(game: Game): Boolean = game.aiPlayerIds.isEmpty() &&
+        game.flowConfig.timeControl.base.isPositive() &&
+        game.roundActivity.isInactive(game.humanPlayerIds)
 }
