@@ -10,7 +10,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModEntiti
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.MahjongTableGameActionService
-import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.persistence.MahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.tile.EntityMahjongTileWallPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
@@ -346,37 +345,19 @@ class MahjongTileEntity(
     }
 
     /**
-     * 只在這個 entity 存在後的第一個 server tick 驗證一次：`managedByGame` 為 `true` 時，
-     * [managedTableId] 對應的對局是否還存在——查不到就自我 [discard]。
+     * 管理中的牌只在存在後的第一個 server tick 確認所屬對局還在，查不到就移除自己，見 [ManagedEntityOwnership]。
      *
-     * - 這是崩潰恢復的安全網，處理清除路徑沒有清掉 3D entity 的情況，例如 `TableLocationValidationService.cleanupMissing`。
-     *   正常流程仍由明確的清除呼叫處理，例如 `MahjongTileWallPresenter.clear()`／`MahjongPlayerAreaPresenter.clear()`。
      * - 只查這個 tableId 是否還有對局，不比對這張牌的 UUID 是否還在牌牆、手牌、牌河或副露。
      *   對局還在時，由每局重建時整批清空重新生成的機制換掉舊局的牌，見 [EntityMahjongTileWallPresenter.present] KDoc。
-     * - 讀取 [AuthoritativeStateStore.state] 已發布的快照，不在 tick 這個主執行緒同步呼叫點等待權威狀態的鎖。
-     * - 只在 entity 剛存在時檢查一次，包括世界重新載入後的第一個 tick，也就是崩潰重啟後。
-     *   一場遊戲可能有上百張管理中的牌，因此不每個 tick 都查。之後的清除都走明確的清除路徑。
+     * - 一場遊戲可能有上百張管理中的牌，因此不每個 tick 都查。之後的清除都走明確的清除路徑，例如
+     *   `MahjongTileWallPresenter.clear()`／`MahjongPlayerAreaPresenter.clear()`。
      */
     override fun tick() {
         super.tick()
         if (level().isClientSide) return
         if (!managedByGame || hasValidatedManagedState) return
         hasValidatedManagedState = true
-        validateStillManagedByActiveGame()
-    }
-
-    /**
-     * 見 [tick] KDoc。
-     *
-     * 麻將資料無法讀取時權威狀態是清空的，任何對局都會被誤判為已結束，因此保留這張牌。資料恢復後重新載入世界時，
-     * entity 會重新建立並再次驗證。
-     */
-    private fun validateStillManagedByActiveGame() {
-        val tableId = managedTableId ?: return
-        if (!GlobalContext.get().get<MahjongDataStatus>().isMahjongAvailable) return
-        val store = GlobalContext.get().get<AuthoritativeStateStore>()
-        val gameStillActive = tableId in store.state.value.games
-        if (!gameStillActive) discard()
+        if (ManagedEntityOwnership.isGameGone(managedTableId)) discard()
     }
 
     /** 依 server policy 決定是否提供物理阻擋。展示交接後的隱形牌不得繼續形成看不見的牆。 */

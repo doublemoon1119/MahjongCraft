@@ -106,13 +106,13 @@ internal class AutotestServerTable(val rule: String, val botName: String, val po
 
         /** 測試的三張牌桌：日麻、台麻與三人麻將，各有一位機器人房主。 */
         fun all(): List<AutotestServerTable> = listOf(
-            AutotestServerTable(rule = BuiltInRuleModuleIds.RIICHI, botName = "MahjongBot1", position = BlockPos(0, -60, 6), seedNumbers = listOf(1, 1)),
-            AutotestServerTable(rule = BuiltInRuleModuleIds.TAIWAN, botName = "MahjongBot2", position = BlockPos(12, -60, 6), seedNumbers = listOf(1, 1)),
+            AutotestServerTable(rule = BuiltInRuleModuleIds.RIICHI, botName = "MahjongBot1", position = BlockPos(0, -60, 6), seedNumbers = listOf(1, 1, 1)),
+            AutotestServerTable(rule = BuiltInRuleModuleIds.TAIWAN, botName = "MahjongBot2", position = BlockPos(12, -60, 6), seedNumbers = listOf(1, 1, 1)),
             AutotestServerTable(
                 rule = BuiltInRuleModuleIds.RIICHI_THREE_PLAYER,
                 botName = "MahjongBot3",
                 position = BlockPos(24, -60, 6),
-                seedNumbers = listOf(1, 1),
+                seedNumbers = listOf(1, 1, 1),
             ),
         )
 

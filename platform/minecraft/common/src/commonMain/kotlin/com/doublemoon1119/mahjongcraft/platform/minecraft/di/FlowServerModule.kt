@@ -43,6 +43,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTime
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.OfflineMatchPause
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.OfflinePauseExpiryService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionWinPresentationStager
@@ -162,6 +164,8 @@ val flowServerModule = module {
     single<GameDecisionTimerManager>()
     single<GameSnapshotSynchronizer>()
     single<HandSortPreferenceStore>()
+    single<OfflineMatchPause>()
+    single<OfflinePauseExpiryService>()
     single<PlayerActionContextResolver>()
     factory<PlayerDecisionTimerFactory>()
     single<WinPresentationHandoff>()

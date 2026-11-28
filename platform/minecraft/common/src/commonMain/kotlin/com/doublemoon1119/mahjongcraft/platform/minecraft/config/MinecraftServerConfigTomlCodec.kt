@@ -56,6 +56,8 @@ class MinecraftServerConfigTomlCodec {
  * TOML 根節點，只負責穩定的設定檔結構。
  *
  * @property playerDisconnection 尚未開始的遊戲之玩家斷線設定。
+ * @property inactivePlayers 所有真人都只有逾時代打時結束對局的設定。
+ * @property offlinePlayers 所有真人都離線時暫停對局的設定。
  * @property aiPlayer 找不到 AI 玩家時的處理設定。
  * @property table 麻將桌破壞與缺失資料設定。
  * @property mahjongTile 麻將牌世界呈現設定。
@@ -65,6 +67,10 @@ class MinecraftServerConfigTomlCodec {
 private data class MinecraftServerConfigTomlDto(
     @SerialName("player-disconnection")
     val playerDisconnection: PlayerDisconnectionTomlDto = PlayerDisconnectionTomlDto(),
+    @SerialName("inactive-players")
+    val inactivePlayers: InactivePlayersTomlDto = InactivePlayersTomlDto(),
+    @SerialName("offline-players")
+    val offlinePlayers: OfflinePlayersTomlDto = OfflinePlayersTomlDto(),
     @SerialName("ai-player")
     val aiPlayer: AiPlayerTomlDto = AiPlayerTomlDto(),
     val table: TablePolicyTomlDto = TablePolicyTomlDto(),
@@ -95,6 +101,17 @@ private data class MinecraftServerConfigTomlDto(
                     "but was ${playerDisconnection.timeoutSeconds}"
             }
         },
+        inactiveRoundLimit = inactivePlayers.rounds.also { rounds ->
+            requireConfig(condition = rounds in 0..MinecraftServerConfig.MAX_INACTIVE_ROUND_LIMIT) {
+                "inactive-players.rounds must be between 0 and ${MinecraftServerConfig.MAX_INACTIVE_ROUND_LIMIT}, but was $rounds"
+            }
+        },
+        offlinePauseTimeout = offlinePlayers.pauseTimeoutSeconds.also { seconds ->
+            requireConfig(condition = seconds in 0..MinecraftServerConfig.MAX_OFFLINE_PAUSE_TIMEOUT.inWholeSeconds) {
+                "offline-players.pause-timeout-seconds must be between 0 and " +
+                    "${MinecraftServerConfig.MAX_OFFLINE_PAUSE_TIMEOUT.inWholeSeconds}, but was $seconds"
+            }
+        }.seconds,
         tableBreakPolicy = enumValue(
             field = "table.break-policy",
             value = table.breakPolicy,
@@ -130,6 +147,8 @@ private data class MinecraftServerConfigTomlDto(
                 policy = config.disconnectedPlayerPolicy.configValue,
                 timeoutSeconds = config.disconnectedPlayerTimeout.inWholeSeconds,
             ),
+            inactivePlayers = InactivePlayersTomlDto(rounds = config.inactiveRoundLimit),
+            offlinePlayers = OfflinePlayersTomlDto(pauseTimeoutSeconds = config.offlinePauseTimeout.inWholeSeconds),
             aiPlayer = AiPlayerTomlDto(config.missingAiPlayerPolicy.configValue),
             table = TablePolicyTomlDto(
                 breakPolicy = config.tableBreakPolicy.configValue,
@@ -154,6 +173,27 @@ private data class PlayerDisconnectionTomlDto(
     val policy: String = DisconnectedPlayerPolicy.LEAVE_IMMEDIATELY.configValue,
     @SerialName("timeout-seconds")
     val timeoutSeconds: Long = MinecraftServerConfig.DEFAULT_DISCONNECTED_PLAYER_TIMEOUT.inWholeSeconds,
+)
+
+/**
+ * 所有真人都只有逾時代打時結束對局的 TOML 欄位。
+ *
+ * @property rounds 連續幾局無人主動操作就結束這場。0 代表不因此結束。
+ */
+@Serializable
+private data class InactivePlayersTomlDto(
+    val rounds: Int = MinecraftServerConfig.DEFAULT_INACTIVE_ROUND_LIMIT,
+)
+
+/**
+ * 所有真人都離線時暫停對局的 TOML 欄位。
+ *
+ * @property pauseTimeoutSeconds 暫停累計多少秒後中止對局。0 代表一直等待。
+ */
+@Serializable
+private data class OfflinePlayersTomlDto(
+    @SerialName("pause-timeout-seconds")
+    val pauseTimeoutSeconds: Long = 0,
 )
 
 /**

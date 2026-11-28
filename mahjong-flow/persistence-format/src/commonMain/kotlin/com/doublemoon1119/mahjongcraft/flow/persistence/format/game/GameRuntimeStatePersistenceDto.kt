@@ -27,6 +27,10 @@ import kotlin.time.Duration
  * @property roomAdmission 開局前房間的加入限制及生命週期。
  * @property matchSeed 對局種子的十六進位字串，見 [Game.matchSeed]。只存在伺服器存檔。
  * @property openedRoundCount 已開過的局數，見 [Game.openedRoundCount]。
+ * @property activePlayerIds 這一局至少主動完成一次決策的玩家 UUID 字串，見 [Game.roundActivity]。
+ * @property timedOutPlayerIds 這一局至少有一次逾時代打的玩家 UUID 字串，見 [Game.roundActivity]。
+ * @property inactiveRoundStreak 連續無人主動操作的局數，見 [Game.inactiveRoundStreak]。
+ * @property offlinePauseElapsed 所有真人離線而暫停的累計時間，見 [Game.offlinePauseElapsed]。
  */
 @Serializable
 data class GameRuntimeStatePersistenceDto(
@@ -48,4 +52,8 @@ data class GameRuntimeStatePersistenceDto(
     val roomAdmission: RoomAdmissionPersistenceDto,
     val matchSeed: String,
     val openedRoundCount: Int,
+    val activePlayerIds: Set<String>,
+    val timedOutPlayerIds: Set<String>,
+    val inactiveRoundStreak: Int,
+    val offlinePauseElapsed: Duration,
 )

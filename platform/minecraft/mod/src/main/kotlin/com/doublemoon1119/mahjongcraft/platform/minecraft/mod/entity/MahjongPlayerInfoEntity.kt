@@ -126,9 +126,20 @@ class MahjongPlayerInfoEntity(
         applyVisibility()
     }
 
+    /** 是否已在第一個伺服器 tick 確認擁有者還在，見 [ManagedEntityOwnership]。 */
+    private var ownershipChecked = false
+
+    /**
+     * 伺服器端在第一個 tick 確認所屬對局還在（見 [ManagedEntityOwnership]），之後每個 tick 套用隱藏期限，並定期確認所屬桌子
+     * 還在。
+     */
     override fun tick() {
         super.tick()
         if (level().isClientSide) return
+        if (!ownershipChecked) {
+            ownershipChecked = true
+            if (ManagedEntityOwnership.isGameGone(managedTableId)) return discard()
+        }
         applyVisibility()
         if (tickCount % ORPHAN_CHECK_INTERVAL_TICKS != 0) return
         val expectedId = managedTableId ?: return discard()

@@ -596,6 +596,9 @@ object MinecraftHistoryScreenKeys {
     /** 玩家分數達到終止門檻。 */
     const val ROUND_OUTCOME_PLAYER_BUSTED = "mahjongcraft.history_screen.round.outcome.player_busted"
 
+    /** 連續數局所有真人都沒有主動操作。 */
+    const val ROUND_OUTCOME_PLAYERS_INACTIVE = "mahjongcraft.history_screen.round.outcome.players_inactive"
+
     /** 和牌。 */
     const val ROUND_CLASSIFICATION_WIN = "mahjongcraft.history_screen.round.classification.win"
 

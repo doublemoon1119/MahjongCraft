@@ -18,5 +18,6 @@ fun minecraftAbortReasonTranslationKey(reasonId: String): String = when (reasonI
     GameAbortReasonIds.INVALID_PROGRESSION -> MinecraftMessageKeys.GAME_ABORT_REASON_PROGRESSION
     GameAbortReasonIds.AUTOMATIC_DECISION_FAILED -> MinecraftMessageKeys.GAME_ABORT_REASON_AUTOMATIC
     GameAbortReasonIds.RULE_EXECUTION_FAILED -> MinecraftMessageKeys.GAME_ABORT_REASON_RULE
+    GameAbortReasonIds.PLAYERS_OFFLINE -> MinecraftMessageKeys.GAME_ABORT_REASON_PLAYERS_OFFLINE
     else -> MinecraftMessageKeys.GAME_ABORT_REASON_UNKNOWN
 }

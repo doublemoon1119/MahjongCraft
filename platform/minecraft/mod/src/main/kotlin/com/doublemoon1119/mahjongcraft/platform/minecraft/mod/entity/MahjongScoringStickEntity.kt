@@ -86,27 +86,16 @@ class MahjongScoringStickEntity(
         setNoGravity(true)
     }
 
-    /**
-     * 這個 entity 物件在記憶體裡第一次被 tick 到的 `level().gameTime`。只在記憶體內，不寫進存檔，理由跟
-     * `MahjongDiceEntity.firstTickWorldTime` 完全一致（避免世界重新載入一次補跑大量 tick 時誤判成
-     * 早就該消失了）。
-     */
-    private var firstTickWorldTime: Long = Long.MIN_VALUE
+    /** 是否已在第一個伺服器 tick 確認擁有者還在，見 [ManagedEntityOwnership]。 */
+    private var ownershipChecked = false
 
-    /**
-     * 管理中積棒的 fallback 自動清除——**不是主要清除路徑**。積棒的正常生命週期由
-     * `EntityTablePropPresenter` 依桌況差量同步，不再需要的積棒在新物件生成成功後才移除，或由對局結束的
-     * 顯式清除觸發。這裡只是意外情境（伺服器崩潰、對局非正常結束導致沒有機會走到正常清除
-     * 流程）的保險，門檻抓得遠大於正常一局遊戲時長，不能像 `MahjongDiceEntity` 那樣抓短動畫時長——
-     * 積棒沒有「動畫播完」的概念，太短的門檻會在正常對局進行中就把還在使用的積棒清掉。
-     */
+    /** 管理中的積棒在第一個伺服器 tick 確認所屬對局還在，見 [ManagedEntityOwnership]。自由放置的點棒不檢查。 */
     override fun tick() {
         super.tick()
         if (level().isClientSide) return
-        if (firstTickWorldTime == Long.MIN_VALUE) firstTickWorldTime = level().gameTime
-        if (managedByGame && level().gameTime - firstTickWorldTime >= FALLBACK_DESPAWN_AFTER_TICKS) {
-            discard()
-        }
+        if (!managedByGame || ownershipChecked) return
+        ownershipChecked = true
+        if (ManagedEntityOwnership.isGameGone(managedTableId)) discard()
     }
 
     /** 點棒扁平輕薄，不提供物理阻擋，僅供視線選取。 */
@@ -290,12 +279,6 @@ class MahjongScoringStickEntity(
 
         /** 點棒掉落動畫的時長。 */
         const val DROP_DURATION_TICKS: Int = 6
-
-        /**
-         * 管理中積棒的 fallback 自動清除門檻（見 [tick]）——1 小時份的 tick 數，遠大於正常一局遊戲
-         * 時長，只用來兜底意外情境，不影響正常對局的積棒顯示。
-         */
-        private const val FALLBACK_DESPAWN_AFTER_TICKS = 20L * 60L * 60L
 
         /** 以名稱同步目前面額。 */
         private val DENOMINATION: EntityDataAccessor<String> =

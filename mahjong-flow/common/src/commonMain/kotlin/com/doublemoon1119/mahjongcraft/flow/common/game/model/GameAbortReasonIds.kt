@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
-/** 對局無法安全繼續時使用的規則中立終止原因。 */
+/** 對局無法安全繼續、或無人能繼續時使用的規則中立終止原因。 */
 object GameAbortReasonIds {
     /** 規則提供和牌動作，卻無法產生對應結算。 */
     const val MISSING_WIN_SETTLEMENT = "mahjongcraft:missing_win_settlement"
@@ -16,4 +16,7 @@ object GameAbortReasonIds {
 
     /** 規則接點執行失敗，無法安全繼續本場。 */
     const val RULE_EXECUTION_FAILED = "mahjongcraft:rule_execution_failed"
+
+    /** 所有真人都離線，對局暫停超過伺服器設定的時限。 */
+    const val PLAYERS_OFFLINE = "mahjongcraft:players_offline"
 }

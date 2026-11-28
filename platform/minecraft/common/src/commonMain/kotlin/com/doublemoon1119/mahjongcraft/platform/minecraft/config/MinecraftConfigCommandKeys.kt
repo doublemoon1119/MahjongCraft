@@ -11,6 +11,12 @@ object MinecraftConfigCommandKeys {
     /** 斷線玩家設定區段的顯示名稱。 */
     const val SERVER_CONFIG_SECTION_PLAYER_DISCONNECTION: String = "mahjongcraft.config.section.player_disconnection"
 
+    /** 無人操作時結束對局的設定區段。 */
+    const val SERVER_CONFIG_SECTION_INACTIVE_PLAYERS: String = "mahjongcraft.config.section.inactive_players"
+
+    /** 全員離線時暫停對局的設定區段。 */
+    const val SERVER_CONFIG_SECTION_OFFLINE_PLAYERS: String = "mahjongcraft.config.section.offline_players"
+
     /** AI 玩家設定分類。 */
     const val SERVER_CONFIG_SECTION_AI_PLAYER: String = "mahjongcraft.config.section.ai_player"
 
@@ -280,6 +286,12 @@ object MinecraftConfigCommandKeys {
 
     /** 斷線玩家逾時欄位。 */
     const val DISCONNECTED_PLAYER_TIMEOUT: String = "mahjongcraft.server_config.disconnected_player_timeout"
+
+    /** 連續幾局無人主動操作就結束對局的欄位。 */
+    const val INACTIVE_ROUND_LIMIT: String = "mahjongcraft.server_config.inactive_round_limit"
+
+    /** 全員離線暫停時限欄位。 */
+    const val OFFLINE_PAUSE_TIMEOUT: String = "mahjongcraft.server_config.offline_pause_timeout"
 
     /** 麻將桌破壞政策欄位。 */
     const val TABLE_BREAK_POLICY: String = "mahjongcraft.server_config.table_break_policy"

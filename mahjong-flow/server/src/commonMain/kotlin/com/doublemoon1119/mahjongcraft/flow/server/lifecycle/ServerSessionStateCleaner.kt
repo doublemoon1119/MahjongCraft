@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.OfflineMatchPause
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
@@ -17,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
  * @property membershipRepository 玩家場地歸屬倉庫。
  * @property decisionTimerManager 對局決策計時器管理器。
  * @property decisionTimerSynchronizationService 決策計時器同步服務。
+ * @property offlineMatchPause 全員離線暫停的計時紀錄。
  */
 class ServerSessionStateCleaner(
     private val authoritativeStateStore: AuthoritativeStateStore,
@@ -25,11 +27,13 @@ class ServerSessionStateCleaner(
     private val membershipRepository: PlayerMembershipRepository,
     private val decisionTimerManager: GameDecisionTimerManager,
     private val decisionTimerSynchronizationService: DecisionTimerSynchronizationService,
+    private val offlineMatchPause: OfflineMatchPause,
 ) {
     /** 清除 session 狀態。持久化完成後應先 flush，再呼叫本方法釋放記憶體且不標記 dirty。 */
     suspend fun clear() {
         decisionTimerManager.clearAll()
         decisionTimerSynchronizationService.clear()
+        offlineMatchPause.clear()
         authoritativeStateStore.load(AuthoritativeStateSnapshot())
         roomSnapshots.clearAll()
         gameSnapshots.clearAll()

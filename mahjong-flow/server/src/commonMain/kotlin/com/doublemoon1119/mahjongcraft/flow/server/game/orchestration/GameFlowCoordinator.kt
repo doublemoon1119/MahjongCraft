@@ -136,12 +136,15 @@ class GameFlowCoordinator(
      * @param gameId 對局 Uuid。
      * @param playerId 發起操作的玩家 Uuid。
      * @param command 欲執行的操作。
+     * @param initiatedByPlayer 玩家自己送出時為 true，成功後記成玩家這一局主動操作過，見 [Game.roundActivity]。平台代替玩家送出的
+     * 機械動作，例如伺服器替真人自動摸牌，傳 false，不算玩家主動操作。
      * @return 命令結果。規則契約錯誤導致中止時，回傳 [GameError.MatchAborted]。
      */
     suspend fun dispatch(
         gameId: Uuid,
         playerId: Uuid,
         command: GameCommand,
+        initiatedByPlayer: Boolean = true,
     ): Outcome<Unit, GameError> {
         val game = gameRepository.getGame(gameId)
             ?: return Outcome.Error(GameError.GameNotFound(gameId))
@@ -151,7 +154,9 @@ class GameFlowCoordinator(
         if (playerId in game.forcedAutoPlayPlayerIds) {
             return Outcome.Error(GameError.ForcedAutoPlayActive(playerId, gameId))
         }
-        return dispatchAndReconcile(gameId, playerId, command)
+        val result = dispatchAndReconcile(gameId, playerId, command)
+        if (result is Outcome.Success && initiatedByPlayer) recordRoundActivity(gameId, playerId, game.tableState.roundSerial, timedOut = false)
+        return result
     }
 
     /**
@@ -243,6 +248,7 @@ class GameFlowCoordinator(
             val result = submitAutomatedDecision(gameId, ruleDecisionAction.playerId, ruleDecisionAction.command, ruleDecisionAction.basis)
             if (ruleDecisionAction.clearsForcedAutoPlay && result is Outcome.Success) {
                 clearForcedAutoPlay(gameId, ruleDecisionAction.playerId)
+                recordRoundActivity(gameId, ruleDecisionAction.playerId, stepBefore.tableState.roundSerial, timedOut = true)
                 decisionAvailabilityService.reconcile(gameId, ruleDecisionAction.playerId)
             }
             return stepBefore != gameRepository.getGame(gameId)
@@ -257,6 +263,9 @@ class GameFlowCoordinator(
         if (humanAction != null) {
             val (playerId, command) = humanAction
             val result = submitAutomatedDecision(gameId, playerId, command, stepBefore)
+            if (result is Outcome.Success) {
+                recordRoundActivity(gameId, playerId, stepBefore.tableState.roundSerial, timedOut = forcedAction != null)
+            }
             if (forcedAction != null && result is Outcome.Success) {
                 clearForcedAutoPlay(gameId, playerId)
                 decisionAvailabilityService.reconcile(gameId, playerId)
@@ -496,6 +505,25 @@ class GameFlowCoordinator(
             completedPlayerId = playerId.takeIf { result is Outcome.Success },
         )
         return result
+    }
+
+    /**
+     * 記下真人玩家在這一局怎麼完成了一次決策，見 [Game.roundActivity]。
+     *
+     * - AI 的決策不記錄。
+     * - 命令讓對局進入下一局後才記錄時，不記到新的一局。
+     *
+     * @param gameId 對局識別碼。
+     * @param playerId 完成決策的玩家。
+     * @param roundSerial 送出命令時的局序，見 [TableState.roundSerial]。
+     * @param timedOut 這次決策是否因逾時由伺服器代打。否則是玩家自己或自己開啟的自動操作完成。
+     */
+    private suspend fun recordRoundActivity(gameId: Uuid, playerId: Uuid, roundSerial: Int, timedOut: Boolean) {
+        gameRepository.updateGame(gameId) { game ->
+            if (game == null || game.isAi(playerId) || game.tableState.roundSerial != roundSerial) return@updateGame game to Unit
+            val activity = if (timedOut) game.roundActivity.withTimedOut(playerId) else game.roundActivity.withActive(playerId)
+            (if (activity == game.roundActivity) game else game.copy(roundActivity = activity)) to Unit
+        }
     }
 
     /**

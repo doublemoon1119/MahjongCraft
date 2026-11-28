@@ -34,6 +34,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveD
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawSettlementStatusLabelsDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegistryImpl
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -269,7 +270,7 @@ class HistoryRoundEventPresentationTest {
     /** 整場結束使用獨立標題，所有內建終止原因均能本地化。 */
     @Test
     fun `match completion localizes built in end reasons`() {
-        val reasons = mapOf(BuiltInMatchEndReasonIds.SCHEDULE_COMPLETED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_SCHEDULE_COMPLETED, BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_TARGET_SCORE_REACHED, BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_EXTRA_ROUND_LIMIT_REACHED, BuiltInMatchEndReasonIds.PLAYER_BUSTED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_PLAYER_BUSTED)
+        val reasons = mapOf(BuiltInMatchEndReasonIds.SCHEDULE_COMPLETED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_SCHEDULE_COMPLETED, BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_TARGET_SCORE_REACHED, BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_EXTRA_ROUND_LIMIT_REACHED, BuiltInMatchEndReasonIds.PLAYER_BUSTED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_PLAYER_BUSTED, BuiltInMatchEndReasonIds.PLAYERS_INACTIVE to MinecraftHistoryScreenKeys.ROUND_OUTCOME_PLAYERS_INACTIVE)
         reasons.forEach { (reason, key) ->
             val outcome = HistoryRoundOutcomeDto(reason, emptyList(), emptyMap(), null, emptyList(), null, nextDealerSeat = null, scoreChangesBySeat = emptyMap(), winnerDetails = emptyList(), hasEarlierWinSettlement = false, winningTile = null)
             val fact = presenter().present(events(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.MATCH_COMPLETED, outcome)), null).transactions.single().facts.single()
@@ -294,6 +295,7 @@ class HistoryRoundEventPresentationTest {
         val reasons = mapOf(
             "mahjongcraft:table_missing" to MinecraftHistoryScreenKeys.ROUND_ABORT_REASON_TABLE_MISSING,
             "mahjongcraft:table_broken_by_player" to MinecraftHistoryScreenKeys.ROUND_ABORT_REASON_TABLE_BROKEN_BY_PLAYER,
+            "mahjongcraft:players_offline" to MinecraftMessageKeys.GAME_ABORT_REASON_PLAYERS_OFFLINE,
         )
         reasons.forEach { (reason, key) ->
             val outcome = HistoryRoundOutcomeDto(

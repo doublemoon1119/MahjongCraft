@@ -26,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPlayerActivity
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
@@ -37,6 +38,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.AutomaticDecisionEvaluator
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortHandler
@@ -45,6 +47,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvai
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.MatchAbsenceSettings
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionWinPresentationStager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
@@ -75,6 +79,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
@@ -325,10 +330,15 @@ class GameFlowCoordinatorTest {
             decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
             commandResolver = AutomaticGameCommandResolver(moduleRegistry),
         )
+        val automaticDecisionEvaluator = AutomaticDecisionEvaluator(
+            moduleRegistry = moduleRegistry,
+            visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+            actionContextResolver = PlayerActionContextResolver(),
+        )
         val clock = MutableMonotonicClock()
         val decisionTimerManager = GameDecisionTimerManager(
             gameRepository = gameRepo,
-            authorityResolver = GameDecisionAuthorityResolver(),
+            authorityResolver = GameDecisionAuthorityResolver(automaticDecisionEvaluator = automaticDecisionEvaluator),
             timerFactory = PlayerDecisionTimerFactory(clock),
             clock = clock,
         )
@@ -384,6 +394,7 @@ class GameFlowCoordinatorTest {
                 presentationPublisher = presentationPublisher,
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
                 beginRuleDecisionUseCase = beginRuleDecisionUseCase,
+                absenceSettings = MatchAbsenceSettings.DISABLED,
             ),
             // FakeGameRepository 是獨立於 AuthoritativeStateStore 的測試替身，這裡的 ReturnToRoomUseCase
             // 因此接不到同一份對局資料，對本檔案的測試而言只是滿足建構子的無害 no-op；真的驗證
@@ -430,6 +441,12 @@ class GameFlowCoordinatorTest {
                 handSortPreferenceStore = handSortPreferenceStore,
             ),
             beginRuleDecisionUseCase = beginRuleDecisionUseCase,
+            automaticDecisionDriver = AutomaticDecisionDriver(
+                gameRepository = gameRepo,
+                evaluator = automaticDecisionEvaluator,
+                commandMapper = GameActionCommandMapper(ExtensionGameActionCommandFactoryRegistry()),
+                actionContextResolver = PlayerActionContextResolver(),
+            ),
         )
     }
 
@@ -556,6 +573,38 @@ class GameFlowCoordinatorTest {
             message = "Player must regain control after their single missed decision is auto-played.",
         )
         assertEquals(lastDrawn, updatedGame.tableState.players.first { it.id == forcedPlayerId }.discardPile.entries.single().tile)
+        assertEquals(RoundPlayerActivity(timedOutPlayerIds = setOf(forcedPlayerId)), updatedGame.roundActivity)
+    }
+
+    /** 驗證玩家自己開啟的自動操作代為送出的決策算主動操作，不算逾時。 */
+    @Test
+    fun `test an enabled automatic control counts as the player acting`() = runTest {
+        val fixtures = Fixtures()
+        val discarded = FakeIdentifiedTileFactory.create(Tile.Honor.South)
+        val discarder = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, discardPile = FakeDiscardPile().discardTile(discarded))
+        val respondent = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.South) } + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
+            components = riichiDeclarationComponents(),
+        )
+        val game = Game(
+            tableState = FakeTableStateFactory.create(
+                id = gameId,
+                players = listOf(discarder, respondent),
+                config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+                pendingReaction = PendingReaction(discarder.id, discarded.id, setOf(respondent.id), ronPlayerIds = emptySet(), id = Uuid.random()),
+            ),
+            flowConfig = GameFlowConfig(),
+            enabledAutomaticControlIdsByPlayerId = mapOf(respondent.id to setOf(BuiltInAutomaticControlIds.DECLINE_CALLS)),
+            matchSeed = testMatchSeed(0),
+        )
+        fixtures.gameRepo.setGame(game)
+
+        assertTrue(fixtures.coordinator.advanceAutomatedPlayerStep(gameId))
+
+        val updated = fixtures.gameRepo.getGame(gameId)!!
+        assertEquals(null, updated.tableState.pendingReaction, "The declined call should close the reaction window.")
+        assertEquals(RoundPlayerActivity(activePlayerIds = setOf(respondent.id)), updated.roundActivity)
     }
 
     /** 驗證單步入口只執行一個自動命令，不會在同一次呼叫中遞迴驅動後續玩家。 */
@@ -1849,6 +1898,29 @@ class GameFlowCoordinatorTest {
         )
     }
 
+    /** 驗證平台代替玩家送出的摸牌不算玩家這一局主動操作過，玩家自己送出的摸牌才算。 */
+    @Test
+    fun `test a draw sent on the player's behalf does not count as the player acting`() = runTest {
+        val fixtures = Fixtures()
+        val playerId = Uuid.random()
+        val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(player),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            tileWall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Honor.East), FakeIdentifiedTileFactory.create(Tile.Honor.South))),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        assertTrue(fixtures.coordinator.dispatch(gameId, playerId, GameCommand.Draw, initiatedByPlayer = false) is Outcome.Success)
+        assertEquals(RoundPlayerActivity(), fixtures.gameRepo.getGame(gameId)?.roundActivity)
+
+        fixtures.gameRepo.setTableState(table)
+        assertTrue(fixtures.coordinator.dispatch(gameId, playerId, GameCommand.Draw) is Outcome.Success)
+        assertEquals(RoundPlayerActivity(activePlayerIds = setOf(playerId)), fixtures.gameRepo.getGame(gameId)?.roundActivity)
+    }
+
     /**
      * 驗證一般槓牌成功（無搶槓視窗開啟）不會觸發任何銜接。
      */
@@ -1973,6 +2045,11 @@ class GameFlowCoordinatorTest {
         val updatedAi = newState.players.first { it.id == aiId }
         assertEquals(1, updatedAi.discardPile.entries.size, "The AI should have automatically drawn and discarded.")
         assertEquals(0, newState.currentPlayerIndex, "Turn should have advanced back to the human.")
+        assertEquals(
+            expected = RoundPlayerActivity(activePlayerIds = setOf(humanId)),
+            actual = fixtures.gameRepo.getGame(gameId)?.roundActivity,
+            message = "Only the human's own command is recorded; AI decisions are not.",
+        )
     }
 
     /**

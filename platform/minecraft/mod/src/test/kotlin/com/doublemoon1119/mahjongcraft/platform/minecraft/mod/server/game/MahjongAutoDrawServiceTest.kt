@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPlayerActivity
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
@@ -31,6 +32,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvai
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.MatchAbsenceSettings
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
@@ -269,6 +271,7 @@ class MahjongAutoDrawServiceTest {
                 presentationPublisher = presentationPublisher,
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
                 beginRuleDecisionUseCase = ruleDecisions.begin,
+                absenceSettings = MatchAbsenceSettings.DISABLED,
             ),
             returnToRoomUseCase = ReturnToRoomUseCase(
                 authoritativeStateStore = store,
@@ -357,6 +360,7 @@ class MahjongAutoDrawServiceTest {
         assertNotNull(state)
         val drawnTile = state.currentPlayer.hand.lastDrawn
         assertNotNull(drawnTile, "Human dealer should have been auto-drawn a tile.")
+        assertEquals(RoundPlayerActivity(), fixtures.gameRepo.getGame(gameId)?.roundActivity, "A server-sent draw must not count as the player acting.")
     }
 
     /** 驗證目前玩家是 AI 時，`checkAndAutoDraw` 不會介入（交給自動推進處理）。 */

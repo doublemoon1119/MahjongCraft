@@ -246,6 +246,35 @@ class MinecraftServerConfigTomlCodecTest {
         assertTrue("#" !in encoded)
     }
 
+    /** 無人操作局數與全員離線暫停時限：預設值、邊界與 round-trip。 */
+    @Test
+    fun `test absent player settings use defaults, accept bounds and round trip`() {
+        val defaults = codec.decode("[inactive-players]\n[offline-players]")
+        assertEquals(2, defaults.inactiveRoundLimit)
+        assertEquals(Duration.ZERO, defaults.offlinePauseTimeout)
+
+        val bounds = codec.decode("[inactive-players]\nrounds = 10\n[offline-players]\npause-timeout-seconds = 604800")
+        assertEquals(10, bounds.inactiveRoundLimit)
+        assertEquals(7.days, bounds.offlinePauseTimeout)
+        assertEquals(0, codec.decode("[inactive-players]\nrounds = 0").inactiveRoundLimit)
+
+        val config = MinecraftServerConfig(inactiveRoundLimit = 3, offlinePauseTimeout = 600.seconds)
+        assertEquals(config, codec.decode(codec.encode(config)))
+    }
+
+    /** 無人操作局數與全員離線暫停時限超出範圍時應回報合法邊界。 */
+    @Test
+    fun `test absent player settings outside range fail validation`() {
+        listOf("rounds = -1", "rounds = 11").forEach { field ->
+            val failure = assertFailsWith<InvalidMinecraftServerConfigException> { codec.decode("[inactive-players]\n$field") }
+            assertTrue(failure.message.orEmpty().contains("inactive-players.rounds must be between 0 and 10"))
+        }
+        listOf("pause-timeout-seconds = -1", "pause-timeout-seconds = 604801").forEach { field ->
+            val failure = assertFailsWith<InvalidMinecraftServerConfigException> { codec.decode("[offline-players]\n$field") }
+            assertTrue(failure.message.orEmpty().contains("offline-players.pause-timeout-seconds must be between 0 and 604800"))
+        }
+    }
+
     /** 缺席政策只有繼續與中止，預設中止，不沿用真人斷線選項。 */
     @Test
     fun `world participant policy defaults to abort and round trips both choices`() {

@@ -27,6 +27,18 @@ rules come from collisions that only showed up in game, so check them even when 
 - The deferred draw runs after other entities have rendered. Do not let it read renderer fields that a later
   entity can overwrite; set them inside the draw or capture the values.
 
+## Removing objects a match or room no longer needs
+
+- Entities that a match or a waiting room manages, such as tiles, point sticks, round and player information
+  and the multi-tile confirm button, are removed by explicit clear calls when the match or room no longer
+  needs them.
+- A clear call only reaches loaded chunks. On its first server tick, each such entity asks
+  `ManagedEntityOwnership` whether its match or room still exists and removes itself if not. This also covers
+  world reloads and crash restarts.
+- Do not remove such an entity after a fixed time. A match can run for hours or stay paused while every seated
+  player is offline. Time-based removal is only for effects that end on their own, such as dice and
+  settlement presentations.
+
 ## Moving objects that are already on the table
 
 - Flow publishes each transaction as an ordered list of `TableStep`s: the table state after the step plus

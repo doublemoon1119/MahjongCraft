@@ -58,9 +58,17 @@ class MahjongLobbyInfoEntity(
         this.controllerPos = controllerPos.immutable()
     }
 
+    /** 是否已在第一個伺服器 tick 確認擁有者還在，見 [ManagedEntityOwnership]。 */
+    private var ownershipChecked = false
+
+    /** 伺服器端在第一個 tick 確認所屬等待室還在（見 [ManagedEntityOwnership]），之後定期確認所屬桌子還在。 */
     override fun tick() {
         super.tick()
         if (level().isClientSide) return
+        if (!ownershipChecked) {
+            ownershipChecked = true
+            if (ManagedEntityOwnership.isRoomGone(managedTableId)) return discard()
+        }
         if (tickCount % ORPHAN_CHECK_INTERVAL_TICKS != 0) return
         val expectedTableId = managedTableId ?: return discard()
         val pos = controllerPos ?: return discard()

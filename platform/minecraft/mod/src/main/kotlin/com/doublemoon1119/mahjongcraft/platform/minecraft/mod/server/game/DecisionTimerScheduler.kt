@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimeoutService
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.OfflinePauseExpiryService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import kotlinx.coroutines.CancellationException
@@ -26,7 +27,7 @@ import kotlinx.coroutines.launch
  * 每秒一次的全域處理：
  *
  * 1. 暫停所有 busy 桌。
- * 2. 判定逾時。逾時已請求推進的對局不在同一輪重複請求。
+ * 2. 中止所有真人離線過久的對局，再判定逾時。逾時已請求推進的對局不在同一輪重複請求。
  * 3. 同步倒數。
  *
  * 每個 tick 的處理見 [DecisionTickProcessor]。
@@ -36,6 +37,7 @@ import kotlinx.coroutines.launch
  * @property failurePolicy 判斷每 tick 處理中丟出的失敗能否記錄後等下個 tick 重試。無法隔離的失敗原樣往外傳。
  * @param availabilityService 在逾時判定前先暫停 busy 桌，並在閒置後恢復決策。
  * @param timeoutService 執行與平台無關的逾時政策。
+ * @param offlinePauseExpiryService 中止所有真人都離線、暫停超過伺服器設定時限的對局。
  * @param gameRepository 用於列出所有進行中對局，供心跳巡邏使用。
  * @param advanceManager 請求推進各對局的自動操作，並查詢對局是否已在推進。
  * @param synchronizationService 每秒同步一次所有真人決策者的權威時間。
@@ -47,6 +49,7 @@ class DecisionTimerScheduler(
     private val failurePolicy: ExtensionFailurePolicy,
     availabilityService: GameDecisionAvailabilityService,
     timeoutService: GameDecisionTimeoutService,
+    offlinePauseExpiryService: OfflinePauseExpiryService,
     gameRepository: GameRepository,
     advanceManager: AutomatedAdvanceManager,
     synchronizationService: DecisionTimerSynchronizationService,
@@ -60,7 +63,10 @@ class DecisionTimerScheduler(
         rotation = GameAdvanceRotation(TICKS_PER_SECOND),
         listGames = { gameRepository.getAllGameIds() },
         reconcile = { gameId -> availabilityService.reconcile(gameId) },
-        settleTimeouts = { timeoutService.processExpiredDecisions() },
+        settleTimeouts = {
+            offlinePauseExpiryService.abortExpired()
+            timeoutService.processExpiredDecisions()
+        },
         isBusy = busyGate::isBusy,
         isAdvancing = advanceManager::isAdvancing,
         requestAdvance = advanceManager::request,

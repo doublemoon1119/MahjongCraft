@@ -52,6 +52,9 @@ import kotlin.uuid.Uuid
  * @property matchSeed 整場對局衍生座位、牌山與骰子的不公開種子。只存在伺服器，不得送給任何客戶端。
  * @property openedRoundCount 這場對局已經開過的局數，包含連莊與重新開局。下一次開局使用這個數值當局序，
  *   確保每一局都使用不同的亂數。
+ * @property roundActivity 真人玩家在目前這一局怎麼完成決策，換局時清空。
+ * @property inactiveRoundStreak 連續幾局所有真人都只有逾時代打、沒有主動操作。任何一局有人主動操作就歸零。
+ * @property offlinePauseElapsed 這場因所有真人都離線而暫停的累計時間。伺服器停止期間不計入。
  */
 data class Game(
     val tableState: TableState,
@@ -76,6 +79,9 @@ data class Game(
     val roomAdmission: RoomAdmissionState = RoomAdmissionState(),
     val matchSeed: MatchSeed = MatchSeed.generate(),
     val openedRoundCount: Int = 1,
+    val roundActivity: RoundPlayerActivity = RoundPlayerActivity(),
+    val inactiveRoundStreak: Int = 0,
+    val offlinePauseElapsed: Duration = Duration.ZERO,
 ) {
     init {
         val playerIds = tableState.players.mapTo(mutableSetOf()) { it.id }
@@ -94,6 +100,13 @@ data class Game(
         enabledAutomaticControlIdsByPlayerId.values.forEach(::requireValidAutomaticControlIds)
         require(automaticControlRevision >= 0L) { "Automatic control revision must not be negative" }
         require(openedRoundCount >= 1) { "A game always has at least its first round opened" }
+        require(roundActivity.activePlayerIds.all { it in playerIds } && roundActivity.timedOutPlayerIds.all { it in playerIds }) {
+            "Round activity must only contain game players"
+        }
+        require(inactiveRoundStreak >= 0) { "Inactive round streak must not be negative" }
+        require(offlinePauseElapsed.isFinite() && !offlinePauseElapsed.isNegative()) {
+            "Offline pause time must be finite and not negative"
+        }
         require(pendingRuleDecision?.participantPlayerIds?.all { it in playerIds } != false) {
             "Rule decision participants must belong to the game"
         }
@@ -128,6 +141,9 @@ data class Game(
 
     /** 由 AI 操控的玩家。 */
     val aiPlayerIds: Set<Uuid> get() = aiPlayerStrategyKeys.keys
+
+    /** 由真人操控的玩家。 */
+    val humanPlayerIds: Set<Uuid> get() = tableState.players.mapTo(mutableSetOf()) { it.id } - aiPlayerIds
 
     /**
      * [playerId] 是否由 AI 操控。

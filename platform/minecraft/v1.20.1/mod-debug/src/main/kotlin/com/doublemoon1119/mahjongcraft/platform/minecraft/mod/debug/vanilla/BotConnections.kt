@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla
 
 import com.mojang.authlib.GameProfile
 import net.minecraft.network.Connection
+import net.minecraft.network.chat.Component
 import net.minecraft.network.protocol.game.ClientboundKeepAlivePacket
 import net.minecraft.network.protocol.game.ServerboundKeepAlivePacket
 import net.minecraft.server.MinecraftServer
@@ -35,4 +36,14 @@ fun placeNewPlayer(server: MinecraftServer, connection: Connection, player: Serv
  */
 fun answerKeepAlive(player: ServerPlayer, packet: Any) {
     if (packet is ClientboundKeepAlivePacket) player.connection.handleKeepAlive(ServerboundKeepAlivePacket(packet.id))
+}
+
+/**
+ * 經原版的玩家離線流程讓玩家離開伺服器，與連線中斷時相同。需要在伺服器主執行緒上呼叫。
+ *
+ * @param player 要離開的玩家。
+ * @param reason 寫進伺服器紀錄的離線原因。
+ */
+fun disconnectPlayer(player: ServerPlayer, reason: String) {
+    player.connection.onDisconnect(Component.literal(reason))
 }

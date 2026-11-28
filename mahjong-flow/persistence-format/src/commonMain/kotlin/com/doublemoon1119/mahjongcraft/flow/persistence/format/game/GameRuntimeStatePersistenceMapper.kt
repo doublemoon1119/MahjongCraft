@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPlayerActivity
 import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.room.toPersistenceDto
 import kotlin.time.Duration
@@ -32,6 +33,10 @@ fun Game.toRuntimeStatePersistenceDto(): GameRuntimeStatePersistenceDto = GameRu
     aiPlayerStrategyKeys = aiPlayerStrategyKeys.mapKeys { (playerId, _) -> playerId.toString() },
     matchSeed = matchSeed.toByteArray().toHexString(),
     openedRoundCount = openedRoundCount,
+    activePlayerIds = roundActivity.activePlayerIds.mapTo(mutableSetOf(), Uuid::toString),
+    timedOutPlayerIds = roundActivity.timedOutPlayerIds.mapTo(mutableSetOf(), Uuid::toString),
+    inactiveRoundStreak = inactiveRoundStreak,
+    offlinePauseElapsed = offlinePauseElapsed,
 )
 
 /**
@@ -78,3 +83,13 @@ fun GameRuntimeStatePersistenceDto.toEnabledAutomaticControlIdsByPlayerId(): Map
  * @return 轉換後的結果。
  */
 fun GameRuntimeStatePersistenceDto.toInterruptedBaseByPlayerId(): Map<Uuid, Duration> = interruptedBaseByPlayerId.mapKeys { (playerId, _) -> Uuid.parse(playerId) }
+
+/**
+ * 將 persistence DTO 中的本局玩家活動還原成領域模型。
+ *
+ * @return 轉換後的結果。
+ */
+fun GameRuntimeStatePersistenceDto.toRoundActivity(): RoundPlayerActivity = RoundPlayerActivity(
+    activePlayerIds = activePlayerIds.mapTo(mutableSetOf(), Uuid::parse),
+    timedOutPlayerIds = timedOutPlayerIds.mapTo(mutableSetOf(), Uuid::parse),
+)

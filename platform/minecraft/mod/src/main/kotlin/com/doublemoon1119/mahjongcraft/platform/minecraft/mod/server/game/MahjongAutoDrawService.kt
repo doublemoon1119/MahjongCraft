@@ -36,6 +36,7 @@ class MahjongAutoDrawService(
      *   - 已經摸過牌，或剛吃／碰成立、準備直接捨牌。
      *   - 玩家已進入強制自動操作（[Game.forcedAutoPlayPlayerIds]）。這類玩家的摸牌與捨牌由 `ForcedAutoPlayDriver` 在自動推進中代打。
      * - 只分派摸牌，不接著驅動自動連鎖。它在每次自動推進的最後執行，摸牌成功時由推進再跑一輪接續後續流程。
+     * - 這次摸牌由伺服器代送，不算玩家這一局主動操作過，整桌真人都沒在操作時仍會被判定為無人操作。
      *
      * @param gameId 欲檢查的對局 Uuid。
      * @return 是否替真人摸了牌。
@@ -49,6 +50,6 @@ class MahjongAutoDrawService(
         if (game.isAi(current.id) || current.id in game.forcedAutoPlayPlayerIds) return false
         if (!state.isDrawWindowOpenFor(current.id)) return false
 
-        return gameFlowCoordinator.dispatch(gameId, current.id, GameCommand.Draw) is Outcome.Success
+        return gameFlowCoordinator.dispatch(gameId, current.id, GameCommand.Draw, initiatedByPlayer = false) is Outcome.Success
     }
 }

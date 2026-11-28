@@ -15,13 +15,35 @@
 # - "keep_seat": Keep the seat and wait for the player to reconnect.
 # - "leave_immediately": Remove the player from the waiting game immediately.
 # - "leave_after_timeout": Keep the seat until the timeout expires; reconnecting cancels the removal.
-# Games that have already started always keep the disconnected player's seat for now.
+# Games that have already started keep the seat and play on; see [offline-players] for when everyone is offline.
 policy = "leave_immediately"
 
 # Time in seconds before removing a disconnected player when policy is "leave_after_timeout".
 # This value is ignored by the other policies.
 # Allowed range: 1 to 3600 (1 hour).
 timeout-seconds = 30
+
+[inactive-players]
+
+# Ends a started match normally, keeping its results, when nobody is really playing anymore.
+# A round counts as inactive when every human player only had the timer act for them in that round:
+# each of them timed out at least once and none of them chose an action themselves.
+# Automatic actions a player turned on, such as auto-discard, count as choosing an action.
+# Matches with an AI seat, and rounds whose base thinking time is 0 seconds, are never counted.
+# The match ends after this many inactive rounds in a row; any round with a human action resets the count.
+# 0 disables this check.
+# Allowed range: 0 to 10.
+rounds = 2
+
+[offline-players]
+
+# A started match pauses while every human player in it is offline, and resumes when one of them reconnects.
+# Matches without human players never pause.
+# Time in seconds the pause may last in total before the match is aborted without recording results.
+# Time while the server is stopped does not count.
+# 0 means wait forever.
+# Allowed range: 0 to 604800 (7 days).
+pause-timeout-seconds = 0
 
 [ai-player]
 

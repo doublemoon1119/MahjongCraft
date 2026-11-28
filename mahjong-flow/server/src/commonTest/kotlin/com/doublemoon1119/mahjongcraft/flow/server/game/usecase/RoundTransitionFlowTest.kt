@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepos
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.runAsSingleWrite
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.MatchAbsenceSettings
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
@@ -114,6 +115,7 @@ class RoundTransitionFlowTest {
             presentationPublisher = presentationPublisher,
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             beginRuleDecisionUseCase = noRuleDecisionBeginUseCase(gameRepo, moduleRegistry, snapshotSynchronizer),
+            absenceSettings = MatchAbsenceSettings.DISABLED,
         )
     }
 
