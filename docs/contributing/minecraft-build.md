@@ -297,7 +297,8 @@ Each kind of run in detail:
   `runServer` and an example's `runServer` start as usual and run no test, with or without
   `-PmahjongcraftAutotest`.
 - The test starts the server twice. The first run, `runAutotestServerStart`, plays at tables, takes the seated
-  bots offline and back while an unseated bot watches, and stops in the middle of a match. The second run,
+  bots offline and back while an unseated bot watches, checks that leftover table objects whose match or
+  room is gone remove themselves, and stops in the middle of a match. The second run,
   `runAutotestServerResume`, loads the same world, checks what was restored and that the matches stay paused
   until the seated bots rejoin, then finishes the matches. Both runs write into the same report under
   `run/autotest-server/autotest/<start time>/`, which keeps the latest reports like the client test.

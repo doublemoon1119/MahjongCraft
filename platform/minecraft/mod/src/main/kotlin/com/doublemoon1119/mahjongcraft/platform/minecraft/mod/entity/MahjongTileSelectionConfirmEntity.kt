@@ -81,25 +81,16 @@ class MahjongTileSelectionConfirmEntity(
         setNoGravity(true)
     }
 
-    /**
-     * 這個 entity 物件在記憶體裡第一次被 tick 到的 `level().gameTime`。只在記憶體內，不寫進存檔，理由同
-     * [MahjongRoundInfoEntity.firstTickWorldTime]。
-     */
-    private var firstTickWorldTime: Long = Long.MIN_VALUE
+    /** 是否已在第一個伺服器 tick 確認擁有者還在，見 [ManagedEntityOwnership]。 */
+    private var ownershipChecked = false
 
-    /**
-     * fallback 自動清除——**不是主要清除路徑**。正常生命週期是選牌送出／取消後由
-     * `MahjongTableGameActionService` 立即清除。這裡只是意外情境（伺服器崩潰、玩家斷線後選牌狀態卡死）
-     * 的保險，門檻抓得遠小於局況顯示那種整局都要存在的 entity，理由同
-     * [MahjongRoundInfoEntity.tick] 的同款設計。
-     */
+    /** 伺服器端在第一個 tick 確認所屬對局還在，見 [ManagedEntityOwnership]。選牌結束時由明確的清除呼叫移除。 */
     override fun tick() {
         super.tick()
         if (level().isClientSide) return
-        if (firstTickWorldTime == Long.MIN_VALUE) firstTickWorldTime = level().gameTime
-        if (level().gameTime - firstTickWorldTime >= FALLBACK_DESPAWN_AFTER_TICKS) {
-            discard()
-        }
+        if (ownershipChecked) return
+        ownershipChecked = true
+        if (ManagedEntityOwnership.isGameGone(managedTableId)) discard()
     }
 
     /** 純互動用途，不提供物理阻擋、不參與推擠。 */
@@ -210,9 +201,6 @@ class MahjongTileSelectionConfirmEntity(
 
         /** 拼湊片段索引的世界存檔 key。 */
         private const val NBT_KEY_SEGMENT_INDEX = "SegmentIndex"
-
-        /** fallback 自動清除門檻（見 [tick]）——5 分鐘，遠大於正常選牌所需時間，只用來兜底意外情境。 */
-        private const val FALLBACK_DESPAWN_AFTER_TICKS = 20L * 60L * 5L
 
         /** 同步所屬玩家 UUID。空字串表示尚未指派。 */
         private val HOLDER_ID: EntityDataAccessor<String> =

@@ -71,33 +71,22 @@ class MahjongRoundInfoEntity(
         setNoGravity(true)
     }
 
-    /**
-     * 這個 entity 物件在記憶體裡第一次被 tick 到的 `level().gameTime`。只在記憶體內，不寫進存檔，理由跟
-     * [MahjongScoringStickEntity.firstTickWorldTime] 完全一致（避免世界重新載入一次補跑大量 tick 時
-     * 誤判成早就該消失了）。
-     */
-    private var firstTickWorldTime: Long = Long.MIN_VALUE
+    /** 是否已在第一個伺服器 tick 確認擁有者還在，見 [ManagedEntityOwnership]。 */
+    private var ownershipChecked = false
 
     /** 目前局況顯示隱形 lease 的絕對截止時間。沒有 lease 時為 [Long.MIN_VALUE]。 */
     private var hiddenUntilGameTime: Long = Long.MIN_VALUE
 
-    /**
-     * fallback 自動清除——**不是主要清除路徑**。正常生命週期是跟牌牆同時生成、換局時由
-     * `EntityMahjongRoundInfoPresenter.present()` 找到既有 entity 就地更新內容（不重新生成），或由
-     * `ServerThreadGamePresentationPublisher.clearPlayerTiles()`（回房間等情境）顯式清除。這裡只是意外情境
-     * （伺服器崩潰、對局非正常結束導致沒有機會走到正常清除流程）的保險，門檻抓得遠大於正常一局遊戲
-     * 時長，理由同 [MahjongScoringStickEntity.tick] 的同款設計——這個 entity 沒有自由放置模式（一律
-     * 由牌局管理），不需要像點棒那樣額外判斷 `managedByGame`。
-     */
+    /** 伺服器端在第一個 tick 確認所屬對局還在（見 [ManagedEntityOwnership]），之後每個 tick 套用隱藏期限與離線暫停狀態。 */
     override fun tick() {
         super.tick()
         if (level().isClientSide) return
+        if (!ownershipChecked) {
+            ownershipChecked = true
+            if (ManagedEntityOwnership.isGameGone(managedTableId)) return discard()
+        }
         applyVisibility()
         offlinePaused = managedTableId?.let(GlobalContext.get().get<OfflineMatchPause>()::isPaused) == true
-        if (firstTickWorldTime == Long.MIN_VALUE) firstTickWorldTime = level().gameTime
-        if (level().gameTime - firstTickWorldTime >= FALLBACK_DESPAWN_AFTER_TICKS) {
-            discard()
-        }
     }
 
     /** 純視覺物件，不提供物理阻擋、不參與推擠、不能被互動選取。 */
@@ -268,12 +257,6 @@ class MahjongRoundInfoEntity(
 
         /** 局況顯示行內容的世界存檔 key。 */
         private const val NBT_KEY_LINES = "Lines"
-
-        /**
-         * fallback 自動清除門檻（見 [tick]）——1 小時份的 tick 數，遠大於正常一局遊戲時長，只用來
-         * 兜底意外情境，不影響正常對局的局況顯示。
-         */
-        private const val FALLBACK_DESPAWN_AFTER_TICKS = 20L * 60L * 60L
 
         /** 同步要顯示的完整內容，編碼格式見 [lines]。 */
         private val LINES: EntityDataAccessor<String> =

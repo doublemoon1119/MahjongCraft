@@ -11,7 +11,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.Aut
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.AutotestStepResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.autotest.autotestReportMarkdown
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.debug.vanilla.serverDirectory
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongLobbyInfoEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongRoundInfoEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongScoringStickEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTileEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.entity.MahjongTileSelectionConfirmEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.loader.ServerEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.mod.server.game.debug.autotest.AutotestServerTable.Companion.playerId
@@ -25,6 +30,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.Entity
 import net.minecraft.world.phys.AABB
 import org.koin.core.Koin
 import java.nio.file.Files
@@ -46,6 +52,8 @@ import kotlin.uuid.Uuid
  *
  * - 機器人玩家照玩家的流程擺三張牌桌（日麻、台麻、三人麻將），開房並補上 AI。
  * - 第一場開自動操作打完，並確認封存進牌譜。
+ * - 由等待室或對局管理的物件指派給不存在的牌桌時，在第一個遊戲刻移除自己；擁有者還在時保留。第一場打完後的等待室與第二場
+ *   進行中的對局各檢查一次。
  * - 第二場開局後，等各桌機器人的決策時間開始倒數。
  * - 一位沒有入座的機器人站到牌桌旁旁觀，三位房主機器人離線：確認各桌暫停、局況顯示暫停提示，牌局與決策時間都不前進。房主重新
  *   加入後確認各桌從暫停前的剩餘時間繼續。
@@ -164,7 +172,9 @@ internal class AutotestServerRunner(private val koin: Koin) {
         if (!step("bots") { joinBots(server) }) return
         if (!step("tables") { setUpTables() }) return
         if (!step("first-match") { playFirstMatch() }) return
+        if (!step("room-owned-cleanup") { checkRoomOwnedCleanup(server) }) return
         if (!step("second-match") { startSecondMatch() }) return
+        if (!step("game-owned-cleanup") { checkGameOwnedCleanup(server) }) return
         if (!step("offline-pause") { pauseWhileOffline(server) }) return
         step("interrupt") { interruptSecondMatch() }
     }
@@ -256,6 +266,78 @@ internal class AutotestServerRunner(private val koin: Koin) {
         }
         waitForMatchesToFinish(games)
     }
+
+    /**
+     * 等待室管理的物件：日麻桌的房間提示指派給不存在的牌桌時移除自己，指派給這張還在等待的牌桌時保留。
+     *
+     * @param server 目前伺服器。
+     */
+    private suspend fun AutotestServerContext.checkRoomOwnedCleanup(server: MinecraftServer) {
+        val table = tables.first()
+        checkOwnership(server, table, ownedEntities = { tableId -> listOf("lobby info" to lobbyInfo(server, table, tableId)) })
+    }
+
+    /**
+     * 對局管理的物件：指派給不存在的牌桌時移除自己，指派給日麻桌進行中的對局時保留。
+     *
+     * @param server 目前伺服器。
+     */
+    private suspend fun AutotestServerContext.checkGameOwnedCleanup(server: MinecraftServer) {
+        val table = tables.first()
+        checkOwnership(server, table) { tableId ->
+            val level = server.overworld()
+            listOf(
+                "tile" to MahjongTileEntity(world = level).apply { assignToTable(tableId) },
+                "point stick" to MahjongScoringStickEntity(world = level).apply { assignToTable(tableId) },
+                "round info" to MahjongRoundInfoEntity(world = level).apply { assignToTable(tableId) },
+                "player info" to MahjongPlayerInfoEntity(world = level).apply { assignToTable(tableId, table.position) },
+                "tile selection confirm button" to MahjongTileSelectionConfirmEntity(world = level).apply {
+                    assignToHolder(tableId = tableId, playerId = AutotestBotPlayer.playerIdOf(table.botName), segmentIndex = 0, isPrimary = true)
+                },
+            )
+        }
+    }
+
+    /**
+     * 在牌桌上方生成兩組相同種類的物件：一組指派給不存在的牌桌，一組指派給 [table]。前者應在第一個遊戲刻移除自己，後者應保留，
+     * 檢查後移除，不影響之後的步驟。從存檔載入的遺留物件走同一條檢查。
+     *
+     * @param server 目前伺服器。
+     * @param table 擁有者還在的牌桌。
+     * @param ownedEntities 依牌桌識別碼建立各種物件，以名稱標示。
+     */
+    private suspend fun AutotestServerContext.checkOwnership(
+        server: MinecraftServer,
+        table: AutotestServerTable,
+        ownedEntities: (Uuid) -> List<Pair<String, Entity>>,
+    ) {
+        val level = server.overworld()
+        val orphans = ownedEntities(Uuid.random())
+        val owned = ownedEntities(checkNotNull(table.tableId))
+        for ((_, entity) in orphans + owned) {
+            entity.moveTo(table.position.x + 0.5, table.position.y + CLEANUP_SPAWN_HEIGHT, table.position.z + 0.5, 0f, 0f)
+            level.addFreshEntity(entity)
+        }
+        for ((name, entity) in orphans) {
+            check("A leftover $name whose owner is gone removes itself", waitUntil(SYNC_TIMEOUT) { entity.isRemoved })
+        }
+        for ((name, entity) in owned) {
+            // 遊戲刻在呼叫 tick 前遞增 tickCount，到 2 時第一個遊戲刻的檢查已經跑過。
+            val ticked = waitUntil(SYNC_TIMEOUT) { entity.isRemoved || entity.tickCount >= 2 }
+            check("A $name whose owner still exists stays", ticked && !entity.isRemoved)
+            entity.discard()
+        }
+    }
+
+    /**
+     * 建立指派給 [tableId] 的房間提示，位置檢查用 [table] 的控制方塊。
+     *
+     * @param server 目前伺服器。
+     * @param table 控制方塊所在的牌桌。
+     * @param tableId 指派的牌桌識別碼。
+     * @return 房間提示。
+     */
+    private fun lobbyInfo(server: MinecraftServer, table: AutotestServerTable, tableId: Uuid): Entity = MahjongLobbyInfoEntity(world = server.overworld()).apply { assignToTable(tableId, table.position) }
 
     /** 三張牌桌再開一場，等各桌機器人的決策時間都開始倒數。 */
     private suspend fun AutotestServerContext.startSecondMatch() {
@@ -645,6 +727,9 @@ internal class AutotestServerRunner(private val koin: Koin) {
 
         /** 確認暫停時，對局至少要累計暫停這麼久。 */
         private val PAUSE_HOLD = 3.seconds
+
+        /** 清理檢查的物件生成在牌桌控制方塊上方的高度。 */
+        private const val CLEANUP_SPAWN_HEIGHT = 3.0
 
         /** 從牌桌控制方塊找局況顯示的範圍。 */
         private const val ROUND_INFO_SEARCH_RADIUS = 8.0
